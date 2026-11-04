@@ -1,0 +1,8 @@
+import Foundation
+
+public enum SpotKind: String, CaseIterable, Sendable {
+    case launch
+    case toggle
+    case expand
+    case slider
+}

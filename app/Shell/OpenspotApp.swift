@@ -13,8 +13,8 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     private var statusItem: NSStatusItem?
-    private let model = ShelfModel()
-    private var panel: ShelfPanel?
+    private let model = SpotsModel()
+    private var panel: SpotsPanel?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -23,7 +23,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         item.button?.action = #selector(togglePanel)
         statusItem = item
         EditMenu.install()
-        panel = ShelfPanel.make(model: model)
+        panel = SpotsPanel.make(model: model)
         HotKey.registerControlSpace { [weak self] in
             Task { @MainActor in self?.togglePanel() }
         }
@@ -31,12 +31,11 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     @objc func togglePanel() {
         guard let panel else { return }
-        if panel.isVisible && panel.isKeyWindow {
-            panel.orderOut(nil)
+        if model.isShown {
+            panel.hide()
             return
         }
-        Task { await model.reload() }
         NSApp.activate(ignoringOtherApps: true)
-        panel.makeKeyAndOrderFront(nil)
+        panel.show()
     }
 }
