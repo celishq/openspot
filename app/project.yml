@@ -9,6 +9,7 @@ settings:
     CODE_SIGN_STYLE: Manual
     CODE_SIGN_IDENTITY: "-"
     ENABLE_HARDENED_RUNTIME: YES
+    DEVELOPMENT_TEAM: NNK86LQK58
 targets:
   OpenspotCore:
     type: library.static

@@ -7,6 +7,14 @@ import OpenspotCore
 final class ShelfModel {
     private(set) var rows: [Row] = []
     private(set) var problems: [String] = []
+    var query = "" {
+        didSet { selected = 0 }
+    }
+    var selected = 0
+
+    var visibleRows: [Row] {
+        RowFilter.matching(rows, query: query)
+    }
 
     func reload() async {
         let folder = PluginFolder.url()
@@ -24,6 +32,19 @@ final class ShelfModel {
         }
         self.rows = rows
         self.problems = problems
+    }
+
+    func moveSelection(by step: Int) {
+        let count = visibleRows.count
+        guard count > 0 else { return }
+        selected = min(max(selected + step, 0), count - 1)
+    }
+
+    func runSelected() -> Bool {
+        let list = visibleRows
+        guard list.indices.contains(selected) else { return false }
+        run(list[selected])
+        return true
     }
 
     func run(_ row: Row) {

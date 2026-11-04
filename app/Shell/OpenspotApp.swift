@@ -22,6 +22,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         item.button?.target = self
         item.button?.action = #selector(togglePanel)
         statusItem = item
+        EditMenu.install()
         panel = ShelfPanel.make(model: model)
         HotKey.registerControlSpace { [weak self] in
             Task { @MainActor in self?.togglePanel() }
@@ -30,7 +31,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     @objc func togglePanel() {
         guard let panel else { return }
-        if panel.isVisible {
+        if panel.isVisible && panel.isKeyWindow {
             panel.orderOut(nil)
             return
         }

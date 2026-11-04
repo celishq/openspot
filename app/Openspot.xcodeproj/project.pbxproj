@@ -11,13 +11,16 @@
 		0A25A661610D38B40A8E1727 /* libOpenspotCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 04798119A31A08BDE55ED6D1 /* libOpenspotCore.a */; };
 		0DD710318DF8C4FED1B2CCC2 /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24EB4E324074C75307FDB333 /* SmokeTests.swift */; };
 		0EDE8DE80F8192A42BE306AC /* PluginLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B29067D1A1F77DA750A0144D /* PluginLoaderTests.swift */; };
+		169116F61A49430D712562F0 /* RowFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06C447088392CEDBCD1DBB26 /* RowFilter.swift */; };
 		1847C82CBD188D7F2484EED3 /* HotKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96AC0CDE42355E19E796FFAE /* HotKey.swift */; };
 		260823EDF2EB2D1BB495C3B4 /* libOpenspotCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 04798119A31A08BDE55ED6D1 /* libOpenspotCore.a */; };
 		555B3C67577BEB7F4D527DEC /* Row.swift in Sources */ = {isa = PBXBuildFile; fileRef = C92369CC132ACA639105D3DF /* Row.swift */; };
 		5D4ADFD59D075BF4ECCC839F /* OpenspotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A093123650150BDB564E8AA8 /* OpenspotApp.swift */; };
 		67A6C7074851AE6B4C171FC0 /* ShelfPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C610AA8AACA2479B5FC0FD3D /* ShelfPanel.swift */; };
+		8E9C45D3841D293AAFAA28F2 /* EditMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 549DD6A76762877757F6D843 /* EditMenu.swift */; };
 		979AA44B6E7FE2B97A59E3B4 /* PluginRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4061FA8530B0AB8D4D6FA339 /* PluginRunner.swift */; };
 		9DA9A198838222BB424C04E7 /* ShelfModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F8A0204116B7FF15B1C8F6B /* ShelfModel.swift */; };
+		9E4A571091CEB4A0D6B4894E /* RowFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55A76DD52A853698659751EE /* RowFilterTests.swift */; };
 		B2E89A69E75A5FD56C718F45 /* PluginScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29BF886C2AE7CC0743613AC1 /* PluginScanner.swift */; };
 		C630389F78169FE5CD722981 /* PluginHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8C706E0624B044F0CB6CF0 /* PluginHeader.swift */; };
 		E70238E4D98F4F0F27CFE767 /* ShelfView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F60135B388FAAE855FE70E3 /* ShelfView.swift */; };
@@ -43,11 +46,14 @@
 
 /* Begin PBXFileReference section */
 		04798119A31A08BDE55ED6D1 /* libOpenspotCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libOpenspotCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		06C447088392CEDBCD1DBB26 /* RowFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RowFilter.swift; sourceTree = "<group>"; };
 		1B7CF0FE4A88F09730375B32 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		24EB4E324074C75307FDB333 /* SmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTests.swift; sourceTree = "<group>"; };
 		29BF886C2AE7CC0743613AC1 /* PluginScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScanner.swift; sourceTree = "<group>"; };
 		4061FA8530B0AB8D4D6FA339 /* PluginRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginRunner.swift; sourceTree = "<group>"; };
 		4C8C706E0624B044F0CB6CF0 /* PluginHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginHeader.swift; sourceTree = "<group>"; };
+		549DD6A76762877757F6D843 /* EditMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditMenu.swift; sourceTree = "<group>"; };
+		55A76DD52A853698659751EE /* RowFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RowFilterTests.swift; sourceTree = "<group>"; };
 		78CB7FF3E38128F1B9AC6CD9 /* Version.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Version.swift; sourceTree = "<group>"; };
 		7F60135B388FAAE855FE70E3 /* ShelfView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfView.swift; sourceTree = "<group>"; };
 		96AC0CDE42355E19E796FFAE /* HotKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKey.swift; sourceTree = "<group>"; };
@@ -95,6 +101,7 @@
 			isa = PBXGroup;
 			children = (
 				B29067D1A1F77DA750A0144D /* PluginLoaderTests.swift */,
+				55A76DD52A853698659751EE /* RowFilterTests.swift */,
 				24EB4E324074C75307FDB333 /* SmokeTests.swift */,
 			);
 			path = Tests;
@@ -103,6 +110,7 @@
 		AC0DF50E527DAC861C2D8CFB /* Shell */ = {
 			isa = PBXGroup;
 			children = (
+				549DD6A76762877757F6D843 /* EditMenu.swift */,
 				96AC0CDE42355E19E796FFAE /* HotKey.swift */,
 				1B7CF0FE4A88F09730375B32 /* Info.plist */,
 				A093123650150BDB564E8AA8 /* OpenspotApp.swift */,
@@ -131,6 +139,7 @@
 				4061FA8530B0AB8D4D6FA339 /* PluginRunner.swift */,
 				29BF886C2AE7CC0743613AC1 /* PluginScanner.swift */,
 				C92369CC132ACA639105D3DF /* Row.swift */,
+				06C447088392CEDBCD1DBB26 /* RowFilter.swift */,
 				78CB7FF3E38128F1B9AC6CD9 /* Version.swift */,
 			);
 			path = Core;
@@ -209,9 +218,11 @@
 						ProvisioningStyle = Manual;
 					};
 					404BF3EE1B95F578121EFECA = {
+						DevelopmentTeam = NNK86LQK58;
 						ProvisioningStyle = Manual;
 					};
 					5F0BD7C8AF9A6FB05B0E992A = {
+						DevelopmentTeam = NNK86LQK58;
 						ProvisioningStyle = Manual;
 					};
 				};
@@ -266,6 +277,7 @@
 				979AA44B6E7FE2B97A59E3B4 /* PluginRunner.swift in Sources */,
 				B2E89A69E75A5FD56C718F45 /* PluginScanner.swift in Sources */,
 				555B3C67577BEB7F4D527DEC /* Row.swift in Sources */,
+				169116F61A49430D712562F0 /* RowFilter.swift in Sources */,
 				01756FA9CDEBFE895F796322 /* Version.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -274,6 +286,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8E9C45D3841D293AAFAA28F2 /* EditMenu.swift in Sources */,
 				1847C82CBD188D7F2484EED3 /* HotKey.swift in Sources */,
 				5D4ADFD59D075BF4ECCC839F /* OpenspotApp.swift in Sources */,
 				9DA9A198838222BB424C04E7 /* ShelfModel.swift in Sources */,
@@ -287,6 +300,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0EDE8DE80F8192A42BE306AC /* PluginLoaderTests.swift in Sources */,
+				9E4A571091CEB4A0D6B4894E /* RowFilterTests.swift in Sources */,
 				0DD710318DF8C4FED1B2CCC2 /* SmokeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -344,6 +358,7 @@
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = NNK86LQK58;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -493,6 +508,7 @@
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = NNK86LQK58;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
