@@ -1,0 +1,587 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		01756FA9CDEBFE895F796322 /* Version.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78CB7FF3E38128F1B9AC6CD9 /* Version.swift */; };
+		0A25A661610D38B40A8E1727 /* libOpenspotCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 04798119A31A08BDE55ED6D1 /* libOpenspotCore.a */; };
+		0DD710318DF8C4FED1B2CCC2 /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24EB4E324074C75307FDB333 /* SmokeTests.swift */; };
+		0EDE8DE80F8192A42BE306AC /* PluginLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B29067D1A1F77DA750A0144D /* PluginLoaderTests.swift */; };
+		1847C82CBD188D7F2484EED3 /* HotKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96AC0CDE42355E19E796FFAE /* HotKey.swift */; };
+		260823EDF2EB2D1BB495C3B4 /* libOpenspotCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 04798119A31A08BDE55ED6D1 /* libOpenspotCore.a */; };
+		555B3C67577BEB7F4D527DEC /* Row.swift in Sources */ = {isa = PBXBuildFile; fileRef = C92369CC132ACA639105D3DF /* Row.swift */; };
+		5D4ADFD59D075BF4ECCC839F /* OpenspotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A093123650150BDB564E8AA8 /* OpenspotApp.swift */; };
+		67A6C7074851AE6B4C171FC0 /* ShelfPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C610AA8AACA2479B5FC0FD3D /* ShelfPanel.swift */; };
+		979AA44B6E7FE2B97A59E3B4 /* PluginRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4061FA8530B0AB8D4D6FA339 /* PluginRunner.swift */; };
+		9DA9A198838222BB424C04E7 /* ShelfModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F8A0204116B7FF15B1C8F6B /* ShelfModel.swift */; };
+		B2E89A69E75A5FD56C718F45 /* PluginScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29BF886C2AE7CC0743613AC1 /* PluginScanner.swift */; };
+		C630389F78169FE5CD722981 /* PluginHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8C706E0624B044F0CB6CF0 /* PluginHeader.swift */; };
+		E70238E4D98F4F0F27CFE767 /* ShelfView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F60135B388FAAE855FE70E3 /* ShelfView.swift */; };
+		F2F3D3EACF4CB9697FF2382C /* PluginFolder.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA7CB04E1CE0920F52CDF971 /* PluginFolder.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1604A58F6E2404774CA0B2D0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1C19AF8969943168B67EC323 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5F0BD7C8AF9A6FB05B0E992A;
+			remoteInfo = OpenspotCore;
+		};
+		56F9BCB0F8821B1FC1AD70E3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1C19AF8969943168B67EC323 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5F0BD7C8AF9A6FB05B0E992A;
+			remoteInfo = OpenspotCore;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		04798119A31A08BDE55ED6D1 /* libOpenspotCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libOpenspotCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		1B7CF0FE4A88F09730375B32 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		24EB4E324074C75307FDB333 /* SmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTests.swift; sourceTree = "<group>"; };
+		29BF886C2AE7CC0743613AC1 /* PluginScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScanner.swift; sourceTree = "<group>"; };
+		4061FA8530B0AB8D4D6FA339 /* PluginRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginRunner.swift; sourceTree = "<group>"; };
+		4C8C706E0624B044F0CB6CF0 /* PluginHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginHeader.swift; sourceTree = "<group>"; };
+		78CB7FF3E38128F1B9AC6CD9 /* Version.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Version.swift; sourceTree = "<group>"; };
+		7F60135B388FAAE855FE70E3 /* ShelfView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfView.swift; sourceTree = "<group>"; };
+		96AC0CDE42355E19E796FFAE /* HotKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKey.swift; sourceTree = "<group>"; };
+		9F8A0204116B7FF15B1C8F6B /* ShelfModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfModel.swift; sourceTree = "<group>"; };
+		A093123650150BDB564E8AA8 /* OpenspotApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenspotApp.swift; sourceTree = "<group>"; };
+		AEE6E5B4502E62959A3B47EE /* Openspot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Openspot.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B29067D1A1F77DA750A0144D /* PluginLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginLoaderTests.swift; sourceTree = "<group>"; };
+		BA7CB04E1CE0920F52CDF971 /* PluginFolder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginFolder.swift; sourceTree = "<group>"; };
+		C610AA8AACA2479B5FC0FD3D /* ShelfPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfPanel.swift; sourceTree = "<group>"; };
+		C92369CC132ACA639105D3DF /* Row.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Row.swift; sourceTree = "<group>"; };
+		D2CAEE13E8AAF9CF999090F8 /* OpenspotTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OpenspotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		4207824EB5915E7EDA572BFC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0A25A661610D38B40A8E1727 /* libOpenspotCore.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9377494807D855EA77601A31 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				260823EDF2EB2D1BB495C3B4 /* libOpenspotCore.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		43F99A2A8426AD8DCB4DE46A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				04798119A31A08BDE55ED6D1 /* libOpenspotCore.a */,
+				AEE6E5B4502E62959A3B47EE /* Openspot.app */,
+				D2CAEE13E8AAF9CF999090F8 /* OpenspotTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		775723F192EC7991A2AABB10 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				B29067D1A1F77DA750A0144D /* PluginLoaderTests.swift */,
+				24EB4E324074C75307FDB333 /* SmokeTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		AC0DF50E527DAC861C2D8CFB /* Shell */ = {
+			isa = PBXGroup;
+			children = (
+				96AC0CDE42355E19E796FFAE /* HotKey.swift */,
+				1B7CF0FE4A88F09730375B32 /* Info.plist */,
+				A093123650150BDB564E8AA8 /* OpenspotApp.swift */,
+				9F8A0204116B7FF15B1C8F6B /* ShelfModel.swift */,
+				C610AA8AACA2479B5FC0FD3D /* ShelfPanel.swift */,
+				7F60135B388FAAE855FE70E3 /* ShelfView.swift */,
+			);
+			path = Shell;
+			sourceTree = "<group>";
+		};
+		EBC64133A8423C16570997F1 = {
+			isa = PBXGroup;
+			children = (
+				FE89EF902B9DC3983D28BFA7 /* Core */,
+				AC0DF50E527DAC861C2D8CFB /* Shell */,
+				775723F192EC7991A2AABB10 /* Tests */,
+				43F99A2A8426AD8DCB4DE46A /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		FE89EF902B9DC3983D28BFA7 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				BA7CB04E1CE0920F52CDF971 /* PluginFolder.swift */,
+				4C8C706E0624B044F0CB6CF0 /* PluginHeader.swift */,
+				4061FA8530B0AB8D4D6FA339 /* PluginRunner.swift */,
+				29BF886C2AE7CC0743613AC1 /* PluginScanner.swift */,
+				C92369CC132ACA639105D3DF /* Row.swift */,
+				78CB7FF3E38128F1B9AC6CD9 /* Version.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0935741A5890ABCE44BE6174 /* Openspot */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 169F4EC2EABFB09092472269 /* Build configuration list for PBXNativeTarget "Openspot" */;
+			buildPhases = (
+				8A2590F6399735935380EDC5 /* Sources */,
+				9377494807D855EA77601A31 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				86D27CBB6BFDC3012ED1C75A /* PBXTargetDependency */,
+			);
+			name = Openspot;
+			packageProductDependencies = (
+			);
+			productName = Openspot;
+			productReference = AEE6E5B4502E62959A3B47EE /* Openspot.app */;
+			productType = "com.apple.product-type.application";
+		};
+		404BF3EE1B95F578121EFECA /* OpenspotTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 181498267ED295D0537F9DF0 /* Build configuration list for PBXNativeTarget "OpenspotTests" */;
+			buildPhases = (
+				8F40F69EC7704AC1A7D139E2 /* Sources */,
+				4207824EB5915E7EDA572BFC /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CECB34804FDF4ADA6784BF86 /* PBXTargetDependency */,
+			);
+			name = OpenspotTests;
+			packageProductDependencies = (
+			);
+			productName = OpenspotTests;
+			productReference = D2CAEE13E8AAF9CF999090F8 /* OpenspotTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		5F0BD7C8AF9A6FB05B0E992A /* OpenspotCore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4F479C9F9D300053C415DDCB /* Build configuration list for PBXNativeTarget "OpenspotCore" */;
+			buildPhases = (
+				49BD8C90A2B8E07986C49E34 /* Sources */,
+				034C06F305F2C03C90FA322D /* Copy Swift Objective-C Interface Header */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = OpenspotCore;
+			packageProductDependencies = (
+			);
+			productName = OpenspotCore;
+			productReference = 04798119A31A08BDE55ED6D1 /* libOpenspotCore.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1C19AF8969943168B67EC323 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					0935741A5890ABCE44BE6174 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
+					404BF3EE1B95F578121EFECA = {
+						ProvisioningStyle = Manual;
+					};
+					5F0BD7C8AF9A6FB05B0E992A = {
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = 2153F0BB0841E43643DE80E2 /* Build configuration list for PBXProject "Openspot" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = EBC64133A8423C16570997F1;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 43F99A2A8426AD8DCB4DE46A /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5F0BD7C8AF9A6FB05B0E992A /* OpenspotCore */,
+				0935741A5890ABCE44BE6174 /* Openspot */,
+				404BF3EE1B95F578121EFECA /* OpenspotTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		034C06F305F2C03C90FA322D /* Copy Swift Objective-C Interface Header */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(DERIVED_SOURCES_DIR)/$(SWIFT_OBJC_INTERFACE_HEADER_NAME)",
+			);
+			name = "Copy Swift Objective-C Interface Header";
+			outputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/include/$(PRODUCT_MODULE_NAME)/$(SWIFT_OBJC_INTERFACE_HEADER_NAME)",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "ditto \"${SCRIPT_INPUT_FILE_0}\" \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		49BD8C90A2B8E07986C49E34 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F2F3D3EACF4CB9697FF2382C /* PluginFolder.swift in Sources */,
+				C630389F78169FE5CD722981 /* PluginHeader.swift in Sources */,
+				979AA44B6E7FE2B97A59E3B4 /* PluginRunner.swift in Sources */,
+				B2E89A69E75A5FD56C718F45 /* PluginScanner.swift in Sources */,
+				555B3C67577BEB7F4D527DEC /* Row.swift in Sources */,
+				01756FA9CDEBFE895F796322 /* Version.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8A2590F6399735935380EDC5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1847C82CBD188D7F2484EED3 /* HotKey.swift in Sources */,
+				5D4ADFD59D075BF4ECCC839F /* OpenspotApp.swift in Sources */,
+				9DA9A198838222BB424C04E7 /* ShelfModel.swift in Sources */,
+				67A6C7074851AE6B4C171FC0 /* ShelfPanel.swift in Sources */,
+				E70238E4D98F4F0F27CFE767 /* ShelfView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8F40F69EC7704AC1A7D139E2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0EDE8DE80F8192A42BE306AC /* PluginLoaderTests.swift in Sources */,
+				0DD710318DF8C4FED1B2CCC2 /* SmokeTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		86D27CBB6BFDC3012ED1C75A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5F0BD7C8AF9A6FB05B0E992A /* OpenspotCore */;
+			targetProxy = 56F9BCB0F8821B1FC1AD70E3 /* PBXContainerItemProxy */;
+		};
+		CECB34804FDF4ADA6784BF86 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5F0BD7C8AF9A6FB05B0E992A /* OpenspotCore */;
+			targetProxy = 1604A58F6E2404774CA0B2D0 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1C962B177F8A4E0D73C12DD8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		405D58E3B097903D70D0EB36 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				DEFINES_MODULE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.openspot.core;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		571469FB90D9A0D0812B846D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = Shell/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.openspot.app;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		650C83CCC44D74EDAEE671E3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.openspot.tests;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		7A414FE878FCBDC985B5119F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = Shell/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.openspot.app;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		7C89337480B2B78AF57BF003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				DEFINES_MODULE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.openspot.core;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		A8A871041519BFB09E9C0A86 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		BB85001CAFB0B598442BE62A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.openspot.tests;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		169F4EC2EABFB09092472269 /* Build configuration list for PBXNativeTarget "Openspot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				571469FB90D9A0D0812B846D /* Debug */,
+				7A414FE878FCBDC985B5119F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		181498267ED295D0537F9DF0 /* Build configuration list for PBXNativeTarget "OpenspotTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BB85001CAFB0B598442BE62A /* Debug */,
+				650C83CCC44D74EDAEE671E3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		2153F0BB0841E43643DE80E2 /* Build configuration list for PBXProject "Openspot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A8A871041519BFB09E9C0A86 /* Debug */,
+				1C962B177F8A4E0D73C12DD8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		4F479C9F9D300053C415DDCB /* Build configuration list for PBXNativeTarget "OpenspotCore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7C89337480B2B78AF57BF003 /* Debug */,
+				405D58E3B097903D70D0EB36 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 1C19AF8969943168B67EC323 /* Project object */;
+}
