@@ -1,10 +1,10 @@
 import Foundation
 
-public struct PluginHeader: Equatable {
+public struct PluginHeader: Equatable, Sendable {
     public let name: String
     public let api: Int
 
-    public static func read(_ text: String) -> PluginHeader? {
+    public init?(text: String) {
         var name: String?
         var api: Int?
         for line in text.split(separator: "\n") {
@@ -21,6 +21,7 @@ public struct PluginHeader: Equatable {
             }
         }
         guard let name, let api else { return nil }
-        return PluginHeader(name: name, api: api)
+        self.name = name
+        self.api = api
     }
 }

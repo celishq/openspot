@@ -13,17 +13,16 @@ final class ShelfModel {
     var selected = 0
 
     var visibleRows: [Row] {
-        RowFilter.matching(rows, query: query)
+        SearchQuery(text: query).matching(rows)
     }
 
     func reload() async {
-        let folder = PluginFolder.url()
-        let scan = (try? PluginScanner.scan(folder)) ?? ScanResult(plugins: [], refused: [])
+        let scan = (try? PluginFolder.standard().scan()) ?? ScanResult(plugins: [], refused: [])
         var rows: [Row] = []
         var problems = scan.refused.map { "\($0.file): \($0.reason)" }
         for plugin in scan.plugins {
             do {
-                let result = try await PluginRunner.run(plugin, query: "", timeout: 2)
+                let result = try await PluginRun(plugin: plugin, query: "", timeout: 2).execute()
                 rows.append(contentsOf: result.rows)
                 problems.append(contentsOf: result.errors.map { "\(plugin.name): bad row \($0)" })
             } catch {

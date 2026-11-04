@@ -1,16 +1,21 @@
 import Foundation
 
-public enum PluginError: Error, Equatable, Sendable {
-    case timedOut
-    case failed(Int32)
-}
+public struct PluginRun: Sendable {
+    public let plugin: Plugin
+    public let query: String
+    public let timeout: TimeInterval
 
-public enum PluginRunner {
-    public static func run(_ plugin: Plugin, query: String, timeout: TimeInterval) async throws -> RowResult {
+    public init(plugin: Plugin, query: String, timeout: TimeInterval) {
+        self.plugin = plugin
+        self.query = query
+        self.timeout = timeout
+    }
+
+    public func execute() async throws -> RowResult {
         try await withThrowingTaskGroup(of: RowResult.self) { group in
-            group.addTask { try await execute(plugin, query: query) }
+            group.addTask { try await self.runProcess() }
             group.addTask {
-                try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+                try await Task.sleep(nanoseconds: UInt64(self.timeout * 1_000_000_000))
                 throw PluginError.timedOut
             }
             let first = try await group.next()!
@@ -19,7 +24,7 @@ public enum PluginRunner {
         }
     }
 
-    private static func execute(_ plugin: Plugin, query: String) async throws -> RowResult {
+    private func runProcess() async throws -> RowResult {
         let process = Process()
         process.executableURL = plugin.url
         process.arguments = [query]
@@ -36,7 +41,7 @@ public enum PluginRunner {
                         continuation.resume(throwing: PluginError.failed(process.terminationStatus))
                         return
                     }
-                    continuation.resume(returning: RowParser.parse(String(decoding: data, as: UTF8.self)))
+                    continuation.resume(returning: RowResult(output: String(decoding: data, as: UTF8.self)))
                 }
             }
         } onCancel: {

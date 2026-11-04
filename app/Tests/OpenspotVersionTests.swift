@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class SmokeTests: XCTestCase {
+final class OpenspotVersionTests: XCTestCase {
     func testApiVersionIsOne() {
         XCTAssertEqual(OpenspotVersion.api, 1)
     }
