@@ -52,6 +52,7 @@ private struct Backing: NSViewRepresentable {
                 let kept = part.filters?.filter { ($0 as? NSObject)?.value(forKey: "name") as? String != "colorSaturate" }
                 if kept?.count != part.filters?.count { part.filters = kept }
                 part.setValue(radius, forKeyPath: "filters.gaussianBlur.inputRadius")
+                part.setValue(SpotTokens.backdropScale, forKey: "scale")
             }
         }
     }

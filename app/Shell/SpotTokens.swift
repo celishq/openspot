@@ -17,6 +17,7 @@ enum SpotTokens {
     static let listIconSize: CGFloat = 24
     static let halo: CGFloat = 52
     static let backdropBlur: CGFloat = 4
+    static let backdropScale: CGFloat = 0.5
     static let backdropShade = 0.1
     static let titleOpacity = 0.85
     static let secondaryLight = 0.47
