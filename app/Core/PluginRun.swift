@@ -34,13 +34,15 @@ public struct PluginRun: Sendable {
         process.standardOutput = output
         let errors = Pipe()
         process.standardError = errors
+        let exit = DispatchSemaphore(value: 0)
+        process.terminationHandler = { _ in exit.signal() }
         try process.run()
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
                 DispatchQueue.global().async {
                     let data = output.fileHandleForReading.readDataToEndOfFile()
                     let errorData = errors.fileHandleForReading.readDataToEndOfFile()
-                    process.waitUntilExit()
+                    exit.wait()
                     guard process.terminationStatus == 0 else {
                         let lines = String(decoding: errorData, as: UTF8.self).split(separator: "\n")
                         continuation.resume(throwing: PluginError.failed(process.terminationStatus, lines.last.map(String.init) ?? ""))
