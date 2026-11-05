@@ -1,4 +1,3 @@
-import AppKit
 import OpenspotCore
 import SwiftUI
 
@@ -9,14 +8,35 @@ struct SpotItemIcon: View {
 
     var body: some View {
         if let file = item.file {
-            Image(nsImage: NSWorkspace.shared.icon(forFile: file))
-                .resizable()
-                .frame(width: size, height: size)
+            SpotFileIconView(icon: FileIcon(path: file), size: size)
         } else if let symbol = item.symbol {
             Image(systemName: symbol)
                 .font(.system(size: size * 0.7, weight: .medium))
                 .foregroundStyle(.white)
                 .frame(width: size, height: size)
+        }
+    }
+}
+
+/// A file's icon read from the store. Its place stays empty until the bitmap is ready.
+private struct SpotFileIconView: View {
+    let icon: FileIcon
+    let size: CGFloat
+    @State private var loaded: CGImage?
+
+    var body: some View {
+        Group {
+            if let image = SpotIconStore.shared.cached(icon) ?? loaded {
+                Image(decorative: image, scale: SpotIconStore.scale)
+                    .resizable()
+                    .interpolation(.high)
+            } else {
+                Color.clear
+            }
+        }
+        .frame(width: size, height: size)
+        .task(id: icon) {
+            loaded = await SpotIconStore.shared.image(icon)
         }
     }
 }

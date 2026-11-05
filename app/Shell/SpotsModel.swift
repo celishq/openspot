@@ -100,6 +100,7 @@ final class SpotsModel {
             do {
                 let lines = try await command.items(timeout: Self.itemsTimeout)
                 lists[command.id]?.replace(lines.items)
+                await SpotIconStore.shared.prepare(lines.items)
                 if !lines.errors.isEmpty {
                     notify("\(command.name) sent \(lines.errors.count) items Openspot cannot read.")
                 }
@@ -116,6 +117,7 @@ final class SpotsModel {
         liveAnswer = Task {
             do {
                 let lines = try await command.items(query: query, timeout: Self.liveTimeout)
+                await SpotIconStore.shared.prepare(lines.items)
                 guard !Task.isCancelled else { return }
                 lists[command.id]?.answer(lines.items, to: query)
             } catch {
