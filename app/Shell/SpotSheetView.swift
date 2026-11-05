@@ -17,6 +17,7 @@ struct SpotSheetView: View {
     @State private var edges = SpotScrollEdges()
 
     private static let bottomFade = 2 * SpotTokens.padding
+    private static let glyphGap = SpotTokens.padding - 5
 
     private var row: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
@@ -70,7 +71,7 @@ struct SpotSheetView: View {
                             .lineLimit(1)
                     }
                 }
-                .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(showsSmallCard ? 0 : 1) }
+                .opacity(showsSmallCard ? 0 : 1)
                 Spacer()
                 SpotRoundButton(symbol: "xmark", label: "Close", action: onClose)
             }
@@ -96,16 +97,18 @@ struct SpotSheetView: View {
         !isOpen && entry.state.on == true
     }
 
-    /// The smaller header of a screen of its own, which leaves its room to the screen. The card's glyph gives way to the title.
+    /// The smaller header of a screen of its own, which leaves its room to the screen. The title slides in and pushes the
+    /// card's glyph out.
     private var screenHeader: some View {
         HStack {
-            Text(entry.state.title)
-                .font(SpotType.title)
-                .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
-                .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(isOpen ? 1 : 0) }
-                .overlay(alignment: .leading) {
-                    glyph.animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: !isOpen)) { $0.opacity(isOpen ? 0 : 1) }
-                }
+            HStack(spacing: Self.glyphGap) {
+                glyph.opacity(isOpen ? 0 : 1)
+                Text(entry.state.title)
+                    .font(SpotType.title)
+                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                    .opacity(showsSmallCard ? 0 : 1)
+            }
+            .offset(x: isOpen ? -(SpotTokens.glyphSize + Self.glyphGap) : 0)
             Spacer()
             SpotRoundButton(symbol: "xmark", label: "Close", action: onClose)
         }

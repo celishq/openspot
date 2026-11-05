@@ -14,7 +14,8 @@ struct SpotsView: View {
     @State private var sheetHint = ""
 
     private static let panelSpace = "panel"
-    private static let gridPrompt = "Search spots"
+    private static let gridWord = "spots"
+    private static let wordRoll: CGFloat = 20
     private static let blurSteps: [(inset: CGFloat, radius: CGFloat)] = [
         (SpotTokens.halo - 30, SpotTokens.backdropBlur / 4),
         (SpotTokens.halo - 20, SpotTokens.backdropBlur / 2),
@@ -260,7 +261,7 @@ struct SpotsView: View {
             Image(systemName: "magnifyingglass")
                 .modifier(SpotSecondaryText())
                 .frame(width: sheetOpen ? SpotTokens.listIconSize : SpotTokens.glyphSize)
-            TextField(sheetOpen ? sheetPrompt : Self.gridPrompt, text: Binding(get: { model.searchText }, set: { model.searchText = $0 }), prompt: Text(""))
+            TextField("Search \(sheetOpen ? sheetWord : Self.gridWord)", text: Binding(get: { model.searchText }, set: { model.searchText = $0 }), prompt: Text(""))
                 .textFieldStyle(.plain)
                 .background(alignment: .leading) { promptWords }
                 .focused($searchFocused)
@@ -317,13 +318,19 @@ struct SpotsView: View {
         .modifier(SpotGlass(radius: fieldRadius, isBare: sheetOpen))
     }
 
-    /// The empty field's words. One fades out before the other fades in, so that they never overlap.
+    /// The empty field's words. The first stays, and the last rolls out of its line as the other rolls in.
     private var promptWords: some View {
-        ZStack(alignment: .leading) {
-            Text(Self.gridPrompt)
-                .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(sheetOpen ? 0 : 1) }
-            Text(sheetPrompt)
-                .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: sheetOpen)) { $0.opacity(sheetOpen ? 1 : 0) }
+        HStack(spacing: 0) {
+            Text("Search ")
+            ZStack(alignment: .leading) {
+                Text(Self.gridWord)
+                    .opacity(sheetOpen ? 0 : 1)
+                    .offset(y: sheetOpen ? -Self.wordRoll : 0)
+                Text(sheetWord)
+                    .opacity(sheetOpen ? 1 : 0)
+                    .offset(y: sheetOpen ? 0 : Self.wordRoll)
+            }
+            .clipped()
         }
         .foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
         .lineLimit(1)
@@ -335,7 +342,7 @@ struct SpotsView: View {
         sheetOpen ? SpotTokens.radius - SpotTokens.padding : SpotTokens.corner(for: .strip)
     }
 
-    private var sheetPrompt: String {
-        "Search \(model.entries.first { $0.id == sheetID }?.state.title ?? "")"
+    private var sheetWord: String {
+        model.entries.first { $0.id == sheetID }?.state.title ?? ""
     }
 }
