@@ -49,6 +49,40 @@ final class SpotGridTests: XCTestCase {
         XCTAssertEqual(SpotGrid().place([.small, .small, .small, .small]).map(\.size), [.small, .small, .small, .small])
     }
 
+    private func move(from index: Int, in sizes: [SpotSize], dx: Int = 0, dy: Int = 0) -> Int? {
+        let grid = SpotGrid()
+        return grid.neighbour(of: index, in: grid.place(sizes), dx: dx, dy: dy)
+    }
+
+    func testDownFromAStripLandsOnTheSquaresBelowItAndNotTheStripAfterThem() {
+        XCTAssertEqual(move(from: 0, in: [.strip, .square, .square, .strip], dy: 1), 1)
+    }
+
+    func testDownFromASquareLandsOnTheStripBelow() {
+        XCTAssertEqual(move(from: 2, in: [.strip, .square, .square, .strip], dy: 1), 3)
+    }
+
+    func testUpFromAStripLandsOnTheSquaresAboveIt() {
+        XCTAssertEqual(move(from: 3, in: [.strip, .square, .square, .strip], dy: -1), 1)
+    }
+
+    func testDownKeepsTheNearestColumn() {
+        XCTAssertEqual(move(from: 1, in: [.wide, .wide, .wide, .wide], dy: 1), 3)
+    }
+
+    func testSidewaysStaysInTheSameRow() {
+        XCTAssertEqual(move(from: 0, in: [.wide, .wide, .strip], dx: 1), 1)
+        XCTAssertNil(move(from: 1, in: [.wide, .wide, .strip], dx: 1))
+    }
+
+    func testRightFromASquareLandsOnTheTopSpotBesideIt() {
+        XCTAssertEqual(move(from: 0, in: [.square, .wide, .wide], dx: 1), 1)
+    }
+
+    func testAMoveWithNothingThereGivesNothing() {
+        XCTAssertNil(move(from: 0, in: [.strip], dy: 1))
+    }
+
     func testNoSpotsGivesNoPlacements() {
         XCTAssertEqual(SpotGrid().place([]), [])
     }

@@ -29,6 +29,33 @@ public struct SpotGrid: Sendable {
         return placements.sorted { $0.index < $1.index }
     }
 
+    /// The spot that an arrow key moves to: in the nearest row or column that way, the one most in line with this spot.
+    public func neighbour(of index: Int, in placements: [SpotPlacement], dx: Int, dy: Int) -> Int? {
+        guard let here = placements.first(where: { $0.index == index }) else { return nil }
+        let isVertical = dy != 0
+        let ahead = placements.filter { spot in
+            if isVertical {
+                return dy > 0 ? spot.row >= here.row + here.size.rows : spot.row + spot.size.rows <= here.row
+            }
+            let inRow = spot.row < here.row + here.size.rows && here.row < spot.row + spot.size.rows
+            return inRow && (dx > 0 ? spot.column >= here.column + here.size.columns : spot.column + spot.size.columns <= here.column)
+        }
+        func gap(_ spot: SpotPlacement) -> Int {
+            if isVertical { return dy > 0 ? spot.row - here.row : here.row - spot.row - spot.size.rows }
+            return dx > 0 ? spot.column - here.column : here.column - spot.column - spot.size.columns
+        }
+        func offset(_ spot: SpotPlacement) -> Int {
+            isVertical
+                ? abs(2 * spot.column + spot.size.columns - 2 * here.column - here.size.columns)
+                : abs(2 * spot.row + spot.size.rows - 2 * here.row - here.size.rows)
+        }
+        guard let nearest = ahead.map(gap).min() else { return nil }
+        return ahead
+            .filter { gap($0) == nearest }
+            .min { (offset($0), $0.index) < (offset($1), $1.index) }?
+            .index
+    }
+
     /// Places a square with the spots beside it, and returns the number of rows it used.
     private func placeSquare(_ square: Spot, in queue: inout [Spot], row: Int, placements: inout [SpotPlacement]) -> Int {
         if let next = queue.first, next.size == .square {

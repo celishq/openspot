@@ -230,21 +230,8 @@ final class SpotsModel {
     }
 
     func moveSelection(dx: Int, dy: Int) {
-        let spots = placements
-        guard let here = spots.first(where: { $0.index == selected }) else { return }
-        let hereX = Double(here.column) + Double(here.size.columns) / 2
-        let hereY = Double(here.row) + Double(here.size.rows) / 2
-        let candidates: [(index: Int, score: Double)] = spots.compactMap { spot in
-            guard spot.index != selected else { return nil }
-            let x = Double(spot.column) + Double(spot.size.columns) / 2 - hereX
-            let y = Double(spot.row) + Double(spot.size.rows) / 2 - hereY
-            let along = x * Double(dx) + y * Double(dy)
-            guard along > 0 else { return nil }
-            let across = dx != 0 ? abs(y) : abs(x)
-            return (spot.index, along + 2 * across)
-        }
-        if let best = candidates.min(by: { $0.score < $1.score }) {
-            selected = best.index
+        if let next = SpotGrid().neighbour(of: selected, in: placements, dx: dx, dy: dy) {
+            selected = next
         }
     }
 
