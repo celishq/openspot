@@ -39,7 +39,7 @@ struct SpotsView: View {
                     onClose: { model.closeList() }
                 )
                 .modifier(SpotSheetFrame(
-                    rect: sheetOpen ? SpotTokens.sheetRect : openFrame ?? SpotTokens.sheetRect,
+                    rect: sheetOpen ? sheetRect : openFrame ?? sheetRect,
                     radius: sheetOpen ? SpotTokens.radius : SpotTokens.corner(for: entry.size)
                 ))
             }
@@ -87,7 +87,6 @@ struct SpotsView: View {
             Color.black.opacity(SpotTokens.backdropShade)
                 .mask(softEdge(inset: Self.blurSteps[1].inset, softness: Self.blurEdgeSoftness, height: backdropHeight))
         }
-        .animation(SpotMotion.backdrop, value: contentHeight)
         .opacity(model.isShown ? 1 : 0)
         .scaleEffect(model.isShown ? 1 : SpotMotion.backdropHiddenScale)
         .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
@@ -102,12 +101,13 @@ struct SpotsView: View {
             .blur(radius: softness)
     }
 
-    private var contentHeight: CGFloat {
-        SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0)
+    private var sheetRect: CGRect {
+        SpotTokens.sheetRect(rows: model.lists[sheetID ?? ""]?.shown.count ?? 0)
     }
 
     private var backdropHeight: CGFloat {
-        sheetOpen ? SpotTokens.panelHeight : contentHeight
+        guard !sheetOpen else { return sheetRect.height + 2 * SpotTokens.halo }
+        return SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0)
     }
 
     private var openFrame: CGRect? {
@@ -119,7 +119,7 @@ struct SpotsView: View {
               let open = model.placements.first(where: { model.visible[$0.index].id == sheetID })
         else { return .zero }
         let away = placement.direction(awayFrom: open)
-        let sheet = SpotTokens.sheetRect
+        let sheet = sheetRect
         return CGSize(
             width: away.columns < 0 ? sheet.minX - from.minX : away.columns > 0 ? sheet.maxX - from.maxX : 0,
             height: away.rows < 0 ? sheet.minY - from.minY : away.rows > 0 ? sheet.maxY - from.maxY : 0

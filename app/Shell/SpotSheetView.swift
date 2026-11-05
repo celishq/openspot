@@ -10,6 +10,10 @@ struct SpotSheetView: View {
 
     private static let bottomFade = 2 * SpotTokens.padding
 
+    private var rect: CGRect {
+        SpotTokens.sheetRect(rows: list.shown.count)
+    }
+
     private var row: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
     }
@@ -54,7 +58,7 @@ struct SpotSheetView: View {
             }
         }
         .padding(SpotTokens.padding)
-        .frame(width: SpotTokens.sheetRect.width, height: SpotTokens.sheetRect.height, alignment: .topLeading)
+        .frame(width: rect.width, height: rect.height, alignment: .topLeading)
     }
 
     private var emptyText: String {
@@ -77,7 +81,7 @@ struct SpotSheetView: View {
                 }
             }
             .safeAreaPadding(.top, SpotTokens.padding)
-            .safeAreaPadding(.bottom, Self.bottomFade)
+            .safeAreaPadding(.bottom, SpotTokens.sheetFits(rows: list.shown.count) ? SpotTokens.padding : Self.bottomFade)
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask(edgeFade)
             .padding(.vertical, -SpotTokens.padding)

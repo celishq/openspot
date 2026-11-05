@@ -38,6 +38,7 @@ struct SpotRim: View {
     var body: some View {
         ZStack {
             shape.strokeBorder(sides, lineWidth: 0.5)
+                .drawingGroup()
             ZStack {
                 shape.strokeBorder(ends(1), lineWidth: 2)
                     .blur(radius: 2)
@@ -46,6 +47,7 @@ struct SpotRim: View {
                 shape.strokeBorder(ends(0.17), lineWidth: 1)
                 shape.strokeBorder(ends(0.15), lineWidth: 0.5)
             }
+            .drawingGroup()
             .blendMode(.plusLighter)
         }
     }
