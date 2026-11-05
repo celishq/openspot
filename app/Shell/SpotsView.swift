@@ -355,19 +355,16 @@ struct SpotsView: View {
             .allowsHitTesting(false)
     }
 
-    /// The first word stays, and the last rolls out of its line as the other rolls in.
+    /// One line on one path: the first word stays, and the last fades into the other in its place.
     private var promptWords: some View {
         HStack(spacing: 0) {
             Text("\(SearchPrompt.verb) ")
             ZStack(alignment: .leading) {
                 Text(SearchPrompt.grid)
                     .opacity(sheetOpen ? 0 : 1)
-                    .offset(y: sheetOpen ? -Self.wordRoll : 0)
                 Text(sheetWord)
                     .opacity(sheetOpen ? 1 : 0)
-                    .offset(y: sheetOpen ? 0 : Self.wordRoll)
             }
-            .clipped()
         }
         .font(SpotType.input)
         .foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
