@@ -12,6 +12,7 @@ public struct PluginCommand: Equatable, Sendable {
     public let key: CommandKey?
     public let hasState: Bool
     public let pick: ItemPick
+    public let isGlobal: Bool
 
     public init(
         id: String,
@@ -23,7 +24,8 @@ public struct PluginCommand: Equatable, Sendable {
         subtitle: String? = nil,
         key: CommandKey? = nil,
         hasState: Bool = false,
-        pick: ItemPick = .close
+        pick: ItemPick = .close,
+        isGlobal: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -35,6 +37,7 @@ public struct PluginCommand: Equatable, Sendable {
         self.key = key
         self.hasState = hasState
         self.pick = pick
+        self.isGlobal = isGlobal
     }
 
     /// The state the manifest gives, shown before the command answers or when it cannot.
@@ -71,6 +74,6 @@ public struct PluginCommand: Equatable, Sendable {
     }
 
     public func withoutKey() -> PluginCommand {
-        PluginCommand(id: id, name: name, url: url, kind: kind, size: size, symbol: symbol, subtitle: subtitle, hasState: hasState, pick: pick)
+        PluginCommand(id: id, name: name, url: url, kind: kind, size: size, symbol: symbol, subtitle: subtitle, hasState: hasState, pick: pick, isGlobal: isGlobal)
     }
 }

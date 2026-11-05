@@ -8,3 +8,4 @@ type = "list"
 symbol = "square.grid.2x2"
 subtitle = "Open an app"
 key = "a"
+global = true

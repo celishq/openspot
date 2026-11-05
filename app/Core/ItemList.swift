@@ -20,6 +20,11 @@ public struct ItemList: Equatable, Sendable {
         shown.indices.contains(selected) ? shown[selected] : nil
     }
 
+    /// The items that a search elsewhere finds in this list.
+    public func matches(_ text: String) -> [SpotItem] {
+        SearchQuery(text: text).matching(all, recent: recent)
+    }
+
     public mutating func search(_ text: String) {
         query = text
         selected = 0

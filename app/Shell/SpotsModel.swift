@@ -10,6 +10,7 @@ final class SpotsModel {
         let size: SpotSize
         let symbol: String
         let command: PluginCommand
+        let item: SpotItem?
         var state: SpotState
 
         init(command: PluginCommand, state: SpotState) {
@@ -18,23 +19,44 @@ final class SpotsModel {
             size = command.size
             symbol = command.symbol
             self.command = command
+            item = nil
             self.state = state
+        }
+
+        /// A wide card for an item that the main search found in a list.
+        init(command: PluginCommand, item: SpotItem) {
+            id = "\(command.id)\n\(item.run)"
+            kind = .launch
+            size = .wide
+            symbol = item.symbol ?? command.symbol
+            self.command = command
+            self.item = item
+            state = SpotState(title: item.title, subtitle: item.subtitle ?? command.name)
         }
     }
 
     private static let stateTimeout: TimeInterval = 2
     private static let actionTimeout: TimeInterval = 30
     private static let itemsTimeout: TimeInterval = 10
+    private static let globalItemLimit = 6
 
-    var entries: [Entry] = []
+    var entries: [Entry] = [] {
+        didSet { updateVisible() }
+    }
     var query = "" {
         didSet {
             if query != oldValue { selected = 0 }
+            updateVisible()
         }
     }
+    private(set) var visible: [Entry] = []
     var selected = 0
     var openList: String?
-    private(set) var lists: [String: ItemList] = [:]
+    private(set) var lists: [String: ItemList] = [:] {
+        didSet {
+            if !query.isEmpty { updateVisible() }
+        }
+    }
     var isShown = false
     var dismiss: () -> Void = {}
     var show: () -> Void = {}
@@ -108,10 +130,18 @@ final class SpotsModel {
         }
     }
 
-    var visible: [Entry] {
+    /// Shows each spot the search finds, then the items it finds in the lists that offer them.
+    private func updateVisible() {
         let text = query.trimmingCharacters(in: .whitespaces)
-        guard !text.isEmpty else { return entries }
-        return entries.filter { $0.state.title.localizedCaseInsensitiveContains(text) }
+        guard !text.isEmpty else {
+            visible = entries
+            return
+        }
+        let spots = entries.filter { $0.state.title.localizedCaseInsensitiveContains(text) }
+        let items = entries.filter(\.command.isGlobal).flatMap { entry in
+            (lists[entry.id]?.matches(text) ?? []).map { Entry(command: entry.command, item: $0) }
+        }
+        visible = spots + items.prefix(Self.globalItemLimit)
     }
 
     func moveSelection(dx: Int, dy: Int) {
@@ -178,6 +208,10 @@ final class SpotsModel {
     }
 
     private func run(_ entry: Entry) {
+        if let item = entry.item, let list = entries.first(where: { $0.id == entry.command.id }) {
+            pick(item, of: list)
+            return
+        }
         guard let index = index(of: entry) else { return }
         switch entry.kind {
         case .toggle:
@@ -274,6 +308,10 @@ final class SpotsModel {
 
     func runItem(_ item: SpotItem) {
         guard let entry = openEntry else { return }
+        pick(item, of: entry)
+    }
+
+    private func pick(_ item: SpotItem, of entry: Entry) {
         if entry.command.pick == .close {
             lists[entry.id]?.remember(item)
             UserDefaults.standard.set(lists[entry.id]?.recent, forKey: Self.recentKey(entry.id))

@@ -51,6 +51,14 @@ final class ItemListTests: XCTestCase {
         XCTAssertEqual(list.selectedItem?.title, "B")
     }
 
+    func testMatchesLeavesTheSearchOfTheListAlone() {
+        var list = ItemList(items: items("Safari", "Notes"), recent: [])
+        list.search("note")
+
+        XCTAssertEqual(list.matches("saf").map(\.title), ["Safari"])
+        XCTAssertEqual(list.shown.map(\.title), ["Notes"])
+    }
+
     func testAnEmptyListSelectsNothing() {
         XCTAssertNil(ItemList().selectedItem)
     }

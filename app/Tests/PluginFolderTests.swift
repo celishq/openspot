@@ -81,6 +81,7 @@ final class PluginFolderTests: XCTestCase {
         type = "list"
         state = true
         pick = "stay"
+        global = true
         """, files: ["one.sh"])
 
         let command = try XCTUnwrap(try PluginFolder(url: folder).scan().commands.first)
@@ -88,6 +89,7 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(command.kind, .list)
         XCTAssertTrue(command.hasState)
         XCTAssertEqual(command.pick, .stay)
+        XCTAssertTrue(command.isGlobal)
     }
 
     func testAPickThatIsNotKnownRefusesThePlugin() throws {
@@ -118,6 +120,7 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertNil(command.key)
         XCTAssertFalse(command.hasState)
         XCTAssertEqual(command.pick, .close)
+        XCTAssertFalse(command.isGlobal)
     }
 
     func testCommandsOfTwoPluginsHaveDifferentIds() throws {

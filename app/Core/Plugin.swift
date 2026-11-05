@@ -64,7 +64,8 @@ public struct Plugin: Equatable, Sendable {
             subtitle: text("subtitle"),
             key: key,
             hasState: table["state"] == .boolean(true),
-            pick: pick
+            pick: pick,
+            isGlobal: table["global"] == .boolean(true)
         )
     }
 }

@@ -159,7 +159,16 @@ struct SpotCardView: View {
         size == .small || isOn ? .clear : .white.opacity(0.2)
     }
 
+    @ViewBuilder
     private var glyph: some View {
+        if let item = entry.item, item.file != nil {
+            SpotItemIcon(item: item, size: SpotTokens.glyphSize)
+        } else {
+            symbolGlyph
+        }
+    }
+
+    private var symbolGlyph: some View {
         Image(systemName: entry.symbol)
             .font(.system(size: 17, weight: .semibold))
             .foregroundStyle(isOn ? Color.accentColor : Color.white)

@@ -52,6 +52,7 @@ final class SamplePluginsTests: XCTestCase {
         XCTAssertEqual(lines.errors, [])
         XCTAssertEqual(finder.run, "/System/Library/CoreServices/Finder.app")
         XCTAssertEqual(finder.file, finder.run)
+        XCTAssertTrue(apps.isGlobal)
         XCTAssertGreaterThan(lines.items.filter { $0.run.hasPrefix("/System/Applications/") }.count, 5)
     }
 }
