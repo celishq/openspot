@@ -7,7 +7,10 @@ enum SpotType {
     static let detail = Font.system(size: 11)
     static let input = Font.system(size: 14)
     static let action = Font.system(size: 11, weight: .medium)
-    static let metric = Font.system(size: 26, weight: .medium)
+    static let metric = Font.system(size: 30, weight: .semibold, design: .rounded).monospacedDigit()
+    static let ringValue = Font.system(size: 20, weight: .semibold, design: .rounded).monospacedDigit()
+    static let value = Font.system(size: 15, weight: .semibold, design: .rounded).monospacedDigit()
+    static let controlValue = Font.system(size: 11, weight: .semibold, design: .rounded).monospacedDigit()
     static let small = Font.system(size: 10, weight: .medium)
     static let lineGap: CGFloat = 1
 }

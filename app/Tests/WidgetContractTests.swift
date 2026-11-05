@@ -50,6 +50,68 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(metric.refresh, 5)
     }
 
+    func testAMetricCanSetATint() throws {
+        try plugin("power", manifest: power.replacingOccurrences(of: "kind = \"gauge\"", with: "kind = \"gauge\"\ntint = \"green\""), script: powerScript)
+
+        XCTAssertEqual(try PluginFolder(url: folder).scan().metrics.first?.tint, .green)
+    }
+
+    func testAnUnknownTintIsRefusedAndNamesTheChoices() throws {
+        try plugin("power", manifest: power.replacingOccurrences(of: "kind = \"gauge\"", with: "kind = \"gauge\"\ntint = \"beige\""), script: powerScript)
+
+        let refused = try XCTUnwrap(try PluginFolder(url: folder).scan().refused.first)
+
+        XCTAssertEqual(refused.reason, "level has an unknown tint: beige. Use red, orange, yellow, green, mint, teal, cyan, blue, indigo, purple or pink")
+    }
+
+    private func single(size: String?, layout: String = "single", places: String = "[\"power/level\"]") throws {
+        try plugin("power", manifest: power, script: powerScript)
+        try plugin("mine", manifest: """
+        name = "Mine"
+        api = 1
+
+        [[widgets]]
+        name = "Now"
+        layout = "\(layout)"
+        places = \(places)
+        \(size.map { "size = \"\($0)\"" } ?? "")
+        """)
+    }
+
+    func testASingleWidgetIsSquareUnlessItAsksForAnotherSize() throws {
+        try single(size: nil)
+        XCTAssertEqual(try PluginFolder(url: folder).scan().commands.first?.size, .square)
+    }
+
+    func testASingleWidgetCanAskToBeSmall() throws {
+        try single(size: "small")
+        XCTAssertEqual(try PluginFolder(url: folder).scan().commands.first?.size, .small)
+    }
+
+    func testOnlyASingleWidgetTakesASize() throws {
+        try single(size: "small", layout: "pair", places: "[\"power/level\", \"power/level\"]")
+        let refused = try XCTUnwrap(try PluginFolder(url: folder).scan().refused.first)
+        XCTAssertEqual(refused.reason, "Now cannot take a size, because the pair layout sets its own")
+    }
+
+    func testASingleWidgetRefusesAnUnknownSize() throws {
+        try single(size: "huge")
+        let refused = try XCTUnwrap(try PluginFolder(url: folder).scan().refused.first)
+        XCTAssertEqual(refused.reason, "Now has an unknown size: huge")
+    }
+
+    func testAPlaceTakesItsFormFromTheCardItFills() {
+        let slot = WidgetLayout.single.slots[0]
+        XCTAssertEqual(WidgetLayout.single.form(of: slot, on: .small), .control)
+        XCTAssertEqual(WidgetLayout.single.form(of: slot, on: .wide), .half)
+        XCTAssertEqual(WidgetLayout.single.form(of: slot, on: .strip), .half)
+        XCTAssertEqual(WidgetLayout.single.form(of: slot, on: .square), .big)
+    }
+
+    func testAHeroHasOneBigPlaceAndThreeLines() {
+        XCTAssertEqual(WidgetLayout.hero.slots.map { WidgetLayout.hero.form(of: $0, on: .large) }, [.big, .line, .line, .line])
+    }
+
     func testAMetricNamesWhatItMeasures() throws {
         try plugin("power", manifest: power.replacingOccurrences(of: "kind = \"gauge\"", with: "kind = \"gauge\"\nlabel = \"Charge\""), script: powerScript)
 
@@ -157,7 +219,7 @@ final class WidgetContractTests: XCTestCase {
 
         let refused = try XCTUnwrap(try PluginFolder(url: folder).scan().refused.first)
 
-        XCTAssertEqual(refused.reason, "Now has an unknown layout: circle. Use hero, quad, pair or row")
+        XCTAssertEqual(refused.reason, "Now has an unknown layout: circle. Use single, hero, pair or row")
     }
 
     func testAWidgetThatNamesAMissingMetricIsLeftOutAndReported() throws {
@@ -254,7 +316,7 @@ final class WidgetContractTests: XCTestCase {
                     }
                 }
             }
-            XCTAssertEqual(cells.count, layout.size.columns * layout.size.rows, layout.name)
+            XCTAssertEqual(cells.count, layout.size.columns * layout.rows, layout.name)
         }
     }
 
@@ -287,9 +349,18 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(MetricValue(title: "", value: -1).fill, 0)
     }
 
-    func testATrendScalesFromLowestToHighest() {
-        XCTAssertEqual(MetricValue(title: "", points: [10, 20, 30]).scaledPoints, [0, 0.5, 1])
-        XCTAssertEqual(MetricValue(title: "", points: [7, 7]).scaledPoints, [0.5, 0.5])
+    func testATrendScalesFromZeroToItsHighest() {
+        XCTAssertEqual(MetricValue(title: "", points: [10, 20, 40]).scaledPoints, [0.25, 0.5, 1])
+        XCTAssertEqual(MetricValue(title: "", points: [7, 7]).scaledPoints, [1, 1])
+        XCTAssertEqual(MetricValue(title: "", points: [0, 0]).scaledPoints, [0, 0])
+    }
+
+    func testATrendWithATopValueScalesToIt() {
+        XCTAssertEqual(MetricValue(title: "", points: [25, 50], max: 100).scaledPoints, [0.25, 0.5])
+    }
+
+    func testAPointAboveTheTopValueStaysFull() {
+        XCTAssertEqual(MetricValue(title: "", points: [50, 200], max: 100).scaledPoints, [0.5, 1])
     }
 
     func testTheCheckReportsNoFaultsForAGoodFolder() async throws {

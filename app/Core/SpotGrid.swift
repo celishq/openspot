@@ -37,7 +37,7 @@ public struct SpotGrid: Sendable {
             placements.append(SpotPlacement(index: next.index, row: row, column: 2, size: .square))
             return 2
         }
-        let side = taking(nil, from: &queue, room: 4)
+        let side = taking(nil, from: &queue, room: 4, widest: 2)
         guard !side.isEmpty else {
             placements.append(SpotPlacement(index: square.index, row: row, column: 0, size: .strip))
             return 1
@@ -64,14 +64,14 @@ public struct SpotGrid: Sendable {
         }
     }
 
-    /// Takes the next one-row spots from the queue, in order, that fit in the room.
-    private func taking(_ first: Spot?, from queue: inout [Spot], room: Int) -> [Spot] {
+    /// Takes the next one-row spots from the queue, in order, that fit in the room and are no wider than the limit.
+    private func taking(_ first: Spot?, from queue: inout [Spot], room: Int, widest: Int = 4) -> [Spot] {
         var taken = first.map { [$0] } ?? []
         var left = room - (first?.size.columns ?? 0)
         var position = 0
         while left > 0, position < queue.count {
             let next = queue[position]
-            if next.size.rows == 1, next.size.columns <= left {
+            if next.size.rows == 1, next.size.columns <= min(left, widest) {
                 taken.append(next)
                 left -= next.size.columns
                 queue.remove(at: position)

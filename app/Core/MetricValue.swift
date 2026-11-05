@@ -28,6 +28,7 @@ public struct MetricValue: Decodable, Equatable, Sendable {
     public let tone: Tone?
     public let value: Double?
     public let points: [Double]?
+    public let max: Double?
     public let rows: [Row]?
 
     public init(
@@ -37,6 +38,7 @@ public struct MetricValue: Decodable, Equatable, Sendable {
         tone: Tone? = nil,
         value: Double? = nil,
         points: [Double]? = nil,
+        max: Double? = nil,
         rows: [Row]? = nil
     ) {
         self.title = title
@@ -45,18 +47,19 @@ public struct MetricValue: Decodable, Equatable, Sendable {
         self.tone = tone
         self.value = value
         self.points = points
+        self.max = max
         self.rows = rows
     }
 
     /// The part of a gauge that is full, from 0 to 1.
     public var fill: Double {
-        min(max(value ?? 0, 0), 1)
+        Swift.min(Swift.max(value ?? 0, 0), 1)
     }
 
-    /// The points of a trend, from 0 at the lowest to 1 at the highest. Equal points lie in the middle.
+    /// The points of a trend, from 0 at zero to 1 at the top value, or at the highest point when there is none.
     public var scaledPoints: [Double] {
         let points = points ?? []
-        guard let low = points.min(), let high = points.max() else { return [] }
-        return points.map { high > low ? ($0 - low) / (high - low) : 0.5 }
+        guard let top = self.max ?? points.max(), top > 0 else { return points.map { _ in 0 } }
+        return points.map { Swift.min(Swift.max($0 / top, 0), 1) }
     }
 }

@@ -138,7 +138,9 @@ echo '{"title":"3","detail":"Last at 14:20","symbol":"cup.and.saucer.fill"}'
 `refresh` is in seconds. The default is 60. Openspot reads a metric only when a widget places it and the panel is
 open, so a metric costs nothing when the panel is closed. When a read fails, the last value stays and dims.
 
-`label` says what the metric measures, and each place shows it above the value. The default is the plugin's name.
+`label` says what the metric measures, and each place shows it. The default is the plugin's name. `tint` is optional:
+it colours the label and the mark, so a person finds the metric by colour. Use red, orange, yellow, green, mint, teal,
+cyan, blue, indigo, purple or pink. A `tone` takes over the colour of the mark.
 
 Each metric prints `title`, its value, and can print `detail`, `symbol` and `tone`. Do not repeat the label in them.
 The tone is `good`, `warn` or `bad`. Use it only when the colour means something. Each kind has its own data:
@@ -147,7 +149,7 @@ The tone is `good`, `warn` or `bad`. Use it only when the colour means something
 |---|---|---|
 | `value` | A number or a word. | Nothing more. |
 | `gauge` | A ring. | `"value":0.84`, from 0 to 1. |
-| `trend` | A line. | `"points":[2,5,3,8]`. |
+| `trend` | Bars from zero. The last bar is the newest. | `"points":[2,5,3,8]`, and `"max":100` for a fixed top value. |
 | `status` | A dot with a word. | Set `tone` for the colour of the dot. |
 | `rows` | Short lines, as many as fit. | `"rows":[{"title":"Build","detail":"2m","tone":"good"}]`. |
 
@@ -163,7 +165,7 @@ api = 1
 [[widgets]]
 name = "Morning"
 layout = "hero"
-places = ["agents/list", "battery/level", "system/disk", "system/cpu"]
+places = ["agents/list", "battery/level", "system/cpu", "system/disk"]
 opens = "links/Links"
 ```
 
@@ -172,13 +174,16 @@ command that Enter or a click runs. `key` also works.
 
 | Layout | Size | Places |
 |---|---|---|
-| `hero` | 4x2 | One large on the left, two small over one wide on the right. |
-| `quad` | 4x2 | Four wide, in two rows. |
-| `pair` | 4x1 | Two wide. |
-| `row` | 4x1 | Four small. |
+| `single` | 2x2 | One metric. Use `size` to ask for `small` (1x1) or `wide` (2x1). |
+| `hero` | 4x2 | One large on the left, three lines on the right. |
+| `pair` | 4x1 | Two, each with its mark at the outer edge. |
+| `row` | 4x1 | Four values, each over its label. |
 
-Each place shows its label, then its title and detail, then its mark. A small place shows only what fits, so keep the
-title short, such as `84%`.
+A size is a preference. The grid fills each row: four small spots stay 1x1, and fewer than four grow. The same is true
+for a command with `size = "small"`, which shows only its symbol.
+
+A large place shows the detail. In a `hero` line, a trend with `max` shows as one bar. Other places show only the label, the value and the mark, so keep the title short, such
+as `84%`.
 
 ## Check your work
 

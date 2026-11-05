@@ -14,8 +14,8 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Files", "Plugins", "Links", "Overview", "Status", "Paste Screenshot", "Snippets"])
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "f", "p", "l", nil, nil, "v", "n"])
+        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Files", "Plugins", "Links", "Overview", "Battery", "CPU", "Paste Screenshot", "Snippets"])
+        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "f", "p", "l", nil, nil, nil, "v", "n"])
     }
 
     func testEveryMetricPrintsAValue() async throws {

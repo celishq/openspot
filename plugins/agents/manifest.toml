@@ -5,10 +5,12 @@ api = 1
 name = "running"
 exec = "agents.sh"
 kind = "value"
+tint = "orange"
 refresh = 5
 
 [[metrics]]
 name = "list"
 exec = "agents.sh"
 kind = "rows"
+tint = "orange"
 refresh = 5

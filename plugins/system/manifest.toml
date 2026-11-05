@@ -6,6 +6,7 @@ name = "cpu"
 exec = "system.sh"
 kind = "trend"
 label = "CPU"
+tint = "blue"
 refresh = 5
 
 [[metrics]]
@@ -13,4 +14,5 @@ name = "disk"
 exec = "system.sh"
 kind = "gauge"
 label = "Disk"
+tint = "indigo"
 refresh = 300

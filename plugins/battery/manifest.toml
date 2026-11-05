@@ -5,4 +5,5 @@ api = 1
 name = "level"
 exec = "battery.sh"
 kind = "gauge"
+tint = "green"
 refresh = 30

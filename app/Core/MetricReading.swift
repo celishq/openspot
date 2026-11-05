@@ -1,15 +1,17 @@
 import Foundation
 
-/// The name and the last value of a metric. The value stays when a later read fails, and is then stale.
+/// The name, the tint and the last value of a metric. The value stays when a later read fails, and is then stale.
 public struct MetricReading: Equatable, Sendable {
     public let kind: MetricKind
     public let label: String
+    public let tint: MetricTint?
     public private(set) var value: MetricValue?
     public private(set) var isStale = false
 
-    public init(kind: MetricKind, label: String, value: MetricValue? = nil) {
+    public init(kind: MetricKind, label: String, tint: MetricTint? = nil, value: MetricValue? = nil) {
         self.kind = kind
         self.label = label
+        self.tint = tint
         self.value = value
     }
 

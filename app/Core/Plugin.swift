@@ -53,17 +53,35 @@ public struct Plugin: Equatable, Sendable {
         }
         var label = pluginName
         if case .string(let own)? = table["label"] { label = own }
-        return PluginMetric(id: "\(plugin.lastPathComponent)/\(name)", name: name, url: url, kind: kind, label: label, refresh: refresh)
+        var tint: MetricTint?
+        if case .string(let tintName)? = table["tint"] {
+            guard let known = MetricTint(rawValue: tintName) else {
+                let names = MetricTint.allCases.map(\.rawValue)
+                throw PluginError.manifest("\(name) has an unknown tint: \(tintName). Use \(names.dropLast().joined(separator: ", ")) or \(names.last ?? "")")
+            }
+            tint = known
+        }
+        return PluginMetric(id: "\(plugin.lastPathComponent)/\(name)", name: name, url: url, kind: kind, label: label, tint: tint, refresh: refresh)
     }
 
     private static func widget(_ table: [String: TomlDocument.Value], plugin: URL) throws -> PluginCommand {
         guard case .string(let name)? = table["name"] else { throw PluginError.manifest("a widget needs a name") }
         guard case .string(let layoutName)? = table["layout"] else { throw PluginError.manifest("\(name) needs a layout") }
         guard let layout = WidgetLayout(name: layoutName) else {
-            throw PluginError.manifest("\(name) has an unknown layout: \(layoutName). Use hero, quad, pair or row")
+            throw PluginError.manifest("\(name) has an unknown layout: \(layoutName). Use single, hero, pair or row")
         }
         guard case .strings(let places)? = table["places"], places.count == layout.slots.count else {
             throw PluginError.manifest("\(name) needs \(layout.slots.count) places for the \(layoutName) layout")
+        }
+        var size = layout.size
+        if case .string(let sizeName)? = table["size"] {
+            guard layout == .single else {
+                throw PluginError.manifest("\(name) cannot take a size, because the \(layoutName) layout sets its own")
+            }
+            guard let asked = SpotSize(name: sizeName) else {
+                throw PluginError.manifest("\(name) has an unknown size: \(sizeName)")
+            }
+            size = asked
         }
         var key: CommandKey?
         if case .string(let keyName)? = table["key"] {
@@ -79,7 +97,7 @@ public struct Plugin: Equatable, Sendable {
             name: name,
             url: plugin,
             kind: .widget,
-            size: layout.size,
+            size: size,
             key: key,
             layout: layout,
             places: places,

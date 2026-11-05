@@ -43,6 +43,7 @@
 		4E1955C194A8F2DAF8B71A1D /* SamplePluginsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5939868A8BC2E7F5717AD6 /* SamplePluginsTests.swift */; };
 		4E3F88B30B5699A00B361399 /* SpotSecondaryText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1505DACC9843A04F2A984B5A /* SpotSecondaryText.swift */; };
 		4FEC65E1F66B79BE3D87A28A /* SpotType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 635785CCF26D5E42D728B6C1 /* SpotType.swift */; };
+		5587BA32A3E73B8C2B19F740 /* MetricTint.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD9C10520B9D47293102824E /* MetricTint.swift */; };
 		57F70B25BAA7A839A01DF12E /* ItemPick.swift in Sources */ = {isa = PBXBuildFile; fileRef = 885F30718D7143D315BB77E4 /* ItemPick.swift */; };
 		5D4ADFD59D075BF4ECCC839F /* OpenspotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A093123650150BDB564E8AA8 /* OpenspotApp.swift */; };
 		66F449574C33E4F12F11C832 /* SpotRim.swift in Sources */ = {isa = PBXBuildFile; fileRef = 384FA0117E3FA9189E3F0449 /* SpotRim.swift */; };
@@ -206,6 +207,7 @@
 		F8C11359EC58C3ADD300C79C /* ItemList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemList.swift; sourceTree = "<group>"; };
 		FA0A0CC4AB97014955A99CB6 /* ActionKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionKey.swift; sourceTree = "<group>"; };
 		FCD3AC5B47FF116C302D6D9B /* SpotIconStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotIconStore.swift; sourceTree = "<group>"; };
+		FD9C10520B9D47293102824E /* MetricTint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricTint.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -331,6 +333,7 @@
 				B806653171F89517A90699CA /* MetricKind.swift */,
 				C898CFB3AD0FCEF4FE717081 /* MetricReading.swift */,
 				0978C03C0FFABF2387A76C6E /* MetricSchedule.swift */,
+				FD9C10520B9D47293102824E /* MetricTint.swift */,
 				E8E5DA89D87550A90A66EA7F /* MetricValue.swift */,
 				141BB519D46B81785E8218B3 /* OpenspotVersion.swift */,
 				3E48C3F732BA3CF7B2CE37BA /* Plugin.swift */,
@@ -498,6 +501,7 @@
 				BB93CD88FCBF50A10F1202E4 /* MetricKind.swift in Sources */,
 				2F6A866D618B306E1CB99547 /* MetricReading.swift in Sources */,
 				230CF7C8C28362EAB894212A /* MetricSchedule.swift in Sources */,
+				5587BA32A3E73B8C2B19F740 /* MetricTint.swift in Sources */,
 				82097E0AFF50173F2B7B36E7 /* MetricValue.swift in Sources */,
 				D5B6DD9C65031745051DBE2D /* OpenspotVersion.swift in Sources */,
 				4436FE935D4C7ED3F10D86D1 /* Plugin.swift in Sources */,

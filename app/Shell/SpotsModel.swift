@@ -110,8 +110,11 @@ final class SpotsModel {
         }
         self.entries = entries
         metrics = scan.metrics
-        for metric in metrics where readings[metric.id]?.kind != metric.kind || readings[metric.id]?.label != metric.label {
-            readings[metric.id] = MetricReading(kind: metric.kind, label: metric.label)
+        for metric in metrics {
+            let reading = readings[metric.id]
+            if reading?.kind != metric.kind || reading?.label != metric.label || reading?.tint != metric.tint {
+                readings[metric.id] = MetricReading(kind: metric.kind, label: metric.label, tint: metric.tint)
+            }
         }
         readDueMetrics()
         if problems != self.problems, !problems.isEmpty {
@@ -514,7 +517,16 @@ final class SpotsModel {
 
     /// The keys that work on the selected row or card, in words for the bottom of the panel.
     var hint: String {
-        target.flatMap(actionMenu(on:))?.hint ?? "Esc Close"
+        let keys = target.flatMap(actionMenu(on:))?.hint ?? "Esc Close"
+        return selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
+    }
+
+    /// The name of the selected spot when it shows only a glyph.
+    private var selectedGlyphTitle: String? {
+        guard openList == nil, let entry = selectedEntry, entry.kind != .widget,
+              placements.first(where: { $0.index == selected })?.size == .small
+        else { return nil }
+        return entry.state.title
     }
 
     func closeMenu() {

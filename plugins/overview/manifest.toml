@@ -4,9 +4,14 @@ api = 1
 [[widgets]]
 name = "Overview"
 layout = "hero"
-places = ["agents/list", "battery/level", "system/disk", "system/cpu"]
+places = ["agents/list", "battery/level", "system/cpu", "system/disk"]
 
 [[widgets]]
-name = "Status"
-layout = "pair"
-places = ["agents/running", "battery/level"]
+name = "Battery"
+layout = "single"
+places = ["battery/level"]
+
+[[widgets]]
+name = "CPU"
+layout = "single"
+places = ["system/cpu"]

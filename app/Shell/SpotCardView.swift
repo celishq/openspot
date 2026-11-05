@@ -20,7 +20,7 @@ struct SpotCardView: View {
 
     var body: some View {
         content
-            .padding(SpotTokens.padding)
+            .padding(SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, strength: showsPress ? SpotMotion.pressedGlass : 1))
             .overlay(shape.fill((isFilled ? Color.black : Color.white).opacity(showsPress ? 0.12 : isHovered ? 0.08 : 0)).allowsHitTesting(false))
@@ -39,7 +39,7 @@ struct SpotCardView: View {
         if entry.kind == .slider {
             sliderBody
         } else if let layout = entry.command.layout {
-            SpotWidgetView(layout: layout, places: entry.command.places, readings: readings)
+            SpotWidgetView(layout: layout, places: entry.command.places, readings: readings, card: size)
         } else if size == .small {
             glyph.frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if size.rows > 1 {

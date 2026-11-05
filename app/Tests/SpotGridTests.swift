@@ -39,6 +39,16 @@ final class SpotGridTests: XCTestCase {
         XCTAssertEqual(sizes([.large]), [.large])
     }
 
+    func testAStripAfterASquareKeepsItsSize() {
+        let placements = SpotGrid().place([.square, .strip])
+        XCTAssertEqual(placements.map(\.size), [.strip, .strip])
+        XCTAssertEqual(placements.map(\.row), [0, 1])
+    }
+
+    func testFourSmallSpotsKeepTheirSize() {
+        XCTAssertEqual(SpotGrid().place([.small, .small, .small, .small]).map(\.size), [.small, .small, .small, .small])
+    }
+
     func testNoSpotsGivesNoPlacements() {
         XCTAssertEqual(SpotGrid().place([]), [])
     }
