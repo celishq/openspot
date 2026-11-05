@@ -74,14 +74,7 @@ struct SpotSheetView: View {
                     }
                 }
                 Spacer()
-                Button(action: onClose) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
-                        .background(Color.white.opacity(0.2), in: Circle())
-                }
-                .buttonStyle(.plain)
+                SpotRoundButton(symbol: "xmark", label: "Close", action: onClose)
             }
     }
 
@@ -92,14 +85,7 @@ struct SpotSheetView: View {
                 .font(SpotType.title)
                 .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
             Spacer()
-            Button(action: onClose) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: SpotTokens.listIconSize, height: SpotTokens.listIconSize)
-                    .background(Color.white.opacity(0.2), in: Circle())
-            }
-            .buttonStyle(.plain)
+            SpotRoundButton(symbol: "xmark", label: "Close", action: onClose)
         }
     }
 

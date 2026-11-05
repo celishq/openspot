@@ -29,8 +29,7 @@ struct SpotTranslateView: View {
     private static let settings = URL(string: "x-apple.systempreferences:com.apple.Localization-Settings.extension")
     private static let pause: Duration = .milliseconds(300)
     private static let hint = "⌘⏎ Copy   ⌘⇧S Swap   Esc Close"
-    private static let swapSize: CGFloat = 30
-    private static let swapFill = 0.42
+    private static let disabledOpacity = 0.5
     private static let editorInset: CGFloat = 5
 
     let model: SpotsModel
@@ -57,6 +56,7 @@ struct SpotTranslateView: View {
                 Rectangle()
                     .fill(.white.opacity(SpotTokens.fill))
                     .frame(height: 1)
+                    .padding(.trailing, SpotTokens.padding + SpotTokens.glyphSize + SpotTokens.placeGap)
                 outputPane
             }
             .background(Color.white.opacity(SpotTokens.fill), in: shape)
@@ -77,18 +77,10 @@ struct SpotTranslateView: View {
     }
 
     private var swapButton: some View {
-        Button { model.swapTranslation() } label: {
-            Image(systemName: "arrow.up.arrow.down")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: Self.swapSize, height: Self.swapSize)
-                .background(Color(white: Self.swapFill), in: Circle())
-                .contentShape(Circle())
-        }
-        .buttonStyle(.plain)
-        .disabled(!draft.canSwap)
-        .accessibilityLabel("Swap languages")
-        .padding(.trailing, SpotTokens.padding)
+        SpotRoundButton(symbol: "arrow.up.arrow.down", label: "Swap languages") { model.swapTranslation() }
+            .disabled(!draft.canSwap)
+            .opacity(draft.canSwap ? 1 : Self.disabledOpacity)
+            .padding(.trailing, SpotTokens.padding)
     }
 
     private func languageMenu(_ title: String, @ViewBuilder choices: () -> some View) -> some View {
