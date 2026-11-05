@@ -6,6 +6,8 @@ struct SpotsView: View {
     let close: () -> Void
     @FocusState private var searchFocused: Bool
     @State private var edges = SpotScrollEdges()
+    @State private var scroll = ScrollPosition()
+    @State private var scrollOffset: CGFloat = 0
     @State private var cardFrames: [String: CGRect] = [:]
     @State private var sheetID: String?
     @State private var sheetOpen = false
@@ -19,15 +21,21 @@ struct SpotsView: View {
     private static let blurEdgeSoftness: CGFloat = 11
     private static let scrollEdgeInset: CGFloat = SpotTokens.halo - 18
     private static let scrollEdgeSoftness: CGFloat = 7
+    private static let gridTop: CGFloat = SpotTokens.halo + SpotTokens.rowHeight + SpotTokens.rowGap
+    private static let gridBottom: CGFloat = SpotTokens.halo + SpotTokens.hintBlock
 
     var body: some View {
         ZStack(alignment: .topLeading) {
             ScrollView(showsIndicators: false) {
                 grid
                     .padding(.horizontal, SpotTokens.halo)
-                    .padding(.top, SpotTokens.halo + SpotTokens.rowHeight + SpotTokens.rowGap)
-                    .padding(.bottom, SpotTokens.halo + SpotTokens.hintBlock)
+                    .padding(.top, Self.gridTop)
+                    .padding(.bottom, Self.gridBottom)
             }
+            .scrollPosition($scroll)
+            .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in
+                scrollOffset = offset
+            })
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask(edges.gradient)
             .mask(softEdge(inset: Self.scrollEdgeInset, softness: Self.scrollEdgeSoftness, height: SpotTokens.panelHeight))
@@ -85,6 +93,9 @@ struct SpotsView: View {
                 if model.isShown { searchFocused = true }
             }
         }
+        .onChange(of: model.selected) {
+            showSelected()
+        }
         .onChange(of: model.form == nil) { _, isList in
             searchFocused = isList
         }
@@ -108,6 +119,23 @@ struct SpotsView: View {
                 }
             }
         }
+    }
+
+    /// Scrolls the grid until the selected spot lies clear of the fades at its two ends.
+    private func showSelected() {
+        let placements = model.placements
+        guard model.openList == nil, let spot = placements.first(where: { $0.index == model.selected }) else { return }
+        let rows = placements.map { $0.row + $0.size.rows }.max() ?? 0
+        let top = Self.gridTop + CGFloat(spot.row) * (SpotTokens.rowHeight + SpotTokens.rowGap)
+        let window = ScrollWindow(
+            top: SpotTokens.halo + SpotTokens.rowHeight + SpotScrollEdges.fadeLength,
+            bottom: SpotTokens.panelHeight - Self.gridBottom - SpotScrollEdges.fadeLength,
+            viewHeight: SpotTokens.panelHeight,
+            contentHeight: Self.gridTop + SpotTokens.height(rows: rows) + Self.gridBottom
+        )
+        let offset = window.offset(showing: top...(top + SpotTokens.height(rows: spot.size.rows)), from: scrollOffset)
+        guard offset != scrollOffset else { return }
+        withAnimation(SpotMotion.follow) { scroll.scrollTo(y: offset) }
     }
 
     private var softBlur: some View {

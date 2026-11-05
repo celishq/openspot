@@ -5,7 +5,7 @@ struct SpotScrollEdges: Equatable {
     var top = 0.0
     var bottom = 0.0
 
-    private static let fadeLength = 56.0
+    static let fadeLength = 56.0
 
     var gradient: LinearGradient {
         LinearGradient(stops: stops, startPoint: .top, endPoint: .bottom)

@@ -16,6 +16,7 @@ enum SpotMotion {
     static let pressedScale = 1.04
     static let pressedGlass = 1.5
     static let press = Animation.spring(duration: 0.2, bounce: 0.2)
+    static let follow = Animation.easeOut(duration: 0.2)
 
     static func sheet(isOpen: Bool) -> Animation {
         .spring(duration: isOpen ? openDuration : closeDuration, bounce: 0)
