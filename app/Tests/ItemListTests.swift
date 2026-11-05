@@ -42,6 +42,14 @@ final class ItemListTests: XCTestCase {
         XCTAssertEqual(list.selected, 2)
     }
 
+    func testASelectionAtTheTopStaysAtTheTop() {
+        var list = ItemList(items: items("B", "C"))
+
+        list.replace(items("A", "B", "C"))
+
+        XCTAssertEqual(list.selectedItem?.title, "A")
+    }
+
     func testFreshItemsWithoutTheSelectedItemStayInRange() {
         var list = ItemList(items: items("A", "B", "C"))
         list.move(by: 2)

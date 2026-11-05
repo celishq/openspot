@@ -84,7 +84,8 @@ struct SpotSheetView: View {
                 if let run { proxy.scrollTo(run) }
             }
             .onChange(of: list.query) {
-                if let run = list.shown.first?.run { proxy.scrollTo(run, anchor: .top) }
+                guard let run = list.shown.first?.run else { return }
+                DispatchQueue.main.async { proxy.scrollTo(run, anchor: .top) }
             }
         }
     }

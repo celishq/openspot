@@ -47,11 +47,12 @@ public struct ItemList: Equatable, Sendable {
         if text == query { isWaiting = false }
     }
 
-    /// Takes fresh items, and keeps the selection on the same item when it is still there.
+    /// Takes fresh items. A selection at the top stays at the top, and any other stays on its item when it is still there.
     public mutating func replace(_ items: [SpotItem]) {
         let run = selectedItem?.run
         all = items
         refresh()
+        guard selected > 0 else { return }
         selected = shown.firstIndex { $0.run == run } ?? min(selected, max(shown.count - 1, 0))
     }
 
