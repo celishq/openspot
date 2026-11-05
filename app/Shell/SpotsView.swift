@@ -232,9 +232,8 @@ struct SpotsView: View {
             Image(systemName: "magnifyingglass")
                 .modifier(SpotSecondaryText())
                 .frame(width: SpotTokens.glyphSize)
-            TextField(searchPrompt, text: Binding(get: { model.searchText }, set: { model.searchText = $0 }), prompt: Text(""))
+            TextField(searchPrompt, text: Binding(get: { model.searchText }, set: { model.searchText = $0 }), prompt: Text(searchPrompt).foregroundStyle(.white.opacity(SpotTokens.secondaryLight)))
                 .textFieldStyle(.plain)
-                .modifier(SpotFieldPrompt(text: searchPrompt, isShown: model.searchText.isEmpty))
                 .focused($searchFocused)
                 .onSubmit { model.runSelected() }
                 .onKeyPress(.downArrow) {
@@ -290,7 +289,7 @@ struct SpotsView: View {
         .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
         .padding(.horizontal, SpotTokens.padding)
         .frame(height: sheetOpen ? SpotTokens.listRowHeight : SpotTokens.rowHeight)
-        .background(Color.white.opacity(sheetOpen ? 0.12 : 0), in: RoundedRectangle(cornerRadius: fieldRadius, style: .continuous))
+        .background(Color.white.opacity(sheetOpen ? SpotTokens.fill : 0), in: RoundedRectangle(cornerRadius: fieldRadius, style: .continuous))
         .modifier(SpotGlass(radius: fieldRadius, isBare: sheetOpen))
     }
 

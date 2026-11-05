@@ -138,9 +138,11 @@ echo '{"title":"3","detail":"Last at 14:20","symbol":"cup.and.saucer.fill"}'
 `refresh` is in seconds. The default is 60. Openspot reads a metric only when a widget places it and the panel is
 open, so a metric costs nothing when the panel is closed. When a read fails, the last value stays and dims.
 
-`label` says what the metric measures, and each place shows it. The default is the plugin's name. `tint` is optional:
-it colours the mark, so a person finds the metric by colour. Use red, orange, yellow, green, mint, teal,
-cyan, blue, indigo, purple or pink. A `tone` takes over the colour of the mark.
+`label` says what the metric measures, and each place shows it. The default is the plugin's name.
+
+Marks are white. A `tone` colours a mark to say what it means. `tint` also colours the mark, and it is optional: use red,
+orange, yellow, green, mint, teal, cyan, blue, indigo, purple or pink, and only when the colour helps a person find one
+metric among many. Text stays white.
 
 Each metric prints `title`, its value, and can print `detail`, `symbol` and `tone`. Do not repeat the label in them.
 The tone is `good`, `warn` or `bad`. Use it only when the colour means something. Each kind has its own data:

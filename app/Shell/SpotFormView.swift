@@ -40,18 +40,17 @@ struct SpotFormView: View {
                 TextField(
                     field.label,
                     text: value(of: field),
-                    prompt: Text("")
+                    prompt: Text(field.placeholder ?? field.label).foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
                 )
                 .labelsHidden()
                 .textFieldStyle(.plain)
-                .modifier(SpotFieldPrompt(text: field.placeholder ?? field.label, isShown: (draft.values[field.name] ?? "").isEmpty))
                 .focused($focus, equals: field.name)
             }
             .font(SpotType.body)
             .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
             .padding(.horizontal, SpotTokens.padding)
             .frame(height: SpotTokens.listRowHeight)
-            .background(Color.white.opacity(0.12), in: shape)
+            .background(Color.white.opacity(SpotTokens.fill), in: shape)
         case .multiline:
             TextEditor(text: value(of: field))
                 .scrollContentBackground(.hidden)
@@ -65,7 +64,7 @@ struct SpotFormView: View {
                 .padding(.horizontal, SpotTokens.padding - 5)
                 .padding(.vertical, SpotTokens.padding - 5)
                 .frame(height: SpotTokens.formTextHeight)
-                .background(Color.white.opacity(0.12), in: shape)
+                .background(Color.white.opacity(SpotTokens.fill), in: shape)
         }
     }
 

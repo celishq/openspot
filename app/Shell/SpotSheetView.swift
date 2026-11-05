@@ -88,7 +88,7 @@ struct SpotSheetView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, SpotTokens.padding)
             .frame(height: SpotTokens.listRowHeight)
-            .background(Color.white.opacity(0.3), in: row)
+            .background(Color.white.opacity(SpotTokens.selectedFill), in: row)
             .contentShape(row)
     }
 
@@ -150,7 +150,7 @@ struct SpotSheetView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, SpotTokens.padding)
         .frame(height: SpotTokens.listRowHeight)
-        .background(Color.white.opacity(isSelected ? 0.3 : 0.12), in: row)
+        .background(Color.white.opacity(isSelected ? SpotTokens.selectedFill : SpotTokens.fill), in: row)
         .contentShape(row)
     }
 }

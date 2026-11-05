@@ -16,8 +16,6 @@ struct SpotMetricView: View {
     private static let trendBar: CGFloat = 3
     private static let trendGap: CGFloat = 2
     private static let oldBar = 0.55
-    private static let markLight = 0.65
-    private static let trackLight = 0.3
     private static let dot: CGFloat = 7
     private static let rowLine: CGFloat = 15
     private static let edgeMarkWidth: CGFloat = 44
@@ -196,7 +194,6 @@ struct SpotMetricView: View {
             Image(systemName: name)
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(markColour)
-                .blendMode(.plusLighter)
         }
     }
 
@@ -213,17 +210,11 @@ struct SpotMetricView: View {
         Circle()
             .fill(colour)
             .frame(width: Self.dot, height: Self.dot)
-            .blendMode(.plusLighter)
     }
 
-    /// The colour of a mark. It adds light to the backdrop, so it needs less strength than plain paint to keep its hue.
+    /// The colour of a mark: what its tone means, or else its tint, or else white.
     private var markColour: Color {
-        switch value?.tone {
-        case .good: Color.green.opacity(Self.markLight)
-        case .warn: Color.orange.opacity(Self.markLight)
-        case .bad: Color.red.opacity(Self.markLight)
-        case nil: tint?.opacity(Self.markLight) ?? .white
-        }
+        value?.tone.map(Self.colour) ?? tint ?? .white
     }
 
     private static func colour(_ tint: MetricTint) -> Color {
@@ -263,12 +254,11 @@ struct SpotMetricView: View {
 
     private func ring(side: CGFloat, line: CGFloat, @ViewBuilder inside: () -> some View) -> some View {
         ZStack {
-            Circle().stroke(markColour.opacity(Self.trackLight), lineWidth: line).blendMode(.plusLighter)
+            Circle().stroke(.white.opacity(SpotTokens.track), lineWidth: line)
             Circle()
                 .trim(from: 0, to: value?.fill ?? 0)
                 .rotation(.degrees(-90))
                 .stroke(markColour, style: StrokeStyle(lineWidth: line, lineCap: .round))
-                .blendMode(.plusLighter)
             inside().padding(line + 2)
         }
         .padding(line / 2)
@@ -278,8 +268,8 @@ struct SpotMetricView: View {
     private func bar(fill: Double) -> some View {
         GeometryReader { room in
             ZStack(alignment: .leading) {
-                Capsule().fill(markColour.opacity(Self.trackLight)).blendMode(.plusLighter)
-                Capsule().fill(markColour).frame(width: room.size.width * fill).blendMode(.plusLighter)
+                Capsule().fill(.white.opacity(SpotTokens.track))
+                Capsule().fill(markColour).frame(width: room.size.width * fill)
             }
         }
         .frame(height: Self.barLine)
@@ -306,7 +296,6 @@ struct SpotMetricView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .blendMode(.plusLighter)
     }
 
     private var rows: some View {
@@ -322,7 +311,7 @@ struct SpotMetricView: View {
             .padding(.bottom, 4)
             ForEach(Array((value?.rows ?? []).prefix(rowRoom).enumerated()), id: \.offset) { _, row in
                 HStack(spacing: SpotTokens.placeGap / 2) {
-                    if let tone = row.tone { dot(Self.colour(tone).opacity(Self.markLight)) }
+                    if let tone = row.tone { dot(Self.colour(tone)) }
                     Text(row.title)
                         .font(SpotType.detail)
                         .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))

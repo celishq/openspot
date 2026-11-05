@@ -16,7 +16,7 @@ enum SpotTokens {
     static let listRowGap: CGFloat = 6
     static let listIconSize: CGFloat = 24
     static let hintHeight: CGFloat = 14
-    static let hintLight = 0.35
+    static let hintLight = 0.5
     static let hintBlock: CGFloat = rowGap + hintHeight
     static let menuRowHeight: CGFloat = 32
     static let menuRowGap: CGFloat = 2
@@ -33,8 +33,11 @@ enum SpotTokens {
     static let backdropScale: CGFloat = 1
     static let backdropShade = 0.2
     static let glassShade = 0.38
-    static let titleOpacity = 0.85
-    static let secondaryLight = 0.55
+    static let titleOpacity = 1.0
+    static let secondaryLight = 0.7
+    static let fill = 0.1
+    static let selectedFill = 0.22
+    static let track = 0.2
     static let cardBlur: CGFloat = 16
     static let panelWidth: CGFloat = gridWidth + 2 * halo
     static let panelHeight: CGFloat = 2 * halo + 7 * rowHeight + 6 * rowGap
