@@ -40,7 +40,7 @@ enum SpotTokens {
     static let track = 0.2
     static let cardBlur: CGFloat = 16
     static let panelWidth: CGFloat = gridWidth + 2 * halo
-    static let panelHeight: CGFloat = 2 * halo + 7 * rowHeight + 6 * rowGap
+    static let panelHeight: CGFloat = 2 * halo + 7 * rowHeight + 6 * rowGap + hintBlock
     static let sheetMaxHeight: CGFloat = panelHeight - 2 * halo
 
     /// How far the search field moves down to sit under the title of an open sheet.

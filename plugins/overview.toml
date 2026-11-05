@@ -1,0 +1,4 @@
+[[widgets]]
+name = "Overview"
+layout = "hero"
+places = ["agents", "battery", "cpu", "disk"]

@@ -14,8 +14,21 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Files", "Plugins", "Links", "Overview", "Battery", "CPU", "Agents", "Paste screenshot", "Pull requests", "Pull request status", "Snippets"])
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "f", "p", "l", nil, nil, nil, nil, "v", "g", nil, "n"])
+        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Files", "Plugins", "Links", "Overview", "Screenshot", "Pull requests", "Snippets"])
+        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "f", "p", "l", nil, "v", "g", "n"])
+    }
+
+    func testNoMetricShowsTwiceInTheGrid() throws {
+        let places = try scan.commands.flatMap(\.places)
+
+        XCTAssertEqual(places.count, Set(places).count)
+    }
+
+    func testTheSpotsFitThePanelWithNoScrolling() throws {
+        let placements = SpotGrid().place(try scan.commands.map(\.size))
+        let rows = placements.map { $0.row + $0.size.rows }.max()
+
+        XCTAssertEqual(rows, 6)
     }
 
     func testEveryMetricPrintsAValue() async throws {
@@ -182,7 +195,6 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
         let metric = try XCTUnwrap(scan.metrics.first { $0.id == "pulls" })
         let list = try XCTUnwrap(scan.commands.first { $0.id == "pulls" })
-        let widget = try XCTUnwrap(scan.commands.first { $0.id == "pulls/Pull request status" })
         try await withPrivateHome { folder in
             let value = try await metric.read(timeout: 5)
             let lines = try await list.items(timeout: 5)
@@ -193,8 +205,8 @@ final class SamplePluginsTests: XCTestCase {
             XCTAssertEqual(lines.errors, [])
             XCTAssertEqual(lines.items.map(\.run), (1...3).map { "https://github.test/a/\($0)" } + ["https://github.test/b/4"])
             XCTAssertEqual(lines.items.last?.subtitle, "No checks · To review · b")
-            XCTAssertEqual(widget.tray, metric.id)
-            XCTAssertEqual(widget.opens, list.id)
+            XCTAssertTrue(metric.isTray)
+            XCTAssertEqual(list.id, metric.id)
 
             let item = try XCTUnwrap(lines.items.first)
             try await list.perform(.item(item), timeout: 5)
@@ -216,10 +228,7 @@ final class SamplePluginsTests: XCTestCase {
     }
 
     func testAgentsShowInTheMenuBar() throws {
-        let scan = try scan
-        let widget = try XCTUnwrap(scan.commands.first { $0.id == "overview/Agents" })
-
-        XCTAssertEqual(widget.tray, "agents")
+        XCTAssertEqual(try scan.metrics.filter(\.isTray).map(\.id), ["agents", "pulls"])
     }
 
     /// A web with one site: icons.test names a small image on its page, and each other site has no image at all.

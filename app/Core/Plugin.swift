@@ -1,8 +1,8 @@
 import Foundation
 
-/// What one file in the plugin folder gives: an executable, or a file of widgets.
+/// What one file in the plugin folder gives: an executable, or a TOML file of widgets.
 public struct Plugin: Equatable, Sendable {
-    public static let widgetExtension = "widget"
+    public static let widgetExtension = "toml"
 
     public let id: String
     public let commands: [PluginCommand]
@@ -17,8 +17,8 @@ public struct Plugin: Equatable, Sendable {
     /// Reads a file with no run of it. Returns nil for a file that is neither. Throws a fault that names what is wrong.
     public init?(file url: URL, id: String) throws {
         if url.pathExtension == Self.widgetExtension {
-            let text = try String(contentsOf: url, encoding: .utf8)
-            self.init(id: id, commands: try TextBlock.blocks(in: text).map { try Self.widget($0, id: id, url: url) })
+            let document = try TomlDocument(text: try String(contentsOf: url, encoding: .utf8))
+            self.init(id: id, commands: try (document.arrays["widgets"] ?? []).map { try Self.widget($0, id: id, url: url) })
         } else if FileManager.default.isExecutableFile(atPath: url.path) {
             try self.init(script: url, header: PluginHeader(url: url).block, id: id)
         } else {
@@ -33,27 +33,30 @@ public struct Plugin: Equatable, Sendable {
         var read: SpotRead?
         if let text = header.value("read") {
             guard let parsed = SpotRead(name: text) else {
-                throw PluginError.header("\(name) has an unknown read: \(text). Use click, open or a number of seconds")
+                throw PluginError.fault("\(name) has an unknown read: \(text). Use click, open or a number of seconds")
             }
             read = parsed
         }
+        let isTray = header.flag("tray") ?? false
         var metrics: [PluginMetric] = []
         if case .every(let seconds) = read {
-            metrics.append(PluginMetric(id: id, url: url, label: name, symbol: symbol, refresh: seconds))
+            metrics.append(PluginMetric(id: id, url: url, label: name, symbol: symbol, refresh: seconds, isTray: isTray))
             guard header.value("key") != nil else {
                 self.init(id: id, commands: [], metrics: metrics)
                 return
             }
+        } else if isTray {
+            throw PluginError.fault("\(name) needs a number of seconds as its read to show in the menu bar")
         }
         let sizeName = header.value("size") ?? "wide"
-        guard let size = SpotSize(name: sizeName) else { throw PluginError.header("\(name) has an unknown size: \(sizeName)") }
+        guard let size = SpotSize(name: sizeName) else { throw PluginError.fault("\(name) has an unknown size: \(sizeName)") }
         let searchName = header.value("search") ?? ItemSearch.local.rawValue
-        guard let search = ItemSearch(rawValue: searchName) else { throw PluginError.header("\(name) has an unknown search: \(searchName)") }
-        guard search == .local || read == .click else { throw PluginError.header("\(name) needs read=click to search live") }
+        guard let search = ItemSearch(rawValue: searchName) else { throw PluginError.fault("\(name) has an unknown search: \(searchName)") }
+        guard search == .local || read == .click else { throw PluginError.fault("\(name) needs read=click to search live") }
         var rank = PluginCommand.lastRank
         if let text = header.value("rank") {
-            guard let number = Int(text) else { throw PluginError.header("\(name) needs a number as its rank") }
-            guard read == .open else { throw PluginError.header("\(name) needs read=open to join the main search") }
+            guard let number = Int(text) else { throw PluginError.fault("\(name) needs a number as its rank") }
+            guard read == .open else { throw PluginError.fault("\(name) needs read=open to join the main search") }
             rank = number
         }
         let command = PluginCommand(
@@ -64,7 +67,7 @@ public struct Plugin: Equatable, Sendable {
             size: size,
             symbol: symbol ?? "app",
             subtitle: header.value("subtitle"),
-            key: try Self.key(in: header, of: name),
+            key: try Self.key(header.value("key"), of: name),
             read: read,
             rank: rank,
             search: search,
@@ -81,35 +84,34 @@ public struct Plugin: Equatable, Sendable {
         return words.prefix(1).uppercased() + words.dropFirst()
     }
 
-    private static func key(in block: TextBlock, of name: String) throws -> CommandKey? {
-        guard let text = block.value("key") else { return nil }
-        guard let key = CommandKey(name: text) else { throw PluginError.header("\(name) has an unknown key: \(text)") }
+    private static func key(_ text: String?, of name: String) throws -> CommandKey? {
+        guard let text else { return nil }
+        guard let key = CommandKey(name: text) else { throw PluginError.fault("\(name) has an unknown key: \(text)") }
         return key
     }
 
-    private static func widget(_ block: TextBlock, id: String, url: URL) throws -> PluginCommand {
-        guard let name = block.value("name") else { throw PluginError.header("a widget needs a name") }
-        guard let layoutName = block.value("layout") else { throw PluginError.header("\(name) needs a layout") }
-        guard let layout = WidgetLayout(name: layoutName) else {
-            throw PluginError.header("\(name) has an unknown layout: \(layoutName). Use single, hero, pair or row")
+    private static func widget(_ table: [String: TomlDocument.Value], id: String, url: URL) throws -> PluginCommand {
+        func text(_ key: String) -> String? {
+            if case .string(let value)? = table[key] { return value }
+            return nil
         }
-        let places = block.values("place")
-        guard places.count == layout.slots.count else {
-            throw PluginError.header("\(name) needs \(layout.slots.count) places for the \(layoutName) layout")
+        guard let name = text("name") else { throw PluginError.fault("a widget needs a name") }
+        guard let layoutName = text("layout") else { throw PluginError.fault("\(name) needs a layout") }
+        guard let layout = WidgetLayout(name: layoutName) else {
+            throw PluginError.fault("\(name) has an unknown layout: \(layoutName). Use single, hero, pair or row")
+        }
+        guard case .strings(let places)? = table["places"], places.count == layout.slots.count else {
+            throw PluginError.fault("\(name) needs \(layout.slots.count) places for the \(layoutName) layout")
         }
         var size = layout.size
-        if let sizeName = block.value("size") {
+        if let sizeName = text("size") {
             guard layout == .single else {
-                throw PluginError.header("\(name) cannot take a size, because the \(layoutName) layout sets its own")
+                throw PluginError.fault("\(name) cannot take a size, because the \(layoutName) layout sets its own")
             }
             guard let asked = SpotSize(name: sizeName) else {
-                throw PluginError.header("\(name) has an unknown size: \(sizeName)")
+                throw PluginError.fault("\(name) has an unknown size: \(sizeName)")
             }
             size = asked
-        }
-        let tray = block.value("tray")
-        if let tray, !places.contains(tray) {
-            throw PluginError.header("\(name) cannot show \(tray) in the menu bar, because it does not place it")
         }
         return PluginCommand(
             id: "\(id)/\(name)",
@@ -117,11 +119,10 @@ public struct Plugin: Equatable, Sendable {
             url: url,
             kind: .widget,
             size: size,
-            key: try key(in: block, of: name),
+            key: try key(text("key"), of: name),
             layout: layout,
             places: places,
-            opens: block.value("opens"),
-            tray: tray
+            opens: text("opens")
         )
     }
 }

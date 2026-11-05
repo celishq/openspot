@@ -8,8 +8,8 @@ public struct MetricSchedule: Sendable {
 
     /// The metrics to keep fresh: those in the menu bar always, and those that a widget places while the panel is open.
     public static func wanted(_ metrics: [PluginMetric], by commands: [PluginCommand], isPanelOpen: Bool) -> [PluginMetric] {
-        let ids = isPanelOpen ? Set(commands.flatMap(\.places)) : Set(commands.compactMap(\.tray))
-        return metrics.filter { ids.contains($0.id) }
+        let placed = isPanelOpen ? Set(commands.flatMap(\.places)) : []
+        return metrics.filter { $0.isTray || placed.contains($0.id) }
     }
 
     /// The metrics whose refresh time has passed. Each one counts as read from now.

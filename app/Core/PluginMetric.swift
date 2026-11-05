@@ -7,13 +7,15 @@ public struct PluginMetric: Equatable, Sendable {
     public let label: String
     public let symbol: String?
     public let refresh: TimeInterval
+    public let isTray: Bool
 
-    public init(id: String, url: URL, label: String? = nil, symbol: String? = nil, refresh: TimeInterval = 60) {
+    public init(id: String, url: URL, label: String? = nil, symbol: String? = nil, refresh: TimeInterval = 60, isTray: Bool = false) {
         self.id = id
         self.url = url
         self.label = label ?? id
         self.symbol = symbol
         self.refresh = refresh
+        self.isTray = isTray
     }
 
     public func read(timeout: TimeInterval) async throws -> MetricValue {

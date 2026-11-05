@@ -1,7 +1,7 @@
 #!/bin/sh
 # name=Plugins
 # symbol=puzzlepiece.extension
-# subtitle=Build your own
+# subtitle=Add your own
 # key=p
 # read=open
 # recents=false

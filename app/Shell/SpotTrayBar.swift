@@ -2,7 +2,7 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// The menu bar items of the widgets that show a metric there. An item comes and goes with its mark.
+/// The menu bar items of the metrics that ask to show there. An item comes and goes with its mark.
 @MainActor
 final class SpotTrayBar: NSObject {
     /// A view that leaves each click to the button that holds it.

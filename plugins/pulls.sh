@@ -1,9 +1,10 @@
 #!/bin/sh
 # name=Pull requests
 # symbol=arrow.triangle.pull
-# subtitle=Yours and to review
+# subtitle=On GitHub
 # key=g
 # read=120
+# tray=true
 export LC_ALL=en_US.UTF-8
 export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
 

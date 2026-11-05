@@ -1,8 +1,8 @@
 #!/bin/sh
+# name=Screenshot
 # symbol=doc.on.clipboard.fill
-# subtitle=Last one, into the selection
+# subtitle=Paste latest
 # key=v
-# size=strip
 folder=$(defaults read com.apple.screencapture location 2>/dev/null || echo "$HOME/Desktop")
 case "$folder" in "~"*) folder="$HOME${folder#\~}" ;; esac
 file=$(mdfind -0 -onlyin "$folder" 'kMDItemIsScreenCapture = 1' | xargs -0 ls -1t 2>/dev/null | head -n 1)

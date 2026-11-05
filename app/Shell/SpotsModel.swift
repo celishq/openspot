@@ -138,7 +138,7 @@ final class SpotsModel {
     private func updateMetricLoop() {
         metricLoop?.cancel()
         metricLoop = nil
-        guard isShown || entries.contains(where: { $0.command.tray != nil }) else { return }
+        guard isShown || metrics.contains(where: \.isTray) else { return }
         metricLoop = Task {
             while !Task.isCancelled {
                 readDueMetrics()
@@ -338,18 +338,18 @@ final class SpotsModel {
         }
     }
 
-    /// The marks of the widgets that show a metric in the menu bar, by widget.
+    /// The marks of the metrics that show in the menu bar, by metric.
     var trayMarks: [(id: String, mark: TrayMark)] {
-        entries.compactMap { entry in
-            guard let reading = entry.command.tray.flatMap({ readings[$0] }), let mark = TrayMark(reading: reading) else { return nil }
-            return (entry.id, mark)
+        metrics.filter(\.isTray).compactMap { metric in
+            guard let reading = readings[metric.id], let mark = TrayMark(reading: reading) else { return nil }
+            return (metric.id, mark)
         }
     }
 
-    /// Opens what a click on a menu bar item asks for, or closes the panel when it already shows that.
+    /// Opens the list of a metric that is also a list, or else selects the widget that places it. Closes the panel
+    /// when it already shows that.
     func openFromTray(_ id: String) {
-        guard let entry = entries.first(where: { $0.id == id }) else { return }
-        let opens = entry.command.opens
+        let opens = entries.first { $0.id == id && $0.kind == .list }?.id
         if isShown, opens == nil || openList == opens {
             dismiss()
         } else if let opens {
@@ -358,7 +358,7 @@ final class SpotsModel {
             closeList()
             query = ""
             show()
-            selected = visible.firstIndex { $0.id == id } ?? 0
+            selected = visible.firstIndex { $0.command.places.contains(id) } ?? 0
         }
     }
 

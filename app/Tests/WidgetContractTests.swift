@@ -19,8 +19,13 @@ final class WidgetContractTests: XCTestCase {
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
     }
 
-    private func widgets(_ text: String, file: String = "mine.widget") throws {
+    private func widgets(_ text: String, file: String = "mine.toml") throws {
         try text.write(to: folder.appendingPathComponent(file), atomically: true, encoding: .utf8)
+    }
+
+    private func widget(name: String = "Now", layout: String, places: [String], more: String = "") throws {
+        let list = places.map { "\"\($0)\"" }.joined(separator: ", ")
+        try widgets("[[widgets]]\nname = \"\(name)\"\nlayout = \"\(layout)\"\nplaces = [\(list)]\n\(more)\n")
     }
 
     private func power(_ body: String = "printf 'title=84%%\\nvalue=0.84\\ntone=good\\n'") throws {
@@ -33,7 +38,7 @@ final class WidgetContractTests: XCTestCase {
 
     private func single(size: String?, layout: String = "single", places: Int = 1) throws {
         try power()
-        try widgets("name=Now\nlayout=\(layout)\n" + String(repeating: "place=power\n", count: places) + (size.map { "size=\($0)\n" } ?? ""))
+        try widget(layout: layout, places: Array(repeating: "power", count: places), more: size.map { "size = \"\($0)\"" } ?? "")
     }
 
     func testASingleWidgetIsSquareUnlessItAsksForAnotherSize() throws {
@@ -95,37 +100,50 @@ final class WidgetContractTests: XCTestCase {
         }
     }
 
-    func testAWidgetCanPickOneOfItsMetricsForTheMenuBar() throws {
-        try power()
-        try widgets("name=Level\nlayout=single\nplace=power\ntray=power\n")
+    func testAMetricCanAskToShowInTheMenuBar() throws {
+        try script("power.sh", "#!/bin/sh\n# read=5\n# tray=true\n")
+        try script("other.sh", "#!/bin/sh\n# read=5\n")
 
-        let widget = try XCTUnwrap(try scan.commands.first { $0.kind == .widget })
-
-        XCTAssertEqual(widget.tray, "power")
-        XCTAssertEqual(widget.withoutKey().tray, "power")
+        XCTAssertEqual(try scan.metrics.filter(\.isTray).map(\.id), ["power"])
     }
 
-    func testAWidgetCannotPickAMetricItDoesNotPlace() throws {
-        try power()
-        try widgets("name=Level\nlayout=single\nplace=power\ntray=other\n")
+    func testOnlyAMetricCanShowInTheMenuBar() throws {
+        try script("one.sh", "#!/bin/sh\n# tray=true\n")
+        try script("two.sh", "#!/bin/sh\n# read=open\n# tray=true\n")
 
-        XCTAssertEqual(try scan.refused.first?.reason, "Level cannot show other in the menu bar, because it does not place it")
+        XCTAssertEqual(try scan.refused, [
+            Refusal(file: "one", reason: "One needs a number of seconds as its read to show in the menu bar"),
+            Refusal(file: "two", reason: "Two needs a number of seconds as its read to show in the menu bar")
+        ])
     }
 
-    func testOnlyMenuBarMetricsAreWantedWithThePanelClosed() {
+    func testAMenuBarMetricIsWantedWithThePanelClosedAndNoWidget() {
         let url = URL(fileURLWithPath: "/x")
-        let metrics = ["a/one", "a/two", "a/three"].map { PluginMetric(id: $0, url: url) }
-        let widgets = [
-            PluginCommand(id: "a/W", name: "W", url: url, kind: .widget, places: ["a/one", "a/two"], tray: "a/one")
+        let metrics = [
+            PluginMetric(id: "tray", url: url, isTray: true),
+            PluginMetric(id: "placed", url: url),
+            PluginMetric(id: "idle", url: url)
         ]
+        let widgets = [PluginCommand(id: "a/W", name: "W", url: url, kind: .widget, places: ["placed"])]
 
-        XCTAssertEqual(MetricSchedule.wanted(metrics, by: widgets, isPanelOpen: false).map(\.id), ["a/one"])
-        XCTAssertEqual(MetricSchedule.wanted(metrics, by: widgets, isPanelOpen: true).map(\.id), ["a/one", "a/two"])
+        XCTAssertEqual(MetricSchedule.wanted(metrics, by: widgets, isPanelOpen: false).map(\.id), ["tray"])
+        XCTAssertEqual(MetricSchedule.wanted(metrics, by: widgets, isPanelOpen: true).map(\.id), ["tray", "placed"])
     }
 
     func testAWidgetFilePlacesMetricsOfOtherScripts() throws {
         try power()
-        try widgets("name=Now\nlayout=pair\nplace=power\nplace=power\nkey=w\n\nname=Then\nlayout=single\nplace=power\n")
+        try widgets("""
+        [[widgets]]
+        name = "Now"
+        layout = "pair"
+        places = ["power", "power"]
+        key = "w"
+
+        [[widgets]]
+        name = "Then"
+        layout = "single"
+        places = ["power"]
+        """)
 
         let scan = try scan
         let widget = try XCTUnwrap(scan.commands.first)
@@ -140,19 +158,19 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testAWidgetNeedsOnePlaceForEachSlot() throws {
-        try widgets("name=Now\nlayout=hero\nplace=power\n")
+        try widget(layout: "hero", places: ["power"])
 
         XCTAssertEqual(try scan.refused.first?.reason, "Now needs 4 places for the hero layout")
     }
 
     func testAnUnknownLayoutIsRefusedAndNamesTheChoices() throws {
-        try widgets("name=Now\nlayout=circle\nplace=power\n")
+        try widget(layout: "circle", places: ["power"])
 
         XCTAssertEqual(try scan.refused.first?.reason, "Now has an unknown layout: circle. Use single, hero, pair or row")
     }
 
     func testAWidgetThatNamesAMissingMetricIsLeftOutAndReported() throws {
-        try widgets("name=Now\nlayout=pair\nplace=power\nplace=none\n")
+        try widget(layout: "pair", places: ["power", "none"])
 
         let scan = try scan
 
@@ -162,7 +180,7 @@ final class WidgetContractTests: XCTestCase {
 
     func testAWidgetThatOpensAMissingCommandIsLeftOutAndReported() throws {
         try power()
-        try widgets("name=Now\nlayout=pair\nplace=power\nplace=power\nopens=nothing\n")
+        try widget(layout: "pair", places: ["power", "power"], more: "opens = \"nothing\"")
 
         let scan = try scan
 
@@ -249,6 +267,12 @@ final class WidgetContractTests: XCTestCase {
         let faults = await PluginCheck(folder: PluginFolder(url: folder)).faults()
 
         XCTAssertEqual(faults, [])
+    }
+
+    func testATomlFaultNamesItsLine() throws {
+        try widgets("[[widgets]]\nnot a pair\n")
+
+        XCTAssertEqual(try scan.refused, [Refusal(file: "mine", reason: "line 2: expected a key and a value")])
     }
 
     func testTheCheckReportsARefusedHeaderAndABadMetric() async throws {

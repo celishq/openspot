@@ -113,10 +113,13 @@ final class GuidePluginTests: XCTestCase {
         XCTAssertEqual(faults, [])
     }
 
-    func testTheWidgetExampleInTheGuideNamesARealLayout() throws {
-        let example = try XCTUnwrap(blocks("text").first { $0.contains("layout=") })
-        let block = try XCTUnwrap(TextBlock.blocks(in: example).first)
+    func testTheWidgetExampleInTheGuideLoads() throws {
+        let example = try XCTUnwrap(blocks("toml").first)
+        let widgets = try XCTUnwrap(try TomlDocument(text: example).arrays["widgets"])
+        guard case .string(let layout)? = widgets.first?["layout"], case .strings(let places)? = widgets.first?["places"] else {
+            return XCTFail("no layout or places")
+        }
 
-        XCTAssertEqual(WidgetLayout(name: try XCTUnwrap(block.value("layout")))?.slots.count, block.values("place").count)
+        XCTAssertEqual(WidgetLayout(name: layout)?.slots.count, places.count)
     }
 }

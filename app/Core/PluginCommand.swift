@@ -22,7 +22,6 @@ public struct PluginCommand: Equatable, Sendable {
     public let layout: WidgetLayout?
     public let places: [String]
     public let opens: String?
-    public let tray: String?
 
     public init(
         id: String,
@@ -42,8 +41,7 @@ public struct PluginCommand: Equatable, Sendable {
         actions: [CommandAction] = [],
         layout: WidgetLayout? = nil,
         places: [String] = [],
-        opens: String? = nil,
-        tray: String? = nil
+        opens: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -63,7 +61,6 @@ public struct PluginCommand: Equatable, Sendable {
         self.layout = layout
         self.places = places
         self.opens = opens
-        self.tray = tray
     }
 
     /// Whether its rows join the main search.

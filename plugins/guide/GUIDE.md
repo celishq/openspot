@@ -46,6 +46,7 @@ open -a Calendar
 | `rank` | Shows its rows in the main search. A lower number comes first. Needs `read=open`. |
 | `search` | `live`: Openspot calls `<script> search <text>`. Needs `read=click`. |
 | `recents` | `false` to not sort recent picks first. |
+| `tray` | `true` to show a metric in the menu bar. Needs a number as its `read`. |
 
 To read a script, Openspot calls it with no arguments:
 
@@ -196,20 +197,18 @@ What a metric prints decides how it shows:
 ## Widgets
 
 A widget is a spot that shows metrics in a layout. It runs nothing, and it can place metrics of any plugin. Widgets live
-in a file that ends in `.widget`, with one block for each widget:
+in a `.toml` file in the plugins folder:
 
-```text
-name=Morning
-layout=hero
-place=agents
-place=battery
-place=cpu
-place=disk
-opens=links
+```toml
+[[widgets]]
+name = "Morning"
+layout = "hero"
+places = ["agents", "battery", "cpu", "disk"]
+opens = "links"
 ```
 
-Each `place` fills the next slot of the layout, and each slot needs one metric. `opens` is optional: it names the command
-that Enter or a click runs. `key` also works.
+`places` fills the slots of the layout in order, and each slot needs one metric. `opens` is optional: it names the
+command that Enter or a click runs. `key` also works.
 
 | Layout | Size | Places |
 |---|---|---|
@@ -226,10 +225,11 @@ the value and the mark, so keep the title short, such as `84%`.
 
 ## The menu bar
 
-Add `tray` to a widget to also show one of its metrics in the menu bar. It names one of the widget's places:
-`tray=coffee`. Openspot then reads that metric all the time, so choose a `read` that is not too short.
+Add `tray=true` to the header of a metric to show it in the menu bar. It needs no widget. Openspot then reads it all the
+time, so choose a `read` that is not too short.
 
-A click opens the panel on the command that `opens` names. A widget with no `opens` is selected in the panel instead.
+A click opens the panel on the metric's list if it also has a `key`. If not, the panel opens and selects a widget that
+places it.
 
 The item shows the metric's `symbol` and its mark. Rows show one count for each `tone`, worst first. A ring, bars and a
 dot show small, and a `title` shows as text.
