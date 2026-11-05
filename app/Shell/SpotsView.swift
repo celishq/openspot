@@ -36,7 +36,10 @@ struct SpotsView: View {
                     entry: entry,
                     list: model.lists[entry.id] ?? ItemList(),
                     onRun: { model.runItem($0) },
-                    onClose: { model.closeList() }
+                    onClose: {
+                        model.allowSheetMotion()
+                        model.closeList()
+                    }
                 )
                 .modifier(SpotSheetFrame(
                     rect: sheetOpen ? sheetRect : openFrame ?? sheetRect,
@@ -63,6 +66,12 @@ struct SpotsView: View {
             }
         }
         .onChange(of: model.openList) { _, list in
+            guard model.sheetMoves else {
+                sheetID = list
+                sheetOpen = list != nil
+                model.allowSheetMotion()
+                return
+            }
             if let list {
                 sheetID = list
                 DispatchQueue.main.async {
@@ -203,6 +212,7 @@ struct SpotsView: View {
                     return .handled
                 }
                 .onKeyPress(.escape) {
+                    model.allowSheetMotion()
                     if !model.stepBack() { close() }
                     return .handled
                 }

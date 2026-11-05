@@ -53,6 +53,8 @@ final class SpotsModel {
     private(set) var visible: [Entry] = []
     var selected = 0
     var openList: String?
+    private(set) var sheetMoves = true
+    private var closingPick: (item: SpotItem, entry: Entry)?
     private(set) var lists: [String: ItemList] = [:] {
         didSet {
             if !query.isEmpty { updateVisible() }
@@ -147,7 +149,7 @@ final class SpotsModel {
                 notify("\(entry.state.title) failed. \(Self.reason(error))")
             }
             if entry.kind == .list, entry.command.pick == .stay { loadItems(of: entry.command) }
-            guard entry.kind != .slider,
+            guard entry.kind != .slider, closingPick == nil,
                   let state = try? await entry.command.state(timeout: Self.stateTimeout),
                   let index = entries.firstIndex(where: { $0.id == entry.id }) else { return }
             entries[index].state = state
@@ -227,6 +229,7 @@ final class SpotsModel {
             run(entry)
             return
         }
+        sheetMoves = isShown
         show()
         open(id)
     }
@@ -250,6 +253,7 @@ final class SpotsModel {
             if isShown { dismiss() }
             perform(.run, on: entry)
         case .list:
+            sheetMoves = true
             if openList == entry.id {
                 closeList()
             } else {
@@ -329,6 +333,11 @@ final class SpotsModel {
         liveAnswer?.cancel()
     }
 
+    /// Lets the next open or close of a sheet move, as it does when the person asks for it in the open panel.
+    func allowSheetMotion() {
+        sheetMoves = true
+    }
+
     func moveItem(by step: Int) {
         guard let openList else { return }
         lists[openList]?.move(by: step)
@@ -344,15 +353,27 @@ final class SpotsModel {
         pick(item, of: entry)
     }
 
+    /// Records a pick and clears what it left open, once the panel has faded, so nothing moves during the fade.
+    func finishPick() {
+        guard let pick = closingPick else { return }
+        closingPick = nil
+        if pick.entry.command.keepsRecent {
+            lists[pick.entry.id]?.remember(pick.item)
+            UserDefaults.standard.set(lists[pick.entry.id]?.recent, forKey: Self.recentKey(pick.entry.id))
+        }
+        sheetMoves = false
+        closeList()
+        query = ""
+    }
+
     private func pick(_ item: SpotItem, of entry: Entry) {
         if entry.command.pick == .close {
-            if entry.command.keepsRecent {
-                lists[entry.id]?.remember(item)
-                UserDefaults.standard.set(lists[entry.id]?.recent, forKey: Self.recentKey(entry.id))
+            closingPick = (item, entry)
+            if isShown {
+                dismiss()
+            } else {
+                finishPick()
             }
-            if isShown { dismiss() }
-            closeList()
-            query = ""
         }
         perform(.item(item), on: entry)
     }

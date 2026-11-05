@@ -8,6 +8,7 @@ final class SpotsPanel: NSPanel {
 
     /// Brings the panel to the front and starts its open motion.
     func show() {
+        model?.finishPick()
         model?.selected = 0
         Task { await model?.reload() }
         makeKeyAndOrderFront(nil)
@@ -18,7 +19,9 @@ final class SpotsPanel: NSPanel {
     func hide() {
         model?.isShown = false
         DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeOutDuration) {
-            if self.model?.isShown == false { self.orderOut(nil) }
+            guard self.model?.isShown == false else { return }
+            self.orderOut(nil)
+            self.model?.finishPick()
         }
     }
 
