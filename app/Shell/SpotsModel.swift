@@ -52,8 +52,8 @@ final class SpotsModel {
     private static let globalItemLimit = 6
     private static let liveTimeout: TimeInterval = 10
     private static let metricTick: UInt64 = 1_000_000_000
-    nonisolated private static let sourceKey = "translate.source"
-    nonisolated private static let targetKey = "translate.target"
+    private static let textPause: Duration = .milliseconds(300)
+    private static let sliderPause: Duration = .milliseconds(100)
 
     var entries: [Entry] = [] {
         didSet { updateVisible() }
@@ -83,7 +83,6 @@ final class SpotsModel {
     var show: () -> Void = {}
     var notify: (String) -> Void = { _ in }
     var confirm: (String) -> Void = { _ in }
-    var regainKeys: () -> Void = {}
     private var problems: [String] = []
     private var liveAnswer: Task<Void, Never>?
     private(set) var menu: ActionMenu?
@@ -94,21 +93,9 @@ final class SpotsModel {
     private var metricSchedule = MetricSchedule()
     private var metricLoop: Task<Void, Never>?
     private var outputs: [String: PluginOutput] = [:]
-    var translation = TranslationDraft(
-        preferred: Locale.preferredLanguages,
-        source: UserDefaults.standard.string(forKey: SpotsModel.sourceKey),
-        target: UserDefaults.standard.string(forKey: SpotsModel.targetKey)
-    ) {
-        didSet {
-            UserDefaults.standard.set(translation.source, forKey: Self.sourceKey)
-            UserDefaults.standard.set(translation.target, forKey: Self.targetKey)
-        }
-    }
-    var isDownloadingLanguage = false {
-        didSet {
-            if oldValue, !isDownloadingLanguage { regainKeys() }
-        }
-    }
+    private(set) var panels: [String: SpotPanel] = [:]
+    private var panelCall: Task<Void, Never>?
+    private var panelRead: Task<Void, Never>?
 
     /// Reads the plugin folder again, and asks each plugin for its state.
     func reload() async {
@@ -208,8 +195,9 @@ final class SpotsModel {
         lists[command.id]?.beginLoading()
         Task {
             do {
-                let lines = try await command.items(timeout: Self.itemsTimeout)
+                let lines = try await command.items(input: panels[command.id]?.values, timeout: Self.itemsTimeout)
                 keep(lines, of: command)
+                takePanel(lines, of: command)
                 lists[command.id]?.replace(lines.items)
                 if let run { lists[command.id]?.select(run: run) }
                 await SpotIconStore.shared.prepare(lines.items)
@@ -350,7 +338,7 @@ final class SpotsModel {
         case .launch:
             if isShown { dismiss() }
             perform(.run, on: entry)
-        case .list, .view:
+        case .list:
             sheetMoves = true
             if openList == entry.id {
                 closeList()
@@ -407,9 +395,13 @@ final class SpotsModel {
         SpotGrid().place(visible.map(\.size))
     }
 
-    /// Whether the panel shows its search field, which a form or a screen of its own replaces.
+    /// Whether the panel shows its search field, which a form or a sheet of parts replaces.
     var showsSearch: Bool {
-        form == nil && openEntry?.kind != .view
+        form == nil && openPanel == nil
+    }
+
+    var openPanel: SpotPanel? {
+        openList.flatMap { panels[$0] }
     }
 
     var openEntry: Entry? {
@@ -460,6 +452,8 @@ final class SpotsModel {
     func closeList() {
         openList = nil
         liveAnswer?.cancel()
+        panelCall?.cancel()
+        panelRead?.cancel()
     }
 
     /// Lets the next open or close of a sheet move, as it does when the person asks for it in the open panel.
@@ -543,7 +537,7 @@ final class SpotsModel {
             }
             return true
         }
-        if openEntry?.kind == .view { return handleScreenKey(key) }
+        if let panel = openPanel { return handlePanelKey(key, panel) }
         if key == ActionKey(name: "escape") {
             allowSheetMotion()
             if !stepBack() { dismiss() }
@@ -565,30 +559,79 @@ final class SpotsModel {
         return true
     }
 
-    /// Takes the keys of a screen in a sheet, and leaves all others to its text areas.
-    private func handleScreenKey(_ key: ActionKey) -> Bool {
-        switch key {
-        case ActionKey(name: "return", isCommand: true): copyTranslation()
-        case ActionKey(name: "s", isCommand: true, isShift: true): swapTranslation()
-        case ActionKey(name: "escape"):
+    /// Takes Esc and the keys of the parts, and leaves all others to the text areas.
+    private func handlePanelKey(_ key: ActionKey, _ panel: SpotPanel) -> Bool {
+        if key == ActionKey(name: "escape") {
             allowSheetMotion()
             closeList()
-        default: return false
+            return true
         }
+        guard let part = panel.parts.first(where: { $0.key == key }) else { return false }
+        pressPart(part)
         return true
     }
 
-    func swapTranslation() {
-        translation.swap()
+    /// Shows the parts a script printed, and keeps them fresh when it asks for that.
+    private func takePanel(_ lines: PluginOutput, of command: PluginCommand) {
+        guard var panel = panels[command.id] else {
+            panels[command.id] = SpotPanel(output: lines)
+            return readPanelAgain(command)
+        }
+        if panel.take(lines, answering: panel.generation) {
+            panels[command.id] = panel
+            readPanelAgain(command)
+        }
     }
 
-    /// Copies the translation and closes the panel. The screen and its text stay for the next time.
-    func copyTranslation() {
-        guard !translation.output.isEmpty else { return }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(translation.output, forType: .string)
-        if isShown { dismiss() }
-        confirm("Copied")
+    /// Reads an open sheet of parts again after the time it asks for.
+    private func readPanelAgain(_ command: PluginCommand) {
+        panelRead?.cancel()
+        guard openList == command.id, let every = panels[command.id]?.every else { return }
+        panelRead = Task {
+            try? await Task.sleep(for: .seconds(every))
+            if !Task.isCancelled { loadItems(of: command) }
+        }
+    }
+
+    /// Takes a value the person set, so that it shows at once, and tells the script after a pause that fits the control.
+    func setPart(_ part: SpotPart, to value: String) {
+        guard let entry = openEntry, let generation = panels[entry.id]?.set(value, of: part.id) else { return }
+        let pause: Duration? = switch part.control {
+        case .text: Self.textPause
+        case .slider: Self.sliderPause
+        default: nil
+        }
+        call(.set(part.id, to: value), on: entry, generation: generation, pause: pause, keeping: part.isEditable ? part.id : nil)
+    }
+
+    func pressPart(_ part: SpotPart) {
+        guard let entry = openEntry, let generation = panels[entry.id]?.advance() else { return }
+        if part.closes, isShown { dismiss() }
+        call(.press(part.id), on: entry, generation: generation, closes: part.closes)
+    }
+
+    /// Runs one change of a sheet of parts. A newer change stops it, and only the newest answer shows. A script that
+    /// prints no parts is read again.
+    private func call(_ action: SpotAction, on entry: Entry, generation: Int, pause: Duration? = nil, keeping: String? = nil, closes: Bool = false) {
+        panelCall?.cancel()
+        panelCall = Task {
+            if let pause { try? await Task.sleep(for: pause) }
+            guard !Task.isCancelled, let values = panels[entry.id]?.values else { return }
+            do {
+                let lines = try await entry.command.change(action, values: values, timeout: Self.actionTimeout)
+                guard !Task.isCancelled || closes else { return }
+                if let toast = lines.summary?.value("toast") { confirm(toast) }
+                if lines.parts.isEmpty, !closes {
+                    loadItems(of: entry.command)
+                } else {
+                    panels[entry.id]?.take(lines, answering: generation, keeping: keeping)
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+                notify("\(entry.state.title) failed. \(Self.reason(error))")
+                loadItems(of: entry.command)
+            }
+        }
     }
 
     private func handleMenuKey(_ key: ActionKey) {
@@ -617,6 +660,7 @@ final class SpotsModel {
 
     /// The keys that work on the selected row or card, in words for the bottom of the panel.
     var hint: String {
+        if let panel = openPanel { return panel.hint }
         let keys = target.flatMap(actionMenu(on:))?.hint ?? "Esc Close"
         return selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
     }

@@ -37,7 +37,7 @@ public struct PluginGuide: Equatable, Sendable {
 
         Read the guide first: \(guide.path)
         Put the plugin in: \(folder.path)
-        When it is ready, run this and fix each fault it reports: "\(app)" --check "\(folder.path)"
+        When it is ready, run this and fix each fault it reports: "\(app)" check "\(folder.path)"
         Tell me what the plugin runs on my computer.
 
         """

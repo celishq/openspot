@@ -162,6 +162,75 @@ A field needs `field`, its name, and `label`. `type` is `text` (the default) or 
 are optional. Then `<script> <action> [run]` gets the values on stdin as one block, such as `text=one\ntwo`, and it can
 print the `run` value of the row to select.
 
+## Sheets of parts
+
+A script that prints parts opens a sheet of them, with no search field. A part is a block with `part=<id>`, and
+`section=<id>` starts a new section with a divider. What the block holds decides what it shows.
+
+```text
+section=lights
+title=Lights
+on=true
+
+part=left
+title=Left
+detail=Connecting…
+on=true
+
+part=brightness
+level=80
+symbol=sun.max
+
+part=battery
+title=Battery
+detail=68%
+
+part=quit
+title=Quit
+press=true
+key=cmd+q
+close=true
+```
+
+| Prints | Shows | Openspot calls |
+|---|---|---|
+| `title`, `detail`, `symbol` | A label, with a value on the right. | |
+| `on=true` | A switch. | `set <id> true` or `false` |
+| `level=70`, `min`, `max` | A slider. | `set <id> <number>` |
+| `color=#ff0000` for each swatch, `value` | A row of colours. | `set <id> <color>` |
+| `option=en:English` for each choice, `value` | A menu. | `set <id> <option id>` |
+| `text=...`, `lines=6`, `placeholder` | A text area. `readonly=true` only shows the text. | `set <id> <text>` |
+| `press=arrow.clockwise` | A round button at the end of the line. | `press <id>` |
+| `press=true` | The whole line is a button. | `press <id>` |
+
+A part holds one control. `key` adds a key to a press, such as `cmd+q`, and `close=true` closes the panel after it.
+
+The script holds no state. Each call gets all values on stdin, as one block such as `input=one\ntwo`. It prints the
+whole sheet again, or prints nothing to be read again. It can also print `toast=Saved`. A first block with `every=5`
+reads an open sheet again every 5 seconds.
+
+Openspot shows a change at once, and only the answer to the newest change shows. It waits for a pause in typing and in
+a slider's motion. Text that the person is typing stays as typed until they press something.
+
+To read the sheet when the panel opens, so that it opens at its full size, use `read=open`. Otherwise use `read=click`.
+
+## The openspot command
+
+A script finds `openspot` on its path. It gives what macOS has no command for, in plain text.
+
+| Call | Does |
+|---|---|
+| `openspot check [folder]` | Reports the faults of a plugins folder. |
+| `openspot catalog` | Prints each part, with its keys. |
+| `openspot color pick` | Prints the colour the person picks. Prints nothing on a cancel. |
+| `openspot translate [--from code] [--to code]` | Translates the text on stdin on this Mac. Prints `text` and `from`, or `status=missing`, `unsupported` or `unknown`. |
+| `openspot translate languages` | Prints each language, with its name. |
+
+When macOS already has a command, use it: `pbcopy`, `open`, `say`, `caffeinate`, `mdfind`, `screencapture`,
+`shortcuts run`, `osascript`. To decode a value from stdin, use `printf '%b' "$value"`.
+
+To use `openspot` in a terminal, link it: `ln -s <path to Openspot.app>/Contents/Helpers/openspot /usr/local/bin/openspot`.
+
 ## Metrics
 
 A metric is one piece of live data. Any widget can show it. A script with a number of seconds as its `read` is a metric,
@@ -246,7 +315,7 @@ Run this before you stop. It loads each plugin and reads each one that has a `re
 with 1 when there is a fault. It does not run a script with no `read`.
 
 ```text
-<path to Openspot> --check <plugins folder>
+openspot check <plugins folder>
 ```
 
 ## Rules for scripts

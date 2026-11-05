@@ -41,6 +41,12 @@ targets:
       path: Shell/Openspot.entitlements
       properties:
         com.apple.security.automation.apple-events: true
+    postBuildScripts:
+      - name: Link the openspot command
+        basedOnDependencyAnalysis: false
+        script: |
+          mkdir -p "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers"
+          ln -sfn ../MacOS/Openspot "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers/openspot"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.app

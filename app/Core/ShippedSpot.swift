@@ -3,22 +3,10 @@ import Foundation
 /// A spot that ships with the app, so that it shows whatever the plugins folder holds.
 public enum ShippedSpot: Equatable, Sendable {
     case plugins(PluginGuide)
-    case translate
 
     /// The commands of the shipped spots, in the order of the grid.
     public static func commands(folder: URL, guide: URL, app: String) -> [PluginCommand] {
         [
-            PluginCommand(
-                id: "openspot/translate",
-                name: "Translate",
-                url: folder,
-                kind: .view,
-                size: .small,
-                symbol: "translate",
-                subtitle: "Between languages",
-                key: CommandKey(name: "t"),
-                shipped: .translate
-            ),
             PluginCommand(
                 id: "openspot/plugins",
                 name: "Plugins",

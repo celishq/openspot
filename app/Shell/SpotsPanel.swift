@@ -52,7 +52,7 @@ final class SpotsPanel: NSPanel {
 
     override func resignKey() {
         super.resignKey()
-        if model?.isShown == true, model?.isDownloadingLanguage != true { hide() }
+        if model?.isShown == true { hide() }
     }
 
     /// Takes the system's low-resolution glow off each text cursor whenever the cursor draws, so that none ever shows.

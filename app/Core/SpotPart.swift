@@ -1,0 +1,110 @@
+import Foundation
+
+/// One line of a sheet that a script prints. What the block holds decides what it shows.
+public struct SpotPart: Equatable, Sendable, Identifiable {
+    public struct Option: Equatable, Sendable {
+        public let id: String
+        public let title: String
+
+        public init(id: String, title: String) {
+            self.id = id
+            self.title = title
+        }
+    }
+
+    public enum Control: Equatable, Sendable {
+        case none
+        case toggle(Bool)
+        case slider(level: Double, min: Double, max: Double)
+        case swatches([String], value: String?)
+        case menu([Option], value: String?)
+        case text(String, lines: Int, placeholder: String?, isReadOnly: Bool)
+    }
+
+    public enum Press: Equatable, Sendable {
+        case none
+        case line
+        case symbol(String)
+    }
+
+    private static let defaultLines = 4
+
+    public let id: String
+    public let isSection: Bool
+    public let title: String?
+    public let detail: String?
+    public let symbol: String?
+    public private(set) var control: Control
+    public let press: Press
+    public let key: ActionKey?
+    public let closes: Bool
+
+    /// Reads a block with a `part` or a `section` key.
+    public init?(block: TextBlock) {
+        guard let id = block.value("part") ?? block.value("section") else { return nil }
+        self.id = id
+        isSection = block.value("section") != nil
+        title = block.value("title")
+        detail = block.value("detail")
+        symbol = block.value("symbol")
+        key = block.value("key").flatMap(ActionKey.init(text:))
+        closes = block.flag("close") ?? false
+        switch block.value("press") {
+        case nil: press = .none
+        case "true": press = .line
+        case let name?: press = .symbol(name)
+        }
+        if let on = block.flag("on") {
+            control = .toggle(on)
+        } else if let level = block.number("level") {
+            control = .slider(level: level, min: block.number("min") ?? 0, max: block.number("max") ?? 100)
+        } else if !block.values("color").isEmpty {
+            control = .swatches(block.values("color"), value: block.value("value"))
+        } else if !block.values("option").isEmpty {
+            let options = block.values("option").map { option -> Option in
+                let pair = option.split(separator: ":", maxSplits: 1).map(String.init)
+                return Option(id: pair[0], title: pair.count > 1 ? pair[1] : pair[0])
+            }
+            control = .menu(options, value: block.value("value"))
+        } else if block.fields.contains(where: { $0.key == "text" }) {
+            control = .text(
+                block.value("text") ?? "",
+                lines: block.number("lines").map(Int.init) ?? Self.defaultLines,
+                placeholder: block.value("placeholder"),
+                isReadOnly: block.flag("readonly") ?? false
+            )
+        } else {
+            control = .none
+        }
+    }
+
+    /// The value of its control, as the script reads it. A line with no control has none.
+    public var value: String? {
+        switch control {
+        case .none: nil
+        case .toggle(let on): on ? "true" : "false"
+        case .slider(let level, _, _): String(Int(level.rounded()))
+        case .swatches(_, let value), .menu(_, let value): value
+        case .text(let text, _, _, _): text
+        }
+    }
+
+    /// Whether the person types into it.
+    public var isEditable: Bool {
+        if case .text(_, _, _, false) = control { return true }
+        return false
+    }
+
+    /// Takes a value that the person set.
+    public mutating func set(_ value: String) {
+        switch control {
+        case .none: break
+        case .toggle: control = .toggle(value == "true")
+        case .slider(_, let low, let high): control = .slider(level: Double(value) ?? low, min: low, max: high)
+        case .swatches(let colors, _): control = .swatches(colors, value: value)
+        case .menu(let options, _): control = .menu(options, value: value)
+        case .text(_, let lines, let placeholder, let isReadOnly):
+            control = .text(value, lines: lines, placeholder: placeholder, isReadOnly: isReadOnly)
+        }
+    }
+}

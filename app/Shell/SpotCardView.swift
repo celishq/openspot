@@ -106,7 +106,7 @@ struct SpotCardView: View {
     @ViewBuilder
     private var accessory: some View {
         switch entry.kind {
-        case .list, .view:
+        case .list:
             Image(systemName: "chevron.right")
                 .font(.system(size: 9, weight: .semibold))
                 .foregroundStyle(isFilled ? Color.black : Color.white)

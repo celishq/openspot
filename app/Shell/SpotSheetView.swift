@@ -7,7 +7,9 @@ struct SpotSheetView: View {
     let list: ItemList
     let rect: CGRect
     let form: FormDraft?
-    let screen: AnyView?
+    let panel: SpotPanel?
+    let onSet: (SpotPart, String) -> Void
+    let onPress: (SpotPart) -> Void
     let createTitle: String?
     let onCreate: () -> Void
     let onFormValue: (String, String) -> Void
@@ -16,21 +18,16 @@ struct SpotSheetView: View {
     @State private var edges = SpotScrollEdges()
 
     private static let bottomFade = 2 * SpotTokens.padding
-    private static let glyphGap = SpotTokens.padding - 5
 
     private var row: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: screen == nil ? SpotTokens.rowGap : SpotTokens.formFieldGap) {
-            if screen == nil {
-                header
-            } else {
-                screenHeader
-            }
-            if let screen {
-                screen
+        VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
+            header
+            if let panel {
+                SpotPanelView(panel: panel, onSet: onSet, onPress: onPress)
             } else if let form {
                 SpotFormView(draft: form, onValue: onFormValue)
             } else {
@@ -92,23 +89,6 @@ struct SpotSheetView: View {
     /// Whether the sheet still lies on a card that is turned on, which is plain white.
     private var showsFill: Bool {
         !isOpen && entry.state.on == true
-    }
-
-    /// The smaller header of a screen of its own, which leaves its room to the screen. The title slides in and pushes the
-    /// card's glyph out.
-    private var screenHeader: some View {
-        HStack {
-            HStack(spacing: Self.glyphGap) {
-                glyph.opacity(isOpen ? 0 : 1)
-                Text(entry.state.title)
-                    .font(SpotType.title)
-                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
-                    .opacity(showsSmallCard ? 0 : 1)
-            }
-            .offset(x: isOpen ? -(SpotTokens.glyphSize + Self.glyphGap) : 0)
-            Spacer()
-            SpotRoundButton(symbol: "xmark", label: "Close", action: onClose)
-        }
     }
 
     private var emptyText: String {

@@ -74,7 +74,7 @@ final class GuidePluginTests: XCTestCase {
 
         XCTAssertTrue(prompt.contains("GUIDE.md"))
         XCTAssertTrue(prompt.contains(plugins.path))
-        XCTAssertTrue(prompt.contains("--check"))
+        XCTAssertTrue(prompt.contains("check"))
     }
 
     func testTheRowsOpenTheGuideAndTheFolder() async throws {

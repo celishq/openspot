@@ -124,8 +124,13 @@ public struct PluginCommand: Equatable, Sendable {
     }
 
     /// Asks the command for the items of its list, with the search when it searches live.
-    public func items(query: String = "", timeout: TimeInterval) async throws -> PluginOutput {
-        try await output(.items(query: query), timeout: timeout)
+    public func items(query: String = "", input: String? = nil, timeout: TimeInterval) async throws -> PluginOutput {
+        PluginOutput(text: try await text(of: SpotAction.items(query: query).arguments, input: input, timeout: timeout))
+    }
+
+    /// Reports a change in a sheet of parts, with all its values on standard input, and returns what the script prints.
+    public func change(_ action: SpotAction, values: String, timeout: TimeInterval) async throws -> PluginOutput {
+        PluginOutput(text: try await text(of: action.arguments, input: values, timeout: timeout))
     }
 
     /// Asks the command for the form of an action.
@@ -154,7 +159,6 @@ public struct PluginCommand: Equatable, Sendable {
         case .list: return "Open"
         case .slider: return nil
         case .widget: return opens == nil ? nil : "Open"
-        case .view: return "Open"
         }
     }
 

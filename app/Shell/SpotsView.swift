@@ -53,7 +53,9 @@ struct SpotsView: View {
                     list: model.lists[entry.id] ?? ItemList(),
                     rect: sheetRect,
                     form: model.form?.entry.id == entry.id ? model.form?.draft : nil,
-                    screen: entry.kind == .view ? AnyView(SpotTranslateView(model: model)) : nil,
+                    panel: model.panels[entry.id],
+                    onSet: { model.setPart($0, to: $1) },
+                    onPress: { model.pressPart($0) },
                     createTitle: model.createAction.map { "\($0.title): \(model.searchText)" },
                     onCreate: { model.createFromSearch() },
                     onFormValue: { model.setFormValue($0, for: $1) },
@@ -178,7 +180,7 @@ struct SpotsView: View {
 
     private var sheetRect: CGRect {
         if let form = model.form { return SpotTokens.formRect(form.draft.form) }
-        if model.entries.first(where: { $0.id == sheetID })?.kind == .view { return SpotTokens.viewRect }
+        if let panel = model.panels[sheetID ?? ""] { return SpotTokens.panelRect(panel.parts) }
         return SpotTokens.sheetRect(rows: model.lists[sheetID ?? ""]?.shown.count ?? 0)
     }
 
@@ -215,17 +217,16 @@ struct SpotsView: View {
         .clipped()
     }
 
-    /// What the hint says while a sheet shows: a form and a screen have their own keys.
+    /// What the hint says while a sheet shows: a form has its own keys.
     private var sheetWords: String {
         if model.form != nil { return "⌘⏎ Save   Esc Cancel" }
-        if model.entries.first(where: { $0.id == sheetID })?.kind == .view { return SpotTranslateView.hint }
         return sheetHint
     }
 
-    /// Whether the search field is drawn. A form and a screen of its own replace it.
+    /// Whether the search field is drawn. A form and a sheet of parts replace it.
     private var showsSearchField: Bool {
         guard model.form == nil else { return false }
-        return !(sheetOpen && model.entries.first { $0.id == sheetID }?.kind == .view)
+        return !(sheetOpen && model.panels[sheetID ?? ""] != nil)
     }
 
     private var openFrame: CGRect? {

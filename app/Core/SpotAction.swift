@@ -30,6 +30,16 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: ["form", action.id] + (item.map { [$0.run] } ?? []))
     }
 
+    /// A person set the value of a part.
+    public static func set(_ part: String, to value: String) -> SpotAction {
+        SpotAction(arguments: ["set", part, value])
+    }
+
+    /// A person pressed a part.
+    public static func press(_ part: String) -> SpotAction {
+        SpotAction(arguments: ["press", part])
+    }
+
     public static func level(_ value: Double) -> SpotAction {
         SpotAction(arguments: ["level", String(Int(value.rounded()))])
     }

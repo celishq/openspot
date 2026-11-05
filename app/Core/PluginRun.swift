@@ -20,6 +20,12 @@ public struct PluginRun: Sendable {
         self.input = input
     }
 
+    /// The environment of a script, with the `openspot` command of this app on its path.
+    public static func environment(base: [String: String], app: String) -> [String: String] {
+        let helpers = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Helpers").path
+        return base.merging(["PATH": "\(helpers):\(base["PATH"] ?? "")"], uniquingKeysWith: { _, new in new })
+    }
+
     /// Runs the plugin with the arguments, and returns what it prints.
     public func output() async throws -> String {
         try await withThrowingTaskGroup(of: String.self) { group in
@@ -37,10 +43,7 @@ public struct PluginRun: Sendable {
     private func runProcess() async throws -> String {
         let process = Process()
         process.executableURL = url
-        process.environment = ProcessInfo.processInfo.environment.merging(
-            ["OPENSPOT_APP": Bundle.main.executablePath ?? ""],
-            uniquingKeysWith: { _, new in new }
-        )
+        process.environment = Self.environment(base: ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "")
         process.arguments = arguments
         let inputPipe = input.map { _ in Pipe() }
         process.standardInput = inputPipe ?? FileHandle.nullDevice

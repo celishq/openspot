@@ -513,14 +513,12 @@ final class SamplePluginsTests: XCTestCase {
         }
     }
 
-    /// Runs the color picker with a stand-in for the app, which prints this answer to its helper call.
+    /// Runs the color picker with a stand-in for the openspot command, which prints this answer.
     private func pickColor(answer: String, in folder: URL) async throws -> String? {
-        let app = folder.appendingPathComponent("fake-app")
-        try "#!/bin/sh\n[ \"$1\" = --pick-color ] && printf '%s' '\(answer)'\n".write(to: app, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: app.path)
+        try "#!/bin/sh\n[ \"$1 $2\" = 'color pick' ] && printf '%s' '\(answer)'\n".write(to: folder.appendingPathComponent("tools/openspot"), atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: folder.appendingPathComponent("tools/openspot").path)
         let picker = try XCTUnwrap(try scan.commands.first { $0.name == "Color picker" })
-        let output = try await PluginRun(url: URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", "OPENSPOT_APP='\(app.path)' '\(picker.url.path)'"], timeout: 5).output()
-        return PluginOutput(text: output).summary?.value("toast")
+        return try await picker.perform(.run, timeout: 5)
     }
 
     func testTheColorPickerCopiesAPickAndNothingOnACancel() async throws {
@@ -533,6 +531,114 @@ final class SamplePluginsTests: XCTestCase {
             let cancelled = try await self.pickColor(answer: "", in: folder)
             XCTAssertNil(cancelled)
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("clipboard").path))
+        }
+    }
+
+    /// Puts a stand-in for the openspot command on the path. It knows two languages and translates to upper case.
+    private func fakeTranslate(in folder: URL, status: String? = nil) throws -> PluginCommand {
+        let reply = status.map { "printf 'status=\($0)\\nfrom=ru\\nto=en\\n'" } ?? """
+        text=$(cat); case "$text" in *[а-я]*) from=ru ;; *) from=en ;; esac
+        case "$*" in *"--from auto"*) ;; *"--from "*) from=$3 ;; esac
+        printf 'text=%s\\nfrom=%s\\n' "$(printf '%s' "$text" | tr a-z A-Z)" "$from"
+        """
+        let script = """
+        #!/bin/sh
+        if [ "$2" = languages ]; then
+          printf 'preferred=en\\npreferred=ru\\n\\nlanguage=en\\nname=English\\n\\nlanguage=ru\\nname=Russian\\n'
+          exit 0
+        fi
+        \(reply)
+
+        """
+        let tool = folder.appendingPathComponent("tools/openspot")
+        try script.write(to: tool, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: tool.path)
+        return try XCTUnwrap(try scan.commands.first { $0.name == "Translate" })
+    }
+
+    private func text(of id: String, in output: PluginOutput) -> String? {
+        output.parts.first { $0.id == id }?.value
+    }
+
+    func testTranslateIsASheetOfPartsWithItsLanguagesAndNoFaults() async throws {
+        try await withPrivateHome { folder in
+            let translate = try self.fakeTranslate(in: folder)
+
+            let output = try await translate.items(timeout: 5)
+
+            XCTAssertEqual(output.kind, .list)
+            XCTAssertEqual(output.partFaults, [])
+            XCTAssertEqual(output.parts.map(\.id), ["source", "input", "swap", "target", "output"])
+            XCTAssertEqual(self.text(of: "source", in: output), "auto")
+            XCTAssertEqual(self.text(of: "target", in: output), "en")
+        }
+    }
+
+    func testTranslateAnswersTypedTextAndOffersToCopy() async throws {
+        try await withPrivateHome { folder in
+            let translate = try self.fakeTranslate(in: folder)
+
+            let output = try await translate.change(.set("input", to: "hi"), values: "input=hi\nsource=ru\ntarget=en\n", timeout: 5)
+
+            XCTAssertEqual(self.text(of: "output", in: output), "HI")
+            XCTAssertEqual(output.parts.last?.id, "copy")
+            XCTAssertEqual(output.parts.last?.key, ActionKey(name: "return", isCommand: true))
+        }
+    }
+
+    func testTranslateMovesItsTargetWhenTheTextIsAlreadyInIt() async throws {
+        try await withPrivateHome { folder in
+            let translate = try self.fakeTranslate(in: folder)
+
+            let output = try await translate.change(.set("input", to: "hi"), values: "input=hi\nsource=auto\ntarget=en\n", timeout: 5)
+
+            XCTAssertEqual(self.text(of: "target", in: output), "ru")
+        }
+    }
+
+    func testTranslateSwapsTheLanguagesAndTheTexts() async throws {
+        try await withPrivateHome { folder in
+            let translate = try self.fakeTranslate(in: folder)
+
+            let output = try await translate.change(.press("swap"), values: "input=hi\noutput=there\nsource=ru\ntarget=en\n", timeout: 5)
+
+            XCTAssertEqual(self.text(of: "source", in: output), "en")
+            XCTAssertEqual(self.text(of: "target", in: output), "ru")
+            XCTAssertEqual(self.text(of: "input", in: output), "there")
+        }
+    }
+
+    func testTranslateKeepsTheChosenLanguagesForTheNextRead() async throws {
+        try await withPrivateHome { folder in
+            let translate = try self.fakeTranslate(in: folder)
+
+            _ = try await translate.change(.set("target", to: "ru"), values: "source=en\ntarget=ru\n", timeout: 5)
+            let output = try await translate.items(timeout: 5)
+
+            XCTAssertEqual(self.text(of: "source", in: output), "en")
+            XCTAssertEqual(self.text(of: "target", in: output), "ru")
+        }
+    }
+
+    func testTranslateLinksToSettingsWhenALanguageIsMissing() async throws {
+        try await withPrivateHome { folder in
+            let translate = try self.fakeTranslate(in: folder, status: "missing")
+
+            let output = try await translate.change(.set("input", to: "привет"), values: "input=привет\nsource=auto\ntarget=en\n", timeout: 5)
+
+            XCTAssertEqual(self.text(of: "output", in: output), "Russian to English is not installed")
+            XCTAssertEqual(output.parts.last?.id, "settings")
+        }
+    }
+
+    func testTranslateCopiesItsOutput() async throws {
+        try await withPrivateHome { folder in
+            let translate = try self.fakeTranslate(in: folder)
+
+            let output = try await translate.change(.press("copy"), values: "input=hi\noutput=one\\ntwo\n", timeout: 5)
+
+            XCTAssertEqual(output.summary?.value("toast"), "Copied")
+            XCTAssertEqual(try self.read("clipboard", in: folder), "one\ntwo")
         }
     }
 
