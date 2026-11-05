@@ -59,7 +59,7 @@ struct SpotTranslateView: View {
                     .frame(height: 1)
                 outputPane
             }
-            .background(SpotTokens.fieldFill, in: shape)
+            .background(Color.white.opacity(SpotTokens.fill), in: shape)
             .overlay(alignment: .trailing) { swapButton }
             SpotHint(text: Self.hint)
         }
@@ -83,7 +83,6 @@ struct SpotTranslateView: View {
                 .foregroundStyle(.white)
                 .frame(width: Self.swapSize, height: Self.swapSize)
                 .background(Color(white: Self.swapFill), in: Circle())
-                .overlay(Circle().stroke(SpotTokens.fieldFill, lineWidth: 3))
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)

@@ -50,7 +50,7 @@ struct SpotFormView: View {
             .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
             .padding(.horizontal, SpotTokens.padding)
             .frame(height: SpotTokens.listRowHeight)
-            .background(SpotTokens.fieldFill, in: shape)
+            .background(Color.white.opacity(SpotTokens.fill), in: shape)
         case .multiline:
             TextEditor(text: value(of: field))
                 .scrollContentBackground(.hidden)
@@ -64,7 +64,7 @@ struct SpotFormView: View {
                 .padding(.horizontal, SpotTokens.padding - 5)
                 .padding(.vertical, SpotTokens.padding - 5)
                 .frame(height: SpotTokens.formTextHeight)
-                .background(SpotTokens.fieldFill, in: shape)
+                .background(Color.white.opacity(SpotTokens.fill), in: shape)
         }
     }
 

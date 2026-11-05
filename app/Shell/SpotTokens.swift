@@ -37,8 +37,6 @@ enum SpotTokens {
     static let secondaryLight = 0.7
     static let fill = 0.1
     static let selectedFill = 0.22
-    /// The grey under typed text. It is opaque, so that no blur shows through where a text change redraws the window.
-    static let fieldFill = Color(white: 0.24)
     static let track = 0.2
     static let cardBlur: CGFloat = 16
     static let panelWidth: CGFloat = gridWidth + 2 * halo

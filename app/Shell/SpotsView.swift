@@ -97,6 +97,11 @@ struct SpotsView: View {
         }
         .coordinateSpace(name: Self.panelSpace)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
+        .overlay {
+            SpotWholeRedraw(isActive: model.isShown)
+                .padding(Self.blurSteps[0].inset)
+                .allowsHitTesting(false)
+        }
         .background(softBlur)
         .environment(\.spotIsShown, model.isShown)
         .preferredColorScheme(.dark)
@@ -316,7 +321,7 @@ struct SpotsView: View {
         .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
         .padding(.horizontal, SpotTokens.padding)
         .frame(height: sheetOpen ? SpotTokens.listRowHeight : SpotTokens.rowHeight)
-        .background(SpotTokens.fieldFill.opacity(sheetOpen ? 1 : 0), in: RoundedRectangle(cornerRadius: fieldRadius, style: .continuous))
+        .background(Color.white.opacity(sheetOpen ? SpotTokens.fill : 0), in: RoundedRectangle(cornerRadius: fieldRadius, style: .continuous))
         .modifier(SpotGlass(radius: fieldRadius, isBare: sheetOpen))
     }
 
