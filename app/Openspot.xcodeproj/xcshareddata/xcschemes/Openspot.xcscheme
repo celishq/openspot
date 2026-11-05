@@ -92,6 +92,11 @@
       </CommandLineArguments>
       <EnvironmentVariables>
          <EnvironmentVariable
+            key = "OPENSPOT_CONFIG"
+            value = "$(SRCROOT)/../.temp/config"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
             key = "OPENSPOT_PLUGINS"
             value = "$(SRCROOT)/../plugins"
             isEnabled = "YES">
