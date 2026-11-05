@@ -14,8 +14,8 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Files", "Links", "Overview", "Screenshot", "Pull requests", "Snippets", "Plugins"])
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "f", "l", nil, "v", "g", "n", "p"])
+        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Color picker", "Files", "Links", "Overview", "Screenshot", "Pull requests", "Snippets", "Plugins"])
+        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "o", "f", "l", nil, "v", "g", "n", "p"])
     }
 
     func testNoMetricShowsTwiceInTheGrid() throws {
@@ -508,6 +508,29 @@ final class SamplePluginsTests: XCTestCase {
             try await links.perform(.action(try await self.action("reveal", of: links), item: downloads), timeout: 5)
 
             XCTAssertEqual(try self.read("opened", in: folder), "-R\n")
+        }
+    }
+
+    /// Runs the color picker with a stand-in for the app, which prints this answer to its helper call.
+    private func pickColor(answer: String, in folder: URL) async throws -> String? {
+        let app = folder.appendingPathComponent("fake-app")
+        try "#!/bin/sh\n[ \"$1\" = --pick-color ] && printf '%s' '\(answer)'\n".write(to: app, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: app.path)
+        let picker = try XCTUnwrap(try scan.commands.first { $0.name == "Color picker" })
+        let output = try await PluginRun(url: URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", "OPENSPOT_APP='\(app.path)' '\(picker.url.path)'"], timeout: 5).output()
+        return PluginOutput(text: output).summary?.value("toast")
+    }
+
+    func testTheColorPickerCopiesAPickAndNothingOnACancel() async throws {
+        try await withPrivateHome { folder in
+            let picked = try await self.pickColor(answer: "#0080FF", in: folder)
+            XCTAssertEqual(picked, "Copied #0080FF")
+            XCTAssertEqual(try self.read("clipboard", in: folder), "#0080FF")
+
+            try FileManager.default.removeItem(at: folder.appendingPathComponent("clipboard"))
+            let cancelled = try await self.pickColor(answer: "", in: folder)
+            XCTAssertNil(cancelled)
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("clipboard").path))
         }
     }
 

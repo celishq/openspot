@@ -1,6 +1,7 @@
 #!/bin/sh
 # symbol=cup.and.saucer.fill
 # key=c
+# size=small
 # read=open
 # recents=false
 record="${TMPDIR:-/tmp}/openspot-caffeinate"
