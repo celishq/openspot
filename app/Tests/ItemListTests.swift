@@ -23,6 +23,33 @@ final class ItemListTests: XCTestCase {
         XCTAssertEqual(list.selected, 0)
     }
 
+    func testTheSameTextKeepsTheSelection() {
+        var list = ItemList(items: items("Notes", "Numbers"))
+        list.search("n")
+        list.move(by: 1)
+
+        XCTAssertFalse(list.search("n"))
+
+        XCTAssertEqual(list.selectedItem?.title, "Numbers")
+    }
+
+    func testNewTextReportsTheChange() {
+        var list = ItemList(items: items("Notes"))
+
+        XCTAssertTrue(list.search("n"))
+    }
+
+    func testResetClearsTheSearchAndTheSelection() {
+        var list = ItemList(items: items("Notes", "Numbers"))
+        list.search("n")
+        list.move(by: 1)
+
+        list.reset()
+
+        XCTAssertEqual(list.query, "")
+        XCTAssertEqual(list.selected, 0)
+    }
+
     func testMovingStopsAtEachEnd() {
         var list = ItemList(items: items("A", "B"))
 

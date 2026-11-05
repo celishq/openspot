@@ -292,8 +292,9 @@ final class SpotsModel {
         get { openItems?.query ?? query }
         set {
             if let entry = openEntry {
-                lists[entry.id]?.search(newValue)
-                if entry.command.search == .live { askLive(entry.command) }
+                if lists[entry.id]?.search(newValue) == true, entry.command.search == .live {
+                    askLive(entry.command)
+                }
             } else {
                 query = newValue
             }
@@ -314,7 +315,7 @@ final class SpotsModel {
 
     private func open(_ id: String) {
         openList = id
-        lists[id]?.search("")
+        lists[id]?.reset()
         guard let command = openEntry?.command else { return }
         if command.search == .live {
             askLive(command)

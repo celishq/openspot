@@ -28,7 +28,19 @@ public struct ItemList: Equatable, Sendable {
         SearchQuery(text: text).matching(all, recent: recent)
     }
 
-    public mutating func search(_ text: String) {
+    /// Searches for new text, and selects the first row. Returns false when the text is the same, and changes nothing.
+    @discardableResult
+    public mutating func search(_ text: String) -> Bool {
+        guard text != query else { return false }
+        begin(text)
+        return true
+    }
+
+    public mutating func reset() {
+        begin("")
+    }
+
+    private mutating func begin(_ text: String) {
         query = text
         selected = 0
         isWaiting = search == .live
