@@ -40,10 +40,11 @@ struct SpotFormView: View {
                 TextField(
                     field.label,
                     text: value(of: field),
-                    prompt: Text(field.placeholder ?? field.label).foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
+                    prompt: Text("")
                 )
                 .labelsHidden()
                 .textFieldStyle(.plain)
+                .modifier(SpotFieldPrompt(text: field.placeholder ?? field.label, isShown: (draft.values[field.name] ?? "").isEmpty))
                 .focused($focus, equals: field.name)
             }
             .font(SpotType.body)

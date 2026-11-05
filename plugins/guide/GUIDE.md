@@ -139,7 +139,7 @@ echo '{"title":"3","detail":"Last at 14:20","symbol":"cup.and.saucer.fill"}'
 open, so a metric costs nothing when the panel is closed. When a read fails, the last value stays and dims.
 
 `label` says what the metric measures, and each place shows it. The default is the plugin's name. `tint` is optional:
-it colours the label and the mark, so a person finds the metric by colour. Use red, orange, yellow, green, mint, teal,
+it colours the mark, so a person finds the metric by colour. Use red, orange, yellow, green, mint, teal,
 cyan, blue, indigo, purple or pink. A `tone` takes over the colour of the mark.
 
 Each metric prints `title`, its value, and can print `detail`, `symbol` and `tone`. Do not repeat the label in them.
