@@ -28,7 +28,7 @@ struct SpotTranslateView: View {
 
     private static let settings = URL(string: "x-apple.systempreferences:com.apple.Localization-Settings.extension")
     private static let pause: Duration = .milliseconds(300)
-    private static let hint = "⌘⏎ Copy   ⌘⇧S Swap   Esc Close"
+    static let hint = "⌘⏎ Copy   ⌘⇧S Swap   Esc Close"
     private static let disabledOpacity = 0.5
     private static let editorInset: CGFloat = 5
 
@@ -61,7 +61,6 @@ struct SpotTranslateView: View {
             }
             .background(Color.white.opacity(SpotTokens.fill), in: shape)
             .overlay(alignment: .trailing) { swapButton }
-            SpotHint(text: Self.hint)
         }
         .task { await loadLanguages() }
         .task(id: request) { await translate() }

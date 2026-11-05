@@ -29,33 +29,29 @@ struct SpotsView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            ZStack(alignment: .topLeading) {
-                ScrollView(showsIndicators: false) {
-                    grid
-                        .padding(.horizontal, SpotTokens.halo)
-                        .padding(.top, Self.gridTop)
-                        .padding(.bottom, Self.gridBottom)
-                }
-                .scrollPosition($scroll)
-                .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in
-                    scrollOffset = offset
-                })
-                .modifier(SpotScrollEdgeTracker(edges: $edges))
-                .mask(edges.gradient)
-                SpotHint(text: gridHint)
-                    .frame(width: SpotTokens.gridWidth)
-                    .offset(x: SpotTokens.halo, y: contentHeight - SpotTokens.halo - SpotTokens.hintHeight)
-                    .opacity(model.isShown && !sheetOpen ? 1 : 0)
-                    .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
+            ScrollView(showsIndicators: false) {
+                grid
+                    .padding(.horizontal, SpotTokens.halo)
+                    .padding(.top, Self.gridTop)
+                    .padding(.bottom, Self.gridBottom)
             }
-            .mask(softEdge(inset: Self.scrollEdgeInset, softness: Self.scrollEdgeSoftness, height: backdropHeight))
+            .scrollPosition($scroll)
+            .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in
+                scrollOffset = offset
+            })
+            .modifier(SpotScrollEdgeTracker(edges: $edges))
+            .mask(edges.gradient)
+            .mask(softEdge(inset: Self.scrollEdgeInset, softness: Self.scrollEdgeSoftness, height: backdropHeight - SpotTokens.hintBlock))
+            hintLine
+                .offset(x: SpotTokens.halo, y: contentHeight - SpotTokens.halo - SpotTokens.hintHeight)
+                .opacity(model.isShown ? 1 : 0)
+                .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
                 SpotSheetView(
                     entry: entry,
                     isOpen: sheetOpen,
                     list: model.lists[entry.id] ?? ItemList(),
                     rect: sheetRect,
-                    hint: sheetHint,
                     form: model.form?.entry.id == entry.id ? model.form?.draft : nil,
                     screen: entry.kind == .view ? AnyView(SpotTranslateView(model: model)) : nil,
                     createTitle: model.createAction.map { "\($0.title): \(model.searchText)" },
@@ -186,7 +182,7 @@ struct SpotsView: View {
     }
 
     private var contentHeight: CGFloat {
-        guard !sheetOpen else { return sheetRect.height + 2 * SpotTokens.halo }
+        guard !sheetOpen else { return sheetRect.height + 2 * SpotTokens.halo + SpotTokens.hintBlock }
         return SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0)
     }
 
@@ -202,6 +198,27 @@ struct SpotsView: View {
 
     private func cardIsSelected(_ entry: SpotsModel.Entry) -> Bool {
         model.placements.first { model.visible[$0.index].id == entry.id }?.index == model.selected
+    }
+
+    /// The one hint under the content. Its words roll out of the line as the sheet's or the grid's roll in.
+    private var hintLine: some View {
+        ZStack {
+            SpotHint(text: gridHint)
+                .opacity(sheetOpen ? 0 : 1)
+                .offset(y: sheetOpen ? -Self.wordRoll : 0)
+            SpotHint(text: sheetWords)
+                .opacity(sheetOpen ? 1 : 0)
+                .offset(y: sheetOpen ? 0 : Self.wordRoll)
+        }
+        .frame(width: SpotTokens.gridWidth, height: SpotTokens.hintHeight)
+        .clipped()
+    }
+
+    /// What the hint says while a sheet shows: a form and a screen have their own keys.
+    private var sheetWords: String {
+        if model.form != nil { return "⌘⏎ Save   Esc Cancel" }
+        if model.entries.first(where: { $0.id == sheetID })?.kind == .view { return SpotTranslateView.hint }
+        return sheetHint
     }
 
     /// Whether the search field is drawn. A form and a screen of its own replace it.

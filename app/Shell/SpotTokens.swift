@@ -41,7 +41,7 @@ enum SpotTokens {
     static let cardBlur: CGFloat = 16
     static let panelWidth: CGFloat = gridWidth + 2 * halo
     static let panelHeight: CGFloat = 2 * halo + 7 * rowHeight + 6 * rowGap + hintBlock
-    static let sheetMaxHeight: CGFloat = panelHeight - 2 * halo
+    static let sheetMaxHeight: CGFloat = panelHeight - 2 * halo - hintBlock
 
     /// How far the search field moves down to sit under the title of an open sheet.
     static let sheetFieldDrop: CGFloat = padding + glyphSize + rowGap
@@ -78,7 +78,7 @@ enum SpotTokens {
     /// The frame of a sheet with these rows. An empty sheet keeps room for one row, and a long one stops at the panel.
     static func sheetRect(rows: Int) -> CGRect {
         let count = CGFloat(max(rows, 1))
-        let height = sheetRowsTop + count * listRowHeight + (count - 1) * listRowGap + hintBlock + padding
+        let height = sheetRowsTop + count * listRowHeight + (count - 1) * listRowGap + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 
@@ -96,7 +96,7 @@ enum SpotTokens {
             sum + formLabelHeight + formLabelGap + (field.type == .multiline ? formTextHeight : listRowHeight)
         }
         let gaps = CGFloat(max(form.fields.count - 1, 0)) * formFieldGap
-        let height = padding + glyphSize + rowGap + fields + gaps + hintBlock + padding
+        let height = padding + glyphSize + rowGap + fields + gaps + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 

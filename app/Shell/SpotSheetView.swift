@@ -6,7 +6,6 @@ struct SpotSheetView: View {
     let isOpen: Bool
     let list: ItemList
     let rect: CGRect
-    let hint: String
     let form: FormDraft?
     let screen: AnyView?
     let createTitle: String?
@@ -34,7 +33,6 @@ struct SpotSheetView: View {
                 screen
             } else if let form {
                 SpotFormView(draft: form, onValue: onFormValue)
-                SpotHint(text: "⌘⏎ Save   Esc Cancel")
             } else {
                 Color.clear.frame(height: SpotTokens.listRowHeight)
                 if let createTitle {
@@ -50,7 +48,6 @@ struct SpotSheetView: View {
                 } else {
                     rows
                 }
-                SpotHint(text: hint)
             }
         }
         .padding(SpotTokens.padding)

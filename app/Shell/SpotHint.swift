@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The keys that work now, as a quiet line at the bottom of the panel or a sheet.
+/// The keys that work now, as a quiet line under the content of the panel.
 struct SpotHint: View {
     let text: String
 
