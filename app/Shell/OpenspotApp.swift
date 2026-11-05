@@ -54,6 +54,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         model.show = { [weak self] in
             if self?.model.isShown == false { self?.showPanel() }
         }
+        model.regainKeys = { [weak self] in self?.panel?.makeKeyAndOrderFront(nil) }
         let toast = ToastPanel.make()
         model.notify = { toast.show($0, symbol: ToastPanel.failureSymbol) }
         model.confirm = { toast.show($0, symbol: ToastPanel.confirmSymbol) }

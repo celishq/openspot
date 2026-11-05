@@ -83,6 +83,7 @@ final class SpotsModel {
     var show: () -> Void = {}
     var notify: (String) -> Void = { _ in }
     var confirm: (String) -> Void = { _ in }
+    var regainKeys: () -> Void = {}
     private var problems: [String] = []
     private var liveAnswer: Task<Void, Never>?
     private(set) var menu: ActionMenu?
@@ -103,7 +104,11 @@ final class SpotsModel {
             UserDefaults.standard.set(translation.target, forKey: Self.targetKey)
         }
     }
-    var isDownloadingLanguage = false
+    var isDownloadingLanguage = false {
+        didSet {
+            if oldValue, !isDownloadingLanguage { regainKeys() }
+        }
+    }
 
     /// Reads the plugin folder again, and asks each plugin for its state.
     func reload() async {
@@ -539,6 +544,11 @@ final class SpotsModel {
             return true
         }
         if openEntry?.kind == .view { return handleScreenKey(key) }
+        if key == ActionKey(name: "escape") {
+            allowSheetMotion()
+            if !stepBack() { dismiss() }
+            return true
+        }
         guard let target else { return false }
         if key == ActionKey(name: "k", isCommand: true) {
             openMenu(on: target)

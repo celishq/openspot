@@ -88,7 +88,7 @@ final class SpotsPanel: NSPanel {
         panel.level = .floating
         panel.isReleasedWhenClosed = false
         panel.isMovableByWindowBackground = false
-        panel.contentView = NSHostingView(rootView: SpotsView(model: model, close: { panel.hide() }))
+        panel.contentView = NSHostingView(rootView: SpotsView(model: model))
         panel.center()
         return panel
     }

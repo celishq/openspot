@@ -3,7 +3,6 @@ import OpenspotCore
 
 struct SpotsView: View {
     let model: SpotsModel
-    let close: () -> Void
     @FocusState private var searchFocused: Bool
     @State private var edges = SpotScrollEdges()
     @State private var scroll = ScrollPosition()
@@ -97,8 +96,8 @@ struct SpotsView: View {
         .onChange(of: model.selected) {
             showSelected()
         }
-        .onChange(of: model.form == nil) { _, isList in
-            searchFocused = isList
+        .onChange(of: model.showsSearch) { _, shows in
+            searchFocused = shows
         }
         .onChange(of: model.openList) { _, list in
             guard model.sheetMoves else {
@@ -274,11 +273,6 @@ struct SpotsView: View {
                     } else {
                         model.moveSelection(dx: 1, dy: 0)
                     }
-                    return .handled
-                }
-                .onKeyPress(.escape) {
-                    model.allowSheetMotion()
-                    if !model.stepBack() { close() }
                     return .handled
                 }
                 .onKeyPress(keys: [.return]) { press in
