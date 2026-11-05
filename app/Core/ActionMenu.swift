@@ -11,14 +11,20 @@ public struct ActionMenu: Equatable, Sendable {
     public private(set) var confirming: String?
 
     /// Lists what Enter does, then the actions that fit. Returns nil when there is nothing to list.
-    public init?(command: PluginCommand, item: SpotItem?) {
+    public init?(command: PluginCommand, item: SpotItem?, showsPrimary: Bool = true) {
         var rows: [Row] = []
-        if let title = command.primaryTitle(hasItem: item != nil) {
+        if showsPrimary, let title = command.primaryTitle(hasItem: item != nil) {
             rows.append(Row(title: title, keyLabel: "⏎", action: nil))
         }
         rows += command.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
         guard !rows.isEmpty else { return nil }
         self.rows = rows
+    }
+
+    /// The first keys and the key of this menu, in words for a footer.
+    public var hint: String {
+        let keys = rows.filter { !$0.keyLabel.isEmpty }.prefix(2).map { "\($0.keyLabel) \($0.title)" }
+        return (keys + ["⌘K Actions"]).joined(separator: "   ")
     }
 
     public mutating func move(by step: Int) {

@@ -1,0 +1,40 @@
+name = "Quicklinks"
+api = 1
+
+[[commands]]
+name = "Quicklinks"
+exec = "quicklinks.sh"
+type = "list"
+global = true
+symbol = "link"
+subtitle = "Open a link"
+key = "l"
+
+[[actions]]
+command = "Quicklinks"
+id = "copy"
+title = "Copy link"
+key = "cmd+return"
+after = "close"
+
+[[actions]]
+command = "Quicklinks"
+id = "edit"
+title = "Edit"
+key = "cmd+e"
+form = true
+
+[[actions]]
+command = "Quicklinks"
+id = "delete"
+title = "Delete"
+key = "cmd+backspace"
+confirm = "Press again to delete"
+
+[[actions]]
+command = "Quicklinks"
+id = "new"
+title = "New quicklink"
+key = "cmd+n"
+scope = "command"
+form = true

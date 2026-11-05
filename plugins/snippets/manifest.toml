@@ -1,0 +1,41 @@
+name = "Snippets"
+api = 1
+
+[[commands]]
+name = "Snippets"
+exec = "snippets.sh"
+type = "list"
+global = true
+primary = "Copy"
+symbol = "text.quote"
+subtitle = "Copy text"
+key = "n"
+
+[[actions]]
+command = "Snippets"
+id = "paste"
+title = "Paste"
+key = "cmd+return"
+after = "close"
+
+[[actions]]
+command = "Snippets"
+id = "edit"
+title = "Edit"
+key = "cmd+e"
+form = true
+
+[[actions]]
+command = "Snippets"
+id = "delete"
+title = "Delete"
+key = "cmd+backspace"
+confirm = "Press again to delete"
+
+[[actions]]
+command = "Snippets"
+id = "new"
+title = "New snippet"
+key = "cmd+n"
+scope = "command"
+form = true

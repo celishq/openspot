@@ -16,6 +16,12 @@ case "$1" in
             printf "{\"title\":\"%s\",\"subtitle\":\"%s\",\"run\":\"%s\",\"file\":\"%s\"}\n", $NF, folder, $0, $0
           }'
     ;;
+  reveal)
+    open -R "$2"
+    ;;
+  copy)
+    printf '%s' "$2" | LC_ALL=en_US.UTF-8 pbcopy
+    ;;
   *)
     open "$1"
     ;;

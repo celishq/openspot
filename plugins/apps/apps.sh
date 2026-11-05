@@ -9,6 +9,9 @@ case "$1" in
       | sort -f -u \
       | awk -F'\t' '{ printf "{\"title\":\"%s\",\"run\":\"%s\",\"file\":\"%s\"}\n", $1, $2, $2 }'
     ;;
+  reveal)
+    open -R "$2"
+    ;;
   *)
     open "$1"
     ;;

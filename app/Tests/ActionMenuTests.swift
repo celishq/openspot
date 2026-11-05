@@ -24,6 +24,19 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(menu.rows.map(\.title), ["Open", "New"])
     }
 
+    func testAnOpenListWithNoSelectedItemLeavesOutOpen() throws {
+        let menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, showsPrimary: false))
+
+        XCTAssertEqual(menu.rows.map(\.title), ["New"])
+    }
+
+    func testTheHintNamesTheFirstKeysAndTheMenu() throws {
+        let keyed = PluginCommand(id: "a/A", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list, primary: "Copy", actions: [paste, delete, new])
+
+        XCTAssertEqual(ActionMenu(command: keyed, item: item)?.hint, "⏎ Copy   ⌘⏎ Paste   ⌘K Actions")
+        XCTAssertEqual(ActionMenu(command: keyed, item: nil, showsPrimary: false)?.hint, "⌘K Actions")
+    }
+
     func testEachKindOfSpotSaysWhatEnterDoes() {
         XCTAssertEqual(command(kind: .launch).primaryTitle(hasItem: false), "Run")
         XCTAssertEqual(command(kind: .toggle).primaryTitle(hasItem: false), "Toggle")

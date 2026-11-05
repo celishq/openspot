@@ -1,4 +1,6 @@
 import AppKit
+import Carbon.HIToolbox
+import OpenspotCore
 import SwiftUI
 
 final class SpotsPanel: NSPanel {
@@ -17,11 +19,33 @@ final class SpotsPanel: NSPanel {
 
     /// Starts the close motion, and takes the panel off the screen when it ends.
     func hide() {
+        model?.closeMenu()
         model?.isShown = false
         DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeOutDuration) {
             guard self.model?.isShown == false else { return }
             self.orderOut(nil)
             self.model?.finishPick()
+        }
+    }
+
+    /// Gives each key to the actions first, so that they work whichever field has the focus.
+    override func sendEvent(_ event: NSEvent) {
+        if event.type == .keyDown, let key = Self.actionKey(of: event), model?.handleKey(key) == true { return }
+        super.sendEvent(event)
+    }
+
+    private static func actionKey(of event: NSEvent) -> ActionKey? {
+        let name: String?
+        switch Int(event.keyCode) {
+        case kVK_Return, kVK_ANSI_KeypadEnter: name = "return"
+        case kVK_Delete: name = "backspace"
+        case kVK_Escape: name = "escape"
+        case kVK_UpArrow: name = "up"
+        case kVK_DownArrow: name = "down"
+        default: name = event.charactersIgnoringModifiers?.lowercased()
+        }
+        return name.map {
+            ActionKey(name: $0, isCommand: event.modifierFlags.contains(.command), isShift: event.modifierFlags.contains(.shift))
         }
     }
 

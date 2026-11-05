@@ -4,15 +4,17 @@ import OpenspotCore
 struct SpotSheetView: View {
     let entry: SpotsModel.Entry
     let list: ItemList
+    let rect: CGRect
+    let hint: String?
+    let form: FormDraft?
+    let createTitle: String?
+    let onCreate: () -> Void
+    let onFormValue: (String, String) -> Void
     let onRun: (SpotItem) -> Void
     let onClose: () -> Void
     @State private var edges = SpotScrollEdges()
 
     private static let bottomFade = 2 * SpotTokens.padding
-
-    private var rect: CGRect {
-        SpotTokens.sheetRect(rows: list.shown.count)
-    }
 
     private var row: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
@@ -27,10 +29,10 @@ struct SpotSheetView: View {
                     .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
                     .background(Color.white.opacity(0.2), in: Circle())
                 VStack(alignment: .leading, spacing: SpotType.lineGap) {
-                    Text(entry.state.title)
+                    Text(form?.form.title ?? entry.state.title)
                         .font(SpotType.title)
                         .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
-                    if let subtitle = entry.state.subtitle {
+                    if form == nil, let subtitle = entry.state.subtitle {
                         Text(subtitle)
                             .font(SpotType.detail)
                             .modifier(SpotSecondaryText())
@@ -47,14 +49,25 @@ struct SpotSheetView: View {
                 }
                 .buttonStyle(.plain)
             }
-            Color.clear.frame(height: SpotTokens.listRowHeight)
-            if list.shown.isEmpty {
-                Text(emptyText)
-                    .font(SpotType.body)
-                    .modifier(SpotSecondaryText())
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            if let form {
+                SpotFormView(draft: form, onValue: onFormValue)
+                hintText("⌘⏎ Save   Esc Cancel")
             } else {
-                rows
+                Color.clear.frame(height: SpotTokens.listRowHeight)
+                if let createTitle {
+                    Button(action: onCreate) {
+                        createLabel(createTitle)
+                    }
+                    .buttonStyle(.plain)
+                } else if list.shown.isEmpty {
+                    Text(emptyText)
+                        .font(SpotType.body)
+                        .modifier(SpotSecondaryText())
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    rows
+                }
+                if let hint { hintText(hint) }
             }
         }
         .padding(SpotTokens.padding)
@@ -63,7 +76,28 @@ struct SpotSheetView: View {
 
     private var emptyText: String {
         if list.isWaiting { return "Searching" }
-        return list.search == .live && list.query.isEmpty ? "Type to search" : "No results"
+        if list.search == .live && list.query.isEmpty { return "Type to search" }
+        return list.query.isEmpty ? "Nothing here yet" : "No results"
+    }
+
+    private func hintText(_ text: String) -> some View {
+        Text(text)
+            .font(SpotType.detail)
+            .modifier(SpotSecondaryText())
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, minHeight: SpotTokens.hintHeight, maxHeight: SpotTokens.hintHeight, alignment: .center)
+    }
+
+    private func createLabel(_ title: String) -> some View {
+        Text(title)
+            .font(SpotType.body)
+            .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, SpotTokens.padding)
+            .frame(height: SpotTokens.listRowHeight)
+            .background(Color.white.opacity(0.3), in: row)
+            .contentShape(row)
     }
 
     private var rows: some View {
@@ -81,7 +115,7 @@ struct SpotSheetView: View {
                 }
             }
             .safeAreaPadding(.top, SpotTokens.padding)
-            .safeAreaPadding(.bottom, SpotTokens.sheetFits(rows: list.shown.count) ? SpotTokens.padding : Self.bottomFade)
+            .safeAreaPadding(.bottom, SpotTokens.sheetFits(rows: list.shown.count, hasHint: hint != nil) ? SpotTokens.padding : Self.bottomFade)
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask(edgeFade)
             .padding(.vertical, -SpotTokens.padding)

@@ -9,3 +9,10 @@ symbol = "square.grid.2x2"
 subtitle = "Open app"
 key = "a"
 global = true
+
+[[actions]]
+command = "Apps"
+id = "reveal"
+title = "Show in Finder"
+key = "cmd+return"
+after = "close"

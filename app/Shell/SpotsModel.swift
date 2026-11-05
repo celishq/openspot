@@ -35,6 +35,17 @@ final class SpotsModel {
         }
     }
 
+    /// A form open in a sheet, with the action that asked for it. Its text stays when the panel closes.
+    struct FormSession {
+        var draft: FormDraft
+        let entry: Entry
+        let action: CommandAction
+        let item: SpotItem?
+        let openedSheet: Bool
+    }
+
+    private typealias Target = (entry: Entry, item: SpotItem?)
+
     private static let stateTimeout: TimeInterval = 2
     private static let actionTimeout: TimeInterval = 30
     private static let itemsTimeout: TimeInterval = 10
@@ -66,6 +77,9 @@ final class SpotsModel {
     var notify: (String) -> Void = { _ in }
     private var problems: [String] = []
     private var liveAnswer: Task<Void, Never>?
+    private(set) var menu: ActionMenu?
+    private var menuTarget: Target?
+    private(set) var form: FormSession?
 
     /// Reads the plugin folder again, and asks each plugin for its state.
     func reload() async {
@@ -73,7 +87,7 @@ final class SpotsModel {
         let scan = (try? folder.scan()) ?? ScanResult(plugins: [], refused: [])
         var entries: [Entry] = []
         var problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
-        scan.commands.filter { $0.kind == .list }.forEach(loadItems)
+        scan.commands.filter { $0.kind == .list }.forEach { loadItems(of: $0) }
         if scan.commands.isEmpty {
             problems.append("No plugins in \(folder.url.path)")
         }
@@ -93,7 +107,8 @@ final class SpotsModel {
     }
 
     /// Asks a list command for its items, and shows them when they arrive.
-    private func loadItems(of command: PluginCommand) {
+    private func loadItems(of command: PluginCommand, selecting run: String? = nil) {
+        guard command.kind == .list else { return }
         if lists[command.id] == nil {
             lists[command.id] = ItemList(recent: UserDefaults.standard.stringArray(forKey: Self.recentKey(command.id)) ?? [], search: command.search)
         }
@@ -102,6 +117,7 @@ final class SpotsModel {
             do {
                 let lines = try await command.items(timeout: Self.itemsTimeout)
                 lists[command.id]?.replace(lines.items)
+                if let run { lists[command.id]?.select(run: run) }
                 await SpotIconStore.shared.prepare(lines.items)
                 if !lines.errors.isEmpty {
                     notify("\(command.name) sent \(lines.errors.count) items Openspot cannot read.")
@@ -141,14 +157,14 @@ final class SpotsModel {
     }
 
     /// Runs an action on a spot, and shows the state the plugin then reports.
-    private func perform(_ action: SpotAction, on entry: Entry) {
+    private func perform(_ action: SpotAction, on entry: Entry, reloads: Bool = false) {
         Task {
             do {
                 try await entry.command.perform(action, timeout: Self.actionTimeout)
             } catch {
                 notify("\(entry.state.title) failed. \(Self.reason(error))")
             }
-            if entry.kind == .list, entry.command.pick == .stay { loadItems(of: entry.command) }
+            if reloads || entry.command.pick == .stay { loadItems(of: entry.command) }
             guard entry.kind != .slider, closingPick == nil,
                   let state = try? await entry.command.state(timeout: Self.stateTimeout),
                   let index = entries.firstIndex(where: { $0.id == entry.id }) else { return }
@@ -344,8 +360,22 @@ final class SpotsModel {
     }
 
     func runSelectedItem() {
-        guard let item = openItems?.selectedItem else { return }
+        guard let item = openItems?.selectedItem else {
+            createFromSearch()
+            return
+        }
         runItem(item)
+    }
+
+    /// The action that makes a new item from what the search did not find.
+    var createAction: CommandAction? {
+        guard let list = openItems, !list.query.isEmpty, list.shown.isEmpty, list.search == .local else { return nil }
+        return openEntry?.command.actions.first { $0.scope == .command && $0.isForm }
+    }
+
+    func createFromSearch() {
+        guard let action = createAction, let entry = openEntry else { return }
+        openForm(action, on: (entry, nil), prefill: openItems?.query ?? "")
     }
 
     func runItem(_ item: SpotItem) {
@@ -366,8 +396,8 @@ final class SpotsModel {
         query = ""
     }
 
-    private func pick(_ item: SpotItem, of entry: Entry) {
-        if entry.command.pick == .close {
+    private func pick(_ item: SpotItem, of entry: Entry, action: SpotAction? = nil) {
+        if action != nil || entry.command.pick == .close {
             closingPick = (item, entry)
             if isShown {
                 dismiss()
@@ -375,6 +405,154 @@ final class SpotsModel {
                 finishPick()
             }
         }
-        perform(.item(item), on: entry)
+        perform(action ?? .item(item), on: entry)
+    }
+
+    /// What the actions menu and the action keys work on: the selected row, or else the selected card.
+    private var target: Target? {
+        if let entry = openEntry { return (entry, openItems?.selectedItem) }
+        guard let entry = selectedEntry else { return nil }
+        if let item = entry.item, let list = entries.first(where: { $0.id == entry.command.id }) { return (list, item) }
+        return (entry, nil)
+    }
+
+    /// Takes a key before the focused field does. Returns false when the key is not for an action, a menu or a form.
+    func handleKey(_ key: ActionKey) -> Bool {
+        if menu != nil {
+            handleMenuKey(key)
+            return true
+        }
+        if form != nil {
+            switch key {
+            case ActionKey(name: "return", isCommand: true): submitForm()
+            case ActionKey(name: "escape"): cancelForm()
+            default: return false
+            }
+            return true
+        }
+        guard let target else { return false }
+        if key == ActionKey(name: "k", isCommand: true) {
+            openMenu(on: target)
+            return menu != nil
+        }
+        guard let action = target.entry.command.actions(for: target.item).first(where: { $0.key == key }) else { return false }
+        if action.confirm != nil {
+            openMenu(on: target)
+            menu?.select(action)
+            pressMenu()
+        } else {
+            run(action, on: target)
+        }
+        return true
+    }
+
+    private func handleMenuKey(_ key: ActionKey) {
+        switch key {
+        case ActionKey(name: "k", isCommand: true), ActionKey(name: "escape"): closeMenu()
+        case ActionKey(name: "up"): menu?.move(by: -1)
+        case ActionKey(name: "down"): menu?.move(by: 1)
+        case ActionKey(name: "return"): pressMenu()
+        default:
+            if let action = menu?.rows.compactMap(\.action).first(where: { $0.key == key }) {
+                menu?.select(action)
+                pressMenu()
+            }
+        }
+    }
+
+    private func openMenu(on target: Target) {
+        let isOpenList = openList == target.entry.id
+        menu = ActionMenu(command: target.entry.command, item: target.item, showsPrimary: !isOpenList || target.item != nil)
+        menuTarget = target
+    }
+
+    func closeMenu() {
+        menu = nil
+        menuTarget = nil
+    }
+
+    func pressMenu(row: Int) {
+        guard let menu else { return }
+        self.menu?.move(by: row - menu.selected)
+        pressMenu()
+    }
+
+    private func pressMenu() {
+        guard let row = menu?.press(), let target = menuTarget else { return }
+        closeMenu()
+        if let action = row.action {
+            run(action, on: target)
+        } else if let item = target.item {
+            pick(item, of: target.entry)
+        } else {
+            run(target.entry)
+        }
+    }
+
+    private func run(_ action: CommandAction, on target: Target) {
+        if action.isForm {
+            openForm(action, on: target)
+        } else if action.after == .stay {
+            perform(.action(action, item: target.item), on: target.entry, reloads: true)
+        } else if let item = target.item {
+            pick(item, of: target.entry, action: .action(action, item: item))
+        } else {
+            if isShown { dismiss() }
+            perform(.action(action, item: nil), on: target.entry)
+        }
+    }
+
+    private func openForm(_ action: CommandAction, on target: Target, prefill: String = "") {
+        Task {
+            do {
+                let form = try await target.entry.command.form(action, item: target.item, timeout: Self.actionTimeout)
+                let opensSheet = openList != target.entry.id
+                if opensSheet {
+                    sheetMoves = isShown
+                    open(target.entry.id)
+                }
+                self.form = FormSession(
+                    draft: FormDraft(form: form, prefill: prefill),
+                    entry: target.entry,
+                    action: action,
+                    item: target.item,
+                    openedSheet: opensSheet
+                )
+            } catch {
+                notify("\(action.title) failed. \(Self.reason(error))")
+            }
+        }
+    }
+
+    func setFormValue(_ text: String, for name: String) {
+        form?.draft.set(text, for: name)
+    }
+
+    func cancelForm() {
+        guard let form else { return }
+        self.form = nil
+        if form.openedSheet {
+            allowSheetMotion()
+            closeList()
+        }
+    }
+
+    /// Saves the form. It stays open with its text when the command refuses the values.
+    func submitForm() {
+        guard let form else { return }
+        if let missing = form.draft.missing {
+            notify("Enter a value for \(missing.label).")
+            return
+        }
+        Task {
+            do {
+                let run = try await form.entry.command.submit(form.action, item: form.item, draft: form.draft, timeout: Self.actionTimeout)
+                self.form = nil
+                lists[form.entry.id]?.reset()
+                loadItems(of: form.entry.command, selecting: run.isEmpty ? nil : run)
+            } catch {
+                notify("\(form.action.title) failed. \(Self.reason(error))")
+            }
+        }
     }
 }

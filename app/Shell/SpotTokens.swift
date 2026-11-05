@@ -15,6 +15,14 @@ enum SpotTokens {
     static let listRowHeight: CGFloat = 40
     static let listRowGap: CGFloat = 6
     static let listIconSize: CGFloat = 24
+    static let hintHeight: CGFloat = 14
+    static let menuRowHeight: CGFloat = 32
+    static let menuRowGap: CGFloat = 2
+    static let menuPadding: CGFloat = 8
+    static let formLabelHeight: CGFloat = 14
+    static let formLabelGap: CGFloat = 4
+    static let formFieldGap: CGFloat = 12
+    static let formTextHeight: CGFloat = 120
     static let halo: CGFloat = 52
     static let backdropBlur: CGFloat = 4
     static let backdropScale: CGFloat = 0.5
@@ -42,15 +50,30 @@ enum SpotTokens {
     static let sheetRowsTop: CGFloat = sheetFieldDrop + listRowHeight + rowGap
 
     /// The frame of a sheet with these rows. An empty sheet keeps room for one row, and a long one stops at the panel.
-    static func sheetRect(rows: Int) -> CGRect {
+    static func sheetRect(rows: Int, hasHint: Bool) -> CGRect {
         let count = CGFloat(max(rows, 1))
-        let height = sheetRowsTop + count * listRowHeight + (count - 1) * listRowGap + padding
+        let hint = hasHint ? rowGap + hintHeight : 0
+        let height = sheetRowsTop + count * listRowHeight + (count - 1) * listRowGap + hint + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 
     /// Whether a sheet with these rows shows them all with no scrolling.
-    static func sheetFits(rows: Int) -> Bool {
-        sheetRect(rows: rows).height < sheetMaxHeight
+    static func sheetFits(rows: Int, hasHint: Bool) -> Bool {
+        sheetRect(rows: rows, hasHint: hasHint).height < sheetMaxHeight
+    }
+
+    /// The frame of a sheet that shows this form.
+    static func formRect(_ form: ItemForm) -> CGRect {
+        let fields = form.fields.reduce(CGFloat(0)) { sum, field in
+            sum + formLabelHeight + formLabelGap + (field.type == .multiline ? formTextHeight : listRowHeight)
+        }
+        let gaps = CGFloat(max(form.fields.count - 1, 0)) * formFieldGap
+        let height = padding + glyphSize + rowGap + fields + gaps + rowGap + hintHeight + padding
+        return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
+    }
+
+    static func menuHeight(rows: Int) -> CGFloat {
+        CGFloat(rows) * menuRowHeight + CGFloat(max(rows - 1, 0)) * menuRowGap + 2 * menuPadding
     }
 
     /// The height of the blur around the search field and these card rows. It stops at the height of the panel.

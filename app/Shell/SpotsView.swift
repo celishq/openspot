@@ -35,6 +35,12 @@ struct SpotsView: View {
                 SpotSheetView(
                     entry: entry,
                     list: model.lists[entry.id] ?? ItemList(),
+                    rect: sheetRect,
+                    hint: entry.command.actions.isEmpty ? nil : ActionMenu(command: entry.command, item: model.lists[entry.id]?.selectedItem, showsPrimary: model.lists[entry.id]?.selectedItem != nil)?.hint,
+                    form: model.form?.entry.id == entry.id ? model.form?.draft : nil,
+                    createTitle: model.createAction.map { "\($0.title): \(model.searchText)" },
+                    onCreate: { model.createFromSearch() },
+                    onFormValue: { model.setFormValue($0, for: $1) },
                     onRun: { model.runItem($0) },
                     onClose: {
                         model.allowSheetMotion()
@@ -50,6 +56,15 @@ struct SpotsView: View {
                 .padding(.horizontal, sheetOpen ? SpotTokens.halo + SpotTokens.padding : SpotTokens.halo)
                 .padding(.top, SpotTokens.halo)
                 .offset(y: sheetOpen ? SpotTokens.sheetFieldDrop : 0)
+                .opacity(model.form == nil ? 1 : 0)
+                .allowsHitTesting(model.form == nil)
+            if let menu = model.menu {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture { model.closeMenu() }
+                SpotActionMenuView(menu: menu, onPress: { model.pressMenu(row: $0) })
+                    .offset(x: SpotTokens.halo, y: menuTop(menu))
+            }
         }
         .coordinateSpace(name: Self.panelSpace)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
@@ -64,6 +79,9 @@ struct SpotsView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeInDuration) {
                 if model.isShown { searchFocused = true }
             }
+        }
+        .onChange(of: model.form == nil) { _, isList in
+            searchFocused = isList
         }
         .onChange(of: model.openList) { _, list in
             guard model.sheetMoves else {
@@ -111,12 +129,24 @@ struct SpotsView: View {
     }
 
     private var sheetRect: CGRect {
-        SpotTokens.sheetRect(rows: model.lists[sheetID ?? ""]?.shown.count ?? 0)
+        if let form = model.form { return SpotTokens.formRect(form.draft.form) }
+        let hasHint = model.entries.first { $0.id == sheetID }?.command.actions.isEmpty == false
+        return SpotTokens.sheetRect(rows: model.lists[sheetID ?? ""]?.shown.count ?? 0, hasHint: hasHint)
+    }
+
+    private var contentHeight: CGFloat {
+        guard !sheetOpen else { return sheetRect.height + 2 * SpotTokens.halo }
+        return SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0)
     }
 
     private var backdropHeight: CGFloat {
-        guard !sheetOpen else { return sheetRect.height + 2 * SpotTokens.halo }
-        return SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0)
+        let menu = model.menu.map { SpotTokens.menuHeight(rows: $0.rows.count) + 2 * SpotTokens.halo } ?? 0
+        return max(contentHeight, menu)
+    }
+
+    /// Where the menu starts: its bottom meets the bottom of the content.
+    private func menuTop(_ menu: ActionMenu) -> CGFloat {
+        max(SpotTokens.halo, contentHeight - SpotTokens.halo - SpotTokens.menuHeight(rows: menu.rows.count))
     }
 
     private var openFrame: CGRect? {
