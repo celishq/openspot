@@ -121,7 +121,7 @@ struct SpotTranslateView: View {
             }
         }
         .frame(maxHeight: .infinity)
-        .background(Color.white.opacity(SpotTokens.fill), in: shape)
+        .background(SpotTokens.fieldFill, in: shape)
     }
 
     private var outputArea: some View {
@@ -141,7 +141,7 @@ struct SpotTranslateView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.white.opacity(SpotTokens.fill), in: shape)
+        .background(SpotTokens.fieldFill, in: shape)
     }
 
     @ViewBuilder

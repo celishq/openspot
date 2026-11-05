@@ -291,7 +291,7 @@ struct SpotsView: View {
         .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
         .padding(.horizontal, SpotTokens.padding)
         .frame(height: sheetOpen ? SpotTokens.listRowHeight : SpotTokens.rowHeight)
-        .background(Color.white.opacity(sheetOpen ? SpotTokens.fill : 0), in: RoundedRectangle(cornerRadius: fieldRadius, style: .continuous))
+        .background(SpotTokens.fieldFill.opacity(sheetOpen ? 1 : 0), in: RoundedRectangle(cornerRadius: fieldRadius, style: .continuous))
         .modifier(SpotGlass(radius: fieldRadius, isBare: sheetOpen))
     }
 
