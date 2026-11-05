@@ -7,8 +7,9 @@ public struct ScanResult: Equatable, Sendable {
         self.refused = refused
     }
 
+    /// The commands in their grid order: a lower `order` first, and otherwise as the folder sorts them.
     public var commands: [PluginCommand] {
-        plugins.flatMap(\.commands)
+        plugins.flatMap(\.commands).sorted { $0.order < $1.order }
     }
 
     public var metrics: [PluginMetric] {

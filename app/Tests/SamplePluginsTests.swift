@@ -14,8 +14,8 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Files", "Plugins", "Links", "Overview", "Screenshot", "Pull requests", "Snippets"])
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "f", "p", "l", nil, "v", "g", "n"])
+        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Files", "Links", "Overview", "Screenshot", "Pull requests", "Snippets", "Plugins"])
+        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "f", "l", nil, "v", "g", "n", "p"])
     }
 
     func testNoMetricShowsTwiceInTheGrid() throws {

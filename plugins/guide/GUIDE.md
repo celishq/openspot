@@ -42,6 +42,7 @@ open -a Calendar
 | `subtitle` | The second line. |
 | `key` | One letter that runs it after the trigger key. |
 | `size` | `wide` (the default), `small`, `square` or `strip`. |
+| `order` | Its place in the grid. A lower number comes first, and the default is 0. |
 | `read` | When Openspot reads the script. See below. |
 | `rank` | Shows its rows in the main search. A lower number comes first. Needs `read=open`. |
 | `search` | `live`: Openspot calls `<script> search <text>`. Needs `read=click`. |

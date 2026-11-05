@@ -15,6 +15,7 @@ public struct PluginCommand: Equatable, Sendable {
     public let read: SpotRead?
     public private(set) var pick: ItemPick
     public let rank: Int
+    public let order: Int
     public let search: ItemSearch
     public let keepsRecent: Bool
     public private(set) var primary: String?
@@ -35,6 +36,7 @@ public struct PluginCommand: Equatable, Sendable {
         read: SpotRead? = nil,
         pick: ItemPick = .close,
         rank: Int = PluginCommand.lastRank,
+        order: Int = 0,
         search: ItemSearch = .local,
         keepsRecent: Bool = true,
         primary: String? = nil,
@@ -54,6 +56,7 @@ public struct PluginCommand: Equatable, Sendable {
         self.read = read
         self.pick = pick
         self.rank = rank
+        self.order = order
         self.search = search
         self.keepsRecent = keepsRecent
         self.primary = primary

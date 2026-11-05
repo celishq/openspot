@@ -59,6 +59,11 @@ public struct Plugin: Equatable, Sendable {
             guard read == .open else { throw PluginError.fault("\(name) needs read=open to join the main search") }
             rank = number
         }
+        var order = 0
+        if let text = header.value("order") {
+            guard let number = Int(text) else { throw PluginError.fault("\(name) needs a number as its order") }
+            order = number
+        }
         let command = PluginCommand(
             id: id,
             name: name,
@@ -70,6 +75,7 @@ public struct Plugin: Equatable, Sendable {
             key: try Self.key(header.value("key"), of: name),
             read: read,
             rank: rank,
+            order: order,
             search: search,
             keepsRecent: header.flag("recents") != false
         )

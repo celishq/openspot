@@ -5,6 +5,7 @@
 # key=p
 # read=open
 # recents=false
+# order=1
 export LC_ALL=en_US.UTF-8
 here=$(cd "$(dirname "$0")" && pwd)
 plugins=$(dirname "$here")

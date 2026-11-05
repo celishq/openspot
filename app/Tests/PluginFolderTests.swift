@@ -114,6 +114,15 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(scan.commands.first?.readsState, false)
     }
 
+    func testAnOrderMovesASpotAndTheFolderSetsTheRest() throws {
+        try write("a.sh", header: "order=1")
+        try write("b.sh")
+        try write("c.sh", header: "order=-1")
+        try write("d.sh")
+
+        XCTAssertEqual(try scan.commands.map(\.id), ["c", "b", "d", "a"])
+    }
+
     func testAListCanSearchLive() throws {
         try write("one.sh", header: "read=click\nsearch=live")
 
@@ -129,6 +138,7 @@ final class PluginFolderTests: XCTestCase {
         try write("f.sh", header: "rank=1")
         try write("g.sh", header: "read=open\nsearch=live")
         try write("h.sh", header: "read=click\nsearch=live\nrank=1")
+        try write("i.sh", header: "order=last")
 
         XCTAssertEqual(try scan.plugins, [])
         XCTAssertEqual(try scan.refused, [
@@ -139,7 +149,8 @@ final class PluginFolderTests: XCTestCase {
             Refusal(file: "e", reason: "E needs a number as its rank"),
             Refusal(file: "f", reason: "F needs read=open to join the main search"),
             Refusal(file: "g", reason: "G needs read=click to search live"),
-            Refusal(file: "h", reason: "H needs read=open to join the main search")
+            Refusal(file: "h", reason: "H needs read=open to join the main search"),
+            Refusal(file: "i", reason: "I needs a number as its order")
         ])
     }
 
