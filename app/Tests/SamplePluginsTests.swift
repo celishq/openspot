@@ -191,7 +191,7 @@ final class SamplePluginsTests: XCTestCase {
             XCTAssertEqual(value.rows?.first?.title, "Fix \\ \"tray\"")
             XCTAssertEqual(lines.errors, [])
             XCTAssertEqual(lines.items.map(\.run), (1...3).map { "https://github.test/a/\($0)" } + ["https://github.test/b/4"])
-            XCTAssertEqual(lines.items.last?.subtitle, "b · Review asked · No checks")
+            XCTAssertEqual(lines.items.last?.subtitle, "No checks · To review · b")
             XCTAssertEqual(widget.tray, metric.id)
             XCTAssertEqual(widget.opens, list.id)
 

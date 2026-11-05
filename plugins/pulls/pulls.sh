@@ -6,7 +6,7 @@ export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
 defs='def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");
 def checks: {SUCCESS: "Checks passed", FAILURE: "Checks failed", ERROR: "Checks failed", PENDING: "Checks running", EXPECTED: "Checks running"}[.state // ""] // "No checks";
 def tone: {SUCCESS: "good", FAILURE: "bad", ERROR: "bad", PENDING: "warn", EXPECTED: "warn"}[.state // ""];
-def about: (.repo + (if .asked then " · Review asked" else "" end) + " · " + checks) | esc;'
+def about: (checks + (if .asked then " · To review" else "" end) + " · " + .repo) | esc;'
 
 query='query($mine: String!, $asked: String!) {
   mine: search(query: $mine, type: ISSUE, first: 30) { nodes { ...pull } }
