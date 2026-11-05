@@ -231,7 +231,7 @@ struct SpotsView: View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .modifier(SpotSecondaryText())
-                .frame(width: SpotTokens.glyphSize)
+                .frame(width: sheetOpen ? SpotTokens.listIconSize : SpotTokens.glyphSize)
             TextField(searchPrompt, text: Binding(get: { model.searchText }, set: { model.searchText = $0 }), prompt: Text(searchPrompt).foregroundStyle(.white.opacity(SpotTokens.secondaryLight)))
                 .textFieldStyle(.plain)
                 .focused($searchFocused)
