@@ -5,9 +5,10 @@ import SwiftUI
 /// it alone. It draws a faint layer that changes each frame, too faint to see.
 struct SpotWholeRedraw: NSViewRepresentable {
     private static let key = "wholeRedraw"
-    private static let tint = 0.01
+    private static let tint = 0.004
 
     let isActive: Bool
+    let radius: CGFloat
 
     final class Surface: NSView {
         override func hitTest(_ point: NSPoint) -> NSView? { nil }
@@ -17,6 +18,8 @@ struct SpotWholeRedraw: NSViewRepresentable {
         let view = Surface()
         view.wantsLayer = true
         view.layer?.backgroundColor = NSColor.black.withAlphaComponent(Self.tint).cgColor
+        view.layer?.cornerRadius = radius
+        view.layer?.cornerCurve = .continuous
         return view
     }
 

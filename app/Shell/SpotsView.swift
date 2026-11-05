@@ -98,7 +98,7 @@ struct SpotsView: View {
         .coordinateSpace(name: Self.panelSpace)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
         .overlay {
-            SpotWholeRedraw(isActive: model.isShown)
+            SpotWholeRedraw(isActive: model.isShown, radius: SpotTokens.radius + SpotTokens.halo - Self.blurSteps[0].inset)
                 .padding(Self.blurSteps[0].inset)
                 .allowsHitTesting(false)
         }
