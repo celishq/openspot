@@ -20,6 +20,7 @@ struct SpotMetricView: View {
     private static let rowLine: CGFloat = 15
     private static let edgeMarkWidth: CGFloat = 44
     private static let lineTrendHeight: CGFloat = 12
+    private static let controlBars = CGSize(width: 33, height: 16)
 
     private var kind: MetricKind { reading?.kind ?? .value }
     private var value: MetricValue? { reading?.value }
@@ -134,7 +135,7 @@ struct SpotMetricView: View {
             case .trend:
                 VStack(spacing: SpotType.lineGap) {
                     valueText(SpotType.controlValue)
-                    bars
+                    bars.frame(width: Self.controlBars.width, height: Self.controlBars.height)
                 }
             case .value, .status, .rows:
                 VStack(spacing: SpotType.lineGap) {
