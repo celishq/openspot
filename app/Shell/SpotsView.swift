@@ -12,6 +12,7 @@ struct SpotsView: View {
     @State private var sheetOpen = false
 
     private static let panelSpace = "panel"
+    private static let gridPrompt = "Search spots"
     private static let blurSteps: [(inset: CGFloat, radius: CGFloat)] = [
         (SpotTokens.halo - 30, SpotTokens.backdropBlur / 4),
         (SpotTokens.halo - 20, SpotTokens.backdropBlur / 2),
@@ -60,6 +61,21 @@ struct SpotsView: View {
                         model.closeList()
                     }
                 )
+                .opacity(cardFace(of: entry) != nil && !sheetOpen ? 0 : 1)
+                .overlay(alignment: .topLeading) {
+                    if let face = cardFace(of: entry) {
+                        SpotCardView(
+                            entry: entry,
+                            size: face.size,
+                            isSelected: face.isSelected,
+                            readings: [:],
+                            onTap: {},
+                            onLevel: { _ in }
+                        )
+                        .opacity(sheetOpen ? 0 : 1)
+                        .allowsHitTesting(false)
+                    }
+                }
                 .modifier(SpotSheetFrame(
                     rect: sheetOpen ? sheetRect : openFrame ?? sheetRect,
                     radius: sheetOpen ? SpotTokens.radius : SpotTokens.corner(for: entry.size)
@@ -69,8 +85,8 @@ struct SpotsView: View {
                 .padding(.horizontal, sheetOpen ? SpotTokens.halo + SpotTokens.padding : SpotTokens.halo)
                 .padding(.top, SpotTokens.halo)
                 .offset(y: sheetOpen ? SpotTokens.sheetFieldDrop : 0)
-                .opacity(model.showsSearch ? 1 : 0)
-                .allowsHitTesting(model.showsSearch)
+                .opacity(showsSearchField ? 1 : 0)
+                .allowsHitTesting(showsSearchField)
             if let menu = model.menu {
                 Color.clear
                     .contentShape(Rectangle())
@@ -182,6 +198,19 @@ struct SpotsView: View {
         max(SpotTokens.halo, contentHeight - SpotTokens.halo - SpotTokens.hintBlock - SpotTokens.menuHeight(rows: menu.rows.count))
     }
 
+    /// The look of the card that a sheet grows out of, when it differs from the top of the sheet. The two then fade.
+    private func cardFace(of entry: SpotsModel.Entry) -> (size: SpotSize, isSelected: Bool)? {
+        guard let placement = model.placements.first(where: { model.visible[$0.index].id == entry.id }),
+              entry.kind == .view || placement.size == .small || entry.state.on == true
+        else { return nil }
+        return (placement.size, placement.index == model.selected)
+    }
+
+    /// Whether the search field is drawn. Around a screen of its own it fades with the sheet.
+    private var showsSearchField: Bool {
+        model.form == nil && !(sheetOpen && model.entries.first { $0.id == sheetID }?.kind == .view)
+    }
+
     private var openFrame: CGRect? {
         sheetID.flatMap { cardFrames[$0] }
     }
@@ -233,8 +262,10 @@ struct SpotsView: View {
             Image(systemName: "magnifyingglass")
                 .modifier(SpotSecondaryText())
                 .frame(width: sheetOpen ? SpotTokens.listIconSize : SpotTokens.glyphSize)
-            TextField(searchPrompt, text: Binding(get: { model.searchText }, set: { model.searchText = $0 }), prompt: Text(searchPrompt).foregroundStyle(.white.opacity(SpotTokens.secondaryLight)))
+            TextField(sheetPrompt ?? Self.gridPrompt, text: Binding(get: { model.searchText }, set: { model.searchText = $0 }))
                 .textFieldStyle(.plain)
+                .labelsHidden()
+                .background(alignment: .leading) { promptText }
                 .focused($searchFocused)
                 .onSubmit { model.runSelected() }
                 .onKeyPress(.downArrow) {
@@ -293,7 +324,21 @@ struct SpotsView: View {
         sheetOpen ? SpotTokens.radius - SpotTokens.padding : SpotTokens.corner(for: .strip)
     }
 
-    private var searchPrompt: String {
-        model.openEntry.map { "Search \($0.state.title)" } ?? "Search spots"
+    /// The words of an empty field. The words of the grid and of the sheet fade into each other as the sheet moves.
+    @ViewBuilder
+    private var promptText: some View {
+        if model.searchText.isEmpty {
+            ZStack(alignment: .leading) {
+                Text(Self.gridPrompt).opacity(sheetOpen ? 0 : 1)
+                if let sheetPrompt { Text(sheetPrompt).opacity(sheetOpen ? 1 : 0) }
+            }
+            .lineLimit(1)
+            .foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
+            .allowsHitTesting(false)
+        }
+    }
+
+    private var sheetPrompt: String? {
+        model.entries.first { $0.id == sheetID }.map { "Search \($0.state.title)" }
     }
 }
