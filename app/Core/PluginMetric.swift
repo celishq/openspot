@@ -8,13 +8,15 @@ public struct PluginMetric: Equatable, Sendable {
     public let name: String
     public let url: URL
     public let kind: MetricKind
+    public let label: String
     public let refresh: TimeInterval
 
-    public init(id: String, name: String, url: URL, kind: MetricKind, refresh: TimeInterval = PluginMetric.standardRefresh) {
+    public init(id: String, name: String, url: URL, kind: MetricKind, label: String? = nil, refresh: TimeInterval = PluginMetric.standardRefresh) {
         self.id = id
         self.name = name
         self.url = url
         self.kind = kind
+        self.label = label ?? name
         self.refresh = refresh
     }
 

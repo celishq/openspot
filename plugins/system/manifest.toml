@@ -5,10 +5,12 @@ api = 1
 name = "cpu"
 exec = "system.sh"
 kind = "trend"
+label = "CPU"
 refresh = 5
 
 [[metrics]]
 name = "disk"
 exec = "system.sh"
 kind = "gauge"
+label = "Disk"
 refresh = 300

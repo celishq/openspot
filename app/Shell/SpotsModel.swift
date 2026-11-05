@@ -110,8 +110,8 @@ final class SpotsModel {
         }
         self.entries = entries
         metrics = scan.metrics
-        for metric in metrics where readings[metric.id]?.kind != metric.kind {
-            readings[metric.id] = MetricReading(kind: metric.kind)
+        for metric in metrics where readings[metric.id]?.kind != metric.kind || readings[metric.id]?.label != metric.label {
+            readings[metric.id] = MetricReading(kind: metric.kind, label: metric.label)
         }
         readDueMetrics()
         if problems != self.problems, !problems.isEmpty {

@@ -1,22 +1,25 @@
 import OpenspotCore
 import SwiftUI
 
-/// One place of a widget: a mark, then a title with a detail. A wide place puts them side by side, a tall one stacks
-/// them, and a narrow one keeps only what fits. A stale value stays, and dims.
+/// One place of a widget, by one rule: the label of the metric, then its value with a detail, and a mark beside or
+/// under them. A place keeps only what fits. A stale value stays, and dims.
 struct SpotMetricView: View {
     let reading: MetricReading?
     let slot: WidgetLayout.Slot
     let size: CGSize
 
-    private static let bigRing: CGFloat = 64
+    private static let bigRing: CGFloat = 52
     private static let ringLine: CGFloat = 4
+    private static let barLine: CGFloat = 3
     private static let trendLine: CGFloat = 1.5
     private static let dot: CGFloat = 7
-    private static let rowLine: CGFloat = 17
+    private static let rowLine: CGFloat = 15
     private static let shortPlace: CGFloat = 40
 
     private var isTall: Bool { slot.rows > 1 }
     private var isNarrow: Bool { slot.columns == 1 }
+    private var isShort: Bool { size.height < Self.shortPlace }
+    private var kind: MetricKind { reading?.kind ?? .value }
     private var value: MetricValue? { reading?.value }
     private var title: String { value?.title ?? "–" }
 
@@ -28,60 +31,109 @@ struct SpotMetricView: View {
 
     @ViewBuilder
     private var content: some View {
-        switch reading?.kind ?? .value {
-        case .rows: rows
-        case .gauge: gauge
-        case .trend: trend
-        case .status: placed(mark: dot(value?.tone))
-        case .value: placed(mark: symbol)
+        if kind == .rows {
+            rows
+        } else if isTall {
+            tall
+        } else if isNarrow {
+            narrow
+        } else {
+            wide
         }
     }
 
-    private func placed(mark: some View) -> some View {
-        Group {
-            if isTall {
-                VStack(alignment: .leading, spacing: 0) {
-                    mark
-                    Spacer(minLength: 0)
-                    text(titleFont: SpotType.metric)
-                }
-            } else if isNarrow {
-                HStack(alignment: .firstTextBaseline, spacing: SpotTokens.placeGap / 2) {
-                    if reading?.kind == .status { mark }
-                    text(titleFont: SpotType.title)
-                }
-                .frame(maxHeight: .infinity, alignment: .center)
+    private var tall: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 0) {
+                label
+                Spacer(minLength: 0)
+                sideMark(side: Self.bigRing)
+            }
+            if kind == .trend {
+                line.padding(.vertical, SpotTokens.placeGap / 2)
             } else {
-                HStack(spacing: SpotTokens.placeGap) {
-                    mark
-                    text(titleFont: SpotType.title)
+                Spacer(minLength: 0)
+            }
+            reading(font: SpotType.metric)
+            detail
+        }
+    }
+
+    private var wide: some View {
+        HStack(spacing: SpotTokens.placeGap) {
+            VStack(alignment: .leading, spacing: SpotType.lineGap) {
+                label
+                HStack(alignment: .firstTextBaseline, spacing: SpotTokens.placeGap / 2) {
+                    reading(font: SpotType.title).layoutPriority(1)
+                    detail
                 }
-                .frame(maxHeight: .infinity, alignment: .center)
+            }
+            .layoutPriority(1)
+            if kind == .trend {
+                line
+            } else {
+                Spacer(minLength: 0)
+                sideMark(side: min(size.height, SpotTokens.glyphSize))
             }
         }
+        .frame(maxHeight: .infinity, alignment: .center)
     }
 
-    private func text(titleFont: Font, showsDetail: Bool = true) -> some View {
+    private var narrow: some View {
         VStack(alignment: .leading, spacing: SpotType.lineGap) {
+            label
+            reading(font: SpotType.title)
+            if !isShort {
+                if kind == .gauge {
+                    bar.padding(.top, SpotTokens.placeGap / 2)
+                } else if kind == .trend {
+                    line
+                }
+            }
+        }
+        .frame(maxHeight: .infinity, alignment: isShort ? .center : .top)
+    }
+
+    private var label: some View {
+        Text(reading?.label ?? "")
+            .font(SpotType.small)
+            .modifier(SpotSecondaryText())
+            .lineLimit(1)
+    }
+
+    private func reading(font: Font) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: SpotTokens.placeGap / 2) {
+            if kind == .status { dot(value?.tone) }
             Text(title)
-                .font(titleFont)
+                .font(font)
                 .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
                 .lineLimit(1)
-            if showsDetail, let detail = value?.detail {
-                Text(detail)
-                    .font(SpotType.detail)
-                    .modifier(SpotSecondaryText())
-                    .lineLimit(1)
-            }
         }
     }
 
     @ViewBuilder
-    private var symbol: some View {
-        if let name = value?.symbol {
-            Image(systemName: name)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(colour(value?.tone))
+    private var detail: some View {
+        if let detail = value?.detail {
+            Text(detail)
+                .font(SpotType.detail)
+                .modifier(SpotSecondaryText())
+                .lineLimit(1)
+        }
+    }
+
+    @ViewBuilder
+    private func sideMark(side: CGFloat) -> some View {
+        switch kind {
+        case .gauge:
+            ring(side)
+        case .value:
+            if let name = value?.symbol {
+                Image(systemName: name)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(colour(value?.tone))
+            }
+        case .trend, .rows, .status:
+            EmptyView()
         }
     }
 
@@ -100,63 +152,32 @@ struct SpotMetricView: View {
         }
     }
 
-    @ViewBuilder
-    private var gauge: some View {
-        if isTall {
-            VStack(spacing: SpotTokens.placeGap) {
-                ring(Self.bigRing) {
-                    Text(title).font(SpotType.title).foregroundStyle(.white.opacity(SpotTokens.titleOpacity)).lineLimit(1)
-                }
-                if let detail = value?.detail {
-                    Text(detail).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if isNarrow {
-            ring(min(size.width, size.height)) {
-                Text(title).font(SpotType.small).foregroundStyle(.white.opacity(SpotTokens.titleOpacity)).lineLimit(1).minimumScaleFactor(0.7)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
-            HStack(spacing: SpotTokens.placeGap) {
-                ring(min(size.height, SpotTokens.glyphSize)) {
-                    if let name = value?.symbol {
-                        Image(systemName: name).font(SpotType.small).foregroundStyle(.white)
-                    }
-                }
-                text(titleFont: SpotType.title)
-            }
-            .frame(maxHeight: .infinity, alignment: .center)
-        }
-    }
-
-    private func ring(_ side: CGFloat, @ViewBuilder inside: () -> some View) -> some View {
+    private func ring(_ side: CGFloat) -> some View {
         ZStack {
             Circle().stroke(.white.opacity(0.2), lineWidth: Self.ringLine)
             Circle()
                 .trim(from: 0, to: value?.fill ?? 0)
                 .rotation(.degrees(-90))
                 .stroke(colour(value?.tone), style: StrokeStyle(lineWidth: Self.ringLine, lineCap: .round))
-            inside().padding(Self.ringLine)
+            if let name = value?.symbol {
+                Image(systemName: name)
+                    .font(SpotType.small)
+                    .foregroundStyle(.white)
+                    .padding(Self.ringLine)
+            }
         }
         .padding(Self.ringLine / 2)
         .frame(width: side, height: side)
     }
 
-    @ViewBuilder
-    private var trend: some View {
-        if isTall || isNarrow {
-            VStack(alignment: .leading, spacing: SpotTokens.placeGap / 2) {
-                text(titleFont: isTall ? SpotType.metric : SpotType.title, showsDetail: isTall || size.height > Self.shortPlace)
-                line
+    private var bar: some View {
+        GeometryReader { room in
+            ZStack(alignment: .leading) {
+                Capsule().fill(.white.opacity(0.2))
+                Capsule().fill(colour(value?.tone)).frame(width: room.size.width * (value?.fill ?? 0))
             }
-        } else {
-            HStack(spacing: SpotTokens.placeGap) {
-                text(titleFont: SpotType.title)
-                line
-            }
-            .frame(maxHeight: .infinity, alignment: .center)
         }
+        .frame(height: Self.barLine)
     }
 
     private var line: some View {
@@ -179,11 +200,15 @@ struct SpotMetricView: View {
 
     private var rows: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(title)
-                .font(SpotType.title)
-                .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
-                .lineLimit(1)
-                .frame(height: Self.rowLine, alignment: .leading)
+            HStack(alignment: .firstTextBaseline, spacing: SpotTokens.placeGap) {
+                label
+                Spacer(minLength: 0)
+                Text(title)
+                    .font(SpotType.small)
+                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                    .lineLimit(1)
+            }
+            .frame(height: Self.rowLine, alignment: .leading)
             ForEach(Array((value?.rows ?? []).prefix(rowRoom).enumerated()), id: \.offset) { _, row in
                 HStack(spacing: SpotTokens.placeGap / 2) {
                     if row.tone != nil { dot(row.tone) }
@@ -206,6 +231,6 @@ struct SpotMetricView: View {
     }
 
     private var rowRoom: Int {
-        max(Int(size.height / Self.rowLine) - 1, 0)
+        isNarrow ? 0 : max(Int(size.height / Self.rowLine) - 1, 0)
     }
 }

@@ -119,6 +119,7 @@ api = 1
 name = "cups"
 exec = "coffee.sh"
 kind = "value"
+label = "Cups today"
 refresh = 60
 
 [[widgets]]
@@ -131,14 +132,16 @@ File `coffee.sh`. Openspot calls `<exec> metric <name>`.
 
 ```sh
 #!/bin/sh
-echo '{"title":"3","detail":"Cups today","symbol":"cup.and.saucer.fill"}'
+echo '{"title":"3","detail":"Last at 14:20","symbol":"cup.and.saucer.fill"}'
 ```
 
 `refresh` is in seconds. The default is 60. Openspot reads a metric only when a widget places it and the panel is
 open, so a metric costs nothing when the panel is closed. When a read fails, the last value stays and dims.
 
-Each metric prints `title`, and can print `detail`, `symbol` and `tone`. The tone is `good`, `warn` or `bad`. Use it
-only when the colour means something. Each kind has its own data:
+`label` says what the metric measures, and each place shows it above the value. The default is the plugin's name.
+
+Each metric prints `title`, its value, and can print `detail`, `symbol` and `tone`. Do not repeat the label in them.
+The tone is `good`, `warn` or `bad`. Use it only when the colour means something. Each kind has its own data:
 
 | Kind | Shows | Also prints |
 |---|---|---|
@@ -174,8 +177,8 @@ command that Enter or a click runs. `key` also works.
 | `pair` | 4x1 | Two wide. |
 | `row` | 4x1 | Four small. |
 
-A wide or large place shows a mark and its words. A small place shows only what fits: a ring holds its title, so keep
-that title short, such as `84%`.
+Each place shows its label, then its title and detail, then its mark. A small place shows only what fits, so keep the
+title short, such as `84%`.
 
 ## Check your work
 

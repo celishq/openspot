@@ -30,11 +30,11 @@ public struct Plugin: Equatable, Sendable {
             throw PluginError.manifest("An action names no command called \(lost.command)")
         }
         let widgets = try (document.arrays["widgets"] ?? []).map { try Self.widget($0, plugin: url) }
-        let metrics = try (document.arrays["metrics"] ?? []).map { try Self.metric($0, plugin: url) }
+        let metrics = try (document.arrays["metrics"] ?? []).map { try Self.metric($0, plugin: url, pluginName: name) }
         self.init(name: name, api: api, url: url, commands: commands + widgets, metrics: metrics)
     }
 
-    private static func metric(_ table: [String: TomlDocument.Value], plugin: URL) throws -> PluginMetric {
+    private static func metric(_ table: [String: TomlDocument.Value], plugin: URL, pluginName: String) throws -> PluginMetric {
         guard case .string(let name)? = table["name"] else { throw PluginError.manifest("a metric needs a name") }
         guard case .string(let exec)? = table["exec"] else { throw PluginError.manifest("\(name) needs an exec") }
         let url = plugin.appendingPathComponent(exec)
@@ -51,7 +51,9 @@ public struct Plugin: Equatable, Sendable {
             }
             refresh = TimeInterval(seconds)
         }
-        return PluginMetric(id: "\(plugin.lastPathComponent)/\(name)", name: name, url: url, kind: kind, refresh: refresh)
+        var label = pluginName
+        if case .string(let own)? = table["label"] { label = own }
+        return PluginMetric(id: "\(plugin.lastPathComponent)/\(name)", name: name, url: url, kind: kind, label: label, refresh: refresh)
     }
 
     private static func widget(_ table: [String: TomlDocument.Value], plugin: URL) throws -> PluginCommand {

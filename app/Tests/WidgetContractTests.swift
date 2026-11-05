@@ -50,6 +50,26 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(metric.refresh, 5)
     }
 
+    func testAMetricNamesWhatItMeasures() throws {
+        try plugin("power", manifest: power.replacingOccurrences(of: "kind = \"gauge\"", with: "kind = \"gauge\"\nlabel = \"Charge\""), script: powerScript)
+
+        XCTAssertEqual(try PluginFolder(url: folder).scan().metrics.first?.label, "Charge")
+    }
+
+    func testAMetricWithNoLabelTakesTheNameOfItsPlugin() throws {
+        try plugin("power", manifest: power, script: powerScript)
+
+        let scan = try PluginFolder(url: folder).scan()
+
+        XCTAssertEqual(scan.metrics.first?.label, scan.plugins.first?.name)
+    }
+
+    func testAReadingKeepsTheNameOfItsMetricBeforeAnyValue() {
+        let reading = MetricReading(kind: .gauge, label: "Battery")
+        XCTAssertEqual(reading.label, "Battery")
+        XCTAssertNil(reading.value)
+    }
+
     func testAMetricRefreshesEachMinuteUnlessItSaysOtherwise() throws {
         try plugin("power", manifest: power.replacingOccurrences(of: "refresh = 5\n", with: "").replacingOccurrences(of: "refresh = 5", with: ""), script: powerScript)
 
@@ -251,7 +271,7 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testAFailedReadKeepsTheLastValueAndMarksItStale() {
-        var reading = MetricReading(kind: .value)
+        var reading = MetricReading(kind: .value, label: "Cups")
         reading.take(MetricValue(title: "3"))
         reading.markStale()
 

@@ -8,7 +8,7 @@ case "$2" in
     { [ -f "$history" ] && grep -E '^[0-9]+$' "$history" | tail -n 29; echo "$now"; } > "$history.$$"
     mv "$history.$$" "$history"
     points=$(paste -s -d, - < "$history")
-    printf '{"title":"%s%%","detail":"CPU","points":[%s]}\n' "$now" "$points"
+    printf '{"title":"%s%%","points":[%s]}\n' "$now" "$points"
     ;;
   disk)
     df -k /System/Volumes/Data | awk 'NR == 2 {
