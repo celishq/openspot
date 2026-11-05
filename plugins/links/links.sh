@@ -5,6 +5,9 @@ data="$config/data/links.json"
 icons="$config/data/icons"
 agent="Mozilla/5.0 (Macintosh) Openspot"
 
+# Makes a jq value safe for one line of a text block.
+esc='def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");'
+
 # Makes the list once: saved quicklinks move over, and the folder shortcuts join them.
 prepare() {
   [ -e "$data" ] && return
@@ -49,9 +52,14 @@ check_path() {
   esac
 }
 
+# Reads the form values on stdin, and prints them as one JSON object.
+form_values() {
+  jq -Rsc 'split("\n") | map(capture("^(?<key>[^=]+)=(?<value>.*)$")? | .value |= gsub("\\\\(?<c>[n\\\\])"; if .c == "n" then "\n" else .c end)) | from_entries'
+}
+
 # Reads the form values, and prints them with a full link. A path stays as it is.
 checked() {
-  jq -c '.url |= (gsub("^\\s+|\\s+$"; "") | if test("^[/~]") or test("^[a-zA-Z][a-zA-Z0-9+.-]*:") then . else "https://" + . end)
+  form_values | jq -c '.url |= (gsub("^\\s+|\\s+$"; "") | if test("^[/~]") or test("^[a-zA-Z][a-zA-Z0-9+.-]*:") then . else "https://" + . end)
     | if (.url | test("^[/~]") | not) and (.url | test("\\s")) then error("bad") else . end' 2>/dev/null || {
     echo "Enter a link with no spaces, or a path." >&2
     exit 1
@@ -117,13 +125,13 @@ prepare
 case "$1" in
   items)
     found=$(ls "$icons" 2>/dev/null | jq -R . | jq -sc .)
-    load | jq -c --arg icons "$icons" --argjson found "$found" --arg home "$HOME" '.[]
+    load | jq -r --arg icons "$icons" --argjson found "$found" --arg home "$HOME" "$esc"'.[]
       | if (.url | test("^[/~]")) then
-          {title, subtitle: .url, run: .id, file: (.url | if startswith("~") then $home + .[1:] else . end)}
+          "title=\(.title | esc)\nsubtitle=\(.url | esc)\nrun=\(.id | esc)\nfile=\(.url | if startswith("~") then $home + .[1:] else . end | esc)\n"
         else
           (.url | sub("^[a-zA-Z][a-zA-Z0-9+.-]*:(//)?"; "") | sub("[/?#].*$"; "")) as $host
-          | {title, subtitle: $host, run: .id, symbol: "link", hides: ["reveal"]}
-          + (if ($found | index($host + ".icon")) then {image: "\($icons)/\($host).icon"} else {} end)
+          | "title=\(.title | esc)\nsubtitle=\($host | esc)\nrun=\(.id | esc)\nsymbol=link\nhides=reveal\n"
+          + (if ($found | index($host + ".icon")) then "image=\("\($icons)/\($host).icon" | esc)\n" else "" end)
         end'
     fetch_missing >/dev/null 2>&1 </dev/null &
     ;;
@@ -135,10 +143,16 @@ case "$1" in
       title="New link"
       values='{"title":"","url":""}'
     fi
-    jq -nc --arg title "$title" --argjson v "$values" '{title: $title, fields: [
-      {name: "title", label: "Name", type: "text", value: $v.title, required: true},
-      {name: "url", label: "Link", type: "text", value: $v.url, required: true, placeholder: "example.com or ~/Downloads"}
-    ]}'
+    jq -nr --arg title "$title" --argjson v "$values" "$esc"'"title=\($title)
+field=title
+field.label=Name
+field.value=\($v.title | esc)
+field.required=true
+field=url
+field.label=Link
+field.value=\($v.url | esc)
+field.required=true
+field.placeholder=example.com or ~/Downloads"'
     ;;
   new)
     id=$(uuidgen)

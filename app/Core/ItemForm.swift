@@ -1,9 +1,9 @@
 import Foundation
 
-/// A form that a command prints as JSON, and Openspot draws.
-public struct ItemForm: Decodable, Equatable, Sendable {
-    public struct Field: Decodable, Equatable, Sendable {
-        public enum Kind: String, Decodable, Sendable {
+/// A form that a command prints, and Openspot draws.
+public struct ItemForm: Equatable, Sendable {
+    public struct Field: Equatable, Sendable {
+        public enum Kind: String, Sendable {
             case text
             case multiline
         }
@@ -31,5 +31,24 @@ public struct ItemForm: Decodable, Equatable, Sendable {
     public init(title: String, fields: [Field]) {
         self.title = title
         self.fields = fields
+    }
+
+    /// Reads the block a form prints. It needs a title, and a name and a label for each field.
+    public init?(block: TextBlock) {
+        guard let title = block.value("title") else { return nil }
+        let groups = block.groups("field")
+        let fields = groups.compactMap { group -> Field? in
+            guard let name = group.value("field"), let label = group.value("label") else { return nil }
+            return Field(
+                name: name,
+                label: label,
+                type: group.value("type").flatMap(Field.Kind.init) ?? .text,
+                value: group.value("value"),
+                required: group.flag("required"),
+                placeholder: group.value("placeholder")
+            )
+        }
+        guard fields.count == groups.count else { return nil }
+        self.init(title: title, fields: fields)
     }
 }

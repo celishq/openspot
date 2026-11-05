@@ -37,7 +37,7 @@ final class WidgetContractTests: XCTestCase {
 
     private let powerScript = """
     #!/bin/sh
-    [ "$1 $2" = "metric level" ] && echo '{"title":"84%","value":0.84,"tone":"good"}'
+    [ "$1 $2" = "metric level" ] && printf 'title=84%%\\nvalue=0.84\\ntone=good\\n'
     """
 
     func testAMetricTakesItsFolderAndName() throws {

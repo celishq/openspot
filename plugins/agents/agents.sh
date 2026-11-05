@@ -17,11 +17,11 @@ list=$(sessions)
 count=$(printf '%s' "$list" | grep -c .)
 case "$2" in
   running)
-    printf '{"title":"%s","detail":"running","symbol":"sparkles"}\n' "$count"
+    printf 'title=%s\ndetail=running\nsymbol=sparkles\n' "$count"
     ;;
   list)
-    rows=$(printf '%s' "$list" | jq -R -s -c 'split("\n") | map(select(length > 0) | split("\t") | {title: .[1], detail: .[0]})')
-    printf '{"title":"%s","rows":%s}\n' "$count" "$rows"
+    printf 'title=%s\n' "$count"
+    printf '%s' "$list" | sed 's/\\/\\\\/g' | awk -F'\t' 'NF { print "row=" $2; print "row.detail=" $1 }'
     ;;
   *) exit 1 ;;
 esac

@@ -33,16 +33,16 @@ case "$1" in
         fi
       fi
     fi
-    printf '{"title":"Caffeinate","subtitle":"%s","on":%s}\n' "$subtitle" "$on"
+    printf 'title=Caffeinate\nsubtitle=%s\non=%s\n' "$subtitle" "$on"
     ;;
   items)
     if [ "$running" = 1 ]; then
-      echo '{"title":"Turn off","run":"off"}'
+      printf 'title=Turn off\nrun=off\n\n'
     fi
-    echo '{"title":"30 minutes","run":"1800"}'
-    echo '{"title":"1 hour","run":"3600"}'
-    echo '{"title":"2 hours","run":"7200"}'
-    echo '{"title":"Until turned off","run":"0"}'
+    printf 'title=30 minutes\nrun=1800\n\n'
+    printf 'title=1 hour\nrun=3600\n\n'
+    printf 'title=2 hours\nrun=7200\n\n'
+    printf 'title=Until turned off\nrun=0\n'
     ;;
   off)
     stop

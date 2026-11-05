@@ -1,7 +1,7 @@
 import Foundation
 
 /// One thing a list offers. Its `run` value goes back to the command when it is picked.
-public struct SpotItem: Equatable, Decodable, Sendable {
+public struct SpotItem: Equatable, Sendable {
     public let title: String
     public let subtitle: String?
     public let run: String
@@ -18,6 +18,21 @@ public struct SpotItem: Equatable, Decodable, Sendable {
         self.file = file
         self.image = image
         self.hides = hides
+    }
+
+    /// Reads the block of one row. It needs a title and a run value.
+    public init?(block: TextBlock) {
+        guard let title = block.value("title"), let run = block.value("run") else { return nil }
+        let hides = block.values("hides")
+        self.init(
+            title: title,
+            subtitle: block.value("subtitle"),
+            run: run,
+            symbol: block.value("symbol"),
+            file: block.value("file"),
+            image: block.value("image"),
+            hides: hides.isEmpty ? nil : hides
+        )
     }
 
     /// The picture a row draws: its image, or else the icon of its file.

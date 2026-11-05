@@ -1,16 +1,16 @@
 import Foundation
 
 /// What a metric prints when it is read.
-public struct MetricValue: Decodable, Equatable, Sendable {
+public struct MetricValue: Equatable, Sendable {
     /// A meaning that a mark may show in colour.
-    public enum Tone: String, Decodable, Sendable {
+    public enum Tone: String, Sendable {
         case good
         case warn
         case bad
     }
 
     /// One line of a metric of the rows kind.
-    public struct Row: Decodable, Equatable, Sendable {
+    public struct Row: Equatable, Sendable {
         public let title: String
         public let detail: String?
         public let tone: Tone?
@@ -49,6 +49,25 @@ public struct MetricValue: Decodable, Equatable, Sendable {
         self.points = points
         self.max = max
         self.rows = rows
+    }
+
+    /// Reads the block a metric prints. Only the title is required, and a bad value is left out.
+    public init?(block: TextBlock) {
+        guard let title = block.value("title") else { return nil }
+        let points = block.values("point").compactMap(Double.init).filter(\.isFinite)
+        let rows = block.groups("row").compactMap { row in
+            row.value("row").map { Row(title: $0, detail: row.value("detail"), tone: row.value("tone").flatMap(Tone.init)) }
+        }
+        self.init(
+            title: title,
+            detail: block.value("detail"),
+            symbol: block.value("symbol"),
+            tone: block.value("tone").flatMap(Tone.init),
+            value: block.number("value"),
+            points: points.isEmpty ? nil : points,
+            max: block.number("max"),
+            rows: rows.isEmpty ? nil : rows
+        )
     }
 
     /// The part of a gauge that is full, from 0 to 1.

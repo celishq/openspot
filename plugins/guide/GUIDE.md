@@ -29,6 +29,27 @@ File `run.sh`. Make it executable with `chmod +x run.sh`.
 say hello
 ```
 
+## What a script prints
+
+A script prints plain text, one `key=value` on each line. A blank line ends a block.
+
+```text
+title=Safari
+subtitle=App
+run=/Applications/Safari.app
+
+title=Notes
+run=/Applications/Notes.app
+```
+
+- A line splits at its first `=`, so a value can hold `=`, quotes and spaces.
+- A line with no key, a key Openspot does not know and a value it cannot read are skipped.
+- An empty value counts as no value.
+- A value is one line. In a value, `\n` stands for a new line and `\\` for a backslash. If a value comes from outside your
+  script, such as a file name or a web page, write its backslashes and new lines this way:
+  `sed 's/\\/\\\\/g' | awk 'NR > 1 { printf "\\n" } { printf "%s", $0 }'`.
+- With `jq -r`, use `def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");` and write `"title=\(.title | esc)"`.
+
 ## Commands
 
 A command is a spot in the grid. These are its keys:
@@ -49,20 +70,23 @@ Openspot calls the script in these ways:
 | Type | Call | The script does |
 |---|---|---|
 | `launch` | `<exec>` | Does the work. |
-| `toggle` | `<exec> state`, `<exec> on`, `<exec> off` | Prints `{"title":"Wi-Fi","subtitle":"Home","on":true}` for `state`. |
-| `slider` | `<exec> state`, `<exec> <number>` | Prints `{"title":"Volume","level":40,"min":0,"max":100}` for `state`. |
-| `list` | `<exec> items`, `<exec> <run>` | Prints one JSON line for each row, then runs the `run` value of the row you pick. |
+| `toggle` | `<exec> state`, `<exec> on`, `<exec> off` | Prints `title`, `subtitle` and `on=true` or `on=false` for `state`. |
+| `slider` | `<exec> state`, `<exec> <number>` | Prints `title`, `level`, `min` and `max` for `state`. |
+| `list` | `<exec> items`, `<exec> <run>` | Prints one block for each row, then runs the `run` value of the row you pick. |
 
 ## Lists
 
-Each line of `items` is one row:
+Each block of `items` is one row:
 
-```json
-{"title":"Safari","subtitle":"App","run":"/Applications/Safari.app","file":"/Applications/Safari.app"}
+```text
+title=Safari
+subtitle=App
+run=/Applications/Safari.app
+file=/Applications/Safari.app
 ```
 
 Only `title` and `run` are required. Also use `symbol` for an SF Symbol, `file` for a file's icon, or `image` for a
-path to an image. `hides` is a list of action IDs that this row does not offer.
+path to an image. `hides` is the ID of an action that this row does not offer. Repeat the line for each one.
 
 More keys for a list command:
 
@@ -98,12 +122,17 @@ key = "cmd+return"
 
 For an action with a form, `<exec> form <id> [run]` prints the fields:
 
-```json
-{"title":"New note","fields":[{"name":"text","label":"Text","type":"multiline","value":"","required":true}]}
+```text
+title=New note
+field=text
+field.label=Text
+field.type=multiline
+field.required=true
 ```
 
-The type is `text` or `multiline`. `placeholder` is optional. Then `<exec> <id> [run]` gets the values as JSON on
-stdin, and it can print the `run` value of the row to select.
+Each `field` line starts a field, and it gives its name. A field needs a `field.label`. `field.type` is `text` (the
+default) or `multiline`. `field.value` and `field.placeholder` are optional. Then `<exec> <id> [run]` gets the values on
+stdin as one block, such as `text=one\ntwo`, and it can print the `run` value of the row to select.
 
 ## Metrics
 
@@ -132,7 +161,7 @@ File `coffee.sh`. Openspot calls `<exec> metric <name>`.
 
 ```sh
 #!/bin/sh
-echo '{"title":"3","detail":"Last at 14:20","symbol":"cup.and.saucer.fill"}'
+printf 'title=3\ndetail=Last at 14:20\nsymbol=cup.and.saucer.fill\n'
 ```
 
 `refresh` is in seconds. The default is 60. Openspot reads a metric only when a widget places it and the panel is
@@ -150,10 +179,10 @@ The tone is `good`, `warn` or `bad`. Use it only when the colour means something
 | Kind | Shows | Also prints |
 |---|---|---|
 | `value` | A number or a word. | Nothing more. |
-| `gauge` | A ring. | `"value":0.84`, from 0 to 1. |
-| `trend` | Bars from zero. The last bar is the newest. | `"points":[2,5,3,8]`, and `"max":100` for a fixed top value. |
+| `gauge` | A ring. | `value=0.84`, from 0 to 1. |
+| `trend` | Bars from zero. The last bar is the newest. | One `point=2` line for each bar, and `max=100` for a fixed top value. |
 | `status` | A dot with a word. | Set `tone` for the colour of the dot. |
-| `rows` | Short lines, as many as fit. | `"rows":[{"title":"Build","detail":"2m","tone":"good"}]`. |
+| `rows` | Short lines, as many as fit. | One `row=Build` line for each row, and after it `row.detail=2m` and `row.tone=good`. |
 
 ## Widgets
 

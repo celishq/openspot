@@ -84,27 +84,27 @@ public struct PluginCommand: Equatable, Sendable {
     public func state(timeout: TimeInterval) async throws -> SpotState {
         guard readsState else { return manifestState }
         let output = try await PluginRun(command: self, arguments: SpotAction.read.arguments, timeout: timeout).output()
-        guard let state = try? JSONDecoder().decode(SpotState.self, from: Data(output.utf8)) else {
+        guard let state = TextBlock.blocks(in: output).first.flatMap(SpotState.init(block:)) else {
             throw PluginError.badState
         }
         return state
     }
 
     /// Asks the command for the items of its list, with the search when it searches live.
-    public func items(query: String = "", timeout: TimeInterval) async throws -> ItemLines {
-        ItemLines(output: try await PluginRun(command: self, arguments: SpotAction.items(query: query).arguments, timeout: timeout).output())
+    public func items(query: String = "", timeout: TimeInterval) async throws -> ItemBlocks {
+        ItemBlocks(output: try await PluginRun(command: self, arguments: SpotAction.items(query: query).arguments, timeout: timeout).output())
     }
 
     /// Asks the command for the form of an action.
     public func form(_ action: CommandAction, item: SpotItem?, timeout: TimeInterval) async throws -> ItemForm {
         let output = try await PluginRun(command: self, arguments: SpotAction.form(action, item: item).arguments, timeout: timeout).output()
-        guard let form = try? JSONDecoder().decode(ItemForm.self, from: Data(output.utf8)) else { throw PluginError.badForm }
+        guard let form = TextBlock.blocks(in: output).first.flatMap(ItemForm.init(block:)) else { throw PluginError.badForm }
         return form
     }
 
     /// Gives a filled form to the command, and returns the run value of the item it saved, if it prints one.
     public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft, timeout: TimeInterval) async throws -> String {
-        let output = try await PluginRun(command: self, arguments: SpotAction.action(action, item: item).arguments, timeout: timeout, input: draft.json).output()
+        let output = try await PluginRun(command: self, arguments: SpotAction.action(action, item: item).arguments, timeout: timeout, input: draft.text).output()
         return output.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 

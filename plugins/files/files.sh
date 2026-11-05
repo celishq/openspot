@@ -6,14 +6,14 @@ case "$1" in
     mdfind -onlyin "$HOME" "kMDItemFSName == \"*$query*\"cd" 2>/dev/null \
       | grep -v "^$HOME/Library/" \
       | LC_ALL=C tr -d '\000-\011\013-\037' \
-      | sed 's/\\/\\\\/g; s/"/\\"/g' \
+      | sed 's/\\/\\\\/g' \
       | awk -F/ -v home="$HOME" '
           NR > 30 { exit }
           {
             folder = $0
             sub(/\/[^\/]*$/, "", folder)
             if (index(folder, home) == 1) folder = "~" substr(folder, length(home) + 1)
-            printf "{\"title\":\"%s\",\"subtitle\":\"%s\",\"run\":\"%s\",\"file\":\"%s\"}\n", $NF, folder, $0, $0
+            printf "title=%s\nsubtitle=%s\nrun=%s\nfile=%s\n\n", $NF, folder, $0, $0
           }'
     ;;
   reveal)

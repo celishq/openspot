@@ -6,9 +6,9 @@ guide="$here/GUIDE.md"
 
 case "$1" in
   items)
-    echo '{"title":"Copy prompt for AI","subtitle":"Have an AI build a plugin for you","run":"prompt","symbol":"sparkles"}'
-    echo '{"title":"Read the guide","subtitle":"How plugins and widgets work","run":"guide","symbol":"book"}'
-    echo '{"title":"Open plugins folder","subtitle":"Add a folder here to install a plugin","run":"folder","symbol":"folder"}'
+    printf 'title=Copy prompt for AI\nsubtitle=Have an AI build a plugin for you\nrun=prompt\nsymbol=sparkles\n\n'
+    printf 'title=Read the guide\nsubtitle=How plugins and widgets work\nrun=guide\nsymbol=book\n\n'
+    printf 'title=Open plugins folder\nsubtitle=Add a folder here to install a plugin\nrun=folder\nsymbol=folder\n'
     ;;
   prompt)
     pbcopy <<EOF
@@ -27,10 +27,10 @@ EOF
     open "$plugins"
     ;;
   form)
-    echo '{"title":"New plugin","fields":[{"name":"name","label":"Name","type":"text","value":"","required":true,"placeholder":"Weather"}]}'
+    printf 'title=New plugin\nfield=name\nfield.label=Name\nfield.required=true\nfield.placeholder=Weather\n'
     ;;
   new)
-    name=$(jq -r .name)
+    name=$(sed -n 's/^name=//p')
     slug=$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-//; s/-$//')
     if [ -z "$slug" ]; then
       echo "Use letters or digits in the name." >&2

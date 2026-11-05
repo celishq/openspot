@@ -1,6 +1,6 @@
 import Foundation
 
-public struct SpotState: Decodable, Equatable, Sendable {
+public struct SpotState: Equatable, Sendable {
     public let title: String
     public let subtitle: String?
     public let on: Bool?
@@ -22,6 +22,19 @@ public struct SpotState: Decodable, Equatable, Sendable {
         self.level = level
         self.min = min
         self.max = max
+    }
+
+    /// Reads the block a state prints. Only the title is required.
+    public init?(block: TextBlock) {
+        guard let title = block.value("title") else { return nil }
+        self.init(
+            title: title,
+            subtitle: block.value("subtitle"),
+            on: block.flag("on"),
+            level: block.number("level"),
+            min: block.number("min"),
+            max: block.number("max")
+        )
     }
 
     public func adjusted(by delta: Double) -> SpotState {

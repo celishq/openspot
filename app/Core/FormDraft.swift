@@ -25,10 +25,8 @@ public struct FormDraft: Equatable, Sendable {
         }
     }
 
-    /// The values as JSON, for the command to read on its standard input.
-    public var json: String {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .sortedKeys
-        return (try? encoder.encode(values)).map { String(decoding: $0, as: UTF8.self) } ?? "{}"
+    /// The values as one block, for the command to read on its standard input.
+    public var text: String {
+        TextBlock(fields: values.sorted { $0.key < $1.key }.map { .init(key: $0.key, value: $0.value) }).text
     }
 }

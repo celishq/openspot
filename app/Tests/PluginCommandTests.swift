@@ -27,7 +27,7 @@ final class PluginCommandTests: XCTestCase {
 
     func testReadsTheStateACommandPrints() async throws {
         let command = try writeCommand(kind: .toggle, """
-        [ "$1" = state ] && echo '{"title":"Focus","subtitle":"On","on":true}'
+        [ "$1" = state ] && printf 'title=Focus\\nsubtitle=On\\non=true\\n'
         """)
 
         let state = try await command.state(timeout: 5)
@@ -45,7 +45,7 @@ final class PluginCommandTests: XCTestCase {
     }
 
     func testAListShowsItsManifestUnlessItHasAState() async throws {
-        let body = "echo '{\"title\":\"Read\"}'"
+        let body = "echo title=Read"
 
         let plain = try writeCommand(kind: .list, subtitle: "Apps", body)
         let plainState = try await plain.state(timeout: 5)
@@ -58,7 +58,7 @@ final class PluginCommandTests: XCTestCase {
 
     func testReadsTheItemsACommandPrints() async throws {
         let command = try writeCommand(kind: .list, """
-        [ "$1" = items ] && echo '{"title":"Safari","run":"/Safari.app"}'
+        [ "$1" = items ] && printf 'title=Safari\\nrun=/Safari.app\\n'
         """)
 
         let lines = try await command.items(timeout: 5)
@@ -68,7 +68,7 @@ final class PluginCommandTests: XCTestCase {
 
     func testPassesTheSearchToALiveList() async throws {
         let command = try writeCommand(kind: .list, """
-        printf '{"title":"%s","run":"%s"}\\n' "$2" "$1"
+        printf 'title=%s\\nrun=%s\\n' "$2" "$1"
         """)
 
         let lines = try await command.items(query: "rep", timeout: 5)
@@ -78,7 +78,7 @@ final class PluginCommandTests: XCTestCase {
 
     func testReadsTheFormACommandPrints() async throws {
         let command = try writeCommand(kind: .list, """
-        [ "$1 $2" = "form new" ] && echo '{"title":"New","fields":[{"name":"title","label":"Name","type":"text"}]}'
+        [ "$1 $2" = "form new" ] && printf 'title=New\\nfield=title\\nfield.label=Name\\n'
         """)
 
         let form = try await command.form(CommandAction(id: "new", title: "New", isForm: true), item: nil, timeout: 5)
@@ -105,7 +105,7 @@ final class PluginCommandTests: XCTestCase {
         let run = try await command.submit(CommandAction(id: "new", title: "New", isForm: true), item: nil, draft: FormDraft(form: form), timeout: 5)
 
         XCTAssertEqual(run, "abc")
-        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), #"{"title":"One"}"#)
+        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "title=One\n")
     }
 
     func testOutputThatIsNotAStateFails() async throws {

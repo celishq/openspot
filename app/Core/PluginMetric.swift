@@ -24,7 +24,7 @@ public struct PluginMetric: Equatable, Sendable {
 
     public func read(timeout: TimeInterval) async throws -> MetricValue {
         let output = try await PluginRun(url: url, arguments: SpotAction.metric(name).arguments, timeout: timeout).output()
-        guard let value = try? JSONDecoder().decode(MetricValue.self, from: Data(output.utf8)) else {
+        guard let value = TextBlock.blocks(in: output).first.flatMap(MetricValue.init(block:)) else {
             throw PluginError.badMetric
         }
         return value

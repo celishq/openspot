@@ -2,20 +2,24 @@ import XCTest
 @testable import OpenspotCore
 
 final class SpotStateTests: XCTestCase {
-    func testDecodesAToggleState() throws {
-        let json = #"{"title": "Wi-Fi", "subtitle": "VIRGIN-telco_5668", "on": true}"#
-        let state = try JSONDecoder().decode(SpotState.self, from: Data(json.utf8))
+    func testReadsAToggleState() throws {
+        let block = try XCTUnwrap(TextBlock.blocks(in: "title=Wi-Fi\nsubtitle=VIRGIN-telco_5668\non=true").first)
+        let state = try XCTUnwrap(SpotState(block: block))
         XCTAssertEqual(state.title, "Wi-Fi")
         XCTAssertEqual(state.subtitle, "VIRGIN-telco_5668")
         XCTAssertEqual(state.on, true)
     }
 
-    func testDecodesASliderState() throws {
-        let json = #"{"title": "Display", "level": 70, "min": 0, "max": 100}"#
-        let state = try JSONDecoder().decode(SpotState.self, from: Data(json.utf8))
+    func testReadsASliderState() throws {
+        let block = try XCTUnwrap(TextBlock.blocks(in: "title=Display\nlevel=70\nmin=0\nmax=100").first)
+        let state = try XCTUnwrap(SpotState(block: block))
         XCTAssertEqual(state.level, 70)
         XCTAssertEqual(state.min, 0)
         XCTAssertEqual(state.max, 100)
+    }
+
+    func testAStateNeedsATitle() throws {
+        XCTAssertNil(SpotState(block: try XCTUnwrap(TextBlock.blocks(in: "on=true").first)))
     }
 
     func testAdjustingASliderMovesItWithinItsRange() {

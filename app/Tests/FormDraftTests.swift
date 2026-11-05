@@ -7,12 +7,6 @@ final class FormDraftTests: XCTestCase {
         .init(name: "content", label: "Content", type: .multiline, value: "old")
     ])
 
-    func testDecodesAForm() throws {
-        let json = #"{"title":"New","fields":[{"name":"title","label":"Name","type":"text","required":true},{"name":"content","label":"Content","type":"multiline","value":"old"}]}"#
-
-        XCTAssertEqual(try JSONDecoder().decode(ItemForm.self, from: Data(json.utf8)), form)
-    }
-
     func testStartsFromTheFormsValues() {
         XCTAssertEqual(FormDraft(form: form).values, ["title": "", "content": "old"])
     }
@@ -36,12 +30,13 @@ final class FormDraftTests: XCTestCase {
         XCTAssertNil(draft.missing)
     }
 
-    func testTheJsonKeepsQuotesAndNewLines() throws {
+    func testTheTextKeepsQuotesAndNewLines() throws {
         var draft = FormDraft(form: form)
         draft.set("say \"hi\"\nthen go", for: "content")
 
-        let values = try JSONDecoder().decode([String: String].self, from: Data(draft.json.utf8))
+        let block = try XCTUnwrap(TextBlock.blocks(in: draft.text).first)
 
-        XCTAssertEqual(values["content"], "say \"hi\"\nthen go")
+        XCTAssertEqual(block.value("content"), "say \"hi\"\nthen go")
+        XCTAssertTrue(draft.text.contains("\ntitle=\n") || draft.text.hasSuffix("title=\n"))
     }
 }

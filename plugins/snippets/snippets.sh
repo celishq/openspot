@@ -2,6 +2,14 @@
 export LC_ALL=en_US.UTF-8
 data="${OPENSPOT_CONFIG:-$HOME/.config/openspot}/data/snippets.json"
 
+# Makes a jq value safe for one line of a text block.
+esc='def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");'
+
+# Reads the form values on stdin, and prints them as one JSON object.
+form_values() {
+  jq -Rsc 'split("\n") | map(capture("^(?<key>[^=]+)=(?<value>.*)$")? | .value |= gsub("\\\\(?<c>[n\\\\])"; if .c == "n" then "\n" else .c end)) | from_entries'
+}
+
 load() {
   if [ -s "$data" ]; then cat "$data"; else echo '[]'; fi
 }
@@ -20,7 +28,7 @@ content() {
 
 case "$1" in
   items)
-    load | jq -c '.[] | {title, subtitle: (.content | gsub("\\s+"; " ") | .[0:200]), run: .id}'
+    load | jq -r "$esc"'.[] | "title=\(.title | esc)\nsubtitle=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\nrun=\(.id | esc)\n"'
     ;;
   form)
     if [ "$2" = edit ]; then
@@ -30,19 +38,25 @@ case "$1" in
       title="New snippet"
       values='{"title":"","content":""}'
     fi
-    jq -nc --arg title "$title" --argjson v "$values" '{title: $title, fields: [
-      {name: "title", label: "Name", type: "text", value: $v.title, required: true},
-      {name: "content", label: "Text", type: "multiline", value: $v.content, required: true}
-    ]}'
+    jq -nr --arg title "$title" --argjson v "$values" "$esc"'"title=\($title)
+field=title
+field.label=Name
+field.value=\($v.title | esc)
+field.required=true
+field=content
+field.label=Text
+field.type=multiline
+field.value=\($v.content | esc)
+field.required=true"'
     ;;
   new)
     id=$(uuidgen)
-    values=$(cat)
+    values=$(form_values)
     load | jq -c --arg id "$id" --argjson v "$values" '. + [{id: $id, title: $v.title, content: $v.content}]' | store
     echo "$id"
     ;;
   edit)
-    values=$(cat)
+    values=$(form_values)
     load | jq -c --arg id "$2" --argjson v "$values" 'map(if .id == $id then .title = $v.title | .content = $v.content else . end)' | store
     echo "$2"
     ;;
