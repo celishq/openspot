@@ -2,6 +2,8 @@ import Foundation
 
 /// One executable of a plugin, with the look its spot takes.
 public struct PluginCommand: Equatable, Sendable {
+    public static let lastRank = Int.max
+
     public let id: String
     public let name: String
     public let url: URL
@@ -13,6 +15,7 @@ public struct PluginCommand: Equatable, Sendable {
     public let hasState: Bool
     public let pick: ItemPick
     public let isGlobal: Bool
+    public let rank: Int
     public let search: ItemSearch
     public let keepsRecent: Bool
     public let primary: String?
@@ -30,6 +33,7 @@ public struct PluginCommand: Equatable, Sendable {
         hasState: Bool = false,
         pick: ItemPick = .close,
         isGlobal: Bool = false,
+        rank: Int = PluginCommand.lastRank,
         search: ItemSearch = .local,
         keepsRecent: Bool = true,
         primary: String? = nil,
@@ -46,6 +50,7 @@ public struct PluginCommand: Equatable, Sendable {
         self.hasState = hasState
         self.pick = pick
         self.isGlobal = isGlobal
+        self.rank = rank
         self.search = search
         self.keepsRecent = keepsRecent
         self.primary = primary

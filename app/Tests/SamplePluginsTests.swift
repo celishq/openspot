@@ -60,6 +60,13 @@ final class SamplePluginsTests: XCTestCase {
         XCTAssertEqual(stopped.on, false)
     }
 
+    func testLinksComeBeforeAppsInTheMainSearch() throws {
+        let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
+        let apps = try XCTUnwrap(try scan.commands.first { $0.name == "Apps" })
+
+        XCTAssertLessThan(links.rank, apps.rank)
+    }
+
     func testAppsListsEachAppWithItsPathAndNoBadLine() async throws {
         let apps = try XCTUnwrap(try scan.commands.first { $0.name == "Apps" })
 

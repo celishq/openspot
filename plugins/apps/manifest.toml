@@ -9,6 +9,7 @@ symbol = "square.grid.2x2"
 subtitle = "Open app"
 key = "a"
 global = true
+rank = 2
 
 [[actions]]
 command = "Apps"

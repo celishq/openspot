@@ -6,6 +6,7 @@ name = "Links"
 exec = "links.sh"
 type = "list"
 global = true
+rank = 1
 symbol = "link"
 subtitle = "Open a link"
 key = "l"

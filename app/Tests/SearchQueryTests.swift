@@ -64,4 +64,38 @@ final class SearchQueryTests: XCTestCase {
     func testRecentPicksLeadAnEmptySearch() {
         XCTAssertEqual(titles("", in: ["Safari", "Notes", "Mail"], recent: ["Mail", "Notes"]), ["Mail", "Notes", "Safari"])
     }
+
+    private func list(_ titles: [String], recent: [String] = []) -> ItemList {
+        ItemList(items: titles.map { item($0) }, recent: recent)
+    }
+
+    private func found(_ text: String, in lists: [ItemList]) -> [String] {
+        SearchQuery(text: text).matching(in: lists).map(\.item.title)
+    }
+
+    func testTheFirstListWinsAMatchOfTheSameRank() {
+        XCTAssertEqual(found("d", in: [list(["Docs"]), list(["Dictionary"])]), ["Docs", "Dictionary"])
+    }
+
+    func testABetterMatchBeatsAnEarlierList() {
+        XCTAssertEqual(found("note", in: [list(["Keynote"]), list(["Notes"])]), ["Notes", "Keynote"])
+    }
+
+    func testARecentPickBeatsAnEarlierList() {
+        XCTAssertEqual(found("s", in: [list(["Site"]), list(["Safari"], recent: ["Safari"])]), ["Safari", "Site"])
+    }
+
+    func testRecentPicksKeepTheirOrderWithinAList() {
+        XCTAssertEqual(found("s", in: [list(["Safari", "Slack"], recent: ["Slack", "Safari"])]), ["Slack", "Safari"])
+    }
+
+    func testAMatchTellsWhichListItCameFrom() {
+        let matches = SearchQuery(text: "d").matching(in: [list(["Mail"]), list(["Docs"])])
+
+        XCTAssertEqual(matches.map(\.list), [1])
+    }
+
+    func testAnEmptySearchOfSeveralListsKeepsListOrder() {
+        XCTAssertEqual(found("", in: [list(["Docs"]), list(["Apps"])]), ["Docs", "Apps"])
+    }
 }

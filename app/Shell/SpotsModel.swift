@@ -180,10 +180,9 @@ final class SpotsModel {
             return
         }
         let spots = entries.filter { $0.state.title.localizedCaseInsensitiveContains(text) }
-        let items = entries.filter(\.command.isGlobal).flatMap { entry in
-            (lists[entry.id]?.matches(text) ?? []).map { Entry(command: entry.command, item: $0) }
-        }
-        visible = spots + items.prefix(Self.globalItemLimit)
+        let sources = entries.filter(\.command.isGlobal).sorted { $0.command.rank < $1.command.rank }
+        let found = SearchQuery(text: text).matching(in: sources.map { lists[$0.id] ?? ItemList() })
+        visible = spots + found.prefix(Self.globalItemLimit).map { Entry(command: sources[$0.list].command, item: $0.item) }
     }
 
     func moveSelection(dx: Int, dy: Int) {

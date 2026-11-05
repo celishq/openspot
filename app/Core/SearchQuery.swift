@@ -2,6 +2,7 @@ import Foundation
 
 /// Text that finds and ranks items: the title start, a word start, the initials in order, any part of the title,
 /// then any part of the subtitle. Within a rank, recent picks come first, then the given order.
+/// Across lists, a recent pick comes before any other item of its rank, and an earlier list wins what is left.
 public struct SearchQuery: Equatable, Sendable {
     public let text: String
     private let folded: String
@@ -12,13 +13,30 @@ public struct SearchQuery: Equatable, Sendable {
     }
 
     public func matching(_ items: [SpotItem], recent: [String] = []) -> [SpotItem] {
-        let recency = Dictionary(recent.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
-        let ranked = items.enumerated().compactMap { offset, item in
-            rank(of: item).map { (rank: $0, recency: recency[item.run] ?? Int.max, offset: offset, item: item) }
-        }
-        return ranked
+        ranked(items, recent: recent)
             .sorted { ($0.rank, $0.recency, $0.offset) < ($1.rank, $1.recency, $1.offset) }
             .map(\.item)
+    }
+
+    /// The items that match in each list, as one ranking, with the index of the list each came from.
+    public func matching(in lists: [ItemList]) -> [(list: Int, item: SpotItem)] {
+        lists.enumerated()
+            .flatMap { index, list in
+                ranked(list.all, recent: list.recent).map { (list: index, match: $0) }
+            }
+            .sorted { first, second in
+                let one = first.match, two = second.match
+                return (one.rank, one.recency == Int.max ? 1 : 0, first.list, one.recency, one.offset)
+                    < (two.rank, two.recency == Int.max ? 1 : 0, second.list, two.recency, two.offset)
+            }
+            .map { (list: $0.list, item: $0.match.item) }
+    }
+
+    private func ranked(_ items: [SpotItem], recent: [String]) -> [(rank: Int, recency: Int, offset: Int, item: SpotItem)] {
+        let recency = Dictionary(recent.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+        return items.enumerated().compactMap { offset, item in
+            rank(of: item).map { (rank: $0, recency: recency[item.run] ?? Int.max, offset: offset, item: item) }
+        }
     }
 
     private func rank(of item: SpotItem) -> Int? {

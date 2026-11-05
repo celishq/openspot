@@ -104,6 +104,11 @@ public struct Plugin: Equatable, Sendable {
         guard !isGlobal || search == .local else {
             throw PluginError.manifest("\(name) cannot join the main search, because it searches live")
         }
+        var rank = PluginCommand.lastRank
+        if let value = table["rank"] {
+            guard case .integer(let number) = value else { throw PluginError.manifest("\(name) needs a number as its rank") }
+            rank = number
+        }
         return PluginCommand(
             id: "\(plugin.lastPathComponent)/\(name)",
             name: name,
@@ -116,6 +121,7 @@ public struct Plugin: Equatable, Sendable {
             hasState: table["state"] == .boolean(true),
             pick: pick,
             isGlobal: isGlobal,
+            rank: rank,
             search: search,
             keepsRecent: table["recents"] != .boolean(false),
             primary: text("primary"),

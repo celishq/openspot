@@ -96,11 +96,11 @@ final class ItemListTests: XCTestCase {
         XCTAssertEqual(list.selectedItem?.title, "B")
     }
 
-    func testMatchesLeavesTheSearchOfTheListAlone() {
+    func testASearchElsewhereLeavesTheSearchOfTheListAlone() {
         var list = ItemList(items: items("Safari", "Notes"), recent: [])
         list.search("note")
 
-        XCTAssertEqual(list.matches("saf").map(\.title), ["Safari"])
+        XCTAssertEqual(SearchQuery(text: "saf").matching(in: [list]).map(\.item.title), ["Safari"])
         XCTAssertEqual(list.shown.map(\.title), ["Notes"])
     }
 

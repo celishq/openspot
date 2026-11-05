@@ -10,7 +10,7 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var shown: [SpotItem] = []
     public private(set) var selected = 0
     public private(set) var isWaiting = false
-    private var all: [SpotItem]
+    private(set) var all: [SpotItem]
 
     public init(items: [SpotItem] = [], recent: [String] = [], search: ItemSearch = .local) {
         self.search = search
@@ -21,11 +21,6 @@ public struct ItemList: Equatable, Sendable {
 
     public var selectedItem: SpotItem? {
         shown.indices.contains(selected) ? shown[selected] : nil
-    }
-
-    /// The items that a search elsewhere finds in this list.
-    public func matches(_ text: String) -> [SpotItem] {
-        SearchQuery(text: text).matching(all, recent: recent)
     }
 
     /// Searches for new text, and selects the first row. Returns false when the text is the same, and changes nothing.

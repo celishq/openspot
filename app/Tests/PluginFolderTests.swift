@@ -94,6 +94,40 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertTrue(command.isGlobal)
     }
 
+    func testACommandCanDeclareItsRank() throws {
+        try writePlugin("tools", manifest: """
+        name = "Tools"
+        api = 1
+
+        [[commands]]
+        name = "One"
+        exec = "one.sh"
+        rank = 3
+
+        [[commands]]
+        name = "Two"
+        exec = "one.sh"
+        """, files: ["one.sh"])
+
+        let commands = try PluginFolder(url: folder).scan().commands
+
+        XCTAssertEqual(commands.map(\.rank), [3, PluginCommand.lastRank])
+    }
+
+    func testARankThatIsNotANumberIsRefused() throws {
+        try writePlugin("tools", manifest: """
+        name = "Tools"
+        api = 1
+
+        [[commands]]
+        name = "One"
+        exec = "one.sh"
+        rank = "first"
+        """, files: ["one.sh"])
+
+        XCTAssertEqual(try PluginFolder(url: folder).scan().refused.count, 1)
+    }
+
     func testAListCanSearchLive() throws {
         try writePlugin("tools", manifest: """
         name = "Tools"
