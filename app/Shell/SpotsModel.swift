@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import OpenspotCore
 
 @MainActor
@@ -52,6 +52,8 @@ final class SpotsModel {
     private static let globalItemLimit = 6
     private static let liveTimeout: TimeInterval = 10
     private static let metricTick: UInt64 = 1_000_000_000
+    nonisolated private static let sourceKey = "translate.source"
+    nonisolated private static let targetKey = "translate.target"
 
     var entries: [Entry] = [] {
         didSet { updateVisible() }
@@ -91,6 +93,17 @@ final class SpotsModel {
     private var metricSchedule = MetricSchedule()
     private var metricLoop: Task<Void, Never>?
     private var outputs: [String: PluginOutput] = [:]
+    var translation = TranslationDraft(
+        preferred: Locale.preferredLanguages,
+        source: UserDefaults.standard.string(forKey: SpotsModel.sourceKey),
+        target: UserDefaults.standard.string(forKey: SpotsModel.targetKey)
+    ) {
+        didSet {
+            UserDefaults.standard.set(translation.source, forKey: Self.sourceKey)
+            UserDefaults.standard.set(translation.target, forKey: Self.targetKey)
+        }
+    }
+    var isDownloadingLanguage = false
 
     /// Reads the plugin folder again, and asks each plugin for its state.
     func reload() async {
@@ -305,7 +318,7 @@ final class SpotsModel {
     /// Runs a command by its key, with the panel open only when its spot needs it.
     func press(_ id: String) {
         guard let entry = entries.first(where: { $0.id == id }) else { return }
-        guard entry.kind == .list else {
+        guard entry.kind.opensSheet else {
             run(entry)
             return
         }
@@ -332,7 +345,7 @@ final class SpotsModel {
         case .launch:
             if isShown { dismiss() }
             perform(.run, on: entry)
-        case .list:
+        case .list, .view:
             sheetMoves = true
             if openList == entry.id {
                 closeList()
@@ -357,7 +370,7 @@ final class SpotsModel {
     /// Opens the list of a metric that is also a list, or else selects the widget that places it. Closes the panel
     /// when it already shows that.
     func openFromTray(_ id: String) {
-        let opens = entries.first { $0.id == id && $0.kind == .list }?.id
+        let opens = entries.first { $0.id == id && $0.kind.opensSheet }?.id
         if isShown, opens == nil || openList == opens {
             dismiss()
         } else if let opens {
@@ -387,6 +400,11 @@ final class SpotsModel {
 
     var placements: [SpotPlacement] {
         SpotGrid().place(visible.map(\.size))
+    }
+
+    /// Whether the panel shows its search field, which a form or a screen of its own replaces.
+    var showsSearch: Bool {
+        form == nil && openEntry?.kind != .view
     }
 
     var openEntry: Entry? {
@@ -520,6 +538,7 @@ final class SpotsModel {
             }
             return true
         }
+        if openEntry?.kind == .view { return handleScreenKey(key) }
         guard let target else { return false }
         if key == ActionKey(name: "k", isCommand: true) {
             openMenu(on: target)
@@ -534,6 +553,32 @@ final class SpotsModel {
             run(action, on: target)
         }
         return true
+    }
+
+    /// Takes the keys of a screen in a sheet, and leaves all others to its text areas.
+    private func handleScreenKey(_ key: ActionKey) -> Bool {
+        switch key {
+        case ActionKey(name: "return", isCommand: true): copyTranslation()
+        case ActionKey(name: "s", isCommand: true, isShift: true): swapTranslation()
+        case ActionKey(name: "escape"):
+            allowSheetMotion()
+            closeList()
+        default: return false
+        }
+        return true
+    }
+
+    func swapTranslation() {
+        translation.swap()
+    }
+
+    /// Copies the translation and closes the panel. The screen and its text stay for the next time.
+    private func copyTranslation() {
+        guard !translation.output.isEmpty else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(translation.output, forType: .string)
+        if isShown { dismiss() }
+        confirm("Copied")
     }
 
     private func handleMenuKey(_ key: ActionKey) {

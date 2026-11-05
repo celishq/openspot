@@ -51,6 +51,7 @@ struct SpotsView: View {
                     rect: sheetRect,
                     hint: model.hint,
                     form: model.form?.entry.id == entry.id ? model.form?.draft : nil,
+                    screen: entry.kind == .view ? AnyView(SpotTranslateView(model: model)) : nil,
                     createTitle: model.createAction.map { "\($0.title): \(model.searchText)" },
                     onCreate: { model.createFromSearch() },
                     onFormValue: { model.setFormValue($0, for: $1) },
@@ -69,8 +70,8 @@ struct SpotsView: View {
                 .padding(.horizontal, sheetOpen ? SpotTokens.halo + SpotTokens.padding : SpotTokens.halo)
                 .padding(.top, SpotTokens.halo)
                 .offset(y: sheetOpen ? SpotTokens.sheetFieldDrop : 0)
-                .opacity(model.form == nil ? 1 : 0)
-                .allowsHitTesting(model.form == nil)
+                .opacity(model.showsSearch ? 1 : 0)
+                .allowsHitTesting(model.showsSearch)
             if let menu = model.menu {
                 Color.clear
                     .contentShape(Rectangle())
@@ -90,7 +91,7 @@ struct SpotsView: View {
                 return
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeInDuration) {
-                if model.isShown { searchFocused = true }
+                if model.isShown, model.showsSearch { searchFocused = true }
             }
         }
         .onChange(of: model.selected) {
@@ -163,6 +164,7 @@ struct SpotsView: View {
 
     private var sheetRect: CGRect {
         if let form = model.form { return SpotTokens.formRect(form.draft.form) }
+        if model.entries.first(where: { $0.id == sheetID })?.kind == .view { return SpotTokens.viewRect }
         return SpotTokens.sheetRect(rows: model.lists[sheetID ?? ""]?.shown.count ?? 0)
     }
 
@@ -214,7 +216,7 @@ struct SpotsView: View {
                     onLevel: { model.setLevel(entry.id, to: $0) }
                 )
                 .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .named(Self.panelSpace)) }, action: { frame in
-                    if entry.kind == .list { cardFrames[entry.id] = frame }
+                    if entry.kind.opensSheet { cardFrames[entry.id] = frame }
                 })
                 .offset(
                     x: CGFloat(placement.column) * (SpotTokens.cell + SpotTokens.columnGap) + pushed.width,

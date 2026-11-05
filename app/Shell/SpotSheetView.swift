@@ -7,6 +7,7 @@ struct SpotSheetView: View {
     let rect: CGRect
     let hint: String
     let form: FormDraft?
+    let screen: AnyView?
     let createTitle: String?
     let onCreate: () -> Void
     let onFormValue: (String, String) -> Void
@@ -49,7 +50,9 @@ struct SpotSheetView: View {
                 }
                 .buttonStyle(.plain)
             }
-            if let form {
+            if let screen {
+                screen
+            } else if let form {
                 SpotFormView(draft: form, onValue: onFormValue)
                 SpotHint(text: "⌘⏎ Save   Esc Cancel")
             } else {

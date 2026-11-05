@@ -154,6 +154,7 @@ public struct PluginCommand: Equatable, Sendable {
         case .list: return "Open"
         case .slider: return nil
         case .widget: return opens == nil ? nil : "Open"
+        case .view: return "Open"
         }
     }
 

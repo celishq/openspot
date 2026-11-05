@@ -87,6 +87,9 @@ enum SpotTokens {
         sheetRect(rows: rows).height < sheetMaxHeight
     }
 
+    /// The frame of a sheet that shows a screen of its own.
+    static let viewRect = CGRect(x: halo, y: halo, width: gridWidth, height: sheetMaxHeight)
+
     /// The frame of a sheet that shows this form.
     static func formRect(_ form: ItemForm) -> CGRect {
         let fields = form.fields.reduce(CGFloat(0)) { sum, field in
