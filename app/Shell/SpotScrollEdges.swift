@@ -34,18 +34,14 @@ struct SpotScrollEdgeTracker: ViewModifier {
     @Binding var edges: SpotScrollEdges
 
     func body(content: Content) -> some View {
-        if #available(macOS 15.0, *) {
-            content.onScrollGeometryChange(for: SpotScrollEdges.self, of: { geometry in
-                let below = geometry.contentSize.height - geometry.containerSize.height - geometry.contentOffset.y
-                return SpotScrollEdges(
-                    top: min(max(geometry.contentOffset.y / Self.fadeDistance, 0), 1),
-                    bottom: min(max(below / Self.fadeDistance, 0), 1)
-                )
-            }, action: { _, new in
-                edges = new
-            })
-        } else {
-            content
-        }
+        content.onScrollGeometryChange(for: SpotScrollEdges.self, of: { geometry in
+            let below = geometry.contentSize.height - geometry.containerSize.height - geometry.contentOffset.y
+            return SpotScrollEdges(
+                top: min(max(geometry.contentOffset.y / Self.fadeDistance, 0), 1),
+                bottom: min(max(below / Self.fadeDistance, 0), 1)
+            )
+        }, action: { _, new in
+            edges = new
+        })
     }
 }

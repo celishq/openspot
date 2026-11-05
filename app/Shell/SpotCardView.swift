@@ -138,21 +138,16 @@ struct SpotCardView: View {
         .frame(maxHeight: .infinity, alignment: .center)
     }
 
-    @ViewBuilder
     private var slider: some View {
         let low = entry.state.min ?? 0
         let high = entry.state.max ?? 100
-        let track = Slider(
+        return Slider(
             value: Binding(get: { entry.state.level ?? low }, set: { onLevel($0.rounded()) }),
             in: low...high
         )
         .controlSize(.small)
         .tint(.white)
-        if #available(macOS 26.0, *) {
-            track.sliderThumbVisibility(.hidden)
-        } else {
-            track
-        }
+        .sliderThumbVisibility(.hidden)
     }
 
     private var glyphDisc: Color {
