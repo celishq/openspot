@@ -22,7 +22,40 @@ struct SpotSheetView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
+        VStack(alignment: .leading, spacing: screen == nil ? SpotTokens.rowGap : SpotTokens.formFieldGap) {
+            if screen == nil {
+                header
+            } else {
+                screenHeader
+            }
+            if let screen {
+                screen
+            } else if let form {
+                SpotFormView(draft: form, onValue: onFormValue)
+                SpotHint(text: "⌘⏎ Save   Esc Cancel")
+            } else {
+                Color.clear.frame(height: SpotTokens.listRowHeight)
+                if let createTitle {
+                    Button(action: onCreate) {
+                        createLabel(createTitle)
+                    }
+                    .buttonStyle(.plain)
+                } else if list.shown.isEmpty {
+                    Text(emptyText)
+                        .font(SpotType.body)
+                        .modifier(SpotSecondaryText())
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    rows
+                }
+                SpotHint(text: hint)
+            }
+        }
+        .padding(SpotTokens.padding)
+        .frame(width: rect.width, height: rect.height, alignment: .topLeading)
+    }
+
+    private var header: some View {
             HStack(spacing: SpotTokens.padding - 5) {
                 Image(systemName: entry.symbol)
                     .font(.system(size: 17, weight: .semibold))
@@ -50,31 +83,24 @@ struct SpotSheetView: View {
                 }
                 .buttonStyle(.plain)
             }
-            if let screen {
-                screen
-            } else if let form {
-                SpotFormView(draft: form, onValue: onFormValue)
-                SpotHint(text: "⌘⏎ Save   Esc Cancel")
-            } else {
-                Color.clear.frame(height: SpotTokens.listRowHeight)
-                if let createTitle {
-                    Button(action: onCreate) {
-                        createLabel(createTitle)
-                    }
-                    .buttonStyle(.plain)
-                } else if list.shown.isEmpty {
-                    Text(emptyText)
-                        .font(SpotType.body)
-                        .modifier(SpotSecondaryText())
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    rows
-                }
-                SpotHint(text: hint)
+    }
+
+    /// The smaller header of a screen of its own, which leaves its room to the screen.
+    private var screenHeader: some View {
+        HStack {
+            Text(entry.state.title)
+                .font(SpotType.title)
+                .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+            Spacer()
+            Button(action: onClose) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: SpotTokens.listIconSize, height: SpotTokens.listIconSize)
+                    .background(Color.white.opacity(0.2), in: Circle())
             }
+            .buttonStyle(.plain)
         }
-        .padding(SpotTokens.padding)
-        .frame(width: rect.width, height: rect.height, alignment: .topLeading)
     }
 
     private var emptyText: String {

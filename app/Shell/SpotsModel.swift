@@ -583,7 +583,7 @@ final class SpotsModel {
     }
 
     /// Copies the translation and closes the panel. The screen and its text stay for the next time.
-    private func copyTranslation() {
+    func copyTranslation() {
         guard !translation.output.isEmpty else { return }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(translation.output, forType: .string)

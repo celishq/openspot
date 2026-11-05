@@ -29,6 +29,9 @@ struct SpotTranslateView: View {
     private static let settings = URL(string: "x-apple.systempreferences:com.apple.Localization-Settings.extension")
     private static let pause: Duration = .milliseconds(300)
     private static let hint = "⌘⏎ Copy   ⌘⇧S Swap   Esc Close"
+    private static let swapSize: CGFloat = 30
+    private static let swapFill = 0.42
+    private static let editorInset: CGFloat = 5
 
     let model: SpotsModel
     @State private var languages: [Language] = []
@@ -49,9 +52,15 @@ struct SpotTranslateView: View {
 
     var body: some View {
         VStack(spacing: SpotTokens.formFieldGap) {
-            languageRow
-            inputArea
-            outputArea
+            VStack(spacing: 0) {
+                inputPane
+                Rectangle()
+                    .fill(.white.opacity(SpotTokens.fill))
+                    .frame(height: 1)
+                outputPane
+            }
+            .background(SpotTokens.fieldFill, in: shape)
+            .overlay(alignment: .trailing) { swapButton }
             SpotHint(text: Self.hint)
         }
         .task { await loadLanguages() }
@@ -67,67 +76,98 @@ struct SpotTranslateView: View {
         }
     }
 
-    private var languageRow: some View {
-        HStack(spacing: SpotTokens.placeGap) {
+    private var swapButton: some View {
+        Button { model.swapTranslation() } label: {
+            Image(systemName: "arrow.up.arrow.down")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: Self.swapSize, height: Self.swapSize)
+                .background(Color(white: Self.swapFill), in: Circle())
+                .overlay(Circle().stroke(SpotTokens.fieldFill, lineWidth: 3))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!draft.canSwap)
+        .accessibilityLabel("Swap languages")
+        .padding(.trailing, SpotTokens.padding)
+    }
+
+    private func languageMenu(_ title: String, @ViewBuilder choices: () -> some View) -> some View {
+        Menu {
+            choices()
+        } label: {
+            HStack(spacing: 4) {
+                Text(title)
+                    .font(SpotType.detail)
+                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 9, weight: .semibold))
+                    .modifier(SpotSecondaryText())
+            }
+        }
+        .menuStyle(.button)
+        .menuIndicator(.hidden)
+        .buttonStyle(.plain)
+        .fixedSize()
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var sourceMenu: some View {
+        languageMenu(automaticTitle) {
             Picker("From", selection: Binding(get: { draft.source }, set: { model.translation.choose(source: $0) })) {
                 Text(automaticTitle).tag(String?.none)
                 Divider()
                 ForEach(languages) { Text($0.name).tag(String?.some($0.id)) }
             }
+            .pickerStyle(.inline)
             .labelsHidden()
-            .controlSize(.small)
-            .frame(maxWidth: .infinity)
-            Button { model.swapTranslation() } label: {
-                Image(systemName: "arrow.left.arrow.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: SpotTokens.listIconSize, height: SpotTokens.listIconSize)
-                    .background(Color.white.opacity(SpotTokens.fill), in: Circle())
-                    .contentShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .disabled(!draft.canSwap)
-            .opacity(draft.canSwap ? 1 : 0.5)
-            .accessibilityLabel("Swap languages")
+        }
+    }
+
+    private var targetMenu: some View {
+        languageMenu(name(of: draft.target)) {
             Picker("To", selection: Binding(get: { draft.target }, set: { model.translation.choose(target: $0) })) {
                 ForEach(languages) { Text($0.name).tag($0.id) }
             }
+            .pickerStyle(.inline)
             .labelsHidden()
-            .controlSize(.small)
-            .frame(maxWidth: .infinity)
         }
     }
 
+    /// The menu of the input language, or the language it found.
     private var automaticTitle: String {
-        draft.detected.map { "Auto (\(name(of: $0)))" } ?? "Automatic"
+        if let source = draft.source { return name(of: source) }
+        return draft.detected.map { "Auto (\(name(of: $0)))" } ?? "Automatic"
     }
 
-    private var inputArea: some View {
-        ZStack(alignment: .topLeading) {
-            TextEditor(text: Binding(get: { draft.input }, set: { model.translation.input = $0 }))
-                .scrollContentBackground(.hidden)
-                .font(SpotType.body)
-                .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
-                .focused($isInputFocused)
-                .padding(.horizontal, SpotTokens.padding - 5)
-                .padding(.vertical, SpotTokens.padding - 5)
-            if draft.input.isEmpty {
-                Text("Type or paste text")
+    private var inputPane: some View {
+        VStack(spacing: SpotTokens.formLabelGap) {
+            sourceMenu
+            ZStack(alignment: .topLeading) {
+                TextEditor(text: Binding(get: { draft.input }, set: { model.translation.input = $0 }))
+                    .scrollContentBackground(.hidden)
                     .font(SpotType.body)
-                    .foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
-                    .padding(SpotTokens.padding - 5)
-                    .padding(.leading, 5)
-                    .allowsHitTesting(false)
+                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                    .focused($isInputFocused)
+                    .padding(.horizontal, -Self.editorInset)
+                if draft.input.isEmpty {
+                    Text("Type or paste text")
+                        .font(SpotType.body)
+                        .foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
+                        .allowsHitTesting(false)
+                }
             }
         }
+        .padding(SpotTokens.padding)
         .frame(maxHeight: .infinity)
-        .background(SpotTokens.fieldFill, in: shape)
     }
 
-    private var outputArea: some View {
-        Group {
+    private var outputPane: some View {
+        VStack(spacing: SpotTokens.formLabelGap) {
+            targetMenu
             if let notice {
                 noticeView(notice)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView(showsIndicators: false) {
                     Text(draft.output.isEmpty ? "Translation" : draft.output)
@@ -135,13 +175,16 @@ struct SpotTranslateView: View {
                         .foregroundStyle(.white.opacity(draft.output.isEmpty ? SpotTokens.secondaryLight : SpotTokens.titleOpacity))
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(SpotTokens.padding - 5)
-                        .padding(.leading, 5)
+                }
+                .frame(maxHeight: .infinity)
+                if !draft.output.isEmpty {
+                    noticeButton("Copy") { model.copyTranslation() }
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                 }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(SpotTokens.fieldFill, in: shape)
+        .padding(SpotTokens.padding)
+        .frame(maxHeight: .infinity)
     }
 
     @ViewBuilder
@@ -250,7 +293,10 @@ struct SpotTranslateView: View {
     }
 
     private nonisolated static func translation(of text: String, from: Locale.Language, to: Locale.Language) async throws -> String {
-        try await TranslationSession(installedSource: from, target: to).translate(text).targetText
+        if #available(macOS 26.4, *) {
+            return try await TranslationSession(installedSource: from, target: to, preferredStrategy: .highFidelity).translate(text).targetText
+        }
+        return try await TranslationSession(installedSource: from, target: to).translate(text).targetText
     }
 
     private func startDownload(from: String, to: String) {
