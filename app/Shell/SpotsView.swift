@@ -14,8 +14,8 @@ struct SpotsView: View {
     @State private var sheetHint = ""
 
     private static let panelSpace = "panel"
-    private static let gridWord = "spots"
     private static let wordRoll: CGFloat = 20
+    private static let fieldGap: CGFloat = 8
     private static let blurSteps: [(inset: CGFloat, radius: CGFloat)] = [
         (SpotTokens.halo - 30, SpotTokens.backdropBlur / 4),
         (SpotTokens.halo - 20, SpotTokens.backdropBlur / 2),
@@ -76,6 +76,7 @@ struct SpotsView: View {
                 .offset(y: sheetOpen ? SpotTokens.sheetFieldDrop : 0)
                 .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(showsSearchField ? 1 : 0) }
                 .allowsHitTesting(showsSearchField)
+            promptLayer
             if let menu = model.menu {
                 Color.clear
                     .contentShape(Rectangle())
@@ -275,13 +276,12 @@ struct SpotsView: View {
     }
 
     private var searchField: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Self.fieldGap) {
             Image(systemName: "magnifyingglass")
                 .modifier(SpotSecondaryText())
                 .frame(width: sheetOpen ? SpotTokens.listIconSize : SpotTokens.glyphSize)
-            TextField("Search \(sheetOpen ? sheetWord : Self.gridWord)", text: Binding(get: { model.searchText }, set: { model.searchText = $0 }), prompt: Text(""))
+            TextField("\(SearchPrompt.verb) \(sheetOpen ? sheetWord : SearchPrompt.grid)", text: Binding(get: { model.searchText }, set: { model.searchText = $0 }), prompt: Text(""))
                 .textFieldStyle(.plain)
-                .background(alignment: .leading) { promptWords }
                 .focused($searchFocused)
                 .onSubmit { model.runSelected() }
                 .onKeyPress(.downArrow) {
@@ -336,12 +336,30 @@ struct SpotsView: View {
         .modifier(SpotGlass(radius: fieldRadius, isBare: sheetOpen))
     }
 
-    /// The empty field's words. The first stays, and the last rolls out of its line as the other rolls in.
+    /// The empty field's words, as a layer of their own that moves with the field by offsets alone, which stay smooth where
+    /// layout rounds to whole pixels.
+    private var promptLayer: some View {
+        let top = SpotTokens.halo + (sheetOpen ? SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2 : 0)
+        let left = sheetOpen
+            ? SpotTokens.halo + 2 * SpotTokens.padding + SpotTokens.listIconSize + Self.fieldGap
+            : SpotTokens.halo + SpotTokens.padding + SpotTokens.glyphSize + Self.fieldGap
+        return promptWords
+            .frame(height: SpotTokens.rowHeight)
+            .offset(x: left, y: top)
+            .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
+            .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(showsSearchField ? 1 : 0) }
+            .opacity(model.isShown ? 1 : 0)
+            .scaleEffect(model.isShown ? 1 : SpotMotion.hiddenScale, anchor: UnitPoint(x: 0.5, y: (SpotTokens.halo + SpotTokens.rowHeight / 2) / SpotTokens.panelHeight))
+            .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
+            .allowsHitTesting(false)
+    }
+
+    /// The first word stays, and the last rolls out of its line as the other rolls in.
     private var promptWords: some View {
         HStack(spacing: 0) {
-            Text("Search ")
+            Text("\(SearchPrompt.verb) ")
             ZStack(alignment: .leading) {
-                Text(Self.gridWord)
+                Text(SearchPrompt.grid)
                     .opacity(sheetOpen ? 0 : 1)
                     .offset(y: sheetOpen ? -Self.wordRoll : 0)
                 Text(sheetWord)
@@ -350,10 +368,10 @@ struct SpotsView: View {
             }
             .clipped()
         }
+        .font(SpotType.input)
         .foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
         .lineLimit(1)
         .opacity(model.searchText.isEmpty ? 1 : 0)
-        .allowsHitTesting(false)
     }
 
     private var fieldRadius: CGFloat {
@@ -361,6 +379,6 @@ struct SpotsView: View {
     }
 
     private var sheetWord: String {
-        model.entries.first { $0.id == sheetID }?.state.title ?? ""
+        SearchPrompt.word(for: model.entries.first { $0.id == sheetID }?.state.title ?? "")
     }
 }
