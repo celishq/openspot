@@ -74,7 +74,8 @@ public struct Plugin: Equatable, Sendable {
             hasState: table["state"] == .boolean(true),
             pick: pick,
             isGlobal: isGlobal,
-            search: search
+            search: search,
+            keepsRecent: table["recents"] != .boolean(false)
         )
     }
 }

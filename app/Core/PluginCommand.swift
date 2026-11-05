@@ -14,6 +14,7 @@ public struct PluginCommand: Equatable, Sendable {
     public let pick: ItemPick
     public let isGlobal: Bool
     public let search: ItemSearch
+    public let keepsRecent: Bool
 
     public init(
         id: String,
@@ -27,7 +28,8 @@ public struct PluginCommand: Equatable, Sendable {
         hasState: Bool = false,
         pick: ItemPick = .close,
         isGlobal: Bool = false,
-        search: ItemSearch = .local
+        search: ItemSearch = .local,
+        keepsRecent: Bool = true
     ) {
         self.id = id
         self.name = name
@@ -41,6 +43,7 @@ public struct PluginCommand: Equatable, Sendable {
         self.pick = pick
         self.isGlobal = isGlobal
         self.search = search
+        self.keepsRecent = keepsRecent
     }
 
     /// The state the manifest gives, shown before the command answers or when it cannot.
@@ -77,6 +80,6 @@ public struct PluginCommand: Equatable, Sendable {
     }
 
     public func withoutKey() -> PluginCommand {
-        PluginCommand(id: id, name: name, url: url, kind: kind, size: size, symbol: symbol, subtitle: subtitle, hasState: hasState, pick: pick, isGlobal: isGlobal, search: search)
+        PluginCommand(id: id, name: name, url: url, kind: kind, size: size, symbol: symbol, subtitle: subtitle, hasState: hasState, pick: pick, isGlobal: isGlobal, search: search, keepsRecent: keepsRecent)
     }
 }

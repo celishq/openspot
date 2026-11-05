@@ -38,9 +38,32 @@ final class SamplePluginsTests: XCTestCase {
 
         XCTAssertEqual(state.title, "Caffeinate")
         XCTAssertNotNil(state.on)
-        XCTAssertEqual(lines.items.prefix(4).map(\.run), ["1800", "3600", "7200", "0"])
+        XCTAssertEqual(lines.items.map(\.run).filter { $0 != "off" }, ["1800", "3600", "7200", "0"])
         XCTAssertEqual(lines.errors, [])
-        XCTAssertEqual(caffeinate.pick, .stay)
+        XCTAssertEqual(caffeinate.pick, .close)
+        XCTAssertFalse(caffeinate.keepsRecent)
+    }
+
+    func testCaffeinateOffersTurnOffFirstAndStopsOnIt() async throws {
+        let caffeinate = try XCTUnwrap(try scan.commands.first { $0.name == "Caffeinate" })
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-caffeinate-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let before = ProcessInfo.processInfo.environment["TMPDIR"]
+        setenv("TMPDIR", folder.path + "/", 1)
+        defer {
+            if let before { setenv("TMPDIR", before, 1) } else { unsetenv("TMPDIR") }
+            try? FileManager.default.removeItem(at: folder)
+        }
+
+        try await caffeinate.perform(.item(SpotItem(title: "1 minute", run: "60")), timeout: 5)
+        let started = try await caffeinate.state(timeout: 5)
+        let first = try await caffeinate.items(timeout: 5).items.first
+        XCTAssertEqual(started.on, true)
+        XCTAssertEqual(first?.run, "off")
+
+        try await caffeinate.perform(.item(try XCTUnwrap(first)), timeout: 5)
+        let stopped = try await caffeinate.state(timeout: 5)
+        XCTAssertEqual(stopped.on, false)
     }
 
     func testAppsListsEachAppWithItsPathAndNoBadLine() async throws {

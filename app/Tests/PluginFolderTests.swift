@@ -82,10 +82,12 @@ final class PluginFolderTests: XCTestCase {
         state = true
         pick = "stay"
         global = true
+        recents = false
         """, files: ["one.sh"])
 
         let command = try XCTUnwrap(try PluginFolder(url: folder).scan().commands.first)
 
+        XCTAssertFalse(command.keepsRecent)
         XCTAssertEqual(command.kind, .list)
         XCTAssertTrue(command.hasState)
         XCTAssertEqual(command.pick, .stay)
@@ -157,6 +159,7 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(command.pick, .close)
         XCTAssertFalse(command.isGlobal)
         XCTAssertEqual(command.search, .local)
+        XCTAssertTrue(command.keepsRecent)
     }
 
     func testCommandsOfTwoPluginsHaveDifferentIds() throws {

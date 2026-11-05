@@ -9,7 +9,10 @@ case "$(ps -p "${pid:-0}" -o comm= 2>/dev/null)" in
 esac
 
 stop() {
-  [ "$running" = 1 ] && kill "$pid"
+  if [ "$running" = 1 ] && ! kill "$pid"; then
+    echo "Could not turn off Caffeinate." >&2
+    exit 1
+  fi
   rm -f "$record"
   running=0
 }
@@ -33,13 +36,13 @@ case "$1" in
     printf '{"title":"Caffeinate","subtitle":"%s","on":%s}\n' "$subtitle" "$on"
     ;;
   items)
+    if [ "$running" = 1 ]; then
+      echo '{"title":"Turn off","run":"off"}'
+    fi
     echo '{"title":"30 minutes","run":"1800"}'
     echo '{"title":"1 hour","run":"3600"}'
     echo '{"title":"2 hours","run":"7200"}'
     echo '{"title":"Until turned off","run":"0"}'
-    if [ "$running" = 1 ]; then
-      echo '{"title":"Turn off","run":"off"}'
-    fi
     ;;
   off)
     stop

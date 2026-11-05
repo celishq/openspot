@@ -315,7 +315,12 @@ final class SpotsModel {
     private func open(_ id: String) {
         openList = id
         lists[id]?.search("")
-        if let entry = openEntry, entry.command.search == .live { askLive(entry.command) }
+        guard let command = openEntry?.command else { return }
+        if command.search == .live {
+            askLive(command)
+        } else {
+            loadItems(of: command)
+        }
     }
 
     func closeList() {
@@ -340,8 +345,10 @@ final class SpotsModel {
 
     private func pick(_ item: SpotItem, of entry: Entry) {
         if entry.command.pick == .close {
-            lists[entry.id]?.remember(item)
-            UserDefaults.standard.set(lists[entry.id]?.recent, forKey: Self.recentKey(entry.id))
+            if entry.command.keepsRecent {
+                lists[entry.id]?.remember(item)
+                UserDefaults.standard.set(lists[entry.id]?.recent, forKey: Self.recentKey(entry.id))
+            }
             if isShown { dismiss() }
             closeList()
             query = ""

@@ -8,4 +8,4 @@ type = "list"
 symbol = "cup.and.saucer.fill"
 key = "c"
 state = true
-pick = "stay"
+recents = false
