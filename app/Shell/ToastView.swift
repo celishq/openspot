@@ -12,7 +12,7 @@ struct ToastView: View {
                     .foregroundStyle(.white)
             }
             Text(toast.message)
-                .font(.system(size: 13, weight: .medium))
+                .font(SpotType.body)
                 .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
                 .lineLimit(3)
         }

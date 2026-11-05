@@ -147,9 +147,9 @@ struct SpotsView: View {
     private var searchField: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .foregroundStyle(.white)
+                .foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
                 .frame(width: SpotTokens.glyphSize)
-            TextField(searchPrompt, text: Binding(get: { model.searchText }, set: { model.searchText = $0 }), prompt: Text(searchPrompt).foregroundStyle(.white.opacity(SpotTokens.titleOpacity)))
+            TextField(searchPrompt, text: Binding(get: { model.searchText }, set: { model.searchText = $0 }), prompt: Text(searchPrompt).foregroundStyle(.white.opacity(SpotTokens.secondaryLight)))
                 .textFieldStyle(.plain)
                 .focused($searchFocused)
                 .onSubmit { model.runSelected() }
@@ -201,7 +201,7 @@ struct SpotsView: View {
                     return .handled
                 }
         }
-        .font(.system(size: 14))
+        .font(SpotType.input)
         .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
         .padding(.horizontal, SpotTokens.padding)
         .frame(height: sheetOpen ? SpotTokens.listRowHeight : SpotTokens.rowHeight)

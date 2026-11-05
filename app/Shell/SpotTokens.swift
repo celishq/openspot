@@ -21,7 +21,7 @@ enum SpotTokens {
     static let backdropShade = 0.2
     static let glassShade = 0.38
     static let titleOpacity = 0.85
-    static let secondaryLight = 0.47
+    static let secondaryLight = 0.55
     static let cardBlur: CGFloat = 16
     static let panelWidth: CGFloat = gridWidth + 2 * halo
     static let panelHeight: CGFloat = 2 * halo + 7 * rowHeight + 6 * rowGap

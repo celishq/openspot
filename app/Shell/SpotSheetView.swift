@@ -22,14 +22,15 @@ struct SpotSheetView: View {
                     .foregroundStyle(.white)
                     .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
                     .background(Color.white.opacity(0.2), in: Circle())
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: SpotType.lineGap) {
                     Text(entry.state.title)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(SpotType.title)
                         .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
                     if let subtitle = entry.state.subtitle {
                         Text(subtitle)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(SpotType.detail)
                             .modifier(SpotSecondaryText())
+                            .lineLimit(1)
                     }
                 }
                 Spacer()
@@ -45,7 +46,7 @@ struct SpotSheetView: View {
             Color.clear.frame(height: SpotTokens.listRowHeight)
             if list.shown.isEmpty {
                 Text(emptyText)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(SpotType.body)
                     .modifier(SpotSecondaryText())
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -103,14 +104,14 @@ struct SpotSheetView: View {
     private func rowLabel(_ item: SpotItem, isSelected: Bool) -> some View {
         HStack(spacing: SpotTokens.padding - 5) {
             SpotItemIcon(item: item, size: SpotTokens.listIconSize)
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 Text(item.title)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(SpotType.body)
                     .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
                     .lineLimit(1)
                 if let subtitle = item.subtitle {
                     Text(subtitle)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(SpotType.detail)
                         .modifier(SpotSecondaryText())
                         .lineLimit(1)
                 }

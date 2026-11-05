@@ -83,19 +83,19 @@ struct SpotCardView: View {
 
     private var title: some View {
         Text(entry.state.title)
-            .font(.system(size: 13, weight: .semibold))
+            .font(SpotType.title)
             .foregroundStyle(isFilled ? Color.black.opacity(SpotTokens.titleOpacity) : Color.white.opacity(SpotTokens.titleOpacity))
             .lineLimit(1)
     }
 
     private var text: some View {
-        VStack(alignment: .leading, spacing: 1) {
+        VStack(alignment: .leading, spacing: SpotType.lineGap) {
             title
             if let subtitle = entry.state.subtitle {
                 Text(subtitle)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(SpotType.detail)
                     .modifier(SpotSecondaryText(isOnWhite: isFilled))
-                    .lineLimit(2)
+                    .lineLimit(1)
             }
         }
     }
@@ -111,7 +111,7 @@ struct SpotCardView: View {
         case .launch:
             if size != .wide {
                 Text("Run")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(SpotType.action)
                     .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 6)
