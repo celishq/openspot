@@ -29,6 +29,22 @@ final class PluginRunTests: XCTestCase {
         XCTAssertEqual(output, "hello\n")
     }
 
+    func testGivesTheInputToThePlugin() async throws {
+        let plugin = try writePlugin("cat.sh", "#!/bin/sh\ncat\n")
+
+        let output = try await PluginRun(command: plugin, arguments: [], timeout: 5, input: "line \"one\"\nline two").output()
+
+        XCTAssertEqual(output, "line \"one\"\nline two")
+    }
+
+    func testAPluginThatIgnoresALargeInputStillFinishes() async throws {
+        let plugin = try writePlugin("quiet.sh", "#!/bin/sh\necho done\n")
+
+        let output = try await PluginRun(command: plugin, arguments: [], timeout: 5, input: String(repeating: "x", count: 500_000)).output()
+
+        XCTAssertEqual(output, "done\n")
+    }
+
     func testTimesOutASlowPlugin() async throws {
         let plugin = try writePlugin("slow.sh", "#!/bin/sh\nsleep 5\n")
 

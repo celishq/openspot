@@ -68,6 +68,10 @@ public struct ItemList: Equatable, Sendable {
         selected = shown.firstIndex { $0.run == run } ?? min(selected, max(shown.count - 1, 0))
     }
 
+    public mutating func select(run: String) {
+        selected = shown.firstIndex { $0.run == run } ?? selected
+    }
+
     public mutating func move(by step: Int) {
         selected = min(max(selected + step, 0), max(shown.count - 1, 0))
     }

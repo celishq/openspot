@@ -76,6 +76,38 @@ final class PluginCommandTests: XCTestCase {
         XCTAssertEqual(lines.items, [SpotItem(title: "rep", run: "items")])
     }
 
+    func testReadsTheFormACommandPrints() async throws {
+        let command = try writeCommand(kind: .list, """
+        [ "$1 $2" = "form new" ] && echo '{"title":"New","fields":[{"name":"title","label":"Name","type":"text"}]}'
+        """)
+
+        let form = try await command.form(CommandAction(id: "new", title: "New", isForm: true), item: nil, timeout: 5)
+
+        XCTAssertEqual(form, ItemForm(title: "New", fields: [.init(name: "title", label: "Name")]))
+    }
+
+    func testAFormThatCannotBeReadFails() async throws {
+        let command = try writeCommand(kind: .list, "echo nonsense")
+
+        do {
+            _ = try await command.form(CommandAction(id: "new", title: "New", isForm: true), item: nil, timeout: 5)
+            XCTFail("expected a failure")
+        } catch PluginError.badForm {
+        }
+    }
+
+    func testSubmitGivesTheValuesAndReturnsTheNewRun() async throws {
+        let command = try writeCommand(kind: .list, """
+        [ "$1" = new ] && cat > '\(marker.path)' && echo ' abc '
+        """)
+        let form = ItemForm(title: "New", fields: [.init(name: "title", label: "Name", value: "One")])
+
+        let run = try await command.submit(CommandAction(id: "new", title: "New", isForm: true), item: nil, draft: FormDraft(form: form), timeout: 5)
+
+        XCTAssertEqual(run, "abc")
+        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), #"{"title":"One"}"#)
+    }
+
     func testOutputThatIsNotAStateFails() async throws {
         let command = try writeCommand(kind: .toggle, "echo nonsense")
 

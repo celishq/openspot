@@ -129,6 +129,74 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(scan.refused.first?.reason, "One cannot join the main search, because it searches live")
     }
 
+    func testActionsBelongToTheirCommand() throws {
+        try writePlugin("tools", manifest: """
+        name = "Tools"
+        api = 1
+
+        [[commands]]
+        name = "One"
+        exec = "one.sh"
+        type = "list"
+        primary = "Copy"
+
+        [[commands]]
+        name = "Two"
+        exec = "one.sh"
+
+        [[actions]]
+        command = "One"
+        id = "new"
+        title = "New"
+        key = "cmd+n"
+        scope = "command"
+        form = true
+
+        [[actions]]
+        command = "One"
+        id = "delete"
+        title = "Delete"
+        after = "close"
+        confirm = "Delete this?"
+        """, files: ["one.sh"])
+
+        let commands = try PluginFolder(url: folder).scan().commands
+
+        XCTAssertEqual(commands[0].primary, "Copy")
+        XCTAssertEqual(commands[0].actions, [
+            CommandAction(id: "new", title: "New", key: ActionKey(text: "cmd+n"), scope: .command, isForm: true),
+            CommandAction(id: "delete", title: "Delete", after: .close, confirm: "Delete this?")
+        ])
+        XCTAssertEqual(commands[1].actions, [])
+    }
+
+    private func refusal(forAction lines: String) throws -> String? {
+        try writePlugin("tools", manifest: """
+        name = "Tools"
+        api = 1
+
+        [[commands]]
+        name = "One"
+        exec = "one.sh"
+
+        [[actions]]
+        \(lines)
+        """, files: ["one.sh"])
+        return try PluginFolder(url: folder).scan().refused.first?.reason
+    }
+
+    func testAnActionOfNoCommandRefusesThePlugin() throws {
+        XCTAssertEqual(try refusal(forAction: "command = \"Two\"\nid = \"a\"\ntitle = \"A\""), "An action names no command called Two")
+    }
+
+    func testAnActionWithABadKeyRefusesThePlugin() throws {
+        XCTAssertEqual(try refusal(forAction: "command = \"One\"\nid = \"a\"\ntitle = \"A\"\nkey = \"ctrl+a\""), "A has an unknown key: ctrl+a")
+    }
+
+    func testAnActionWithoutATitleRefusesThePlugin() throws {
+        XCTAssertEqual(try refusal(forAction: "command = \"One\"\nid = \"a\""), "An action needs a command, an id and a title")
+    }
+
     func testAPickThatIsNotKnownRefusesThePlugin() throws {
         try writePlugin("tools", manifest: """
         name = "Tools"

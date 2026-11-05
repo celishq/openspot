@@ -50,6 +50,16 @@ final class ItemListTests: XCTestCase {
         XCTAssertEqual(list.selected, 0)
     }
 
+    func testSelectsARunWhenItIsShown() {
+        var list = ItemList(items: items("A", "B", "C"))
+
+        list.select(run: "C")
+        XCTAssertEqual(list.selectedItem?.title, "C")
+
+        list.select(run: "missing")
+        XCTAssertEqual(list.selectedItem?.title, "C")
+    }
+
     func testMovingStopsAtEachEnd() {
         var list = ItemList(items: items("A", "B"))
 

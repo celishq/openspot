@@ -22,6 +22,14 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: [item.run])
     }
 
+    public static func action(_ action: CommandAction, item: SpotItem?) -> SpotAction {
+        SpotAction(arguments: [action.id] + (item.map { [$0.run] } ?? []))
+    }
+
+    public static func form(_ action: CommandAction, item: SpotItem?) -> SpotAction {
+        SpotAction(arguments: ["form", action.id] + (item.map { [$0.run] } ?? []))
+    }
+
     public static func level(_ value: Double) -> SpotAction {
         SpotAction(arguments: [String(Int(value.rounded()))])
     }

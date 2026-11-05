@@ -20,11 +20,53 @@ public struct Plugin: Equatable, Sendable {
         guard case .string(let name)? = document.values["name"] else { throw PluginError.manifest("needs a name") }
         guard case .integer(let api)? = document.values["api"] else { throw PluginError.manifest("needs an api") }
         guard api == OpenspotVersion.api else { throw PluginError.manifest("needs api \(api)") }
-        let commands = try (document.arrays["commands"] ?? []).map { try Self.command($0, plugin: url) }
+        let actions = try (document.arrays["actions"] ?? []).map(Self.action)
+        let commands = try (document.arrays["commands"] ?? []).map { table in
+            try Self.command(table, plugin: url, actions: actions)
+        }
+        if let lost = actions.first(where: { action in !commands.contains { $0.name == action.command } }) {
+            throw PluginError.manifest("An action names no command called \(lost.command)")
+        }
         self.init(name: name, api: api, url: url, commands: commands)
     }
 
-    private static func command(_ table: [String: TomlDocument.Value], plugin: URL) throws -> PluginCommand {
+    private static func action(_ table: [String: TomlDocument.Value]) throws -> (command: String, action: CommandAction) {
+        func text(_ key: String) -> String? {
+            if case .string(let value)? = table[key] { return value }
+            return nil
+        }
+        guard let command = text("command"), let id = text("id"), let title = text("title") else {
+            throw PluginError.manifest("An action needs a command, an id and a title")
+        }
+        var key: ActionKey?
+        if let keyName = text("key") {
+            guard let parsed = ActionKey(text: keyName) else {
+                throw PluginError.manifest("\(title) has an unknown key: \(keyName)")
+            }
+            key = parsed
+        }
+        guard let scope = CommandAction.Scope(rawValue: text("scope") ?? CommandAction.Scope.item.rawValue) else {
+            throw PluginError.manifest("\(title) has an unknown scope")
+        }
+        guard let after = CommandAction.After(rawValue: text("after") ?? CommandAction.After.stay.rawValue) else {
+            throw PluginError.manifest("\(title) has an unknown after")
+        }
+        return (command, CommandAction(
+            id: id,
+            title: title,
+            key: key,
+            scope: scope,
+            after: after,
+            isForm: table["form"] == .boolean(true),
+            confirm: text("confirm")
+        ))
+    }
+
+    private static func command(
+        _ table: [String: TomlDocument.Value],
+        plugin: URL,
+        actions: [(command: String, action: CommandAction)]
+    ) throws -> PluginCommand {
         func text(_ key: String) -> String? {
             if case .string(let value)? = table[key] { return value }
             return nil
@@ -75,7 +117,9 @@ public struct Plugin: Equatable, Sendable {
             pick: pick,
             isGlobal: isGlobal,
             search: search,
-            keepsRecent: table["recents"] != .boolean(false)
+            keepsRecent: table["recents"] != .boolean(false),
+            primary: text("primary"),
+            actions: actions.filter { $0.command == name }.map(\.action)
         )
     }
 }

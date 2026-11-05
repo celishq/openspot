@@ -4,11 +4,13 @@ public struct PluginRun: Sendable {
     public let command: PluginCommand
     public let arguments: [String]
     public let timeout: TimeInterval
+    public let input: String?
 
-    public init(command: PluginCommand, arguments: [String], timeout: TimeInterval) {
+    public init(command: PluginCommand, arguments: [String], timeout: TimeInterval, input: String? = nil) {
         self.command = command
         self.arguments = arguments
         self.timeout = timeout
+        self.input = input
     }
 
     /// Runs the plugin with the arguments, and returns what it prints.
@@ -29,7 +31,8 @@ public struct PluginRun: Sendable {
         let process = Process()
         process.executableURL = command.url
         process.arguments = arguments
-        process.standardInput = FileHandle.nullDevice
+        let inputPipe = input.map { _ in Pipe() }
+        process.standardInput = inputPipe ?? FileHandle.nullDevice
         let output = Pipe()
         process.standardOutput = output
         let errors = Pipe()
@@ -37,6 +40,13 @@ public struct PluginRun: Sendable {
         let exit = DispatchSemaphore(value: 0)
         process.terminationHandler = { _ in exit.signal() }
         try process.run()
+        if let inputPipe, let input {
+            signal(SIGPIPE, SIG_IGN)
+            DispatchQueue.global().async {
+                try? inputPipe.fileHandleForWriting.write(contentsOf: Data(input.utf8))
+                try? inputPipe.fileHandleForWriting.close()
+            }
+        }
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
                 DispatchQueue.global().async {
