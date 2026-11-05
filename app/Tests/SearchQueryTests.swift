@@ -39,6 +39,10 @@ final class SearchQueryTests: XCTestCase {
         XCTAssertEqual(titles("vsc", in: ["Xcode", "Visual Studio Code"]), ["Visual Studio Code"])
     }
 
+    func testInitialsMaySkipAWord() {
+        XCTAssertEqual(titles("ae", in: ["Xcode", "Adobe After Effects"]), ["Adobe After Effects"])
+    }
+
     func testACapitalInsideAWordStartsAWord() {
         XCTAssertEqual(titles("ft", in: ["Loft", "FaceTime"]), ["FaceTime", "Loft"])
     }
