@@ -14,8 +14,8 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Color picker", "Files", "Links", "Overview", "Screenshot", "Pull requests", "Snippets", "Plugins"])
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "o", "f", "l", nil, "v", "g", "n", "p"])
+        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Color picker", "Files", "Links", "Overview", "Screenshot", "Pull requests", "Snippets", "Translate", "Plugins"])
+        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "o", "f", "l", nil, "v", "g", "n", "t", "p"])
     }
 
     func testNoMetricShowsTwiceInTheGrid() throws {
@@ -531,6 +531,23 @@ final class SamplePluginsTests: XCTestCase {
             let cancelled = try await self.pickColor(answer: "", in: folder)
             XCTAssertNil(cancelled)
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("clipboard").path))
+        }
+    }
+
+    func testTranslateCopiesARowAndOpensTheSettingsForAMissingLanguage() async throws {
+        let translate = try XCTUnwrap(try scan.commands.first { $0.name == "Translate" })
+        try await withPrivateHome { folder in
+            let empty = try await translate.items(timeout: 5)
+            XCTAssertEqual(empty.items, [])
+            XCTAssertEqual(empty.primary, "Copy")
+
+            let toast = try await translate.perform(.item(SpotItem(title: "Привет", run: "Привет")), timeout: 5)
+            XCTAssertEqual(toast, "Copied")
+            XCTAssertEqual(try self.read("clipboard", in: folder), "Привет")
+
+            let silent = try await translate.perform(.item(SpotItem(title: "Add", run: ":settings:ru")), timeout: 5)
+            XCTAssertNil(silent)
+            XCTAssertTrue(try self.read("opened", in: folder).contains("Localization-Settings"))
         }
     }
 

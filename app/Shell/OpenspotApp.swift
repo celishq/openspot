@@ -9,6 +9,9 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         if let flag = CommandLine.arguments.firstIndex(of: "--check") {
             runCheck(path: CommandLine.arguments.dropFirst(flag + 1).first)
         }
+        if let flag = CommandLine.arguments.firstIndex(of: "--translate") {
+            SpotTranslation.run(text: CommandLine.arguments.dropFirst(flag + 1).first ?? "")
+        }
         if CommandLine.arguments.contains("--pick-color") {
             SpotColorPick.run()
         }
