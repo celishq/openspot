@@ -19,4 +19,8 @@ final class SpotActionTests: XCTestCase {
     func testARunSendsNoArguments() {
         XCTAssertEqual(SpotAction.run.arguments, [])
     }
+
+    func testAListItemSendsItsRunValue() {
+        XCTAssertEqual(SpotAction.item(SpotItem(title: "1 hour", run: "3600")).arguments, ["3600"])
+    }
 }

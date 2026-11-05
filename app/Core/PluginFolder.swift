@@ -17,18 +17,30 @@ public struct PluginFolder: Sendable {
         return PluginFolder(url: home.appendingPathComponent(".config/openspot/plugins", isDirectory: true))
     }
 
+    /// Reads each plugin in the folder. When two commands share a key, the first keeps it.
     public func scan() throws -> ScanResult {
-        let files = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)
+        let folders = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)
             .sorted { $0.lastPathComponent < $1.lastPathComponent }
         var result = ScanResult(plugins: [], refused: [])
-        for file in files {
-            guard let text = try? String(contentsOf: file, encoding: .utf8),
-                  let header = PluginHeader(text: text) else { continue }
-            guard header.api == OpenspotVersion.api else {
-                result.refused.append(Refusal(file: file.lastPathComponent, reason: "needs api \(header.api)"))
-                continue
+        var taken: Set<String> = []
+        for folder in folders {
+            let manifest = folder.appendingPathComponent("manifest.toml")
+            guard let text = try? String(contentsOf: manifest, encoding: .utf8) else { continue }
+            do {
+                let plugin = try Plugin(manifest: text, url: folder)
+                let commands = plugin.commands.map { command -> PluginCommand in
+                    guard let key = command.key, !taken.insert(key.name).inserted else { return command }
+                    result.refused.append(Refusal(
+                        file: folder.lastPathComponent,
+                        reason: "\(command.name) cannot use key \(key.name), because another command has it"
+                    ))
+                    return command.withoutKey()
+                }
+                result.plugins.append(Plugin(name: plugin.name, api: plugin.api, url: folder, commands: commands))
+            } catch {
+                let reason = (error as? PluginError)?.reason ?? String(describing: error)
+                result.refused.append(Refusal(file: folder.lastPathComponent, reason: reason))
             }
-            result.plugins.append(Plugin(name: header.name, api: header.api, url: file))
         }
         return result
     }

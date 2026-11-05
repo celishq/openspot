@@ -1,0 +1,9 @@
+name = "Caffeinate"
+api = 1
+
+[[commands]]
+name = "Caffeinate"
+exec = "caffeinate.sh"
+type = "expand"
+symbol = "cup.and.saucer.fill"
+key = "c"

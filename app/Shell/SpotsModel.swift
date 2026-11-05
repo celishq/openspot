@@ -9,10 +9,23 @@ final class SpotsModel {
         let kind: SpotKind
         let size: SpotSize
         let symbol: String
+        let command: PluginCommand
         var state: SpotState
+
+        init(command: PluginCommand, state: SpotState) {
+            id = command.id
+            kind = command.kind
+            size = command.size
+            symbol = command.symbol
+            self.command = command
+            self.state = state
+        }
     }
 
-    var entries: [Entry]
+    private static let stateTimeout: TimeInterval = 2
+    private static let actionTimeout: TimeInterval = 30
+
+    var entries: [Entry] = []
     var query = "" {
         didSet {
             if query != oldValue { selected = 0 }
@@ -21,11 +34,53 @@ final class SpotsModel {
     var selected = 0
     var openList: String?
     var itemSelected = 0
-    var lastCommand = ""
     var isShown = false
+    var dismiss: () -> Void = {}
+    var show: () -> Void = {}
+    var notify: (String) -> Void = { _ in }
+    private var problems: [String] = []
 
-    init(entries: [Entry] = SpotsModel.sample) {
+    /// Reads the plugin folder again, and asks each plugin for its state.
+    func reload() async {
+        let folder = PluginFolder.standard()
+        let scan = (try? folder.scan()) ?? ScanResult(plugins: [], refused: [])
+        var entries: [Entry] = []
+        var problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
+        if scan.commands.isEmpty {
+            problems.append("No plugins in \(folder.url.path)")
+        }
+        for command in scan.commands {
+            do {
+                entries.append(Entry(command: command, state: try await command.state(timeout: Self.stateTimeout)))
+            } catch {
+                entries.append(Entry(command: command, state: command.manifestState))
+                problems.append("\(command.name) failed. \(Self.reason(error))")
+            }
+        }
         self.entries = entries
+        if problems != self.problems, !problems.isEmpty {
+            notify(problems.joined(separator: " "))
+        }
+        self.problems = problems
+    }
+
+    private static func reason(_ error: Error) -> String {
+        (error as? PluginError)?.reason ?? error.localizedDescription
+    }
+
+    /// Runs an action on a spot, and shows the state the plugin then reports.
+    private func perform(_ action: SpotAction, on entry: Entry) {
+        Task {
+            do {
+                try await entry.command.perform(action, timeout: Self.actionTimeout)
+            } catch {
+                notify("\(entry.state.title) failed. \(Self.reason(error))")
+            }
+            guard entry.kind != .slider,
+                  let state = try? await entry.command.state(timeout: Self.stateTimeout),
+                  let index = entries.firstIndex(where: { $0.id == entry.id }) else { return }
+            entries[index].state = state
+        }
     }
 
     var visible: [Entry] {
@@ -60,8 +115,7 @@ final class SpotsModel {
     func adjustSelected(by delta: Double) {
         guard let entry = selectedEntry, entry.kind == .slider, let index = index(of: entry) else { return }
         entries[index].state = entries[index].state.adjusted(by: delta)
-        let level = entries[index].state.level ?? 0
-        lastCommand = "Would run: \(entry.state.title) \(SpotAction.level(level).arguments.joined(separator: " "))"
+        perform(.level(entries[index].state.level ?? 0), on: entries[index])
     }
 
     func tap(_ id: String) {
@@ -72,9 +126,10 @@ final class SpotsModel {
 
     func setLevel(_ id: String, to value: Double) {
         guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
+        let before = entries[index].state.level
         entries[index].state = entries[index].state.withLevel(value)
-        let level = entries[index].state.level ?? 0
-        lastCommand = "Would run: \(entries[index].state.title) \(SpotAction.level(level).arguments.joined(separator: " "))"
+        guard entries[index].state.level != before else { return }
+        perform(.level(entries[index].state.level ?? 0), on: entries[index])
     }
 
     func runSelected() {
@@ -82,7 +137,24 @@ final class SpotsModel {
             runSelectedItem()
             return
         }
-        guard let entry = selectedEntry, let index = index(of: entry) else { return }
+        guard let entry = selectedEntry else { return }
+        run(entry)
+    }
+
+    /// Runs a command by its key, with the panel open only when its spot needs it.
+    func press(_ id: String) {
+        guard let entry = entries.first(where: { $0.id == id }) else { return }
+        guard entry.kind == .expand else {
+            run(entry)
+            return
+        }
+        show()
+        openList = id
+        itemSelected = 0
+    }
+
+    private func run(_ entry: Entry) {
+        guard let index = index(of: entry) else { return }
         switch entry.kind {
         case .toggle:
             let action = SpotAction.toggle(entry.state)
@@ -92,9 +164,10 @@ final class SpotsModel {
                 on: action.arguments == ["on"],
                 items: entry.state.items
             )
-            lastCommand = "Would run: \(entry.state.title) \(action.arguments.joined(separator: " "))"
+            perform(action, on: entry)
         case .launch:
-            lastCommand = "Would run: \(entry.state.title)"
+            if isShown { dismiss() }
+            perform(.run, on: entry)
         case .expand:
             openList = openList == entry.id ? nil : entry.id
             itemSelected = 0
@@ -105,7 +178,7 @@ final class SpotsModel {
 
     func openBigView() {
         guard let entry = selectedEntry else { return }
-        lastCommand = "Would open big view: \(entry.state.title)"
+        notify("\(entry.state.title) has no big view yet.")
     }
 
     private var selectedEntry: Entry? {
@@ -141,33 +214,8 @@ final class SpotsModel {
     }
 
     func runItem(_ item: SpotItem) {
-        lastCommand = "Would run: \(item.run)"
+        guard let entry = openEntry else { return }
+        perform(.item(item), on: entry)
+        closeList()
     }
-
-    static let sample: [Entry] = [
-        Entry(id: "airplane", kind: .toggle, size: .square, symbol: "airplane",
-              state: SpotState(title: "Airplane Mode", subtitle: "Off", on: false)),
-        Entry(id: "wifi", kind: .toggle, size: .wide, symbol: "wifi",
-              state: SpotState(title: "Wi-Fi", subtitle: "VIRGIN-telco_5668", on: true)),
-        Entry(id: "bluetooth", kind: .toggle, size: .small, symbol: "dot.radiowaves.left.and.right",
-              state: SpotState(title: "Bluetooth", subtitle: "On", on: true)),
-        Entry(id: "networks", kind: .expand, size: .wide, symbol: "network",
-              state: SpotState(title: "Networks", subtitle: "3 known", items: [
-                  SpotItem(title: "VIRGIN-telco_5668", run: "networks.sh VIRGIN-telco_5668"),
-                  SpotItem(title: "VIRGIN-guest", run: "networks.sh VIRGIN-guest"),
-                  SpotItem(title: "Office 5G", run: "networks.sh Office")
-              ])),
-        Entry(id: "focus", kind: .toggle, size: .small, symbol: "moon.fill",
-              state: SpotState(title: "Focus", subtitle: "Off", on: false)),
-        Entry(id: "stage", kind: .toggle, size: .small, symbol: "squares.leading.rectangle",
-              state: SpotState(title: "Stage Manager", subtitle: "Off", on: false)),
-        Entry(id: "mirror", kind: .toggle, size: .small, symbol: "rectangle.on.rectangle",
-              state: SpotState(title: "Screen Mirroring", subtitle: "Off", on: false)),
-        Entry(id: "caffeinate", kind: .launch, size: .strip, symbol: "cup.and.saucer.fill",
-              state: SpotState(title: "Caffeinate", subtitle: "On · 2h left")),
-        Entry(id: "display", kind: .slider, size: .strip, symbol: "sun.max.fill",
-              state: SpotState(title: "Display", level: 70, min: 0, max: 100)),
-        Entry(id: "sound", kind: .slider, size: .strip, symbol: "speaker.wave.2.fill",
-              state: SpotState(title: "Sound", level: 30, min: 0, max: 100))
-    ]
 }

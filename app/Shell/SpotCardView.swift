@@ -47,7 +47,7 @@ struct SpotCardView: View {
     }
 
     private var isOn: Bool {
-        entry.kind == .toggle && entry.state.on == true
+        entry.state.on == true
     }
 
     private var showsPress: Bool {
@@ -55,7 +55,7 @@ struct SpotCardView: View {
     }
 
     private var isFilled: Bool {
-        isOn && size == .small
+        isOn
     }
 
     private var row: some View {
@@ -63,7 +63,7 @@ struct SpotCardView: View {
             glyph
             text
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.trailing, entry.kind == .expand ? -SpotTokens.columnGap : 0)
+                .padding(.trailing, entry.kind == .expand || size == .wide ? -SpotTokens.columnGap : 0)
             accessory
         }
         .frame(maxHeight: .infinity)
@@ -84,7 +84,7 @@ struct SpotCardView: View {
     private var title: some View {
         Text(entry.state.title)
             .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+            .foregroundStyle(isFilled ? Color.black.opacity(SpotTokens.titleOpacity) : Color.white.opacity(SpotTokens.titleOpacity))
             .lineLimit(1)
     }
 
@@ -94,7 +94,7 @@ struct SpotCardView: View {
             if let subtitle = entry.state.subtitle {
                 Text(subtitle)
                     .font(.system(size: 12, weight: .medium))
-                    .modifier(SpotSecondaryText())
+                    .modifier(SpotSecondaryText(isOnWhite: isFilled))
                     .lineLimit(2)
             }
         }
@@ -106,15 +106,17 @@ struct SpotCardView: View {
         case .expand:
             Image(systemName: "chevron.right")
                 .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(isFilled ? Color.black : Color.white)
                 .padding(.trailing, -6)
         case .launch:
-            Text("Run")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 6)
-                .background(Color.white.opacity(0.25), in: Capsule())
+            if size != .wide {
+                Text("Run")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.25), in: Capsule())
+            }
         case .toggle, .slider:
             EmptyView()
         }
@@ -154,8 +156,7 @@ struct SpotCardView: View {
     }
 
     private var glyphDisc: Color {
-        if size == .small { return .clear }
-        return isOn ? .white : .white.opacity(0.2)
+        size == .small || isOn ? .clear : .white.opacity(0.2)
     }
 
     private var glyph: some View {

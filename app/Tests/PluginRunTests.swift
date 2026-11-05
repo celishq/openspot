@@ -14,11 +14,11 @@ final class PluginRunTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func writePlugin(_ name: String, _ body: String) throws -> Plugin {
+    private func writePlugin(_ name: String, _ body: String) throws -> PluginCommand {
         let url = folder.appendingPathComponent(name)
         try body.write(to: url, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
-        return Plugin(name: name, api: 1, url: url)
+        return PluginCommand(id: name, name: name, url: url)
     }
 
     func testReturnsRowsForTheQuery() async throws {
@@ -29,7 +29,7 @@ final class PluginRunTests: XCTestCase {
         printf '{"title":"%s","run":"true"}\\n' "$1"
         """)
 
-        let result = try await PluginRun(plugin: plugin, query: "hello", timeout: 5).execute()
+        let result = try await PluginRun(command: plugin, query: "hello", timeout: 5).execute()
 
         XCTAssertEqual(result.rows.map(\.title), ["hello"])
     }
@@ -38,7 +38,7 @@ final class PluginRunTests: XCTestCase {
         let plugin = try writePlugin("slow.sh", "#!/bin/sh\n# @name Slow\n# @api 1\nsleep 5\n")
 
         do {
-            _ = try await PluginRun(plugin: plugin, query: "", timeout: 0.5).execute()
+            _ = try await PluginRun(command: plugin, query: "", timeout: 0.5).execute()
             XCTFail("expected a timeout")
         } catch PluginError.timedOut {
         }

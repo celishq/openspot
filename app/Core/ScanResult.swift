@@ -6,4 +6,8 @@ public struct ScanResult: Equatable, Sendable {
         self.plugins = plugins
         self.refused = refused
     }
+
+    public var commands: [PluginCommand] {
+        plugins.flatMap(\.commands)
+    }
 }

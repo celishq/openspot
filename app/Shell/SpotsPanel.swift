@@ -9,6 +9,7 @@ final class SpotsPanel: NSPanel {
     /// Brings the panel to the front and starts its open motion.
     func show() {
         model?.selected = 0
+        Task { await model?.reload() }
         makeKeyAndOrderFront(nil)
         DispatchQueue.main.async { self.model?.isShown = true }
     }
@@ -24,6 +25,24 @@ final class SpotsPanel: NSPanel {
     override func resignKey() {
         super.resignKey()
         if model?.isShown == true { hide() }
+    }
+
+    override func update() {
+        super.update()
+        if let field = (firstResponder as? NSTextView)?.delegate as? NSView {
+            Self.removeCursorGlow(in: field)
+        }
+    }
+
+    /// Removes the system's low-resolution glow from each text cursor in a view.
+    private static func removeCursorGlow(in view: NSView) {
+        if let cursor = view as? NSTextInsertionIndicator {
+            cursor.automaticModeOptions = []
+            for layer in cursor.layer?.sublayers ?? [] where layer.sublayers?.contains(where: { $0.filters?.isEmpty == false }) == true {
+                layer.removeFromSuperlayer()
+            }
+        }
+        view.subviews.forEach(removeCursorGlow)
     }
 
     static func make(model: SpotsModel) -> SpotsPanel {

@@ -20,13 +20,13 @@ final class ShelfModel {
         let scan = (try? PluginFolder.standard().scan()) ?? ScanResult(plugins: [], refused: [])
         var rows: [Row] = []
         var problems = scan.refused.map { "\($0.file): \($0.reason)" }
-        for plugin in scan.plugins {
+        for command in scan.commands {
             do {
-                let result = try await PluginRun(plugin: plugin, query: "", timeout: 2).execute()
+                let result = try await PluginRun(command: command, query: "", timeout: 2).execute()
                 rows.append(contentsOf: result.rows)
-                problems.append(contentsOf: result.errors.map { "\(plugin.name): bad row \($0)" })
+                problems.append(contentsOf: result.errors.map { "\(command.name): bad row \($0)" })
             } catch {
-                problems.append("\(plugin.name): \(error)")
+                problems.append("\(command.name): \(error)")
             }
         }
         self.rows = rows

@@ -1,0 +1,9 @@
+name = "Apps"
+api = 1
+
+[[commands]]
+name = "Safari"
+exec = "safari.sh"
+symbol = "safari"
+subtitle = "App"
+key = "b"

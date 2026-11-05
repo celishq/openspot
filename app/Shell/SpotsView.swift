@@ -27,6 +27,7 @@ struct SpotsView: View {
             }
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask(edges.gradient)
+            .mask(softEdge(inset: Self.blurSteps[1].inset))
             searchField
                 .padding([.horizontal, .top], SpotTokens.halo)
                 .offset(y: sheetOpen ? openFrame.map { SpotTokens.sheetRect.minY - $0.minY } ?? 0 : 0)
@@ -47,19 +48,6 @@ struct SpotsView: View {
         }
         .coordinateSpace(name: Self.panelSpace)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
-        .overlay(alignment: .bottom) {
-            if !model.lastCommand.isEmpty {
-                Text(model.lastCommand)
-                    .font(.caption.monospacedDigit())
-                    .modifier(SpotSecondaryText())
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .modifier(SpotGlass(radius: 11))
-                    .padding(.bottom, SpotTokens.halo / 2)
-                    .opacity(sheetOpen ? 0 : 1)
-                    .allowsHitTesting(false)
-            }
-        }
         .background(softBlur)
         .environment(\.spotIsShown, model.isShown)
         .preferredColorScheme(.dark)
