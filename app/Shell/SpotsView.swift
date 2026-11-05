@@ -12,10 +12,13 @@ struct SpotsView: View {
 
     private static let panelSpace = "panel"
     private static let blurSteps: [(inset: CGFloat, radius: CGFloat)] = [
-        (SpotTokens.halo - 26, SpotTokens.backdropBlur / 4),
-        (SpotTokens.halo - 18, SpotTokens.backdropBlur / 2),
+        (SpotTokens.halo - 30, SpotTokens.backdropBlur / 4),
+        (SpotTokens.halo - 20, SpotTokens.backdropBlur / 2),
         (SpotTokens.halo - 10, SpotTokens.backdropBlur)
     ]
+    private static let blurEdgeSoftness: CGFloat = 11
+    private static let scrollEdgeInset: CGFloat = SpotTokens.halo - 18
+    private static let scrollEdgeSoftness: CGFloat = 7
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -27,7 +30,7 @@ struct SpotsView: View {
             }
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask(edges.gradient)
-            .mask(softEdge(inset: Self.blurSteps[1].inset))
+            .mask(softEdge(inset: Self.scrollEdgeInset, softness: Self.scrollEdgeSoftness))
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
                 SpotSheetView(
                     entry: entry,
@@ -79,21 +82,21 @@ struct SpotsView: View {
         ZStack {
             ForEach(Self.blurSteps, id: \.inset) { step in
                 SpotBlur(radius: model.isShown ? step.radius : 0)
-                    .mask(softEdge(inset: step.inset))
+                    .mask(softEdge(inset: step.inset, softness: Self.blurEdgeSoftness))
             }
             Color.black.opacity(SpotTokens.backdropShade)
-                .mask(softEdge(inset: Self.blurSteps[1].inset))
+                .mask(softEdge(inset: Self.blurSteps[1].inset, softness: Self.blurEdgeSoftness))
         }
         .opacity(model.isShown ? 1 : 0)
         .scaleEffect(model.isShown ? 1 : SpotMotion.backdropHiddenScale)
         .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
     }
 
-    private func softEdge(inset: CGFloat) -> some View {
+    private func softEdge(inset: CGFloat, softness: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: SpotTokens.radius + SpotTokens.halo - inset, style: .continuous)
             .fill(Color.black)
             .padding(inset)
-            .blur(radius: 7)
+            .blur(radius: softness)
     }
 
     private var openFrame: CGRect? {
