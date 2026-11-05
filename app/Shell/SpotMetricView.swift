@@ -13,6 +13,7 @@ struct SpotMetricView: View {
     private static let trendLine: CGFloat = 1.5
     private static let dot: CGFloat = 7
     private static let rowLine: CGFloat = 17
+    private static let shortPlace: CGFloat = 40
 
     private var isTall: Bool { slot.rows > 1 }
     private var isNarrow: Bool { slot.columns == 1 }
@@ -60,13 +61,13 @@ struct SpotMetricView: View {
         }
     }
 
-    private func text(titleFont: Font) -> some View {
+    private func text(titleFont: Font, showsDetail: Bool = true) -> some View {
         VStack(alignment: .leading, spacing: SpotType.lineGap) {
             Text(title)
                 .font(titleFont)
                 .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
                 .lineLimit(1)
-            if let detail = value?.detail {
+            if showsDetail, let detail = value?.detail {
                 Text(detail)
                     .font(SpotType.detail)
                     .modifier(SpotSecondaryText())
@@ -146,7 +147,7 @@ struct SpotMetricView: View {
     private var trend: some View {
         if isTall || isNarrow {
             VStack(alignment: .leading, spacing: SpotTokens.placeGap / 2) {
-                text(titleFont: isTall ? SpotType.metric : SpotType.title)
+                text(titleFont: isTall ? SpotType.metric : SpotType.title, showsDetail: isTall || size.height > Self.shortPlace)
                 line
             }
         } else {

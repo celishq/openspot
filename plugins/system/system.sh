@@ -3,9 +3,9 @@
 case "$2" in
   cpu)
     history="${TMPDIR:-/tmp}/openspot-cpu"
-    cores=$(sysctl -n hw.ncpu)
+    cores=$(/usr/sbin/sysctl -n hw.ncpu)
     now=$(ps -A -o %cpu= | awk -v cores="$cores" '{sum += $1} END {printf "%d", sum / cores}')
-    { [ -f "$history" ] && tail -n 29 "$history"; echo "$now"; } > "$history.$$"
+    { [ -f "$history" ] && grep -E '^[0-9]+$' "$history" | tail -n 29; echo "$now"; } > "$history.$$"
     mv "$history.$$" "$history"
     points=$(paste -s -d, - < "$history")
     printf '{"title":"%s%%","detail":"CPU","points":[%s]}\n' "$now" "$points"

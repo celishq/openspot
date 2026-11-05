@@ -14,8 +14,8 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Files", "Links", "Overview", "Status", "Paste Screenshot", "Snippets"])
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "f", "l", nil, nil, "v", "n"])
+        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Files", "Plugins", "Links", "Overview", "Status", "Paste Screenshot", "Snippets"])
+        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "f", "p", "l", nil, nil, "v", "n"])
     }
 
     func testEveryMetricPrintsAValue() async throws {
@@ -32,6 +32,26 @@ final class SamplePluginsTests: XCTestCase {
         let second = try await cpu.read(timeout: 10).points?.count ?? 0
 
         XCTAssertGreaterThanOrEqual(second, min(first + 1, 30))
+    }
+
+    func testTheCPUTrendSurvivesABadHistoryAndAShortPath() async throws {
+        let cpu = try XCTUnwrap(try scan.metrics.first { $0.id == "system/cpu" })
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-cpu-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try "5\n\nnonsense\n7\n".write(to: folder.appendingPathComponent("openspot-cpu"), atomically: true, encoding: .utf8)
+        let environment = ProcessInfo.processInfo.environment
+        setenv("TMPDIR", folder.path + "/", 1)
+        setenv("PATH", "/usr/bin:/bin", 1)
+        defer {
+            if let tmp = environment["TMPDIR"] { setenv("TMPDIR", tmp, 1) } else { unsetenv("TMPDIR") }
+            if let path = environment["PATH"] { setenv("PATH", path, 1) }
+            try? FileManager.default.removeItem(at: folder)
+        }
+
+        let points = try await cpu.read(timeout: 10).points
+
+        XCTAssertEqual(points?.prefix(2), [5, 7])
+        XCTAssertEqual(points?.count, 3)
     }
 
     func testEveryCommandCanBeRun() throws {

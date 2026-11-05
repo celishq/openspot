@@ -6,7 +6,7 @@ export LC_ALL=en_US.UTF-8
 sessions() {
   for tool in claude codex; do
     for pid in $(pgrep -x "$tool"); do
-      folder=$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')
+      folder=$(/usr/sbin/lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')
       printf '%s\t%s\n' "$tool" "$(basename "${folder:-?}")"
     done
   done

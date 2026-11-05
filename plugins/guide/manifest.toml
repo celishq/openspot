@@ -1,0 +1,19 @@
+name = "Plugins"
+api = 1
+
+[[commands]]
+name = "Plugins"
+exec = "guide.sh"
+type = "list"
+symbol = "puzzlepiece.extension"
+subtitle = "Build your own"
+key = "p"
+recents = false
+
+[[actions]]
+command = "Plugins"
+id = "new"
+title = "New plugin"
+key = "cmd+n"
+scope = "command"
+form = true
