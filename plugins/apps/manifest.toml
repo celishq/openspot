@@ -6,6 +6,6 @@ name = "Apps"
 exec = "apps.sh"
 type = "list"
 symbol = "square.grid.2x2"
-subtitle = "Open an app"
+subtitle = "Open app"
 key = "a"
 global = true

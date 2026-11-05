@@ -8,6 +8,8 @@ struct SpotSheetView: View {
     let onClose: () -> Void
     @State private var edges = SpotScrollEdges()
 
+    private static let bottomFade = 2 * SpotTokens.padding
+
     private var row: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
     }
@@ -73,9 +75,11 @@ struct SpotSheetView: View {
                     }
                 }
             }
+            .safeAreaPadding(.top, SpotTokens.padding)
+            .safeAreaPadding(.bottom, Self.bottomFade)
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask(edgeFade)
-            .padding(.bottom, -SpotTokens.padding)
+            .padding(.vertical, -SpotTokens.padding)
             .onChange(of: list.selectedItem?.run) { _, run in
                 if let run { proxy.scrollTo(run) }
             }
@@ -88,7 +92,7 @@ struct SpotSheetView: View {
                 .frame(height: SpotTokens.padding)
             Color.black
             LinearGradient(colors: [.black, .black.opacity(1 - edges.bottom)], startPoint: .top, endPoint: .bottom)
-                .frame(height: SpotTokens.listRowHeight)
+                .frame(height: Self.bottomFade)
         }
     }
 

@@ -4,6 +4,7 @@ api = 1
 [[commands]]
 name = "Paste Screenshot"
 exec = "screenshot.sh"
+size = "strip"
 symbol = "doc.on.clipboard.fill"
 subtitle = "Last one, into the selection"
 key = "v"
