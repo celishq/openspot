@@ -16,7 +16,7 @@ struct SpotGlass: ViewModifier {
             .animation(SpotMotion.surface(isShown: isShown), value: isShown)
             .background {
                 SpotBlur(radius: isShown ? SpotTokens.cardBlur * strength : 0)
-                    .overlay(Color.black.opacity(0.22))
+                    .overlay(Color.black.opacity(SpotTokens.glassShade))
                     .clipShape(shape)
                     .opacity(isShown && !isSolid && !isBare ? 1 : 0)
                 shape.fill(Color.white).opacity(isShown && isSolid ? 1 : 0)
