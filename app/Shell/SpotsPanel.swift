@@ -1,5 +1,6 @@
 import AppKit
 import Carbon.HIToolbox
+import ObjectiveC
 import OpenspotCore
 import SwiftUI
 
@@ -54,25 +55,24 @@ final class SpotsPanel: NSPanel {
         if model?.isShown == true { hide() }
     }
 
-    override func update() {
-        super.update()
-        if let field = (firstResponder as? NSTextView)?.delegate as? NSView {
-            Self.removeCursorGlow(in: field)
-        }
-    }
-
-    /// Removes the system's low-resolution glow from each text cursor in a view.
-    private static func removeCursorGlow(in view: NSView) {
-        if let cursor = view as? NSTextInsertionIndicator {
+    /// Takes the system's low-resolution glow off each text cursor whenever the cursor draws, so that none ever shows.
+    private static let plainCursors: Void = {
+        typealias Draw = @convention(c) (NSView, Selector) -> Void
+        let selector = #selector(NSView.updateLayer)
+        guard let method = class_getInstanceMethod(NSTextInsertionIndicator.self, selector) else { return }
+        let original = unsafeBitCast(method_getImplementation(method), to: Draw.self)
+        let plain: @convention(block) (NSTextInsertionIndicator) -> Void = { cursor in
+            original(cursor, selector)
             cursor.automaticModeOptions = []
             for layer in cursor.layer?.sublayers ?? [] where layer.sublayers?.contains(where: { $0.filters?.isEmpty == false }) == true {
                 layer.removeFromSuperlayer()
             }
         }
-        view.subviews.forEach(removeCursorGlow)
-    }
+        method_setImplementation(method, imp_implementationWithBlock(plain))
+    }()
 
     static func make(model: SpotsModel) -> SpotsPanel {
+        _ = plainCursors
         let panel = SpotsPanel(
             contentRect: NSRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: SpotTokens.panelHeight),
             styleMask: [.borderless, .fullSizeContentView],
