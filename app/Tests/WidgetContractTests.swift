@@ -13,91 +13,47 @@ final class WidgetContractTests: XCTestCase {
         try FileManager.default.removeItem(at: folder)
     }
 
-    private func plugin(_ name: String, manifest: String, script: String? = nil) throws {
-        let directory = folder.appendingPathComponent(name)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        try manifest.write(to: directory.appendingPathComponent("manifest.toml"), atomically: true, encoding: .utf8)
-        if let script {
-            let url = directory.appendingPathComponent("run.sh")
-            try script.write(to: url, atomically: true, encoding: .utf8)
-            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
-        }
+    private func script(_ name: String, _ text: String) throws {
+        let url = folder.appendingPathComponent(name)
+        try text.write(to: url, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
     }
 
-    private let power = """
-    name = "Power"
-    api = 1
-
-    [[metrics]]
-    name = "level"
-    exec = "run.sh"
-    kind = "gauge"
-    refresh = 5
-    """
-
-    private let powerScript = """
-    #!/bin/sh
-    [ "$1 $2" = "metric level" ] && printf 'title=84%%\\nvalue=0.84\\ntone=good\\n'
-    """
-
-    func testAMetricTakesItsFolderAndName() throws {
-        try plugin("power", manifest: power, script: powerScript)
-
-        let metric = try XCTUnwrap(try PluginFolder(url: folder).scan().metrics.first)
-
-        XCTAssertEqual(metric.id, "power/level")
-        XCTAssertEqual(metric.kind, .gauge)
-        XCTAssertEqual(metric.refresh, 5)
+    private func widgets(_ text: String, file: String = "mine.widget") throws {
+        try text.write(to: folder.appendingPathComponent(file), atomically: true, encoding: .utf8)
     }
 
-    func testAMetricCanSetATint() throws {
-        try plugin("power", manifest: power.replacingOccurrences(of: "kind = \"gauge\"", with: "kind = \"gauge\"\ntint = \"green\""), script: powerScript)
-
-        XCTAssertEqual(try PluginFolder(url: folder).scan().metrics.first?.tint, .green)
+    private func power(_ body: String = "printf 'title=84%%\\nvalue=0.84\\ntone=good\\n'") throws {
+        try script("power.sh", "#!/bin/sh\n# read=5\n\(body)\n")
     }
 
-    func testAnUnknownTintIsRefusedAndNamesTheChoices() throws {
-        try plugin("power", manifest: power.replacingOccurrences(of: "kind = \"gauge\"", with: "kind = \"gauge\"\ntint = \"beige\""), script: powerScript)
-
-        let refused = try XCTUnwrap(try PluginFolder(url: folder).scan().refused.first)
-
-        XCTAssertEqual(refused.reason, "level has an unknown tint: beige. Use red, orange, yellow, green, mint, teal, cyan, blue, indigo, purple or pink")
+    private var scan: ScanResult {
+        get throws { try PluginFolder(url: folder).scan() }
     }
 
-    private func single(size: String?, layout: String = "single", places: String = "[\"power/level\"]") throws {
-        try plugin("power", manifest: power, script: powerScript)
-        try plugin("mine", manifest: """
-        name = "Mine"
-        api = 1
-
-        [[widgets]]
-        name = "Now"
-        layout = "\(layout)"
-        places = \(places)
-        \(size.map { "size = \"\($0)\"" } ?? "")
-        """)
+    private func single(size: String?, layout: String = "single", places: Int = 1) throws {
+        try power()
+        try widgets("name=Now\nlayout=\(layout)\n" + String(repeating: "place=power\n", count: places) + (size.map { "size=\($0)\n" } ?? ""))
     }
 
     func testASingleWidgetIsSquareUnlessItAsksForAnotherSize() throws {
         try single(size: nil)
-        XCTAssertEqual(try PluginFolder(url: folder).scan().commands.first?.size, .square)
+        XCTAssertEqual(try scan.commands.first?.size, .square)
     }
 
     func testASingleWidgetCanAskToBeSmall() throws {
         try single(size: "small")
-        XCTAssertEqual(try PluginFolder(url: folder).scan().commands.first?.size, .small)
+        XCTAssertEqual(try scan.commands.first?.size, .small)
     }
 
     func testOnlyASingleWidgetTakesASize() throws {
-        try single(size: "small", layout: "pair", places: "[\"power/level\", \"power/level\"]")
-        let refused = try XCTUnwrap(try PluginFolder(url: folder).scan().refused.first)
-        XCTAssertEqual(refused.reason, "Now cannot take a size, because the pair layout sets its own")
+        try single(size: "small", layout: "pair", places: 2)
+        XCTAssertEqual(try scan.refused.first?.reason, "Now cannot take a size, because the pair layout sets its own")
     }
 
     func testASingleWidgetRefusesAnUnknownSize() throws {
         try single(size: "huge")
-        let refused = try XCTUnwrap(try PluginFolder(url: folder).scan().refused.first)
-        XCTAssertEqual(refused.reason, "Now has an unknown size: huge")
+        XCTAssertEqual(try scan.refused.first?.reason, "Now has an unknown size: huge")
     }
 
     func testAPlaceTakesItsFormFromTheCardItFills() {
@@ -112,35 +68,15 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(WidgetLayout.hero.slots.map { WidgetLayout.hero.form(of: $0, on: .large) }, [.big, .line, .line, .line])
     }
 
-    func testAMetricNamesWhatItMeasures() throws {
-        try plugin("power", manifest: power.replacingOccurrences(of: "kind = \"gauge\"", with: "kind = \"gauge\"\nlabel = \"Charge\""), script: powerScript)
-
-        XCTAssertEqual(try PluginFolder(url: folder).scan().metrics.first?.label, "Charge")
-    }
-
-    func testAMetricWithNoLabelTakesTheNameOfItsPlugin() throws {
-        try plugin("power", manifest: power, script: powerScript)
-
-        let scan = try PluginFolder(url: folder).scan()
-
-        XCTAssertEqual(scan.metrics.first?.label, scan.plugins.first?.name)
-    }
-
     func testAReadingKeepsTheNameOfItsMetricBeforeAnyValue() {
-        let reading = MetricReading(kind: .gauge, label: "Battery")
+        let reading = MetricReading(label: "Battery")
         XCTAssertEqual(reading.label, "Battery")
         XCTAssertNil(reading.value)
     }
 
-    func testAMetricRefreshesEachMinuteUnlessItSaysOtherwise() throws {
-        try plugin("power", manifest: power.replacingOccurrences(of: "refresh = 5\n", with: "").replacingOccurrences(of: "refresh = 5", with: ""), script: powerScript)
-
-        XCTAssertEqual(try PluginFolder(url: folder).scan().metrics.first?.refresh, 60)
-    }
-
     func testAMetricPrintsItsValue() async throws {
-        try plugin("power", manifest: power, script: powerScript)
-        let metric = try XCTUnwrap(try PluginFolder(url: folder).scan().metrics.first)
+        try power()
+        let metric = try XCTUnwrap(try scan.metrics.first)
 
         let value = try await metric.read(timeout: 5)
 
@@ -148,8 +84,8 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testAMetricThatPrintsNonsenseFails() async throws {
-        try plugin("power", manifest: power, script: "#!/bin/sh\necho nonsense\n")
-        let metric = try XCTUnwrap(try PluginFolder(url: folder).scan().metrics.first)
+        try power("echo nonsense")
+        let metric = try XCTUnwrap(try scan.metrics.first)
 
         do {
             _ = try await metric.read(timeout: 5)
@@ -160,39 +96,25 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testAWidgetCanPickOneOfItsMetricsForTheMenuBar() throws {
-        try plugin("power", manifest: power + """
+        try power()
+        try widgets("name=Level\nlayout=single\nplace=power\ntray=power\n")
 
+        let widget = try XCTUnwrap(try scan.commands.first { $0.kind == .widget })
 
-        [[widgets]]
-        name = "Level"
-        layout = "single"
-        places = ["power/level"]
-        tray = "power/level"
-        """, script: powerScript)
-
-        let widget = try XCTUnwrap(try PluginFolder(url: folder).scan().commands.first { $0.kind == .widget })
-
-        XCTAssertEqual(widget.tray, "power/level")
-        XCTAssertEqual(widget.withoutKey().tray, "power/level")
+        XCTAssertEqual(widget.tray, "power")
+        XCTAssertEqual(widget.withoutKey().tray, "power")
     }
 
     func testAWidgetCannotPickAMetricItDoesNotPlace() throws {
-        try plugin("power", manifest: power + """
+        try power()
+        try widgets("name=Level\nlayout=single\nplace=power\ntray=other\n")
 
-
-        [[widgets]]
-        name = "Level"
-        layout = "single"
-        places = ["power/level"]
-        tray = "power/other"
-        """, script: powerScript)
-
-        XCTAssertEqual(try PluginFolder(url: folder).scan().refused.first?.reason, "Level cannot show power/other in the menu bar, because it does not place it")
+        XCTAssertEqual(try scan.refused.first?.reason, "Level cannot show other in the menu bar, because it does not place it")
     }
 
     func testOnlyMenuBarMetricsAreWantedWithThePanelClosed() {
         let url = URL(fileURLWithPath: "/x")
-        let metrics = ["a/one", "a/two", "a/three"].map { PluginMetric(id: $0, name: $0, url: url, kind: .value) }
+        let metrics = ["a/one", "a/two", "a/three"].map { PluginMetric(id: $0, url: url) }
         let widgets = [
             PluginCommand(id: "a/W", name: "W", url: url, kind: .widget, places: ["a/one", "a/two"], tray: "a/one")
         ]
@@ -201,117 +123,51 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(MetricSchedule.wanted(metrics, by: widgets, isPanelOpen: true).map(\.id), ["a/one", "a/two"])
     }
 
-    func testAnUnknownMetricKindIsRefused() throws {
-        try plugin("power", manifest: power.replacingOccurrences(of: "gauge", with: "dial"), script: powerScript)
+    func testAWidgetFilePlacesMetricsOfOtherScripts() throws {
+        try power()
+        try widgets("name=Now\nlayout=pair\nplace=power\nplace=power\nkey=w\n\nname=Then\nlayout=single\nplace=power\n")
 
-        XCTAssertEqual(try PluginFolder(url: folder).scan().refused.first?.file, "power")
-    }
-
-    func testAWidgetInAFolderOfItsOwnPlacesMetricsOfAnotherPlugin() throws {
-        try plugin("power", manifest: power, script: powerScript)
-        try plugin("mine", manifest: """
-        name = "Mine"
-        api = 1
-
-        [[widgets]]
-        name = "Now"
-        layout = "pair"
-        places = ["power/level", "power/level"]
-        key = "w"
-        """)
-
-        let scan = try PluginFolder(url: folder).scan()
+        let scan = try scan
         let widget = try XCTUnwrap(scan.commands.first)
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(widget.id, "mine/Now")
+        XCTAssertEqual(scan.commands.map(\.id), ["mine/Now", "mine/Then"])
         XCTAssertEqual(widget.kind, .widget)
         XCTAssertEqual(widget.size, .strip)
         XCTAssertEqual(widget.layout, .pair)
-        XCTAssertEqual(widget.places, ["power/level", "power/level"])
+        XCTAssertEqual(widget.places, ["power", "power"])
         XCTAssertEqual(widget.key?.name, "w")
     }
 
     func testAWidgetNeedsOnePlaceForEachSlot() throws {
-        try plugin("mine", manifest: """
-        name = "Mine"
-        api = 1
+        try widgets("name=Now\nlayout=hero\nplace=power\n")
 
-        [[widgets]]
-        name = "Now"
-        layout = "hero"
-        places = ["power/level"]
-        """)
-
-        let refused = try XCTUnwrap(try PluginFolder(url: folder).scan().refused.first)
-
-        XCTAssertEqual(refused.reason, "Now needs 4 places for the hero layout")
+        XCTAssertEqual(try scan.refused.first?.reason, "Now needs 4 places for the hero layout")
     }
 
     func testAnUnknownLayoutIsRefusedAndNamesTheChoices() throws {
-        try plugin("mine", manifest: """
-        name = "Mine"
-        api = 1
+        try widgets("name=Now\nlayout=circle\nplace=power\n")
 
-        [[widgets]]
-        name = "Now"
-        layout = "circle"
-        places = ["power/level"]
-        """)
-
-        let refused = try XCTUnwrap(try PluginFolder(url: folder).scan().refused.first)
-
-        XCTAssertEqual(refused.reason, "Now has an unknown layout: circle. Use single, hero, pair or row")
+        XCTAssertEqual(try scan.refused.first?.reason, "Now has an unknown layout: circle. Use single, hero, pair or row")
     }
 
     func testAWidgetThatNamesAMissingMetricIsLeftOutAndReported() throws {
-        try plugin("mine", manifest: """
-        name = "Mine"
-        api = 1
+        try widgets("name=Now\nlayout=pair\nplace=power\nplace=none\n")
 
-        [[widgets]]
-        name = "Now"
-        layout = "pair"
-        places = ["power/level", "power/none"]
-        """)
-
-        let scan = try PluginFolder(url: folder).scan()
+        let scan = try scan
 
         XCTAssertEqual(scan.commands, [])
-        XCTAssertEqual(scan.refused, [Refusal(file: "mine", reason: "Now names no metric called power/level")])
+        XCTAssertEqual(scan.refused, [Refusal(file: "mine", reason: "Now names no metric called power")])
     }
 
     func testAWidgetThatOpensAMissingCommandIsLeftOutAndReported() throws {
-        try plugin("power", manifest: power, script: powerScript)
-        try plugin("mine", manifest: """
-        name = "Mine"
-        api = 1
+        try power()
+        try widgets("name=Now\nlayout=pair\nplace=power\nplace=power\nopens=nothing\n")
 
-        [[widgets]]
-        name = "Now"
-        layout = "pair"
-        places = ["power/level", "power/level"]
-        opens = "power/Nothing"
-        """)
-
-        let scan = try PluginFolder(url: folder).scan()
+        let scan = try scan
 
         XCTAssertEqual(scan.commands, [])
-        XCTAssertEqual(scan.refused, [Refusal(file: "mine", reason: "Now opens no command called power/Nothing")])
-    }
-
-    func testACommandCannotCallItselfAWidget() throws {
-        try plugin("power", manifest: """
-        name = "Power"
-        api = 1
-
-        [[commands]]
-        name = "Now"
-        exec = "run.sh"
-        type = "widget"
-        """, script: "#!/bin/sh\n")
-
-        XCTAssertEqual(try PluginFolder(url: folder).scan().refused.first?.reason, "Now has an unknown type: widget")
+        XCTAssertEqual(scan.refused, [Refusal(file: "mine", reason: "Now opens no command called nothing")])
     }
 
     func testAWidgetOffersEnterOnlyWhenItOpensSomething() {
@@ -324,28 +180,10 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testALostKeyKeepsTheRestOfTheCommand() throws {
-        try plugin("one", manifest: """
-        name = "One"
-        api = 1
+        try script("one.sh", "#!/bin/sh\n# key=x\n# read=open\n# rank=1\n")
+        try script("two.sh", "#!/bin/sh\n# key=x\n# read=open\n# rank=2\n")
 
-        [[commands]]
-        name = "First"
-        exec = "run.sh"
-        key = "x"
-        rank = 1
-        """, script: "#!/bin/sh\n")
-        try plugin("two", manifest: """
-        name = "Two"
-        api = 1
-
-        [[commands]]
-        name = "Second"
-        exec = "run.sh"
-        key = "x"
-        rank = 2
-        """, script: "#!/bin/sh\n")
-
-        XCTAssertEqual(try PluginFolder(url: folder).scan().commands.map(\.rank), [1, 2])
+        XCTAssertEqual(try scan.commands.map(\.rank), [1, 2])
     }
 
     func testEveryLayoutFillsItsSizeWithNoOverlap() {
@@ -364,8 +202,8 @@ final class WidgetContractTests: XCTestCase {
 
     func testAScheduleGivesEachMetricOnceUntilItsRefreshPasses() {
         let url = URL(fileURLWithPath: "/tmp")
-        let fast = PluginMetric(id: "a/fast", name: "fast", url: url, kind: .value, refresh: 5)
-        let slow = PluginMetric(id: "a/slow", name: "slow", url: url, kind: .value, refresh: 60)
+        let fast = PluginMetric(id: "a/fast", url: url, refresh: 5)
+        let slow = PluginMetric(id: "a/slow", url: url, refresh: 60)
         let start = Date(timeIntervalSince1970: 1000)
         var schedule = MetricSchedule()
 
@@ -375,7 +213,7 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testAFailedReadKeepsTheLastValueAndMarksItStale() {
-        var reading = MetricReading(kind: .value, label: "Cups")
+        var reading = MetricReading(label: "Cups")
         reading.take(MetricValue(title: "3"))
         reading.markStale()
 
@@ -406,35 +244,37 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testTheCheckReportsNoFaultsForAGoodFolder() async throws {
-        try plugin("power", manifest: power, script: powerScript)
+        try power()
 
         let faults = await PluginCheck(folder: PluginFolder(url: folder)).faults()
 
         XCTAssertEqual(faults, [])
     }
 
-    func testTheCheckReportsARefusedManifestAndABadMetric() async throws {
-        try plugin("power", manifest: power, script: "#!/bin/sh\necho nonsense\n")
-        try plugin("broken", manifest: "name = \"Broken\"\n")
+    func testTheCheckReportsARefusedHeaderAndABadMetric() async throws {
+        try power("echo nonsense")
+        try script("broken.sh", "#!/bin/sh\n# size=huge\n")
 
         let faults = await PluginCheck(folder: PluginFolder(url: folder)).faults()
 
-        XCTAssertEqual(faults, ["broken: needs an api", "power/level: It sent a metric Openspot cannot read."])
+        XCTAssertEqual(faults, ["broken: Broken has an unknown size: huge", "power: It sent a metric Openspot cannot read."])
     }
 
     func testTheCheckReportsAListThatFails() async throws {
-        try plugin("tools", manifest: """
-        name = "Tools"
-        api = 1
-
-        [[commands]]
-        name = "List"
-        exec = "run.sh"
-        type = "list"
-        """, script: "#!/bin/sh\necho gone >&2\nexit 1\n")
+        try script("tools.sh", "#!/bin/sh\n# read=click\necho gone >&2\nexit 1\n")
 
         let faults = await PluginCheck(folder: PluginFolder(url: folder)).faults()
 
-        XCTAssertEqual(faults, ["tools/List: gone"])
+        XCTAssertEqual(faults, ["tools: gone"])
+    }
+
+    func testTheCheckDoesNotRunAScriptWithNoRead() async throws {
+        let marker = folder.appendingPathComponent("marker")
+        try script("once.sh", "#!/bin/sh\ntouch '\(marker.path)'\n")
+
+        let faults = await PluginCheck(folder: PluginFolder(url: folder)).faults()
+
+        XCTAssertEqual(faults, [])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))
     }
 }

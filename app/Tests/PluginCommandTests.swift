@@ -14,20 +14,20 @@ final class PluginCommandTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func writeCommand(kind: SpotKind, subtitle: String? = nil, hasState: Bool = false, _ body: String) throws -> PluginCommand {
+    private func writeCommand(kind: SpotKind, subtitle: String? = nil, read: SpotRead? = nil, _ body: String) throws -> PluginCommand {
         let url = folder.appendingPathComponent("command.sh")
         try "#!/bin/sh\n\(body)\n".write(to: url, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
-        return PluginCommand(id: "test/Command", name: "Command", url: url, kind: kind, subtitle: subtitle, hasState: hasState)
+        return PluginCommand(id: "test/Command", name: "Command", url: url, kind: kind, subtitle: subtitle, read: read)
     }
 
     private var marker: URL {
         folder.appendingPathComponent("marker")
     }
 
-    func testReadsTheStateACommandPrints() async throws {
-        let command = try writeCommand(kind: .toggle, """
-        [ "$1" = state ] && printf 'title=Focus\\nsubtitle=On\\non=true\\n'
+    func testReadsTheStateACommandPrintsWithNoArguments() async throws {
+        let command = try writeCommand(kind: .toggle, read: .open, """
+        [ -z "$1" ] && printf 'title=Focus\\ndetail=On\\non=true\\n'
         """)
 
         let state = try await command.state(timeout: 5)
@@ -35,30 +35,39 @@ final class PluginCommandTests: XCTestCase {
         XCTAssertEqual(state, SpotState(title: "Focus", subtitle: "On", on: true))
     }
 
-    func testALaunchSpotShowsItsManifestAndDoesNotRun() async throws {
-        let command = try writeCommand(kind: .launch, subtitle: "Folder", "touch '\(marker.path)'")
+    func testAStateKeepsWhatItLeavesOutFromTheHeader() async throws {
+        let command = try writeCommand(kind: .toggle, subtitle: "Header", read: .open, "echo on=true")
 
         let state = try await command.state(timeout: 5)
 
-        XCTAssertEqual(state, SpotState(title: "Command", subtitle: "Folder"))
+        XCTAssertEqual(state, SpotState(title: "Command", subtitle: "Header", on: true))
+    }
+
+    func testASpotWithNoReadShowsItsHeaderAndDoesNotRun() async throws {
+        let command = try writeCommand(kind: .launch, subtitle: "Folder", "touch '\(marker.path)'")
+
+        let opened = try await command.opened(timeout: 5)
+
+        XCTAssertEqual(opened.state, SpotState(title: "Command", subtitle: "Folder"))
         XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))
     }
 
-    func testAListShowsItsManifestUnlessItHasAState() async throws {
-        let body = "echo title=Read"
+    func testOpeningGivesTheKindAndTheActionsThatItPrints() async throws {
+        let command = try writeCommand(kind: .launch, read: .open, """
+        printf 'on=true\\n\\naction=open\\ntitle=Select\\n\\naction=copy\\ntitle=Copy\\n\\nrow=A\\nrun=a\\n'
+        """)
 
-        let plain = try writeCommand(kind: .list, subtitle: "Apps", body)
-        let plainState = try await plain.state(timeout: 5)
-        let stated = try writeCommand(kind: .list, hasState: true, body)
-        let statedState = try await stated.state(timeout: 5)
+        let opened = try await command.opened(timeout: 5)
 
-        XCTAssertEqual(plainState, SpotState(title: "Command", subtitle: "Apps"))
-        XCTAssertEqual(statedState, SpotState(title: "Read"))
+        XCTAssertEqual(opened.command.kind, .list)
+        XCTAssertEqual(opened.command.primary, "Select")
+        XCTAssertEqual(opened.command.actions.map(\.id), ["copy"])
+        XCTAssertEqual(opened.state.on, true)
     }
 
-    func testReadsTheItemsACommandPrints() async throws {
+    func testReadsTheItemsACommandPrintsWithNoArguments() async throws {
         let command = try writeCommand(kind: .list, """
-        [ "$1" = items ] && printf 'title=Safari\\nrun=/Safari.app\\n'
+        [ -z "$1" ] && printf 'row=Safari\\nrun=/Safari.app\\n'
         """)
 
         let lines = try await command.items(timeout: 5)
@@ -68,17 +77,17 @@ final class PluginCommandTests: XCTestCase {
 
     func testPassesTheSearchToALiveList() async throws {
         let command = try writeCommand(kind: .list, """
-        printf 'title=%s\\nrun=%s\\n' "$2" "$1"
+        printf 'row=%s\\nrun=%s\\n' "$2" "$1"
         """)
 
         let lines = try await command.items(query: "rep", timeout: 5)
 
-        XCTAssertEqual(lines.items, [SpotItem(title: "rep", run: "items")])
+        XCTAssertEqual(lines.items, [SpotItem(title: "rep", run: "search")])
     }
 
     func testReadsTheFormACommandPrints() async throws {
         let command = try writeCommand(kind: .list, """
-        [ "$1 $2" = "form new" ] && printf 'title=New\\nfield=title\\nfield.label=Name\\n'
+        [ "$1 $2" = "form new" ] && printf 'title=New\\n\\nfield=title\\nlabel=Name\\n'
         """)
 
         let form = try await command.form(CommandAction(id: "new", title: "New", isForm: true), item: nil, timeout: 5)
@@ -109,7 +118,7 @@ final class PluginCommandTests: XCTestCase {
     }
 
     func testOutputThatIsNotAStateFails() async throws {
-        let command = try writeCommand(kind: .toggle, "echo nonsense")
+        let command = try writeCommand(kind: .toggle, read: .open, "echo nonsense")
 
         do {
             _ = try await command.state(timeout: 5)

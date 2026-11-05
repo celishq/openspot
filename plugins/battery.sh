@@ -1,5 +1,5 @@
 #!/bin/sh
-[ "$1 $2" = "metric level" ] || exit 1
+# read=30
 line=$(pmset -g batt | grep -E '[0-9]+%')
 if [ -z "$line" ]; then
   printf 'title=–\ndetail=No battery\nsymbol=powerplug.fill\nvalue=0\n'

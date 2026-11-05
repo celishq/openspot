@@ -14,55 +14,27 @@ final class PluginFolderTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func writePlugin(_ name: String, manifest: String, files: [String] = ["run.sh"]) throws {
-        let plugin = folder.appendingPathComponent(name)
-        try FileManager.default.createDirectory(at: plugin, withIntermediateDirectories: true)
-        try manifest.write(to: plugin.appendingPathComponent("manifest.toml"), atomically: true, encoding: .utf8)
-        for file in files {
-            let url = plugin.appendingPathComponent(file)
-            try "#!/bin/sh\n".write(to: url, atomically: true, encoding: .utf8)
-            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
-        }
+    @discardableResult
+    private func write(_ path: String, header: String = "", body: String = "") throws -> URL {
+        let url = folder.appendingPathComponent(path)
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let lines = header.split(separator: "\n").map { "# \($0)\n" }.joined()
+        try "#!/bin/sh\n\(lines)\(body)\n".write(to: url, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        return url
     }
 
-    private func manifest(api: Int = 1, command: String = "") -> String {
-        """
-        name = "Tools"
-        api = \(api)
-
-        [[commands]]
-        name = "One"
-        exec = "run.sh"
-        \(command)
-        """
+    private var scan: ScanResult {
+        get throws { try PluginFolder(url: folder).scan() }
     }
 
-    func testReadsEveryCommandOfAPlugin() throws {
-        try writePlugin("tools", manifest: """
-        name = "Tools"
-        api = 1
+    func testAnExecutableIsASpotWithItsHeader() throws {
+        try write("one.sh", header: "name=First\nsize=square\nsymbol=moon\nsubtitle=Off\nkey=o")
 
-        [[commands]]
-        name = "One"
-        exec = "one.sh"
-        type = "toggle"
-        size = "square"
-        symbol = "moon"
-        subtitle = "Off"
-        key = "o"
-
-        [[commands]]
-        name = "Two"
-        exec = "two.sh"
-        """, files: ["one.sh", "two.sh"])
-
-        let scan = try PluginFolder(url: folder).scan()
-
-        XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.plugins.map(\.name), ["Tools"])
-        XCTAssertEqual(scan.commands.map(\.name), ["One", "Two"])
-        let one = scan.commands[0]
-        XCTAssertEqual(one.kind, .toggle)
+        XCTAssertEqual(try scan.refused, [])
+        let one = try XCTUnwrap(try scan.commands.first)
+        XCTAssertEqual(one.id, "one")
+        XCTAssertEqual(one.name, "First")
         XCTAssertEqual(one.size, .square)
         XCTAssertEqual(one.symbol, "moon")
         XCTAssertEqual(one.subtitle, "Off")
@@ -70,182 +42,115 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(one.url.lastPathComponent, "one.sh")
     }
 
-    func testAListReadsHowItBehaves() throws {
-        try writePlugin("tools", manifest: """
-        name = "Tools"
-        api = 1
+    func testAScriptWithNoHeaderIsAWideLaunchSpotNamedAfterItsFile() throws {
+        try write("say-hello_now.sh")
 
-        [[commands]]
-        name = "One"
-        exec = "one.sh"
-        type = "list"
-        state = true
-        pick = "stay"
-        global = true
-        recents = false
-        """, files: ["one.sh"])
+        let command = try XCTUnwrap(try scan.commands.first)
 
-        let command = try XCTUnwrap(try PluginFolder(url: folder).scan().commands.first)
-
-        XCTAssertFalse(command.keepsRecent)
-        XCTAssertEqual(command.kind, .list)
-        XCTAssertTrue(command.hasState)
-        XCTAssertEqual(command.pick, .stay)
-        XCTAssertTrue(command.isGlobal)
+        XCTAssertEqual(command.name, "Say hello now")
+        XCTAssertEqual(command.kind, .launch)
+        XCTAssertEqual(command.size, .wide)
+        XCTAssertEqual(command.symbol, "app")
+        XCTAssertNil(command.key)
+        XCTAssertNil(command.read)
+        XCTAssertFalse(command.readsState)
+        XCTAssertEqual(command.pick, .close)
+        XCTAssertFalse(command.isGlobal)
+        XCTAssertEqual(command.search, .local)
+        XCTAssertTrue(command.keepsRecent)
     }
 
-    func testACommandCanDeclareItsRank() throws {
-        try writePlugin("tools", manifest: """
-        name = "Tools"
-        api = 1
+    func testEachExecutableInAFolderIsASpot() throws {
+        try write("tools/two.sh")
+        try write("tools/one.sh")
+        try "shared code".write(to: folder.appendingPathComponent("tools/shared.sh"), atomically: true, encoding: .utf8)
 
-        [[commands]]
-        name = "One"
-        exec = "one.sh"
-        rank = 3
-
-        [[commands]]
-        name = "Two"
-        exec = "one.sh"
-        """, files: ["one.sh"])
-
-        let commands = try PluginFolder(url: folder).scan().commands
-
-        XCTAssertEqual(commands.map(\.rank), [3, PluginCommand.lastRank])
+        XCTAssertEqual(try scan.commands.map(\.id), ["tools/one", "tools/two"])
     }
 
-    func testARankThatIsNotANumberIsRefused() throws {
-        try writePlugin("tools", manifest: """
-        name = "Tools"
-        api = 1
+    func testSkipsAnEmptyFolderAndAFileThatIsNotExecutable() throws {
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("empty"), withIntermediateDirectories: true)
+        try "text".write(to: folder.appendingPathComponent("notes.txt"), atomically: true, encoding: .utf8)
 
-        [[commands]]
-        name = "One"
-        exec = "one.sh"
-        rank = "first"
-        """, files: ["one.sh"])
+        XCTAssertEqual(try scan.plugins, [])
+        XCTAssertEqual(try scan.refused, [])
+    }
 
-        XCTAssertEqual(try PluginFolder(url: folder).scan().refused.count, 1)
+    func testReadSaysWhatKindOfSpotItIsBeforeAnyRun() throws {
+        try write("click.sh", header: "read=click")
+        try write("open.sh", header: "read=open")
+        try write("ranked.sh", header: "read=open\nrank=3\nrecents=false")
+
+        let commands = try scan.commands
+
+        XCTAssertEqual(commands.map(\.kind), [.list, .launch, .list])
+        XCTAssertEqual(commands.map(\.readsState), [false, true, false])
+        XCTAssertEqual(commands[2].rank, 3)
+        XCTAssertTrue(commands[2].isGlobal)
+        XCTAssertFalse(commands[2].keepsRecent)
+    }
+
+    func testANumberAsTheReadIsAMetricWithNoSpot() throws {
+        try write("cups.sh", header: "name=Cups\nsymbol=cup.and.saucer\nread=30")
+
+        let scan = try scan
+        let metric = try XCTUnwrap(scan.metrics.first)
+
+        XCTAssertEqual(scan.commands, [])
+        XCTAssertEqual(metric.id, "cups")
+        XCTAssertEqual(metric.label, "Cups")
+        XCTAssertEqual(metric.symbol, "cup.and.saucer")
+        XCTAssertEqual(metric.refresh, 30)
+    }
+
+    func testAMetricWithAKeyIsAlsoAList() throws {
+        try write("pulls.sh", header: "read=120\nkey=g")
+
+        let scan = try scan
+
+        XCTAssertEqual(scan.metrics.map(\.id), ["pulls"])
+        XCTAssertEqual(scan.commands.map(\.id), ["pulls"])
+        XCTAssertEqual(scan.commands.first?.kind, .list)
+        XCTAssertEqual(scan.commands.first?.readsState, false)
     }
 
     func testAListCanSearchLive() throws {
-        try writePlugin("tools", manifest: """
-        name = "Tools"
-        api = 1
+        try write("one.sh", header: "read=click\nsearch=live")
 
-        [[commands]]
-        name = "One"
-        exec = "one.sh"
-        type = "list"
-        search = "live"
-        """, files: ["one.sh"])
-
-        let command = try XCTUnwrap(try PluginFolder(url: folder).scan().commands.first)
-
-        XCTAssertEqual(command.search, .live)
+        XCTAssertEqual(try scan.commands.first?.search, .live)
     }
 
-    func testALiveListCannotJoinTheMainSearch() throws {
-        try writePlugin("tools", manifest: """
-        name = "Tools"
-        api = 1
+    func testRefusesAHeaderWithAFault() throws {
+        try write("a.sh", header: "read=sometimes")
+        try write("b.sh", header: "size=huge")
+        try write("c.sh", header: "key=ctrl+d")
+        try write("d.sh", header: "search=later")
+        try write("e.sh", header: "read=open\nrank=first")
+        try write("f.sh", header: "rank=1")
+        try write("g.sh", header: "read=open\nsearch=live")
+        try write("h.sh", header: "read=click\nsearch=live\nrank=1")
 
-        [[commands]]
-        name = "One"
-        exec = "one.sh"
-        type = "list"
-        search = "live"
-        global = true
-        """, files: ["one.sh"])
-
-        let scan = try PluginFolder(url: folder).scan()
-
-        XCTAssertEqual(scan.refused.first?.reason, "One cannot join the main search, because it searches live")
-    }
-
-    func testActionsBelongToTheirCommand() throws {
-        try writePlugin("tools", manifest: """
-        name = "Tools"
-        api = 1
-
-        [[commands]]
-        name = "One"
-        exec = "one.sh"
-        type = "list"
-        primary = "Copy"
-
-        [[commands]]
-        name = "Two"
-        exec = "one.sh"
-
-        [[actions]]
-        command = "One"
-        id = "new"
-        title = "New"
-        key = "cmd+n"
-        scope = "command"
-        form = true
-
-        [[actions]]
-        command = "One"
-        id = "delete"
-        title = "Delete"
-        after = "close"
-        confirm = "Delete this?"
-        """, files: ["one.sh"])
-
-        let commands = try PluginFolder(url: folder).scan().commands
-
-        XCTAssertEqual(commands[0].primary, "Copy")
-        XCTAssertEqual(commands[0].actions, [
-            CommandAction(id: "new", title: "New", key: ActionKey(text: "cmd+n"), scope: .command, isForm: true),
-            CommandAction(id: "delete", title: "Delete", after: .close, confirm: "Delete this?")
+        XCTAssertEqual(try scan.plugins, [])
+        XCTAssertEqual(try scan.refused, [
+            Refusal(file: "a", reason: "A has an unknown read: sometimes. Use click, open or a number of seconds"),
+            Refusal(file: "b", reason: "B has an unknown size: huge"),
+            Refusal(file: "c", reason: "C has an unknown key: ctrl+d"),
+            Refusal(file: "d", reason: "D has an unknown search: later"),
+            Refusal(file: "e", reason: "E needs a number as its rank"),
+            Refusal(file: "f", reason: "F needs read=open to join the main search"),
+            Refusal(file: "g", reason: "G needs read=click to search live"),
+            Refusal(file: "h", reason: "H needs read=open to join the main search")
         ])
-        XCTAssertEqual(commands[1].actions, [])
     }
 
-    private func refusal(forAction lines: String) throws -> String? {
-        try writePlugin("tools", manifest: """
-        name = "Tools"
-        api = 1
+    func testAScanDoesNotRunAScript() throws {
+        let marker = folder.appendingPathComponent("marker")
+        try write("one.sh", header: "read=open", body: "touch '\(marker.path)'")
+        try write("two.sh", body: "touch '\(marker.path)'")
 
-        [[commands]]
-        name = "One"
-        exec = "one.sh"
+        _ = try scan
 
-        [[actions]]
-        \(lines)
-        """, files: ["one.sh"])
-        return try PluginFolder(url: folder).scan().refused.first?.reason
-    }
-
-    func testAnActionOfNoCommandRefusesThePlugin() throws {
-        XCTAssertEqual(try refusal(forAction: "command = \"Two\"\nid = \"a\"\ntitle = \"A\""), "An action names no command called Two")
-    }
-
-    func testAnActionWithABadKeyRefusesThePlugin() throws {
-        XCTAssertEqual(try refusal(forAction: "command = \"One\"\nid = \"a\"\ntitle = \"A\"\nkey = \"ctrl+a\""), "A has an unknown key: ctrl+a")
-    }
-
-    func testAnActionWithoutATitleRefusesThePlugin() throws {
-        XCTAssertEqual(try refusal(forAction: "command = \"One\"\nid = \"a\""), "An action needs a command, an id and a title")
-    }
-
-    func testAPickThatIsNotKnownRefusesThePlugin() throws {
-        try writePlugin("tools", manifest: """
-        name = "Tools"
-        api = 1
-
-        [[commands]]
-        name = "One"
-        exec = "one.sh"
-        pick = "later"
-        """, files: ["one.sh"])
-
-        let scan = try PluginFolder(url: folder).scan()
-
-        XCTAssertEqual(scan.plugins, [])
-        XCTAssertEqual(scan.refused.first?.reason, "One has an unknown pick: later")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))
     }
 
     func testAConfigPathHoldsThePluginFolder() {
@@ -266,75 +171,11 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(folder.url.path, "/home/.config/openspot/plugins")
     }
 
-    func testACommandWithNoLookIsAWideLaunchSpot() throws {
-        try writePlugin("tools", manifest: manifest())
-
-        let command = try XCTUnwrap(try PluginFolder(url: folder).scan().commands.first)
-
-        XCTAssertEqual(command.kind, .launch)
-        XCTAssertEqual(command.size, .wide)
-        XCTAssertEqual(command.symbol, "app")
-        XCTAssertNil(command.key)
-        XCTAssertFalse(command.hasState)
-        XCTAssertEqual(command.pick, .close)
-        XCTAssertFalse(command.isGlobal)
-        XCTAssertEqual(command.search, .local)
-        XCTAssertTrue(command.keepsRecent)
-    }
-
-    func testCommandsOfTwoPluginsHaveDifferentIds() throws {
-        try writePlugin("a", manifest: manifest())
-        try writePlugin("b", manifest: manifest())
-
-        let ids = try PluginFolder(url: folder).scan().commands.map(\.id)
-
-        XCTAssertEqual(ids, ["a/One", "b/One"])
-    }
-
-    func testSkipsAFolderWithNoManifestAndAFile() throws {
-        try FileManager.default.createDirectory(at: folder.appendingPathComponent("empty"), withIntermediateDirectories: true)
-        try "text".write(to: folder.appendingPathComponent("notes.txt"), atomically: true, encoding: .utf8)
-
-        let scan = try PluginFolder(url: folder).scan()
-
-        XCTAssertEqual(scan.plugins, [])
-        XCTAssertEqual(scan.refused, [])
-    }
-
-    func testRefusesAnUnknownApi() throws {
-        try writePlugin("future", manifest: manifest(api: 9))
-
-        let scan = try PluginFolder(url: folder).scan()
-
-        XCTAssertEqual(scan.plugins, [])
-        XCTAssertEqual(scan.refused, [Refusal(file: "future", reason: "needs api 9")])
-    }
-
-    func testRefusesAManifestWithAFault() throws {
-        try writePlugin("a", manifest: manifest(command: "type = \"dial\""))
-        try writePlugin("b", manifest: manifest(command: "size = \"huge\""))
-        try writePlugin("c", manifest: manifest(command: "key = \"ctrl+d\""))
-        try writePlugin("d", manifest: "name = \"D\"\napi = 1\n\n[[commands]]\nname = \"One\"\nexec = \"gone.sh\"\n")
-        try writePlugin("e", manifest: "api = 1\n")
-
-        let scan = try PluginFolder(url: folder).scan()
-
-        XCTAssertEqual(scan.refused, [
-            Refusal(file: "a", reason: "One has an unknown type: dial"),
-            Refusal(file: "b", reason: "One has an unknown size: huge"),
-            Refusal(file: "c", reason: "One has an unknown key: ctrl+d"),
-            Refusal(file: "d", reason: "One needs a file named gone.sh"),
-            Refusal(file: "e", reason: "needs a name")
-        ])
-    }
-
     func testTheFirstCommandKeepsATakenKey() throws {
-        try writePlugin("a", manifest: manifest(command: "key = \"d\""))
-        try writePlugin("b", manifest: manifest(command: "key = \"D\""))
+        try write("a.sh", header: "name=One\nkey=d")
+        try write("b.sh", header: "name=Two\nkey=D")
 
-        let scan = try PluginFolder(url: folder).scan()
-
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["d", nil])
-        XCTAssertEqual(scan.refused, [Refusal(file: "b", reason: "One cannot use key d, because another command has it")])
+        XCTAssertEqual(try scan.commands.map(\.key?.name), ["d", nil])
+        XCTAssertEqual(try scan.refused, [Refusal(file: "b", reason: "Two cannot use key d, because another command has it")])
     }
 }

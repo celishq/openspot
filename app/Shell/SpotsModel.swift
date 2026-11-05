@@ -9,7 +9,7 @@ final class SpotsModel {
         let kind: SpotKind
         let size: SpotSize
         let symbol: String
-        let command: PluginCommand
+        var command: PluginCommand
         let item: SpotItem?
         var state: SpotState
 
@@ -89,6 +89,7 @@ final class SpotsModel {
     private var metrics: [PluginMetric] = []
     private var metricSchedule = MetricSchedule()
     private var metricLoop: Task<Void, Never>?
+    private var outputs: [String: PluginOutput] = [:]
 
     /// Reads the plugin folder again, and asks each plugin for its state.
     func reload() async {
@@ -96,24 +97,33 @@ final class SpotsModel {
         let scan = (try? folder.scan()) ?? ScanResult(plugins: [], refused: [])
         var entries: [Entry] = []
         var problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
-        scan.commands.filter { $0.kind == .list }.forEach { loadItems(of: $0) }
+        scan.commands.filter { $0.kind == .list }.forEach(prepareList)
+        scan.commands.filter { $0.kind == .list && $0.read == .open }.forEach { loadItems(of: $0) }
         if scan.commands.isEmpty {
             problems.append("No plugins in \(folder.url.path)")
         }
         for command in scan.commands {
             do {
-                entries.append(Entry(command: command, state: try await command.state(timeout: Self.stateTimeout)))
+                let opened = try await command.opened(timeout: Self.stateTimeout)
+                if command.readsState, opened.command.kind == .list {
+                    prepareList(opened.command)
+                    loadItems(of: opened.command)
+                }
+                entries.append(Entry(command: opened.command, state: opened.state))
             } catch {
-                entries.append(Entry(command: command, state: command.manifestState))
+                entries.append(Entry(command: command, state: command.headerState))
                 problems.append("\(command.name) failed. \(Self.reason(error))")
             }
+        }
+        for index in entries.indices {
+            if let output = outputs[entries[index].id] { entries[index].command = entries[index].command.taking(output) }
         }
         self.entries = entries
         metrics = scan.metrics
         for metric in metrics {
             let reading = readings[metric.id]
-            if reading?.kind != metric.kind || reading?.label != metric.label || reading?.tint != metric.tint {
-                readings[metric.id] = MetricReading(kind: metric.kind, label: metric.label, tint: metric.tint)
+            if reading?.label != metric.label || reading?.headerSymbol != metric.symbol {
+                readings[metric.id] = MetricReading(label: metric.label, headerSymbol: metric.symbol)
             }
         }
         readDueMetrics()
@@ -152,16 +162,29 @@ final class SpotsModel {
         }
     }
 
-    /// Asks a list command for its items, and shows them when they arrive.
-    private func loadItems(of command: PluginCommand, selecting run: String? = nil) {
-        guard command.kind == .list else { return }
+    private func prepareList(_ command: PluginCommand) {
         if lists[command.id] == nil {
             lists[command.id] = ItemList(recent: UserDefaults.standard.stringArray(forKey: Self.recentKey(command.id)) ?? [], search: command.search)
         }
+    }
+
+    /// Keeps the actions a script printed, for its spot now and after the next reload.
+    private func keep(_ output: PluginOutput, of command: PluginCommand) {
+        outputs[command.id] = output
+        if let index = entries.firstIndex(where: { $0.id == command.id }) {
+            entries[index].command = entries[index].command.taking(output)
+        }
+    }
+
+    /// Asks a list command for its items, and shows them when they arrive.
+    private func loadItems(of command: PluginCommand, selecting run: String? = nil) {
+        guard command.kind == .list else { return }
+        prepareList(command)
         guard command.search == .local else { return }
         Task {
             do {
                 let lines = try await command.items(timeout: Self.itemsTimeout)
+                keep(lines, of: command)
                 lists[command.id]?.replace(lines.items)
                 if let run { lists[command.id]?.select(run: run) }
                 await SpotIconStore.shared.prepare(lines.items)
@@ -183,6 +206,7 @@ final class SpotsModel {
                 let lines = try await command.items(query: query, timeout: Self.liveTimeout)
                 await SpotIconStore.shared.prepare(lines.items)
                 guard !Task.isCancelled else { return }
+                keep(lines, of: command)
                 lists[command.id]?.answer(lines.items, to: query)
             } catch {
                 guard !Task.isCancelled else { return }

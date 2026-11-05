@@ -68,19 +68,6 @@ public struct TextBlock: Equatable, Sendable {
         value(key).flatMap(Bool.init)
     }
 
-    /// One block for each `key` line, with the `key.name` lines that follow it as `name`.
-    public func groups(_ key: String) -> [TextBlock] {
-        var groups: [[Field]] = []
-        for field in fields {
-            if field.key == key {
-                groups.append([field])
-            } else if field.key.hasPrefix(key + "."), !groups.isEmpty {
-                groups[groups.count - 1].append(Field(key: String(field.key.dropFirst(key.count + 1)), value: field.value))
-            }
-        }
-        return groups.map { TextBlock(fields: $0) }
-    }
-
     private static func escaped(_ value: String) -> String {
         var scalars = String.UnicodeScalarView()
         for scalar in value.unicodeScalars {

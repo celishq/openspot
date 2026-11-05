@@ -30,8 +30,13 @@ final class GuidePluginTests: XCTestCase {
         try FileManager.default.removeItem(at: folder)
     }
 
+    private func newAction(of guide: PluginCommand) async throws -> CommandAction {
+        let actions = try await guide.items(timeout: 5).actions
+        return try XCTUnwrap(actions.first { $0.id == "new" })
+    }
+
     private func guide() throws -> PluginCommand {
-        try XCTUnwrap(try PluginFolder(url: plugins).scan().commands.first { $0.id == "guide/Plugins" })
+        try XCTUnwrap(try PluginFolder(url: plugins).scan().commands.first { $0.id == "guide/guide" })
     }
 
     private func saved(_ name: String) throws -> String {
@@ -60,7 +65,7 @@ final class GuidePluginTests: XCTestCase {
 
     func testNewPluginMakesAWorkingPlugin() async throws {
         let guide = try guide()
-        let action = try XCTUnwrap(guide.actions.first { $0.id == "new" })
+        let action = try await newAction(of: guide)
         let form = try await guide.form(action, item: nil, timeout: 5)
         var draft = FormDraft(form: form)
         draft.set("My Weather", for: "name")
@@ -68,16 +73,16 @@ final class GuidePluginTests: XCTestCase {
         _ = try await guide.submit(action, item: nil, draft: draft, timeout: 5)
 
         let scan = try PluginFolder(url: plugins).scan()
-        let made = scan.commands.first { $0.id == "my-weather/My Weather" }
+        let made = scan.commands.first { $0.id == "my-weather" }
         XCTAssertEqual(scan.refused, [])
-        XCTAssertNotNil(made)
+        XCTAssertEqual(made?.name, "My Weather")
         try await XCTUnwrap(made).perform(.run, timeout: 5)
-        XCTAssertTrue(try saved("opened").contains("my-weather"))
+        XCTAssertEqual(try saved("opened"), "-R\n")
     }
 
     func testNewPluginKeepsAPluginThatExists() async throws {
         let guide = try guide()
-        let action = try XCTUnwrap(guide.actions.first { $0.id == "new" })
+        let action = try await newAction(of: guide)
         var draft = FormDraft(form: try await guide.form(action, item: nil, timeout: 5))
         draft.set("Guide", for: "name")
 
@@ -94,21 +99,13 @@ final class GuidePluginTests: XCTestCase {
         guideText.components(separatedBy: "```\(fence)\n").dropFirst().map { $0.components(separatedBy: "```")[0] }
     }
 
-    func testEachExamplePluginInTheGuideLoadsAndAnswers() async throws {
-        let examples = blocks("toml").filter { $0.contains("api = 1") && !$0.contains("[[widgets]]\nname = \"Morning\"") }
+    func testEachExampleScriptInTheGuideLoadsAndAnswers() async throws {
         let scripts = blocks("sh")
-        XCTAssertEqual(examples.count, scripts.count)
-        for (manifest, script) in zip(examples, scripts) {
-            let name = try XCTUnwrap(try TomlDocument(text: manifest).values["name"])
-            guard case .string(let title) = name else { return XCTFail("no name") }
-            let directory = plugins.appendingPathComponent(title.lowercased())
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            try manifest.write(to: directory.appendingPathComponent("manifest.toml"), atomically: true, encoding: .utf8)
-            for exec in Self.execs(in: manifest) {
-                let url = directory.appendingPathComponent(exec)
-                try script.write(to: url, atomically: true, encoding: .utf8)
-                try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
-            }
+        XCTAssertGreaterThan(scripts.count, 2)
+        for (index, script) in scripts.enumerated() {
+            let url = plugins.appendingPathComponent("example-\(index).sh")
+            try script.write(to: url, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
         }
 
         let faults = await PluginCheck(folder: PluginFolder(url: plugins)).faults()
@@ -116,10 +113,10 @@ final class GuidePluginTests: XCTestCase {
         XCTAssertEqual(faults, [])
     }
 
-    private static func execs(in manifest: String) -> [String] {
-        manifest.split(separator: "\n").compactMap { line in
-            guard line.hasPrefix("exec = ") else { return nil }
-            return line.dropFirst(7).trimmingCharacters(in: CharacterSet(charactersIn: "\""))
-        }
+    func testTheWidgetExampleInTheGuideNamesARealLayout() throws {
+        let example = try XCTUnwrap(blocks("text").first { $0.contains("layout=") })
+        let block = try XCTUnwrap(TextBlock.blocks(in: example).first)
+
+        XCTAssertEqual(WidgetLayout(name: try XCTUnwrap(block.value("layout")))?.slots.count, block.values("place").count)
     }
 }

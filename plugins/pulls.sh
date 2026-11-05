@@ -1,4 +1,9 @@
 #!/bin/sh
+# name=Pull requests
+# symbol=arrow.triangle.pull
+# subtitle=Yours and to review
+# key=g
+# read=120
 export LC_ALL=en_US.UTF-8
 export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
 
@@ -32,21 +37,16 @@ pulls() {
 }
 
 case "$1" in
-  metric)
-    [ "$2" = open ] || exit 1
+  "")
     list=$(pulls) || exit 1
-    printf '%s' "$list" | jq -r "$defs"'"title=\(length) open\nsymbol=arrow.triangle.pull",
-      (if length == 0 then "hidden=true" else empty end),
-      (.[] | "row=\(.title | esc)\nrow.detail=\(about)", (tone | if . then "row.tone=\(.)" else empty end))'
-    ;;
-  items)
-    list=$(pulls) || exit 1
-    printf '%s' "$list" | jq -r "$defs"'.[] | "title=\(.title | esc)\nsubtitle=\(about)\nrun=\(.url | esc)\nsymbol=\({good: "checkmark.circle", bad: "xmark.circle", warn: "clock"}[tone // ""] // "arrow.triangle.pull")\n"'
+    printf 'action=copy\ntitle=Copy link\nkey=cmd+return\nclose=true\n\n'
+    printf '%s' "$list" | jq -r "$defs"'.[] | "row=\(.title | esc)\ndetail=\(about)\nrun=\(.url | esc)\nsymbol=\({good: "checkmark.circle", bad: "xmark.circle", warn: "clock"}[tone // ""] // "arrow.triangle.pull")"
+      + (tone | if . then "\ntone=\(.)" else "" end) + "\n"'
     ;;
   copy)
     printf '%s' "$2" | pbcopy
     ;;
-  *)
-    open "$1"
+  open)
+    open "$2"
     ;;
 esac

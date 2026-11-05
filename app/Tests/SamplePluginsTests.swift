@@ -14,7 +14,7 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Files", "Plugins", "Links", "Overview", "Battery", "CPU", "Agents", "Paste Screenshot", "Pull requests", "Pull request status", "Snippets"])
+        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Files", "Plugins", "Links", "Overview", "Battery", "CPU", "Agents", "Paste screenshot", "Pull requests", "Pull request status", "Snippets"])
         XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "f", "p", "l", nil, nil, nil, nil, "v", "g", nil, "n"])
     }
 
@@ -29,7 +29,7 @@ final class SamplePluginsTests: XCTestCase {
     }
 
     func testTheCPUTrendGrowsWithEachRead() async throws {
-        let cpu = try XCTUnwrap(try scan.metrics.first { $0.id == "system/cpu" })
+        let cpu = try XCTUnwrap(try scan.metrics.first { $0.id == "cpu" })
 
         let first = try await cpu.read(timeout: 10).points?.count ?? 0
         let second = try await cpu.read(timeout: 10).points?.count ?? 0
@@ -38,7 +38,7 @@ final class SamplePluginsTests: XCTestCase {
     }
 
     func testTheCPUTrendSurvivesABadHistoryAndAShortPath() async throws {
-        let cpu = try XCTUnwrap(try scan.metrics.first { $0.id == "system/cpu" })
+        let cpu = try XCTUnwrap(try scan.metrics.first { $0.id == "cpu" })
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-cpu-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         try "5\n\nnonsense\n7\n".write(to: folder.appendingPathComponent("openspot-cpu"), atomically: true, encoding: .utf8)
@@ -58,7 +58,7 @@ final class SamplePluginsTests: XCTestCase {
     }
 
     func testEveryCommandCanBeRun() throws {
-        for command in try scan.commands {
+        for command in try scan.commands where command.kind != .widget {
             XCTAssertTrue(FileManager.default.isExecutableFile(atPath: command.url.path), command.name)
         }
     }
@@ -73,7 +73,8 @@ final class SamplePluginsTests: XCTestCase {
         XCTAssertNotNil(state.on)
         XCTAssertEqual(lines.items.map(\.run).filter { $0 != "off" }, ["1800", "3600", "7200", "0"])
         XCTAssertEqual(lines.errors, [])
-        XCTAssertEqual(caffeinate.pick, .close)
+        XCTAssertEqual(lines.pick, .close)
+        XCTAssertEqual(lines.primary, "Select")
         XCTAssertFalse(caffeinate.keepsRecent)
     }
 
@@ -179,14 +180,14 @@ final class SamplePluginsTests: XCTestCase {
 
     func testPullRequestsCountEachStateAndOfferEachOne() async throws {
         let scan = try scan
-        let metric = try XCTUnwrap(scan.metrics.first { $0.id == "pulls/open" })
-        let list = try XCTUnwrap(scan.commands.first { $0.id == "pulls/Pull requests" })
+        let metric = try XCTUnwrap(scan.metrics.first { $0.id == "pulls" })
+        let list = try XCTUnwrap(scan.commands.first { $0.id == "pulls" })
         let widget = try XCTUnwrap(scan.commands.first { $0.id == "pulls/Pull request status" })
         try await withPrivateHome { folder in
             let value = try await metric.read(timeout: 5)
             let lines = try await list.items(timeout: 5)
 
-            XCTAssertEqual(value.title, "4 open")
+            XCTAssertEqual(value.title, "4")
             XCTAssertEqual(value.rows?.map(\.tone), [.bad, .warn, .good, nil])
             XCTAssertEqual(value.rows?.first?.title, "Fix \\ \"tray\"")
             XCTAssertEqual(lines.errors, [])
@@ -198,13 +199,13 @@ final class SamplePluginsTests: XCTestCase {
             let item = try XCTUnwrap(lines.items.first)
             try await list.perform(.item(item), timeout: 5)
             XCTAssertEqual(try self.read("opened", in: folder), item.run + "\n")
-            try await list.perform(.action(try self.action("copy", of: list), item: item), timeout: 5)
+            try await list.perform(.action(try await self.action("copy", of: list), item: item), timeout: 5)
             XCTAssertEqual(try self.read("clipboard", in: folder), item.run)
         }
     }
 
     func testPullRequestsHideWhenThereAreNone() async throws {
-        let metric = try XCTUnwrap(try scan.metrics.first { $0.id == "pulls/open" })
+        let metric = try XCTUnwrap(try scan.metrics.first { $0.id == "pulls" })
         try await withPrivateHome { folder in
             try #"{"data":{"mine":{"nodes":[]},"asked":{"nodes":[]}}}"#.write(to: folder.appendingPathComponent("gh-answer"), atomically: true, encoding: .utf8)
 
@@ -218,7 +219,7 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
         let widget = try XCTUnwrap(scan.commands.first { $0.id == "overview/Agents" })
 
-        XCTAssertEqual(widget.tray, "agents/list")
+        XCTAssertEqual(widget.tray, "agents")
     }
 
     /// A web with one site: icons.test names a small image on its page, and each other site has no image at all.
@@ -247,7 +248,7 @@ final class SamplePluginsTests: XCTestCase {
     }
 
     private func savedLink(_ url: String, in links: PluginCommand) async throws {
-        let new = try action("new", of: links)
+        let new = try await action("new", of: links)
         var draft = FormDraft(form: try await links.form(new, item: nil, timeout: 5))
         draft.set("Site", for: "title")
         draft.set(url, for: "url")
@@ -297,7 +298,7 @@ final class SamplePluginsTests: XCTestCase {
             let config = folder.appendingPathComponent("debug-config")
             setenv("OPENSPOT_CONFIG", config.path, 1)
             defer { unsetenv("OPENSPOT_CONFIG") }
-            let new = try self.action("new", of: snippets)
+            let new = try await self.action("new", of: snippets)
             var draft = FormDraft(form: try await snippets.form(new, item: nil, timeout: 5))
             draft.set("A", for: "title")
             draft.set("B", for: "content")
@@ -309,8 +310,10 @@ final class SamplePluginsTests: XCTestCase {
         }
     }
 
-    private func action(_ id: String, of command: PluginCommand) throws -> CommandAction {
-        try XCTUnwrap(command.actions.first { $0.id == id })
+    /// Reads a script to find the action that it prints.
+    private func action(_ id: String, of command: PluginCommand) async throws -> CommandAction {
+        let actions = try await command.items(timeout: 5).actions
+        return try XCTUnwrap(actions.first { $0.id == id })
     }
 
     private func read(_ name: String, in folder: URL) throws -> String {
@@ -324,7 +327,7 @@ final class SamplePluginsTests: XCTestCase {
             let empty = try await snippets.items(timeout: 5)
             XCTAssertEqual(empty.items, [])
 
-            let new = try action("new", of: snippets)
+            let new = try await action("new", of: snippets)
             let form = try await snippets.form(new, item: nil, timeout: 5)
             var draft = FormDraft(form: form)
             draft.set("Hello", for: "title")
@@ -341,7 +344,7 @@ final class SamplePluginsTests: XCTestCase {
             try await snippets.perform(.item(item), timeout: 5)
             XCTAssertEqual(try self.read("clipboard", in: folder), text)
 
-            let edit = try action("edit", of: snippets)
+            let edit = try await action("edit", of: snippets)
             let filled = try await snippets.form(edit, item: item, timeout: 5)
             XCTAssertEqual(filled.fields.map(\.value), ["Hello", text])
             var changed = FormDraft(form: filled)
@@ -351,11 +354,11 @@ final class SamplePluginsTests: XCTestCase {
             XCTAssertEqual(edited.map(\.title), ["Changed"])
 
             try "before".write(to: folder.appendingPathComponent("clipboard"), atomically: true, encoding: .utf8)
-            try await snippets.perform(.action(try self.action("paste", of: snippets), item: item), timeout: 5)
+            try await snippets.perform(.action(try await self.action("paste", of: snippets), item: item), timeout: 5)
             XCTAssertEqual(try self.read("pasted", in: folder), text)
             XCTAssertEqual(try self.read("clipboard", in: folder), "before")
 
-            try await snippets.perform(.action(try self.action("delete", of: snippets), item: item), timeout: 5)
+            try await snippets.perform(.action(try await self.action("delete", of: snippets), item: item), timeout: 5)
             let gone = try await snippets.items(timeout: 5).items
             XCTAssertEqual(gone, [])
         }
@@ -376,7 +379,7 @@ final class SamplePluginsTests: XCTestCase {
     func testLinksCompletesALinkAndOpensAndCopiesIt() async throws {
         let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
         try await withPrivateHome { folder in
-            let new = try action("new", of: links)
+            let new = try await action("new", of: links)
             var draft = FormDraft(form: try await links.form(new, item: nil, timeout: 5))
             draft.set("Docs", for: "title")
             draft.set(" github.com/a/b ", for: "url")
@@ -390,7 +393,7 @@ final class SamplePluginsTests: XCTestCase {
             try await links.perform(.item(item), timeout: 5)
             XCTAssertEqual(try self.read("opened", in: folder), "https://github.com/a/b\n")
 
-            try await links.perform(.action(try self.action("copy", of: links), item: item), timeout: 5)
+            try await links.perform(.action(try await self.action("copy", of: links), item: item), timeout: 5)
             XCTAssertEqual(try self.read("clipboard", in: folder), "https://github.com/a/b")
         }
     }
@@ -398,7 +401,7 @@ final class SamplePluginsTests: XCTestCase {
     func testLinksRefusesALinkWithSpaces() async throws {
         let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
         try await withPrivateHome { _ in
-            let new = try action("new", of: links)
+            let new = try await action("new", of: links)
             var draft = FormDraft(form: try await links.form(new, item: nil, timeout: 5))
             draft.set("Bad", for: "title")
             draft.set("not a link", for: "url")
@@ -426,7 +429,7 @@ final class SamplePluginsTests: XCTestCase {
     func testLinksKeepsItsListAfterEachShortcutIsDeleted() async throws {
         let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
         try await withPrivateHome { _ in
-            let delete = try self.action("delete", of: links)
+            let delete = try await self.action("delete", of: links)
             for item in try await links.items(timeout: 5).items {
                 try await links.perform(.action(delete, item: item), timeout: 5)
             }
@@ -457,7 +460,7 @@ final class SamplePluginsTests: XCTestCase {
         try await withPrivateHome { folder in
             let place = folder.appendingPathComponent("My Work")
             try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
-            let new = try self.action("new", of: links)
+            let new = try await self.action("new", of: links)
             var draft = FormDraft(form: try await links.form(new, item: nil, timeout: 5))
             draft.set("Work", for: "title")
             draft.set("~/My Work", for: "url")
@@ -491,16 +494,17 @@ final class SamplePluginsTests: XCTestCase {
             try FileManager.default.createDirectory(at: folder.appendingPathComponent("Downloads"), withIntermediateDirectories: true)
             let downloads = try await links.items(timeout: 5).items.first { $0.title == "Downloads" }
 
-            try await links.perform(.action(try self.action("reveal", of: links), item: downloads), timeout: 5)
+            try await links.perform(.action(try await self.action("reveal", of: links), item: downloads), timeout: 5)
 
             XCTAssertEqual(try self.read("opened", in: folder), "-R\n")
         }
     }
 
-    func testAppsAndFilesOfferToShowInFinder() throws {
+    func testAppsAndFilesOfferToShowInFinder() async throws {
         for name in ["Apps", "Files"] {
             let command = try XCTUnwrap(try scan.commands.first { $0.name == name })
-            XCTAssertEqual(command.actions.first?.id, "reveal", name)
+            let actions = try await command.items(timeout: 10).actions
+            XCTAssertEqual(actions.first?.id, "reveal", name)
         }
     }
 }

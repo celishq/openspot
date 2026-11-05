@@ -1,0 +1,5 @@
+name=Pull request status
+layout=single
+place=pulls
+opens=pulls
+tray=pulls

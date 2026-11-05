@@ -1,6 +1,13 @@
 #!/bin/sh
+# symbol=doc.text.magnifyingglass
+# subtitle=Find a file
+# key=f
+# read=click
+# search=live
 case "$1" in
-  items)
+  ""|search)
+    printf 'action=reveal\ntitle=Show in Finder\nkey=cmd+return\nclose=true\n\n'
+    printf 'action=copy\ntitle=Copy path\nkey=cmd+shift+c\nclose=true\n\n'
     query=$(printf '%s' "$2" | tr -d '"\\*')
     [ "${#query}" -lt 2 ] && exit 0
     mdfind -onlyin "$HOME" "kMDItemFSName == \"*$query*\"cd" 2>/dev/null \
@@ -13,7 +20,7 @@ case "$1" in
             folder = $0
             sub(/\/[^\/]*$/, "", folder)
             if (index(folder, home) == 1) folder = "~" substr(folder, length(home) + 1)
-            printf "title=%s\nsubtitle=%s\nrun=%s\nfile=%s\n\n", $NF, folder, $0, $0
+            printf "row=%s\ndetail=%s\nrun=%s\nfile=%s\n\n", $NF, folder, $0, $0
           }'
     ;;
   reveal)
@@ -22,7 +29,7 @@ case "$1" in
   copy)
     printf '%s' "$2" | LC_ALL=en_US.UTF-8 pbcopy
     ;;
-  *)
-    open "$1"
+  open)
+    open "$2"
     ;;
 esac

@@ -4,7 +4,7 @@ public enum PluginError: Error, Equatable, Sendable {
     case badState
     case badForm
     case badMetric
-    case manifest(String)
+    case header(String)
 
     /// Why it failed, in words for the person.
     public var reason: String {
@@ -15,7 +15,7 @@ public enum PluginError: Error, Equatable, Sendable {
         case .badState: "It sent a state Openspot cannot read."
         case .badForm: "It sent a form Openspot cannot read."
         case .badMetric: "It sent a metric Openspot cannot read."
-        case .manifest(let fault): fault
+        case .header(let fault): fault
         }
     }
 }

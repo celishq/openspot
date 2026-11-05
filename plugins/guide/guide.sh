@@ -1,33 +1,44 @@
 #!/bin/sh
+# name=Plugins
+# symbol=puzzlepiece.extension
+# subtitle=Build your own
+# key=p
+# read=open
+# recents=false
 export LC_ALL=en_US.UTF-8
 here=$(cd "$(dirname "$0")" && pwd)
 plugins=$(dirname "$here")
 guide="$here/GUIDE.md"
 
 case "$1" in
-  items)
-    printf 'title=Copy prompt for AI\nsubtitle=Have an AI build a plugin for you\nrun=prompt\nsymbol=sparkles\n\n'
-    printf 'title=Read the guide\nsubtitle=How plugins and widgets work\nrun=guide\nsymbol=book\n\n'
-    printf 'title=Open plugins folder\nsubtitle=Add a folder here to install a plugin\nrun=folder\nsymbol=folder\n'
+  "")
+    printf 'action=new\ntitle=New plugin\nkey=cmd+n\nscope=command\nform=true\n\n'
+    printf 'row=Copy prompt for AI\ndetail=Have an AI build a plugin for you\nrun=prompt\nsymbol=sparkles\n\n'
+    printf 'row=Read the guide\ndetail=How plugins and widgets work\nrun=guide\nsymbol=book\n\n'
+    printf 'row=Open plugins folder\ndetail=Add a script here to install a plugin\nrun=folder\nsymbol=folder\n'
     ;;
-  prompt)
-    pbcopy <<EOF
+  open)
+    case "$2" in
+      prompt)
+        pbcopy <<EOF
 Build an Openspot plugin that does this: <describe what you want>
 
 Read the guide first: $guide
-Put the plugin in its own folder in: $plugins
+Put the plugin in: $plugins
 When it is ready, run this and fix each fault it reports: "$OPENSPOT_APP" --check "$plugins"
 Tell me what the plugin runs on my computer.
 EOF
-    ;;
-  guide)
-    open "$guide"
-    ;;
-  folder)
-    open "$plugins"
+        ;;
+      guide)
+        open "$guide"
+        ;;
+      folder)
+        open "$plugins"
+        ;;
+    esac
     ;;
   form)
-    printf 'title=New plugin\nfield=name\nfield.label=Name\nfield.required=true\nfield.placeholder=Weather\n'
+    printf 'title=New plugin\n\nfield=name\nlabel=Name\nrequired=true\nplaceholder=Weather\n'
     ;;
   new)
     name=$(sed -n 's/^name=//p')
@@ -36,29 +47,20 @@ EOF
       echo "Use letters or digits in the name." >&2
       exit 1
     fi
-    folder="$plugins/$slug"
-    if [ -e "$folder" ]; then
+    file="$plugins/$slug.sh"
+    if [ -e "$file" ] || [ -e "$plugins/$slug" ]; then
       echo "A plugin called $slug already exists." >&2
       exit 1
     fi
-    mkdir -p "$folder"
-    title=$(printf '%s' "$name" | sed 's/["\\]//g')
-    cat > "$folder/manifest.toml" <<EOF
-name = "$title"
-api = 1
-
-[[commands]]
-name = "$title"
-exec = "$slug.sh"
-symbol = "star"
-subtitle = "Edit $slug.sh"
-EOF
-    cat > "$folder/$slug.sh" <<EOF
+    cat > "$file" <<EOF
 #!/bin/sh
-open "$folder"
+# name=$name
+# symbol=star
+# subtitle=Edit $slug.sh
+open -R "$file"
 EOF
-    chmod +x "$folder/$slug.sh"
-    open "$folder"
+    chmod +x "$file"
+    open -R "$file"
     ;;
   *)
     exit 1

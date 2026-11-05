@@ -1,4 +1,9 @@
 #!/bin/sh
+# symbol=link
+# subtitle=Open a link
+# key=l
+# read=open
+# rank=1
 export LC_ALL=en_US.UTF-8
 config="${OPENSPOT_CONFIG:-$HOME/.config/openspot}"
 data="$config/data/links.json"
@@ -123,14 +128,19 @@ fetch_missing() {
 prepare
 
 case "$1" in
-  items)
+  "")
+    printf 'action=copy\ntitle=Copy\nkey=cmd+return\nclose=true\n\n'
+    printf 'action=reveal\ntitle=Show in Finder\nkey=cmd+r\nclose=true\n\n'
+    printf 'action=edit\ntitle=Edit\nkey=cmd+e\nform=true\n\n'
+    printf 'action=delete\ntitle=Delete\nkey=cmd+backspace\nconfirm=Press again to delete\n\n'
+    printf 'action=new\ntitle=New link\nkey=cmd+n\nscope=command\nform=true\n\n'
     found=$(ls "$icons" 2>/dev/null | jq -R . | jq -sc .)
     load | jq -r --arg icons "$icons" --argjson found "$found" --arg home "$HOME" "$esc"'.[]
       | if (.url | test("^[/~]")) then
-          "title=\(.title | esc)\nsubtitle=\(.url | esc)\nrun=\(.id | esc)\nfile=\(.url | if startswith("~") then $home + .[1:] else . end | esc)\n"
+          "row=\(.title | esc)\ndetail=\(.url | esc)\nrun=\(.id | esc)\nfile=\(.url | if startswith("~") then $home + .[1:] else . end | esc)\n"
         else
           (.url | sub("^[a-zA-Z][a-zA-Z0-9+.-]*:(//)?"; "") | sub("[/?#].*$"; "")) as $host
-          | "title=\(.title | esc)\nsubtitle=\($host | esc)\nrun=\(.id | esc)\nsymbol=link\nhides=reveal\n"
+          | "row=\(.title | esc)\ndetail=\($host | esc)\nrun=\(.id | esc)\nsymbol=link\nhides=reveal\n"
           + (if ($found | index($host + ".icon")) then "image=\("\($icons)/\($host).icon" | esc)\n" else "" end)
         end'
     fetch_missing >/dev/null 2>&1 </dev/null &
@@ -144,15 +154,17 @@ case "$1" in
       values='{"title":"","url":""}'
     fi
     jq -nr --arg title "$title" --argjson v "$values" "$esc"'"title=\($title)
+
 field=title
-field.label=Name
-field.value=\($v.title | esc)
-field.required=true
+label=Name
+value=\($v.title | esc)
+required=true
+
 field=url
-field.label=Link
-field.value=\($v.url | esc)
-field.required=true
-field.placeholder=example.com or ~/Downloads"'
+label=Link
+value=\($v.url | esc)
+required=true
+placeholder=example.com or ~/Downloads"'
     ;;
   new)
     id=$(uuidgen)
@@ -177,8 +189,8 @@ field.placeholder=example.com or ~/Downloads"'
     check_path "$url"
     open -R "$url"
     ;;
-  *)
-    url=$(link "$1") || exit 1
+  open)
+    url=$(link "$2") || exit 1
     check_path "$url"
     open "$url"
     ;;

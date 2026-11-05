@@ -19,32 +19,38 @@ public struct PluginFolder: Sendable {
         return PluginFolder(url: config.appendingPathComponent("plugins", isDirectory: true))
     }
 
-    /// Reads each plugin in the folder. When two commands share a key, the first keeps it.
+    /// Reads each executable and widget file, at the top of the folder or one folder down. When two commands share a
+    /// key, the first keeps it.
     public func scan() throws -> ScanResult {
-        let folders = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)
-            .sorted { $0.lastPathComponent < $1.lastPathComponent }
         var result = ScanResult(plugins: [], refused: [])
         var taken: Set<String> = []
-        for folder in folders {
-            let manifest = folder.appendingPathComponent("manifest.toml")
-            guard let text = try? String(contentsOf: manifest, encoding: .utf8) else { continue }
-            do {
-                let plugin = try Plugin(manifest: text, url: folder)
-                let commands = plugin.commands.map { command -> PluginCommand in
-                    guard let key = command.key, !taken.insert(key.name).inserted else { return command }
-                    result.refused.append(Refusal(
-                        file: folder.lastPathComponent,
-                        reason: "\(command.name) cannot use key \(key.name), because another command has it"
-                    ))
-                    return command.withoutKey()
+        for entry in try Self.sorted(in: url) {
+            var isFolder: ObjCBool = false
+            FileManager.default.fileExists(atPath: entry.path, isDirectory: &isFolder)
+            let files = isFolder.boolValue ? (try? Self.sorted(in: entry)) ?? [] : [entry]
+            for file in files {
+                let stem = file.deletingPathExtension().lastPathComponent
+                let id = isFolder.boolValue ? "\(entry.lastPathComponent)/\(stem)" : stem
+                do {
+                    guard let plugin = try Plugin(file: file, id: id) else { continue }
+                    let commands = plugin.commands.map { command -> PluginCommand in
+                        guard let key = command.key, !taken.insert(key.name).inserted else { return command }
+                        result.refused.append(Refusal(file: id, reason: "\(command.name) cannot use key \(key.name), because another command has it"))
+                        return command.withoutKey()
+                    }
+                    result.plugins.append(Plugin(id: id, commands: commands, metrics: plugin.metrics))
+                } catch {
+                    let reason = (error as? PluginError)?.reason ?? String(describing: error)
+                    result.refused.append(Refusal(file: id, reason: reason))
                 }
-                result.plugins.append(Plugin(name: plugin.name, api: plugin.api, url: folder, commands: commands, metrics: plugin.metrics))
-            } catch {
-                let reason = (error as? PluginError)?.reason ?? String(describing: error)
-                result.refused.append(Refusal(file: folder.lastPathComponent, reason: reason))
             }
         }
         result.removeWidgetsWithLostParts()
         return result
+    }
+
+    private static func sorted(in folder: URL) throws -> [URL] {
+        try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
 }

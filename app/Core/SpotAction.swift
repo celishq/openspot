@@ -4,14 +4,14 @@ public struct SpotAction: Equatable, Sendable {
     public let arguments: [String]
 
     public static let run = SpotAction(arguments: [])
-    public static let read = SpotAction(arguments: ["state"])
+    public static let read = SpotAction(arguments: [])
 
     public init(arguments: [String]) {
         self.arguments = arguments
     }
 
     public static func items(query: String) -> SpotAction {
-        SpotAction(arguments: query.isEmpty ? ["items"] : ["items", query])
+        SpotAction(arguments: query.isEmpty ? [] : ["search", query])
     }
 
     public static func toggle(_ state: SpotState) -> SpotAction {
@@ -19,7 +19,7 @@ public struct SpotAction: Equatable, Sendable {
     }
 
     public static func item(_ item: SpotItem) -> SpotAction {
-        SpotAction(arguments: [item.run])
+        SpotAction(arguments: ["open", item.run])
     }
 
     public static func action(_ action: CommandAction, item: SpotItem?) -> SpotAction {
@@ -30,11 +30,7 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: ["form", action.id] + (item.map { [$0.run] } ?? []))
     }
 
-    public static func metric(_ name: String) -> SpotAction {
-        SpotAction(arguments: ["metric", name])
-    }
-
     public static func level(_ value: Double) -> SpotAction {
-        SpotAction(arguments: [String(Int(value.rounded()))])
+        SpotAction(arguments: ["level", String(Int(value.rounded()))])
     }
 }

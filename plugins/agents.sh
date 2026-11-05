@@ -1,5 +1,6 @@
 #!/bin/sh
-[ "$1" = metric ] || exit 1
+# symbol=sparkles
+# read=5
 export LC_ALL=en_US.UTF-8
 
 # Prints one line for each agent in a terminal: its tool, then the folder it works in.
@@ -13,16 +14,4 @@ sessions() {
   done
 }
 
-list=$(sessions)
-count=$(printf '%s' "$list" | grep -c .)
-case "$2" in
-  running)
-    printf 'title=%s\ndetail=running\nsymbol=sparkles\n' "$count"
-    ;;
-  list)
-    printf 'title=%s\nsymbol=sparkles\n' "$count"
-    [ "$count" = 0 ] && echo hidden=true
-    printf '%s' "$list" | sed 's/\\/\\\\/g' | awk -F'\t' 'NF { print "row=" $2; print "row.detail=" $1 }'
-    ;;
-  *) exit 1 ;;
-esac
+sessions | sed 's/\\/\\\\/g' | awk -F'\t' 'NF { printf "row=%s\ndetail=%s\n\n", $2, $1 }'

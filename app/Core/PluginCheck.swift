@@ -36,7 +36,7 @@ public struct PluginCheck: Sendable {
         var faults: [String] = []
         do {
             _ = try await command.state(timeout: timeout)
-            if command.kind == .list, command.search == .local {
+            if command.read != nil, command.search == .local {
                 let lines = try await command.items(timeout: timeout)
                 faults += lines.errors.map { "\(command.id): cannot read the item \($0)" }
             }

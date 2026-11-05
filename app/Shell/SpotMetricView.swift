@@ -140,7 +140,7 @@ struct SpotMetricView: View {
             case .value, .status, .rows:
                 VStack(spacing: SpotType.lineGap) {
                     symbol
-                    valueText(value?.symbol == nil ? SpotType.value : SpotType.controlValue)
+                    valueText(reading?.symbol == nil ? SpotType.value : SpotType.controlValue)
                 }
             }
         }
@@ -191,7 +191,7 @@ struct SpotMetricView: View {
 
     @ViewBuilder
     private var symbol: some View {
-        if let name = value?.symbol {
+        if let name = reading?.symbol {
             Image(systemName: name)
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(markColour)
@@ -200,7 +200,7 @@ struct SpotMetricView: View {
 
     @ViewBuilder
     private var ringSymbol: some View {
-        if let name = value?.symbol {
+        if let name = reading?.symbol {
             Image(systemName: name)
                 .font(SpotType.small)
                 .foregroundStyle(.white)

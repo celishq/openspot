@@ -1,4 +1,4 @@
-/// One more thing a command can do, listed in its actions menu and declared in its manifest.
+/// One more thing a command can do, which its script prints and its actions menu lists.
 public struct CommandAction: Equatable, Sendable {
     /// What an action needs: a selected item, or only its command.
     public enum Scope: String, Sendable {
@@ -36,5 +36,25 @@ public struct CommandAction: Equatable, Sendable {
         self.after = after
         self.isForm = isForm
         self.confirm = confirm
+    }
+
+    /// Reads the block of one action. It needs a title, and a key or a scope it gives must be known.
+    public init?(id: String, block: TextBlock) {
+        guard let title = block.value("title") else { return nil }
+        var key: ActionKey?
+        if let name = block.value("key") {
+            guard let parsed = ActionKey(text: name) else { return nil }
+            key = parsed
+        }
+        guard let scope = Scope(rawValue: block.value("scope") ?? Scope.item.rawValue) else { return nil }
+        self.init(
+            id: id,
+            title: title,
+            key: key,
+            scope: scope,
+            after: block.flag("close") == true ? .close : .stay,
+            isForm: block.flag("form") ?? false,
+            confirm: block.value("confirm")
+        )
     }
 }

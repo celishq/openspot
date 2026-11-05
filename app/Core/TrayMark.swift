@@ -31,7 +31,7 @@ public struct TrayMark: Equatable, Sendable {
 
     public init?(reading: MetricReading) {
         guard let value = reading.value, !value.isHidden else { return nil }
-        symbol = value.symbol
+        symbol = reading.symbol
         tone = value.tone
         isStale = reading.isStale
         summary = "\(reading.label): \(value.title)"

@@ -26,10 +26,10 @@ public struct ScanResult: Equatable, Sendable {
                 if reason == nil, let opens = command.opens, !commands.contains(opens) {
                     reason = "\(command.name) opens no command called \(opens)"
                 }
-                if let reason { refused.append(Refusal(file: plugin.url.lastPathComponent, reason: reason)) }
+                if let reason { refused.append(Refusal(file: plugin.id, reason: reason)) }
                 return reason == nil
             }
-            return Plugin(name: plugin.name, api: plugin.api, url: plugin.url, commands: kept, metrics: plugin.metrics)
+            return Plugin(id: plugin.id, commands: kept, metrics: plugin.metrics)
         }
     }
 }

@@ -1,214 +1,127 @@
 import Foundation
 
-/// A folder with a manifest.toml and the executables its commands run.
+/// What one file in the plugin folder gives: an executable, or a file of widgets.
 public struct Plugin: Equatable, Sendable {
-    public let name: String
-    public let api: Int
-    public let url: URL
+    public static let widgetExtension = "widget"
+
+    public let id: String
     public let commands: [PluginCommand]
     public let metrics: [PluginMetric]
 
-    public init(name: String, api: Int, url: URL, commands: [PluginCommand], metrics: [PluginMetric] = []) {
-        self.name = name
-        self.api = api
-        self.url = url
+    public init(id: String, commands: [PluginCommand], metrics: [PluginMetric] = []) {
+        self.id = id
         self.commands = commands
         self.metrics = metrics
     }
 
-    /// Reads a plugin from its manifest text. Throws a fault that names what is wrong.
-    public init(manifest text: String, url: URL) throws {
-        let document = try TomlDocument(text: text)
-        guard case .string(let name)? = document.values["name"] else { throw PluginError.manifest("needs a name") }
-        guard case .integer(let api)? = document.values["api"] else { throw PluginError.manifest("needs an api") }
-        guard api == OpenspotVersion.api else { throw PluginError.manifest("needs api \(api)") }
-        let actions = try (document.arrays["actions"] ?? []).map(Self.action)
-        let commands = try (document.arrays["commands"] ?? []).map { table in
-            try Self.command(table, plugin: url, actions: actions)
+    /// Reads a file with no run of it. Returns nil for a file that is neither. Throws a fault that names what is wrong.
+    public init?(file url: URL, id: String) throws {
+        if url.pathExtension == Self.widgetExtension {
+            let text = try String(contentsOf: url, encoding: .utf8)
+            self.init(id: id, commands: try TextBlock.blocks(in: text).map { try Self.widget($0, id: id, url: url) })
+        } else if FileManager.default.isExecutableFile(atPath: url.path) {
+            try self.init(script: url, header: PluginHeader(url: url).block, id: id)
+        } else {
+            return nil
         }
-        if let lost = actions.first(where: { action in !commands.contains { $0.name == action.command } }) {
-            throw PluginError.manifest("An action names no command called \(lost.command)")
-        }
-        let widgets = try (document.arrays["widgets"] ?? []).map { try Self.widget($0, plugin: url) }
-        let metrics = try (document.arrays["metrics"] ?? []).map { try Self.metric($0, plugin: url, pluginName: name) }
-        self.init(name: name, api: api, url: url, commands: commands + widgets, metrics: metrics)
     }
 
-    private static func metric(_ table: [String: TomlDocument.Value], plugin: URL, pluginName: String) throws -> PluginMetric {
-        guard case .string(let name)? = table["name"] else { throw PluginError.manifest("a metric needs a name") }
-        guard case .string(let exec)? = table["exec"] else { throw PluginError.manifest("\(name) needs an exec") }
-        let url = plugin.appendingPathComponent(exec)
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            throw PluginError.manifest("\(name) needs a file named \(exec)")
-        }
-        guard case .string(let kindName)? = table["kind"], let kind = MetricKind(rawValue: kindName) else {
-            throw PluginError.manifest("\(name) needs a kind: value, gauge, trend, rows or status")
-        }
-        var refresh = PluginMetric.standardRefresh
-        if let value = table["refresh"] {
-            guard case .integer(let seconds) = value, seconds > 0 else {
-                throw PluginError.manifest("\(name) needs a number of seconds as its refresh")
+    /// A script with a number of seconds as its `read` is a metric, and it is also a list when it has a key.
+    public init(script url: URL, header: TextBlock, id: String) throws {
+        let name = header.value("name") ?? Self.name(of: url)
+        let symbol = header.value("symbol")
+        var read: SpotRead?
+        if let text = header.value("read") {
+            guard let parsed = SpotRead(name: text) else {
+                throw PluginError.header("\(name) has an unknown read: \(text). Use click, open or a number of seconds")
             }
-            refresh = TimeInterval(seconds)
+            read = parsed
         }
-        var label = pluginName
-        if case .string(let own)? = table["label"] { label = own }
-        var tint: MetricTint?
-        if case .string(let tintName)? = table["tint"] {
-            guard let known = MetricTint(rawValue: tintName) else {
-                let names = MetricTint.allCases.map(\.rawValue)
-                throw PluginError.manifest("\(name) has an unknown tint: \(tintName). Use \(names.dropLast().joined(separator: ", ")) or \(names.last ?? "")")
+        var metrics: [PluginMetric] = []
+        if case .every(let seconds) = read {
+            metrics.append(PluginMetric(id: id, url: url, label: name, symbol: symbol, refresh: seconds))
+            guard header.value("key") != nil else {
+                self.init(id: id, commands: [], metrics: metrics)
+                return
             }
-            tint = known
         }
-        return PluginMetric(id: "\(plugin.lastPathComponent)/\(name)", name: name, url: url, kind: kind, label: label, tint: tint, refresh: refresh)
+        let sizeName = header.value("size") ?? "wide"
+        guard let size = SpotSize(name: sizeName) else { throw PluginError.header("\(name) has an unknown size: \(sizeName)") }
+        let searchName = header.value("search") ?? ItemSearch.local.rawValue
+        guard let search = ItemSearch(rawValue: searchName) else { throw PluginError.header("\(name) has an unknown search: \(searchName)") }
+        guard search == .local || read == .click else { throw PluginError.header("\(name) needs read=click to search live") }
+        var rank = PluginCommand.lastRank
+        if let text = header.value("rank") {
+            guard let number = Int(text) else { throw PluginError.header("\(name) needs a number as its rank") }
+            guard read == .open else { throw PluginError.header("\(name) needs read=open to join the main search") }
+            rank = number
+        }
+        let command = PluginCommand(
+            id: id,
+            name: name,
+            url: url,
+            kind: read == nil || (read == .open && rank == PluginCommand.lastRank) ? .launch : .list,
+            size: size,
+            symbol: symbol ?? "app",
+            subtitle: header.value("subtitle"),
+            key: try Self.key(in: header, of: name),
+            read: read,
+            rank: rank,
+            search: search,
+            keepsRecent: header.flag("recents") != false
+        )
+        self.init(id: id, commands: [command], metrics: metrics)
     }
 
-    private static func widget(_ table: [String: TomlDocument.Value], plugin: URL) throws -> PluginCommand {
-        guard case .string(let name)? = table["name"] else { throw PluginError.manifest("a widget needs a name") }
-        guard case .string(let layoutName)? = table["layout"] else { throw PluginError.manifest("\(name) needs a layout") }
+    /// The name a file gives when it has no `name` line: its words with a capital first letter.
+    private static func name(of url: URL) -> String {
+        let words = url.deletingPathExtension().lastPathComponent
+            .replacingOccurrences(of: "-", with: " ")
+            .replacingOccurrences(of: "_", with: " ")
+        return words.prefix(1).uppercased() + words.dropFirst()
+    }
+
+    private static func key(in block: TextBlock, of name: String) throws -> CommandKey? {
+        guard let text = block.value("key") else { return nil }
+        guard let key = CommandKey(name: text) else { throw PluginError.header("\(name) has an unknown key: \(text)") }
+        return key
+    }
+
+    private static func widget(_ block: TextBlock, id: String, url: URL) throws -> PluginCommand {
+        guard let name = block.value("name") else { throw PluginError.header("a widget needs a name") }
+        guard let layoutName = block.value("layout") else { throw PluginError.header("\(name) needs a layout") }
         guard let layout = WidgetLayout(name: layoutName) else {
-            throw PluginError.manifest("\(name) has an unknown layout: \(layoutName). Use single, hero, pair or row")
+            throw PluginError.header("\(name) has an unknown layout: \(layoutName). Use single, hero, pair or row")
         }
-        guard case .strings(let places)? = table["places"], places.count == layout.slots.count else {
-            throw PluginError.manifest("\(name) needs \(layout.slots.count) places for the \(layoutName) layout")
+        let places = block.values("place")
+        guard places.count == layout.slots.count else {
+            throw PluginError.header("\(name) needs \(layout.slots.count) places for the \(layoutName) layout")
         }
         var size = layout.size
-        if case .string(let sizeName)? = table["size"] {
+        if let sizeName = block.value("size") {
             guard layout == .single else {
-                throw PluginError.manifest("\(name) cannot take a size, because the \(layoutName) layout sets its own")
+                throw PluginError.header("\(name) cannot take a size, because the \(layoutName) layout sets its own")
             }
             guard let asked = SpotSize(name: sizeName) else {
-                throw PluginError.manifest("\(name) has an unknown size: \(sizeName)")
+                throw PluginError.header("\(name) has an unknown size: \(sizeName)")
             }
             size = asked
         }
-        var key: CommandKey?
-        if case .string(let keyName)? = table["key"] {
-            guard let parsed = CommandKey(name: keyName) else {
-                throw PluginError.manifest("\(name) has an unknown key: \(keyName)")
-            }
-            key = parsed
-        }
-        var opens: String?
-        if case .string(let target)? = table["opens"] { opens = target }
-        var tray: String?
-        if case .string(let metric)? = table["tray"] {
-            guard places.contains(metric) else {
-                throw PluginError.manifest("\(name) cannot show \(metric) in the menu bar, because it does not place it")
-            }
-            tray = metric
+        let tray = block.value("tray")
+        if let tray, !places.contains(tray) {
+            throw PluginError.header("\(name) cannot show \(tray) in the menu bar, because it does not place it")
         }
         return PluginCommand(
-            id: "\(plugin.lastPathComponent)/\(name)",
-            name: name,
-            url: plugin,
-            kind: .widget,
-            size: size,
-            key: key,
-            layout: layout,
-            places: places,
-            opens: opens,
-            tray: tray
-        )
-    }
-
-    private static func action(_ table: [String: TomlDocument.Value]) throws -> (command: String, action: CommandAction) {
-        func text(_ key: String) -> String? {
-            if case .string(let value)? = table[key] { return value }
-            return nil
-        }
-        guard let command = text("command"), let id = text("id"), let title = text("title") else {
-            throw PluginError.manifest("An action needs a command, an id and a title")
-        }
-        var key: ActionKey?
-        if let keyName = text("key") {
-            guard let parsed = ActionKey(text: keyName) else {
-                throw PluginError.manifest("\(title) has an unknown key: \(keyName)")
-            }
-            key = parsed
-        }
-        guard let scope = CommandAction.Scope(rawValue: text("scope") ?? CommandAction.Scope.item.rawValue) else {
-            throw PluginError.manifest("\(title) has an unknown scope")
-        }
-        guard let after = CommandAction.After(rawValue: text("after") ?? CommandAction.After.stay.rawValue) else {
-            throw PluginError.manifest("\(title) has an unknown after")
-        }
-        return (command, CommandAction(
-            id: id,
-            title: title,
-            key: key,
-            scope: scope,
-            after: after,
-            isForm: table["form"] == .boolean(true),
-            confirm: text("confirm")
-        ))
-    }
-
-    private static func command(
-        _ table: [String: TomlDocument.Value],
-        plugin: URL,
-        actions: [(command: String, action: CommandAction)]
-    ) throws -> PluginCommand {
-        func text(_ key: String) -> String? {
-            if case .string(let value)? = table[key] { return value }
-            return nil
-        }
-        guard let name = text("name") else { throw PluginError.manifest("a command needs a name") }
-        guard let exec = text("exec") else { throw PluginError.manifest("\(name) needs an exec") }
-        let url = plugin.appendingPathComponent(exec)
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            throw PluginError.manifest("\(name) needs a file named \(exec)")
-        }
-        let typeName = text("type") ?? SpotKind.launch.rawValue
-        guard let kind = SpotKind(rawValue: typeName), kind != .widget else {
-            throw PluginError.manifest("\(name) has an unknown type: \(typeName)")
-        }
-        let sizeName = text("size") ?? "wide"
-        guard let size = SpotSize(name: sizeName) else {
-            throw PluginError.manifest("\(name) has an unknown size: \(sizeName)")
-        }
-        var key: CommandKey?
-        if let keyName = text("key") {
-            guard let parsed = CommandKey(name: keyName) else {
-                throw PluginError.manifest("\(name) has an unknown key: \(keyName)")
-            }
-            key = parsed
-        }
-        let pickName = text("pick") ?? ItemPick.close.rawValue
-        guard let pick = ItemPick(rawValue: pickName) else {
-            throw PluginError.manifest("\(name) has an unknown pick: \(pickName)")
-        }
-        let searchName = text("search") ?? ItemSearch.local.rawValue
-        guard let search = ItemSearch(rawValue: searchName) else {
-            throw PluginError.manifest("\(name) has an unknown search: \(searchName)")
-        }
-        let isGlobal = table["global"] == .boolean(true)
-        guard !isGlobal || search == .local else {
-            throw PluginError.manifest("\(name) cannot join the main search, because it searches live")
-        }
-        var rank = PluginCommand.lastRank
-        if let value = table["rank"] {
-            guard case .integer(let number) = value else { throw PluginError.manifest("\(name) needs a number as its rank") }
-            rank = number
-        }
-        return PluginCommand(
-            id: "\(plugin.lastPathComponent)/\(name)",
+            id: "\(id)/\(name)",
             name: name,
             url: url,
-            kind: kind,
+            kind: .widget,
             size: size,
-            symbol: text("symbol") ?? "app",
-            subtitle: text("subtitle"),
-            key: key,
-            hasState: table["state"] == .boolean(true),
-            pick: pick,
-            isGlobal: isGlobal,
-            rank: rank,
-            search: search,
-            keepsRecent: table["recents"] != .boolean(false),
-            primary: text("primary"),
-            actions: actions.filter { $0.command == name }.map(\.action)
+            key: try key(in: block, of: name),
+            layout: layout,
+            places: places,
+            opens: block.value("opens"),
+            tray: tray
         )
     }
 }

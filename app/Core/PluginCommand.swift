@@ -7,19 +7,18 @@ public struct PluginCommand: Equatable, Sendable {
     public let id: String
     public let name: String
     public let url: URL
-    public let kind: SpotKind
+    public private(set) var kind: SpotKind
     public let size: SpotSize
     public let symbol: String
     public let subtitle: String?
-    public let key: CommandKey?
-    public let hasState: Bool
-    public let pick: ItemPick
-    public let isGlobal: Bool
+    public private(set) var key: CommandKey?
+    public let read: SpotRead?
+    public private(set) var pick: ItemPick
     public let rank: Int
     public let search: ItemSearch
     public let keepsRecent: Bool
-    public let primary: String?
-    public let actions: [CommandAction]
+    public private(set) var primary: String?
+    public private(set) var actions: [CommandAction]
     public let layout: WidgetLayout?
     public let places: [String]
     public let opens: String?
@@ -34,9 +33,8 @@ public struct PluginCommand: Equatable, Sendable {
         symbol: String = "app",
         subtitle: String? = nil,
         key: CommandKey? = nil,
-        hasState: Bool = false,
+        read: SpotRead? = nil,
         pick: ItemPick = .close,
-        isGlobal: Bool = false,
         rank: Int = PluginCommand.lastRank,
         search: ItemSearch = .local,
         keepsRecent: Bool = true,
@@ -55,9 +53,8 @@ public struct PluginCommand: Equatable, Sendable {
         self.symbol = symbol
         self.subtitle = subtitle
         self.key = key
-        self.hasState = hasState
+        self.read = read
         self.pick = pick
-        self.isGlobal = isGlobal
         self.rank = rank
         self.search = search
         self.keepsRecent = keepsRecent
@@ -69,39 +66,62 @@ public struct PluginCommand: Equatable, Sendable {
         self.tray = tray
     }
 
-    /// The state the manifest gives, shown before the command answers or when it cannot.
-    public var manifestState: SpotState {
+    /// Whether its rows join the main search.
+    public var isGlobal: Bool {
+        rank != Self.lastRank
+    }
+
+    /// The state the header gives, shown before the command answers or when it cannot.
+    public var headerState: SpotState {
         SpotState(title: name, subtitle: subtitle)
     }
 
-    /// Whether the command prints a state. Toggles and sliders do, a launch spot does not, and a list says so.
+    /// Whether the panel asks the command how it looks each time it opens.
     public var readsState: Bool {
-        switch kind {
-        case .launch, .widget: false
-        case .toggle, .slider: true
-        case .list: hasState
-        }
+        read == .open && !isGlobal
     }
 
     /// Asks the command for its state. A command with no state to read does not run.
     public func state(timeout: TimeInterval) async throws -> SpotState {
-        guard readsState else { return manifestState }
-        let output = try await PluginRun(command: self, arguments: SpotAction.read.arguments, timeout: timeout).output()
-        guard let state = TextBlock.blocks(in: output).first.flatMap(SpotState.init(block:)) else {
-            throw PluginError.badState
-        }
-        return state
+        guard readsState else { return headerState }
+        return try Self.state(of: try await output(.read, timeout: timeout), header: headerState)
+    }
+
+    /// Asks the command how it looks, and returns it with the kind and the actions that its output gives.
+    public func opened(timeout: TimeInterval) async throws -> (command: PluginCommand, state: SpotState) {
+        guard readsState else { return (self, headerState) }
+        let output = try await output(.read, timeout: timeout)
+        var command = taking(output)
+        command.kind = output.kind
+        return (command, try Self.state(of: output, header: headerState))
+    }
+
+    /// This command with the actions, the word for Enter and the pick that its script printed.
+    public func taking(_ output: PluginOutput) -> PluginCommand {
+        var command = self
+        command.actions = output.actions
+        command.primary = output.primary
+        command.pick = output.pick
+        return command
+    }
+
+    private static func state(of output: PluginOutput, header: SpotState) throws -> SpotState {
+        guard output.summary != nil || output.errors.isEmpty else { throw PluginError.badState }
+        return SpotState(block: output.summary, header: header)
+    }
+
+    private func output(_ action: SpotAction, timeout: TimeInterval) async throws -> PluginOutput {
+        PluginOutput(text: try await PluginRun(command: self, arguments: action.arguments, timeout: timeout).output())
     }
 
     /// Asks the command for the items of its list, with the search when it searches live.
-    public func items(query: String = "", timeout: TimeInterval) async throws -> ItemBlocks {
-        ItemBlocks(output: try await PluginRun(command: self, arguments: SpotAction.items(query: query).arguments, timeout: timeout).output())
+    public func items(query: String = "", timeout: TimeInterval) async throws -> PluginOutput {
+        try await output(.items(query: query), timeout: timeout)
     }
 
     /// Asks the command for the form of an action.
     public func form(_ action: CommandAction, item: SpotItem?, timeout: TimeInterval) async throws -> ItemForm {
-        let output = try await PluginRun(command: self, arguments: SpotAction.form(action, item: item).arguments, timeout: timeout).output()
-        guard let form = TextBlock.blocks(in: output).first.flatMap(ItemForm.init(block:)) else { throw PluginError.badForm }
+        guard let form = ItemForm(output: try await output(.form(action, item: item), timeout: timeout)) else { throw PluginError.badForm }
         return form
     }
 
@@ -133,6 +153,8 @@ public struct PluginCommand: Equatable, Sendable {
     }
 
     public func withoutKey() -> PluginCommand {
-        PluginCommand(id: id, name: name, url: url, kind: kind, size: size, symbol: symbol, subtitle: subtitle, hasState: hasState, pick: pick, isGlobal: isGlobal, rank: rank, search: search, keepsRecent: keepsRecent, primary: primary, actions: actions, layout: layout, places: places, opens: opens, tray: tray)
+        var command = self
+        command.key = nil
+        return command
     }
 }

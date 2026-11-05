@@ -24,16 +24,15 @@ public struct SpotState: Equatable, Sendable {
         self.max = max
     }
 
-    /// Reads the block a state prints. Only the title is required.
-    public init?(block: TextBlock) {
-        guard let title = block.value("title") else { return nil }
+    /// Reads the block that says how a spot looks, and keeps what the block leaves out from the header.
+    public init(block: TextBlock?, header: SpotState) {
         self.init(
-            title: title,
-            subtitle: block.value("subtitle"),
-            on: block.flag("on"),
-            level: block.number("level"),
-            min: block.number("min"),
-            max: block.number("max")
+            title: block?.value("title") ?? header.title,
+            subtitle: block?.value("detail") ?? header.subtitle,
+            on: block?.flag("on"),
+            level: block?.number("level"),
+            min: block?.number("min"),
+            max: block?.number("max")
         )
     }
 

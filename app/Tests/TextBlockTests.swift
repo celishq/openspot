@@ -42,24 +42,6 @@ final class TextBlockTests: XCTestCase {
         XCTAssertEqual(TextBlock.blocks(in: "point=1\ntitle=x\npoint=2")[0].values("point"), ["1", "2"])
     }
 
-    func testAGroupStartsAtItsKeyAndTakesTheLinesAfterIt() {
-        let block = TextBlock.blocks(in: """
-        row.detail=lost
-        row=One
-        row.detail=first
-        row=Two
-        title=Not a row
-        row.tone=bad
-        """)[0]
-
-        let rows = block.groups("row")
-
-        XCTAssertEqual(rows.map { $0.value("row") }, ["One", "Two"])
-        XCTAssertEqual(rows[0].value("detail"), "first")
-        XCTAssertEqual(rows[1].value("tone"), "bad")
-        XCTAssertNil(rows[1].value("title"))
-    }
-
     func testANumberAndAFlagSkipABadValue() {
         let block = TextBlock.blocks(in: "a=0.5\nb=wide\nc=nan\nd=true\ne=maybe\nf=false")[0]
 
@@ -71,8 +53,8 @@ final class TextBlockTests: XCTestCase {
         XCTAssertEqual(block.flag("f"), false)
     }
 
-    func testAMetricReadsEachOfItsKeys() {
-        let block = TextBlock.blocks(in: """
+    func testAMetricReadsItsKeys() {
+        let output = PluginOutput(text: """
         title=6 open
         detail=Today
         symbol=star
@@ -82,13 +64,15 @@ final class TextBlockTests: XCTestCase {
         point=wide
         point=3
         max=9
-        row=Fix "tray"
-        row.detail=failing
-        row.tone=bad
-        row=Docs
-        """)[0]
 
-        XCTAssertEqual(MetricValue(block: block), MetricValue(
+        row=Fix "tray"
+        detail=failing
+        tone=bad
+
+        row=Docs
+        """)
+
+        XCTAssertEqual(MetricValue(output: output), MetricValue(
             title: "6 open",
             detail: "Today",
             symbol: "star",
@@ -101,44 +85,16 @@ final class TextBlockTests: XCTestCase {
     }
 
     func testAMetricSkipsABadToneAndNeedsATitle() {
-        XCTAssertNil(MetricValue(block: TextBlock.blocks(in: "detail=Only")[0]))
-        XCTAssertEqual(MetricValue(block: TextBlock.blocks(in: "title=A\ntone=purple\nfuture=key")[0]), MetricValue(title: "A"))
+        XCTAssertNil(MetricValue(output: PluginOutput(text: "detail=Only")))
+        XCTAssertEqual(MetricValue(output: PluginOutput(text: "title=A\ntone=purple\nfuture=key")), MetricValue(title: "A"))
     }
 
-    func testAnItemNeedsATitleAndARun() {
-        XCTAssertNil(SpotItem(block: TextBlock.blocks(in: "title=Only")[0]))
+    func testAnItemNeedsARowAndARun() {
+        XCTAssertNil(SpotItem(block: TextBlock.blocks(in: "row=Only")[0]))
         XCTAssertNil(SpotItem(block: TextBlock.blocks(in: "run=only")[0]))
         XCTAssertEqual(
-            SpotItem(block: TextBlock.blocks(in: "title=A\nrun=a\nsubtitle=B\nsymbol=s\nfile=/f\nimage=/i\nhides=x\nhides=y")[0]),
+            SpotItem(block: TextBlock.blocks(in: "row=A\nrun=a\ndetail=B\nsymbol=s\nfile=/f\nimage=/i\nhides=x\nhides=y")[0]),
             SpotItem(title: "A", subtitle: "B", run: "a", symbol: "s", file: "/f", image: "/i", hides: ["x", "y"])
         )
-    }
-
-    func testAFormReadsItsFields() {
-        let block = TextBlock.blocks(in: #"""
-        title=New
-        field=name
-        field.label=Name
-        field.required=true
-        field.placeholder=Weather
-        field=text
-        field.label=Text
-        field.type=multiline
-        field.value=one\ntwo
-        field=odd
-        field.label=Odd
-        field.type=dial
-        """#)[0]
-
-        XCTAssertEqual(ItemForm(block: block), ItemForm(title: "New", fields: [
-            .init(name: "name", label: "Name", required: true, placeholder: "Weather"),
-            .init(name: "text", label: "Text", type: .multiline, value: "one\ntwo"),
-            .init(name: "odd", label: "Odd")
-        ]))
-    }
-
-    func testAFormNeedsATitleAndALabelForEachField() {
-        XCTAssertNil(ItemForm(block: TextBlock.blocks(in: "field=a\nfield.label=A")[0]))
-        XCTAssertNil(ItemForm(block: TextBlock.blocks(in: "title=New\nfield=a")[0]))
     }
 }

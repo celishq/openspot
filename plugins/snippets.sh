@@ -1,4 +1,9 @@
 #!/bin/sh
+# symbol=text.quote
+# subtitle=Copy text
+# key=n
+# read=open
+# rank=3
 export LC_ALL=en_US.UTF-8
 data="${OPENSPOT_CONFIG:-$HOME/.config/openspot}/data/snippets.json"
 
@@ -27,8 +32,13 @@ content() {
 }
 
 case "$1" in
-  items)
-    load | jq -r "$esc"'.[] | "title=\(.title | esc)\nsubtitle=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\nrun=\(.id | esc)\n"'
+  "")
+    printf 'action=open\ntitle=Copy\n\n'
+    printf 'action=paste\ntitle=Paste\nkey=cmd+return\nclose=true\n\n'
+    printf 'action=edit\ntitle=Edit\nkey=cmd+e\nform=true\n\n'
+    printf 'action=delete\ntitle=Delete\nkey=cmd+backspace\nconfirm=Press again to delete\n\n'
+    printf 'action=new\ntitle=New snippet\nkey=cmd+n\nscope=command\nform=true\n\n'
+    load | jq -r "$esc"'.[] | "row=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\nrun=\(.id | esc)\n"'
     ;;
   form)
     if [ "$2" = edit ]; then
@@ -39,15 +49,17 @@ case "$1" in
       values='{"title":"","content":""}'
     fi
     jq -nr --arg title "$title" --argjson v "$values" "$esc"'"title=\($title)
+
 field=title
-field.label=Name
-field.value=\($v.title | esc)
-field.required=true
+label=Name
+value=\($v.title | esc)
+required=true
+
 field=content
-field.label=Text
-field.type=multiline
-field.value=\($v.content | esc)
-field.required=true"'
+label=Text
+type=multiline
+value=\($v.content | esc)
+required=true"'
     ;;
   new)
     id=$(uuidgen)
@@ -77,8 +89,8 @@ field.required=true"'
       printf '%s' "${previous%x}" | pbcopy
     fi
     ;;
-  *)
-    text=$(content "$1" && printf x) || exit 1
+  open)
+    text=$(content "$2" && printf x) || exit 1
     printf '%s' "${text%x}" | pbcopy
     ;;
 esac

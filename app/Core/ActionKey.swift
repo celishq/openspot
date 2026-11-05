@@ -1,6 +1,6 @@
 import Foundation
 
-/// A key with its modifiers, as a manifest names it, such as cmd+return or cmd+shift+n.
+/// A key with its modifiers, as a script names it, such as cmd+return or cmd+shift+n.
 public struct ActionKey: Hashable, Sendable {
     public let name: String
     public let isCommand: Bool

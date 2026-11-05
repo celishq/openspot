@@ -2,24 +2,30 @@ import XCTest
 @testable import OpenspotCore
 
 final class SpotStateTests: XCTestCase {
+    private let header = SpotState(title: "Name", subtitle: "From header")
+
+    private func state(_ text: String) throws -> SpotState {
+        SpotState(block: try XCTUnwrap(TextBlock.blocks(in: text).first), header: header)
+    }
+
     func testReadsAToggleState() throws {
-        let block = try XCTUnwrap(TextBlock.blocks(in: "title=Wi-Fi\nsubtitle=VIRGIN-telco_5668\non=true").first)
-        let state = try XCTUnwrap(SpotState(block: block))
+        let state = try state("title=Wi-Fi\ndetail=VIRGIN-telco_5668\non=true")
         XCTAssertEqual(state.title, "Wi-Fi")
         XCTAssertEqual(state.subtitle, "VIRGIN-telco_5668")
         XCTAssertEqual(state.on, true)
     }
 
     func testReadsASliderState() throws {
-        let block = try XCTUnwrap(TextBlock.blocks(in: "title=Display\nlevel=70\nmin=0\nmax=100").first)
-        let state = try XCTUnwrap(SpotState(block: block))
+        let state = try state("title=Display\nlevel=70\nmin=0\nmax=100")
         XCTAssertEqual(state.level, 70)
         XCTAssertEqual(state.min, 0)
         XCTAssertEqual(state.max, 100)
     }
 
-    func testAStateNeedsATitle() throws {
-        XCTAssertNil(SpotState(block: try XCTUnwrap(TextBlock.blocks(in: "on=true").first)))
+    func testAStateTakesFromTheHeaderWhatItLeavesOut() throws {
+        let state = try state("on=true")
+        XCTAssertEqual(state.title, "Name")
+        XCTAssertEqual(state.subtitle, "From header")
     }
 
     func testAdjustingASliderMovesItWithinItsRange() {

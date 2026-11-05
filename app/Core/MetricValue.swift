@@ -30,6 +30,7 @@ public struct MetricValue: Equatable, Sendable {
     public let points: [Double]?
     public let max: Double?
     public let rows: [Row]?
+    public let tint: MetricTint?
     public let isHidden: Bool
 
     public init(
@@ -41,6 +42,7 @@ public struct MetricValue: Equatable, Sendable {
         points: [Double]? = nil,
         max: Double? = nil,
         rows: [Row]? = nil,
+        tint: MetricTint? = nil,
         isHidden: Bool = false
     ) {
         self.title = title
@@ -51,16 +53,22 @@ public struct MetricValue: Equatable, Sendable {
         self.points = points
         self.max = max
         self.rows = rows
+        self.tint = tint
         self.isHidden = isHidden
     }
 
-    /// Reads the block a metric prints. Only the title is required, and a bad value is left out.
-    public init?(block: TextBlock) {
-        guard let title = block.value("title") else { return nil }
-        let points = block.values("point").compactMap(Double.init).filter(\.isFinite)
-        let rows = block.groups("row").compactMap { row in
-            row.value("row").map { Row(title: $0, detail: row.value("detail"), tone: row.value("tone").flatMap(Tone.init)) }
+    /// Reads what a metric prints. Nothing means nothing to show. Rows count themselves, and all else needs a title.
+    public init?(output: PluginOutput) {
+        let rows = output.rows.compactMap { block in
+            block.value("row").map { Row(title: $0, detail: block.value("detail"), tone: block.value("tone").flatMap(Tone.init)) }
         }
+        guard let block = output.summary else {
+            guard output.errors.isEmpty || !rows.isEmpty else { return nil }
+            self.init(title: rows.isEmpty ? "–" : String(rows.count), rows: rows.isEmpty ? nil : rows, isHidden: rows.isEmpty)
+            return
+        }
+        guard let title = block.value("title") ?? (rows.isEmpty ? nil : String(rows.count)) else { return nil }
+        let points = block.values("point").compactMap(Double.init).filter(\.isFinite)
         self.init(
             title: title,
             detail: block.value("detail"),
@@ -70,8 +78,16 @@ public struct MetricValue: Equatable, Sendable {
             points: points.isEmpty ? nil : points,
             max: block.number("max"),
             rows: rows.isEmpty ? nil : rows,
-            isHidden: block.flag("hidden") ?? false
+            tint: block.value("tint").flatMap(MetricTint.init)
         )
+    }
+
+    /// How a place draws this value, which follows from what the script printed.
+    public var kind: MetricKind {
+        if rows != nil { return .rows }
+        if value != nil { return .gauge }
+        if points != nil { return .trend }
+        return tone != nil && symbol == nil ? .status : .value
     }
 
     /// The part of a gauge that is full, from 0 to 1.

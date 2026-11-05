@@ -20,13 +20,13 @@ public struct SpotItem: Equatable, Sendable {
         self.hides = hides
     }
 
-    /// Reads the block of one row. It needs a title and a run value.
+    /// Reads the block of one row. It needs a run value.
     public init?(block: TextBlock) {
-        guard let title = block.value("title"), let run = block.value("run") else { return nil }
+        guard let title = block.value("row"), let run = block.value("run") else { return nil }
         let hides = block.values("hides")
         self.init(
             title: title,
-            subtitle: block.value("subtitle"),
+            subtitle: block.value("detail"),
             run: run,
             symbol: block.value("symbol"),
             file: block.value("file"),

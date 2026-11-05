@@ -2,43 +2,84 @@
 
 This guide is for people and for AI agents. It tells you all that you need.
 
-A plugin is a folder in the plugins folder. The folder holds a `manifest.toml` and the scripts that it names.
-Openspot reads the folder each time the panel opens, so a new plugin needs no restart.
+A plugin is one executable file in the plugins folder, in any language. Openspot reads the folder each time the panel
+opens, so a new plugin needs no restart.
 
 The rule: a script prints data, and Openspot draws it. A plugin never draws.
 
 ## The smallest plugin
 
-Folder `hello`, file `manifest.toml`:
-
-```toml
-name = "Hello"
-api = 1
-
-[[commands]]
-name = "Hello"
-exec = "run.sh"
-symbol = "hand.wave"
-subtitle = "Say hello"
-```
-
-File `run.sh`. Make it executable with `chmod +x run.sh`.
+File `hello.sh`. Make it executable with `chmod +x hello.sh`.
 
 ```sh
 #!/bin/sh
 say hello
 ```
 
+This is a spot called Hello. A click runs it. Openspot never runs a script only to look at it, unless its header says so.
+
+Keep several scripts together in a folder if you want. Each executable file is one spot, and a file that is not
+executable can hold shared code.
+
+## The header
+
+Comment lines right under the first line say what a script is, one `key=value` on each line. They can start with `#`,
+`//` or `--`. The first other line ends them. Openspot reads them without running the script.
+
+```sh
+#!/bin/sh
+# name=Morning
+# symbol=sun.max
+# subtitle=Start the day
+# key=m
+open -a Calendar
+```
+
+| Key | Meaning |
+|---|---|
+| `name` | The title. The default comes from the file name. |
+| `symbol` | An SF Symbol name. |
+| `subtitle` | The second line. |
+| `key` | One letter that runs it after the trigger key. |
+| `size` | `wide` (the default), `small`, `square` or `strip`. |
+| `read` | When Openspot reads the script. See below. |
+| `rank` | Shows its rows in the main search. A lower number comes first. Needs `read=open`. |
+| `search` | `live`: Openspot calls `<script> search <text>`. Needs `read=click`. |
+| `recents` | `false` to not sort recent picks first. |
+
+To read a script, Openspot calls it with no arguments:
+
+| `read` | Openspot reads it | Use it for |
+|---|---|---|
+| none | Never. A click runs it. | A script that does one thing. |
+| `click` | On a click. | A list. |
+| `open` | Each time the panel opens. | A toggle, a slider, or a list for the main search. |
+| a number | Every that many seconds. | A metric. It has no spot unless it also has a `key`. |
+
+So with a `read`, a script must do no work when it has no arguments.
+
+## The calls
+
+| Call | When | The script does |
+|---|---|---|
+| `<script>` | On a click or a read | Does its work, or prints what to show if it has a `read`. |
+| `<script> open <run>` | A row is picked | Opens the row. |
+| `<script> <action> [run]` | An action runs | Does it. A filled form comes on stdin. |
+| `<script> form <action> [run]` | Before an action with a form | Prints the fields. |
+| `<script> search <text>` | The search changes, with `search=live` | Prints the rows and the actions. |
+| `<script> on`, `off` | A toggle is pressed | Turns it on or off. |
+| `<script> level <number>` | A slider moves | Sets the level. |
+
 ## What a script prints
 
 A script prints plain text, one `key=value` on each line. A blank line ends a block.
 
 ```text
-title=Safari
-subtitle=App
+row=Safari
+detail=App
 run=/Applications/Safari.app
 
-title=Notes
+row=Notes
 run=/Applications/Notes.app
 ```
 
@@ -48,160 +89,127 @@ run=/Applications/Notes.app
 - A value is one line. In a value, `\n` stands for a new line and `\\` for a backslash. If a value comes from outside your
   script, such as a file name or a web page, write its backslashes and new lines this way:
   `sed 's/\\/\\\\/g' | awk 'NR > 1 { printf "\\n" } { printf "%s", $0 }'`.
-- With `jq -r`, use `def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");` and write `"title=\(.title | esc)"`.
+- With `jq -r`, use `def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");` and write `"row=\(.title | esc)"`.
 
-## Commands
-
-A command is a spot in the grid. These are its keys:
-
-| Key | Meaning |
-|---|---|
-| `name` | The title, and part of its ID: `<folder>/<name>`. Required. |
-| `exec` | The script, in the plugin folder. Required. |
-| `type` | `launch` (the default), `toggle`, `slider` or `list`. |
-| `size` | `wide` (the default), `small`, `square` or `strip`. |
-| `symbol` | An SF Symbol name. |
-| `subtitle` | The second line. |
-| `key` | One letter that runs it after the trigger key. |
-| `state` | `true` when a list also prints a state. |
-
-Openspot calls the script in these ways:
-
-| Type | Call | The script does |
-|---|---|---|
-| `launch` | `<exec>` | Does the work. |
-| `toggle` | `<exec> state`, `<exec> on`, `<exec> off` | Prints `title`, `subtitle` and `on=true` or `on=false` for `state`. |
-| `slider` | `<exec> state`, `<exec> <number>` | Prints `title`, `level`, `min` and `max` for `state`. |
-| `list` | `<exec> items`, `<exec> <run>` | Prints one block for each row, then runs the `run` value of the row you pick. |
+A block is a row when it has `row`, an action when it has `action`, and a form field when it has `field`. The first other
+block says how the spot itself looks. Printing nothing means that there is nothing to show.
 
 ## Lists
 
-Each block of `items` is one row:
+A script that prints rows is a list. Each row is one block:
 
 ```text
-title=Safari
-subtitle=App
+row=Safari
+detail=App
 run=/Applications/Safari.app
 file=/Applications/Safari.app
 ```
 
-Only `title` and `run` are required. Also use `symbol` for an SF Symbol, `file` for a file's icon, or `image` for a
-path to an image. `hides` is the ID of an action that this row does not offer. Repeat the line for each one.
+`row` and `run` are the only keys a list needs. Also use `symbol` for an SF Symbol, `file` for a file's icon, or `image`
+for a path to an image. `hides` is the ID of an action that this row does not offer. Repeat the line for each one.
 
-More keys for a list command:
+## Toggles and sliders
 
-| Key | Meaning |
+Give the script `read=open`, and let it print one block:
+
+| Prints | Shows |
 |---|---|
-| `global` | `true` to show its rows in the main search. |
-| `rank` | Its place in the main search. A lower number comes first, and no rank comes last. |
-| `search` | `local` (the default): Openspot filters the rows. `live`: Openspot calls `<exec> items <text>`. |
-| `pick` | `close` (the default) or `stay`, after a row is picked. |
-| `recents` | `false` to not sort recent picks first. |
-| `primary` | The word for Enter. The default is `Open`. |
+| `on=true` or `on=false` | A toggle. |
+| `level=70`, and `min=0` and `max=100` | A slider. |
+
+Both can print `title` and `detail`. The defaults come from the header.
 
 ## Actions and forms
 
-An action is an extra thing to do. It shows in the ⌘K menu, and its key works directly.
+An action is an extra thing to do. It shows in the ⌘K menu, and its key works directly. A list prints its actions with
+its rows:
 
-```toml
-[[actions]]
-command = "Notes"
-id = "copy"
-title = "Copy"
-key = "cmd+return"
+```text
+action=copy
+title=Copy
+key=cmd+return
+close=true
 ```
 
 | Key | Meaning |
 |---|---|
-| `command`, `id`, `title` | Required. The call is `<exec> <id> <run>`. |
+| `action`, `title` | Required. The call is `<script> <action> <run>`. |
 | `key` | Such as `cmd+e`, `cmd+return` or `cmd+shift+d`. |
-| `scope` | `item` (the default) or `command`, which needs no selected row. |
-| `after` | `stay` (the default) or `close`. |
+| `scope` | `command` for an action that needs no selected row. |
+| `close` | `true` to close the panel after it runs. |
 | `confirm` | Words that ask for a second press, such as `Press again to delete`. |
 | `form` | `true` to ask for values first. |
 
-For an action with a form, `<exec> form <id> [run]` prints the fields:
+`action=open` is special, because it sets what Enter does on a row. `title` is the word for Enter, and the default is
+`Open`. `close=false` keeps the panel open after a pick.
+
+For an action with a form, `<script> form <action> [run]` prints a block with the title, then one block for each field:
 
 ```text
 title=New note
+
 field=text
-field.label=Text
-field.type=multiline
-field.required=true
+label=Text
+type=multiline
+required=true
 ```
 
-Each `field` line starts a field, and it gives its name. A field needs a `field.label`. `field.type` is `text` (the
-default) or `multiline`. `field.value` and `field.placeholder` are optional. Then `<exec> <id> [run]` gets the values on
-stdin as one block, such as `text=one\ntwo`, and it can print the `run` value of the row to select.
+A field needs `field`, its name, and `label`. `type` is `text` (the default) or `multiline`. `value` and `placeholder`
+are optional. Then `<script> <action> [run]` gets the values on stdin as one block, such as `text=one\ntwo`, and it can
+print the `run` value of the row to select.
 
 ## Metrics
 
-A metric is one piece of live data. Any widget can show it. Its ID is `<folder>/<name>`.
+A metric is one piece of live data. Any widget can show it. A script with a number of seconds as its `read` is a metric,
+and its ID is its path with no extension, such as `coffee` or `home/coffee`.
 
-Folder `coffee`, file `manifest.toml`:
-
-```toml
-name = "Coffee"
-api = 1
-
-[[metrics]]
-name = "cups"
-exec = "coffee.sh"
-kind = "value"
-label = "Cups today"
-refresh = 60
-
-[[widgets]]
-name = "Coffee today"
-layout = "pair"
-places = ["coffee/cups", "coffee/cups"]
-```
-
-File `coffee.sh`. Openspot calls `<exec> metric <name>`.
+File `coffee.sh`:
 
 ```sh
 #!/bin/sh
-printf 'title=3\ndetail=Last at 14:20\nsymbol=cup.and.saucer.fill\n'
+# name=Cups today
+# symbol=cup.and.saucer.fill
+# read=60
+printf 'title=3\ndetail=Last at 14:20\n'
 ```
 
-`refresh` is in seconds. The default is 60. Openspot reads a metric only when a widget places it and the panel is
-open, or when a widget shows it in the menu bar. When a read fails, the last value stays and dims.
+Openspot reads a metric only when a widget places it and the panel is open, or when a widget shows it in the menu bar.
+When a read fails, the last value stays and dims.
 
-`label` says what the metric measures, and each place shows it. The default is the plugin's name.
+`name` says what the metric measures, and each place shows it. Do not repeat it in the values. `symbol` can also be
+printed, when it changes.
 
-Marks are white. A `tone` colours a mark to say what it means. `tint` also colours the mark, and it is optional: use red,
-orange, yellow, green, mint, teal, cyan, blue, indigo, purple or pink, and only when the colour helps a person find one
-metric among many. Text stays white.
+Marks are white. A `tone` colours a mark to say what it means: `good`, `warn` or `bad`. Use it only when the colour means
+something. `tint` also colours the mark, and it is optional: use red, orange, yellow, green, mint, teal, cyan, blue,
+indigo, purple or pink, and only when the colour helps a person find one metric among many. Text stays white.
 
-Each metric prints `title`, its value, and can print `detail`, `symbol` and `tone`. Do not repeat the label in them.
-The tone is `good`, `warn` or `bad`. Use it only when the colour means something. Each kind has its own data:
+What a metric prints decides how it shows:
 
-| Kind | Shows | Also prints |
-|---|---|---|
-| `value` | A number or a word. | Nothing more. |
-| `gauge` | A ring. | `value=0.84`, from 0 to 1. |
-| `trend` | Bars from zero. The last bar is the newest. | One `point=2` line for each bar, and `max=100` for a fixed top value. |
-| `status` | A dot with a word. | Set `tone` for the colour of the dot. |
-| `rows` | Short lines, as many as fit. | One `row=Build` line for each row, and after it `row.detail=2m` and `row.tone=good`. |
+| Prints | Shows |
+|---|---|
+| `title` | A number or a word. |
+| `title` and `value=0.84`, from 0 to 1 | A ring. |
+| `title` and one `point=2` line for each bar | Bars from zero. The last bar is the newest. `max=100` sets a fixed top value. |
+| `title` and `tone`, with no `symbol` | A dot with a word. |
+| A block with `row=Build` for each row | Short lines, as many as fit. Each can have `detail=2m` and `tone=good`. `title` is the count unless you print one. |
 
 ## Widgets
 
-A widget is a spot that shows metrics in a layout. It runs nothing, and it can place metrics of any plugin. So to make
-your own widget, make a folder with only a manifest.
+A widget is a spot that shows metrics in a layout. It runs nothing, and it can place metrics of any plugin. Widgets live
+in a file that ends in `.widget`, with one block for each widget:
 
-```toml
-name = "My widgets"
-api = 1
-
-[[widgets]]
-name = "Morning"
-layout = "hero"
-places = ["agents/list", "battery/level", "system/cpu", "system/disk"]
-opens = "links/Links"
+```text
+name=Morning
+layout=hero
+place=agents
+place=battery
+place=cpu
+place=disk
+opens=links
 ```
 
-`places` fills the slots of the layout in order, and each slot needs one metric. `opens` is optional: it names the
-command that Enter or a click runs. `key` also works.
+Each `place` fills the next slot of the layout, and each slot needs one metric. `opens` is optional: it names the command
+that Enter or a click runs. `key` also works.
 
 | Layout | Size | Places |
 |---|---|---|
@@ -211,28 +219,28 @@ command that Enter or a click runs. `key` also works.
 | `row` | 4x1 | Four values, each over its label. |
 
 A size is a preference. The grid fills each row: four small spots stay 1x1, and fewer than four grow. The same is true
-for a command with `size = "small"`, which shows only its symbol.
+for a command with `size=small`, which shows only its symbol.
 
-A large place shows the detail. In a `hero` line, a trend with `max` shows as one bar. Other places show only the label, the value and the mark, so keep the title short, such
-as `84%`.
+A large place shows the detail. In a `hero` line, a trend with `max` shows as one bar. Other places show only the label,
+the value and the mark, so keep the title short, such as `84%`.
 
 ## The menu bar
 
-Add `tray` to a widget to also show one of its metrics in the menu bar. It names one of the widget's `places`:
-`tray = "coffee/cups"`. Openspot then reads that metric all the time, so choose a `refresh` that is not too short.
+Add `tray` to a widget to also show one of its metrics in the menu bar. It names one of the widget's places:
+`tray=coffee`. Openspot then reads that metric all the time, so choose a `read` that is not too short.
 
 A click opens the panel on the command that `opens` names. A widget with no `opens` is selected in the panel instead.
 
-The item shows the metric's `symbol` and its mark. A `rows` metric shows one count for each `row.tone`, worst first. A
-`gauge` shows a small ring, a `trend` shows bars, a `status` shows a dot, and a `value` shows its title.
+The item shows the metric's `symbol` and its mark. Rows show one count for each `tone`, worst first. A ring, bars and a
+dot show small, and a `title` shows as text.
 
-Print `hidden=true` to remove the item until the next read, such as when nothing is running. Widgets in the panel still
-show the metric.
+Print nothing to remove the item until the next read, such as when nothing is running. Widgets in the panel still show
+the metric.
 
 ## Check your work
 
-Run this before you stop. It loads each plugin and calls each state, list and metric once. It prints each fault, and
-it exits with 1 when there is a fault.
+Run this before you stop. It loads each plugin and reads each one that has a `read`. It prints each fault, and it exits
+with 1 when there is a fault. It does not run a script with no `read`.
 
 ```text
 <path to Openspot> --check <plugins folder>
@@ -242,7 +250,7 @@ it exits with 1 when there is a fault.
 
 - Print only the data. Send each message for the person to stderr. When a script fails, its last stderr line shows.
 - Exit with 0 on success. Any other code is a failure.
-- Be fast. A state has 2 seconds, a list or a metric has 10, and an action has 30.
+- Be fast. A `read=open` that prints no rows has 2 seconds, a list or a metric has 10, and an action has 30.
 - Keep files in `${OPENSPOT_CONFIG:-$HOME/.config/openspot}/data`, not in the plugin folder.
 - Use short plain words in sentence case. Start an action's name with a verb.
 - Do not use a `key` that another plugin has. The first plugin keeps it.

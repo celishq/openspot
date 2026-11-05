@@ -13,7 +13,7 @@ final class SpotActionTests: XCTestCase {
     }
 
     func testASliderLevelIsSentAsARoundedNumber() {
-        XCTAssertEqual(SpotAction.level(69.6).arguments, ["70"])
+        XCTAssertEqual(SpotAction.level(69.6).arguments, ["level", "70"])
     }
 
     func testARunSendsNoArguments() {
@@ -21,12 +21,12 @@ final class SpotActionTests: XCTestCase {
     }
 
     func testAListItemSendsItsRunValue() {
-        XCTAssertEqual(SpotAction.item(SpotItem(title: "1 hour", run: "3600")).arguments, ["3600"])
+        XCTAssertEqual(SpotAction.item(SpotItem(title: "1 hour", run: "3600")).arguments, ["open", "3600"])
     }
 
     func testItemsPassesASearchOnlyWhenThereIsOne() {
-        XCTAssertEqual(SpotAction.items(query: "").arguments, ["items"])
-        XCTAssertEqual(SpotAction.items(query: "rep").arguments, ["items", "rep"])
+        XCTAssertEqual(SpotAction.items(query: "").arguments, [])
+        XCTAssertEqual(SpotAction.items(query: "rep").arguments, ["search", "rep"])
     }
 
     func testAnActionSendsItsIdAndItsItem() {
