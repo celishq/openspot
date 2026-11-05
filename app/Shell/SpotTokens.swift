@@ -38,6 +38,12 @@ enum SpotTokens {
         CGFloat(rows) * rowHeight + CGFloat(rows - 1) * rowGap
     }
 
+    /// The height of the blur around the search field and these card rows. It stops at the height of the panel.
+    static func backdropHeight(rows: Int) -> CGFloat {
+        let cards = rows > 0 ? rowGap + height(rows: rows) : 0
+        return min(2 * halo + rowHeight + cards, panelHeight)
+    }
+
     static func corner(for size: SpotSize) -> CGFloat {
         size.rows == 1 && size.columns < columns ? rowHeight / 2 : radius
     }

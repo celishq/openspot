@@ -30,7 +30,7 @@ struct SpotsView: View {
             }
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask(edges.gradient)
-            .mask(softEdge(inset: Self.scrollEdgeInset, softness: Self.scrollEdgeSoftness))
+            .mask(softEdge(inset: Self.scrollEdgeInset, softness: Self.scrollEdgeSoftness, height: SpotTokens.panelHeight))
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
                 SpotSheetView(
                     entry: entry,
@@ -82,21 +82,32 @@ struct SpotsView: View {
         ZStack {
             ForEach(Self.blurSteps, id: \.inset) { step in
                 SpotBlur(radius: model.isShown ? step.radius : 0)
-                    .mask(softEdge(inset: step.inset, softness: Self.blurEdgeSoftness))
+                    .mask(softEdge(inset: step.inset, softness: Self.blurEdgeSoftness, height: backdropHeight))
             }
             Color.black.opacity(SpotTokens.backdropShade)
-                .mask(softEdge(inset: Self.blurSteps[1].inset, softness: Self.blurEdgeSoftness))
+                .mask(softEdge(inset: Self.blurSteps[1].inset, softness: Self.blurEdgeSoftness, height: backdropHeight))
         }
+        .animation(SpotMotion.backdrop, value: contentHeight)
         .opacity(model.isShown ? 1 : 0)
         .scaleEffect(model.isShown ? 1 : SpotMotion.backdropHiddenScale)
         .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
     }
 
-    private func softEdge(inset: CGFloat, softness: CGFloat) -> some View {
+    private func softEdge(inset: CGFloat, softness: CGFloat, height: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: SpotTokens.radius + SpotTokens.halo - inset, style: .continuous)
             .fill(Color.black)
             .padding(inset)
+            .frame(height: height)
+            .frame(maxHeight: .infinity, alignment: .top)
             .blur(radius: softness)
+    }
+
+    private var contentHeight: CGFloat {
+        SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0)
+    }
+
+    private var backdropHeight: CGFloat {
+        sheetOpen ? SpotTokens.panelHeight : contentHeight
     }
 
     private var openFrame: CGRect? {
