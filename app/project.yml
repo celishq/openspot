@@ -66,6 +66,7 @@ schemes:
       config: Debug
       environmentVariables:
         OPENSPOT_PLUGINS: $(SRCROOT)/../plugins
+        OPENSPOT_CONFIG: $(SRCROOT)/../.temp/config
     test:
       targets:
         - OpenspotTests

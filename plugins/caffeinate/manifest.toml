@@ -9,3 +9,4 @@ symbol = "cup.and.saucer.fill"
 key = "c"
 state = true
 recents = false
+primary = "Select"

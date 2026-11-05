@@ -16,6 +16,8 @@ enum SpotTokens {
     static let listRowGap: CGFloat = 6
     static let listIconSize: CGFloat = 24
     static let hintHeight: CGFloat = 14
+    static let hintLight = 0.35
+    static let hintBlock: CGFloat = rowGap + hintHeight
     static let menuRowHeight: CGFloat = 32
     static let menuRowGap: CGFloat = 2
     static let menuPadding: CGFloat = 8
@@ -50,16 +52,15 @@ enum SpotTokens {
     static let sheetRowsTop: CGFloat = sheetFieldDrop + listRowHeight + rowGap
 
     /// The frame of a sheet with these rows. An empty sheet keeps room for one row, and a long one stops at the panel.
-    static func sheetRect(rows: Int, hasHint: Bool) -> CGRect {
+    static func sheetRect(rows: Int) -> CGRect {
         let count = CGFloat(max(rows, 1))
-        let hint = hasHint ? rowGap + hintHeight : 0
-        let height = sheetRowsTop + count * listRowHeight + (count - 1) * listRowGap + hint + padding
+        let height = sheetRowsTop + count * listRowHeight + (count - 1) * listRowGap + hintBlock + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 
     /// Whether a sheet with these rows shows them all with no scrolling.
-    static func sheetFits(rows: Int, hasHint: Bool) -> Bool {
-        sheetRect(rows: rows, hasHint: hasHint).height < sheetMaxHeight
+    static func sheetFits(rows: Int) -> Bool {
+        sheetRect(rows: rows).height < sheetMaxHeight
     }
 
     /// The frame of a sheet that shows this form.
@@ -68,7 +69,7 @@ enum SpotTokens {
             sum + formLabelHeight + formLabelGap + (field.type == .multiline ? formTextHeight : listRowHeight)
         }
         let gaps = CGFloat(max(form.fields.count - 1, 0)) * formFieldGap
-        let height = padding + glyphSize + rowGap + fields + gaps + rowGap + hintHeight + padding
+        let height = padding + glyphSize + rowGap + fields + gaps + hintBlock + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 
@@ -79,7 +80,7 @@ enum SpotTokens {
     /// The height of the blur around the search field and these card rows. It stops at the height of the panel.
     static func backdropHeight(rows: Int) -> CGFloat {
         let cards = rows > 0 ? rowGap + height(rows: rows) : 0
-        return min(2 * halo + rowHeight + cards, panelHeight)
+        return min(2 * halo + rowHeight + cards + hintBlock, panelHeight)
     }
 
     static func corner(for size: SpotSize) -> CGFloat {

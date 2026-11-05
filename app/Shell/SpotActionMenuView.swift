@@ -28,7 +28,7 @@ struct SpotActionMenuView: View {
                     }
                     .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
                     .frame(height: SpotTokens.menuRowHeight)
-                    .background(Color.white.opacity(index == menu.selected ? 0.3 : 0), in: shape)
+                    .background(fill(of: row, at: index), in: shape)
                     .contentShape(shape)
                 }
                 .buttonStyle(.plain)
@@ -39,9 +39,16 @@ struct SpotActionMenuView: View {
         .modifier(SpotGlass(radius: SpotTokens.radius - SpotTokens.padding + SpotTokens.menuPadding))
     }
 
-    private func titleColor(of row: ActionMenu.Row) -> Color {
+    private func isConfirming(_ row: ActionMenu.Row) -> Bool {
         menu.confirming != nil && row.action?.id == menu.confirming
-            ? Color(red: 1, green: 0.62, blue: 0.58)
-            : .white.opacity(SpotTokens.titleOpacity)
+    }
+
+    private func fill(of row: ActionMenu.Row, at index: Int) -> Color {
+        if isConfirming(row) { return Color(red: 0.78, green: 0.16, blue: 0.14) }
+        return .white.opacity(index == menu.selected ? 0.3 : 0)
+    }
+
+    private func titleColor(of row: ActionMenu.Row) -> Color {
+        isConfirming(row) ? .white : .white.opacity(SpotTokens.titleOpacity)
     }
 }

@@ -214,6 +214,24 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(scan.refused.first?.reason, "One has an unknown pick: later")
     }
 
+    func testAConfigPathHoldsThePluginFolder() {
+        let folder = PluginFolder.standard(environment: ["OPENSPOT_CONFIG": "/tmp/debug"], home: URL(fileURLWithPath: "/home"))
+
+        XCTAssertEqual(folder.url.path, "/tmp/debug/plugins")
+    }
+
+    func testAPluginPathBeatsAConfigPath() {
+        let folder = PluginFolder.standard(environment: ["OPENSPOT_CONFIG": "/tmp/debug", "OPENSPOT_PLUGINS": "/tmp/own"], home: URL(fileURLWithPath: "/home"))
+
+        XCTAssertEqual(folder.url.path, "/tmp/own")
+    }
+
+    func testWithNoPathTheHomeHoldsThePluginFolder() {
+        let folder = PluginFolder.standard(environment: [:], home: URL(fileURLWithPath: "/home"))
+
+        XCTAssertEqual(folder.url.path, "/home/.config/openspot/plugins")
+    }
+
     func testACommandWithNoLookIsAWideLaunchSpot() throws {
         try writePlugin("tools", manifest: manifest())
 

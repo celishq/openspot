@@ -14,4 +14,18 @@ final class FileIconTests: XCTestCase {
     func testAPathWithNoExtensionHasItsOwnIcon() {
         XCTAssertEqual(FileIcon(path: "/Users/me/Downloads"), .file("/Users/me/Downloads"))
     }
+
+    func testAnItemUsesItsImageBeforeItsFile() {
+        let item = SpotItem(title: "A", run: "a", file: "/a/report.pdf", image: "/icons/a.icon")
+
+        XCTAssertEqual(item.icon, .image("/icons/a.icon"))
+    }
+
+    func testAnItemWithAFileUsesTheIconOfTheFile() {
+        XCTAssertEqual(SpotItem(title: "A", run: "a", file: "/a/report.pdf").icon, .type("pdf"))
+    }
+
+    func testAnItemWithNeitherHasNoIcon() {
+        XCTAssertNil(SpotItem(title: "A", run: "a").icon)
+    }
 }

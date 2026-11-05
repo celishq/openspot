@@ -461,9 +461,18 @@ final class SpotsModel {
     }
 
     private func openMenu(on target: Target) {
-        let isOpenList = openList == target.entry.id
-        menu = ActionMenu(command: target.entry.command, item: target.item, showsPrimary: !isOpenList || target.item != nil)
+        menu = actionMenu(on: target)
         menuTarget = target
+    }
+
+    private func actionMenu(on target: Target) -> ActionMenu? {
+        let isOpenList = openList == target.entry.id
+        return ActionMenu(command: target.entry.command, item: target.item, showsPrimary: !isOpenList || target.item != nil)
+    }
+
+    /// The keys that work on the selected row or card, in words for the bottom of the panel.
+    var hint: String {
+        target.flatMap(actionMenu(on:))?.hint ?? "Esc Close"
     }
 
     func closeMenu() {

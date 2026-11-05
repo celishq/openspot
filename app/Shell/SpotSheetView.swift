@@ -5,7 +5,7 @@ struct SpotSheetView: View {
     let entry: SpotsModel.Entry
     let list: ItemList
     let rect: CGRect
-    let hint: String?
+    let hint: String
     let form: FormDraft?
     let createTitle: String?
     let onCreate: () -> Void
@@ -51,7 +51,7 @@ struct SpotSheetView: View {
             }
             if let form {
                 SpotFormView(draft: form, onValue: onFormValue)
-                hintText("⌘⏎ Save   Esc Cancel")
+                SpotHint(text: "⌘⏎ Save   Esc Cancel")
             } else {
                 Color.clear.frame(height: SpotTokens.listRowHeight)
                 if let createTitle {
@@ -67,7 +67,7 @@ struct SpotSheetView: View {
                 } else {
                     rows
                 }
-                if let hint { hintText(hint) }
+                SpotHint(text: hint)
             }
         }
         .padding(SpotTokens.padding)
@@ -78,14 +78,6 @@ struct SpotSheetView: View {
         if list.isWaiting { return "Searching" }
         if list.search == .live && list.query.isEmpty { return "Type to search" }
         return list.query.isEmpty ? "Nothing here yet" : "No results"
-    }
-
-    private func hintText(_ text: String) -> some View {
-        Text(text)
-            .font(SpotType.detail)
-            .modifier(SpotSecondaryText())
-            .lineLimit(1)
-            .frame(maxWidth: .infinity, minHeight: SpotTokens.hintHeight, maxHeight: SpotTokens.hintHeight, alignment: .center)
     }
 
     private func createLabel(_ title: String) -> some View {
@@ -115,7 +107,7 @@ struct SpotSheetView: View {
                 }
             }
             .safeAreaPadding(.top, SpotTokens.padding)
-            .safeAreaPadding(.bottom, SpotTokens.sheetFits(rows: list.shown.count, hasHint: hint != nil) ? SpotTokens.padding : Self.bottomFade)
+            .safeAreaPadding(.bottom, SpotTokens.sheetFits(rows: list.shown.count) ? SpotTokens.padding : Self.bottomFade)
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask(edgeFade)
             .padding(.vertical, -SpotTokens.padding)

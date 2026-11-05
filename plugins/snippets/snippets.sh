@@ -1,6 +1,6 @@
 #!/bin/sh
 export LC_ALL=en_US.UTF-8
-data="$HOME/.config/openspot/data/snippets.json"
+data="${OPENSPOT_CONFIG:-$HOME/.config/openspot}/data/snippets.json"
 
 load() {
   if [ -s "$data" ]; then cat "$data"; else echo '[]'; fi

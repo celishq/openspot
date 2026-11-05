@@ -13,7 +13,7 @@ struct SpotScrollEdges: Equatable {
 
     private var stops: [Gradient.Stop] {
         let start = (SpotTokens.halo + SpotTokens.rowHeight) / SpotTokens.panelHeight
-        let end = 1 - SpotTokens.halo / SpotTokens.panelHeight
+        let end = 1 - (SpotTokens.halo + SpotTokens.hintBlock) / SpotTokens.panelHeight
         let length = Self.fadeLength / SpotTokens.panelHeight
         return [
             .init(color: .black.opacity(1 - top), location: start),

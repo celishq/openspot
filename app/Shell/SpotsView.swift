@@ -26,17 +26,22 @@ struct SpotsView: View {
                 grid
                     .padding(.horizontal, SpotTokens.halo)
                     .padding(.top, SpotTokens.halo + SpotTokens.rowHeight + SpotTokens.rowGap)
-                    .padding(.bottom, SpotTokens.halo)
+                    .padding(.bottom, SpotTokens.halo + SpotTokens.hintBlock)
             }
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask(edges.gradient)
             .mask(softEdge(inset: Self.scrollEdgeInset, softness: Self.scrollEdgeSoftness, height: SpotTokens.panelHeight))
+            SpotHint(text: model.hint)
+                .frame(width: SpotTokens.gridWidth)
+                .offset(x: SpotTokens.halo, y: contentHeight - SpotTokens.halo - SpotTokens.hintHeight)
+                .opacity(model.isShown && !sheetOpen ? 1 : 0)
+                .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
                 SpotSheetView(
                     entry: entry,
                     list: model.lists[entry.id] ?? ItemList(),
                     rect: sheetRect,
-                    hint: entry.command.actions.isEmpty ? nil : ActionMenu(command: entry.command, item: model.lists[entry.id]?.selectedItem, showsPrimary: model.lists[entry.id]?.selectedItem != nil)?.hint,
+                    hint: model.hint,
                     form: model.form?.entry.id == entry.id ? model.form?.draft : nil,
                     createTitle: model.createAction.map { "\($0.title): \(model.searchText)" },
                     onCreate: { model.createFromSearch() },
@@ -130,8 +135,7 @@ struct SpotsView: View {
 
     private var sheetRect: CGRect {
         if let form = model.form { return SpotTokens.formRect(form.draft.form) }
-        let hasHint = model.entries.first { $0.id == sheetID }?.command.actions.isEmpty == false
-        return SpotTokens.sheetRect(rows: model.lists[sheetID ?? ""]?.shown.count ?? 0, hasHint: hasHint)
+        return SpotTokens.sheetRect(rows: model.lists[sheetID ?? ""]?.shown.count ?? 0)
     }
 
     private var contentHeight: CGFloat {
@@ -146,7 +150,7 @@ struct SpotsView: View {
 
     /// Where the menu starts: its bottom meets the bottom of the content.
     private func menuTop(_ menu: ActionMenu) -> CGFloat {
-        max(SpotTokens.halo, contentHeight - SpotTokens.halo - SpotTokens.menuHeight(rows: menu.rows.count))
+        max(SpotTokens.halo, contentHeight - SpotTokens.halo - SpotTokens.hintBlock - SpotTokens.menuHeight(rows: menu.rows.count))
     }
 
     private var openFrame: CGRect? {

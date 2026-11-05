@@ -14,7 +14,9 @@ public struct PluginFolder: Sendable {
         if let path = environment["OPENSPOT_PLUGINS"], !path.isEmpty {
             return PluginFolder(url: URL(fileURLWithPath: path, isDirectory: true))
         }
-        return PluginFolder(url: home.appendingPathComponent(".config/openspot/plugins", isDirectory: true))
+        let config = environment["OPENSPOT_CONFIG"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0, isDirectory: true) }
+            ?? home.appendingPathComponent(".config/openspot", isDirectory: true)
+        return PluginFolder(url: config.appendingPathComponent("plugins", isDirectory: true))
     }
 
     /// Reads each plugin in the folder. When two commands share a key, the first keeps it.

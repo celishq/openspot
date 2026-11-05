@@ -156,7 +156,7 @@ struct SpotCardView: View {
 
     @ViewBuilder
     private var glyph: some View {
-        if let item = entry.item, item.file != nil {
+        if let item = entry.item, item.icon != nil {
             SpotItemIcon(item: item, size: SpotTokens.glyphSize)
         } else {
             symbolGlyph

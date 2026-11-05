@@ -97,6 +97,7 @@ final class SamplePluginsTests: XCTestCase {
             ("pbcopy", "cat > '\(folder.path)/clipboard'"),
             ("pbpaste", "cat '\(folder.path)/clipboard' 2>/dev/null"),
             ("open", "echo \"$1\" > '\(folder.path)/opened'"),
+            ("curl", Self.fakeCurl(log: folder.appendingPathComponent("fetched").path)),
             ("osascript", "cp '\(folder.path)/clipboard' '\(folder.path)/pasted'")
         ] {
             let tool = tools.appendingPathComponent(name)
@@ -113,6 +114,92 @@ final class SamplePluginsTests: XCTestCase {
             try? FileManager.default.removeItem(at: folder)
         }
         try await body(folder)
+    }
+
+    /// A web with one site: icons.test names a small image on its page, and each other site has no image at all.
+    private static func fakeCurl(log: String) -> String {
+        """
+        out=""
+        for a; do
+          [ "$previous" = "-o" ] && out=$a
+          previous=$a
+          url=$a
+        done
+        echo "$url" >> '\(log)'
+        case "$url" in
+          https://icons.test/)
+            echo '<head><link href="/a.png" rel="icon"></head>'
+            ;;
+          https://icons.test/a.png)
+            echo 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' | base64 -D > "$out"
+            printf 'image/png'
+            ;;
+          *)
+            exit 22
+            ;;
+        esac
+        """
+    }
+
+    private func savedLink(_ url: String, in links: PluginCommand) async throws {
+        let new = try action("new", of: links)
+        var draft = FormDraft(form: try await links.form(new, item: nil, timeout: 5))
+        draft.set("Site", for: "title")
+        draft.set(url, for: "url")
+        _ = try await links.submit(new, item: nil, draft: draft, timeout: 5)
+    }
+
+    func testQuicklinksShowsTheIconASiteNamesOnItsPage() async throws {
+        let links = try XCTUnwrap(try scan.commands.first { $0.name == "Quicklinks" })
+        try await withPrivateHome { folder in
+            try await self.savedLink("https://icons.test/deep/page", in: links)
+            let expected = folder.appendingPathComponent(".config/openspot/data/icons/icons.test.icon").path
+
+            for _ in 0..<50 where !FileManager.default.fileExists(atPath: expected) {
+                try await Task.sleep(nanoseconds: 100_000_000)
+            }
+            let items = try await links.items(timeout: 5).items
+
+            XCTAssertEqual(items.first?.image, expected)
+            XCTAssertEqual(items.first?.subtitle, "icons.test")
+        }
+    }
+
+    func testQuicklinksKeepsItsGlyphAndDoesNotAskAgainWhenASiteHasNoIcon() async throws {
+        let links = try XCTUnwrap(try scan.commands.first { $0.name == "Quicklinks" })
+        try await withPrivateHome { folder in
+            try await self.savedLink("https://none.test", in: links)
+            let marker = folder.appendingPathComponent(".config/openspot/data/icons/none.test.none").path
+
+            for _ in 0..<50 where !FileManager.default.fileExists(atPath: marker) {
+                try await Task.sleep(nanoseconds: 100_000_000)
+            }
+            let before = try self.read("fetched", in: folder)
+            let items = try await links.items(timeout: 5).items
+            try await Task.sleep(nanoseconds: 500_000_000)
+
+            XCTAssertNil(items.first?.image)
+            XCTAssertEqual(items.first?.symbol, "link")
+            XCTAssertEqual(try self.read("fetched", in: folder), before)
+        }
+    }
+
+    func testAConfigPathHoldsTheDataOfAPlugin() async throws {
+        let snippets = try XCTUnwrap(try scan.commands.first { $0.name == "Snippets" })
+        try await withPrivateHome { folder in
+            let config = folder.appendingPathComponent("debug-config")
+            setenv("OPENSPOT_CONFIG", config.path, 1)
+            defer { unsetenv("OPENSPOT_CONFIG") }
+            let new = try self.action("new", of: snippets)
+            var draft = FormDraft(form: try await snippets.form(new, item: nil, timeout: 5))
+            draft.set("A", for: "title")
+            draft.set("B", for: "content")
+
+            _ = try await snippets.submit(new, item: nil, draft: draft, timeout: 5)
+
+            XCTAssertTrue(FileManager.default.fileExists(atPath: config.appendingPathComponent("data/snippets.json").path))
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent(".config").path))
+        }
     }
 
     private func action(_ id: String, of command: PluginCommand) throws -> CommandAction {

@@ -4,13 +4,14 @@ import SwiftUI
 /// backdrop and reads grey on dark and white on light. On a white card it is plain dark text.
 struct SpotSecondaryText: ViewModifier {
     var isOnWhite = false
+    var strength = SpotTokens.secondaryLight
 
     func body(content: Content) -> some View {
         if isOnWhite {
             content.foregroundStyle(.black.opacity(SpotTokens.secondaryLight))
         } else {
             content
-                .foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
+                .foregroundStyle(.white.opacity(strength))
                 .blendMode(.plusLighter)
         }
     }

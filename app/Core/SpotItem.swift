@@ -7,12 +7,19 @@ public struct SpotItem: Equatable, Decodable, Sendable {
     public let run: String
     public let symbol: String?
     public let file: String?
+    public let image: String?
 
-    public init(title: String, subtitle: String? = nil, run: String, symbol: String? = nil, file: String? = nil) {
+    public init(title: String, subtitle: String? = nil, run: String, symbol: String? = nil, file: String? = nil, image: String? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
         self.symbol = symbol
         self.file = file
+        self.image = image
+    }
+
+    /// The picture a row draws: its image, or else the icon of its file.
+    public var icon: FileIcon? {
+        image.map(FileIcon.image) ?? file.map(FileIcon.init(path:))
     }
 }

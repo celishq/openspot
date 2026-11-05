@@ -45,7 +45,7 @@ final class SpotIconStore {
 
     /// Draws the icons of these items, and returns when they are ready.
     func prepare(_ items: [SpotItem]) async {
-        let icons = Set(items.compactMap { $0.file.map(FileIcon.init(path:)) })
+        let icons = Set(items.compactMap(\.icon))
         await withTaskGroup(of: Void.self) { group in
             for icon in icons where cached(icon) == nil {
                 group.addTask { _ = await self.image(icon) }
@@ -65,6 +65,7 @@ final class SpotIconStore {
         switch icon {
         case .file(let path): "file:\(path)" as NSString
         case .type(let suffix): "type:\(suffix)" as NSString
+        case .image(let path): "image:\(path)" as NSString
         }
     }
 
@@ -73,6 +74,9 @@ final class SpotIconStore {
         switch icon {
         case .file(let path): source = NSWorkspace.shared.icon(forFile: path)
         case .type(let suffix): source = NSWorkspace.shared.icon(for: UTType(filenameExtension: suffix) ?? .data)
+        case .image(let path):
+            guard let image = NSImage(contentsOfFile: path) else { return nil }
+            source = image
         }
         guard let context = CGContext(
             data: nil,
