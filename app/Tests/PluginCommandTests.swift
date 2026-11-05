@@ -14,11 +14,11 @@ final class PluginCommandTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func writeCommand(kind: SpotKind, subtitle: String? = nil, _ body: String) throws -> PluginCommand {
+    private func writeCommand(kind: SpotKind, subtitle: String? = nil, hasState: Bool = false, _ body: String) throws -> PluginCommand {
         let url = folder.appendingPathComponent("command.sh")
         try "#!/bin/sh\n\(body)\n".write(to: url, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
-        return PluginCommand(id: "test/Command", name: "Command", url: url, kind: kind, subtitle: subtitle)
+        return PluginCommand(id: "test/Command", name: "Command", url: url, kind: kind, subtitle: subtitle, hasState: hasState)
     }
 
     private var marker: URL {
@@ -42,6 +42,28 @@ final class PluginCommandTests: XCTestCase {
 
         XCTAssertEqual(state, SpotState(title: "Command", subtitle: "Folder"))
         XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))
+    }
+
+    func testAListShowsItsManifestUnlessItHasAState() async throws {
+        let body = "echo '{\"title\":\"Read\"}'"
+
+        let plain = try writeCommand(kind: .list, subtitle: "Apps", body)
+        let plainState = try await plain.state(timeout: 5)
+        let stated = try writeCommand(kind: .list, hasState: true, body)
+        let statedState = try await stated.state(timeout: 5)
+
+        XCTAssertEqual(plainState, SpotState(title: "Command", subtitle: "Apps"))
+        XCTAssertEqual(statedState, SpotState(title: "Read"))
+    }
+
+    func testReadsTheItemsACommandPrints() async throws {
+        let command = try writeCommand(kind: .list, """
+        [ "$1" = items ] && echo '{"title":"Safari","run":"/Safari.app"}'
+        """)
+
+        let lines = try await command.items(timeout: 5)
+
+        XCTAssertEqual(lines.items, [SpotItem(title: "Safari", run: "/Safari.app")])
     }
 
     func testOutputThatIsNotAStateFails() async throws {

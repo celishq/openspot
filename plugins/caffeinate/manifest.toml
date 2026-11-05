@@ -4,6 +4,8 @@ api = 1
 [[commands]]
 name = "Caffeinate"
 exec = "caffeinate.sh"
-type = "expand"
+type = "list"
 symbol = "cup.and.saucer.fill"
 key = "c"
+state = true
+pick = "stay"

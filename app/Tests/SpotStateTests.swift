@@ -18,12 +18,6 @@ final class SpotStateTests: XCTestCase {
         XCTAssertEqual(state.max, 100)
     }
 
-    func testDecodesExpandItems() throws {
-        let json = #"{"title": "Wi-Fi", "items": [{"title": "Office 5G", "run": "networksetup -setairportnetwork en0 Office"}]}"#
-        let state = try JSONDecoder().decode(SpotState.self, from: Data(json.utf8))
-        XCTAssertEqual(state.items, [SpotItem(title: "Office 5G", run: "networksetup -setairportnetwork en0 Office")])
-    }
-
     func testAdjustingASliderMovesItWithinItsRange() {
         let state = SpotState(title: "Display", level: 95, min: 0, max: 100)
         XCTAssertEqual(state.adjusted(by: 10).level, 100)

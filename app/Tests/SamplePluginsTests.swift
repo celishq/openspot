@@ -14,8 +14,8 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Safari", "Caffeinate", "Downloads", "Screenshots", "Paste Screenshot"])
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["b", "c", "d", "s", "v"])
+        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Downloads", "Screenshots", "Paste Screenshot"])
+        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "d", "s", "v"])
     }
 
     func testOnePluginHoldsSeveralCommands() throws {
@@ -30,13 +30,28 @@ final class SamplePluginsTests: XCTestCase {
         }
     }
 
-    func testCaffeinateOffersItsDurationsAndReportsIfItIsOn() async throws {
+    func testCaffeinateReportsIfItIsOnAndOffersItsDurations() async throws {
         let caffeinate = try XCTUnwrap(try scan.commands.first { $0.name == "Caffeinate" })
 
         let state = try await caffeinate.state(timeout: 5)
+        let lines = try await caffeinate.items(timeout: 5)
 
         XCTAssertEqual(state.title, "Caffeinate")
-        XCTAssertEqual(state.items?.prefix(4).map(\.run), ["1800", "3600", "7200", "0"])
         XCTAssertNotNil(state.on)
+        XCTAssertEqual(lines.items.prefix(4).map(\.run), ["1800", "3600", "7200", "0"])
+        XCTAssertEqual(lines.errors, [])
+        XCTAssertEqual(caffeinate.pick, .stay)
+    }
+
+    func testAppsListsEachAppWithItsPathAndNoBadLine() async throws {
+        let apps = try XCTUnwrap(try scan.commands.first { $0.name == "Apps" })
+
+        let lines = try await apps.items(timeout: 10)
+        let finder = try XCTUnwrap(lines.items.first { $0.title == "Finder" })
+
+        XCTAssertEqual(lines.errors, [])
+        XCTAssertEqual(finder.run, "/System/Library/CoreServices/Finder.app")
+        XCTAssertEqual(finder.file, finder.run)
+        XCTAssertGreaterThan(lines.items.filter { $0.run.hasPrefix("/System/Applications/") }.count, 5)
     }
 }

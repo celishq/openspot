@@ -28,15 +28,10 @@ struct SpotsView: View {
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask(edges.gradient)
             .mask(softEdge(inset: Self.blurSteps[1].inset))
-            searchField
-                .padding([.horizontal, .top], SpotTokens.halo)
-                .offset(y: sheetOpen ? openFrame.map { SpotTokens.sheetRect.minY - $0.minY } ?? 0 : 0)
-                .opacity(sheetOpen ? 0 : 1)
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
                 SpotSheetView(
                     entry: entry,
-                    items: entry.state.items ?? [],
-                    itemSelected: model.itemSelected,
+                    list: model.lists[entry.id] ?? ItemList(),
                     onRun: { model.runItem($0) },
                     onClose: { model.closeList() }
                 )
@@ -45,6 +40,10 @@ struct SpotsView: View {
                     radius: sheetOpen ? SpotTokens.radius : SpotTokens.corner(for: entry.size)
                 ))
             }
+            searchField
+                .padding(.horizontal, sheetOpen ? SpotTokens.halo + SpotTokens.padding : SpotTokens.halo)
+                .padding(.top, SpotTokens.halo)
+                .offset(y: sheetOpen ? SpotTokens.sheetFieldDrop : 0)
         }
         .coordinateSpace(name: Self.panelSpace)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
@@ -129,7 +128,7 @@ struct SpotsView: View {
                     onLevel: { model.setLevel(entry.id, to: $0) }
                 )
                 .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .named(Self.panelSpace)) }, action: { frame in
-                    if entry.kind == .expand { cardFrames[entry.id] = frame }
+                    if entry.kind == .list { cardFrames[entry.id] = frame }
                 })
                 .offset(
                     x: CGFloat(placement.column) * (SpotTokens.cell + SpotTokens.columnGap) + pushed.width,
@@ -147,7 +146,7 @@ struct SpotsView: View {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.white)
                 .frame(width: SpotTokens.glyphSize)
-            TextField("Search spots", text: Binding(get: { model.query }, set: { model.query = $0 }), prompt: Text("Search spots").foregroundStyle(.white.opacity(SpotTokens.titleOpacity)))
+            TextField(searchPrompt, text: Binding(get: { model.searchText }, set: { model.searchText = $0 }), prompt: Text(searchPrompt).foregroundStyle(.white.opacity(SpotTokens.titleOpacity)))
                 .textFieldStyle(.plain)
                 .focused($searchFocused)
                 .onSubmit { model.runSelected() }
@@ -169,7 +168,7 @@ struct SpotsView: View {
                 }
                 .onKeyPress(.leftArrow) {
                     if model.openList != nil {
-                        return .handled
+                        return .ignored
                     }
                     if model.selectedIsSlider {
                         model.adjustSelected(by: -5)
@@ -180,7 +179,7 @@ struct SpotsView: View {
                 }
                 .onKeyPress(.rightArrow) {
                     if model.openList != nil {
-                        return .handled
+                        return .ignored
                     }
                     if model.selectedIsSlider {
                         model.adjustSelected(by: 5)
@@ -190,11 +189,7 @@ struct SpotsView: View {
                     return .handled
                 }
                 .onKeyPress(.escape) {
-                    if model.openList != nil {
-                        model.closeList()
-                    } else {
-                        close()
-                    }
+                    if !model.stepBack() { close() }
                     return .handled
                 }
                 .onKeyPress(keys: [.return]) { press in
@@ -206,7 +201,16 @@ struct SpotsView: View {
         .font(.system(size: 14))
         .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
         .padding(.horizontal, SpotTokens.padding)
-        .frame(height: SpotTokens.rowHeight)
-        .modifier(SpotGlass(radius: SpotTokens.corner(for: .strip)))
+        .frame(height: sheetOpen ? SpotTokens.listRowHeight : SpotTokens.rowHeight)
+        .background(Color.white.opacity(sheetOpen ? 0.12 : 0), in: RoundedRectangle(cornerRadius: fieldRadius, style: .continuous))
+        .modifier(SpotGlass(radius: fieldRadius, isBare: sheetOpen))
+    }
+
+    private var fieldRadius: CGFloat {
+        sheetOpen ? SpotTokens.radius - SpotTokens.padding : SpotTokens.corner(for: .strip)
+    }
+
+    private var searchPrompt: String {
+        model.openEntry.map { "Search \($0.state.title)" } ?? "Search spots"
     }
 }

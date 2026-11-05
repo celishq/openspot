@@ -21,24 +21,19 @@ final class PluginRunTests: XCTestCase {
         return PluginCommand(id: name, name: name, url: url)
     }
 
-    func testReturnsRowsForTheQuery() async throws {
-        let plugin = try writePlugin("echo.sh", """
-        #!/bin/sh
-        # @name Echo
-        # @api 1
-        printf '{"title":"%s","run":"true"}\\n' "$1"
-        """)
+    func testReturnsWhatThePluginPrintsForTheArguments() async throws {
+        let plugin = try writePlugin("echo.sh", "#!/bin/sh\necho \"$1\"\n")
 
-        let result = try await PluginRun(command: plugin, query: "hello", timeout: 5).execute()
+        let output = try await PluginRun(command: plugin, arguments: ["hello"], timeout: 5).output()
 
-        XCTAssertEqual(result.rows.map(\.title), ["hello"])
+        XCTAssertEqual(output, "hello\n")
     }
 
     func testTimesOutASlowPlugin() async throws {
-        let plugin = try writePlugin("slow.sh", "#!/bin/sh\n# @name Slow\n# @api 1\nsleep 5\n")
+        let plugin = try writePlugin("slow.sh", "#!/bin/sh\nsleep 5\n")
 
         do {
-            _ = try await PluginRun(command: plugin, query: "", timeout: 0.5).execute()
+            _ = try await PluginRun(command: plugin, arguments: [], timeout: 0.5).output()
             XCTFail("expected a timeout")
         } catch PluginError.timedOut {
         }

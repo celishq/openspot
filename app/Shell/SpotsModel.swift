@@ -24,6 +24,7 @@ final class SpotsModel {
 
     private static let stateTimeout: TimeInterval = 2
     private static let actionTimeout: TimeInterval = 30
+    private static let itemsTimeout: TimeInterval = 10
 
     var entries: [Entry] = []
     var query = "" {
@@ -33,7 +34,7 @@ final class SpotsModel {
     }
     var selected = 0
     var openList: String?
-    var itemSelected = 0
+    private(set) var lists: [String: ItemList] = [:]
     var isShown = false
     var dismiss: () -> Void = {}
     var show: () -> Void = {}
@@ -46,6 +47,7 @@ final class SpotsModel {
         let scan = (try? folder.scan()) ?? ScanResult(plugins: [], refused: [])
         var entries: [Entry] = []
         var problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
+        scan.commands.filter { $0.kind == .list }.forEach(loadItems)
         if scan.commands.isEmpty {
             problems.append("No plugins in \(folder.url.path)")
         }
@@ -64,6 +66,28 @@ final class SpotsModel {
         self.problems = problems
     }
 
+    /// Asks a list command for its items, and shows them when they arrive.
+    private func loadItems(of command: PluginCommand) {
+        if lists[command.id] == nil {
+            lists[command.id] = ItemList(recent: UserDefaults.standard.stringArray(forKey: Self.recentKey(command.id)) ?? [])
+        }
+        Task {
+            do {
+                let lines = try await command.items(timeout: Self.itemsTimeout)
+                lists[command.id]?.replace(lines.items)
+                if !lines.errors.isEmpty {
+                    notify("\(command.name) sent \(lines.errors.count) items Openspot cannot read.")
+                }
+            } catch {
+                notify("\(command.name) failed. \(Self.reason(error))")
+            }
+        }
+    }
+
+    private static func recentKey(_ id: String) -> String {
+        "recent.\(id)"
+    }
+
     private static func reason(_ error: Error) -> String {
         (error as? PluginError)?.reason ?? error.localizedDescription
     }
@@ -76,6 +100,7 @@ final class SpotsModel {
             } catch {
                 notify("\(entry.state.title) failed. \(Self.reason(error))")
             }
+            if entry.kind == .list, entry.command.pick == .stay { loadItems(of: entry.command) }
             guard entry.kind != .slider,
                   let state = try? await entry.command.state(timeout: Self.stateTimeout),
                   let index = entries.firstIndex(where: { $0.id == entry.id }) else { return }
@@ -144,13 +169,12 @@ final class SpotsModel {
     /// Runs a command by its key, with the panel open only when its spot needs it.
     func press(_ id: String) {
         guard let entry = entries.first(where: { $0.id == id }) else { return }
-        guard entry.kind == .expand else {
+        guard entry.kind == .list else {
             run(entry)
             return
         }
         show()
-        openList = id
-        itemSelected = 0
+        open(id)
     }
 
     private func run(_ entry: Entry) {
@@ -161,16 +185,18 @@ final class SpotsModel {
             entries[index].state = SpotState(
                 title: entry.state.title,
                 subtitle: entry.state.subtitle,
-                on: action.arguments == ["on"],
-                items: entry.state.items
+                on: action.arguments == ["on"]
             )
             perform(action, on: entry)
         case .launch:
             if isShown { dismiss() }
             perform(.run, on: entry)
-        case .expand:
-            openList = openList == entry.id ? nil : entry.id
-            itemSelected = 0
+        case .list:
+            if openList == entry.id {
+                closeList()
+            } else {
+                open(entry.id)
+            }
         case .slider:
             break
         }
@@ -199,23 +225,62 @@ final class SpotsModel {
         entries.first { $0.id == openList }
     }
 
+    var openItems: ItemList? {
+        openList.flatMap { lists[$0] }
+    }
+
+    /// The text of the field: the search of the open list, or else the search of the spots.
+    var searchText: String {
+        get { openItems?.query ?? query }
+        set {
+            if let openList {
+                lists[openList]?.search(newValue)
+            } else {
+                query = newValue
+            }
+        }
+    }
+
+    /// Clears the search, or else closes the open list. Returns false when there is nothing to step back from.
+    func stepBack() -> Bool {
+        if !searchText.isEmpty {
+            searchText = ""
+        } else if openList != nil {
+            closeList()
+        } else {
+            return false
+        }
+        return true
+    }
+
+    private func open(_ id: String) {
+        openList = id
+        lists[id]?.search("")
+    }
+
     func closeList() {
         openList = nil
     }
 
     func moveItem(by step: Int) {
-        guard let count = openEntry?.state.items?.count, count > 0 else { return }
-        itemSelected = min(max(itemSelected + step, 0), count - 1)
+        guard let openList else { return }
+        lists[openList]?.move(by: step)
     }
 
     func runSelectedItem() {
-        guard let items = openEntry?.state.items, items.indices.contains(itemSelected) else { return }
-        runItem(items[itemSelected])
+        guard let item = openItems?.selectedItem else { return }
+        runItem(item)
     }
 
     func runItem(_ item: SpotItem) {
         guard let entry = openEntry else { return }
+        if entry.command.pick == .close {
+            lists[entry.id]?.remember(item)
+            UserDefaults.standard.set(lists[entry.id]?.recent, forKey: Self.recentKey(entry.id))
+            if isShown { dismiss() }
+            closeList()
+            query = ""
+        }
         perform(.item(item), on: entry)
-        closeList()
     }
 }

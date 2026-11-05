@@ -10,6 +10,8 @@ public struct PluginCommand: Equatable, Sendable {
     public let symbol: String
     public let subtitle: String?
     public let key: CommandKey?
+    public let hasState: Bool
+    public let pick: ItemPick
 
     public init(
         id: String,
@@ -19,7 +21,9 @@ public struct PluginCommand: Equatable, Sendable {
         size: SpotSize = .wide,
         symbol: String = "app",
         subtitle: String? = nil,
-        key: CommandKey? = nil
+        key: CommandKey? = nil,
+        hasState: Bool = false,
+        pick: ItemPick = .close
     ) {
         self.id = id
         self.name = name
@@ -29,6 +33,8 @@ public struct PluginCommand: Equatable, Sendable {
         self.symbol = symbol
         self.subtitle = subtitle
         self.key = key
+        self.hasState = hasState
+        self.pick = pick
     }
 
     /// The state the manifest gives, shown before the command answers or when it cannot.
@@ -36,9 +42,18 @@ public struct PluginCommand: Equatable, Sendable {
         SpotState(title: name, subtitle: subtitle)
     }
 
-    /// Asks the command for its state. A launch spot has no state to read, so it does not run.
+    /// Whether the command prints a state. Toggles and sliders do, a launch spot does not, and a list says so.
+    public var readsState: Bool {
+        switch kind {
+        case .launch: false
+        case .toggle, .slider: true
+        case .list: hasState
+        }
+    }
+
+    /// Asks the command for its state. A command with no state to read does not run.
     public func state(timeout: TimeInterval) async throws -> SpotState {
-        guard kind != .launch else { return manifestState }
+        guard readsState else { return manifestState }
         let output = try await PluginRun(command: self, arguments: SpotAction.read.arguments, timeout: timeout).output()
         guard let state = try? JSONDecoder().decode(SpotState.self, from: Data(output.utf8)) else {
             throw PluginError.badState
@@ -46,11 +61,16 @@ public struct PluginCommand: Equatable, Sendable {
         return state
     }
 
+    /// Asks the command for the items of its list.
+    public func items(timeout: TimeInterval) async throws -> ItemLines {
+        ItemLines(output: try await PluginRun(command: self, arguments: SpotAction.items.arguments, timeout: timeout).output())
+    }
+
     public func perform(_ action: SpotAction, timeout: TimeInterval) async throws {
         _ = try await PluginRun(command: self, arguments: action.arguments, timeout: timeout).output()
     }
 
     public func withoutKey() -> PluginCommand {
-        PluginCommand(id: id, name: name, url: url, kind: kind, size: size, symbol: symbol, subtitle: subtitle)
+        PluginCommand(id: id, name: name, url: url, kind: kind, size: size, symbol: symbol, subtitle: subtitle, hasState: hasState, pick: pick)
     }
 }

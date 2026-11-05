@@ -63,7 +63,7 @@ struct SpotCardView: View {
             glyph
             text
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.trailing, entry.kind == .expand || size == .wide ? -SpotTokens.columnGap : 0)
+                .padding(.trailing, entry.kind == .list || size == .wide ? -SpotTokens.columnGap : 0)
             accessory
         }
         .frame(maxHeight: .infinity)
@@ -103,7 +103,7 @@ struct SpotCardView: View {
     @ViewBuilder
     private var accessory: some View {
         switch entry.kind {
-        case .expand:
+        case .list:
             Image(systemName: "chevron.right")
                 .font(.system(size: 9, weight: .semibold))
                 .foregroundStyle(isFilled ? Color.black : Color.white)

@@ -12,6 +12,9 @@ enum SpotTokens {
     static let cell: CGFloat = (gridWidth - columnGap * CGFloat(columns - 1)) / CGFloat(columns)
     static let rowHeight: CGFloat = 62
     static let glyphSize: CGFloat = 36
+    static let listRowHeight: CGFloat = 40
+    static let listRowGap: CGFloat = 6
+    static let listIconSize: CGFloat = 24
     static let halo: CGFloat = 52
     static let backdropBlur: CGFloat = 4
     static let backdropShade = 0.1
@@ -21,6 +24,9 @@ enum SpotTokens {
     static let panelWidth: CGFloat = gridWidth + 2 * halo
     static let panelHeight: CGFloat = 2 * halo + 7 * rowHeight + 6 * rowGap
     static let sheetRect = CGRect(x: halo, y: halo, width: gridWidth, height: panelHeight - 2 * halo)
+
+    /// How far the search field moves down to sit under the title of an open sheet.
+    static let sheetFieldDrop: CGFloat = padding + glyphSize + rowGap
 
     static func width(columns: Int) -> CGFloat {
         CGFloat(columns) * cell + CGFloat(columns - 1) * columnGap

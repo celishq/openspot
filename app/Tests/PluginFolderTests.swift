@@ -70,6 +70,43 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(one.url.lastPathComponent, "one.sh")
     }
 
+    func testAListReadsHowItBehaves() throws {
+        try writePlugin("tools", manifest: """
+        name = "Tools"
+        api = 1
+
+        [[commands]]
+        name = "One"
+        exec = "one.sh"
+        type = "list"
+        state = true
+        pick = "stay"
+        """, files: ["one.sh"])
+
+        let command = try XCTUnwrap(try PluginFolder(url: folder).scan().commands.first)
+
+        XCTAssertEqual(command.kind, .list)
+        XCTAssertTrue(command.hasState)
+        XCTAssertEqual(command.pick, .stay)
+    }
+
+    func testAPickThatIsNotKnownRefusesThePlugin() throws {
+        try writePlugin("tools", manifest: """
+        name = "Tools"
+        api = 1
+
+        [[commands]]
+        name = "One"
+        exec = "one.sh"
+        pick = "later"
+        """, files: ["one.sh"])
+
+        let scan = try PluginFolder(url: folder).scan()
+
+        XCTAssertEqual(scan.plugins, [])
+        XCTAssertEqual(scan.refused.first?.reason, "One has an unknown pick: later")
+    }
+
     func testACommandWithNoLookIsAWideLaunchSpot() throws {
         try writePlugin("tools", manifest: manifest())
 
@@ -79,6 +116,8 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(command.size, .wide)
         XCTAssertEqual(command.symbol, "app")
         XCTAssertNil(command.key)
+        XCTAssertFalse(command.hasState)
+        XCTAssertEqual(command.pick, .close)
     }
 
     func testCommandsOfTwoPluginsHaveDifferentIds() throws {

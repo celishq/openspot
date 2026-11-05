@@ -7,7 +7,6 @@ public struct SpotState: Decodable, Equatable, Sendable {
     public let level: Double?
     public let min: Double?
     public let max: Double?
-    public let items: [SpotItem]?
 
     public init(
         title: String,
@@ -15,8 +14,7 @@ public struct SpotState: Decodable, Equatable, Sendable {
         on: Bool? = nil,
         level: Double? = nil,
         min: Double? = nil,
-        max: Double? = nil,
-        items: [SpotItem]? = nil
+        max: Double? = nil
     ) {
         self.title = title
         self.subtitle = subtitle
@@ -24,7 +22,6 @@ public struct SpotState: Decodable, Equatable, Sendable {
         self.level = level
         self.min = min
         self.max = max
-        self.items = items
     }
 
     public func adjusted(by delta: Double) -> SpotState {
@@ -36,6 +33,6 @@ public struct SpotState: Decodable, Equatable, Sendable {
         let low = self.min ?? 0
         let high = self.max ?? 100
         let next = Swift.min(Swift.max(value, low), high)
-        return SpotState(title: title, subtitle: subtitle, on: on, level: next, min: self.min, max: self.max, items: items)
+        return SpotState(title: title, subtitle: subtitle, on: on, level: next, min: self.min, max: self.max)
     }
 }

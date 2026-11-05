@@ -11,14 +11,6 @@ public struct PluginRun: Sendable {
         self.timeout = timeout
     }
 
-    public init(command: PluginCommand, query: String, timeout: TimeInterval) {
-        self.init(command: command, arguments: [query], timeout: timeout)
-    }
-
-    public func execute() async throws -> RowResult {
-        RowResult(output: try await output())
-    }
-
     /// Runs the plugin with the arguments, and returns what it prints.
     public func output() async throws -> String {
         try await withThrowingTaskGroup(of: String.self) { group in

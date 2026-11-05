@@ -17,10 +17,8 @@ stop() {
 case "$1" in
   state)
     subtitle="Off"
-    off=""
     on=false
     if [ "$running" = 1 ]; then
-      off=',{"title":"Turn off","run":"off"}'
       on=true
       subtitle="Until off"
       if [ "$end" != 0 ]; then
@@ -32,7 +30,16 @@ case "$1" in
         fi
       fi
     fi
-    printf '{"title":"Caffeinate","subtitle":"%s","on":%s,"items":[{"title":"30 minutes","run":"1800"},{"title":"1 hour","run":"3600"},{"title":"2 hours","run":"7200"},{"title":"Until turned off","run":"0"}%s]}\n' "$subtitle" "$on" "$off"
+    printf '{"title":"Caffeinate","subtitle":"%s","on":%s}\n' "$subtitle" "$on"
+    ;;
+  items)
+    echo '{"title":"30 minutes","run":"1800"}'
+    echo '{"title":"1 hour","run":"3600"}'
+    echo '{"title":"2 hours","run":"7200"}'
+    echo '{"title":"Until turned off","run":"0"}'
+    if [ "$running" = 1 ]; then
+      echo '{"title":"Turn off","run":"off"}'
+    fi
     ;;
   off)
     stop

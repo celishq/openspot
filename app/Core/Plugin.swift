@@ -50,6 +50,10 @@ public struct Plugin: Equatable, Sendable {
             }
             key = parsed
         }
+        let pickName = text("pick") ?? ItemPick.close.rawValue
+        guard let pick = ItemPick(rawValue: pickName) else {
+            throw PluginError.manifest("\(name) has an unknown pick: \(pickName)")
+        }
         return PluginCommand(
             id: "\(plugin.lastPathComponent)/\(name)",
             name: name,
@@ -58,7 +62,9 @@ public struct Plugin: Equatable, Sendable {
             size: size,
             symbol: text("symbol") ?? "app",
             subtitle: text("subtitle"),
-            key: key
+            key: key,
+            hasState: table["state"] == .boolean(true),
+            pick: pick
         )
     }
 }
