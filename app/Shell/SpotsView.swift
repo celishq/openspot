@@ -10,11 +10,11 @@ struct SpotsView: View {
     @State private var cardFrames: [String: CGRect] = [:]
     @State private var sheetID: String?
     @State private var sheetOpen = false
-    @State private var fieldInSheet = false
-    @State private var fieldIsFaded = false
     @State private var gridHint = ""
+    @State private var sheetHint = ""
 
     private static let panelSpace = "panel"
+    private static let gridPrompt = "Search spots"
     private static let blurSteps: [(inset: CGFloat, radius: CGFloat)] = [
         (SpotTokens.halo - 30, SpotTokens.backdropBlur / 4),
         (SpotTokens.halo - 20, SpotTokens.backdropBlur / 2),
@@ -28,30 +28,33 @@ struct SpotsView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            ScrollView(showsIndicators: false) {
-                grid
-                    .padding(.horizontal, SpotTokens.halo)
-                    .padding(.top, Self.gridTop)
-                    .padding(.bottom, Self.gridBottom)
+            ZStack(alignment: .topLeading) {
+                ScrollView(showsIndicators: false) {
+                    grid
+                        .padding(.horizontal, SpotTokens.halo)
+                        .padding(.top, Self.gridTop)
+                        .padding(.bottom, Self.gridBottom)
+                }
+                .scrollPosition($scroll)
+                .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in
+                    scrollOffset = offset
+                })
+                .modifier(SpotScrollEdgeTracker(edges: $edges))
+                .mask(edges.gradient)
+                SpotHint(text: gridHint)
+                    .frame(width: SpotTokens.gridWidth)
+                    .offset(x: SpotTokens.halo, y: gridHeight - SpotTokens.halo - SpotTokens.hintHeight)
+                    .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(sheetOpen ? 0 : 1) }
+                    .opacity(model.isShown ? 1 : 0)
+                    .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
             }
-            .scrollPosition($scroll)
-            .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in
-                scrollOffset = offset
-            })
-            .modifier(SpotScrollEdgeTracker(edges: $edges))
-            .mask(edges.gradient)
-            .mask(softEdge(inset: Self.scrollEdgeInset, softness: Self.scrollEdgeSoftness, height: SpotTokens.panelHeight))
-            SpotHint(text: gridHint)
-                .frame(width: SpotTokens.gridWidth)
-                .offset(x: SpotTokens.halo, y: contentHeight - SpotTokens.halo - SpotTokens.hintHeight)
-                .opacity(model.isShown && !sheetOpen ? 1 : 0)
-                .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
+            .mask(softEdge(inset: Self.scrollEdgeInset, softness: Self.scrollEdgeSoftness, height: backdropHeight))
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
                 SpotSheetView(
                     entry: entry,
                     list: model.lists[entry.id] ?? ItemList(),
                     rect: sheetRect,
-                    hint: model.hint,
+                    hint: sheetHint,
                     form: model.form?.entry.id == entry.id ? model.form?.draft : nil,
                     screen: entry.kind == .view ? AnyView(SpotTranslateView(model: model)) : nil,
                     createTitle: model.createAction.map { "\($0.title): \(model.searchText)" },
@@ -63,7 +66,8 @@ struct SpotsView: View {
                         model.closeList()
                     }
                 )
-                .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(sheetOpen ? 1 : 0) }
+                .offset(x: sheetRect.minX - sheetFrame.minX, y: sheetRect.minY - sheetFrame.minY)
+                .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: sheetOpen)) { $0.opacity(sheetOpen ? 1 : 0) }
                 .overlay(alignment: .topLeading) {
                     if let face = cardFace(of: entry) {
                         SpotCardView(
@@ -74,20 +78,20 @@ struct SpotsView: View {
                             onTap: {},
                             onLevel: { _ in }
                         )
-                        .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: sheetOpen)) { $0.opacity(sheetOpen ? 0 : 1) }
+                        .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(sheetOpen ? 0 : 1) }
                         .allowsHitTesting(false)
                     }
                 }
                 .modifier(SpotSheetFrame(
-                    rect: sheetOpen ? sheetRect : openFrame ?? sheetRect,
+                    rect: sheetFrame,
                     radius: sheetOpen ? SpotTokens.radius : SpotTokens.corner(for: entry.size)
                 ))
             }
             searchField
-                .padding(.horizontal, fieldInSheet ? SpotTokens.halo + SpotTokens.padding : SpotTokens.halo)
+                .padding(.horizontal, sheetOpen ? SpotTokens.halo + SpotTokens.padding : SpotTokens.halo)
                 .padding(.top, SpotTokens.halo)
-                .offset(y: fieldInSheet ? SpotTokens.sheetFieldDrop : 0)
-                .opacity(showsSearchField ? 1 : 0)
+                .offset(y: sheetOpen ? SpotTokens.sheetFieldDrop : 0)
+                .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(showsSearchField ? 1 : 0) }
                 .allowsHitTesting(showsSearchField)
             if let menu = model.menu {
                 Color.clear
@@ -123,17 +127,16 @@ struct SpotsView: View {
             searchFocused = shows
         }
         .onChange(of: model.hint, initial: true) { _, hint in
-            if model.openList == nil { gridHint = hint }
+            if model.openList == nil { gridHint = hint } else { sheetHint = hint }
         }
         .onChange(of: model.openList) { _, list in
+            if list != nil { sheetHint = model.hint }
             guard model.sheetMoves else {
                 sheetID = list
                 sheetOpen = list != nil
-                fieldInSheet = list != nil
                 model.allowSheetMotion()
                 return
             }
-            moveField(isOpening: list != nil)
             if let list {
                 sheetID = list
                 DispatchQueue.main.async {
@@ -146,16 +149,6 @@ struct SpotsView: View {
                     if model.openList == nil { sheetID = nil }
                 }
             }
-        }
-    }
-
-    /// Fades the search field out, moves it while unseen and fades it back, so that it never crosses the moving sheet.
-    private func moveField(isOpening: Bool) {
-        let half = (isOpening ? SpotMotion.openDuration : SpotMotion.closeDuration) / 2
-        withAnimation(.easeOut(duration: half)) { fieldIsFaded = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + half) {
-            fieldInSheet = model.openList != nil
-            withAnimation(.easeIn(duration: half)) { fieldIsFaded = false }
         }
     }
 
@@ -205,9 +198,17 @@ struct SpotsView: View {
         return SpotTokens.sheetRect(rows: model.lists[sheetID ?? ""]?.shown.count ?? 0)
     }
 
+    /// Where the sheet is drawn: on its card until it opens. Its content stays at its final place, and the sheet grows over it.
+    private var sheetFrame: CGRect {
+        sheetOpen ? sheetRect : openFrame ?? sheetRect
+    }
+
     private var contentHeight: CGFloat {
-        guard !sheetOpen else { return sheetRect.height + 2 * SpotTokens.halo }
-        return SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0)
+        sheetOpen ? sheetRect.height + 2 * SpotTokens.halo : gridHeight
+    }
+
+    private var gridHeight: CGFloat {
+        SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0)
     }
 
     private var backdropHeight: CGFloat {
@@ -228,8 +229,8 @@ struct SpotsView: View {
 
     /// Whether the search field is drawn. A form and a screen of its own replace it.
     private var showsSearchField: Bool {
-        guard !fieldIsFaded, model.form == nil else { return false }
-        return !(fieldInSheet && model.entries.first { $0.id == sheetID }?.kind == .view)
+        guard model.form == nil else { return false }
+        return !(sheetOpen && model.entries.first { $0.id == sheetID }?.kind == .view)
     }
 
     private var openFrame: CGRect? {
@@ -283,9 +284,10 @@ struct SpotsView: View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .modifier(SpotSecondaryText())
-                .frame(width: fieldInSheet ? SpotTokens.listIconSize : SpotTokens.glyphSize)
-            TextField(searchPrompt, text: Binding(get: { model.searchText }, set: { model.searchText = $0 }), prompt: Text(searchPrompt).foregroundStyle(.white.opacity(SpotTokens.secondaryLight)))
+                .frame(width: sheetOpen ? SpotTokens.listIconSize : SpotTokens.glyphSize)
+            TextField(sheetOpen ? sheetPrompt : Self.gridPrompt, text: Binding(get: { model.searchText }, set: { model.searchText = $0 }), prompt: Text(""))
                 .textFieldStyle(.plain)
+                .background(alignment: .leading) { promptWords }
                 .focused($searchFocused)
                 .onSubmit { model.runSelected() }
                 .onKeyPress(.downArrow) {
@@ -335,17 +337,30 @@ struct SpotsView: View {
         .font(SpotType.input)
         .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
         .padding(.horizontal, SpotTokens.padding)
-        .frame(height: fieldInSheet ? SpotTokens.listRowHeight : SpotTokens.rowHeight)
-        .background(Color.white.opacity(fieldInSheet ? SpotTokens.fill : 0), in: RoundedRectangle(cornerRadius: fieldRadius, style: .continuous))
-        .modifier(SpotGlass(radius: fieldRadius, isBare: fieldInSheet))
+        .frame(height: sheetOpen ? SpotTokens.listRowHeight : SpotTokens.rowHeight)
+        .background(Color.white.opacity(sheetOpen ? SpotTokens.fill : 0), in: RoundedRectangle(cornerRadius: fieldRadius, style: .continuous))
+        .modifier(SpotGlass(radius: fieldRadius, isBare: sheetOpen))
+    }
+
+    /// The empty field's words. One fades out before the other fades in, so that they never overlap.
+    private var promptWords: some View {
+        ZStack(alignment: .leading) {
+            Text(Self.gridPrompt)
+                .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(sheetOpen ? 0 : 1) }
+            Text(sheetPrompt)
+                .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: sheetOpen)) { $0.opacity(sheetOpen ? 1 : 0) }
+        }
+        .foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
+        .lineLimit(1)
+        .opacity(model.searchText.isEmpty ? 1 : 0)
+        .allowsHitTesting(false)
     }
 
     private var fieldRadius: CGFloat {
-        fieldInSheet ? SpotTokens.radius - SpotTokens.padding : SpotTokens.corner(for: .strip)
+        sheetOpen ? SpotTokens.radius - SpotTokens.padding : SpotTokens.corner(for: .strip)
     }
 
-    private var searchPrompt: String {
-        guard fieldInSheet, let entry = model.entries.first(where: { $0.id == sheetID }) else { return "Search spots" }
-        return "Search \(entry.state.title)"
+    private var sheetPrompt: String {
+        "Search \(model.entries.first { $0.id == sheetID }?.state.title ?? "")"
     }
 }
