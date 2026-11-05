@@ -245,6 +245,7 @@ struct SpotsView: View {
                 .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .named(Self.panelSpace)) }, action: { frame in
                     if entry.kind.opensSheet { cardFrames[entry.id] = frame }
                 })
+                .scaleEffect(sheetOpen && entry.id != sheetID ? SpotMotion.pushedScale : 1)
                 .offset(
                     x: CGFloat(placement.column) * (SpotTokens.cell + SpotTokens.columnGap) + pushed.width,
                     y: CGFloat(placement.row) * (SpotTokens.rowHeight + SpotTokens.rowGap) + pushed.height

@@ -14,6 +14,7 @@ enum SpotMotion {
     static let hiddenScale = 1.04
     static let backdropHiddenScale = 1.02
     static let pressedScale = 1.04
+    static let pushedScale = 0.92
     static let pressedGlass = 1.5
     static let press = Animation.spring(duration: 0.2, bounce: 0.2)
     static let follow = Animation.easeOut(duration: 0.2)
