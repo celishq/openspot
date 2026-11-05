@@ -145,8 +145,10 @@ public struct PluginCommand: Equatable, Sendable {
         }
     }
 
-    public func perform(_ action: SpotAction, timeout: TimeInterval) async throws {
-        _ = try await PluginRun(command: self, arguments: action.arguments, timeout: timeout).output()
+    /// Runs an action, and returns the words of the toast that it prints, if any.
+    @discardableResult
+    public func perform(_ action: SpotAction, timeout: TimeInterval) async throws -> String? {
+        try await output(action, timeout: timeout).summary?.value("toast")
     }
 
     public func withoutKey() -> PluginCommand {

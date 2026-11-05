@@ -102,13 +102,15 @@ final class SamplePluginsTests: XCTestCase {
             try? FileManager.default.removeItem(at: folder)
         }
 
-        try await caffeinate.perform(.item(SpotItem(title: "1 minute", run: "60")), timeout: 5)
+        let toast = try await caffeinate.perform(.item(SpotItem(title: "1 minute", run: "60")), timeout: 5)
+        XCTAssertEqual(toast, "Caffeinate is on for 1 minute")
         let started = try await caffeinate.state(timeout: 5)
         let first = try await caffeinate.items(timeout: 5).items.first
         XCTAssertEqual(started.on, true)
         XCTAssertEqual(first?.run, "off")
 
-        try await caffeinate.perform(.item(try XCTUnwrap(first)), timeout: 5)
+        let stopToast = try await caffeinate.perform(.item(try XCTUnwrap(first)), timeout: 5)
+        XCTAssertEqual(stopToast, "Caffeinate is off")
         let stopped = try await caffeinate.state(timeout: 5)
         XCTAssertEqual(stopped.on, false)
     }

@@ -51,16 +51,28 @@ case "$1" in
     case "$2" in
       off)
         stop
+        echo "toast=Caffeinate is off"
         ;;
       0)
         stop
         nohup caffeinate -di >/dev/null 2>&1 &
         echo "$! 0" > "$record"
+        echo "toast=Caffeinate is on until you turn it off"
         ;;
       *)
         stop
         nohup caffeinate -di -t "$2" >/dev/null 2>&1 &
         echo "$! $(( $(date +%s) + $2 ))" > "$record"
+        minutes=$(( $2 / 60 ))
+        if [ "$minutes" -ge 120 ]; then
+          echo "toast=Caffeinate is on for $(( minutes / 60 )) hours"
+        elif [ "$minutes" -eq 60 ]; then
+          echo "toast=Caffeinate is on for 1 hour"
+        elif [ "$minutes" -eq 1 ]; then
+          echo "toast=Caffeinate is on for 1 minute"
+        else
+          echo "toast=Caffeinate is on for $minutes minutes"
+        fi
         ;;
     esac
     ;;

@@ -7,6 +7,7 @@ final class ToastPanel: NSPanel {
     private static let size = NSSize(width: 560, height: 120)
     private static let duration: TimeInterval = 5
     static let failureSymbol = "exclamationmark.triangle.fill"
+    static let confirmSymbol = "checkmark.circle.fill"
 
     private let toast = Toast()
     private var shows = 0

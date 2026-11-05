@@ -80,6 +80,7 @@ final class SpotsModel {
     var dismiss: () -> Void = {}
     var show: () -> Void = {}
     var notify: (String) -> Void = { _ in }
+    var confirm: (String) -> Void = { _ in }
     private var problems: [String] = []
     private var liveAnswer: Task<Void, Never>?
     private(set) var menu: ActionMenu?
@@ -232,7 +233,7 @@ final class SpotsModel {
     private func perform(_ action: SpotAction, on entry: Entry, reloads: Bool = false) {
         Task {
             do {
-                try await entry.command.perform(action, timeout: Self.actionTimeout)
+                if let toast = try await entry.command.perform(action, timeout: Self.actionTimeout) { confirm(toast) }
             } catch {
                 notify("\(entry.state.title) failed. \(Self.reason(error))")
             }

@@ -95,6 +95,8 @@ run=/Applications/Notes.app
 A block is a row when it has `row`, an action when it has `action`, and a form field when it has `field`. The first other
 block says how the spot itself looks. Printing nothing means that there is nothing to show.
 
+To confirm what an action did, print `toast=Saved`. Openspot shows it, also with the panel closed.
+
 ## Lists
 
 A script that prints rows is a list. Each row is one block:

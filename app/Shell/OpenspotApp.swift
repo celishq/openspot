@@ -53,6 +53,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         let toast = ToastPanel.make()
         model.notify = { toast.show($0, symbol: ToastPanel.failureSymbol) }
+        model.confirm = { toast.show($0, symbol: ToastPanel.confirmSymbol) }
         let trigger = CommandTrigger(model: model, toast: toast)
         self.trigger = trigger
         trayBar = SpotTrayBar(model: model)

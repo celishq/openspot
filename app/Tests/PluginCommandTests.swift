@@ -135,6 +135,16 @@ final class PluginCommandTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "on\n")
     }
 
+    func testAnActionCanPrintAToast() async throws {
+        let quiet = try writeCommand(kind: .launch, "echo done > /dev/null")
+        let quietToast = try await quiet.perform(.run, timeout: 5)
+        let loud = try writeCommand(kind: .launch, "echo 'toast=All done'")
+        let loudToast = try await loud.perform(.run, timeout: 5)
+
+        XCTAssertNil(quietToast)
+        XCTAssertEqual(loudToast, "All done")
+    }
+
     func testAFailureCarriesTheLastLineOfItsErrorOutput() async throws {
         let command = try writeCommand(kind: .launch, "echo first >&2\necho 'No screenshot found.' >&2\nexit 3")
 
