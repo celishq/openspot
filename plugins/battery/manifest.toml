@@ -1,0 +1,8 @@
+name = "Battery"
+api = 1
+
+[[metrics]]
+name = "level"
+exec = "battery.sh"
+kind = "gauge"
+refresh = 30

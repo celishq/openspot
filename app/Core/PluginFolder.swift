@@ -38,12 +38,13 @@ public struct PluginFolder: Sendable {
                     ))
                     return command.withoutKey()
                 }
-                result.plugins.append(Plugin(name: plugin.name, api: plugin.api, url: folder, commands: commands))
+                result.plugins.append(Plugin(name: plugin.name, api: plugin.api, url: folder, commands: commands, metrics: plugin.metrics))
             } catch {
                 let reason = (error as? PluginError)?.reason ?? String(describing: error)
                 result.refused.append(Refusal(file: folder.lastPathComponent, reason: reason))
             }
         }
+        result.removeWidgetsWithLostParts()
         return result
     }
 }

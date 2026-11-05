@@ -1,6 +1,6 @@
 import Foundation
 
-/// One executable of a plugin, with the look its spot takes.
+/// One executable of a plugin, with the look its spot takes. A widget runs nothing, and places metrics in a layout.
 public struct PluginCommand: Equatable, Sendable {
     public static let lastRank = Int.max
 
@@ -20,6 +20,9 @@ public struct PluginCommand: Equatable, Sendable {
     public let keepsRecent: Bool
     public let primary: String?
     public let actions: [CommandAction]
+    public let layout: WidgetLayout?
+    public let places: [String]
+    public let opens: String?
 
     public init(
         id: String,
@@ -37,7 +40,10 @@ public struct PluginCommand: Equatable, Sendable {
         search: ItemSearch = .local,
         keepsRecent: Bool = true,
         primary: String? = nil,
-        actions: [CommandAction] = []
+        actions: [CommandAction] = [],
+        layout: WidgetLayout? = nil,
+        places: [String] = [],
+        opens: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -55,6 +61,9 @@ public struct PluginCommand: Equatable, Sendable {
         self.keepsRecent = keepsRecent
         self.primary = primary
         self.actions = actions
+        self.layout = layout
+        self.places = places
+        self.opens = opens
     }
 
     /// The state the manifest gives, shown before the command answers or when it cannot.
@@ -65,7 +74,7 @@ public struct PluginCommand: Equatable, Sendable {
     /// Whether the command prints a state. Toggles and sliders do, a launch spot does not, and a list says so.
     public var readsState: Bool {
         switch kind {
-        case .launch: false
+        case .launch, .widget: false
         case .toggle, .slider: true
         case .list: hasState
         }
@@ -112,6 +121,7 @@ public struct PluginCommand: Equatable, Sendable {
         case .toggle: return "Toggle"
         case .list: return "Open"
         case .slider: return nil
+        case .widget: return opens == nil ? nil : "Open"
         }
     }
 
@@ -120,6 +130,6 @@ public struct PluginCommand: Equatable, Sendable {
     }
 
     public func withoutKey() -> PluginCommand {
-        PluginCommand(id: id, name: name, url: url, kind: kind, size: size, symbol: symbol, subtitle: subtitle, hasState: hasState, pick: pick, isGlobal: isGlobal, search: search, keepsRecent: keepsRecent, primary: primary, actions: actions)
+        PluginCommand(id: id, name: name, url: url, kind: kind, size: size, symbol: symbol, subtitle: subtitle, hasState: hasState, pick: pick, isGlobal: isGlobal, rank: rank, search: search, keepsRecent: keepsRecent, primary: primary, actions: actions, layout: layout, places: places, opens: opens)
     }
 }

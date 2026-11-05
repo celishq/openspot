@@ -1,0 +1,12 @@
+name = "Overview"
+api = 1
+
+[[widgets]]
+name = "Overview"
+layout = "hero"
+places = ["agents/list", "battery/level", "system/disk", "system/cpu"]
+
+[[widgets]]
+name = "Status"
+layout = "pair"
+places = ["agents/running", "battery/level"]

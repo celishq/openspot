@@ -21,6 +21,7 @@ enum SpotTokens {
     static let menuRowHeight: CGFloat = 32
     static let menuRowGap: CGFloat = 2
     static let menuPadding: CGFloat = 8
+    static let placeGap: CGFloat = 8
     static let formLabelHeight: CGFloat = 14
     static let formLabelGap: CGFloat = 4
     static let formFieldGap: CGFloat = 12
@@ -46,6 +47,19 @@ enum SpotTokens {
 
     static func height(rows: Int) -> CGFloat {
         CGFloat(rows) * rowHeight + CGFloat(rows - 1) * rowGap
+    }
+
+    /// Where a place lies inside a widget of this many rows, whose inner room has the same four columns.
+    static func placeRect(_ slot: WidgetLayout.Slot, rows: Int) -> CGRect {
+        let inner = CGSize(width: gridWidth - 2 * padding, height: height(rows: rows) - 2 * padding)
+        let cellWidth = (inner.width - CGFloat(columns - 1) * placeGap) / CGFloat(columns)
+        let cellHeight = (inner.height - CGFloat(rows - 1) * placeGap) / CGFloat(rows)
+        return CGRect(
+            x: CGFloat(slot.column) * (cellWidth + placeGap),
+            y: CGFloat(slot.row) * (cellHeight + placeGap),
+            width: CGFloat(slot.columns) * cellWidth + CGFloat(slot.columns - 1) * placeGap,
+            height: CGFloat(slot.rows) * cellHeight + CGFloat(slot.rows - 1) * placeGap
+        )
     }
 
     /// How far a sheet's rows start below its top edge.

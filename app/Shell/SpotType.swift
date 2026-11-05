@@ -7,5 +7,7 @@ enum SpotType {
     static let detail = Font.system(size: 11)
     static let input = Font.system(size: 14)
     static let action = Font.system(size: 11, weight: .medium)
+    static let metric = Font.system(size: 26, weight: .medium)
+    static let small = Font.system(size: 10, weight: .medium)
     static let lineGap: CGFloat = 1
 }

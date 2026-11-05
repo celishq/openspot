@@ -6,12 +6,14 @@ public struct Plugin: Equatable, Sendable {
     public let api: Int
     public let url: URL
     public let commands: [PluginCommand]
+    public let metrics: [PluginMetric]
 
-    public init(name: String, api: Int, url: URL, commands: [PluginCommand]) {
+    public init(name: String, api: Int, url: URL, commands: [PluginCommand], metrics: [PluginMetric] = []) {
         self.name = name
         self.api = api
         self.url = url
         self.commands = commands
+        self.metrics = metrics
     }
 
     /// Reads a plugin from its manifest text. Throws a fault that names what is wrong.
@@ -27,7 +29,60 @@ public struct Plugin: Equatable, Sendable {
         if let lost = actions.first(where: { action in !commands.contains { $0.name == action.command } }) {
             throw PluginError.manifest("An action names no command called \(lost.command)")
         }
-        self.init(name: name, api: api, url: url, commands: commands)
+        let widgets = try (document.arrays["widgets"] ?? []).map { try Self.widget($0, plugin: url) }
+        let metrics = try (document.arrays["metrics"] ?? []).map { try Self.metric($0, plugin: url) }
+        self.init(name: name, api: api, url: url, commands: commands + widgets, metrics: metrics)
+    }
+
+    private static func metric(_ table: [String: TomlDocument.Value], plugin: URL) throws -> PluginMetric {
+        guard case .string(let name)? = table["name"] else { throw PluginError.manifest("a metric needs a name") }
+        guard case .string(let exec)? = table["exec"] else { throw PluginError.manifest("\(name) needs an exec") }
+        let url = plugin.appendingPathComponent(exec)
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            throw PluginError.manifest("\(name) needs a file named \(exec)")
+        }
+        guard case .string(let kindName)? = table["kind"], let kind = MetricKind(rawValue: kindName) else {
+            throw PluginError.manifest("\(name) needs a kind: value, gauge, trend, rows or status")
+        }
+        var refresh = PluginMetric.standardRefresh
+        if let value = table["refresh"] {
+            guard case .integer(let seconds) = value, seconds > 0 else {
+                throw PluginError.manifest("\(name) needs a number of seconds as its refresh")
+            }
+            refresh = TimeInterval(seconds)
+        }
+        return PluginMetric(id: "\(plugin.lastPathComponent)/\(name)", name: name, url: url, kind: kind, refresh: refresh)
+    }
+
+    private static func widget(_ table: [String: TomlDocument.Value], plugin: URL) throws -> PluginCommand {
+        guard case .string(let name)? = table["name"] else { throw PluginError.manifest("a widget needs a name") }
+        guard case .string(let layoutName)? = table["layout"] else { throw PluginError.manifest("\(name) needs a layout") }
+        guard let layout = WidgetLayout(name: layoutName) else {
+            throw PluginError.manifest("\(name) has an unknown layout: \(layoutName). Use hero, quad, pair or row")
+        }
+        guard case .strings(let places)? = table["places"], places.count == layout.slots.count else {
+            throw PluginError.manifest("\(name) needs \(layout.slots.count) places for the \(layoutName) layout")
+        }
+        var key: CommandKey?
+        if case .string(let keyName)? = table["key"] {
+            guard let parsed = CommandKey(name: keyName) else {
+                throw PluginError.manifest("\(name) has an unknown key: \(keyName)")
+            }
+            key = parsed
+        }
+        var opens: String?
+        if case .string(let target)? = table["opens"] { opens = target }
+        return PluginCommand(
+            id: "\(plugin.lastPathComponent)/\(name)",
+            name: name,
+            url: plugin,
+            kind: .widget,
+            size: layout.size,
+            key: key,
+            layout: layout,
+            places: places,
+            opens: opens
+        )
     }
 
     private static func action(_ table: [String: TomlDocument.Value]) throws -> (command: String, action: CommandAction) {
@@ -78,7 +133,7 @@ public struct Plugin: Equatable, Sendable {
             throw PluginError.manifest("\(name) needs a file named \(exec)")
         }
         let typeName = text("type") ?? SpotKind.launch.rawValue
-        guard let kind = SpotKind(rawValue: typeName) else {
+        guard let kind = SpotKind(rawValue: typeName), kind != .widget else {
             throw PluginError.manifest("\(name) has an unknown type: \(typeName)")
         }
         let sizeName = text("size") ?? "wide"

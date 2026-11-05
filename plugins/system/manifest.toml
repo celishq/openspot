@@ -1,0 +1,14 @@
+name = "System"
+api = 1
+
+[[metrics]]
+name = "cpu"
+exec = "system.sh"
+kind = "trend"
+refresh = 5
+
+[[metrics]]
+name = "disk"
+exec = "system.sh"
+kind = "gauge"
+refresh = 300

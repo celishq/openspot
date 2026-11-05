@@ -1,13 +1,20 @@
 import Foundation
 
 public struct PluginRun: Sendable {
-    public let command: PluginCommand
+    public let url: URL
     public let arguments: [String]
     public let timeout: TimeInterval
     public let input: String?
 
     public init(command: PluginCommand, arguments: [String], timeout: TimeInterval, input: String? = nil) {
-        self.command = command
+        url = command.url
+        self.arguments = arguments
+        self.timeout = timeout
+        self.input = input
+    }
+
+    public init(url: URL, arguments: [String], timeout: TimeInterval, input: String? = nil) {
+        self.url = url
         self.arguments = arguments
         self.timeout = timeout
         self.input = input
@@ -29,7 +36,11 @@ public struct PluginRun: Sendable {
 
     private func runProcess() async throws -> String {
         let process = Process()
-        process.executableURL = command.url
+        process.executableURL = url
+        process.environment = ProcessInfo.processInfo.environment.merging(
+            ["OPENSPOT_APP": Bundle.main.executablePath ?? ""],
+            uniquingKeysWith: { _, new in new }
+        )
         process.arguments = arguments
         let inputPipe = input.map { _ in Pipe() }
         process.standardInput = inputPipe ?? FileHandle.nullDevice

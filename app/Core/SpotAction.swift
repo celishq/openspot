@@ -30,6 +30,10 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: ["form", action.id] + (item.map { [$0.run] } ?? []))
     }
 
+    public static func metric(_ name: String) -> SpotAction {
+        SpotAction(arguments: ["metric", name])
+    }
+
     public static func level(_ value: Double) -> SpotAction {
         SpotAction(arguments: [String(Int(value.rounded()))])
     }

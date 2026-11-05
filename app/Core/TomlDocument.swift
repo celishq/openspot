@@ -1,11 +1,12 @@
 import Foundation
 
-/// The part of TOML a plugin manifest uses: top-level pairs and arrays of tables, with strings, integers and booleans.
+/// The part of TOML a plugin manifest uses: top-level pairs and arrays of tables, with strings, integers, booleans and one-line lists of strings.
 public struct TomlDocument: Equatable, Sendable {
     public enum Value: Equatable, Sendable {
         case string(String)
         case integer(Int)
         case boolean(Bool)
+        case strings([String])
     }
 
     public private(set) var values: [String: Value] = [:]
@@ -44,6 +45,7 @@ public struct TomlDocument: Equatable, Sendable {
     private static func value(_ source: Substring) -> Value? {
         let text = source.trimmingCharacters(in: .whitespaces)
         if text.hasPrefix("\"") { return string(text) }
+        if text.hasPrefix("[") { return strings(text) }
         let bare = (text.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false).first ?? "")
             .trimmingCharacters(in: .whitespaces)
         switch bare {
@@ -54,9 +56,36 @@ public struct TomlDocument: Equatable, Sendable {
     }
 
     private static func string(_ text: String) -> Value? {
+        var rest = text.dropFirst()
+        guard let result = quoted(&rest) else { return nil }
+        let tail = rest.trimmingCharacters(in: .whitespaces)
+        return tail.isEmpty || tail.hasPrefix("#") ? .string(result) : nil
+    }
+
+    private static func strings(_ text: String) -> Value? {
+        var result: [String] = []
+        var rest = text.dropFirst()
+        while let character = rest.popFirst() {
+            switch character {
+            case " ", "\t", ",":
+                continue
+            case "\"":
+                guard let item = quoted(&rest) else { return nil }
+                result.append(item)
+            case "]":
+                let tail = rest.trimmingCharacters(in: .whitespaces)
+                return tail.isEmpty || tail.hasPrefix("#") ? .strings(result) : nil
+            default:
+                return nil
+            }
+        }
+        return nil
+    }
+
+    /// Reads up to the closing quote, and leaves what follows it.
+    private static func quoted(_ rest: inout Substring) -> String? {
         var result = ""
         var escaped = false
-        var rest = text.dropFirst()
         while let character = rest.popFirst() {
             if escaped {
                 switch character {
@@ -69,8 +98,7 @@ public struct TomlDocument: Equatable, Sendable {
             } else if character == "\\" {
                 escaped = true
             } else if character == "\"" {
-                let tail = rest.trimmingCharacters(in: .whitespaces)
-                return tail.isEmpty || tail.hasPrefix("#") ? .string(result) : nil
+                return result
             } else {
                 result.append(character)
             }

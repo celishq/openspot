@@ -1,0 +1,28 @@
+import Foundation
+
+/// One piece of live data from a plugin, named by its folder and name, such as battery/level.
+public struct PluginMetric: Equatable, Sendable {
+    public static let standardRefresh: TimeInterval = 60
+
+    public let id: String
+    public let name: String
+    public let url: URL
+    public let kind: MetricKind
+    public let refresh: TimeInterval
+
+    public init(id: String, name: String, url: URL, kind: MetricKind, refresh: TimeInterval = PluginMetric.standardRefresh) {
+        self.id = id
+        self.name = name
+        self.url = url
+        self.kind = kind
+        self.refresh = refresh
+    }
+
+    public func read(timeout: TimeInterval) async throws -> MetricValue {
+        let output = try await PluginRun(url: url, arguments: SpotAction.metric(name).arguments, timeout: timeout).output()
+        guard let value = try? JSONDecoder().decode(MetricValue.self, from: Data(output.utf8)) else {
+            throw PluginError.badMetric
+        }
+        return value
+    }
+}

@@ -2,11 +2,12 @@ import SwiftUI
 import OpenspotCore
 
 /// A spot: a glyph, then a title with a detail, then an accessory. A small card shows the glyph alone,
-/// and a slider shows its title over its track.
+/// a slider shows its title over its track, and a widget shows its places.
 struct SpotCardView: View {
     let entry: SpotsModel.Entry
     let size: SpotSize
     let isSelected: Bool
+    let readings: [String: MetricReading]
     let onTap: () -> Void
     let onLevel: (Double) -> Void
     @State private var isHovered = false
@@ -37,6 +38,8 @@ struct SpotCardView: View {
     private var content: some View {
         if entry.kind == .slider {
             sliderBody
+        } else if let layout = entry.command.layout {
+            SpotWidgetView(layout: layout, places: entry.command.places, readings: readings)
         } else if size == .small {
             glyph.frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if size.rows > 1 {
@@ -51,7 +54,7 @@ struct SpotCardView: View {
     }
 
     private var showsPress: Bool {
-        isPressed && entry.kind != .slider
+        isPressed && entry.kind != .slider && (entry.kind != .widget || entry.command.opens != nil)
     }
 
     private var isFilled: Bool {
@@ -117,7 +120,7 @@ struct SpotCardView: View {
                     .padding(.vertical, 6)
                     .background(Color.white.opacity(0.25), in: Capsule())
             }
-        case .toggle, .slider:
+        case .toggle, .slider, .widget:
             EmptyView()
         }
     }

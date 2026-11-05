@@ -27,6 +27,18 @@ final class SpotGridTests: XCTestCase {
         ])
     }
 
+    func testALargeSpotKeepsItsWholeShelf() {
+        XCTAssertEqual(SpotGrid().place([.small, .large, .small]), [
+            SpotPlacement(index: 0, row: 0, column: 0, size: .wide),
+            SpotPlacement(index: 1, row: 1, column: 0, size: .large),
+            SpotPlacement(index: 2, row: 0, column: 2, size: .wide)
+        ])
+    }
+
+    func testALargeSpotAloneKeepsItsSize() {
+        XCTAssertEqual(sizes([.large]), [.large])
+    }
+
     func testNoSpotsGivesNoPlacements() {
         XCTAssertEqual(SpotGrid().place([]), [])
     }
@@ -81,7 +93,7 @@ final class SpotGridTests: XCTestCase {
     }
 
     func testEveryCombinationFillsEveryRowWithoutOverlap() {
-        let all: [SpotSize] = [.small, .wide, .square, .strip]
+        let all: [SpotSize] = [.small, .wide, .square, .strip, .large]
         var combinations: [[SpotSize]] = [[]]
         for _ in 0..<6 {
             combinations += combinations.filter { $0.count == combinations.last!.count }.flatMap { base in all.map { base + [$0] } }

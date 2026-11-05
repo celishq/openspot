@@ -14,8 +14,24 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Files", "Links", "Paste Screenshot", "Snippets"])
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "f", "l", "v", "n"])
+        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Files", "Links", "Overview", "Status", "Paste Screenshot", "Snippets"])
+        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "f", "l", nil, nil, "v", "n"])
+    }
+
+    func testEveryMetricPrintsAValue() async throws {
+        for metric in try scan.metrics {
+            _ = try await metric.read(timeout: 10)
+            XCTAssertTrue(FileManager.default.isExecutableFile(atPath: metric.url.path), metric.id)
+        }
+    }
+
+    func testTheCPUTrendGrowsWithEachRead() async throws {
+        let cpu = try XCTUnwrap(try scan.metrics.first { $0.id == "system/cpu" })
+
+        let first = try await cpu.read(timeout: 10).points?.count ?? 0
+        let second = try await cpu.read(timeout: 10).points?.count ?? 0
+
+        XCTAssertGreaterThanOrEqual(second, min(first + 1, 30))
     }
 
     func testEveryCommandCanBeRun() throws {

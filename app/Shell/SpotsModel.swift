@@ -51,6 +51,7 @@ final class SpotsModel {
     private static let itemsTimeout: TimeInterval = 10
     private static let globalItemLimit = 6
     private static let liveTimeout: TimeInterval = 10
+    private static let metricTick: UInt64 = 1_000_000_000
 
     var entries: [Entry] = [] {
         didSet { updateVisible() }
@@ -71,7 +72,11 @@ final class SpotsModel {
             if !query.isEmpty { updateVisible() }
         }
     }
-    var isShown = false
+    var isShown = false {
+        didSet {
+            if isShown != oldValue { updateMetricLoop() }
+        }
+    }
     var dismiss: () -> Void = {}
     var show: () -> Void = {}
     var notify: (String) -> Void = { _ in }
@@ -80,6 +85,10 @@ final class SpotsModel {
     private(set) var menu: ActionMenu?
     private var menuTarget: Target?
     private(set) var form: FormSession?
+    private(set) var readings: [String: MetricReading] = [:]
+    private var metrics: [PluginMetric] = []
+    private var metricSchedule = MetricSchedule()
+    private var metricLoop: Task<Void, Never>?
 
     /// Reads the plugin folder again, and asks each plugin for its state.
     func reload() async {
@@ -100,10 +109,42 @@ final class SpotsModel {
             }
         }
         self.entries = entries
+        metrics = scan.metrics
+        for metric in metrics where readings[metric.id]?.kind != metric.kind {
+            readings[metric.id] = MetricReading(kind: metric.kind)
+        }
+        readDueMetrics()
         if problems != self.problems, !problems.isEmpty {
             notify(problems.joined(separator: " "))
         }
         self.problems = problems
+    }
+
+    /// Keeps the metrics fresh only while the panel shows them.
+    private func updateMetricLoop() {
+        metricLoop?.cancel()
+        guard isShown else { return }
+        metricLoop = Task {
+            while !Task.isCancelled {
+                readDueMetrics()
+                try? await Task.sleep(nanoseconds: Self.metricTick)
+            }
+        }
+    }
+
+    /// Reads each metric that a widget places and whose refresh time has passed.
+    private func readDueMetrics() {
+        let placed = Set(entries.flatMap(\.command.places))
+        for metric in metricSchedule.takeDue(metrics.filter { placed.contains($0.id) }, now: Date()) {
+            Task {
+                do {
+                    let value = try await metric.read(timeout: Self.itemsTimeout)
+                    readings[metric.id]?.take(value)
+                } catch {
+                    readings[metric.id]?.markStale()
+                }
+            }
+        }
     }
 
     /// Asks a list command for its items, and shows them when they arrive.
@@ -276,6 +317,8 @@ final class SpotsModel {
             }
         case .slider:
             break
+        case .widget:
+            if let opens = entry.command.opens { press(opens) }
         }
     }
 

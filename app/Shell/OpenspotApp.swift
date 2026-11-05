@@ -6,11 +6,26 @@ import OpenspotCore
 @MainActor
 final class OpenspotApp: NSObject, NSApplicationDelegate {
     static func main() {
+        if let flag = CommandLine.arguments.firstIndex(of: "--check") {
+            runCheck(path: CommandLine.arguments.dropFirst(flag + 1).first)
+        }
         let app = NSApplication.shared
         let delegate = OpenspotApp()
         app.delegate = delegate
         app.setActivationPolicy(.accessory)
         app.run()
+    }
+
+    /// Reports the faults of a plugins folder, or of the standard one, and exits with 1 when there are any.
+    private static func runCheck(path: String?) -> Never {
+        let folder = path.map { PluginFolder(url: URL(fileURLWithPath: $0, isDirectory: true)) } ?? .standard()
+        Task {
+            let faults = await PluginCheck(folder: folder).faults()
+            faults.forEach { print($0) }
+            print(faults.isEmpty ? "No faults in \(folder.url.path)." : "\(faults.count) faults in \(folder.url.path).")
+            exit(faults.isEmpty ? 0 : 1)
+        }
+        dispatchMain()
     }
 
     private var statusItem: NSStatusItem?

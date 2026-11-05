@@ -16,6 +16,9 @@ public struct SpotGrid: Sendable {
             if first.size == .strip {
                 placements.append(SpotPlacement(index: first.index, row: row, column: 0, size: .strip))
                 row += 1
+            } else if first.size == .large {
+                placements.append(SpotPlacement(index: first.index, row: row, column: 0, size: .large))
+                row += 2
             } else if first.size.rows > 1 {
                 row += placeSquare(first, in: &queue, row: row, placements: &placements)
             } else {
