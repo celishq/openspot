@@ -18,6 +18,12 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(menu.rows.map(\.keyLabel), ["⏎", "⌘⏎", "", ""])
     }
 
+    func testAnItemCanHideAnAction() throws {
+        let menu = try XCTUnwrap(ActionMenu(command: command(), item: SpotItem(title: "One", run: "1", hides: ["paste"])))
+
+        XCTAssertEqual(menu.rows.map(\.title), ["Copy", "Delete", "New"])
+    }
+
     func testWithNoItemOnlyTheCommandsActionsShow() throws {
         let menu = try XCTUnwrap(ActionMenu(command: command(), item: nil))
 

@@ -1,9 +1,9 @@
-name = "Quicklinks"
+name = "Links"
 api = 1
 
 [[commands]]
-name = "Quicklinks"
-exec = "quicklinks.sh"
+name = "Links"
+exec = "links.sh"
 type = "list"
 global = true
 symbol = "link"
@@ -11,30 +11,37 @@ subtitle = "Open a link"
 key = "l"
 
 [[actions]]
-command = "Quicklinks"
+command = "Links"
 id = "copy"
-title = "Copy link"
+title = "Copy"
 key = "cmd+return"
 after = "close"
 
 [[actions]]
-command = "Quicklinks"
+command = "Links"
+id = "reveal"
+title = "Show in Finder"
+key = "cmd+r"
+after = "close"
+
+[[actions]]
+command = "Links"
 id = "edit"
 title = "Edit"
 key = "cmd+e"
 form = true
 
 [[actions]]
-command = "Quicklinks"
+command = "Links"
 id = "delete"
 title = "Delete"
 key = "cmd+backspace"
 confirm = "Press again to delete"
 
 [[actions]]
-command = "Quicklinks"
+command = "Links"
 id = "new"
-title = "New quicklink"
+title = "New link"
 key = "cmd+n"
 scope = "command"
 form = true

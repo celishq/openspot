@@ -36,16 +36,18 @@ struct SpotFormView: View {
     private func control(for field: ItemForm.Field) -> some View {
         switch field.type {
         case .text:
-            TextField(
-                field.label,
-                text: value(of: field),
-                prompt: field.placeholder.map { Text($0).foregroundStyle(.white.opacity(SpotTokens.secondaryLight)) }
-            )
-            .labelsHidden()
-            .textFieldStyle(.plain)
+            HStack(spacing: 0) {
+                TextField(
+                    field.label,
+                    text: value(of: field),
+                    prompt: Text(field.placeholder ?? field.label).foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
+                )
+                .labelsHidden()
+                .textFieldStyle(.plain)
+                .focused($focus, equals: field.name)
+            }
             .font(SpotType.body)
             .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
-            .focused($focus, equals: field.name)
             .padding(.horizontal, SpotTokens.padding)
             .frame(height: SpotTokens.listRowHeight)
             .background(Color.white.opacity(0.12), in: shape)
