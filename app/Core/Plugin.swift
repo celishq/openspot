@@ -54,6 +54,14 @@ public struct Plugin: Equatable, Sendable {
         guard let pick = ItemPick(rawValue: pickName) else {
             throw PluginError.manifest("\(name) has an unknown pick: \(pickName)")
         }
+        let searchName = text("search") ?? ItemSearch.local.rawValue
+        guard let search = ItemSearch(rawValue: searchName) else {
+            throw PluginError.manifest("\(name) has an unknown search: \(searchName)")
+        }
+        let isGlobal = table["global"] == .boolean(true)
+        guard !isGlobal || search == .local else {
+            throw PluginError.manifest("\(name) cannot join the main search, because it searches live")
+        }
         return PluginCommand(
             id: "\(plugin.lastPathComponent)/\(name)",
             name: name,
@@ -65,7 +73,8 @@ public struct Plugin: Equatable, Sendable {
             key: key,
             hasState: table["state"] == .boolean(true),
             pick: pick,
-            isGlobal: table["global"] == .boolean(true)
+            isGlobal: isGlobal,
+            search: search
         )
     }
 }

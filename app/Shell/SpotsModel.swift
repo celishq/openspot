@@ -39,6 +39,7 @@ final class SpotsModel {
     private static let actionTimeout: TimeInterval = 30
     private static let itemsTimeout: TimeInterval = 10
     private static let globalItemLimit = 6
+    private static let liveTimeout: TimeInterval = 10
 
     var entries: [Entry] = [] {
         didSet { updateVisible() }
@@ -62,6 +63,7 @@ final class SpotsModel {
     var show: () -> Void = {}
     var notify: (String) -> Void = { _ in }
     private var problems: [String] = []
+    private var liveAnswer: Task<Void, Never>?
 
     /// Reads the plugin folder again, and asks each plugin for its state.
     func reload() async {
@@ -91,8 +93,9 @@ final class SpotsModel {
     /// Asks a list command for its items, and shows them when they arrive.
     private func loadItems(of command: PluginCommand) {
         if lists[command.id] == nil {
-            lists[command.id] = ItemList(recent: UserDefaults.standard.stringArray(forKey: Self.recentKey(command.id)) ?? [])
+            lists[command.id] = ItemList(recent: UserDefaults.standard.stringArray(forKey: Self.recentKey(command.id)) ?? [], search: command.search)
         }
+        guard command.search == .local else { return }
         Task {
             do {
                 let lines = try await command.items(timeout: Self.itemsTimeout)
@@ -102,6 +105,25 @@ final class SpotsModel {
                 }
             } catch {
                 notify("\(command.name) failed. \(Self.reason(error))")
+            }
+        }
+    }
+
+    /// Asks a live list about its current search. A newer search stops the older one.
+    private func askLive(_ command: PluginCommand) {
+        guard let query = lists[command.id]?.query else { return }
+        liveAnswer?.cancel()
+        liveAnswer = Task {
+            do {
+                let lines = try await command.items(query: query, timeout: Self.liveTimeout)
+                guard !Task.isCancelled else { return }
+                lists[command.id]?.answer(lines.items, to: query)
+            } catch {
+                guard !Task.isCancelled else { return }
+                lists[command.id]?.stopWaiting(for: query)
+                if error as? PluginError != .timedOut {
+                    notify("\(command.name) failed. \(Self.reason(error))")
+                }
             }
         }
     }
@@ -267,8 +289,9 @@ final class SpotsModel {
     var searchText: String {
         get { openItems?.query ?? query }
         set {
-            if let openList {
-                lists[openList]?.search(newValue)
+            if let entry = openEntry {
+                lists[entry.id]?.search(newValue)
+                if entry.command.search == .live { askLive(entry.command) }
             } else {
                 query = newValue
             }
@@ -290,10 +313,12 @@ final class SpotsModel {
     private func open(_ id: String) {
         openList = id
         lists[id]?.search("")
+        if let entry = openEntry, entry.command.search == .live { askLive(entry.command) }
     }
 
     func closeList() {
         openList = nil
+        liveAnswer?.cancel()
     }
 
     func moveItem(by step: Int) {

@@ -92,6 +92,41 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertTrue(command.isGlobal)
     }
 
+    func testAListCanSearchLive() throws {
+        try writePlugin("tools", manifest: """
+        name = "Tools"
+        api = 1
+
+        [[commands]]
+        name = "One"
+        exec = "one.sh"
+        type = "list"
+        search = "live"
+        """, files: ["one.sh"])
+
+        let command = try XCTUnwrap(try PluginFolder(url: folder).scan().commands.first)
+
+        XCTAssertEqual(command.search, .live)
+    }
+
+    func testALiveListCannotJoinTheMainSearch() throws {
+        try writePlugin("tools", manifest: """
+        name = "Tools"
+        api = 1
+
+        [[commands]]
+        name = "One"
+        exec = "one.sh"
+        type = "list"
+        search = "live"
+        global = true
+        """, files: ["one.sh"])
+
+        let scan = try PluginFolder(url: folder).scan()
+
+        XCTAssertEqual(scan.refused.first?.reason, "One cannot join the main search, because it searches live")
+    }
+
     func testAPickThatIsNotKnownRefusesThePlugin() throws {
         try writePlugin("tools", manifest: """
         name = "Tools"
@@ -121,6 +156,7 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertFalse(command.hasState)
         XCTAssertEqual(command.pick, .close)
         XCTAssertFalse(command.isGlobal)
+        XCTAssertEqual(command.search, .local)
     }
 
     func testCommandsOfTwoPluginsHaveDifferentIds() throws {

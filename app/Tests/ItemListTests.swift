@@ -59,6 +59,45 @@ final class ItemListTests: XCTestCase {
         XCTAssertEqual(list.shown.map(\.title), ["Notes"])
     }
 
+    func testALiveListShowsWhatThePluginAnswersWithoutFilteringIt() {
+        var list = ItemList(search: .live)
+        list.search("rep")
+
+        list.answer(items("Annual", "Report"), to: "rep")
+
+        XCTAssertEqual(list.shown.map(\.title), ["Annual", "Report"])
+    }
+
+    func testALiveListDropsAnAnswerToAnOlderSearch() {
+        var list = ItemList(search: .live)
+        list.search("re")
+        list.search("rep")
+
+        list.answer(items("Old"), to: "re")
+
+        XCTAssertEqual(list.shown, [])
+        XCTAssertTrue(list.isWaiting)
+    }
+
+    func testALiveListKeepsItsRowsWhileItWaits() {
+        var list = ItemList(search: .live)
+        list.search("re")
+        list.answer(items("Report"), to: "re")
+
+        list.search("rep")
+
+        XCTAssertEqual(list.shown.map(\.title), ["Report"])
+        XCTAssertTrue(list.isWaiting)
+    }
+
+    func testALocalListNeverWaits() {
+        var list = ItemList(items: items("Safari"))
+
+        list.search("s")
+
+        XCTAssertFalse(list.isWaiting)
+    }
+
     func testAnEmptyListSelectsNothing() {
         XCTAssertNil(ItemList().selectedItem)
     }

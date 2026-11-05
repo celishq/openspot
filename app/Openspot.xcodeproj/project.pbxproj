@@ -64,6 +64,7 @@
 		F2F3D3EACF4CB9697FF2382C /* PluginFolder.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA7CB04E1CE0920F52CDF971 /* PluginFolder.swift */; };
 		F505A05762885E185C424A0C /* PluginError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 683D2D86A8A9A624A7D47068 /* PluginError.swift */; };
 		FA4ED8B79F8DFA86AC2554FA /* SpotBlur.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D80A3DB1AFC952F20544685 /* SpotBlur.swift */; };
+		FA923233777F0F8051589ACD /* ItemSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FDCB8D128DEE15211EA303B /* ItemSearch.swift */; };
 		FDFCACDD84F257DFC0447468 /* SpotScrollEdges.swift in Sources */ = {isa = PBXBuildFile; fileRef = 129273D774E702C4EB45C7C5 /* SpotScrollEdges.swift */; };
 		FECF3F5767FC720A3CAC51B6 /* TomlDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC5E511C98D9A3593A540A9C /* TomlDocument.swift */; };
 /* End PBXBuildFile section */
@@ -102,6 +103,7 @@
 		29D87E637245D924392B0CBD /* SpotCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCardView.swift; sourceTree = "<group>"; };
 		2BFDC9AC30BD6976E037E11A /* CommandKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandKey.swift; sourceTree = "<group>"; };
 		2F2BD5DCCC5B7B02AFC6082F /* TomlDocumentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TomlDocumentTests.swift; sourceTree = "<group>"; };
+		2FDCB8D128DEE15211EA303B /* ItemSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemSearch.swift; sourceTree = "<group>"; };
 		318EF34C019A7228CFC97E67 /* SpotPlacementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotPlacementTests.swift; sourceTree = "<group>"; };
 		384FA0117E3FA9189E3F0449 /* SpotRim.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRim.swift; sourceTree = "<group>"; };
 		3E48C3F732BA3CF7B2CE37BA /* Plugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Plugin.swift; sourceTree = "<group>"; };
@@ -249,6 +251,7 @@
 				5C4493A010EE135AFFD2145C /* ItemLines.swift */,
 				F8C11359EC58C3ADD300C79C /* ItemList.swift */,
 				885F30718D7143D315BB77E4 /* ItemPick.swift */,
+				2FDCB8D128DEE15211EA303B /* ItemSearch.swift */,
 				141BB519D46B81785E8218B3 /* OpenspotVersion.swift */,
 				3E48C3F732BA3CF7B2CE37BA /* Plugin.swift */,
 				526290FDC5A89DAF472B0601 /* PluginCommand.swift */,
@@ -401,6 +404,7 @@
 				F252B0CCA8936EB11473506F /* ItemLines.swift in Sources */,
 				358BF0A2A6E1162F4EC1B91E /* ItemList.swift in Sources */,
 				57F70B25BAA7A839A01DF12E /* ItemPick.swift in Sources */,
+				FA923233777F0F8051589ACD /* ItemSearch.swift in Sources */,
 				D5B6DD9C65031745051DBE2D /* OpenspotVersion.swift in Sources */,
 				4436FE935D4C7ED3F10D86D1 /* Plugin.swift in Sources */,
 				263F56740C5EF2FAF1B2CEA2 /* PluginCommand.swift in Sources */,

@@ -13,6 +13,7 @@ public struct PluginCommand: Equatable, Sendable {
     public let hasState: Bool
     public let pick: ItemPick
     public let isGlobal: Bool
+    public let search: ItemSearch
 
     public init(
         id: String,
@@ -25,7 +26,8 @@ public struct PluginCommand: Equatable, Sendable {
         key: CommandKey? = nil,
         hasState: Bool = false,
         pick: ItemPick = .close,
-        isGlobal: Bool = false
+        isGlobal: Bool = false,
+        search: ItemSearch = .local
     ) {
         self.id = id
         self.name = name
@@ -38,6 +40,7 @@ public struct PluginCommand: Equatable, Sendable {
         self.hasState = hasState
         self.pick = pick
         self.isGlobal = isGlobal
+        self.search = search
     }
 
     /// The state the manifest gives, shown before the command answers or when it cannot.
@@ -64,9 +67,9 @@ public struct PluginCommand: Equatable, Sendable {
         return state
     }
 
-    /// Asks the command for the items of its list.
-    public func items(timeout: TimeInterval) async throws -> ItemLines {
-        ItemLines(output: try await PluginRun(command: self, arguments: SpotAction.items.arguments, timeout: timeout).output())
+    /// Asks the command for the items of its list, with the search when it searches live.
+    public func items(query: String = "", timeout: TimeInterval) async throws -> ItemLines {
+        ItemLines(output: try await PluginRun(command: self, arguments: SpotAction.items(query: query).arguments, timeout: timeout).output())
     }
 
     public func perform(_ action: SpotAction, timeout: TimeInterval) async throws {
@@ -74,6 +77,6 @@ public struct PluginCommand: Equatable, Sendable {
     }
 
     public func withoutKey() -> PluginCommand {
-        PluginCommand(id: id, name: name, url: url, kind: kind, size: size, symbol: symbol, subtitle: subtitle, hasState: hasState, pick: pick, isGlobal: isGlobal)
+        PluginCommand(id: id, name: name, url: url, kind: kind, size: size, symbol: symbol, subtitle: subtitle, hasState: hasState, pick: pick, isGlobal: isGlobal, search: search)
     }
 }

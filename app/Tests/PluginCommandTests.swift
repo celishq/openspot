@@ -66,6 +66,16 @@ final class PluginCommandTests: XCTestCase {
         XCTAssertEqual(lines.items, [SpotItem(title: "Safari", run: "/Safari.app")])
     }
 
+    func testPassesTheSearchToALiveList() async throws {
+        let command = try writeCommand(kind: .list, """
+        printf '{"title":"%s","run":"%s"}\\n' "$2" "$1"
+        """)
+
+        let lines = try await command.items(query: "rep", timeout: 5)
+
+        XCTAssertEqual(lines.items, [SpotItem(title: "rep", run: "items")])
+    }
+
     func testOutputThatIsNotAStateFails() async throws {
         let command = try writeCommand(kind: .toggle, "echo nonsense")
 

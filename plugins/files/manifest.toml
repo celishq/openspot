@@ -1,0 +1,11 @@
+name = "Files"
+api = 1
+
+[[commands]]
+name = "Files"
+exec = "files.sh"
+type = "list"
+search = "live"
+symbol = "doc.text.magnifyingglass"
+subtitle = "Find a file"
+key = "f"

@@ -42,7 +42,7 @@ struct SpotSheetView: View {
             }
             Color.clear.frame(height: SpotTokens.listRowHeight)
             if list.shown.isEmpty {
-                Text("No results")
+                Text(emptyText)
                     .font(.system(size: 13, weight: .medium))
                     .modifier(SpotSecondaryText())
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -52,6 +52,11 @@ struct SpotSheetView: View {
         }
         .padding(SpotTokens.padding)
         .frame(width: SpotTokens.sheetRect.width, height: SpotTokens.sheetRect.height, alignment: .topLeading)
+    }
+
+    private var emptyText: String {
+        if list.isWaiting { return "Searching" }
+        return list.search == .live && list.query.isEmpty ? "Type to search" : "No results"
     }
 
     private var rows: some View {

@@ -5,10 +5,13 @@ public struct SpotAction: Equatable, Sendable {
 
     public static let run = SpotAction(arguments: [])
     public static let read = SpotAction(arguments: ["state"])
-    public static let items = SpotAction(arguments: ["items"])
 
     public init(arguments: [String]) {
         self.arguments = arguments
+    }
+
+    public static func items(query: String) -> SpotAction {
+        SpotAction(arguments: query.isEmpty ? ["items"] : ["items", query])
     }
 
     public static func toggle(_ state: SpotState) -> SpotAction {

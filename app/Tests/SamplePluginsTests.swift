@@ -14,8 +14,8 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Downloads", "Screenshots", "Paste Screenshot"])
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "d", "s", "v"])
+        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Files", "Downloads", "Screenshots", "Paste Screenshot"])
+        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "f", "d", "s", "v"])
     }
 
     func testOnePluginHoldsSeveralCommands() throws {
@@ -54,5 +54,14 @@ final class SamplePluginsTests: XCTestCase {
         XCTAssertEqual(finder.file, finder.run)
         XCTAssertTrue(apps.isGlobal)
         XCTAssertGreaterThan(lines.items.filter { $0.run.hasPrefix("/System/Applications/") }.count, 5)
+    }
+
+    func testFilesIsLiveAndGivesNothingForATooShortSearch() async throws {
+        let files = try XCTUnwrap(try scan.commands.first { $0.name == "Files" })
+
+        let lines = try await files.items(query: "a", timeout: 5)
+
+        XCTAssertEqual(files.search, .live)
+        XCTAssertEqual(lines.items, [])
     }
 }
