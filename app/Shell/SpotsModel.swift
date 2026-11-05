@@ -117,16 +117,18 @@ final class SpotsModel {
             }
         }
         readDueMetrics()
+        if metricLoop == nil { updateMetricLoop() }
         if problems != self.problems, !problems.isEmpty {
             notify(problems.joined(separator: " "))
         }
         self.problems = problems
     }
 
-    /// Keeps the metrics fresh only while the panel shows them.
+    /// Keeps the metrics fresh while the panel shows them, or while the menu bar shows any.
     private func updateMetricLoop() {
         metricLoop?.cancel()
-        guard isShown else { return }
+        metricLoop = nil
+        guard isShown || entries.contains(where: { $0.command.tray != nil }) else { return }
         metricLoop = Task {
             while !Task.isCancelled {
                 readDueMetrics()
@@ -135,10 +137,10 @@ final class SpotsModel {
         }
     }
 
-    /// Reads each metric that a widget places and whose refresh time has passed.
+    /// Reads each wanted metric whose refresh time has passed.
     private func readDueMetrics() {
-        let placed = Set(entries.flatMap(\.command.places))
-        for metric in metricSchedule.takeDue(metrics.filter { placed.contains($0.id) }, now: Date()) {
+        let wanted = MetricSchedule.wanted(metrics, by: entries.map(\.command), isPanelOpen: isShown)
+        for metric in metricSchedule.takeDue(wanted, now: Date()) {
             Task {
                 do {
                     let value = try await metric.read(timeout: Self.itemsTimeout)
@@ -309,6 +311,30 @@ final class SpotsModel {
             break
         case .widget:
             if let opens = entry.command.opens { press(opens) }
+        }
+    }
+
+    /// The marks of the widgets that show a metric in the menu bar, by widget.
+    var trayMarks: [(id: String, mark: TrayMark)] {
+        entries.compactMap { entry in
+            guard let reading = entry.command.tray.flatMap({ readings[$0] }), let mark = TrayMark(reading: reading) else { return nil }
+            return (entry.id, mark)
+        }
+    }
+
+    /// Opens what a click on a menu bar item asks for, or closes the panel when it already shows that.
+    func openFromTray(_ id: String) {
+        guard let entry = entries.first(where: { $0.id == id }) else { return }
+        let opens = entry.command.opens
+        if isShown, opens == nil || openList == opens {
+            dismiss()
+        } else if let opens {
+            press(opens)
+        } else {
+            closeList()
+            query = ""
+            show()
+            selected = visible.firstIndex { $0.id == id } ?? 0
         }
     }
 

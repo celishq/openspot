@@ -330,7 +330,7 @@ struct SpotMetricView: View {
         }
     }
 
-    private static func colour(_ tone: MetricValue.Tone) -> Color {
+    static func colour(_ tone: MetricValue.Tone) -> Color {
         switch tone {
         case .good: .green
         case .warn: .orange

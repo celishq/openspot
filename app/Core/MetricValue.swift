@@ -30,6 +30,7 @@ public struct MetricValue: Equatable, Sendable {
     public let points: [Double]?
     public let max: Double?
     public let rows: [Row]?
+    public let isHidden: Bool
 
     public init(
         title: String,
@@ -39,7 +40,8 @@ public struct MetricValue: Equatable, Sendable {
         value: Double? = nil,
         points: [Double]? = nil,
         max: Double? = nil,
-        rows: [Row]? = nil
+        rows: [Row]? = nil,
+        isHidden: Bool = false
     ) {
         self.title = title
         self.detail = detail
@@ -49,6 +51,7 @@ public struct MetricValue: Equatable, Sendable {
         self.points = points
         self.max = max
         self.rows = rows
+        self.isHidden = isHidden
     }
 
     /// Reads the block a metric prints. Only the title is required, and a bad value is left out.
@@ -66,7 +69,8 @@ public struct MetricValue: Equatable, Sendable {
             value: block.number("value"),
             points: points.isEmpty ? nil : points,
             max: block.number("max"),
-            rows: rows.isEmpty ? nil : rows
+            rows: rows.isEmpty ? nil : rows,
+            isHidden: block.flag("hidden") ?? false
         )
     }
 

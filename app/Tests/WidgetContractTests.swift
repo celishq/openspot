@@ -159,6 +159,48 @@ final class WidgetContractTests: XCTestCase {
         }
     }
 
+    func testAWidgetCanPickOneOfItsMetricsForTheMenuBar() throws {
+        try plugin("power", manifest: power + """
+
+
+        [[widgets]]
+        name = "Level"
+        layout = "single"
+        places = ["power/level"]
+        tray = "power/level"
+        """, script: powerScript)
+
+        let widget = try XCTUnwrap(try PluginFolder(url: folder).scan().commands.first { $0.kind == .widget })
+
+        XCTAssertEqual(widget.tray, "power/level")
+        XCTAssertEqual(widget.withoutKey().tray, "power/level")
+    }
+
+    func testAWidgetCannotPickAMetricItDoesNotPlace() throws {
+        try plugin("power", manifest: power + """
+
+
+        [[widgets]]
+        name = "Level"
+        layout = "single"
+        places = ["power/level"]
+        tray = "power/other"
+        """, script: powerScript)
+
+        XCTAssertEqual(try PluginFolder(url: folder).scan().refused.first?.reason, "Level cannot show power/other in the menu bar, because it does not place it")
+    }
+
+    func testOnlyMenuBarMetricsAreWantedWithThePanelClosed() {
+        let url = URL(fileURLWithPath: "/x")
+        let metrics = ["a/one", "a/two", "a/three"].map { PluginMetric(id: $0, name: $0, url: url, kind: .value) }
+        let widgets = [
+            PluginCommand(id: "a/W", name: "W", url: url, kind: .widget, places: ["a/one", "a/two"], tray: "a/one")
+        ]
+
+        XCTAssertEqual(MetricSchedule.wanted(metrics, by: widgets, isPanelOpen: false).map(\.id), ["a/one"])
+        XCTAssertEqual(MetricSchedule.wanted(metrics, by: widgets, isPanelOpen: true).map(\.id), ["a/one", "a/two"])
+    }
+
     func testAnUnknownMetricKindIsRefused() throws {
         try plugin("power", manifest: power.replacingOccurrences(of: "gauge", with: "dial"), script: powerScript)
 

@@ -165,7 +165,7 @@ printf 'title=3\ndetail=Last at 14:20\nsymbol=cup.and.saucer.fill\n'
 ```
 
 `refresh` is in seconds. The default is 60. Openspot reads a metric only when a widget places it and the panel is
-open, so a metric costs nothing when the panel is closed. When a read fails, the last value stays and dims.
+open, or when a widget shows it in the menu bar. When a read fails, the last value stays and dims.
 
 `label` says what the metric measures, and each place shows it. The default is the plugin's name.
 
@@ -215,6 +215,19 @@ for a command with `size = "small"`, which shows only its symbol.
 
 A large place shows the detail. In a `hero` line, a trend with `max` shows as one bar. Other places show only the label, the value and the mark, so keep the title short, such
 as `84%`.
+
+## The menu bar
+
+Add `tray` to a widget to also show one of its metrics in the menu bar. It names one of the widget's `places`:
+`tray = "coffee/cups"`. Openspot then reads that metric all the time, so choose a `refresh` that is not too short.
+
+A click opens the panel on the command that `opens` names. A widget with no `opens` is selected in the panel instead.
+
+The item shows the metric's `symbol` and its mark. A `rows` metric shows one count for each `row.tone`, worst first. A
+`gauge` shows a small ring, a `trend` shows bars, a `status` shows a dot, and a `value` shows its title.
+
+Print `hidden=true` to remove the item until the next read, such as when nothing is running. Widgets in the panel still
+show the metric.
 
 ## Check your work
 

@@ -34,6 +34,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var previousApp: NSRunningApplication?
     private var trigger: CommandTrigger?
     private var hotKeys: [HotKey.Registration] = []
+    private var trayBar: SpotTrayBar?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -54,6 +55,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         model.notify = { toast.show($0, symbol: ToastPanel.failureSymbol) }
         let trigger = CommandTrigger(model: model, toast: toast)
         self.trigger = trigger
+        trayBar = SpotTrayBar(model: model)
         Task { await model.reload() }
         let panelKey = HotKey.register(code: UInt32(kVK_Space), modifiers: UInt32(controlKey)) { [weak self] in
             Task { @MainActor in self?.togglePanel() }

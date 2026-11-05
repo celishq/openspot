@@ -20,7 +20,8 @@ case "$2" in
     printf 'title=%s\ndetail=running\nsymbol=sparkles\n' "$count"
     ;;
   list)
-    printf 'title=%s\n' "$count"
+    printf 'title=%s\nsymbol=sparkles\n' "$count"
+    [ "$count" = 0 ] && echo hidden=true
     printf '%s' "$list" | sed 's/\\/\\\\/g' | awk -F'\t' 'NF { print "row=" $2; print "row.detail=" $1 }'
     ;;
   *) exit 1 ;;

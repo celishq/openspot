@@ -23,6 +23,7 @@ public struct PluginCommand: Equatable, Sendable {
     public let layout: WidgetLayout?
     public let places: [String]
     public let opens: String?
+    public let tray: String?
 
     public init(
         id: String,
@@ -43,7 +44,8 @@ public struct PluginCommand: Equatable, Sendable {
         actions: [CommandAction] = [],
         layout: WidgetLayout? = nil,
         places: [String] = [],
-        opens: String? = nil
+        opens: String? = nil,
+        tray: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -64,6 +66,7 @@ public struct PluginCommand: Equatable, Sendable {
         self.layout = layout
         self.places = places
         self.opens = opens
+        self.tray = tray
     }
 
     /// The state the manifest gives, shown before the command answers or when it cannot.
@@ -130,6 +133,6 @@ public struct PluginCommand: Equatable, Sendable {
     }
 
     public func withoutKey() -> PluginCommand {
-        PluginCommand(id: id, name: name, url: url, kind: kind, size: size, symbol: symbol, subtitle: subtitle, hasState: hasState, pick: pick, isGlobal: isGlobal, rank: rank, search: search, keepsRecent: keepsRecent, primary: primary, actions: actions, layout: layout, places: places, opens: opens)
+        PluginCommand(id: id, name: name, url: url, kind: kind, size: size, symbol: symbol, subtitle: subtitle, hasState: hasState, pick: pick, isGlobal: isGlobal, rank: rank, search: search, keepsRecent: keepsRecent, primary: primary, actions: actions, layout: layout, places: places, opens: opens, tray: tray)
     }
 }

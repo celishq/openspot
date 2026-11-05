@@ -92,6 +92,13 @@ public struct Plugin: Equatable, Sendable {
         }
         var opens: String?
         if case .string(let target)? = table["opens"] { opens = target }
+        var tray: String?
+        if case .string(let metric)? = table["tray"] {
+            guard places.contains(metric) else {
+                throw PluginError.manifest("\(name) cannot show \(metric) in the menu bar, because it does not place it")
+            }
+            tray = metric
+        }
         return PluginCommand(
             id: "\(plugin.lastPathComponent)/\(name)",
             name: name,
@@ -101,7 +108,8 @@ public struct Plugin: Equatable, Sendable {
             key: key,
             layout: layout,
             places: places,
-            opens: opens
+            opens: opens,
+            tray: tray
         )
     }
 

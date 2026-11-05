@@ -11,6 +11,7 @@ enum SpotType {
     static let ringValue = Font.system(size: 20, weight: .semibold, design: .rounded).monospacedDigit()
     static let value = Font.system(size: 15, weight: .semibold, design: .rounded).monospacedDigit()
     static let controlValue = Font.system(size: 11, weight: .semibold, design: .rounded).monospacedDigit()
+    static let tray = Font.system(size: 13, weight: .medium).monospacedDigit()
     static let small = Font.system(size: 10, weight: .medium)
     static let lineGap: CGFloat = 1
 }

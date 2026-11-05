@@ -15,3 +15,10 @@ places = ["battery/level"]
 name = "CPU"
 layout = "single"
 places = ["system/cpu"]
+
+[[widgets]]
+name = "Agents"
+layout = "single"
+size = "small"
+places = ["agents/list"]
+tray = "agents/list"

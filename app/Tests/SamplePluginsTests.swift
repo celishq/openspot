@@ -14,14 +14,17 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Files", "Plugins", "Links", "Overview", "Battery", "CPU", "Paste Screenshot", "Snippets"])
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "f", "p", "l", nil, nil, nil, "v", "n"])
+        XCTAssertEqual(scan.commands.map(\.name), ["Apps", "Caffeinate", "Files", "Plugins", "Links", "Overview", "Battery", "CPU", "Agents", "Paste Screenshot", "Pull requests", "Pull request status", "Snippets"])
+        XCTAssertEqual(scan.commands.map(\.key?.name), ["a", "c", "f", "p", "l", nil, nil, nil, nil, "v", "g", nil, "n"])
     }
 
     func testEveryMetricPrintsAValue() async throws {
-        for metric in try scan.metrics {
-            _ = try await metric.read(timeout: 10)
-            XCTAssertTrue(FileManager.default.isExecutableFile(atPath: metric.url.path), metric.id)
+        let metrics = try scan.metrics
+        try await withPrivateHome { _ in
+            for metric in metrics {
+                _ = try await metric.read(timeout: 10)
+                XCTAssertTrue(FileManager.default.isExecutableFile(atPath: metric.url.path), metric.id)
+            }
         }
     }
 
@@ -135,6 +138,7 @@ final class SamplePluginsTests: XCTestCase {
             ("pbpaste", "cat '\(folder.path)/clipboard' 2>/dev/null"),
             ("open", "echo \"$1\" > '\(folder.path)/opened'"),
             ("curl", Self.fakeCurl(log: folder.appendingPathComponent("fetched").path)),
+            ("gh", Self.fakeGh(answer: folder.appendingPathComponent("gh-answer").path)),
             ("osascript", "cp '\(folder.path)/clipboard' '\(folder.path)/pasted'")
         ] {
             let tool = tools.appendingPathComponent(name)
@@ -151,6 +155,70 @@ final class SamplePluginsTests: XCTestCase {
             try? FileManager.default.removeItem(at: folder)
         }
         try await body(folder)
+    }
+
+    /// Answers a query with the saved answer, or else with one pull request in each state.
+    private static func fakeGh(answer: String) -> String {
+        """
+        [ -f '\(answer)' ] && { cat '\(answer)'; exit 0; }
+        cat <<'END'
+        {"data":{
+          "mine":{"nodes":[
+            {"title":"Fix \\\\ \\"tray\\"","url":"https://github.test/a/1","repository":{"name":"a"},"commits":{"nodes":[{"commit":{"statusCheckRollup":{"state":"FAILURE"}}}]}},
+            {"title":"Live mode","url":"https://github.test/a/2","repository":{"name":"a"},"commits":{"nodes":[{"commit":{"statusCheckRollup":{"state":"PENDING"}}}]}},
+            {"title":"Docs","url":"https://github.test/a/3","repository":{"name":"a"},"commits":{"nodes":[{"commit":{"statusCheckRollup":{"state":"SUCCESS"}}}]}}
+          ]},
+          "asked":{"nodes":[
+            {"title":"Live mode","url":"https://github.test/a/2","repository":{"name":"a"},"commits":{"nodes":[{"commit":{"statusCheckRollup":{"state":"PENDING"}}}]}},
+            {"title":"Review me","url":"https://github.test/b/4","repository":{"name":"b"},"commits":{"nodes":[{"commit":{"statusCheckRollup":null}}]}}
+          ]}
+        }}
+        END
+        """
+    }
+
+    func testPullRequestsCountEachStateAndOfferEachOne() async throws {
+        let scan = try scan
+        let metric = try XCTUnwrap(scan.metrics.first { $0.id == "pulls/open" })
+        let list = try XCTUnwrap(scan.commands.first { $0.id == "pulls/Pull requests" })
+        let widget = try XCTUnwrap(scan.commands.first { $0.id == "pulls/Pull request status" })
+        try await withPrivateHome { folder in
+            let value = try await metric.read(timeout: 5)
+            let lines = try await list.items(timeout: 5)
+
+            XCTAssertEqual(value.title, "4 open")
+            XCTAssertEqual(value.rows?.map(\.tone), [.bad, .warn, .good, nil])
+            XCTAssertEqual(value.rows?.first?.title, "Fix \\ \"tray\"")
+            XCTAssertEqual(lines.errors, [])
+            XCTAssertEqual(lines.items.map(\.run), (1...3).map { "https://github.test/a/\($0)" } + ["https://github.test/b/4"])
+            XCTAssertEqual(lines.items.last?.subtitle, "b · Review asked · No checks")
+            XCTAssertEqual(widget.tray, metric.id)
+            XCTAssertEqual(widget.opens, list.id)
+
+            let item = try XCTUnwrap(lines.items.first)
+            try await list.perform(.item(item), timeout: 5)
+            XCTAssertEqual(try self.read("opened", in: folder), item.run + "\n")
+            try await list.perform(.action(try self.action("copy", of: list), item: item), timeout: 5)
+            XCTAssertEqual(try self.read("clipboard", in: folder), item.run)
+        }
+    }
+
+    func testPullRequestsHideWhenThereAreNone() async throws {
+        let metric = try XCTUnwrap(try scan.metrics.first { $0.id == "pulls/open" })
+        try await withPrivateHome { folder in
+            try #"{"data":{"mine":{"nodes":[]},"asked":{"nodes":[]}}}"#.write(to: folder.appendingPathComponent("gh-answer"), atomically: true, encoding: .utf8)
+
+            let value = try await metric.read(timeout: 5)
+
+            XCTAssertTrue(value.isHidden)
+        }
+    }
+
+    func testAgentsShowInTheMenuBar() throws {
+        let scan = try scan
+        let widget = try XCTUnwrap(scan.commands.first { $0.id == "overview/Agents" })
+
+        XCTAssertEqual(widget.tray, "agents/list")
     }
 
     /// A web with one site: icons.test names a small image on its page, and each other site has no image at all.
