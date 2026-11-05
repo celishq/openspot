@@ -95,12 +95,17 @@ final class SpotsModel {
     /// Reads the plugin folder again, and asks each plugin for its state.
     func reload() async {
         let folder = PluginFolder.standard()
-        let scan = (try? folder.scan()) ?? ScanResult(plugins: [], refused: [])
+        let shipped = ShippedSpot.commands(
+            folder: folder.url,
+            guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder.url,
+            app: Bundle.main.executablePath ?? ""
+        )
+        let scan = (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
         var entries: [Entry] = []
         var problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
         scan.commands.filter { $0.kind == .list }.forEach(prepareList)
         scan.commands.filter { $0.kind == .list && $0.read == .open }.forEach { loadItems(of: $0) }
-        if scan.commands.isEmpty {
+        if scan.commands.allSatisfy({ $0.shipped != nil }) {
             problems.append("No plugins in \(folder.url.path)")
         }
         for command in scan.commands {

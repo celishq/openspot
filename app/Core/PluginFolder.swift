@@ -19,11 +19,11 @@ public struct PluginFolder: Sendable {
         return PluginFolder(url: config.appendingPathComponent("plugins", isDirectory: true))
     }
 
-    /// Reads each executable and widget file, at the top of the folder or one folder down. When two commands share a
-    /// key, the first keeps it.
-    public func scan() throws -> ScanResult {
-        var result = ScanResult(plugins: [], refused: [])
-        var taken: Set<String> = []
+    /// Reads each executable and widget file, at the top of the folder or one folder down, after the shipped commands.
+    /// When two commands share a key, the first keeps it.
+    public func scan(shipped: [PluginCommand] = []) throws -> ScanResult {
+        var result = ScanResult(plugins: shipped.isEmpty ? [] : [Plugin(id: "openspot", commands: shipped)], refused: [])
+        var taken = Set(shipped.compactMap(\.key?.name))
         for entry in try Self.sorted(in: url) {
             var isFolder: ObjCBool = false
             FileManager.default.fileExists(atPath: entry.path, isDirectory: &isFolder)

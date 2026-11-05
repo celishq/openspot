@@ -5,6 +5,7 @@ final class GuidePluginTests: XCTestCase {
     private var folder: URL!
     private var plugins: URL!
     private var guideText = ""
+    private var guideURL: URL!
     private let path = ProcessInfo.processInfo.environment["PATH"]
 
     override func setUpWithError() throws {
@@ -15,8 +16,8 @@ final class GuidePluginTests: XCTestCase {
         let tools = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
-        try FileManager.default.copyItem(at: root.appendingPathComponent("plugins/guide"), to: plugins.appendingPathComponent("guide"))
-        guideText = try String(contentsOf: plugins.appendingPathComponent("guide/GUIDE.md"), encoding: .utf8)
+        guideURL = root.appendingPathComponent("app/Shell/GUIDE.md")
+        guideText = try String(contentsOf: guideURL, encoding: .utf8)
         for (name, script) in [("pbcopy", "cat > '\(folder.path)/clipboard'"), ("open", "echo \"$1\" > '\(folder.path)/opened'")] {
             let tool = tools.appendingPathComponent(name)
             try "#!/bin/sh\n\(script)\n".write(to: tool, atomically: true, encoding: .utf8)
@@ -36,11 +37,34 @@ final class GuidePluginTests: XCTestCase {
     }
 
     private func guide() throws -> PluginCommand {
-        try XCTUnwrap(try PluginFolder(url: plugins).scan().commands.first { $0.id == "guide/guide" })
+        try XCTUnwrap(ShippedSpot.commands(folder: plugins, guide: guideURL, app: "/Apps/Openspot").first { $0.name == "Plugins" })
     }
 
     private func saved(_ name: String) throws -> String {
         try String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8)
+    }
+
+    func testThePluginsSpotShowsWithAnEmptyFolderAndKeepsItsKey() throws {
+        try "#!/bin/sh\n# key=p\n".write(to: plugins.appendingPathComponent("mine.sh"), atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: plugins.appendingPathComponent("mine.sh").path)
+        let shipped = ShippedSpot.commands(folder: plugins, guide: guideURL, app: "")
+
+        let scan = try PluginFolder(url: plugins).scan(shipped: shipped)
+
+        XCTAssertEqual(scan.commands.first { $0.key?.name == "p" }?.name, "Plugins")
+        XCTAssertEqual(scan.refused, [Refusal(file: "mine", reason: "Mine cannot use key p, because another command has it")])
+    }
+
+    func testThePluginsSpotListsItsRowsAndItsAction() async throws {
+        let guide = try guide()
+
+        let opened = try await guide.opened(timeout: 5)
+        let lines = try await guide.items(timeout: 5)
+
+        XCTAssertEqual(opened.command.kind, .list)
+        XCTAssertEqual(opened.command.actions.map(\.id), ["new"])
+        XCTAssertEqual(lines.items.map(\.run), ["prompt", "guide", "folder"])
+        XCTAssertEqual(lines.errors, [])
     }
 
     func testThePromptNamesTheGuideTheFolderAndTheCheck() async throws {
@@ -78,6 +102,7 @@ final class GuidePluginTests: XCTestCase {
         XCTAssertEqual(made?.name, "My Weather")
         try await XCTUnwrap(made).perform(.run, timeout: 5)
         XCTAssertEqual(try saved("opened"), "-R\n")
+        XCTAssertEqual(try String(contentsOf: plugins.appendingPathComponent("my-weather.sh"), encoding: .utf8).split(separator: "\n")[1], "# name=My Weather")
     }
 
     func testNewPluginKeepsAPluginThatExists() async throws {
@@ -85,6 +110,7 @@ final class GuidePluginTests: XCTestCase {
         let action = try await newAction(of: guide)
         var draft = FormDraft(form: try await guide.form(action, item: nil, timeout: 5))
         draft.set("Guide", for: "name")
+        try FileManager.default.createDirectory(at: plugins.appendingPathComponent("guide"), withIntermediateDirectories: true)
 
         do {
             _ = try await guide.submit(action, item: nil, draft: draft, timeout: 5)

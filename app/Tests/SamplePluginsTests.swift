@@ -6,7 +6,9 @@ final class SamplePluginsTests: XCTestCase {
         get throws {
             let root = URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-            return try PluginFolder(url: root.appendingPathComponent("plugins")).scan()
+            let folder = root.appendingPathComponent("plugins")
+            let shipped = ShippedSpot.commands(folder: folder, guide: root.appendingPathComponent("app/Shell/GUIDE.md"), app: "")
+            return try PluginFolder(url: folder).scan(shipped: shipped)
         }
     }
 
@@ -71,7 +73,7 @@ final class SamplePluginsTests: XCTestCase {
     }
 
     func testEveryCommandCanBeRun() throws {
-        for command in try scan.commands where command.kind != .widget {
+        for command in try scan.commands where command.kind != .widget && command.shipped == nil {
             XCTAssertTrue(FileManager.default.isExecutableFile(atPath: command.url.path), command.name)
         }
     }

@@ -23,6 +23,7 @@ public struct PluginCommand: Equatable, Sendable {
     public let layout: WidgetLayout?
     public let places: [String]
     public let opens: String?
+    public let shipped: ShippedSpot?
 
     public init(
         id: String,
@@ -43,7 +44,8 @@ public struct PluginCommand: Equatable, Sendable {
         actions: [CommandAction] = [],
         layout: WidgetLayout? = nil,
         places: [String] = [],
-        opens: String? = nil
+        opens: String? = nil,
+        shipped: ShippedSpot? = nil
     ) {
         self.id = id
         self.name = name
@@ -64,6 +66,7 @@ public struct PluginCommand: Equatable, Sendable {
         self.layout = layout
         self.places = places
         self.opens = opens
+        self.shipped = shipped
     }
 
     /// Whether its rows join the main search.
@@ -111,7 +114,13 @@ public struct PluginCommand: Equatable, Sendable {
     }
 
     private func output(_ action: SpotAction, timeout: TimeInterval) async throws -> PluginOutput {
-        PluginOutput(text: try await PluginRun(command: self, arguments: action.arguments, timeout: timeout).output())
+        PluginOutput(text: try await text(of: action.arguments, input: nil, timeout: timeout))
+    }
+
+    /// What a call prints: the answer of a shipped spot, or else the output of the script.
+    private func text(of arguments: [String], input: String?, timeout: TimeInterval) async throws -> String {
+        if case .plugins(let guide) = shipped { return try await guide.answer(arguments, input: input, timeout: timeout) }
+        return try await PluginRun(command: self, arguments: arguments, timeout: timeout, input: input).output()
     }
 
     /// Asks the command for the items of its list, with the search when it searches live.
@@ -127,7 +136,7 @@ public struct PluginCommand: Equatable, Sendable {
 
     /// Gives a filled form to the command, and returns the run value of the item it saved, if it prints one.
     public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft, timeout: TimeInterval) async throws -> String {
-        let output = try await PluginRun(command: self, arguments: SpotAction.action(action, item: item).arguments, timeout: timeout, input: draft.text).output()
+        let output = try await text(of: SpotAction.action(action, item: item).arguments, input: draft.text, timeout: timeout)
         return output.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
