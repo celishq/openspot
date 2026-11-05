@@ -22,11 +22,10 @@ enum SpotMotion {
         .spring(duration: isOpen ? openDuration : closeDuration, bounce: 0)
     }
 
-    /// The part of a sheet's motion that a part fades in: one look leaves early and the next comes late, so that they
-    /// never overlap. What leaves early is gone before the search field reaches it.
+    /// The half of a sheet's motion that a part fades in, so that two looks of one place never overlap.
     static func sheetFade(isOpen: Bool, isLate: Bool) -> Animation {
         let half = (isOpen ? openDuration : closeDuration) / 2
-        return isLate ? .easeIn(duration: half).delay(half) : .easeOut(duration: isOpen ? openDuration / 3 : closeDuration / 5)
+        return isLate ? .easeIn(duration: half).delay(half) : .easeOut(duration: half)
     }
 
     static func surface(isShown: Bool) -> Animation {

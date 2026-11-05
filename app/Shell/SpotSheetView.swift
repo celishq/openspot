@@ -3,6 +3,7 @@ import OpenspotCore
 
 struct SpotSheetView: View {
     let entry: SpotsModel.Entry
+    let isOpen: Bool
     let list: ItemList
     let rect: CGRect
     let hint: String
@@ -57,33 +58,54 @@ struct SpotSheetView: View {
 
     private var header: some View {
             HStack(spacing: SpotTokens.padding - 5) {
-                Image(systemName: entry.symbol)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
-                    .background(Color.white.opacity(0.2), in: Circle())
+                glyph
                 VStack(alignment: .leading, spacing: SpotType.lineGap) {
                     Text(form?.form.title ?? entry.state.title)
                         .font(SpotType.title)
-                        .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                        .foregroundStyle(showsFill ? Color.black.opacity(SpotTokens.titleOpacity) : Color.white.opacity(SpotTokens.titleOpacity))
                     if form == nil, let subtitle = entry.state.subtitle {
                         Text(subtitle)
                             .font(SpotType.detail)
-                            .modifier(SpotSecondaryText())
+                            .modifier(SpotSecondaryText(isOnWhite: showsFill))
                             .lineLimit(1)
                     }
                 }
+                .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(showsSmallCard ? 0 : 1) }
                 Spacer()
                 SpotRoundButton(symbol: "xmark", label: "Close", action: onClose)
             }
     }
 
-    /// The smaller header of a screen of its own, which leaves its room to the screen.
+    /// The card's glyph, placed as the card places it until the sheet opens.
+    private var glyph: some View {
+        Image(systemName: entry.symbol)
+            .font(.system(size: 17, weight: .semibold))
+            .foregroundStyle(showsFill ? Color.accentColor : Color.white)
+            .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+            .background(Color.white.opacity(showsSmallCard || showsFill ? 0 : 0.2), in: Circle())
+            .offset(x: showsSmallCard ? (SpotTokens.cell - SpotTokens.glyphSize) / 2 - SpotTokens.padding : 0)
+    }
+
+    /// Whether the sheet still lies on a 1x1 card, which shows its glyph alone.
+    private var showsSmallCard: Bool {
+        !isOpen && entry.size == .small
+    }
+
+    /// Whether the sheet still lies on a card that is turned on, which is plain white.
+    private var showsFill: Bool {
+        !isOpen && entry.state.on == true
+    }
+
+    /// The smaller header of a screen of its own, which leaves its room to the screen. The card's glyph gives way to the title.
     private var screenHeader: some View {
         HStack {
             Text(entry.state.title)
                 .font(SpotType.title)
                 .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(isOpen ? 1 : 0) }
+                .overlay(alignment: .leading) {
+                    glyph.animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: !isOpen)) { $0.opacity(isOpen ? 0 : 1) }
+                }
             Spacer()
             SpotRoundButton(symbol: "xmark", label: "Close", action: onClose)
         }

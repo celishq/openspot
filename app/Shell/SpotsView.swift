@@ -43,15 +43,15 @@ struct SpotsView: View {
                 .mask(edges.gradient)
                 SpotHint(text: gridHint)
                     .frame(width: SpotTokens.gridWidth)
-                    .offset(x: SpotTokens.halo, y: gridHeight - SpotTokens.halo - SpotTokens.hintHeight)
-                    .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(sheetOpen ? 0 : 1) }
-                    .opacity(model.isShown ? 1 : 0)
+                    .offset(x: SpotTokens.halo, y: contentHeight - SpotTokens.halo - SpotTokens.hintHeight)
+                    .opacity(model.isShown && !sheetOpen ? 1 : 0)
                     .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
             }
             .mask(softEdge(inset: Self.scrollEdgeInset, softness: Self.scrollEdgeSoftness, height: backdropHeight))
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
                 SpotSheetView(
                     entry: entry,
+                    isOpen: sheetOpen,
                     list: model.lists[entry.id] ?? ItemList(),
                     rect: sheetRect,
                     hint: sheetHint,
@@ -66,25 +66,11 @@ struct SpotsView: View {
                         model.closeList()
                     }
                 )
-                .offset(x: sheetRect.minX - sheetFrame.minX, y: sheetRect.minY - sheetFrame.minY)
-                .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: sheetOpen)) { $0.opacity(sheetOpen ? 1 : 0) }
-                .overlay(alignment: .topLeading) {
-                    if let face = cardFace(of: entry) {
-                        SpotCardView(
-                            entry: entry,
-                            size: face.size,
-                            isSelected: face.isSelected,
-                            readings: [:],
-                            onTap: {},
-                            onLevel: { _ in }
-                        )
-                        .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(sheetOpen ? 0 : 1) }
-                        .allowsHitTesting(false)
-                    }
-                }
+                .background(Color.white.opacity(entry.state.on == true && !sheetOpen ? 1 : 0))
                 .modifier(SpotSheetFrame(
-                    rect: sheetFrame,
-                    radius: sheetOpen ? SpotTokens.radius : SpotTokens.corner(for: entry.size)
+                    rect: sheetOpen ? sheetRect : openFrame ?? sheetRect,
+                    radius: sheetOpen ? SpotTokens.radius : SpotTokens.corner(for: entry.size),
+                    ringOpacity: !sheetOpen && cardIsSelected(entry) ? 1 : 0
                 ))
             }
             searchField
@@ -198,17 +184,9 @@ struct SpotsView: View {
         return SpotTokens.sheetRect(rows: model.lists[sheetID ?? ""]?.shown.count ?? 0)
     }
 
-    /// Where the sheet is drawn: on its card until it opens. Its content stays at its final place, and the sheet grows over it.
-    private var sheetFrame: CGRect {
-        sheetOpen ? sheetRect : openFrame ?? sheetRect
-    }
-
     private var contentHeight: CGFloat {
-        sheetOpen ? sheetRect.height + 2 * SpotTokens.halo : gridHeight
-    }
-
-    private var gridHeight: CGFloat {
-        SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0)
+        guard !sheetOpen else { return sheetRect.height + 2 * SpotTokens.halo }
+        return SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0)
     }
 
     private var backdropHeight: CGFloat {
@@ -221,10 +199,8 @@ struct SpotsView: View {
         max(SpotTokens.halo, contentHeight - SpotTokens.halo - SpotTokens.hintBlock - SpotTokens.menuHeight(rows: menu.rows.count))
     }
 
-    /// The look of the card that a sheet grows out of.
-    private func cardFace(of entry: SpotsModel.Entry) -> (size: SpotSize, isSelected: Bool)? {
-        guard let placement = model.placements.first(where: { model.visible[$0.index].id == entry.id }) else { return nil }
-        return (placement.size, placement.index == model.selected)
+    private func cardIsSelected(_ entry: SpotsModel.Entry) -> Bool {
+        model.placements.first { model.visible[$0.index].id == entry.id }?.index == model.selected
     }
 
     /// Whether the search field is drawn. A form and a screen of its own replace it.
@@ -272,8 +248,7 @@ struct SpotsView: View {
                     x: CGFloat(placement.column) * (SpotTokens.cell + SpotTokens.columnGap) + pushed.width,
                     y: CGFloat(placement.row) * (SpotTokens.rowHeight + SpotTokens.rowGap) + pushed.height
                 )
-                .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(sheetOpen ? 0 : 1) }
-                .opacity(entry.id == sheetID ? 0 : 1)
+                .opacity(entry.id == sheetID || sheetOpen ? 0 : 1)
             }
         }
         .frame(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows), alignment: .topLeading)
