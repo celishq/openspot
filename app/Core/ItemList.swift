@@ -10,6 +10,8 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var shown: [SpotItem] = []
     public private(set) var selected = 0
     public private(set) var isWaiting = false
+    public private(set) var isLoading = false
+    public private(set) var hasFailed = false
     private(set) var all: [SpotItem]
 
     public init(items: [SpotItem] = [], recent: [String] = [], search: ItemSearch = .local) {
@@ -54,9 +56,21 @@ public struct ItemList: Equatable, Sendable {
         if text == query { isWaiting = false }
     }
 
+    public mutating func beginLoading() {
+        isLoading = true
+        hasFailed = false
+    }
+
+    public mutating func loadFailed() {
+        isLoading = false
+        hasFailed = true
+    }
+
     /// Takes fresh items. A selection at the top stays at the top, and any other stays on its item when it is still there.
     public mutating func replace(_ items: [SpotItem]) {
         let run = selectedItem?.run
+        isLoading = false
+        hasFailed = false
         all = items
         refresh()
         guard selected > 0 else { return }

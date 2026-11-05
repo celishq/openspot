@@ -6,6 +6,30 @@ final class ItemListTests: XCTestCase {
         titles.map { SpotItem(title: $0, run: $0) }
     }
 
+    func testALoadStaysUntilItsAnswerAndASearchDoesNotEndIt() {
+        var list = ItemList()
+
+        list.beginLoading()
+        list.reset()
+        XCTAssertTrue(list.isLoading)
+
+        list.replace(items("Safari"))
+        XCTAssertFalse(list.isLoading)
+        XCTAssertFalse(list.hasFailed)
+    }
+
+    func testAFailedLoadSaysSoUntilTheNextAnswer() {
+        var list = ItemList()
+
+        list.beginLoading()
+        list.loadFailed()
+        XCTAssertFalse(list.isLoading)
+        XCTAssertTrue(list.hasFailed)
+
+        list.beginLoading()
+        XCTAssertFalse(list.hasFailed)
+    }
+
     func testShowsEachItemBeforeASearch() {
         let list = ItemList(items: items("Safari", "Notes"))
 

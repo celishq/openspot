@@ -181,6 +181,7 @@ final class SpotsModel {
         guard command.kind == .list else { return }
         prepareList(command)
         guard command.search == .local else { return }
+        lists[command.id]?.beginLoading()
         Task {
             do {
                 let lines = try await command.items(timeout: Self.itemsTimeout)
@@ -192,6 +193,7 @@ final class SpotsModel {
                     notify("\(command.name) sent \(lines.errors.count) items Openspot cannot read.")
                 }
             } catch {
+                lists[command.id]?.loadFailed()
                 notify("\(command.name) failed. \(Self.reason(error))")
             }
         }
