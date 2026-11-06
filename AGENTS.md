@@ -33,6 +33,8 @@
 - A test proves behaviour through the public surface: inputs in, outputs out.
 - Fakes stand in only at I/O: the disk, the process, the clock.
 - Write the failing test first, then the code that passes it.
+- Write a script for a test with `writeScript(to:)`. macOS checks a new executable file on its first run, for 150 ms or more.
+- Give a test a short pause through a setting, such as `stopPause`, and keep one test of the real time. Wait for a fact; pause only to prove that nothing happened.
 
 ## Verify
 

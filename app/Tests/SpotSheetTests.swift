@@ -91,8 +91,9 @@ final class SpotSheetTests: XCTestCase {
 
     func testClosingStopsAScriptThatKeepsPrinting() async throws {
         let sheet = try make("""
+        echo $$ > '\(path("pid"))'
         printf 'layout=none\\n\\npart=a\\ntitle=0\\n---\\n'
-        sleep 0.2
+        sleep 5
         touch '\(path("went-on"))'
         printf 'part=a\\ntitle=1\\n---\\n'
         """)
@@ -100,7 +101,8 @@ final class SpotSheetTests: XCTestCase {
         sheet.open {}
         try await wait("the first frame") { sheet.panel != nil }
         sheet.close()
-        try await Task.sleep(for: .milliseconds(300))
+        let pid = try XCTUnwrap(Int32(try String(contentsOfFile: path("pid"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
+        try await wait("the end of the script") { kill(pid, 0) != 0 }
 
         XCTAssertFalse(exists("went-on"))
         XCTAssertEqual(sheet.panel?.parts.first?.title, "0")
