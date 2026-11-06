@@ -21,6 +21,7 @@ enum SpotMotion {
     static let keycap = Animation.easeOut(duration: 0.12)
     static let edit = Animation.spring(duration: 0.3, bounce: 0)
     static let hintFade = Animation.easeOut(duration: 0.15)
+    static let cardRowStagger = 0.025
 
     static func sheet(isOpen: Bool) -> Animation {
         .spring(duration: isOpen ? openDuration : closeDuration, bounce: 0)
@@ -30,6 +31,29 @@ enum SpotMotion {
     static func sheetFade(isOpen: Bool, isLate: Bool) -> Animation {
         let half = (isOpen ? openDuration : closeDuration) / 2
         return isLate ? .easeIn(duration: half).delay(half) : .easeOut(duration: half)
+    }
+
+    /// The header leaves in the first quarter of a sheet's motion.
+    static func headerOut(isOpen: Bool) -> Animation {
+        .easeOut(duration: (isOpen ? openDuration : closeDuration) / 4)
+    }
+
+    /// The header returns in the second half of a sheet's motion, a quarter after it has left.
+    static func headerIn(isOpen: Bool) -> Animation {
+        let duration = isOpen ? openDuration : closeDuration
+        return .easeIn(duration: duration / 2).delay(duration / 4)
+    }
+
+    /// How the cards fade: out in the first half of an opening sheet, and back in on close, row by row from the sheet's card.
+    static func cardFade(isSheetOpen: Bool, rowsAway: Int) -> Animation {
+        guard !isSheetOpen else { return sheetFade(isOpen: true, isLate: false) }
+        let half = closeDuration / 2
+        return .easeOut(duration: half).delay(min(Double(rowsAway) * cardRowStagger, half))
+    }
+
+    /// The crossfade of the blur of the grid and the blur of the sheet.
+    static func blurFade(isSheetOpen: Bool) -> Animation {
+        .easeOut(duration: isSheetOpen ? openDuration : closeDuration)
     }
 
     static func surface(isShown: Bool) -> Animation {

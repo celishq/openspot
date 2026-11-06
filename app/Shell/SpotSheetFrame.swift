@@ -15,7 +15,7 @@ struct SpotSheetFrame: ViewModifier {
             .clipped()
             .modifier(SpotGlass(radius: radius))
             .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(Color.accentColor, lineWidth: 2).opacity(ringOpacity))
+            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(Color.accentColor, lineWidth: 2).animation(SpotMotion.sheetFade(isOpen: ringOpacity == 0, isLate: ringOpacity > 0)) { $0.opacity(ringOpacity) })
             .offset(x: rect.minX, y: rect.minY)
     }
 }

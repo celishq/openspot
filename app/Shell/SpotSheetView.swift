@@ -4,6 +4,7 @@ import OpenspotCore
 struct SpotSheetView: View {
     let entry: SpotsModel.Entry
     let isOpen: Bool
+    let headerIsHidden: Bool
     let list: ItemList
     let rect: CGRect
     let form: FormDraft?
@@ -32,6 +33,7 @@ struct SpotSheetView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             header
+                .opacity(headerIsHidden ? 0 : 1)
             VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
                 if let panel {
                     SpotPanelView(panel: panel, work: work, onSet: onSet, onPress: onPress, recordingPart: recording, onRecord: onRecord)
@@ -55,7 +57,7 @@ struct SpotSheetView: View {
                     }
                 }
             }
-            .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(showsTallCard || (!isOpen && entry.id == ShippedSpot.installID) ? 0 : 1) }
+            .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(isOpen ? 1 : 0) }
         }
         .padding(SpotTokens.padding)
         .frame(width: rect.width, height: rect.height, alignment: .topLeading)
