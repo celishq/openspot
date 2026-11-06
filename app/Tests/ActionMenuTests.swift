@@ -24,6 +24,20 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(menu.rows.map(\.title), ["Copy", "Delete", "New"])
     }
 
+    func testAMenuThatOffersSharingEndsWithIt() throws {
+        let menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, offersShare: true))
+
+        XCTAssertEqual(menu.rows.map(\.title), ["Open", "New", "Copy to share"])
+        XCTAssertEqual(menu.rows.last?.action, .share)
+    }
+
+    func testAMenuWithOnlySharingStillOpens() throws {
+        let slider = PluginCommand(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .slider)
+
+        XCTAssertNil(ActionMenu(command: slider, item: nil))
+        XCTAssertEqual(ActionMenu(command: slider, item: nil, offersShare: true)?.rows.map(\.title), ["Copy to share"])
+    }
+
     func testWithNoItemOnlyTheCommandsActionsShow() throws {
         let menu = try XCTUnwrap(ActionMenu(command: command(), item: nil))
 

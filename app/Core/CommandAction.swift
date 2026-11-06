@@ -12,6 +12,9 @@ public struct CommandAction: Equatable, Sendable {
         case stay
     }
 
+    /// The row that the app adds to the menu of a spot, which no script prints or answers.
+    public static let share = CommandAction(id: "openspot.share", title: "Copy to share", scope: .command, after: .close)
+
     public let id: String
     public let title: String
     public let key: ActionKey?
