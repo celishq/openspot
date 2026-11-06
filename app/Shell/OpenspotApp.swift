@@ -1,5 +1,4 @@
 import AppKit
-import Carbon.HIToolbox
 import OpenspotCore
 
 @main
@@ -22,6 +21,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var previousApp: NSRunningApplication?
     private var hotKey: HotKey.Registration?
     private var trayBar: SpotTrayBar?
+    private var configFaults: [String] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -42,8 +42,30 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         model.notify = { toast.show($0, symbol: ToastPanel.failureSymbol) }
         model.confirm = { toast.show($0, symbol: ToastPanel.confirmSymbol) }
         trayBar = SpotTrayBar(model: model)
+        model.applyConfig = { [weak self] in self?.applyConfig() }
         Task { await model.reload() }
-        hotKey = HotKey.register(code: UInt32(kVK_Space), modifiers: UInt32(controlKey)) { [weak self] in
+    }
+
+    /// Takes what the config file asks for. A key that macOS refuses leaves the current one in use, and the person sees why.
+    private func applyConfig() {
+        let config = ConfigFile.standard().read()
+        var faults = config.faults
+        let key = config.panelKey ?? model.entryKey
+        if hotKey == nil || key != model.entryKey {
+            if let registration = register(key) {
+                hotKey.map(HotKey.unregister)
+                hotKey = registration
+                model.entryKey = key
+            } else {
+                faults.append("Openspot cannot use \(key.label) to open.")
+            }
+        }
+        if faults != configFaults, !faults.isEmpty { model.notify(faults.joined(separator: " ")) }
+        configFaults = faults
+    }
+
+    private func register(_ key: Shortcut) -> HotKey.Registration? {
+        HotKey.register(key) { [weak self] in
             Task { @MainActor in self?.togglePanel() }
         }
     }

@@ -77,6 +77,7 @@ final class SpotsModel {
     var dismiss: () -> Void = {}
     var show: () -> Void = {}
     var notify: (String) -> Void = { _ in }
+    var applyConfig: () -> Void = {}
     var confirm: (String) -> Void = { _ in }
     private var problems: [String] = []
     private(set) var menu: ActionMenu?
@@ -88,8 +89,9 @@ final class SpotsModel {
     private var metricLoop: Task<Void, Never>?
     private var outputs: [String: PluginOutput] = [:]
 
-    /// Reads the plugin folder again, and asks each plugin for its state.
+    /// Reads the config file and the plugin folder again, and asks each plugin for its state.
     func reload() async {
+        applyConfig()
         let folder = PluginFolder.standard()
         let shipped = ShippedSpot.commands(
             folder: folder.url,
