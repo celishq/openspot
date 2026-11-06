@@ -41,7 +41,7 @@ public enum PartCatalog {
     - A smaller area inside or across a larger one floats on top, with its own blurred background. This is how you make a \
     floating button. Text moves clear of it.
     - `keys=7 8 9 +` adds a row of key buttons. Use it for any keypad, in place of a part for each key. A word that repeats \
-    next to itself spans those cells. Pressing a key calls `press <word>`.
+    next to itself spans those cells. Pressing a key calls `<word>`.
 
     Every row has one height: \(Int(SheetPlacement.rowHeight))pt, or \(Int(SheetPlacement.keyRowHeight))pt when the sheet \
     has keys. The gap between cells is always \(Int(SheetPlacement.gap))pt. To make something taller, draw more rows. \
@@ -76,14 +76,14 @@ public enum PartCatalog {
     | Keys | Shows | Calls the script with |
     |---|---|---|
     | `title`, `detail`, `symbol` | A line: the title on the left, the detail on the right. | |
-    | `on=true` or `on=false` | A switch at the end of the line. | `set <id> true` or `false` |
-    | `level=70`, optional `min`, `max`, `title`, `symbol` | A slider, from 0 to 100 unless `min` and `max` say. Give each slider a `title` or a `symbol`. | `set <id> <number>` |
-    | `color=#ff0000` for each colour, `value=#ff0000` | A row of swatches. One `color=` with a `title` is one small swatch at the end of the line. | `set <id> <color>` |
-    | `option=id:Title` for each choice, `value=id` | A menu. | `set <id> <option id>` |
-    | `item=id:Title` for each row, `value=id` | A list to choose from, which scrolls. Use it for any list of rows. | `set <id> <item id>` |
-    | `text=...`, optional `readonly=true`, `placeholder` | A text area, which scrolls. Write a line break as `\\n`. | `set <id> <text>` |
-    | `press=true`, with `title` | A button that fills its cell. | `press <id>` |
-    | `press=arrow.up` or another SF Symbol name | A round button, which shrinks to fit its area, up to 44pt. | `press <id>` |
+    | `on=true` or `on=false` | A switch at the end of the line. | `<id> true` or `false` |
+    | `level=70`, optional `min`, `max`, `title`, `symbol` | A slider, from 0 to 100 unless `min` and `max` say. Give each slider a `title` or a `symbol`. | `<id> <number>` |
+    | `color=#ff0000` for each colour, `value=#ff0000` | A row of swatches. One `color=` with a `title` is one small swatch at the end of the line. | `<id> <color>` |
+    | `option=id:Title` for each choice, `value=id` | A menu. | `<id> <option id>` |
+    | `item=id:Title` for each row, `value=id` | A list to choose from, which scrolls. Use it for any list of rows. | `<id> <item id>` |
+    | `text=...`, optional `readonly=true`, `placeholder` | A text area, which scrolls. Write a line break as `\\n`. | `<id> <text>` |
+    | `press=true`, with `title` | A button that fills its cell. | `<id>` |
+    | `press=arrow.up` or another SF Symbol name | A round button, which shrinks to fit its area, up to 44pt. | `<id>` |
     | `metric=42%`, optional `title` | A big number in a tile. It needs 2 columns of 4, and 2 rows with a title. | |
     | `point=3` for each bar | A bar chart in a tile. | |
     | `image=/path/to/file` | A picture from a file. | |
@@ -107,12 +107,11 @@ public enum PartCatalog {
 
     A call can keep printing. A line `---` ends a frame, and the app draws it at once. A frame with a layout replaces the \
     sheet, and a frame with only parts changes those parts, so print `part`, `cell` and the keys again for each one. A new \
-    `set` or `press` stops the running call, and so does closing the sheet.
+    change or press stops the running call, and so does closing the sheet.
 
-    A script with `# live=true` in its header runs while its sheet is open, so a model or a connection stays loaded between \
-    events. It gets one block on its standard input for each event, with a blank line after it: `event=read`, `event=set` \
-    with `id` and `value`, or `event=press` with `id`. It keeps its own state, and answers with frames. It must end when its \
-    input ends.
+    A script with `# stay=true` in its header runs while its sheet is open, so a model or a connection stays loaded between \
+    calls. It gets one block on its standard input for each call, with a blank line after it: `name`, `value`, and one \
+    `field.<id>` for each value of the sheet. It keeps its own state, and answers with frames. It must end when its input ends.
 
     """
 
@@ -120,6 +119,7 @@ public enum PartCatalog {
     ## Rules
 
     - Every letter in a drawing needs one part, and two parts cannot share a letter.
+    - A part cannot be called `read`.
     - Do not use a key that this page does not name.
     - Use at most one `look=strong`.
     - Keep titles short: about 7 letters fit in one column of four, with a control in the same cell.

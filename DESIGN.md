@@ -394,30 +394,24 @@ Remove a row when the code follows the rule.
 
 | Rules | Module | Today | Target |
 |---|---|---|---|
-| Section 4 | Plugin scan, `SpotRead` | `read` is `click`, `open` or seconds. Seconds makes a metric. | `read` is a list of moments. F7 decides if it has a spot. No aliases. |
-| Section 4, R6, R7 | Plugin scan, plugins | `live=true`, `search=live` and `recents=false` are header keys. | `stay=true` in the header. `search` and `recents` are printed. No aliases. |
-| Section 5 | `SpotAction`, plugins, Plugins spot | A read has no argument. Search, sheet changes and presses have their own words: `search`, `set`, `press`. | `read [text]`, `<part> [value]`. |
-| C1 | `openspot check` | Nothing refuses a part or an action called `read`. | A fault. |
-| C3 | `SpotAction`, plugins, Plugins spot | A form is its own call: `form <action> [run]`. | The same call, with empty stdin. |
-| Section 5, moments | Not built | No `launch` or `wake` moment. | Both, as words in `read`. |
+| Section 5, moments | `SpotRead`, `SpotsModel` | `launch` and `wake` are words in `read`, and the command keeps them. Nothing calls `read` at those moments. | Both call `read` at their moment. |
+| Section 4, `tray` | `Plugin`, `SpotsModel` | `tray=true` with `stay=true` loads, and shows nothing in the menu bar. | It shows. |
 | Section 7 | `PluginCommand.perform`, `PluginRun.output` | A run, a pick and an action wait for the end, and stop at 30 s. Their frames do not show. | No limit. Frames show. |
-| L2, L4, L5 | `SpotSession` | Closing a sheet stops its call. Each new change or press stops the older call. | L2, L4, L5. |
+| L2, L4, L5 | `SpotSheet` | Closing a sheet stops its call. Each new change or press stops the older call. | L2, L4, L5. |
 | L6, L7, L8, G1 to G4 | Not built | Running work does not show on a card, an action or the menu bar item, and a sheet does not find its running call again. | L6, L7, L8, G1 to G4. |
-| D1 to D6 | Not built | No drops. | D1 to D6. |
-| A2 | `SpotSession` | It has this name. | `SpotSheet`. |
-| A1 | `SpotsModel`, `SpotSession`, `PluginMetric` | Each starts runs by itself. | One owner. |
+| D1 to D6 | `PluginCommand.drop` | The command keeps `drop`. Nothing else is built. | D1 to D6. |
+| A1 | `SpotsModel`, `SpotSheet`, `PluginMetric` | Each starts runs by itself. | One owner. |
 | A1 | `PluginRun`, `LiveScript` | Process start is written three times. | One way to start, with two modes. |
 | M1, M2 | Runs | `Caffeinate` runs twice for each panel open. `Apps` runs twice for a panel open and a sheet open. | One run. |
 | M3 | `SpotsModel.reload` | Reads state one script at a time, with a limit of 2 s for each. | At the same time, with the limit of section 7. |
-| Section 5 | `PluginRun` | The environment adds only `PATH`. | `OPENSPOT_DATA`. |
 | K1 to K3 | `SpotTranslation`, `translate.sh` | The script starts `openspot translate --serve` and talks through fifos. | A handler that calls `openspot translate`. |
-| K5 | `SpotSession` | Only a live sheet starts empty and closes with the panel. | Each sheet of parts. |
-| Y1, Y2 | `SpotAction`, `SpotsModel`, `SpotSession` | A live script gets `read`, `set` and `press`, with `event` and `id` keys. A pick or an action starts a second copy. | Each call reaches it, with `name` and `value`. |
-| L3, Y5 | `SpotSession`, `LiveScript` | A live script runs only while its sheet is open. | While something wants it. |
+| K5 | `SpotSheet` | Only a staying sheet starts empty and closes with the panel. | Each sheet of parts. |
+| Y2 | `SpotsModel`, `SpotSheet` | A pick or an action of a staying script, and a form, start a second copy. | Each call reaches the running script. |
+| L3, Y5 | `SpotSheet`, `LiveScript` | A staying script runs only while its sheet is open. | While something wants it. |
 | F7, section 9 | `PluginMetric`, `MetricSchedule`, widgets | Only a script with a number in its `read` can be placed. | Any script with a `read`. |
-| Docs | `GUIDE.md`, `PluginGuide` | Teach the old keys and calls. | Follow this document. |
+| Docs | `GUIDE.md`, `PartCatalog` | They teach today's time limits and what stops a call, and say that `launch`, `wake`, `drop` and `tray` with `stay` do not act yet. | Follow section 7, the moments and the drops when each one is built. |
 
-The tests in `SpotActionTests`, `SheetStreamTests`, `SpotPanelTests` and `SamplePluginsTests` pin the old calls. Read them
+The tests in `SpotActionTests`, `SheetStreamTests`, `SpotPanelTests` and `SamplePluginsTests` pin the calls. Read them
 before each change. Each change in this table is breaking, and no alias stays.
 
 ## 14. Decisions

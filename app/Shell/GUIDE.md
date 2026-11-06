@@ -44,33 +44,47 @@ open -a Calendar
 | `size` | `wide` (the default), `small`, `square` or `strip`. |
 | `order` | Its place in the grid. A lower number comes first, and the default is 0. |
 | `read` | When Openspot reads the script. See below. |
-| `rank` | Shows its rows in the main search. A lower number comes first. Needs `read=open`. |
-| `search` | `live`: Openspot calls `<script> search <text>`. Needs `read=click`. |
-| `recents` | `false` to not sort recent picks first. |
-| `tray` | `true` to show a metric in the menu bar. Needs a number as its `read`. |
+| `rank` | Shows its rows in the main search. A lower number comes first. Needs `panel`, `launch` or a number in its `read`. |
+| `tray` | `true` to show a metric in the menu bar. Needs a number in its `read`. `stay=true` also loads, and shows nothing there yet. |
+| `stay` | `true` to keep the script running. See "Sheets of parts". |
+| `drop` | A list of file extensions, `folder` or `*`. Openspot keeps this key, and does not act on it yet. |
 
-To read a script, Openspot calls it with no arguments:
+`read` is a list of moments, split by commas, such as `read=panel,60`. At each moment Openspot calls `<script> read`:
 
-| `read` | Openspot reads it | Use it for |
+| Moment | Openspot reads it | Use it for |
 |---|---|---|
-| none | Never. A click runs it. | A script that does one thing. |
-| `click` | On a click. | A list. |
-| `open` | Each time the panel opens. | A toggle, a slider, or a list for the main search. |
+| none | Never. A click runs `<script>` with no argument. | A script that does one thing. |
+| `sheet` | When its sheet opens. | A list. |
+| `panel` | Each time the panel opens. | A toggle, a slider, or a list for the main search. |
 | a number | Every that many seconds. | A metric. It has no spot unless it also has a `key`. |
+| `launch`, `wake` | Not yet. Openspot keeps these words, and does not act on them yet. | |
 
-So with a `read`, a script must do no work when it has no arguments.
+A read must be safe at each moment that its header lists, so `read` does no work.
 
 ## The calls
 
 | Call | When | The script does |
 |---|---|---|
-| `<script>` | On a click or a read | Does its work, or prints what to show if it has a `read`. |
+| `<script>` | A click, with no `read` in its header | Does its work. |
+| `<script> read [text]` | A moment, a sheet opens, or the search changes with `search=script` | Prints what to show. |
+| `<script> run` | A click on a card with no sheet, with a `read` in its header | Does its work. |
 | `<script> open <run>` | A row is picked | Opens the row. |
-| `<script> <action> [run]` | An action runs | Does it. A filled form comes on stdin. |
-| `<script> form <action> [run]` | Before an action with a form | Prints the fields. |
-| `<script> search <text>` | The search changes, with `search=live` | Prints the rows and the actions. |
+| `<script> <action> [run]` | An action runs | Does it. With `form=true` and empty stdin, it prints the fields. A filled form comes on stdin. |
+| `<script> <part> [value]` | A part changes, or a press of a part | Prints the sheet, or nothing to be read again. |
 | `<script> on`, `off` | A toggle is pressed | Turns it on or off. |
 | `<script> level <number>` | A slider moves | Sets the level. |
+
+`read` is the only reserved word. A part or an action cannot be called `read`, and `openspot check` reports it.
+
+```sh
+#!/bin/sh
+# name=Notes
+# read=sheet
+case "$1" in
+  read) printf 'row=Today\nrun=today\n' ;;
+  open) open -a Notes ;;
+esac
+```
 
 ## What a script prints
 
@@ -94,7 +108,8 @@ run=/Applications/Notes.app
 - With `jq -r`, use `def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");` and write `"row=\(.title | esc)"`.
 
 A block is a row when it has `row`, an action when it has `action`, and a form field when it has `field`. The first other
-block says how the spot itself looks. Printing nothing means that there is nothing to show.
+block says how the spot itself looks, and it can hold `search` and `recents`. Printing nothing means that there is nothing
+to show.
 
 To confirm what an action did, print `toast=Saved`. Openspot shows it, also with the panel closed.
 
@@ -112,9 +127,17 @@ file=/Applications/Safari.app
 `row` and `run` are the only keys a list needs. Also use `symbol` for an SF Symbol, `file` for a file's icon, or `image`
 for a path to an image. `hides` is the ID of an action that this row does not offer. Repeat the line for each one.
 
+Openspot searches the rows itself and sorts recent picks first. To change this, print one block before the rows on each
+read:
+
+| Prints | Does |
+|---|---|
+| `search=script` | Each search change calls `<script> read <text>`. The script prints the rows that match. |
+| `recents=false` | Does not sort recent picks first. |
+
 ## Toggles and sliders
 
-Give the script `read=open`, and let it print one block:
+Give the script `read=panel`, and let it print one block:
 
 | Prints | Shows |
 |---|---|
@@ -147,7 +170,8 @@ close=true
 `action=open` is special, because it sets what Enter does on a row. `title` is the word for Enter, and the default is
 `Open`. `close=false` keeps the panel open after a pick.
 
-For an action with a form, `<script> form <action> [run]` prints a block with the title, then one block for each field:
+An action with a form first runs as `<script> <action> [run]` with empty stdin. It prints a block with the title, then one
+block for each field:
 
 ```text
 title=New note
@@ -159,8 +183,8 @@ required=true
 ```
 
 A field needs `field`, its name, and `label`. `type` is `text` (the default) or `multiline`. `value` and `placeholder`
-are optional. Then `<script> <action> [run]` gets the values on stdin as one block, such as `text=one\ntwo`, and it can
-print the `run` value of the row to select.
+are optional. After the person fills the form, the same call runs with the values on stdin as one block, such as
+`text=one\ntwo`, and it can print the `run` value of the row to select.
 
 ## Sheets of parts
 
@@ -210,16 +234,16 @@ The app owns each gap, row height and centre. A script says only which part goes
 | Prints | Shows | Openspot calls |
 |---|---|---|
 | `title`, `detail`, `symbol` | A line, with a value on the right. | |
-| `on=true` | A switch. | `set <id> true` or `false` |
-| `level=70`, `min`, `max` | A slider. | `set <id> <number>` |
-| `color=#ff0000` for each swatch, `value` | A row of colours. | `set <id> <color>` |
-| `option=en:English` for each choice, `value` | A menu. | `set <id> <option id>` |
-| `item=a:Address` for each row, `value` | A list to choose from. | `set <id> <item id>` |
-| `text=...`, `placeholder` | A text area. `readonly=true` only shows the text. | `set <id> <text>` |
-| `press=arrow.clockwise` | A round button. | `press <id>` |
-| `press=true` | A button that fills its cell. | `press <id>` |
+| `on=true` | A switch. | `<id> true` or `false` |
+| `level=70`, `min`, `max` | A slider. | `<id> <number>` |
+| `color=#ff0000` for each swatch, `value` | A row of colours. | `<id> <color>` |
+| `option=en:English` for each choice, `value` | A menu. | `<id> <option id>` |
+| `item=a:Address` for each row, `value` | A list to choose from. | `<id> <item id>` |
+| `text=...`, `placeholder` | A text area. `readonly=true` only shows the text. | `<id> <text>` |
+| `press=arrow.clockwise` | A round button. | `<id>` |
+| `press=true` | A button that fills its cell. | `<id>` |
 | `metric=42%`, `point=3`, `image=<path>`, `block=progress` | A number, a chart, a picture, a progress bar. | |
-| `keys=7 8 9 +` in the layout block | A row of key buttons. | `press <word>` |
+| `keys=7 8 9 +` in the layout block | A row of key buttons. | `<word>` |
 
 The script holds no state. Each call gets all values on stdin, as one block such as `input=one\ntwo`. It prints the
 whole sheet again, or prints nothing to be read again. It can also print `toast=Saved`. In the layout block, `every=5`
@@ -229,16 +253,16 @@ Openspot shows a change at once, and only the answer to the newest change shows.
 a slider's motion. Text that the person is typing stays as typed until they press something.
 
 A call can keep printing, as `ffmpeg` does. A line `---` ends a frame, and the app draws it at once. A frame with a layout
-replaces the sheet, and a frame with only parts changes those parts. A new `set` or `press` stops the running call, and so
+replaces the sheet, and a frame with only parts changes those parts. A new change or press stops the running call, and so
 does closing the sheet. Only the first frame has a time limit. To outlive the sheet, start the work with `nohup`.
 
-A script with `# live=true` in its header runs while its sheet is open, so that a model or a connection stays loaded
-between events. It starts when the sheet opens, and the sheet shows with its first frame. Closing the sheet or the panel
-closes its input, and it then has 2 seconds to end. It gets one block on stdin for each event, with a blank line after it:
-`event=read`, `event=set` with `id` and `value`, or `event=press` with `id`. It keeps its own state, and answers with
-frames. See `translate.sh` for an example.
+A script with `# stay=true` in its header runs while its sheet is open, so that a model or a connection stays loaded
+between calls. It starts when the sheet opens, and the sheet shows with its first frame. Closing the sheet or the panel
+closes its input, and it then has 2 seconds to end. It gets one block on stdin for each call, with a blank line after it:
+`name`, `value`, and one `field.<id>` for each value of the sheet. It keeps its own state, and answers with frames. See
+`translate.sh` for an example.
 
-To read the sheet when the panel opens, so that it opens at its full size, use `read=open`. Otherwise use `read=click`.
+To read the sheet when the panel opens, so that it opens at its full size, use `read=panel`. Otherwise use `read=sheet`.
 
 To try a sheet, run `openspot sandbox`, or `openspot sandbox <file>` to watch a file or run a script. It shows the real
 sheet and its faults at once. `openspot check --sheet` reports the faults of a sheet on stdin, and `openspot render
@@ -266,8 +290,7 @@ To use `openspot` in a terminal, link it: `ln -s <path to Openspot.app>/Contents
 
 ## Metrics
 
-A metric is one piece of live data. Any widget can show it. A script with a number of seconds as its `read` is a metric,
-and its ID is its path with no extension, such as `coffee` or `home/coffee`.
+A metric is one piece of live data. Any widget can show it. A script with a number in its `read` is a metric, and its ID is its path with no extension, such as `coffee` or `home/coffee`.
 
 File `coffee.sh`:
 
@@ -369,8 +392,9 @@ openspot check <plugins folder>
 
 - Print only the data. Send each message for the person to stderr. When a script fails, its last stderr line shows.
 - Exit with 0 on success. Any other code is a failure.
-- Be fast. A `read=open` that prints no rows has 2 seconds, a list or a metric has 10, and an action has 30.
-- Keep files in `${OPENSPOT_CONFIG:-$HOME/.config/openspot}/data`, not in the plugin folder.
+- Be fast. A `read=panel` that prints no rows has 2 seconds, a list or a metric has 10, and an action has 30.
+- Keep files in `$OPENSPOT_DATA`, not in the plugin folder. Openspot creates this folder. All plugins share it, so name your
+  files after your script.
 - Use short plain words in sentence case. Start an action's name with a verb.
 - Do not use a `key` that another plugin has. The first plugin keeps it.
 - A plugin runs with the full access of the person. If you are an agent, tell the person what yours runs.

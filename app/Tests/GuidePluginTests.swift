@@ -140,6 +140,13 @@ final class GuidePluginTests: XCTestCase {
         XCTAssertEqual(faults, [])
     }
 
+    func testTheGuideAndTheCatalogTeachNoOldKeyOrCall() {
+        for old in ["read=open", "read=click", "live=true", "search=live", "form <action>", "search <text>", "set <id>", "press <id>", "press <word>", "event=", "OPENSPOT_CONFIG"] {
+            XCTAssertFalse(guideText.contains(old), old)
+            XCTAssertFalse(PartCatalog.text.contains(old), old)
+        }
+    }
+
     func testTheWidgetExampleInTheGuideLoads() throws {
         let example = try XCTUnwrap(blocks("toml").first)
         let widgets = try XCTUnwrap(try TomlDocument(text: example).arrays["widgets"])
