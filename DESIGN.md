@@ -275,7 +275,7 @@ Two rules decide each call, with no key.
 |---|---|
 | L1 | A `read` stops when nothing wants it. So a stream from a `read` stops when its sheet closes. |
 | L2 | A call that does work keeps running with the sheet and the panel closed. Openspot keeps its last frame. |
-| L3 | Something wants a script while its sheet is open, while the panel is open and a widget places it or `panel` is in its `read`, while the menu bar shows it, or at all times with `launch` in its `read`. |
+| L3 | Something wants a script while its sheet is open and the panel is open, while the panel is open and a widget places it or `panel` is in its `read`, while the menu bar shows it, or at all times with `launch` in its `read`. |
 | L4 | A new value for a part stops the older call of that part, and only the newest answer shows. So typing does not pile up runs. |
 | L5 | A second press of a running part, action or card stops the call. Each process in its group gets the terminate signal. After 2 seconds, Openspot kills each process in the group that still runs. |
 | L6 | Running work shows on its part, its action, its spot and the Openspot item in the menu bar, so the person can find and stop it. It shows only after the call has run for 1 second, so a quick call does not flash. |
@@ -408,14 +408,10 @@ Remove a row when the code follows the rule.
 
 | Rules | Module | Today | Target |
 |---|---|---|---|
-| Section 5, moments | `SpotRead`, `SpotRuns.arrive` | `launch` and `wake` are words in `read`, and the command keeps them. Nothing calls `read` at those moments. | Both call `read` at their moment. |
-| Section 4, `tray` | `Plugin`, `SpotRuns.trayMarks` | `tray=true` with `stay=true` loads, and shows nothing in the menu bar. | It shows. |
 | L6, G1 to G4 | `SpotSheet.calls` holds them, and nothing draws them | Running work does not show on a card, an action or the menu bar item. | L6, G1 to G4. |
 | D1 to D6 | `PluginCommand.drop`, `SpotSheet.calls` | The command keeps `drop`. Nothing else is built. | D1 to D6. |
 | K1 to K3 | `SpotTranslation`, `translate.sh` | The script starts `openspot translate --serve` and talks through fifos. | A handler that calls `openspot translate`, which reaches a helper that exits when idle. |
-| Y2 | `SpotSheet` | A pick or an action of a staying script, and a form, start a second copy. | Each call reaches the running script. |
-| L3, Y5 | `SpotSheet`, `SpotRuns.stay`, `SpotRuns.wants` | A staying script runs only while its sheet is open. | While something wants it. |
-| Docs | `GUIDE.md`, `PartCatalog` | They say that `launch`, `wake`, `drop` and `tray` with `stay` do not act yet. | Follow each rule when it is built. |
+| Docs | `GUIDE.md`, `PartCatalog` | They say that `drop` does not act yet. | Follow each rule when it is built. |
 
 The tests in `SpotActionTests`, `SheetStreamTests`, `SpotPanelTests`, `SpotRunsTests` and `SamplePluginsTests` pin the calls. Read them
 before each change. Each change in this table is breaking, and no alias stays.

@@ -46,6 +46,8 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         self.trigger = trigger
         trayBar = SpotTrayBar(model: model)
         model.reload()
+        model.arrive(.launch)
+        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(didWake), name: NSWorkspace.didWakeNotification, object: nil)
         let panelKey = HotKey.register(code: UInt32(kVK_Space), modifiers: UInt32(controlKey)) { [weak self] in
             Task { @MainActor in self?.togglePanel() }
         }
@@ -57,6 +59,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         model.quit()
+    }
+
+    @objc private func didWake() {
+        model.arrive(.wake)
     }
 
     @objc func togglePanel() {

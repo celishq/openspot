@@ -918,6 +918,498 @@ final class SpotRunsTests: XCTestCase {
         XCTAssertEqual(sheet.list.shown.count, 2)
     }
 
+    // MARK: L3, moments
+
+    func testEachMomentReadsOnlyTheScriptsThatListIt() async throws {
+        try script("onlaunch", header: "read=launch", log: "onlaunch", "printf 'title=L\\n'")
+        try script("onwake", header: "read=wake", log: "onwake", "printf 'title=W\\n'")
+        try script("onpanel", header: "read=panel", log: "onpanel", "printf 'title=P\\n'")
+        _ = try scanned()
+        try await pause(0.2)
+        XCTAssertEqual(log("onlaunch") + log("onwake") + log("onpanel"), [])
+
+        runs.arrive(.launch)
+        try await wait("the launch read") { self.log("onlaunch") == ["read"] }
+        XCTAssertEqual(log("onwake"), [])
+
+        runs.arrive(.wake)
+        try await wait("the wake read") { self.log("onwake") == ["read"] }
+        XCTAssertEqual(log("onlaunch"), ["read"])
+        XCTAssertEqual(log("onpanel"), [])
+
+        runs.arrive(.panel)
+        try await wait("the panel read") { self.log("onpanel") == ["read"] }
+        XCTAssertEqual(log("onlaunch"), ["read"])
+        XCTAssertEqual(log("onwake"), ["read"])
+    }
+
+    func testAnOpenSheetOfRowsIsNotReadWithThePanelClosedAndIsReadWhenThePanelOpens() async throws {
+        try script(header: "read=5\nkey=a", "printf 'row=A\\nrun=a\\n'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 && sheet.calls.isEmpty }
+        XCTAssertEqual(log(), ["read"])
+        time += 5
+        runs.tick()
+        try await wait("the read from the number") { self.log() == ["read", "read"] && sheet.calls.isEmpty }
+
+        runs.panelClosed()
+        XCTAssertTrue(sheet.isOpen)
+        time += 5
+        runs.tick()
+        try await pause(0.3)
+        XCTAssertEqual(log(), ["read", "read"])
+
+        time += 5
+        runs.panelOpened()
+        try await wait("the read when the panel opens") { self.log() == ["read", "read", "read"] }
+    }
+
+    func testAStreamOfAnOpenSheetOfRowsStopsWhenThePanelClosesAndStartsWhenItOpens() async throws {
+        try script(header: "read=sheet", "printf 'row=A\\nrun=a\\n---\\n'\nsleep 0.5\ntouch '\(path("went-on"))'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+
+        runs.panelClosed()
+        try await pause(0.8)
+        XCTAssertFalse(exists("went-on"))
+        XCTAssertEqual(sheet.list.shown.count, 1)
+
+        time += 5
+        runs.panelOpened()
+        try await wait("the new read") { self.log() == ["read", "read"] }
+    }
+
+    func testAScriptWithLaunchAndANumberIsReadWithThePanelClosed() async throws {
+        try script(header: "read=launch,1\nkey=a", "printf 'title=1\\n'")
+        _ = try scanned()
+        try await wait("the first read") { self.log().count == 1 }
+
+        time += 1
+
+        try await wait("the read from the clock") { self.log().count == 2 }
+    }
+
+    // MARK: Y2, Y3, Y5
+
+    /// Writes a staying script. It logs each line of its stdin, and prints the frame after each block.
+    @discardableResult
+    private func staying(header: String = "stay=true", frame: String = "row=A\\nrun=a\\n") throws -> URL {
+        try script(header: header, """
+        trap 'touch "\(path("ended"))"' EXIT
+        while IFS= read -r line; do
+          printf '%s\\n' "$line" >> '\(path("blocks"))'
+          [ -n "$line" ] || printf '\(frame)---\\n'
+        done
+        """)
+    }
+
+    /// The blocks that a staying script got, one string for each.
+    private func blocks() -> [String] {
+        let text = (try? String(contentsOfFile: path("blocks"), encoding: .utf8)) ?? ""
+        return text.components(separatedBy: "\n\n").filter { !$0.isEmpty }
+    }
+
+    /// The first scanned script's sheet, with each failure that it tells the person, before the script can start.
+    private func toldSheet() throws -> (sheet: SpotSheet, told: () -> [String]) {
+        let sheet = runs.sheet(for: try XCTUnwrap(PluginFolder(url: folder).scan().scripts.first))
+        var failures: [String] = []
+        sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
+        return (sheet, { failures })
+    }
+
+    private static let form = """
+    while IFS= read -r line; do
+      printf '%%s\\n' "$line" >> '%@'
+      case "$line" in
+        name=*) name=${line#name=}; filled= ;;
+        field.*) filled=1 ;;
+        '')
+          if [ "$name" = new ] && [ -z "$filled" ]; then
+            printf 'title=New\\n\\nfield=a\\nlabel=A\\n---\\n'
+          else
+            printf 'action=new\\ntitle=New\\nscope=command\\nform=true\\n\\nrow=A\\nrun=a\\n---\\n'
+          fi
+          ;;
+      esac
+    done
+    """
+
+    func testAPickReachesTheRunningStayingScript() async throws {
+        try staying()
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+
+        sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
+
+        try await wait("the call") { self.blocks() == ["name=read", "name=open\nvalue=a"] }
+        XCTAssertEqual(log().count, 1)
+        XCTAssertTrue(sheet.calls.isEmpty)
+    }
+
+    func testAnActionReachesTheRunningStayingScript() async throws {
+        try staying(frame: "action=go\\ntitle=Go\\nscope=item\\n\\nrow=A\\nrun=a\\n")
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        let action = try XCTUnwrap(sheet.command.actions.first)
+
+        sheet.run(action, item: sheet.list.selectedItem)
+        sheet.run(action, item: nil)
+
+        try await wait("the calls") { self.blocks() == ["name=read", "name=go\nvalue=a", "name=go"] }
+        XCTAssertEqual(log().count, 1)
+    }
+
+    func testAFormOfAStayingScriptGoesAsTwoBlocks() async throws {
+        try script(header: "stay=true", String(format: Self.form, path("blocks")))
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the action") { sheet.command.actions.count == 1 }
+        let action = try XCTUnwrap(sheet.command.actions.first)
+
+        let asked = try await sheet.form(action, item: nil)
+        let form = try XCTUnwrap(asked)
+        XCTAssertEqual(form.fields.map(\.name), ["a"])
+        XCTAssertEqual(sheet.command.actions.count, 1)
+        var draft = FormDraft(form: form, prefill: "")
+        draft.set("one", for: "a")
+        let isDone = try await sheet.submit(action, item: nil, draft: draft)
+
+        XCTAssertTrue(isDone)
+        try await wait("the blocks") { self.blocks() == ["name=read", "name=new", "name=new\nfield.a=one"] }
+        XCTAssertEqual(log().count, 1)
+    }
+
+    func testASecondAskForAFormOfAStayingScriptLeavesTheFirstWaiting() async throws {
+        try script(header: "stay=true", """
+        while IFS= read -r line; do
+          case "$line" in
+            name=new) sleep 0.3; printf 'title=New\\n\\nfield=a\\nlabel=A\\n---\\n' ;;
+            name=read) printf 'action=new\\ntitle=New\\nscope=command\\nform=true\\n---\\n' ;;
+          esac
+        done
+        """)
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the action") { sheet.command.actions.count == 1 }
+        let action = try XCTUnwrap(sheet.command.actions.first)
+
+        async let first = sheet.form(action, item: nil)
+        try await pause(0.1)
+        let second = try await sheet.form(action, item: nil)
+
+        XCTAssertNil(second)
+        let form = try await first
+        XCTAssertEqual(form?.fields.map(\.name), ["a"])
+    }
+
+    func testAFormOfAStayingScriptThatEndsIsABadForm() async throws {
+        try script(header: "stay=true", """
+        while IFS= read -r line; do
+          case "$line" in
+            name=new) exit 0 ;;
+            name=read) printf 'action=new\\ntitle=New\\nscope=command\\nform=true\\n---\\n' ;;
+          esac
+        done
+        """)
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the action") { sheet.command.actions.count == 1 }
+        let action = try XCTUnwrap(sheet.command.actions.first)
+
+        do {
+            _ = try await sheet.form(action, item: nil)
+            XCTFail("It should have no form.")
+        } catch {
+            XCTAssertEqual(error as? PluginError, .badForm)
+        }
+    }
+
+    func testASearchReachesTheRunningStayingScript() async throws {
+        try staying(frame: "search=script\\n\\nrow=A\\nrun=a\\n")
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+
+        sheet.search("rep")
+
+        try await wait("the search") { self.blocks() == ["name=read", "name=read\nvalue=rep"] }
+        try await wait("the answer") { !sheet.list.isWaiting }
+        XCTAssertEqual(log().count, 1)
+    }
+
+    func testACardCallOfAStayingScriptReachesIt() async throws {
+        try staying()
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+
+        sheet.pressCard()
+
+        try await wait("the call") { self.blocks().count == 2 }
+        XCTAssertEqual(log().count, 1)
+        XCTAssertFalse(sheet.isCardRunning)
+    }
+
+    func testAStayingTrayScriptRunsWithThePanelClosedAndItsFrameReachesTheMenuBar() async throws {
+        try staying(header: "stay=true\ntray=true", frame: "title=3\\n")
+        _ = try scanned()
+
+        try await wait("the mark") { self.runs.trayMarks.first?.mark.summary == "Script: 3" }
+
+        XCTAssertFalse(runs.isPanelOpen)
+        XCTAssertEqual(log().count, 1)
+        XCTAssertEqual(blocks(), ["name=read"])
+    }
+
+    func testAStayingTrayScriptGoesOnWhenItsSheetAndThePanelCloseAndAScanComes() async throws {
+        try staying(header: "stay=true\ntray=true", frame: "title=3\\n\\nrow=A\\nrun=a\\n")
+        let sheet = try sheet()
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        runs.panelOpened()
+        sheet.open {}
+        sheet.close()
+        runs.panelClosed()
+        _ = try scanned()
+        try await pause(0.3)
+
+        XCTAssertFalse(exists("ended"))
+        XCTAssertEqual(log().count, 1)
+
+        sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
+
+        try await wait("the call") { self.blocks().last == "name=open\nvalue=a" }
+        XCTAssertEqual(log().count, 1)
+    }
+
+    func testAFrameOfPartsChangesNoMarkOfAStayingTrayScript() async throws {
+        try script(header: "stay=true\ntray=true", """
+        while IFS= read -r line; do
+          case "$line" in
+            name=read) printf 'title=3\\n---\\n' ;;
+            name=open) printf 'part=a\\ntitle=A\\n---\\n'; touch '\(path("printed"))' ;;
+          esac
+        done
+        """)
+        let sheet = try sheet()
+        try await wait("the mark") { !self.runs.trayMarks.isEmpty }
+
+        sheet.pick(SpotItem(title: "A", run: "a"))
+        try await wait("the frame") { self.exists("printed") }
+        try await pause(0.2)
+
+        XCTAssertEqual(runs.trayMarks.first?.mark.summary, "Script: 3")
+        XCTAssertEqual(runs.trayMarks.first?.mark.isStale, false)
+    }
+
+    func testASheetOfARunningStayingScriptOpensAtOnceWithItsLastFrame() async throws {
+        try staying(header: "stay=true\ntray=true", frame: "title=3\\n\\npart=a\\ntitle=A\\n")
+        let sheet = try sheet()
+        try await wait("the mark") { !self.runs.trayMarks.isEmpty }
+        XCTAssertNil(sheet.panel)
+        var isReady = false
+
+        sheet.open { isReady = true }
+
+        XCTAssertTrue(isReady)
+        XCTAssertEqual(sheet.panel?.parts.map(\.id), ["a"])
+        XCTAssertEqual(log().count, 1)
+    }
+
+    func testAStayingScriptIsWantedByThePanelOnlyWhileItIsOpen() async throws {
+        try staying(header: "stay=true\nread=panel")
+        let sheet = try sheet()
+        try await pause(0.2)
+        XCTAssertEqual(log(), [])
+
+        runs.panelOpened()
+        try await wait("the frame") { sheet.list.shown.count == 1 }
+        XCTAssertEqual(blocks(), ["name=read"])
+
+        runs.panelClosed()
+        try await wait("the end") { self.exists("ended") }
+        XCTAssertEqual(log().count, 1)
+    }
+
+    func testAStayingScriptWithLaunchRunsAtAllTimesAndEachMomentReachesIt() async throws {
+        try staying(header: "stay=true\nread=launch,wake")
+        let sheet = try sheet()
+
+        runs.arrive(.launch)
+        try await wait("the frame") { sheet.list.shown.count == 1 }
+        XCTAssertEqual(blocks(), ["name=read"])
+
+        runs.panelOpened()
+        runs.panelClosed()
+        runs.arrive(.wake)
+
+        try await wait("the read of the wake") { self.blocks() == ["name=read", "name=read"] }
+        XCTAssertFalse(exists("ended"))
+        XCTAssertEqual(log().count, 1)
+    }
+
+    func testAStayingScriptWithOnlyWakeDoesNotStartAtItsMoment() async throws {
+        try staying(header: "stay=true\nread=wake")
+        _ = try scanned()
+
+        runs.arrive(.wake)
+        try await pause(0.3)
+
+        XCTAssertEqual(log(), [])
+    }
+
+    func testAStayingScriptWithANumberGetsAReadOnItsTimer() async throws {
+        try staying(header: "stay=true\ntray=true\nread=5", frame: "title=3\\n")
+        _ = try scanned()
+        try await wait("the mark") { !self.runs.trayMarks.isEmpty }
+        XCTAssertEqual(blocks(), ["name=read"])
+
+        time += 5
+        runs.tick()
+
+        try await wait("the read") { self.blocks() == ["name=read", "name=read"] }
+        XCTAssertEqual(log().count, 1)
+    }
+
+    func testAStayingScriptThatEndedStartsAgainAtTheNextMoment() async throws {
+        try script(header: "stay=true\ntray=true", """
+        [ -f '\(path("second"))' ] || { touch '\(path("second"))'; printf 'title=1\\n'; exit 0; }
+        while IFS= read -r line; do
+          [ -n "$line" ] || printf 'title=2\\n---\\n'
+        done
+        """)
+        let sheet = try sheet()
+        try await wait("the end of the first run") { sheet.reading.isStale }
+        XCTAssertEqual(sheet.reading.value?.title, "1")
+        XCTAssertEqual(log().count, 1)
+
+        runs.arrive(.wake)
+
+        try await wait("the second run") { sheet.reading.value?.title == "2" }
+        XCTAssertFalse(sheet.reading.isStale)
+        XCTAssertEqual(log().count, 2)
+    }
+
+    func testACallStartsAStayingScriptThatNothingWantsAndItEndsAfterTheCall() async throws {
+        try staying()
+        let sheet = try sheet()
+
+        sheet.pick(SpotItem(title: "A", run: "a"))
+
+        try await wait("the end") { self.exists("ended") }
+        XCTAssertEqual(blocks(), ["name=read", "name=open\nvalue=a"])
+        XCTAssertEqual(log().count, 1)
+    }
+
+    func testAStayingScriptThatLeavesTheFolderEnds() async throws {
+        let url = try staying(header: "stay=true\ntray=true", frame: "title=3\\n")
+        _ = try scanned()
+        try await wait("the mark") { !self.runs.trayMarks.isEmpty }
+
+        try FileManager.default.removeItem(at: url)
+        _ = try scanned()
+
+        try await wait("the end") { self.exists("ended") }
+    }
+
+    private static let givenUp = "Script failed 3 times in one minute. Openspot will not start it again until its file changes."
+
+    func testThreeQuickFailuresStopNewStartsAndTellThePersonOnce() async throws {
+        try script(header: "stay=true\ntray=true\nread=wake", "echo broken >&2\nexit 1")
+        let (sheet, told) = try toldSheet()
+
+        _ = try scanned()
+        try await wait("the first failure") { told().count == 1 }
+        runs.arrive(.wake)
+        try await wait("the second failure") { told().count == 2 }
+        XCTAssertEqual(told(), ["Script failed. broken", "Script failed. broken"])
+        runs.arrive(.wake)
+        try await wait("the third failure") { told().count == 3 }
+        XCTAssertEqual(told().last, Self.givenUp)
+        XCTAssertEqual(log().count, 3)
+
+        runs.arrive(.wake)
+        runs.panelOpened()
+        runs.panelClosed()
+        _ = try scanned()
+        sheet.pick(SpotItem(title: "A", run: "a"))
+        try await pause(0.3)
+
+        XCTAssertEqual(log().count, 3)
+        XCTAssertEqual(told().filter { $0 == Self.givenUp }.count, 1)
+        XCTAssertEqual(told().count, 3)
+    }
+
+    func testFailuresMoreThanAMinuteApartDoNotStopNewStarts() async throws {
+        try script(header: "stay=true\ntray=true", "echo broken >&2\nexit 1")
+        let (_, told) = try toldSheet()
+        _ = try scanned()
+
+        for count in 1...4 {
+            try await wait("failure \(count)") { told().count == count }
+            time += 31
+            runs.arrive(.wake)
+        }
+
+        try await wait("the fifth start") { self.log().count == 5 }
+        XCTAssertEqual(told().filter { $0 == Self.givenUp }, [])
+    }
+
+    func testAChangedFileStartsAStoppedScriptAgainAndAnUnchangedOneStaysStopped() async throws {
+        try script(header: "stay=true\ntray=true", "echo broken >&2\nexit 1")
+        let (_, told) = try toldSheet()
+        _ = try scanned()
+        try await wait("the first failure") { told().count == 1 }
+        runs.arrive(.wake)
+        try await wait("the second failure") { told().count == 2 }
+        runs.arrive(.wake)
+        try await wait("the third failure") { told().count == 3 }
+
+        _ = try scanned()
+        try await pause(0.2)
+        XCTAssertEqual(log().count, 3)
+
+        try staying(header: "stay=true\ntray=true", frame: "title=3\\n")
+        _ = try scanned()
+
+        try await wait("the mark") { self.runs.trayMarks.first?.mark.summary == "Script: 3" }
+        XCTAssertEqual(log().count, 4)
+    }
+
+    func testASheetOfAStoppedScriptDoesNotOpen() async throws {
+        try script(header: "stay=true\ntray=true", "exit 1")
+        let (sheet, told) = try toldSheet()
+        _ = try scanned()
+        try await wait("the first failure") { told().count == 1 }
+        runs.arrive(.wake)
+        try await wait("the second failure") { told().count == 2 }
+        runs.arrive(.wake)
+        try await wait("the third failure") { told().count == 3 }
+        var isReady = false
+
+        sheet.open { isReady = true }
+        try await pause(0.2)
+
+        XCTAssertFalse(isReady)
+        XCTAssertFalse(sheet.isOpen)
+    }
+
+    func testASheetThatAStayingScriptNeverShowedDoesNotStayOpen() async throws {
+        try script(header: "stay=true", "exit 1")
+        let sheet = try sheet()
+        var isReady = false
+
+        sheet.open { isReady = true }
+        try await wait("the end") { !sheet.isOpen }
+
+        XCTAssertFalse(isReady)
+    }
+
     // MARK: C4, rank, sandbox
 
     func testSearchTextReachesTheScriptAfterAPause() async throws {

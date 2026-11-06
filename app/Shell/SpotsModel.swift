@@ -131,6 +131,11 @@ final class SpotsModel {
         runs.panelOpened()
     }
 
+    /// A moment of the Mac arrived, such as a wake.
+    func arrive(_ moment: SpotRead.Moment) {
+        runs.arrive(moment)
+    }
+
     /// Stops each call as the app quits.
     func quit() {
         runs.quit()

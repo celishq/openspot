@@ -45,7 +45,7 @@ open -a Calendar
 | `order` | Its place in the grid. A lower number comes first, and the default is 0. |
 | `read` | When Openspot reads the script. See below. |
 | `rank` | Shows its rows in the main search. A lower number comes first. Needs `panel`, `launch` or a number in its `read`. A number also needs a `key`, or Openspot refuses the plugin. |
-| `tray` | `true` to show a metric in the menu bar. Needs a number in its `read`. `stay=true` also loads, and shows nothing there yet. |
+| `tray` | `true` to show a metric in the menu bar. Needs a number in its `read`, or `stay=true`. |
 | `stay` | `true` to keep the script running. See "Sheets of parts". |
 | `drop` | A list of file extensions, `folder` or `*`. Openspot keeps this key, and does not act on it yet. |
 
@@ -57,11 +57,12 @@ open -a Calendar
 | `sheet` | When its sheet opens. | A list. |
 | `panel` | Each time the panel opens. | A toggle, a slider, or a list for the main search. |
 | a number | Every that many seconds, while something wants it, such as its open sheet. | A metric. It has no spot unless it also has a `key`. |
-| `launch`, `wake` | Not yet. Openspot keeps these words, and does not act on them yet. | |
+| `launch` | When the app starts. | Work to do once, or a staying script that runs at all times. |
+| `wake` | When the Mac wakes. | A value that is old after a sleep. |
 
 A read must be safe at each moment that its header lists, so `read` does no work. A script has one read at a time. A
-`panel` or a `sheet` moment uses an answer that is younger than 5 seconds. A number always runs. After a call
-that prints no state, Openspot reads the script again.
+`panel` or a `sheet` moment uses an answer that is younger than 5 seconds. A number, `launch` and `wake` always run. After
+a call that prints no state, Openspot reads the script again.
 
 ## The calls
 
@@ -298,12 +299,18 @@ last value.
 
 Closing the panel closes a sheet of parts and drops its values, and the next open reads again. A sheet of rows stays open.
 
-A script with `# stay=true` in its header runs while its sheet is open, so that a model or a connection stays loaded
-between calls. It starts when the sheet opens, and the sheet shows with its first frame. Closing the sheet or the panel
-closes its input. After 2 seconds its group gets the terminate signal, and 2 seconds after that Openspot kills what still
-runs. It gets one block on stdin for each call, with a blank line after it:
-`name`, `value`, and one `field.<id>` for each value of the sheet. It keeps its own state, and answers with frames. See
-`translate.sh` for an example.
+A script with `# stay=true` in its header runs while something wants it, so that a model or a connection stays loaded
+between calls. Something wants it while its sheet is open and the panel is open, while the panel is open and a widget
+places it or `panel` is in its `read`, while the menu bar shows it, or at all times with `launch` in its `read`. It starts
+when something first wants it, and the sheet shows with its first frame. When nothing wants it, Openspot closes its input.
+After 2 seconds its group gets the terminate signal, and 2 seconds after that Openspot kills what still runs.
+
+It gets one block on stdin for each call, with a blank line after it: `name`, `value`, and one `field.<id>` for each value
+of the sheet. A pick, an action and a form reach the script that runs, and no call starts a second copy. It keeps its own
+state, and answers with frames. See `translate.sh` for an example.
+
+If it ends and something still wants it, the next moment or call starts it again. After 3 failures in one minute, Openspot
+tells the person, and does not start it again until a scan finds its file changed.
 
 To read the sheet when the panel opens, so that it opens at its full size, use `read=panel`. Otherwise use `read=sheet`.
 

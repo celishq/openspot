@@ -38,6 +38,7 @@ public final class SpotRuns {
     nonisolated deinit {}
 
     /// Takes a new look at the plugin folder. Each script keeps its sheet, and a sheet whose script is gone stops its reads.
+    /// A staying script that something wants starts.
     public func take(_ scan: ScanResult) {
         let scripts = scan.scripts
         placed = Set(scan.commands.flatMap(\.places))
@@ -47,7 +48,7 @@ public final class SpotRuns {
             sheet.close()
             sheet.stopReads()
         }
-        scripts.forEach { _ = sheet(for: $0) }
+        scripts.forEach { sheet(for: $0).scanned() }
         updateClock()
     }
 
@@ -67,6 +68,7 @@ public final class SpotRuns {
     /// The panel opened: reads each script that this moment lists or that a widget places, and starts the timers.
     public func panelOpened() {
         isPanelOpen = true
+        sheets.values.forEach { $0.panelOpened() }
         tick()
         arrive(.panel)
         for id in placed {
@@ -83,16 +85,18 @@ public final class SpotRuns {
     }
 
     /// A moment arrived: reads each script whose `read` lists it, all at the same time. Only `panel` can use a young answer.
+    /// A staying script that something wants and that ended starts again.
     public func arrive(_ moment: SpotRead.Moment) {
         for sheet in sheets.values where sheet.command.read?.has(moment) == true {
             sheet.read(need: moment == .panel ? .moment : .clock)
         }
+        sheets.values.forEach { $0.settleLive() }
     }
 
     /// Reads each wanted script whose number of seconds has passed.
     public func tick() {
         let time = now()
-        for sheet in sheets.values where wants(sheet.command) || sheet.isOpen {
+        for sheet in sheets.values where sheet.isWanted {
             guard let seconds = sheet.command.read?.seconds else { continue }
             if let last = asked[sheet.command.id], time.timeIntervalSince(last) < seconds { continue }
             asked[sheet.command.id] = time
@@ -138,7 +142,7 @@ public final class SpotRuns {
         return text
     }
 
-    /// Whether something other than an open sheet wants this script.
+    /// Whether something other than its sheet in view wants this script.
     func wants(_ command: PluginCommand) -> Bool {
         guard let read = command.read else { return command.isTray }
         return command.isTray || read.has(.launch) || (isPanelOpen && (read.has(.panel) || placed.contains(command.id)))
@@ -214,10 +218,9 @@ public final class SpotRuns {
         processes.append(process)
     }
 
-    /// Keeps the timers going while the panel is open, while the menu bar shows a script, or while an open sheet has a number
-    /// in its `read`.
+    /// Keeps the timers going while the panel is open, or while something wants a script with a number in its `read`.
     func updateClock() {
-        guard isPanelOpen || sheets.values.contains(where: { $0.command.isTray || ($0.isOpen && $0.command.read?.seconds != nil) }) else {
+        guard isPanelOpen || sheets.values.contains(where: { $0.command.read?.seconds != nil && $0.isWanted }) else {
             clock?.cancel()
             clock = nil
             return
