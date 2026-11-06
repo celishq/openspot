@@ -101,10 +101,10 @@ public enum SheetFaults {
             default:
                 break
             }
-            if let title = part.title, part.look != .key {
+            if let title = part.title, part.look != .key, !part.fillsHeight {
                 var control = part.control == .none && part.press != .line ? 0 : controlWidth
                 if case .swatches = part.control { control = smallSwatchWidth }
-                let detail = CGFloat(part.detail?.count ?? 0) * detailLetterWidth
+                let detail = part.detail.map { CGFloat($0.count) * detailLetterWidth + 2 * SheetPlacement.gap } ?? 0
                 if CGFloat(title.count) * letterWidth + detail + (part.press == .line ? 0 : control) > width {
                     faults.append("the title of the part \(part.id) may not fit its cell")
                 }
