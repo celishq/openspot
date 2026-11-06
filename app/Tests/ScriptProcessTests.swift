@@ -16,8 +16,7 @@ final class ScriptProcessTests: XCTestCase {
 
     private func writePlugin(_ name: String, _ body: String) throws -> PluginCommand {
         let url = folder.appendingPathComponent(name)
-        try body.write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        try body.writeScript(to: url)
         return PluginCommand(id: name, name: name, url: url)
     }
 

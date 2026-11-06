@@ -134,8 +134,7 @@ final class SamplePluginsTests: XCTestCase {
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
         let log = folder.appendingPathComponent("moved")
         let move = tools.appendingPathComponent("mv")
-        try "#!/bin/sh\necho \"$2\" >> '\(log.path)'\nexec /bin/mv \"$@\"\n".write(to: move, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: move.path)
+        try "#!/bin/sh\necho \"$2\" >> '\(log.path)'\nexec /bin/mv \"$@\"\n".writeScript(to: move)
         let before = ProcessInfo.processInfo.environment
         setenv("TMPDIR", folder.path, 1)
         setenv("PATH", "\(tools.path):/usr/bin:/bin", 1)
@@ -197,8 +196,7 @@ final class SamplePluginsTests: XCTestCase {
             ("osascript", "cp '\(folder.path)/clipboard' '\(folder.path)/pasted'")
         ] {
             let tool = tools.appendingPathComponent(name)
-            try "#!/bin/sh\n\(script)\n".write(to: tool, atomically: true, encoding: .utf8)
-            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: tool.path)
+            try "#!/bin/sh\n\(script)\n".writeScript(to: tool)
         }
         let home = ProcessInfo.processInfo.environment["HOME"]
         let path = ProcessInfo.processInfo.environment["PATH"]
@@ -552,8 +550,7 @@ final class SamplePluginsTests: XCTestCase {
 
     /// Runs the color picker with a stand-in for the openspot command, which prints this answer.
     private func pickColor(answer: String, in folder: URL) async throws -> String? {
-        try "#!/bin/sh\n[ \"$1 $2\" = 'color pick' ] && printf '%s' '\(answer)'\n".write(to: folder.appendingPathComponent("tools/openspot"), atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: folder.appendingPathComponent("tools/openspot").path)
+        try "#!/bin/sh\n[ \"$1 $2\" = 'color pick' ] && printf '%s' '\(answer)'\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
         let picker = try XCTUnwrap(try scan.commands.first { $0.name == "Color picker" })
         return try await picker.perform(picker.click, timeout: 5)
     }
@@ -592,8 +589,7 @@ final class SamplePluginsTests: XCTestCase {
 
         """
         let tool = folder.appendingPathComponent("tools/openspot")
-        try script.write(to: tool, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: tool.path)
+        try script.writeScript(to: tool)
         return try XCTUnwrap(try scan.commands.first { $0.name == "Translate" })
     }
 
@@ -720,8 +716,7 @@ final class SamplePluginsTests: XCTestCase {
             let translate = try self.fakeTranslate(in: folder)
             let log = folder.appendingPathComponent("moved").path
             let mover = folder.appendingPathComponent("tools/mv")
-            try "#!/bin/sh\necho \"$2\" >> '\(log)'\nexec /bin/mv \"$@\"\n".write(to: mover, atomically: true, encoding: .utf8)
-            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: mover.path)
+            try "#!/bin/sh\necho \"$2\" >> '\(log)'\nexec /bin/mv \"$@\"\n".writeScript(to: mover)
 
             _ = try await Self.drive(translate, [.set("target", to: "ru")])
 

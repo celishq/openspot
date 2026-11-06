@@ -39,8 +39,7 @@ final class CapabilityTests: XCTestCase {
     /// A script that makes one call, and prints its answer.
     private func script(after: String = "") throws -> URL {
         let url = folder.appendingPathComponent("script-\(UUID().uuidString.prefix(8))")
-        try "#!/bin/sh\nprintf count | '\(tool.path)' call \(label)\n\(after)\n".write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        try "#!/bin/sh\nprintf count | '\(tool.path)' call \(label)\n\(after)\n".writeScript(to: url)
         return url
     }
 

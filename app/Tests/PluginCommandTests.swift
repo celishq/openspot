@@ -16,8 +16,7 @@ final class PluginCommandTests: XCTestCase {
 
     private func writeCommand(kind: SpotKind, subtitle: String? = nil, read: SpotRead? = nil, _ body: String) throws -> PluginCommand {
         let url = folder.appendingPathComponent("command.sh")
-        try "#!/bin/sh\n\(body)\n".write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        try "#!/bin/sh\n\(body)\n".writeScript(to: url)
         return PluginCommand(id: "test/Command", name: "Command", url: url, kind: kind, subtitle: subtitle, read: read)
     }
 

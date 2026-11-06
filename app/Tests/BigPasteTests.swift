@@ -47,8 +47,7 @@ final class BigPasteTests: XCTestCase {
           read) printf 'part=input\\ntext=\\n\\npart=output\\ntext=\\nreadonly=true\\n' ;;
           input) \(answer) ;;
         esac
-        """.write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        """.writeScript(to: url)
         runs.take(try PluginFolder(url: folder).scan())
         return try XCTUnwrap(runs.sheets["script"])
     }
@@ -83,8 +82,7 @@ final class BigPasteTests: XCTestCase {
 
             let answer = TextBlock(fields: [.init(key: "part", value: "output"), .init(key: "text", value: text)]).text
             let url = folder.appendingPathComponent("echo.sh")
-            try "#!/bin/sh\ncat\n".write(to: url, atomically: true, encoding: .utf8)
-            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+            try "#!/bin/sh\ncat\n".writeScript(to: url)
             let started = Date()
             let echoed = try await ScriptProcess.output(url: url, input: answer, limit: 30)
             print("TIMING \(name) process with cat: \(Int(Date().timeIntervalSince(started) * 1000)) ms")

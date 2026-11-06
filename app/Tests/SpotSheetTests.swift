@@ -16,8 +16,7 @@ final class SpotSheetTests: XCTestCase {
 
     private func make(name: String = "script", _ body: String, stays: Bool = false, read: SpotRead? = nil) throws -> SpotSheet {
         let url = folder.appendingPathComponent("\(name).sh")
-        try "#!/bin/sh\n\(body)\n".write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        try "#!/bin/sh\n\(body)\n".writeScript(to: url)
         return SpotRuns().sheet(for: PluginCommand(id: name, name: name, url: url, kind: .list, read: read ?? (stays ? nil : .sheet), stays: stays))
     }
 

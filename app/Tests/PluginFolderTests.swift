@@ -19,8 +19,7 @@ final class PluginFolderTests: XCTestCase {
         let url = folder.appendingPathComponent(path)
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         let lines = header.split(separator: "\n").map { "# \($0)\n" }.joined()
-        try "#!/bin/sh\n\(lines)\(body)\n".write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        try "#!/bin/sh\n\(lines)\(body)\n".writeScript(to: url)
         return url
     }
 

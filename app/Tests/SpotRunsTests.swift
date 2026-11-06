@@ -37,8 +37,7 @@ final class SpotRunsTests: XCTestCase {
     private func script(_ name: String = "script", header: String = "", log: String = "log", _ body: String = "") throws -> URL {
         let url = folder.appendingPathComponent("\(name).sh")
         let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\necho \"$*\" >> '\(path(log))'\n\(body)\n".write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        try "#!/bin/sh\n\(lines)\necho \"$*\" >> '\(path(log))'\n\(body)\n".writeScript(to: url)
         return url
     }
 

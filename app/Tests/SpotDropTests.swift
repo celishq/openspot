@@ -49,8 +49,7 @@ final class SpotDropTests: XCTestCase {
     private func sheet(header: String = "", _ body: String = "") throws -> SpotSheet {
         let url = folder.appendingPathComponent("script.sh")
         let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\necho \"$*\" >> '\(path("log"))'\n\(body)\n".write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        try "#!/bin/sh\n\(lines)\necho \"$*\" >> '\(path("log"))'\n\(body)\n".writeScript(to: url)
         let scan = try PluginFolder(url: folder).scan()
         XCTAssertEqual(scan.refused, [])
         runs.take(scan)
@@ -153,8 +152,7 @@ final class SpotDropTests: XCTestCase {
     /// Writes one more script with this header, and takes a new scan.
     private func addScript(_ name: String, header: String) throws {
         let url = folder.appendingPathComponent("\(name).sh")
-        try "#!/bin/sh\n# \(header)\n".write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        try "#!/bin/sh\n# \(header)\n".writeScript(to: url)
         runs.take(try PluginFolder(url: folder).scan())
     }
 
@@ -221,8 +219,7 @@ final class SpotDropTests: XCTestCase {
 
     func testAnArgumentThatStartsWithADashReachesTheScriptAsItIs() async throws {
         let url = folder.appendingPathComponent("plain.sh")
-        try "#!/bin/sh\nprintf '%s|' \"$@\"\n".write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        try "#!/bin/sh\nprintf '%s|' \"$@\"\n".writeScript(to: url)
 
         let text = try await runs.answer(of: PluginCommand(id: "plain", name: "Plain", url: url), .drop(paths: ["-n", "--", "a b"]))
 
