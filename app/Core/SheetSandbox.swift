@@ -34,26 +34,12 @@ public struct SheetSandbox: Equatable, Sendable {
         return panel?.advance() ?? 0
     }
 
-    /// Takes what a script answered, unless a newer change has outdated it.
-    public mutating func take(answer text: String, answering generation: Int, keeping id: String? = nil) {
-        guard panel?.generation == generation || panel == nil else { return }
-        self.text = text
-        let output = PluginOutput(text: text)
-        faults = output.sheetFaults
-        if panel?.take(output, answering: generation, keeping: id) != true, let panel = SpotPanel(output: output) { self.panel = panel }
-    }
-
-    /// Takes a frame of a stream, which changes the parts it names, or the whole sheet when it has a layout.
-    public mutating func merge(frame text: String, answering generation: Int? = nil, keeping id: String? = nil) {
+    /// Shows a frame that a script printed, which its session draws.
+    public mutating func note(frame text: String) {
         self.text = text
         let output = PluginOutput(text: text)
         guard !output.parts.isEmpty else { return }
-        faults = output.layout == nil ? output.partFaults.filter { !$0.hasPrefix("the sheet") } : output.sheetFaults
-        if panel == nil {
-            panel = SpotPanel(output: output)
-        } else {
-            panel?.merge(output, answering: generation, keeping: id)
-        }
+        faults = output.layout == nil ? output.partFaults : output.sheetFaults
     }
 
     public mutating func record(_ line: String) {

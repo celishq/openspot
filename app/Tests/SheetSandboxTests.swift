@@ -44,14 +44,13 @@ final class SheetSandboxTests: XCTestCase {
         XCTAssertEqual(sandbox.log, ["set a true", "press a"])
     }
 
-    func testAnAnswerToAnOlderChangeIsDropped() {
+    func testAFrameOfAScriptShowsItsTextAndFaults() {
         var sandbox = SheetSandbox()
-        sandbox.take(text: "part=a\ntext=one\n")
-        let older = sandbox.set("two", of: "a")
-        sandbox.set("three", of: "a")
 
-        sandbox.take(answer: "part=a\ntext=stale\n", answering: older)
+        sandbox.note(frame: "grid=a b\n\npart=a\ncell=a\ntitle=A\n")
 
-        XCTAssertEqual(sandbox.panel?.parts.first?.value, "three")
+        XCTAssertEqual(sandbox.text, "grid=a b\n\npart=a\ncell=a\ntitle=A\n")
+        XCTAssertEqual(sandbox.faults, ["the letter b has no part"])
+        XCTAssertNil(sandbox.panel)
     }
 }

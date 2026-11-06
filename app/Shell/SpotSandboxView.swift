@@ -57,7 +57,7 @@ struct SpotSandboxView: View {
 
     private var result: some View {
         VStack(alignment: .leading, spacing: SpotTokens.formFieldGap) {
-            if let panel = model.sandbox.panel {
+            if let panel = model.panel {
                 SpotSheetPreview(panel: panel, onSet: { model.set($0, to: $1) }, onPress: { model.press($0) })
             } else {
                 Text("Type a sheet, or choose an example.")
