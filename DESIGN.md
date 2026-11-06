@@ -421,14 +421,7 @@ A change to the meaning of a word that exists is a breaking change. Do not make 
 
 ## 13. Where the code differs today
 
-| Rule | Module | Today |
-|---|---|---|
-| D1 | `SheetLayout`, `SheetExamples`, `PartCatalog`, `translate.sh` | Six named layouts, with named cells. |
-| D3 | `SheetPlacement` | Three row heights and two gaps. |
-| D4 | `SheetPlacement`, `SpotPart` | The `fill` and `lines` keys decide the height. |
-| D5 | `SheetLayout`, `ItemList`, `SpotSheetView`, `SpotPanelView`, `SpotsModel` | A sheet shows rows or parts, never both, and rows have one column. |
-| `OPENSPOT_DATA` | `ScriptProcess`, `Plugin` | One shared folder. |
-| `openspot emoji` | `CommandLineCall`, `SpotCommandLine` | No such call. |
+The code follows this document.
 
 ## 14. Decisions
 
