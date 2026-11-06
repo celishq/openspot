@@ -278,7 +278,7 @@ Two rules decide each call, with no key.
 | L3 | Something wants a script while its sheet is open and the panel is open, while the panel is open and a widget places it or `panel` is in its `read`, while the menu bar shows it, or at all times with `launch` in its `read`. |
 | L4 | A new value for a part stops the older call of that part, and only the newest answer shows. So typing does not pile up runs. |
 | L5 | A second press of a running part, action or card stops the call. Each process in its group gets the terminate signal. After 2 seconds, Openspot kills each process in the group that still runs. |
-| L6 | Running work shows on its part, its action, its spot and the Openspot item in the menu bar, so the person can find and stop it. It shows only after the call has run for 1 second, so a quick call does not flash. |
+| L6 | Running work shows on its part, its action, its spot and the Openspot item in the menu bar, so the person can find and stop it. It shows only after the call has run for 1 second, so a quick call does not flash. A call to a staying script shows no running mark, because Openspot cannot see where such a call ends. That script says what it does in its own frames. |
 | L7 | When a sheet opens, Openspot does its `read`, then adds the last frame of each running call. |
 | L8 | The end of a call shows its `toast`. A failed call always tells the person. |
 | L9 | Quitting Openspot stops each call. To outlive the app, a script starts its work with `nohup` and then exits. A stop reaches the whole group, so `nohup` does not protect a child while its script still runs. |
@@ -409,7 +409,6 @@ Remove a row when the code follows the rule.
 | Rules | Module | Today | Target |
 |---|---|---|---|
 | D2 | `SpotCardView`, `SpotMenuBarDrag` | A card shows the mark only while the drag is on it. | Each card that accepts the files shows it for the whole drag. |
-| L6 | `SpotSheet` | A call to a staying script has no `ScriptCall`, so it shows nothing. | Decide in the code whether one can show, and report it: Openspot cannot see where such a call ends. |
 | C6 | `SheetFrameReader`, `TextBlock` | They loop over each byte. Several 1 MB values took 20 to 30 s in a Debug test. | A 1 MB paste answers in under 1 second in a Debug build, or a report of what limits it. |
 
 The tests in `SpotActionTests`, `SheetStreamTests`, `SpotPanelTests`, `SpotRunsTests` and `SamplePluginsTests` pin the calls. Read them
