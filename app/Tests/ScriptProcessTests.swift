@@ -2,6 +2,8 @@ import XCTest
 @testable import OpenspotCore
 
 final class ScriptProcessTests: XCTestCase {
+    private static let stopPause: TimeInterval = 0.2
+
     private var folder: URL!
 
     override func setUpWithError() throws {
@@ -87,28 +89,26 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     func testAStopReachesEachChildOfTheScript() async throws {
-        let plugin = try writePlugin("child.sh", "#!/bin/sh\n(sleep 0.8; touch '\(path("child"))') &\nprintf 'a=1\\n---\\n'\nwait\n")
+        let plugin = try writePlugin("child.sh", "#!/bin/sh\n(sleep 0.3; touch '\(path("child"))') &\nprintf 'a=1\\n---\\n'\nwait\n")
         let process = ScriptProcess(url: plugin.url)
         var frames = try process.start().makeAsyncIterator()
         _ = try await frames.next()
 
         process.stop()
-        try await Task.sleep(for: .seconds(1.2))
+        try await Task.sleep(for: .seconds(0.5))
 
         XCTAssertFalse(exists("child"))
     }
 
     func testAStopGivesTheScriptTheTerminateSignalAndTimeToEnd() async throws {
-        let plugin = try writePlugin("term.sh", "#!/bin/sh\ntrap 'sleep 0.5; touch \"\(path("cleaned"))\"; exit 0' TERM\nprintf 'a=1\\n---\\n'\nwhile :; do sleep 0.1; done\n")
+        let plugin = try writePlugin("term.sh", "#!/bin/sh\ntrap 'sleep 0.1; touch \"\(path("cleaned"))\"; exit 0' TERM\nprintf 'a=1\\n---\\n'\nwhile :; do sleep 0.05; done\n")
         let process = ScriptProcess(url: plugin.url)
         var frames = try process.start().makeAsyncIterator()
         _ = try await frames.next()
 
         process.stop()
-        try await Task.sleep(for: .seconds(1.5))
 
-        XCTAssertTrue(exists("cleaned"))
-        XCTAssertFalse(process.isRunning)
+        try await wait { self.exists("cleaned") && !process.isRunning }
     }
 
     func testAScriptThatIgnoresTheTerminateSignalEndsAfterTwoSeconds() async throws {
@@ -144,85 +144,85 @@ final class ScriptProcessTests: XCTestCase {
         kill(pid, 0) == 0
     }
 
-    func testAScriptAndAChildThatIgnoreTheTerminateSignalAreGoneTwoSecondsAfterAStop() async throws {
+    private func wait(until fact: () -> Bool) async throws {
+        for _ in 0..<500 {
+            if fact() { return }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTFail("waited too long")
+    }
+
+    func testAScriptAndAChildThatIgnoreTheTerminateSignalAreGoneOnePauseAfterAStop() async throws {
         let plugin = try writePlugin("deaf.sh", "#!/bin/sh\ntrap '' TERM\n\(writesPid("script"))\n\(deafChild())printf 'a=1\\n---\\n'\nwhile :; do sleep 0.1; done\n")
-        let process = ScriptProcess(url: plugin.url)
+        let process = ScriptProcess(url: plugin.url, stopPause: Self.stopPause)
         var frames = try process.start().makeAsyncIterator()
         _ = try await frames.next()
         let script = try await pid("script")
         let child = try await pid("child")
+        let started = Date()
 
         process.stop()
-        try await Task.sleep(for: .seconds(1))
-        XCTAssertTrue(runs(script))
-        XCTAssertTrue(runs(child))
-        try await Task.sleep(for: .seconds(1.5))
+        try await wait { !self.runs(script) && !self.runs(child) }
 
-        XCTAssertFalse(runs(script))
-        XCTAssertFalse(runs(child))
+        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), Self.stopPause)
     }
 
     func testAChildThatIgnoresTheTerminateSignalIsGoneAfterItsScriptEndedAtTheStop() async throws {
         let plugin = try writePlugin("parent.sh", "#!/bin/sh\n\(deafChild())printf 'a=1\\n---\\n'\nsleep 30\n")
-        let process = ScriptProcess(url: plugin.url)
+        let process = ScriptProcess(url: plugin.url, stopPause: Self.stopPause)
         var frames = try process.start().makeAsyncIterator()
         _ = try await frames.next()
         let child = try await pid("child")
+        let started = Date()
 
         process.stop()
-        try await Task.sleep(for: .seconds(1))
-        XCTAssertFalse(process.isRunning)
-        XCTAssertTrue(runs(child))
-        try await Task.sleep(for: .seconds(1.5))
+        try await wait { !self.runs(child) }
 
-        XCTAssertFalse(runs(child))
+        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), Self.stopPause)
+        XCTAssertFalse(process.isRunning)
     }
 
     func testAStopLeavesAChildAloneAfterItsCallEndedByItself() async throws {
         let plugin = try writePlugin("away.sh", "#!/bin/sh\n\(deafChild())\n")
-        let process = ScriptProcess(url: plugin.url)
+        let process = ScriptProcess(url: plugin.url, stopPause: Self.stopPause)
         for try await _ in try process.start() {}
         let child = try await pid("child")
         defer { kill(child, SIGKILL) }
 
         process.stop()
-        try await Task.sleep(for: .seconds(2.5))
+        try await Task.sleep(for: .seconds(Self.stopPause + 0.2))
 
         XCTAssertTrue(runs(child))
     }
 
     func testAnEndClosesTheInputThenStopsThenKillsTheGroupOfAStayingScript() async throws {
         let plugin = try writePlugin("stay.sh", "#!/bin/sh\ntrap '' TERM\n\(writesPid("script"))\n\(deafChild())printf 'a=1\\n---\\n'\nwhile :; do sleep 0.1; done\n")
-        let live = ScriptProcess(url: plugin.url, mode: .stays)
+        let live = ScriptProcess(url: plugin.url, mode: .stays, stopPause: Self.stopPause)
         var frames = try live.start().makeAsyncIterator()
         _ = try await frames.next()
         let script = try await pid("script")
         let child = try await pid("child")
+        let started = Date()
 
         live.end()
-        try await Task.sleep(for: .seconds(3))
-        XCTAssertTrue(runs(script))
-        XCTAssertTrue(runs(child))
-        try await Task.sleep(for: .seconds(1.5))
+        try await wait { !self.runs(script) && !self.runs(child) }
 
-        XCTAssertFalse(runs(script))
-        XCTAssertFalse(runs(child))
+        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), Self.stopPause * 2)
     }
 
     func testAnEndReachesAChildAfterAStayingScriptEndedWithItsInput() async throws {
         let plugin = try writePlugin("stay.sh", "#!/bin/sh\n\(deafChild())printf 'a=1\\n---\\n'\ncat >/dev/null\n")
-        let live = ScriptProcess(url: plugin.url, mode: .stays)
+        let live = ScriptProcess(url: plugin.url, mode: .stays, stopPause: Self.stopPause)
         var frames = try live.start().makeAsyncIterator()
         _ = try await frames.next()
         let child = try await pid("child")
+        let started = Date()
 
         live.end()
-        try await Task.sleep(for: .seconds(1))
-        XCTAssertFalse(live.isRunning)
-        XCTAssertTrue(runs(child))
-        try await Task.sleep(for: .seconds(3.5))
+        try await wait { !self.runs(child) }
 
-        XCTAssertFalse(runs(child))
+        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), Self.stopPause * 2)
+        XCTAssertFalse(live.isRunning)
     }
 
     func testACallGoesOnWhileAChildHoldsItsOutput() async throws {
@@ -255,14 +255,14 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     func testAOutOfTimeFirstFrameStopsTheScript() async throws {
-        let plugin = try writePlugin("late.sh", "#!/bin/sh\nsleep 0.8\ntouch '\(path("went-on"))'\n")
+        let plugin = try writePlugin("late.sh", "#!/bin/sh\nsleep 0.4\ntouch '\(path("went-on"))'\n")
 
         do {
             _ = try await ScriptProcess.output(url: plugin.url, limit: 0.2)
             XCTFail("expected a timeout")
         } catch PluginError.timedOut {
         }
-        try await Task.sleep(for: .seconds(1))
+        try await Task.sleep(for: .seconds(0.4))
 
         XCTAssertFalse(exists("went-on"))
     }

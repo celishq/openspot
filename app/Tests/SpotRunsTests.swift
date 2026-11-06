@@ -11,7 +11,7 @@ final class SpotRunsTests: XCTestCase {
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-runs-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        runs = SpotRuns(now: { [unowned self] in self.time })
+        runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50))
     }
 
     override func tearDown() async throws {
@@ -190,7 +190,7 @@ final class SpotRunsTests: XCTestCase {
     func testANumberInReadReadsAnOpenSheetOnItsTimerWithAYoungAnswer() async throws {
         try script(header: "read=1\nkey=a", "printf 'part=a\\ntitle=A\\n'")
         let sheet = try sheet()
-        try await pause(1.2)
+        try await pause(0.2)
         XCTAssertEqual(log(), [])
 
         sheet.open {}
@@ -202,7 +202,7 @@ final class SpotRunsTests: XCTestCase {
 
         sheet.close()
         time += 1
-        try await pause(1.2)
+        try await pause(0.2)
         XCTAssertEqual(log(), ["read", "read"])
     }
 
@@ -212,7 +212,7 @@ final class SpotRunsTests: XCTestCase {
 
         sheet.open {}
         try await wait("the part") { sheet.panel != nil }
-        try await pause(1.2)
+        try await pause(0.2)
 
         XCTAssertEqual(log(), ["read"])
         sheet.close()

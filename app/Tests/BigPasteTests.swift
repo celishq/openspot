@@ -70,6 +70,15 @@ final class BigPasteTests: XCTestCase {
         return time
     }
 
+    /// The time of the first run under the limit, or else the best of the runs. A busy machine can slow one run.
+    private func bestTime(of sheet: SpotSheet, for text: String, under limit: TimeInterval) async throws -> TimeInterval {
+        var best = TimeInterval.infinity
+        for _ in 0..<Self.runCount where best >= limit {
+            best = min(best, try await answerTime(of: sheet, for: text))
+        }
+        return best
+    }
+
     func testEachStepOfAPasteOfOneMegabyteGivesBackTheText() async throws {
         for (name, text) in Self.texts {
             var panel = try XCTUnwrap(SpotPanel(output: PluginOutput(text: "part=input\ntext=\n\npart=output\ntext=\n")))
@@ -113,10 +122,7 @@ final class BigPasteTests: XCTestCase {
     func testAPasteOfOneMegabyteAnswersInUnderOneSecond() async throws {
         let sheet = try sheet(answer: "printf 'part=output\\ntext='; sed -n 's/^input=//p'")
         for (name, text) in Self.texts {
-            var best = TimeInterval.infinity
-            for _ in 0..<Self.runCount {
-                best = min(best, try await answerTime(of: sheet, for: text))
-            }
+            let best = try await bestTime(of: sheet, for: text, under: 1)
             print("TIMING \(name) paste to answer: \(Int(best * 1000)) ms")
             XCTAssertLessThan(best, 1, name)
         }
@@ -125,10 +131,7 @@ final class BigPasteTests: XCTestCase {
     func testAPasteOfOneMegabyteThroughTheShellHelperAnswers() async throws {
         let sheet = try sheet(answer: #". "$OPENSPOT_SH"; input=$(value input; printf x); printf 'part=output\ntext=%s\n' "$(esc "${input%x}")""#)
         for (name, text) in Self.texts {
-            var best = TimeInterval.infinity
-            for _ in 0..<Self.runCount {
-                best = min(best, try await answerTime(of: sheet, for: text))
-            }
+            let best = try await bestTime(of: sheet, for: text, under: 5)
             print("TIMING \(name) paste to answer through the helper: \(Int(best * 1000)) ms")
             XCTAssertLessThan(best, 5, name)
         }

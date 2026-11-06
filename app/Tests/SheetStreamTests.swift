@@ -19,6 +19,14 @@ final class SheetStreamTests: XCTestCase {
         return url
     }
 
+    private func wait(until fact: () -> Bool) async throws {
+        for _ in 0..<500 {
+            if fact() { return }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTFail("waited too long")
+    }
+
     func testAMarkEndsAFrameWhereverAChunkStops() {
         var reader = SheetFrameReader()
 
@@ -52,10 +60,10 @@ final class SheetStreamTests: XCTestCase {
 
     func testEndingTheStreamStopsTheScript() async throws {
         let marker = folder.appendingPathComponent("alive")
-        let url = try script("printf 'part=a\\n---\\n'\nsleep 2\ntouch '\(marker.path)'")
+        let url = try script("printf 'part=a\\n---\\n'\nsleep 0.3\ntouch '\(marker.path)'")
 
         for try await _ in try ScriptProcess(url: url, limit: 5).start() { break }
-        try await Task.sleep(for: .seconds(3))
+        try await Task.sleep(for: .seconds(0.5))
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))
     }
@@ -69,7 +77,7 @@ final class SheetStreamTests: XCTestCase {
             XCTAssertEqual(error as? PluginError, .timedOut)
         }
 
-        let slow = try script("printf 'part=a\\n---\\n'\nsleep 1\nprintf 'part=b\\n---\\n'")
+        let slow = try script("printf 'part=a\\n---\\n'\nsleep 0.5\nprintf 'part=b\\n---\\n'")
         var frames: [String] = []
         for try await frame in try ScriptProcess(url: slow, limit: 0.3).start() { frames.append(frame) }
         XCTAssertEqual(frames, ["part=a\n", "part=b\n"])
@@ -160,21 +168,16 @@ final class SheetStreamTests: XCTestCase {
 
         live.send(.press("copy"))
         live.end()
-        try await Task.sleep(for: .seconds(1))
-
-        XCTAssertTrue(FileManager.default.fileExists(atPath: marker.path))
-        XCTAssertFalse(live.isRunning)
+        try await wait(until: { FileManager.default.fileExists(atPath: marker.path) && !live.isRunning })
     }
 
     func testAScriptThatIgnoresTheEndOfItsInputIsStopped() async throws {
         let url = try script("trap '' HUP\nwhile :; do sleep 0.1; done")
-        let live = ScriptProcess(url: url, mode: .stays, limit: 5)
+        let live = ScriptProcess(url: url, mode: .stays, limit: 5, stopPause: 0.2)
         _ = try live.start()
 
         live.end()
-        try await Task.sleep(for: .seconds(4))
-
-        XCTAssertFalse(live.isRunning)
+        try await wait(until: { !live.isRunning })
     }
 
     func testAScriptThatStaysIsAList() throws {

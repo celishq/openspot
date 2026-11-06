@@ -8,7 +8,6 @@ public final class ScriptProcess: @unchecked Sendable {
         case stays
     }
 
-    private static let stopPause: TimeInterval = 2
     private static let exitPause: TimeInterval = 1
     private static let errorsPause: TimeInterval = 0.5
     private static let forcePause: TimeInterval = 0.1
@@ -16,6 +15,7 @@ public final class ScriptProcess: @unchecked Sendable {
     private let process = Process()
     private let mode: Mode
     private let limit: TimeInterval?
+    private let stopPause: TimeInterval
     private let input = Pipe()
     private let writes = DispatchQueue(label: "openspot.script")
     private let exit = DispatchSemaphore(value: 0)
@@ -25,12 +25,14 @@ public final class ScriptProcess: @unchecked Sendable {
     private var stopped = false
     private var ended = false
 
-    /// `limit` is the time the script has to its first frame or its end. With none, it has no limit.
-    public init(url: URL, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil) {
+    /// `limit` is the time the script has to its first frame or its end. With none, it has no limit. `stopPause` is the time
+    /// between each step of a stop.
+    public init(url: URL, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2) {
         process.executableURL = url
         process.arguments = arguments
         self.mode = mode
         self.limit = limit
+        self.stopPause = stopPause
     }
 
     /// The environment of a script: the `openspot` command of this app on its path, the data folder, which this creates, and
@@ -105,7 +107,7 @@ public final class ScriptProcess: @unchecked Sendable {
     /// gets the terminate signal, and 2 seconds later Openspot kills what still runs.
     public func end() {
         closeInput()
-        DispatchQueue.global().asyncAfter(deadline: .now() + Self.stopPause) { [self] in
+        DispatchQueue.global().asyncAfter(deadline: .now() + stopPause) { [self] in
             if lock.withLock({ ended && !stopped }) {
                 stopGroup()
             } else {
@@ -179,7 +181,7 @@ public final class ScriptProcess: @unchecked Sendable {
 
     private func stopGroup() {
         deliver(SIGTERM)
-        DispatchQueue.global().asyncAfter(deadline: .now() + Self.stopPause) { [self] in deliver(SIGKILL) }
+        DispatchQueue.global().asyncAfter(deadline: .now() + stopPause) { [self] in deliver(SIGKILL) }
     }
 
     /// Whether a process of its group still runs.

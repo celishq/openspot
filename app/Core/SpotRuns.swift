@@ -6,9 +6,6 @@ import Observation
 @MainActor
 @Observable
 public final class SpotRuns {
-    private static let tickPause: Duration = .seconds(1)
-    private static let quitPause: TimeInterval = 2
-
     public private(set) var sheets: [String: SpotSheet] = [:]
     public private(set) var isPanelOpen = false
     /// The files of the drag in progress, which each card that takes them all shows for the whole drag.
@@ -17,6 +14,8 @@ public final class SpotRuns {
     /// The time a `read` has to its first frame or its end.
     public let readLimit: TimeInterval
     @ObservationIgnored let now: () -> Date
+    @ObservationIgnored private let stopPause: TimeInterval
+    @ObservationIgnored private let tickPause: Duration
     @ObservationIgnored private let recent: (String) -> [String]
     @ObservationIgnored private let prepare: ([SpotItem]) async -> Void
     @ObservationIgnored private var order: [String] = []
@@ -28,11 +27,15 @@ public final class SpotRuns {
     public init(
         readLimit: TimeInterval = 10,
         now: @escaping () -> Date = { Date() },
+        stopPause: TimeInterval = 2,
+        tickPause: Duration = .seconds(1),
         recent: @escaping (String) -> [String] = { _ in [] },
         prepare: @escaping ([SpotItem]) async -> Void = { _ in }
     ) {
         self.readLimit = readLimit
         self.now = now
+        self.stopPause = stopPause
+        self.tickPause = tickPause
         self.recent = recent
         self.prepare = prepare
     }
@@ -113,7 +116,7 @@ public final class SpotRuns {
         let live = processes.filter(\.isLive)
         sheets.values.forEach { $0.prepareToQuit() }
         live.forEach { $0.leave() }
-        let deadline = Date().addingTimeInterval(Self.quitPause)
+        let deadline = Date().addingTimeInterval(stopPause)
         live.forEach { $0.finish(by: deadline) }
     }
 
@@ -203,7 +206,7 @@ public final class SpotRuns {
 
     /// Starts a script that stays, and returns it with its frames.
     func stay(_ command: PluginCommand, limit: TimeInterval?) throws -> (ScriptProcess, AsyncThrowingStream<String, Error>) {
-        let script = ScriptProcess(url: command.url, mode: .stays, limit: limit)
+        let script = ScriptProcess(url: command.url, mode: .stays, limit: limit, stopPause: stopPause)
         let frames = try script.start()
         keep(script)
         return (script, frames)
@@ -227,7 +230,7 @@ public final class SpotRuns {
             })
         }
         let sent = action.sent(input: input)
-        let process = ScriptProcess(url: command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit)
+        let process = ScriptProcess(url: command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause)
         do {
             let stream = try process.start()
             keep(process)
@@ -251,9 +254,9 @@ public final class SpotRuns {
         }
         tick()
         guard clock == nil else { return }
-        clock = Task { [weak self] in
+        clock = Task { [weak self, tickPause] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: Self.tickPause)
+                try? await Task.sleep(for: tickPause)
                 self?.tick()
             }
         }
