@@ -94,6 +94,9 @@ final class SpotsModel {
     private var closingPick: (item: SpotItem, entry: Entry)?
     private let runs: SpotRuns
     private var dragWatch: Task<Void, Never>?
+    private var dragPaths: [String] = []
+    /// The shared spot that the open review shows, which exists only as long as that sheet.
+    private var reviewed: SpotReview?
     var isShown = false
     /// Whether a drag over the menu bar item opened the panel, so that it is not key and its field takes no focus.
     var isOpenForDrag = false
@@ -106,6 +109,7 @@ final class SpotsModel {
     var setEntryKeyOn: (Bool) -> Void = { _ in }
     var dismiss: () -> Void = {}
     var show: () -> Void = {}
+    var present: () -> Void = {}
     var notify: (String) -> Void = { _ in }
     var applyConfig: () -> Void = {}
     var confirm: (String) -> Void = { _ in }
@@ -146,7 +150,7 @@ final class SpotsModel {
             guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder.url,
             app: Bundle.main.executablePath ?? "",
             update: updateSpot
-        )
+        ) + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
         let scan = (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
         var problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
         if scan.commands.allSatisfy({ $0.shipped != nil }) {
@@ -190,7 +194,7 @@ final class SpotsModel {
 
     /// Whether a card takes these dragged files. A card under an open sheet takes none.
     func acceptsDrop(_ paths: [String], on id: String) -> Bool {
-        openList == nil && sheets[id]?.command.accepts(paths) == true
+        openList == nil && !SharedSpot.isFile(paths) && sheets[id]?.command.accepts(paths) == true
     }
 
     /// Whether a card shows that it takes the drag in progress.
@@ -202,8 +206,9 @@ final class SpotsModel {
     /// showing them, and a panel that the drag opened closes.
     func followDrag() {
         let paths = SpotCardDrop.paths
-        guard paths != runs.draggedPaths else { return }
-        runs.draggedPaths = paths
+        guard paths != dragPaths else { return }
+        dragPaths = paths
+        runs.draggedPaths = SharedSpot.isFile(paths) ? [] : paths
         dragWatch?.cancel()
         dragWatch = Task { [weak self] in
             while NSEvent.pressedMouseButtons != 0 {
@@ -211,6 +216,7 @@ final class SpotsModel {
                 if Task.isCancelled { return }
             }
             guard let self else { return }
+            dragPaths = []
             runs.draggedPaths = []
             if isOpenForDrag, isShown { dismiss() }
         }
@@ -219,6 +225,7 @@ final class SpotsModel {
     /// Takes a drop on a card and closes the panel. Returns false when the card does not take these files.
     func drop(_ paths: [String], on id: String) -> Bool {
         guard openList == nil, sheets[id]?.drop(paths) == true else { return false }
+        dragPaths = []
         runs.draggedPaths = []
         if isShown { dismiss() }
         return true
@@ -231,6 +238,58 @@ final class SpotsModel {
         guard openList != nil else { return }
         sheetMoves = false
         closeList()
+    }
+
+    /// Opens the sheet that shows a `.spot` file before a person adds it. One file shows at a time, and a file it cannot read
+    /// only says why.
+    func review(_ urls: [URL]) {
+        guard let url = urls.first else { return }
+        finishPick()
+        closeMenu()
+        form = nil
+        closeList()
+        do {
+            let review = try SpotReview(
+                spot: SharedSpot(contentsOf: url),
+                name: url.deletingPathExtension().lastPathComponent,
+                folder: PluginFolder.standard().url
+            )
+            reviewed = review
+            dragWatch?.cancel()
+            dragPaths = []
+            runs.draggedPaths = []
+            present()
+            sheetMoves = false
+            open(ShippedSpot.command(reviewing: review).id)
+            if urls.count > 1 { notify("Openspot adds one spot at a time.") }
+        } catch {
+            notify(Self.reason(error))
+        }
+    }
+
+    /// Ends the review, so that its card leaves the grid.
+    private func endReview() {
+        guard reviewed != nil else { return }
+        reviewed = nil
+        reload()
+    }
+
+    /// Puts the file of a spot on the clipboard, ready to paste into a chat, and warns the sender about secrets.
+    private func share(_ entry: Entry) {
+        if isShown { dismiss() }
+        do {
+            let folder = PluginFolder.standard()
+            let spot = try SharedSpot(sharing: entry.command, from: folder.scan(), in: folder)
+            let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
+            try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
+            let file = place.appendingPathComponent(SharedSpot.fileName(for: entry.command.name))
+            try spot.data.write(to: file)
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.writeObjects([file as NSURL])
+            confirm(spot.notice(name: entry.command.name))
+        } catch {
+            notify("\(entry.command.name) was not copied. \(Self.reason(error))")
+        }
     }
 
     private static func recentKey(_ id: String) -> String {
@@ -479,6 +538,7 @@ final class SpotsModel {
         stopRecording()
         openList = nil
         sheets.values.forEach { $0.close() }
+        endReview()
     }
 
     /// Closes each sheet of parts when the panel has faded, and stops the reads that nothing wants now. A sheet of rows stays
@@ -489,6 +549,7 @@ final class SpotsModel {
             sheetMoves = false
             openList = nil
         }
+        endReview()
     }
 
     /// Lets the next open or close of a sheet move, as it does when the person asks for it in the open panel.
@@ -682,11 +743,17 @@ final class SpotsModel {
 
     private func actionMenu(on target: Target) -> ActionMenu? {
         let isOpenList = openList == target.entry.id
-        return ActionMenu(command: target.entry.command, item: target.item, showsPrimary: !isOpenList || target.item != nil)
+        return ActionMenu(
+            command: target.entry.command,
+            item: target.item,
+            showsPrimary: !isOpenList || target.item != nil,
+            offersShare: target.item == nil && target.entry.command.shipped == nil
+        )
     }
 
     /// The keys that work on the selected row or card, in words for the bottom of the panel.
     var hint: String {
+        if SharedSpot.isFile(dragPaths) { return "Drop to review this spot" }
         if let panel = openPanel { return panel.hint { work(of: $0) != nil } }
         let keys = target.flatMap { target in
             actionMenu(on: target)?.hint { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil }
@@ -717,7 +784,9 @@ final class SpotsModel {
         let isRunning = menu.map { work(of: $0.rows[$0.selected]) != nil } ?? false
         guard let row = menu?.press(isRunning: isRunning), let target = menuTarget else { return }
         closeMenu()
-        if let action = row.action {
+        if row.action == .share {
+            share(target.entry)
+        } else if let action = row.action {
             run(action, on: target)
         } else if let item = target.item {
             pick(item, of: target.entry)

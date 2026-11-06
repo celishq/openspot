@@ -92,6 +92,7 @@ struct SpotsView: View {
                     .offset(x: SpotTokens.halo, y: menuTop(menu))
             }
         }
+        .onDrop(of: [.fileURL], delegate: SpotAddDrop(model: model))
         .coordinateSpace(name: Self.panelSpace)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
         .overlay {

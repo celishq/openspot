@@ -25,6 +25,8 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var menuBarDrag: SpotMenuBarDrag?
     private var fileChooser: SpotFileChooser?
     private var update: AppUpdate?
+    private var isLaunched = false
+    private var openedAtLaunch: [URL] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -32,7 +34,9 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         item.button?.target = self
         item.button?.action = #selector(pressItem)
         statusItem = item
-        menuBarDrag = item.button.map { SpotMenuBarDrag(button: $0) { [weak self] in self?.showPanelForDrag() } }
+        menuBarDrag = item.button.map { button in
+            SpotMenuBarDrag(button: button, onEnter: { [weak self] in self?.showPanelForDrag() }, onDrop: { [weak self] in self?.model.review($0) })
+        }
         model.chooseFiles = { [weak self] in self?.chooseFiles(for: $0, then: $1) }
         EditMenu.install()
         panel = SpotsPanel.make(model: model)
@@ -52,8 +56,11 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         model.updateSpot = update.spot
         model.applyConfig = { [weak self] in self?.applyConfig() }
         model.setEntryKeyOn = { [weak self] in self?.setEntryKey(on: $0) }
+        model.present = { [weak self] in self?.presentPanel() }
         model.reload()
         model.arrive(.launch)
+        isLaunched = true
+        if !openedAtLaunch.isEmpty { model.review(openedAtLaunch) }
         NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(didWake), name: NSWorkspace.didWakeNotification, object: nil)
     }
 
@@ -86,6 +93,15 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// A person opened `.spot` files, such as by a double-click. macOS can ask this before the app has finished its launch.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        if isLaunched {
+            model.review(urls)
+        } else {
+            openedAtLaunch = urls
+        }
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         model.quit()
     }
@@ -112,6 +128,13 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         previousApp = NSWorkspace.shared.frontmostApplication
         NSApp.activate(ignoringOtherApps: true)
         panel.show()
+    }
+
+    /// Brings the panel to the front with the focus, also when a drag opened it or it already shows.
+    private func presentPanel() {
+        if let front = NSWorkspace.shared.frontmostApplication, front != .current { previousApp = front }
+        NSApp.activate(ignoringOtherApps: true)
+        panel?.show()
     }
 
     /// Opens the panel for a drag. The front app stays in front, so that closing the panel activates nothing.

@@ -50,6 +50,20 @@ targets:
         SUAutomaticallyUpdate: true
         SUVerifyUpdateBeforeExtraction: true
         NSAppleEventsUsageDescription: Openspot runs your plugins, and a plugin can ask another app to act, such as to paste.
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Openspot spot
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Owner
+            LSItemContentTypes:
+              - dev.openspot.spot
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: dev.openspot.spot
+            UTTypeDescription: Openspot spot
+            UTTypeConformsTo:
+              - public.json
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - spot
     entitlements:
       path: Shell/Openspot.entitlements
       properties:
