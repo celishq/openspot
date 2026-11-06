@@ -64,7 +64,7 @@ final class SpotDropTests: XCTestCase {
         XCTFail("waited for \(what)")
     }
 
-    private func pause(_ seconds: Double = 0.3) async throws {
+    private func pause(_ seconds: Double = 0.15) async throws {
         try await Task.sleep(for: .seconds(seconds))
     }
 
@@ -329,7 +329,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testASecondDropWaitsForTheFirstDrop() async throws {
-        let sheet = try sheet(header: "drop=mov", "case \"$2\" in *first.mov) sleep 0.4; touch '\(path("first-done"))' ;; esac")
+        let sheet = try sheet(header: "drop=mov", "case \"$2\" in *first.mov) sleep 0.25; touch '\(path("first-done"))' ;; esac")
         let first = file("first.mov")
         let second = file("second.mov")
 
@@ -361,7 +361,7 @@ final class SpotDropTests: XCTestCase {
         XCTAssertTrue(sheet.drop([file("a.mov")]))
 
         runs.quit()
-        try await pause(0.5)
+        try await pause(0.25)
 
         XCTAssertEqual(log(), ["read", "work"])
     }
@@ -465,7 +465,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testAPressOnARunningDropStopsItAndAsksForNoChoice() async throws {
-        let sheet = try sheet(header: "drop=mov", "sleep 0.4\ntouch '\(path("went-on"))'")
+        let sheet = try sheet(header: "drop=mov", "sleep 0.25\ntouch '\(path("went-on"))'")
         let choices = choiceCount(of: sheet)
         XCTAssertTrue(sheet.drop([file("a.mov")]))
         XCTAssertTrue(sheet.isCardRunning)
@@ -476,7 +476,7 @@ final class SpotDropTests: XCTestCase {
 
         XCTAssertEqual(choices(), 0)
         XCTAssertFalse(sheet.isCardRunning)
-        try await pause(0.6)
+        try await pause(0.3)
         XCTAssertFalse(exists("went-on"))
     }
 
@@ -549,7 +549,7 @@ final class SpotDropTests: XCTestCase {
         let sheet = try sheet(header: "read=sheet\ndrop=mov", """
         case "$1" in
           read) printf 'row=A\\nrun=a\\n' ;;
-          drop) sleep 0.4; touch '\(path("went-on"))' ;;
+          drop) sleep 0.25; touch '\(path("went-on"))' ;;
         esac
         """)
         sheet.open {}
@@ -558,7 +558,7 @@ final class SpotDropTests: XCTestCase {
         try await wait("the call") { self.log().count == 2 }
 
         sheet.stop(try XCTUnwrap(sheet.calls.first))
-        try await pause(0.6)
+        try await pause(0.3)
 
         XCTAssertFalse(exists("went-on"))
         XCTAssertEqual(sheet.list.shown.count, 1)

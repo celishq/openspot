@@ -66,7 +66,7 @@ final class SpotRunsTests: XCTestCase {
         XCTFail("waited for \(what)")
     }
 
-    private func pause(_ seconds: Double = 0.4) async throws {
+    private func pause(_ seconds: Double = 0.2) async throws {
         try await Task.sleep(for: .seconds(seconds))
     }
 
@@ -99,13 +99,13 @@ final class SpotRunsTests: XCTestCase {
     }
 
     func testAScriptThatLeavesTheFolderLosesItsSheetAndItsRead() async throws {
-        let url = try script(header: "read=sheet", "sleep 0.3\ntouch '\(path("went-on"))'")
+        let url = try script(header: "read=sheet", "sleep 0.2\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
         sheet.read()
 
         try FileManager.default.removeItem(at: url)
         _ = try scanned()
-        try await pause(0.7)
+        try await pause(0.35)
 
         XCTAssertNil(runs.sheets["script"])
         XCTAssertFalse(exists("went-on"))
@@ -135,7 +135,7 @@ final class SpotRunsTests: XCTestCase {
         time += 4
         sheet.close()
         sheet.open {}
-        try await pause(0.3)
+        try await pause(0.15)
 
         XCTAssertEqual(log(), ["read"])
     }
@@ -168,7 +168,7 @@ final class SpotRunsTests: XCTestCase {
         try script("fast", header: "read=1\ntray=true", "printf 'title=1\\n'")
         _ = try scanned()
         try await wait("the first read") { self.log().count == 1 }
-        try await pause(0.2)
+        try await pause(0.1)
 
         time += 1
         runs.tick()
@@ -190,7 +190,7 @@ final class SpotRunsTests: XCTestCase {
     func testANumberInReadReadsAnOpenSheetOnItsTimerWithAYoungAnswer() async throws {
         try script(header: "read=1\nkey=a", "printf 'part=a\\ntitle=A\\n'")
         let sheet = try sheet()
-        try await pause(0.2)
+        try await pause(0.1)
         XCTAssertEqual(log(), [])
 
         sheet.open {}
@@ -202,7 +202,7 @@ final class SpotRunsTests: XCTestCase {
 
         sheet.close()
         time += 1
-        try await pause(0.2)
+        try await pause(0.1)
         XCTAssertEqual(log(), ["read", "read"])
     }
 
@@ -212,7 +212,7 @@ final class SpotRunsTests: XCTestCase {
 
         sheet.open {}
         try await wait("the part") { sheet.panel != nil }
-        try await pause(0.2)
+        try await pause(0.1)
 
         XCTAssertEqual(log(), ["read"])
         sheet.close()
@@ -226,7 +226,7 @@ final class SpotRunsTests: XCTestCase {
 
         time += 4
         runs.tick()
-        try await pause(0.2)
+        try await pause(0.1)
         XCTAssertEqual(log("fast").count, 1)
 
         time += 1
@@ -265,7 +265,7 @@ final class SpotRunsTests: XCTestCase {
     }
 
     func testAChangeDuringARunningReadReadsOnceMoreAfterIt() async throws {
-        try script(header: "read=sheet", "sleep 0.3\nprintf 'row=A\\nrun=a\\n'")
+        try script(header: "read=sheet", "sleep 0.2\nprintf 'row=A\\nrun=a\\n'")
         let sheet = try sheet()
 
         sheet.read()
@@ -334,7 +334,7 @@ final class SpotRunsTests: XCTestCase {
         sheet.pressCard()
 
         try await wait("the read after the call") { self.log() == ["read", "on", "read"] }
-        try await pause(0.2)
+        try await pause(0.1)
         XCTAssertEqual(self.log().count, 3)
     }
 
@@ -360,7 +360,7 @@ final class SpotRunsTests: XCTestCase {
 
         sheet.pressCard()
         try await wait("the call") { self.log() == ["read", "on"] }
-        try await pause(0.3)
+        try await pause(0.15)
 
         XCTAssertEqual(log(), ["read", "on"])
         XCTAssertEqual(sheet.state.on, true)
@@ -372,7 +372,7 @@ final class SpotRunsTests: XCTestCase {
 
         sheet.pressCard()
         try await wait("the call") { self.log() == [""] }
-        try await pause(0.2)
+        try await pause(0.1)
 
         XCTAssertEqual(log(), [""])
     }
@@ -381,11 +381,11 @@ final class SpotRunsTests: XCTestCase {
 
     func testAReadHasTenSecondsAndAnyOtherNameHasNoLimit() async throws {
         XCTAssertEqual(SpotRuns().readLimit, 10)
-        runs = SpotRuns(readLimit: 1)
+        runs = SpotRuns(readLimit: 0.5)
         try script(header: "read=sheet", """
         case "$1" in
           read) [ -f '\(path("slow"))' ] && sleep 30; touch '\(path("slow"))'; printf 'title=1\\n\\nrow=A\\nrun=a\\n' ;;
-          open) sleep 0.5; touch '\(path("done"))' ;;
+          open) sleep 0.3; touch '\(path("done"))' ;;
         esac
         """)
         let sheet = try sheet()
@@ -445,7 +445,7 @@ final class SpotRunsTests: XCTestCase {
         try await wait("the first frame") { sheet.list.shown.count == 1 }
 
         runs.panelClosed()
-        try await pause(0.7)
+        try await pause(0.35)
 
         XCTAssertFalse(exists("went-on"))
         XCTAssertEqual(sheet.calls.count, 0)
@@ -468,7 +468,7 @@ final class SpotRunsTests: XCTestCase {
 
         sheet.read()
         try await wait("the row") { sheet.list.shown.count == 1 }
-        try await pause(0.6)
+        try await pause(0.3)
 
         XCTAssertFalse(exists("went-on"))
     }
@@ -487,7 +487,7 @@ final class SpotRunsTests: XCTestCase {
 
         sheet.close()
         try await wait("the end of the read") { !sheet.list.isLoading }
-        try await pause(0.2)
+        try await pause(0.1)
 
         XCTAssertEqual(sheet.list.shown.count, 1)
         XCTAssertFalse(sheet.list.hasFailed)
@@ -498,7 +498,7 @@ final class SpotRunsTests: XCTestCase {
       read) printf 'layout=none\\n\\npart=go\\ntitle=Go\\npress=true\\n\\npart=bar\\ntitle=idle\\n' ;;
       go)
         printf 'toast=Started\\non=true\\n\\npart=bar\\ntitle=half\\n---\\n'
-        sleep 0.5
+        sleep 0.3
         touch '%@'
         printf 'toast=Done\\n\\npart=bar\\ntitle=done\\n'
         ;;
@@ -576,8 +576,8 @@ final class SpotRunsTests: XCTestCase {
         try script(header: "read=sheet", """
         case "$1" in
           read) printf 'part=a\\non=false\\n\\npart=b\\non=false\\n\\npart=out\\ntitle=none\\n' ;;
-          a) [ "$2" = true ] && { sleep 0.4; touch '\(path("old-a"))'; exit 0; }; touch '\(path("new-a"))'; printf 'part=out\\ntitle=new\\n' ;;
-          b) sleep 0.4; touch '\(path("b"))'; printf 'part=out\\ntitle=b\\n' ;;
+          a) [ "$2" = true ] && { sleep 0.25; touch '\(path("old-a"))'; exit 0; }; touch '\(path("new-a"))'; printf 'part=out\\ntitle=new\\n' ;;
+          b) sleep 0.25; touch '\(path("b"))'; printf 'part=out\\ntitle=b\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -591,7 +591,7 @@ final class SpotRunsTests: XCTestCase {
         sheet.set(parts[0], to: "false")
 
         try await wait("the other part") { self.exists("b") }
-        try await pause(0.2)
+        try await pause(0.1)
         XCTAssertTrue(exists("new-a"))
         XCTAssertFalse(exists("old-a"))
         XCTAssertEqual(sheet.panel?.parts[0].value, "false")
@@ -602,7 +602,7 @@ final class SpotRunsTests: XCTestCase {
         try script(header: "read=sheet", """
         case "$1" in
           read) printf 'part=a\\non=false\\n\\npart=b\\non=false\\n' ;;
-          a) sleep 0.3; printf 'part=a\\non=true\\n\\npart=b\\non=false\\n' ;;
+          a) sleep 0.2; printf 'part=a\\non=true\\n\\npart=b\\non=false\\n' ;;
           b) printf 'part=b\\non=true\\n' ;;
         esac
         """)
@@ -622,7 +622,7 @@ final class SpotRunsTests: XCTestCase {
         try script(header: "read=sheet", """
         case "$1" in
           read) printf 'part=go\\ntitle=Go\\npress=true\\n' ;;
-          go) sleep 0.4; touch '\(path("went-on"))' ;;
+          go) sleep 0.25; touch '\(path("went-on"))' ;;
         esac
         """)
         let sheet = try sheet()
@@ -635,7 +635,7 @@ final class SpotRunsTests: XCTestCase {
         time += 1
         sheet.press(part)
         XCTAssertTrue(sheet.calls.isEmpty)
-        try await pause(0.6)
+        try await pause(0.3)
 
         XCTAssertFalse(exists("went-on"))
         XCTAssertEqual(log(), ["read", "go"])
@@ -645,7 +645,7 @@ final class SpotRunsTests: XCTestCase {
         try script(header: "read=sheet", """
         case "$1" in
           read) printf 'action=go\\ntitle=Go\\nscope=command\\n\\nrow=A\\nrun=a\\n' ;;
-          go) sleep 0.4; touch '\(path("went-on"))' ;;
+          go) sleep 0.25; touch '\(path("went-on"))' ;;
         esac
         """)
         let sheet = try sheet()
@@ -657,14 +657,14 @@ final class SpotRunsTests: XCTestCase {
         try await wait("the call") { self.log() == ["read", "go"] }
         time += 1
         sheet.run(action, item: nil)
-        try await pause(0.6)
+        try await pause(0.3)
 
         XCTAssertFalse(exists("went-on"))
         XCTAssertEqual(log(), ["read", "go"])
     }
 
     func testASecondPressOfARunningCardStopsIt() async throws {
-        try script(body: "sleep 0.4\ntouch '\(path("went-on"))'")
+        try script(body: "sleep 0.25\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
 
         sheet.pressCard()
@@ -673,7 +673,7 @@ final class SpotRunsTests: XCTestCase {
         time += 1
         sheet.pressCard()
         XCTAssertFalse(sheet.isCardRunning)
-        try await pause(0.6)
+        try await pause(0.3)
 
         XCTAssertFalse(exists("went-on"))
     }
@@ -996,7 +996,7 @@ final class SpotRunsTests: XCTestCase {
     }
 
     func testARunningCardSaysThatAPressStopsItAndAPressDoes() async throws {
-        try script(body: "sleep 0.5\ntouch '\(path("went-on"))'")
+        try script(body: "sleep 0.3\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
         let menu = try XCTUnwrap(ActionMenu(command: sheet.command, item: nil))
         let row = try XCTUnwrap(menu.rows.first)
@@ -1010,7 +1010,7 @@ final class SpotRunsTests: XCTestCase {
         XCTAssertNotNil(sheet.work(of: row, item: nil))
         sheet.pressCard()
         XCTAssertNil(sheet.cardWork)
-        try await pause(0.8)
+        try await pause(0.4)
         XCTAssertFalse(exists("went-on"))
     }
 
@@ -1020,7 +1020,7 @@ final class SpotRunsTests: XCTestCase {
         try script(header: "read=sheet", """
         case "$1" in
           read) printf 'part=go\\ntitle=Go\\npress=true\\n' ;;
-          go) sleep 0.3; touch '\(path("done"))' ;;
+          go) sleep 0.2; touch '\(path("done"))' ;;
         esac
         """)
         let sheet = try sheet()
@@ -1041,8 +1041,8 @@ final class SpotRunsTests: XCTestCase {
         try script(header: "read=sheet", """
         case "$1" in
           read) printf 'action=go\\ntitle=Go\\nscope=command\\n\\nrow=A\\nrun=a\\n' ;;
-          go) sleep 0.3; touch '\(path("action"))' ;;
-          open) sleep 0.3; touch '\(path("pick"))' ;;
+          go) sleep 0.2; touch '\(path("action"))' ;;
+          open) sleep 0.2; touch '\(path("pick"))' ;;
         esac
         """)
         let sheet = try sheet()
@@ -1079,7 +1079,7 @@ final class SpotRunsTests: XCTestCase {
         try script(header: "read=sheet", """
         case "$1" in
           read) printf 'action=new\\ntitle=New\\nscope=command\\nform=true\\n\\nrow=A\\nrun=a\\n' ;;
-          new) sleep 0.3; printf 'title=New\\n\\nfield=a\\nlabel=A\\n' ;;
+          new) sleep 0.2; printf 'title=New\\n\\nfield=a\\nlabel=A\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -1265,7 +1265,7 @@ final class SpotRunsTests: XCTestCase {
         try script("onwake", header: "read=wake", log: "onwake", "printf 'title=W\\n'")
         try script("onpanel", header: "read=panel", log: "onpanel", "printf 'title=P\\n'")
         _ = try scanned()
-        try await pause(0.2)
+        try await pause(0.1)
         XCTAssertEqual(log("onlaunch") + log("onwake") + log("onpanel"), [])
 
         runs.arrive(.launch)
@@ -1298,7 +1298,7 @@ final class SpotRunsTests: XCTestCase {
         XCTAssertTrue(sheet.isOpen)
         time += 5
         runs.tick()
-        try await pause(0.3)
+        try await pause(0.15)
         XCTAssertEqual(log(), ["read", "read"])
 
         time += 5
@@ -1314,7 +1314,7 @@ final class SpotRunsTests: XCTestCase {
         try await wait("the row") { sheet.list.shown.count == 1 }
 
         runs.panelClosed()
-        try await pause(0.8)
+        try await pause(0.4)
         XCTAssertFalse(exists("went-on"))
         XCTAssertEqual(sheet.list.shown.count, 1)
 
@@ -1429,7 +1429,7 @@ final class SpotRunsTests: XCTestCase {
         try script(header: "stay=true", """
         while IFS= read -r line; do
           case "$line" in
-            name=new) sleep 0.3; printf 'title=New\\n\\nfield=a\\nlabel=A\\n---\\n' ;;
+            name=new) sleep 0.2; printf 'title=New\\n\\nfield=a\\nlabel=A\\n---\\n' ;;
             name=read) printf 'action=new\\ntitle=New\\nscope=command\\nform=true\\n---\\n' ;;
           esac
         done
@@ -1516,7 +1516,7 @@ final class SpotRunsTests: XCTestCase {
         sheet.close()
         runs.panelClosed()
         _ = try scanned()
-        try await pause(0.3)
+        try await pause(0.15)
 
         XCTAssertFalse(exists("ended"))
         XCTAssertEqual(log().count, 1)
@@ -1541,7 +1541,7 @@ final class SpotRunsTests: XCTestCase {
 
         sheet.pick(SpotItem(title: "A", run: "a"))
         try await wait("the frame") { self.exists("printed") }
-        try await pause(0.2)
+        try await pause(0.1)
 
         XCTAssertEqual(runs.trayMarks.first?.mark.summary, "Script: 3")
         XCTAssertEqual(runs.trayMarks.first?.mark.isStale, false)
@@ -1564,7 +1564,7 @@ final class SpotRunsTests: XCTestCase {
     func testAStayingScriptIsWantedByThePanelOnlyWhileItIsOpen() async throws {
         try staying(header: "stay=true\nread=panel")
         let sheet = try sheet()
-        try await pause(0.2)
+        try await pause(0.1)
         XCTAssertEqual(log(), [])
 
         runs.panelOpened()
@@ -1598,7 +1598,7 @@ final class SpotRunsTests: XCTestCase {
         _ = try scanned()
 
         runs.arrive(.wake)
-        try await pause(0.3)
+        try await pause(0.15)
 
         XCTAssertEqual(log(), [])
     }
@@ -1678,7 +1678,7 @@ final class SpotRunsTests: XCTestCase {
         runs.panelClosed()
         _ = try scanned()
         sheet.pick(SpotItem(title: "A", run: "a"))
-        try await pause(0.3)
+        try await pause(0.15)
 
         XCTAssertEqual(log().count, 3)
         XCTAssertEqual(told().filter { $0 == Self.givenUp }.count, 1)
@@ -1711,7 +1711,7 @@ final class SpotRunsTests: XCTestCase {
         try await wait("the third failure") { told().count == 3 }
 
         _ = try scanned()
-        try await pause(0.2)
+        try await pause(0.1)
         XCTAssertEqual(log().count, 3)
 
         try staying(header: "stay=true\ntray=true", frame: "title=3\\n")
@@ -1733,7 +1733,7 @@ final class SpotRunsTests: XCTestCase {
         var isReady = false
 
         sheet.open { isReady = true }
-        try await pause(0.2)
+        try await pause(0.1)
 
         XCTAssertFalse(isReady)
         XCTAssertFalse(sheet.isOpen)
@@ -1770,7 +1770,7 @@ final class SpotRunsTests: XCTestCase {
 
     func testANewKeyStopsTheOlderSearch() async throws {
         try script(header: "read=sheet", """
-        [ "$2" = slow ] && { sleep 0.8; touch '\(path("went-on"))'; }
+        [ "$2" = slow ] && { sleep 0.4; touch '\(path("went-on"))'; }
         printf 'search=script\\n\\nrow=%s\\nrun=a\\n' "${2:-none}"
         """)
         let sheet = try sheet()
@@ -1781,7 +1781,7 @@ final class SpotRunsTests: XCTestCase {
         try await wait("the search") { self.log().count == 2 }
         sheet.search("slower")
         try await wait("the answer") { sheet.list.shown.map(\.title) == ["slower"] }
-        try await pause(0.9)
+        try await pause(0.45)
 
         XCTAssertFalse(exists("went-on"))
     }
