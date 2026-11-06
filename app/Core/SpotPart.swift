@@ -164,6 +164,14 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         return false
     }
 
+    /// Whether the return key can use it.
+    public var isSelectable: Bool {
+        switch control {
+        case .toggle, .shortcut: true
+        default: press != .none
+        }
+    }
+
     /// Takes a value that the person set.
     public mutating func set(_ value: String) {
         switch control {

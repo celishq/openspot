@@ -72,6 +72,11 @@ struct SpotPanelView: View {
                 alignment: .leading
             )
             .frame(width: frame.rect.width, height: frame.rect.height, alignment: Self.alignment(frame))
+            .background {
+                if panel.selectedPart?.id == part.id {
+                    shape.fill(Color.white.opacity(SpotTokens.selectedFill)).padding(-SpotTokens.controlPadding)
+                }
+            }
             .offset(x: frame.rect.minX, y: frame.rect.minY)
             .zIndex(frame.isOnTop ? 1 : 0)
     }

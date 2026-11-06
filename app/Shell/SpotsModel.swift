@@ -554,16 +554,33 @@ final class SpotsModel {
         return true
     }
 
-    /// Takes Esc and the keys of the parts, and leaves all others to the text areas.
+    /// Takes Esc, the arrows, return and the keys of the parts, and leaves all others to the text areas.
     private func handlePanelKey(_ key: ActionKey, _ panel: SpotPanel) -> Bool {
         if key == ActionKey(name: "escape") {
             allowSheetMotion()
             closeList()
             return true
         }
-        guard let part = panel.parts.first(where: { $0.key == key }) else { return false }
-        pressPart(part)
+        if panel.takesArrows, key == ActionKey(name: "up") || key == ActionKey(name: "down") {
+            openSheet?.movePart(by: key.name == "up" ? -1 : 1)
+            return true
+        }
+        if let part = panel.parts.first(where: { $0.key == key }) {
+            pressPart(part)
+            return true
+        }
+        guard key == ActionKey(name: "return"), let part = panel.selectedPart else { return false }
+        useSelected(part)
         return true
+    }
+
+    /// Does what a click on the control of this part does.
+    private func useSelected(_ part: SpotPart) {
+        switch part.control {
+        case .shortcut: toggleRecording(part)
+        case .toggle(let on): setPart(part, to: on ? "false" : "true")
+        default: pressPart(part)
+        }
     }
 
     func setPart(_ part: SpotPart, to value: String) {

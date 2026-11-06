@@ -75,6 +75,12 @@ public final class SpotSheet {
         live = nil
         editing = nil
         ready = nil
+        panel?.clearSelection()
+    }
+
+    /// Moves the selection among its parts.
+    public func movePart(by step: Int) {
+        panel?.move(by: step)
     }
 
     /// Asks the script for its rows and parts. A newer read replaces this one. A script that keeps printing changes its open
