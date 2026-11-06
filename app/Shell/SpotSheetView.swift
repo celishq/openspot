@@ -21,6 +21,7 @@ struct SpotSheetView: View {
     let closeShift: CGFloat?
     let onClose: () -> Void
     @State private var edges = SpotScrollEdges()
+    @State private var wordsHeight: CGFloat = 0
 
     private static let bottomFade = 2 * SpotTokens.padding
 
@@ -31,26 +32,30 @@ struct SpotSheetView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             header
-            if let panel {
-                SpotPanelView(panel: panel, work: work, onSet: onSet, onPress: onPress, recordingPart: recording, onRecord: onRecord)
-            } else if let form {
-                SpotFormView(draft: form, onValue: onFormValue)
-            } else {
-                Color.clear.frame(height: SpotTokens.listRowHeight)
-                if let createTitle {
-                    Button(action: onCreate) {
-                        createLabel(createTitle)
-                    }
-                    .buttonStyle(.plain)
-                } else if list.shown.isEmpty {
-                    Text(emptyText)
-                        .font(SpotType.body)
-                        .modifier(SpotSecondaryText())
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+            VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
+                if let panel {
+                    SpotPanelView(panel: panel, work: work, onSet: onSet, onPress: onPress, recordingPart: recording, onRecord: onRecord)
+                } else if let form {
+                    SpotFormView(draft: form, onValue: onFormValue)
                 } else {
-                    rows
+                    Color.clear.frame(height: SpotTokens.listRowHeight)
+                    if let createTitle {
+                        Button(action: onCreate) {
+                            createLabel(createTitle)
+                        }
+                        .buttonStyle(.plain)
+                    } else if list.shown.isEmpty {
+                        Text(emptyText)
+                            .font(SpotType.body)
+                            .modifier(SpotSecondaryText())
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .transition(.identity)
+                    } else {
+                        rows
+                    }
                 }
             }
+            .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(showsTallCard ? 0 : 1) }
         }
         .padding(SpotTokens.padding)
         .frame(width: rect.width, height: rect.height, alignment: .topLeading)
@@ -71,6 +76,8 @@ struct SpotSheetView: View {
                             .lineLimit(1)
                     }
                 }
+                .onGeometryChange(for: CGFloat.self, of: \.size.height) { wordsHeight = $0 }
+                .offset(showsTallCard ? tallCardShift : .zero)
                 .opacity(showsSmallCard ? 0 : 1)
                 Spacer()
                 closeButton
@@ -109,6 +116,21 @@ struct SpotSheetView: View {
     /// Whether the sheet still lies on a 1x1 card, which shows its glyph alone.
     private var showsSmallCard: Bool {
         !isOpen && entry.size == .small
+    }
+
+    /// Whether the sheet still lies on a card with room under its header, which shows only its glyph and its words.
+    private var showsTallCard: Bool {
+        !isOpen && entry.size.rows > 1
+    }
+
+    /// How far the words of the header lie from their place at the foot of a tall card.
+    private var tallCardShift: CGSize {
+        let row = max(SpotTokens.glyphSize, wordsHeight)
+        let top = SpotTokens.padding + (row - wordsHeight) / 2
+        return CGSize(
+            width: -(SpotTokens.glyphSize + SpotTokens.padding - 5),
+            height: SpotTokens.height(rows: entry.size.rows) - SpotTokens.padding - wordsHeight - top
+        )
     }
 
     /// Whether the sheet still lies on a card that is turned on, which is plain white.

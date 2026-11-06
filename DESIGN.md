@@ -80,6 +80,8 @@ esac
 | A6 | One global key opens the panel from any app, and the person chooses it. No other key is global. |
 | A7 | The person arranges the grid: each `[[spots]]` table of `config.toml` names a spot by `id`, and can set `size` and `grid`. It overrides the plugin. A `size` is a preference, and the grid can still change it to fill a row. Listed spots take the order of the file. The Edit Spots mode writes this file. |
 | A8 | The app opens the panel unseen once as it starts, which runs each script with `panel` in its `read` and each script a widget places, and draws the panel. It waits for at most 2 seconds, then closes it and shows the toast "Openspot is ready". A script with only `sheet` in its `read` does not run. A press of the key in that time opens the panel at once. |
+| A9 | A sheet that moves out of its card and has no answer yet holds that motion for at most 150 ms for the first answer, so that it grows once, to its real size. A sheet with an answer moves at once. A sheet that still waits after that shows no search field, and its first answer sets its size on the same motion. |
+| A10 | A surface with no card, the drop state or the install screen, grows out of the search field and collapses back into it, on the spring of a sheet, and pushes the grid as far as its lower edge moves. |
 
 ## 4. The plugin file
 

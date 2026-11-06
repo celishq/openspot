@@ -20,7 +20,9 @@ field() {
 # Keeps the list of languages, so that only the first read asks macOS.
 languages() {
   [ -s "$known" ] && return
+  trap 'rm -f "$known.$$"; exit 143' TERM
   openspot translate languages > "$known.$$" 2>/dev/null && mv "$known.$$" "$known"
+  trap - TERM
   rm -f "$known.$$"
 }
 
@@ -31,7 +33,11 @@ name() {
 
 # Prints the options of a language menu.
 options() {
-  [ -s "$known" ] && awk -F= '$1 == "language" { code = $2 } $1 == "name" { print "option=" code ":" $2 }' "$known"
+  if [ -s "$known" ]; then
+    awk -F= '$1 == "language" { code = $2 } $1 == "name" { print "option=" code ":" $2 }' "$known"
+  else
+    printf 'option=en:English\n'
+  fi
 }
 
 # Prints the first preferred language that is not this one.
@@ -106,13 +112,17 @@ show() {
   fi
 }
 
-languages
 input=$(value input; printf x)
 input=${input%x}
 source=$(value source)
 target=$(value target)
 [ -n "$source" ] || source=$(field source "$(cat "$saved" 2>/dev/null)")
 [ -n "$target" ] || target=$(field target "$(cat "$saved" 2>/dev/null)")
+if [ ! -s "$known" ] && { [ "$1" = read ] || [ -z "$1" ]; }; then
+  (source=${source:-auto}; target=${target:-en}; output=; status=; detected=; show)
+  printf -- '---\n'
+fi
+languages
 : "${source:=auto}"
 : "${target:=$(preferred "")}"
 : "${target:=en}"

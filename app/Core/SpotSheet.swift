@@ -35,6 +35,7 @@ public final class SpotSheet {
     private static let searchKey = "search"
     private static let cardKey = "card"
     private static let levelKey = "level"
+    private static let heldKey = "held"
 
     public private(set) var command: PluginCommand
     public var list: ItemList {
@@ -69,6 +70,7 @@ public final class SpotSheet {
     @ObservationIgnored private var formAnswer: CheckedContinuation<String?, Error>?
     @ObservationIgnored private var editing: String?
     @ObservationIgnored private var ready: (() -> Void)?
+    @ObservationIgnored private var held: (() -> Void)?
     @ObservationIgnored private var waitingDrops: [[String]] = []
 
     init(command: PluginCommand, runs: SpotRuns, recent: [String], prepare: @escaping ([SpotItem]) async -> Void) {
@@ -97,6 +99,11 @@ public final class SpotSheet {
         command.readsState && !hasAsked
     }
 
+    /// Whether an open sheet still waits for the first answer, so that it cannot yet say what kind of sheet it is.
+    public var awaitsFirstAnswer: Bool {
+        isOpen && answered == nil && panel == nil && list.search == .local && list.isLoading
+    }
+
     /// Asks for the first answer, and runs the given work when it arrives.
     public func afterAnswer(_ work: @escaping () -> Void) {
         waiter = work
@@ -104,13 +111,18 @@ public final class SpotSheet {
     }
 
     /// Opens the sheet with its search kept. `onReady` runs now, or for a staying script with its first frame. A staying
-    /// script that already printed opens at once with its last frame, and one that Openspot cannot start does not open.
-    public func open(need: ReadNeed = .moment, onReady: @escaping () -> Void) {
+    /// script that already printed opens at once with its last frame, and one that Openspot cannot start does not open. With
+    /// `waits`, a sheet with no answer yet runs `onReady` with its first answer, or after a short pause when that is late.
+    public func open(need: ReadNeed = .moment, waits: Bool = false, onReady: @escaping () -> Void) {
         isOpen = true
         isInView = true
         list.selectFirst()
         if command.stays {
             openLive(need: need, onReady: onReady)
+        } else if waits, answered == nil, list.search == .local {
+            held = onReady
+            after(.seconds(runs.firstAnswerPause), key: Self.heldKey) { [weak self] in self?.endHold() }
+            read(need: need)
         } else {
             onReady()
             read(need: need)
@@ -130,6 +142,7 @@ public final class SpotSheet {
         if let search = running(Self.searchKey) { stop(search) }
         editing = nil
         ready = nil
+        held = nil
         panel?.clearSelection()
         settleLive()
         stopUnwantedRead()
@@ -555,6 +568,16 @@ public final class SpotSheet {
         hasAsked = true
         let work = waiter
         waiter = nil
+        work?()
+        endHold()
+    }
+
+    /// Lets a sheet that held its motion move.
+    private func endHold() {
+        pauses[Self.heldKey]?.cancel()
+        pauses[Self.heldKey] = nil
+        let work = held
+        held = nil
         work?()
     }
 

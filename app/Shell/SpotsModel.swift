@@ -85,7 +85,7 @@ final class SpotsModel {
     private typealias Target = (entry: Entry, item: SpotItem?)
 
     private static let globalItemLimit = 6
-    private static let dragWatchPause: Duration = .milliseconds(100)
+    private static let dragWatchPause: Duration = .milliseconds(16)
     private static let chainPause: Duration = .milliseconds(200)
     private static let loadLimit: Duration = .seconds(2)
     private static let loadPause: Duration = .milliseconds(20)
@@ -417,12 +417,8 @@ final class SpotsModel {
 
     func tap(_ id: String) {
         guard let position = visible.firstIndex(where: { $0.id == id }) else { return }
-        if isEditing {
-            withAnimation(SpotMotion.edit) { selected = position }
-        } else {
-            selected = position
-            runSelected()
-        }
+        selected = position
+        runSelected()
     }
 
     func setLevel(_ id: String, to value: Double) {
@@ -511,19 +507,17 @@ final class SpotsModel {
 
     private func handleEditKey(_ key: ActionKey) {
         let order = visible.map(\.id)
-        withAnimation(SpotMotion.edit) {
-            switch (key.name, key.isShift) {
-            case ("escape", _): endEditing()
-            case ("left", false): moveSelection(dx: -1, dy: 0)
-            case ("right", false): moveSelection(dx: 1, dy: 0)
-            case ("up", false): moveSelection(dx: 0, dy: -1)
-            case ("down", false): moveSelection(dx: 0, dy: 1)
-            case ("left", true), ("up", true): moveSelectedSpot(by: -1, in: order)
-            case ("right", true), ("down", true): moveSelectedSpot(by: 1, in: order)
-            case ("s", _): stepSelectedSize()
-            case ("h", _): toggleSelectedOnGrid()
-            default: break
-            }
+        switch (key.name, key.isShift) {
+        case ("escape", _): endEditing()
+        case ("left", false): moveSelection(dx: -1, dy: 0)
+        case ("right", false): moveSelection(dx: 1, dy: 0)
+        case ("up", false): moveSelection(dx: 0, dy: -1)
+        case ("down", false): moveSelection(dx: 0, dy: 1)
+        case ("left", true), ("up", true): moveSelectedSpot(by: -1, in: order)
+        case ("right", true), ("down", true): moveSelectedSpot(by: 1, in: order)
+        case ("s", _): stepSelectedSize()
+        case ("h", _): toggleSelectedOnGrid()
+        default: break
         }
     }
 
@@ -737,7 +731,7 @@ final class SpotsModel {
     private func open(_ id: String) {
         guard let sheet = sheets[id] else { return }
         sheets.values.filter { $0 !== sheet }.forEach { $0.close() }
-        sheet.open { [weak self] in self?.openList = id }
+        sheet.open(waits: sheetMoves) { [weak self] in self?.openList = id }
     }
 
     func closeList() {

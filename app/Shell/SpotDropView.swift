@@ -25,6 +25,5 @@ struct SpotDropView: View {
         }
         .padding(SpotTokens.padding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .modifier(SpotGlass())
     }
 }

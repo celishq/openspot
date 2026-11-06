@@ -105,6 +105,11 @@ private struct Backing: NSViewRepresentable {
         }
     }
 
+    /// Fills the surface it lies on, so that a resize asks AppKit for no size of its own.
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: Surface, context: Context) -> CGSize? {
+        proposal.replacingUnspecifiedDimensions()
+    }
+
     func makeNSView(context: Context) -> Surface {
         let surface = Surface()
         surface.radius = radius

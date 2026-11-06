@@ -33,7 +33,7 @@ struct SpotCardView: View {
             .background(shape.fill(Color.accentColor).opacity(dropFill))
             .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, strength: showsPress ? SpotMotion.pressedGlass : 1))
             .overlay(shape.fill((isFilled ? Color.black : Color.white).opacity(showsPress ? 0.12 : isHovered ? 0.08 : 0)).allowsHitTesting(false))
-            .overlay(shape.strokeBorder(Color.accentColor, lineWidth: 2).opacity(isSelected && isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
+            .overlay(shape.strokeBorder(Color.accentColor, lineWidth: 2).animation(nil) { $0.opacity(isSelected ? 1 : 0) }.opacity(isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { keycap }
             .contentShape(shape)
             .onHover { isHovered = $0 }
