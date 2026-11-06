@@ -4,6 +4,8 @@ import OpenspotCore
 struct SpotSheetView: View {
     let entry: SpotsModel.Entry
     let isOpen: Bool
+    /// Whether the header lies on the white fill of a card that is turned on.
+    let showsFill: Bool
     let list: ItemList
     let rect: CGRect
     let form: FormDraft?
@@ -47,7 +49,7 @@ struct SpotSheetView: View {
                     }
                 }
             }
-            .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(showsTallCard || (!isOpen && entry.id == ShippedSpot.installID) ? 0 : 1) }
+            .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(isOpen ? 1 : 0) }
         }
         .padding(SpotTokens.padding)
         .frame(width: rect.width, height: rect.height, alignment: .topLeading)
@@ -128,11 +130,6 @@ struct SpotSheetView: View {
             width: -(SpotTokens.glyphSize + SpotTokens.padding - 5),
             height: SpotTokens.height(rows: entry.size.rows) - SpotTokens.padding - wordsHeight - top
         )
-    }
-
-    /// Whether the sheet still lies on a card that is turned on, which is plain white.
-    private var showsFill: Bool {
-        !isOpen && entry.state.on == true
     }
 
     private func createLabel(_ title: String) -> some View {

@@ -41,7 +41,7 @@ private struct Backing: NSViewRepresentable {
             wantsLayer = true
             layer?.addSublayer(sides)
             layer?.addSublayer(ends)
-            sides.colors = [0, 0.5, 0.5, 0].map { NSColor.black.withAlphaComponent($0).cgColor }
+            sides.colors = [0, 0.3, 0.3, 0].map { NSColor.black.withAlphaComponent($0).cgColor }
             sides.locations = [0, 0.3, 0.7, 1]
             sides.mask = sideLine
             ends.colors = [1, 0, 0, 1].map { NSColor.white.withAlphaComponent($0).cgColor }
@@ -56,7 +56,7 @@ private struct Backing: NSViewRepresentable {
             glowClip.cornerCurve = .continuous
             glow.filters = Self.blur.map { [$0] }
             setUp(sideLine, lineWidth: 0.5, strength: 1)
-            setUp(wideLine, lineWidth: 1, strength: 0.17)
+            setUp(wideLine, lineWidth: 1, strength: 0.25)
             setUp(thinLine, lineWidth: 0.5, strength: 0.15)
             setUp(glow, lineWidth: 2, strength: 0.3)
         }
