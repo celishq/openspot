@@ -16,8 +16,8 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Translate", "Apps", "Caffeinate", "Color picker", "Files", "Links", "Overview", "Screenshot", "Pull requests", "Snippets", "Plugins", "Settings"])
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["t", "a", "c", "o", "f", "l", nil, "v", "g", "n", "p", nil])
+        XCTAssertEqual(scan.commands.map(\.name), ["Translate", "Apps", "Caffeinate", "Color picker", "Emoji", "Files", "Links", "Overview", "Screenshot", "Pull requests", "Snippets", "Plugins", "Settings"])
+        XCTAssertEqual(scan.commands.map(\.key?.name), ["t", "a", "c", "o", "e", "f", "l", nil, "v", "g", "n", "p", nil])
     }
 
     func testNoMetricShowsTwiceInTheGrid() throws {
@@ -75,7 +75,8 @@ final class SamplePluginsTests: XCTestCase {
     func testTheCheckFindsNoFaultInTheFolder() async throws {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        try await withPrivateHome { _ in
+        try await withPrivateHome { folder in
+            try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
             let faults = await PluginCheck(folder: PluginFolder(url: root.appendingPathComponent("plugins"))).faults()
 
             XCTAssertEqual(faults, [])
@@ -609,6 +610,69 @@ final class SamplePluginsTests: XCTestCase {
             panel.take(last, answering: panel.generation)
         }
         return last
+    }
+
+    private func fakeEmoji(in folder: URL) throws -> PluginCommand {
+        let script = """
+        #!/bin/sh
+        printf 'row=thumbs up, %s\\nrun=👍\\nglyph=👍\\n' "$3"
+
+        """
+        try script.writeScript(to: folder.appendingPathComponent("tools/openspot"))
+        return try XCTUnwrap(try scan.commands.first { $0.name == "Emoji" })
+    }
+
+    func testEmojiIsAGridWithItsToneAndNoFaults() async throws {
+        try await withPrivateHome { folder in
+            let output = try await self.fakeEmoji(in: folder).items(timeout: 10)
+
+            XCTAssertEqual(output.sheetFaults, [])
+            XCTAssertEqual(output.perLine, 7)
+            XCTAssertEqual(output.items.map(\.title), ["thumbs up, none"])
+            XCTAssertEqual(self.text(of: "tone", in: output), "none")
+            XCTAssertEqual(output.primary, "Copy")
+        }
+    }
+
+    func testEmojiKeepsTheToneThatThePersonChooses() async throws {
+        try await withPrivateHome { folder in
+            let emoji = try self.fakeEmoji(in: folder)
+
+            _ = try await SpotRuns().answer(of: emoji, .set("tone", to: "dark"), input: nil, limit: 30)
+            let output = try await emoji.items(timeout: 10)
+
+            XCTAssertEqual(self.text(of: "tone", in: output), "dark")
+            XCTAssertEqual(output.items.map(\.title), ["thumbs up, dark"])
+        }
+    }
+
+    func testEmojiMovesToTheNextToneAndWrapsAround() async throws {
+        try await withPrivateHome { folder in
+            let emoji = try self.fakeEmoji(in: folder)
+            let first = try await emoji.items(timeout: 10)
+            let tone = try XCTUnwrap(first.actions.first { $0.id == "next-tone" })
+            let row = SpotItem(title: "thumbs up", run: "👍")
+            XCTAssertEqual(tone.key, ActionKey(name: "t", isCommand: true))
+
+            _ = try await SpotRuns().answer(of: emoji, .action(tone, item: row), input: nil, limit: 30)
+            let next = try await emoji.items(timeout: 10)
+            XCTAssertEqual(self.text(of: "tone", in: next), "light")
+
+            _ = try await SpotRuns().answer(of: emoji, .set("tone", to: "dark"), input: nil, limit: 30)
+            _ = try await SpotRuns().answer(of: emoji, .action(tone, item: row), input: nil, limit: 30)
+            let wrapped = try await emoji.items(timeout: 10)
+            XCTAssertEqual(self.text(of: "tone", in: wrapped), "none")
+        }
+    }
+
+    func testEmojiCopiesThePick() async throws {
+        try await withPrivateHome { folder in
+            let emoji = try self.fakeEmoji(in: folder)
+
+            _ = try await SpotRuns().answer(of: emoji, .item(SpotItem(title: "thumbs up", run: "👍")), input: nil, limit: 30)
+
+            XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("clipboard"), encoding: .utf8), "👍")
+        }
     }
 
     func testTranslateIsASheetOfPartsWithItsLanguagesAndNoFaults() async throws {
