@@ -3,14 +3,17 @@ import AppKit
 import OpenspotCore
 
 /// Keeps the app current: it checks GitHub each day, downloads a new version silently and installs it on quit, or at once
-/// from the Updates spot. A Debug build never checks by itself.
+/// from the Updates spot. A build with no update key has none of this.
 @MainActor
 final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelegate {
     private(set) var spot: UpdateSpot!
     private var controller: SPUStandardUpdaterController?
     private var install: (() -> Void)?
+    private let onReady: @MainActor () -> Void
 
-    init(runningWork: @escaping @MainActor () -> Int) {
+    init?(runningWork: @escaping @MainActor () -> Int, onReady: @escaping @MainActor () -> Void) {
+        guard let key = Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String, !key.isEmpty else { return nil }
+        self.onReady = onReady
         super.init()
         spot = UpdateSpot(
             version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "",
@@ -18,12 +21,7 @@ final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelega
             check: { [weak self] in await self?.check() },
             restart: { [weak self] in await self?.restart() }
         )
-        #if DEBUG
-        let starts = false
-        #else
-        let starts = true
-        #endif
-        controller = SPUStandardUpdaterController(startingUpdater: starts, updaterDelegate: self, userDriverDelegate: self)
+        controller = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: self, userDriverDelegate: self)
     }
 
     nonisolated var supportsGentleScheduledUpdateReminders: Bool {
@@ -39,7 +37,10 @@ final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelega
         nonisolated(unsafe) let handler = immediateInstallHandler
         MainActor.assumeIsolated {
             install = handler
-            Task { await spot.take(ready: version) }
+            Task {
+                await spot.take(ready: version)
+                onReady()
+            }
         }
         return true
     }

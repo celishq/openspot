@@ -181,8 +181,6 @@ final class SpotPanelTests: XCTestCase {
         press=true
         """)
 
-        XCTAssertNil(sheet.selectedPart)
-        sheet.move(by: 1)
         XCTAssertEqual(sheet.selectedPart?.id, "key")
         sheet.move(by: 1)
         XCTAssertEqual(sheet.selectedPart?.id, "wifi")
@@ -193,10 +191,8 @@ final class SpotPanelTests: XCTestCase {
         XCTAssertEqual(sheet.selectedPart?.id, "key")
     }
 
-    func testAnArrowPicksTheFirstPartWhenNoneIsSelected() throws {
-        var sheet = try panel("part=key\nshortcut=ctrl+space\n\npart=wifi\non=true\n")
-
-        sheet.move(by: -1)
+    func testASheetOpensWithItsFirstPartSelected() throws {
+        let sheet = try panel("part=note\ntitle=Note\n\npart=key\nshortcut=ctrl+space\n\npart=wifi\non=true\n")
 
         XCTAssertEqual(sheet.selectedPart?.id, "key")
     }
@@ -210,7 +206,7 @@ final class SpotPanelTests: XCTestCase {
         XCTAssertNil(sheet.selectedPart)
     }
 
-    func testTheSelectionSurvivesANewAnswerAndEndsWithThePart() throws {
+    func testTheSelectionSurvivesANewAnswerAndMovesOnWhenThePartEnds() throws {
         var sheet = try panel("part=key\nshortcut=ctrl+space\n")
         sheet.move(by: 1)
 
@@ -218,15 +214,15 @@ final class SpotPanelTests: XCTestCase {
         XCTAssertEqual(sheet.selectedPart?.id, "key")
 
         sheet.take(PluginOutput(text: "part=wifi\non=true\n"), answering: sheet.generation)
-        XCTAssertNil(sheet.selectedPart)
+        XCTAssertEqual(sheet.selectedPart?.id, "wifi")
     }
 
-    func testAClearedSelectionPicksNoPart() throws {
-        var sheet = try panel("part=key\nshortcut=ctrl+space\n")
+    func testAClearedSelectionGoesBackToTheFirstPart() throws {
+        var sheet = try panel("part=key\nshortcut=ctrl+space\n\npart=wifi\non=true\n")
         sheet.move(by: 1)
 
         sheet.clearSelection()
 
-        XCTAssertNil(sheet.selectedPart)
+        XCTAssertEqual(sheet.selectedPart?.id, "key")
     }
 }

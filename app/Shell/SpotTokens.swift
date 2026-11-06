@@ -13,6 +13,12 @@ enum SpotTokens {
     static let rowHeight: CGFloat = 62
     static let glyphSize: CGFloat = 36
     static let workMark: CGFloat = 16
+    static let offGridLight = 0.4
+    static let keycap: CGFloat = 20
+    static let keycapRadius: CGFloat = 6
+    static let keycapShade = 0.2
+    /// How far from each edge the rim of a round corner passes through its diagonal, as a part of the radius.
+    static let rimPoint: CGFloat = 1 - 0.5.squareRoot()
     static let listRowHeight: CGFloat = 40
     static let listRowGap: CGFloat = 6
     static let listIconSize: CGFloat = 24
@@ -31,7 +37,6 @@ enum SpotTokens {
     static let formTextHeight: CGFloat = 120
     static let halo: CGFloat = 52
     static let backdropBlur: CGFloat = 4
-    static let backdropScale: CGFloat = 1
     static let backdropShade = 0.2
     static let glassShade = 0.38
     static let titleOpacity = 1.0

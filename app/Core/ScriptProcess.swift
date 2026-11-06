@@ -25,6 +25,7 @@ public final class ScriptProcess: @unchecked Sendable {
     private var hasFrame = false
     private var stopped = false
     private var ended = false
+    private var killsLater = false
 
     /// `limit` is the time the script has to its first frame or its end. With none, it has no limit. `stopPause` is the time
     /// between each step of a stop.
@@ -140,6 +141,11 @@ public final class ScriptProcess: @unchecked Sendable {
         !lock.withLock { ended }
     }
 
+    /// Whether a quit must wait for it: its call runs, or a stop will still kill what its group holds.
+    var needsFinish: Bool {
+        lock.withLock { !ended || killsLater }
+    }
+
     /// Asks the process to end as quitting does: a staying script's input closes, and any other process stops.
     func leave() {
         if case .stays = mode {
@@ -184,8 +190,12 @@ public final class ScriptProcess: @unchecked Sendable {
     }
 
     private func stopGroup() {
+        lock.withLock { killsLater = true }
         deliver(SIGTERM)
-        DispatchQueue.global().asyncAfter(deadline: .now() + stopPause) { [self] in deliver(SIGKILL) }
+        DispatchQueue.global().asyncAfter(deadline: .now() + stopPause) { [self] in
+            deliver(SIGKILL)
+            lock.withLock { killsLater = false }
+        }
     }
 
     /// Whether a process of its group still runs.

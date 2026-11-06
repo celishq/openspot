@@ -9,14 +9,42 @@ final class SpotsPanel: NSPanel {
 
     override var canBecomeKey: Bool { true }
 
+    /// Opens the panel unseen, so that the first real open has its answers, its views and a ready text field. It then closes
+    /// and runs the given work. A real open during this keeps the panel open.
+    func warm(then done: @escaping () -> Void) {
+        model?.isWarming = true
+        alphaValue = 0
+        ignoresMouseEvents = true
+        open { orderFrontRegardless() }
+        Task { @MainActor [weak self] in
+            await self?.model?.waitForReads()
+            self?.contentView?.layoutSubtreeIfNeeded()
+            self?.displayIfNeeded()
+            try? await Task.sleep(for: .seconds(2 * SpotMotion.fadeInDuration))
+            if self?.model?.isWarming == true {
+                self?.model?.isWarming = false
+                self?.hide()
+            }
+            done()
+        }
+    }
+
+    private func endWarming() {
+        model?.isWarming = false
+        alphaValue = 1
+        ignoresMouseEvents = false
+    }
+
     /// Brings the panel to the front and starts its open motion.
     func show() {
+        endWarming()
         model?.isOpenForDrag = false
         open { makeKeyAndOrderFront(nil) }
     }
 
     /// Shows the panel under a drag with no change of focus: it does not become key, and it closes when the drag ends.
     func showForDrag() {
+        endWarming()
         model?.prepareForDrag()
         open { orderFrontRegardless() }
     }
@@ -30,11 +58,11 @@ final class SpotsPanel: NSPanel {
         DispatchQueue.main.async { self.model?.isShown = true }
     }
 
-    /// Whether a point on the screen lies on the part of the panel that shows the drop state. The window is taller than that.
+    /// Whether a point on the screen lies on the part of the panel that takes a drop. The window is taller than that.
     func showsDrop(at point: NSPoint) -> Bool {
         guard let model, model.isShown else { return false }
         let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
-        let height = SpotTokens.backdropHeight(rows: max(rows, SpotsModel.dropRows))
+        let height = SpotTokens.backdropHeight(rows: rows)
         return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
     }
 
@@ -43,10 +71,13 @@ final class SpotsPanel: NSPanel {
         model?.takeHeld([])
         model?.stopRecording()
         model?.closeMenu()
+        model?.endEditing(motion: nil)
         model?.isShown = false
         DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeOutDuration) {
             guard self.model?.isShown == false else { return }
             self.orderOut(nil)
+            self.alphaValue = 1
+            self.ignoresMouseEvents = false
             self.model?.finishPick()
             self.model?.panelDidHide()
         }
@@ -56,7 +87,7 @@ final class SpotsPanel: NSPanel {
     override func sendEvent(_ event: NSEvent) {
         if event.type == .flagsChanged { model?.takeHeld(Self.modifiers(of: event.modifierFlags)) }
         if event.type == .keyDown {
-            if model?.recordingPart != nil {
+            if model?.recording != nil {
                 if Int(event.keyCode) == kVK_Escape {
                     model?.stopRecording()
                 } else {
@@ -87,6 +118,8 @@ final class SpotsPanel: NSPanel {
         case kVK_Escape: name = "escape"
         case kVK_UpArrow: name = "up"
         case kVK_DownArrow: name = "down"
+        case kVK_LeftArrow: name = "left"
+        case kVK_RightArrow: name = "right"
         default: name = event.charactersIgnoringModifiers?.lowercased()
         }
         return name.map {

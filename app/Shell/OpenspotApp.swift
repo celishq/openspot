@@ -48,15 +48,15 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             self?.previousApp?.activate()
         }
         model.show = { [weak self] in
-            if self?.model.isShown == false { self?.showPanel() }
+            if self?.model.isShown == false || self?.model.isWarming == true { self?.showPanel() }
         }
         let toast = ToastPanel.make()
         model.notify = { toast.show($0, symbol: ToastPanel.failureSymbol) }
         model.confirm = { toast.show($0, symbol: ToastPanel.confirmSymbol) }
         trayBar = SpotTrayBar(model: model, openspotItem: item)
-        let update = AppUpdate { [model] in model.workCount }
+        let update = AppUpdate(runningWork: { [model] in model.workCount }, onReady: { [model] in model.updateIsReady() })
         self.update = update
-        model.updateSpot = update.spot
+        model.updateSpot = update?.spot
         model.applyConfig = { [weak self] in self?.applyConfig() }
         model.setEntryKeyOn = { [weak self] in self?.setEntryKey(on: $0) }
         model.present = { [weak self] in self?.presentPanel() }
@@ -66,6 +66,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         model.reload()
         model.arrive(.launch)
+        panel?.warm { [model] in model.confirm("Openspot is ready") }
         isLaunched = true
         if !openedAtLaunch.isEmpty { model.review(openedAtLaunch) }
         NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(didWake), name: NSWorkspace.didWakeNotification, object: nil)
@@ -123,7 +124,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     @objc func togglePanel() {
-        if model.isShown {
+        if model.isShown, !model.isWarming {
             panel?.hide()
         } else {
             showPanel()
@@ -151,7 +152,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     /// Opens the panel for a drag. The front app stays in front, so that closing the panel activates nothing.
     private func showPanelForDrag() {
-        guard !model.isShown else { return model.followDrag() }
+        guard !model.isShown || model.isWarming else { return model.followDrag() }
         previousApp = nil
         panel?.showForDrag()
     }
@@ -159,7 +160,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     /// Closes the panel and asks the person for files. Afterwards the app that was in front comes back.
     private func chooseFiles(for command: PluginCommand, then take: @escaping ([String]) -> Void) {
         guard fileChooser == nil else { return }
-        let previous = model.isShown ? previousApp : NSWorkspace.shared.frontmostApplication
+        let previous = model.isShown && !model.isWarming ? previousApp : NSWorkspace.shared.frontmostApplication
         if model.isShown { panel?.hide() }
         NSApp.activate(ignoringOtherApps: true)
         let chooser = SpotFileChooser(command: command)

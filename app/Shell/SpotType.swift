@@ -13,5 +13,6 @@ enum SpotType {
     static let controlValue = Font.system(size: 11, weight: .semibold, design: .rounded).monospacedDigit()
     static let tray = Font.system(size: 13, weight: .medium).monospacedDigit()
     static let small = Font.system(size: 10, weight: .medium)
+    static let keycap = Font.system(size: 11, weight: .semibold, design: .rounded)
     static let lineGap: CGFloat = 1
 }

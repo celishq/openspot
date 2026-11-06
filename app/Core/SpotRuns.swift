@@ -13,6 +13,8 @@ public final class SpotRuns {
     @ObservationIgnored public var onReport: (String, SpotSheet.Report) -> Void = { _, _ in }
     /// The time a `read` has to its first frame or its end.
     public let readLimit: TimeInterval
+    /// How long a sheet with no answer yet holds its motion for the first answer.
+    public let firstAnswerPause: TimeInterval
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored private let stopPause: TimeInterval
     @ObservationIgnored private let tickPause: Duration
@@ -26,6 +28,7 @@ public final class SpotRuns {
 
     public init(
         readLimit: TimeInterval = 10,
+        firstAnswerPause: TimeInterval = 0.15,
         now: @escaping () -> Date = { Date() },
         stopPause: TimeInterval = 2,
         tickPause: Duration = .seconds(1),
@@ -33,6 +36,7 @@ public final class SpotRuns {
         prepare: @escaping ([SpotItem]) async -> Void = { _ in }
     ) {
         self.readLimit = readLimit
+        self.firstAnswerPause = firstAnswerPause
         self.now = now
         self.stopPause = stopPause
         self.tickPause = tickPause
@@ -82,6 +86,11 @@ public final class SpotRuns {
         updateClock()
     }
 
+    /// Whether a read of any script runs.
+    public var isReading: Bool {
+        sheets.values.contains(where: \.isReading)
+    }
+
     /// The panel closed: a sheet of parts closes and drops its values, and a read that nothing wants now stops.
     public func panelClosed() {
         isPanelOpen = false
@@ -113,7 +122,7 @@ public final class SpotRuns {
     public func quit() {
         clock?.cancel()
         clock = nil
-        let live = processes.filter(\.isLive)
+        let live = processes.filter(\.needsFinish)
         sheets.values.forEach { $0.prepareToQuit() }
         live.forEach { $0.leave() }
         let deadline = Date().addingTimeInterval(stopPause)
@@ -155,7 +164,8 @@ public final class SpotRuns {
         sheets.mapValues(\.reading)
     }
 
-    /// Runs one call with no sheet, and returns all that it prints. A staying script runs until it gives its first frame.
+    /// Runs one call with no sheet, and returns all that it prints. A `read` runs until it gives its first frame, which is what
+    /// a sheet takes as its answer.
     public func answer(of command: PluginCommand, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil) async throws -> String {
         if command.stays, action == .read {
             let (script, frames) = try stay(command, limit: limit)
@@ -164,8 +174,14 @@ public final class SpotRuns {
             for try await frame in frames { return frame }
             return ""
         }
+        let (stream, halt) = frames(of: command, action, input: input, limit: limit)
+        if action == .read {
+            defer { halt() }
+            for try await frame in stream { return frame }
+            return ""
+        }
         var text = ""
-        for try await frame in frames(of: command, action, input: input, limit: limit).stream { text += frame }
+        for try await frame in stream { text += frame }
         return text
     }
 
@@ -241,7 +257,7 @@ public final class SpotRuns {
     }
 
     private func keep(_ process: ScriptProcess) {
-        processes.removeAll { !$0.isLive }
+        processes.removeAll { !$0.needsFinish }
         processes.append(process)
     }
 

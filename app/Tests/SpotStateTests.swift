@@ -8,6 +8,30 @@ final class SpotStateTests: XCTestCase {
         SpotState(block: try XCTUnwrap(TextBlock.blocks(in: text).first), header: header)
     }
 
+    func testAFrameSetsWhetherTheSpotIsOnTheGrid() throws {
+        let hidden = SpotState(title: "Name", isOnGrid: false)
+
+        XCTAssertTrue(header.isOnGrid)
+        XCTAssertTrue(SpotState(block: TextBlock.blocks(in: "grid=true").first, header: hidden).isOnGrid)
+        XCTAssertFalse(try state("grid=false").isOnGrid)
+    }
+
+    func testAFrameWithNoGridKeepsTheHeader() {
+        let hidden = SpotState(title: "Name", isOnGrid: false)
+
+        XCTAssertFalse(SpotState(block: TextBlock.blocks(in: "title=New").first, header: hidden).isOnGrid)
+        XCTAssertFalse(SpotState(block: nil, header: hidden).isOnGrid)
+    }
+
+    func testAChangedStateStaysOffTheGrid() throws {
+        let hidden = SpotState(title: "Name", level: 1, isOnGrid: false)
+        let block = try XCTUnwrap(TextBlock.blocks(in: "on=true").first)
+
+        XCTAssertFalse(hidden.taking(block).isOnGrid)
+        XCTAssertFalse(hidden.showing(title: "Work", detail: nil).isOnGrid)
+        XCTAssertFalse(hidden.withLevel(2).isOnGrid)
+    }
+
     func testReadsAToggleState() throws {
         let state = try state("title=Wi-Fi\ndetail=VIRGIN-telco_5668\non=true")
         XCTAssertEqual(state.title, "Wi-Fi")

@@ -12,6 +12,7 @@ struct SpotCardView: View {
     let isDropTarget: Bool
     let readings: [String: MetricReading]
     let chainLetter: String?
+    let showsChain: Bool
     let onTap: () -> Void
     let onLevel: (Double) -> Void
     @State private var isHovered = false
@@ -26,13 +27,14 @@ struct SpotCardView: View {
     }
 
     var body: some View {
-        content
+        ZStack(alignment: .topLeading) { content }
             .padding(SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape.fill(Color.accentColor).opacity(dropFill))
             .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, strength: showsPress ? SpotMotion.pressedGlass : 1))
             .overlay(shape.fill((isFilled ? Color.black : Color.white).opacity(showsPress ? 0.12 : isHovered ? 0.08 : 0)).allowsHitTesting(false))
-            .overlay(shape.strokeBorder(Color.accentColor, lineWidth: 2).opacity(isSelected && isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
+            .overlay(shape.strokeBorder(Color.accentColor, lineWidth: 2).animation(nil) { $0.opacity(isSelected ? 1 : 0) }.opacity(isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
+            .overlay(alignment: .topTrailing) { keycap }
             .contentShape(shape)
             .onHover { isHovered = $0 }
             .onTapGesture(perform: onTap)
@@ -120,9 +122,7 @@ struct SpotCardView: View {
     private var accessory: some View {
         switch entry.kind {
         case .list:
-            Image(systemName: "chevron.right")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(isFilled ? Color.black : Color.white)
+            SpotCardArrow(isOnWhite: isFilled)
         case .launch:
             if size != .wide, !entry.stopsOnPress {
                 Text("Run")
@@ -164,17 +164,29 @@ struct SpotCardView: View {
         }
     }
 
-    private var symbolGlyph: some View {
-        Group {
-            if let chainLetter {
-                Text(chainLetter)
-            } else {
-                Image(systemName: entry.symbol)
-            }
+    /// The letter of the spot, on the rim of its top right corner.
+    @ViewBuilder
+    private var keycap: some View {
+        if let chainLetter {
+            let inset = SpotTokens.corner(for: size) * SpotTokens.rimPoint - SpotTokens.keycap / 2
+            Text(chainLetter)
+                .font(SpotType.keycap)
+                .foregroundStyle(.white)
+                .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
+                .background(Color(white: SpotTokens.keycapShade), in: RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(Color.white.opacity(SpotTokens.track)))
+                .offset(x: -inset, y: inset)
+                .opacity(showsChain ? 1 : 0)
+                .animation(SpotMotion.keycap, value: showsChain)
+                .allowsHitTesting(false)
         }
-        .font(.system(size: 17, weight: .semibold))
-        .foregroundStyle(isFilled ? Color.accentColor : Color.white)
-        .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
-        .background(glyphDisc, in: Circle())
+    }
+
+    private var symbolGlyph: some View {
+        Image(systemName: entry.symbol)
+            .font(.system(size: 17, weight: .semibold))
+            .foregroundStyle(isFilled ? Color.accentColor : Color.white)
+            .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+            .background(glyphDisc, in: Circle())
     }
 }

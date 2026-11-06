@@ -10,9 +10,24 @@ public struct SpotSize: Equatable, Sendable {
     public static let strip = SpotSize(columns: 4, rows: 1)
     public static let large = SpotSize(columns: 4, rows: 2)
 
+    /// Each size a person can prefer, from the smallest.
+    public static let all: [SpotSize] = [.small, .wide, .square, .strip, .large]
+
     public init(columns: Int, rows: Int) {
         self.columns = columns
         self.rows = rows
+    }
+
+    /// The word a file uses for this size.
+    public var name: String {
+        switch self {
+        case .small: "small"
+        case .wide: "wide"
+        case .square: "square"
+        case .strip: "strip"
+        case .large: "large"
+        default: "\(columns)x\(rows)"
+        }
     }
 
     /// The size a file names: small, wide, square, strip or large.

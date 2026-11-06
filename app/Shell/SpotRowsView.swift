@@ -4,6 +4,7 @@ import SwiftUI
 /// The rows of a script, one on each line or as square buttons, which scroll when they do not fit.
 struct SpotRowsView: View {
     let list: ItemList
+    var recording: String?
     let onRun: (SpotItem) -> Void
     @State private var edges = SpotScrollEdges()
 
@@ -23,6 +24,7 @@ struct SpotRowsView: View {
                 .font(SpotType.body)
                 .modifier(SpotSecondaryText())
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .transition(.identity)
         } else {
             scroll
         }
@@ -113,6 +115,10 @@ struct SpotRowsView: View {
                         .modifier(SpotSecondaryText())
                         .lineLimit(1)
                 }
+            }
+            Spacer(minLength: 0)
+            if let shortcut = item.shortcut {
+                SpotKeyLabel(text: shortcut, isRecording: recording == item.run)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -119,9 +119,9 @@ final class SpotReviewTests: XCTestCase {
 
         let drop = SpotDrop(paths: [file.path], folder: target)
 
-        XCTAssertEqual(drop.title, "Drop to install Weather")
+        XCTAssertEqual(drop.title, "Weather")
         XCTAssertEqual(drop.symbol, "sun.max")
-        XCTAssertEqual(drop.detail, "Today")
+        XCTAssertEqual(drop.detail, "Drop to install")
         XCTAssertEqual(SpotDrop(paths: [file.path, file.path], folder: target).detail, "Openspot installs one spot at a time")
     }
 

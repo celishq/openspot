@@ -76,6 +76,7 @@ public struct Plugin: Equatable, Sendable {
             isTray: isTray,
             dataName: header.value("data") ?? id.split(separator: "/").first.map(String.init),
             hasSpot: read?.seconds == nil || hasKey,
+            isOnGrid: header.flag("grid") ?? true,
             headerSymbol: symbol
         )
         self.init(id: id, commands: [command])

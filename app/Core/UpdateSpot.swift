@@ -1,6 +1,6 @@
 import Foundation
 
-/// The Updates spot, which ships with the app. It shows the version or a downloaded update. A press checks now or restarts
+/// The Updates spot, which ships with the app. Search finds it with the version, and the grid shows it with a downloaded update. A press checks now or restarts
 /// into the update, and it warns once before a restart that would stop running calls.
 public actor UpdateSpot {
     private let version: String
@@ -40,7 +40,7 @@ public actor UpdateSpot {
         guard let ready else { return "title=Updates\ndetail=\(version)\n" }
         let work = await runningWork()
         let detail = work > 0 && warned == work ? "Stops \(Self.calls(work))" : "Update \(ready)"
-        return "title=Restart\ndetail=\(detail)\n"
+        return "title=Restart\ndetail=\(detail)\ngrid=true\n"
     }
 
     private func press() async -> String {

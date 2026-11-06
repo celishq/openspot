@@ -6,6 +6,32 @@ import XCTest
 final class SpotRunsReadTests: SpotRunsCase {
     // MARK: A1, A2
 
+    func testAnOpenAtLaunchWaitsForEachReadAndServesTheNextOpen() async throws {
+        try script(header: "read=panel", "echo run >> '\(path("runs"))'\nsleep 0.1\nprintf 'title=Read\\n'")
+        let sheet = try sheet()
+
+        runs.panelOpened()
+        XCTAssertTrue(runs.isReading)
+        try await wait("the answer") { !self.runs.isReading }
+        runs.panelClosed()
+        runs.panelOpened()
+        try await pause(0.1)
+
+        XCTAssertEqual(sheet.state.title, "Read")
+        XCTAssertEqual(try String(contentsOfFile: path("runs"), encoding: .utf8), "run\n")
+    }
+
+    func testAnOpenAtLaunchRunsNoScriptThatReadsOnlyAtItsSheet() async throws {
+        try script(header: "read=sheet", "echo run >> '\(path("runs"))'")
+        _ = try sheet()
+
+        runs.panelOpened()
+        try await pause(0.1)
+
+        XCTAssertFalse(runs.isReading)
+        XCTAssertFalse(exists("runs"))
+    }
+
     func testEachScriptWithACardOrNotHasOneSheetAndAWidgetHasNone() throws {
         try script("cups", header: "read=30")
         try script("tool", header: "read=sheet\nkey=t")

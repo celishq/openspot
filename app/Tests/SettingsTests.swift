@@ -31,35 +31,47 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(commands.map(\.key?.name), ["p", nil])
     }
 
-    func testTheSheetShowsTheKeyOfTheFile() async throws {
+    func testTheSheetListsTheKeyOfTheFile() async throws {
         try file.set("panel_key", to: "option+space")
 
-        let parts = try await spot.items(timeout: 1).parts
+        let items = try await spot.items(timeout: 1).items
 
-        XCTAssertEqual(parts.map(\.id), ["panel_key"])
-        XCTAssertEqual(parts.first?.look, .tile)
-        XCTAssertEqual(parts.first?.title, "Open Openspot")
-        XCTAssertEqual(parts.first?.control, .shortcut("option+space"))
+        XCTAssertEqual(items.map(\.run), ["panel_key"])
+        XCTAssertEqual(items.first?.title, "Open Openspot")
+        XCTAssertEqual(items.first?.shortcut, "option+space")
     }
 
-    func testTheSheetShowsTheStandardKeyWithNoFile() async throws {
-        let parts = try await spot.items(timeout: 1).parts
+    func testTheSheetListsTheStandardKeyWithNoFile() async throws {
+        let items = try await spot.items(timeout: 1).items
 
-        XCTAssertEqual(parts.first?.control, .shortcut("ctrl+space"))
+        XCTAssertEqual(items.first?.shortcut, "ctrl+space")
     }
 
-    func testARecordedKeyGoesToTheFileAndTheSheetReadsItAgain() async throws {
+    func testTheSheetHasNoPartsAndKeepsItsOrder() async throws {
+        let output = try await spot.items(timeout: 1)
+
+        XCTAssertTrue(output.parts.isEmpty)
+        XCTAssertFalse(output.keepsRecent)
+    }
+
+    func testAKeyRecordedOnARowGoesToTheFileAndTheListReadsItAgain() async throws {
         let runs = SpotRuns()
         let sheet = runs.sheet(for: try spot)
         sheet.open {}
-        for _ in 0..<200 where sheet.panel == nil { try await Task.sleep(for: .milliseconds(5)) }
-        let part = try XCTUnwrap(sheet.panel?.parts.first)
+        for _ in 0..<200 where sheet.list.shown.isEmpty { try await Task.sleep(for: .milliseconds(5)) }
+        let item = try XCTUnwrap(sheet.list.selectedItem)
 
-        sheet.set(part, to: "cmd+k")
+        sheet.set(item, to: "cmd+k")
 
-        for _ in 0..<200 where file.read().panelKey != Shortcut(text: "cmd+k") { try await Task.sleep(for: .milliseconds(5)) }
+        for _ in 0..<200 where sheet.list.shown.first?.shortcut != "cmd+k" { try await Task.sleep(for: .milliseconds(5)) }
         XCTAssertEqual(file.read().panelKey, Shortcut(text: "cmd+k"))
-        XCTAssertEqual(sheet.panel?.parts.first?.control, .shortcut("cmd+k"))
+        XCTAssertEqual(sheet.list.shown.first?.shortcut, "cmd+k")
+    }
+
+    func testARowCarriesItsKey() {
+        let items = PluginOutput(text: "row=Open\nrun=open\nshortcut=ctrl+k\n\nrow=Other\nrun=other\n").items
+
+        XCTAssertEqual(items.map(\.shortcut), ["ctrl+k", nil])
     }
 
     func testAKeyItCannotUseLeavesTheFile() async throws {
