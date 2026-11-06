@@ -56,6 +56,7 @@ final class SpotsPanel: NSPanel {
                 }
                 return
             }
+            if Int(event.keyCode) == kVK_ANSI_V, Self.modifiers(of: event.modifierFlags) == .command, model?.pasteSpot() == true { return }
             if let key = Self.actionKey(of: event), model?.handleKey(key) == true { return }
             if model?.handleChain(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags)) == true { return }
         }
@@ -88,7 +89,7 @@ final class SpotsPanel: NSPanel {
 
     override func resignKey() {
         super.resignKey()
-        if model?.isShown == true { hide() }
+        if model?.isShown == true, model?.isReviewing != true { hide() }
     }
 
     /// Takes the system's low-resolution glow off each text cursor whenever the cursor draws, so that none ever shows.

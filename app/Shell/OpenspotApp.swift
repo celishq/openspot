@@ -15,6 +15,9 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         app.run()
     }
 
+    /// The seconds after a drop until the app that the drag came from has let go of the focus.
+    private static let dropSettle = 0.2
+
     private var statusItem: NSStatusItem?
     private let model = SpotsModel()
     private var panel: SpotsPanel?
@@ -135,6 +138,11 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         if let front = NSWorkspace.shared.frontmostApplication, front != .current { previousApp = front }
         NSApp.activate(ignoringOtherApps: true)
         panel?.show()
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.dropSettle) { [weak self] in
+            guard self?.model.isReviewing == true else { return }
+            NSApp.activate(ignoringOtherApps: true)
+            self?.panel?.makeKeyAndOrderFront(nil)
+        }
     }
 
     /// Opens the panel for a drag. The front app stays in front, so that closing the panel activates nothing.

@@ -494,7 +494,8 @@ To send a spot to another person:
 2. Choose "Copy to share". This puts a `.spot` file on the clipboard.
 3. Paste the file into a chat or a mail. Check it for secrets first, because Openspot does not.
 
-To add a spot that you got, double-click its `.spot` file, or drop it on the Openspot item in the menu bar or on the panel.
+To add a spot that you got, double-click its `.spot` file, drop it on the Openspot item in the menu bar or on the panel, or
+copy the file and press ⌘V in the panel.
 Openspot shows what runs by itself, each file that it replaces and all the text it can. It names each file that it cannot show,
 and a program comes first. Nothing runs until you press ⌘⏎ to add it.
 
@@ -514,6 +515,11 @@ A `.spot` file is JSON. It holds a format number and the files:
 - Hidden files and `$OPENSPOT_DATA` stay behind.
 - A compiled program travels, but no one can read it first. Add one only if you trust the sender.
 - A file with the same path is replaced, and the old file goes to the Trash.
+
+## Remove a spot
+
+Select the spot, press ⌘K, choose "Remove" and press again. Its file goes to the Trash. The other files of its folder and
+what it keeps in `$OPENSPOT_DATA` stay. A widget file goes whole, with each widget in it.
 
 ## Check your work
 

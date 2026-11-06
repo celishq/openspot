@@ -25,17 +25,40 @@ final class ActionMenuTests: XCTestCase {
     }
 
     func testAMenuThatOffersSharingEndsWithIt() throws {
-        let menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, offersShare: true))
+        let menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, extras: [.share, .remove()]))
 
-        XCTAssertEqual(menu.rows.map(\.title), ["Open", "New", "Copy to share"])
-        XCTAssertEqual(menu.rows.last?.action, .share)
+        XCTAssertEqual(menu.rows.map(\.title), ["Open", "New", "Copy to share", "Remove"])
+        XCTAssertEqual(menu.rows[2].action, .share)
     }
 
     func testAMenuWithOnlySharingStillOpens() throws {
         let slider = PluginCommand(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .slider)
 
         XCTAssertNil(ActionMenu(command: slider, item: nil))
-        XCTAssertEqual(ActionMenu(command: slider, item: nil, offersShare: true)?.rows.map(\.title), ["Copy to share"])
+        XCTAssertEqual(ActionMenu(command: slider, item: nil, extras: [.share])?.rows.map(\.title), ["Copy to share"])
+    }
+
+    func testRemoveAsksForASecondPress() throws {
+        var menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, extras: [.remove()]))
+        menu.select(.remove())
+
+        XCTAssertNil(menu.press())
+        XCTAssertEqual(menu.title(of: menu.rows[menu.selected]), "Press again to remove")
+        XCTAssertEqual(menu.press()?.action, .remove())
+    }
+
+    func testRemoveNamesEachWidgetThatItTakesWithIt() {
+        XCTAssertEqual(CommandAction.remove(widgets: 3).confirm, "Press again to remove 3 widgets")
+    }
+
+    func testAMoveToTheSameRowKeepsItsQuestion() throws {
+        var menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, extras: [.remove()]))
+        menu.select(.remove())
+        XCTAssertNil(menu.press())
+
+        menu.move(by: 0)
+
+        XCTAssertEqual(menu.press()?.action, .remove())
     }
 
     func testWithNoItemOnlyTheCommandsActionsShow() throws {

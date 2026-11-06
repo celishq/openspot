@@ -10,14 +10,14 @@ public struct ActionMenu: Equatable, Sendable {
     public private(set) var selected = 0
     public private(set) var confirming: String?
 
-    /// Lists what Enter does, then the actions that fit, then a share row if it offers one. Returns nil when there is nothing to list.
-    public init?(command: PluginCommand, item: SpotItem?, showsPrimary: Bool = true, offersShare: Bool = false) {
+    /// Lists what Enter does, the actions that fit, then the rows that the app adds. Returns nil when there is nothing to list.
+    public init?(command: PluginCommand, item: SpotItem?, showsPrimary: Bool = true, extras: [CommandAction] = []) {
         var rows: [Row] = []
         if showsPrimary, let title = command.primaryTitle(hasItem: item != nil) {
             rows.append(Row(title: title, keyLabel: "⏎", action: nil))
         }
         rows += command.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
-        if offersShare { rows.append(Row(title: CommandAction.share.title, keyLabel: "", action: .share)) }
+        rows += extras.map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
         guard !rows.isEmpty else { return nil }
         self.rows = rows
     }
@@ -34,6 +34,7 @@ public struct ActionMenu: Equatable, Sendable {
     }
 
     public mutating func move(by step: Int) {
+        guard step != 0 else { return }
         selected = min(max(selected + step, 0), rows.count - 1)
         confirming = nil
     }

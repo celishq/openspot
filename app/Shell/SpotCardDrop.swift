@@ -11,7 +11,12 @@ struct SpotCardDrop: DropDelegate {
 
     /// The files of the drag in progress.
     static var paths: [String] {
-        let urls = NSPasteboard(name: .drag).readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL]
+        paths(on: NSPasteboard(name: .drag))
+    }
+
+    /// The files that a pasteboard holds.
+    static func paths(on pasteboard: NSPasteboard) -> [String] {
+        let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL]
         return urls?.map(\.path) ?? []
     }
 

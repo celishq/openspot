@@ -77,6 +77,7 @@ final class SpotsModel {
 
     private static let globalItemLimit = 6
     private static let dragWatchPause: Duration = .milliseconds(100)
+    private static let dropPause: Duration = .milliseconds(300)
 
     var entries: [Entry] = [] {
         didSet { updateVisible() }
@@ -215,7 +216,8 @@ final class SpotsModel {
                 try? await Task.sleep(for: Self.dragWatchPause)
                 if Task.isCancelled { return }
             }
-            guard let self else { return }
+            try? await Task.sleep(for: Self.dropPause)
+            guard !Task.isCancelled, let self else { return }
             dragPaths = []
             runs.draggedPaths = []
             if isOpenForDrag, isShown { dismiss() }
@@ -267,6 +269,19 @@ final class SpotsModel {
         }
     }
 
+    /// Whether a review shows, which stays open when the panel loses the focus.
+    var isReviewing: Bool {
+        reviewed != nil
+    }
+
+    /// Opens the review of a `.spot` file on the clipboard. Returns false when the clipboard holds other things, or a form is open.
+    func pasteSpot(from pasteboard: NSPasteboard = .general) -> Bool {
+        let paths = SpotCardDrop.paths(on: pasteboard)
+        guard form == nil, SharedSpot.isFile(paths) else { return false }
+        review(paths.map { URL(fileURLWithPath: $0) })
+        return true
+    }
+
     /// Ends the review, so that its card leaves the grid.
     private func endReview() {
         guard reviewed != nil else { return }
@@ -289,6 +304,19 @@ final class SpotsModel {
             confirm(spot.notice(name: entry.command.name))
         } catch {
             notify("\(entry.command.name) was not copied. \(Self.reason(error))")
+        }
+    }
+
+    /// Moves the file of a spot to the Trash. What it keeps in `$OPENSPOT_DATA` stays.
+    private func remove(_ entry: Entry) {
+        closeList()
+        if isShown { dismiss() }
+        do {
+            try PluginFolder.standard().remove(entry.command)
+            confirm("\(entry.command.name) moved to the Trash")
+            reload()
+        } catch {
+            notify("\(entry.command.name) was not removed. \(Self.reason(error))")
         }
     }
 
@@ -747,8 +775,13 @@ final class SpotsModel {
             command: target.entry.command,
             item: target.item,
             showsPrimary: !isOpenList || target.item != nil,
-            offersShare: target.item == nil && target.entry.command.shipped == nil
+            extras: target.item == nil && target.entry.command.shipped == nil ? [.share, .remove(widgets: widgets(sharingFileWith: target.entry))] : []
         )
+    }
+
+    /// How many widgets the file of a widget holds, which go together when it is removed.
+    private func widgets(sharingFileWith entry: Entry) -> Int {
+        entry.kind == .widget ? entries.filter { $0.command.url == entry.command.url }.count : 1
     }
 
     /// The keys that work on the selected row or card, in words for the bottom of the panel.
@@ -786,6 +819,8 @@ final class SpotsModel {
         closeMenu()
         if row.action == .share {
             share(target.entry)
+        } else if row.action?.id == CommandAction.removeID {
+            remove(target.entry)
         } else if let action = row.action {
             run(action, on: target)
         } else if let item = target.item {

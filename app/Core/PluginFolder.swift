@@ -53,6 +53,12 @@ public struct PluginFolder: Sendable {
         return result
     }
 
+    /// Takes the file of a spot out of the folder. It goes to the Trash, and the other files of its folder stay.
+    public func remove(_ command: PluginCommand, discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws {
+        guard command.shipped == nil else { throw PluginError.fault("\(command.name) comes with Openspot, so it cannot be removed.") }
+        try discard(command.url)
+    }
+
     private static func sorted(in folder: URL) throws -> [URL] {
         try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
             .sorted { $0.lastPathComponent < $1.lastPathComponent }
