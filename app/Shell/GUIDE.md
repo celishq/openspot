@@ -268,7 +268,8 @@ These stop a call:
 
 - A new value for a part stops the older call of that part.
 - A second press of a running part, action or card stops its call. Each process in its group gets the terminate signal.
-  After 2 seconds, Openspot kills what still runs.
+  After 2 seconds, Openspot kills what still runs. A press within 1 second of the start of the call does nothing, so a
+  double press does not stop it.
 - Quitting Openspot stops each call. To outlive the app, start the work with `nohup` and then exit. A stop reaches the whole
   group, so `nohup` does not protect a child while its script still runs.
 

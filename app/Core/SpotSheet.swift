@@ -25,6 +25,7 @@ public final class SpotSheet {
     private static let answerAge: TimeInterval = 5
     private static let textPause: Duration = .milliseconds(300)
     private static let sliderPause: Duration = .milliseconds(100)
+    private static let pressPause: TimeInterval = 1
     private static let readKey = "read"
     private static let searchKey = "search"
     private static let cardKey = "card"
@@ -193,13 +194,13 @@ public final class SpotSheet {
     /// Runs a press of a part. A second press of a running part stops its call.
     public func press(_ part: SpotPart) {
         let key = Self.key(part: part.id)
-        if !command.stays, let running = running(key) { return stop(running) }
+        if !command.stays, let running = running(key) { return pressAgain(running) }
         guard let generation = panel?.advance() else { return }
         editing = nil
         change(.press(part.id), key: key, generation: generation, keeping: nil, closes: part.closes)
     }
 
-    /// Whether a press of the card now stops a call.
+    /// Whether a call of the card runs.
     public var isCardRunning: Bool {
         running(Self.cardKey) != nil
     }
@@ -207,7 +208,7 @@ public final class SpotSheet {
     /// Runs a click on a card with no sheet: a toggle shows its new state at once. A second press stops the call, and a
     /// stopped toggle goes back.
     public func pressCard() {
-        if let running = running(Self.cardKey) { return stop(running) }
+        if let running = running(Self.cardKey) { return pressAgain(running) }
         guard command.kind == .toggle else { return work(command.click, key: Self.cardKey) }
         let before = state
         let action = SpotAction.toggle(state)
@@ -237,7 +238,7 @@ public final class SpotSheet {
         press(.action(action, item: item))
     }
 
-    /// Asks for the form of an action: the call of that action, with empty stdin. Returns nil when a person stopped it.
+    /// Asks for the form of an action: the call of that action, with empty stdin. Returns nil when a person pressed it again.
     public func form(_ action: CommandAction, item: SpotItem?) async throws -> ItemForm? {
         let call = SpotAction.action(action, item: item)
         guard let text = try await text(of: call, input: nil) else { return nil }
@@ -246,7 +247,7 @@ public final class SpotSheet {
     }
 
     /// Gives a filled form to the script, and reads again with the row it saved selected. Returns false when a person
-    /// stopped it.
+    /// pressed it again.
     public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft) async throws -> Bool {
         let call = SpotAction.action(action, item: item)
         guard let text = try await text(of: call, input: draft.text) else { return false }
@@ -259,6 +260,11 @@ public final class SpotSheet {
     public func stop(_ call: ScriptCall) {
         call.stop()
         calls.removeAll { $0 === call }
+    }
+
+    /// Takes a press of a running call: it stops the call, unless the call started within the last second (L11).
+    private func pressAgain(_ call: ScriptCall) {
+        if runs.now().timeIntervalSince(call.started) >= Self.pressPause { stop(call) }
     }
 
     private static func key(part id: String) -> String {
@@ -550,7 +556,7 @@ public final class SpotSheet {
     /// Starts or stops the call of a person's press.
     private func press(_ action: SpotAction) {
         let key = "call:\(action.arguments.joined(separator: "\n"))"
-        if let running = running(key) { return stop(running) }
+        if let running = running(key) { return pressAgain(running) }
         work(action, key: key)
     }
 
@@ -604,11 +610,12 @@ public final class SpotSheet {
         if command.read != nil || command.stays { read(need: .change) }
     }
 
-    /// Runs a call to its end, and returns all that it printed, or nil when it was stopped. A second press stops it.
+    /// Runs a call to its end, and returns all that it printed, or nil when it was stopped or pressed again. A second press
+    /// stops it.
     private func text(of action: SpotAction, input: String?) async throws -> String? {
         let key = "call:\(action.arguments.joined(separator: "\n"))"
         if let running = running(key) {
-            stop(running)
+            pressAgain(running)
             return nil
         }
         return try await withCheckedThrowingContinuation { continuation in

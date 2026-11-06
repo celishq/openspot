@@ -613,6 +613,7 @@ final class SpotRunsTests: XCTestCase {
 
         sheet.press(part)
         try await wait("the call") { self.log() == ["read", "go"] }
+        time += 1
         sheet.press(part)
         XCTAssertTrue(sheet.calls.isEmpty)
         try await pause(0.6)
@@ -635,6 +636,7 @@ final class SpotRunsTests: XCTestCase {
 
         sheet.run(action, item: nil)
         try await wait("the call") { self.log() == ["read", "go"] }
+        time += 1
         sheet.run(action, item: nil)
         try await pause(0.6)
 
@@ -649,6 +651,7 @@ final class SpotRunsTests: XCTestCase {
         sheet.pressCard()
         XCTAssertTrue(sheet.isCardRunning)
         try await wait("the call") { self.log() == [""] }
+        time += 1
         sheet.pressCard()
         XCTAssertFalse(sheet.isCardRunning)
         try await pause(0.6)
@@ -664,9 +667,92 @@ final class SpotRunsTests: XCTestCase {
 
         sheet.pressCard()
         XCTAssertEqual(sheet.state.on, true)
+        time += 1
         sheet.pressCard()
 
         try await wait("the old state") { sheet.state.on == false }
+    }
+
+    // MARK: L11
+
+    func testAPressOfAPartWithinOneSecondOfItsStartDoesNothing() async throws {
+        try script(header: "read=sheet", """
+        case "$1" in
+          read) printf 'part=go\\ntitle=Go\\npress=true\\n' ;;
+          go) sleep 0.3; touch '\(path("done"))' ;;
+        esac
+        """)
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the part") { sheet.panel != nil }
+        let part = try XCTUnwrap(sheet.panel?.parts.first)
+
+        sheet.press(part)
+        time += 0.9
+        sheet.press(part)
+
+        XCTAssertEqual(sheet.calls.filter(\.doesWork).count, 1)
+        try await wait("the end of the work") { self.exists("done") }
+        try await wait("the read after the work") { self.log() == ["read", "go", "read"] }
+    }
+
+    func testAPickOrAnActionWithinOneSecondOfItsStartDoesNothing() async throws {
+        try script(header: "read=sheet", """
+        case "$1" in
+          read) printf 'action=go\\ntitle=Go\\nscope=command\\n\\nrow=A\\nrun=a\\n' ;;
+          go) sleep 0.3; touch '\(path("action"))' ;;
+          open) sleep 0.3; touch '\(path("pick"))' ;;
+        esac
+        """)
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        let action = try XCTUnwrap(sheet.command.actions.first)
+        let item = try XCTUnwrap(sheet.list.selectedItem)
+
+        sheet.run(action, item: nil)
+        sheet.pick(item)
+        sheet.run(action, item: nil)
+        sheet.pick(item)
+
+        XCTAssertEqual(sheet.calls.filter(\.doesWork).count, 2)
+        try await wait("the end of the work") { self.exists("action") && self.exists("pick") }
+    }
+
+    func testAPressOfACardWithinOneSecondOfItsStartDoesNothing() async throws {
+        try script(header: "read=panel", "[ \"$1\" = read ] && { printf 'on=false\\n'; exit 0; }\nsleep 0.3\ntouch '\(path("done"))'\nprintf 'on=true\\n'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        try await wait("the kind") { sheet.command.kind == .toggle }
+
+        sheet.pressCard()
+        sheet.pressCard()
+
+        XCTAssertEqual(sheet.state.on, true)
+        XCTAssertTrue(sheet.isCardRunning)
+        try await wait("the end of the work") { self.exists("done") && !sheet.isCardRunning }
+        XCTAssertEqual(sheet.state.on, true)
+    }
+
+    func testASecondAskForAFormWithinOneSecondLeavesTheFirstRunning() async throws {
+        try script(header: "read=sheet", """
+        case "$1" in
+          read) printf 'action=new\\ntitle=New\\nscope=command\\nform=true\\n\\nrow=A\\nrun=a\\n' ;;
+          new) sleep 0.3; printf 'title=New\\n\\nfield=a\\nlabel=A\\n' ;;
+        esac
+        """)
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the action") { sheet.command.actions.count == 1 }
+        let action = try XCTUnwrap(sheet.command.actions.first)
+
+        async let first = sheet.form(action, item: nil)
+        try await wait("the call") { sheet.calls.contains(where: \.doesWork) }
+        let second = try await sheet.form(action, item: nil)
+
+        XCTAssertNil(second)
+        let form = try await first
+        XCTAssertEqual(form?.fields.map(\.name), ["a"])
     }
 
     func testQuittingStopsEachCall() async throws {

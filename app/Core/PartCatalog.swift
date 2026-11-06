@@ -111,7 +111,8 @@ public enum PartCatalog {
     A `read` has 10 seconds until its first frame or its end, and it stops when nothing wants it, such as when its sheet \
     closes. Any other name has no time limit, and it keeps running with the sheet and the panel closed. A new value for a part \
     stops the older call of that part. A second press of a running part, action or card stops its call: each process in its \
-    group gets the terminate signal, and after 2 seconds Openspot kills what still runs. Quitting Openspot stops each call. \
+    group gets the terminate signal, and after 2 seconds Openspot kills what still runs. A press within 1 second of the start of \
+    the call does nothing, so a double press does not stop it. Quitting Openspot stops each call. \
     To outlive the app, start the work with `nohup` and then exit. A stopped call changes nothing. Closing the panel \
     closes a sheet of parts and drops its values.
 
