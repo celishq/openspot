@@ -113,7 +113,7 @@ public final class SpotRuns {
     public func quit() {
         clock?.cancel()
         clock = nil
-        let live = processes.filter(\.isLive)
+        let live = processes.filter(\.needsFinish)
         sheets.values.forEach { $0.prepareToQuit() }
         live.forEach { $0.leave() }
         let deadline = Date().addingTimeInterval(stopPause)
@@ -241,7 +241,7 @@ public final class SpotRuns {
     }
 
     private func keep(_ process: ScriptProcess) {
-        processes.removeAll { !$0.isLive }
+        processes.removeAll { !$0.needsFinish }
         processes.append(process)
     }
 

@@ -373,7 +373,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         printf 'part=a\\ntitle=A\\n---\\n'
         while :; do sleep 0.05; done
         """)
-        try script("deaf", "echo $$ > '\(path("deaf-pid"))'\ntrap '' TERM\nwhile :; do sleep 0.05; done")
+        try script("deaf", "echo $$ > '\(path("deaf-pid"))'\ntrap '' TERM\n\(String.deafLoop)")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the part") { sheet.panel != nil }
@@ -392,7 +392,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testQuittingLeavesNoChildThatIgnoresTheTerminateSignal() async throws {
-        try script(body: "sh -c \"trap '' TERM; echo \\$\\$ > '\(path("pid"))'; while :; do sleep 0.05; done\" >/dev/null 2>&1 &\nsleep 30")
+        try script(body: "sh -c \"trap '' TERM; echo \\$\\$ > '\(path("pid"))'; \(String.deafLoop)\" >/dev/null 2>&1 &\nsleep 30")
         let sheet = try sheet()
         sheet.pressCard()
         try await wait("the child") { self.exists("pid") }
@@ -404,6 +404,23 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
         XCTAssertLessThan(Date().timeIntervalSince(started), 3)
         try await wait("the end of the child") { kill(pid, 0) != 0 }
+    }
+
+    func testQuittingLeavesNoChildOfACallThatItsStopAlreadyEnded() async throws {
+        try script(body: "echo $$ > '\(path("script"))'\nsh -c \"trap '' TERM; echo \\$\\$ > '\(path("pid"))'; \(String.deafLoop)\" >/dev/null 2>&1 &\nsleep 30")
+        let sheet = try sheet()
+        sheet.pressCard()
+        try await wait("the child") { self.exists("pid") }
+        try await pause(0.1)
+        let child = try XCTUnwrap(Int32(try String(contentsOfFile: path("pid"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
+        let parent = try XCTUnwrap(Int32(try String(contentsOfFile: path("script"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
+
+        sheet.stop(try XCTUnwrap(sheet.calls.first))
+        try await wait("the end of the script") { kill(parent, 0) != 0 }
+        try await pause(0.05)
+        runs.quit()
+
+        XCTAssertNotEqual(kill(child, 0), 0)
     }
 
     func testQuittingMarksEachCallAsStopped() async throws {
