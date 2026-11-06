@@ -74,23 +74,31 @@ enum SpotTokens {
     /// How far a sheet's rows start below its top edge.
     static let sheetRowsTop: CGFloat = sheetFieldDrop + listRowHeight + rowGap
 
+    /// The side of a square button when a line holds this many rows.
+    static func square(perLine: Int) -> CGFloat {
+        (SheetPlacement.width - listRowGap * CGFloat(perLine - 1)) / CGFloat(perLine)
+    }
+
     /// The frame of a sheet with these rows. An empty sheet keeps room for one row, and a long one stops at the panel.
-    static func sheetRect(rows: Int) -> CGRect {
-        let count = CGFloat(max(rows, 1))
-        let height = sheetRowsTop + count * listRowHeight + (count - 1) * listRowGap + padding
+    /// More than one row on a line makes square buttons.
+    static func sheetRect(rows: Int, perLine: Int = 1) -> CGRect {
+        let lines = CGFloat(max((rows + perLine - 1) / perLine, 1))
+        let line = perLine > 1 ? square(perLine: perLine) : listRowHeight
+        let height = sheetRowsTop + lines * line + (lines - 1) * listRowGap + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 
     /// Whether a sheet with these rows shows them all with no scrolling.
-    static func sheetFits(rows: Int) -> Bool {
-        sheetRect(rows: rows).height < sheetMaxHeight
+    static func sheetFits(rows: Int, perLine: Int = 1) -> Bool {
+        sheetRect(rows: rows, perLine: perLine).height < sheetMaxHeight
     }
 
     static let editorInset: CGFloat = 5
 
     /// The frame of a sheet that shows these parts. A tall one stops at the panel, and its parts scroll.
     static func panelRect(_ panel: SpotPanel) -> CGRect {
-        let height = padding + glyphSize + rowGap + panel.placement.height + padding
+        let field = panel.showsRows ? SheetPlacement.fieldRoom : 0
+        let height = padding + glyphSize + rowGap + field + panel.placement.height + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 

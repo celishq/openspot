@@ -80,15 +80,15 @@ show() {
   auto="Automatic"
   [ -n "$detected" ] && auto="Auto ($(name "$detected"))"
 
-  printf 'layout=pair\n\n'
+  printf 'grid=s s . .\ngrid=i i i i\ngrid=i i i x\ngrid=- - - x\ngrid=t t . x\ngrid=o o o o\ngrid=o o o c\ncard=s i t o\n\n'
 
-  printf 'part=source\ncell=from\noption=auto:%s\n' "$auto"
+  printf 'part=source\ncell=s\noption=auto:%s\n' "$auto"
   options
   printf 'value=%s\n\n' "$source"
 
-  printf 'part=input\ncell=top\ntext=%s\nplaceholder=Type or paste text\n\n' "$(esc "$input")"
+  printf 'part=input\ncell=i\ntext=%s\nplaceholder=Type or paste text\n\n' "$(esc "$input")"
 
-  printf 'part=target\ncell=to\n'
+  printf 'part=target\ncell=t\n'
   options
   printf 'value=%s\n\n' "$target"
 
@@ -101,14 +101,14 @@ show() {
   esac
   [ -z "$notice" ] || output=$(esc "$notice")
 
-  printf 'part=output\ncell=bottom\ntext=%s\nplaceholder=Translation\nreadonly=true\n\n' "$output"
+  printf 'part=output\ncell=o\ntext=%s\nplaceholder=Translation\nreadonly=true\n\n' "$output"
 
-  printf 'part=swap\ncell=swap\npress=arrow.up.arrow.down\nkey=cmd+shift+s\n\n'
+  printf 'part=swap\ncell=x\npress=arrow.up.arrow.down\nkey=cmd+shift+s\n\n'
 
   if [ "$status" = missing ]; then
-    printf 'part=settings\ncell=action\nalign=right\nlook=chip\ntitle=Open Settings\npress=true\n'
+    printf 'part=settings\ncell=c\nalign=right\nlook=chip\ntitle=Open Settings\npress=true\n'
   elif [ -n "$output" ] && [ -z "$notice" ]; then
-    printf 'part=copy\ncell=action\nalign=right\nlook=chip\ntitle=Copy\npress=true\nkey=cmd+return\nclose=true\n'
+    printf 'part=copy\ncell=c\nalign=right\nlook=chip\ntitle=Copy\npress=true\nkey=cmd+return\nclose=true\n'
   fi
 }
 

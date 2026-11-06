@@ -2,6 +2,7 @@
 # symbol=text.quote
 # subtitle=Copy text
 # key=n
+# size=small
 # read=panel
 # rank=3
 export LC_ALL=en_US.UTF-8

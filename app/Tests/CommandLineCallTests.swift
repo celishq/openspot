@@ -13,6 +13,13 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertFalse(CommandLineCall.usage.contains("--serve"))
     }
 
+    func testEmojiCanNameATone() {
+        XCTAssertEqual(CommandLineCall(arguments: ["emoji"]), .emoji(tone: .none))
+        XCTAssertEqual(CommandLineCall(arguments: ["emoji", "--tone", "medium-dark"]), .emoji(tone: .mediumDark))
+        XCTAssertEqual(CommandLineCall(arguments: ["emoji", "--tone", "blue"]), .unknown("emoji --tone blue"))
+        XCTAssertEqual(CommandLineCall(arguments: ["emoji", "--tone"]), .unknown("emoji --tone"))
+    }
+
     func testASandboxCanNameAFile() {
         XCTAssertEqual(CommandLineCall(arguments: ["sandbox"]), .sandbox(nil))
         XCTAssertEqual(CommandLineCall(arguments: ["sandbox", "a.txt"]), .sandbox("a.txt"))

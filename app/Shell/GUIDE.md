@@ -49,6 +49,7 @@ open -a Calendar
 | `tray` | `true` to show a metric in the menu bar. Needs a number in its `read`, or `stay=true`. |
 | `stay` | `true` to keep the script running. See "Sheets of parts". |
 | `drop` | A list of file extensions, `folder` or `*`. Its card takes files that a person drops. See "Drops". |
+| `data` | The name of a data folder to share with other spots. See "Rules for scripts". |
 
 `read` is a list of moments, split by commas, such as `read=panel,60`. At each moment Openspot calls `<script> read`:
 
@@ -149,8 +150,8 @@ run=/Applications/Safari.app
 file=/Applications/Safari.app
 ```
 
-`row` and `run` are the only keys a list needs. Also use `symbol` for an SF Symbol, `file` for a file's icon, or `image`
-for a path to an image. `hides` is the ID of an action that this row does not offer. Repeat the line for each one.
+`row` and `run` are the only keys a list needs. Also use `symbol` for an SF Symbol, `file` for a file's icon, `image`
+for a path to an image, or `glyph` for a short text, such as an emoji. `hides` is the ID of an action that this row does not offer. Repeat the line for each one.
 `shortcut=ctrl+space` shows a key at the end of the row. A pick records the next key, and Openspot calls `<run> <key>`.
 
 Openspot searches the rows itself and sorts recent picks first. To change this, print one block before the rows on each
@@ -160,6 +161,27 @@ read:
 |---|---|
 | `search=script` | Each search change calls `<script> read <text>`. The script prints the rows that match. |
 | `recents=false` | Does not sort recent picks first. |
+
+To show rows as square buttons, print `repeat=<letter> <per line>` in that block. Each button draws its picture, and the
+title of the selected button shows in the sheet's header. To add parts around the rows, draw them. The repeated area scrolls,
+and the app draws the search field over the sheet:
+
+```text
+grid=t t t t t t t
+grid=a a a a a a a
+repeat=a 7
+
+part=tone
+cell=t
+title=Skin tone
+option=none:Yellow
+option=medium:Medium
+value=none
+
+row=thumbs up
+run=👍
+glyph=👍
+```
 
 ## Toggles and sliders
 
@@ -250,26 +272,8 @@ are optional. After the person fills the form, the same call runs with the value
 A script that prints parts opens a sheet of them, with no search field. Run `openspot catalog` for the whole language,
 with examples. A model can write a good sheet from that text alone.
 
-A sheet has a layout and parts. Use a named layout when one fits, because it gives the best result:
-
-```text
-layout=pair
-
-part=input
-cell=top
-text=Hello
-
-part=output
-cell=bottom
-text=Bonjour
-readonly=true
-
-part=swap
-cell=swap
-press=arrow.up.arrow.down
-```
-
-Or draw your own, with one letter for each area. A smaller area on a larger one floats, with its own background:
+A sheet is a drawing and parts. Draw it with one letter for each area, and a part takes a letter with `cell`. The words of a
+line set the columns, so a wider area takes more words. A smaller area on a larger one floats, with its own background:
 
 ```text
 grid=t t t t
@@ -278,13 +282,15 @@ grid=t t t c
 part=note
 cell=t
 text=Buy milk
-fill=true
 
 part=save
 cell=c
 look=strong
 press=checkmark
 ```
+
+Each row has one height, so a taller area takes more lines. Rows that hold text, a list, a chart or a picture share the free
+height. A letter with no part stays empty.
 
 With no drawing, a sheet is one column of lines, and `section=<id>` starts a new group with a divider.
 
@@ -386,6 +392,7 @@ A script finds `openspot` on its path. It gives what macOS has no command for, i
 | `openspot color pick` | Prints the colour the person picks. Prints nothing on a cancel. |
 | `openspot translate [--from code] [--to code]` | Translates the text on stdin on this Mac. Prints `text` and `from`, or `status=missing`, `unsupported`, `unknown` or `failed`. |
 | `openspot translate languages` | Prints each language, with its name. |
+| `openspot emoji [--tone name]` | Prints each emoji as a row, with its name in the language of the Mac. A tone is `none`, `light`, `medium-light`, `medium`, `medium-dark` or `dark`. |
 
 When macOS already has a command, use it: `pbcopy`, `open`, `say`, `caffeinate`, `mdfind`, `screencapture`,
 `shortcuts run`, `osascript`.
@@ -537,8 +544,8 @@ openspot check <plugins folder>
 - Print only the data. Send each message for the person to stderr. When a script fails, its last stderr line shows.
 - Exit with 0 on success. Any other code is a failure.
 - Be fast in `read`. It has 10 seconds until its first frame or its end. Reads run at the same time, so a slow script delays no other. Any other name has no limit.
-- Keep files in `$OPENSPOT_DATA`, not in the plugin folder. Openspot creates this folder. All plugins share it, so name your
-  files after your script.
+- Keep files in `$OPENSPOT_DATA`, not in the plugin folder. Openspot creates this folder for each spot. Scripts in one plugin
+  folder share it. To share it with other spots, give each one the same `data=<name>` in its header.
 - Write a file to a temp name, then move it: `... > "$file.$$" && mv "$file.$$" "$file"`. A stop can come at any time, and two
   calls of one script can run at the same time, so a file must never be half written.
 - Use short plain words in sentence case. Start an action's name with a verb.

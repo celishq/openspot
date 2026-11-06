@@ -22,14 +22,13 @@ public struct SheetPlacement: Equatable, Sendable {
 
     public static let width: CGFloat = 266
     public static let maxHeight: CGFloat = 442
-    public static let gap: CGFloat = 8
+    public static let gap: CGFloat = 6
     public static let edge: CGFloat = 13
-    public static let rowHeight: CGFloat = 28
-    public static let keyRowHeight: CGFloat = 44
-    public static let tileRowHeight: CGFloat = 40
-    public static let tileGap: CGFloat = 6
+    public static let rowHeight: CGFloat = 40
     public static let maxRound: CGFloat = 44
     public static let dividerHeight: CGFloat = 1
+    /// The height of the search field over a sheet that repeats rows, with its gap.
+    public static let fieldRoom: CGFloat = 54
     /// How far text moves from a round button that sits on the divider at its edge.
     private static let seamClearance: CGFloat = 22
 
@@ -37,17 +36,17 @@ public struct SheetPlacement: Equatable, Sendable {
     public let lines: [CGRect]
     public let cards: [CGRect]
     public let height: CGFloat
+    /// Where the rows of the script flow.
+    public let repeatFrame: CGRect?
 
     /// Whether the content is taller than the panel, so that it scrolls.
     public var overflows: Bool {
-        height > Self.maxHeight
+        height > Self.maxHeight - (repeatFrame == nil ? 0 : Self.fieldRoom)
     }
 
     public init(parts: [SpotPart], layout: SheetLayout) {
         let rows = layout.rows
-        let hasTiles = parts.contains { $0.look == .tile }
-        let unit = parts.contains { $0.look == .key } ? Self.keyRowHeight : hasTiles ? Self.tileRowHeight : Self.rowHeight
-        let gap = hasTiles ? Self.tileGap : Self.gap
+        let gap = Self.gap
         let columns = max(rows.map(\.count).max() ?? 1, 1)
         let cell = (Self.width - gap * CGFloat(columns - 1)) / CGFloat(columns)
         let columnX = { (x: Int) in CGFloat(x) * (cell + gap) }
@@ -61,7 +60,7 @@ public struct SheetPlacement: Equatable, Sendable {
             for letter in letters { cardOf[letter] = cardAreas.count - 1 }
         }
 
-        var heights = rows.indices.map { layout.hasDivider(inRow: $0) ? Self.dividerHeight : unit }
+        var heights = rows.indices.map { layout.hasDivider(inRow: $0) ? Self.dividerHeight : Self.rowHeight }
         for card in cardAreas {
             heights[card.y0] += Self.edge
             heights[card.y1] += Self.edge
@@ -69,12 +68,17 @@ public struct SheetPlacement: Equatable, Sendable {
         var fillRows = Set<Int>()
         for part in parts {
             guard let letter = layout.letter(of: part), let area = layout.areas[letter] else { continue }
-            guard part.fills || layout.fills.contains(letter) else { continue }
+            guard part.growsRow else { continue }
             for y in area.y0...area.y1 where !layout.hasDivider(inRow: y) { fillRows.insert(y) }
+        }
+        let repeatArea = layout.repeated.flatMap { layout.areas[$0.area] }
+        if let repeatArea {
+            for y in repeatArea.y0...repeatArea.y1 where !layout.hasDivider(inRow: y) { fillRows.insert(y) }
         }
         let gaps = gap * CGFloat(max(rows.count - 1, 0))
         if !fillRows.isEmpty {
-            let free = Self.maxHeight - heights.reduce(0, +) - gaps
+            let room = Self.maxHeight - (repeatArea == nil ? 0 : Self.fieldRoom)
+            let free = room - heights.reduce(0, +) - gaps
             if free > 0 { for y in fillRows { heights[y] += free / CGFloat(fillRows.count) } }
         }
 
@@ -162,6 +166,7 @@ public struct SheetPlacement: Equatable, Sendable {
             CGRect(x: 0, y: rowY[$0], width: Self.width, height: Self.dividerHeight)
         }
         cards = cardAreas.map(rect)
+        repeatFrame = repeatArea.map(rect)
         height = rows.isEmpty ? 0 : heights.reduce(0, +) + gaps
     }
 

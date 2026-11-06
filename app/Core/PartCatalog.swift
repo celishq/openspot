@@ -4,14 +4,14 @@ import Foundation
 public enum PartCatalog {
     private static let keys: Set<String> = [
         "part", "section", "title", "detail", "symbol", "on", "level", "min", "max", "color", "value", "option", "text",
-        "lines", "placeholder", "readonly", "press", "key", "close", "cell", "fill", "align", "look", "block", "metric", "point",
+        "placeholder", "readonly", "press", "key", "close", "cell", "align", "look", "block", "metric", "point",
         "image", "item", "shortcut"
     ]
     private static let controls = ["on", "level", "color", "option", "text", "metric", "point", "image", "item", "shortcut"]
 
     /// The catalog, for a person or a model to read. It holds the whole language, so a sheet can be written from it alone.
     public static var text: String {
-        [language, layouts, parts, streams, rules, examples].joined(separator: "\n")
+        [language, parts, streams, rules, examples].joined(separator: "\n")
     }
 
     private static let language = """
@@ -21,17 +21,14 @@ public enum PartCatalog {
     icon, a title and a close button, so do not add these. The content is \(Int(SheetPlacement.width))pt wide, and at most \
     \(Int(SheetPlacement.maxHeight))pt tall.
 
-    The text has blocks, split by one blank line. The first block is the layout. Each other block is one part, and holds \
+    The text has blocks, split by one blank line. The first block is the drawing. Each other block is one part, and holds \
     `part=<id>`. The order of keys in a block does not matter. Each key and value is on its own line, with no colon and no \
     spaces around `=`.
 
     ## Layout
 
-    Use a name when one fits, because a name gives the best result. Write `layout=<name>`, and each `cell=` uses a cell name. \
-    A cell with no part stays empty.
-
-    If no name fits, draw the sheet in letters, with one `grid=` line for each row. Every line has the same number of \
-    columns, and four is usual.
+    Draw the sheet in letters, with one `grid=` line for each row. Every line has the same number of columns, and the \
+    words of a line set that number, so a wider area takes more words. Four columns are usual. A letter with no part stays empty.
 
     - A letter, or any one character, names an area. The area is the rectangle around all its cells.
     - `.` is an empty cell.
@@ -43,31 +40,19 @@ public enum PartCatalog {
     - `keys=7 8 9 +` adds a row of key buttons. Use it for any keypad, in place of a part for each key. A word that repeats \
     next to itself spans those cells. Pressing a key calls `<word>`.
 
-    Every row has one height: \(Int(SheetPlacement.rowHeight))pt, \(Int(SheetPlacement.keyRowHeight))pt when the sheet \
-    has keys, or \(Int(SheetPlacement.tileRowHeight))pt when it has tiles, as in a list. The gap between cells is \
-    \(Int(SheetPlacement.gap))pt, or \(Int(SheetPlacement.tileGap))pt when the sheet has tiles. To make something taller, draw more rows. \
+    `repeat=a 7` flows the rows of the script through the area `a`, with 7 on each line, and the area scrolls. A row is a block \
+    with `row=<title>`, `run=<value>` and a picture, and a row is picked by `open <value>`. With more than one on a line, each \
+    is a square button with `glyph=<text>`, `symbol`, `image` or `file`, and `row` is the word that a search finds. The app draws \
+    the search field over the sheet. A sheet can repeat one area.
+
+    Every row has one height: \(Int(SheetPlacement.rowHeight))pt. The gap between cells is \(Int(SheetPlacement.gap))pt. To \
+    make something taller, draw more rows. Rows that hold text, a list, a chart or a picture share the free height, and the \
+    sheet then takes its full height. \
     A column of four is about 60pt wide. You cannot set a size, a colour or a gap of your own.
 
     A sheet with no drawing is one column of lines. `section=<id>` in place of `part=<id>` starts a new group with a divider.
 
     """
-
-    private static var layouts: String {
-        let rows = SheetLayout.named.keys.sorted().map { name -> String in
-            let named = SheetLayout.named[name]!
-            let drawing = named.drawing.map { "`\($0)`" }.joined(separator: " / ")
-            let cells = named.cells.sorted { $0.key < $1.key }.map { "`\($0.key)`=\($0.value)" }.joined(separator: " ")
-            return "| `\(name)` | \(named.purpose) | \(drawing) | \(cells) |"
-        }
-        return """
-        ## Named layouts
-
-        | Name | For | Its drawing | Cell names |
-        |---|---|---|---|
-        \(rows.joined(separator: "\n"))
-
-        """
-    }
 
     private static let parts = """
     ## Parts
@@ -98,7 +83,6 @@ public enum PartCatalog {
     | `cell=a` | Puts the part on a letter or a named cell. |
     | `key=cmd+return` | Adds a keyboard key to a press. The hint under the sheet shows it. Use cmd, shift and one letter, digit, return or backspace. |
     | `close=true` | Closes the panel after a press. |
-    | `fill=true` | This part's rows share the free height, and the sheet takes its full height. |
     | `align=left`, `right` or `center` | Places a part that is smaller than its cell. |
     | `look=tile`, `chip`, `strong`, `bare` or `section` | `tile` is a filled row. `chip` is a small capsule button. `strong` is the one main button, white. `bare` shows a button or a metric with no fill. `section` makes a bold title. |
 
@@ -139,7 +123,7 @@ public enum PartCatalog {
     - Use at most one `look=strong`.
     - Keep titles short: about 7 letters fit in one column of four, with a control in the same cell.
     - A row of 8 swatches needs the full width.
-    - Do not stretch rows of plain lines with `fill=true` beside them. Use `item=` for a list.
+    - Do not put plain lines beside a text area in the same rows, because those rows stretch. Use `item=` for a list.
     - Run `openspot check --sheet` on a sheet to see its faults, and `openspot render <file.png>` to see its picture.
 
     """

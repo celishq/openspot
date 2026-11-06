@@ -16,8 +16,8 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Translate", "Apps", "Caffeinate", "Color picker", "Files", "Links", "Overview", "Screenshot", "Pull requests", "Snippets", "Plugins", "Settings"])
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["t", "a", "c", "o", "f", "l", nil, "v", "g", "n", "p", nil])
+        XCTAssertEqual(scan.commands.map(\.name), ["Translate", "Apps", "Caffeinate", "Color picker", "Emoji", "Files", "Links", "Overview", "Screenshot", "Pull requests", "Snippets", "Plugins", "Settings"])
+        XCTAssertEqual(scan.commands.map(\.key?.name), ["t", "a", "c", "o", "e", "f", "l", nil, "v", "g", "n", "p", nil])
     }
 
     func testNoMetricShowsTwiceInTheGrid() throws {
@@ -75,7 +75,8 @@ final class SamplePluginsTests: XCTestCase {
     func testTheCheckFindsNoFaultInTheFolder() async throws {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        try await withPrivateHome { _ in
+        try await withPrivateHome { folder in
+            try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
             let faults = await PluginCheck(folder: PluginFolder(url: root.appendingPathComponent("plugins"))).faults()
 
             XCTAssertEqual(faults, [])
@@ -307,7 +308,7 @@ final class SamplePluginsTests: XCTestCase {
         let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
         try await withPrivateHome { folder in
             try await self.savedLink("https://icons.test/deep/page", in: links)
-            let expected = folder.appendingPathComponent(".config/openspot/data/icons/icons.test.icon").path
+            let expected = folder.appendingPathComponent(".config/openspot/data/links/icons/icons.test.icon").path
 
             for _ in 0..<50 where !FileManager.default.fileExists(atPath: expected) {
                 try await Task.sleep(nanoseconds: 100_000_000)
@@ -324,7 +325,7 @@ final class SamplePluginsTests: XCTestCase {
         let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
         try await withPrivateHome { folder in
             try await self.savedLink("https://none.test", in: links)
-            let marker = folder.appendingPathComponent(".config/openspot/data/icons/none.test.none").path
+            let marker = folder.appendingPathComponent(".config/openspot/data/links/icons/none.test.none").path
 
             for _ in 0..<50 where !FileManager.default.fileExists(atPath: marker) {
                 try await Task.sleep(nanoseconds: 100_000_000)
@@ -353,7 +354,7 @@ final class SamplePluginsTests: XCTestCase {
 
             _ = try await snippets.submit(new, item: nil, draft: draft, timeout: 5)
 
-            XCTAssertTrue(FileManager.default.fileExists(atPath: config.appendingPathComponent("data/snippets.json").path))
+            XCTAssertTrue(FileManager.default.fileExists(atPath: config.appendingPathComponent("data/snippets/snippets.json").path))
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent(".config").path))
         }
     }
@@ -491,7 +492,7 @@ final class SamplePluginsTests: XCTestCase {
     func testSavedQuicklinksMoveToLinks() async throws {
         let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
         try await withPrivateHome { folder in
-            let data = folder.appendingPathComponent(".config/openspot/data")
+            let data = folder.appendingPathComponent(".config/openspot/data/links")
             try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
             let old = data.appendingPathComponent("quicklinks.json")
             try #"[{"id":"1","title":"Docs","url":"https://docs.test"}]"#.write(to: old, atomically: true, encoding: .utf8)
@@ -611,6 +612,69 @@ final class SamplePluginsTests: XCTestCase {
         return last
     }
 
+    private func fakeEmoji(in folder: URL) throws -> PluginCommand {
+        let script = """
+        #!/bin/sh
+        printf 'row=thumbs up, %s\\nrun=👍\\nglyph=👍\\n' "$3"
+
+        """
+        try script.writeScript(to: folder.appendingPathComponent("tools/openspot"))
+        return try XCTUnwrap(try scan.commands.first { $0.name == "Emoji" })
+    }
+
+    func testEmojiIsAGridWithItsToneAndNoFaults() async throws {
+        try await withPrivateHome { folder in
+            let output = try await self.fakeEmoji(in: folder).items(timeout: 10)
+
+            XCTAssertEqual(output.sheetFaults, [])
+            XCTAssertEqual(output.perLine, 7)
+            XCTAssertEqual(output.items.map(\.title), ["thumbs up, none"])
+            XCTAssertEqual(self.text(of: "tone", in: output), "none")
+            XCTAssertEqual(output.primary, "Copy")
+        }
+    }
+
+    func testEmojiKeepsTheToneThatThePersonChooses() async throws {
+        try await withPrivateHome { folder in
+            let emoji = try self.fakeEmoji(in: folder)
+
+            _ = try await SpotRuns().answer(of: emoji, .set("tone", to: "dark"), input: nil, limit: 30)
+            let output = try await emoji.items(timeout: 10)
+
+            XCTAssertEqual(self.text(of: "tone", in: output), "dark")
+            XCTAssertEqual(output.items.map(\.title), ["thumbs up, dark"])
+        }
+    }
+
+    func testEmojiMovesToTheNextToneAndWrapsAround() async throws {
+        try await withPrivateHome { folder in
+            let emoji = try self.fakeEmoji(in: folder)
+            let first = try await emoji.items(timeout: 10)
+            let tone = try XCTUnwrap(first.actions.first { $0.id == "next-tone" })
+            let row = SpotItem(title: "thumbs up", run: "👍")
+            XCTAssertEqual(tone.key, ActionKey(name: "t", isCommand: true))
+
+            _ = try await SpotRuns().answer(of: emoji, .action(tone, item: row), input: nil, limit: 30)
+            let next = try await emoji.items(timeout: 10)
+            XCTAssertEqual(self.text(of: "tone", in: next), "light")
+
+            _ = try await SpotRuns().answer(of: emoji, .set("tone", to: "dark"), input: nil, limit: 30)
+            _ = try await SpotRuns().answer(of: emoji, .action(tone, item: row), input: nil, limit: 30)
+            let wrapped = try await emoji.items(timeout: 10)
+            XCTAssertEqual(self.text(of: "tone", in: wrapped), "none")
+        }
+    }
+
+    func testEmojiCopiesThePick() async throws {
+        try await withPrivateHome { folder in
+            let emoji = try self.fakeEmoji(in: folder)
+
+            _ = try await SpotRuns().answer(of: emoji, .item(SpotItem(title: "thumbs up", run: "👍")), input: nil, limit: 30)
+
+            XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("clipboard"), encoding: .utf8), "👍")
+        }
+    }
+
     /// Reads a sheet, and returns how long its first parts took and how many options its target menu ends with.
     @MainActor
     private static func firstParts(of command: PluginCommand) async throws -> (seconds: TimeInterval, options: Int) {
@@ -666,7 +730,7 @@ final class SamplePluginsTests: XCTestCase {
             XCTAssertEqual(translate.kind, .list)
             XCTAssertEqual(output.kind, .list)
             XCTAssertEqual(output.sheetFaults, [])
-            XCTAssertEqual(output.layout?.name, "pair")
+            XCTAssertEqual(output.layout?.rows.first, ["s", "s", ".", "."])
             XCTAssertEqual(output.parts.map(\.id), ["source", "input", "target", "output", "swap"])
             XCTAssertEqual(self.text(of: "source", in: output), "auto")
             XCTAssertEqual(self.text(of: "target", in: output), "en")
@@ -764,7 +828,7 @@ final class SamplePluginsTests: XCTestCase {
 
             _ = try await Self.drive(translate, [.set("target", to: "ru")])
 
-            let data = folder.appendingPathComponent(".config/openspot/data")
+            let data = folder.appendingPathComponent(".config/openspot/data/translate")
             XCTAssertEqual(try self.read("moved", in: folder).split(separator: "\n").map { String($0.split(separator: "/").last ?? "") }, ["translate-languages", "translate"])
             XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: data.path).sorted(), ["translate", "translate-languages"])
             XCTAssertEqual(try String(contentsOf: data.appendingPathComponent("translate"), encoding: .utf8), "source=auto\ntarget=ru\n")

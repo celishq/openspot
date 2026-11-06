@@ -178,6 +178,50 @@ final class ItemListTests: XCTestCase {
         XCTAssertFalse(list.isWaiting)
     }
 
+    private func grid(_ count: Int, perLine: Int) -> ItemList {
+        var list = ItemList(items: (0..<count).map { SpotItem(title: "\($0)", run: "\($0)") })
+        list.take(perLine: perLine)
+        return list
+    }
+
+    func testAKeyDownKeepsThePlaceInTheLine() {
+        var list = grid(10, perLine: 4)
+        list.move(by: 1)
+
+        list.moveLine(by: 1)
+
+        XCTAssertEqual(list.selected, 5)
+    }
+
+    func testAKeyDownToAShortLineTakesItsLastItem() {
+        var list = grid(10, perLine: 4)
+        list.move(by: 7)
+
+        list.moveLine(by: 1)
+
+        XCTAssertEqual(list.selected, 9)
+    }
+
+    func testAKeyStopsAtTheFirstAndTheLastLine() {
+        var list = grid(10, perLine: 4)
+        list.move(by: 2)
+        list.moveLine(by: -1)
+        XCTAssertEqual(list.selected, 2)
+
+        list.move(by: 7)
+        list.moveLine(by: 1)
+        XCTAssertEqual(list.selected, 9)
+    }
+
+    func testOneItemPerLineMovesAsAList() {
+        var list = grid(3, perLine: 1)
+
+        list.moveLine(by: 1)
+        XCTAssertEqual(list.selected, 1)
+        list.moveLine(by: -1)
+        XCTAssertEqual(list.selected, 0)
+    }
+
     func testAnEmptyListSelectsNothing() {
         XCTAssertNil(ItemList().selectedItem)
     }

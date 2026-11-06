@@ -152,7 +152,7 @@ final class SpotSheetTests: XCTestCase {
     func testClosingStopsAScriptThatKeepsPrinting() async throws {
         let sheet = try make("""
         echo $$ > '\(path("pid"))'
-        printf 'layout=none\\n\\npart=a\\ntitle=0\\n---\\n'
+        printf 'title=Sheet\\n\\npart=a\\ntitle=0\\n---\\n'
         sleep 5
         touch '\(path("went-on"))'
         printf 'part=a\\ntitle=1\\n---\\n'
