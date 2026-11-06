@@ -73,7 +73,7 @@ esac
 | ID | Rule |
 |---|---|
 | A1 | One owner in Core starts each run of a script. No other code starts a process. |
-| A2 | Each spot with a sheet has one `SpotSheet` in Core, which holds its rows, its parts and its open state. A run of one spot never stops a run of another spot. |
+| A2 | Each script that shows anything has one `SpotSheet` in Core. It holds the last frame of the script, its rows, its parts, its open state and its running calls. The card, the sheet, a widget and the menu bar all read from it, and no other place keeps what a script printed. A run of one script never stops a run of another. |
 | A3 | A stopped run changes nothing. Only a call that ended by itself can report that there is nothing to show. |
 | A4 | Search text stays until the person presses Esc. |
 | A5 | A spot that ships with the app answers the same calls, in Swift. |
@@ -118,7 +118,7 @@ Comment lines right under the first line, one `key=value` on each line. They can
 | Key | Values | Meaning |
 |---|---|---|
 | `read` | A list of `panel`, `sheet`, `launch`, `wake` and seconds | The moments when Openspot calls `read`. Section 5. |
-| `rank` | Number | Its rows join the main search. Needs `panel`, `launch` or a number in its `read`. |
+| `rank` | Number | Its rows join the main search. Needs `panel`, `launch` or a number in its `read`. A number also needs a `key` (F7), or the plugin is refused. |
 | `tray` | `true` | Shows it in the menu bar. Needs a number in its `read`, or `stay=true`. |
 | `stay` | `true` | The script stays running. Section 8. |
 | `drop` | A list of file extensions, `folder` or `*` | Its card takes files that a person drops. Section 5. |
@@ -151,7 +151,7 @@ A file with no header key has one call: `<script>`, on a click.
 | C1 | A plugin cannot print a part or an action called `read`. `openspot check` reports it. |
 | C2 | A new built-in name reaches only a script whose header or output asks for it. |
 | C3 | An action with `form=true` first runs as `<action> [run]` with empty stdin, and the script prints `field` blocks. After the person fills the form, the same call runs with the values on stdin. |
-| C4 | Openspot waits for a pause before it sends a change: 300 ms for text and 100 ms for a slider. |
+| C4 | Openspot waits for a pause before it sends a change: 300 ms for text, also for `read <text>`, and 100 ms for a slider. |
 | C5 | Text that the person types stays as typed until they press something. |
 
 ### Moments
@@ -394,6 +394,9 @@ Remove a row when the code follows the rule.
 
 | Rules | Module | Today | Target |
 |---|---|---|---|
+| A2 | `SpotsModel`, `MetricReading`, `PluginMetric` | A metric's value is in a separate `readings` table, and a metric is a separate type from a command. | One `SpotSheet` for each script. |
+| C4, `rank` | `SpotSheet`, `Plugin` | `read <text>` runs on each key. `rank` with a number and no `key` loads, and its rows join nothing. | A 300 ms pause. A refusal. |
+| F2, section 5 | `SpotSandboxModel` | `openspot sandbox <file>` calls `read`, also for a file with no `read`. | It calls the file as a click does. |
 | Section 5, moments | `SpotRead`, `SpotsModel` | `launch` and `wake` are words in `read`, and the command keeps them. Nothing calls `read` at those moments. | Both call `read` at their moment. |
 | Section 4, `tray` | `Plugin`, `SpotsModel` | `tray=true` with `stay=true` loads, and shows nothing in the menu bar. | It shows. |
 | Section 7 | `PluginCommand.perform`, `PluginRun.output` | A run, a pick and an action wait for the end, and stop at 30 s. Their frames do not show. | No limit. Frames show. |
@@ -422,6 +425,7 @@ before each change. Each change in this table is breaking, and no alias stays.
 | Scripts, not a JS runtime | Goal 1. Shell gives each Mac tool at once, and a start costs about 5 ms. | JS only. It loses one-file shell scripts. |
 | JS waits | It can come later as one more executable, with `#!/usr/bin/env -S openspot run`, on JavaScriptCore. The contract does not change. It must provide `fetch`, timers and modules. | A JS level now. `node` and `bun` are not on each Mac. |
 | Lifetime from rules | A person can see and stop work, so work needs no limit and no key. Nothing wants a stopped sheet, so its read ends. | A `job` key. A `fresh` key. A lifetime value on `stay`. |
+| One `SpotSheet` for each script | A metric and a sheet both hold what a script last printed, and a widget can place any script. | A separate table and a separate type for metrics. |
 | Hooks are moments of `read` | Each hook need so far is a refresh at a moment, and `stay=true` covers the rest. | A separate `hook` call and a `hooks` key. |
 | State behind a capability | A script stays a handler. This removes fifos and a server from each plugin. | A server in each plugin. |
 | `stay` still exists | A socket or a compiled program has its own state. | Only capabilities. They cannot hold an author's own state. |
