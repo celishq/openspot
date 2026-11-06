@@ -85,7 +85,7 @@ targets:
           fi
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.app
+        PRODUCT_BUNDLE_IDENTIFIER: openspot.celis.ai
         DEVELOPMENT_TEAM: ""
       configs:
         Debug:
