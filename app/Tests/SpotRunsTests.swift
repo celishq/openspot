@@ -362,7 +362,7 @@ final class SpotRunsTests: XCTestCase {
 
     func testAReadHasTenSecondsAndAnyOtherNameHasNoLimit() async throws {
         XCTAssertEqual(SpotRuns().readLimit, 10)
-        runs = SpotRuns(readLimit: 0.2)
+        runs = SpotRuns(readLimit: 1)
         try script(header: "read=sheet", """
         case "$1" in
           read) [ -f '\(path("slow"))' ] && sleep 30; touch '\(path("slow"))'; printf 'title=1\\n\\nrow=A\\nrun=a\\n' ;;
@@ -691,6 +691,21 @@ final class SpotRunsTests: XCTestCase {
         try await wait("the stop") { self.exists("stopped") }
         let pid = try XCTUnwrap(Int32(try String(contentsOfFile: path("deaf-pid"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
         try await wait("the end of the deaf script") { kill(pid, 0) != 0 }
+    }
+
+    func testQuittingLeavesNoChildThatIgnoresTheTerminateSignal() async throws {
+        try script(body: "sh -c \"trap '' TERM; echo \\$\\$ > '\(path("pid"))'; while :; do sleep 0.05; done\" >/dev/null 2>&1 &\nsleep 30")
+        let sheet = try sheet()
+        sheet.pressCard()
+        try await wait("the child") { self.exists("pid") }
+        try await pause(0.1)
+        let pid = try XCTUnwrap(Int32(try String(contentsOfFile: path("pid"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
+        let started = Date()
+
+        runs.quit()
+
+        XCTAssertLessThan(Date().timeIntervalSince(started), 3)
+        try await wait("the end of the child") { kill(pid, 0) != 0 }
     }
 
     // MARK: K5

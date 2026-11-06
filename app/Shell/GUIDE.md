@@ -267,8 +267,10 @@ Two rules decide how long a call runs:
 These stop a call:
 
 - A new value for a part stops the older call of that part.
-- A second press of a running part, action or card stops its call. It gets the terminate signal, and then 2 seconds to end.
-- Quitting Openspot stops each call. To outlive the app, start the work with `nohup`.
+- A second press of a running part, action or card stops its call. Each process in its group gets the terminate signal.
+  After 2 seconds, Openspot kills what still runs.
+- Quitting Openspot stops each call. To outlive the app, start the work with `nohup` and then exit. A stop reaches the whole
+  group, so `nohup` does not protect a child while its script still runs.
 
 A stopped call changes nothing. A call ends when its output closes, so a script that leaves a child running sends the
 output of that child somewhere else. A failed call always tells the person. A failed `read` from a number only dims the
@@ -278,7 +280,8 @@ Closing the panel closes a sheet of parts and drops its values, and the next ope
 
 A script with `# stay=true` in its header runs while its sheet is open, so that a model or a connection stays loaded
 between calls. It starts when the sheet opens, and the sheet shows with its first frame. Closing the sheet or the panel
-closes its input, and it then has 2 seconds to end. It gets one block on stdin for each call, with a blank line after it:
+closes its input. After 2 seconds its group gets the terminate signal, and 2 seconds after that Openspot kills what still
+runs. It gets one block on stdin for each call, with a blank line after it:
 `name`, `value`, and one `field.<id>` for each value of the sheet. It keeps its own state, and answers with frames. See
 `translate.sh` for an example.
 

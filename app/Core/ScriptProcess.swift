@@ -94,17 +94,21 @@ public final class ScriptProcess: @unchecked Sendable {
         writes.async { try? handle.write(contentsOf: Data(text.utf8)) }
     }
 
-    /// Closes its input after the calls already sent, which ends a script that reads to the end. A script that still runs
-    /// after a short time is stopped.
+    /// Closes its input after the calls already sent, which ends a script that reads to the end. After 2 seconds its group
+    /// gets the terminate signal, and 2 seconds later Openspot kills what still runs.
     public func end() {
         closeInput()
         DispatchQueue.global().asyncAfter(deadline: .now() + Self.stopPause) { [self] in
-            if process.isRunning { stop() }
+            if lock.withLock({ ended && !stopped }) {
+                stopGroup()
+            } else {
+                stop()
+            }
         }
     }
 
-    /// Stops the call: its stream ends now with no error, and the script and each child of it get the terminate signal,
-    /// and then 2 seconds to end.
+    /// Stops the call: its stream ends now with no error, and each process in its group gets the terminate signal. After 2
+    /// seconds, Openspot kills what still runs. A call that ended by itself has nothing to stop.
     public func stop() {
         stop(because: nil)
     }
@@ -132,11 +136,14 @@ public final class ScriptProcess: @unchecked Sendable {
         }
     }
 
-    /// Waits for the end of the process, up to the time given. Ends it by force after that.
+    /// Waits for the end of each process in its group, up to the time given. Ends what still runs by force after that.
     func finish(by deadline: Date) {
-        if waitForExit(seconds: deadline.timeIntervalSinceNow), !isLive { return }
+        _ = waitForExit(seconds: deadline.timeIntervalSinceNow)
+        while hasGroup, Date() < deadline { Thread.sleep(forTimeInterval: Self.forcePause) }
+        guard hasGroup else { return }
         deliver(SIGTERM)
-        if !waitForExit(seconds: Self.forcePause) { deliver(SIGKILL) }
+        Thread.sleep(forTimeInterval: Self.forcePause)
+        deliver(SIGKILL)
     }
 
     private func closeInput() {
@@ -159,11 +166,19 @@ public final class ScriptProcess: @unchecked Sendable {
             return self.continuation
         }
         guard let continuation else { return }
-        deliver(SIGTERM)
+        stopGroup()
         continuation.finish(throwing: error)
-        DispatchQueue.global().asyncAfter(deadline: .now() + Self.stopPause) { [self] in
-            if isLive || process.isRunning { deliver(SIGKILL) }
-        }
+    }
+
+    private func stopGroup() {
+        deliver(SIGTERM)
+        DispatchQueue.global().asyncAfter(deadline: .now() + Self.stopPause) { [self] in deliver(SIGKILL) }
+    }
+
+    /// Whether a process of its group still runs.
+    private var hasGroup: Bool {
+        let id = process.processIdentifier
+        return id > 0 && kill(-id, 0) == 0
     }
 
     /// Sends a signal to the process group of the script, which holds the children it started.

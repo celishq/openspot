@@ -126,6 +126,106 @@ final class ScriptProcessTests: XCTestCase {
         XCTAssertFalse(process.isRunning)
     }
 
+    private func writesPid(_ name: String) -> String {
+        "echo $$ > '\(path(name))'"
+    }
+
+    /// A child that ignores the terminate signal, with its output somewhere else, so that its end does not close the call.
+    private func deafChild() -> String {
+        "sh -c \"trap '' TERM; \(writesPid("child").replacingOccurrences(of: "$$", with: "\\$\\$")); while :; do sleep 0.1; done\" >/dev/null 2>&1 &\n"
+    }
+
+    private func pid(_ name: String) async throws -> Int32 {
+        for _ in 0..<300 where !exists(name) { try await Task.sleep(for: .milliseconds(10)) }
+        try await Task.sleep(for: .milliseconds(50))
+        return try XCTUnwrap(Int32(try String(contentsOfFile: path(name), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
+    }
+
+    private func runs(_ pid: Int32) -> Bool {
+        kill(pid, 0) == 0
+    }
+
+    func testAScriptAndAChildThatIgnoreTheTerminateSignalAreGoneTwoSecondsAfterAStop() async throws {
+        let plugin = try writePlugin("deaf.sh", "#!/bin/sh\ntrap '' TERM\n\(writesPid("script"))\n\(deafChild())printf 'a=1\\n---\\n'\nwhile :; do sleep 0.1; done\n")
+        let process = ScriptProcess(url: plugin.url)
+        var frames = try process.start().makeAsyncIterator()
+        _ = try await frames.next()
+        let script = try await pid("script")
+        let child = try await pid("child")
+
+        process.stop()
+        try await Task.sleep(for: .seconds(1))
+        XCTAssertTrue(runs(script))
+        XCTAssertTrue(runs(child))
+        try await Task.sleep(for: .seconds(1.5))
+
+        XCTAssertFalse(runs(script))
+        XCTAssertFalse(runs(child))
+    }
+
+    func testAChildThatIgnoresTheTerminateSignalIsGoneAfterItsScriptEndedAtTheStop() async throws {
+        let plugin = try writePlugin("parent.sh", "#!/bin/sh\n\(deafChild())printf 'a=1\\n---\\n'\nsleep 30\n")
+        let process = ScriptProcess(url: plugin.url)
+        var frames = try process.start().makeAsyncIterator()
+        _ = try await frames.next()
+        let child = try await pid("child")
+
+        process.stop()
+        try await Task.sleep(for: .seconds(1))
+        XCTAssertFalse(process.isRunning)
+        XCTAssertTrue(runs(child))
+        try await Task.sleep(for: .seconds(1.5))
+
+        XCTAssertFalse(runs(child))
+    }
+
+    func testAStopLeavesAChildAloneAfterItsCallEndedByItself() async throws {
+        let plugin = try writePlugin("away.sh", "#!/bin/sh\n\(deafChild())\n")
+        let process = ScriptProcess(url: plugin.url)
+        for try await _ in try process.start() {}
+        let child = try await pid("child")
+        defer { kill(child, SIGKILL) }
+
+        process.stop()
+        try await Task.sleep(for: .seconds(2.5))
+
+        XCTAssertTrue(runs(child))
+    }
+
+    func testAnEndClosesTheInputThenStopsThenKillsTheGroupOfAStayingScript() async throws {
+        let plugin = try writePlugin("stay.sh", "#!/bin/sh\ntrap '' TERM\n\(writesPid("script"))\n\(deafChild())printf 'a=1\\n---\\n'\nwhile :; do sleep 0.1; done\n")
+        let live = ScriptProcess(url: plugin.url, mode: .stays)
+        var frames = try live.start().makeAsyncIterator()
+        _ = try await frames.next()
+        let script = try await pid("script")
+        let child = try await pid("child")
+
+        live.end()
+        try await Task.sleep(for: .seconds(3))
+        XCTAssertTrue(runs(script))
+        XCTAssertTrue(runs(child))
+        try await Task.sleep(for: .seconds(1.5))
+
+        XCTAssertFalse(runs(script))
+        XCTAssertFalse(runs(child))
+    }
+
+    func testAnEndReachesAChildAfterAStayingScriptEndedWithItsInput() async throws {
+        let plugin = try writePlugin("stay.sh", "#!/bin/sh\n\(deafChild())printf 'a=1\\n---\\n'\ncat >/dev/null\n")
+        let live = ScriptProcess(url: plugin.url, mode: .stays)
+        var frames = try live.start().makeAsyncIterator()
+        _ = try await frames.next()
+        let child = try await pid("child")
+
+        live.end()
+        try await Task.sleep(for: .seconds(1))
+        XCTAssertFalse(live.isRunning)
+        XCTAssertTrue(runs(child))
+        try await Task.sleep(for: .seconds(3.5))
+
+        XCTAssertFalse(runs(child))
+    }
+
     func testACallGoesOnWhileAChildHoldsItsOutput() async throws {
         let plugin = try writePlugin("child.sh", "#!/bin/sh\n(sleep 0.3; printf 'late=1\\n') &\nexit 0\n")
 
