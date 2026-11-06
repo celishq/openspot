@@ -126,6 +126,7 @@ schemes:
     test:
       environmentVariables:
         OPENSPOT_SH: $(SRCROOT)/Shell/openspot.sh
+        HOME: $(SRCROOT)/../.temp/test-home
       targets:
         - name: OpenspotTests
           parallelizable: true
