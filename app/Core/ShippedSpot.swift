@@ -52,10 +52,13 @@ public enum ShippedSpot: Equatable, Sendable {
         return commands
     }
 
+    /// The ID of the sheet that shows a shared spot, which has no card in the grid.
+    public static let installID = "openspot/install"
+
     /// The sheet that shows a shared spot before a person installs it.
     public static func command(reviewing review: SpotReview) -> PluginCommand {
         PluginCommand(
-            id: "openspot/install",
+            id: installID,
             name: review.name,
             url: review.folder,
             kind: .list,

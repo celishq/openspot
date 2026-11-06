@@ -270,11 +270,13 @@ final class SpotsModel {
         closeMenu()
         form = nil
         closeList()
+        endReview()
+        let moves = isShown
         do {
             let review = try SpotReview(spot: SharedSpot(contentsOf: url), folder: PluginFolder.standard().url)
             reviewed = review
             present()
-            sheetMoves = false
+            sheetMoves = moves
             open(ShippedSpot.command(reviewing: review).id)
             if urls.count > 1 { notify("Openspot installs one spot at a time.") }
         } catch {
@@ -295,8 +297,8 @@ final class SpotsModel {
         return true
     }
 
-    /// Ends the review, so that its card leaves the grid.
-    private func endReview() {
+    /// Ends the review when its sheet has gone. Its sheet leaves with the next scan.
+    func endReview() {
         guard reviewed != nil else { return }
         reviewed = nil
         reload()
@@ -344,11 +346,12 @@ final class SpotsModel {
     /// Shows each spot the search finds, then the items it finds in the lists that offer them.
     private func updateVisible() {
         let text = query.trimmingCharacters(in: .whitespaces)
+        let cards = entries.filter { $0.id != ShippedSpot.installID }
         guard !text.isEmpty else {
-            visible = entries
+            visible = cards
             return
         }
-        let spots = entries.filter { $0.state.title.localizedCaseInsensitiveContains(text) }
+        let spots = cards.filter { $0.state.title.localizedCaseInsensitiveContains(text) }
         let sources = entries.filter(\.command.isGlobal).sorted { $0.command.rank < $1.command.rank }
         let found = SearchQuery(text: text).matching(in: sources.map { sheets[$0.id]?.list ?? ItemList() })
         visible = spots + found.prefix(Self.globalItemLimit).map { Entry(command: sources[$0.list].command, item: $0.item) }
@@ -583,7 +586,6 @@ final class SpotsModel {
         stopRecording()
         openList = nil
         sheets.values.forEach { $0.close() }
-        endReview()
     }
 
     /// Closes each sheet of parts when the panel has faded, and stops the reads that nothing wants now. A sheet of rows stays
