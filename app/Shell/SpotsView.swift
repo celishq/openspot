@@ -267,6 +267,7 @@ struct SpotsView: View {
                     isDropTarget: dropTarget == entry.id,
                     readings: entry.kind == .widget ? model.readings : [:],
                     chainLetter: model.chainLetter(of: entry),
+                    showsChain: model.showsChain,
                     onTap: { model.tap(entry.id) },
                     onLevel: { model.setLevel(entry.id, to: $0) }
                 )

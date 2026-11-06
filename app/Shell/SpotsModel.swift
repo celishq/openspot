@@ -77,6 +77,7 @@ final class SpotsModel {
 
     private static let globalItemLimit = 6
     private static let dragWatchPause: Duration = .milliseconds(100)
+    private static let chainPause: Duration = .milliseconds(200)
 
     var entries: [Entry] = [] {
         didSet { updateVisible() }
@@ -102,6 +103,7 @@ final class SpotsModel {
     var chooseFiles: (PluginCommand, @escaping ([String]) -> Void) -> Void = { _, _ in }
     var entryKey = Shortcut.standard
     private var isChainHeld = false
+    private var chainWatch: Task<Void, Never>?
     private(set) var recording: String?
     var setEntryKeyOn: (Bool) -> Void = { _ in }
     var dismiss: () -> Void = {}
@@ -304,15 +306,28 @@ final class SpotsModel {
         open(id)
     }
 
-    /// Notes which modifiers the person holds, so that each spot can show its letter while they match the entry key.
+    /// Notes which modifiers the person holds. The letters show once they have matched the entry key for a moment, so that
+    /// a quick press shows nothing.
     func takeHeld(_ modifiers: Shortcut.Modifiers) {
-        isChainHeld = modifiers == entryKey.modifiers
+        chainWatch?.cancel()
+        guard modifiers == entryKey.modifiers else {
+            isChainHeld = false
+            return
+        }
+        chainWatch = Task { [weak self] in
+            try? await Task.sleep(for: Self.chainPause)
+            if !Task.isCancelled { self?.isChainHeld = true }
+        }
     }
 
-    /// The letter that a spot shows while the person holds the modifiers of the entry key on the grid.
+    /// Whether the spots show their letters.
+    var showsChain: Bool {
+        isChainHeld && isOnGrid
+    }
+
+    /// The letter of a spot that has a key.
     func chainLetter(of entry: Entry) -> String? {
-        guard isChainHeld, entry.item == nil, isOnGrid else { return nil }
-        return entry.command.key?.name.uppercased()
+        entry.item == nil ? entry.command.key?.name.uppercased() : nil
     }
 
     private var isOnGrid: Bool {
