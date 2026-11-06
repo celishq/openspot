@@ -150,6 +150,59 @@ final class SpotDropTests: XCTestCase {
         XCTAssertFalse(sheet.command.accepts([file("a.txt")]))
     }
 
+    /// Writes one more script with this header, and takes a new scan.
+    private func addScript(_ name: String, header: String) throws {
+        let url = folder.appendingPathComponent("\(name).sh")
+        try "#!/bin/sh\n# \(header)\n".write(to: url, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        runs.take(try PluginFolder(url: folder).scan())
+    }
+
+    private func cardsThatTakeTheDrag() -> Set<String> {
+        Set(runs.sheets.keys.filter { runs.takesDrag($0) })
+    }
+
+    func testForTheWholeDragEachCardThatTakesEachFileShowsItAndNoOtherDoes() throws {
+        try addScript("movies", header: "drop=mov")
+        try addScript("clips", header: "drop=mov,mkv")
+        try addScript("all", header: "drop=*")
+        try addScript("folders", header: "drop=folder")
+        try addScript("plain", header: "name=Plain")
+        XCTAssertEqual(cardsThatTakeTheDrag(), [])
+
+        runs.draggedPaths = [file("a.mov")]
+        XCTAssertEqual(cardsThatTakeTheDrag(), ["movies", "clips", "all"])
+
+        runs.draggedPaths = [file("a.mov"), file("b.mkv")]
+        XCTAssertEqual(cardsThatTakeTheDrag(), ["clips", "all"])
+
+        runs.draggedPaths = [file("a.mov"), file("b.txt")]
+        XCTAssertEqual(cardsThatTakeTheDrag(), ["all"])
+
+        runs.draggedPaths = [try directory("plain folder")]
+        XCTAssertEqual(cardsThatTakeTheDrag(), ["all", "folders"])
+
+        runs.draggedPaths = []
+        XCTAssertEqual(cardsThatTakeTheDrag(), [])
+    }
+
+    func testACardThatIsNotAScriptNeverTakesADrag() {
+        runs.draggedPaths = [file("a.mov")]
+
+        XCTAssertFalse(runs.takesDrag("gone"))
+    }
+
+    func testADragRunsNoScript() async throws {
+        try addScript("movies", header: "drop=mov")
+        runs.draggedPaths = [file("a.mov")]
+
+        XCTAssertTrue(runs.takesDrag("movies"))
+
+        try await pause()
+        XCTAssertEqual(runs.sheets["movies"]?.calls.count, 0)
+        XCTAssertEqual(runs.sheets["movies"]?.lastFrame, nil)
+    }
+
     // MARK: D3
 
     func testADropRunsOneCallWithEachPathAsItsOwnArgument() async throws {

@@ -197,7 +197,7 @@ esac
 | `*` | Each file and each folder. |
 
 - To drop files, drag them over the Openspot item in the menu bar. The panel opens and the focus stays where it is. The panel stays open until the drag ends.
-- A card takes a drag only when its `drop` takes each dragged file. Only that card shows it, when the drag is on it. A mix with one other file goes to no card.
+- A card takes a drag only when its `drop` takes each dragged file. For the whole drag, each such card changes its fill, and the card under the drag fills fully, because it takes the drop. Other cards do not change. A mix with one other file goes to no card.
 - A drop runs one call, `drop <path> [path]...`, and closes the panel. Each full path is its own argument, so write `"$file"` with its quotes.
 - A drop on a card with a running call waits, and runs when that call ends. It does not stop the call. A `read` does not hold a drop.
 - A click on a card with `drop` and no sheet opens a file chooser, and the choice runs the same call. A toggle and a slider keep their own click, and a card with a sheet opens its sheet.

@@ -261,6 +261,7 @@ struct SpotsView: View {
                     entry: entry,
                     size: placement.size,
                     isSelected: placement.index == model.selected,
+                    takesDrag: model.takesDrag(entry.id),
                     isDropTarget: dropTarget == entry.id,
                     readings: entry.kind == .widget ? model.readings : [:],
                     onTap: { model.tap(entry.id) },

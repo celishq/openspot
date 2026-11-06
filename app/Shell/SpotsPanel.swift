@@ -5,32 +5,20 @@ import OpenspotCore
 import SwiftUI
 
 final class SpotsPanel: NSPanel {
-    private static let dragWatchPause: Duration = .milliseconds(100)
-
     private var model: SpotsModel?
-    private var dragWatch: Task<Void, Never>?
 
     override var canBecomeKey: Bool { true }
 
     /// Brings the panel to the front and starts its open motion.
     func show() {
-        dragWatch?.cancel()
         model?.isOpenForDrag = false
         open { makeKeyAndOrderFront(nil) }
     }
 
     /// Shows the panel under a drag with no change of focus: it does not become key, and it closes when the drag ends.
     func showForDrag() {
-        dragWatch?.cancel()
         model?.prepareForDrag()
         open { orderFrontRegardless() }
-        dragWatch = Task { [weak self] in
-            while NSEvent.pressedMouseButtons != 0 {
-                try? await Task.sleep(for: Self.dragWatchPause)
-                if Task.isCancelled { return }
-            }
-            if self?.model?.isShown == true { self?.hide() }
-        }
     }
 
     private func open(ordering order: () -> Void) {

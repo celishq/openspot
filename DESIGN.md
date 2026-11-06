@@ -404,14 +404,7 @@ A change to the meaning of a word that exists is a breaking change. Do not make 
 
 ## 13. Where the code differs today
 
-Remove a row when the code follows the rule.
-
-| Rules | Module | Today | Target |
-|---|---|---|---|
-| D2 | `SpotCardView`, `SpotMenuBarDrag` | A card shows the mark only while the drag is on it. | Each card that accepts the files shows it for the whole drag. |
-
-The tests in `SpotActionTests`, `SheetStreamTests`, `SpotPanelTests`, `SpotRunsTests` and `SamplePluginsTests` pin the calls. Read them
-before each change. Each change in this table is breaking, and no alias stays.
+The code follows this document.
 
 ## 14. Decisions
 
@@ -455,9 +448,17 @@ Nothing.
    permission prompt, so it needs the person.
 3. M3: whether each current plugin still fits the limits when reads run at the same time.
 4. L11: whether 1 second is enough to stop a double press from stopping work.
-5. D1: a drag over a menu bar item that opens a panel with no change of focus. It needs a real screen and a real drag.
+5. D1, D2: a drag over a menu bar item that opens a panel with no change of focus, and the mark that shows from then until the
+   drag ends. It needs a real screen and a real drag. An off-screen render proves the mark, and a test proves which cards take
+   the files. A drag that reaches an open panel and no card shows no mark until it reaches a card.
 6. K2: the start time of the `openspot` command, which each change in `Translate` calls: a median of 9 ms for `catalog` over 20
    calls, and 11 ms for a call through a running helper with no translation, in a Debug build on one Mac. The first run after a
    build took 297 ms. A Release build and a Mac under memory pressure are not measured.
 7. Start times: about 5 ms for `sh`, 18 ms for `bun`, 25 ms for `python3`, 60 ms for `node` and 3.4 s for `swift file.swift`.
    One Mac, trivial programs. A Swift plugin must be compiled.
+8. C6: a 1 MB paste reaches the sheet in under 1 second in a Debug build, with the pause of C4. The drawing comes after that, in
+   system views. In an off-screen window on one Mac, a Debug build took 1.6 s to draw 1 MB in an editable text part. A read-only
+   text part took 4.1 to 4.6 s for 1 MB and drew no text, and it drew text at 500 KB, which took 2.9 s. A Release build and the
+   real panel are not measured.
+9. Y2: a copy that Openspot ended still runs the calls that it has, for up to 4 seconds (Y4). A call in that time starts a new
+   copy, because the old one has no open stdin. So two copies can run for that time.

@@ -76,6 +76,7 @@ final class SpotsModel {
     private typealias Target = (entry: Entry, item: SpotItem?)
 
     private static let globalItemLimit = 6
+    private static let dragWatchPause: Duration = .milliseconds(100)
 
     var entries: [Entry] = [] {
         didSet { updateVisible() }
@@ -92,6 +93,7 @@ final class SpotsModel {
     private(set) var sheetMoves = true
     private var closingPick: (item: SpotItem, entry: Entry)?
     private let runs: SpotRuns
+    private var dragWatch: Task<Void, Never>?
     var isShown = false
     /// Whether a drag over the menu bar item opened the panel, so that it is not key and its field takes no focus.
     var isOpenForDrag = false
@@ -175,9 +177,33 @@ final class SpotsModel {
         openList == nil && sheets[id]?.command.accepts(paths) == true
     }
 
+    /// Whether a card shows that it takes the drag in progress.
+    func takesDrag(_ id: String) -> Bool {
+        openList == nil && runs.takesDrag(id)
+    }
+
+    /// Takes the files of a drag that reached the menu bar item or a card. When no mouse button is down, the cards stop
+    /// showing them, and a panel that the drag opened closes.
+    func followDrag() {
+        let paths = SpotCardDrop.paths
+        guard paths != runs.draggedPaths else { return }
+        runs.draggedPaths = paths
+        dragWatch?.cancel()
+        dragWatch = Task { [weak self] in
+            while NSEvent.pressedMouseButtons != 0 {
+                try? await Task.sleep(for: Self.dragWatchPause)
+                if Task.isCancelled { return }
+            }
+            guard let self else { return }
+            runs.draggedPaths = []
+            if isOpenForDrag, isShown { dismiss() }
+        }
+    }
+
     /// Takes a drop on a card and closes the panel. Returns false when the card does not take these files.
     func drop(_ paths: [String], on id: String) -> Bool {
         guard openList == nil, sheets[id]?.drop(paths) == true else { return false }
+        runs.draggedPaths = []
         if isShown { dismiss() }
         return true
     }
@@ -185,6 +211,7 @@ final class SpotsModel {
     /// Shows the grid and not a sheet, so that a drag can reach the cards.
     func prepareForDrag() {
         isOpenForDrag = true
+        followDrag()
         guard openList != nil else { return }
         sheetMoves = false
         closeList()

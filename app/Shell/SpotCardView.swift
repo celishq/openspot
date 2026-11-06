@@ -8,6 +8,7 @@ struct SpotCardView: View {
     let entry: SpotsModel.Entry
     let size: SpotSize
     let isSelected: Bool
+    let takesDrag: Bool
     let isDropTarget: Bool
     let readings: [String: MetricReading]
     let onTap: () -> Void
@@ -27,7 +28,7 @@ struct SpotCardView: View {
         content
             .padding(SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
-            .background(shape.fill(Color.accentColor).opacity(isDropTarget ? 1 : 0))
+            .background(shape.fill(Color.accentColor).opacity(dropFill))
             .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, strength: showsPress ? SpotMotion.pressedGlass : 1))
             .overlay(shape.fill((isFilled ? Color.black : Color.white).opacity(showsPress ? 0.12 : isHovered ? 0.08 : 0)).allowsHitTesting(false))
             .overlay(shape.strokeBorder(Color.accentColor, lineWidth: 2).opacity(isSelected && isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
@@ -61,8 +62,13 @@ struct SpotCardView: View {
         isPressed && entry.kind != .slider && (entry.kind != .widget || entry.command.opens != nil)
     }
 
+    /// How strong the fill is: part of the way on a card that takes the drag, and full on the card that takes the drop.
+    private var dropFill: Double {
+        isDropTarget ? 1 : takesDrag ? SpotTokens.dragFill : 0
+    }
+
     private var isFilled: Bool {
-        isOn && !isDropTarget
+        isOn && dropFill == 0
     }
 
     private var row: some View {

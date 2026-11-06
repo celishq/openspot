@@ -11,6 +11,8 @@ public final class SpotRuns {
 
     public private(set) var sheets: [String: SpotSheet] = [:]
     public private(set) var isPanelOpen = false
+    /// The files of the drag in progress, which each card that takes them all shows for the whole drag.
+    public var draggedPaths: [String] = []
     @ObservationIgnored public var onReport: (String, SpotSheet.Report) -> Void = { _, _ in }
     /// The time a `read` has to its first frame or its end.
     public let readLimit: TimeInterval
@@ -138,6 +140,11 @@ public final class SpotRuns {
     /// The ID of the script of the oldest running work, whose spot a click on the Openspot item selects.
     public var workSpot: String? {
         work.first?.id
+    }
+
+    /// Whether the card of this script takes all the files of the drag in progress.
+    public func takesDrag(_ id: String) -> Bool {
+        sheets[id]?.command.accepts(draggedPaths) == true
     }
 
     /// What each script last gave a widget to draw, by script.
