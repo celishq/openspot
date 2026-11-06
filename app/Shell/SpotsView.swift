@@ -14,6 +14,7 @@ struct SpotsView: View {
     @State private var gridHint = ""
     @State private var sheetHint = ""
     @State private var dropTarget: String?
+    @State private var dragged: (id: String, offset: CGSize)?
 
     private static let panelSpace = "panel"
     private static let wordRoll: CGFloat = 20
@@ -86,6 +87,7 @@ struct SpotsView: View {
                 .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(showsSearchField ? 1 : 0) }
                 .allowsHitTesting(showsSearchField)
             promptLayer
+            if model.isEditing { editHeader }
             if let menu = model.menu {
                 Color.clear
                     .contentShape(Rectangle())
@@ -246,7 +248,7 @@ struct SpotsView: View {
 
     /// Whether the search field is drawn. A form and a sheet of parts replace it.
     private var showsSearchField: Bool {
-        guard model.form == nil else { return false }
+        guard model.form == nil, !model.isEditing else { return false }
         return !(sheetOpen && model.sheets[sheetID ?? ""]?.panel != nil)
     }
 
@@ -292,14 +294,67 @@ struct SpotsView: View {
                 })
                 .scaleEffect(sheetOpen && entry.id != sheetID ? SpotMotion.pushedScale : 1)
                 .offset(
-                    x: CGFloat(placement.column) * (SpotTokens.cell + SpotTokens.columnGap) + pushed.width,
-                    y: CGFloat(placement.row) * (SpotTokens.rowHeight + SpotTokens.rowGap) + pushed.height
+                    x: CGFloat(placement.column) * (SpotTokens.cell + SpotTokens.columnGap) + pushed.width + (dragged?.id == entry.id ? dragged?.offset.width ?? 0 : 0),
+                    y: CGFloat(placement.row) * (SpotTokens.rowHeight + SpotTokens.rowGap) + pushed.height + (dragged?.id == entry.id ? dragged?.offset.height ?? 0 : 0)
                 )
-                .opacity(entry.id == sheetID || sheetOpen ? 0 : 1)
+                .zIndex(dragged?.id == entry.id ? 1 : 0)
+                .highPriorityGesture(moveGesture(of: entry), including: model.isEditing ? .all : .subviews)
+                .contextMenu { spotMenu(of: entry) }
+                .opacity(entry.id == sheetID || sheetOpen ? 0 : entry.isOnGrid ? 1 : SpotTokens.offGridLight)
             }
         }
         .frame(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows), alignment: .topLeading)
         .contentShape(Rectangle())
+    }
+
+    /// What a card offers on a right click: its preferred size, its place on the grid and Edit Spots.
+    @ViewBuilder
+    private func spotMenu(of entry: SpotsModel.Entry) -> some View {
+        let sizes = model.sizes(of: entry)
+        if !sizes.isEmpty {
+            Picker("Size", selection: Binding(get: { entry.size.name }, set: { name in
+                if let size = SpotSize(name: name) { model.prefer(size, for: entry.id) }
+            })) {
+                ForEach(sizes.map(\.name), id: \.self) { Text($0.capitalized).tag($0) }
+            }
+        }
+        if entry.item == nil {
+            Button(entry.isOnGrid ? "Hide from Grid" : "Show on Grid") { model.setOnGrid(!entry.isOnGrid, for: entry.id) }
+            Button("Edit Spots") { model.beginEditing() }
+        }
+    }
+
+    /// Moves a card in Edit Spots: it follows the pointer, and takes the place of the card it lands on.
+    private func moveGesture(of entry: SpotsModel.Entry) -> some Gesture {
+        DragGesture(coordinateSpace: .named(Self.panelSpace))
+            .onChanged { dragged = (entry.id, $0.translation) }
+            .onEnded { drag in
+                dragged = nil
+                let point = CGPoint(
+                    x: drag.location.x - SpotTokens.halo,
+                    y: drag.location.y + scrollOffset - Self.gridTop
+                )
+                let column = Int(point.x / (SpotTokens.cell + SpotTokens.columnGap))
+                let row = Int(point.y / (SpotTokens.rowHeight + SpotTokens.rowGap))
+                let target = model.placements.first { place in
+                    (place.column..<(place.column + place.size.columns)).contains(column) && (place.row..<(place.row + place.size.rows)).contains(row)
+                }
+                if let target { model.moveSpot(entry.id, to: target.index) }
+            }
+    }
+
+    /// The top of the grid in Edit Spots, in the place of the search field.
+    private var editHeader: some View {
+        HStack {
+            Text("Edit Spots")
+                .font(SpotType.input)
+                .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+            Spacer()
+            SpotRoundButton(symbol: "checkmark", label: "Done") { model.endEditing() }
+        }
+        .padding(.horizontal, SpotTokens.padding)
+        .frame(width: SpotTokens.gridWidth, height: SpotTokens.rowHeight)
+        .offset(x: SpotTokens.halo, y: SpotTokens.halo)
     }
 
     private var searchField: some View {

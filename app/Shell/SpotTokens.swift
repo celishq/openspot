@@ -13,6 +13,7 @@ enum SpotTokens {
     static let rowHeight: CGFloat = 62
     static let glyphSize: CGFloat = 36
     static let workMark: CGFloat = 16
+    static let offGridLight = 0.4
     static let keycap: CGFloat = 20
     static let keycapRadius: CGFloat = 6
     static let keycapShade = 0.2

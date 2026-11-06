@@ -56,6 +56,21 @@ public struct SpotGrid: Sendable {
             .index
     }
 
+    /// The next size in this list that changes how the grid looks, or nil when none does. The grid can grow a spot to fill
+    /// its row, so a step can pass over a size.
+    public func nextSize(of index: Int, in sizes: [SpotSize], among choices: [SpotSize]) -> SpotSize? {
+        guard sizes.indices.contains(index) else { return nil }
+        let now = place(sizes)
+        let start = choices.firstIndex(of: sizes[index]) ?? -1
+        return (1...choices.count).lazy
+            .map { choices[(start + $0 + choices.count) % choices.count] }
+            .first { size in
+                var next = sizes
+                next[index] = size
+                return place(next) != now
+            }
+    }
+
     /// Places a square with the spots beside it, and returns the number of rows it used.
     private func placeSquare(_ square: Spot, in queue: inout [Spot], row: Int, placements: inout [SpotPlacement]) -> Int {
         if let next = queue.first, next.size == .square {

@@ -78,6 +78,7 @@ esac
 | A4 | Search text stays until the person presses Esc. |
 | A5 | Plugins, Settings and Updates ship with the app. Each answers the same calls, in Swift. Updates has `grid=false`, and prints `grid=true` when a downloaded update waits to install. It takes the first place of order 0, so its card shows with no scrolling. |
 | A6 | One global key opens the panel from any app, and the person chooses it. No other key is global. |
+| A7 | The person arranges the grid: each `[[spots]]` table of `config.toml` names a spot by `id`, and can set `size` and `grid`. It overrides the plugin. A `size` is a preference, and the grid can still change it to fill a row. Listed spots take the order of the file. The Edit Spots mode writes this file. |
 
 ## 4. The plugin file
 

@@ -35,6 +35,7 @@ final class SpotsPanel: NSPanel {
         model?.takeHeld([])
         model?.stopRecording()
         model?.closeMenu()
+        model?.endEditing()
         model?.isShown = false
         DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeOutDuration) {
             guard self.model?.isShown == false else { return }
@@ -79,6 +80,8 @@ final class SpotsPanel: NSPanel {
         case kVK_Escape: name = "escape"
         case kVK_UpArrow: name = "up"
         case kVK_DownArrow: name = "down"
+        case kVK_LeftArrow: name = "left"
+        case kVK_RightArrow: name = "right"
         default: name = event.charactersIgnoringModifiers?.lowercased()
         }
         return name.map {

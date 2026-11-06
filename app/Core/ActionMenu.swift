@@ -4,6 +4,7 @@ public struct ActionMenu: Equatable, Sendable {
         public let title: String
         public let keyLabel: String
         public let action: CommandAction?
+        public var opensEdit = false
     }
 
     public let rows: [Row]
@@ -11,12 +12,13 @@ public struct ActionMenu: Equatable, Sendable {
     public private(set) var confirming: String?
 
     /// Lists what Enter does, then the actions that fit. Returns nil when there is nothing to list.
-    public init?(command: PluginCommand, item: SpotItem?, showsPrimary: Bool = true) {
+    public init?(command: PluginCommand, item: SpotItem?, showsPrimary: Bool = true, showsEdit: Bool = false) {
         var rows: [Row] = []
         if showsPrimary, let title = command.primaryTitle(hasItem: item != nil) {
             rows.append(Row(title: title, keyLabel: "⏎", action: nil))
         }
         rows += command.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
+        if showsEdit { rows.append(Row(title: "Edit Spots", keyLabel: "", action: nil, opensEdit: true)) }
         guard !rows.isEmpty else { return nil }
         self.rows = rows
     }

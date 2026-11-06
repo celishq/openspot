@@ -11,6 +11,14 @@ final class ActionMenuTests: XCTestCase {
         PluginCommand(id: "a/A", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: kind, primary: primary, actions: [paste, delete, new])
     }
 
+    func testAGridCardOffersToEditTheSpotsAfterItsActions() throws {
+        let menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, showsEdit: true))
+
+        XCTAssertEqual(menu.rows.last?.title, "Edit Spots")
+        XCTAssertEqual(menu.rows.last?.opensEdit, true)
+        XCTAssertFalse(menu.hint.contains("Edit Spots"))
+    }
+
     func testAnItemListsWhatEnterDoesThenEachAction() throws {
         let menu = try XCTUnwrap(ActionMenu(command: command(), item: item))
 

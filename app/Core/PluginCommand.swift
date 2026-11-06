@@ -90,6 +90,13 @@ public struct PluginCommand: Equatable, Sendable {
         self.headerSymbol = headerSymbol
     }
 
+    /// The sizes a person can prefer for its card. A widget has the size of its layout, and Updates needs room for its words.
+    public var sizes: [SpotSize] {
+        if kind == .widget { return [] }
+        if case .updates? = shipped { return SpotSize.all.filter { $0.columns > 1 } }
+        return SpotSize.all
+    }
+
     /// Whether its rows join the main search.
     public var isGlobal: Bool {
         rank != Self.lastRank
