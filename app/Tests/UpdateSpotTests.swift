@@ -39,7 +39,7 @@ final class UpdateSpotTests: XCTestCase {
         let state = try await command.state(timeout: 5)
         _ = try await command.perform(.run, timeout: 5)
 
-        XCTAssertEqual(state, SpotState(title: "Updates", subtitle: "0.2.0"))
+        XCTAssertEqual(state, SpotState(title: "Updates", subtitle: "0.2.0", isOnGrid: false))
         let checks = await presses.checks
         let restarts = await presses.restarts
         XCTAssertEqual(checks, 1)
@@ -54,11 +54,15 @@ final class UpdateSpotTests: XCTestCase {
         let state = try await command.state(timeout: 5)
         _ = try await command.perform(.run, timeout: 5)
 
-        XCTAssertEqual(state, SpotState(title: "Restart", subtitle: "Update 0.3.0"))
+        XCTAssertEqual(state, SpotState(title: "Restart", subtitle: "Update 0.3.0", isOnGrid: true))
         let checks = await presses.checks
         let restarts = await presses.restarts
         XCTAssertEqual(checks, 0)
         XCTAssertEqual(restarts, 1)
+    }
+
+    func testTheSpotIsOffTheGridUntilAnUpdateIsReady() throws {
+        XCTAssertFalse(try command(spot()).headerState.isOnGrid)
     }
 
     func testWithRunningWorkTheFirstPressWarnsAndTheSecondRestarts() async throws {

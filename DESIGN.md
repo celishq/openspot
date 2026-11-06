@@ -76,7 +76,7 @@ esac
 | A2 | Each script that shows anything has one `SpotSheet` in Core. It holds the last frame of the script, its rows, its parts, its open state and its running calls. The card, the sheet, a widget and the menu bar all read from it, and no other place keeps what a script printed. A run of one script never stops a run of another. |
 | A3 | A stopped run changes nothing. Only a call that ended by itself can report that there is nothing to show. |
 | A4 | Search text stays until the person presses Esc. |
-| A5 | Plugins, Settings and Updates ship with the app. Each answers the same calls, in Swift. |
+| A5 | Plugins, Settings and Updates ship with the app. Each answers the same calls, in Swift. Updates has `grid=false`, and prints `grid=true` when a downloaded update waits to install. |
 | A6 | One global key opens the panel from any app, and the person chooses it. No other key is global. |
 
 ## 4. The plugin file
@@ -98,6 +98,7 @@ This is a complete plugin. It is a spot called Hello, and a click runs it.
 | F6 | A header key that is not valid refuses that plugin. Openspot reports the reason and loads the others. |
 | F7 | A script with a number in its `read` and no `key` has no spot. A widget or the menu bar can show it. |
 | F8 | Widgets are in a `.toml` file, because a person writes them by hand. A widget runs nothing. |
+| F9 | `grid=false` keeps a spot off the grid. It differs from F7: search and its key still find the spot. A script with `panel` in its `read` can print `grid=true` or `grid=false` to change this, and a frame with no `grid` keeps the header's value. A stopped call changes nothing. |
 
 ### Header
 
@@ -113,6 +114,7 @@ Comment lines right under the first line, one `key=value` on each line. They can
 | `key` | One letter | Runs it after the trigger key. |
 | `size` | `wide`, `small`, `square`, `strip`, `large` | A preference. The grid fills each row. |
 | `order` | Number | Its place in the grid. |
+| `grid` | `false` | The spot is not on the grid. Search and its key still find it. |
 
 **How it behaves**
 
@@ -233,7 +235,7 @@ A script prints plain text. Each line is `key=value`, and a blank line ends a bl
 | `field` | A form field. |
 | `part` | A part of a sheet. |
 | `section` | A new group of parts. |
-| Anything else, first | How the spot itself looks: `title`, `detail`, `on`, `level`, `toast`, `search`, `recents`, a layout. |
+| Anything else, first | How the spot itself looks: `title`, `detail`, `on`, `level`, `grid`, `toast`, `search`, `recents`, a layout. |
 
 | ID | Rule |
 |---|---|

@@ -43,6 +43,7 @@ open -a Calendar
 | `key` | One letter. Hold the key that opens the panel, and press this letter to run it. |
 | `size` | `wide` (the default), `small`, `square` or `strip`. |
 | `order` | Its place in the grid. A lower number comes first, and the default is 0. |
+| `grid` | `false` to keep the spot off the grid. Search and its key still find it. With `panel` in its `read`, the first block can print `grid=true` or `grid=false` to change this. |
 | `read` | When Openspot reads the script. See below. |
 | `rank` | Shows its rows in the main search. A lower number comes first. Needs `panel`, `launch` or a number in its `read`. A number also needs a `key`, or Openspot refuses the plugin. |
 | `tray` | `true` to show a metric in the menu bar. Needs a number in its `read`, or `stay=true`. |

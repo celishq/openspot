@@ -2,6 +2,18 @@ import XCTest
 @testable import OpenspotCore
 
 final class PluginHeaderTests: XCTestCase {
+    func testAHeaderKeepsASpotOffTheGridAndInTheScan() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-grid-\(UUID().uuidString)")
+        try Data("#!/bin/sh\n# grid=false\n".utf8).write(to: url)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let command = try XCTUnwrap(try Plugin(file: url, id: "script")?.commands.first)
+
+        XCTAssertFalse(command.headerState.isOnGrid)
+        XCTAssertTrue(command.hasSpot)
+    }
+
     func testReadsTheCommentLinesUnderTheFirstLine() {
         let header = PluginHeader(text: "#!/bin/sh\n# name=Morning\n#\n# Prose has no key.\n#symbol=sun.max\nsay hello\n# key=m\n")
 

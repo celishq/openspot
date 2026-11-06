@@ -173,6 +173,11 @@ final class SpotsModel {
         runs.arrive(moment)
     }
 
+    /// A downloaded update waits, so the Updates spot reads now and is on the grid before the panel next opens.
+    func updateIsReady() {
+        sheets.values.first { if case .updates? = $0.command.shipped { true } else { false } }?.read(need: .change)
+    }
+
     /// Stops each call as the app quits.
     func quit() {
         runs.quit()
@@ -182,7 +187,8 @@ final class SpotsModel {
         switch report {
         case .toast(let text): confirm(text)
         case .failure(let text): notify(text)
-        case .listChange: if !query.isEmpty { updateVisible() }
+        case .listChange:
+            if !query.isEmpty || sheets[id].map({ $0.state.isOnGrid != visible.contains { $0.id == id } }) == true { updateVisible() }
         case .frame:
             if case .settings? = sheets[id]?.command.shipped { applyConfig() }
         case .chooseFiles:
@@ -247,10 +253,10 @@ final class SpotsModel {
     private func updateVisible() {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
-            visible = entries
+            visible = entries.filter(\.state.isOnGrid)
             return
         }
-        let spots = entries.filter { $0.state.title.localizedCaseInsensitiveContains(text) }
+        let spots = entries.filter { $0.state.title.localizedCaseInsensitiveContains(text) || $0.command.name.localizedCaseInsensitiveContains(text) }
         let sources = entries.filter(\.command.isGlobal).sorted { $0.command.rank < $1.command.rank }
         let found = SearchQuery(text: text).matching(in: sources.map { sheets[$0.id]?.list ?? ItemList() })
         visible = spots + found.prefix(Self.globalItemLimit).map { Entry(command: sources[$0.list].command, item: $0.item) }

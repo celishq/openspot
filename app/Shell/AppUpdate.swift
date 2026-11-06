@@ -9,8 +9,10 @@ final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelega
     private(set) var spot: UpdateSpot!
     private var controller: SPUStandardUpdaterController?
     private var install: (() -> Void)?
+    private let onReady: @MainActor () -> Void
 
-    init(runningWork: @escaping @MainActor () -> Int) {
+    init(runningWork: @escaping @MainActor () -> Int, onReady: @escaping @MainActor () -> Void) {
+        self.onReady = onReady
         super.init()
         spot = UpdateSpot(
             version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "",
@@ -39,7 +41,10 @@ final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelega
         nonisolated(unsafe) let handler = immediateInstallHandler
         MainActor.assumeIsolated {
             install = handler
-            Task { await spot.take(ready: version) }
+            Task {
+                await spot.take(ready: version)
+                onReady()
+            }
         }
         return true
     }
