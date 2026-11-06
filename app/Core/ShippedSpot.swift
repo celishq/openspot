@@ -37,16 +37,17 @@ public enum ShippedSpot: Equatable, Sendable {
             )
         ]
         if let update {
-            commands.append(
+            commands.insert(
                 PluginCommand(
                     id: "openspot/updates",
                     name: "Updates",
                     url: folder,
                     symbol: "arrow.triangle.2.circlepath",
                     read: .panel,
-                    order: 3,
-                    shipped: .updates(update)
-                )
+                    shipped: .updates(update),
+                    isOnGrid: false
+                ),
+                at: 0
             )
         }
         return commands

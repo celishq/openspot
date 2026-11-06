@@ -33,6 +33,8 @@ public struct PluginCommand: Equatable, Sendable {
     public let isTray: Bool
     /// Whether it has a card. A script with a number in its `read` and no `key` has none (F7).
     public let hasSpot: Bool
+    /// Whether the grid shows its card until a frame says otherwise (F9).
+    public let isOnGrid: Bool
     /// The `symbol` its header names, if any.
     public let headerSymbol: String?
 
@@ -59,6 +61,7 @@ public struct PluginCommand: Equatable, Sendable {
         drop: [String] = [],
         isTray: Bool = false,
         hasSpot: Bool = true,
+        isOnGrid: Bool = true,
         headerSymbol: String? = nil
     ) {
         self.id = id
@@ -83,7 +86,15 @@ public struct PluginCommand: Equatable, Sendable {
         self.drop = drop
         self.isTray = isTray
         self.hasSpot = hasSpot
+        self.isOnGrid = isOnGrid
         self.headerSymbol = headerSymbol
+    }
+
+    /// The sizes a person can prefer for its card. A widget has the size of its layout, and Updates needs room for its words.
+    public var sizes: [SpotSize] {
+        if kind == .widget { return [] }
+        if case .updates? = shipped { return SpotSize.all.filter { $0.columns > 1 } }
+        return SpotSize.all
     }
 
     /// Whether its rows join the main search.
@@ -93,7 +104,7 @@ public struct PluginCommand: Equatable, Sendable {
 
     /// The state the header gives, shown before the command answers or when it cannot.
     public var headerState: SpotState {
-        SpotState(title: name, subtitle: subtitle)
+        SpotState(title: name, subtitle: subtitle, isOnGrid: isOnGrid)
     }
 
     /// Whether the panel asks the command how it looks each time it opens.

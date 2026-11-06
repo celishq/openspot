@@ -43,6 +43,7 @@ open -a Calendar
 | `key` | One letter. Hold the key that opens the panel, and press this letter to run it. |
 | `size` | `wide` (the default), `small`, `square` or `strip`. |
 | `order` | Its place in the grid. A lower number comes first, and the default is 0. |
+| `grid` | `false` to keep the spot off the grid. Search and its key still find it. With `panel` in its `read`, the first block can print `grid=true` or `grid=false` to change this. |
 | `read` | When Openspot reads the script. See below. |
 | `rank` | Shows its rows in the main search. A lower number comes first. Needs `panel`, `launch` or a number in its `read`. A number also needs a `key`, or Openspot refuses the plugin. |
 | `tray` | `true` to show a metric in the menu bar. Needs a number in its `read`, or `stay=true`. |
@@ -55,7 +56,7 @@ open -a Calendar
 |---|---|---|
 | none | Never. A click runs `<script>` with no argument. | A script that does one thing. |
 | `sheet` | When its sheet opens. | A list. |
-| `panel` | Each time the panel opens. | A toggle, a slider, or a list for the main search. |
+| `panel` | Each time the panel opens, and once as the app starts. | A toggle, a slider, or a list for the main search. |
 | a number | Every that many seconds, while something wants it, such as its open sheet. | A metric. It has no spot unless it also has a `key`. |
 | `launch` | When the app starts. | Work to do once, or a staying script that runs at all times. |
 | `wake` | When the Mac wakes. | A value that is old after a sleep. |
@@ -150,6 +151,7 @@ file=/Applications/Safari.app
 
 `row` and `run` are the only keys a list needs. Also use `symbol` for an SF Symbol, `file` for a file's icon, or `image`
 for a path to an image. `hides` is the ID of an action that this row does not offer. Repeat the line for each one.
+`shortcut=ctrl+space` shows a key at the end of the row. A pick records the next key, and Openspot calls `<run> <key>`.
 
 Openspot searches the rows itself and sorts recent picks first. To change this, print one block before the rows on each
 read:

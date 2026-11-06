@@ -14,7 +14,7 @@ public struct Settings: Equatable, Sendable {
     public func answer(_ arguments: [String]) throws -> String {
         switch arguments.first {
         case "read":
-            return "part=\(Self.panelKey)\ntitle=Open Openspot\nlook=tile\nshortcut=\((file.read().panelKey ?? .standard).text)\n"
+            return "recents=false\n\naction=open\ntitle=Change\n\nrow=Open Openspot\nrun=\(Self.panelKey)\nsymbol=keyboard\nshortcut=\((file.read().panelKey ?? .standard).text)\n"
         case Self.panelKey:
             guard let shortcut = arguments.dropFirst().first.flatMap(Shortcut.init(text:)) else {
                 throw PluginError.failed(1, "Openspot cannot use this key.")

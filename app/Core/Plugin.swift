@@ -75,6 +75,7 @@ public struct Plugin: Equatable, Sendable {
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             isTray: isTray,
             hasSpot: read?.seconds == nil || hasKey,
+            isOnGrid: header.flag("grid") ?? true,
             headerSymbol: symbol
         )
         self.init(id: id, commands: [command])

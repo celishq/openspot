@@ -36,6 +36,66 @@ final class SpotSheetTests: XCTestCase {
         XCTFail("waited for \(what)")
     }
 
+    private func holding(_ body: String, pause: TimeInterval) throws -> SpotSheet {
+        let url = folder.appendingPathComponent("held.sh")
+        try "#!/bin/sh\n\(body)\n".writeScript(to: url)
+        return SpotRuns(firstAnswerPause: pause).sheet(for: PluginCommand(id: "held", name: "held", url: url, kind: .list, read: .sheet))
+    }
+
+    func testASheetThatWaitsOpensWithItsFirstAnswer() async throws {
+        let sheet = try holding("printf 'part=a\\ntitle=A\\n'", pause: 30)
+        var partsAtOpen: Bool?
+
+        sheet.open(waits: true) { partsAtOpen = sheet.panel != nil }
+
+        XCTAssertNil(partsAtOpen)
+        try await wait("the open") { partsAtOpen != nil }
+        XCTAssertEqual(partsAtOpen, true)
+    }
+
+    func testASheetThatWaitsOpensWithoutAnAnswerThatIsLate() async throws {
+        let sheet = try holding("sleep 5", pause: 0.02)
+        var isOpened = false
+
+        sheet.open(waits: true) { isOpened = true }
+
+        try await wait("the open") { isOpened }
+        XCTAssertNil(sheet.panel)
+        sheet.close()
+    }
+
+    func testASheetSaysItAwaitsItsFirstAnswerUntilItComes() async throws {
+        let sheet = try holding("sleep 0.2\nprintf 'part=a\\ntitle=A\\n'", pause: 0.02)
+
+        sheet.open(waits: true) {}
+
+        XCTAssertTrue(sheet.awaitsFirstAnswer)
+        try await wait("the parts") { sheet.panel != nil }
+        XCTAssertFalse(sheet.awaitsFirstAnswer)
+    }
+
+    func testASheetWithAnAnswerOpensAtOnceThoughItMayWait() async throws {
+        let sheet = try holding("printf 'row=A\\nrun=a\\n'", pause: 30)
+        sheet.read()
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        var isOpened = false
+
+        sheet.open(waits: true) { isOpened = true }
+
+        XCTAssertTrue(isOpened)
+    }
+
+    func testAClosedSheetDoesNotOpenWhenItsAnswerComes() async throws {
+        let sheet = try holding("printf 'row=A\\nrun=a\\n'", pause: 0.02)
+        var isOpened = false
+
+        sheet.open(waits: true) { isOpened = true }
+        sheet.close()
+        try await Task.sleep(for: .milliseconds(60))
+
+        XCTAssertFalse(isOpened)
+    }
+
     func testARunThatEndsWithNoOutputEmptiesTheList() async throws {
         let sheet = try make("[ -f '\(path("second"))' ] && exit 0\ntouch '\(path("second"))'\nprintf 'row=A\\nrun=a\\n'")
 

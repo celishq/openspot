@@ -611,6 +611,50 @@ final class SamplePluginsTests: XCTestCase {
         return last
     }
 
+    /// Reads a sheet, and returns how long its first parts took and how many options its target menu ends with.
+    @MainActor
+    private static func firstParts(of command: PluginCommand) async throws -> (seconds: TimeInterval, options: Int) {
+        let sheet = SpotRuns().sheet(for: command)
+        let start = Date()
+        let options: () -> Int = {
+            guard case .menu(let options, _)? = sheet.panel?.parts.first(where: { $0.id == "target" })?.control else { return 0 }
+            return options.count
+        }
+        sheet.open {}
+        while sheet.panel == nil, Date().timeIntervalSince(start) < 10 { try await Task.sleep(for: .milliseconds(10)) }
+        let seconds = Date().timeIntervalSince(start)
+        while options() < 2, Date().timeIntervalSince(start) < 10 { try await Task.sleep(for: .milliseconds(10)) }
+        let count = options()
+        sheet.close()
+        return (seconds, count)
+    }
+
+    func testAReadAnswersWithItsFirstFrame() async throws {
+        try await withPrivateHome { folder in
+            let url = folder.appendingPathComponent("frames.sh")
+            try "#!/bin/sh\nprintf 'part=a\\n---\\n'\nprintf 'part=b\\n'\n".writeScript(to: url)
+
+            let text = try await SpotRuns().answer(of: PluginCommand(id: "frames", name: "Frames", url: url), .read, limit: 5)
+
+            XCTAssertEqual(text, "part=a\n")
+        }
+    }
+
+    func testTranslateShowsItsPartsBeforeItKnowsItsLanguages() async throws {
+        try await withPrivateHome { folder in
+            _ = try self.fakeTranslate(in: folder)
+            let tool = folder.appendingPathComponent("tools/openspot")
+            let fake = try String(contentsOf: tool, encoding: .utf8)
+            try fake.replacingOccurrences(of: "if [ \"$2\" = languages ]; then", with: "if [ \"$2\" = languages ]; then\n  sleep 1").writeScript(to: tool)
+            let translate = try XCTUnwrap(try self.scan.commands.first { $0.name == "Translate" })
+
+            let result = try await Self.firstParts(of: translate)
+
+            XCTAssertLessThan(result.seconds, 1)
+            XCTAssertEqual(result.options, 2)
+        }
+    }
+
     func testTranslateIsASheetOfPartsWithItsLanguagesAndNoFaults() async throws {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder)

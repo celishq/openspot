@@ -52,9 +52,13 @@ private struct Backing: NSViewRepresentable {
                 let kept = part.filters?.filter { ($0 as? NSObject)?.value(forKey: "name") as? String != "colorSaturate" }
                 if kept?.count != part.filters?.count { part.filters = kept }
                 part.setValue(radius, forKeyPath: "filters.gaussianBlur.inputRadius")
-                part.setValue(SpotTokens.backdropScale, forKey: "scale")
             }
         }
+    }
+
+    /// Fills the surface it lies on, so that a resize asks AppKit for no size of its own.
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: Surface, context: Context) -> CGSize? {
+        proposal.replacingUnspecifiedDimensions()
     }
 
     func makeNSView(context: Context) -> Surface {

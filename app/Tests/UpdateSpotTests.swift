@@ -39,7 +39,7 @@ final class UpdateSpotTests: XCTestCase {
         let state = try await command.state(timeout: 5)
         _ = try await command.perform(.run, timeout: 5)
 
-        XCTAssertEqual(state, SpotState(title: "Updates", subtitle: "0.2.0"))
+        XCTAssertEqual(state, SpotState(title: "Updates", subtitle: "0.2.0", isOnGrid: false))
         let checks = await presses.checks
         let restarts = await presses.restarts
         XCTAssertEqual(checks, 1)
@@ -54,11 +54,30 @@ final class UpdateSpotTests: XCTestCase {
         let state = try await command.state(timeout: 5)
         _ = try await command.perform(.run, timeout: 5)
 
-        XCTAssertEqual(state, SpotState(title: "Restart", subtitle: "Update 0.3.0"))
+        XCTAssertEqual(state, SpotState(title: "Restart", subtitle: "Update 0.3.0", isOnGrid: true))
         let checks = await presses.checks
         let restarts = await presses.restarts
         XCTAssertEqual(checks, 0)
         XCTAssertEqual(restarts, 1)
+    }
+
+    func testTheSpotIsOffTheGridUntilAnUpdateIsReady() throws {
+        XCTAssertFalse(try command(spot()).headerState.isOnGrid)
+    }
+
+    func testTheSpotComesBeforeEachSpotOfTheSameOrderInTheGrid() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-order-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let script = folder.appendingPathComponent("aaa.sh")
+        try Data("#!/bin/sh\n".utf8).write(to: script)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
+
+        let shipped = ShippedSpot.commands(folder: folder, guide: folder, app: "", update: spot())
+        let scan = try PluginFolder(url: folder).scan(shipped: shipped)
+
+        XCTAssertEqual(scan.commands.first?.name, "Updates")
+        XCTAssertEqual(scan.commands.dropFirst().first?.id, "aaa")
     }
 
     func testWithRunningWorkTheFirstPressWarnsAndTheSecondRestarts() async throws {
@@ -102,11 +121,11 @@ final class UpdateSpotTests: XCTestCase {
         XCTAssertEqual(restarts, 0)
     }
 
-    func testTheCardFollowsTheOtherShippedSpotsAndHasRoomForItsWords() throws {
+    func testTheCardComesFirstOfTheShippedSpotsAndHasRoomForItsWords() throws {
         let folder = URL(fileURLWithPath: "/tmp")
         let commands = ShippedSpot.commands(folder: folder, guide: folder, app: "", update: spot())
 
-        XCTAssertEqual(commands.map(\.name), ["Plugins", "Settings", "Updates"])
-        XCTAssertEqual(commands.last?.size, .wide)
+        XCTAssertEqual(commands.map(\.name), ["Updates", "Plugins", "Settings"])
+        XCTAssertEqual(commands.first?.size, .wide)
     }
 }

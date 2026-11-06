@@ -1,6 +1,10 @@
 import Foundation
 
 extension String {
+    /// The loop of a test script that ignores the terminate signal. It ends by itself, so that a test run that dies leaves
+    /// nothing that runs for ever.
+    static let deafLoop = "seq 300 | while read i; do sleep 0.1; done"
+
     /// Writes this text as an executable script. macOS checks each new executable file on its first run, for 150 ms or more,
     /// which a short time limit in a test can miss. So this takes a file that already ran: a file in the shared folder with
     /// no other name is free to take, and with none free it runs a new one first.

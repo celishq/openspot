@@ -76,8 +76,12 @@ esac
 | A2 | Each script that shows anything has one `SpotSheet` in Core. It holds the last frame of the script, its rows, its parts, its open state and its running calls. The card, the sheet, a widget and the menu bar all read from it, and no other place keeps what a script printed. A run of one script never stops a run of another. |
 | A3 | A stopped run changes nothing. Only a call that ended by itself can report that there is nothing to show. |
 | A4 | Search text stays until the person presses Esc. |
-| A5 | Plugins, Settings and Updates ship with the app. Each answers the same calls, in Swift. |
+| A5 | Plugins, Settings and Updates ship with the app. Each answers the same calls, in Swift. Updates has `grid=false`, and prints `grid=true` when a downloaded update waits to install. It takes the first place of order 0, so its card shows with no scrolling. |
 | A6 | One global key opens the panel from any app, and the person chooses it. No other key is global. |
+| A7 | The person arranges the grid: each `[[spots]]` table of `config.toml` names a spot by `id`, and can set `size` and `grid`. It overrides the plugin. A `size` is a preference, and the grid can still change it to fill a row. Listed spots take the order of the file. The Edit Spots mode writes this file. |
+| A8 | The app opens the panel unseen once as it starts, which runs each script with `panel` in its `read` and each script a widget places, and draws the panel. It waits for at most 2 seconds, then closes it and shows the toast "Openspot is ready". A script with only `sheet` in its `read` does not run. A press of the key in that time opens the panel at once. |
+| A9 | A sheet that moves out of its card and has no answer yet holds that motion for at most 150 ms for the first answer, so that it grows once, to its real size. A sheet with an answer moves at once. A sheet that still waits after that shows no search field, and its first answer sets its size on the same motion. |
+| A10 | A dragged `.spot` file shows in the search field as an icon and a name, laid out as a sheet's header, and the grid stays. A drop, a paste or a double-click expands the field into the install screen, on the spring of a sheet, with the icon and the name in place, and pushes the grid as far as its lower edge moves. It closes back into the field. |
 
 ## 4. The plugin file
 
@@ -98,6 +102,7 @@ This is a complete plugin. It is a spot called Hello, and a click runs it.
 | F6 | A header key that is not valid refuses that plugin. Openspot reports the reason and loads the others. |
 | F7 | A script with a number in its `read` and no `key` has no spot. A widget or the menu bar can show it. |
 | F8 | Widgets are in a `.toml` file, because a person writes them by hand. A widget runs nothing. |
+| F9 | `grid=false` keeps a spot off the grid. It differs from F7: search and its key still find the spot. A script with `panel` in its `read` can print `grid=true` or `grid=false` to change this, and a frame with no `grid` keeps the header's value. A stopped call changes nothing. |
 
 ### Header
 
@@ -113,6 +118,7 @@ Comment lines right under the first line, one `key=value` on each line. They can
 | `key` | One letter | Runs it after the trigger key. |
 | `size` | `wide`, `small`, `square`, `strip`, `large` | A preference. The grid fills each row. |
 | `order` | Number | Its place in the grid. |
+| `grid` | `false` | The spot is not on the grid. Search and its key still find it. |
 
 **How it behaves**
 
@@ -142,6 +148,7 @@ A file with no header key has one call: `<script>`, on a click.
 | A click on a toggle | `on`, `off` | None |
 | A move of a slider on a card | `level <number>` | None |
 | A pick of a row | `open <run>` | None |
+| A key recorded on a row that has `shortcut` | `<run> <key>` | None |
 | An action | `<action> [run]` | Form values, if any |
 | A change of a part | `<part> <value>` | Values of the sheet |
 | A press of a part | `<part>` | Values of the sheet |
@@ -162,7 +169,7 @@ A file with no header key has one call: `<script>`, on a click.
 |---|---|
 | `launch` | The app starts. |
 | `wake` | The Mac wakes. |
-| `panel` | The panel opens. |
+| `panel` | The panel opens, and once when the app starts (A8). |
 | `sheet` | Its sheet opens. A spot with a sheet does this with or without the word. |
 | A number | Every that many seconds, while something wants it (L3). |
 
@@ -232,7 +239,7 @@ A script prints plain text. Each line is `key=value`, and a blank line ends a bl
 | `field` | A form field. |
 | `part` | A part of a sheet. |
 | `section` | A new group of parts. |
-| Anything else, first | How the spot itself looks: `title`, `detail`, `on`, `level`, `toast`, `search`, `recents`, a layout. |
+| Anything else, first | How the spot itself looks: `title`, `detail`, `on`, `level`, `grid`, `toast`, `search`, `recents`, a layout. |
 
 | ID | Rule |
 |---|---|
@@ -429,6 +436,7 @@ The code follows this document.
 | A form is the same call | One call shape with no exception. | A `form` word. It is easier in shell, but it adds a word. |
 | Header in each file | Goal 1, and a scan runs nothing. | A manifest. It can still come later. |
 | No permission model | A script can already do all that the person can. A false limit is worse than none. | A `uses` key. |
+| Three backdrop blur steps under the cards, at the system's sampling scale, with no constant redraw | An idle open panel took the GPU from about 70% to about 11% on a quiet desktop and about 30% over moving content, and the steps give a soft edge. | One step, which saves few points and shows an edge. A system material and Liquid Glass, which cost about the same and do not give this look. |
 | A spot travels as a `.spot` file | A chat app takes a file of any size that a script has, and a double-click or a drop adds it. | Encoded text, which hits message limits and hides the code. A link, which needs a hosted page. |
 | A `.spot` file is JSON: a format number and files | A standard format that any editor shows. A header already holds each fact about a spot, so the file repeats none. | A zip file, which hides the text. A manifest. |
 | A spot travels with what it needs | A widget works only with the metrics it places, and a script in a folder can need the other files of that folder. `$OPENSPOT_DATA` stays behind, because it is private. | Only single scripts, which leaves widgets and folders out. |

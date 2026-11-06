@@ -42,18 +42,16 @@ public struct SpotPanel: Equatable, Sendable {
         !parts.contains(where: \.isEditable) && parts.contains(where: \.isSelectable)
     }
 
+    /// The part that return uses: the one the person moved to, or else the first that takes a selection.
     public var selectedPart: SpotPart? {
-        parts.first { $0.id == selected && $0.isSelectable }
+        guard takesArrows else { return nil }
+        return parts.first { $0.id == selected && $0.isSelectable } ?? parts.first(where: \.isSelectable)
     }
 
-    /// Moves the selection, and stops at the first and last part. With no selection, it selects the first part.
+    /// Moves the selection, and stops at the first and last part.
     public mutating func move(by step: Int) {
-        guard takesArrows else { return }
         let ids = parts.filter(\.isSelectable).map(\.id)
-        guard let index = ids.firstIndex(where: { $0 == selectedPart?.id }) else {
-            selected = ids.first
-            return
-        }
+        guard let index = ids.firstIndex(where: { $0 == selectedPart?.id }) else { return }
         selected = ids[min(max(index + step, 0), ids.count - 1)]
     }
 
