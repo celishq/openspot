@@ -27,6 +27,8 @@ enum SpotCommandLine {
             checkSheet()
         case .translate(let from, let to):
             finish { try await SpotTranslation.answer(to: Self.standardInput, from: from, to: to) }
+        case .translateServe:
+            SpotTranslation.serve()
         case .translateLanguages:
             finish { await SpotTranslation.languages() }
         }

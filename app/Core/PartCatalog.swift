@@ -11,7 +11,7 @@ public enum PartCatalog {
 
     /// The catalog, for a person or a model to read. It holds the whole language, so a sheet can be written from it alone.
     public static var text: String {
-        [language, layouts, parts, rules, examples].joined(separator: "\n")
+        [language, layouts, parts, streams, rules, examples].joined(separator: "\n")
     }
 
     private static let language = """
@@ -99,6 +99,19 @@ public enum PartCatalog {
     | `fill=true` | This part's rows share the free height, and the sheet takes its full height. |
     | `align=left`, `right` or `center` | Places a part that is smaller than its cell. |
     | `look=tile`, `chip`, `strong`, `bare` or `section` | `tile` is a filled row. `chip` is a small capsule button. `strong` is the one main button, white. `bare` shows a button or a metric with no fill. `section` makes a bold title. |
+
+    """
+
+    private static let streams = """
+    ## Long work and running scripts
+
+    A call can keep printing. A line `---` ends a frame, and the app draws it at once. A frame with a layout replaces the \
+    sheet, and a frame with only parts changes those parts, so print `part`, `cell` and the keys again for each one. A new \
+    `set` or `press` stops the running call, and so does closing the sheet.
+
+    A script with `# live=true` in its header stays running, so a model or a connection stays loaded. It gets one block on \
+    its standard input for each event, with a blank line after it: `event=read`, `event=set` with `id` and `value`, or \
+    `event=press` with `id`. It keeps its own state, and answers with frames. It ends when its input ends.
 
     """
 

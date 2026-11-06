@@ -24,6 +24,8 @@ public struct PluginCommand: Equatable, Sendable {
     public let places: [String]
     public let opens: String?
     public let shipped: ShippedSpot?
+    /// Whether the script stays running and takes events on its standard input.
+    public let isLive: Bool
 
     public init(
         id: String,
@@ -45,7 +47,8 @@ public struct PluginCommand: Equatable, Sendable {
         layout: WidgetLayout? = nil,
         places: [String] = [],
         opens: String? = nil,
-        shipped: ShippedSpot? = nil
+        shipped: ShippedSpot? = nil,
+        isLive: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -67,6 +70,7 @@ public struct PluginCommand: Equatable, Sendable {
         self.places = places
         self.opens = opens
         self.shipped = shipped
+        self.isLive = isLive
     }
 
     /// Whether its rows join the main search.
@@ -81,7 +85,7 @@ public struct PluginCommand: Equatable, Sendable {
 
     /// Whether the panel asks the command how it looks each time it opens.
     public var readsState: Bool {
-        read == .open && !isGlobal
+        read == .open && !isGlobal && !isLive
     }
 
     /// Asks the command for its state. A command with no state to read does not run.
@@ -125,7 +129,36 @@ public struct PluginCommand: Equatable, Sendable {
 
     /// Asks the command for the items of its list, with the search when it searches live.
     public func items(query: String = "", input: String? = nil, timeout: TimeInterval) async throws -> PluginOutput {
-        PluginOutput(text: try await text(of: SpotAction.items(query: query).arguments, input: input, timeout: timeout))
+        if isLive { return try await firstLiveFrame(timeout: timeout) }
+        return PluginOutput(text: try await text(of: SpotAction.items(query: query).arguments, input: input, timeout: timeout))
+    }
+
+    /// Starts a live script, reads its first sheet and stops it.
+    private func firstLiveFrame(timeout: TimeInterval) async throws -> PluginOutput {
+        let live = LiveScript(url: url, timeout: timeout)
+        defer { live.stop() }
+        let frames = try live.start()
+        live.send(.read)
+        for try await frame in frames { return PluginOutput(text: frame) }
+        return PluginOutput(text: "")
+    }
+
+    /// What a call prints, frame by frame, as the script prints it.
+    public func frames(_ action: SpotAction, input: String?, timeout: TimeInterval) -> AsyncThrowingStream<String, Error> {
+        if case .plugins = shipped {
+            return AsyncThrowingStream { continuation in
+                let task = Task {
+                    do {
+                        continuation.yield(try await text(of: action.arguments, input: input, timeout: timeout))
+                        continuation.finish()
+                    } catch {
+                        continuation.finish(throwing: error)
+                    }
+                }
+                continuation.onTermination = { _ in task.cancel() }
+            }
+        }
+        return PluginRun(command: self, arguments: action.arguments, timeout: timeout, input: input).frames()
     }
 
     /// Reports a change in a sheet of parts, with all its values on standard input, and returns what the script prints.

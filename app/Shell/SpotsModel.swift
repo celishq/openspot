@@ -96,9 +96,15 @@ final class SpotsModel {
     private(set) var panels: [String: SpotPanel] = [:]
     private var panelCall: Task<Void, Never>?
     private var panelRead: Task<Void, Never>?
+    private var panelStream: Task<Void, Never>?
+    private var isStreaming = false
+    private var lives: [String: LiveScript] = [:]
+    private var liveEditing: [String: String] = [:]
 
     /// Reads the plugin folder again, and asks each plugin for its state.
     func reload() async {
+        lives.values.forEach { $0.stop() }
+        lives = [:]
         let folder = PluginFolder.standard()
         let shipped = ShippedSpot.commands(
             folder: folder.url,
@@ -187,28 +193,88 @@ final class SpotsModel {
         }
     }
 
-    /// Asks a list command for its items, and shows them when they arrive.
+    /// Asks a list command for its items, and shows them when they arrive. A script that keeps printing frames changes
+    /// its open sheet until a newer call or the end of the sheet stops it.
     private func loadItems(of command: PluginCommand, selecting run: String? = nil) {
         guard command.kind == .list else { return }
         prepareList(command)
+        if command.isLive { return readLive(command) }
         guard command.search == .local else { return }
         lists[command.id]?.beginLoading()
-        Task {
+        stopStream()
+        panelStream = Task {
+            var isFirst = true
             do {
-                let lines = try await command.items(input: panels[command.id]?.values, timeout: Self.itemsTimeout)
-                keep(lines, of: command)
-                takePanel(lines, of: command)
-                lists[command.id]?.replace(lines.items)
-                if let run { lists[command.id]?.select(run: run) }
-                await SpotIconStore.shared.prepare(lines.items)
-                if !lines.errors.isEmpty {
-                    notify("\(command.name) sent \(lines.errors.count) items Openspot cannot read.")
+                for try await text in command.frames(.items(query: ""), input: panels[command.id]?.values, timeout: Self.itemsTimeout) {
+                    let lines = PluginOutput(text: text)
+                    if isFirst {
+                        await takeItems(lines, of: command, selecting: run)
+                        isFirst = false
+                        isStreaming = true
+                    } else {
+                        guard openList == command.id else { break }
+                        if let toast = lines.summary?.value("toast") { confirm(toast) }
+                        panels[command.id]?.merge(lines)
+                    }
                 }
+                if isFirst { await takeItems(PluginOutput(text: ""), of: command, selecting: run) }
             } catch {
+                guard !Task.isCancelled else { return }
                 lists[command.id]?.loadFailed()
                 notify("\(command.name) failed. \(Self.reason(error))")
             }
         }
+    }
+
+    private func takeItems(_ lines: PluginOutput, of command: PluginCommand, selecting run: String?) async {
+        keep(lines, of: command)
+        takePanel(lines, of: command)
+        lists[command.id]?.replace(lines.items)
+        if let run { lists[command.id]?.select(run: run) }
+        await SpotIconStore.shared.prepare(lines.items)
+        if !lines.errors.isEmpty {
+            notify("\(command.name) sent \(lines.errors.count) items Openspot cannot read.")
+        }
+    }
+
+    /// Stops a script that is still printing frames. A read that has given no frame yet goes on, and fills its list.
+    private func stopStream() {
+        if isStreaming { panelStream?.cancel() }
+        isStreaming = false
+    }
+
+    /// Asks a live script for its sheet, and starts the script if it is not running.
+    private func readLive(_ command: PluginCommand) {
+        if lives[command.id] == nil {
+            let live = LiveScript(url: command.url, timeout: Self.itemsTimeout)
+            do {
+                let frames = try live.start()
+                lives[command.id] = live
+                Task { await follow(live, frames, of: command) }
+            } catch {
+                return notify("\(command.name) failed. \(Self.reason(error))")
+            }
+        }
+        lives[command.id]?.send(.read)
+    }
+
+    /// Takes each frame of a live script until it ends. The next read starts it again.
+    private func follow(_ live: LiveScript, _ frames: AsyncThrowingStream<String, Error>, of command: PluginCommand) async {
+        do {
+            for try await text in frames {
+                let lines = PluginOutput(text: text)
+                if let toast = lines.summary?.value("toast") { confirm(toast) }
+                keep(lines, of: command)
+                if panels[command.id] == nil {
+                    panels[command.id] = SpotPanel(output: lines)
+                } else {
+                    panels[command.id]?.merge(lines, keeping: liveEditing[command.id])
+                }
+            }
+        } catch {
+            notify("\(command.name) failed. \(Self.reason(error))")
+        }
+        if lives[command.id] === live { lives[command.id] = nil }
     }
 
     /// Asks a live list about its current search. A newer search stops the older one.
@@ -454,6 +520,7 @@ final class SpotsModel {
         liveAnswer?.cancel()
         panelCall?.cancel()
         panelRead?.cancel()
+        stopStream()
     }
 
     /// Lets the next open or close of a sheet move, as it does when the person asks for it in the open panel.
@@ -596,6 +663,7 @@ final class SpotsModel {
     /// Takes a value the person set, so that it shows at once, and tells the script after a pause that fits the control.
     func setPart(_ part: SpotPart, to value: String) {
         guard let entry = openEntry, let generation = panels[entry.id]?.set(value, of: part.id) else { return }
+        if part.isEditable { liveEditing[entry.id] = part.id }
         let pause: Duration? = switch part.control {
         case .text: Self.textPause
         case .slider: Self.sliderPause
@@ -606,26 +674,40 @@ final class SpotsModel {
 
     func pressPart(_ part: SpotPart) {
         guard let entry = openEntry, let generation = panels[entry.id]?.advance() else { return }
+        liveEditing[entry.id] = nil
         if part.closes, isShown { dismiss() }
         call(.press(part.id), on: entry, generation: generation, closes: part.closes)
     }
 
     /// Runs one change of a sheet of parts. A newer change stops it, and only the newest answer shows. A script that
-    /// prints no parts is read again.
+    /// prints no parts is read again. A live script takes the change as an event.
     private func call(_ action: SpotAction, on entry: Entry, generation: Int, pause: Duration? = nil, keeping: String? = nil, closes: Bool = false) {
         panelCall?.cancel()
+        stopStream()
         panelCall = Task {
             if let pause { try? await Task.sleep(for: pause) }
             guard !Task.isCancelled, let values = panels[entry.id]?.values else { return }
+            if entry.command.isLive {
+                lives[entry.id]?.send(action)
+                return
+            }
+            var isFirst = true
             do {
-                let lines = try await entry.command.change(action, values: values, timeout: Self.actionTimeout)
-                guard !Task.isCancelled || closes else { return }
-                if let toast = lines.summary?.value("toast") { confirm(toast) }
-                if lines.parts.isEmpty, !closes {
-                    loadItems(of: entry.command)
-                } else {
-                    panels[entry.id]?.take(lines, answering: generation, keeping: keeping)
+                for try await text in entry.command.frames(action, input: values, timeout: Self.actionTimeout) {
+                    guard !Task.isCancelled || closes else { return }
+                    let lines = PluginOutput(text: text)
+                    if let toast = lines.summary?.value("toast") { confirm(toast) }
+                    if isFirst, lines.parts.isEmpty, !closes {
+                        loadItems(of: entry.command)
+                    } else if isFirst {
+                        panels[entry.id]?.take(lines, answering: generation, keeping: keeping)
+                    } else {
+                        panels[entry.id]?.merge(lines, answering: generation, keeping: keeping)
+                    }
+                    isFirst = false
                 }
+                guard !Task.isCancelled else { return }
+                if isFirst, !closes { loadItems(of: entry.command) }
             } catch {
                 guard !Task.isCancelled else { return }
                 notify("\(entry.state.title) failed. \(Self.reason(error))")

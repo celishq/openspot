@@ -1,0 +1,159 @@
+import XCTest
+@testable import OpenspotCore
+
+final class SheetStreamTests: XCTestCase {
+    private var folder: URL!
+
+    override func setUpWithError() throws {
+        folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-stream-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    }
+
+    override func tearDownWithError() throws {
+        try? FileManager.default.removeItem(at: folder)
+    }
+
+    private func script(_ body: String) throws -> URL {
+        let url = folder.appendingPathComponent("script.sh")
+        try "#!/bin/sh\n\(body)\n".write(to: url, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        return url
+    }
+
+    func testAMarkEndsAFrameWhereverAChunkStops() {
+        var reader = SheetFrameReader()
+
+        XCTAssertEqual(reader.read(Data("part=a\n-".utf8)), [])
+        XCTAssertEqual(reader.read(Data("--\npart=".utf8)), ["part=a\n"])
+        XCTAssertEqual(reader.read(Data("b".utf8)), [])
+        XCTAssertEqual(reader.finish(), "part=b")
+        XCTAssertNil(reader.finish())
+    }
+
+    func testAScriptWithNoMarkGivesOneFrameWhenItEnds() async throws {
+        let url = try script("printf 'part=a\\ntitle=A\\n'")
+        var frames: [String] = []
+
+        for try await frame in PluginRun(url: url, arguments: [], timeout: 5).frames() { frames.append(frame) }
+
+        XCTAssertEqual(frames, ["part=a\ntitle=A\n"])
+    }
+
+    func testAFrameArrivesWhileTheScriptRuns() async throws {
+        let url = try script("printf 'part=a\\n---\\n'\nsleep 30")
+        let started = Date()
+
+        for try await frame in PluginRun(url: url, arguments: [], timeout: 5).frames() {
+            XCTAssertEqual(frame, "part=a\n")
+            break
+        }
+
+        XCTAssertLessThan(Date().timeIntervalSince(started), 5)
+    }
+
+    func testEndingTheStreamStopsTheScript() async throws {
+        let marker = folder.appendingPathComponent("alive")
+        let url = try script("printf 'part=a\\n---\\n'\nsleep 2\ntouch '\(marker.path)'")
+
+        for try await _ in PluginRun(url: url, arguments: [], timeout: 5).frames() { break }
+        try await Task.sleep(for: .seconds(3))
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))
+    }
+
+    func testOnlyTheFirstFrameHasATimeLimit() async throws {
+        let silent = try script("sleep 30")
+        do {
+            for try await _ in PluginRun(url: silent, arguments: [], timeout: 0.3).frames() {}
+            XCTFail("It should time out.")
+        } catch {
+            XCTAssertEqual(error as? PluginError, .timedOut)
+        }
+
+        let slow = try script("printf 'part=a\\n---\\n'\nsleep 1\nprintf 'part=b\\n---\\n'")
+        var frames: [String] = []
+        for try await frame in PluginRun(url: slow, arguments: [], timeout: 0.3).frames() { frames.append(frame) }
+        XCTAssertEqual(frames, ["part=a\n", "part=b\n"])
+    }
+
+    func testAFailureReportsItsLastErrorLine() async throws {
+        let url = try script("echo first >&2\necho last >&2\nexit 3")
+        do {
+            for try await _ in PluginRun(url: url, arguments: [], timeout: 5).frames() {}
+            XCTFail("It should fail.")
+        } catch {
+            XCTAssertEqual(error as? PluginError, .failed(3, "last"))
+        }
+    }
+
+    func testALaterFrameChangesOnlyThePartsItNames() throws {
+        var panel = try XCTUnwrap(SpotPanel(output: PluginOutput(text: "part=a\ntitle=A\n\npart=b\ntitle=B\n")))
+
+        panel.merge(PluginOutput(text: "part=b\ntitle=New\n"))
+        XCTAssertEqual(panel.parts.map(\.title), ["A", "New"])
+
+        panel.merge(PluginOutput(text: "part=c\ntitle=C\n"))
+        XCTAssertEqual(panel.parts.map(\.id), ["a", "b", "c"])
+    }
+
+    func testAFrameWithALayoutReplacesTheSheet() throws {
+        var panel = try XCTUnwrap(SpotPanel(output: PluginOutput(text: "part=a\ntitle=A\n\npart=b\ntitle=B\n")))
+
+        panel.merge(PluginOutput(text: "grid=c\n\npart=c\ncell=c\ntitle=C\n"))
+
+        XCTAssertEqual(panel.parts.map(\.id), ["c"])
+        XCTAssertNotNil(panel.layout)
+    }
+
+    func testAFrameKeepsTheTextThePersonIsTyping() throws {
+        var panel = try XCTUnwrap(SpotPanel(output: PluginOutput(text: "part=a\ntext=typed\n")))
+
+        panel.merge(PluginOutput(text: "part=a\ntext=old\n"), keeping: "a")
+
+        XCTAssertEqual(panel.parts.first?.value, "typed")
+    }
+
+    func testEventsAreBlocks() {
+        XCTAssertEqual(SpotAction.read.event, "event=read\n\n")
+        XCTAssertEqual(SpotAction.press("swap").event, "event=press\nid=swap\n\n")
+        XCTAssertEqual(SpotAction.set("input", to: "one\ntwo").event, "event=set\nid=input\nvalue=one\\ntwo\n\n")
+    }
+
+    func testALiveScriptAnswersEachEventAndKeepsItsState() async throws {
+        let url = try script("""
+        count=0
+        while IFS= read -r line; do
+          [ -n "$line" ] || { count=$((count + 1)); printf 'part=a\\ntitle=%s\\n---\\n' "$count"; }
+        done
+        """)
+        let live = LiveScript(url: url, timeout: 5)
+        var frames = try live.start().makeAsyncIterator()
+
+        live.send(.read)
+        let first = try await frames.next()
+        live.send(.press("a"))
+        let second = try await frames.next()
+
+        XCTAssertEqual(first, "part=a\ntitle=1\n")
+        XCTAssertEqual(second, "part=a\ntitle=2\n")
+        live.stop()
+    }
+
+    func testAScriptThatNamesItselfLiveIsAList() throws {
+        let url = try script("# live=true\n# read=open")
+        let command = try XCTUnwrap(try Plugin(file: url, id: "script")).commands.first
+
+        XCTAssertEqual(command?.isLive, true)
+        XCTAssertEqual(command?.kind, .list)
+        XCTAssertEqual(command?.readsState, false)
+    }
+
+    func testAPlainFirstReadOfALiveScriptGivesItsFirstFrame() async throws {
+        let url = try script("# live=true\nwhile IFS= read -r line; do [ -n \"$line\" ] || printf 'part=a\\ntitle=A\\n---\\n'; done")
+        let command = PluginCommand(id: "a", name: "A", url: url, kind: .list, isLive: true)
+
+        let output = try await command.items(timeout: 5)
+
+        XCTAssertEqual(output.parts.map(\.id), ["a"])
+    }
+}

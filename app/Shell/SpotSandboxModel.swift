@@ -16,6 +16,8 @@ final class SpotSandboxModel {
     let file: URL?
     @ObservationIgnored private var written: Date?
     @ObservationIgnored private var call: Task<Void, Never>?
+    @ObservationIgnored private var live: LiveScript?
+    @ObservationIgnored private var editing: String?
 
     var fileName: String? {
         file?.lastPathComponent
@@ -29,7 +31,8 @@ final class SpotSandboxModel {
     init(path: String?) {
         file = path.map { URL(fileURLWithPath: $0) }
         if let file, FileManager.default.isExecutableFile(atPath: file.path) {
-            script = PluginCommand(id: file.lastPathComponent, name: file.lastPathComponent, url: file, kind: .list)
+            let isLive = PluginHeader(url: file).block.flag("live") ?? false
+            script = PluginCommand(id: file.lastPathComponent, name: file.lastPathComponent, url: file, kind: .list, isLive: isLive)
         }
         reload()
         watch()
@@ -48,6 +51,7 @@ final class SpotSandboxModel {
     func set(_ part: SpotPart, to value: String) {
         let generation = sandbox.set(value, of: part.id)
         guard let script else { return }
+        if part.isEditable { editing = part.id }
         let pause: Duration? = switch part.control {
         case .text: Self.textPause
         case .slider: Self.sliderPause
@@ -59,6 +63,7 @@ final class SpotSandboxModel {
     func press(_ part: SpotPart) {
         let generation = sandbox.press(part.id)
         guard let script else { return }
+        editing = nil
         run(.press(part.id), on: script, generation: generation)
     }
 
@@ -67,16 +72,25 @@ final class SpotSandboxModel {
         call = Task {
             if let pause { try? await Task.sleep(for: pause) }
             guard !Task.isCancelled else { return }
+            if script.isLive {
+                live?.send(action)
+                return
+            }
+            var isFirst = true
             do {
-                let answer = try await PluginRun(command: script, arguments: action.arguments, timeout: Self.callTimeout, input: sandbox.panel?.values).output()
-                guard !Task.isCancelled else { return }
-                if answer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    reload()
-                } else {
-                    sandbox.take(answer: answer, answering: generation, keeping: keeping)
+                for try await frame in script.frames(action, input: sandbox.panel?.values, timeout: Self.callTimeout) {
+                    guard !Task.isCancelled else { return }
+                    if isFirst {
+                        sandbox.take(answer: frame, answering: generation, keeping: keeping)
+                    } else {
+                        sandbox.merge(frame: frame, answering: generation, keeping: keeping)
+                    }
+                    isFirst = false
                 }
+                if isFirst, !Task.isCancelled { reload() }
             } catch {
-                sandbox.record("failed: \((error as? PluginError)?.reason ?? String(describing: error))")
+                guard !Task.isCancelled else { return }
+                record(error)
             }
         }
     }
@@ -89,14 +103,45 @@ final class SpotSandboxModel {
             sandbox.take(text: (try? String(contentsOf: file, encoding: .utf8)) ?? "")
             return
         }
-        Task {
+        if script.isLive { return restartLive(script) }
+        call?.cancel()
+        call = Task {
+            var isFirst = true
             do {
-                let answer = try await PluginRun(command: script, arguments: [], timeout: Self.callTimeout, input: sandbox.panel?.values).output()
-                sandbox.take(text: answer)
+                for try await frame in script.frames(.read, input: sandbox.panel?.values, timeout: Self.callTimeout) {
+                    guard !Task.isCancelled else { return }
+                    if isFirst { sandbox.take(text: frame) } else { sandbox.merge(frame: frame) }
+                    isFirst = false
+                }
             } catch {
-                sandbox.record("failed: \((error as? PluginError)?.reason ?? String(describing: error))")
+                guard !Task.isCancelled else { return }
+                record(error)
             }
         }
+    }
+
+    /// Starts a live script again, as its file has changed, and reads its sheet.
+    private func restartLive(_ script: PluginCommand) {
+        live?.stop()
+        let live = LiveScript(url: script.url, timeout: Self.callTimeout)
+        do {
+            let frames = try live.start()
+            self.live = live
+            Task {
+                do {
+                    for try await frame in frames { sandbox.merge(frame: frame, keeping: editing) }
+                } catch {
+                    record(error)
+                }
+            }
+            live.send(.read)
+        } catch {
+            record(error)
+        }
+    }
+
+    private func record(_ error: Error) {
+        sandbox.record("failed: \((error as? PluginError)?.reason ?? String(describing: error))")
     }
 
     /// Reads the file again each time something else changes it, such as a model that writes there.

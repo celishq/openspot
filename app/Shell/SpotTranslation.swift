@@ -36,11 +36,44 @@ enum SpotTranslation {
         }
     }
 
-    private static func translation(of text: String, from: Locale.Language, to: Locale.Language) async throws -> String {
-        if #available(macOS 26.4, *) {
-            return try await TranslationSession(installedSource: from, target: to, preferredStrategy: .highFidelity).translate(text).targetText
+    /// Answers one block at a time until its input ends: `text`, `from` and `to` in, then the answer and a line `---` out.
+    /// It stays running, so each pair of languages stays loaded between answers.
+    static func serve() -> Never {
+        Task.detached {
+            var fields: [String] = []
+            while let line = readLine() {
+                guard line.isEmpty else {
+                    fields.append(line)
+                    continue
+                }
+                let block = TextBlock.blocks(in: fields.joined(separator: "\n")).first ?? TextBlock(fields: [])
+                fields = []
+                let from = block.value("from").flatMap { $0 == "auto" ? nil : $0 }
+                let reply = (try? await answer(to: block.value("text") ?? "", from: from, to: block.value("to"))) ?? Self.reply(status: "failed")
+                FileHandle.standardOutput.write(Data((reply + "---\n").utf8))
+            }
+            exit(0)
         }
-        return try await TranslationSession(installedSource: from, target: to).translate(text).targetText
+        dispatchMain()
+    }
+
+    @MainActor private static var sessions: [String: TranslationSession] = [:]
+
+    /// Translates with the session of this pair, which stays loaded for the next text.
+    @MainActor
+    private static func translation(of text: String, from: Locale.Language, to: Locale.Language) async throws -> String {
+        let pair = "\(from.minimalIdentifier)>\(to.minimalIdentifier)"
+        nonisolated(unsafe) let session = sessions[pair] ?? makeSession(from: from, to: to)
+        sessions[pair] = session
+        return try await session.translate(text).targetText
+    }
+
+    @MainActor
+    private static func makeSession(from: Locale.Language, to: Locale.Language) -> TranslationSession {
+        if #available(macOS 26.4, *) {
+            return TranslationSession(installedSource: from, target: to, preferredStrategy: .highFidelity)
+        }
+        return TranslationSession(installedSource: from, target: to)
     }
 
     private static func reply(text: String? = nil, status: String? = nil, from: String? = nil, to: String? = nil) -> String {

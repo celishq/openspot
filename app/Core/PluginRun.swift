@@ -40,6 +40,72 @@ public struct PluginRun: Sendable {
         }
     }
 
+    /// Runs the plugin and gives each frame as the plugin prints it. A line `---` ends a frame, and so does the end of the
+    /// output. Only the first frame has a time limit. Ending the stream stops the plugin.
+    public func frames() -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            let process = Process()
+            process.executableURL = url
+            process.environment = Self.environment(base: ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "")
+            process.arguments = arguments
+            let inputPipe = input.map { _ in Pipe() }
+            process.standardInput = inputPipe ?? FileHandle.nullDevice
+            let output = Pipe()
+            process.standardOutput = output
+            let errors = Pipe()
+            process.standardError = errors
+            let exit = DispatchSemaphore(value: 0)
+            process.terminationHandler = { _ in exit.signal() }
+            do {
+                try process.run()
+            } catch {
+                continuation.finish(throwing: error)
+                return
+            }
+            if let inputPipe, let input {
+                signal(SIGPIPE, SIG_IGN)
+                DispatchQueue.global().async {
+                    try? inputPipe.fileHandleForWriting.write(contentsOf: Data(input.utf8))
+                    try? inputPipe.fileHandleForWriting.close()
+                }
+            }
+            let start = StreamStart()
+            continuation.onTermination = { _ in process.terminate() }
+            DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
+                guard !start.hasFrame else { return }
+                continuation.finish(throwing: PluginError.timedOut)
+                process.terminate()
+            }
+            let lastErrors = StreamText()
+            DispatchQueue.global().async {
+                lastErrors.text = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+            }
+            DispatchQueue.global().async {
+                var reader = SheetFrameReader()
+                while true {
+                    let data = output.fileHandleForReading.availableData
+                    if data.isEmpty { break }
+                    for frame in reader.read(data) {
+                        start.markFrame()
+                        continuation.yield(frame)
+                    }
+                }
+                exit.wait()
+                guard process.terminationStatus == 0 || process.terminationReason == .uncaughtSignal else {
+                    let line = lastErrors.text.split(separator: "\n").last.map(String.init) ?? ""
+                    continuation.finish(throwing: PluginError.failed(process.terminationStatus, line))
+                    return
+                }
+                if let frame = reader.finish() {
+                    start.markFrame()
+                    continuation.yield(frame)
+                }
+                start.markFrame()
+                continuation.finish()
+            }
+        }
+    }
+
     private func runProcess() async throws -> String {
         let process = Process()
         process.executableURL = url
@@ -78,5 +144,30 @@ public struct PluginRun: Sendable {
         } onCancel: {
             process.terminate()
         }
+    }
+}
+
+/// Whether a stream has given its first frame, which ends its time limit.
+final class StreamStart: @unchecked Sendable {
+    private let lock = NSLock()
+    private var frame = false
+
+    var hasFrame: Bool {
+        lock.withLock { frame }
+    }
+
+    func markFrame() {
+        lock.withLock { frame = true }
+    }
+}
+
+/// Text that one queue writes and another reads.
+final class StreamText: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = ""
+
+    var text: String {
+        get { lock.withLock { value } }
+        set { lock.withLock { value = newValue } }
     }
 }

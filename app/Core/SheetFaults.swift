@@ -4,6 +4,7 @@ import CoreGraphics
 /// What is wrong with the layout of a sheet, in words that let a person or a model fix it.
 public enum SheetFaults {
     private static let letterWidth: CGFloat = 6.5
+    private static let detailLetterWidth: CGFloat = 5.5
     private static let controlWidth: CGFloat = 38
     private static let metricWidth: CGFloat = 100
     private static let tallMetric: CGFloat = 60
@@ -103,7 +104,8 @@ public enum SheetFaults {
             if let title = part.title, part.look != .key {
                 var control = part.control == .none && part.press != .line ? 0 : controlWidth
                 if case .swatches = part.control { control = smallSwatchWidth }
-                if CGFloat(title.count) * letterWidth + (part.press == .line ? 0 : control) > width {
+                let detail = CGFloat(part.detail?.count ?? 0) * detailLetterWidth
+                if CGFloat(title.count) * letterWidth + detail + (part.press == .line ? 0 : control) > width {
                     faults.append("the title of the part \(part.id) may not fit its cell")
                 }
             }

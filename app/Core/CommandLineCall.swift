@@ -10,6 +10,7 @@ public enum CommandLineCall: Equatable, Sendable {
     case colorPick
     case translate(from: String?, to: String?)
     case translateLanguages
+    case translateServe
     case help
     case unknown(String)
 
@@ -21,6 +22,7 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot catalog                             Prints each part that a script can print.
     openspot color pick                          Prints the colour the person picks.
     openspot translate [--from code] [--to code] Translates the text on stdin.
+    openspot translate --serve                   Stays running, and answers blocks on stdin, for a live script.
     openspot translate languages                 Prints the languages it knows.
 
     """
@@ -45,6 +47,7 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("render", let path?) where rest.count == 1: self = .render(path)
         case ("color", "pick") where rest.count == 1: self = .colorPick
         case ("translate", "languages") where rest.count == 1: self = .translateLanguages
+        case ("translate", "--serve") where rest.count == 1: self = .translateServe
         case ("translate", _):
             guard let options = Self.options(rest) else {
                 self = .unknown(arguments.joined(separator: " "))

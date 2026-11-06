@@ -40,6 +40,13 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: ["press", part])
     }
 
+    /// This action as one block for a live script: `event`, `id` and `value`. A read has only its event.
+    public var event: String {
+        let names = ["event", "id", "value"]
+        let words = arguments.isEmpty ? ["read"] : arguments
+        return TextBlock(fields: zip(names, words).map { .init(key: $0, value: $1) }).text + "\n"
+    }
+
     public static func level(_ value: Double) -> SpotAction {
         SpotAction(arguments: ["level", String(Int(value.rounded()))])
     }

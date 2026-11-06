@@ -228,6 +228,14 @@ reads an open sheet again every 5 seconds.
 Openspot shows a change at once, and only the answer to the newest change shows. It waits for a pause in typing and in
 a slider's motion. Text that the person is typing stays as typed until they press something.
 
+A call can keep printing, as `ffmpeg` does. A line `---` ends a frame, and the app draws it at once. A frame with a layout
+replaces the sheet, and a frame with only parts changes those parts. A new `set` or `press` stops the running call, and so
+does closing the sheet. Only the first frame has a time limit. To outlive the sheet, start the work with `nohup`.
+
+A script with `# live=true` in its header stays running, so that a model or a connection stays loaded. It gets one block
+on stdin for each event, with a blank line after it: `event=read`, `event=set` with `id` and `value`, or `event=press` with
+`id`. It keeps its own state, answers with frames, and ends when its input ends. See `translate.sh` for an example.
+
 To read the sheet when the panel opens, so that it opens at its full size, use `read=open`. Otherwise use `read=click`.
 
 To try a sheet, run `openspot sandbox`, or `openspot sandbox <file>` to watch a file or run a script. It shows the real

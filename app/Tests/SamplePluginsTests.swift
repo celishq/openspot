@@ -536,10 +536,10 @@ final class SamplePluginsTests: XCTestCase {
 
     /// Puts a stand-in for the openspot command on the path. It knows two languages and translates to upper case.
     private func fakeTranslate(in folder: URL, status: String? = nil) throws -> PluginCommand {
-        let reply = status.map { "printf 'status=\($0)\\nfrom=ru\\nto=en\\n'" } ?? """
-        text=$(cat); case "$text" in *[а-я]*) from=ru ;; *) from=en ;; esac
-        case "$*" in *"--from auto"*) ;; *"--from "*) from=$3 ;; esac
-        printf 'text=%s\\nfrom=%s\\n' "$(printf '%s' "$text" | tr a-z A-Z)" "$from"
+        let reply = status.map { "printf 'status=\($0)\\nfrom=ru\\nto=en\\n---\\n'" } ?? """
+        case "$text" in *[а-я]*) found=ru ;; *) found=en ;; esac
+        [ "$from" = auto ] || found=$from
+        printf 'text=%s\\nfrom=%s\\n---\\n' "$(printf '%s' "$text" | tr a-mo-z A-MO-Z)" "$found"
         """
         let script = """
         #!/bin/sh
@@ -547,7 +547,15 @@ final class SamplePluginsTests: XCTestCase {
           printf 'preferred=en\\npreferred=ru\\n\\nlanguage=en\\nname=English\\n\\nlanguage=ru\\nname=Russian\\n'
           exit 0
         fi
-        \(reply)
+        while IFS= read -r line; do
+          case "$line" in
+            text=*) text=${line#text=} ;;
+            from=*) from=${line#from=} ;;
+            '')
+              \(reply)
+              ;;
+          esac
+        done
 
         """
         let tool = folder.appendingPathComponent("tools/openspot")
@@ -560,14 +568,30 @@ final class SamplePluginsTests: XCTestCase {
         output.parts.first { $0.id == id }?.value
     }
 
+    /// Runs a live script through the events, and returns the frame that answers the last one.
+    private func drive(_ command: PluginCommand, _ actions: [SpotAction]) async throws -> PluginOutput {
+        let live = LiveScript(url: command.url, timeout: 10)
+        defer { live.stop() }
+        var frames = try live.start().makeAsyncIterator()
+        var last = ""
+        for action in [SpotAction.read] + actions {
+            live.send(action)
+            last = try await frames.next() ?? ""
+        }
+        return PluginOutput(text: last)
+    }
+
     func testTranslateIsASheetOfPartsWithItsLanguagesAndNoFaults() async throws {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder)
 
-            let output = try await translate.items(timeout: 5)
+            let output = try await translate.items(timeout: 10)
 
+            XCTAssertTrue(translate.isLive)
+            XCTAssertEqual(translate.kind, .list)
             XCTAssertEqual(output.kind, .list)
-            XCTAssertEqual(output.partFaults, [])
+            XCTAssertEqual(output.sheetFaults, [])
+            XCTAssertEqual(output.layout?.name, "pair")
             XCTAssertEqual(output.parts.map(\.id), ["source", "input", "target", "output", "swap"])
             XCTAssertEqual(self.text(of: "source", in: output), "auto")
             XCTAssertEqual(self.text(of: "target", in: output), "en")
@@ -578,7 +602,7 @@ final class SamplePluginsTests: XCTestCase {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder)
 
-            let output = try await translate.change(.set("input", to: "hi"), values: "input=hi\nsource=ru\ntarget=en\n", timeout: 5)
+            let output = try await self.drive(translate, [.set("source", to: "ru"), .set("target", to: "en"), .set("input", to: "hi")])
 
             XCTAssertEqual(self.text(of: "output", in: output), "HI")
             XCTAssertEqual(output.parts.last?.id, "copy")
@@ -590,7 +614,7 @@ final class SamplePluginsTests: XCTestCase {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder)
 
-            let output = try await translate.change(.set("input", to: "hi"), values: "input=hi\nsource=auto\ntarget=en\n", timeout: 5)
+            let output = try await self.drive(translate, [.set("input", to: "hi")])
 
             XCTAssertEqual(self.text(of: "target", in: output), "ru")
         }
@@ -600,11 +624,11 @@ final class SamplePluginsTests: XCTestCase {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder)
 
-            let output = try await translate.change(.press("swap"), values: "input=hi\noutput=there\nsource=ru\ntarget=en\n", timeout: 5)
+            let output = try await self.drive(translate, [.set("source", to: "ru"), .set("target", to: "en"), .set("input", to: "hi"), .press("swap")])
 
             XCTAssertEqual(self.text(of: "source", in: output), "en")
             XCTAssertEqual(self.text(of: "target", in: output), "ru")
-            XCTAssertEqual(self.text(of: "input", in: output), "there")
+            XCTAssertEqual(self.text(of: "input", in: output), "HI")
         }
     }
 
@@ -612,8 +636,8 @@ final class SamplePluginsTests: XCTestCase {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder)
 
-            _ = try await translate.change(.set("target", to: "ru"), values: "source=en\ntarget=ru\n", timeout: 5)
-            let output = try await translate.items(timeout: 5)
+            _ = try await self.drive(translate, [.set("source", to: "en"), .set("target", to: "ru")])
+            let output = try await translate.items(timeout: 10)
 
             XCTAssertEqual(self.text(of: "source", in: output), "en")
             XCTAssertEqual(self.text(of: "target", in: output), "ru")
@@ -624,7 +648,7 @@ final class SamplePluginsTests: XCTestCase {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder, status: "missing")
 
-            let output = try await translate.change(.set("input", to: "привет"), values: "input=привет\nsource=auto\ntarget=en\n", timeout: 5)
+            let output = try await self.drive(translate, [.set("input", to: "привет")])
 
             XCTAssertEqual(self.text(of: "output", in: output), "Russian to English is not installed")
             XCTAssertEqual(output.parts.last?.id, "settings")
@@ -635,10 +659,10 @@ final class SamplePluginsTests: XCTestCase {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder)
 
-            let output = try await translate.change(.press("copy"), values: "input=hi\noutput=one\\ntwo\n", timeout: 5)
+            let output = try await self.drive(translate, [.set("source", to: "ru"), .set("target", to: "en"), .set("input", to: "one\ntwo"), .press("copy")])
 
             XCTAssertEqual(output.summary?.value("toast"), "Copied")
-            XCTAssertEqual(try self.read("clipboard", in: folder), "one\ntwo")
+            XCTAssertEqual(try self.read("clipboard", in: folder), "OnE\nTWO")
         }
     }
 

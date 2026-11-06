@@ -46,6 +46,24 @@ public struct SpotPanel: Equatable, Sendable {
         return generation
     }
 
+    /// Takes a later frame of a stream, unless a newer change has outdated it. A frame with a layout replaces the sheet, and
+    /// a frame with only parts changes those parts.
+    @discardableResult
+    public mutating func merge(_ output: PluginOutput, answering generation: Int? = nil, keeping id: String? = nil) -> Bool {
+        guard generation == nil || generation == self.generation, !output.parts.isEmpty else { return false }
+        if output.layout != nil { return take(output, answering: self.generation, keeping: id) }
+        let kept = parts.first { $0.id == id }?.value
+        for part in output.parts {
+            if let index = parts.firstIndex(where: { $0.id == part.id }) {
+                parts[index] = part
+            } else {
+                parts.append(part)
+            }
+        }
+        if let id, let kept, let index = parts.firstIndex(where: { $0.id == id }) { parts[index].set(kept) }
+        return true
+    }
+
     /// Takes the answer to a call, unless a newer change has outdated it. `keeping` names a part whose text the person
     /// owns while they type. Returns whether it took the answer.
     @discardableResult

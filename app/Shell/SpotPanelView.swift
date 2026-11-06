@@ -184,6 +184,15 @@ struct SpotPanelView: View {
                     }
                 }
                 .contentShape(Rectangle())
+            case .strong where frame.isOnTop:
+                Text(part.title ?? part.id.capitalized)
+                    .font(SpotType.action)
+                    .foregroundStyle(.black)
+                    .padding(.horizontal, SpotTokens.padding)
+                    .padding(.vertical, 5)
+                    .fixedSize()
+                    .background(Color.white, in: Capsule())
+                    .contentShape(Capsule())
             case .strong:
                 centeredLine(part, text: .black, fill: Color.white)
             case .tile:

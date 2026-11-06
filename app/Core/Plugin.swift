@@ -38,6 +38,7 @@ public struct Plugin: Equatable, Sendable {
             read = parsed
         }
         let isTray = header.flag("tray") ?? false
+        let isLive = header.flag("live") ?? false
         var metrics: [PluginMetric] = []
         if case .every(let seconds) = read {
             metrics.append(PluginMetric(id: id, url: url, label: name, symbol: symbol, refresh: seconds, isTray: isTray))
@@ -68,7 +69,7 @@ public struct Plugin: Equatable, Sendable {
             id: id,
             name: name,
             url: url,
-            kind: read == nil || (read == .open && rank == PluginCommand.lastRank) ? .launch : .list,
+            kind: isLive ? .list : read == nil || (read == .open && rank == PluginCommand.lastRank) ? .launch : .list,
             size: size,
             symbol: symbol ?? "app",
             subtitle: header.value("subtitle"),
@@ -77,7 +78,8 @@ public struct Plugin: Equatable, Sendable {
             rank: rank,
             order: order,
             search: search,
-            keepsRecent: header.flag("recents") != false
+            keepsRecent: header.flag("recents") != false,
+            isLive: isLive
         )
         self.init(id: id, commands: [command], metrics: metrics)
     }

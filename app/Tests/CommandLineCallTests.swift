@@ -2,6 +2,10 @@ import XCTest
 @testable import OpenspotCore
 
 final class CommandLineCallTests: XCTestCase {
+    func testATranslationServerStaysRunning() {
+        XCTAssertEqual(CommandLineCall(arguments: ["translate", "--serve"]), .translateServe)
+    }
+
     func testASandboxCanNameAFile() {
         XCTAssertEqual(CommandLineCall(arguments: ["sandbox"]), .sandbox(nil))
         XCTAssertEqual(CommandLineCall(arguments: ["sandbox", "a.txt"]), .sandbox("a.txt"))
