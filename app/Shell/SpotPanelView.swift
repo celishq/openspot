@@ -1,7 +1,9 @@
+import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// The parts that a script prints, drawn with system controls. It draws what it gets, and reports each change.
+/// The parts that a script prints, drawn with system controls where `SheetPlacement` puts them. It draws what it gets,
+/// and reports each change.
 struct SpotPanelView: View {
     let panel: SpotPanel
     let onSet: (SpotPart, String) -> Void
@@ -9,21 +11,27 @@ struct SpotPanelView: View {
     @FocusState private var focus: String?
     @Environment(\.spotIsShown) private var isShown
 
-    private static let dividerGap: CGFloat = 8
     private static let swatchSize: CGFloat = 22
+    private static let smallSwatch: CGFloat = 16
     private static let lineGap: CGFloat = 8
+    private static let barGap: CGFloat = 3
+    private static let narrowCell: CGFloat = 80
+    private static let narrowGap: CGFloat = 2
+    private static let keyFont = Font.system(size: 18, weight: .medium)
+    private static let metricFont = Font.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit()
+    private static let topFill = Color(white: 0.34).opacity(0.72)
 
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
     }
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: SpotTokens.partGap) {
-                ForEach(panel.parts) { part in
-                    line(part)
-                        .frame(height: SpotTokens.partHeight(part))
-                }
+        let sheet = panel.placement
+        Group {
+            if sheet.overflows {
+                ScrollView(showsIndicators: false) { canvas(sheet) }
+            } else {
+                canvas(sheet)
             }
         }
         .onAppear(perform: focusFirstField)
@@ -32,71 +40,175 @@ struct SpotPanelView: View {
         }
     }
 
+    private func canvas(_ sheet: SheetPlacement) -> some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(Array(sheet.cards.enumerated()), id: \.offset) { _, card in
+                shape.fill(Color.white.opacity(SpotTokens.fill))
+                    .frame(width: card.width, height: card.height)
+                    .offset(x: card.minX, y: card.minY)
+            }
+            ForEach(Array(sheet.lines.enumerated()), id: \.offset) { _, line in
+                Rectangle()
+                    .fill(.white.opacity(SpotTokens.fill))
+                    .frame(width: line.width, height: line.height)
+                    .offset(x: line.minX, y: line.minY)
+            }
+            ForEach(panel.parts) { part in
+                if let frame = sheet.frames[part.id] {
+                    placed(part, frame)
+                }
+            }
+        }
+        .frame(width: SheetPlacement.width, height: sheet.height, alignment: .topLeading)
+    }
+
+    private func placed(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
+        content(part, frame)
+            .frame(
+                maxWidth: frame.horizontal == .fill ? .infinity : nil,
+                maxHeight: frame.vertical == .fill ? .infinity : nil,
+                alignment: .leading
+            )
+            .frame(width: frame.rect.width, height: frame.rect.height, alignment: Self.alignment(frame))
+            .offset(x: frame.rect.minX, y: frame.rect.minY)
+            .zIndex(frame.isOnTop ? 1 : 0)
+    }
+
+    private static func alignment(_ frame: SheetPlacement.Frame) -> Alignment {
+        let horizontal: HorizontalAlignment = switch frame.horizontal {
+        case .fill, .start: .leading
+        case .center: .center
+        case .end: .trailing
+        }
+        let vertical: VerticalAlignment = switch frame.vertical {
+        case .fill, .center: .center
+        case .start: .top
+        case .end: .bottom
+        }
+        return Alignment(horizontal: horizontal, vertical: vertical)
+    }
+
     private func focusFirstField() {
         DispatchQueue.main.async { focus = panel.parts.first(where: \.isEditable)?.id }
     }
 
     @ViewBuilder
-    private func line(_ part: SpotPart) -> some View {
+    private func content(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         switch part.control {
         case .text(let text, _, let placeholder, let isReadOnly):
-            textArea(part, text: text, placeholder: placeholder, isReadOnly: isReadOnly)
+            textArea(part, frame, text: text, placeholder: placeholder, isReadOnly: isReadOnly)
         case .slider(let level, let low, let high):
             slider(part, level: level, low: low, high: high)
-        case .swatches(let colors, let value):
+        case .swatches(let colors, let value) where colors.count > 1:
             swatches(part, colors: colors, value: value)
+        case .list(let items, let value):
+            list(part, items: items, value: value)
+        case .metric(let number):
+            metric(part, number: number)
+        case .chart(let points):
+            chart(points)
+        case .image(let path):
+            image(path)
+        case .progress(let level):
+            progress(part, level: level)
         default:
             if part.press == .line {
-                Button { onPress(part) } label: { labelled(part).contentShape(Rectangle()) }
-                    .buttonStyle(.plain)
+                lineButton(part, frame)
             } else {
-                labelled(part)
+                labelled(part, frame).modifier(TileLook(isOn: part.look == .tile))
             }
         }
     }
 
-    /// A line with a label, a value, a round button and a switch or a menu. A section with no title is a divider.
-    private func labelled(_ part: SpotPart) -> some View {
-        HStack(spacing: Self.lineGap) {
+    /// A line with a label, a value, a round button and a switch or a menu.
+    private func labelled(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
+        HStack(spacing: frame.rect.width < Self.narrowCell ? Self.narrowGap : Self.lineGap) {
             if let symbol = part.symbol {
                 Image(systemName: symbol).modifier(SpotSecondaryText())
             }
             if let title = part.title {
                 Text(title)
-                    .font(part.isSection ? SpotType.title : SpotType.body)
+                    .font(part.isSection || part.look == .section ? SpotType.title : SpotType.body)
                     .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
                     .lineLimit(1)
+                    .layoutPriority(1)
             }
-            if part.isSection, part.title == nil {
-                divider
-            } else if part.title != nil || part.detail != nil {
-                Spacer(minLength: Self.lineGap)
+            if part.title != nil || part.detail != nil {
+                Spacer(minLength: 0)
             }
-            if let detail = part.detail ?? (part.press == .line ? part.key?.label : nil) {
+            if let detail = part.detail {
                 Text(detail)
                     .font(SpotType.detail)
                     .modifier(SpotSecondaryText())
                     .lineLimit(1)
             }
             if case .symbol(let symbol) = part.press {
-                SpotRoundButton(symbol: symbol, label: part.title ?? part.id.capitalized) { onPress(part) }
+                SpotRoundButton(
+                    symbol: symbol,
+                    label: part.title ?? part.id.capitalized,
+                    size: frame.roundSize,
+                    look: part.look == .strong ? .strong : frame.isOnTop ? .floating : part.look == .bare ? .bare : .plain
+                ) { onPress(part) }
             }
-            control(part)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .overlay(alignment: .top) {
-            if part.isSection, part.title != nil, part.id != panel.parts.first?.id { divider }
+            control(part, frame)
         }
     }
 
-    private var divider: some View {
-        Rectangle()
-            .fill(.white.opacity(SpotTokens.fill))
-            .frame(height: 1)
+    /// A line that is a button. It looks like one by default, and `look` changes how.
+    @ViewBuilder
+    private func lineButton(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
+        Button { onPress(part) } label: {
+            switch part.look {
+            case .key:
+                Text(part.title ?? part.id)
+                    .font(Self.keyFont)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.white.opacity(SpotTokens.selectedFill), in: shape)
+                    .contentShape(shape)
+            case .chip:
+                Text(part.title ?? part.id)
+                    .font(SpotType.action)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, SpotTokens.padding)
+                    .padding(.vertical, 5)
+                    .fixedSize()
+                    .background(frame.isOnTop ? AnyShapeStyle(Self.topFill) : AnyShapeStyle(Color.white.opacity(SpotTokens.selectedFill)), in: Capsule())
+                    .background(frame.isOnTop ? AnyShapeStyle(.thinMaterial) : AnyShapeStyle(Color.clear), in: Capsule())
+                    .contentShape(Capsule())
+            case .bare:
+                HStack {
+                    labelled(part, frame)
+                    if part.detail == nil, let key = part.key {
+                        Text(key.label).font(SpotType.detail).modifier(SpotSecondaryText())
+                    }
+                }
+                .contentShape(Rectangle())
+            case .strong:
+                centeredLine(part, text: .black, fill: Color.white)
+            case .tile:
+                labelled(part, frame)
+                    .modifier(TileLook(isOn: true))
+                    .contentShape(shape)
+            default:
+                centeredLine(part, text: .white, fill: Color.white.opacity(SpotTokens.selectedFill))
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func centeredLine(_ part: SpotPart, text: Color, fill: Color) -> some View {
+        Text(part.title ?? part.id.capitalized)
+            .font(SpotType.body.weight(.medium))
+            .foregroundStyle(text)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(fill, in: shape)
+            .contentShape(shape)
     }
 
     @ViewBuilder
-    private func control(_ part: SpotPart) -> some View {
+    private func control(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         switch part.control {
         case .toggle(let on):
             Toggle(part.title ?? part.id, isOn: Binding(get: { on }, set: { onSet(part, $0 ? "true" : "false") }))
@@ -104,13 +216,17 @@ struct SpotPanelView: View {
                 .controlSize(.small)
                 .labelsHidden()
         case .menu(let options, let value):
-            menu(part, options: options, value: value)
+            menu(part, frame, options: options, value: value)
+        case .swatches(let colors, let value):
+            if let color = colors.first {
+                swatch(part, color: color, isChosen: color == value, size: Self.smallSwatch)
+            }
         default:
             EmptyView()
         }
     }
 
-    private func menu(_ part: SpotPart, options: [SpotPart.Option], value: String?) -> some View {
+    private func menu(_ part: SpotPart, _ frame: SheetPlacement.Frame, options: [SpotPart.Option], value: String?) -> some View {
         Menu {
             Picker(part.title ?? part.id, selection: Binding(get: { value ?? "" }, set: { onSet(part, $0) })) {
                 ForEach(options, id: \.id) { Text($0.title).tag($0.id) }
@@ -122,10 +238,15 @@ struct SpotPanelView: View {
                 Text(options.first { $0.id == value }?.title ?? options.first?.title ?? "")
                     .font(SpotType.detail)
                     .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                    .lineLimit(1)
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.system(size: 9, weight: .semibold))
                     .modifier(SpotSecondaryText())
             }
+            .padding(.horizontal, frame.isOnTop ? 10 : 0)
+            .padding(.vertical, frame.isOnTop ? 5 : 0)
+            .background(frame.isOnTop ? AnyShapeStyle(Self.topFill) : AnyShapeStyle(Color.clear), in: Capsule())
+            .background(frame.isOnTop ? AnyShapeStyle(.thinMaterial) : AnyShapeStyle(Color.clear), in: Capsule())
         }
         .menuStyle(.button)
         .menuIndicator(.hidden)
@@ -139,6 +260,7 @@ struct SpotPanelView: View {
                 Text(title)
                     .font(SpotType.body)
                     .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                    .lineLimit(1)
             }
             if let symbol = part.symbol {
                 Image(systemName: symbol)
@@ -151,23 +273,28 @@ struct SpotPanelView: View {
         }
     }
 
+    /// A row of colours that reaches both edges of its cell.
     private func swatches(_ part: SpotPart, colors: [String], value: String?) -> some View {
-        HStack(spacing: Self.lineGap) {
-            ForEach(colors, id: \.self) { color in
-                Button { onSet(part, color) } label: {
-                    Circle()
-                        .fill(Self.color(color))
-                        .frame(width: Self.swatchSize, height: Self.swatchSize)
-                        .overlay {
-                            if color == value { Circle().strokeBorder(.white, lineWidth: 2) }
-                        }
-                        .contentShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(color)
+        HStack(spacing: 0) {
+            ForEach(Array(colors.enumerated()), id: \.offset) { index, color in
+                if index > 0 { Spacer(minLength: 0) }
+                swatch(part, color: color, isChosen: color == value, size: Self.swatchSize)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func swatch(_ part: SpotPart, color: String, isChosen: Bool, size: CGFloat) -> some View {
+        Button { onSet(part, color) } label: {
+            Circle()
+                .fill(Self.color(color))
+                .frame(width: size, height: size)
+                .overlay {
+                    if isChosen { Circle().strokeBorder(.white, lineWidth: 2) }
+                }
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(color)
     }
 
     private static func color(_ text: String) -> Color {
@@ -179,8 +306,99 @@ struct SpotPanelView: View {
         )
     }
 
+    /// Rows to choose from, one under the other, which scroll when they do not fit.
+    private func list(_ part: SpotPart, items: [SpotPart.Option], value: String?) -> some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: SpotTokens.listRowGap) {
+                ForEach(items, id: \.id) { item in
+                    Button { onSet(part, item.id) } label: {
+                        Text(item.title)
+                            .font(SpotType.body)
+                            .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, SpotTokens.controlPadding)
+                            .frame(height: SheetPlacement.rowHeight)
+                            .background(Color.white.opacity(item.id == value ? SpotTokens.selectedFill : 0), in: shape)
+                            .contentShape(shape)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func metric(_ part: SpotPart, number: String) -> some View {
+        VStack(alignment: part.look == .bare ? .trailing : .leading, spacing: SpotType.lineGap) {
+            Text(number)
+                .font(Self.metricFont)
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            if let title = part.title {
+                Text(title)
+                    .font(SpotType.detail)
+                    .modifier(SpotSecondaryText())
+                    .lineLimit(1)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: part.look == .bare ? .trailing : .leading)
+        .padding(.horizontal, part.look == .bare ? 0 : SpotTokens.padding)
+        .background(Color.white.opacity(part.look == .bare ? 0 : SpotTokens.fill), in: shape)
+    }
+
+    private func chart(_ points: [Double]) -> some View {
+        let top = max(points.max() ?? 1, 1)
+        return GeometryReader { room in
+            HStack(alignment: .bottom, spacing: Self.barGap) {
+                ForEach(Array(points.enumerated()), id: \.offset) { _, point in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(.white.opacity(0.7))
+                        .frame(height: room.size.height * max(point, 0) / top)
+                }
+            }
+            .frame(maxHeight: .infinity, alignment: .bottom)
+        }
+        .padding(SpotTokens.padding)
+        .background(Color.white.opacity(SpotTokens.fill), in: shape)
+    }
+
+    /// The picture at a file path. A file it cannot read shows an empty tile.
+    private func image(_ path: String) -> some View {
+        Group {
+            if let picture = NSImage(contentsOfFile: path) {
+                Image(nsImage: picture).resizable().scaledToFill()
+            } else {
+                Color.white.opacity(SpotTokens.fill)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipShape(shape)
+    }
+
+    private func progress(_ part: SpotPart, level: Double) -> some View {
+        VStack(spacing: Self.lineGap) {
+            HStack {
+                Text(part.title ?? "")
+                    .font(SpotType.body)
+                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                    .lineLimit(1)
+                Spacer(minLength: Self.lineGap)
+                if let detail = part.detail {
+                    Text(detail).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
+                }
+            }
+            ProgressView(value: min(max(level, 0), 100), total: 100)
+                .progressViewStyle(.linear)
+                .tint(.white)
+                .controlSize(.small)
+        }
+        .frame(maxHeight: .infinity)
+    }
+
     @ViewBuilder
-    private func textArea(_ part: SpotPart, text: String, placeholder: String?, isReadOnly: Bool) -> some View {
+    private func textArea(_ part: SpotPart, _ frame: SheetPlacement.Frame, text: String, placeholder: String?, isReadOnly: Bool) -> some View {
+        let inset = frame.isInCard ? 0 : SpotTokens.padding
         ZStack(alignment: .topLeading) {
             if isReadOnly {
                 ScrollView(showsIndicators: false) {
@@ -202,7 +420,25 @@ struct SpotPanelView: View {
         }
         .font(SpotType.body)
         .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
-        .padding(SpotTokens.padding)
-        .background(Color.white.opacity(SpotTokens.fill), in: shape)
+        .padding(.horizontal, inset)
+        .padding(.top, inset + frame.clearTop)
+        .padding(.bottom, inset + frame.clearBottom)
+        .background(Color.white.opacity(frame.isInCard ? 0 : SpotTokens.fill), in: shape)
+    }
+}
+
+/// The filled row of `look=tile`.
+private struct TileLook: ViewModifier {
+    let isOn: Bool
+
+    func body(content: Content) -> some View {
+        if isOn {
+            content
+                .padding(.horizontal, SpotTokens.padding)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.white.opacity(SpotTokens.fill), in: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous))
+        } else {
+            content
+        }
     }
 }

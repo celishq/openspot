@@ -55,6 +55,11 @@ public struct PluginGuide: Equatable, Sendable {
     run=prompt
     symbol=sparkles
 
+    row=Try a sheet
+    detail=Build a layout and see it at once
+    run=sandbox
+    symbol=square.grid.2x2
+
     row=Read the guide
     detail=How plugins and widgets work
     run=guide
@@ -79,6 +84,9 @@ public struct PluginGuide: Equatable, Sendable {
         switch row {
         case "prompt":
             try await tool(["LC_ALL=en_US.UTF-8", "pbcopy"], input: prompt, timeout: timeout)
+        case "sandbox":
+            let bundle = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            try await tool(["open", "-n", bundle.path, "--args", "sandbox"], timeout: timeout)
         case "guide":
             try await tool(["open", guide.path], timeout: timeout)
         case "folder":

@@ -87,24 +87,11 @@ enum SpotTokens {
         sheetRect(rows: rows).height < sheetMaxHeight
     }
 
-    static let partGap: CGFloat = 4
-    static let partLineHeight: CGFloat = 28
-    static let partLineHeightWithButton: CGFloat = glyphSize
-    static let textLineHeight: CGFloat = 17
     static let editorInset: CGFloat = 5
 
-    /// The height of one part in a sheet.
-    static func partHeight(_ part: SpotPart) -> CGFloat {
-        if case .text(_, let lines, _, _) = part.control { return CGFloat(lines) * textLineHeight + 2 * padding }
-        if case .symbol = part.press { return partLineHeightWithButton }
-        return partLineHeight
-    }
-
     /// The frame of a sheet that shows these parts. A tall one stops at the panel, and its parts scroll.
-    static func panelRect(_ parts: [SpotPart]) -> CGRect {
-        let lines = parts.reduce(CGFloat(0)) { $0 + partHeight($1) }
-        let gaps = CGFloat(max(parts.count - 1, 0)) * partGap
-        let height = padding + glyphSize + rowGap + lines + gaps + padding
+    static func panelRect(_ panel: SpotPanel) -> CGRect {
+        let height = padding + glyphSize + rowGap + panel.placement.height + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 

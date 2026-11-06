@@ -180,7 +180,7 @@ struct SpotsView: View {
 
     private var sheetRect: CGRect {
         if let form = model.form { return SpotTokens.formRect(form.draft.form) }
-        if let panel = model.panels[sheetID ?? ""] { return SpotTokens.panelRect(panel.parts) }
+        if let panel = model.panels[sheetID ?? ""] { return SpotTokens.panelRect(panel) }
         return SpotTokens.sheetRect(rows: model.lists[sheetID ?? ""]?.shown.count ?? 0)
     }
 

@@ -19,6 +19,10 @@ enum SpotCommandLine {
             SpotColorPick.run()
         case .check(let path):
             check(path)
+        case .sandbox(let path):
+            SpotSandbox.run(path: path)
+        case .render(let path):
+            SpotSheetPicture.run(text: standardInput, path: path)
         case .checkSheet:
             checkSheet()
         case .translate(let from, let to):

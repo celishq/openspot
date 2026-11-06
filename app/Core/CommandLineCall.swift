@@ -4,6 +4,8 @@ import Foundation
 public enum CommandLineCall: Equatable, Sendable {
     case check(String?)
     case checkSheet
+    case render(String)
+    case sandbox(String?)
     case catalog
     case colorPick
     case translate(from: String?, to: String?)
@@ -14,6 +16,8 @@ public enum CommandLineCall: Equatable, Sendable {
     public static let usage = """
     openspot check [folder]                      Reports the faults of a plugins folder.
     openspot check --sheet                       Reports the faults of a sheet on stdin.
+    openspot render <file.png>                   Draws the sheet on stdin to a picture.
+    openspot sandbox [file]                      Opens a window to try a sheet from text, a file or a script.
     openspot catalog                             Prints each part that a script can print.
     openspot color pick                          Prints the colour the person picks.
     openspot translate [--from code] [--to code] Translates the text on stdin.
@@ -37,6 +41,8 @@ public enum CommandLineCall: Equatable, Sendable {
         switch (noun, rest.first) {
         case ("check", _) where rest.count <= 1: self = .check(rest.first)
         case ("catalog", nil): self = .catalog
+        case ("sandbox", _) where rest.count <= 1: self = .sandbox(rest.first)
+        case ("render", let path?) where rest.count == 1: self = .render(path)
         case ("color", "pick") where rest.count == 1: self = .colorPick
         case ("translate", "languages") where rest.count == 1: self = .translateLanguages
         case ("translate", _):

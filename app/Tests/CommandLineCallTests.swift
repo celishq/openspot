@@ -2,6 +2,16 @@ import XCTest
 @testable import OpenspotCore
 
 final class CommandLineCallTests: XCTestCase {
+    func testASandboxCanNameAFile() {
+        XCTAssertEqual(CommandLineCall(arguments: ["sandbox"]), .sandbox(nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["sandbox", "a.txt"]), .sandbox("a.txt"))
+    }
+
+    func testARenderNamesItsFile() {
+        XCTAssertEqual(CommandLineCall(arguments: ["render", "a.png"]), .render("a.png"))
+        XCTAssertEqual(CommandLineCall(arguments: ["render"]), .unknown("render"))
+    }
+
     func testASheetCheckReadsStandardInput() {
         XCTAssertEqual(CommandLineCall(arguments: ["check", "--sheet"]), .checkSheet)
     }

@@ -9,6 +9,7 @@ public enum SheetFaults {
     private static let tallMetric: CGFloat = 60
     private static let tallProgress: CGFloat = 44
     private static let swatchWidth: CGFloat = 26
+    private static let smallSwatchWidth: CGFloat = 18
     private static let unknownName = "there is no layout called"
 
     /// Returns one line for each fault. A sheet with no drawing has only the faults of its height.
@@ -100,7 +101,8 @@ public enum SheetFaults {
                 break
             }
             if let title = part.title, part.look != .key {
-                let control = part.control == .none && part.press != .line ? 0 : controlWidth
+                var control = part.control == .none && part.press != .line ? 0 : controlWidth
+                if case .swatches = part.control { control = smallSwatchWidth }
                 if CGFloat(title.count) * letterWidth + (part.press == .line ? 0 : control) > width {
                     faults.append("the title of the part \(part.id) may not fit its cell")
                 }

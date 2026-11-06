@@ -63,7 +63,7 @@ final class GuidePluginTests: XCTestCase {
 
         XCTAssertEqual(opened.command.kind, .list)
         XCTAssertEqual(opened.command.actions.map(\.id), ["new"])
-        XCTAssertEqual(lines.items.map(\.run), ["prompt", "guide", "folder"])
+        XCTAssertEqual(lines.items.map(\.run), ["prompt", "sandbox", "guide", "folder"])
         XCTAssertEqual(lines.errors, [])
     }
 
