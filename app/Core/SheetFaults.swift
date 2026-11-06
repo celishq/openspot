@@ -5,7 +5,7 @@ import CoreGraphics
 public enum SheetFaults {
     private static let letterWidth: CGFloat = 6.5
     private static let detailLetterWidth: CGFloat = 5.5
-    private static let controlWidth: CGFloat = 38
+    private static let controlWidth: CGFloat = 52
     private static let metricWidth: CGFloat = 100
     private static let tallMetric: CGFloat = 60
     private static let tallProgress: CGFloat = 44
