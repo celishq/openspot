@@ -24,6 +24,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case chart([Double])
         case image(String)
         case progress(level: Double)
+        case shortcut(String)
     }
 
     public enum Press: Equatable, Sendable {
@@ -80,6 +81,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
             control = .toggle(on)
         } else if block.value("block") == "progress" {
             control = .progress(level: block.number("level") ?? 0)
+        } else if let shortcut = block.value("shortcut") {
+            control = .shortcut(shortcut)
         } else if let metric = block.value("metric") {
             control = .metric(metric)
         } else if let image = block.value("image") {
@@ -119,6 +122,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case .slider(let level, _, _): String(Int(level.rounded()))
         case .swatches(_, let value), .menu(_, let value), .list(_, let value): value
         case .text(let text, _, _, _): text
+        case .shortcut(let text): text
         }
     }
 
@@ -165,6 +169,14 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         return false
     }
 
+    /// Whether the return key can use it.
+    public var isSelectable: Bool {
+        switch control {
+        case .toggle, .shortcut: true
+        default: press != .none
+        }
+    }
+
     /// Takes a value that the person set.
     public mutating func set(_ value: String) {
         switch control {
@@ -174,6 +186,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case .slider(_, let low, let high): control = .slider(level: Double(value) ?? low, min: low, max: high)
         case .swatches(let colors, _): control = .swatches(colors, value: value)
         case .menu(let options, _): control = .menu(options, value: value)
+        case .shortcut: control = .shortcut(value)
         case .text(_, let lines, let placeholder, let isReadOnly):
             control = .text(value, lines: lines, placeholder: placeholder, isReadOnly: isReadOnly)
         }

@@ -26,6 +26,8 @@ public struct SheetPlacement: Equatable, Sendable {
     public static let edge: CGFloat = 13
     public static let rowHeight: CGFloat = 28
     public static let keyRowHeight: CGFloat = 44
+    public static let tileRowHeight: CGFloat = 40
+    public static let tileGap: CGFloat = 6
     public static let maxRound: CGFloat = 44
     public static let dividerHeight: CGFloat = 1
     /// How far text moves from a round button that sits on the divider at its edge.
@@ -43,10 +45,12 @@ public struct SheetPlacement: Equatable, Sendable {
 
     public init(parts: [SpotPart], layout: SheetLayout) {
         let rows = layout.rows
-        let unit = parts.contains { $0.look == .key } ? Self.keyRowHeight : Self.rowHeight
+        let hasTiles = parts.contains { $0.look == .tile }
+        let unit = parts.contains { $0.look == .key } ? Self.keyRowHeight : hasTiles ? Self.tileRowHeight : Self.rowHeight
+        let gap = hasTiles ? Self.tileGap : Self.gap
         let columns = max(rows.map(\.count).max() ?? 1, 1)
-        let cell = (Self.width - Self.gap * CGFloat(columns - 1)) / CGFloat(columns)
-        let columnX = { (x: Int) in CGFloat(x) * (cell + Self.gap) }
+        let cell = (Self.width - gap * CGFloat(columns - 1)) / CGFloat(columns)
+        let columnX = { (x: Int) in CGFloat(x) * (cell + gap) }
 
         var cardAreas: [SheetArea] = []
         var cardOf: [String: Int] = [:]
@@ -68,7 +72,7 @@ public struct SheetPlacement: Equatable, Sendable {
             guard part.fills || layout.fills.contains(letter) else { continue }
             for y in area.y0...area.y1 where !layout.hasDivider(inRow: y) { fillRows.insert(y) }
         }
-        let gaps = Self.gap * CGFloat(max(rows.count - 1, 0))
+        let gaps = gap * CGFloat(max(rows.count - 1, 0))
         if !fillRows.isEmpty {
             let free = Self.maxHeight - heights.reduce(0, +) - gaps
             if free > 0 { for y in fillRows { heights[y] += free / CGFloat(fillRows.count) } }
@@ -78,7 +82,7 @@ public struct SheetPlacement: Equatable, Sendable {
         var y: CGFloat = 0
         for row in heights {
             rowY.append(y)
-            y += row + Self.gap
+            y += row + gap
         }
         let rect = { (area: SheetArea) in
             CGRect(

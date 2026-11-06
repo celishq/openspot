@@ -11,6 +11,8 @@ struct SpotSheetView: View {
     let work: (SpotPart) -> ScriptCall?
     let onSet: (SpotPart, String) -> Void
     let onPress: (SpotPart) -> Void
+    let recordingPart: String?
+    let onRecord: (SpotPart) -> Void
     let createTitle: String?
     let onCreate: () -> Void
     let onFormValue: (String, String) -> Void
@@ -28,7 +30,7 @@ struct SpotSheetView: View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             header
             if let panel {
-                SpotPanelView(panel: panel, work: work, onSet: onSet, onPress: onPress)
+                SpotPanelView(panel: panel, work: work, onSet: onSet, onPress: onPress, recordingPart: recordingPart, onRecord: onRecord)
             } else if let form {
                 SpotFormView(draft: form, onValue: onFormValue)
             } else {

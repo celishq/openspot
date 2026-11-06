@@ -40,7 +40,7 @@ open -a Calendar
 | `name` | The title. The default comes from the file name. |
 | `symbol` | An SF Symbol name. |
 | `subtitle` | The second line. |
-| `key` | One letter that runs it after the trigger key. |
+| `key` | One letter. Hold the key that opens the panel, and press this letter to run it. |
 | `size` | `wide` (the default), `small`, `square` or `strip`. |
 | `order` | Its place in the grid. A lower number comes first, and the default is 0. |
 | `read` | When Openspot reads the script. See below. |
@@ -296,6 +296,7 @@ The app owns each gap, row height and centre. A script says only which part goes
 | `color=#ff0000` for each swatch, `value` | A row of colours. | `<id> <color>` |
 | `option=en:English` for each choice, `value` | A menu. | `<id> <option id>` |
 | `item=a:Address` for each row, `value` | A list to choose from. | `<id> <item id>` |
+| `shortcut=ctrl+space`, with `title` | A key that a click records. | `<id> <key>` |
 | `text=...`, `placeholder` | A text area. `readonly=true` only shows the text. | `<id> <text>` |
 | `press=arrow.clockwise` | A round button. | `<id>` |
 | `press=true` | A button that fills its cell. | `<id>` |

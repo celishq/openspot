@@ -102,11 +102,11 @@ final class UpdateSpotTests: XCTestCase {
         XCTAssertEqual(restarts, 0)
     }
 
-    func testTheCardFollowsThePluginsSpotAndHasRoomForItsWords() throws {
+    func testTheCardFollowsTheOtherShippedSpotsAndHasRoomForItsWords() throws {
         let folder = URL(fileURLWithPath: "/tmp")
         let commands = ShippedSpot.commands(folder: folder, guide: folder, app: "", update: spot())
 
-        XCTAssertEqual(commands.map(\.name), ["Plugins", "Updates"])
+        XCTAssertEqual(commands.map(\.name), ["Plugins", "Settings", "Updates"])
         XCTAssertEqual(commands.last?.size, .wide)
     }
 }

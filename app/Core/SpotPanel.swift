@@ -6,6 +6,7 @@ public struct SpotPanel: Equatable, Sendable {
     public private(set) var parts: [SpotPart]
     public private(set) var generation = 0
     public private(set) var layout: SheetLayout?
+    private var selected: String?
     private var changes: [String: Int] = [:]
 
     /// Returns nil when a script prints no parts.
@@ -34,6 +35,30 @@ public struct SpotPanel: Equatable, Sendable {
     public func hint(stopping isRunning: (SpotPart) -> Bool) -> String {
         let keys = parts.compactMap { part in part.key.map { "\($0.label) \(isRunning(part) ? "Stop" : part.title ?? part.id.capitalized)" } }
         return (keys + ["Esc Close"]).joined(separator: "   ")
+    }
+
+    /// Whether the up and down keys select its parts. A sheet with a text area leaves them to that area.
+    public var takesArrows: Bool {
+        !parts.contains(where: \.isEditable) && parts.contains(where: \.isSelectable)
+    }
+
+    public var selectedPart: SpotPart? {
+        parts.first { $0.id == selected && $0.isSelectable }
+    }
+
+    /// Moves the selection, and stops at the first and last part. With no selection, it selects the first part.
+    public mutating func move(by step: Int) {
+        guard takesArrows else { return }
+        let ids = parts.filter(\.isSelectable).map(\.id)
+        guard let index = ids.firstIndex(where: { $0 == selectedPart?.id }) else {
+            selected = ids.first
+            return
+        }
+        selected = ids[min(max(index + step, 0), ids.count - 1)]
+    }
+
+    public mutating func clearSelection() {
+        selected = nil
     }
 
     /// Takes a value that the person set, and returns the generation of the call that reports it.

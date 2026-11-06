@@ -99,6 +99,14 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(sheet.frames["0"]).rect.width, SheetPlacement.width)
     }
 
+    func testTilesTakeTheHeightAndGapOfTheRowsOfAList() throws {
+        let sheet = try XCTUnwrap(SpotPanel(output: PluginOutput(text: "part=a\ntitle=A\nlook=tile\n\npart=b\ntitle=B\nlook=tile\n"))).placement
+
+        XCTAssertEqual(try XCTUnwrap(sheet.frames["a"]).rect.height, SheetPlacement.tileRowHeight)
+        XCTAssertEqual(try XCTUnwrap(sheet.frames["b"]).rect.minY, SheetPlacement.tileRowHeight + SheetPlacement.tileGap)
+        XCTAssertEqual(sheet.height, 2 * SheetPlacement.tileRowHeight + SheetPlacement.tileGap)
+    }
+
     func testARoundButtonOnALineShrinksToTheRow() throws {
         let frame = try XCTUnwrap(try placement("part=reload\ntitle=Reload\npress=arrow.clockwise\n").frames["reload"])
 

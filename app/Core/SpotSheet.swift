@@ -130,9 +130,15 @@ public final class SpotSheet {
         if let search = running(Self.searchKey) { stop(search) }
         editing = nil
         ready = nil
+        panel?.clearSelection()
         settleLive()
         stopUnwantedRead()
         runs.updateClock()
+    }
+
+    /// Moves the selection among its parts.
+    public func movePart(by step: Int) {
+        panel?.move(by: step)
     }
 
     /// The panel closed: a sheet of parts closes and drops its values, so the next open reads again. A sheet of rows stays.

@@ -166,4 +166,71 @@ final class SpotPanelTests: XCTestCase {
         XCTAssertEqual(PluginOutput(text: "keys=read go\n").partFaults, ["a part cannot be called read"])
         XCTAssertEqual(PluginOutput(text: "action=read\ntitle=A\n").partFaults, ["an action cannot be called read"])
     }
+
+    func testArrowsSelectThePartsThatReturnCanUse() throws {
+        var sheet = try panel("""
+        part=key
+        title=Key
+        shortcut=ctrl+space
+
+        part=note
+        title=Note
+
+        part=wifi
+        title=Wi-Fi
+        on=true
+
+        part=reload
+        title=Reload
+        press=true
+        """)
+
+        XCTAssertNil(sheet.selectedPart)
+        sheet.move(by: 1)
+        XCTAssertEqual(sheet.selectedPart?.id, "key")
+        sheet.move(by: 1)
+        XCTAssertEqual(sheet.selectedPart?.id, "wifi")
+        sheet.move(by: 1)
+        sheet.move(by: 1)
+        XCTAssertEqual(sheet.selectedPart?.id, "reload")
+        sheet.move(by: -3)
+        XCTAssertEqual(sheet.selectedPart?.id, "key")
+    }
+
+    func testAnArrowPicksTheFirstPartWhenNoneIsSelected() throws {
+        var sheet = try panel("part=key\nshortcut=ctrl+space\n\npart=wifi\non=true\n")
+
+        sheet.move(by: -1)
+
+        XCTAssertEqual(sheet.selectedPart?.id, "key")
+    }
+
+    func testASheetWithATextAreaKeepsItsArrows() throws {
+        var sheet = try panel("part=note\ntext=Hello\n\npart=reload\ntitle=Reload\npress=true\n")
+
+        sheet.move(by: 1)
+
+        XCTAssertFalse(sheet.takesArrows)
+        XCTAssertNil(sheet.selectedPart)
+    }
+
+    func testTheSelectionSurvivesANewAnswerAndEndsWithThePart() throws {
+        var sheet = try panel("part=key\nshortcut=ctrl+space\n")
+        sheet.move(by: 1)
+
+        sheet.take(PluginOutput(text: "part=key\nshortcut=option+space\n"), answering: sheet.generation)
+        XCTAssertEqual(sheet.selectedPart?.id, "key")
+
+        sheet.take(PluginOutput(text: "part=wifi\non=true\n"), answering: sheet.generation)
+        XCTAssertNil(sheet.selectedPart)
+    }
+
+    func testAClearedSelectionPicksNoPart() throws {
+        var sheet = try panel("part=key\nshortcut=ctrl+space\n")
+        sheet.move(by: 1)
+
+        sheet.clearSelection()
+
+        XCTAssertNil(sheet.selectedPart)
+    }
 }

@@ -59,6 +59,8 @@ struct SpotsView: View {
                     work: { model.work(of: $0) },
                     onSet: { model.setPart($0, to: $1) },
                     onPress: { model.pressPart($0) },
+                    recordingPart: model.recordingPart,
+                    onRecord: { model.toggleRecording($0) },
                     createTitle: model.createAction.map { "\($0.title): \(model.searchText)" },
                     onCreate: { model.createFromSearch() },
                     onFormValue: { model.setFormValue($0, for: $1) },
@@ -264,6 +266,7 @@ struct SpotsView: View {
                     takesDrag: model.takesDrag(entry.id),
                     isDropTarget: dropTarget == entry.id,
                     readings: entry.kind == .widget ? model.readings : [:],
+                    chainLetter: model.chainLetter(of: entry),
                     onTap: { model.tap(entry.id) },
                     onLevel: { model.setLevel(entry.id, to: $0) }
                 )

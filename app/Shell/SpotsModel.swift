@@ -100,9 +100,14 @@ final class SpotsModel {
     var updateSpot: UpdateSpot?
 
     var chooseFiles: (PluginCommand, @escaping ([String]) -> Void) -> Void = { _, _ in }
+    var entryKey = Shortcut.standard
+    private var isChainHeld = false
+    private(set) var recordingPart: String?
+    var setEntryKeyOn: (Bool) -> Void = { _ in }
     var dismiss: () -> Void = {}
     var show: () -> Void = {}
     var notify: (String) -> Void = { _ in }
+    var applyConfig: () -> Void = {}
     var confirm: (String) -> Void = { _ in }
     private var problems: [String] = []
     private(set) var menu: ActionMenu?
@@ -131,8 +136,10 @@ final class SpotsModel {
         runs.work.count
     }
 
-    /// Reads the plugin folder again. No script runs for this, and each card shows its header until its answer arrives.
+    /// Reads the config file and the plugin folder again. No script runs for this, and each card shows its header until its
+    /// answer arrives.
     func reload() {
+        applyConfig()
         let folder = PluginFolder.standard()
         let shipped = ShippedSpot.commands(
             folder: folder.url,
@@ -174,7 +181,8 @@ final class SpotsModel {
         case .toast(let text): confirm(text)
         case .failure(let text): notify(text)
         case .listChange: if !query.isEmpty { updateVisible() }
-        case .frame: break
+        case .frame:
+            if case .settings? = sheets[id]?.command.shipped { applyConfig() }
         case .chooseFiles:
             if let sheet = sheets[id] { chooseFiles(sheet.command) { sheet.drop($0) } }
         }
@@ -294,6 +302,31 @@ final class SpotsModel {
         sheetMoves = isShown
         show()
         open(id)
+    }
+
+    /// Notes which modifiers the person holds, so that each spot can show its letter while they match the entry key.
+    func takeHeld(_ modifiers: Shortcut.Modifiers) {
+        isChainHeld = modifiers == entryKey.modifiers
+    }
+
+    /// The letter that a spot shows while the person holds the modifiers of the entry key on the grid.
+    func chainLetter(of entry: Entry) -> String? {
+        guard isChainHeld, entry.item == nil, isOnGrid else { return nil }
+        return entry.command.key?.name.uppercased()
+    }
+
+    private var isOnGrid: Bool {
+        menu == nil && form == nil && openList == nil
+    }
+
+    /// Runs the spot whose letter this press holds, whatever the search shows. A spot with no sheet closes the panel.
+    func handleChain(code: UInt32, modifiers: Shortcut.Modifiers) -> Bool {
+        guard isOnGrid, let entry = entries.first(where: { entry in
+            entry.command.key.map { entryKey.chains(to: $0, code: code, modifiers: modifiers) } ?? false
+        }) else { return false }
+        press(entry.id)
+        if entry.kind == .toggle { dismiss() }
+        return true
     }
 
     private func run(_ entry: Entry) {
@@ -443,6 +476,7 @@ final class SpotsModel {
     }
 
     func closeList() {
+        stopRecording()
         openList = nil
         sheets.values.forEach { $0.close() }
     }
@@ -562,16 +596,33 @@ final class SpotsModel {
         return true
     }
 
-    /// Takes Esc and the keys of the parts, and leaves all others to the text areas.
+    /// Takes Esc, the arrows, return and the keys of the parts, and leaves all others to the text areas.
     private func handlePanelKey(_ key: ActionKey, _ panel: SpotPanel) -> Bool {
         if key == ActionKey(name: "escape") {
             allowSheetMotion()
             closeList()
             return true
         }
-        guard let part = panel.parts.first(where: { $0.key == key }) else { return false }
-        pressPart(part)
+        if panel.takesArrows, key == ActionKey(name: "up") || key == ActionKey(name: "down") {
+            openSheet?.movePart(by: key.name == "up" ? -1 : 1)
+            return true
+        }
+        if let part = panel.parts.first(where: { $0.key == key }) {
+            pressPart(part)
+            return true
+        }
+        guard key == ActionKey(name: "return"), let part = panel.selectedPart else { return false }
+        useSelected(part)
         return true
+    }
+
+    /// Does what a click on the control of this part does.
+    private func useSelected(_ part: SpotPart) {
+        switch part.control {
+        case .shortcut: toggleRecording(part)
+        case .toggle(let on): setPart(part, to: on ? "false" : "true")
+        default: pressPart(part)
+        }
     }
 
     func setPart(_ part: SpotPart, to value: String) {
@@ -581,6 +632,33 @@ final class SpotsModel {
     func pressPart(_ part: SpotPart) {
         openSheet?.press(part)
         if part.closes, isShown { dismiss() }
+    }
+
+    /// Starts to record the next key for a part, with the entry key off so that it can be recorded too, or stops.
+    func toggleRecording(_ part: SpotPart) {
+        if recordingPart == part.id {
+            stopRecording()
+        } else {
+            recordingPart = part.id
+            setEntryKeyOn(false)
+        }
+    }
+
+    func stopRecording() {
+        guard recordingPart != nil else { return }
+        recordingPart = nil
+        setEntryKeyOn(true)
+    }
+
+    /// Takes the key for the part that records. A key it cannot use leaves it recording, and says why.
+    func record(code: UInt32, modifiers: Shortcut.Modifiers) {
+        guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
+            notify("Hold cmd, ctrl or option with a letter, a digit, space, return or tab.")
+            return
+        }
+        let part = openPanel?.parts.first { $0.id == recordingPart }
+        stopRecording()
+        if let part { setPart(part, to: shortcut.text) }
     }
 
     private func handleMenuKey(_ key: ActionKey) {

@@ -76,7 +76,8 @@ esac
 | A2 | Each script that shows anything has one `SpotSheet` in Core. It holds the last frame of the script, its rows, its parts, its open state and its running calls. The card, the sheet, a widget and the menu bar all read from it, and no other place keeps what a script printed. A run of one script never stops a run of another. |
 | A3 | A stopped run changes nothing. Only a call that ended by itself can report that there is nothing to show. |
 | A4 | Search text stays until the person presses Esc. |
-| A5 | A spot that ships with the app answers the same calls, in Swift. |
+| A5 | Plugins, Settings and Updates ship with the app. Each answers the same calls, in Swift. |
+| A6 | One global key opens the panel from any app, and the person chooses it. No other key is global. |
 
 ## 4. The plugin file
 
@@ -410,6 +411,7 @@ The code follows this document.
 
 | Decision | Why | Rejected |
 |---|---|---|
+| One global key | A launcher takes as little as it can from each other app. All else happens inside the panel. | A second global key that arms the letters of spots. |
 | One call shape, with only `read` reserved | An author learns one line. A clash can happen only inside one file, and C1 and C2 cover it. | A word for each kind of call. An `action` word. Both add words to learn. |
 | Scripts, not a JS runtime | Goal 1. Shell gives each Mac tool at once, and a start costs about 5 ms. | JS only. It loses one-file shell scripts. |
 | JS waits | It can come later as one more executable, with `#!/usr/bin/env -S openspot run`, on JavaScriptCore. The contract does not change. It must provide `fetch`, timers and modules. | A JS level now. `node` and `bun` are not on each Mac. |

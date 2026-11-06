@@ -11,6 +11,7 @@ struct SpotCardView: View {
     let takesDrag: Bool
     let isDropTarget: Bool
     let readings: [String: MetricReading]
+    let chainLetter: String?
     let onTap: () -> Void
     let onLevel: (Double) -> Void
     @State private var isHovered = false
@@ -164,10 +165,16 @@ struct SpotCardView: View {
     }
 
     private var symbolGlyph: some View {
-        Image(systemName: entry.symbol)
-            .font(.system(size: 17, weight: .semibold))
-            .foregroundStyle(isFilled ? Color.accentColor : Color.white)
-            .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
-            .background(glyphDisc, in: Circle())
+        Group {
+            if let chainLetter {
+                Text(chainLetter)
+            } else {
+                Image(systemName: entry.symbol)
+            }
+        }
+        .font(.system(size: 17, weight: .semibold))
+        .foregroundStyle(isFilled ? Color.accentColor : Color.white)
+        .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+        .background(glyphDisc, in: Circle())
     }
 }

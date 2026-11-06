@@ -24,6 +24,7 @@ final class SpotsPanel: NSPanel {
     private func open(ordering order: () -> Void) {
         model?.finishPick()
         model?.selected = 0
+        model?.takeHeld(Self.modifiers(of: NSEvent.modifierFlags))
         model?.panelWillShow()
         order()
         DispatchQueue.main.async { self.model?.isShown = true }
@@ -31,6 +32,8 @@ final class SpotsPanel: NSPanel {
 
     /// Starts the close motion, and takes the panel off the screen when it ends.
     func hide() {
+        model?.takeHeld([])
+        model?.stopRecording()
         model?.closeMenu()
         model?.isShown = false
         DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeOutDuration) {
@@ -43,8 +46,29 @@ final class SpotsPanel: NSPanel {
 
     /// Gives each key to the actions first, so that they work whichever field has the focus.
     override func sendEvent(_ event: NSEvent) {
-        if event.type == .keyDown, let key = Self.actionKey(of: event), model?.handleKey(key) == true { return }
+        if event.type == .flagsChanged { model?.takeHeld(Self.modifiers(of: event.modifierFlags)) }
+        if event.type == .keyDown {
+            if model?.recordingPart != nil {
+                if Int(event.keyCode) == kVK_Escape {
+                    model?.stopRecording()
+                } else {
+                    model?.record(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags))
+                }
+                return
+            }
+            if let key = Self.actionKey(of: event), model?.handleKey(key) == true { return }
+            if model?.handleChain(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags)) == true { return }
+        }
         super.sendEvent(event)
+    }
+
+    private static func modifiers(of flags: NSEvent.ModifierFlags) -> Shortcut.Modifiers {
+        var modifiers: Shortcut.Modifiers = []
+        if flags.contains(.command) { modifiers.insert(.command) }
+        if flags.contains(.control) { modifiers.insert(.control) }
+        if flags.contains(.option) { modifiers.insert(.option) }
+        if flags.contains(.shift) { modifiers.insert(.shift) }
+        return modifiers
     }
 
     private static func actionKey(of event: NSEvent) -> ActionKey? {

@@ -5,9 +5,9 @@ public enum PartCatalog {
     private static let keys: Set<String> = [
         "part", "section", "title", "detail", "symbol", "on", "level", "min", "max", "color", "value", "option", "text",
         "lines", "placeholder", "readonly", "press", "key", "close", "cell", "fill", "align", "look", "block", "metric", "point",
-        "image", "item"
+        "image", "item", "shortcut"
     ]
-    private static let controls = ["on", "level", "color", "option", "text", "metric", "point", "image", "item"]
+    private static let controls = ["on", "level", "color", "option", "text", "metric", "point", "image", "item", "shortcut"]
 
     /// The catalog, for a person or a model to read. It holds the whole language, so a sheet can be written from it alone.
     public static var text: String {
@@ -43,8 +43,9 @@ public enum PartCatalog {
     - `keys=7 8 9 +` adds a row of key buttons. Use it for any keypad, in place of a part for each key. A word that repeats \
     next to itself spans those cells. Pressing a key calls `<word>`.
 
-    Every row has one height: \(Int(SheetPlacement.rowHeight))pt, or \(Int(SheetPlacement.keyRowHeight))pt when the sheet \
-    has keys. The gap between cells is always \(Int(SheetPlacement.gap))pt. To make something taller, draw more rows. \
+    Every row has one height: \(Int(SheetPlacement.rowHeight))pt, \(Int(SheetPlacement.keyRowHeight))pt when the sheet \
+    has keys, or \(Int(SheetPlacement.tileRowHeight))pt when it has tiles, as in a list. The gap between cells is \
+    \(Int(SheetPlacement.gap))pt, or \(Int(SheetPlacement.tileGap))pt when the sheet has tiles. To make something taller, draw more rows. \
     A column of four is about 60pt wide. You cannot set a size, a colour or a gap of your own.
 
     A sheet with no drawing is one column of lines. `section=<id>` in place of `part=<id>` starts a new group with a divider.
@@ -82,6 +83,7 @@ public enum PartCatalog {
     | `option=id:Title` for each choice, `value=id` | A menu. | `<id> <option id>` |
     | `item=id:Title` for each row, `value=id` | A list to choose from, which scrolls. Use it for any list of rows. | `<id> <item id>` |
     | `text=...`, optional `readonly=true`, `placeholder` | A text area, which scrolls. Write a line break as `\\n`. | `<id> <text>` |
+    | `shortcut=ctrl+space`, with `title` | A key at the end of the line. A click records the next key that the person presses, and Esc cancels. | `<id> <key>`, such as `<id> cmd+k` |
     | `press=true`, with `title` | A button that fills its cell. | `<id>` |
     | `press=arrow.up` or another SF Symbol name | A round button, which shrinks to fit its area, up to 44pt. | `<id>` |
     | `metric=42%`, optional `title` | A big number in a tile. It needs 2 columns of 4, and 2 rows with a title. | |
@@ -169,6 +171,9 @@ public enum PartCatalog {
             if level < low || level > high {
                 faults.append("the part \(name) has a level of \(Int(level)), outside \(Int(low)) to \(Int(high))")
             }
+        }
+        if let shortcut = block.value("shortcut"), Shortcut(text: shortcut) == nil {
+            faults.append("the part \(name) needs a shortcut that holds cmd, ctrl or option: \(shortcut)")
         }
         if let key = block.value("key"), ActionKey(text: key) == nil {
             faults.append("the part \(name) has an unknown key combination: \(key)")
