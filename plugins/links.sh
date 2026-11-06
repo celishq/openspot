@@ -5,9 +5,8 @@
 # read=open
 # rank=1
 export LC_ALL=en_US.UTF-8
-config="${OPENSPOT_CONFIG:-$HOME/.config/openspot}"
-data="$config/data/links.json"
-icons="$config/data/icons"
+data="$OPENSPOT_DATA/links.json"
+icons="$OPENSPOT_DATA/icons"
 agent="Mozilla/5.0 (Macintosh) Openspot"
 
 # Makes a jq value safe for one line of a text block.
@@ -16,8 +15,7 @@ esc='def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");'
 # Makes the list once: saved quicklinks move over, and the folder shortcuts join them.
 prepare() {
   [ -e "$data" ] && return
-  mkdir -p "$config/data"
-  old="$config/data/quicklinks.json"
+  old="$OPENSPOT_DATA/quicklinks.json"
   if [ -s "$old" ]; then saved=$(cat "$old"); else saved='[]'; fi
   shots=$(defaults read com.apple.screencapture location 2>/dev/null || echo "~/Desktop")
   printf '%s' "$saved" | jq -c --arg shots "$shots" '. + [
@@ -32,7 +30,6 @@ load() {
 }
 
 store() {
-  mkdir -p "$(dirname "$data")"
   cat > "$data.$$" && mv "$data.$$" "$data"
 }
 

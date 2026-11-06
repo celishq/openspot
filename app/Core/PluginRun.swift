@@ -20,10 +20,14 @@ public struct PluginRun: Sendable {
         self.input = input
     }
 
-    /// The environment of a script, with the `openspot` command of this app on its path.
+    /// The environment of a script, with the `openspot` command of this app on its path and the data folder, which this
+    /// creates.
     public static func environment(base: [String: String], app: String) -> [String: String] {
         let helpers = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Helpers").path
-        return base.merging(["PATH": "\(helpers):\(base["PATH"] ?? "")"], uniquingKeysWith: { _, new in new })
+        let home = base["HOME"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? FileManager.default.homeDirectoryForCurrentUser
+        let data = PluginFolder.config(environment: base, home: home).appendingPathComponent("data", isDirectory: true)
+        try? FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
+        return base.merging(["PATH": "\(helpers):\(base["PATH"] ?? "")", "OPENSPOT_DATA": data.path], uniquingKeysWith: { _, new in new })
     }
 
     /// Runs the plugin with the arguments, and returns what it prints.

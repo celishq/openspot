@@ -45,6 +45,27 @@ final class PluginRunTests: XCTestCase {
         XCTAssertEqual(output, "done\n")
     }
 
+    func testARunGetsTheDataFolderAndOpenspotCreatesIt() async throws {
+        let config = folder.appendingPathComponent("config")
+        setenv("OPENSPOT_CONFIG", config.path, 1)
+        defer { unsetenv("OPENSPOT_CONFIG") }
+        let plugin = try writePlugin("data.sh", "#!/bin/sh\nprintf %s \"$OPENSPOT_DATA\"\n")
+        let data = config.appendingPathComponent("data").path
+
+        let output = try await PluginRun(command: plugin, arguments: [], timeout: 5).output()
+
+        XCTAssertEqual(output, data)
+        var isFolder: ObjCBool = false
+        XCTAssertTrue(FileManager.default.fileExists(atPath: data, isDirectory: &isFolder))
+        XCTAssertTrue(isFolder.boolValue)
+    }
+
+    func testTheDataFolderIsInTheHomeOfTheRunWithNoConfigPath() {
+        let environment = PluginRun.environment(base: ["HOME": folder.path], app: "")
+
+        XCTAssertEqual(environment["OPENSPOT_DATA"], folder.appendingPathComponent(".config/openspot/data").path)
+    }
+
     func testTimesOutASlowPlugin() async throws {
         let plugin = try writePlugin("slow.sh", "#!/bin/sh\nsleep 5\n")
 

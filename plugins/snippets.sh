@@ -5,7 +5,7 @@
 # read=open
 # rank=3
 export LC_ALL=en_US.UTF-8
-data="${OPENSPOT_CONFIG:-$HOME/.config/openspot}/data/snippets.json"
+data="$OPENSPOT_DATA/snippets.json"
 
 # Makes a jq value safe for one line of a text block.
 esc='def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");'
@@ -20,7 +20,6 @@ load() {
 }
 
 store() {
-  mkdir -p "$(dirname "$data")"
   cat > "$data.$$" && mv "$data.$$" "$data"
 }
 

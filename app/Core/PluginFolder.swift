@@ -14,9 +14,13 @@ public struct PluginFolder: Sendable {
         if let path = environment["OPENSPOT_PLUGINS"], !path.isEmpty {
             return PluginFolder(url: URL(fileURLWithPath: path, isDirectory: true))
         }
-        let config = environment["OPENSPOT_CONFIG"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0, isDirectory: true) }
+        return PluginFolder(url: config(environment: environment, home: home).appendingPathComponent("plugins", isDirectory: true))
+    }
+
+    /// The folder that holds the plugins folder and the data of plugins.
+    static func config(environment: [String: String], home: URL) -> URL {
+        environment["OPENSPOT_CONFIG"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0, isDirectory: true) }
             ?? home.appendingPathComponent(".config/openspot", isDirectory: true)
-        return PluginFolder(url: config.appendingPathComponent("plugins", isDirectory: true))
     }
 
     /// Reads each executable and widget file, at the top of the folder or one folder down, after the shipped commands.

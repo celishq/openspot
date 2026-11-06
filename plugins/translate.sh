@@ -7,9 +7,8 @@
 # live=true
 export LC_ALL=en_US.UTF-8
 
-data="${OPENSPOT_CONFIG:-$HOME/.config/openspot}/data"
-saved="$data/translate"
-known="$data/translate-languages"
+saved="$OPENSPOT_DATA/translate"
+known="$OPENSPOT_DATA/translate-languages"
 settings='x-apple.systempreferences:com.apple.Localization-Settings.extension'
 
 # Prints a value of a block, as it is written, from the lines on stdin.
@@ -20,7 +19,6 @@ value() {
 # Keeps the list of languages, so that only the first read asks macOS.
 languages() {
   [ -s "$known" ] && return
-  mkdir -p "$data"
   openspot translate languages > "$known.new" 2>/dev/null && mv "$known.new" "$known"
   rm -f "$known.new"
 }
@@ -41,7 +39,6 @@ preferred() {
 }
 
 save() {
-  mkdir -p "$data"
   printf 'source=%s\ntarget=%s\n' "$source" "$target" > "$saved"
 }
 
