@@ -11,7 +11,7 @@ struct SpotSheetView: View {
     let work: (SpotPart) -> ScriptCall?
     let onSet: (SpotPart, String) -> Void
     let onPress: (SpotPart) -> Void
-    let recordingPart: String?
+    let recording: String?
     let onRecord: (SpotPart) -> Void
     let createTitle: String?
     let onCreate: () -> Void
@@ -30,7 +30,7 @@ struct SpotSheetView: View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             header
             if let panel {
-                SpotPanelView(panel: panel, work: work, onSet: onSet, onPress: onPress, recordingPart: recordingPart, onRecord: onRecord)
+                SpotPanelView(panel: panel, work: work, onSet: onSet, onPress: onPress, recordingPart: recording, onRecord: onRecord)
             } else if let form {
                 SpotFormView(draft: form, onValue: onFormValue)
             } else {
@@ -174,6 +174,10 @@ struct SpotSheetView: View {
                         .modifier(SpotSecondaryText())
                         .lineLimit(1)
                 }
+            }
+            Spacer(minLength: 0)
+            if let shortcut = item.shortcut {
+                SpotKeyLabel(text: shortcut, isRecording: recording == item.run)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

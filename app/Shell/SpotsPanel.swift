@@ -48,7 +48,7 @@ final class SpotsPanel: NSPanel {
     override func sendEvent(_ event: NSEvent) {
         if event.type == .flagsChanged { model?.takeHeld(Self.modifiers(of: event.modifierFlags)) }
         if event.type == .keyDown {
-            if model?.recordingPart != nil {
+            if model?.recording != nil {
                 if Int(event.keyCode) == kVK_Escape {
                     model?.stopRecording()
                 } else {

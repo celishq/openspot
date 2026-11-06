@@ -339,6 +339,11 @@ public final class SpotSheet {
         press(.item(item))
     }
 
+    /// Takes a key that the person recorded on a row, and tells the script.
+    public func set(_ item: SpotItem, to value: String) {
+        press(.set(item.run, to: value))
+    }
+
     /// Runs an action. A second press of a running action stops its call.
     public func run(_ action: CommandAction, item: SpotItem?) {
         press(.action(action, item: item))

@@ -142,6 +142,7 @@ A file with no header key has one call: `<script>`, on a click.
 | A click on a toggle | `on`, `off` | None |
 | A move of a slider on a card | `level <number>` | None |
 | A pick of a row | `open <run>` | None |
+| A key recorded on a row that has `shortcut` | `<run> <key>` | None |
 | An action | `<action> [run]` | Form values, if any |
 | A change of a part | `<part> <value>` | Values of the sheet |
 | A press of a part | `<part>` | Values of the sheet |

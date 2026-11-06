@@ -150,6 +150,7 @@ file=/Applications/Safari.app
 
 `row` and `run` are the only keys a list needs. Also use `symbol` for an SF Symbol, `file` for a file's icon, or `image`
 for a path to an image. `hides` is the ID of an action that this row does not offer. Repeat the line for each one.
+`shortcut=ctrl+space` shows a key at the end of the row. A pick records the next key, and Openspot calls `<run> <key>`.
 
 Openspot searches the rows itself and sorts recent picks first. To change this, print one block before the rows on each
 read:

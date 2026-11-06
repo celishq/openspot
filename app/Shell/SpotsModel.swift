@@ -102,7 +102,7 @@ final class SpotsModel {
     var chooseFiles: (PluginCommand, @escaping ([String]) -> Void) -> Void = { _, _ in }
     var entryKey = Shortcut.standard
     private var isChainHeld = false
-    private(set) var recordingPart: String?
+    private(set) var recording: String?
     var setEntryKeyOn: (Bool) -> Void = { _ in }
     var dismiss: () -> Void = {}
     var show: () -> Void = {}
@@ -537,6 +537,10 @@ final class SpotsModel {
     }
 
     private func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil) {
+        if action == nil, item.shortcut != nil {
+            toggleRecording(id: item.run)
+            return
+        }
         if action != nil || entry.command.pick == .close {
             closingPick = (item, entry)
             if isShown {
@@ -636,29 +640,45 @@ final class SpotsModel {
 
     /// Starts to record the next key for a part, with the entry key off so that it can be recorded too, or stops.
     func toggleRecording(_ part: SpotPart) {
-        if recordingPart == part.id {
+        toggleRecording(id: part.id)
+    }
+
+    /// Starts to record the next key for a part or a row, or stops.
+    private func toggleRecording(id: String) {
+        if recording == id {
             stopRecording()
         } else {
-            recordingPart = part.id
+            recording = id
             setEntryKeyOn(false)
         }
     }
 
     func stopRecording() {
-        guard recordingPart != nil else { return }
-        recordingPart = nil
+        guard recording != nil else { return }
+        recording = nil
         setEntryKeyOn(true)
     }
 
-    /// Takes the key for the part that records. A key it cannot use leaves it recording, and says why.
+    /// Takes the key for the part or the row that records. A key it cannot use leaves it recording, and says why. A row
+    /// closes the panel, as a pick of any row does.
     func record(code: UInt32, modifiers: Shortcut.Modifiers) {
         guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
             notify("Hold cmd, ctrl or option with a letter, a digit, space, return or tab.")
             return
         }
-        let part = openPanel?.parts.first { $0.id == recordingPart }
+        let part = openPanel?.parts.first { $0.id == recording }
+        let item = openItems?.shown.first { $0.run == recording }
         stopRecording()
         if let part { setPart(part, to: shortcut.text) }
+        if let item, let entry = openEntry {
+            sheets[entry.id]?.set(item, to: shortcut.text)
+            closingPick = (item, entry)
+            if isShown {
+                dismiss()
+            } else {
+                finishPick()
+            }
+        }
     }
 
     private func handleMenuKey(_ key: ActionKey) {
@@ -687,6 +707,7 @@ final class SpotsModel {
 
     /// The keys that work on the selected row or card, in words for the bottom of the panel.
     var hint: String {
+        if recording != nil { return "Esc Cancel" }
         if let panel = openPanel { return panel.hint { work(of: $0) != nil } }
         let keys = target.flatMap { target in
             actionMenu(on: target)?.hint { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil }

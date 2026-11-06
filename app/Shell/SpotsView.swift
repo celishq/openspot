@@ -59,7 +59,7 @@ struct SpotsView: View {
                     work: { model.work(of: $0) },
                     onSet: { model.setPart($0, to: $1) },
                     onPress: { model.pressPart($0) },
-                    recordingPart: model.recordingPart,
+                    recording: model.recording,
                     onRecord: { model.toggleRecording($0) },
                     createTitle: model.createAction.map { "\($0.title): \(model.searchText)" },
                     onCreate: { model.createFromSearch() },
