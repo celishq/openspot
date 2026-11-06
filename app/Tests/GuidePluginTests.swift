@@ -64,7 +64,7 @@ final class GuidePluginTests: XCTestCase {
         XCTAssertEqual(opened.command.kind, .list)
         XCTAssertEqual(opened.command.actions.map(\.id), ["new"])
         XCTAssertFalse(opened.command.keepsRecent)
-        XCTAssertEqual(lines.items.map(\.run), ["prompt", "sandbox", "guide", "folder"])
+        XCTAssertEqual(lines.items.map(\.run), ["prompt", "sandbox", "guide", "folder", "get"])
         XCTAssertEqual(lines.errors, [])
     }
 
@@ -86,6 +86,12 @@ final class GuidePluginTests: XCTestCase {
 
         try await guide.perform(.item(SpotItem(title: "Folder", run: "folder")), timeout: 5)
         XCTAssertTrue(try saved("opened").contains(plugins.path))
+    }
+
+    func testGetPluginsOpensTheFolderOnGitHub() async throws {
+        try await guide().perform(.item(SpotItem(title: "Get", run: "get")), timeout: 5)
+
+        XCTAssertEqual(try saved("opened"), "https://github.com/celishq/openspot/tree/main/plugins\n")
     }
 
     func testNewPluginMakesAWorkingPlugin() async throws {
