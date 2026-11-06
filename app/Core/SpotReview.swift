@@ -60,7 +60,6 @@ public struct SpotReview: Equatable, Sendable {
             TextBlock(fields: [
                 .init(key: "part", value: "review"),
                 .init(key: "cell", value: "t"),
-                .init(key: "fill", value: "true"),
                 .init(key: "readonly", value: "true"),
                 .init(key: "text", value: text)
             ]).text,

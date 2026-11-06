@@ -622,7 +622,7 @@ final class SamplePluginsTests: XCTestCase {
             XCTAssertEqual(translate.kind, .list)
             XCTAssertEqual(output.kind, .list)
             XCTAssertEqual(output.sheetFaults, [])
-            XCTAssertEqual(output.layout?.name, "pair")
+            XCTAssertEqual(output.layout?.rows.first, ["s", "s", ".", "."])
             XCTAssertEqual(output.parts.map(\.id), ["source", "input", "target", "output", "swap"])
             XCTAssertEqual(self.text(of: "source", in: output), "auto")
             XCTAssertEqual(self.text(of: "target", in: output), "en")

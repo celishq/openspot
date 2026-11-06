@@ -11,14 +11,11 @@ public enum SheetFaults {
     private static let tallProgress: CGFloat = 44
     private static let swatchWidth: CGFloat = 26
     private static let smallSwatchWidth: CGFloat = 18
-    private static let unknownName = "there is no layout called"
 
     /// Returns one line for each fault. A sheet with no drawing has only the faults of its height.
     public static func of(layout: SheetLayout?, summary: TextBlock?, parts: [SpotPart]) -> [String] {
         var faults: [String] = []
-        if let name = summary?.value("layout"), SheetLayout.named[name] == nil {
-            faults.append("\(unknownName) \(name)")
-        }
+        if summary?.value("layout") != nil { faults.append("a sheet has no layout key, so draw it with grid= lines") }
         guard let layout else {
             let flat = SheetPlacement(parts: parts, layout: SheetLayout(flat: parts))
             if flat.overflows, parts.contains(where: \.scrollsItself) {
@@ -57,23 +54,12 @@ public enum SheetFaults {
                 continue
             }
             if layout.areas[letter] == nil {
-                if let name = layout.name {
-                    faults.append("the part \(part.id) names the cell \(part.cell ?? letter), which the layout \(name) does not have")
-                } else {
-                    faults.append("the part \(part.id) names the cell \(letter), which the drawing does not have")
-                }
-            } else if layout.name != nil, let cell = part.cell, layout.cells[cell] == nil {
-                faults.append("the part \(part.id) names the cell \(cell), which the layout \(layout.name ?? "") does not have")
+                faults.append("the part \(part.id) names the cell \(letter), which the drawing does not have")
             }
             if let other = taken[letter] {
                 faults.append("the parts \(other) and \(part.id) share the cell \(letter)")
             } else {
                 taken[letter] = part.id
-            }
-        }
-        if layout.name == nil {
-            for letter in layout.areas.keys.sorted() where taken[letter] == nil {
-                faults.append("the letter \(letter) has no part")
             }
         }
         return faults
@@ -109,7 +95,7 @@ public enum SheetFaults {
                     faults.append("the title of the part \(part.id) may not fit its cell")
                 }
             }
-            if !frame.isOnTop, !part.fillsHeight, frame.rect.height > SheetPlacement.keyRowHeight * 2, area.y0 == area.y1 {
+            if !frame.isOnTop, !part.fillsHeight, frame.rect.height > SheetPlacement.rowHeight * 2, area.y0 == area.y1 {
                 faults.append("the part \(part.id) sits in rows that stretch, so use item= for a list")
             }
         }

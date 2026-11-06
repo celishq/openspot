@@ -28,7 +28,7 @@ final class SpotReviewTests: XCTestCase {
 
     private func shown(_ review: SpotReview) throws -> String {
         let part = try XCTUnwrap(sheet(review).parts.first { $0.id == "review" })
-        guard case .text(let text, _, _, let isReadOnly) = part.control else { throw PluginError.badForm }
+        guard case .text(let text, _, let isReadOnly) = part.control else { throw PluginError.badForm }
         XCTAssertTrue(isReadOnly)
         return text
     }

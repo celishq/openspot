@@ -107,7 +107,7 @@ struct SpotPanelView: View {
     @ViewBuilder
     private func content(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         switch part.control {
-        case .text(let text, _, let placeholder, let isReadOnly):
+        case .text(let text, let placeholder, let isReadOnly):
             textArea(part, frame, text: text, placeholder: placeholder, isReadOnly: isReadOnly)
                 .overlay(alignment: .topTrailing) { cornerMark(part, frame) }
         case .slider(let level, let low, let high):

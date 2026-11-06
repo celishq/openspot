@@ -8,19 +8,12 @@ final class SheetSandboxTests: XCTestCase {
         }
     }
 
-    func testEachNamedLayoutHasAnExample() {
-        let names = Set(SheetExamples.all.map(\.name))
-        for name in SheetLayout.named.keys {
-            XCTAssertTrue(names.contains(name), name)
-        }
-    }
-
     func testTextDrawsASheetAndReportsItsFaults() {
         var sandbox = SheetSandbox()
-        sandbox.take(text: "grid=a b\n\npart=a\ncell=a\ntitle=A\n")
+        sandbox.take(text: "grid=a\n\npart=a\ncell=b\ntitle=A\n")
 
         XCTAssertEqual(sandbox.panel?.parts.map(\.id), ["a"])
-        XCTAssertEqual(sandbox.faults, ["the letter b has no part"])
+        XCTAssertEqual(sandbox.faults, ["the part a names the cell b, which the drawing does not have"])
     }
 
     func testTextThatDrawsNothingLeavesTheLastSheet() {
@@ -47,10 +40,10 @@ final class SheetSandboxTests: XCTestCase {
     func testAFrameOfAScriptShowsItsTextAndFaults() {
         var sandbox = SheetSandbox()
 
-        sandbox.note(frame: "grid=a b\n\npart=a\ncell=a\ntitle=A\n")
+        sandbox.note(frame: "grid=a\n\npart=a\ncell=b\ntitle=A\n")
 
-        XCTAssertEqual(sandbox.text, "grid=a b\n\npart=a\ncell=a\ntitle=A\n")
-        XCTAssertEqual(sandbox.faults, ["the letter b has no part"])
+        XCTAssertEqual(sandbox.text, "grid=a\n\npart=a\ncell=b\ntitle=A\n")
+        XCTAssertEqual(sandbox.faults, ["the part a names the cell b, which the drawing does not have"])
         XCTAssertNil(sandbox.panel)
     }
 }

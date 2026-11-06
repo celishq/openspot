@@ -248,26 +248,8 @@ are optional. After the person fills the form, the same call runs with the value
 A script that prints parts opens a sheet of them, with no search field. Run `openspot catalog` for the whole language,
 with examples. A model can write a good sheet from that text alone.
 
-A sheet has a layout and parts. Use a named layout when one fits, because it gives the best result:
-
-```text
-layout=pair
-
-part=input
-cell=top
-text=Hello
-
-part=output
-cell=bottom
-text=Bonjour
-readonly=true
-
-part=swap
-cell=swap
-press=arrow.up.arrow.down
-```
-
-Or draw your own, with one letter for each area. A smaller area on a larger one floats, with its own background:
+A sheet is a drawing and parts. Draw it with one letter for each area, and a part takes a letter with `cell`. The words of a
+line set the columns, so a wider area takes more words. A smaller area on a larger one floats, with its own background:
 
 ```text
 grid=t t t t
@@ -276,13 +258,15 @@ grid=t t t c
 part=note
 cell=t
 text=Buy milk
-fill=true
 
 part=save
 cell=c
 look=strong
 press=checkmark
 ```
+
+Each row has one height, so a taller area takes more lines. Rows that hold text, a list, a chart or a picture share the free
+height. A letter with no part stays empty.
 
 With no drawing, a sheet is one column of lines, and `section=<id>` starts a new group with a divider.
 

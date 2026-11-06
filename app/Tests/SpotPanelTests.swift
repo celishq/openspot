@@ -69,13 +69,12 @@ final class SpotPanelTests: XCTestCase {
 
         part=output
         text=one\\ntwo
-        lines=6
         placeholder=Translation
         readonly=true
         """).parts
 
         XCTAssertEqual(parts[0].control, .menu([.init(id: "auto", title: "Auto"), .init(id: "en", title: "English")], value: "en"))
-        XCTAssertEqual(parts[1].control, .text("one\ntwo", lines: 6, placeholder: "Translation", isReadOnly: true))
+        XCTAssertEqual(parts[1].control, .text("one\ntwo", placeholder: "Translation", isReadOnly: true))
     }
 
     func testValuesGoToTheScriptAsOneBlock() throws {
@@ -98,9 +97,9 @@ final class SpotPanelTests: XCTestCase {
         let second = panel.set("three", of: "input")
 
         XCTAssertFalse(panel.take(PluginOutput(text: "part=input\ntext=two\n\npart=output\ntext=stale\n"), answering: first))
-        XCTAssertEqual(panel.parts[1].control, .text("old", lines: 4, placeholder: nil, isReadOnly: false))
+        XCTAssertEqual(panel.parts[1].control, .text("old", placeholder: nil, isReadOnly: false))
         XCTAssertTrue(panel.take(PluginOutput(text: "part=input\ntext=three\n\npart=output\ntext=new\n"), answering: second))
-        XCTAssertEqual(panel.parts[1].control, .text("new", lines: 4, placeholder: nil, isReadOnly: false))
+        XCTAssertEqual(panel.parts[1].control, .text("new", placeholder: nil, isReadOnly: false))
     }
 
     func testAnAnswerKeepsTheTextThePersonIsEditing() throws {
@@ -109,7 +108,7 @@ final class SpotPanelTests: XCTestCase {
 
         panel.take(PluginOutput(text: "part=input\ntext=two\n"), answering: call, keeping: "input")
 
-        XCTAssertEqual(panel.parts[0].control, .text("two ", lines: 4, placeholder: nil, isReadOnly: false))
+        XCTAssertEqual(panel.parts[0].control, .text("two ", placeholder: nil, isReadOnly: false))
     }
 
     func testAPressCanReplaceAnyText() throws {
@@ -118,7 +117,7 @@ final class SpotPanelTests: XCTestCase {
 
         panel.take(PluginOutput(text: "part=input\ntext=swapped\n"), answering: call)
 
-        XCTAssertEqual(panel.parts[0].control, .text("swapped", lines: 4, placeholder: nil, isReadOnly: false))
+        XCTAssertEqual(panel.parts[0].control, .text("swapped", placeholder: nil, isReadOnly: false))
     }
 
     func testTheHintListsTheKeysOfItsParts() throws {
@@ -150,9 +149,6 @@ final class SpotPanelTests: XCTestCase {
     func testTheCatalogNamesEachControl() {
         for word in ["`on=true`", "`level=70`", "`color=", "`option=", "`item=", "`text=", "`press=true`", "`metric=", "`point=", "`image=", "`block=progress`", "`keys=", "`card="] {
             XCTAssertTrue(PartCatalog.text.contains(word), word)
-        }
-        for name in SheetLayout.named.keys {
-            XCTAssertTrue(PartCatalog.text.contains("`\(name)`"), name)
         }
     }
 
