@@ -1,14 +1,20 @@
 import OpenspotCore
 import SwiftUI
 
-/// The picture of an item: its image or the icon of its file, or else its symbol, or else nothing.
+/// The picture of an item: its image or the icon of its file, or else its glyph, or else its symbol, or else nothing.
 struct SpotItemIcon: View {
     let item: SpotItem
     let size: CGFloat
 
+    private static let glyphScale = 0.8
+
     var body: some View {
         if let icon = item.icon {
             SpotFileIconView(icon: icon, size: size)
+        } else if let glyph = item.glyph {
+            Text(glyph)
+                .font(.system(size: size * Self.glyphScale))
+                .frame(width: size, height: size)
         } else if let symbol = item.symbol {
             Image(systemName: symbol)
                 .font(.system(size: size * 0.7, weight: .medium))

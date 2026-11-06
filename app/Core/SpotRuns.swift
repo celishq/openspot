@@ -222,7 +222,7 @@ public final class SpotRuns {
 
     /// Starts a script that stays, and returns it with its frames.
     func stay(_ command: PluginCommand, limit: TimeInterval?) throws -> (ScriptProcess, AsyncThrowingStream<String, Error>) {
-        let script = ScriptProcess(url: command.url, mode: .stays, limit: limit, stopPause: stopPause)
+        let script = ScriptProcess(url: command.url, mode: .stays, limit: limit, stopPause: stopPause, dataName: command.dataName)
         let frames = try script.start()
         keep(script)
         return (script, frames)
@@ -246,7 +246,7 @@ public final class SpotRuns {
             })
         }
         let sent = action.sent(input: input)
-        let process = ScriptProcess(url: command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause)
+        let process = ScriptProcess(url: command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: command.dataName)
         do {
             let stream = try process.start()
             keep(process)

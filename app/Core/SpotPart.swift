@@ -18,7 +18,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case slider(level: Double, min: Double, max: Double)
         case swatches([String], value: String?)
         case menu([Option], value: String?)
-        case text(String, lines: Int, placeholder: String?, isReadOnly: Bool)
+        case text(String, placeholder: String?, isReadOnly: Bool)
         case list([Option], value: String?)
         case metric(String)
         case chart([Double])
@@ -42,8 +42,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case left, center, right
     }
 
-    private static let defaultLines = 4
-
     public let id: String
     public let isSection: Bool
     public let title: String?
@@ -54,7 +52,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let key: ActionKey?
     public let closes: Bool
     public let cell: String?
-    public let fills: Bool
     public let align: Align?
     public let look: Look?
 
@@ -69,7 +66,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         key = block.value("key").flatMap(ActionKey.init(text:))
         closes = block.flag("close") ?? false
         cell = block.value("cell")
-        fills = block.flag("fill") ?? false
         align = block.value("align").flatMap(Align.init(rawValue:))
         look = block.value("look").flatMap(Look.init(rawValue:))
         switch block.value("press") {
@@ -100,7 +96,6 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         } else if block.fields.contains(where: { $0.key == "text" }) {
             control = .text(
                 block.value("text") ?? "",
-                lines: block.number("lines").map(Int.init) ?? Self.defaultLines,
                 placeholder: block.value("placeholder"),
                 isReadOnly: block.flag("readonly") ?? false
             )
@@ -121,7 +116,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case .toggle(let on): on ? "true" : "false"
         case .slider(let level, _, _): String(Int(level.rounded()))
         case .swatches(_, let value), .menu(_, let value), .list(_, let value): value
-        case .text(let text, _, _, _): text
+        case .text(let text, _, _): text
         case .shortcut(let text): text
         }
     }
@@ -149,14 +144,13 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         }
     }
 
-    /// How many rows it takes in a sheet with no drawing.
-    var flatRows: Int {
-        guard case .text(_, let lines, _, _) = control else { return 1 }
-        let height = CGFloat(lines) * Self.textLine + 2 * SheetPlacement.edge
-        return max(Int(((height + SheetPlacement.gap) / (SheetPlacement.rowHeight + SheetPlacement.gap)).rounded(.up)), 1)
+    /// Whether its rows share the free height of a sheet.
+    var growsRow: Bool {
+        switch control {
+        case .text, .list, .chart, .image: true
+        default: false
+        }
     }
-
-    private static let textLine: CGFloat = 17
 
     /// Whether a press reaches it, so that a press also stops its running call.
     public var isPressable: Bool {
@@ -165,7 +159,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     /// Whether the person types into it.
     public var isEditable: Bool {
-        if case .text(_, _, _, false) = control { return true }
+        if case .text(_, _, false) = control { return true }
         return false
     }
 
@@ -187,8 +181,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case .swatches(let colors, _): control = .swatches(colors, value: value)
         case .menu(let options, _): control = .menu(options, value: value)
         case .shortcut: control = .shortcut(value)
-        case .text(_, let lines, let placeholder, let isReadOnly):
-            control = .text(value, lines: lines, placeholder: placeholder, isReadOnly: isReadOnly)
+        case .text(_, let placeholder, let isReadOnly):
+            control = .text(value, placeholder: placeholder, isReadOnly: isReadOnly)
         }
     }
 }

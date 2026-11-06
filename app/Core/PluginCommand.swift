@@ -31,6 +31,8 @@ public struct PluginCommand: Equatable, Sendable {
     public let drop: [String]
     /// Whether the menu bar shows it.
     public let isTray: Bool
+    /// The folder of its files inside the data of the app. A shipped spot and a widget have none.
+    public let dataName: String?
     /// Whether it has a card. A script with a number in its `read` and no `key` has none (F7).
     public let hasSpot: Bool
     /// Whether the grid shows its card until a frame says otherwise (F9).
@@ -60,6 +62,7 @@ public struct PluginCommand: Equatable, Sendable {
         stays: Bool = false,
         drop: [String] = [],
         isTray: Bool = false,
+        dataName: String? = nil,
         hasSpot: Bool = true,
         isOnGrid: Bool = true,
         headerSymbol: String? = nil
@@ -85,6 +88,7 @@ public struct PluginCommand: Equatable, Sendable {
         self.stays = stays
         self.drop = drop
         self.isTray = isTray
+        self.dataName = dataName
         self.hasSpot = hasSpot
         self.isOnGrid = isOnGrid
         self.headerSymbol = headerSymbol

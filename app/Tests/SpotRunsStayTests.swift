@@ -281,6 +281,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testACallStartsAStayingScriptThatNothingWantsAndItEndsAfterTheCall() async throws {
+        runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 30, tickPause: .milliseconds(50))
         try staying()
         let sheet = try sheet()
 

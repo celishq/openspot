@@ -8,17 +8,19 @@ public struct SpotItem: Equatable, Sendable {
     public let symbol: String?
     public let file: String?
     public let image: String?
+    public let glyph: String?
     public let hides: [String]?
     /// The key this row shows. A pick records the next key that the person presses.
     public let shortcut: String?
 
-    public init(title: String, subtitle: String? = nil, run: String, symbol: String? = nil, file: String? = nil, image: String? = nil, hides: [String]? = nil, shortcut: String? = nil) {
+    public init(title: String, subtitle: String? = nil, run: String, symbol: String? = nil, file: String? = nil, image: String? = nil, glyph: String? = nil, hides: [String]? = nil, shortcut: String? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
         self.symbol = symbol
         self.file = file
         self.image = image
+        self.glyph = glyph
         self.hides = hides
         self.shortcut = shortcut
     }
@@ -34,6 +36,7 @@ public struct SpotItem: Equatable, Sendable {
             symbol: block.value("symbol"),
             file: block.value("file"),
             image: block.value("image"),
+            glyph: block.value("glyph"),
             hides: hides.isEmpty ? nil : hides,
             shortcut: block.value("shortcut")
         )

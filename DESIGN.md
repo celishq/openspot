@@ -212,7 +212,7 @@ esac
 |---|---|
 | Arguments | The name and its value. |
 | Stdin | What the person filled in: all values of the sheet, or the fields of a form, as one block. Otherwise empty. |
-| `OPENSPOT_DATA` | The folder for its files, which Openspot creates: `<config>/data`. All plugins share it, so a script names its files after itself. |
+| `OPENSPOT_DATA` | The folder for its files, which Openspot creates: `<config>/data/<spot>`. A script in a plugin folder uses the name of that folder. `data=<name>` in the header shares a folder with other spots. It prevents a clash, and it does not protect a file (P1). |
 | `OPENSPOT_SH` | A shell file that a script can load. It is optional (W1). |
 | `PATH` | The person's path, with the `openspot` command first. |
 
@@ -269,6 +269,19 @@ done
 | S1 | A line `---` ends a frame, and so does the end of the output. Openspot draws each frame at once. |
 | S2 | A frame with a layout replaces the sheet. A frame with only parts changes those parts. |
 | S3 | A frame with no open sheet shows only its `toast` and its state. Openspot keeps the last frame for the sheet. |
+
+### Layout
+
+A sheet is a drawing and parts. A person or a model says what goes where, and the app sets each size.
+
+| ID | Rule |
+|---|---|
+| D1 | A sheet draws its layout with `grid=` lines. A sheet has no named layouts. The catalog holds drawings to copy. |
+| D2 | The words in a `grid=` line set the columns. A wider area takes more words, so there is no width to set. |
+| D3 | Each row has one height and each gap has one size, and the app owns both. A taller area takes more lines. |
+| D4 | Rows that hold text, a picture, a chart, a list or a repeated area share the free height. Other rows keep their height. |
+| D5 | `repeat=<letter> <per line>` flows the rows of a script into one area of the drawing, and that area scrolls. Rows keep one list path for search, keys and selection. |
+| D6 | A complex view is a Swift block in the app, which a script names and fills with data. A plugin still never draws. |
 
 ## 7. How long a call runs
 
@@ -385,6 +398,7 @@ The command is on the path of each script. It also gives the tools for authors.
 | `openspot color pick` | Capability: the colour the person picks. |
 | `openspot translate` | Capability: translates text on this Mac, and keeps each pair of languages loaded (K2). |
 | `openspot translate languages` | Capability: the languages it knows. |
+| `openspot emoji [--tone name]` | Capability: each emoji with its name in the language of the Mac, as rows. |
 
 ## 11. Security
 
@@ -436,6 +450,8 @@ The code follows this document.
 | A form is the same call | One call shape with no exception. | A `form` word. It is easier in shell, but it adds a word. |
 | Header in each file | Goal 1, and a scan runs nothing. | A manifest. It can still come later. |
 | No permission model | A script can already do all that the person can. A false limit is worse than none. | A `uses` key. |
+| A sheet is a drawing, with one row height | A model writes one form, and each result stays even. | Named layouts. Column ratios, row sizes and nested drawings, which add words that most sheets never need. Sixteen columns, which make long lines and cannot make thirds. |
+| Complex views are Swift blocks in the app | The text language stays small, and a plugin still never draws (goal 2). Third-party Swift views come in a later phase. | A view in a plugin now. It needs a build, a signing exception and trust in code that no one can read. |
 | Three backdrop blur steps under the cards, at the system's sampling scale, with no constant redraw | An idle open panel took the GPU from about 70% to about 11% on a quiet desktop and about 30% over moving content, and the steps give a soft edge. | One step, which saves few points and shows an edge. A system material and Liquid Glass, which cost about the same and do not give this look. |
 | A spot travels as a `.spot` file | A chat app takes a file of any size that a script has, and a double-click or a drop adds it. | Encoded text, which hits message limits and hides the code. A link, which needs a hosted page. |
 | A `.spot` file is JSON: a format number and files | A standard format that any editor shows. A header already holds each fact about a spot, so the file repeats none. | A zip file, which hides the text. A manifest. |

@@ -69,6 +69,11 @@
       </CommandLineArguments>
       <EnvironmentVariables>
          <EnvironmentVariable
+            key = "HOME"
+            value = "$(SRCROOT)/../.temp/test-home"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
             key = "OPENSPOT_SH"
             value = "$(SRCROOT)/Shell/openspot.sh"
             isEnabled = "YES">

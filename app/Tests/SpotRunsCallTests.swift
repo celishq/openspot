@@ -122,7 +122,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
     private static let worker = """
     case "$1" in
-      read) printf 'layout=none\\n\\npart=go\\ntitle=Go\\npress=true\\n\\npart=bar\\ntitle=idle\\n' ;;
+      read) printf 'title=Sheet\\n\\npart=go\\ntitle=Go\\npress=true\\n\\npart=bar\\ntitle=idle\\n' ;;
       go)
         printf 'toast=Started\\non=true\\n\\npart=bar\\ntitle=half\\n---\\n'
         sleep 0.3

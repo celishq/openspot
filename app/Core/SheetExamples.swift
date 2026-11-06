@@ -1,6 +1,6 @@
 import Foundation
 
-/// A working sheet for each layout, for a person to start from in the sandbox and a model to read in the catalog.
+/// A working sheet for each kind of drawing, for a person to start from in the sandbox and a model to read in the catalog.
 public enum SheetExamples {
     public struct Example: Equatable, Sendable {
         public let name: String
@@ -8,38 +8,45 @@ public enum SheetExamples {
     }
 
     public static let all: [Example] = [
-        Example(name: "pair", text: """
-        layout=pair
+        Example(name: "text in, text out", text: """
+        grid=s s . .
+        grid=i i i i
+        grid=i i i x
+        grid=- - - x
+        grid=t t . x
+        grid=o o o o
+        grid=o o o c
+        card=s i t o
 
         part=source
-        cell=from
+        cell=s
         option=auto:Automatic
         option=en:English
         value=auto
 
         part=input
-        cell=top
+        cell=i
         text=Good morning
         placeholder=Type or paste text
 
         part=target
-        cell=to
+        cell=t
         option=fr:French
         option=de:German
         value=fr
 
         part=output
-        cell=bottom
+        cell=o
         text=Bonjour
         readonly=true
 
         part=swap
-        cell=swap
+        cell=x
         press=arrow.up.arrow.down
         key=cmd+shift+s
 
         part=copy
-        cell=action
+        cell=c
         align=right
         look=chip
         title=Copy
@@ -48,120 +55,142 @@ public enum SheetExamples {
         close=true
 
         """),
-        Example(name: "media", text: """
-        layout=media
+        Example(name: "a picture with actions", text: """
+        grid=a a a a
+        grid=a a a a
+        grid=a a a a
+        grid=a a p p
+        grid=a a p p
+        grid=t t t t
+        grid=s s s s
+        grid=. b n .
 
         part=art
-        cell=picture
+        cell=a
         image=/System/Library/Desktop Pictures/.thumbnails/Sequoia.heic
 
         part=play
-        cell=action
+        cell=p
         look=strong
         press=pause.fill
 
         part=song
-        cell=title
+        cell=t
         title=Night drive
         detail=2:14 / 3:40
 
         part=position
-        cell=seek
+        cell=s
         level=60
 
         part=previous
-        cell=back
+        cell=b
         look=bare
         press=backward.fill
 
         part=following
-        cell=next
+        cell=n
         look=bare
         press=forward.fill
 
         """),
-        Example(name: "job", text: """
-        layout=job
+        Example(name: "a long task", text: """
+        grid=f f f f
+        grid=q q r r
+        grid=p p p p
+        grid=p p p p
+        grid=l l l l
+        grid=l l l c
+        card=f q r
 
         part=file
-        cell=file
+        cell=f
         title=Demo.mov
         detail=1.2 GB
 
         part=quality
-        cell=left
+        cell=q
         option=high:High quality
         option=low:Low quality
         value=high
 
         part=format
-        cell=right
+        cell=r
         align=right
         option=mp4:MP4
         value=mp4
 
         part=status
-        cell=progress
+        cell=p
         block=progress
         title=Converting
         detail=1:12 left
         level=62
 
         part=log
-        cell=log
+        cell=l
         text=frame= 4120 fps= 96\\nframe= 4216 fps= 97
         readonly=true
 
         part=stop
-        cell=action
+        cell=c
         align=right
         look=chip
         title=Stop
         press=true
 
         """),
-        Example(name: "chat", text: """
-        layout=chat
+        Example(name: "messages and a field", text: """
+        grid=m m m m
+        grid=i i i i
+        grid=i i i i
+        grid=a i i s
 
         part=messages
-        cell=messages
+        cell=m
         text=Why do the checks fail?\\n\\nThe build step cannot find the module.
         readonly=true
 
         part=question
-        cell=input
+        cell=i
         text=
         placeholder=Ask
 
         part=model
-        cell=left
+        cell=a
         align=left
         option=fast:Fast
         option=deep:Deep
         value=fast
 
         part=ask
-        cell=send
+        cell=s
         look=strong
         press=arrow.up
         key=cmd+return
 
         """),
-        Example(name: "tiles", text: """
-        layout=tiles
+        Example(name: "numbers around a chart", text: """
+        grid=a a b b
+        grid=a a b b
+        grid=g g g r
+        grid=g g g g
+        grid=g g g g
+        grid=c c d d
+        grid=c c d d
 
         part=cpu
-        cell=one
+        cell=a
         metric=42%
         title=CPU
 
         part=memory
-        cell=two
+        cell=b
         metric=61%
         title=Memory
 
         part=history
-        cell=chart
+        cell=g
         point=2
         point=4
         point=3
@@ -170,44 +199,47 @@ public enum SheetExamples {
         point=5
 
         part=refresh
-        cell=corner
+        cell=r
         press=arrow.clockwise
 
         part=disk
-        cell=three
+        cell=c
         metric=312 GB
         title=Disk free
 
         part=battery
-        cell=four
+        cell=d
         metric=68%
         title=Battery
 
         """),
-        Example(name: "browse", text: """
-        layout=browse
+        Example(name: "a list and a preview", text: """
+        grid=l l d d
+        grid=l l d d
+        grid=l l d c
+        grid=b b b b
 
         part=items
-        cell=list
+        cell=l
         item=address:Address
         item=signature:Signature
         item=link:Meeting link
         value=address
 
         part=preview
-        cell=preview
+        cell=d
         text=Rosenthaler Str. 40\\n10178 Berlin
         readonly=true
 
         part=copy
-        cell=action
+        cell=c
         align=right
         look=chip
         title=Copy
         press=true
 
         part=paste
-        cell=bottom
+        cell=b
         look=strong
         title=Paste
         press=true
@@ -222,7 +254,6 @@ public enum SheetExamples {
         part=note
         cell=t
         text=Buy milk\\nCall the bank
-        fill=true
 
         part=save
         cell=c
