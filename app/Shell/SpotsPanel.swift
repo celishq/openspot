@@ -56,7 +56,6 @@ final class SpotsPanel: NSPanel {
                 }
                 return
             }
-            if Int(event.keyCode) == kVK_ANSI_V, Self.modifiers(of: event.modifierFlags) == .command, model?.pasteSpot() == true { return }
             if let key = Self.actionKey(of: event), model?.handleKey(key) == true { return }
             if model?.handleChain(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags)) == true { return }
         }
@@ -90,6 +89,16 @@ final class SpotsPanel: NSPanel {
     override func resignKey() {
         super.resignKey()
         if model?.isShown == true, model?.isReviewing != true { hide() }
+    }
+
+    /// Takes ⌘V for a copied `.spot` file while the panel shows. The Edit menu takes the key before the panel sees it, so this
+    /// looks first. It goes by the key's place, which holds on any keyboard layout.
+    private func watchPaste(model: SpotsModel) {
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak model] event in
+            guard Int(event.keyCode) == kVK_ANSI_V, Self.modifiers(of: event.modifierFlags) == .command else { return event }
+            let isTaken = MainActor.assumeIsolated { model?.isShown == true && model?.pasteSpot() == true }
+            return isTaken ? nil : event
+        }
     }
 
     /// Takes the system's low-resolution glow off each text cursor whenever the cursor draws, so that none ever shows.
@@ -126,6 +135,7 @@ final class SpotsPanel: NSPanel {
         panel.isReleasedWhenClosed = false
         panel.isMovableByWindowBackground = false
         panel.contentView = NSHostingView(rootView: SpotsView(model: model))
+        panel.watchPaste(model: model)
         panel.center()
         return panel
     }

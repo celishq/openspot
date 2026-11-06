@@ -18,6 +18,7 @@ struct SpotsView: View {
     private static let panelSpace = "panel"
     private static let wordRoll: CGFloat = 20
     private static let fieldGap: CGFloat = 8
+    private static let dropRows = 3
     private static let blurSteps: [(inset: CGFloat, radius: CGFloat)] = [
         (SpotTokens.halo - 30, SpotTokens.backdropBlur / 4),
         (SpotTokens.halo - 20, SpotTokens.backdropBlur / 2),
@@ -44,6 +45,7 @@ struct SpotsView: View {
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask(edges.gradient)
             .mask(softEdge(inset: Self.scrollEdgeInset, softness: Self.scrollEdgeSoftness, height: backdropHeight - SpotTokens.hintBlock))
+            .opacity(model.spotDrop == nil ? 1 : 0)
             hintLine
                 .offset(x: SpotTokens.halo, y: contentHeight - SpotTokens.halo - SpotTokens.hintHeight)
                 .opacity(model.isShown ? 1 : 0)
@@ -82,8 +84,14 @@ struct SpotsView: View {
                 .padding(.top, SpotTokens.halo)
                 .offset(y: sheetOpen ? SpotTokens.sheetFieldDrop : 0)
                 .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(showsSearchField ? 1 : 0) }
+                .opacity(model.spotDrop == nil ? 1 : 0)
                 .allowsHitTesting(showsSearchField)
             promptLayer
+            if let drop = model.spotDrop {
+                SpotDropView(drop: drop)
+                    .frame(width: SpotTokens.gridWidth, height: contentHeight - 2 * SpotTokens.halo - SpotTokens.hintBlock)
+                    .offset(x: SpotTokens.halo, y: SpotTokens.halo)
+            }
             if let menu = model.menu {
                 Color.clear
                     .contentShape(Rectangle())
@@ -193,7 +201,8 @@ struct SpotsView: View {
 
     private var contentHeight: CGFloat {
         guard !sheetOpen else { return sheetRect.height + 2 * SpotTokens.halo + SpotTokens.hintBlock }
-        return SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0)
+        let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
+        return SpotTokens.backdropHeight(rows: model.spotDrop == nil ? rows : max(rows, Self.dropRows))
     }
 
     private var backdropHeight: CGFloat {
@@ -360,7 +369,7 @@ struct SpotsView: View {
             .offset(x: left, y: top)
             .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
             .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(showsSearchField ? 1 : 0) }
-            .opacity(model.isShown ? 1 : 0)
+            .opacity(model.isShown && model.spotDrop == nil ? 1 : 0)
             .scaleEffect(model.isShown ? 1 : SpotMotion.hiddenScale, anchor: UnitPoint(x: 0.5, y: (SpotTokens.halo + SpotTokens.rowHeight / 2) / SpotTokens.panelHeight))
             .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
             .allowsHitTesting(false)

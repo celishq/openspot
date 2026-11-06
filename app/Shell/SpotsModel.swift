@@ -96,6 +96,8 @@ final class SpotsModel {
     private let runs: SpotRuns
     private var dragWatch: Task<Void, Never>?
     private var dragPaths: [String] = []
+    /// What the panel says while a `.spot` file is dragged over it.
+    private(set) var spotDrop: SpotDrop?
     /// The shared spot that the open review shows, which exists only as long as that sheet.
     private var reviewed: SpotReview?
     var isShown = false
@@ -210,6 +212,7 @@ final class SpotsModel {
         guard paths != dragPaths else { return }
         dragPaths = paths
         runs.draggedPaths = SharedSpot.isFile(paths) ? [] : paths
+        spotDrop = SharedSpot.isFile(paths) ? SpotDrop(paths: paths, folder: PluginFolder.standard().url) : nil
         dragWatch?.cancel()
         dragWatch = Task { [weak self] in
             while NSEvent.pressedMouseButtons != 0 {
@@ -218,17 +221,21 @@ final class SpotsModel {
             }
             try? await Task.sleep(for: Self.dropPause)
             guard !Task.isCancelled, let self else { return }
-            dragPaths = []
-            runs.draggedPaths = []
+            endDrag()
             if isOpenForDrag, isShown { dismiss() }
         }
+    }
+
+    private func endDrag() {
+        dragPaths = []
+        spotDrop = nil
+        runs.draggedPaths = []
     }
 
     /// Takes a drop on a card and closes the panel. Returns false when the card does not take these files.
     func drop(_ paths: [String], on id: String) -> Bool {
         guard openList == nil, sheets[id]?.drop(paths) == true else { return false }
-        dragPaths = []
-        runs.draggedPaths = []
+        endDrag()
         if isShown { dismiss() }
         return true
     }
@@ -242,28 +249,23 @@ final class SpotsModel {
         closeList()
     }
 
-    /// Opens the sheet that shows a `.spot` file before a person adds it. One file shows at a time, and a file it cannot read
+    /// Opens the sheet that shows a `.spot` file before a person installs it. One file shows at a time, and a file it cannot read
     /// only says why.
     func review(_ urls: [URL]) {
         guard let url = urls.first else { return }
+        dragWatch?.cancel()
+        endDrag()
         finishPick()
         closeMenu()
         form = nil
         closeList()
         do {
-            let review = try SpotReview(
-                spot: SharedSpot(contentsOf: url),
-                name: url.deletingPathExtension().lastPathComponent,
-                folder: PluginFolder.standard().url
-            )
+            let review = try SpotReview(spot: SharedSpot(contentsOf: url), folder: PluginFolder.standard().url)
             reviewed = review
-            dragWatch?.cancel()
-            dragPaths = []
-            runs.draggedPaths = []
             present()
             sheetMoves = false
             open(ShippedSpot.command(reviewing: review).id)
-            if urls.count > 1 { notify("Openspot adds one spot at a time.") }
+            if urls.count > 1 { notify("Openspot installs one spot at a time.") }
         } catch {
             notify(Self.reason(error))
         }
@@ -674,7 +676,8 @@ final class SpotsModel {
             openMenu(on: target)
             return menu != nil
         }
-        guard let action = target.entry.command.actions(for: target.item).first(where: { $0.key == key }) else { return false }
+        let quiet = searchText.isEmpty ? extras(on: target) : []
+        guard let action = (target.entry.command.actions(for: target.item) + quiet).first(where: { $0.key == key }) else { return false }
         if action.confirm != nil {
             openMenu(on: target)
             menu?.select(action)
@@ -775,8 +778,14 @@ final class SpotsModel {
             command: target.entry.command,
             item: target.item,
             showsPrimary: !isOpenList || target.item != nil,
-            extras: target.item == nil && target.entry.command.shipped == nil ? [.share, .remove(widgets: widgets(sharingFileWith: target.entry))] : []
+            extras: extras(on: target)
         )
+    }
+
+    /// The rows that the app adds for a selected card of the grid. A row of a list or an open sheet keeps its own Delete.
+    private func extras(on target: Target) -> [CommandAction] {
+        guard openList == nil, target.item == nil, target.entry.command.shipped == nil else { return [] }
+        return [.share, .remove(widgets: widgets(sharingFileWith: target.entry))]
     }
 
     /// How many widgets the file of a widget holds, which go together when it is removed.
@@ -786,7 +795,7 @@ final class SpotsModel {
 
     /// The keys that work on the selected row or card, in words for the bottom of the panel.
     var hint: String {
-        if SharedSpot.isFile(dragPaths) { return "Drop to review this spot" }
+        if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
         if let panel = openPanel { return panel.hint { work(of: $0) != nil } }
         let keys = target.flatMap { target in
             actionMenu(on: target)?.hint { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil }
@@ -817,11 +826,7 @@ final class SpotsModel {
         let isRunning = menu.map { work(of: $0.rows[$0.selected]) != nil } ?? false
         guard let row = menu?.press(isRunning: isRunning), let target = menuTarget else { return }
         closeMenu()
-        if row.action == .share {
-            share(target.entry)
-        } else if row.action?.id == CommandAction.removeID {
-            remove(target.entry)
-        } else if let action = row.action {
+        if let action = row.action {
             run(action, on: target)
         } else if let item = target.item {
             pick(item, of: target.entry)
@@ -831,7 +836,11 @@ final class SpotsModel {
     }
 
     private func run(_ action: CommandAction, on target: Target) {
-        if action.isForm {
+        if action == .share {
+            share(target.entry)
+        } else if action.id == CommandAction.removeID {
+            remove(target.entry)
+        } else if action.isForm {
             openForm(action, on: target)
         } else if action.after == .stay {
             sheets[target.entry.id]?.run(action, item: target.item)

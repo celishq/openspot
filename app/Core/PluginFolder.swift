@@ -18,9 +18,16 @@ public struct PluginFolder: Sendable {
     }
 
     /// The folder that holds the plugins folder and the data of plugins.
-    static func config(environment: [String: String], home: URL) -> URL {
-        environment["OPENSPOT_CONFIG"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0, isDirectory: true) }
-            ?? home.appendingPathComponent(".config/openspot", isDirectory: true)
+    /// A Debug build names its own folder, so that its plugins and config stay out of the real ones.
+    static func config(
+        environment: [String: String],
+        home: URL,
+        devState: String? = Bundle.main.object(forInfoDictionaryKey: "OpenspotDevState") as? String
+    ) -> URL {
+        for path in [environment["OPENSPOT_CONFIG"], devState] {
+            if let path, !path.isEmpty { return URL(fileURLWithPath: path, isDirectory: true).standardized }
+        }
+        return home.appendingPathComponent(".config/openspot", isDirectory: true)
     }
 
     /// Reads each executable and widget file, at the top of the folder or one folder down, after the shipped commands.

@@ -4,30 +4,38 @@ import Foundation
 /// of the files, and runs none of them.
 public struct SpotReview: Equatable, Sendable {
     static let textLimit = 256_000
+    private static let installPart = "install"
 
     public let spot: SharedSpot
     public let name: String
+    public let symbol: String
+    public let description: String?
     public let folder: URL
     public let subtitle: String
     private let text: String
 
     /// Reads a spot for a plugins folder. Throws a fault when it gives no spot or cannot go into that folder.
-    public init(spot: SharedSpot, name: String, folder: URL) throws {
+    public init(spot: SharedSpot, folder: URL) throws {
         if let clash = spot.clash(in: folder) { throw PluginError.fault(clash) }
         let scan = try Self.scan(of: spot)
-        guard scan.plugins.contains(where: { !$0.commands.isEmpty }) else { throw PluginError.fault("This file holds no spot.") }
+        let commands = scan.plugins.flatMap(\.commands)
+        let primary = spot.files.lazy.compactMap { file in commands.first { $0.url.path.hasSuffix("/\(file.path)") } }.first
+        guard let primary else { throw PluginError.fault("This file holds no spot.") }
         let runs = Self.selfRuns(in: scan)
         self.spot = spot
-        self.name = name
+        name = primary.name
+        symbol = primary.symbol
+        description = primary.subtitle
         self.folder = folder
         let programs = spot.files.filter { $0.isExecutable && !Self.canShow($0) }.map(\.path)
-        subtitle = !programs.isEmpty ? "Holds a program that you cannot read" : runs.isEmpty ? "Runs only when you use it" : "Runs by itself"
+        let quiet = "Runs only when you use it"
+        subtitle = !programs.isEmpty ? "Holds a program that you cannot read" : primary.subtitle ?? (runs.isEmpty ? quiet : "Runs by itself")
         text = [
             programs.isEmpty ? nil : Self.section(
                 "Program that Openspot cannot show",
                 programs + ["It can do all that you can. Add it only if you trust the sender."]
             ),
-            Self.section("Runs by itself", runs),
+            runs.isEmpty ? "\(quiet)\n\n" : Self.section("Runs by itself", runs),
             Self.section("Replaces, and moves the old file to the Trash", spot.replaced(in: folder)),
             Self.section("Will not load", scan.refused.map { "\($0.file): \($0.reason)" })
         ].compactMap { $0 }.joined() + spot.files.map(Self.shown).joined(separator: "\n")
@@ -38,9 +46,9 @@ public struct SpotReview: Equatable, Sendable {
         switch arguments.first {
         case "read":
             return sheet
-        case "add":
+        case Self.installPart:
             try spot.add(to: folder)
-            return TextBlock(fields: [.init(key: "toast", value: "\(name) added")]).text
+            return TextBlock(fields: [.init(key: "toast", value: "\(name) installed")]).text
         default:
             throw PluginError.failed(1, "This sheet cannot do that.")
         }
@@ -57,9 +65,9 @@ public struct SpotReview: Equatable, Sendable {
                 .init(key: "text", value: text)
             ]).text,
             TextBlock(fields: [
-                .init(key: "part", value: "add"),
+                .init(key: "part", value: Self.installPart),
                 .init(key: "cell", value: "a"),
-                .init(key: "title", value: "Add"),
+                .init(key: "title", value: "Install"),
                 .init(key: "press", value: "true"),
                 .init(key: "key", value: "cmd+return"),
                 .init(key: "close", value: "true"),

@@ -27,6 +27,15 @@ final class PluginFolderTests: XCTestCase {
         get throws { try PluginFolder(url: folder).scan() }
     }
 
+    func testADebugBuildKeepsItsStateInItsOwnFolder() {
+        let home = URL(fileURLWithPath: "/Users/a")
+
+        XCTAssertEqual(PluginFolder.config(environment: [:], home: home, devState: "/repo/app/../.temp/openspot").path, "/repo/.temp/openspot")
+        XCTAssertEqual(PluginFolder.config(environment: [:], home: home, devState: "").path, "/Users/a/.config/openspot")
+        XCTAssertEqual(PluginFolder.config(environment: [:], home: home, devState: nil).path, "/Users/a/.config/openspot")
+        XCTAssertEqual(PluginFolder.config(environment: ["OPENSPOT_CONFIG": "/x"], home: home, devState: "/repo").path, "/x")
+    }
+
     func testRemoveTakesOnlyTheFileOfTheSpot() throws {
         try write("home/one.sh")
         try write("home/two.sh")

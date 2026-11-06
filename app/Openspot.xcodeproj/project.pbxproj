@@ -17,6 +17,7 @@
 		0D91D4496EAE5754C1A90B2F /* CommandLineCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = C021CF9F5B97B67736BE3E06 /* CommandLineCall.swift */; };
 		0D925E836160D970705BB7A4 /* FormDraftTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81708547DDCAC262759EB258 /* FormDraftTests.swift */; };
 		0F395EFD608E949B6484843D /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFCDA02E5A39DB101D14153D /* Settings.swift */; };
+		0FF14D4927D8D84A08033B60 /* SpotDropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 873CF527CBEBF574F09ADE15 /* SpotDropView.swift */; };
 		1064A19A03A4673163C44065 /* SpotActionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE269E08E251D3B432156C6C /* SpotActionTests.swift */; };
 		1064D6B06B8C25D88ACBDE94 /* SpotAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 712829BE18057373976589C1 /* SpotAction.swift */; };
 		10B811322EA374F4DAEE220E /* TrayMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA07807B6AFE2F2B5F3E25BF /* TrayMark.swift */; };
@@ -30,6 +31,7 @@
 		1847C82CBD188D7F2484EED3 /* HotKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96AC0CDE42355E19E796FFAE /* HotKey.swift */; };
 		1B2CDB90B88E5511523F2326 /* SheetLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48B0DA6204425E910C82D1D7 /* SheetLayoutTests.swift */; };
 		1CF5567E1D24FC45AE351B57 /* FormDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16E37DCD672217857DB73934 /* FormDraft.swift */; };
+		20F1C05159DE44BAE6387F89 /* SpotDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B9CA12646EEE78E08CEF188 /* SpotDrop.swift */; };
 		214016A13D01C3113B2ED3A2 /* GuidePluginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2B40429524E1DBC6B1DF6D4 /* GuidePluginTests.swift */; };
 		21D10EFB84BFEC54867B0769 /* ActionMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1515F0BF5A74C93DA79290EA /* ActionMenu.swift */; };
 		21D4CDE7DAFD833C7542726C /* UpdateSpot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EC1D8D6E48AA7D874712E18 /* UpdateSpot.swift */; };
@@ -273,6 +275,7 @@
 		68122EC7ACEF5F0A5EB80CFB /* SpotRunsWorkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRunsWorkTests.swift; sourceTree = "<group>"; };
 		683D2D86A8A9A624A7D47068 /* PluginError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginError.swift; sourceTree = "<group>"; };
 		6916BF58BB7B209E090B9B95 /* SpotStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotStateTests.swift; sourceTree = "<group>"; };
+		6B9CA12646EEE78E08CEF188 /* SpotDrop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotDrop.swift; sourceTree = "<group>"; };
 		6CEEF90F3087D628E2368481 /* Toast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Toast.swift; sourceTree = "<group>"; };
 		6DA5EDFC09AA6ED85FA1FE5B /* GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = GUIDE.md; sourceTree = "<group>"; };
 		6EC1D8D6E48AA7D874712E18 /* UpdateSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateSpot.swift; sourceTree = "<group>"; };
@@ -293,6 +296,7 @@
 		845F6667C175DA0D11204811 /* SpotReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotReview.swift; sourceTree = "<group>"; };
 		8612986697AC04A580A55E75 /* ScriptProcessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptProcessTests.swift; sourceTree = "<group>"; };
 		862CE6C17E84B992638C5BA9 /* SpotActionMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotActionMenuView.swift; sourceTree = "<group>"; };
+		873CF527CBEBF574F09ADE15 /* SpotDropView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotDropView.swift; sourceTree = "<group>"; };
 		885F30718D7143D315BB77E4 /* ItemPick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemPick.swift; sourceTree = "<group>"; };
 		8A0E4362080998D54ABAE977 /* AppUpdate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdate.swift; sourceTree = "<group>"; };
 		8DCD3DFB824167199052271C /* PluginOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginOutput.swift; sourceTree = "<group>"; };
@@ -501,6 +505,7 @@
 				29D87E637245D924392B0CBD /* SpotCardView.swift */,
 				991D6EB4A6FC8BDC66EE881C /* SpotColorPick.swift */,
 				9A79E1287F1726472B52F5D9 /* SpotCommandLine.swift */,
+				873CF527CBEBF574F09ADE15 /* SpotDropView.swift */,
 				E4FFCB394CE3EDC2C9832982 /* SpotFileChooser.swift */,
 				CAB5FE54A72D40D0E6886F04 /* SpotFormView.swift */,
 				ED035311DE84A145FEA4940B /* SpotGlass.swift */,
@@ -610,6 +615,7 @@
 				B16B56D4366FF2A98003AB9D /* ShippedSpot.swift */,
 				AE9F826181DE5006BC8017BC /* Shortcut.swift */,
 				712829BE18057373976589C1 /* SpotAction.swift */,
+				6B9CA12646EEE78E08CEF188 /* SpotDrop.swift */,
 				1E4E16647DD963AD2EAA317C /* SpotGrid.swift */,
 				1FF7A0BE1FAE0CB905661118 /* SpotItem.swift */,
 				78CBA9CD15AA3230965C56B1 /* SpotKind.swift */,
@@ -643,6 +649,7 @@
 				45EA41131230D384D6FC1213 /* Resources */,
 				9377494807D855EA77601A31 /* Frameworks */,
 				FA5BD7132374A84E31CCF0E4 /* Link the openspot command */,
+				0D4FDAB32F3B0E2B15E19EB2 /* Fill the dev state */,
 			);
 			buildRules = (
 			);
@@ -795,6 +802,25 @@
 			shellPath = /bin/sh;
 			shellScript = "ditto \"${SCRIPT_INPUT_FILE_0}\" \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 		};
+		0D4FDAB32F3B0E2B15E19EB2 /* Fill the dev state */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Fill the dev state";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ -n \"$OPENSPOT_DEV_STATE\" ] && [ ! -e \"$OPENSPOT_DEV_STATE/plugins\" ]; then\n  mkdir -p \"$OPENSPOT_DEV_STATE\"\n  cp -R \"$SRCROOT/../plugins\" \"$OPENSPOT_DEV_STATE/plugins\"\nfi\n";
+		};
 		FA5BD7132374A84E31CCF0E4 /* Link the openspot command */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -876,6 +902,7 @@
 				6183C3BBCFFCC2D3D5FCC06C /* ShippedSpot.swift in Sources */,
 				B6EA0695E720DA2E159B9CE9 /* Shortcut.swift in Sources */,
 				1064D6B06B8C25D88ACBDE94 /* SpotAction.swift in Sources */,
+				20F1C05159DE44BAE6387F89 /* SpotDrop.swift in Sources */,
 				749CF8922A16EC4D260FC1B8 /* SpotGrid.swift in Sources */,
 				78F1FD8D0F36F19F43ECA955 /* SpotItem.swift in Sources */,
 				B4F3D811916603233D99F4B3 /* SpotKind.swift in Sources */,
@@ -912,6 +939,7 @@
 				83E9BD9EBD7A861547398E00 /* SpotCardView.swift in Sources */,
 				5B9A7435C4B143508A6A2403 /* SpotColorPick.swift in Sources */,
 				79F6BD82A98F056C608E3188 /* SpotCommandLine.swift in Sources */,
+				0FF14D4927D8D84A08033B60 /* SpotDropView.swift in Sources */,
 				BB15E32EC0C31E028C9E12D4 /* SpotFileChooser.swift in Sources */,
 				171BEA4AA57BCA3E3AA05DBC /* SpotFormView.swift in Sources */,
 				A00128D973B46FDF8DAB84E1 /* SpotGlass.swift in Sources */,
@@ -1089,6 +1117,7 @@
 				MARKETING_VERSION = 0.1;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				OPENSPOT_DEV_STATE = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -1126,6 +1155,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				OPENSPOT_DEV_STATE = "$(SRCROOT)/../.temp/openspot";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -1269,6 +1299,7 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				OPENSPOT_DEV_STATE = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;

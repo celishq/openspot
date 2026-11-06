@@ -41,6 +41,8 @@
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>Openspot runs your plugins, and a plugin can ask another app to act, such as to paste.</string>
+	<key>OpenspotDevState</key>
+	<string>$(OPENSPOT_DEV_STATE)</string>
 	<key>SUAutomaticallyUpdate</key>
 	<true/>
 	<key>SUEnableAutomaticChecks</key>

@@ -52,14 +52,14 @@ public enum ShippedSpot: Equatable, Sendable {
         return commands
     }
 
-    /// The sheet that shows a shared spot before a person adds it.
+    /// The sheet that shows a shared spot before a person installs it.
     public static func command(reviewing review: SpotReview) -> PluginCommand {
         PluginCommand(
-            id: "openspot/add",
-            name: "Add \(review.name)",
+            id: "openspot/install",
+            name: review.name,
             url: review.folder,
             kind: .list,
-            symbol: "square.and.arrow.down",
+            symbol: review.symbol,
             subtitle: review.subtitle,
             read: .sheet,
             order: .max,

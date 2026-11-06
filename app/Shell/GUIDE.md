@@ -491,13 +491,13 @@ the metric.
 To send a spot to another person:
 
 1. Select the spot and press ⌘K.
-2. Choose "Copy to share". This puts a `.spot` file on the clipboard.
+2. Choose "Copy to share", or press ⌘⇧C. This puts a `.spot` file on the clipboard.
 3. Paste the file into a chat or a mail. Check it for secrets first, because Openspot does not.
 
-To add a spot that you got, double-click its `.spot` file, drop it on the Openspot item in the menu bar or on the panel, or
-copy the file and press ⌘V in the panel.
+To install a spot that you got, double-click its `.spot` file, drop it on the Openspot item in the menu bar or on the panel, or
+copy the file and press ⌘V in the panel. The panel says what the file is before you drop it.
 Openspot shows what runs by itself, each file that it replaces and all the text it can. It names each file that it cannot show,
-and a program comes first. Nothing runs until you press ⌘⏎ to add it.
+and a program comes first. Nothing runs until you press ⌘⏎ to install it.
 
 A `.spot` file is JSON. It holds a format number and the files:
 
@@ -513,12 +513,12 @@ A `.spot` file is JSON. It holds a format number and the files:
 - A script in a folder takes the whole folder. A widget takes each script that it places or opens.
 - A file that is not text uses `data`, in base64, in place of `text`.
 - Hidden files and `$OPENSPOT_DATA` stay behind.
-- A compiled program travels, but no one can read it first. Add one only if you trust the sender.
+- A compiled program travels, but no one can read it first. Install one only if you trust the sender.
 - A file with the same path is replaced, and the old file goes to the Trash.
 
-## Remove a spot
+## Delete a spot
 
-Select the spot, press ⌘K, choose "Remove" and press again. Its file goes to the Trash. The other files of its folder and
+Select the spot and press ⌘⌫ twice, or press ⌘K and choose "Delete". Its file goes to the Trash. The other files of its folder and
 what it keeps in `$OPENSPOT_DATA` stay. A widget file goes whole, with each widget in it.
 
 ## Check your work
