@@ -34,6 +34,8 @@ enum SpotCommandLine {
             run(.unknown("helper \(name)"))
         case .translateLanguages:
             finish { await SpotTranslation.languages() }
+        case .emoji(let tone):
+            finish { try EmojiCatalog().rows(tone: tone) }
         }
     }
 
@@ -68,7 +70,7 @@ enum SpotCommandLine {
                 print(try await work(), terminator: "")
                 exit(0)
             } catch {
-                FileHandle.standardError.write(Data("\(error.localizedDescription)\n".utf8))
+                FileHandle.standardError.write(Data("\((error as? PluginError)?.reason ?? error.localizedDescription)\n".utf8))
                 exit(1)
             }
         }

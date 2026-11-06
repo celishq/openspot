@@ -10,6 +10,7 @@ public enum CommandLineCall: Equatable, Sendable {
     case colorPick
     case translate(from: String?, to: String?)
     case translateLanguages
+    case emoji(tone: EmojiCatalog.Tone)
     /// Runs as the helper process of a capability. A script never makes this call, so the usage does not list it.
     case helper(String)
     case help
@@ -24,6 +25,8 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot color pick                          Prints the colour the person picks.
     openspot translate [--from code] [--to code] Translates the text on stdin.
     openspot translate languages                 Prints the languages it knows.
+    openspot emoji [--tone name]                 Prints each emoji as a row, with its name in the language of the Mac.
+                                                 A tone is none, light, medium-light, medium, medium-dark or dark.
 
     """
 
@@ -48,6 +51,13 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("color", "pick") where rest.count == 1: self = .colorPick
         case ("translate", "languages") where rest.count == 1: self = .translateLanguages
         case ("helper", let name?) where rest.count == 1: self = .helper(name)
+        case ("emoji", nil): self = .emoji(tone: .none)
+        case ("emoji", "--tone") where rest.count == 2:
+            guard let tone = EmojiCatalog.Tone(rawValue: rest[1]) else {
+                self = .unknown(arguments.joined(separator: " "))
+                return
+            }
+            self = .emoji(tone: tone)
         case ("translate", _):
             guard let options = Self.options(rest) else {
                 self = .unknown(arguments.joined(separator: " "))

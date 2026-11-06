@@ -31,6 +31,7 @@
 		1847C82CBD188D7F2484EED3 /* HotKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96AC0CDE42355E19E796FFAE /* HotKey.swift */; };
 		1B2CDB90B88E5511523F2326 /* SheetLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48B0DA6204425E910C82D1D7 /* SheetLayoutTests.swift */; };
 		1CF5567E1D24FC45AE351B57 /* FormDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16E37DCD672217857DB73934 /* FormDraft.swift */; };
+		1F24FD07F4D69F885E0C71BC /* EmojiCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 774D72ACBE8FD9E50EEDD344 /* EmojiCatalog.swift */; };
 		20F1C05159DE44BAE6387F89 /* SpotDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B9CA12646EEE78E08CEF188 /* SpotDrop.swift */; };
 		214016A13D01C3113B2ED3A2 /* GuidePluginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2B40429524E1DBC6B1DF6D4 /* GuidePluginTests.swift */; };
 		21D10EFB84BFEC54867B0769 /* ActionMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1515F0BF5A74C93DA79290EA /* ActionMenu.swift */; };
@@ -147,6 +148,7 @@
 		C044D042B8D109476119D949 /* PartCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AC1B5E5F6ECDF3C71C6FC3B /* PartCatalog.swift */; };
 		C53A4B9A0F047839D54E875E /* SearchPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA83FEB9ADE31C13E14CF521 /* SearchPrompt.swift */; };
 		C5D1745B2ADE99D8D1AEF40F /* SpotSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CABBF83B134EDFE985B6ECBB /* SpotSheetView.swift */; };
+		C624547B076FE8A68F13BF37 /* EmojiCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF096BD2E9025B33FF465C8 /* EmojiCatalogTests.swift */; };
 		C630389F78169FE5CD722981 /* PluginHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8C706E0624B044F0CB6CF0 /* PluginHeader.swift */; };
 		C65DE74FA9B67DB602B6B757 /* SpotCardDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB18034A90A96E5ED8CA2E79 /* SpotCardDrop.swift */; };
 		C9D26DAF8D6E073BEB6E59C3 /* SpotGridTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70703B1BFAD84794E4BDC0F9 /* SpotGridTests.swift */; };
@@ -255,6 +257,7 @@
 		4C5939868A8BC2E7F5717AD6 /* SamplePluginsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SamplePluginsTests.swift; sourceTree = "<group>"; };
 		4C8871F0DEA0292B7C5FCC70 /* TrayMarkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrayMarkTests.swift; sourceTree = "<group>"; };
 		4C8C706E0624B044F0CB6CF0 /* PluginHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginHeader.swift; sourceTree = "<group>"; };
+		4CF096BD2E9025B33FF465C8 /* EmojiCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiCatalogTests.swift; sourceTree = "<group>"; };
 		4DD60206558D5C0CD4DB5CB3 /* PluginCommandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginCommandTests.swift; sourceTree = "<group>"; };
 		4E22A08D33D8887A85F950C9 /* SpotSheetPicture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSheetPicture.swift; sourceTree = "<group>"; };
 		4F76EE32BFF0C76A3FFDAF04 /* ScriptProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptProcess.swift; sourceTree = "<group>"; };
@@ -286,6 +289,7 @@
 		739B5C48B6D3AACC37BE65C8 /* ShortcutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutTests.swift; sourceTree = "<group>"; };
 		7524080673E3B05F48D0A150 /* ScriptFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptFile.swift; sourceTree = "<group>"; };
 		7636C3ADEE9DFA0A2EF75CC9 /* Refusal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Refusal.swift; sourceTree = "<group>"; };
+		774D72ACBE8FD9E50EEDD344 /* EmojiCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiCatalog.swift; sourceTree = "<group>"; };
 		77CA1A1F50C44D2C91139D8A /* TextBlockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextBlockTests.swift; sourceTree = "<group>"; };
 		78CBA9CD15AA3230965C56B1 /* SpotKind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotKind.swift; sourceTree = "<group>"; };
 		7A561C7D1421FD80006D0042 /* SpotMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotMotion.swift; sourceTree = "<group>"; };
@@ -441,6 +445,7 @@
 				B2D62D8B5553AF2E9EF9AFF3 /* CommandKeyTests.swift */,
 				144AE8063E284949FC39AC18 /* CommandLineCallTests.swift */,
 				F6FD2BEB19EFA48253618461 /* ConfigFileTests.swift */,
+				4CF096BD2E9025B33FF465C8 /* EmojiCatalogTests.swift */,
 				D34F4DF9EE6D7D1505F40662 /* FileIconTests.swift */,
 				81708547DDCAC262759EB258 /* FormDraftTests.swift */,
 				E2B40429524E1DBC6B1DF6D4 /* GuidePluginTests.swift */,
@@ -579,6 +584,7 @@
 				C021CF9F5B97B67736BE3E06 /* CommandLineCall.swift */,
 				01B0A430AAAA24A466FFE908 /* Config.swift */,
 				DD31E61912B28C1E91FDC33B /* ConfigFile.swift */,
+				774D72ACBE8FD9E50EEDD344 /* EmojiCatalog.swift */,
 				5A0291DDC71A4CFB70EE6762 /* FileIcon.swift */,
 				16E37DCD672217857DB73934 /* FormDraft.swift */,
 				E6783066F18B3F7801CCCFBD /* HexColor.swift */,
@@ -866,6 +872,7 @@
 				0D91D4496EAE5754C1A90B2F /* CommandLineCall.swift in Sources */,
 				B91D284D93564E1AD42F117C /* Config.swift in Sources */,
 				613CCFCF5707057600DED8F3 /* ConfigFile.swift in Sources */,
+				1F24FD07F4D69F885E0C71BC /* EmojiCatalog.swift in Sources */,
 				B560A52BEC23C47F8E9926E1 /* FileIcon.swift in Sources */,
 				1CF5567E1D24FC45AE351B57 /* FormDraft.swift in Sources */,
 				090BE9AED146522AE27B6B6B /* HexColor.swift in Sources */,
@@ -994,6 +1001,7 @@
 				4B7C93C33BDED640FF7F5819 /* CommandKeyTests.swift in Sources */,
 				B2E3C86E6FCF335C8CFD98EE /* CommandLineCallTests.swift in Sources */,
 				7BC0C70985AB0064E9D7068D /* ConfigFileTests.swift in Sources */,
+				C624547B076FE8A68F13BF37 /* EmojiCatalogTests.swift in Sources */,
 				3B8FBB08AF6DE22373101644 /* FileIconTests.swift in Sources */,
 				0D925E836160D970705BB7A4 /* FormDraftTests.swift in Sources */,
 				214016A13D01C3113B2ED3A2 /* GuidePluginTests.swift in Sources */,
