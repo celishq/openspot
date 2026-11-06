@@ -168,7 +168,7 @@ A file with no header key has one call: `<script>`, on a click.
 | ID | Rule |
 |---|---|
 | M1 | A script has one read at a time. A new request for a read joins the read that runs. |
-| M2 | A request for a read uses an answer that is younger than 5 seconds. A read after a change of state does not. |
+| M2 | A read that a `panel` or a `sheet` moment asks for uses an answer that is younger than 5 seconds. A read after a change of state does not. A read from a number in `read`, from `every=`, from `launch` or from `wake` always runs, so `read=1` shows a value that is 1 second old. |
 | M3 | Reads run at the same time. The panel never waits for one script. A spot shows its header until its answer arrives. |
 | M4 | After a call with no frame, Openspot reads a script that has a `read` key once, by M1. |
 | M5 | A read must be safe at each moment that its header lists. Only the author of the header can promise this. |

@@ -134,7 +134,7 @@ public final class ScriptProcess: @unchecked Sendable {
 
     /// Waits for the end of the process, up to the time given. Ends it by force after that.
     func finish(by deadline: Date) {
-        if waitForExit(seconds: deadline.timeIntervalSinceNow) { return }
+        if waitForExit(seconds: deadline.timeIntervalSinceNow), !isLive { return }
         deliver(SIGTERM)
         if !waitForExit(seconds: Self.forcePause) { deliver(SIGKILL) }
     }

@@ -42,7 +42,7 @@ public struct PluginFolder: Sendable {
                         result.refused.append(Refusal(file: id, reason: "\(command.name) cannot use key \(key.name), because another command has it"))
                         return command.withoutKey()
                     }
-                    result.plugins.append(Plugin(id: id, commands: commands, metrics: plugin.metrics))
+                    result.plugins.append(Plugin(id: id, commands: commands))
                 } catch {
                     let reason = (error as? PluginError)?.reason ?? String(describing: error)
                     result.refused.append(Refusal(file: id, reason: reason))

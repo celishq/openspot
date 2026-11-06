@@ -7,6 +7,7 @@ public struct SpotPanel: Equatable, Sendable {
     public private(set) var every: TimeInterval?
     public private(set) var generation = 0
     public private(set) var layout: SheetLayout?
+    private var changes: [String: Int] = [:]
 
     /// Returns nil when a script prints no parts.
     public init?(output: PluginOutput) {
@@ -36,7 +37,9 @@ public struct SpotPanel: Equatable, Sendable {
     @discardableResult
     public mutating func set(_ value: String, of id: String) -> Int {
         parts.firstIndex { $0.id == id }.map { parts[$0].set(value) }
-        return advance()
+        let generation = advance()
+        changes[id] = generation
+        return generation
     }
 
     /// Starts a new generation, which outdates each call under way.
@@ -46,14 +49,15 @@ public struct SpotPanel: Equatable, Sendable {
         return generation
     }
 
-    /// Takes a later frame of a stream, unless a newer change has outdated it. A frame with a layout replaces the sheet, and
-    /// a frame with only parts changes those parts.
+    /// Takes a frame of a call that runs. A frame with a layout replaces the sheet, and a frame with only parts changes those
+    /// parts. A call older than a change leaves alone each part that changed since, and does not replace the sheet.
     @discardableResult
     public mutating func merge(_ output: PluginOutput, answering generation: Int? = nil, keeping id: String? = nil) -> Bool {
-        guard generation == nil || generation == self.generation, !output.parts.isEmpty else { return false }
-        if output.layout != nil { return take(output, answering: self.generation, keeping: id) }
+        guard !output.parts.isEmpty else { return false }
+        let isNewest = generation == nil || generation == self.generation
+        if output.layout != nil, isNewest { return take(output, answering: self.generation, keeping: id) }
         let kept = parts.first { $0.id == id }?.value
-        for part in output.parts {
+        for part in output.parts where isNewest || (changes[part.id] ?? 0) <= (generation ?? 0) {
             if let index = parts.firstIndex(where: { $0.id == part.id }) {
                 parts[index] = part
             } else {

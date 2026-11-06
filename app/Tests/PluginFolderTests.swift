@@ -121,7 +121,7 @@ final class PluginFolderTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.commands, [])
-        XCTAssertEqual(scan.metrics.map(\.refresh), [30])
+        XCTAssertEqual(scan.metrics.map(\.read?.seconds), [30])
     }
 
     func testAStayingScriptIsAList() throws {
@@ -162,9 +162,9 @@ final class PluginFolderTests: XCTestCase {
 
         XCTAssertEqual(scan.commands, [])
         XCTAssertEqual(metric.id, "cups")
-        XCTAssertEqual(metric.label, "Cups")
+        XCTAssertEqual(metric.name, "Cups")
         XCTAssertEqual(metric.symbol, "cup.and.saucer")
-        XCTAssertEqual(metric.refresh, 30)
+        XCTAssertEqual(metric.read?.seconds, 30)
     }
 
     func testAMetricWithAKeyIsAlsoAList() throws {

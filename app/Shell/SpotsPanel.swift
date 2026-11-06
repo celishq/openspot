@@ -13,7 +13,7 @@ final class SpotsPanel: NSPanel {
     func show() {
         model?.finishPick()
         model?.selected = 0
-        Task { await model?.reload() }
+        model?.panelWillShow()
         makeKeyAndOrderFront(nil)
         DispatchQueue.main.async { self.model?.isShown = true }
     }

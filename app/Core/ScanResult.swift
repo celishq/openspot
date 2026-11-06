@@ -7,18 +7,19 @@ public struct ScanResult: Equatable, Sendable {
         self.refused = refused
     }
 
-    /// The commands in their grid order: a lower `order` first, and otherwise as the folder sorts them.
+    /// The commands with a card, in their grid order: a lower `order` first, and otherwise as the folder sorts them.
     public var commands: [PluginCommand] {
-        plugins.flatMap(\.commands).sorted { $0.order < $1.order }
+        plugins.flatMap(\.commands).filter(\.hasSpot).sorted { $0.order < $1.order }
     }
 
-    public var metrics: [PluginMetric] {
-        plugins.flatMap(\.metrics)
+    /// Each script, with a card or not. A widget is not a script.
+    public var scripts: [PluginCommand] {
+        plugins.flatMap(\.commands).filter { $0.kind != .widget }
     }
 
-    /// Leaves out each widget that names a metric or a command no plugin has, and reports why.
+    /// Leaves out each widget that names a script with no `read` or a command no plugin has, and reports why.
     mutating func removeWidgetsWithLostParts() {
-        let metrics = Set(metrics.map(\.id))
+        let metrics = Set(scripts.filter { $0.read != nil }.map(\.id))
         let commands = Set(commands.map(\.id))
         plugins = plugins.map { plugin in
             let kept = plugin.commands.filter { command in
@@ -30,7 +31,7 @@ public struct ScanResult: Equatable, Sendable {
                 if let reason { refused.append(Refusal(file: plugin.id, reason: reason)) }
                 return reason == nil
             }
-            return Plugin(id: plugin.id, commands: kept, metrics: plugin.metrics)
+            return Plugin(id: plugin.id, commands: kept)
         }
     }
 }

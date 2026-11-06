@@ -4,34 +4,48 @@ import OpenspotCore
 @MainActor
 @Observable
 final class SpotsModel {
+    /// One card: a script, which reads from its sheet, or a widget, or a row that the main search found.
     struct Entry: Identifiable {
         let id: String
-        let kind: SpotKind
         let size: SpotSize
-        let symbol: String
-        var command: PluginCommand
         let item: SpotItem?
-        var state: SpotState
+        private let sheet: SpotSheet?
+        private let fixedCommand: PluginCommand
+        private let fixedState: SpotState
 
-        init(command: PluginCommand, state: SpotState) {
+        init(command: PluginCommand, sheet: SpotSheet?) {
             id = command.id
-            kind = command.kind
             size = command.size
-            symbol = command.symbol
-            self.command = command
             item = nil
-            self.state = state
+            self.sheet = sheet
+            fixedCommand = command
+            fixedState = command.headerState
         }
 
         /// A wide card for an item that the main search found in a list.
         init(command: PluginCommand, item: SpotItem) {
             id = "\(command.id)\n\(item.run)"
-            kind = .launch
             size = .wide
-            symbol = item.symbol ?? command.symbol
-            self.command = command
             self.item = item
-            state = SpotState(title: item.title, subtitle: item.subtitle ?? command.name)
+            sheet = nil
+            fixedCommand = command
+            fixedState = SpotState(title: item.title, subtitle: item.subtitle ?? command.name)
+        }
+
+        @MainActor var command: PluginCommand {
+            sheet?.command ?? fixedCommand
+        }
+
+        @MainActor var kind: SpotKind {
+            item == nil ? command.kind : .launch
+        }
+
+        @MainActor var symbol: String {
+            item?.symbol ?? command.symbol
+        }
+
+        @MainActor var state: SpotState {
+            sheet?.state ?? fixedState
         }
     }
 
@@ -46,11 +60,7 @@ final class SpotsModel {
 
     private typealias Target = (entry: Entry, item: SpotItem?)
 
-    private static let stateTimeout: TimeInterval = 2
-    private static let actionTimeout: TimeInterval = 30
-    private static let itemsTimeout: TimeInterval = 10
     private static let globalItemLimit = 6
-    private static let metricTick: UInt64 = 1_000_000_000
 
     var entries: [Entry] = [] {
         didSet { updateVisible() }
@@ -66,12 +76,8 @@ final class SpotsModel {
     var openList: String?
     private(set) var sheetMoves = true
     private var closingPick: (item: SpotItem, entry: Entry)?
-    private(set) var sheets: [String: SpotSheet] = [:]
-    var isShown = false {
-        didSet {
-            if isShown != oldValue { updateMetricLoop() }
-        }
-    }
+    private let runs: SpotRuns
+    var isShown = false
     var dismiss: () -> Void = {}
     var show: () -> Void = {}
     var notify: (String) -> Void = { _ in }
@@ -80,14 +86,26 @@ final class SpotsModel {
     private(set) var menu: ActionMenu?
     private var menuTarget: Target?
     private(set) var form: FormSession?
-    private(set) var readings: [String: MetricReading] = [:]
-    private var metrics: [PluginMetric] = []
-    private var metricSchedule = MetricSchedule()
-    private var metricLoop: Task<Void, Never>?
-    private var outputs: [String: PluginOutput] = [:]
 
-    /// Reads the plugin folder again, and asks each plugin for its state.
-    func reload() async {
+    init() {
+        runs = SpotRuns(
+            recent: { UserDefaults.standard.stringArray(forKey: Self.recentKey($0)) ?? [] },
+            prepare: { await SpotIconStore.shared.prepare($0) }
+        )
+        runs.onReport = { [weak self] _, report in self?.take(report) }
+    }
+
+    var sheets: [String: SpotSheet] {
+        runs.sheets
+    }
+
+    /// What each script last gave a widget to draw.
+    var readings: [String: MetricReading] {
+        runs.readings
+    }
+
+    /// Reads the plugin folder again. No script runs for this, and each card shows its header until its answer arrives.
+    func reload() {
         let folder = PluginFolder.standard()
         let shipped = ShippedSpot.commands(
             folder: folder.url,
@@ -95,99 +113,35 @@ final class SpotsModel {
             app: Bundle.main.executablePath ?? ""
         )
         let scan = (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
-        var entries: [Entry] = []
         var problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
-        scan.commands.filter { $0.kind == .list }.forEach { _ = sheet(for: $0) }
-        scan.commands.filter { $0.kind == .list && $0.read?.has(.panel) == true }.forEach { sheets[$0.id]?.read() }
         if scan.commands.allSatisfy({ $0.shipped != nil }) {
             problems.append("No plugins in \(folder.url.path)")
         }
-        for command in scan.commands {
-            do {
-                let opened = try await command.opened(timeout: Self.stateTimeout)
-                if command.readsState, opened.command.kind == .list {
-                    sheet(for: opened.command).read()
-                }
-                entries.append(Entry(command: opened.command, state: opened.state))
-            } catch {
-                entries.append(Entry(command: command, state: command.headerState))
-                problems.append("\(command.name) failed. \(Self.reason(error))")
-            }
-        }
-        for index in entries.indices {
-            if let output = outputs[entries[index].id] { entries[index].command = entries[index].command.taking(output) }
-        }
-        self.entries = entries
-        metrics = scan.metrics
-        for metric in metrics {
-            let reading = readings[metric.id]
-            if reading?.label != metric.label || reading?.headerSymbol != metric.symbol {
-                readings[metric.id] = MetricReading(label: metric.label, headerSymbol: metric.symbol)
-            }
-        }
-        readDueMetrics()
-        if metricLoop == nil { updateMetricLoop() }
+        runs.take(scan)
+        entries = scan.commands.map { Entry(command: $0, sheet: runs.sheets[$0.id]) }
         if problems != self.problems, !problems.isEmpty {
             notify(problems.joined(separator: " "))
         }
         self.problems = problems
     }
 
-    /// Keeps the metrics fresh while the panel shows them, or while the menu bar shows any.
-    private func updateMetricLoop() {
-        metricLoop?.cancel()
-        metricLoop = nil
-        guard isShown || metrics.contains(where: \.isTray) else { return }
-        metricLoop = Task {
-            while !Task.isCancelled {
-                readDueMetrics()
-                try? await Task.sleep(nanoseconds: Self.metricTick)
-            }
-        }
+    /// Looks at the plugin folder and asks each script that the panel shows, at the same time.
+    func panelWillShow() {
+        reload()
+        runs.panelOpened()
     }
 
-    /// Reads each wanted metric whose refresh time has passed.
-    private func readDueMetrics() {
-        let wanted = MetricSchedule.wanted(metrics, by: entries.map(\.command), isPanelOpen: isShown)
-        for metric in metricSchedule.takeDue(wanted, now: Date()) {
-            Task {
-                do {
-                    let value = try await metric.read(timeout: Self.itemsTimeout)
-                    readings[metric.id]?.take(value)
-                } catch {
-                    readings[metric.id]?.markStale()
-                }
-            }
-        }
+    /// Stops each call as the app quits.
+    func quit() {
+        runs.quit()
     }
 
-    /// The sheet of a list command, with the command as the folder last gave it.
-    private func sheet(for command: PluginCommand) -> SpotSheet {
-        if let sheet = sheets[command.id] {
-            sheet.update(command)
-            return sheet
-        }
-        let sheet = SpotSheet(
-            command: command,
-            recent: UserDefaults.standard.stringArray(forKey: Self.recentKey(command.id)) ?? [],
-            prepare: { await SpotIconStore.shared.prepare($0) }
-        )
-        sheet.onReport = { [weak self] in self?.take($0, of: command.id) }
-        sheets[command.id] = sheet
-        return sheet
-    }
-
-    private func take(_ report: SpotSheet.Report, of id: String) {
+    private func take(_ report: SpotSheet.Report) {
         switch report {
         case .toast(let text): confirm(text)
         case .failure(let text): notify(text)
         case .listChange: if !query.isEmpty { updateVisible() }
         case .frame: break
-        case .output(let output):
-            outputs[id] = output
-            if let index = entries.firstIndex(where: { $0.id == id }) {
-                entries[index].command = entries[index].command.taking(output)
-            }
         }
     }
 
@@ -197,22 +151,6 @@ final class SpotsModel {
 
     private static func reason(_ error: Error) -> String {
         (error as? PluginError)?.reason ?? error.localizedDescription
-    }
-
-    /// Runs an action on a spot, and shows the state the plugin then reports.
-    private func perform(_ action: SpotAction, on entry: Entry, reloads: Bool = false) {
-        Task {
-            do {
-                if let toast = try await entry.command.perform(action, timeout: Self.actionTimeout) { confirm(toast) }
-            } catch {
-                notify("\(entry.state.title) failed. \(Self.reason(error))")
-            }
-            if reloads || entry.command.pick == .stay { sheets[entry.id]?.read() }
-            guard entry.kind != .slider, closingPick == nil,
-                  let state = try? await entry.command.state(timeout: Self.stateTimeout),
-                  let index = entries.firstIndex(where: { $0.id == entry.id }) else { return }
-            entries[index].state = state
-        }
     }
 
     /// Shows each spot the search finds, then the items it finds in the lists that offer them.
@@ -239,9 +177,8 @@ final class SpotsModel {
     }
 
     func adjustSelected(by delta: Double) {
-        guard let entry = selectedEntry, entry.kind == .slider, let index = index(of: entry) else { return }
-        entries[index].state = entries[index].state.adjusted(by: delta)
-        perform(.level(entries[index].state.level ?? 0), on: entries[index])
+        guard let entry = selectedEntry, entry.kind == .slider else { return }
+        sheets[entry.id]?.setLevel((entry.state.level ?? 0) + delta)
     }
 
     func tap(_ id: String) {
@@ -251,11 +188,7 @@ final class SpotsModel {
     }
 
     func setLevel(_ id: String, to value: Double) {
-        guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
-        let before = entries[index].state.level
-        entries[index].state = entries[index].state.withLevel(value)
-        guard entries[index].state.level != before else { return }
-        perform(.level(entries[index].state.level ?? 0), on: entries[index])
+        sheets[id]?.setLevel(value)
     }
 
     func runSelected() {
@@ -270,6 +203,10 @@ final class SpotsModel {
     /// Runs a command by its key, with the panel open only when its spot needs it.
     func press(_ id: String) {
         guard let entry = entries.first(where: { $0.id == id }) else { return }
+        if let sheet = sheets[id], sheet.awaitsAnswer {
+            sheet.afterAnswer { [weak self] in self?.press(id) }
+            return
+        }
         guard entry.kind.opensSheet else {
             run(entry)
             return
@@ -284,19 +221,16 @@ final class SpotsModel {
             pick(item, of: list)
             return
         }
-        guard let index = index(of: entry) else { return }
+        if let sheet = sheets[entry.id], sheet.awaitsAnswer {
+            sheet.afterAnswer { [weak self] in self?.run(entry) }
+            return
+        }
         switch entry.kind {
         case .toggle:
-            let action = SpotAction.toggle(entry.state)
-            entries[index].state = SpotState(
-                title: entry.state.title,
-                subtitle: entry.state.subtitle,
-                on: action.arguments == ["on"]
-            )
-            perform(action, on: entry)
+            sheets[entry.id]?.pressCard()
         case .launch:
-            if isShown { dismiss() }
-            perform(entry.command.click, on: entry)
+            if isShown, sheets[entry.id]?.isCardRunning != true { dismiss() }
+            sheets[entry.id]?.pressCard()
         case .list:
             sheetMoves = true
             if openList == entry.id {
@@ -311,12 +245,9 @@ final class SpotsModel {
         }
     }
 
-    /// The marks of the metrics that show in the menu bar, by metric.
+    /// The marks of the scripts that show in the menu bar, by script.
     var trayMarks: [(id: String, mark: TrayMark)] {
-        metrics.filter(\.isTray).compactMap { metric in
-            guard let reading = readings[metric.id], let mark = TrayMark(reading: reading) else { return nil }
-            return (metric.id, mark)
-        }
+        runs.trayMarks
     }
 
     /// Opens the list of a metric that is also a list, or else selects the widget that places it. Closes the panel
@@ -343,10 +274,6 @@ final class SpotsModel {
         let list = visible
         guard list.indices.contains(selected) else { return nil }
         return list[selected]
-    }
-
-    private func index(of entry: Entry) -> Int? {
-        entries.firstIndex { $0.id == entry.id }
     }
 
     var placements: [SpotPlacement] {
@@ -410,13 +337,13 @@ final class SpotsModel {
         sheets.values.forEach { $0.close() }
     }
 
-    /// Closes the sheet of a staying script when the panel has faded, so that the next open starts it again.
+    /// Closes each sheet of parts when the panel has faded, and stops the reads that nothing wants now. A sheet of rows stays
+    /// open.
     func panelDidHide() {
-        if openSheet?.command.stays == true {
+        runs.panelClosed()
+        if let openSheet, !openSheet.isOpen {
             sheetMoves = false
-            closeList()
-        } else {
-            sheets.values.filter { $0.command.stays }.forEach { $0.close() }
+            openList = nil
         }
     }
 
@@ -465,7 +392,7 @@ final class SpotsModel {
         closeList()
     }
 
-    private func pick(_ item: SpotItem, of entry: Entry, action: SpotAction? = nil) {
+    private func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil) {
         if action != nil || entry.command.pick == .close {
             closingPick = (item, entry)
             if isShown {
@@ -474,7 +401,11 @@ final class SpotsModel {
                 finishPick()
             }
         }
-        perform(action ?? .item(item), on: entry)
+        if let action {
+            sheets[entry.id]?.run(action, item: item)
+        } else {
+            sheets[entry.id]?.pick(item)
+        }
     }
 
     /// What the actions menu and the action keys work on: the selected row, or else the selected card.
@@ -608,19 +539,19 @@ final class SpotsModel {
         if action.isForm {
             openForm(action, on: target)
         } else if action.after == .stay {
-            perform(.action(action, item: target.item), on: target.entry, reloads: true)
+            sheets[target.entry.id]?.run(action, item: target.item)
         } else if let item = target.item {
-            pick(item, of: target.entry, action: .action(action, item: item))
+            pick(item, of: target.entry, action: action)
         } else {
             if isShown { dismiss() }
-            perform(.action(action, item: nil), on: target.entry)
+            sheets[target.entry.id]?.run(action, item: nil)
         }
     }
 
     private func openForm(_ action: CommandAction, on target: Target, prefill: String = "") {
         Task {
             do {
-                let form = try await target.entry.command.form(action, item: target.item, timeout: Self.actionTimeout)
+                guard let form = try await sheets[target.entry.id]?.form(action, item: target.item) else { return }
                 let opensSheet = openList != target.entry.id
                 if opensSheet {
                     sheetMoves = isShown
@@ -661,9 +592,7 @@ final class SpotsModel {
         }
         Task {
             do {
-                let run = try await form.entry.command.submit(form.action, item: form.item, draft: form.draft, timeout: Self.actionTimeout)
-                self.form = nil
-                sheets[form.entry.id]?.read(selecting: run.isEmpty ? nil : run)
+                if try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: form.draft) == true { self.form = nil }
             } catch {
                 notify("\(form.action.title) failed. \(Self.reason(error))")
             }

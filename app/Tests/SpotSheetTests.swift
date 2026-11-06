@@ -18,7 +18,7 @@ final class SpotSheetTests: XCTestCase {
         let url = folder.appendingPathComponent("\(name).sh")
         try "#!/bin/sh\n\(body)\n".write(to: url, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
-        return SpotSheet(command: PluginCommand(id: name, name: name, url: url, kind: .list, read: read, stays: stays))
+        return SpotRuns().sheet(for: PluginCommand(id: name, name: name, url: url, kind: .list, read: read ?? (stays ? nil : .sheet), stays: stays))
     }
 
     private func path(_ name: String) -> String {
@@ -42,11 +42,11 @@ final class SpotSheetTests: XCTestCase {
 
         sheet.read()
         try await wait("the row") { sheet.list.shown.count == 1 }
-        sheet.read()
+        sheet.read(need: .change)
         try await wait("no rows") { sheet.list.shown.isEmpty }
     }
 
-    func testAReadReplacedByANewerOneLeavesTheRows() async throws {
+    func testAReadThatOthersJoinLeavesTheRows() async throws {
         let sheet = try make("""
         [ -f '\(path("second"))' ] || { touch '\(path("second"))'; printf 'row=A\\nrun=a\\n'; exit 0; }
         sleep 0.3
@@ -55,8 +55,8 @@ final class SpotSheetTests: XCTestCase {
         sheet.read()
         try await wait("the row") { sheet.list.shown.count == 1 }
 
-        sheet.read()
-        sheet.read()
+        sheet.read(need: .change)
+        sheet.read(need: .change)
         var lowest = 1
         for _ in 0..<80 {
             lowest = min(lowest, sheet.list.shown.count)
@@ -67,13 +67,15 @@ final class SpotSheetTests: XCTestCase {
         XCTAssertEqual(sheet.list.shown.count, 1)
     }
 
-    func testClosingLeavesAReadThatHasNoFrameYet() async throws {
+    func testClosingStopsAReadThatNothingElseWants() async throws {
         let sheet = try make("sleep 0.2\nprintf 'row=A\\nrun=a\\n'")
 
         sheet.open {}
         sheet.close()
+        try await Task.sleep(for: .milliseconds(500))
 
-        try await wait("the row") { sheet.list.shown.count == 1 }
+        XCTAssertEqual(sheet.list.shown.count, 0)
+        XCTAssertFalse(sheet.list.isLoading)
     }
 
     func testClosingOneSheetLeavesTheReadOfAnother() async throws {

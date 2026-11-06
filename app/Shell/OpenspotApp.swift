@@ -45,7 +45,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         let trigger = CommandTrigger(model: model, toast: toast)
         self.trigger = trigger
         trayBar = SpotTrayBar(model: model)
-        Task { await model.reload() }
+        model.reload()
         let panelKey = HotKey.register(code: UInt32(kVK_Space), modifiers: UInt32(controlKey)) { [weak self] in
             Task { @MainActor in self?.togglePanel() }
         }
@@ -53,6 +53,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             Task { @MainActor in trigger.press() }
         }
         hotKeys = [panelKey, triggerKey].compactMap { $0 }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        model.quit()
     }
 
     @objc func togglePanel() {
