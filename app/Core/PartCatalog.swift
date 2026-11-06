@@ -106,8 +106,13 @@ public enum PartCatalog {
     ## Long work and running scripts
 
     A call can keep printing. A line `---` ends a frame, and the app draws it at once. A frame with a layout replaces the \
-    sheet, and a frame with only parts changes those parts, so print `part`, `cell` and the keys again for each one. A new \
-    change or press stops the running call, and so does closing the sheet.
+    sheet, and a frame with only parts changes those parts, so print `part`, `cell` and the keys again for each one.
+
+    A `read` has 10 seconds until its first frame or its end, and it stops when nothing wants it, such as when its sheet \
+    closes. Any other name has no time limit, and it keeps running with the sheet and the panel closed. A new value for a part \
+    stops the older call of that part. A second press of a running part, action or card stops its call: it gets the terminate \
+    signal, and then 2 seconds to end. Quitting Openspot stops each call. A stopped call changes nothing. Closing the panel \
+    closes a sheet of parts and drops its values.
 
     A script with `# stay=true` in its header runs while its sheet is open, so a model or a connection stays loaded between \
     calls. It gets one block on its standard input for each call, with a blank line after it: `name`, `value`, and one \

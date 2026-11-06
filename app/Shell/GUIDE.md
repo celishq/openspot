@@ -44,7 +44,7 @@ open -a Calendar
 | `size` | `wide` (the default), `small`, `square` or `strip`. |
 | `order` | Its place in the grid. A lower number comes first, and the default is 0. |
 | `read` | When Openspot reads the script. See below. |
-| `rank` | Shows its rows in the main search. A lower number comes first. Needs `panel`, `launch` or a number in its `read`. |
+| `rank` | Shows its rows in the main search. A lower number comes first. Needs `panel`, `launch` or a number in its `read`. A number also needs a `key`, or Openspot refuses the plugin. |
 | `tray` | `true` to show a metric in the menu bar. Needs a number in its `read`. `stay=true` also loads, and shows nothing there yet. |
 | `stay` | `true` to keep the script running. See "Sheets of parts". |
 | `drop` | A list of file extensions, `folder` or `*`. Openspot keeps this key, and does not act on it yet. |
@@ -59,7 +59,9 @@ open -a Calendar
 | a number | Every that many seconds. | A metric. It has no spot unless it also has a `key`. |
 | `launch`, `wake` | Not yet. Openspot keeps these words, and does not act on them yet. | |
 
-A read must be safe at each moment that its header lists, so `read` does no work.
+A read must be safe at each moment that its header lists, so `read` does no work. A script has one read at a time. A
+`panel` or a `sheet` moment uses an answer that is younger than 5 seconds. A number and `every=` always run. After a call
+that prints no state, Openspot reads the script again.
 
 ## The calls
 
@@ -253,8 +255,26 @@ Openspot shows a change at once, and only the answer to the newest change shows.
 a slider's motion. Text that the person is typing stays as typed until they press something.
 
 A call can keep printing, as `ffmpeg` does. A line `---` ends a frame, and the app draws it at once. A frame with a layout
-replaces the sheet, and a frame with only parts changes those parts. A new change or press stops the running call, and so
-does closing the sheet. Only the first frame has a time limit. To outlive the sheet, start the work with `nohup`.
+replaces the sheet, and a frame with only parts changes those parts.
+
+Two rules decide how long a call runs:
+
+- A `read` has 10 seconds until its first frame or its end. It stops when nothing wants it, so a stream from a `read` stops
+  when its sheet closes.
+- Any other name has no time limit. It keeps running with the sheet and the panel closed, and Openspot keeps its last frame
+  for the sheet. With no open sheet, a frame shows only its `toast`, its `on` and its `level`.
+
+These stop a call:
+
+- A new value for a part stops the older call of that part.
+- A second press of a running part, action or card stops its call. It gets the terminate signal, and then 2 seconds to end.
+- Quitting Openspot stops each call. To outlive the app, start the work with `nohup`.
+
+A stopped call changes nothing. A call ends when its output closes, so a script that leaves a child running sends the
+output of that child somewhere else. A failed call always tells the person. A failed `read` from a number only dims the
+last value.
+
+Closing the panel closes a sheet of parts and drops its values, and the next open reads again. A sheet of rows stays open.
 
 A script with `# stay=true` in its header runs while its sheet is open, so that a model or a connection stays loaded
 between calls. It starts when the sheet opens, and the sheet shows with its first frame. Closing the sheet or the panel
@@ -290,7 +310,7 @@ To use `openspot` in a terminal, link it: `ln -s <path to Openspot.app>/Contents
 
 ## Metrics
 
-A metric is one piece of live data. Any widget can show it. A script with a number in its `read` is a metric, and its ID is its path with no extension, such as `coffee` or `home/coffee`.
+A metric is one piece of live data. Any widget can show the value of any script with a `read`, by its ID, which is its path with no extension, such as `coffee` or `home/coffee`. A script with a number in its `read` keeps the value fresh, and it has no spot unless it also has a `key`.
 
 File `coffee.sh`:
 
@@ -302,7 +322,7 @@ File `coffee.sh`:
 printf 'title=3\ndetail=Last at 14:20\n'
 ```
 
-Openspot reads a metric only when a widget places it and the panel is open, or when a widget shows it in the menu bar.
+Openspot reads a metric only when a widget places it and the panel is open, or when the menu bar shows it.
 When a read fails, the last value stays and dims.
 
 `name` says what the metric measures, and each place shows it. Do not repeat it in the values. `symbol` can also be
@@ -392,7 +412,7 @@ openspot check <plugins folder>
 
 - Print only the data. Send each message for the person to stderr. When a script fails, its last stderr line shows.
 - Exit with 0 on success. Any other code is a failure.
-- Be fast. A `read=panel` that prints no rows has 2 seconds, a list or a metric has 10, and an action has 30.
+- Be fast in `read`. It has 10 seconds until its first frame or its end. Reads run at the same time, so a slow script delays no other. Any other name has no limit.
 - Keep files in `$OPENSPOT_DATA`, not in the plugin folder. Openspot creates this folder. All plugins share it, so name your
   files after your script.
 - Use short plain words in sentence case. Start an action's name with a verb.

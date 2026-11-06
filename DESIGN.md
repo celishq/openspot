@@ -170,7 +170,7 @@ A file with no header key has one call: `<script>`, on a click.
 | M1 | A script has one read at a time. A new request for a read joins the read that runs. |
 | M2 | A read that a `panel` or a `sheet` moment asks for uses an answer that is younger than 5 seconds. A read after a change of state does not. A read from a number in `read`, from `every=`, from `launch` or from `wake` always runs, so `read=1` shows a value that is 1 second old. |
 | M3 | Reads run at the same time. The panel never waits for one script. A spot shows its header until its answer arrives. |
-| M4 | After a call with no frame, Openspot reads a script that has a `read` key once, by M1. |
+| M4 | After a call with no frame, or with frames that show no `on`, `level` or part, Openspot reads a script that has a `read` key once, by M1. |
 | M5 | A read must be safe at each moment that its header lists. Only the author of the header can promise this. |
 
 ### Drops
@@ -394,27 +394,16 @@ Remove a row when the code follows the rule.
 
 | Rules | Module | Today | Target |
 |---|---|---|---|
-| A2 | `SpotsModel`, `MetricReading`, `PluginMetric` | A metric's value is in a separate `readings` table, and a metric is a separate type from a command. | One `SpotSheet` for each script. |
-| C4, `rank` | `SpotSheet`, `Plugin` | `read <text>` runs on each key. `rank` with a number and no `key` loads, and its rows join nothing. | A 300 ms pause. A refusal. |
-| F2, section 5 | `SpotSandboxModel` | `openspot sandbox <file>` calls `read`, also for a file with no `read`. | It calls the file as a click does. |
-| Section 5, moments | `SpotRead`, `SpotsModel` | `launch` and `wake` are words in `read`, and the command keeps them. Nothing calls `read` at those moments. | Both call `read` at their moment. |
-| Section 4, `tray` | `Plugin`, `SpotsModel` | `tray=true` with `stay=true` loads, and shows nothing in the menu bar. | It shows. |
-| Section 7 | `PluginCommand.perform`, `PluginRun.output` | A run, a pick and an action wait for the end, and stop at 30 s. Their frames do not show. | No limit. Frames show. |
-| L2, L4, L5 | `SpotSheet` | Closing a sheet stops its call. Each new change or press stops the older call. | L2, L4, L5. |
-| L6, L7, L8, G1 to G4 | Not built | Running work does not show on a card, an action or the menu bar item, and a sheet does not find its running call again. | L6, L7, L8, G1 to G4. |
-| D1 to D6 | `PluginCommand.drop` | The command keeps `drop`. Nothing else is built. | D1 to D6. |
-| A1 | `SpotsModel`, `SpotSheet`, `PluginMetric` | Each starts runs by itself. | One owner. |
-| A1 | `PluginRun`, `LiveScript` | Process start is written three times. | One way to start, with two modes. |
-| M1, M2 | Runs | `Caffeinate` runs twice for each panel open. `Apps` runs twice for a panel open and a sheet open. | One run. |
-| M3 | `SpotsModel.reload` | Reads state one script at a time, with a limit of 2 s for each. | At the same time, with the limit of section 7. |
+| Section 5, moments | `SpotRead`, `SpotRuns.arrive` | `launch` and `wake` are words in `read`, and the command keeps them. Nothing calls `read` at those moments. | Both call `read` at their moment. |
+| Section 4, `tray` | `Plugin`, `SpotRuns.trayMarks` | `tray=true` with `stay=true` loads, and shows nothing in the menu bar. | It shows. |
+| L6, G1 to G4 | `SpotSheet.calls` holds them, and nothing draws them | Running work does not show on a card, an action or the menu bar item. | L6, G1 to G4. |
+| D1 to D6 | `PluginCommand.drop`, `SpotSheet.calls` | The command keeps `drop`. Nothing else is built. | D1 to D6. |
 | K1 to K3 | `SpotTranslation`, `translate.sh` | The script starts `openspot translate --serve` and talks through fifos. | A handler that calls `openspot translate`. |
-| K5 | `SpotSheet` | Only a staying sheet starts empty and closes with the panel. | Each sheet of parts. |
-| Y2 | `SpotsModel`, `SpotSheet` | A pick or an action of a staying script, and a form, start a second copy. | Each call reaches the running script. |
-| L3, Y5 | `SpotSheet`, `LiveScript` | A staying script runs only while its sheet is open. | While something wants it. |
-| F7, section 9 | `PluginMetric`, `MetricSchedule`, widgets | Only a script with a number in its `read` can be placed. | Any script with a `read`. |
-| Docs | `GUIDE.md`, `PartCatalog` | They teach today's time limits and what stops a call, and say that `launch`, `wake`, `drop` and `tray` with `stay` do not act yet. | Follow section 7, the moments and the drops when each one is built. |
+| Y2 | `SpotSheet` | A pick or an action of a staying script, and a form, start a second copy. | Each call reaches the running script. |
+| L3, Y5 | `SpotSheet`, `SpotRuns.stay`, `SpotRuns.wants` | A staying script runs only while its sheet is open. | While something wants it. |
+| Docs | `GUIDE.md`, `PartCatalog` | They say that `launch`, `wake`, `drop` and `tray` with `stay` do not act yet. | Follow the moments, the drops and the menu bar when each one is built. |
 
-The tests in `SpotActionTests`, `SheetStreamTests`, `SpotPanelTests` and `SamplePluginsTests` pin the calls. Read them
+The tests in `SpotActionTests`, `SheetStreamTests`, `SpotPanelTests`, `SpotRunsTests` and `SamplePluginsTests` pin the calls. Read them
 before each change. Each change in this table is breaking, and no alias stays.
 
 ## 14. Decisions
