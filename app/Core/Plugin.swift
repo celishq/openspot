@@ -104,7 +104,10 @@ public struct Plugin: Equatable, Sendable {
             return nil
         }
         guard let name = text("name") else { throw PluginError.fault("a widget needs a name") }
-        guard let layoutName = text("layout") else { throw PluginError.fault("\(name) needs a layout") }
+        if case .strings(let drawing)? = table["grid"] {
+            return try drawn(drawing, table, name: name, id: id, url: url)
+        }
+        guard let layoutName = text("layout") else { throw PluginError.fault("\(name) needs a layout or a grid") }
         guard let layout = WidgetLayout(name: layoutName) else {
             throw PluginError.fault("\(name) has an unknown layout: \(layoutName). Use single, hero, pair or row")
         }
@@ -130,6 +133,41 @@ public struct Plugin: Equatable, Sendable {
             key: try key(text("key"), of: name),
             layout: layout,
             places: places,
+            opens: text("opens")
+        )
+    }
+
+    /// A widget with a drawing of its own, whose `places` names a metric for each letter.
+    private static func drawn(_ drawing: [String], _ table: [String: TomlDocument.Value], name: String, id: String, url: URL) throws -> PluginCommand {
+        func text(_ key: String) -> String? {
+            if case .string(let value)? = table[key] { return value }
+            return nil
+        }
+        if let fault = WidgetLayout.faults(in: drawing).first { throw PluginError.fault("\(name): \(fault)") }
+        var size: SpotSize?
+        if let sizeName = text("size") {
+            guard let asked = SpotSize(name: sizeName) else { throw PluginError.fault("\(name) has an unknown size: \(sizeName)") }
+            size = asked
+        }
+        let layout = WidgetLayout(drawing: drawing, size: size)
+        guard case .table(let places)? = table["places"] else {
+            throw PluginError.fault("\(name) needs places, with a metric for each letter of its grid")
+        }
+        if let letter = layout.letters.first(where: { places[$0] == nil }) {
+            throw PluginError.fault("\(name) needs a metric for the letter \(letter)")
+        }
+        if let letter = places.keys.sorted().first(where: { !layout.letters.contains($0) }) {
+            throw PluginError.fault("\(name) names the letter \(letter), which its grid does not have")
+        }
+        return PluginCommand(
+            id: "\(id)/\(name)",
+            name: name,
+            url: url,
+            kind: .widget,
+            size: layout.size,
+            key: try key(text("key"), of: name),
+            layout: layout,
+            places: layout.letters.compactMap { places[$0] },
             opens: text("opens")
         )
     }

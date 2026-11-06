@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-/// The places of a widget, each in the slot its layout gives it. A single place fills the card.
+/// The places of a widget, each in the cell its drawing gives it.
 struct SpotWidgetView: View {
     let layout: WidgetLayout
     let places: [String]
@@ -16,11 +16,12 @@ struct SpotWidgetView: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             ForEach(Array(zip(layout.slots.indices, layout.slots)), id: \.0) { index, slot in
-                let rect = layout == .single ? CGRect(origin: .zero, size: room) : SpotTokens.placeRect(slot, rows: layout.rows, room: room)
+                let rect = layout.rect(of: slot, in: room, gap: SpotTokens.placeGap, sideGap: SpotTokens.sideGap)
+                let form = layout.form(of: slot, on: card)
                 SpotMetricView(
                     reading: readings[places[index]],
-                    form: layout.form(of: slot, on: card),
-                    isMirrored: slot.form == .half && slot.column > 0,
+                    form: form,
+                    isMirrored: form == .half && slot.x0 > 0,
                     size: rect.size
                 )
                 .frame(width: rect.width, height: rect.height, alignment: .topLeading)

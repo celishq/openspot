@@ -15,13 +15,14 @@ public struct SpotSize: Equatable, Sendable {
         self.rows = rows
     }
 
-    /// The size a plugin header names: small, wide, square or strip.
+    /// The size a file names: small, wide, square, strip or large.
     public init?(name: String) {
         switch name {
         case "small": self = .small
         case "wide": self = .wide
         case "square": self = .square
         case "strip": self = .strip
+        case "large": self = .large
         default: return nil
         }
     }

@@ -1,12 +1,13 @@
 import Foundation
 
-/// The part of TOML a widget file uses: top-level pairs and arrays of tables, with strings, integers, booleans and one-line lists of strings.
+/// The part of TOML a widget file uses: top-level pairs and arrays of tables, with strings, integers, booleans, one-line lists of strings and one-line tables of strings.
 public struct TomlDocument: Equatable, Sendable {
     public enum Value: Equatable, Sendable {
         case string(String)
         case integer(Int)
         case boolean(Bool)
         case strings([String])
+        case table([String: String])
     }
 
     public private(set) var values: [String: Value] = [:]
@@ -46,6 +47,7 @@ public struct TomlDocument: Equatable, Sendable {
         let text = source.trimmingCharacters(in: .whitespaces)
         if text.hasPrefix("\"") { return string(text) }
         if text.hasPrefix("[") { return strings(text) }
+        if text.hasPrefix("{") { return table(text) }
         let bare = (text.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false).first ?? "")
             .trimmingCharacters(in: .whitespaces)
         switch bare {
@@ -77,6 +79,29 @@ public struct TomlDocument: Equatable, Sendable {
                 return tail.isEmpty || tail.hasPrefix("#") ? .strings(result) : nil
             default:
                 return nil
+            }
+        }
+        return nil
+    }
+
+    private static func table(_ text: String) -> Value? {
+        var result: [String: String] = [:]
+        var rest = text.dropFirst()
+        var key = ""
+        while let character = rest.popFirst() {
+            switch character {
+            case " ", "\t", ",":
+                continue
+            case "=":
+                rest = rest.drop { $0 == " " }
+                guard rest.popFirst() == "\"", !key.isEmpty, let item = quoted(&rest), result[key] == nil else { return nil }
+                result[key] = item
+                key = ""
+            case "}":
+                let tail = rest.trimmingCharacters(in: .whitespaces)
+                return key.isEmpty && (tail.isEmpty || tail.hasPrefix("#")) ? .table(result) : nil
+            default:
+                key.append(character)
             }
         }
         return nil

@@ -73,6 +73,73 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(WidgetLayout.hero.slots.map { WidgetLayout.hero.form(of: $0, on: .large) }, [.big, .line, .line, .line])
     }
 
+    func testAPlaceInARowOrAPairTakesItsFormFromItsCell() {
+        XCTAssertEqual(WidgetLayout.row.slots.map { WidgetLayout.row.form(of: $0, on: .strip) }, [.stat, .stat, .stat, .stat])
+        XCTAssertEqual(WidgetLayout.pair.slots.map { WidgetLayout.pair.form(of: $0, on: .strip) }, [.half, .half])
+    }
+
+    func testAWidgetWithADrawingPlacesAMetricOnEachLetter() throws {
+        try power()
+        try script("heat.sh", "#!/bin/sh\n# read=5\nprintf 'title=1\\n'\n")
+        try widgets("""
+        [[widgets]]
+        name = "Mine"
+        grid = ["a a b", "a a c"]
+        places = { c = "power", a = "heat", b = "power" }
+        """)
+
+        let command = try XCTUnwrap(try scan.commands.first { $0.kind == .widget })
+
+        XCTAssertEqual(command.places, ["heat", "power", "power"])
+        XCTAssertEqual(command.size, .large)
+        XCTAssertEqual(command.layout?.columns, 3)
+        XCTAssertEqual(command.layout?.rows, 2)
+        XCTAssertEqual(command.layout?.slots.first, SheetArea(x0: 0, x1: 1, y0: 0, y1: 1))
+    }
+
+    func testAWidgetDrawingCanAskForASize() throws {
+        try power()
+        try widgets("[[widgets]]\nname = \"Mine\"\ngrid = [\"a b\"]\nsize = \"wide\"\nplaces = { a = \"power\", b = \"power\" }\n")
+
+        XCTAssertEqual(try scan.commands.first { $0.kind == .widget }?.size, .wide)
+    }
+
+    func testAOneLineDrawingIsAStrip() {
+        XCTAssertEqual(WidgetLayout(drawing: ["a b c"]).size, .strip)
+    }
+
+    func testAWidgetDrawingNamesItsFault() throws {
+        let cases: [(grid: String, places: String, reason: String)] = [
+            ("\"a b\", \"a\"", "{ a = \"power\", b = \"power\" }", "Mine: each grid line needs the same number of columns"),
+            ("\"a -\"", "{ a = \"power\" }", "Mine: a widget's grid cannot have a divider"),
+            ("\"a b\", \"b a\"", "{ a = \"power\", b = \"power\" }", "Mine: the letter a is not a rectangle"),
+            ("\"a b\"", "{ a = \"power\" }", "Mine needs a metric for the letter b"),
+            ("\"a\"", "{ a = \"power\", z = \"power\" }", "Mine names the letter z, which its grid does not have")
+        ]
+        try power()
+        for item in cases {
+            try widgets("[[widgets]]\nname = \"Mine\"\ngrid = [\(item.grid)]\nplaces = \(item.places)\n")
+            XCTAssertEqual(try scan.refused.first?.reason, item.reason)
+        }
+    }
+
+    func testCellsKeepOneGapAndAWiderOneBetweenTheSides() throws {
+        let room = CGSize(width: 300, height: 100)
+        let hero = WidgetLayout.hero
+        let rects = hero.slots.map { hero.rect(of: $0, in: room, gap: 8, sideGap: 20) }
+
+        XCTAssertEqual(rects[1].minX - rects[0].maxX, 20, accuracy: 0.001)
+        XCTAssertEqual(rects[2].minY - rects[1].maxY, 8, accuracy: 0.001)
+        XCTAssertEqual(rects[3].maxY, 100, accuracy: 0.001)
+        XCTAssertEqual(rects[3].maxX, 300, accuracy: 0.001)
+
+        let three = WidgetLayout(drawing: ["a b c"])
+        let cells = three.slots.map { three.rect(of: $0, in: room, gap: 8, sideGap: 20) }
+        XCTAssertEqual(cells[1].minX - cells[0].maxX, 8, accuracy: 0.001)
+        XCTAssertEqual(cells[0].width, cells[2].width, accuracy: 0.001)
+        XCTAssertEqual(cells[2].maxX, 300, accuracy: 0.001)
+    }
+
     func testAReadingKeepsTheNameOfItsMetricBeforeAnyValue() {
         let reading = MetricReading(label: "Battery")
         XCTAssertEqual(reading.label, "Battery")
@@ -208,13 +275,13 @@ final class WidgetContractTests: XCTestCase {
         for layout in WidgetLayout.all {
             var cells = Set<[Int]>()
             for slot in layout.slots {
-                for row in slot.row..<(slot.row + slot.rows) {
-                    for column in slot.column..<(slot.column + slot.columns) {
+                for row in slot.y0...slot.y1 {
+                    for column in slot.x0...slot.x1 {
                         XCTAssertTrue(cells.insert([row, column]).inserted, layout.name)
                     }
                 }
             }
-            XCTAssertEqual(cells.count, layout.size.columns * layout.rows, layout.name)
+            XCTAssertEqual(cells.count, layout.columns * layout.rows, layout.name)
         }
     }
 

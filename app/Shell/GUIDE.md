@@ -312,8 +312,22 @@ places = ["agents", "battery", "cpu", "disk"]
 opens = "links"
 ```
 
-`places` fills the slots of the layout in order, and each slot needs one metric. `opens` is optional: it names the
+`places` fills the cells of the layout in order, and each cell needs one metric. `opens` is optional: it names the
 command that Enter or a click runs. `key` also works.
+
+A widget can also draw its own layout, in the same letters as a sheet's `grid`. Each letter is a rectangle, `.` is empty,
+and `places` names a metric for each letter:
+
+```toml
+[[widgets]]
+name = "Desk"
+grid = ["a a b b", "a a c c", "a a d d"]
+places = { a = "agents", b = "battery", c = "cpu", d = "disk" }
+```
+
+A one-line drawing is a `strip` and any other is `large`, unless `size` asks for another. The app sets the gaps, and each
+place takes its form from the room its cell has: a cell with two columns and two rows shows the large form, a shorter one
+a line, and one column of the card only the value.
 
 | Layout | Size | Places |
 |---|---|---|

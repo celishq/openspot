@@ -54,19 +54,6 @@ enum SpotTokens {
         CGFloat(rows) * rowHeight + CGFloat(rows - 1) * rowGap
     }
 
-    /// Where a place lies in the inner room of a card, on four columns and the rows of its layout. A wider gap parts the
-    /// two sides of the card.
-    static func placeRect(_ slot: WidgetLayout.Slot, rows: Int, room: CGSize) -> CGRect {
-        let cellWidth = (room.width - CGFloat(columns - 2) * placeGap - sideGap) / CGFloat(columns)
-        let cellHeight = (room.height - CGFloat(rows - 1) * placeGap) / CGFloat(rows)
-        return CGRect(
-            x: CGFloat(slot.column) * (cellWidth + placeGap) + (slot.column >= columns / 2 ? sideGap - placeGap : 0),
-            y: CGFloat(slot.row) * (cellHeight + placeGap),
-            width: CGFloat(slot.columns) * cellWidth + CGFloat(slot.columns - 1) * placeGap,
-            height: CGFloat(slot.rows) * cellHeight + CGFloat(slot.rows - 1) * placeGap
-        )
-    }
-
     /// The space between the edge of a card and what it shows. A 1x1 widget keeps more room for its one mark.
     static func cardPadding(for size: SpotSize, isWidget: Bool) -> CGFloat {
         isWidget && size == .small ? controlPadding : padding
