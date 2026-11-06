@@ -409,7 +409,6 @@ Remove a row when the code follows the rule.
 | Rules | Module | Today | Target |
 |---|---|---|---|
 | D2 | `SpotCardView`, `SpotMenuBarDrag` | A card shows the mark only while the drag is on it. | Each card that accepts the files shows it for the whole drag. |
-| C6 | `SheetFrameReader`, `TextBlock` | They loop over each byte. Several 1 MB values took 20 to 30 s in a Debug test. | A 1 MB paste answers in under 1 second in a Debug build, or a report of what limits it. |
 
 The tests in `SpotActionTests`, `SheetStreamTests`, `SpotPanelTests`, `SpotRunsTests` and `SamplePluginsTests` pin the calls. Read them
 before each change. Each change in this table is breaking, and no alias stays.

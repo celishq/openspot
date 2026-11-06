@@ -8,6 +8,22 @@ final class TextBlockTests: XCTestCase {
         XCTAssertEqual(blocks.map { $0.value("title") }, ["One", "Two"])
     }
 
+    func testALineOfWhiteSpaceEndsABlock() {
+        let blocks = TextBlock.blocks(in: "title=One\n \t\u{00A0}\r\ntitle=Two")
+
+        XCTAssertEqual(blocks.map { $0.value("title") }, ["One", "Two"])
+    }
+
+    func testABackslashThatEscapesNothingStays() {
+        XCTAssertEqual(TextBlock.blocks(in: "a=one\\")[0].value("a"), "one\\")
+        XCTAssertEqual(TextBlock.blocks(in: "a=\\")[0].value("a"), "\\")
+        XCTAssertEqual(TextBlock.blocks(in: "a=\\t")[0].value("a"), "\\t")
+    }
+
+    func testALineKeepsItsCharactersAroundAnEscape() {
+        XCTAssertEqual(TextBlock.blocks(in: #"é=ñ\n日本\\語"#)[0].value("é"), "ñ\n日本\\語")
+    }
+
     func testALineSplitsAtItsFirstEquals() {
         XCTAssertEqual(TextBlock.blocks(in: "run=a=b")[0].value("run"), "a=b")
     }
