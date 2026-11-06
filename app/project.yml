@@ -51,6 +51,16 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.app
         DEVELOPMENT_TEAM: ""
+  OpenspotStandIn:
+    type: tool
+    platform: macOS
+    sources:
+      - path: StandIn
+    dependencies:
+      - target: OpenspotCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.standin
   OpenspotTests:
     type: bundle.unit-test
     platform: macOS
@@ -58,6 +68,9 @@ targets:
       - path: Tests
     dependencies:
       - target: OpenspotCore
+      - target: OpenspotStandIn
+        link: false
+        embed: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.tests
