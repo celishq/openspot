@@ -37,7 +37,8 @@
 ## Verify
 
 ```sh
-make verify   # the Core check, then the XCTest suite
+make verify                # the Core check, then the XCTest suite, with test classes in parallel
+make test T=SpotRunsTests  # one test class, while you work on it
 ```
 
 `make verify` runs `xcodegen generate` first, so the project file matches the folders on disk.

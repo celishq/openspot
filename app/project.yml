@@ -90,4 +90,5 @@ schemes:
       environmentVariables:
         OPENSPOT_SH: $(SRCROOT)/Shell/openspot.sh
       targets:
-        - OpenspotTests
+        - name: OpenspotTests
+          parallelizable: true
