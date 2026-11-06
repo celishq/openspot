@@ -254,6 +254,28 @@ final class SharedSpotTests: XCTestCase {
         XCTAssertFalse(SharedSpot.isFile([]))
     }
 
+    func testTextThatIsThePathOfASpotFileNamesIt() throws {
+        let file = target.appendingPathComponent("My spot.spot")
+        try Data("{}".utf8).write(to: file)
+        let path = file.path
+
+        XCTAssertEqual(SharedSpot.file(in: path)?.path, path)
+        XCTAssertEqual(SharedSpot.file(in: "  \(path)\n")?.path, path)
+        XCTAssertEqual(SharedSpot.file(in: "'\(path)'")?.path, path)
+        XCTAssertEqual(SharedSpot.file(in: path.replacingOccurrences(of: " ", with: "\\ "))?.path, path)
+        XCTAssertEqual(SharedSpot.file(in: file.absoluteString)?.path, path)
+    }
+
+    func testOtherTextNamesNoSpotFile() throws {
+        let other = target.appendingPathComponent("notes.txt")
+        try Data("x".utf8).write(to: other)
+
+        XCTAssertNil(SharedSpot.file(in: ""))
+        XCTAssertNil(SharedSpot.file(in: "weather.spot"))
+        XCTAssertNil(SharedSpot.file(in: other.path))
+        XCTAssertNil(SharedSpot.file(in: target.appendingPathComponent("gone.spot").path))
+    }
+
     func testTheNoticeWarnsTheSenderAboutSecrets() throws {
         try script("weather.sh")
         try script("home/a.sh")

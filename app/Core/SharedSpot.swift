@@ -128,6 +128,22 @@ public struct SharedSpot: Equatable, Sendable {
         !paths.isEmpty && paths.allSatisfy { URL(fileURLWithPath: $0).pathExtension.lowercased() == fileExtension }
     }
 
+    /// The `.spot` file that a text names, when all of the text is its full path, such as a drag into a text field writes. The
+    /// file must exist. A file URL, quotes and the backslashes of a terminal also count.
+    public static func file(in text: String) -> URL? {
+        var path = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if path.count > 1, let quote = path.first, quote == "'" || quote == "\"", path.last == quote { path = String(path.dropFirst().dropLast()) }
+        if path.hasPrefix("file://") {
+            path = URL(string: path)?.path ?? path
+        } else {
+            path = path.replacingOccurrences(of: "\\ ", with: " ")
+        }
+        guard path.hasPrefix("/"), isFile([path]) else { return nil }
+        var isFolder: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: path, isDirectory: &isFolder), !isFolder.boolValue else { return nil }
+        return URL(fileURLWithPath: path)
+    }
+
     /// What the sender reads after a copy.
     public func notice(name: String) -> String {
         files.count == 1

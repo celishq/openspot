@@ -548,7 +548,11 @@ final class SpotsModel {
     var searchText: String {
         get { openItems?.query ?? query }
         set {
-            if let openSheet {
+            if let file = SharedSpot.file(in: newValue) {
+                query = ""
+                openSheet?.search("")
+                DispatchQueue.main.async { self.review([file]) }
+            } else if let openSheet {
                 openSheet.search(newValue)
             } else {
                 query = newValue
