@@ -78,6 +78,8 @@ final class SpotsModel {
     private static let globalItemLimit = 6
     private static let dragWatchPause: Duration = .milliseconds(100)
     private static let dropPause: Duration = .milliseconds(300)
+    /// The fewest rows that the panel shows for the drop state.
+    static let dropRows = 3
 
     var entries: [Entry] = [] {
         didSet { updateVisible() }
@@ -96,8 +98,10 @@ final class SpotsModel {
     private let runs: SpotRuns
     private var dragWatch: Task<Void, Never>?
     private var dragPaths: [String] = []
-    /// What the panel says while a `.spot` file is dragged over it.
-    private(set) var spotDrop: SpotDrop?
+    private var draggedSpot: SpotDrop?
+    private var isPointerOverDrop = false
+    /// Whether the pointer lies on the panel or the menu bar item.
+    var pointerIsOverDrop: () -> Bool = { false }
     /// The shared spot that the open review shows, which exists only as long as that sheet.
     private var reviewed: SpotReview?
     var isShown = false
@@ -212,12 +216,14 @@ final class SpotsModel {
         guard paths != dragPaths else { return }
         dragPaths = paths
         runs.draggedPaths = SharedSpot.isFile(paths) ? [] : paths
-        spotDrop = SharedSpot.isFile(paths) ? SpotDrop(paths: paths, folder: PluginFolder.standard().url) : nil
+        draggedSpot = SharedSpot.isFile(paths) ? SpotDrop(paths: paths, folder: PluginFolder.standard().url) : nil
+        isPointerOverDrop = pointerIsOverDrop()
         dragWatch?.cancel()
         dragWatch = Task { [weak self] in
             while NSEvent.pressedMouseButtons != 0 {
                 try? await Task.sleep(for: Self.dragWatchPause)
                 if Task.isCancelled { return }
+                if let self { isPointerOverDrop = pointerIsOverDrop() }
             }
             try? await Task.sleep(for: Self.dropPause)
             guard !Task.isCancelled, let self else { return }
@@ -226,9 +232,14 @@ final class SpotsModel {
         }
     }
 
+    /// What the panel says while a `.spot` file is dragged over it or over the menu bar item.
+    var spotDrop: SpotDrop? {
+        isPointerOverDrop ? draggedSpot : nil
+    }
+
     private func endDrag() {
         dragPaths = []
-        spotDrop = nil
+        draggedSpot = nil
         runs.draggedPaths = []
     }
 

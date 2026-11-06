@@ -18,7 +18,6 @@ struct SpotsView: View {
     private static let panelSpace = "panel"
     private static let wordRoll: CGFloat = 20
     private static let fieldGap: CGFloat = 8
-    private static let dropRows = 3
     private static let blurSteps: [(inset: CGFloat, radius: CGFloat)] = [
         (SpotTokens.halo - 30, SpotTokens.backdropBlur / 4),
         (SpotTokens.halo - 20, SpotTokens.backdropBlur / 2),
@@ -202,7 +201,7 @@ struct SpotsView: View {
     private var contentHeight: CGFloat {
         guard !sheetOpen else { return sheetRect.height + 2 * SpotTokens.halo + SpotTokens.hintBlock }
         let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
-        return SpotTokens.backdropHeight(rows: model.spotDrop == nil ? rows : max(rows, Self.dropRows))
+        return SpotTokens.backdropHeight(rows: model.spotDrop == nil ? rows : max(rows, SpotsModel.dropRows))
     }
 
     private var backdropHeight: CGFloat {

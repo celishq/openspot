@@ -60,6 +60,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         model.applyConfig = { [weak self] in self?.applyConfig() }
         model.setEntryKeyOn = { [weak self] in self?.setEntryKey(on: $0) }
         model.present = { [weak self] in self?.presentPanel() }
+        model.pointerIsOverDrop = { [weak self, weak item] in
+            let point = NSEvent.mouseLocation
+            return self?.panel?.showsDrop(at: point) == true || item?.button?.window?.frame.contains(point) == true
+        }
         model.reload()
         model.arrive(.launch)
         isLaunched = true

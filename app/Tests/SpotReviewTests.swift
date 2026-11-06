@@ -139,9 +139,9 @@ final class SpotReviewTests: XCTestCase {
         let add = try XCTUnwrap(sheet(review("")).parts.first { $0.id == "install" })
 
         XCTAssertEqual(add.key, ActionKey(name: "return", isCommand: true))
-        XCTAssertEqual(add.title, "Install")
+        XCTAssertEqual(add.title, "Add")
         XCTAssertTrue(add.closes)
-        XCTAssertEqual(SpotPanel(output: try sheet(review("")))?.hint, "⌘⏎ Install   Esc Close")
+        XCTAssertEqual(SpotPanel(output: try sheet(review("")))?.hint, "⌘⏎ Add   Esc Close")
     }
 
     func testAPlainScriptRunsOnlyWhenItIsUsed() throws {
@@ -230,7 +230,7 @@ final class SpotReviewTests: XCTestCase {
     func testAddPutsItInTheFolderThatTheNextScanReads() throws {
         let answer = try review("name=Weather\nsymbol=sun.max").answer(["install"])
 
-        XCTAssertEqual(PluginOutput(text: answer).summary?.value("toast"), "Weather installed")
+        XCTAssertEqual(PluginOutput(text: answer).summary?.value("toast"), "Weather added")
         let scan = try PluginFolder(url: folder).scan()
         XCTAssertEqual(scan.commands.map(\.name), ["Weather"])
         XCTAssertEqual(scan.refused, [])

@@ -497,7 +497,7 @@ To send a spot to another person:
 To install a spot that you got, double-click its `.spot` file, drop it on the Openspot item in the menu bar or on the panel, or
 copy the file and press ⌘V in the panel. The panel says what the file is before you drop it.
 Openspot shows what runs by itself, each file that it replaces and all the text it can. It names each file that it cannot show,
-and a program comes first. Nothing runs until you press ⌘⏎ to install it.
+and a program comes first. Nothing runs until you press ⌘⏎ to add it.
 
 A `.spot` file is JSON. It holds a format number and the files:
 

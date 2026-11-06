@@ -48,7 +48,7 @@ public struct SpotReview: Equatable, Sendable {
             return sheet
         case Self.installPart:
             try spot.add(to: folder)
-            return TextBlock(fields: [.init(key: "toast", value: "\(name) installed")]).text
+            return TextBlock(fields: [.init(key: "toast", value: "\(name) added")]).text
         default:
             throw PluginError.failed(1, "This sheet cannot do that.")
         }
@@ -67,7 +67,7 @@ public struct SpotReview: Equatable, Sendable {
             TextBlock(fields: [
                 .init(key: "part", value: Self.installPart),
                 .init(key: "cell", value: "a"),
-                .init(key: "title", value: "Install"),
+                .init(key: "title", value: "Add"),
                 .init(key: "press", value: "true"),
                 .init(key: "key", value: "cmd+return"),
                 .init(key: "close", value: "true"),
