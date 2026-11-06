@@ -65,6 +65,7 @@ struct SpotsView: View {
                     onCreate: { model.createFromSearch() },
                     onFormValue: { model.setFormValue($0, for: $1) },
                     onRun: { model.runItem($0) },
+                    closeShift: cardShows(arrowOf: entry) ? (openFrame?.width ?? sheetRect.width) - sheetRect.width : nil,
                     onClose: {
                         model.allowSheetMotion()
                         model.closeList()
@@ -74,7 +75,8 @@ struct SpotsView: View {
                 .modifier(SpotSheetFrame(
                     rect: sheetOpen ? sheetRect : openFrame ?? sheetRect,
                     radius: sheetOpen ? SpotTokens.radius : SpotTokens.corner(for: entry.size),
-                    ringOpacity: !sheetOpen && cardIsSelected(entry) ? 1 : 0
+                    ringOpacity: !sheetOpen && cardIsSelected(entry) ? 1 : 0,
+                    arrow: cardShows(arrowOf: entry) ? AnyView(sheetArrow(of: entry)) : nil
                 ))
             }
             searchField
@@ -188,6 +190,19 @@ struct SpotsView: View {
         if let form = model.form { return SpotTokens.formRect(form.draft.form) }
         if let panel = model.sheets[sheetID ?? ""]?.panel { return SpotTokens.panelRect(panel) }
         return SpotTokens.sheetRect(rows: model.sheets[sheetID ?? ""]?.list.shown.count ?? 0)
+    }
+
+    /// Whether the card of this open sheet draws an arrow. A 1x1 card shows its glyph alone.
+    private func cardShows(arrowOf entry: SpotsModel.Entry) -> Bool {
+        entry.kind == .list && (openFrame?.width ?? 0) > SpotTokens.cell
+    }
+
+    /// The arrow of the card while its sheet moves. It stays in view until the close button takes its place at the edge.
+    private func sheetArrow(of entry: SpotsModel.Entry) -> some View {
+        SpotCardArrow(isOnWhite: entry.state.on == true && !sheetOpen)
+            .placed(isTall: (openFrame?.height ?? 0) > SpotTokens.rowHeight)
+            .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: sheetOpen)) { $0.opacity(sheetOpen ? 0 : 1) }
+            .allowsHitTesting(false)
     }
 
     private var contentHeight: CGFloat {

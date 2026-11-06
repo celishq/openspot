@@ -17,6 +17,8 @@ struct SpotSheetView: View {
     let onCreate: () -> Void
     let onFormValue: (String, String) -> Void
     let onRun: (SpotItem) -> Void
+    /// How far the close button lies from its place at the card's edge. Nil for a card with no arrow, where the frame cuts it.
+    let closeShift: CGFloat?
     let onClose: () -> Void
     @State private var edges = SpotScrollEdges()
 
@@ -71,8 +73,21 @@ struct SpotSheetView: View {
                 }
                 .opacity(showsSmallCard ? 0 : 1)
                 Spacer()
-                SpotRoundButton(symbol: "xmark", label: "Close", action: onClose)
+                closeButton
             }
+    }
+
+    /// The close button, which stays at the moving edge of the sheet and takes the place of the card's arrow.
+    @ViewBuilder
+    private var closeButton: some View {
+        let button = SpotRoundButton(symbol: "xmark", label: "Close", action: onClose)
+        if let closeShift {
+            button
+                .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(isOpen ? 1 : 0) }
+                .offset(x: isOpen ? 0 : closeShift)
+        } else {
+            button
+        }
     }
 
     /// The card's glyph, placed as the card places it until the sheet opens.

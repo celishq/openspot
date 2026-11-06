@@ -122,9 +122,7 @@ struct SpotCardView: View {
     private var accessory: some View {
         switch entry.kind {
         case .list:
-            Image(systemName: "chevron.right")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(isFilled ? Color.black : Color.white)
+            SpotCardArrow(isOnWhite: isFilled)
         case .launch:
             if size != .wide, !entry.stopsOnPress {
                 Text("Run")
