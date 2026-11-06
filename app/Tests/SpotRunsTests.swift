@@ -512,7 +512,7 @@ final class SpotRunsTests: XCTestCase {
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
         sheet.open {}
-        try await wait("the part") { sheet.panel != nil }
+        try await wait("the part") { sheet.panel != nil && sheet.calls.isEmpty }
 
         sheet.press(try XCTUnwrap(sheet.panel?.parts.first))
         try await wait("the first frame") { sheet.calls.first?.lastFrame != nil }
@@ -1116,6 +1116,66 @@ final class SpotRunsTests: XCTestCase {
 
         XCTAssertLessThan(Date().timeIntervalSince(started), 3)
         try await wait("the end of the child") { kill(pid, 0) != 0 }
+    }
+
+    func testQuittingMarksEachCallAsStopped() async throws {
+        try script(body: "sleep 30")
+        let sheet = try sheet()
+        sheet.pressCard()
+        let call = try XCTUnwrap(sheet.calls.first)
+
+        runs.quit()
+
+        XCTAssertTrue(call.isStopped)
+        XCTAssertTrue(sheet.calls.isEmpty)
+    }
+
+    func testAQuitStopsAToggleAndItGoesBack() async throws {
+        try script(header: "read=panel", "[ \"$1\" = read ] && printf 'on=false\\n'\n[ \"$1\" = on ] && sleep 30\nexit 0")
+        let sheet = try sheet()
+        runs.panelOpened()
+        try await wait("the kind") { sheet.command.kind == .toggle && sheet.calls.isEmpty }
+        sheet.pressCard()
+        XCTAssertEqual(sheet.state.on, true)
+        try await wait("the call") { self.log() == ["read", "on"] }
+
+        runs.quit()
+        try await pause()
+
+        XCTAssertEqual(sheet.state.on, false)
+        XCTAssertEqual(log(), ["read", "on"])
+    }
+
+    func testAReadThatWaitsToRunAgainDoesNotRunAfterAQuit() async throws {
+        try script(header: "read=sheet", "printf 'row=A\\nrun=a\\n---\\n'\nsleep 30")
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        sheet.read(need: .change)
+
+        runs.quit()
+        try await pause()
+
+        XCTAssertEqual(log(), ["read"])
+    }
+
+    func testAQuitChangesNothingOnAStayingScriptThatFailsAsItEnds() async throws {
+        try script(header: "stay=true\nread=launch", """
+        while IFS= read -r line; do
+          [ -n "$line" ] || printf 'title=A\\n---\\n'
+        done
+        exit 3
+        """)
+        let (sheet, told) = try toldSheet()
+        runs.arrive(.launch)
+        try await wait("the value") { sheet.reading.value?.title == "A" }
+
+        runs.quit()
+        try await pause()
+
+        XCTAssertEqual(told(), [])
+        XCTAssertFalse(sheet.reading.isStale)
+        XCTAssertEqual(log().count, 1)
     }
 
     // MARK: K5

@@ -104,12 +104,12 @@ public final class SpotRuns {
         }
     }
 
-    /// Stops each call, and waits for the processes to end, for at most 2 seconds.
+    /// Stops each call, which changes nothing, and waits for the processes to end, for at most 2 seconds.
     public func quit() {
         clock?.cancel()
         clock = nil
-        sheets.values.forEach { $0.prepareToQuit() }
         let live = processes.filter(\.isLive)
+        sheets.values.forEach { $0.prepareToQuit() }
         live.forEach { $0.leave() }
         let deadline = Date().addingTimeInterval(Self.quitPause)
         live.forEach { $0.finish(by: deadline) }

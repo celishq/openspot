@@ -411,7 +411,6 @@ Remove a row when the code follows the rule.
 | D2 | `SpotCardView`, `SpotMenuBarDrag` | A card shows the mark only while the drag is on it. | Each card that accepts the files shows it for the whole drag. |
 | Y1, Y2 | `SpotSheet`, `SpotAction` | A `drop` on a staying script starts a second copy. | One block on stdin, with one `value` line for each path. |
 | L6 | `SpotSheet` | A call to a staying script has no `ScriptCall`, so it shows nothing. | Decide in the code whether one can show, and report it: Openspot cannot see where such a call ends. |
-| A3, L9 | `SpotRuns.quit` | A quit does not mark its calls as stopped, so M4 starts a `read` during the quit. | A stopped call changes nothing. |
 | C6 | `SheetFrameReader`, `TextBlock` | They loop over each byte. Several 1 MB values took 20 to 30 s in a Debug test. | A 1 MB paste answers in under 1 second in a Debug build, or a report of what limits it. |
 
 The tests in `SpotActionTests`, `SheetStreamTests`, `SpotPanelTests`, `SpotRunsTests` and `SamplePluginsTests` pin the calls. Read them

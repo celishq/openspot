@@ -188,11 +188,16 @@ public final class SpotSheet {
         }
     }
 
-    /// Drops what waits for a pause, because no new call may start now.
+    /// Stops each call and lets go of a staying script, so that neither changes anything, and drops all that would start a
+    /// new call.
     func prepareToQuit() {
         pauses.values.forEach { $0.cancel() }
         pauses = [:]
         waitingDrops = []
+        readsAgain = false
+        calls.forEach(stop)
+        live = nil
+        answerForm(with: .success(nil))
     }
 
     /// Asks the script for what it shows. A request joins the read that runs (M1). A `panel` or a `sheet` moment uses an answer

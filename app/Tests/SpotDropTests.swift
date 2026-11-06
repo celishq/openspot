@@ -313,7 +313,7 @@ final class SpotDropTests: XCTestCase {
         runs.quit()
         try await pause(0.5)
 
-        XCTAssertEqual(log().filter { $0.hasPrefix("drop") }, [])
+        XCTAssertEqual(log(), ["read", "work"])
     }
 
     // MARK: D5
