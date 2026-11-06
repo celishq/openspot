@@ -129,7 +129,7 @@ public struct PluginCommand: Equatable, Sendable {
     /// What a call prints: the answer of a shipped spot, or else the output of the script.
     private func text(of arguments: [String], input: String?, timeout: TimeInterval) async throws -> String {
         if case .plugins(let guide) = shipped { return try await guide.answer(arguments, input: input, timeout: timeout) }
-        return try await PluginRun(command: self, arguments: arguments, timeout: timeout, input: input).output()
+        return try await ScriptProcess.output(url: url, arguments: arguments, input: input, limit: timeout)
     }
 
     /// Asks the command for the items of its list, with the search when the script searches.
@@ -140,8 +140,8 @@ public struct PluginCommand: Equatable, Sendable {
 
     /// Starts a staying script, reads its first sheet and stops it.
     private func firstLiveFrame(timeout: TimeInterval) async throws -> PluginOutput {
-        let live = LiveScript(url: url, timeout: timeout)
-        defer { live.stop() }
+        let live = ScriptProcess(url: url, mode: .stays, limit: timeout)
+        defer { live.end() }
         let frames = try live.start()
         live.send(.read)
         for try await frame in frames { return PluginOutput(text: frame) }
@@ -163,7 +163,12 @@ public struct PluginCommand: Equatable, Sendable {
                 continuation.onTermination = { _ in task.cancel() }
             }
         }
-        return PluginRun(command: self, arguments: action.arguments, timeout: timeout, input: input).frames()
+        let process = ScriptProcess(url: url, arguments: action.arguments, mode: .once(input: input), limit: timeout)
+        do {
+            return try process.start()
+        } catch {
+            return AsyncThrowingStream { $0.finish(throwing: error) }
+        }
     }
 
     /// Reports a change in a sheet of parts, with all its values on standard input, and returns what the script prints.

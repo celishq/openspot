@@ -123,6 +123,6 @@ public struct PluginGuide: Equatable, Sendable {
     }
 
     private func tool(_ arguments: [String], input: String? = nil, timeout: TimeInterval) async throws {
-        _ = try await PluginRun(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: arguments, timeout: timeout, input: input).output()
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: arguments, input: input, limit: timeout)
     }
 }

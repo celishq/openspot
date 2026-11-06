@@ -34,7 +34,7 @@ public final class SpotSheet {
     @ObservationIgnored private var changing: Task<Void, Never>?
     @ObservationIgnored private var nextRead: Task<Void, Never>?
     @ObservationIgnored private var searching: Task<Void, Never>?
-    @ObservationIgnored private var live: LiveScript?
+    @ObservationIgnored private var live: ScriptProcess?
     @ObservationIgnored private var editing: String?
     @ObservationIgnored private var ready: (() -> Void)?
 
@@ -71,7 +71,7 @@ public final class SpotSheet {
         changing?.cancel()
         nextRead?.cancel()
         stopStream()
-        live?.stop()
+        live?.end()
         live = nil
         editing = nil
         ready = nil
@@ -192,7 +192,7 @@ public final class SpotSheet {
         var values = panel?.values
         if live == nil {
             values = nil
-            let script = LiveScript(url: command.url, timeout: Self.itemsTimeout)
+            let script = ScriptProcess(url: command.url, mode: .stays, limit: Self.itemsTimeout)
             do {
                 let frames = try script.start()
                 live = script
@@ -205,7 +205,7 @@ public final class SpotSheet {
     }
 
     /// Takes each frame of a staying script until it ends. Its first frame replaces what an earlier run left.
-    private func follow(_ script: LiveScript, _ frames: AsyncThrowingStream<String, Error>) async {
+    private func follow(_ script: ScriptProcess, _ frames: AsyncThrowingStream<String, Error>) async {
         var isFirst = true
         do {
             for try await text in frames {

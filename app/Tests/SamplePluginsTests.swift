@@ -580,8 +580,8 @@ final class SamplePluginsTests: XCTestCase {
 
     /// Runs a staying script through the calls, and returns the frame that answers the last one.
     private func drive(_ command: PluginCommand, _ actions: [SpotAction]) async throws -> PluginOutput {
-        let live = LiveScript(url: command.url, timeout: 10)
-        defer { live.stop() }
+        let live = ScriptProcess(url: command.url, mode: .stays, limit: 10)
+        defer { live.end() }
         var frames = try live.start().makeAsyncIterator()
         var last = ""
         for action in [SpotAction.read] + actions {

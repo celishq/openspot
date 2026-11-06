@@ -19,7 +19,7 @@ public struct PluginMetric: Equatable, Sendable {
     }
 
     public func read(timeout: TimeInterval) async throws -> MetricValue {
-        let output = try await PluginRun(url: url, arguments: SpotAction.read.arguments, timeout: timeout).output()
+        let output = try await ScriptProcess.output(url: url, arguments: SpotAction.read.arguments, limit: timeout)
         guard let value = MetricValue(output: PluginOutput(text: output)) else { throw PluginError.badMetric }
         return value
     }
