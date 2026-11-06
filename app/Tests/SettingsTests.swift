@@ -37,6 +37,7 @@ final class SettingsTests: XCTestCase {
         let parts = try await spot.items(timeout: 1).parts
 
         XCTAssertEqual(parts.map(\.id), ["panel_key"])
+        XCTAssertEqual(parts.first?.look, .tile)
         XCTAssertEqual(parts.first?.title, "Open Openspot")
         XCTAssertEqual(parts.first?.control, .shortcut("option+space"))
     }

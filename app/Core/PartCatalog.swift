@@ -43,8 +43,9 @@ public enum PartCatalog {
     - `keys=7 8 9 +` adds a row of key buttons. Use it for any keypad, in place of a part for each key. A word that repeats \
     next to itself spans those cells. Pressing a key calls `<word>`.
 
-    Every row has one height: \(Int(SheetPlacement.rowHeight))pt, or \(Int(SheetPlacement.keyRowHeight))pt when the sheet \
-    has keys. The gap between cells is always \(Int(SheetPlacement.gap))pt. To make something taller, draw more rows. \
+    Every row has one height: \(Int(SheetPlacement.rowHeight))pt, \(Int(SheetPlacement.keyRowHeight))pt when the sheet \
+    has keys, or \(Int(SheetPlacement.tileRowHeight))pt when it has tiles, as in a list. The gap between cells is \
+    \(Int(SheetPlacement.gap))pt, or \(Int(SheetPlacement.tileGap))pt when the sheet has tiles. To make something taller, draw more rows. \
     A column of four is about 60pt wide. You cannot set a size, a colour or a gap of your own.
 
     A sheet with no drawing is one column of lines. `section=<id>` in place of `part=<id>` starts a new group with a divider.

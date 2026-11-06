@@ -73,12 +73,16 @@ struct SpotPanelView: View {
             )
             .frame(width: frame.rect.width, height: frame.rect.height, alignment: Self.alignment(frame))
             .background {
-                if panel.selectedPart?.id == part.id {
+                if isSelected(part), part.look != .tile {
                     shape.fill(Color.white.opacity(SpotTokens.selectedFill)).padding(-SpotTokens.controlPadding)
                 }
             }
             .offset(x: frame.rect.minX, y: frame.rect.minY)
             .zIndex(frame.isOnTop ? 1 : 0)
+    }
+
+    private func isSelected(_ part: SpotPart) -> Bool {
+        panel.selectedPart?.id == part.id
     }
 
     private static func alignment(_ frame: SheetPlacement.Frame) -> Alignment {
@@ -122,7 +126,7 @@ struct SpotPanelView: View {
             if part.press == .line {
                 lineButton(part, frame)
             } else {
-                labelled(part, frame).modifier(TileLook(isOn: part.look == .tile))
+                labelled(part, frame).modifier(TileLook(isOn: part.look == .tile, isSelected: isSelected(part)))
             }
         }
     }
@@ -204,7 +208,7 @@ struct SpotPanelView: View {
                 centeredLine(part, text: .black, fill: Color.white)
             case .tile:
                 labelled(part, frame)
-                    .modifier(TileLook(isOn: true))
+                    .modifier(TileLook(isOn: true, isSelected: isSelected(part)))
                     .contentShape(shape)
             default:
                 centeredLine(part, text: .white, fill: Color.white.opacity(SpotTokens.selectedFill))
@@ -463,13 +467,14 @@ struct SpotPanelView: View {
 /// The filled row of `look=tile`.
 private struct TileLook: ViewModifier {
     let isOn: Bool
+    let isSelected: Bool
 
     func body(content: Content) -> some View {
         if isOn {
             content
                 .padding(.horizontal, SpotTokens.padding)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.white.opacity(SpotTokens.fill), in: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous))
+                .background(Color.white.opacity(isSelected ? SpotTokens.selectedFill : SpotTokens.fill), in: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous))
         } else {
             content
         }
