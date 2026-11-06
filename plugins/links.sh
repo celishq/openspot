@@ -7,6 +7,7 @@
 export LC_ALL=en_US.UTF-8
 data="$OPENSPOT_DATA/links.json"
 icons="$OPENSPOT_DATA/icons"
+. "$OPENSPOT_SH"
 agent="Mozilla/5.0 (Macintosh) Openspot"
 
 # Makes a jq value safe for one line of a text block.
@@ -54,14 +55,9 @@ check_path() {
   esac
 }
 
-# Reads the form values on stdin, and prints them as one JSON object.
-form_values() {
-  jq -Rsc 'split("\n") | map(capture("^(?<key>[^=]+)=(?<value>.*)$")? | .value |= gsub("\\\\(?<c>[n\\\\])"; if .c == "n" then "\n" else .c end)) | from_entries'
-}
-
-# Reads the form values, and prints them with a full link. A path stays as it is.
+# Prints the form values as one JSON object, with a full link. A path stays as it is.
 checked() {
-  form_values | jq -c '.url |= (gsub("^\\s+|\\s+$"; "") | if test("^[/~]") or test("^[a-zA-Z][a-zA-Z0-9+.-]*:") then . else "https://" + . end)
+  jq -nc --arg title "$(value title)" --arg url "$(value url)" '{$title, $url} | .url |= (gsub("^\\s+|\\s+$"; "") | if test("^[/~]") or test("^[a-zA-Z][a-zA-Z0-9+.-]*:") then . else "https://" + . end)
     | if (.url | test("^[/~]") | not) and (.url | test("\\s")) then error("bad") else . end' 2>/dev/null || {
     echo "Enter a link with no spaces, or a path." >&2
     exit 1
@@ -159,24 +155,22 @@ case "$1" in
     fetch_missing >/dev/null 2>&1 </dev/null &
     ;;
   new)
-    input=$(cat)
-    if [ -z "$input" ]; then
+    if [ -z "$(value title)$(value url)" ]; then
       form "New link" '{"title":"","url":""}'
       exit 0
     fi
     id=$(uuidgen)
-    values=$(printf '%s\n' "$input" | checked) || exit 1
+    values=$(checked) || exit 1
     load | jq -c --arg id "$id" --argjson v "$values" '. + [{id: $id, title: $v.title, url: $v.url}]' | store
     fetch_missing >/dev/null 2>&1 </dev/null &
     echo "$id"
     ;;
   edit)
-    input=$(cat)
-    if [ -z "$input" ]; then
+    if [ -z "$(value title)$(value url)" ]; then
       form "Edit link" "$(load | jq -c --arg id "$2" '.[] | select(.id == $id)')"
       exit 0
     fi
-    values=$(printf '%s\n' "$input" | checked) || exit 1
+    values=$(checked) || exit 1
     load | jq -c --arg id "$2" --argjson v "$values" 'map(if .id == $id then .title = $v.title | .url = $v.url else . end)' | store
     echo "$2"
     ;;

@@ -33,14 +33,19 @@ public final class ScriptProcess: @unchecked Sendable {
         self.limit = limit
     }
 
-    /// The environment of a script, with the `openspot` command of this app on its path and the data folder, which this
-    /// creates.
-    public static func environment(base: [String: String], app: String) -> [String: String] {
-        let helpers = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Helpers").path
+    /// The environment of a script: the `openspot` command of this app on its path, the data folder, which this creates, and
+    /// the shell helper in the bundle of the app. With no bundle, as in a test, the helper is what `base` names.
+    public static func environment(base: [String: String], app: String, stays: Bool = false) -> [String: String] {
+        let contents = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent()
+        let helpers = contents.appendingPathComponent("Helpers").path
         let home = base["HOME"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? FileManager.default.homeDirectoryForCurrentUser
         let data = PluginFolder.config(environment: base, home: home).appendingPathComponent("data", isDirectory: true)
         try? FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
-        return base.merging(["PATH": "\(helpers):\(base["PATH"] ?? "")", "OPENSPOT_DATA": data.path], uniquingKeysWith: { _, new in new })
+        var environment = base.merging(["PATH": "\(helpers):\(base["PATH"] ?? "")", "OPENSPOT_DATA": data.path], uniquingKeysWith: { _, new in new })
+        let shell = contents.appendingPathComponent("Resources/openspot.sh").path
+        if FileManager.default.fileExists(atPath: shell) { environment["OPENSPOT_SH"] = shell }
+        environment["OPENSPOT_STAYS"] = stays ? "true" : nil
+        return environment
     }
 
     /// Runs a process once, and returns all that it prints.
@@ -55,15 +60,17 @@ public final class ScriptProcess: @unchecked Sendable {
     /// Starts the process, and returns its frames. A line `---` ends a frame, and so does the end of the output. Ending the
     /// stream early stops a process that runs once.
     public func start() throws -> AsyncThrowingStream<String, Error> {
-        process.environment = Self.environment(base: ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "")
         var text: String?
+        var stays = false
         switch mode {
         case .stays:
+            stays = true
             process.standardInput = input
         case .once(let given):
             text = given
             process.standardInput = given == nil ? FileHandle.nullDevice : input
         }
+        process.environment = Self.environment(base: ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", stays: stays)
         let output = Pipe()
         process.standardOutput = output
         let errors = Pipe()

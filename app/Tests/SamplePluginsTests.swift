@@ -127,6 +127,33 @@ final class SamplePluginsTests: XCTestCase {
         XCTAssertEqual(stopped.on, false)
     }
 
+    func testCaffeinateMovesItsRecordIntoPlace() async throws {
+        let caffeinate = try XCTUnwrap(try scan.commands.first { $0.name == "Caffeinate" })
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-record-\(UUID().uuidString)")
+        let tools = folder.appendingPathComponent("tools")
+        try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
+        let log = folder.appendingPathComponent("moved")
+        let move = tools.appendingPathComponent("mv")
+        try "#!/bin/sh\necho \"$2\" >> '\(log.path)'\nexec /bin/mv \"$@\"\n".write(to: move, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: move.path)
+        let before = ProcessInfo.processInfo.environment
+        setenv("TMPDIR", folder.path, 1)
+        setenv("PATH", "\(tools.path):/usr/bin:/bin", 1)
+        defer {
+            if let tmp = before["TMPDIR"] { setenv("TMPDIR", tmp, 1) } else { unsetenv("TMPDIR") }
+            if let path = before["PATH"] { setenv("PATH", path, 1) }
+            try? FileManager.default.removeItem(at: folder)
+        }
+
+        try await caffeinate.perform(.item(SpotItem(title: "1 minute", run: "60")), timeout: 5)
+        let moved = try? String(contentsOf: log, encoding: .utf8)
+        let started = try await caffeinate.state(timeout: 5)
+        try await caffeinate.perform(.item(SpotItem(title: "Turn off", run: "off")), timeout: 5)
+
+        XCTAssertEqual(moved, folder.appendingPathComponent("openspot-caffeinate").path + "\n")
+        XCTAssertEqual(started.on, true)
+    }
+
     func testLinksComeBeforeAppsInTheMainSearch() throws {
         let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
         let apps = try XCTUnwrap(try scan.commands.first { $0.name == "Apps" })

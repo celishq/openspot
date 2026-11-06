@@ -74,5 +74,7 @@ schemes:
         OPENSPOT_PLUGINS: $(SRCROOT)/../plugins
         OPENSPOT_CONFIG: $(SRCROOT)/../.temp/config
     test:
+      environmentVariables:
+        OPENSPOT_SH: $(SRCROOT)/Shell/openspot.sh
       targets:
         - OpenspotTests

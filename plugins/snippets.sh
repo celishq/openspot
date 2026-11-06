@@ -6,14 +6,10 @@
 # rank=3
 export LC_ALL=en_US.UTF-8
 data="$OPENSPOT_DATA/snippets.json"
+. "$OPENSPOT_SH"
 
 # Makes a jq value safe for one line of a text block.
 esc='def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");'
-
-# Reads the form values on stdin, and prints them as one JSON object.
-form_values() {
-  jq -Rsc 'split("\n") | map(capture("^(?<key>[^=]+)=(?<value>.*)$")? | .value |= gsub("\\\\(?<c>[n\\\\])"; if .c == "n" then "\n" else .c end)) | from_entries'
-}
 
 load() {
   if [ -s "$data" ]; then cat "$data"; else echo '[]'; fi
@@ -56,24 +52,24 @@ case "$1" in
     load | jq -r "$esc"'.[] | "row=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\nrun=\(.id | esc)\n"'
     ;;
   new)
-    input=$(cat)
-    if [ -z "$input" ]; then
+    title=$(value title)
+    text=$(value content; printf x)
+    if [ -z "$title${text%x}" ]; then
       form "New snippet" '{"title":"","content":""}'
       exit 0
     fi
     id=$(uuidgen)
-    values=$(printf '%s\n' "$input" | form_values)
-    load | jq -c --arg id "$id" --argjson v "$values" '. + [{id: $id, title: $v.title, content: $v.content}]' | store
+    load | jq -c --arg id "$id" --arg title "$title" --arg content "${text%x}" '. + [{id: $id, title: $title, content: $content}]' | store
     echo "$id"
     ;;
   edit)
-    input=$(cat)
-    if [ -z "$input" ]; then
+    title=$(value title)
+    text=$(value content; printf x)
+    if [ -z "$title${text%x}" ]; then
       form "Edit snippet" "$(load | jq -c --arg id "$2" '.[] | select(.id == $id)')"
       exit 0
     fi
-    values=$(printf '%s\n' "$input" | form_values)
-    load | jq -c --arg id "$2" --argjson v "$values" 'map(if .id == $id then .title = $v.title | .content = $v.content else . end)' | store
+    load | jq -c --arg id "$2" --arg title "$title" --arg content "${text%x}" 'map(if .id == $id then .title = $title | .content = $content else . end)' | store
     echo "$2"
     ;;
   delete)

@@ -108,15 +108,31 @@ run=/Applications/Notes.app
 - A line with no key, a key Openspot does not know and a value it cannot read are skipped.
 - An empty value counts as no value.
 - A value is one line. In a value, `\n` stands for a new line and `\\` for a backslash. If a value comes from outside your
-  script, such as a file name or a web page, write its backslashes and new lines this way:
-  `sed 's/\\/\\\\/g' | awk 'NR > 1 { printf "\\n" } { printf "%s", $0 }'`.
-- With `jq -r`, use `def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");` and write `"row=\(.title | esc)"`.
+  script, such as a file name or a web page, write it with `esc` (see "The shell helper").
+- For many rows in one pipe, use `sed 's/\\/\\\\/g'`. With `jq -r`, use `def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");` and write `"row=\(.title | esc)"`.
 
 A block is a row when it has `row`, an action when it has `action`, and a form field when it has `field`. The first other
 block says how the spot itself looks, and it can hold `search` and `recents`. Printing nothing means that there is nothing
 to show.
 
 To confirm what an action did, print `toast=Saved`. Openspot shows it, also with the panel closed.
+
+## The shell helper
+
+A shell script can load two functions that start no program. It is optional.
+
+```sh
+#!/bin/sh
+. "$OPENSPOT_SH"
+input=$(value input)
+printf 'part=output\ntext=%s\n' "$(esc "$input")"
+```
+
+- `esc <text>` writes text as a value: a backslash as `\\` and a new line as `\n`.
+- `value <id>` prints the real text of one value from stdin. It prints nothing when stdin has no such value.
+- Loading the file reads all of stdin once, so read stdin only through `value` after that.
+- `$(...)` drops the new lines at the end of a value. To keep them, write `text=$(value id; printf x)` and use `${text%x}`.
+- A script with `stay=true` keeps its stdin for its calls. There, `esc` works, and `value` prints nothing.
 
 ## Lists
 
@@ -311,7 +327,7 @@ A script finds `openspot` on its path. It gives what macOS has no command for, i
 | `openspot translate languages` | Prints each language, with its name. |
 
 When macOS already has a command, use it: `pbcopy`, `open`, `say`, `caffeinate`, `mdfind`, `screencapture`,
-`shortcuts run`, `osascript`. To decode a value from stdin, use `printf '%b' "$value"`.
+`shortcuts run`, `osascript`.
 
 To use `openspot` in a terminal, link it: `ln -s <path to Openspot.app>/Contents/Helpers/openspot /usr/local/bin/openspot`.
 
@@ -422,6 +438,8 @@ openspot check <plugins folder>
 - Be fast in `read`. It has 10 seconds until its first frame or its end. Reads run at the same time, so a slow script delays no other. Any other name has no limit.
 - Keep files in `$OPENSPOT_DATA`, not in the plugin folder. Openspot creates this folder. All plugins share it, so name your
   files after your script.
+- Write a file to a temp name, then move it: `... > "$file.$$" && mv "$file.$$" "$file"`. A stop can come at any time, and two
+  calls of one script can run at the same time, so a file must never be half written.
 - Use short plain words in sentence case. Start an action's name with a verb.
 - Do not use a `key` that another plugin has. The first plugin keeps it.
 - A plugin runs with the full access of the person. If you are an agent, tell the person what yours runs.

@@ -108,7 +108,9 @@ public enum PartCatalog {
     A call can keep printing. A line `---` ends a frame, and the app draws it at once. A frame with a layout replaces the \
     sheet, and a frame with only parts changes those parts, so print `part`, `cell` and the keys again for each one.
 
-    A value over 64 KB is left out of the arguments, and stdin still holds it.
+    A value over 64 KB is left out of the arguments, and stdin still holds it. In a shell script, `. "$OPENSPOT_SH"` gives \
+    `value <id>`, which prints the real text of one value from stdin, and `esc <text>`, which writes text as a value. Loading \
+    it reads all of stdin once. A script writes a file to a temp name, then moves it, so a file is never half written.
 
     A `read` has 10 seconds until its first frame or its end, and it stops when nothing wants it, such as when its sheet \
     closes. Any other name has no time limit, and it keeps running with the sheet and the panel closed. A new value for a part \
