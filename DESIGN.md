@@ -386,8 +386,10 @@ The command is on the path of each script. It also gives the tools for authors.
 | P1 | A plugin runs with the full access of the person. The app has no sandbox, and a script is not limited to capabilities. |
 | P2 | So a header cannot grant or deny power. A `uses` key would be only a label, and this design does not have one. |
 | P3 | Nothing runs on a scan (F2). A script runs only by a person's act or by a key in its text. |
-| P4 | Before a person installs a shared plugin, Openspot shows its text. Sharing is not built yet. |
+| P4 | Before a person installs a shared spot, Openspot shows all the text it can, says what runs by itself and names each file it cannot show. Only a modified key installs it. |
 | P5 | Each usage text for a protected Mac feature is in the app. So a protected feature is a capability. |
+| P6 | A compiled program travels in a `.spot` file, and the review says first that no one can read it. A plugin can be any executable (F1), so sharing takes each of them. |
+| P7 | A `.spot` file has no signature and names no sender. Openspot warns the sender about secrets, and does not look for them. |
 
 ## 12. How to extend
 
@@ -427,6 +429,10 @@ The code follows this document.
 | A form is the same call | One call shape with no exception. | A `form` word. It is easier in shell, but it adds a word. |
 | Header in each file | Goal 1, and a scan runs nothing. | A manifest. It can still come later. |
 | No permission model | A script can already do all that the person can. A false limit is worse than none. | A `uses` key. |
+| A spot travels as a `.spot` file | A chat app takes a file of any size that a script has, and a double-click or a drop adds it. | Encoded text, which hits message limits and hides the code. A link, which needs a hosted page. |
+| A `.spot` file is JSON: a format number and files | A standard format that any editor shows. A header already holds each fact about a spot, so the file repeats none. | A zip file, which hides the text. A manifest. |
+| A spot travels with what it needs | A widget works only with the metrics it places, and a script in a folder can need the other files of that folder. `$OPENSPOT_DATA` stays behind, because it is private. | Only single scripts, which leaves widgets and folders out. |
+| A file of the same name is replaced, and the old one goes to the Trash | The review names each file it replaces. A new name would break the IDs that a widget places. | A new name for each clash. |
 
 **Where the Workers model stops.** A Worker runs in a sandbox, so a binding is both an API and a permission. A script has no
 sandbox, so here a binding is only an API (P1). A Durable Object loses its memory when it sleeps. A staying script is a real

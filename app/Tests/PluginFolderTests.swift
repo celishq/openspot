@@ -27,6 +27,36 @@ final class PluginFolderTests: XCTestCase {
         get throws { try PluginFolder(url: folder).scan() }
     }
 
+    func testADebugBuildKeepsItsStateInItsOwnFolder() {
+        let home = URL(fileURLWithPath: "/Users/a")
+
+        XCTAssertEqual(PluginFolder.config(environment: [:], home: home, devState: "/repo/app/../.temp/openspot").path, "/repo/.temp/openspot")
+        XCTAssertEqual(PluginFolder.config(environment: [:], home: home, devState: "").path, "/Users/a/.config/openspot")
+        XCTAssertEqual(PluginFolder.config(environment: [:], home: home, devState: nil).path, "/Users/a/.config/openspot")
+        XCTAssertEqual(PluginFolder.config(environment: ["OPENSPOT_CONFIG": "/x"], home: home, devState: "/repo").path, "/x")
+    }
+
+    func testRemoveTakesOnlyTheFileOfTheSpot() throws {
+        try write("home/one.sh")
+        try write("home/two.sh")
+        var discarded: [String] = []
+        let command = try XCTUnwrap(try scan.commands.first { $0.id == "home/one" })
+
+        try PluginFolder(url: folder).remove(command) { url in
+            discarded.append(url.lastPathComponent)
+            try FileManager.default.removeItem(at: url)
+        }
+
+        XCTAssertEqual(discarded, ["one.sh"])
+        XCTAssertEqual(try scan.commands.map(\.id), ["home/two"])
+    }
+
+    func testAShippedSpotCannotBeRemoved() throws {
+        let shipped = PluginCommand(id: "openspot/plugins", name: "Plugins", url: folder, shipped: .plugins(PluginGuide(folder: folder, guide: folder, app: "")))
+
+        XCTAssertThrowsError(try PluginFolder(url: folder).remove(shipped) { _ in XCTFail("It must not be discarded.") })
+    }
+
     func testAnExecutableIsASpotWithItsHeader() throws {
         try write("one.sh", header: "name=First\nsize=square\nsymbol=moon\nsubtitle=Off\nkey=o")
 

@@ -481,30 +481,32 @@ struct SpotPanelView: View {
     @ViewBuilder
     private func textArea(_ part: SpotPart, _ frame: SheetPlacement.Frame, text: String, placeholder: String?, isReadOnly: Bool) -> some View {
         let inset = frame.isInCard ? 0 : SpotTokens.padding
+        let space = EdgeInsets(top: inset + frame.clearTop, leading: inset, bottom: inset + frame.clearBottom, trailing: inset)
         ZStack(alignment: .topLeading) {
             if isReadOnly {
                 ScrollView(showsIndicators: false) {
                     Text(text)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(space)
                 }
+                .clipShape(RoundedRectangle(cornerRadius: frame.isInCard ? 0 : SpotTokens.radius - SpotTokens.padding, style: .continuous))
             } else {
                 TextEditor(text: Binding(get: { text }, set: { onSet(part, $0) }))
                     .scrollContentBackground(.hidden)
                     .focused($focus, equals: part.id)
                     .padding(.horizontal, -SpotTokens.editorInset)
+                    .padding(space)
             }
             if text.isEmpty, let placeholder {
                 Text(placeholder)
                     .foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
                     .allowsHitTesting(false)
+                    .padding(space)
             }
         }
         .font(SpotType.body)
         .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
-        .padding(.horizontal, inset)
-        .padding(.top, inset + frame.clearTop)
-        .padding(.bottom, inset + frame.clearBottom)
         .background(Color.white.opacity(frame.isInCard ? 0 : SpotTokens.fill), in: shape)
     }
 }

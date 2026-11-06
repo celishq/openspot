@@ -1,4 +1,4 @@
-.PHONY: verify test plugins release release-build
+.PHONY: verify test plugins dev-state release release-build
 
 verify:
 	sh scripts/check-core.sh
@@ -12,6 +12,11 @@ test:
 plugins:
 	mkdir -p $(HOME)/.config/openspot
 	ln -sfn $(CURDIR)/plugins $(HOME)/.config/openspot/plugins
+
+dev-state:
+	rm -rf .temp/openspot
+	mkdir -p .temp/openspot
+	cp -R plugins .temp/openspot/plugins
 
 release:
 	sh scripts/release.sh publish "$(V)"

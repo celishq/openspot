@@ -24,6 +24,54 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(menu.rows.map(\.title), ["Copy", "Delete", "New"])
     }
 
+    func testAMenuThatOffersSharingEndsWithIt() throws {
+        let menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, extras: [.share, .remove()]))
+
+        XCTAssertEqual(menu.rows.map(\.title), ["Open", "New", "Copy to share", "Delete"])
+        XCTAssertEqual(menu.rows[2].action, .share)
+    }
+
+    func testAMenuWithOnlySharingStillOpens() throws {
+        let slider = PluginCommand(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .slider)
+
+        XCTAssertNil(ActionMenu(command: slider, item: nil))
+        XCTAssertEqual(ActionMenu(command: slider, item: nil, extras: [.share])?.rows.map(\.title), ["Copy to share"])
+    }
+
+    func testRemoveAsksForASecondPress() throws {
+        var menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, extras: [.remove()]))
+        menu.select(.remove())
+
+        XCTAssertNil(menu.press())
+        XCTAssertEqual(menu.title(of: menu.rows[menu.selected]), "Press again to delete")
+        XCTAssertEqual(menu.press()?.action, .remove())
+    }
+
+    func testTheRowsOfTheAppUseTheKeysOfTheSampleLists() {
+        XCTAssertEqual(CommandAction.remove().key, ActionKey(text: "cmd+backspace"))
+        XCTAssertEqual(CommandAction.share.key, ActionKey(text: "cmd+shift+c"))
+    }
+
+    func testTheRowsOfTheAppStayOutOfTheHint() throws {
+        let plain = PluginCommand(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list)
+
+        XCTAssertEqual(ActionMenu(command: plain, item: nil, extras: [.share, .remove()])?.hint, "⏎ Open   ⌘K Actions")
+    }
+
+    func testRemoveNamesEachWidgetThatItTakesWithIt() {
+        XCTAssertEqual(CommandAction.remove(widgets: 3).confirm, "Press again to delete 3 widgets")
+    }
+
+    func testAMoveToTheSameRowKeepsItsQuestion() throws {
+        var menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, extras: [.remove()]))
+        menu.select(.remove())
+        XCTAssertNil(menu.press())
+
+        menu.move(by: 0)
+
+        XCTAssertEqual(menu.press()?.action, .remove())
+    }
+
     func testWithNoItemOnlyTheCommandsActionsShow() throws {
         let menu = try XCTUnwrap(ActionMenu(command: command(), item: nil))
 

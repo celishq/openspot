@@ -6,6 +6,21 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>Openspot</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Openspot spot</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>dev.openspot.spot</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -26,6 +41,8 @@
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>Openspot runs your plugins, and a plugin can ask another app to act, such as to paste.</string>
+	<key>OpenspotDevState</key>
+	<string>$(OPENSPOT_DEV_STATE)</string>
 	<key>SUAutomaticallyUpdate</key>
 	<true/>
 	<key>SUEnableAutomaticChecks</key>
@@ -36,5 +53,25 @@
 	<string>$(UPDATE_PUBLIC_KEY)</string>
 	<key>SUVerifyUpdateBeforeExtraction</key>
 	<true/>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Openspot spot</string>
+			<key>UTTypeIdentifier</key>
+			<string>dev.openspot.spot</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>spot</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>
