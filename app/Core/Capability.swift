@@ -71,7 +71,7 @@ public struct Capability: Sendable {
     /// another one exits with code 0, and any other exit is a failed start.
     private func reach() throws -> Connection {
         guard Connection.address(of: socketPath) != nil else {
-            throw Failure.notStarted(name: name, cause: "the path \(socketPath) is too long for a socket", fix: "Set TMPDIR to a shorter folder.")
+            throw Failure.notStarted(name: name, cause: "the path \(socketPath) is too long for a socket", fix: "Use a shorter folder.")
         }
         let deadline = Date().addingTimeInterval(Self.startLimit)
         let ended = DispatchSemaphore(value: 0)

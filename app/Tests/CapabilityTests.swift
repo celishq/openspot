@@ -218,7 +218,7 @@ final class CapabilityTests: XCTestCase {
             XCTFail("It answered: \(answer)")
         } catch PluginError.failed(_, let line) {
             XCTAssertTrue(line.contains("too long"), line)
-            XCTAssertTrue(line.contains("TMPDIR"), line)
+            XCTAssertTrue(line.contains("Use a shorter folder"), line)
         }
     }
 }

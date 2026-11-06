@@ -357,7 +357,7 @@ After 2 seconds its group gets the terminate signal, and 2 seconds after that Op
 
 It gets one block on stdin for each call, with a blank line after it: `name`, `value`, and one `field.<id>` for each value
 of the sheet. A pick, an action and a form reach the script that runs, and no call starts a second copy. It keeps its own
-state, and answers with frames. See `translate.sh` for an example.
+state, and answers with frames.
 
 If it ends and something still wants it, the next moment or call starts it again. After 3 failures in one minute, Openspot
 tells the person, and does not start it again until a scan finds its file changed.
@@ -380,11 +380,16 @@ A script finds `openspot` on its path. It gives what macOS has no command for, i
 | `openspot render <file.png>` | Draws the sheet on stdin to a picture. |
 | `openspot sandbox [file]` | Opens a window to try a sheet from text, a file or a script. |
 | `openspot color pick` | Prints the colour the person picks. Prints nothing on a cancel. |
-| `openspot translate [--from code] [--to code]` | Translates the text on stdin on this Mac. Prints `text` and `from`, or `status=missing`, `unsupported` or `unknown`. |
+| `openspot translate [--from code] [--to code]` | Translates the text on stdin on this Mac. Prints `text` and `from`, or `status=missing`, `unsupported`, `unknown` or `failed`. |
 | `openspot translate languages` | Prints each language, with its name. |
 
 When macOS already has a command, use it: `pbcopy`, `open`, `say`, `caffeinate`, `mdfind`, `screencapture`,
 `shortcuts run`, `osascript`.
+
+A capability works the same from a script and from a terminal. It can stay loaded between calls: `openspot translate`
+keeps each pair of languages in memory, and they leave memory 30 seconds after the last call. Your script does nothing for
+this. It never starts, finds or stops anything, and it stays a handler that runs once for each call, as `translate.sh` does.
+When a call cannot start what it needs, it exits with code 1 and one line on stderr that says the cause and the fix.
 
 To use `openspot` in a terminal, link it: `ln -s <path to Openspot.app>/Contents/Helpers/openspot /usr/local/bin/openspot`.
 

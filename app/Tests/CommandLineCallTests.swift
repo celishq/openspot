@@ -2,8 +2,15 @@ import XCTest
 @testable import OpenspotCore
 
 final class CommandLineCallTests: XCTestCase {
-    func testATranslationServerStaysRunning() {
-        XCTAssertEqual(CommandLineCall(arguments: ["translate", "--serve"]), .translateServe)
+    func testACapabilityStartsItsHelperWithACallThatTheUsageDoesNotList() {
+        XCTAssertEqual(CommandLineCall(arguments: ["helper", "translate"]), .helper("translate"))
+        XCTAssertEqual(CommandLineCall(arguments: ["helper"]), .unknown("helper"))
+        XCTAssertFalse(CommandLineCall.usage.contains("helper"))
+    }
+
+    func testNoScriptServesTranslationsAnyMore() {
+        XCTAssertEqual(CommandLineCall(arguments: ["translate", "--serve"]), .unknown("translate --serve"))
+        XCTAssertFalse(CommandLineCall.usage.contains("--serve"))
     }
 
     func testASandboxCanNameAFile() {

@@ -375,7 +375,7 @@ The command is on the path of each script. It also gives the tools for authors.
 | `openspot render <file.png>` | Draws the sheet on stdin to a picture. |
 | `openspot sandbox [file]` | Opens a window to try a sheet from text, a file or a script. |
 | `openspot color pick` | Capability: the colour the person picks. |
-| `openspot translate` | Capability: translates text on this Mac, and stays loaded for an open sheet. |
+| `openspot translate` | Capability: translates text on this Mac, and keeps each pair of languages loaded (K2). |
 | `openspot translate languages` | Capability: the languages it knows. |
 
 ## 11. Security
@@ -408,7 +408,6 @@ Remove a row when the code follows the rule.
 
 | Rules | Module | Today | Target |
 |---|---|---|---|
-| K1 to K3 | `SpotTranslation`, `translate.sh` | The script starts `openspot translate --serve` and talks through fifos. | A handler that calls `openspot translate`, which reaches a helper that exits when idle. |
 
 The tests in `SpotActionTests`, `SheetStreamTests`, `SpotPanelTests`, `SpotRunsTests` and `SamplePluginsTests` pin the calls. Read them
 before each change. Each change in this table is breaking, and no alias stays.
@@ -445,13 +444,19 @@ Nothing.
 
 **Not proven**
 
-1. K2: one loaded state across many short runs of a script, with real translation. No language pair is installed on the test Mac.
+1. K2: process tests prove one state across separate runs of a script, one helper after a race, and no helper after its idle
+   time, with a stand-in capability. By hand on one Mac with English to Russian installed, 8 real calls reached one helper: the
+   first took 313 ms and later ones 81 to 114 ms. How much of that gain comes from the kept session, and not from macOS, is not
+   proven. `Translate` has not run in the real panel. A helper that hangs and does not crash blocks each call until the person
+   stops it.
 2. P5: what macOS does when a compiled program under Openspot calls a protected API, such as Calendar. The app can be
    stopped when it has no usage text. Test this before section 8 promises a compiled program any Mac API. The test can show a
    permission prompt, so it needs the person.
 3. M3: whether each current plugin still fits the limits when reads run at the same time.
 4. L11: whether 1 second is enough to stop a double press from stopping work.
 5. D1: a drag over a menu bar item that opens a panel with no change of focus. It needs a real screen and a real drag.
-6. K2: the start time of the `openspot` command, which each change in `Translate` calls. It is not measured.
+6. K2: the start time of the `openspot` command, which each change in `Translate` calls: a median of 9 ms for `catalog` over 20
+   calls, and 11 ms for a call through a running helper with no translation, in a Debug build on one Mac. The first run after a
+   build took 297 ms. A Release build and a Mac under memory pressure are not measured.
 7. Start times: about 5 ms for `sh`, 18 ms for `bun`, 25 ms for `python3`, 60 ms for `node` and 3.4 s for `swift file.swift`.
    One Mac, trivial programs. A Swift plugin must be compiled.
