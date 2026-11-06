@@ -12,6 +12,8 @@ public final class SpotSheet {
         case failure(String)
         case frame(String)
         case listChange
+        /// A click on a card that takes files and has no sheet: the owner asks the person for files, and gives them to `drop`.
+        case chooseFiles
     }
 
     /// Why a read is asked. A `panel` or a `sheet` moment can use a young answer. The clock always runs and reports no failure
@@ -67,6 +69,7 @@ public final class SpotSheet {
     @ObservationIgnored private var formAnswer: CheckedContinuation<String?, Error>?
     @ObservationIgnored private var editing: String?
     @ObservationIgnored private var ready: (() -> Void)?
+    @ObservationIgnored private var waitingDrops: [[String]] = []
 
     init(command: PluginCommand, runs: SpotRuns, recent: [String], prepare: @escaping ([SpotItem]) async -> Void) {
         self.command = command
@@ -189,6 +192,7 @@ public final class SpotSheet {
     func prepareToQuit() {
         pauses.values.forEach { $0.cancel() }
         pauses = [:]
+        waitingDrops = []
     }
 
     /// Asks the script for what it shows. A request joins the read that runs (M1). A `panel` or a `sheet` moment uses an answer
@@ -280,15 +284,31 @@ public final class SpotSheet {
         return state.showing(title: call.title, detail: call.detail)
     }
 
-    /// Runs a click on a card with no sheet: a toggle shows its new state at once. A second press stops the call, and a
-    /// stopped toggle goes back.
+    /// Runs a click on a card with no sheet: a toggle shows its new state at once, and a card that takes files asks for a
+    /// choice. A second press stops the call, and a stopped toggle goes back.
     public func pressCard() {
         if let running = running(Self.cardKey) { return pressAgain(running) }
+        if command.kind == .launch, command.takesDrops { return onReport(.chooseFiles) }
         guard command.kind == .toggle else { return work(command.click, key: Self.cardKey) }
         let before = state
         let action = SpotAction.toggle(state)
         state = SpotState(title: state.title, subtitle: state.subtitle, on: action.arguments == ["on"])
         work(action, key: Self.cardKey, undo: before)
+    }
+
+    /// Takes files that a person dropped or chose, and returns whether the card takes them. They run as one `drop` call, once
+    /// no call that does work runs. A running call goes on.
+    @discardableResult
+    public func drop(_ paths: [String]) -> Bool {
+        guard command.accepts(paths) else { return false }
+        waitingDrops.append(paths)
+        startWaitingDrop()
+        return true
+    }
+
+    private func startWaitingDrop() {
+        guard !waitingDrops.isEmpty, !calls.contains(where: \.doesWork) else { return }
+        work(.drop(paths: waitingDrops.removeFirst()), key: Self.cardKey)
     }
 
     /// Takes a new level of a slider on a card, which shows at once and reaches the script after a pause.
@@ -391,6 +411,7 @@ public final class SpotSheet {
         let call = runs.call(command, action, key: key, input: input, limit: limit, onFrame: onFrame) { [weak self] call, end in
             self?.calls.removeAll { $0 === call }
             await onEnd(end)
+            self?.startWaitingDrop()
         }
         calls.append(call)
         if call.doesWork {

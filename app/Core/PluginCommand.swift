@@ -3,6 +3,8 @@ import Foundation
 /// One executable of a plugin, with the look its spot takes. A widget runs nothing, and places scripts in a layout.
 public struct PluginCommand: Equatable, Sendable {
     public static let lastRank = Int.max
+    private static let folderWord = "folder"
+    private static let anyWord = "*"
 
     public let id: String
     public let name: String
@@ -102,6 +104,39 @@ public struct PluginCommand: Equatable, Sendable {
     /// The call that a click on its card makes: `run`, or no argument for a file with no `read`.
     public var click: SpotAction {
         read == nil ? SpotAction(arguments: []) : .run
+    }
+
+    /// Whether its `drop` takes files that are not folders.
+    public var takesFiles: Bool {
+        dropWords.contains { !$0.isEmpty && $0 != Self.folderWord }
+    }
+
+    /// Whether its `drop` takes folders: the word `folder` or `*`. A bundle, such as an app, is a folder.
+    public var takesFolders: Bool {
+        dropWords.contains(Self.folderWord) || dropWords.contains(Self.anyWord)
+    }
+
+    /// Whether its card takes anything that a person drops.
+    public var takesDrops: Bool {
+        takesFiles || takesFolders
+    }
+
+    /// Whether its card takes all these files at once. One that does not fit, or that is not on the disk, refuses all.
+    public func accepts(_ paths: [String]) -> Bool {
+        !paths.isEmpty && paths.allSatisfy(accepts(path:))
+    }
+
+    private func accepts(path: String) -> Bool {
+        var isFolder: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: path, isDirectory: &isFolder) else { return false }
+        if isFolder.boolValue { return takesFolders }
+        let fileExtension = URL(fileURLWithPath: path).pathExtension.lowercased()
+        if dropWords.contains(Self.anyWord) { return true }
+        return !fileExtension.isEmpty && fileExtension != Self.folderWord && dropWords.contains(fileExtension)
+    }
+
+    private var dropWords: [String] {
+        drop.map { $0.lowercased() }
     }
 
     /// This command with the actions, the word for Enter, the pick and the recents that its script printed, and the kind it

@@ -64,7 +64,7 @@ final class SpotSandboxModel {
         switch report {
         case .frame(let text): sandbox.note(frame: text)
         case .failure(let text), .toast(let text): sandbox.record(text)
-        case .listChange: break
+        case .listChange, .chooseFiles: break
         }
     }
 

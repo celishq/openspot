@@ -1,0 +1,469 @@
+import XCTest
+@testable import OpenspotCore
+
+/// Proves the rules of drops with real files and real processes: which files a card takes, the arguments of its call, and
+/// how a drop waits for a running call.
+@MainActor
+final class SpotDropTests: XCTestCase {
+    private var folder: URL!
+    private var runs: SpotRuns!
+    private var time = Date(timeIntervalSince1970: 1000)
+
+    override func setUp() async throws {
+        folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot drop \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        runs = SpotRuns(now: { [unowned self] in self.time })
+    }
+
+    override func tearDown() async throws {
+        runs.quit()
+        try? FileManager.default.removeItem(at: folder)
+    }
+
+    private func path(_ name: String) -> String {
+        folder.appendingPathComponent(name).path
+    }
+
+    private func exists(_ name: String) -> Bool {
+        FileManager.default.fileExists(atPath: path(name))
+    }
+
+    /// A real file with this name, and its path.
+    private func file(_ name: String) -> String {
+        FileManager.default.createFile(atPath: path(name), contents: Data())
+        return path(name)
+    }
+
+    /// A real folder with this name, and its path.
+    private func directory(_ name: String) throws -> String {
+        try FileManager.default.createDirectory(atPath: path(name), withIntermediateDirectories: true)
+        return path(name)
+    }
+
+    /// The calls that a script logged, one line for each.
+    private func log() -> [String] {
+        ((try? String(contentsOfFile: path("log"), encoding: .utf8)) ?? "").split(separator: "\n", omittingEmptySubsequences: false).dropLast().map(String.init)
+    }
+
+    /// Writes a script with these header lines, which logs each call before its body runs, and gives its sheet.
+    private func sheet(header: String = "", _ body: String = "") throws -> SpotSheet {
+        let url = folder.appendingPathComponent("script.sh")
+        let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
+        try "#!/bin/sh\n\(lines)\necho \"$*\" >> '\(path("log"))'\n\(body)\n".write(to: url, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        let scan = try PluginFolder(url: folder).scan()
+        XCTAssertEqual(scan.refused, [])
+        runs.take(scan)
+        return try XCTUnwrap(runs.sheets["script"])
+    }
+
+    private func wait(_ what: String, until condition: () -> Bool) async throws {
+        for _ in 0..<500 {
+            if condition() { return }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTFail("waited for \(what)")
+    }
+
+    private func pause(_ seconds: Double = 0.3) async throws {
+        try await Task.sleep(for: .seconds(seconds))
+    }
+
+    private func command(drop: [String]) -> PluginCommand {
+        PluginCommand(id: "a", name: "A", url: folder, drop: drop)
+    }
+
+    // MARK: D2
+
+    func testACardTakesOnlyFilesWhoseExtensionItsDropLists() {
+        let card = command(drop: ["mov", "mkv"])
+
+        XCTAssertTrue(card.accepts([file("a.mov")]))
+        XCTAssertTrue(card.accepts([file("a.mov"), file("b.mkv")]))
+        XCTAssertFalse(card.accepts([file("a.txt")]))
+        XCTAssertFalse(card.accepts([file("mov")]))
+    }
+
+    func testOneFileThatDoesNotFitRefusesTheWholeMix() {
+        let card = command(drop: ["mov"])
+
+        XCTAssertFalse(card.accepts([file("a.mov"), file("b.txt")]))
+        XCTAssertFalse(card.accepts([file("b.txt"), file("a.mov")]))
+    }
+
+    func testAnExtensionMatchesInAnyCase() {
+        XCTAssertTrue(command(drop: ["mov"]).accepts([file("A.MOV")]))
+        XCTAssertTrue(command(drop: ["MOV"]).accepts([file("a.mov")]))
+        XCTAssertTrue(command(drop: ["FOLDER"]).takesFolders)
+    }
+
+    func testAFolderFitsOnlyTheWordFolderAndAStar() throws {
+        let plain = try directory("plain")
+        let named = try directory("clip.mov")
+
+        XCTAssertTrue(command(drop: ["folder"]).accepts([plain, named]))
+        XCTAssertFalse(command(drop: ["mov"]).accepts([plain]))
+        XCTAssertFalse(command(drop: ["mov"]).accepts([named]))
+    }
+
+    func testTheWordFolderIsNotAnExtension() {
+        XCTAssertFalse(command(drop: ["folder"]).accepts([file("a.folder")]))
+        XCTAssertFalse(command(drop: ["folder"]).accepts([file("a.mov")]))
+    }
+
+    func testAStarTakesEachFileAndEachFolder() throws {
+        let card = command(drop: ["*"])
+
+        XCTAssertTrue(card.accepts([file("a.mov"), file("no-extension"), try directory("plain")]))
+    }
+
+    func testACardWithNoDropTakesNothing() {
+        XCTAssertFalse(command(drop: []).accepts([file("a.mov")]))
+        XCTAssertFalse(command(drop: [""]).accepts([file("no-extension")]))
+    }
+
+    func testNoFilesAndAMissingFileAreNotTaken() {
+        XCTAssertFalse(command(drop: ["*"]).accepts([]))
+        XCTAssertFalse(command(drop: ["*"]).accepts([path("gone.mov")]))
+    }
+
+    func testAPathWithSpacesAndALeadingDashIsTaken() {
+        XCTAssertTrue(command(drop: ["mov"]).accepts([file("a b c.mov"), file("-rf.mov"), file("--.mov")]))
+    }
+
+    func testAChoiceOffersWhatTheDropTakes() {
+        XCTAssertTrue(command(drop: ["mov"]).takesFiles)
+        XCTAssertFalse(command(drop: ["mov"]).takesFolders)
+        XCTAssertFalse(command(drop: ["folder"]).takesFiles)
+        XCTAssertTrue(command(drop: ["folder"]).takesFolders)
+        XCTAssertTrue(command(drop: ["*"]).takesFiles)
+        XCTAssertTrue(command(drop: ["*"]).takesFolders)
+        XCTAssertFalse(command(drop: []).takesFiles)
+        XCTAssertFalse(command(drop: []).takesFolders)
+        XCTAssertFalse(command(drop: [""]).takesFiles)
+    }
+
+    func testAHeaderWithDropScansToACardThatTakesItsFiles() throws {
+        let sheet = try sheet(header: "drop=mov, MKV,folder")
+
+        XCTAssertTrue(sheet.command.accepts([file("a.mkv"), try directory("plain")]))
+        XCTAssertFalse(sheet.command.accepts([file("a.txt")]))
+    }
+
+    // MARK: D3
+
+    func testADropRunsOneCallWithEachPathAsItsOwnArgument() async throws {
+        let sheet = try sheet(header: "drop=mov", """
+        printf '%s\\n' "$#" > '\(path("arguments"))'
+        for argument; do printf '%s\\n' "$argument" >> '\(path("arguments"))'; done
+        """)
+        let paths = [file("a b c.mov"), file("-rf.mov"), file("--.mov"), file("quoted \"name\".mov")]
+
+        XCTAssertTrue(sheet.drop(paths))
+
+        try await wait("the call") { sheet.calls.isEmpty && self.log().count == 1 }
+        let lines = try String(contentsOfFile: path("arguments"), encoding: .utf8).split(separator: "\n").map(String.init)
+        XCTAssertEqual(lines, ["5", "drop"] + paths)
+    }
+
+    func testAnArgumentThatStartsWithADashReachesTheScriptAsItIs() async throws {
+        let url = folder.appendingPathComponent("plain.sh")
+        try "#!/bin/sh\nprintf '%s|' \"$@\"\n".write(to: url, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+
+        let text = try await runs.answer(of: PluginCommand(id: "plain", name: "Plain", url: url), .drop(paths: ["-n", "--", "a b"]))
+
+        XCTAssertEqual(text, "drop|-n|--|a b|")
+    }
+
+    func testADropThatTheCardDoesNotTakeRunsNothing() async throws {
+        let sheet = try sheet(header: "drop=mov")
+
+        XCTAssertFalse(sheet.drop([file("a.mov"), file("b.txt")]))
+        XCTAssertFalse(sheet.drop([]))
+
+        try await pause()
+        XCTAssertEqual(log(), [])
+        XCTAssertTrue(sheet.calls.isEmpty)
+    }
+
+    // MARK: D4
+
+    /// An open sheet whose running `work` action goes on until the file `release` appears.
+    private func busySheet() async throws -> SpotSheet {
+        let sheet = try sheet(header: "read=sheet\ndrop=mov", """
+        case "$1" in
+          read) printf 'action=work\\ntitle=Work\\nscope=command\\n\\nrow=A\\nrun=a\\n' ;;
+          work) while [ ! -f '\(path("release"))' ]; do sleep 0.02; done; touch '\(path("worked"))' ;;
+        esac
+        """)
+        sheet.open {}
+        try await wait("the action") { sheet.command.actions.count == 1 && sheet.calls.isEmpty }
+        sheet.run(try XCTUnwrap(sheet.command.actions.first), item: nil)
+        try await wait("the call") { self.log() == ["read", "work"] }
+        return sheet
+    }
+
+    func testADropOnACardWithARunningCallWaitsAndDoesNotStopIt() async throws {
+        let sheet = try await busySheet()
+        let file = file("a.mov")
+
+        XCTAssertTrue(sheet.drop([file]))
+        try await pause()
+
+        XCTAssertEqual(log(), ["read", "work"])
+        XCTAssertEqual(sheet.calls.map(\.action.arguments), [["work"]])
+
+        FileManager.default.createFile(atPath: path("release"), contents: Data())
+        try await wait("the drop") { self.log().contains("drop \(file)") }
+        XCTAssertTrue(exists("worked"))
+    }
+
+    func testAWaitingDropRunsAfterTheRunningCallIsStopped() async throws {
+        let sheet = try await busySheet()
+        let file = file("a.mov")
+        XCTAssertTrue(sheet.drop([file]))
+
+        sheet.stop(try XCTUnwrap(sheet.calls.first))
+
+        try await wait("the drop") { self.log().contains("drop \(file)") }
+        XCTAssertFalse(exists("worked"))
+    }
+
+    func testAWaitingDropRunsAfterASecondPressStopsTheRunningCard() async throws {
+        let sheet = try sheet(header: "drop=mov", "case \"$2\" in *first.mov) sleep 30 ;; esac")
+        let first = file("first.mov")
+        let second = file("second.mov")
+        XCTAssertTrue(sheet.drop([first]))
+        try await wait("the first drop") { self.log() == ["drop \(first)"] }
+        XCTAssertTrue(sheet.drop([second]))
+        try await pause(0.1)
+        XCTAssertEqual(log(), ["drop \(first)"])
+
+        time = time.addingTimeInterval(1)
+        sheet.pressCard()
+
+        try await wait("the second drop") { self.log() == ["drop \(first)", "drop \(second)"] }
+    }
+
+    func testAWaitingDropRunsAfterTheRunningCallFails() async throws {
+        let sheet = try sheet(header: "read=sheet\ndrop=mov", """
+        case "$1" in
+          read) printf 'action=work\\ntitle=Work\\nscope=command\\n\\nrow=A\\nrun=a\\n' ;;
+          work) sleep 0.2; echo gone >&2; exit 3 ;;
+        esac
+        """)
+        var failures: [String] = []
+        sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
+        sheet.open {}
+        try await wait("the action") { sheet.command.actions.count == 1 && sheet.calls.isEmpty }
+        sheet.run(try XCTUnwrap(sheet.command.actions.first), item: nil)
+        let file = file("a.mov")
+
+        XCTAssertTrue(sheet.drop([file]))
+
+        try await wait("the drop") { self.log().contains("drop \(file)") }
+        XCTAssertEqual(failures, ["Script failed. gone"])
+    }
+
+    func testTwoWaitingDropsRunInTurn() async throws {
+        let sheet = try await busySheet()
+        let first = file("first.mov")
+        let second = file("second.mov")
+        XCTAssertTrue(sheet.drop([first]))
+        XCTAssertTrue(sheet.drop([second]))
+
+        FileManager.default.createFile(atPath: path("release"), contents: Data())
+
+        try await wait("both drops") { self.log().filter { $0.hasPrefix("drop") } == ["drop \(first)", "drop \(second)"] }
+    }
+
+    func testASecondDropWaitsForTheFirstDrop() async throws {
+        let sheet = try sheet(header: "drop=mov", "case \"$2\" in *first.mov) sleep 0.4; touch '\(path("first-done"))' ;; esac")
+        let first = file("first.mov")
+        let second = file("second.mov")
+
+        XCTAssertTrue(sheet.drop([first]))
+        XCTAssertTrue(sheet.drop([second]))
+        try await wait("the first drop") { self.log() == ["drop \(first)"] }
+        XCTAssertEqual(sheet.calls.count, 1)
+
+        try await wait("the second drop") { self.log() == ["drop \(first)", "drop \(second)"] }
+        XCTAssertTrue(exists("first-done"))
+    }
+
+    func testARunningReadDoesNotHoldADrop() async throws {
+        let sheet = try sheet(header: "read=panel\ndrop=mov", """
+        [ "$1" = read ] && { printf 'on=false\\n---\\n'; sleep 30; }
+        exit 0
+        """)
+        runs.panelOpened()
+        try await wait("the read") { self.log() == ["read"] && sheet.command.kind == .toggle }
+        let file = file("a.mov")
+
+        XCTAssertTrue(sheet.drop([file]))
+
+        try await wait("the drop") { self.log().contains("drop \(file)") }
+    }
+
+    func testQuittingDropsAWaitingDrop() async throws {
+        let sheet = try await busySheet()
+        XCTAssertTrue(sheet.drop([file("a.mov")]))
+
+        runs.quit()
+        try await pause(0.5)
+
+        XCTAssertEqual(log().filter { $0.hasPrefix("drop") }, [])
+    }
+
+    // MARK: D5
+
+    /// Counts how often the sheet asks its owner for a choice of files.
+    private func choiceCount(of sheet: SpotSheet) -> () -> Int {
+        var count = 0
+        sheet.onReport = { if case .chooseFiles = $0 { count += 1 } }
+        return { count }
+    }
+
+    func testAClickOnACardWithDropAndNoSheetAsksForAChoiceAndRunsNothing() async throws {
+        let sheet = try sheet(header: "drop=mov")
+        let choices = choiceCount(of: sheet)
+
+        sheet.pressCard()
+
+        XCTAssertEqual(choices(), 1)
+        XCTAssertTrue(sheet.calls.isEmpty)
+        try await pause()
+        XCTAssertEqual(log(), [])
+    }
+
+    func testAChoiceRunsTheSameCallAsADrop() async throws {
+        let sheet = try sheet(header: "drop=mov")
+        sheet.pressCard()
+        let file = file("a b.mov")
+
+        XCTAssertTrue(sheet.drop([file]))
+
+        try await wait("the call") { self.log() == ["drop \(file)"] }
+    }
+
+    func testAClickOnACardWithNoDropRunsItsCallAndAsksForNoChoice() async throws {
+        let sheet = try sheet()
+        let choices = choiceCount(of: sheet)
+
+        sheet.pressCard()
+
+        XCTAssertEqual(choices(), 0)
+        try await wait("the call") { self.log() == [""] }
+    }
+
+    func testAPressOnARunningDropStopsItAndAsksForNoChoice() async throws {
+        let sheet = try sheet(header: "drop=mov", "sleep 0.4\ntouch '\(path("went-on"))'")
+        let choices = choiceCount(of: sheet)
+        XCTAssertTrue(sheet.drop([file("a.mov")]))
+        XCTAssertTrue(sheet.isCardRunning)
+        try await wait("the call") { self.log().count == 1 }
+
+        time = time.addingTimeInterval(1)
+        sheet.pressCard()
+
+        XCTAssertEqual(choices(), 0)
+        XCTAssertFalse(sheet.isCardRunning)
+        try await pause(0.6)
+        XCTAssertFalse(exists("went-on"))
+    }
+
+    func testAPressWithinOneSecondOfADropDoesNothing() async throws {
+        let sheet = try sheet(header: "drop=mov", "sleep 0.2\ntouch '\(path("done"))'")
+        let choices = choiceCount(of: sheet)
+        XCTAssertTrue(sheet.drop([file("a.mov")]))
+
+        sheet.pressCard()
+
+        XCTAssertEqual(choices(), 0)
+        XCTAssertTrue(sheet.isCardRunning)
+        try await wait("the end of the work") { self.exists("done") }
+    }
+
+    func testAToggleWithDropKeepsItsClick() async throws {
+        let sheet = try sheet(header: "read=panel\ndrop=mov", "[ \"$1\" = read ] && printf 'on=false\\n'\nexit 0")
+        let choices = choiceCount(of: sheet)
+        runs.panelOpened()
+        try await wait("the kind") { sheet.command.kind == .toggle }
+
+        sheet.pressCard()
+
+        XCTAssertEqual(choices(), 0)
+        try await wait("the call") { self.log().contains("on") }
+    }
+
+    // MARK: D6
+
+    func testADropHasNoTimeLimitAndGoesOnWithThePanelClosed() async throws {
+        runs = SpotRuns(readLimit: 0.2, now: { [unowned self] in self.time })
+        let sheet = try sheet(header: "drop=mov", "sleep 0.5\ntouch '\(path("done"))'")
+        runs.panelOpened()
+        var failures: [String] = []
+        sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
+        XCTAssertTrue(sheet.drop([file("a.mov")]))
+
+        runs.panelClosed()
+        XCTAssertEqual(sheet.calls.first?.doesWork, true)
+
+        try await wait("the end of the work") { self.exists("done") && sheet.calls.isEmpty }
+        XCTAssertEqual(failures, [])
+    }
+
+    func testADropShowsItsFramesAndItsToastAndKeepsItsLastFrame() async throws {
+        let sheet = try sheet(header: "drop=mov", "printf 'title=42%%\\nvalue=0.42\\n---\\n'\nsleep 0.2\nprintf 'toast=Done\\n'")
+        var toasts: [String] = []
+        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
+
+        XCTAssertTrue(sheet.drop([file("a.mov")]))
+
+        try await wait("the frame") { sheet.calls.first?.lastFrame != nil }
+        XCTAssertEqual(sheet.calls.first?.action.arguments.first, "drop")
+        XCTAssertEqual(sheet.calls.first?.lastFrame, "title=42%\nvalue=0.42\n")
+        try await wait("the toast") { toasts == ["Done"] }
+        XCTAssertEqual(sheet.lastFrame, "toast=Done\n")
+    }
+
+    func testAFailedDropTellsThePerson() async throws {
+        let sheet = try sheet(header: "drop=mov", "echo broken >&2\nexit 2")
+        var failures: [String] = []
+        sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
+
+        XCTAssertTrue(sheet.drop([file("a.mov")]))
+
+        try await wait("the failure") { failures == ["Script failed. broken"] }
+    }
+
+    func testAStoppedDropChangesNothingAndItsSilenceIsNoAnswer() async throws {
+        let sheet = try sheet(header: "read=sheet\ndrop=mov", """
+        case "$1" in
+          read) printf 'row=A\\nrun=a\\n' ;;
+          drop) sleep 0.4; touch '\(path("went-on"))' ;;
+        esac
+        """)
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 && sheet.calls.isEmpty }
+        XCTAssertTrue(sheet.drop([file("a.mov")]))
+        try await wait("the call") { self.log().count == 2 }
+
+        sheet.stop(try XCTUnwrap(sheet.calls.first))
+        try await pause(0.6)
+
+        XCTAssertFalse(exists("went-on"))
+        XCTAssertEqual(sheet.list.shown.count, 1)
+        XCTAssertEqual(log().count, 2)
+    }
+
+    func testADropWithNoFrameReadsOnce() async throws {
+        let sheet = try sheet(header: "read=sheet\ndrop=mov", "[ \"$1\" = read ] && printf 'row=A\\nrun=a\\n'\nexit 0")
+        let file = file("a.mov")
+
+        XCTAssertTrue(sheet.drop([file]))
+
+        try await wait("the read after the call") { self.log() == ["drop \(file)", "read"] }
+    }
+}

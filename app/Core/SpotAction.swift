@@ -38,6 +38,11 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: [part])
     }
 
+    /// A person dropped or chose files on a card. Each path is its own argument.
+    public static func drop(paths: [String]) -> SpotAction {
+        SpotAction(arguments: ["drop"] + paths)
+    }
+
     /// This call as one block for a script that stays: `name`, `value`, and one `field.<id>` for each value that stdin
     /// holds in a normal call.
     public func event(values: String? = nil) -> String {

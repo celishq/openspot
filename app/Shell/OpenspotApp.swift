@@ -23,6 +23,8 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var trigger: CommandTrigger?
     private var hotKeys: [HotKey.Registration] = []
     private var trayBar: SpotTrayBar?
+    private var menuBarDrag: SpotMenuBarDrag?
+    private var fileChooser: SpotFileChooser?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -30,6 +32,8 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         item.button?.target = self
         item.button?.action = #selector(pressItem)
         statusItem = item
+        menuBarDrag = item.button.map { SpotMenuBarDrag(button: $0) { [weak self] in self?.showPanelForDrag() } }
+        model.chooseFiles = { [weak self] in self?.chooseFiles(for: $0, then: $1) }
         EditMenu.install()
         panel = SpotsPanel.make(model: model)
         model.dismiss = { [weak self] in
@@ -83,5 +87,27 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         previousApp = NSWorkspace.shared.frontmostApplication
         NSApp.activate(ignoringOtherApps: true)
         panel.show()
+    }
+
+    /// Opens the panel for a drag. The front app stays in front, so that closing the panel activates nothing.
+    private func showPanelForDrag() {
+        guard !model.isShown else { return }
+        previousApp = nil
+        panel?.showForDrag()
+    }
+
+    /// Closes the panel and asks the person for files. Afterwards the app that was in front comes back.
+    private func chooseFiles(for command: PluginCommand, then take: @escaping ([String]) -> Void) {
+        guard fileChooser == nil else { return }
+        let previous = model.isShown ? previousApp : NSWorkspace.shared.frontmostApplication
+        if model.isShown { panel?.hide() }
+        NSApp.activate(ignoringOtherApps: true)
+        let chooser = SpotFileChooser(command: command)
+        fileChooser = chooser
+        chooser.show { [weak self] paths in
+            self?.fileChooser = nil
+            previous?.activate()
+            take(paths)
+        }
     }
 }

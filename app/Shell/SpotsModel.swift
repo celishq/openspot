@@ -93,6 +93,9 @@ final class SpotsModel {
     private var closingPick: (item: SpotItem, entry: Entry)?
     private let runs: SpotRuns
     var isShown = false
+    /// Whether a drag over the menu bar item opened the panel, so that it is not key and its field takes no focus.
+    var isOpenForDrag = false
+    var chooseFiles: (PluginCommand, @escaping ([String]) -> Void) -> Void = { _, _ in }
     var dismiss: () -> Void = {}
     var show: () -> Void = {}
     var notify: (String) -> Void = { _ in }
@@ -107,7 +110,7 @@ final class SpotsModel {
             recent: { UserDefaults.standard.stringArray(forKey: Self.recentKey($0)) ?? [] },
             prepare: { await SpotIconStore.shared.prepare($0) }
         )
-        runs.onReport = { [weak self] _, report in self?.take(report) }
+        runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
     }
 
     var sheets: [String: SpotSheet] {
@@ -156,13 +159,35 @@ final class SpotsModel {
         runs.quit()
     }
 
-    private func take(_ report: SpotSheet.Report) {
+    private func take(_ report: SpotSheet.Report, of id: String) {
         switch report {
         case .toast(let text): confirm(text)
         case .failure(let text): notify(text)
         case .listChange: if !query.isEmpty { updateVisible() }
         case .frame: break
+        case .chooseFiles:
+            if let sheet = sheets[id] { chooseFiles(sheet.command) { sheet.drop($0) } }
         }
+    }
+
+    /// Whether a card takes these dragged files. A card under an open sheet takes none.
+    func acceptsDrop(_ paths: [String], on id: String) -> Bool {
+        openList == nil && sheets[id]?.command.accepts(paths) == true
+    }
+
+    /// Takes a drop on a card and closes the panel. Returns false when the card does not take these files.
+    func drop(_ paths: [String], on id: String) -> Bool {
+        guard openList == nil, sheets[id]?.drop(paths) == true else { return false }
+        if isShown { dismiss() }
+        return true
+    }
+
+    /// Shows the grid and not a sheet, so that a drag can reach the cards.
+    func prepareForDrag() {
+        isOpenForDrag = true
+        guard openList != nil else { return }
+        sheetMoves = false
+        closeList()
     }
 
     private static func recentKey(_ id: String) -> String {
@@ -249,7 +274,7 @@ final class SpotsModel {
         case .toggle:
             sheets[entry.id]?.pressCard()
         case .launch:
-            if isShown, sheets[entry.id]?.isCardRunning != true { dismiss() }
+            if isShown, sheets[entry.id]?.isCardRunning != true, !entry.command.takesDrops { dismiss() }
             sheets[entry.id]?.pressCard()
         case .list:
             sheetMoves = true
