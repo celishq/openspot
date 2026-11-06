@@ -15,6 +15,7 @@ public final class ScriptProcess: @unchecked Sendable {
     private let process = Process()
     private let mode: Mode
     private let limit: TimeInterval?
+    private let dataName: String?
     private let stopPause: TimeInterval
     private let input = Pipe()
     private let writes = DispatchQueue(label: "openspot.script")
@@ -27,7 +28,8 @@ public final class ScriptProcess: @unchecked Sendable {
 
     /// `limit` is the time the script has to its first frame or its end. With none, it has no limit. `stopPause` is the time
     /// between each step of a stop.
-    public init(url: URL, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2) {
+    public init(url: URL, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil) {
+        self.dataName = dataName
         process.executableURL = url
         process.arguments = arguments
         self.mode = mode
@@ -36,12 +38,14 @@ public final class ScriptProcess: @unchecked Sendable {
     }
 
     /// The environment of a script: the `openspot` command of this app on its path, the data folder, which this creates, and
-    /// the shell helper in the bundle of the app. With no bundle, as in a test, the helper is what `base` names.
-    public static func environment(base: [String: String], app: String, stays: Bool = false) -> [String: String] {
+    /// the shell helper in the bundle of the app. With no bundle, as in a test, the helper is what `base` names. `dataName`
+    /// names a folder of its own inside the data of the app.
+    public static func environment(base: [String: String], app: String, stays: Bool = false, dataName: String? = nil) -> [String: String] {
         let contents = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent()
         let helpers = contents.appendingPathComponent("Helpers").path
         let home = base["HOME"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? FileManager.default.homeDirectoryForCurrentUser
-        let data = PluginFolder.config(environment: base, home: home).appendingPathComponent("data", isDirectory: true)
+        var data = PluginFolder.config(environment: base, home: home).appendingPathComponent("data", isDirectory: true)
+        if let dataName { data.appendPathComponent(URL(fileURLWithPath: dataName).lastPathComponent, isDirectory: true) }
         try? FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
         var environment = base.merging(["PATH": "\(helpers):\(base["PATH"] ?? "")", "OPENSPOT_DATA": data.path], uniquingKeysWith: { _, new in new })
         let shell = contents.appendingPathComponent("Resources/openspot.sh").path
@@ -72,7 +76,7 @@ public final class ScriptProcess: @unchecked Sendable {
             text = given
             process.standardInput = given == nil ? FileHandle.nullDevice : input
         }
-        process.environment = Self.environment(base: ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", stays: stays)
+        process.environment = Self.environment(base: ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", stays: stays, dataName: dataName)
         let output = Pipe()
         process.standardOutput = output
         let errors = Pipe()

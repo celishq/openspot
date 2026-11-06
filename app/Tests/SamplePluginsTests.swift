@@ -307,7 +307,7 @@ final class SamplePluginsTests: XCTestCase {
         let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
         try await withPrivateHome { folder in
             try await self.savedLink("https://icons.test/deep/page", in: links)
-            let expected = folder.appendingPathComponent(".config/openspot/data/icons/icons.test.icon").path
+            let expected = folder.appendingPathComponent(".config/openspot/data/links/icons/icons.test.icon").path
 
             for _ in 0..<50 where !FileManager.default.fileExists(atPath: expected) {
                 try await Task.sleep(nanoseconds: 100_000_000)
@@ -324,7 +324,7 @@ final class SamplePluginsTests: XCTestCase {
         let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
         try await withPrivateHome { folder in
             try await self.savedLink("https://none.test", in: links)
-            let marker = folder.appendingPathComponent(".config/openspot/data/icons/none.test.none").path
+            let marker = folder.appendingPathComponent(".config/openspot/data/links/icons/none.test.none").path
 
             for _ in 0..<50 where !FileManager.default.fileExists(atPath: marker) {
                 try await Task.sleep(nanoseconds: 100_000_000)
@@ -353,7 +353,7 @@ final class SamplePluginsTests: XCTestCase {
 
             _ = try await snippets.submit(new, item: nil, draft: draft, timeout: 5)
 
-            XCTAssertTrue(FileManager.default.fileExists(atPath: config.appendingPathComponent("data/snippets.json").path))
+            XCTAssertTrue(FileManager.default.fileExists(atPath: config.appendingPathComponent("data/snippets/snippets.json").path))
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent(".config").path))
         }
     }
@@ -491,7 +491,7 @@ final class SamplePluginsTests: XCTestCase {
     func testSavedQuicklinksMoveToLinks() async throws {
         let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
         try await withPrivateHome { folder in
-            let data = folder.appendingPathComponent(".config/openspot/data")
+            let data = folder.appendingPathComponent(".config/openspot/data/links")
             try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
             let old = data.appendingPathComponent("quicklinks.json")
             try #"[{"id":"1","title":"Docs","url":"https://docs.test"}]"#.write(to: old, atomically: true, encoding: .utf8)
@@ -720,7 +720,7 @@ final class SamplePluginsTests: XCTestCase {
 
             _ = try await Self.drive(translate, [.set("target", to: "ru")])
 
-            let data = folder.appendingPathComponent(".config/openspot/data")
+            let data = folder.appendingPathComponent(".config/openspot/data/translate")
             XCTAssertEqual(try self.read("moved", in: folder).split(separator: "\n").map { String($0.split(separator: "/").last ?? "") }, ["translate-languages", "translate"])
             XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: data.path).sorted(), ["translate", "translate-languages"])
             XCTAssertEqual(try String(contentsOf: data.appendingPathComponent("translate"), encoding: .utf8), "source=auto\ntarget=ru\n")

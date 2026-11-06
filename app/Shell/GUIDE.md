@@ -48,6 +48,7 @@ open -a Calendar
 | `tray` | `true` to show a metric in the menu bar. Needs a number in its `read`, or `stay=true`. |
 | `stay` | `true` to keep the script running. See "Sheets of parts". |
 | `drop` | A list of file extensions, `folder` or `*`. Its card takes files that a person drops. See "Drops". |
+| `data` | The name of a data folder to share with other spots. See "Rules for scripts". |
 
 `read` is a list of moments, split by commas, such as `read=panel,60`. At each moment Openspot calls `<script> read`:
 
@@ -540,8 +541,8 @@ openspot check <plugins folder>
 - Print only the data. Send each message for the person to stderr. When a script fails, its last stderr line shows.
 - Exit with 0 on success. Any other code is a failure.
 - Be fast in `read`. It has 10 seconds until its first frame or its end. Reads run at the same time, so a slow script delays no other. Any other name has no limit.
-- Keep files in `$OPENSPOT_DATA`, not in the plugin folder. Openspot creates this folder. All plugins share it, so name your
-  files after your script.
+- Keep files in `$OPENSPOT_DATA`, not in the plugin folder. Openspot creates this folder for each spot. Scripts in one plugin
+  folder share it. To share it with other spots, give each one the same `data=<name>` in its header.
 - Write a file to a temp name, then move it: `... > "$file.$$" && mv "$file.$$" "$file"`. A stop can come at any time, and two
   calls of one script can run at the same time, so a file must never be half written.
 - Use short plain words in sentence case. Start an action's name with a verb.

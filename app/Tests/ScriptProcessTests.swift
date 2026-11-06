@@ -67,6 +67,21 @@ final class ScriptProcessTests: XCTestCase {
         XCTAssertEqual(environment["OPENSPOT_DATA"], folder.appendingPathComponent(".config/openspot/data").path)
     }
 
+    func testASpotHasADataFolderOfItsOwn() {
+        let environment = ScriptProcess.environment(base: ["HOME": folder.path], app: "", dataName: "links")
+
+        XCTAssertEqual(environment["OPENSPOT_DATA"], folder.appendingPathComponent(".config/openspot/data/links").path)
+        var isFolder: ObjCBool = false
+        XCTAssertTrue(FileManager.default.fileExists(atPath: environment["OPENSPOT_DATA"] ?? "", isDirectory: &isFolder))
+        XCTAssertTrue(isFolder.boolValue)
+    }
+
+    func testADataFolderStaysInsideTheDataOfTheApp() {
+        let environment = ScriptProcess.environment(base: ["HOME": folder.path], app: "", dataName: "../../up")
+
+        XCTAssertEqual(environment["OPENSPOT_DATA"], folder.appendingPathComponent(".config/openspot/data/up").path)
+    }
+
     private func exists(_ name: String) -> Bool {
         FileManager.default.fileExists(atPath: folder.appendingPathComponent(name).path)
     }

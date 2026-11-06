@@ -74,6 +74,7 @@ public struct Plugin: Equatable, Sendable {
             stays: stays,
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             isTray: isTray,
+            dataName: header.value("data") ?? id.split(separator: "/").first.map(String.init),
             hasSpot: read?.seconds == nil || hasKey,
             headerSymbol: symbol
         )

@@ -2,6 +2,22 @@ import XCTest
 @testable import OpenspotCore
 
 final class PluginCommandTests: XCTestCase {
+    private func dataName(id: String, header: [TextBlock.Field] = []) throws -> String? {
+        try Plugin(script: URL(fileURLWithPath: "/p/\(id).sh"), header: TextBlock(fields: header), id: id).commands.first?.dataName
+    }
+
+    func testTheDataFolderOfASpotIsItsName() throws {
+        XCTAssertEqual(try dataName(id: "links"), "links")
+    }
+
+    func testScriptsInOneFolderShareItsDataFolder() throws {
+        XCTAssertEqual(try dataName(id: "home/coffee"), "home")
+    }
+
+    func testAHeaderCanShareADataFolder() throws {
+        XCTAssertEqual(try dataName(id: "links", header: [.init(key: "data", value: "notes")]), "notes")
+    }
+
     private var folder: URL!
 
     override func setUpWithError() throws {
