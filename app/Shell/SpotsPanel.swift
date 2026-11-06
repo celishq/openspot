@@ -26,6 +26,7 @@ final class SpotsPanel: NSPanel {
             guard self.model?.isShown == false else { return }
             self.orderOut(nil)
             self.model?.finishPick()
+            self.model?.panelDidHide()
         }
     }
 

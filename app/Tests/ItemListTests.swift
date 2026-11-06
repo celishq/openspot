@@ -10,7 +10,7 @@ final class ItemListTests: XCTestCase {
         var list = ItemList()
 
         list.beginLoading()
-        list.reset()
+        list.search("a")
         XCTAssertTrue(list.isLoading)
 
         list.replace(items("Safari"))
@@ -63,14 +63,14 @@ final class ItemListTests: XCTestCase {
         XCTAssertTrue(list.search("n"))
     }
 
-    func testResetClearsTheSearchAndTheSelection() {
+    func testSelectingTheFirstRowKeepsTheSearch() {
         var list = ItemList(items: items("Notes", "Numbers"))
         list.search("n")
         list.move(by: 1)
 
-        list.reset()
+        list.selectFirst()
 
-        XCTAssertEqual(list.query, "")
+        XCTAssertEqual(list.query, "n")
         XCTAssertEqual(list.selected, 0)
     }
 

@@ -109,9 +109,10 @@ public enum PartCatalog {
     sheet, and a frame with only parts changes those parts, so print `part`, `cell` and the keys again for each one. A new \
     `set` or `press` stops the running call, and so does closing the sheet.
 
-    A script with `# live=true` in its header stays running, so a model or a connection stays loaded. It gets one block on \
-    its standard input for each event, with a blank line after it: `event=read`, `event=set` with `id` and `value`, or \
-    `event=press` with `id`. It keeps its own state, and answers with frames. It ends when its input ends.
+    A script with `# live=true` in its header runs while its sheet is open, so a model or a connection stays loaded between \
+    events. It gets one block on its standard input for each event, with a blank line after it: `event=read`, `event=set` \
+    with `id` and `value`, or `event=press` with `id`. It keeps its own state, and answers with frames. It must end when its \
+    input ends.
 
     """
 

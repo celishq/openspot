@@ -139,6 +139,35 @@ final class SheetStreamTests: XCTestCase {
         live.stop()
     }
 
+    func testAnEventSentJustBeforeTheStopStillRuns() async throws {
+        let marker = folder.appendingPathComponent("copied")
+        let url = try script("""
+        while IFS= read -r line; do
+          case "$line" in event=press) sleep 0.3; touch '\(marker.path)' ;; esac
+        done
+        """)
+        let live = LiveScript(url: url, timeout: 5)
+        _ = try live.start()
+
+        live.send(.press("copy"))
+        live.stop()
+        try await Task.sleep(for: .seconds(1))
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: marker.path))
+        XCTAssertFalse(live.isRunning)
+    }
+
+    func testAScriptThatIgnoresTheEndOfItsInputIsStopped() async throws {
+        let url = try script("trap '' HUP\nwhile :; do sleep 0.1; done")
+        let live = LiveScript(url: url, timeout: 5)
+        _ = try live.start()
+
+        live.stop()
+        try await Task.sleep(for: .seconds(4))
+
+        XCTAssertFalse(live.isRunning)
+    }
+
     func testAScriptThatNamesItselfLiveIsAList() throws {
         let url = try script("# live=true\n# read=open")
         let command = try XCTUnwrap(try Plugin(file: url, id: "script")).commands.first

@@ -4,7 +4,6 @@
 # key=t
 # size=small
 # order=-1
-# read=open
 # live=true
 export LC_ALL=en_US.UTF-8
 

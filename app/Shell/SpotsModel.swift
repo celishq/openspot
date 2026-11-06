@@ -100,11 +100,10 @@ final class SpotsModel {
     private var streaming: Set<String> = []
     private var lives: [String: LiveScript] = [:]
     private var liveEditing: [String: String] = [:]
+    private var openingLive: String?
 
     /// Reads the plugin folder again, and asks each plugin for its state.
     func reload() async {
-        lives.values.forEach { $0.stop() }
-        lives = [:]
         let folder = PluginFolder.standard()
         let shipped = ShippedSpot.commands(
             folder: folder.url,
@@ -264,15 +263,23 @@ final class SpotsModel {
         lives[command.id]?.send(.read)
     }
 
-    /// Takes each frame of a live script until it ends. The next read starts it again.
+    /// Takes each frame of a live script until it ends. Its first frame replaces what an earlier run left, and opens its
+    /// sheet.
     private func follow(_ live: LiveScript, _ frames: AsyncThrowingStream<String, Error>, of command: PluginCommand) async {
+        var isFirst = true
         do {
             for try await text in frames {
+                guard lives[command.id] === live else { return }
                 let lines = PluginOutput(text: text)
                 if let toast = lines.summary?.value("toast") { confirm(toast) }
                 keep(lines, of: command)
-                if panels[command.id] == nil {
+                if isFirst {
                     panels[command.id] = SpotPanel(output: lines)
+                    isFirst = false
+                    if openingLive == command.id {
+                        openingLive = nil
+                        openList = command.id
+                    }
                 } else {
                     panels[command.id]?.merge(lines, keeping: liveEditing[command.id])
                 }
@@ -442,7 +449,6 @@ final class SpotsModel {
             press(opens)
         } else {
             closeList()
-            query = ""
             show()
             selected = visible.firstIndex { $0.command.places.contains(id) } ?? 0
         }
@@ -510,10 +516,17 @@ final class SpotsModel {
         return true
     }
 
+    /// Opens a sheet. A live script starts here, and its sheet opens with its first frame.
     private func open(_ id: String) {
+        guard let command = entries.first(where: { $0.id == id })?.command else { return }
+        stopLive(except: id)
+        lists[id]?.selectFirst()
+        if command.isLive {
+            openingLive = id
+            readLive(command)
+            return
+        }
         openList = id
-        lists[id]?.reset()
-        guard let command = openEntry?.command else { return }
         if command.search == .live {
             askLive(command)
         } else {
@@ -523,10 +536,29 @@ final class SpotsModel {
 
     func closeList() {
         openList = nil
+        stopLive()
         liveAnswer?.cancel()
         panelCall?.cancel()
         panelRead?.cancel()
         stopStream()
+    }
+
+    /// Ends each live script, which runs only while its sheet is open.
+    private func stopLive(except id: String? = nil) {
+        openingLive = nil
+        for (key, live) in lives where key != id {
+            live.stop()
+            lives[key] = nil
+            liveEditing[key] = nil
+        }
+    }
+
+    /// Closes the sheet of a live script when the panel has faded, so that the next open starts it again.
+    func panelDidHide() {
+        openingLive = nil
+        guard let id = openList, entries.first(where: { $0.id == id })?.command.isLive == true else { return stopLive() }
+        sheetMoves = false
+        closeList()
     }
 
     /// Lets the next open or close of a sheet move, as it does when the person asks for it in the open panel.
@@ -573,7 +605,6 @@ final class SpotsModel {
         }
         sheetMoves = false
         closeList()
-        query = ""
     }
 
     private func pick(_ item: SpotItem, of entry: Entry, action: SpotAction? = nil) {
@@ -681,8 +712,8 @@ final class SpotsModel {
     func pressPart(_ part: SpotPart) {
         guard let entry = openEntry, let generation = panels[entry.id]?.advance() else { return }
         liveEditing[entry.id] = nil
-        if part.closes, isShown { dismiss() }
         call(.press(part.id), on: entry, generation: generation, closes: part.closes)
+        if part.closes, isShown { dismiss() }
     }
 
     /// Runs one change of a sheet of parts. A newer change stops it, and only the newest answer shows. A script that
@@ -690,6 +721,10 @@ final class SpotsModel {
     private func call(_ action: SpotAction, on entry: Entry, generation: Int, pause: Duration? = nil, keeping: String? = nil, closes: Bool = false) {
         panelCall?.cancel()
         stopStream()
+        if entry.command.isLive, pause == nil {
+            lives[entry.id]?.send(action)
+            return
+        }
         panelCall = Task {
             if let pause { try? await Task.sleep(for: pause) }
             guard !Task.isCancelled, let values = panels[entry.id]?.values else { return }
@@ -843,7 +878,6 @@ final class SpotsModel {
             do {
                 let run = try await form.entry.command.submit(form.action, item: form.item, draft: form.draft, timeout: Self.actionTimeout)
                 self.form = nil
-                lists[form.entry.id]?.reset()
                 loadItems(of: form.entry.command, selecting: run.isEmpty ? nil : run)
             } catch {
                 notify("\(form.action.title) failed. \(Self.reason(error))")

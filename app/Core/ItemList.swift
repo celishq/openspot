@@ -33,8 +33,9 @@ public struct ItemList: Equatable, Sendable {
         return true
     }
 
-    public mutating func reset() {
-        begin("")
+    /// Selects the first row, and keeps the search.
+    public mutating func selectFirst() {
+        selected = 0
     }
 
     private mutating func begin(_ text: String) {
