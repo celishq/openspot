@@ -8,6 +8,8 @@ struct SpotPanelView: View {
     let panel: SpotPanel
     let onSet: (SpotPart, String) -> Void
     let onPress: (SpotPart) -> Void
+    var recordingPart: String?
+    var onRecord: (SpotPart) -> Void = { _ in }
     @FocusState private var focus: String?
     @Environment(\.spotIsShown) private var isShown
 
@@ -226,6 +228,8 @@ struct SpotPanelView: View {
                 .labelsHidden()
         case .menu(let options, let value):
             menu(part, frame, options: options, value: value)
+        case .shortcut(let text):
+            shortcut(part, text: text)
         case .swatches(let colors, let value):
             if let color = colors.first {
                 swatch(part, color: color, isChosen: color == value, size: Self.smallSwatch)
@@ -261,6 +265,21 @@ struct SpotPanelView: View {
         .menuIndicator(.hidden)
         .buttonStyle(.plain)
         .fixedSize()
+    }
+
+    /// The key of a part. A click asks for the next key that the person presses.
+    private func shortcut(_ part: SpotPart, text: String) -> some View {
+        Button { onRecord(part) } label: {
+            Text(recordingPart == part.id ? "Press keys" : Shortcut(text: text)?.label ?? text)
+                .font(SpotType.action)
+                .foregroundStyle(.white)
+                .padding(.horizontal, SpotTokens.padding)
+                .padding(.vertical, 5)
+                .fixedSize()
+                .background(Color.white.opacity(SpotTokens.selectedFill), in: Capsule())
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 
     private func slider(_ part: SpotPart, level: Double, low: Double, high: Double) -> some View {

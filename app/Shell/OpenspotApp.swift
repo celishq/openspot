@@ -43,6 +43,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         model.confirm = { toast.show($0, symbol: ToastPanel.confirmSymbol) }
         trayBar = SpotTrayBar(model: model)
         model.applyConfig = { [weak self] in self?.applyConfig() }
+        model.setEntryKeyOn = { [weak self] in self?.setEntryKey(on: $0) }
         Task { await model.reload() }
     }
 
@@ -62,6 +63,11 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         if faults != configFaults, !faults.isEmpty { model.notify(faults.joined(separator: " ")) }
         configFaults = faults
+    }
+
+    private func setEntryKey(on isOn: Bool) {
+        hotKey.map(HotKey.unregister)
+        hotKey = isOn ? register(model.entryKey) : nil
     }
 
     private func register(_ key: Shortcut) -> HotKey.Registration? {

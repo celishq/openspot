@@ -413,7 +413,6 @@ Remove a row when the code follows the rule.
 | Y2 | `SpotsModel`, `SpotSheet` | A pick or an action of a staying script, and a form, start a second copy. | Each call reaches the running script. |
 | L3, Y5 | `SpotSheet`, `LiveScript` | A staying script runs only while its sheet is open. | While something wants it. |
 | F7, section 9 | `PluginMetric`, `MetricSchedule`, widgets | Only a script with a number in its `read` can be placed. | Any script with a `read`. |
-| A5, A6 | `OpenspotApp`, `CommandTrigger`, `ShippedSpot` | Two global keys, fixed in the code. Only Plugins ships. | One key that the person chooses. Settings ships. |
 | Docs | `GUIDE.md`, `PartCatalog` | They teach today's time limits and what stops a call, and say that `launch`, `wake`, `drop` and `tray` with `stay` do not act yet. | Follow section 7, the moments and the drops when each one is built. |
 
 The tests in `SpotActionTests`, `SheetStreamTests`, `SpotPanelTests` and `SamplePluginsTests` pin the calls. Read them

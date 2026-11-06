@@ -74,6 +74,8 @@ final class SpotsModel {
     }
     var entryKey = Shortcut.standard
     private var isChainHeld = false
+    private(set) var recordingPart: String?
+    var setEntryKeyOn: (Bool) -> Void = { _ in }
     var dismiss: () -> Void = {}
     var show: () -> Void = {}
     var notify: (String) -> Void = { _ in }
@@ -186,7 +188,8 @@ final class SpotsModel {
         case .toast(let text): confirm(text)
         case .failure(let text): notify(text)
         case .listChange: if !query.isEmpty { updateVisible() }
-        case .frame: break
+        case .frame:
+            if case .settings? = sheets[id]?.command.shipped { applyConfig() }
         case .output(let output):
             outputs[id] = output
             if let index = entries.firstIndex(where: { $0.id == id }) {
@@ -435,6 +438,7 @@ final class SpotsModel {
     }
 
     func closeList() {
+        stopRecording()
         openList = nil
         sheets.values.forEach { $0.close() }
     }
@@ -569,6 +573,33 @@ final class SpotsModel {
     func pressPart(_ part: SpotPart) {
         openSheet?.press(part)
         if part.closes, isShown { dismiss() }
+    }
+
+    /// Starts to record the next key for a part, with the entry key off so that it can be recorded too, or stops.
+    func toggleRecording(_ part: SpotPart) {
+        if recordingPart == part.id {
+            stopRecording()
+        } else {
+            recordingPart = part.id
+            setEntryKeyOn(false)
+        }
+    }
+
+    func stopRecording() {
+        guard recordingPart != nil else { return }
+        recordingPart = nil
+        setEntryKeyOn(true)
+    }
+
+    /// Takes the key for the part that records. A key it cannot use leaves it recording, and says why.
+    func record(code: UInt32, modifiers: Shortcut.Modifiers) {
+        guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
+            notify("Hold cmd, ctrl or option with a letter, a digit, space, return or tab.")
+            return
+        }
+        let part = openPanel?.parts.first { $0.id == recordingPart }
+        stopRecording()
+        if let part { setPart(part, to: shortcut.text) }
     }
 
     private func handleMenuKey(_ key: ActionKey) {

@@ -128,7 +128,7 @@ public struct PluginCommand: Equatable, Sendable {
 
     /// What a call prints: the answer of a shipped spot, or else the output of the script.
     private func text(of arguments: [String], input: String?, timeout: TimeInterval) async throws -> String {
-        if case .plugins(let guide) = shipped { return try await guide.answer(arguments, input: input, timeout: timeout) }
+        if let shipped { return try await shipped.answer(arguments, input: input, timeout: timeout) }
         return try await PluginRun(command: self, arguments: arguments, timeout: timeout, input: input).output()
     }
 
@@ -150,7 +150,7 @@ public struct PluginCommand: Equatable, Sendable {
 
     /// What a call prints, frame by frame, as the script prints it.
     public func frames(_ action: SpotAction, input: String?, timeout: TimeInterval) -> AsyncThrowingStream<String, Error> {
-        if case .plugins = shipped {
+        if shipped != nil {
             return AsyncThrowingStream { continuation in
                 let task = Task {
                     do {

@@ -56,6 +56,8 @@ struct SpotsView: View {
                     panel: model.sheets[entry.id]?.panel,
                     onSet: { model.setPart($0, to: $1) },
                     onPress: { model.pressPart($0) },
+                    recordingPart: model.recordingPart,
+                    onRecord: { model.toggleRecording($0) },
                     createTitle: model.createAction.map { "\($0.title): \(model.searchText)" },
                     onCreate: { model.createFromSearch() },
                     onFormValue: { model.setFormValue($0, for: $1) },

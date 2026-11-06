@@ -164,10 +164,10 @@ public final class SpotSheet {
 
     /// Shows the parts a script printed, and keeps them fresh when it asks for that.
     private func takePanel(_ lines: PluginOutput) {
-        if panel == nil {
+        if let generation = panel?.generation {
+            guard panel?.take(lines, answering: generation) == true else { return }
+        } else {
             panel = SpotPanel(output: lines)
-        } else if panel?.take(lines, answering: panel?.generation ?? 0) != true {
-            return
         }
         readAgain()
     }

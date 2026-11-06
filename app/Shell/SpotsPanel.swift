@@ -22,6 +22,7 @@ final class SpotsPanel: NSPanel {
     /// Starts the close motion, and takes the panel off the screen when it ends.
     func hide() {
         model?.takeHeld([])
+        model?.stopRecording()
         model?.closeMenu()
         model?.isShown = false
         DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeOutDuration) {
@@ -36,6 +37,14 @@ final class SpotsPanel: NSPanel {
     override func sendEvent(_ event: NSEvent) {
         if event.type == .flagsChanged { model?.takeHeld(Self.modifiers(of: event.modifierFlags)) }
         if event.type == .keyDown {
+            if model?.recordingPart != nil {
+                if Int(event.keyCode) == kVK_Escape {
+                    model?.stopRecording()
+                } else {
+                    model?.record(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags))
+                }
+                return
+            }
             if let key = Self.actionKey(of: event), model?.handleKey(key) == true { return }
             if model?.handleChain(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags)) == true { return }
         }

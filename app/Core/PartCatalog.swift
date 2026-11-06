@@ -5,9 +5,9 @@ public enum PartCatalog {
     private static let keys: Set<String> = [
         "part", "section", "title", "detail", "symbol", "on", "level", "min", "max", "color", "value", "option", "text",
         "lines", "placeholder", "readonly", "press", "key", "close", "cell", "fill", "align", "look", "block", "metric", "point",
-        "image", "item"
+        "image", "item", "shortcut"
     ]
-    private static let controls = ["on", "level", "color", "option", "text", "metric", "point", "image", "item"]
+    private static let controls = ["on", "level", "color", "option", "text", "metric", "point", "image", "item", "shortcut"]
 
     /// The catalog, for a person or a model to read. It holds the whole language, so a sheet can be written from it alone.
     public static var text: String {
@@ -82,6 +82,7 @@ public enum PartCatalog {
     | `option=id:Title` for each choice, `value=id` | A menu. | `<id> <option id>` |
     | `item=id:Title` for each row, `value=id` | A list to choose from, which scrolls. Use it for any list of rows. | `<id> <item id>` |
     | `text=...`, optional `readonly=true`, `placeholder` | A text area, which scrolls. Write a line break as `\\n`. | `<id> <text>` |
+    | `shortcut=ctrl+space`, with `title` | A key at the end of the line. A click records the next key that the person presses, and Esc cancels. | `<id> <key>`, such as `<id> cmd+k` |
     | `press=true`, with `title` | A button that fills its cell. | `<id>` |
     | `press=arrow.up` or another SF Symbol name | A round button, which shrinks to fit its area, up to 44pt. | `<id>` |
     | `metric=42%`, optional `title` | A big number in a tile. It needs 2 columns of 4, and 2 rows with a title. | |
@@ -156,6 +157,9 @@ public enum PartCatalog {
             if level < low || level > high {
                 faults.append("the part \(name) has a level of \(Int(level)), outside \(Int(low)) to \(Int(high))")
             }
+        }
+        if let shortcut = block.value("shortcut"), Shortcut(text: shortcut) == nil {
+            faults.append("the part \(name) needs a shortcut that holds cmd, ctrl or option: \(shortcut)")
         }
         if let key = block.value("key"), ActionKey(text: key) == nil {
             faults.append("the part \(name) has an unknown key combination: \(key)")

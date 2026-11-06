@@ -239,6 +239,7 @@ The app owns each gap, row height and centre. A script says only which part goes
 | `color=#ff0000` for each swatch, `value` | A row of colours. | `<id> <color>` |
 | `option=en:English` for each choice, `value` | A menu. | `<id> <option id>` |
 | `item=a:Address` for each row, `value` | A list to choose from. | `<id> <item id>` |
+| `shortcut=ctrl+space`, with `title` | A key that a click records. | `<id> <key>` |
 | `text=...`, `placeholder` | A text area. `readonly=true` only shows the text. | `<id> <text>` |
 | `press=arrow.clockwise` | A round button. | `<id>` |
 | `press=true` | A button that fills its cell. | `<id>` |
