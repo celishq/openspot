@@ -55,7 +55,7 @@ struct SpotSheetView: View {
                     }
                 }
             }
-            .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(showsTallCard ? 0 : 1) }
+            .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(showsTallCard || (!isOpen && entry.id == ShippedSpot.installID) ? 0 : 1) }
         }
         .padding(SpotTokens.padding)
         .frame(width: rect.width, height: rect.height, alignment: .topLeading)

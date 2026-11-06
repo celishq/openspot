@@ -90,8 +90,6 @@ final class SpotsModel {
     private static let loadLimit: Duration = .seconds(2)
     private static let loadPause: Duration = .milliseconds(20)
     private static let dropPause: Duration = .milliseconds(300)
-    /// The fewest rows that the panel shows for the drop state.
-    static let dropRows = 3
 
     var entries: [Entry] = [] {
         didSet { updateVisible() }
@@ -321,6 +319,11 @@ final class SpotsModel {
         } catch {
             notify(Self.reason(error))
         }
+    }
+
+    /// What the search field says as the open review grows out of it.
+    var reviewDrop: SpotDrop? {
+        reviewed.map(SpotDrop.init(reviewing:))
     }
 
     /// Whether a review shows, which stays open when the panel loses the focus.

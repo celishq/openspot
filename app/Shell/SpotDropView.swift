@@ -1,29 +1,31 @@
 import OpenspotCore
 import SwiftUI
 
-/// What takes the place of the grid while a `.spot` file is dragged over the panel: what the file is, and that a drop installs it.
+/// What the search field says while a `.spot` file is dragged over the panel, and as a review grows out of it. It lies as the
+/// header of a sheet lies, so that the two are one thing.
 struct SpotDropView: View {
     let drop: SpotDrop
 
     var body: some View {
-        VStack(spacing: SpotTokens.rowGap) {
+        HStack(spacing: SpotTokens.padding - 5) {
             Image(systemName: drop.symbol)
-                .font(.system(size: 22, weight: .semibold))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 2 * SpotTokens.glyphSize, height: 2 * SpotTokens.glyphSize)
+                .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
                 .background(Color.white.opacity(0.2), in: Circle())
-            Text(drop.title)
-                .font(SpotType.title)
-                .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
-                .multilineTextAlignment(.center)
-            if let detail = drop.detail {
-                Text(detail)
-                    .font(SpotType.detail)
-                    .modifier(SpotSecondaryText())
-                    .multilineTextAlignment(.center)
+            VStack(alignment: .leading, spacing: SpotType.lineGap) {
+                Text(drop.title)
+                    .font(SpotType.title)
+                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                    .lineLimit(1)
+                if let detail = drop.detail {
+                    Text(detail)
+                        .font(SpotType.detail)
+                        .modifier(SpotSecondaryText())
+                        .lineLimit(1)
+                }
             }
+            Spacer(minLength: 0)
         }
-        .padding(SpotTokens.padding)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

@@ -58,11 +58,11 @@ final class SpotsPanel: NSPanel {
         DispatchQueue.main.async { self.model?.isShown = true }
     }
 
-    /// Whether a point on the screen lies on the part of the panel that shows the drop state. The window is taller than that.
+    /// Whether a point on the screen lies on the part of the panel that takes a drop. The window is taller than that.
     func showsDrop(at point: NSPoint) -> Bool {
         guard let model, model.isShown else { return false }
         let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
-        let height = SpotTokens.backdropHeight(rows: max(rows, SpotsModel.dropRows))
+        let height = SpotTokens.backdropHeight(rows: rows)
         return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
     }
 

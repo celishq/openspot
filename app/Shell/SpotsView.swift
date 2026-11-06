@@ -18,7 +18,7 @@ struct SpotsView: View {
     @State private var showsDrop = false
     @State private var lastDrop: SpotDrop?
     @State private var partsLanded = false
-    @State private var installIsFromDrop = false
+    @State private var installIsClosing = false
 
     private static let panelSpace = "panel"
     private static let wordRoll: CGFloat = 20
@@ -38,7 +38,6 @@ struct SpotsView: View {
         ZStack(alignment: .topLeading) {
             ScrollView(showsIndicators: false) {
                 grid
-                    .scaleEffect(showsDrop ? SpotMotion.pushedScale : 1)
                     .offset(y: gridPush)
                     .padding(.horizontal, SpotTokens.halo)
                     .padding(.top, Self.gridTop)
@@ -73,7 +72,7 @@ struct SpotsView: View {
                     onCreate: { model.createFromSearch() },
                     onFormValue: { model.setFormValue($0, for: $1) },
                     onRun: { model.runItem($0) },
-                    closeShift: cardShows(arrowOf: entry) ? (openFrame?.width ?? sheetRect.width) - sheetRect.width : nil,
+                    closeShift: isInstall(entry) ? 0 : cardShows(arrowOf: entry) ? (openFrame?.width ?? sheetRect.width) - sheetRect.width : nil,
                     onClose: {
                         model.allowSheetMotion()
                         model.closeList()
@@ -81,26 +80,16 @@ struct SpotsView: View {
                 )
                 .background(Color.white.opacity(entry.state.on == true && !sheetOpen ? 1 : 0))
                 .modifier(SpotSheetFrame(
-                    rect: sheetOpen ? sheetRect : isInstall(entry) ? (installIsFromDrop ? dropRect : fieldRect) : openFrame ?? sheetRect,
-                    radius: sheetOpen || (isInstall(entry) && installIsFromDrop) ? SpotTokens.radius : isInstall(entry) ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: entry.size),
+                    rect: sheetOpen ? sheetRect : isInstall(entry) ? fieldRect : openFrame ?? sheetRect,
+                    radius: sheetOpen ? SpotTokens.radius : isInstall(entry) ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: entry.size),
                     ringOpacity: !sheetOpen && cardIsSelected(entry) ? 1 : 0,
                     arrow: cardShows(arrowOf: entry) ? AnyView(sheetArrow(of: entry)) : nil
                 ))
             }
-            if let lastDrop {
-                SpotDropView(drop: lastDrop)
-                    .frame(width: dropRect.width, height: dropRect.height)
-                    .modifier(SpotSheetFrame(
-                        rect: showsDrop ? dropRect : fieldRect,
-                        radius: showsDrop ? SpotTokens.radius : SpotTokens.corner(for: .strip),
-                        ringOpacity: 0
-                    ))
-                    .allowsHitTesting(showsDrop)
-            }
             searchField
-                .padding(.horizontal, sheetOpen ? SpotTokens.halo + SpotTokens.padding : SpotTokens.halo)
+                .padding(.horizontal, fieldIsInSheet ? SpotTokens.halo + SpotTokens.padding : SpotTokens.halo)
                 .padding(.top, SpotTokens.halo)
-                .offset(y: sheetOpen ? SpotTokens.sheetFieldDrop : 0)
+                .offset(y: fieldIsInSheet ? SpotTokens.sheetFieldDrop : 0)
                 .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: showsSearchField)) { $0.opacity(showsSearchField ? 1 : 0) }
                 .opacity(model.isEditing ? 0 : 1)
                 .allowsHitTesting(showsSearchField && !model.isEditing)
@@ -140,21 +129,11 @@ struct SpotsView: View {
             }
         }
         .onChange(of: model.spotDrop) { _, drop in
-            if drop == nil, model.isReviewing {
-                installIsFromDrop = true
-                showsDrop = false
-                lastDrop = nil
-            } else if let drop {
+            if let drop {
                 lastDrop = drop
-                DispatchQueue.main.async {
-                    withAnimation(SpotMotion.sheet(isOpen: true)) { showsDrop = true }
-                }
-            } else {
-                withAnimation(SpotMotion.sheet(isOpen: false), completionCriteria: .removed) {
-                    showsDrop = false
-                } completion: {
-                    if !showsDrop { lastDrop = nil }
-                }
+                withAnimation(SpotMotion.sheet(isOpen: true)) { showsDrop = true }
+            } else if !model.isReviewing {
+                hideDrop()
             }
         }
         .onChange(of: model.sheets[sheetID ?? ""]?.panel != nil) { _, hasParts in
@@ -171,7 +150,7 @@ struct SpotsView: View {
             searchFocused = shows
         }
         .onChange(of: model.hint, initial: true) { _, hint in
-            let motion = model.isEditing || hintIsForEdit ? SpotMotion.hintFade : nil
+            let motion = model.isEditing || hintIsForEdit || lastDrop != nil ? SpotMotion.hintFade : nil
             hintIsForEdit = model.isEditing
             withAnimation(motion) {
                 if model.openList == nil, model.spotDrop == nil { gridHint = hint } else { sheetHint = hint }
@@ -182,26 +161,56 @@ struct SpotsView: View {
             guard model.sheetMoves else {
                 sheetID = list
                 sheetOpen = list != nil
+                showsDrop = false
+                lastDrop = nil
                 model.allowSheetMotion()
                 if list == nil { model.endReview() }
                 return
             }
             if let list {
                 sheetID = list
+                holdDropInField()
                 DispatchQueue.main.async {
-                    withAnimation(SpotMotion.sheet(isOpen: true)) { sheetOpen = true }
+                    withAnimation(SpotMotion.sheet(isOpen: true), completionCriteria: .removed) {
+                        sheetOpen = true
+                    } completion: {
+                        if sheetOpen, sheetID == ShippedSpot.installID {
+                            showsDrop = false
+                            lastDrop = nil
+                        }
+                    }
                 }
             } else {
+                holdDropInField()
+                installIsClosing = sheetID == ShippedSpot.installID
                 withAnimation(SpotMotion.sheet(isOpen: false), completionCriteria: .removed) {
                     sheetOpen = false
-                    installIsFromDrop = false
                 } completion: {
                     if model.openList == nil {
                         sheetID = nil
                         model.endReview()
+                        if installIsClosing { hideDrop() }
+                        installIsClosing = false
                     }
                 }
             }
+        }
+    }
+
+    /// Keeps the words of a review in the field, where they lie under the sheet's header as the sheet grows out of the field or
+    /// closes back into it.
+    private func holdDropInField() {
+        guard let drop = model.reviewDrop else { return }
+        lastDrop = drop
+        withAnimation(SpotMotion.sheetFade(isOpen: true, isLate: false)) { showsDrop = true }
+    }
+
+    /// Gives the field back its search.
+    private func hideDrop() {
+        withAnimation(SpotMotion.sheet(isOpen: false), completionCriteria: .removed) {
+            showsDrop = false
+        } completion: {
+            if !showsDrop { lastDrop = nil }
         }
     }
 
@@ -269,27 +278,24 @@ struct SpotsView: View {
         partsLanded ? model.sheets[sheetID ?? ""]?.panel : nil
     }
 
-    /// Where the search field lies at rest. A surface with no card, such as the drop state, grows out of it and collapses into it.
+    /// Where the search field lies at rest. The install screen grows out of it and collapses into it.
     private var fieldRect: CGRect {
         CGRect(x: SpotTokens.halo, y: SpotTokens.halo, width: SpotTokens.gridWidth, height: SpotTokens.rowHeight)
     }
 
-    /// How far a surface that grows out of the field pushes the grid: as far as the surface's lower edge moves.
+    /// How far the install screen pushes the grid: as far as its lower edge moves.
     private var gridPush: CGFloat {
-        if showsDrop { return dropRect.maxY - fieldRect.maxY }
-        return sheetOpen && sheetID == ShippedSpot.installID ? sheetRect.maxY - fieldRect.maxY : 0
+        coversGrid ? sheetRect.maxY - fieldRect.maxY : 0
     }
 
-    /// Whether a sheet or the drop state is out, which sets the time of each fade on their one motion.
+    /// Whether a sheet is out or a drop is taken, which sets the time of each fade and which hint shows.
     private var surfaceIsOut: Bool {
-        sheetOpen || showsDrop
+        sheetOpen || (showsDrop && !installIsClosing)
     }
 
-    /// Where the drop state lies. The install screen grows out of it.
-    private var dropRect: CGRect {
-        let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
-        let height = SpotTokens.backdropHeight(rows: max(rows, SpotsModel.dropRows)) - 2 * SpotTokens.halo - SpotTokens.hintBlock
-        return CGRect(x: SpotTokens.halo, y: SpotTokens.halo, width: SpotTokens.gridWidth, height: height)
+    /// Whether the field lies in the open sheet. The install screen grows out of the field, which stays where it is.
+    private var fieldIsInSheet: Bool {
+        sheetOpen && sheetID != ShippedSpot.installID
     }
 
     private func isInstall(_ entry: SpotsModel.Entry) -> Bool {
@@ -298,8 +304,7 @@ struct SpotsView: View {
 
     private var contentHeight: CGFloat {
         guard !sheetOpen else { return sheetRect.height + 2 * SpotTokens.halo + SpotTokens.hintBlock }
-        let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
-        return SpotTokens.backdropHeight(rows: showsDrop ? max(rows, SpotsModel.dropRows) : rows)
+        return SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0)
     }
 
     private var backdropHeight: CGFloat {
@@ -336,12 +341,12 @@ struct SpotsView: View {
         return sheetHint
     }
 
-    /// Whether the drop state or the install screen takes the place of the grid and the field.
+    /// Whether the install screen takes the place of the grid and the field.
     private var coversGrid: Bool {
-        showsDrop || (sheetOpen && sheetID == ShippedSpot.installID)
+        sheetOpen && sheetID == ShippedSpot.installID
     }
 
-    /// Whether the search field is drawn. A form, a sheet of parts and the drop state replace it.
+    /// Whether the search field is drawn. A form, a sheet of parts and the install screen replace it.
     private var showsSearchField: Bool {
         guard model.form == nil, !coversGrid else { return false }
         guard sheetOpen else { return true }
@@ -461,7 +466,7 @@ struct SpotsView: View {
         HStack(spacing: Self.fieldGap) {
             Image(systemName: "magnifyingglass")
                 .modifier(SpotSecondaryText())
-                .frame(width: sheetOpen ? SpotTokens.listIconSize : SpotTokens.glyphSize)
+                .frame(width: fieldIsInSheet ? SpotTokens.listIconSize : SpotTokens.glyphSize)
             TextField("\(SearchPrompt.verb) \(sheetOpen ? sheetWord : SearchPrompt.grid)", text: Binding(get: { model.searchText }, set: { model.searchText = $0 }), prompt: Text(""))
                 .textFieldStyle(.plain)
                 .focused($searchFocused)
@@ -510,19 +515,27 @@ struct SpotsView: View {
                     return .handled
                 }
         }
+        .opacity(showsDrop ? 0 : 1)
         .font(SpotType.input)
         .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
         .padding(.horizontal, SpotTokens.padding)
-        .frame(height: sheetOpen ? SpotTokens.listRowHeight : SpotTokens.rowHeight)
-        .background(Color.white.opacity(sheetOpen ? SpotTokens.fill : 0), in: RoundedRectangle(cornerRadius: fieldRadius, style: .continuous))
-        .modifier(SpotGlass(radius: fieldRadius, isBare: sheetOpen))
+        .frame(height: fieldIsInSheet ? SpotTokens.listRowHeight : SpotTokens.rowHeight)
+        .overlay {
+            if let lastDrop {
+                SpotDropView(drop: lastDrop)
+                    .padding(.horizontal, SpotTokens.padding)
+                    .opacity(showsDrop ? 1 : 0)
+            }
+        }
+        .background(Color.white.opacity(fieldIsInSheet ? SpotTokens.fill : 0), in: RoundedRectangle(cornerRadius: fieldRadius, style: .continuous))
+        .modifier(SpotGlass(radius: fieldRadius, isBare: fieldIsInSheet || sheetID == ShippedSpot.installID))
     }
 
     /// The empty field's words, as a layer of their own that moves with the field by offsets alone, which stay smooth where
     /// layout rounds to whole pixels.
     private var promptLayer: some View {
-        let top = SpotTokens.halo + (sheetOpen ? SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2 : 0)
-        let left = sheetOpen
+        let top = SpotTokens.halo + (fieldIsInSheet ? SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2 : 0)
+        let left = fieldIsInSheet
             ? SpotTokens.halo + 2 * SpotTokens.padding + SpotTokens.listIconSize + Self.fieldGap
             : SpotTokens.halo + SpotTokens.padding + SpotTokens.glyphSize + Self.fieldGap
         return promptWords
@@ -550,11 +563,11 @@ struct SpotsView: View {
         .font(SpotType.input)
         .foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
         .lineLimit(1)
-        .opacity(model.searchText.isEmpty ? 1 : 0)
+        .opacity(model.searchText.isEmpty && !showsDrop ? 1 : 0)
     }
 
     private var fieldRadius: CGFloat {
-        sheetOpen ? SpotTokens.radius - SpotTokens.padding : SpotTokens.corner(for: .strip)
+        fieldIsInSheet ? SpotTokens.radius - SpotTokens.padding : SpotTokens.corner(for: .strip)
     }
 
     private var sheetWord: String {
