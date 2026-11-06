@@ -95,7 +95,7 @@ struct SpotSheetView: View {
         if list.isWaiting { return "Searching" }
         if list.isLoading { return "Loading…" }
         if list.hasFailed { return "Could not load" }
-        if list.search == .live && list.query.isEmpty { return "Type to search" }
+        if list.search == .script && list.query.isEmpty { return "Type to search" }
         return list.query.isEmpty ? "Nothing here yet" : "No results"
     }
 

@@ -114,9 +114,18 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testEventsAreBlocks() {
-        XCTAssertEqual(SpotAction.read.event, "event=read\n\n")
-        XCTAssertEqual(SpotAction.press("swap").event, "event=press\nid=swap\n\n")
-        XCTAssertEqual(SpotAction.set("input", to: "one\ntwo").event, "event=set\nid=input\nvalue=one\\ntwo\n\n")
+        XCTAssertEqual(SpotAction.read.event(), "name=read\n\n")
+        XCTAssertEqual(SpotAction.press("swap").event(), "name=swap\n\n")
+        XCTAssertEqual(SpotAction.set("input", to: "one\ntwo").event(), "name=input\nvalue=one\\ntwo\n\n")
+    }
+
+    func testAnEventHoldsEachValueOfTheSheet() {
+        let values = "input=one\\ntwo\nsource=auto\n"
+
+        XCTAssertEqual(
+            SpotAction.set("source", to: "auto").event(values: values),
+            "name=source\nvalue=auto\nfield.input=one\\ntwo\nfield.source=auto\n\n"
+        )
     }
 
     func testALiveScriptAnswersEachEventAndKeepsItsState() async throws {
@@ -143,7 +152,7 @@ final class SheetStreamTests: XCTestCase {
         let marker = folder.appendingPathComponent("copied")
         let url = try script("""
         while IFS= read -r line; do
-          case "$line" in event=press) sleep 0.3; touch '\(marker.path)' ;; esac
+          case "$line" in name=copy) sleep 0.3; touch '\(marker.path)' ;; esac
         done
         """)
         let live = LiveScript(url: url, timeout: 5)
@@ -168,18 +177,18 @@ final class SheetStreamTests: XCTestCase {
         XCTAssertFalse(live.isRunning)
     }
 
-    func testAScriptThatNamesItselfLiveIsAList() throws {
-        let url = try script("# live=true\n# read=open")
+    func testAScriptThatStaysIsAList() throws {
+        let url = try script("# stay=true\n# read=panel")
         let command = try XCTUnwrap(try Plugin(file: url, id: "script")).commands.first
 
-        XCTAssertEqual(command?.isLive, true)
+        XCTAssertEqual(command?.stays, true)
         XCTAssertEqual(command?.kind, .list)
         XCTAssertEqual(command?.readsState, false)
     }
 
-    func testAPlainFirstReadOfALiveScriptGivesItsFirstFrame() async throws {
-        let url = try script("# live=true\nwhile IFS= read -r line; do [ -n \"$line\" ] || printf 'part=a\\ntitle=A\\n---\\n'; done")
-        let command = PluginCommand(id: "a", name: "A", url: url, kind: .list, isLive: true)
+    func testAPlainFirstReadOfAStayingScriptGivesItsFirstFrame() async throws {
+        let url = try script("# stay=true\nwhile IFS= read -r line; do [ -n \"$line\" ] || printf 'part=a\\ntitle=A\\n---\\n'; done")
+        let command = PluginCommand(id: "a", name: "A", url: url, kind: .list, stays: true)
 
         let output = try await command.items(timeout: 5)
 

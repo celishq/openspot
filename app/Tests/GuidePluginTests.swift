@@ -63,6 +63,7 @@ final class GuidePluginTests: XCTestCase {
 
         XCTAssertEqual(opened.command.kind, .list)
         XCTAssertEqual(opened.command.actions.map(\.id), ["new"])
+        XCTAssertFalse(opened.command.keepsRecent)
         XCTAssertEqual(lines.items.map(\.run), ["prompt", "sandbox", "guide", "folder"])
         XCTAssertEqual(lines.errors, [])
     }
@@ -100,7 +101,7 @@ final class GuidePluginTests: XCTestCase {
         let made = scan.commands.first { $0.id == "my-weather" }
         XCTAssertEqual(scan.refused, [])
         XCTAssertEqual(made?.name, "My Weather")
-        try await XCTUnwrap(made).perform(.run, timeout: 5)
+        try await XCTUnwrap(made).perform(XCTUnwrap(made).click, timeout: 5)
         XCTAssertEqual(try saved("opened"), "-R\n")
         XCTAssertEqual(try String(contentsOf: plugins.appendingPathComponent("my-weather.sh"), encoding: .utf8).split(separator: "\n")[1], "# name=My Weather")
     }

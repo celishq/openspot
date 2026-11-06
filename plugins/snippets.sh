@@ -2,7 +2,7 @@
 # symbol=text.quote
 # subtitle=Copy text
 # key=n
-# read=open
+# read=panel
 # rank=3
 export LC_ALL=en_US.UTF-8
 data="$OPENSPOT_DATA/snippets.json"
@@ -30,24 +30,9 @@ content() {
   }
 }
 
-case "$1" in
-  "")
-    printf 'action=open\ntitle=Copy\n\n'
-    printf 'action=paste\ntitle=Paste\nkey=cmd+return\nclose=true\n\n'
-    printf 'action=edit\ntitle=Edit\nkey=cmd+e\nform=true\n\n'
-    printf 'action=delete\ntitle=Delete\nkey=cmd+backspace\nconfirm=Press again to delete\n\n'
-    printf 'action=new\ntitle=New snippet\nkey=cmd+n\nscope=command\nform=true\n\n'
-    load | jq -r "$esc"'.[] | "row=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\nrun=\(.id | esc)\n"'
-    ;;
-  form)
-    if [ "$2" = edit ]; then
-      title="Edit snippet"
-      values=$(load | jq -c --arg id "$3" '.[] | select(.id == $id)')
-    else
-      title="New snippet"
-      values='{"title":"","content":""}'
-    fi
-    jq -nr --arg title "$title" --argjson v "$values" "$esc"'"title=\($title)
+# Prints the form with this title and these values.
+form() {
+  jq -nr --arg title "$1" --argjson v "$2" "$esc"'"title=\($title)
 
 field=title
 label=Name
@@ -59,15 +44,35 @@ label=Text
 type=multiline
 value=\($v.content | esc)
 required=true"'
+}
+
+case "$1" in
+  read)
+    printf 'action=open\ntitle=Copy\n\n'
+    printf 'action=paste\ntitle=Paste\nkey=cmd+return\nclose=true\n\n'
+    printf 'action=edit\ntitle=Edit\nkey=cmd+e\nform=true\n\n'
+    printf 'action=delete\ntitle=Delete\nkey=cmd+backspace\nconfirm=Press again to delete\n\n'
+    printf 'action=new\ntitle=New snippet\nkey=cmd+n\nscope=command\nform=true\n\n'
+    load | jq -r "$esc"'.[] | "row=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\nrun=\(.id | esc)\n"'
     ;;
   new)
+    input=$(cat)
+    if [ -z "$input" ]; then
+      form "New snippet" '{"title":"","content":""}'
+      exit 0
+    fi
     id=$(uuidgen)
-    values=$(form_values)
+    values=$(printf '%s\n' "$input" | form_values)
     load | jq -c --arg id "$id" --argjson v "$values" '. + [{id: $id, title: $v.title, content: $v.content}]' | store
     echo "$id"
     ;;
   edit)
-    values=$(form_values)
+    input=$(cat)
+    if [ -z "$input" ]; then
+      form "Edit snippet" "$(load | jq -c --arg id "$2" '.[] | select(.id == $id)')"
+      exit 0
+    fi
+    values=$(printf '%s\n' "$input" | form_values)
     load | jq -c --arg id "$2" --argjson v "$values" 'map(if .id == $id then .title = $v.title | .content = $v.content else . end)' | store
     echo "$2"
     ;;

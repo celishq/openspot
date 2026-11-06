@@ -16,17 +16,26 @@ final class SpotActionTests: XCTestCase {
         XCTAssertEqual(SpotAction.level(69.6).arguments, ["level", "70"])
     }
 
-    func testARunSendsNoArguments() {
-        XCTAssertEqual(SpotAction.run.arguments, [])
+    func testAClickOnACardWithAReadKeySendsRun() {
+        let url = URL(fileURLWithPath: "/x")
+
+        XCTAssertEqual(PluginCommand(id: "a", name: "A", url: url, read: .panel).click.arguments, ["run"])
+    }
+
+    func testAClickOnAFileWithNoReadSendsNoArgument() {
+        let url = URL(fileURLWithPath: "/x")
+
+        XCTAssertEqual(PluginCommand(id: "a", name: "A", url: url).click.arguments, [])
     }
 
     func testAListItemSendsItsRunValue() {
         XCTAssertEqual(SpotAction.item(SpotItem(title: "1 hour", run: "3600")).arguments, ["open", "3600"])
     }
 
-    func testItemsPassesASearchOnlyWhenThereIsOne() {
-        XCTAssertEqual(SpotAction.items(query: "").arguments, [])
-        XCTAssertEqual(SpotAction.items(query: "rep").arguments, ["search", "rep"])
+    func testAReadPassesATextOnlyWhenThereIsOne() {
+        XCTAssertEqual(SpotAction.read.arguments, ["read"])
+        XCTAssertEqual(SpotAction.items(query: "").arguments, ["read"])
+        XCTAssertEqual(SpotAction.items(query: "rep").arguments, ["read", "rep"])
     }
 
     func testAnActionSendsItsIdAndItsItem() {
@@ -34,11 +43,5 @@ final class SpotActionTests: XCTestCase {
 
         XCTAssertEqual(SpotAction.action(delete, item: SpotItem(title: "One", run: "1")).arguments, ["delete", "1"])
         XCTAssertEqual(SpotAction.action(delete, item: nil).arguments, ["delete"])
-    }
-
-    func testAFormAsksByTheIdOfItsAction() {
-        let edit = CommandAction(id: "edit", title: "Edit", isForm: true)
-
-        XCTAssertEqual(SpotAction.form(edit, item: SpotItem(title: "One", run: "1")).arguments, ["form", "edit", "1"])
     }
 }

@@ -72,6 +72,16 @@ final class SamplePluginsTests: XCTestCase {
         XCTAssertEqual(points?.count, 3)
     }
 
+    func testTheCheckFindsNoFaultInTheFolder() async throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        try await withPrivateHome { _ in
+            let faults = await PluginCheck(folder: PluginFolder(url: root.appendingPathComponent("plugins"))).faults()
+
+            XCTAssertEqual(faults, [])
+        }
+    }
+
     func testEveryCommandCanBeRun() throws {
         for command in try scan.commands where command.kind != .widget && command.shipped == nil {
             XCTAssertTrue(FileManager.default.isExecutableFile(atPath: command.url.path), command.name)
@@ -90,7 +100,7 @@ final class SamplePluginsTests: XCTestCase {
         XCTAssertEqual(lines.errors, [])
         XCTAssertEqual(lines.pick, .close)
         XCTAssertEqual(lines.primary, "Select")
-        XCTAssertFalse(caffeinate.keepsRecent)
+        XCTAssertFalse(lines.keepsRecent)
     }
 
     func testCaffeinateOffersTurnOffFirstAndStopsOnIt() async throws {
@@ -137,12 +147,12 @@ final class SamplePluginsTests: XCTestCase {
         XCTAssertGreaterThan(lines.items.filter { $0.run.hasPrefix("/System/Applications/") }.count, 5)
     }
 
-    func testFilesIsLiveAndGivesNothingForATooShortSearch() async throws {
+    func testFilesSearchesItselfAndGivesNothingForATooShortSearch() async throws {
         let files = try XCTUnwrap(try scan.commands.first { $0.name == "Files" })
 
         let lines = try await files.items(query: "a", timeout: 5)
 
-        XCTAssertEqual(files.search, .live)
+        XCTAssertEqual(lines.search, .script)
         XCTAssertEqual(lines.items, [])
     }
 
@@ -518,7 +528,7 @@ final class SamplePluginsTests: XCTestCase {
         try "#!/bin/sh\n[ \"$1 $2\" = 'color pick' ] && printf '%s' '\(answer)'\n".write(to: folder.appendingPathComponent("tools/openspot"), atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: folder.appendingPathComponent("tools/openspot").path)
         let picker = try XCTUnwrap(try scan.commands.first { $0.name == "Color picker" })
-        return try await picker.perform(.run, timeout: 5)
+        return try await picker.perform(picker.click, timeout: 5)
     }
 
     func testTheColorPickerCopiesAPickAndNothingOnACancel() async throws {
@@ -568,7 +578,7 @@ final class SamplePluginsTests: XCTestCase {
         output.parts.first { $0.id == id }?.value
     }
 
-    /// Runs a live script through the events, and returns the frame that answers the last one.
+    /// Runs a staying script through the calls, and returns the frame that answers the last one.
     private func drive(_ command: PluginCommand, _ actions: [SpotAction]) async throws -> PluginOutput {
         let live = LiveScript(url: command.url, timeout: 10)
         defer { live.stop() }
@@ -587,7 +597,7 @@ final class SamplePluginsTests: XCTestCase {
 
             let output = try await translate.items(timeout: 10)
 
-            XCTAssertTrue(translate.isLive)
+            XCTAssertTrue(translate.stays)
             XCTAssertEqual(translate.kind, .list)
             XCTAssertEqual(output.kind, .list)
             XCTAssertEqual(output.sheetFaults, [])

@@ -26,38 +26,37 @@ public struct Plugin: Equatable, Sendable {
         }
     }
 
-    /// A script with a number of seconds as its `read` is a metric, and it is also a list when it has a key.
+    /// A script with a number in its `read` is a metric, and it also has a spot, a list, when it has a key.
     public init(script url: URL, header: TextBlock, id: String) throws {
         let name = header.value("name") ?? Self.name(of: url)
         let symbol = header.value("symbol")
         var read: SpotRead?
         if let text = header.value("read") {
-            guard let parsed = SpotRead(name: text) else {
-                throw PluginError.fault("\(name) has an unknown read: \(text). Use click, open or a number of seconds")
+            guard let parsed = SpotRead(text: text) else {
+                throw PluginError.fault("\(name) has an unknown read: \(text). Use panel, sheet, launch, wake or a number of seconds")
             }
             read = parsed
         }
         let isTray = header.flag("tray") ?? false
-        let isLive = header.flag("live") ?? false
+        let stays = header.flag("stay") ?? false
         var metrics: [PluginMetric] = []
-        if case .every(let seconds) = read {
+        if let seconds = read?.seconds {
             metrics.append(PluginMetric(id: id, url: url, label: name, symbol: symbol, refresh: seconds, isTray: isTray))
             guard header.value("key") != nil else {
                 self.init(id: id, commands: [], metrics: metrics)
                 return
             }
-        } else if isTray {
-            throw PluginError.fault("\(name) needs a number of seconds as its read to show in the menu bar")
+        } else if isTray, !stays {
+            throw PluginError.fault("\(name) needs a number in its read, or stay=true, to show in the menu bar")
         }
         let sizeName = header.value("size") ?? "wide"
         guard let size = SpotSize(name: sizeName) else { throw PluginError.fault("\(name) has an unknown size: \(sizeName)") }
-        let searchName = header.value("search") ?? ItemSearch.local.rawValue
-        guard let search = ItemSearch(rawValue: searchName) else { throw PluginError.fault("\(name) has an unknown search: \(searchName)") }
-        guard search == .local || read == .click else { throw PluginError.fault("\(name) needs read=click to search live") }
         var rank = PluginCommand.lastRank
         if let text = header.value("rank") {
             guard let number = Int(text) else { throw PluginError.fault("\(name) needs a number as its rank") }
-            guard read == .open else { throw PluginError.fault("\(name) needs read=open to join the main search") }
+            guard read?.has(.panel) == true || read?.has(.launch) == true || read?.seconds != nil else {
+                throw PluginError.fault("\(name) needs panel, launch or a number in its read to join the main search")
+            }
             rank = number
         }
         var order = 0
@@ -69,7 +68,7 @@ public struct Plugin: Equatable, Sendable {
             id: id,
             name: name,
             url: url,
-            kind: isLive ? .list : read == nil || (read == .open && rank == PluginCommand.lastRank) ? .launch : .list,
+            kind: stays || rank != PluginCommand.lastRank || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch,
             size: size,
             symbol: symbol ?? "app",
             subtitle: header.value("subtitle"),
@@ -77,9 +76,8 @@ public struct Plugin: Equatable, Sendable {
             read: read,
             rank: rank,
             order: order,
-            search: search,
-            keepsRecent: header.flag("recents") != false,
-            isLive: isLive
+            stays: stays,
+            drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? []
         )
         self.init(id: id, commands: [command], metrics: metrics)
     }

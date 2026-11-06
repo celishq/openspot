@@ -23,14 +23,14 @@ public struct SheetSandbox: Equatable, Sendable {
     /// Takes a value that a person set in the sheet, and returns the generation of the call that reports it.
     @discardableResult
     public mutating func set(_ value: String, of id: String) -> Int {
-        record("set \(id) \(value)")
+        record("\(id) \(value)")
         return panel?.set(value, of: id) ?? 0
     }
 
     /// Takes a press in the sheet, and returns the generation of the call that reports it.
     @discardableResult
     public mutating func press(_ id: String) -> Int {
-        record("press \(id)")
+        record(id)
         return panel?.advance() ?? 0
     }
 

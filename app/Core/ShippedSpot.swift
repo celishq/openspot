@@ -15,9 +15,8 @@ public enum ShippedSpot: Equatable, Sendable {
                 symbol: "puzzlepiece.extension",
                 subtitle: "Add your own",
                 key: CommandKey(name: "p"),
-                read: .open,
+                read: .panel,
                 order: 1,
-                keepsRecent: false,
                 shipped: .plugins(PluginGuide(folder: folder, guide: guide, app: app))
             )
         ]

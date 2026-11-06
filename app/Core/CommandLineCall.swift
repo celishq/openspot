@@ -22,7 +22,7 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot catalog                             Prints each part that a script can print.
     openspot color pick                          Prints the colour the person picks.
     openspot translate [--from code] [--to code] Translates the text on stdin.
-    openspot translate --serve                   Stays running, and answers blocks on stdin, for a live script.
+    openspot translate --serve                   Stays running, and answers blocks on stdin, for a script that stays.
     openspot translate languages                 Prints the languages it knows.
 
     """

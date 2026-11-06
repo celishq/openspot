@@ -174,13 +174,14 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(try scan.metrics.filter(\.isTray).map(\.id), ["power"])
     }
 
-    func testOnlyAMetricCanShowInTheMenuBar() throws {
+    func testOnlyAMetricOrAStayingScriptCanShowInTheMenuBar() throws {
         try script("one.sh", "#!/bin/sh\n# tray=true\n")
-        try script("two.sh", "#!/bin/sh\n# read=open\n# tray=true\n")
+        try script("two.sh", "#!/bin/sh\n# read=panel\n# tray=true\n")
+        try script("three.sh", "#!/bin/sh\n# stay=true\n# tray=true\n")
 
         XCTAssertEqual(try scan.refused, [
-            Refusal(file: "one", reason: "One needs a number of seconds as its read to show in the menu bar"),
-            Refusal(file: "two", reason: "Two needs a number of seconds as its read to show in the menu bar")
+            Refusal(file: "one", reason: "One needs a number in its read, or stay=true, to show in the menu bar"),
+            Refusal(file: "two", reason: "Two needs a number in its read, or stay=true, to show in the menu bar")
         ])
     }
 
@@ -265,8 +266,8 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testALostKeyKeepsTheRestOfTheCommand() throws {
-        try script("one.sh", "#!/bin/sh\n# key=x\n# read=open\n# rank=1\n")
-        try script("two.sh", "#!/bin/sh\n# key=x\n# read=open\n# rank=2\n")
+        try script("one.sh", "#!/bin/sh\n# key=x\n# read=panel\n# rank=1\n")
+        try script("two.sh", "#!/bin/sh\n# key=x\n# read=panel\n# rank=2\n")
 
         XCTAssertEqual(try scan.commands.map(\.rank), [1, 2])
     }
@@ -352,11 +353,19 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testTheCheckReportsAListThatFails() async throws {
-        try script("tools.sh", "#!/bin/sh\n# read=click\necho gone >&2\nexit 1\n")
+        try script("tools.sh", "#!/bin/sh\n# read=sheet\necho gone >&2\nexit 1\n")
 
         let faults = await PluginCheck(folder: PluginFolder(url: folder)).faults()
 
         XCTAssertEqual(faults, ["tools: gone"])
+    }
+
+    func testTheCheckFaultsAPartOrAnActionCalledRead() async throws {
+        try script("tools.sh", "#!/bin/sh\n# read=sheet\nprintf 'action=read\\ntitle=A\\n\\nrow=A\\nrun=a\\n\\npart=read\\ntitle=B\\n'\n")
+
+        let faults = await PluginCheck(folder: PluginFolder(url: folder)).faults()
+
+        XCTAssertEqual(faults, ["tools: an action cannot be called read", "tools: a part cannot be called read"])
     }
 
     func testTheCheckDoesNotRunAScriptWithNoRead() async throws {

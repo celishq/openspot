@@ -1,19 +1,48 @@
 import Foundation
 
-/// When Openspot calls a script with no arguments to see what it prints. A script with none of these is never read.
-public enum SpotRead: Equatable, Sendable {
-    case click
-    case open
-    case every(TimeInterval)
+/// The moments when Openspot calls `read`, which the `read` header line lists. A script with none of these is never read.
+public struct SpotRead: Equatable, Sendable {
+    public enum Moment: Equatable, Sendable {
+        case launch
+        case wake
+        case panel
+        case sheet
+        case every(TimeInterval)
+    }
 
-    /// Reads the value of a `read` header line: click, open or a number of seconds.
-    public init?(name: String) {
-        switch name {
-        case "click": self = .click
-        case "open": self = .open
-        default:
-            guard let seconds = Int(name), seconds > 0 else { return nil }
-            self = .every(TimeInterval(seconds))
+    public static let panel = SpotRead(moments: [.panel])
+    public static let sheet = SpotRead(moments: [.sheet])
+
+    public let moments: [Moment]
+
+    public init(moments: [Moment]) {
+        self.moments = moments
+    }
+
+    /// Reads the value of a `read` header line: moments split by commas. Returns nil when one word is not a moment.
+    public init?(text: String) {
+        var moments: [Moment] = []
+        for word in text.split(separator: ",", omittingEmptySubsequences: false).map({ $0.trimmingCharacters(in: .whitespaces) }) {
+            switch word {
+            case "launch": moments.append(.launch)
+            case "wake": moments.append(.wake)
+            case "panel": moments.append(.panel)
+            case "sheet": moments.append(.sheet)
+            default:
+                guard let seconds = Int(word), seconds > 0 else { return nil }
+                moments.append(.every(TimeInterval(seconds)))
+            }
         }
+        self.moments = moments
+    }
+
+    public func has(_ moment: Moment) -> Bool {
+        moments.contains(moment)
+    }
+
+    /// The first number in the list.
+    public var seconds: TimeInterval? {
+        for case .every(let seconds) in moments { return seconds }
+        return nil
     }
 }

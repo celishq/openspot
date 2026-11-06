@@ -15,11 +15,10 @@ public struct PluginGuide: Equatable, Sendable {
     /// Answers one call with the text a script would print.
     public func answer(_ arguments: [String], input: String?, timeout: TimeInterval) async throws -> String {
         switch arguments.first {
-        case nil:
+        case "read":
             return Self.rows
-        case "form":
-            return Self.form
         case "new":
+            guard let input, !input.isEmpty else { return Self.form }
             try await makePlugin(named: TextBlock.blocks(in: input ?? "").first?.value("name") ?? "", timeout: timeout)
             return ""
         case "open":
@@ -46,6 +45,8 @@ public struct PluginGuide: Equatable, Sendable {
     }
 
     private static let rows = """
+    recents=false
+
     action=new
     title=New plugin
     key=cmd+n

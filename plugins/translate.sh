@@ -4,7 +4,7 @@
 # key=t
 # size=small
 # order=-1
-# live=true
+# stay=true
 export LC_ALL=en_US.UTF-8
 
 saved="$OPENSPOT_DATA/translate"
@@ -109,17 +109,17 @@ show() {
   printf -- '---\n'
 }
 
-# Does one event, and answers with a frame when the sheet changes.
+# Does one call, and answers with a frame when the sheet changes.
 handle() {
-  case "$event $id" in
-    "press settings")
+  case "$call" in
+    settings)
       open "$settings"
       ;;
-    "press copy")
+    copy)
       printf '%b' "$output" | pbcopy
       printf 'toast=Copied\n---\n'
       ;;
-    "press swap")
+    swap)
       old=$source
       if [ "$old" = auto ]; then
         ask && old=$(value from "$answer")
@@ -133,19 +133,19 @@ handle() {
       translate
       show
       ;;
-    "set source")
+    source)
       source=$text
       save
       translate
       show
       ;;
-    "set target")
+    target)
       target=$text
       save
       translate
       show
       ;;
-    "set input")
+    input)
       input=$text
       translate
       show
@@ -175,18 +175,15 @@ translator=$!
 exec 3> "$folder/in" 4< "$folder/out"
 trap 'exec 3>&-; kill "$translator" 2>/dev/null; rm -rf "$folder"' EXIT
 
-event=
-id=
+call=
 text=
 while IFS= read -r line; do
   case "$line" in
-    event=*) event=${line#event=} ;;
-    id=*) id=${line#id=} ;;
+    name=*) call=${line#name=} ;;
     value=*) text=${line#value=} ;;
     '')
       handle
-      event=
-      id=
+      call=
       text=
       ;;
   esac

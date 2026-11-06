@@ -2,7 +2,7 @@
 # symbol=link
 # subtitle=Open a link
 # key=l
-# read=open
+# read=panel
 # rank=1
 export LC_ALL=en_US.UTF-8
 data="$OPENSPOT_DATA/links.json"
@@ -122,10 +122,26 @@ fetch_missing() {
     done
 }
 
+# Prints the form with this title and these values.
+form() {
+  jq -nr --arg title "$1" --argjson v "$2" "$esc"'"title=\($title)
+
+field=title
+label=Name
+value=\($v.title | esc)
+required=true
+
+field=url
+label=Link
+value=\($v.url | esc)
+required=true
+placeholder=example.com or ~/Downloads"'
+}
+
 prepare
 
 case "$1" in
-  "")
+  read)
     printf 'action=copy\ntitle=Copy\nkey=cmd+return\nclose=true\n\n'
     printf 'action=reveal\ntitle=Show in Finder\nkey=cmd+r\nclose=true\n\n'
     printf 'action=edit\ntitle=Edit\nkey=cmd+e\nform=true\n\n'
@@ -142,36 +158,25 @@ case "$1" in
         end'
     fetch_missing >/dev/null 2>&1 </dev/null &
     ;;
-  form)
-    if [ "$2" = edit ]; then
-      title="Edit link"
-      values=$(load | jq -c --arg id "$3" '.[] | select(.id == $id)')
-    else
-      title="New link"
-      values='{"title":"","url":""}'
-    fi
-    jq -nr --arg title "$title" --argjson v "$values" "$esc"'"title=\($title)
-
-field=title
-label=Name
-value=\($v.title | esc)
-required=true
-
-field=url
-label=Link
-value=\($v.url | esc)
-required=true
-placeholder=example.com or ~/Downloads"'
-    ;;
   new)
+    input=$(cat)
+    if [ -z "$input" ]; then
+      form "New link" '{"title":"","url":""}'
+      exit 0
+    fi
     id=$(uuidgen)
-    values=$(checked) || exit 1
+    values=$(printf '%s\n' "$input" | checked) || exit 1
     load | jq -c --arg id "$id" --argjson v "$values" '. + [{id: $id, title: $v.title, url: $v.url}]' | store
     fetch_missing >/dev/null 2>&1 </dev/null &
     echo "$id"
     ;;
   edit)
-    values=$(checked) || exit 1
+    input=$(cat)
+    if [ -z "$input" ]; then
+      form "Edit link" "$(load | jq -c --arg id "$2" '.[] | select(.id == $id)')"
+      exit 0
+    fi
+    values=$(printf '%s\n' "$input" | checked) || exit 1
     load | jq -c --arg id "$2" --argjson v "$values" 'map(if .id == $id then .title = $v.title | .url = $v.url else . end)' | store
     echo "$2"
     ;;

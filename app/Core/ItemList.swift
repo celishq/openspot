@@ -4,7 +4,7 @@ import Foundation
 public struct ItemList: Equatable, Sendable {
     public static let recentLimit = 20
 
-    public let search: ItemSearch
+    public private(set) var search: ItemSearch
     public private(set) var query = ""
     public private(set) var recent: [String]
     public private(set) var shown: [SpotItem] = []
@@ -41,11 +41,19 @@ public struct ItemList: Equatable, Sendable {
     private mutating func begin(_ text: String) {
         query = text
         selected = 0
-        isWaiting = search == .live
+        isWaiting = search == .script
         refresh()
     }
 
-    /// Takes the answer of a live list. An answer to an older search is dropped.
+    /// Takes who searches this list, as the script printed it. A list that the script now searches waits for its answer.
+    public mutating func take(search: ItemSearch) {
+        guard search != self.search else { return }
+        self.search = search
+        isWaiting = search == .script && !query.isEmpty
+        refresh()
+    }
+
+    /// Takes the answer of a list that the script searches. An answer to an older search is dropped.
     public mutating func answer(_ items: [SpotItem], to text: String) {
         guard text == query else { return }
         isWaiting = false
@@ -92,6 +100,6 @@ public struct ItemList: Equatable, Sendable {
     }
 
     private mutating func refresh() {
-        shown = search == .live ? all : SearchQuery(text: query).matching(all, recent: recent)
+        shown = search == .script ? all : SearchQuery(text: query).matching(all, recent: recent)
     }
 }

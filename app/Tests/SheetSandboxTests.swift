@@ -41,7 +41,7 @@ final class SheetSandboxTests: XCTestCase {
         sandbox.press("a")
 
         XCTAssertEqual(sandbox.panel?.parts.first?.control, .toggle(true))
-        XCTAssertEqual(sandbox.log, ["set a true", "press a"])
+        XCTAssertEqual(sandbox.log, ["a true", "a"])
     }
 
     func testAFrameOfAScriptShowsItsTextAndFaults() {

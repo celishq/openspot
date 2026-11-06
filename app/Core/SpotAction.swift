@@ -3,15 +3,15 @@ import Foundation
 public struct SpotAction: Equatable, Sendable {
     public let arguments: [String]
 
-    public static let run = SpotAction(arguments: [])
-    public static let read = SpotAction(arguments: [])
+    public static let run = SpotAction(arguments: ["run"])
+    public static let read = SpotAction(arguments: ["read"])
 
     public init(arguments: [String]) {
         self.arguments = arguments
     }
 
     public static func items(query: String) -> SpotAction {
-        SpotAction(arguments: query.isEmpty ? [] : ["search", query])
+        SpotAction(arguments: query.isEmpty ? ["read"] : ["read", query])
     }
 
     public static func toggle(_ state: SpotState) -> SpotAction {
@@ -26,25 +26,22 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: [action.id] + (item.map { [$0.run] } ?? []))
     }
 
-    public static func form(_ action: CommandAction, item: SpotItem?) -> SpotAction {
-        SpotAction(arguments: ["form", action.id] + (item.map { [$0.run] } ?? []))
-    }
-
     /// A person set the value of a part.
     public static func set(_ part: String, to value: String) -> SpotAction {
-        SpotAction(arguments: ["set", part, value])
+        SpotAction(arguments: [part, value])
     }
 
     /// A person pressed a part.
     public static func press(_ part: String) -> SpotAction {
-        SpotAction(arguments: ["press", part])
+        SpotAction(arguments: [part])
     }
 
-    /// This action as one block for a live script: `event`, `id` and `value`. A read has only its event.
-    public var event: String {
-        let names = ["event", "id", "value"]
-        let words = arguments.isEmpty ? ["read"] : arguments
-        return TextBlock(fields: zip(names, words).map { .init(key: $0, value: $1) }).text + "\n"
+    /// This call as one block for a script that stays: `name`, `value`, and one `field.<id>` for each value that stdin
+    /// holds in a normal call.
+    public func event(values: String? = nil) -> String {
+        let call = zip(["name", "value"], arguments).map { TextBlock.Field(key: $0, value: $1) }
+        let held = values.flatMap { TextBlock.blocks(in: $0).first }?.fields ?? []
+        return TextBlock(fields: call + held.map { .init(key: "field.\($0.key)", value: $0.value) }).text + "\n"
     }
 
     public static func level(_ value: Double) -> SpotAction {

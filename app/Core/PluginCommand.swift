@@ -16,16 +16,17 @@ public struct PluginCommand: Equatable, Sendable {
     public private(set) var pick: ItemPick
     public let rank: Int
     public let order: Int
-    public let search: ItemSearch
-    public let keepsRecent: Bool
+    public private(set) var keepsRecent = true
     public private(set) var primary: String?
     public private(set) var actions: [CommandAction]
     public let layout: WidgetLayout?
     public let places: [String]
     public let opens: String?
     public let shipped: ShippedSpot?
-    /// Whether the script stays running and takes events on its standard input.
-    public let isLive: Bool
+    /// Whether the script stays running and takes calls on its standard input.
+    public let stays: Bool
+    /// The file extensions that its card takes, with `folder` and `*`.
+    public let drop: [String]
 
     public init(
         id: String,
@@ -40,15 +41,14 @@ public struct PluginCommand: Equatable, Sendable {
         pick: ItemPick = .close,
         rank: Int = PluginCommand.lastRank,
         order: Int = 0,
-        search: ItemSearch = .local,
-        keepsRecent: Bool = true,
         primary: String? = nil,
         actions: [CommandAction] = [],
         layout: WidgetLayout? = nil,
         places: [String] = [],
         opens: String? = nil,
         shipped: ShippedSpot? = nil,
-        isLive: Bool = false
+        stays: Bool = false,
+        drop: [String] = []
     ) {
         self.id = id
         self.name = name
@@ -62,15 +62,14 @@ public struct PluginCommand: Equatable, Sendable {
         self.pick = pick
         self.rank = rank
         self.order = order
-        self.search = search
-        self.keepsRecent = keepsRecent
         self.primary = primary
         self.actions = actions
         self.layout = layout
         self.places = places
         self.opens = opens
         self.shipped = shipped
-        self.isLive = isLive
+        self.stays = stays
+        self.drop = drop
     }
 
     /// Whether its rows join the main search.
@@ -85,7 +84,12 @@ public struct PluginCommand: Equatable, Sendable {
 
     /// Whether the panel asks the command how it looks each time it opens.
     public var readsState: Bool {
-        read == .open && !isGlobal && !isLive
+        read?.has(.panel) == true && !isGlobal && !stays
+    }
+
+    /// The call that a click on its card makes: `run`, or no argument for a file with no `read`.
+    public var click: SpotAction {
+        read == nil ? SpotAction(arguments: []) : .run
     }
 
     /// Asks the command for its state. A command with no state to read does not run.
@@ -103,12 +107,13 @@ public struct PluginCommand: Equatable, Sendable {
         return (command, try Self.state(of: output, header: headerState))
     }
 
-    /// This command with the actions, the word for Enter and the pick that its script printed.
+    /// This command with the actions, the word for Enter, the pick and the recents that its script printed.
     public func taking(_ output: PluginOutput) -> PluginCommand {
         var command = self
         command.actions = output.actions
         command.primary = output.primary
         command.pick = output.pick
+        command.keepsRecent = output.keepsRecent
         return command
     }
 
@@ -127,13 +132,13 @@ public struct PluginCommand: Equatable, Sendable {
         return try await PluginRun(command: self, arguments: arguments, timeout: timeout, input: input).output()
     }
 
-    /// Asks the command for the items of its list, with the search when it searches live.
+    /// Asks the command for the items of its list, with the search when the script searches.
     public func items(query: String = "", input: String? = nil, timeout: TimeInterval) async throws -> PluginOutput {
-        if isLive { return try await firstLiveFrame(timeout: timeout) }
+        if stays { return try await firstLiveFrame(timeout: timeout) }
         return PluginOutput(text: try await text(of: SpotAction.items(query: query).arguments, input: input, timeout: timeout))
     }
 
-    /// Starts a live script, reads its first sheet and stops it.
+    /// Starts a staying script, reads its first sheet and stops it.
     private func firstLiveFrame(timeout: TimeInterval) async throws -> PluginOutput {
         let live = LiveScript(url: url, timeout: timeout)
         defer { live.stop() }
@@ -166,9 +171,9 @@ public struct PluginCommand: Equatable, Sendable {
         PluginOutput(text: try await text(of: action.arguments, input: values, timeout: timeout))
     }
 
-    /// Asks the command for the form of an action.
+    /// Asks the command for the form of an action: the call of that action, with empty stdin.
     public func form(_ action: CommandAction, item: SpotItem?, timeout: TimeInterval) async throws -> ItemForm {
-        guard let form = ItemForm(output: try await output(.form(action, item: item), timeout: timeout)) else { throw PluginError.badForm }
+        guard let form = ItemForm(output: try await output(.action(action, item: item), timeout: timeout)) else { throw PluginError.badForm }
         return form
     }
 

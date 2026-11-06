@@ -1,7 +1,7 @@
 import Foundation
 
-/// A script that stays running while its sheet is open: it takes one block on its standard input for each event, and
-/// prints frames. A model or a connection that it loads stays loaded between events. Closing its input tells it to end.
+/// A script that stays running while its sheet is open: it takes one block on its standard input for each call, and
+/// prints frames. A model or a connection that it loads stays loaded between calls. Closing its input tells it to end.
 public final class LiveScript: @unchecked Sendable {
     private static let stopPause: TimeInterval = 2
 
@@ -64,14 +64,14 @@ public final class LiveScript: @unchecked Sendable {
         }
     }
 
-    /// Sends one event to the script, in the order of the calls.
-    public func send(_ action: SpotAction) {
+    /// Sends one call to the script as a block, with the values of its sheet, in the order of the calls.
+    public func send(_ action: SpotAction, values: String? = nil) {
         let handle = input.fileHandleForWriting
-        let text = action.event
+        let text = action.event(values: values)
         writes.async { try? handle.write(contentsOf: Data(text.utf8)) }
     }
 
-    /// Closes its input after the events already sent, which ends a script that reads to the end. A script that still
+    /// Closes its input after the calls already sent, which ends a script that reads to the end. A script that still
     /// runs after a short time is stopped.
     public func stop() {
         let handle = input.fileHandleForWriting

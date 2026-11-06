@@ -15,6 +15,8 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var errors: [String] = []
     public private(set) var layout: SheetLayout?
 
+    private static let reserved = "read"
+
     public init(text: String) {
         var runs = Set<String>()
         for block in TextBlock.blocks(in: text) {
@@ -40,7 +42,18 @@ public struct PluginOutput: Equatable, Sendable {
         }
         layout = summary.flatMap(SheetLayout.init(block:))
         parts += layout?.keyParts ?? []
+        if parts.contains(where: { $0.id == Self.reserved }) { partFaults.append("a part cannot be called \(Self.reserved)") }
         if !parts.isEmpty { partFaults += SheetFaults.of(layout: layout, summary: summary, parts: parts) }
+    }
+
+    /// Who searches its rows: the script when it prints `search=script`.
+    public var search: ItemSearch {
+        summary?.value("search") == ItemSearch.script.rawValue ? .script : .local
+    }
+
+    /// Whether recent picks sort first, unless it prints `recents=false`.
+    public var keepsRecent: Bool {
+        summary?.flag("recents") != false
     }
 
     /// How often an open sheet of parts asks to be read again, in seconds.
@@ -62,6 +75,7 @@ public struct PluginOutput: Equatable, Sendable {
 
     /// Keeps an action. The `open` action sets the word for Enter, and whether a pick stays in the panel.
     private mutating func take(action id: String, _ block: TextBlock) {
+        if id == Self.reserved { partFaults.append("an action cannot be called \(Self.reserved)") }
         if id == "open" {
             primary = block.value("title")
             pick = block.flag("close") == false ? .stay : .close

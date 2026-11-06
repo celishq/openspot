@@ -149,7 +149,13 @@ final class SpotPanelTests: XCTestCase {
     }
 
     func testTheCallsOfAPanel() {
-        XCTAssertEqual(SpotAction.set("left", to: "true").arguments, ["set", "left", "true"])
-        XCTAssertEqual(SpotAction.press("quit").arguments, ["press", "quit"])
+        XCTAssertEqual(SpotAction.set("left", to: "true").arguments, ["left", "true"])
+        XCTAssertEqual(SpotAction.press("quit").arguments, ["quit"])
+    }
+
+    func testAPartOrAnActionCalledReadIsAFault() {
+        XCTAssertEqual(PluginOutput(text: "part=read\ntitle=A\n").partFaults, ["a part cannot be called read"])
+        XCTAssertEqual(PluginOutput(text: "keys=read go\n").partFaults, ["a part cannot be called read"])
+        XCTAssertEqual(PluginOutput(text: "action=read\ntitle=A\n").partFaults, ["an action cannot be called read"])
     }
 }

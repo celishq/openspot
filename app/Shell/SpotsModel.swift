@@ -98,7 +98,7 @@ final class SpotsModel {
         var entries: [Entry] = []
         var problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
         scan.commands.filter { $0.kind == .list }.forEach { _ = sheet(for: $0) }
-        scan.commands.filter { $0.kind == .list && $0.read == .open }.forEach { sheets[$0.id]?.read() }
+        scan.commands.filter { $0.kind == .list && $0.read?.has(.panel) == true }.forEach { sheets[$0.id]?.read() }
         if scan.commands.allSatisfy({ $0.shipped != nil }) {
             problems.append("No plugins in \(folder.url.path)")
         }
@@ -296,7 +296,7 @@ final class SpotsModel {
             perform(action, on: entry)
         case .launch:
             if isShown { dismiss() }
-            perform(.run, on: entry)
+            perform(entry.command.click, on: entry)
         case .list:
             sheetMoves = true
             if openList == entry.id {
@@ -398,7 +398,7 @@ final class SpotsModel {
         return true
     }
 
-    /// Opens a sheet and ends what another left running. The sheet of a live script opens with its first frame.
+    /// Opens a sheet and ends what another left running. The sheet of a staying script opens with its first frame.
     private func open(_ id: String) {
         guard let sheet = sheets[id] else { return }
         sheets.values.filter { $0 !== sheet }.forEach { $0.close() }
@@ -410,13 +410,13 @@ final class SpotsModel {
         sheets.values.forEach { $0.close() }
     }
 
-    /// Closes the sheet of a live script when the panel has faded, so that the next open starts it again.
+    /// Closes the sheet of a staying script when the panel has faded, so that the next open starts it again.
     func panelDidHide() {
-        if openSheet?.command.isLive == true {
+        if openSheet?.command.stays == true {
             sheetMoves = false
             closeList()
         } else {
-            sheets.values.filter { $0.command.isLive }.forEach { $0.close() }
+            sheets.values.filter { $0.command.stays }.forEach { $0.close() }
         }
     }
 

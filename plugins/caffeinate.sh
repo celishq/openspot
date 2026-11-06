@@ -2,8 +2,7 @@
 # symbol=cup.and.saucer.fill
 # key=c
 # size=small
-# read=open
-# recents=false
+# read=panel
 record="${TMPDIR:-/tmp}/openspot-caffeinate"
 pid=""
 end=0
@@ -23,7 +22,7 @@ stop() {
 }
 
 case "$1" in
-  "")
+  read)
     detail="Off"
     on=false
     if [ "$running" = 1 ]; then
@@ -38,7 +37,7 @@ case "$1" in
         fi
       fi
     fi
-    printf 'detail=%s\non=%s\n\n' "$detail" "$on"
+    printf 'detail=%s\non=%s\nrecents=false\n\n' "$detail" "$on"
     printf 'action=open\ntitle=Select\n\n'
     if [ "$running" = 1 ]; then
       printf 'row=Turn off\nrun=off\n\n'

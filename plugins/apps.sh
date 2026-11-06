@@ -2,10 +2,10 @@
 # symbol=square.grid.2x2
 # subtitle=Open app
 # key=a
-# read=open
+# read=panel
 # rank=2
 case "$1" in
-  "")
+  read)
     printf 'action=reveal\ntitle=Show in Finder\nkey=cmd+return\nclose=true\n\n'
     {
       find /Applications /System/Applications "$HOME/Applications" -maxdepth 3 -name '*.app' -prune 2>/dev/null

@@ -31,8 +31,8 @@ final class SpotSandboxModel {
         let file = path.map { URL(fileURLWithPath: $0) }
         self.file = file
         if let file, FileManager.default.isExecutableFile(atPath: file.path) {
-            let isLive = PluginHeader(url: file).block.flag("live") ?? false
-            sheet = SpotSheet(command: PluginCommand(id: file.lastPathComponent, name: file.lastPathComponent, url: file, kind: .list, isLive: isLive))
+            let stays = PluginHeader(url: file).block.flag("stay") ?? false
+            sheet = SpotSheet(command: PluginCommand(id: file.lastPathComponent, name: file.lastPathComponent, url: file, kind: .list, stays: stays))
         } else {
             sheet = nil
         }

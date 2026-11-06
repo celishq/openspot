@@ -2,6 +2,17 @@ import XCTest
 @testable import OpenspotCore
 
 final class PluginOutputTests: XCTestCase {
+    func testAScriptPrintsWhoSearchesItsRowsAndWhetherRecentPicksMoveUp() {
+        let plain = PluginOutput(text: "row=A\nrun=a\n")
+        let printed = PluginOutput(text: "search=script\nrecents=false\n\nrow=A\nrun=a\n")
+
+        XCTAssertEqual(plain.search, .local)
+        XCTAssertTrue(plain.keepsRecent)
+        XCTAssertEqual(printed.search, .script)
+        XCTAssertFalse(printed.keepsRecent)
+        XCTAssertEqual(printed.errors, [])
+    }
+
     func testSortsBlocksByTheKeyThatSaysWhatTheyAre() {
         let output = PluginOutput(text: """
         title=Caffeinate

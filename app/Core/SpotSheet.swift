@@ -41,7 +41,7 @@ public final class SpotSheet {
     public init(command: PluginCommand, recent: [String] = [], prepare: @escaping ([SpotItem]) async -> Void = { _ in }) {
         self.command = command
         self.prepare = prepare
-        list = ItemList(recent: recent, search: command.search)
+        list = ItemList(recent: recent)
     }
 
     nonisolated deinit {}
@@ -51,21 +51,17 @@ public final class SpotSheet {
         self.command = command
     }
 
-    /// Opens the sheet with its search kept. `onReady` runs now, or for a live script with its first frame.
+    /// Opens the sheet with its search kept. `onReady` runs now, or for a staying script with its first frame.
     public func open(onReady: @escaping () -> Void) {
         isOpen = true
         list.selectFirst()
-        if command.isLive {
+        if command.stays {
             ready = onReady
             startLive()
             return
         }
         onReady()
-        if command.search == .live {
-            ask()
-        } else {
-            read()
-        }
+        read()
     }
 
     /// Stops what only an open sheet needs. A read that has given no frame yet goes on, and fills its list.
@@ -82,14 +78,14 @@ public final class SpotSheet {
     }
 
     /// Asks the script for its rows and parts. A newer read replaces this one. A script that keeps printing changes its open
-    /// sheet until a newer call or the end of the sheet stops it. A live script answers only while its sheet is open.
+    /// sheet until a newer call or the end of the sheet stops it. A staying script answers only while its sheet is open.
     public func read(selecting run: String? = nil) {
         guard command.kind == .list else { return }
-        if command.isLive {
+        if command.stays {
             if isOpen { startLive() }
             return
         }
-        guard command.search == .local else { return }
+        guard list.search == .local else { return ask() }
         list.beginLoading()
         reading?.cancel()
         isStreaming = false
@@ -123,9 +119,9 @@ public final class SpotSheet {
         }
     }
 
-    /// Takes new text in the search, and asks a live list about it.
+    /// Takes new text in the search, and asks the script about it when the script searches.
     public func search(_ text: String) {
-        if list.search(text), command.search == .live { ask() }
+        if list.search(text), list.search == .script { ask() }
     }
 
     /// Takes a value the person set, so that it shows at once, and tells the script after a pause that fits the control.
@@ -148,9 +144,11 @@ public final class SpotSheet {
 
     private func takeItems(_ lines: PluginOutput, frame: String, selecting run: String?) async {
         keep(lines)
+        list.take(search: lines.search)
         takePanel(lines)
         list.replace(lines.items)
         if let run { list.select(run: run) }
+        if list.search == .script, !list.query.isEmpty { ask() }
         onReport(.frame(frame))
         await prepare(lines.items)
         if !lines.errors.isEmpty {
@@ -189,9 +187,11 @@ public final class SpotSheet {
         isStreaming = false
     }
 
-    /// Asks a live script for its sheet, and starts the script if it is not running.
+    /// Asks a staying script for its sheet, and starts the script if it is not running. A new run gets no values.
     private func startLive() {
+        var values = panel?.values
         if live == nil {
+            values = nil
             let script = LiveScript(url: command.url, timeout: Self.itemsTimeout)
             do {
                 let frames = try script.start()
@@ -201,10 +201,10 @@ public final class SpotSheet {
                 return fail(error)
             }
         }
-        live?.send(.read)
+        live?.send(.read, values: values)
     }
 
-    /// Takes each frame of a live script until it ends. Its first frame replaces what an earlier run left.
+    /// Takes each frame of a staying script until it ends. Its first frame replaces what an earlier run left.
     private func follow(_ script: LiveScript, _ frames: AsyncThrowingStream<String, Error>) async {
         var isFirst = true
         do {
@@ -229,7 +229,7 @@ public final class SpotSheet {
         if live === script { live = nil }
     }
 
-    /// Asks a live list about its current search. A newer search stops the older one.
+    /// Asks the script about the current search. A newer search stops the older one.
     private func ask() {
         let query = list.query
         searching?.cancel()
@@ -239,6 +239,7 @@ public final class SpotSheet {
                 await prepare(lines.items)
                 guard !Task.isCancelled else { return }
                 keep(lines)
+                list.take(search: lines.search)
                 list.answer(lines.items, to: query)
             } catch {
                 guard !Task.isCancelled else { return }
@@ -249,19 +250,19 @@ public final class SpotSheet {
     }
 
     /// Runs one change of a sheet of parts. A newer change stops it, and only the newest answer shows. A script that prints
-    /// no parts is read again. A live script takes the change as an event.
+    /// no parts is read again. A staying script takes the change as a block.
     private func change(_ action: SpotAction, generation: Int, pause: Duration? = nil, keeping: String? = nil, closes: Bool = false) {
         changing?.cancel()
         stopStream()
-        if command.isLive, pause == nil {
-            live?.send(action)
+        if command.stays, pause == nil {
+            live?.send(action, values: panel?.values)
             return
         }
         changing = Task {
             if let pause { try? await Task.sleep(for: pause) }
             guard !Task.isCancelled, let values = panel?.values else { return }
-            if command.isLive {
-                live?.send(action)
+            if command.stays {
+                live?.send(action, values: values)
                 return
             }
             var isFirst = true

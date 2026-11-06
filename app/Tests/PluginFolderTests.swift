@@ -56,8 +56,8 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertFalse(command.readsState)
         XCTAssertEqual(command.pick, .close)
         XCTAssertFalse(command.isGlobal)
-        XCTAssertEqual(command.search, .local)
-        XCTAssertTrue(command.keepsRecent)
+        XCTAssertFalse(command.stays)
+        XCTAssertEqual(command.click.arguments, [])
     }
 
     func testEachExecutableInAFolderIsASpot() throws {
@@ -77,9 +77,9 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testReadSaysWhatKindOfSpotItIsBeforeAnyRun() throws {
-        try write("click.sh", header: "read=click")
-        try write("open.sh", header: "read=open")
-        try write("ranked.sh", header: "read=open\nrank=3\nrecents=false")
+        try write("a.sh", header: "read=sheet")
+        try write("b.sh", header: "read=panel")
+        try write("c.sh", header: "read=panel\nrank=3")
 
         let commands = try scan.commands
 
@@ -87,7 +87,71 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(commands.map(\.readsState), [false, true, false])
         XCTAssertEqual(commands[2].rank, 3)
         XCTAssertTrue(commands[2].isGlobal)
-        XCTAssertFalse(commands[2].keepsRecent)
+    }
+
+    func testReadIsAListOfMoments() throws {
+        try write("a.sh", header: "read=panel, sheet,launch,wake,30\nkey=a")
+
+        let read = try XCTUnwrap(try scan.commands.first?.read)
+
+        XCTAssertEqual(read.moments, [.panel, .sheet, .launch, .wake, .every(30)])
+        XCTAssertEqual(read.seconds, 30)
+    }
+
+    func testAMomentThatOnlyALaterPhaseActsOnReadsNothingOnAPanelOpen() throws {
+        try write("a.sh", header: "read=launch")
+        try write("b.sh", header: "read=wake")
+
+        let commands = try scan.commands
+
+        XCTAssertEqual(commands.map(\.kind), [.launch, .launch])
+        XCTAssertEqual(commands.map(\.readsState), [false, false])
+    }
+
+    func testAHeaderKeepsTheFilesItsCardTakes() throws {
+        try write("a.sh", header: "drop=mov, mkv,folder")
+        try write("b.sh")
+
+        XCTAssertEqual(try scan.commands.map(\.drop), [["mov", "mkv", "folder"], []])
+    }
+
+    func testANumberInAListOfMomentsWithNoKeyHasNoSpot() throws {
+        try write("a.sh", header: "read=panel,30")
+
+        let scan = try scan
+
+        XCTAssertEqual(scan.commands, [])
+        XCTAssertEqual(scan.metrics.map(\.refresh), [30])
+    }
+
+    func testAStayingScriptIsAList() throws {
+        try write("a.sh", header: "stay=true")
+
+        let command = try XCTUnwrap(try scan.commands.first)
+
+        XCTAssertTrue(command.stays)
+        XCTAssertEqual(command.kind, .list)
+    }
+
+    func testOldHeaderKeysHaveNoEffect() throws {
+        try write("a.sh", header: "live=true\nsearch=live\nrecents=false")
+
+        let command = try XCTUnwrap(try scan.commands.first)
+
+        XCTAssertEqual(try scan.refused, [])
+        XCTAssertFalse(command.stays)
+        XCTAssertEqual(command.kind, .launch)
+        XCTAssertTrue(command.keepsRecent)
+    }
+
+    func testARankNeedsAMomentOutsideTheSheet() throws {
+        try write("a.sh", header: "read=panel\nrank=1")
+        try write("b.sh", header: "read=launch\nrank=2")
+        try write("c.sh", header: "read=30\nrank=3\nkey=c")
+
+        XCTAssertEqual(try scan.refused, [])
+        XCTAssertEqual(try scan.commands.map(\.rank), [1, 2, 3])
+        XCTAssertEqual(try scan.commands.map(\.kind), [.list, .list, .list])
     }
 
     func testANumberAsTheReadIsAMetricWithNoSpot() throws {
@@ -123,40 +187,36 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(try scan.commands.map(\.id), ["c", "b", "d", "a"])
     }
 
-    func testAListCanSearchLive() throws {
-        try write("one.sh", header: "read=click\nsearch=live")
-
-        XCTAssertEqual(try scan.commands.first?.search, .live)
-    }
-
     func testRefusesAHeaderWithAFault() throws {
         try write("a.sh", header: "read=sometimes")
         try write("b.sh", header: "size=huge")
         try write("c.sh", header: "key=ctrl+d")
-        try write("d.sh", header: "search=later")
-        try write("e.sh", header: "read=open\nrank=first")
+        try write("e.sh", header: "read=panel\nrank=first")
         try write("f.sh", header: "rank=1")
-        try write("g.sh", header: "read=open\nsearch=live")
-        try write("h.sh", header: "read=click\nsearch=live\nrank=1")
+        try write("h.sh", header: "read=sheet\nrank=1")
         try write("i.sh", header: "order=last")
+        try write("j.sh", header: "read=open")
+        try write("k.sh", header: "read=click")
+        try write("l.sh", header: "read=panel,later")
 
         XCTAssertEqual(try scan.plugins, [])
         XCTAssertEqual(try scan.refused, [
-            Refusal(file: "a", reason: "A has an unknown read: sometimes. Use click, open or a number of seconds"),
+            Refusal(file: "a", reason: "A has an unknown read: sometimes. Use panel, sheet, launch, wake or a number of seconds"),
             Refusal(file: "b", reason: "B has an unknown size: huge"),
             Refusal(file: "c", reason: "C has an unknown key: ctrl+d"),
-            Refusal(file: "d", reason: "D has an unknown search: later"),
             Refusal(file: "e", reason: "E needs a number as its rank"),
-            Refusal(file: "f", reason: "F needs read=open to join the main search"),
-            Refusal(file: "g", reason: "G needs read=click to search live"),
-            Refusal(file: "h", reason: "H needs read=open to join the main search"),
-            Refusal(file: "i", reason: "I needs a number as its order")
+            Refusal(file: "f", reason: "F needs panel, launch or a number in its read to join the main search"),
+            Refusal(file: "h", reason: "H needs panel, launch or a number in its read to join the main search"),
+            Refusal(file: "i", reason: "I needs a number as its order"),
+            Refusal(file: "j", reason: "J has an unknown read: open. Use panel, sheet, launch, wake or a number of seconds"),
+            Refusal(file: "k", reason: "K has an unknown read: click. Use panel, sheet, launch, wake or a number of seconds"),
+            Refusal(file: "l", reason: "L has an unknown read: panel,later. Use panel, sheet, launch, wake or a number of seconds")
         ])
     }
 
     func testAScanDoesNotRunAScript() throws {
         let marker = folder.appendingPathComponent("marker")
-        try write("one.sh", header: "read=open", body: "touch '\(marker.path)'")
+        try write("one.sh", header: "read=panel", body: "touch '\(marker.path)'")
         try write("two.sh", body: "touch '\(marker.path)'")
 
         _ = try scan

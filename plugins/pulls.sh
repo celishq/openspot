@@ -38,7 +38,7 @@ pulls() {
 }
 
 case "$1" in
-  "")
+  read)
     list=$(pulls) || exit 1
     printf 'action=copy\ntitle=Copy link\nkey=cmd+return\nclose=true\n\n'
     printf '%s' "$list" | jq -r "$defs"'.[] | "row=\(.title | esc)\ndetail=\(about)\nrun=\(.url | esc)\nsymbol=\({good: "checkmark.circle", bad: "xmark.circle", warn: "clock"}[tone // ""] // "arrow.triangle.pull")"

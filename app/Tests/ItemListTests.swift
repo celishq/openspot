@@ -2,6 +2,17 @@ import XCTest
 @testable import OpenspotCore
 
 final class ItemListTests: XCTestCase {
+    func testAListThatLearnsTheScriptSearchesWaitsForAnAnswerToItsText() {
+        var list = ItemList(items: [SpotItem(title: "Notes", run: "n"), SpotItem(title: "Mail", run: "m")])
+        list.search("no")
+        XCTAssertEqual(list.shown.map(\.title), ["Notes"])
+
+        list.take(search: .script)
+
+        XCTAssertTrue(list.isWaiting)
+        XCTAssertEqual(list.shown.count, 2)
+    }
+
     private func items(_ titles: String...) -> [SpotItem] {
         titles.map { SpotItem(title: $0, run: $0) }
     }
@@ -129,7 +140,7 @@ final class ItemListTests: XCTestCase {
     }
 
     func testALiveListShowsWhatThePluginAnswersWithoutFilteringIt() {
-        var list = ItemList(search: .live)
+        var list = ItemList(search: .script)
         list.search("rep")
 
         list.answer(items("Annual", "Report"), to: "rep")
@@ -138,7 +149,7 @@ final class ItemListTests: XCTestCase {
     }
 
     func testALiveListDropsAnAnswerToAnOlderSearch() {
-        var list = ItemList(search: .live)
+        var list = ItemList(search: .script)
         list.search("re")
         list.search("rep")
 
@@ -149,7 +160,7 @@ final class ItemListTests: XCTestCase {
     }
 
     func testALiveListKeepsItsRowsWhileItWaits() {
-        var list = ItemList(search: .live)
+        var list = ItemList(search: .script)
         list.search("re")
         list.answer(items("Report"), to: "re")
 
