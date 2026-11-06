@@ -8,6 +8,7 @@ struct SpotSheetView: View {
     let rect: CGRect
     let form: FormDraft?
     let panel: SpotPanel?
+    let work: (SpotPart) -> ScriptCall?
     let onSet: (SpotPart, String) -> Void
     let onPress: (SpotPart) -> Void
     let recordingPart: String?
@@ -29,7 +30,7 @@ struct SpotSheetView: View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             header
             if let panel {
-                SpotPanelView(panel: panel, onSet: onSet, onPress: onPress, recordingPart: recordingPart, onRecord: onRecord)
+                SpotPanelView(panel: panel, work: work, onSet: onSet, onPress: onPress, recordingPart: recordingPart, onRecord: onRecord)
             } else if let form {
                 SpotFormView(draft: form, onValue: onFormValue)
             } else {
@@ -57,10 +58,11 @@ struct SpotSheetView: View {
             HStack(spacing: SpotTokens.padding - 5) {
                 glyph
                 VStack(alignment: .leading, spacing: SpotType.lineGap) {
-                    Text(form?.form.title ?? entry.state.title)
+                    Text(form?.form.title ?? entry.shownState.title)
                         .font(SpotType.title)
                         .foregroundStyle(showsFill ? Color.black.opacity(SpotTokens.titleOpacity) : Color.white.opacity(SpotTokens.titleOpacity))
-                    if form == nil, let subtitle = entry.state.subtitle {
+                        .lineLimit(1)
+                    if form == nil, let subtitle = entry.shownState.subtitle {
                         Text(subtitle)
                             .font(SpotType.detail)
                             .modifier(SpotSecondaryText(isOnWhite: showsFill))
@@ -75,12 +77,18 @@ struct SpotSheetView: View {
 
     /// The card's glyph, placed as the card places it until the sheet opens.
     private var glyph: some View {
-        Image(systemName: entry.symbol)
-            .font(.system(size: 17, weight: .semibold))
-            .foregroundStyle(showsFill ? Color.accentColor : Color.white)
-            .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
-            .background(Color.white.opacity(showsSmallCard || showsFill ? 0 : 0.2), in: Circle())
-            .offset(x: showsSmallCard ? (SpotTokens.cell - SpotTokens.glyphSize) / 2 - SpotTokens.padding : 0)
+        Group {
+            if let call = entry.work {
+                SpotWorkMark(call: call, isOnWhite: showsFill)
+            } else {
+                Image(systemName: entry.symbol)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(showsFill ? Color.accentColor : Color.white)
+                    .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+                    .background(Color.white.opacity(showsSmallCard || showsFill ? 0 : 0.2), in: Circle())
+            }
+        }
+        .offset(x: showsSmallCard ? (SpotTokens.cell - SpotTokens.glyphSize) / 2 - SpotTokens.padding : 0)
     }
 
     /// Whether the sheet still lies on a 1x1 card, which shows its glyph alone.

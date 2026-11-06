@@ -15,9 +15,16 @@ final class SheetStreamTests: XCTestCase {
 
     private func script(_ body: String) throws -> URL {
         let url = folder.appendingPathComponent("script.sh")
-        try "#!/bin/sh\n\(body)\n".write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        try "#!/bin/sh\n\(body)\n".writeScript(to: url)
         return url
+    }
+
+    private func wait(until fact: () -> Bool) async throws {
+        for _ in 0..<500 {
+            if fact() { return }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTFail("waited too long")
     }
 
     func testAMarkEndsAFrameWhereverAChunkStops() {
@@ -34,7 +41,7 @@ final class SheetStreamTests: XCTestCase {
         let url = try script("printf 'part=a\\ntitle=A\\n'")
         var frames: [String] = []
 
-        for try await frame in PluginRun(url: url, arguments: [], timeout: 5).frames() { frames.append(frame) }
+        for try await frame in try ScriptProcess(url: url, limit: 5).start() { frames.append(frame) }
 
         XCTAssertEqual(frames, ["part=a\ntitle=A\n"])
     }
@@ -43,7 +50,7 @@ final class SheetStreamTests: XCTestCase {
         let url = try script("printf 'part=a\\n---\\n'\nsleep 30")
         let started = Date()
 
-        for try await frame in PluginRun(url: url, arguments: [], timeout: 5).frames() {
+        for try await frame in try ScriptProcess(url: url, limit: 5).start() {
             XCTAssertEqual(frame, "part=a\n")
             break
         }
@@ -53,10 +60,10 @@ final class SheetStreamTests: XCTestCase {
 
     func testEndingTheStreamStopsTheScript() async throws {
         let marker = folder.appendingPathComponent("alive")
-        let url = try script("printf 'part=a\\n---\\n'\nsleep 2\ntouch '\(marker.path)'")
+        let url = try script("printf 'part=a\\n---\\n'\nsleep 0.3\ntouch '\(marker.path)'")
 
-        for try await _ in PluginRun(url: url, arguments: [], timeout: 5).frames() { break }
-        try await Task.sleep(for: .seconds(3))
+        for try await _ in try ScriptProcess(url: url, limit: 5).start() { break }
+        try await Task.sleep(for: .seconds(0.5))
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))
     }
@@ -64,22 +71,22 @@ final class SheetStreamTests: XCTestCase {
     func testOnlyTheFirstFrameHasATimeLimit() async throws {
         let silent = try script("sleep 30")
         do {
-            for try await _ in PluginRun(url: silent, arguments: [], timeout: 0.3).frames() {}
+            for try await _ in try ScriptProcess(url: silent, limit: 0.3).start() {}
             XCTFail("It should time out.")
         } catch {
             XCTAssertEqual(error as? PluginError, .timedOut)
         }
 
-        let slow = try script("printf 'part=a\\n---\\n'\nsleep 1\nprintf 'part=b\\n---\\n'")
+        let slow = try script("printf 'part=a\\n---\\n'\nsleep 0.5\nprintf 'part=b\\n---\\n'")
         var frames: [String] = []
-        for try await frame in PluginRun(url: slow, arguments: [], timeout: 0.3).frames() { frames.append(frame) }
+        for try await frame in try ScriptProcess(url: slow, limit: 0.3).start() { frames.append(frame) }
         XCTAssertEqual(frames, ["part=a\n", "part=b\n"])
     }
 
     func testAFailureReportsItsLastErrorLine() async throws {
         let url = try script("echo first >&2\necho last >&2\nexit 3")
         do {
-            for try await _ in PluginRun(url: url, arguments: [], timeout: 5).frames() {}
+            for try await _ in try ScriptProcess(url: url, limit: 5).start() {}
             XCTFail("It should fail.")
         } catch {
             XCTAssertEqual(error as? PluginError, .failed(3, "last"))
@@ -117,6 +124,7 @@ final class SheetStreamTests: XCTestCase {
         XCTAssertEqual(SpotAction.read.event(), "name=read\n\n")
         XCTAssertEqual(SpotAction.press("swap").event(), "name=swap\n\n")
         XCTAssertEqual(SpotAction.set("input", to: "one\ntwo").event(), "name=input\nvalue=one\\ntwo\n\n")
+        XCTAssertEqual(SpotAction.drop(paths: ["/a b.mov", "-rf.mov"]).event(), "name=drop\nvalue=/a b.mov\nvalue=-rf.mov\n\n")
     }
 
     func testAnEventHoldsEachValueOfTheSheet() {
@@ -135,7 +143,7 @@ final class SheetStreamTests: XCTestCase {
           [ -n "$line" ] || { count=$((count + 1)); printf 'part=a\\ntitle=%s\\n---\\n' "$count"; }
         done
         """)
-        let live = LiveScript(url: url, timeout: 5)
+        let live = ScriptProcess(url: url, mode: .stays, limit: 5)
         var frames = try live.start().makeAsyncIterator()
 
         live.send(.read)
@@ -145,7 +153,7 @@ final class SheetStreamTests: XCTestCase {
 
         XCTAssertEqual(first, "part=a\ntitle=1\n")
         XCTAssertEqual(second, "part=a\ntitle=2\n")
-        live.stop()
+        live.end()
     }
 
     func testAnEventSentJustBeforeTheStopStillRuns() async throws {
@@ -155,26 +163,21 @@ final class SheetStreamTests: XCTestCase {
           case "$line" in name=copy) sleep 0.3; touch '\(marker.path)' ;; esac
         done
         """)
-        let live = LiveScript(url: url, timeout: 5)
+        let live = ScriptProcess(url: url, mode: .stays, limit: 5)
         _ = try live.start()
 
         live.send(.press("copy"))
-        live.stop()
-        try await Task.sleep(for: .seconds(1))
-
-        XCTAssertTrue(FileManager.default.fileExists(atPath: marker.path))
-        XCTAssertFalse(live.isRunning)
+        live.end()
+        try await wait(until: { FileManager.default.fileExists(atPath: marker.path) && !live.isRunning })
     }
 
     func testAScriptThatIgnoresTheEndOfItsInputIsStopped() async throws {
         let url = try script("trap '' HUP\nwhile :; do sleep 0.1; done")
-        let live = LiveScript(url: url, timeout: 5)
+        let live = ScriptProcess(url: url, mode: .stays, limit: 5, stopPause: 0.2)
         _ = try live.start()
 
-        live.stop()
-        try await Task.sleep(for: .seconds(4))
-
-        XCTAssertFalse(live.isRunning)
+        live.end()
+        try await wait(until: { !live.isRunning })
     }
 
     func testAScriptThatStaysIsAList() throws {

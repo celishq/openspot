@@ -49,7 +49,8 @@ final class SettingsTests: XCTestCase {
     }
 
     func testARecordedKeyGoesToTheFileAndTheSheetReadsItAgain() async throws {
-        let sheet = SpotSheet(command: try spot)
+        let runs = SpotRuns()
+        let sheet = runs.sheet(for: try spot)
         sheet.open {}
         for _ in 0..<200 where sheet.panel == nil { try await Task.sleep(for: .milliseconds(5)) }
         let part = try XCTUnwrap(sheet.panel?.parts.first)
@@ -63,7 +64,7 @@ final class SettingsTests: XCTestCase {
 
     func testAKeyItCannotUseLeavesTheFile() async throws {
         do {
-            _ = try await spot.change(SpotAction.set("panel_key", to: "k"), values: "", timeout: 1)
+            _ = try await SpotRuns().answer(of: spot, .set("panel_key", to: "k"), input: "", limit: 1)
             XCTFail("took a bad key")
         } catch {
             XCTAssertFalse(FileManager.default.fileExists(atPath: file.url.path))

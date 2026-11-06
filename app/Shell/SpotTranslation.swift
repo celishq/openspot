@@ -18,9 +18,28 @@ enum SpotTranslation {
         return ([summary] + blocks).map(\.text).joined(separator: "\n")
     }
 
+    /// The helper that keeps each pair of languages loaded (K2).
+    static let capability = Capability(name: "translate")
+
+    /// Asks the helper to translate the text, and returns its answer.
+    static func call(text: String, from: String?, to: String?) throws -> String {
+        let pairs = [("from", from), ("to", to), ("text", text)]
+        let request = TextBlock(fields: pairs.compactMap { key, value in value.map { .init(key: key, value: $0) } }).text
+        return String(decoding: try capability.call(Data(request.utf8)), as: UTF8.self)
+    }
+
+    /// Runs as the helper: answers each request, and says `status=failed` when macOS cannot translate it.
+    static func serve() -> Never {
+        capability.serve { request in
+            let block = TextBlock.blocks(in: String(decoding: request, as: UTF8.self)).first ?? TextBlock(fields: [])
+            let answer = try? await answer(to: block.value("text") ?? "", from: block.value("from"), to: block.value("to"))
+            return Data((answer ?? reply(status: "failed")).utf8)
+        }
+    }
+
     /// Translates the text. No input language means that it finds one, and no output language means the first that the
     /// person prefers apart from the input. A block says what happened: `text` on success, or else `status`.
-    static func answer(to text: String, from: String?, to: String?) async throws -> String {
+    private static func answer(to text: String, from: String?, to: String?) async throws -> String {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return "" }
         guard let code = from ?? NLLanguageRecognizer.dominantLanguage(for: text)?.rawValue else {
             return reply(status: "unknown")
@@ -34,27 +53,6 @@ enum SpotTranslation {
         case .supported: return reply(status: "missing", from: code, to: target)
         default: return reply(status: "unsupported", from: code, to: target)
         }
-    }
-
-    /// Answers one block at a time until its input ends: `text`, `from` and `to` in, then the answer and a line `---` out.
-    /// It stays running, so each pair of languages stays loaded between answers.
-    static func serve() -> Never {
-        Task.detached {
-            var fields: [String] = []
-            while let line = readLine() {
-                guard line.isEmpty else {
-                    fields.append(line)
-                    continue
-                }
-                let block = TextBlock.blocks(in: fields.joined(separator: "\n")).first ?? TextBlock(fields: [])
-                fields = []
-                let from = block.value("from").flatMap { $0 == "auto" ? nil : $0 }
-                let reply = (try? await answer(to: block.value("text") ?? "", from: from, to: block.value("to"))) ?? Self.reply(status: "failed")
-                FileHandle.standardOutput.write(Data((reply + "---\n").utf8))
-            }
-            exit(0)
-        }
-        dispatchMain()
     }
 
     @MainActor private static var sessions: [String: TranslationSession] = [:]

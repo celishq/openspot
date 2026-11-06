@@ -127,6 +127,32 @@ final class SamplePluginsTests: XCTestCase {
         XCTAssertEqual(stopped.on, false)
     }
 
+    func testCaffeinateMovesItsRecordIntoPlace() async throws {
+        let caffeinate = try XCTUnwrap(try scan.commands.first { $0.name == "Caffeinate" })
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-record-\(UUID().uuidString)")
+        let tools = folder.appendingPathComponent("tools")
+        try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
+        let log = folder.appendingPathComponent("moved")
+        let move = tools.appendingPathComponent("mv")
+        try "#!/bin/sh\necho \"$2\" >> '\(log.path)'\nexec /bin/mv \"$@\"\n".writeScript(to: move)
+        let before = ProcessInfo.processInfo.environment
+        setenv("TMPDIR", folder.path, 1)
+        setenv("PATH", "\(tools.path):/usr/bin:/bin", 1)
+        defer {
+            if let tmp = before["TMPDIR"] { setenv("TMPDIR", tmp, 1) } else { unsetenv("TMPDIR") }
+            if let path = before["PATH"] { setenv("PATH", path, 1) }
+            try? FileManager.default.removeItem(at: folder)
+        }
+
+        try await caffeinate.perform(.item(SpotItem(title: "1 minute", run: "60")), timeout: 5)
+        let moved = try? String(contentsOf: log, encoding: .utf8)
+        let started = try await caffeinate.state(timeout: 5)
+        try await caffeinate.perform(.item(SpotItem(title: "Turn off", run: "off")), timeout: 5)
+
+        XCTAssertEqual(moved, folder.appendingPathComponent("openspot-caffeinate").path + "\n")
+        XCTAssertEqual(started.on, true)
+    }
+
     func testLinksComeBeforeAppsInTheMainSearch() throws {
         let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
         let apps = try XCTUnwrap(try scan.commands.first { $0.name == "Apps" })
@@ -170,8 +196,7 @@ final class SamplePluginsTests: XCTestCase {
             ("osascript", "cp '\(folder.path)/clipboard' '\(folder.path)/pasted'")
         ] {
             let tool = tools.appendingPathComponent(name)
-            try "#!/bin/sh\n\(script)\n".write(to: tool, atomically: true, encoding: .utf8)
-            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: tool.path)
+            try "#!/bin/sh\n\(script)\n".writeScript(to: tool)
         }
         let home = ProcessInfo.processInfo.environment["HOME"]
         let path = ProcessInfo.processInfo.environment["PATH"]
@@ -525,8 +550,7 @@ final class SamplePluginsTests: XCTestCase {
 
     /// Runs the color picker with a stand-in for the openspot command, which prints this answer.
     private func pickColor(answer: String, in folder: URL) async throws -> String? {
-        try "#!/bin/sh\n[ \"$1 $2\" = 'color pick' ] && printf '%s' '\(answer)'\n".write(to: folder.appendingPathComponent("tools/openspot"), atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: folder.appendingPathComponent("tools/openspot").path)
+        try "#!/bin/sh\n[ \"$1 $2\" = 'color pick' ] && printf '%s' '\(answer)'\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
         let picker = try XCTUnwrap(try scan.commands.first { $0.name == "Color picker" })
         return try await picker.perform(picker.click, timeout: 5)
     }
@@ -546,31 +570,26 @@ final class SamplePluginsTests: XCTestCase {
 
     /// Puts a stand-in for the openspot command on the path. It knows two languages and translates to upper case.
     private func fakeTranslate(in folder: URL, status: String? = nil) throws -> PluginCommand {
-        let reply = status.map { "printf 'status=\($0)\\nfrom=ru\\nto=en\\n---\\n'" } ?? """
+        let reply = status.map { "printf 'status=\($0)\\nfrom=ru\\nto=en\\n'" } ?? #"""
         case "$text" in *[а-я]*) found=ru ;; *) found=en ;; esac
         [ "$from" = auto ] || found=$from
-        printf 'text=%s\\nfrom=%s\\n---\\n' "$(printf '%s' "$text" | tr a-mo-z A-MO-Z)" "$found"
-        """
+        written=$(printf %s "$text" | tr a-mo-z A-MO-Z | sed 's/\\/\\\\/g' | awk 'NR > 1 { printf "\\n" } { printf "%s", $0 }')
+        printf 'text=%s\nfrom=%s\n' "$written" "$found"
+        """#
         let script = """
         #!/bin/sh
         if [ "$2" = languages ]; then
           printf 'preferred=en\\npreferred=ru\\n\\nlanguage=en\\nname=English\\n\\nlanguage=ru\\nname=Russian\\n'
           exit 0
         fi
-        while IFS= read -r line; do
-          case "$line" in
-            text=*) text=${line#text=} ;;
-            from=*) from=${line#from=} ;;
-            '')
-              \(reply)
-              ;;
-          esac
-        done
+        from=$3
+        text=$(cat; printf x)
+        text=${text%x}
+        \(reply)
 
         """
         let tool = folder.appendingPathComponent("tools/openspot")
-        try script.write(to: tool, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: tool.path)
+        try script.writeScript(to: tool)
         return try XCTUnwrap(try scan.commands.first { $0.name == "Translate" })
     }
 
@@ -578,17 +597,18 @@ final class SamplePluginsTests: XCTestCase {
         output.parts.first { $0.id == id }?.value
     }
 
-    /// Runs a staying script through the calls, and returns the frame that answers the last one.
-    private func drive(_ command: PluginCommand, _ actions: [SpotAction]) async throws -> PluginOutput {
-        let live = LiveScript(url: command.url, timeout: 10)
-        defer { live.stop() }
-        var frames = try live.start().makeAsyncIterator()
-        var last = ""
-        for action in [SpotAction.read] + actions {
-            live.send(action)
-            last = try await frames.next() ?? ""
+    /// Runs a handler through the calls as an open sheet does: one run for each, with the values of the sheet on stdin.
+    /// Returns the answer to the last one.
+    @MainActor
+    private static func drive(_ command: PluginCommand, _ actions: [SpotAction]) async throws -> PluginOutput {
+        var last = try await command.items(timeout: 10)
+        var panel = try XCTUnwrap(SpotPanel(output: last))
+        for action in actions {
+            if action.arguments.count == 2 { panel.set(action.arguments[1], of: action.arguments[0]) }
+            last = PluginOutput(text: try await SpotRuns().answer(of: command, action, input: panel.values, limit: 30))
+            panel.take(last, answering: panel.generation)
         }
-        return PluginOutput(text: last)
+        return last
     }
 
     func testTranslateIsASheetOfPartsWithItsLanguagesAndNoFaults() async throws {
@@ -597,7 +617,8 @@ final class SamplePluginsTests: XCTestCase {
 
             let output = try await translate.items(timeout: 10)
 
-            XCTAssertTrue(translate.stays)
+            XCTAssertFalse(translate.stays)
+            XCTAssertEqual(translate.read, .sheet)
             XCTAssertEqual(translate.kind, .list)
             XCTAssertEqual(output.kind, .list)
             XCTAssertEqual(output.sheetFaults, [])
@@ -612,7 +633,7 @@ final class SamplePluginsTests: XCTestCase {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder)
 
-            let output = try await self.drive(translate, [.set("source", to: "ru"), .set("target", to: "en"), .set("input", to: "hi")])
+            let output = try await Self.drive(translate, [.set("source", to: "ru"), .set("target", to: "en"), .set("input", to: "hi")])
 
             XCTAssertEqual(self.text(of: "output", in: output), "HI")
             XCTAssertEqual(output.parts.last?.id, "copy")
@@ -624,7 +645,7 @@ final class SamplePluginsTests: XCTestCase {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder)
 
-            let output = try await self.drive(translate, [.set("input", to: "hi")])
+            let output = try await Self.drive(translate, [.set("input", to: "hi")])
 
             XCTAssertEqual(self.text(of: "target", in: output), "ru")
         }
@@ -634,7 +655,7 @@ final class SamplePluginsTests: XCTestCase {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder)
 
-            let output = try await self.drive(translate, [.set("source", to: "ru"), .set("target", to: "en"), .set("input", to: "hi"), .press("swap")])
+            let output = try await Self.drive(translate, [.set("source", to: "ru"), .set("target", to: "en"), .set("input", to: "hi"), .press("swap")])
 
             XCTAssertEqual(self.text(of: "source", in: output), "en")
             XCTAssertEqual(self.text(of: "target", in: output), "ru")
@@ -646,7 +667,7 @@ final class SamplePluginsTests: XCTestCase {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder)
 
-            _ = try await self.drive(translate, [.set("source", to: "en"), .set("target", to: "ru")])
+            _ = try await Self.drive(translate, [.set("source", to: "en"), .set("target", to: "ru")])
             let output = try await translate.items(timeout: 10)
 
             XCTAssertEqual(self.text(of: "source", in: output), "en")
@@ -658,7 +679,7 @@ final class SamplePluginsTests: XCTestCase {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder, status: "missing")
 
-            let output = try await self.drive(translate, [.set("input", to: "привет")])
+            let output = try await Self.drive(translate, [.set("input", to: "привет")])
 
             XCTAssertEqual(self.text(of: "output", in: output), "Russian to English is not installed")
             XCTAssertEqual(output.parts.last?.id, "settings")
@@ -669,10 +690,68 @@ final class SamplePluginsTests: XCTestCase {
         try await withPrivateHome { folder in
             let translate = try self.fakeTranslate(in: folder)
 
-            let output = try await self.drive(translate, [.set("source", to: "ru"), .set("target", to: "en"), .set("input", to: "one\ntwo"), .press("copy")])
+            let output = try await Self.drive(translate, [.set("source", to: "ru"), .set("target", to: "en"), .set("input", to: "one\ntwo"), .press("copy")])
 
             XCTAssertEqual(output.summary?.value("toast"), "Copied")
             XCTAssertEqual(try self.read("clipboard", in: folder), "OnE\nTWO")
+        }
+    }
+
+    func testTranslateShowsNoTextOnANewOpenAndKeepsItsLanguages() async throws {
+        try await withPrivateHome { folder in
+            let translate = try self.fakeTranslate(in: folder)
+
+            _ = try await Self.drive(translate, [.set("source", to: "en"), .set("target", to: "ru"), .set("input", to: "hi")])
+            let output = try await translate.items(timeout: 10)
+
+            XCTAssertEqual(self.text(of: "input", in: output), "")
+            XCTAssertEqual(self.text(of: "output", in: output), "")
+            XCTAssertEqual(self.text(of: "source", in: output), "en")
+            XCTAssertEqual(self.text(of: "target", in: output), "ru")
+        }
+    }
+
+    func testTranslateMovesItsSavedFileIntoPlaceAndLeavesNoTempFile() async throws {
+        try await withPrivateHome { folder in
+            let translate = try self.fakeTranslate(in: folder)
+            let log = folder.appendingPathComponent("moved").path
+            let mover = folder.appendingPathComponent("tools/mv")
+            try "#!/bin/sh\necho \"$2\" >> '\(log)'\nexec /bin/mv \"$@\"\n".writeScript(to: mover)
+
+            _ = try await Self.drive(translate, [.set("target", to: "ru")])
+
+            let data = folder.appendingPathComponent(".config/openspot/data")
+            XCTAssertEqual(try self.read("moved", in: folder).split(separator: "\n").map { String($0.split(separator: "/").last ?? "") }, ["translate-languages", "translate"])
+            XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: data.path).sorted(), ["translate", "translate-languages"])
+            XCTAssertEqual(try String(contentsOf: data.appendingPathComponent("translate"), encoding: .utf8), "source=auto\ntarget=ru\n")
+        }
+    }
+
+    func testTranslateTakesABigPaste() async throws {
+        try await withPrivateHome { folder in
+            let translate = try self.fakeTranslate(in: folder)
+            let big = String(repeating: String(repeating: "a", count: 99) + "\\", count: 10_000)
+
+            let output = try await Self.drive(translate, [.set("source", to: "ru"), .set("target", to: "en"), .set("input", to: big)])
+
+            XCTAssertEqual(self.text(of: "output", in: output), big.uppercased())
+        }
+    }
+
+    func testTranslateShowsTheMessageOfACommandThatFails() async throws {
+        try await withPrivateHome { folder in
+            let translate = try self.fakeTranslate(in: folder)
+            let tool = folder.appendingPathComponent("tools/openspot")
+            let working = try String(contentsOf: tool, encoding: .utf8)
+            _ = try await translate.items(timeout: 10)
+            try "#!/bin/sh\ncat >/dev/null\necho 'could not start. Run it again.' >&2\nexit 1\n".write(to: tool, atomically: true, encoding: .utf8)
+            defer { try? working.write(to: tool, atomically: true, encoding: .utf8) }
+
+            let output = try await Self.drive(translate, [.set("input", to: "hi")])
+
+            XCTAssertEqual(self.text(of: "output", in: output), "could not start. Run it again.")
+            XCTAssertEqual(self.text(of: "input", in: output), "hi")
+            XCTAssertEqual(output.parts.last?.id, "swap")
         }
     }
 

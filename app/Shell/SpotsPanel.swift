@@ -11,11 +11,22 @@ final class SpotsPanel: NSPanel {
 
     /// Brings the panel to the front and starts its open motion.
     func show() {
+        model?.isOpenForDrag = false
+        open { makeKeyAndOrderFront(nil) }
+    }
+
+    /// Shows the panel under a drag with no change of focus: it does not become key, and it closes when the drag ends.
+    func showForDrag() {
+        model?.prepareForDrag()
+        open { orderFrontRegardless() }
+    }
+
+    private func open(ordering order: () -> Void) {
         model?.finishPick()
         model?.selected = 0
         model?.takeHeld(Self.modifiers(of: NSEvent.modifierFlags))
-        Task { await model?.reload() }
-        makeKeyAndOrderFront(nil)
+        model?.panelWillShow()
+        order()
         DispatchQueue.main.async { self.model?.isShown = true }
     }
 

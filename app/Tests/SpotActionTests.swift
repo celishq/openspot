@@ -44,4 +44,29 @@ final class SpotActionTests: XCTestCase {
         XCTAssertEqual(SpotAction.action(delete, item: SpotItem(title: "One", run: "1")).arguments, ["delete", "1"])
         XCTAssertEqual(SpotAction.action(delete, item: nil).arguments, ["delete"])
     }
+
+    func testAValueOver64KilobytesInBytesLeavesTheArguments() {
+        let long = String(repeating: "é", count: 32_769)
+
+        let sent = SpotAction.set("a", to: long).sent(input: "a=\(long)\nb=1\n")
+
+        XCTAssertEqual(sent.arguments, ["a"])
+        XCTAssertEqual(sent.input, "a=\(long)\nb=1\n")
+    }
+
+    func testALongRunJoinsTheValuesOfAFormAsValue() {
+        let long = String(repeating: "x", count: 65_537)
+
+        let sent = SpotAction(arguments: ["edit", long]).sent(input: "title=A\n")
+
+        XCTAssertEqual(sent.arguments, ["edit"])
+        XCTAssertEqual(sent.input, "title=A\nvalue=\(long)\n")
+    }
+
+    func testAShortValueStaysAndStdinDoesNotChange() {
+        let sent = SpotAction.set("a", to: "b").sent(input: nil)
+
+        XCTAssertEqual(sent.arguments, ["a", "b"])
+        XCTAssertNil(sent.input)
+    }
 }

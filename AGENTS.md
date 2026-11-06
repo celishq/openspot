@@ -6,6 +6,7 @@
   add or move a file. Targets:
   - `Core/` — the plugin contract and loading. Imports Foundation only.
   - `Shell/` — the menu bar app, the panel and the hotkey. Imports AppKit and SwiftUI.
+  - `StandIn/` — a small program for tests: a capability that needs no Mac feature. It does not ship.
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
 - `plans/` holds design plans. It is git-ignored.
 - `.temp/` holds throwaway mock-ups and screenshots. It is git-ignored.
@@ -32,11 +33,14 @@
 - A test proves behaviour through the public surface: inputs in, outputs out.
 - Fakes stand in only at I/O: the disk, the process, the clock.
 - Write the failing test first, then the code that passes it.
+- Write a script for a test with `writeScript(to:)`. macOS checks a new executable file on its first run, for 150 ms or more.
+- Give a test a short pause through a setting, such as `stopPause`, and keep one test of the real time. Wait for a fact; pause only to prove that nothing happened.
 
 ## Verify
 
 ```sh
-make verify   # the Core check, then the XCTest suite
+make verify                # the Core check, then the XCTest suite, with test classes in parallel
+make test T=SpotRunsTests  # one test class, while you work on it
 ```
 
 `make verify` runs `xcodegen generate` first, so the project file matches the folders on disk.
@@ -45,3 +49,15 @@ make verify   # the Core check, then the XCTest suite
 
 - The team is `NNK86LQK58` (set in `app/project.yml`). Local builds use ad-hoc signing (`CODE_SIGN_IDENTITY "-"`).
 - Do not commit a signing identity or a provisioning profile.
+
+## Release
+
+```sh
+make release V=1.2.3         # verify, build, notarize, then publish a GitHub release with the DMG and the update feed
+make release-build V=1.2.3   # only the signed DMG in .temp/release
+```
+
+- Release from a clean `main` that matches `origin/main`.
+- The Keychain must hold the update key (Sparkle account `openspot`) and the notary login (profile `openspot`). A release
+  stops and names the command for each one that is missing.
+- Published apps read the feed URL and the public key, so do not change the bundle ID, the team or the key.

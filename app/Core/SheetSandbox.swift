@@ -12,6 +12,19 @@ public struct SheetSandbox: Equatable, Sendable {
 
     public init() {}
 
+    /// The command that the sandbox calls for a file: it reads a file with a `read`, and clicks any other.
+    public static func command(file: URL) -> PluginCommand {
+        let header = PluginHeader(url: file).block
+        return PluginCommand(
+            id: file.lastPathComponent,
+            name: file.lastPathComponent,
+            url: file,
+            kind: .list,
+            read: header.value("read").flatMap(SpotRead.init(text:)),
+            stays: header.flag("stay") ?? false
+        )
+    }
+
     /// Reads a sheet that a person typed or a script printed.
     public mutating func take(text: String) {
         self.text = text

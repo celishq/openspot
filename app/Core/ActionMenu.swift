@@ -23,7 +23,12 @@ public struct ActionMenu: Equatable, Sendable {
 
     /// The first keys and the key of this menu, in words for a footer.
     public var hint: String {
-        let keys = rows.filter { !$0.keyLabel.isEmpty }.prefix(2).map { "\($0.keyLabel) \($0.title)" }
+        hint(stopping: { _ in false })
+    }
+
+    /// The first keys and the key of this menu, in words for a footer. The key of a running row says that it stops the call.
+    public func hint(stopping isRunning: (Row) -> Bool) -> String {
+        let keys = rows.filter { !$0.keyLabel.isEmpty }.prefix(2).map { "\($0.keyLabel) \(isRunning($0) ? Self.stopTitle(of: $0) : $0.title)" }
         return (keys + ["⌘K Actions"]).joined(separator: "   ")
     }
 
@@ -36,17 +41,24 @@ public struct ActionMenu: Equatable, Sendable {
         selected = rows.firstIndex { $0.action == action } ?? selected
     }
 
-    /// Takes a press of the selected row. A row that asks to confirm needs a second press, and returns nil on the first.
-    public mutating func press() -> Row? {
+    /// Takes a press of the selected row. A row that asks to confirm needs a second press, and returns nil on the first. A
+    /// running row stops its call, which needs no question.
+    public mutating func press(isRunning: Bool = false) -> Row? {
         let row = rows[selected]
-        guard let action = row.action, action.confirm != nil, confirming != action.id else { return row }
+        guard !isRunning, let action = row.action, action.confirm != nil, confirming != action.id else { return row }
         confirming = action.id
         return nil
     }
 
-    /// What a row says now. It shows its question while it waits for the second press.
-    public func title(of row: Row) -> String {
+    /// What a row says now. A running row says that it stops the call, and a row shows its question while it waits for the
+    /// second press.
+    public func title(of row: Row, isRunning: Bool = false) -> String {
+        if isRunning { return Self.stopTitle(of: row) }
         if let action = row.action, action.id == confirming, let confirm = action.confirm { return confirm }
         return row.title
+    }
+
+    private static func stopTitle(of row: Row) -> String {
+        row.action == nil ? "Stop" : "Stop \(row.title)"
     }
 }

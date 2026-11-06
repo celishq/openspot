@@ -70,6 +70,11 @@ public struct ItemList: Equatable, Sendable {
         hasFailed = false
     }
 
+    /// A stopped read changes nothing, so the rows and what the list last said stay.
+    public mutating func stopLoading() {
+        isLoading = false
+    }
+
     public mutating func loadFailed() {
         isLoading = false
         hasFailed = true

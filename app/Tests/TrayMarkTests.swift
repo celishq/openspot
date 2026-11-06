@@ -45,6 +45,17 @@ final class TrayMarkTests: XCTestCase {
         XCTAssertEqual(TrayMark(reading: reading)?.isStale, true)
     }
 
+    func testRunningWorkIsARingOrASpinnerAndCountsOnlyMoreThanOne() {
+        XCTAssertEqual(TrayMark(workFill: 0.5, count: 1, name: "Encode").content, .work(fill: 0.5, count: nil))
+        XCTAssertEqual(TrayMark(workFill: nil, count: 1, name: "Encode").content, .work(fill: nil, count: nil))
+        XCTAssertEqual(TrayMark(workFill: nil, count: 3, name: "Encode").content, .work(fill: nil, count: 3))
+    }
+
+    func testTheSummaryOfWorkNamesTheOldestCallAndHowManyRun() {
+        XCTAssertEqual(TrayMark(workFill: nil, count: 1, name: "Encode").summary, "Encode is running")
+        XCTAssertEqual(TrayMark(workFill: nil, count: 3, name: "Encode").summary, "3 running. Encode is the oldest")
+    }
+
     func testTheSummaryNamesTheMetricAndItsValue() {
         XCTAssertEqual(mark(MetricValue(title: "3 open"), label: "Pull requests")?.summary, "Pull requests: 3 open")
     }

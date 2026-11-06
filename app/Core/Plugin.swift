@@ -6,12 +6,10 @@ public struct Plugin: Equatable, Sendable {
 
     public let id: String
     public let commands: [PluginCommand]
-    public let metrics: [PluginMetric]
 
-    public init(id: String, commands: [PluginCommand], metrics: [PluginMetric] = []) {
+    public init(id: String, commands: [PluginCommand]) {
         self.id = id
         self.commands = commands
-        self.metrics = metrics
     }
 
     /// Reads a file with no run of it. Returns nil for a file that is neither. Throws a fault that names what is wrong.
@@ -26,7 +24,7 @@ public struct Plugin: Equatable, Sendable {
         }
     }
 
-    /// A script with a number in its `read` is a metric, and it also has a spot, a list, when it has a key.
+    /// A script with a number in its `read` has a spot, a list, only when it has a key.
     public init(script url: URL, header: TextBlock, id: String) throws {
         let name = header.value("name") ?? Self.name(of: url)
         let symbol = header.value("symbol")
@@ -39,14 +37,8 @@ public struct Plugin: Equatable, Sendable {
         }
         let isTray = header.flag("tray") ?? false
         let stays = header.flag("stay") ?? false
-        var metrics: [PluginMetric] = []
-        if let seconds = read?.seconds {
-            metrics.append(PluginMetric(id: id, url: url, label: name, symbol: symbol, refresh: seconds, isTray: isTray))
-            guard header.value("key") != nil else {
-                self.init(id: id, commands: [], metrics: metrics)
-                return
-            }
-        } else if isTray, !stays {
+        let hasKey = header.value("key") != nil
+        if read?.seconds == nil, isTray, !stays {
             throw PluginError.fault("\(name) needs a number in its read, or stay=true, to show in the menu bar")
         }
         let sizeName = header.value("size") ?? "wide"
@@ -56,6 +48,9 @@ public struct Plugin: Equatable, Sendable {
             guard let number = Int(text) else { throw PluginError.fault("\(name) needs a number as its rank") }
             guard read?.has(.panel) == true || read?.has(.launch) == true || read?.seconds != nil else {
                 throw PluginError.fault("\(name) needs panel, launch or a number in its read to join the main search")
+            }
+            guard read?.seconds == nil || hasKey else {
+                throw PluginError.fault("\(name) needs a key to join the main search, because a number in its read and no key gives it no spot")
             }
             rank = number
         }
@@ -77,9 +72,12 @@ public struct Plugin: Equatable, Sendable {
             rank: rank,
             order: order,
             stays: stays,
-            drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? []
+            drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
+            isTray: isTray,
+            hasSpot: read?.seconds == nil || hasKey,
+            headerSymbol: symbol
         )
-        self.init(id: id, commands: [command], metrics: metrics)
+        self.init(id: id, commands: [command])
     }
 
     /// The name a file gives when it has no `name` line: its words with a capital first letter.

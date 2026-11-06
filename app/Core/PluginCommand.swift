@@ -1,8 +1,10 @@
 import Foundation
 
-/// One executable of a plugin, with the look its spot takes. A widget runs nothing, and places metrics in a layout.
+/// One executable of a plugin, with the look its spot takes. A widget runs nothing, and places scripts in a layout.
 public struct PluginCommand: Equatable, Sendable {
     public static let lastRank = Int.max
+    private static let folderWord = "folder"
+    private static let anyWord = "*"
 
     public let id: String
     public let name: String
@@ -27,6 +29,12 @@ public struct PluginCommand: Equatable, Sendable {
     public let stays: Bool
     /// The file extensions that its card takes, with `folder` and `*`.
     public let drop: [String]
+    /// Whether the menu bar shows it.
+    public let isTray: Bool
+    /// Whether it has a card. A script with a number in its `read` and no `key` has none (F7).
+    public let hasSpot: Bool
+    /// The `symbol` its header names, if any.
+    public let headerSymbol: String?
 
     public init(
         id: String,
@@ -48,7 +56,10 @@ public struct PluginCommand: Equatable, Sendable {
         opens: String? = nil,
         shipped: ShippedSpot? = nil,
         stays: Bool = false,
-        drop: [String] = []
+        drop: [String] = [],
+        isTray: Bool = false,
+        hasSpot: Bool = true,
+        headerSymbol: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -70,6 +81,9 @@ public struct PluginCommand: Equatable, Sendable {
         self.shipped = shipped
         self.stays = stays
         self.drop = drop
+        self.isTray = isTray
+        self.hasSpot = hasSpot
+        self.headerSymbol = headerSymbol
     }
 
     /// Whether its rows join the main search.
@@ -92,95 +106,56 @@ public struct PluginCommand: Equatable, Sendable {
         read == nil ? SpotAction(arguments: []) : .run
     }
 
-    /// Asks the command for its state. A command with no state to read does not run.
-    public func state(timeout: TimeInterval) async throws -> SpotState {
-        guard readsState else { return headerState }
-        return try Self.state(of: try await output(.read, timeout: timeout), header: headerState)
+    /// Whether its `drop` takes files that are not folders.
+    public var takesFiles: Bool {
+        dropWords.contains { !$0.isEmpty && $0 != Self.folderWord }
     }
 
-    /// Asks the command how it looks, and returns it with the kind and the actions that its output gives.
-    public func opened(timeout: TimeInterval) async throws -> (command: PluginCommand, state: SpotState) {
-        guard readsState else { return (self, headerState) }
-        let output = try await output(.read, timeout: timeout)
-        var command = taking(output)
-        command.kind = output.kind
-        return (command, try Self.state(of: output, header: headerState))
+    /// Whether its `drop` takes folders: the word `folder` or `*`. A bundle, such as an app, is a folder.
+    public var takesFolders: Bool {
+        dropWords.contains(Self.folderWord) || dropWords.contains(Self.anyWord)
     }
 
-    /// This command with the actions, the word for Enter, the pick and the recents that its script printed.
+    /// Whether its card takes anything that a person drops.
+    public var takesDrops: Bool {
+        takesFiles || takesFolders
+    }
+
+    /// Whether its card takes all these files at once. One that does not fit, or that is not on the disk, refuses all.
+    public func accepts(_ paths: [String]) -> Bool {
+        !paths.isEmpty && paths.allSatisfy(accepts(path:))
+    }
+
+    private func accepts(path: String) -> Bool {
+        var isFolder: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: path, isDirectory: &isFolder) else { return false }
+        if isFolder.boolValue { return takesFolders }
+        let fileExtension = URL(fileURLWithPath: path).pathExtension.lowercased()
+        if dropWords.contains(Self.anyWord) { return true }
+        return !fileExtension.isEmpty && fileExtension != Self.folderWord && dropWords.contains(fileExtension)
+    }
+
+    private var dropWords: [String] {
+        drop.map { $0.lowercased() }
+    }
+
+    /// This command with the actions, the word for Enter, the pick and the recents that its script printed, and the kind it
+    /// makes when the panel asks it how it looks.
     public func taking(_ output: PluginOutput) -> PluginCommand {
         var command = self
         command.actions = output.actions
         command.primary = output.primary
         command.pick = output.pick
         command.keepsRecent = output.keepsRecent
+        if readsState { command.kind = output.kind }
         return command
     }
 
-    private static func state(of output: PluginOutput, header: SpotState) throws -> SpotState {
+    /// The state that an output gives. A command with no state to read keeps its header.
+    public func state(of output: PluginOutput) throws -> SpotState {
+        guard readsState else { return headerState }
         guard output.summary != nil || output.errors.isEmpty else { throw PluginError.badState }
-        return SpotState(block: output.summary, header: header)
-    }
-
-    private func output(_ action: SpotAction, timeout: TimeInterval) async throws -> PluginOutput {
-        PluginOutput(text: try await text(of: action.arguments, input: nil, timeout: timeout))
-    }
-
-    /// What a call prints: the answer of a shipped spot, or else the output of the script.
-    private func text(of arguments: [String], input: String?, timeout: TimeInterval) async throws -> String {
-        if let shipped { return try await shipped.answer(arguments, input: input, timeout: timeout) }
-        return try await PluginRun(command: self, arguments: arguments, timeout: timeout, input: input).output()
-    }
-
-    /// Asks the command for the items of its list, with the search when the script searches.
-    public func items(query: String = "", input: String? = nil, timeout: TimeInterval) async throws -> PluginOutput {
-        if stays { return try await firstLiveFrame(timeout: timeout) }
-        return PluginOutput(text: try await text(of: SpotAction.items(query: query).arguments, input: input, timeout: timeout))
-    }
-
-    /// Starts a staying script, reads its first sheet and stops it.
-    private func firstLiveFrame(timeout: TimeInterval) async throws -> PluginOutput {
-        let live = LiveScript(url: url, timeout: timeout)
-        defer { live.stop() }
-        let frames = try live.start()
-        live.send(.read)
-        for try await frame in frames { return PluginOutput(text: frame) }
-        return PluginOutput(text: "")
-    }
-
-    /// What a call prints, frame by frame, as the script prints it.
-    public func frames(_ action: SpotAction, input: String?, timeout: TimeInterval) -> AsyncThrowingStream<String, Error> {
-        if shipped != nil {
-            return AsyncThrowingStream { continuation in
-                let task = Task {
-                    do {
-                        continuation.yield(try await text(of: action.arguments, input: input, timeout: timeout))
-                        continuation.finish()
-                    } catch {
-                        continuation.finish(throwing: error)
-                    }
-                }
-                continuation.onTermination = { _ in task.cancel() }
-            }
-        }
-        return PluginRun(command: self, arguments: action.arguments, timeout: timeout, input: input).frames()
-    }
-
-    /// Reports a change in a sheet of parts, with all its values on standard input, and returns what the script prints.
-    public func change(_ action: SpotAction, values: String, timeout: TimeInterval) async throws -> PluginOutput {
-        PluginOutput(text: try await text(of: action.arguments, input: values, timeout: timeout))
-    }
-
-    /// Asks the command for the form of an action: the call of that action, with empty stdin.
-    public func form(_ action: CommandAction, item: SpotItem?, timeout: TimeInterval) async throws -> ItemForm {
-        guard let form = ItemForm(output: try await output(.action(action, item: item), timeout: timeout)) else { throw PluginError.badForm }
-        return form
-    }
-
-    /// Gives a filled form to the command, and returns the run value of the item it saved, if it prints one.
-    public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft, timeout: TimeInterval) async throws -> String {
-        let output = try await text(of: SpotAction.action(action, item: item).arguments, input: draft.text, timeout: timeout)
-        return output.trimmingCharacters(in: .whitespacesAndNewlines)
+        return SpotState(block: output.summary, header: headerState)
     }
 
     /// The actions that fit: those an item does not hide, and only the command's own with no item.
@@ -198,12 +173,6 @@ public struct PluginCommand: Equatable, Sendable {
         case .slider: return nil
         case .widget: return opens == nil ? nil : "Open"
         }
-    }
-
-    /// Runs an action, and returns the words of the toast that it prints, if any.
-    @discardableResult
-    public func perform(_ action: SpotAction, timeout: TimeInterval) async throws -> String? {
-        try await output(action, timeout: timeout).summary?.value("toast")
     }
 
     public func withoutKey() -> PluginCommand {

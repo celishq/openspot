@@ -84,4 +84,33 @@ final class ActionMenuTests: XCTestCase {
         menu.move(by: 30)
         XCTAssertEqual(menu.selected, 3)
     }
+
+    func testARunningRowSaysThatItsPressStopsTheCall() throws {
+        let keyed = PluginCommand(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .launch, actions: [
+            CommandAction(id: "copy", title: "Copy", key: ActionKey(text: "cmd+c"), scope: .command)
+        ])
+        let menu = try XCTUnwrap(ActionMenu(command: keyed, item: nil))
+        let primary = menu.rows[0]
+        let copy = menu.rows[1]
+
+        XCTAssertEqual(menu.title(of: primary), "Run")
+        XCTAssertEqual(menu.title(of: primary, isRunning: true), "Stop")
+        XCTAssertEqual(menu.title(of: copy, isRunning: true), "Stop Copy")
+        XCTAssertEqual(menu.hint(stopping: { $0.action == nil }), "⏎ Stop   ⌘C Copy   ⌘K Actions")
+        XCTAssertEqual(menu.hint(stopping: { $0.action != nil }), "⏎ Run   ⌘C Stop Copy   ⌘K Actions")
+        XCTAssertEqual(menu.hint(stopping: { _ in false }), menu.hint)
+    }
+
+    func testAPressOfARunningRowStopsWithNoQuestion() throws {
+        let asking = PluginCommand(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .launch, actions: [
+            CommandAction(id: "wipe", title: "Wipe", scope: .command, confirm: "Wipe all?")
+        ])
+        var menu = try XCTUnwrap(ActionMenu(command: asking, item: nil, showsPrimary: false))
+
+        XCTAssertEqual(menu.press(isRunning: true)?.action?.id, "wipe")
+        XCTAssertNil(menu.confirming)
+        XCTAssertNil(menu.press())
+        XCTAssertEqual(menu.title(of: menu.rows[0]), "Wipe all?")
+        XCTAssertEqual(menu.title(of: menu.rows[0], isRunning: true), "Stop Wipe")
+    }
 }

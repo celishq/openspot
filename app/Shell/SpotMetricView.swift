@@ -255,14 +255,9 @@ struct SpotMetricView: View {
 
     private func ring(side: CGFloat, line: CGFloat, @ViewBuilder inside: () -> some View) -> some View {
         ZStack {
-            Circle().stroke(.white.opacity(SpotTokens.track), lineWidth: line)
-            Circle()
-                .trim(from: 0, to: value?.fill ?? 0)
-                .rotation(.degrees(-90))
-                .stroke(markColour, style: StrokeStyle(lineWidth: line, lineCap: .round))
-            inside().padding(line + 2)
+            SpotRing(fill: value?.fill ?? 0, line: line, colour: markColour)
+            inside().padding(line / 2 + line + 2)
         }
-        .padding(line / 2)
         .frame(width: side, height: side)
     }
 

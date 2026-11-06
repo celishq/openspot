@@ -19,8 +19,7 @@ final class PluginFolderTests: XCTestCase {
         let url = folder.appendingPathComponent(path)
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         let lines = header.split(separator: "\n").map { "# \($0)\n" }.joined()
-        try "#!/bin/sh\n\(lines)\(body)\n".write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        try "#!/bin/sh\n\(lines)\(body)\n".writeScript(to: url)
         return url
     }
 
@@ -121,7 +120,7 @@ final class PluginFolderTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.commands, [])
-        XCTAssertEqual(scan.metrics.map(\.refresh), [30])
+        XCTAssertEqual(scan.metrics.map(\.read?.seconds), [30])
     }
 
     func testAStayingScriptIsAList() throws {
@@ -162,9 +161,9 @@ final class PluginFolderTests: XCTestCase {
 
         XCTAssertEqual(scan.commands, [])
         XCTAssertEqual(metric.id, "cups")
-        XCTAssertEqual(metric.label, "Cups")
+        XCTAssertEqual(metric.name, "Cups")
         XCTAssertEqual(metric.symbol, "cup.and.saucer")
-        XCTAssertEqual(metric.refresh, 30)
+        XCTAssertEqual(metric.read?.seconds, 30)
     }
 
     func testAMetricWithAKeyIsAlsoAList() throws {

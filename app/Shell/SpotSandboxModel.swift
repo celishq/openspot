@@ -31,8 +31,7 @@ final class SpotSandboxModel {
         let file = path.map { URL(fileURLWithPath: $0) }
         self.file = file
         if let file, FileManager.default.isExecutableFile(atPath: file.path) {
-            let stays = PluginHeader(url: file).block.flag("stay") ?? false
-            sheet = SpotSheet(command: PluginCommand(id: file.lastPathComponent, name: file.lastPathComponent, url: file, kind: .list, stays: stays))
+            sheet = SpotRuns().sheet(for: SheetSandbox.command(file: file))
         } else {
             sheet = nil
         }
@@ -65,7 +64,7 @@ final class SpotSandboxModel {
         switch report {
         case .frame(let text): sandbox.note(frame: text)
         case .failure(let text), .toast(let text): sandbox.record(text)
-        case .output, .listChange: break
+        case .listChange, .chooseFiles: break
         }
     }
 
@@ -75,7 +74,7 @@ final class SpotSandboxModel {
         written = Self.modified(file)
         if let sheet {
             sheet.close()
-            sheet.open {}
+            sheet.open(need: .change) {}
         } else {
             sandbox.take(text: (try? String(contentsOf: file, encoding: .utf8)) ?? "")
         }

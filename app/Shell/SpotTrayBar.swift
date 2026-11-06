@@ -2,7 +2,8 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// The menu bar items of the metrics that ask to show there. An item comes and goes with its mark.
+/// The menu bar items of the metrics that ask to show there, and running work on the Openspot item. An item comes and goes
+/// with its mark, and the Openspot item goes back to its title.
 @MainActor
 final class SpotTrayBar: NSObject {
     /// A view that leaves each click to the button that holds it.
@@ -16,18 +17,23 @@ final class SpotTrayBar: NSObject {
     }
 
     private let model: SpotsModel
+    private let openspotItem: NSStatusItem
+    private let openspotTitle: String
+    private var work: Shown?
     private var shown: [String: Shown] = [:]
 
-    init(model: SpotsModel) {
+    init(model: SpotsModel, openspotItem: NSStatusItem) {
         self.model = model
+        self.openspotItem = openspotItem
+        openspotTitle = openspotItem.button?.title ?? ""
         super.init()
         update()
     }
 
     /// Shows the marks of the model now, and again each time they change.
     private func update() {
-        let marks = withObservationTracking {
-            model.trayMarks
+        let (marks, workMark) = withObservationTracking {
+            (model.trayMarks, model.workMark)
         } onChange: { [weak self] in
             Task { @MainActor in self?.update() }
         }
@@ -37,15 +43,38 @@ final class SpotTrayBar: NSObject {
         for (id, mark) in marks {
             draw(mark, in: shown[id] ?? makeItem(id: id, mark: mark))
         }
+        drawWork(workMark)
+    }
+
+    /// Shows running work on the Openspot item, in place of its title.
+    private func drawWork(_ mark: TrayMark?) {
+        guard let mark else {
+            work?.host.removeFromSuperview()
+            work = nil
+            openspotItem.button?.title = openspotTitle
+            openspotItem.button?.toolTip = nil
+            openspotItem.button?.setAccessibilityLabel(nil)
+            openspotItem.length = NSStatusItem.variableLength
+            return
+        }
+        openspotItem.button?.title = ""
+        let shown = work ?? Shown(item: openspotItem, host: makeHost(mark: mark, in: openspotItem))
+        work = shown
+        draw(mark, in: shown)
+    }
+
+    private func makeHost(mark: TrayMark, in item: NSStatusItem) -> Host {
+        let host = Host(rootView: SpotTrayMarkView(mark: mark))
+        host.sizingOptions = [.intrinsicContentSize]
+        host.autoresizingMask = [.width, .height]
+        item.button?.addSubview(host)
+        return host
     }
 
     private func makeItem(id: String, mark: TrayMark) -> Shown {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.autosaveName = id
-        let host = Host(rootView: SpotTrayMarkView(mark: mark))
-        host.sizingOptions = [.intrinsicContentSize]
-        host.autoresizingMask = [.width, .height]
-        item.button?.addSubview(host)
+        let host = makeHost(mark: mark, in: item)
         item.button?.target = self
         item.button?.action = #selector(press)
         let new = Shown(item: item, host: host)

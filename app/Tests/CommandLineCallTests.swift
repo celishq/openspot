@@ -2,8 +2,15 @@ import XCTest
 @testable import OpenspotCore
 
 final class CommandLineCallTests: XCTestCase {
-    func testATranslationServerStaysRunning() {
-        XCTAssertEqual(CommandLineCall(arguments: ["translate", "--serve"]), .translateServe)
+    func testACapabilityStartsItsHelperWithACallThatTheUsageDoesNotList() {
+        XCTAssertEqual(CommandLineCall(arguments: ["helper", "translate"]), .helper("translate"))
+        XCTAssertEqual(CommandLineCall(arguments: ["helper"]), .unknown("helper"))
+        XCTAssertFalse(CommandLineCall.usage.contains("helper"))
+    }
+
+    func testNoScriptServesTranslationsAnyMore() {
+        XCTAssertEqual(CommandLineCall(arguments: ["translate", "--serve"]), .unknown("translate --serve"))
+        XCTAssertFalse(CommandLineCall.usage.contains("--serve"))
     }
 
     func testASandboxCanNameAFile() {
@@ -44,7 +51,7 @@ final class CommandLineCallTests: XCTestCase {
     }
 
     func testAScriptFindsTheCommandOnItsPath() {
-        let environment = PluginRun.environment(base: ["PATH": "/usr/bin", "HOME": "/h"], app: "/A/Openspot.app/Contents/MacOS/Openspot")
+        let environment = ScriptProcess.environment(base: ["PATH": "/usr/bin", "HOME": "/h"], app: "/A/Openspot.app/Contents/MacOS/Openspot")
 
         XCTAssertEqual(environment["PATH"], "/A/Openspot.app/Contents/Helpers:/usr/bin")
         XCTAssertEqual(environment["HOME"], "/h")

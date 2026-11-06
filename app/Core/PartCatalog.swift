@@ -108,11 +108,24 @@ public enum PartCatalog {
     ## Long work and running scripts
 
     A call can keep printing. A line `---` ends a frame, and the app draws it at once. A frame with a layout replaces the \
-    sheet, and a frame with only parts changes those parts, so print `part`, `cell` and the keys again for each one. A new \
-    change or press stops the running call, and so does closing the sheet.
+    sheet, and a frame with only parts changes those parts, so print `part`, `cell` and the keys again for each one.
 
-    A script with `# stay=true` in its header runs while its sheet is open, so a model or a connection stays loaded between \
-    calls. It gets one block on its standard input for each call, with a blank line after it: `name`, `value`, and one \
+    A value over 64 KB is left out of the arguments, and stdin still holds it. In a shell script, `. "$OPENSPOT_SH"` gives \
+    `value <id>`, which prints the real text of one value from stdin, and `esc <text>`, which writes text as a value. Loading \
+    it reads all of stdin once. A script writes a file to a temp name, then moves it, so a file is never half written.
+
+    A `read` has 10 seconds until its first frame or its end, and it stops when nothing wants it, such as when its sheet \
+    closes. Any other name has no time limit, and it keeps running with the sheet and the panel closed. A new value for a part \
+    stops the older call of that part. A second press of a running part, action or card stops its call: each process in its \
+    group gets the terminate signal, and after 2 seconds Openspot kills what still runs. A press within 1 second of the start of \
+    the call does nothing, so a double press does not stop it. Quitting Openspot stops each call. \
+    After 1 second, a call that does work shows on its part, its action, its spot and the Openspot item in the menu bar. Its \
+    last frame reports progress: `value` from 0 to 1 draws a ring, no `value` draws a spinner, and `title` and `detail` show on \
+    the spot only while the call runs. To outlive the app, start the work with `nohup` and then exit. A stopped call changes nothing. Closing the panel \
+    closes a sheet of parts and drops its values.
+
+    A script with `# stay=true` in its header runs while something wants it, so a model or a connection stays loaded between \
+    calls: its open sheet, the menu bar, or `launch` in its `read`. It gets one block on its standard input for each call, with a blank line after it: `name`, `value`, and one \
     `field.<id>` for each value of the sheet. It keeps its own state, and answers with frames. It must end when its input ends.
 
     """

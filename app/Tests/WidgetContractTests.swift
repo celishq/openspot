@@ -15,8 +15,7 @@ final class WidgetContractTests: XCTestCase {
 
     private func script(_ name: String, _ text: String) throws {
         let url = folder.appendingPathComponent(name)
-        try text.write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        try text.writeScript(to: url)
     }
 
     private func widgets(_ text: String, file: String = "mine.toml") throws {
@@ -185,19 +184,6 @@ final class WidgetContractTests: XCTestCase {
         ])
     }
 
-    func testAMenuBarMetricIsWantedWithThePanelClosedAndNoWidget() {
-        let url = URL(fileURLWithPath: "/x")
-        let metrics = [
-            PluginMetric(id: "tray", url: url, isTray: true),
-            PluginMetric(id: "placed", url: url),
-            PluginMetric(id: "idle", url: url)
-        ]
-        let widgets = [PluginCommand(id: "a/W", name: "W", url: url, kind: .widget, places: ["placed"])]
-
-        XCTAssertEqual(MetricSchedule.wanted(metrics, by: widgets, isPanelOpen: false).map(\.id), ["tray"])
-        XCTAssertEqual(MetricSchedule.wanted(metrics, by: widgets, isPanelOpen: true).map(\.id), ["tray", "placed"])
-    }
-
     func testAWidgetFilePlacesMetricsOfOtherScripts() throws {
         try power()
         try widgets("""
@@ -284,18 +270,6 @@ final class WidgetContractTests: XCTestCase {
             }
             XCTAssertEqual(cells.count, layout.columns * layout.rows, layout.name)
         }
-    }
-
-    func testAScheduleGivesEachMetricOnceUntilItsRefreshPasses() {
-        let url = URL(fileURLWithPath: "/tmp")
-        let fast = PluginMetric(id: "a/fast", url: url, refresh: 5)
-        let slow = PluginMetric(id: "a/slow", url: url, refresh: 60)
-        let start = Date(timeIntervalSince1970: 1000)
-        var schedule = MetricSchedule()
-
-        XCTAssertEqual(schedule.takeDue([fast, slow], now: start).map(\.id), ["a/fast", "a/slow"])
-        XCTAssertEqual(schedule.takeDue([fast, slow], now: start.addingTimeInterval(4)).map(\.id), [])
-        XCTAssertEqual(schedule.takeDue([fast, slow], now: start.addingTimeInterval(5)).map(\.id), ["a/fast"])
     }
 
     func testAFailedReadKeepsTheLastValueAndMarksItStale() {

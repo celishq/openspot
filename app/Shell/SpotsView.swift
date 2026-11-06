@@ -1,5 +1,6 @@
 import SwiftUI
 import OpenspotCore
+import UniformTypeIdentifiers
 
 struct SpotsView: View {
     let model: SpotsModel
@@ -12,6 +13,7 @@ struct SpotsView: View {
     @State private var sheetOpen = false
     @State private var gridHint = ""
     @State private var sheetHint = ""
+    @State private var dropTarget: String?
 
     private static let panelSpace = "panel"
     private static let wordRoll: CGFloat = 20
@@ -54,6 +56,7 @@ struct SpotsView: View {
                     rect: sheetRect,
                     form: model.form?.entry.id == entry.id ? model.form?.draft : nil,
                     panel: model.sheets[entry.id]?.panel,
+                    work: { model.work(of: $0) },
                     onSet: { model.setPart($0, to: $1) },
                     onPress: { model.pressPart($0) },
                     recordingPart: model.recordingPart,
@@ -85,7 +88,7 @@ struct SpotsView: View {
                 Color.clear
                     .contentShape(Rectangle())
                     .onTapGesture { model.closeMenu() }
-                SpotActionMenuView(menu: menu, onPress: { model.pressMenu(row: $0) })
+                SpotActionMenuView(menu: menu, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) })
                     .offset(x: SpotTokens.halo, y: menuTop(menu))
             }
         }
@@ -102,10 +105,11 @@ struct SpotsView: View {
         .onChange(of: model.isShown) { _, isShown in
             guard isShown else {
                 searchFocused = false
+                dropTarget = nil
                 return
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeInDuration) {
-                if model.isShown, model.showsSearch { searchFocused = true }
+                if model.isShown, model.showsSearch, !model.isOpenForDrag { searchFocused = true }
             }
         }
         .onChange(of: model.selected) {
@@ -259,11 +263,14 @@ struct SpotsView: View {
                     entry: entry,
                     size: placement.size,
                     isSelected: placement.index == model.selected,
+                    takesDrag: model.takesDrag(entry.id),
+                    isDropTarget: dropTarget == entry.id,
                     readings: entry.kind == .widget ? model.readings : [:],
                     chainLetter: model.chainLetter(of: entry),
                     onTap: { model.tap(entry.id) },
                     onLevel: { model.setLevel(entry.id, to: $0) }
                 )
+                .onDrop(of: [.fileURL], delegate: SpotCardDrop(id: entry.id, model: model, target: $dropTarget))
                 .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .named(Self.panelSpace)) }, action: { frame in
                     if entry.kind.opensSheet { cardFrames[entry.id] = frame }
                 })

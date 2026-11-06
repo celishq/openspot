@@ -36,6 +36,16 @@ public struct SpotState: Equatable, Sendable {
         )
     }
 
+    /// This state with what a frame of a running call changes: only its `on` and its `level`. Its words stay the spot's own.
+    public func taking(_ block: TextBlock) -> SpotState {
+        SpotState(title: title, subtitle: subtitle, on: block.flag("on") ?? on, level: block.number("level") ?? level, min: self.min, max: self.max)
+    }
+
+    /// This state with the words of a running call over its own. A word the call leaves out stays.
+    public func showing(title: String?, detail: String?) -> SpotState {
+        SpotState(title: title ?? self.title, subtitle: detail ?? subtitle, on: on, level: level, min: self.min, max: self.max)
+    }
+
     public func adjusted(by delta: Double) -> SpotState {
         guard let level else { return self }
         return withLevel(level + delta)

@@ -12,6 +12,11 @@ case "$(ps -p "${pid:-0}" -o comm= 2>/dev/null)" in
   *) running=0 ;;
 esac
 
+# Writes the record to a temp name, then moves it, so that it is never half written.
+remember() {
+  echo "$1" > "$record.$$" && mv "$record.$$" "$record"
+}
+
 stop() {
   if [ "$running" = 1 ] && ! kill "$pid"; then
     echo "Could not turn off Caffeinate." >&2
@@ -56,13 +61,13 @@ case "$1" in
       0)
         stop
         nohup caffeinate -di >/dev/null 2>&1 &
-        echo "$! 0" > "$record"
+        remember "$! 0"
         echo "toast=Caffeinate is on until you turn it off"
         ;;
       *)
         stop
         nohup caffeinate -di -t "$2" >/dev/null 2>&1 &
-        echo "$! $(( $(date +%s) + $2 ))" > "$record"
+        remember "$! $(( $(date +%s) + $2 ))"
         minutes=$(( $2 / 60 ))
         if [ "$minutes" -ge 120 ]; then
           echo "toast=Caffeinate is on for $(( minutes / 60 )) hours"

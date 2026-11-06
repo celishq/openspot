@@ -72,11 +72,11 @@ esac
 
 | ID | Rule |
 |---|---|
-| A1 | One owner in Core starts each run of a script. No other code starts a process. |
+| A1 | One owner in Core starts each run of a script. No other code starts a script. A capability's helper and a shipped spot's tools are not scripts. |
 | A2 | Each script that shows anything has one `SpotSheet` in Core. It holds the last frame of the script, its rows, its parts, its open state and its running calls. The card, the sheet, a widget and the menu bar all read from it, and no other place keeps what a script printed. A run of one script never stops a run of another. |
 | A3 | A stopped run changes nothing. Only a call that ended by itself can report that there is nothing to show. |
 | A4 | Search text stays until the person presses Esc. |
-| A5 | Two spots ship with the app: Plugins and Settings. Each answers the same calls, in Swift. |
+| A5 | Plugins, Settings and Updates ship with the app. Each answers the same calls, in Swift. |
 | A6 | One global key opens the panel from any app, and the person chooses it. No other key is global. |
 
 ## 4. The plugin file
@@ -154,6 +154,7 @@ A file with no header key has one call: `<script>`, on a click.
 | C3 | An action with `form=true` first runs as `<action> [run]` with empty stdin, and the script prints `field` blocks. After the person fills the form, the same call runs with the values on stdin. |
 | C4 | Openspot waits for a pause before it sends a change: 300 ms for text, also for `read <text>`, and 100 ms for a slider. |
 | C5 | Text that the person types stays as typed until they press something. |
+| C6 | A value over 64 KB is left out of the arguments, because the system limits them to about 1 MB. Stdin still holds it: a value of the sheet as it is, and any other value under the key `value`. |
 
 ### Moments
 
@@ -164,14 +165,13 @@ A file with no header key has one call: `<script>`, on a click.
 | `panel` | The panel opens. |
 | `sheet` | Its sheet opens. A spot with a sheet does this with or without the word. |
 | A number | Every that many seconds, while something wants it (L3). |
-| `every=<seconds>` in a frame | An open sheet reads again. A script sets this while it runs. |
 
 | ID | Rule |
 |---|---|
 | M1 | A script has one read at a time. A new request for a read joins the read that runs. |
-| M2 | A request for a read uses an answer that is younger than 5 seconds. A read after a change of state does not. |
+| M2 | A read that a `panel` or a `sheet` moment asks for uses an answer that is younger than 5 seconds. A read after a change of state does not. A read from a number in `read`, from `launch` or from `wake` always runs, so `read=1` shows a value that is 1 second old. |
 | M3 | Reads run at the same time. The panel never waits for one script. A spot shows its header until its answer arrives. |
-| M4 | After a call with no frame, Openspot reads a script that has a `read` key once, by M1. |
+| M4 | After a call with no frame, or with frames that show no `on`, `level` or part, Openspot reads a script that has a `read` key once, by M1. |
 | M5 | A read must be safe at each moment that its header lists. Only the author of the header can promise this. |
 
 ### Drops
@@ -193,7 +193,7 @@ esac
 | ID | Rule |
 |---|---|
 | D1 | A drag over the Openspot item in the menu bar opens the panel with no change of focus. The panel stays open until the drag ends. |
-| D2 | During a drag, only a card whose `drop` accepts each dragged file takes it, and only that card shows that it does. |
+| D2 | For the whole drag, each card whose `drop` accepts each dragged file shows that it does, and only such a card takes the drop. Other cards do not change. |
 | D3 | A drop runs one `drop` call with each path as its own argument, and closes the panel. |
 | D4 | A drop on a card with a running call waits, and runs when that call ends. It does not stop the call. |
 | D5 | A click on a card with `drop` and no sheet opens a file chooser, and the choice runs the same call. |
@@ -206,9 +206,20 @@ esac
 | Arguments | The name and its value. |
 | Stdin | What the person filled in: all values of the sheet, or the fields of a form, as one block. Otherwise empty. |
 | `OPENSPOT_DATA` | The folder for its files, which Openspot creates: `<config>/data`. All plugins share it, so a script names its files after itself. |
+| `OPENSPOT_SH` | A shell file that a script can load. It is optional (W1). |
 | `PATH` | The person's path, with the `openspot` command first. |
 
 The rest of the environment comes from the app. In a value, a new line is `\n` and a backslash is `\\`.
+
+| ID | Rule |
+|---|---|
+| W1 | `. "$OPENSPOT_SH"` gives a shell script two functions: `esc <text>` writes text as a value, and `value <id>` prints the real text of one value from stdin. Loading the file starts `cat` once to read all of stdin, so each `$(value id)` works in its subshell, and a script that loads it reads stdin only through `value`. Up to 1 KB, each function starts no program. Above that, it starts `sed`, `tr` or `awk`, and it finishes 1 MB in under 1 second. A staying script keeps its stdin for its calls: `OPENSPOT_STAYS` is set for it, so loading reads nothing and `value` prints nothing. The contract does not need them. |
+
+```sh
+. "$OPENSPOT_SH"
+input=$(value input)
+printf 'row=%s\n' "$(esc "$name")"
+```
 
 ## 6. Frames
 
@@ -232,6 +243,7 @@ A script prints plain text. Each line is `key=value`, and a blank line ends a bl
 | R5 | `toast=<words>` shows at once, also with the panel closed. |
 | R6 | `search=script` makes each search change call `read <text>`. Otherwise Openspot searches the rows itself. |
 | R7 | `recents=false` does not sort recent picks first. |
+| R8 | A script writes a file to a temp name, then moves it. A stop can come at any time, and two calls of one script can run at the same time, so a file must never be half written. |
 
 ### Streaming
 
@@ -264,14 +276,15 @@ Two rules decide each call, with no key.
 |---|---|
 | L1 | A `read` stops when nothing wants it. So a stream from a `read` stops when its sheet closes. |
 | L2 | A call that does work keeps running with the sheet and the panel closed. Openspot keeps its last frame. |
-| L3 | Something wants a script while its sheet is open, while the panel is open and a widget places it, while the menu bar shows it, or at all times with `launch` in its `read`. |
+| L3 | Something wants a script while its sheet is open and the panel is open, while the panel is open and a widget places it or `panel` is in its `read`, while the menu bar shows it, or at all times with `launch` in its `read`. |
 | L4 | A new value for a part stops the older call of that part, and only the newest answer shows. So typing does not pile up runs. |
-| L5 | A second press of a running part, action or card stops the call. It gets the terminate signal, and then 2 seconds to end. |
-| L6 | Running work shows on its part, its action, its spot and the Openspot item in the menu bar, so the person can find and stop it. |
+| L5 | A second press of a running part, action or card stops the call. Each process in its group gets the terminate signal. After 2 seconds, Openspot kills each process in the group that still runs. |
+| L6 | Running work shows on its part, its action, its spot and the Openspot item in the menu bar, so the person can find and stop it. It shows only after the call has run for 1 second, so a quick call does not flash. A call to a staying script shows no running mark, because Openspot cannot see where such a call ends. That script says what it does in its own frames. |
 | L7 | When a sheet opens, Openspot does its `read`, then adds the last frame of each running call. |
 | L8 | The end of a call shows its `toast`. A failed call always tells the person. |
-| L9 | Quitting Openspot stops each call. To outlive the app, a script starts its work with `nohup`. |
+| L9 | Quitting Openspot stops each call. To outlive the app, a script starts its work with `nohup` and then exits. A stop reaches the whole group, so `nohup` does not protect a child while its script still runs. |
 | L10 | A call ends when its output closes. A script that leaves a child running sends the output of that child somewhere else. |
+| L11 | A press within 1 second of the start of that call does nothing, so a double press does not stop it. |
 
 ### Progress
 
@@ -287,8 +300,8 @@ detail=2 min left
 
 | ID | Rule |
 |---|---|
-| G1 | While a call that does work runs, its spot shows a ring from `value`. With no `value`, it shows a spinner. |
-| G2 | While a call that does work runs, the Openspot item in the menu bar shows a ring from the `value` of the oldest running call, or a spinner with no `value`. With more than one call, it also shows how many run. |
+| G1 | While a call that does work runs (L6), its spot shows a ring from `value`. With no `value`, it shows a spinner. |
+| G2 | While a call that does work runs (L6), the Openspot item in the menu bar shows a ring from the `value` of the oldest running call, or a spinner with no `value`. With more than one call, it also shows how many run. |
 | G3 | A click on that item opens the panel with the spot of the oldest running call selected. |
 | G4 | A frame's `title` and `detail` show on the spot only while the call runs. When the call ends, the spot shows its own state again. |
 | G5 | A sheet of parts can also show a part with `block=progress`. |
@@ -314,14 +327,15 @@ Add a capability only when one of these is true:
 
 | ID | Rule |
 |---|---|
-| K1 | A capability works in a terminal. It then loads, answers and exits. |
-| K2 | While a sheet is open, a capability that a script calls keeps its loaded state for the next call. The state ends when the sheet closes. |
-| K3 | A script never starts, finds or stops this state. The way that Openspot holds it is not part of the contract. |
+| K1 | A capability works the same from a script and from a terminal. |
+| K2 | A capability with state keeps it in a helper process. The helper starts at the first call, and exits after 30 seconds with no call. |
+| K3 | A script never starts, finds or stops the helper, and the app does not track it. The way that a call reaches it is not part of the contract. |
 | K4 | A capability prints `status=<word>` when it cannot answer, such as `status=missing`. |
 | K5 | Closing the panel closes a sheet of parts and drops its values. The next open does a new `read`. A sheet of rows stays open. |
 
 `Translate` is the reference. It is a handler with `read=sheet`. Each change runs the script, the script calls
-`openspot translate`, and the language stays loaded for the next text. Closing the panel or the sheet ends it.
+`openspot translate`, and the language stays loaded for the next text. Closing the panel drops the text (K5). The language
+leaves memory 30 seconds after the last text (K2).
 
 ### Stay
 
@@ -336,10 +350,10 @@ value=Hello
 
 | ID | Rule |
 |---|---|
-| Y1 | The block holds `name`, `value`, and one `field.<id>` for each value that stdin holds in a normal call. |
+| Y1 | The block holds `name`, `value`, and one `field.<id>` for each value that stdin holds in a normal call. A `drop` has one `value` line for each path. |
 | Y2 | Each call reaches the running script. No call starts a second copy of it. |
 | Y3 | A staying script starts when something first wants it. A sheet shows with its first frame. |
-| Y4 | To end a script, Openspot closes its stdin. Calls sent before that still run. After 2 seconds it gets the terminate signal. |
+| Y4 | To end a script, Openspot closes its stdin. Calls sent before that still run. After 2 seconds its group gets the terminate signal, and 2 seconds after that Openspot kills what still runs. |
 | Y5 | If a staying script ends and something still wants it, the next moment or call starts it again. After 3 failures in one minute, Openspot does not start it again until the next scan that finds it changed, and it tells the person. |
 | Y6 | Openspot can stop a staying script at any time. What must survive goes in `OPENSPOT_DATA`. |
 
@@ -362,7 +376,7 @@ The command is on the path of each script. It also gives the tools for authors.
 | `openspot render <file.png>` | Draws the sheet on stdin to a picture. |
 | `openspot sandbox [file]` | Opens a window to try a sheet from text, a file or a script. |
 | `openspot color pick` | Capability: the colour the person picks. |
-| `openspot translate` | Capability: translates text on this Mac, and stays loaded for an open sheet. |
+| `openspot translate` | Capability: translates text on this Mac, and keeps each pair of languages loaded (K2). |
 | `openspot translate languages` | Capability: the languages it knows. |
 
 ## 11. Security
@@ -391,32 +405,7 @@ A change to the meaning of a word that exists is a breaking change. Do not make 
 
 ## 13. Where the code differs today
 
-Remove a row when the code follows the rule.
-
-| Rules | Module | Today | Target |
-|---|---|---|---|
-| A2 | `SpotsModel`, `MetricReading`, `PluginMetric` | A metric's value is in a separate `readings` table, and a metric is a separate type from a command. | One `SpotSheet` for each script. |
-| C4, `rank` | `SpotSheet`, `Plugin` | `read <text>` runs on each key. `rank` with a number and no `key` loads, and its rows join nothing. | A 300 ms pause. A refusal. |
-| F2, section 5 | `SpotSandboxModel` | `openspot sandbox <file>` calls `read`, also for a file with no `read`. | It calls the file as a click does. |
-| Section 5, moments | `SpotRead`, `SpotsModel` | `launch` and `wake` are words in `read`, and the command keeps them. Nothing calls `read` at those moments. | Both call `read` at their moment. |
-| Section 4, `tray` | `Plugin`, `SpotsModel` | `tray=true` with `stay=true` loads, and shows nothing in the menu bar. | It shows. |
-| Section 7 | `PluginCommand.perform`, `PluginRun.output` | A run, a pick and an action wait for the end, and stop at 30 s. Their frames do not show. | No limit. Frames show. |
-| L2, L4, L5 | `SpotSheet` | Closing a sheet stops its call. Each new change or press stops the older call. | L2, L4, L5. |
-| L6, L7, L8, G1 to G4 | Not built | Running work does not show on a card, an action or the menu bar item, and a sheet does not find its running call again. | L6, L7, L8, G1 to G4. |
-| D1 to D6 | `PluginCommand.drop` | The command keeps `drop`. Nothing else is built. | D1 to D6. |
-| A1 | `SpotsModel`, `SpotSheet`, `PluginMetric` | Each starts runs by itself. | One owner. |
-| A1 | `PluginRun`, `LiveScript` | Process start is written three times. | One way to start, with two modes. |
-| M1, M2 | Runs | `Caffeinate` runs twice for each panel open. `Apps` runs twice for a panel open and a sheet open. | One run. |
-| M3 | `SpotsModel.reload` | Reads state one script at a time, with a limit of 2 s for each. | At the same time, with the limit of section 7. |
-| K1 to K3 | `SpotTranslation`, `translate.sh` | The script starts `openspot translate --serve` and talks through fifos. | A handler that calls `openspot translate`. |
-| K5 | `SpotSheet` | Only a staying sheet starts empty and closes with the panel. | Each sheet of parts. |
-| Y2 | `SpotsModel`, `SpotSheet` | A pick or an action of a staying script, and a form, start a second copy. | Each call reaches the running script. |
-| L3, Y5 | `SpotSheet`, `LiveScript` | A staying script runs only while its sheet is open. | While something wants it. |
-| F7, section 9 | `PluginMetric`, `MetricSchedule`, widgets | Only a script with a number in its `read` can be placed. | Any script with a `read`. |
-| Docs | `GUIDE.md`, `PartCatalog` | They teach today's time limits and what stops a call, and say that `launch`, `wake`, `drop` and `tray` with `stay` do not act yet. | Follow section 7, the moments and the drops when each one is built. |
-
-The tests in `SpotActionTests`, `SheetStreamTests`, `SpotPanelTests` and `SamplePluginsTests` pin the calls. Read them
-before each change. Each change in this table is breaking, and no alias stays.
+The code follows this document.
 
 ## 14. Decisions
 
@@ -430,6 +419,9 @@ before each change. Each change in this table is breaking, and no alias stays.
 | One `SpotSheet` for each script | A metric and a sheet both hold what a script last printed, and a widget can place any script. | A separate table and a separate type for metrics. |
 | Hooks are moments of `read` | Each hook need so far is a refresh at a moment, and `stay=true` covers the rest. | A separate `hook` call and a `hooks` key. |
 | State behind a capability | A script stays a handler. This removes fifos and a server from each plugin. | A server in each plugin. |
+| A capability exits when idle | One rule, the same from a terminal, and the app does not track sheets for it. A language can stay in memory for 30 seconds after the sheet closes. | State that ends with its sheet. It needs a session passed through the app and the script. |
+| No `every=` | A number in `read` already means this while something wants the script. A script cannot change its rate while it runs, and nothing needs that. | A second timer. |
+| An optional shell helper | Six plugins hold the same escape code, and a handler must read a block from stdin. It adds no call and no key. | A helper as a command, which starts a process for each value. Values in the environment, which share the 1 MB limit. |
 | `stay` still exists | A socket or a compiled program has its own state. | Only capabilities. They cannot hold an author's own state. |
 | Streaming needs no key | A long call only prints more. | A separate stream mode. |
 | A form is the same call | One call shape with no exception. | A `form` word. It is easier in shell, but it adds a word. |
@@ -448,12 +440,27 @@ Nothing.
 
 **Not proven**
 
-1. K2: one loaded state across many short runs of a script, with real translation. No language pair is installed on the test Mac.
+1. K2: process tests prove one state across separate runs of a script, one helper after a race, and no helper after its idle
+   time, with a stand-in capability. By hand on one Mac with English to Russian installed, 8 real calls reached one helper: the
+   first took 313 ms and later ones 81 to 114 ms. How much of that gain comes from the kept session, and not from macOS, is not
+   proven. `Translate` has not run in the real panel. A helper that hangs and does not crash blocks each call until the person
+   stops it.
 2. P5: what macOS does when a compiled program under Openspot calls a protected API, such as Calendar. The app can be
    stopped when it has no usage text. Test this before section 8 promises a compiled program any Mac API. The test can show a
    permission prompt, so it needs the person.
 3. M3: whether each current plugin still fits the limits when reads run at the same time.
-4. L5: whether a double press stops work by accident. `confirm` can guard an action, and parts have no guard yet.
-5. D1: a drag over a menu bar item that opens a panel with no change of focus. It needs a real screen and a real drag.
-6. Start times: about 5 ms for `sh`, 18 ms for `bun`, 25 ms for `python3`, 60 ms for `node` and 3.4 s for `swift file.swift`.
+4. L11: whether 1 second is enough to stop a double press from stopping work.
+5. D1, D2: a drag over a menu bar item that opens a panel with no change of focus, and the mark that shows from then until the
+   drag ends. It needs a real screen and a real drag. An off-screen render proves the mark, and a test proves which cards take
+   the files. A drag that reaches an open panel and no card shows no mark until it reaches a card.
+6. K2: the start time of the `openspot` command, which each change in `Translate` calls: a median of 9 ms for `catalog` over 20
+   calls, and 11 ms for a call through a running helper with no translation, in a Debug build on one Mac. The first run after a
+   build took 297 ms. A Release build and a Mac under memory pressure are not measured.
+7. Start times: about 5 ms for `sh`, 18 ms for `bun`, 25 ms for `python3`, 60 ms for `node` and 3.4 s for `swift file.swift`.
    One Mac, trivial programs. A Swift plugin must be compiled.
+8. C6: a 1 MB paste reaches the sheet in under 1 second in a Debug build, with the pause of C4. The drawing comes after that, in
+   system views. In an off-screen window on one Mac, a Debug build took 1.6 s to draw 1 MB in an editable text part. A read-only
+   text part took 4.1 to 4.6 s for 1 MB and drew no text, and it drew text at 500 KB, which took 2.9 s. A Release build and the
+   real panel are not measured.
+9. Y2: a copy that Openspot ended still runs the calls that it has, for up to 4 seconds (Y4). A call in that time starts a new
+   copy, because the old one has no open stdin. So two copies can run for that time.

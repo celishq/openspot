@@ -158,6 +158,11 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     private static let textLine: CGFloat = 17
 
+    /// Whether a press reaches it, so that a press also stops its running call.
+    public var isPressable: Bool {
+        press != .none
+    }
+
     /// Whether the person types into it.
     public var isEditable: Bool {
         if case .text(_, _, _, false) = control { return true }

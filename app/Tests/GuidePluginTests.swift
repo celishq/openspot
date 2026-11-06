@@ -20,8 +20,7 @@ final class GuidePluginTests: XCTestCase {
         guideText = try String(contentsOf: guideURL, encoding: .utf8)
         for (name, script) in [("pbcopy", "cat > '\(folder.path)/clipboard'"), ("open", "echo \"$1\" > '\(folder.path)/opened'")] {
             let tool = tools.appendingPathComponent(name)
-            try "#!/bin/sh\n\(script)\n".write(to: tool, atomically: true, encoding: .utf8)
-            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: tool.path)
+            try "#!/bin/sh\n\(script)\n".writeScript(to: tool)
         }
         setenv("PATH", "\(tools.path):/usr/bin:/bin", 1)
     }
@@ -45,8 +44,7 @@ final class GuidePluginTests: XCTestCase {
     }
 
     func testThePluginsSpotShowsWithAnEmptyFolderAndKeepsItsKey() throws {
-        try "#!/bin/sh\n# key=p\n".write(to: plugins.appendingPathComponent("mine.sh"), atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: plugins.appendingPathComponent("mine.sh").path)
+        try "#!/bin/sh\n# key=p\n".writeScript(to: plugins.appendingPathComponent("mine.sh"))
         let shipped = ShippedSpot.commands(folder: plugins, guide: guideURL, app: "")
 
         let scan = try PluginFolder(url: plugins).scan(shipped: shipped)
@@ -64,7 +62,7 @@ final class GuidePluginTests: XCTestCase {
         XCTAssertEqual(opened.command.kind, .list)
         XCTAssertEqual(opened.command.actions.map(\.id), ["new"])
         XCTAssertFalse(opened.command.keepsRecent)
-        XCTAssertEqual(lines.items.map(\.run), ["prompt", "sandbox", "guide", "folder"])
+        XCTAssertEqual(lines.items.map(\.run), ["prompt", "sandbox", "guide", "folder", "get"])
         XCTAssertEqual(lines.errors, [])
     }
 
@@ -86,6 +84,12 @@ final class GuidePluginTests: XCTestCase {
 
         try await guide.perform(.item(SpotItem(title: "Folder", run: "folder")), timeout: 5)
         XCTAssertTrue(try saved("opened").contains(plugins.path))
+    }
+
+    func testGetPluginsOpensTheFolderOnGitHub() async throws {
+        try await guide().perform(.item(SpotItem(title: "Get", run: "get")), timeout: 5)
+
+        XCTAssertEqual(try saved("opened"), "https://github.com/celishq/openspot/tree/main/plugins\n")
     }
 
     func testNewPluginMakesAWorkingPlugin() async throws {
@@ -131,8 +135,7 @@ final class GuidePluginTests: XCTestCase {
         XCTAssertGreaterThan(scripts.count, 2)
         for (index, script) in scripts.enumerated() {
             let url = plugins.appendingPathComponent("example-\(index).sh")
-            try script.write(to: url, atomically: true, encoding: .utf8)
-            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+            try script.writeScript(to: url)
         }
 
         let faults = await PluginCheck(folder: PluginFolder(url: plugins)).faults()

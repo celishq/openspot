@@ -4,10 +4,11 @@ import Foundation
 public enum ShippedSpot: Equatable, Sendable {
     case plugins(PluginGuide)
     case settings(Settings)
+    case updates(UpdateSpot)
 
     /// The commands of the shipped spots, in the order of the grid.
-    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard()) -> [PluginCommand] {
-        [
+    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil) -> [PluginCommand] {
+        var commands = [
             PluginCommand(
                 id: "openspot/plugins",
                 name: "Plugins",
@@ -34,13 +35,28 @@ public enum ShippedSpot: Equatable, Sendable {
                 shipped: .settings(Settings(file: config))
             )
         ]
+        if let update {
+            commands.append(
+                PluginCommand(
+                    id: "openspot/updates",
+                    name: "Updates",
+                    url: folder,
+                    symbol: "arrow.triangle.2.circlepath",
+                    read: .panel,
+                    order: 3,
+                    shipped: .updates(update)
+                )
+            )
+        }
+        return commands
     }
 
     /// Answers one call with the text a script would print.
-    func answer(_ arguments: [String], input: String?, timeout: TimeInterval) async throws -> String {
+    func answer(_ arguments: [String], input: String?) async throws -> String {
         switch self {
-        case .plugins(let guide): try await guide.answer(arguments, input: input, timeout: timeout)
+        case .plugins(let guide): try await guide.answer(arguments, input: input)
         case .settings(let settings): try settings.answer(arguments)
+        case .updates(let update): try await update.answer(arguments)
         }
     }
 }

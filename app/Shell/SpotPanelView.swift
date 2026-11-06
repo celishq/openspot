@@ -6,6 +6,7 @@ import SwiftUI
 /// and reports each change.
 struct SpotPanelView: View {
     let panel: SpotPanel
+    var work: (SpotPart) -> ScriptCall? = { _ in nil }
     let onSet: (SpotPart, String) -> Void
     let onPress: (SpotPart) -> Void
     var recordingPart: String?
@@ -108,12 +109,17 @@ struct SpotPanelView: View {
         switch part.control {
         case .text(let text, _, let placeholder, let isReadOnly):
             textArea(part, frame, text: text, placeholder: placeholder, isReadOnly: isReadOnly)
+                .overlay(alignment: .topTrailing) { cornerMark(part, frame) }
         case .slider(let level, let low, let high):
             slider(part, level: level, low: low, high: high)
         case .swatches(let colors, let value) where colors.count > 1:
-            swatches(part, colors: colors, value: value)
+            HStack(spacing: Self.lineGap) {
+                mark(part)
+                swatches(part, colors: colors, value: value)
+            }
         case .list(let items, let value):
             list(part, items: items, value: value)
+                .overlay(alignment: .topTrailing) { cornerMark(part, frame) }
         case .metric(let number):
             metric(part, number: number)
         case .chart(let points):
@@ -131,10 +137,25 @@ struct SpotPanelView: View {
         }
     }
 
+    /// The running work of a part, in the slot of its symbol. The square of a part that takes a press says that it stops.
+    @ViewBuilder
+    private func mark(_ part: SpotPart) -> some View {
+        if let call = work(part) {
+            SpotWorkMark(call: call, side: SpotTokens.workMark, stops: part.isPressable)
+        }
+    }
+
+    /// The running work of a part that fills its cell, in the corner of that cell.
+    private func cornerMark(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
+        mark(part).padding(frame.isInCard ? 0 : SpotTokens.controlPadding)
+    }
+
     /// A line with a label, a value, a round button and a switch or a menu.
     private func labelled(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         HStack(spacing: frame.rect.width < Self.narrowCell ? Self.narrowGap : Self.lineGap) {
-            if let symbol = part.symbol {
+            if !hasRoundMark(part), work(part) != nil {
+                mark(part)
+            } else if let symbol = part.symbol {
                 Image(systemName: symbol).modifier(SpotSecondaryText())
             }
             if let title = part.title {
@@ -152,16 +173,37 @@ struct SpotPanelView: View {
                     .font(SpotType.detail)
                     .modifier(SpotSecondaryText())
                     .lineLimit(1)
+                    .layoutPriority(1)
             }
             if case .symbol(let symbol) = part.press {
                 SpotRoundButton(
                     symbol: symbol,
                     label: part.title ?? part.id.capitalized,
+                    work: work(part),
                     size: frame.roundSize,
                     look: part.look == .strong ? .strong : frame.isOnTop ? .floating : part.look == .bare ? .bare : .plain
                 ) { onPress(part) }
             }
             control(part, frame)
+        }
+    }
+
+    /// Whether a part shows its running work on its round button.
+    private func hasRoundMark(_ part: SpotPart) -> Bool {
+        if case .symbol = part.press { return true }
+        return false
+    }
+
+    /// What a button says: its own words, or the running work of its part and the word that a press stops it.
+    @ViewBuilder
+    private func pressLabel(_ part: SpotPart, words: String, font: Font) -> some View {
+        if let call = work(part) {
+            HStack(spacing: SpotTokens.placeGap / 2) {
+                SpotWorkMark(call: call, side: SpotTokens.workMark, isOnWhite: part.look == .strong)
+                Text("Stop").font(font).lineLimit(1)
+            }
+        } else {
+            Text(words).font(font).lineLimit(1)
         }
     }
 
@@ -171,15 +213,19 @@ struct SpotPanelView: View {
         Button { onPress(part) } label: {
             switch part.look {
             case .key:
-                Text(part.title ?? part.id)
-                    .font(Self.keyFont)
-                    .foregroundStyle(.white)
+                Group {
+                    if let call = work(part) {
+                        SpotWorkMark(call: call, side: SpotTokens.workMark, stops: true)
+                    } else {
+                        Text(part.title ?? part.id).font(Self.keyFont)
+                    }
+                }
+                .foregroundStyle(.white)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Color.white.opacity(SpotTokens.selectedFill), in: shape)
                     .contentShape(shape)
             case .chip:
-                Text(part.title ?? part.id)
-                    .font(SpotType.action)
+                pressLabel(part, words: part.title ?? part.id, font: SpotType.action)
                     .foregroundStyle(.white)
                     .padding(.horizontal, SpotTokens.padding)
                     .padding(.vertical, 5)
@@ -196,8 +242,7 @@ struct SpotPanelView: View {
                 }
                 .contentShape(Rectangle())
             case .strong where frame.isOnTop:
-                Text(part.title ?? part.id.capitalized)
-                    .font(SpotType.action)
+                pressLabel(part, words: part.title ?? part.id.capitalized, font: SpotType.action)
                     .foregroundStyle(.black)
                     .padding(.horizontal, SpotTokens.padding)
                     .padding(.vertical, 5)
@@ -218,10 +263,8 @@ struct SpotPanelView: View {
     }
 
     private func centeredLine(_ part: SpotPart, text: Color, fill: Color) -> some View {
-        Text(part.title ?? part.id.capitalized)
-            .font(SpotType.body.weight(.medium))
+        pressLabel(part, words: part.title ?? part.id.capitalized, font: SpotType.body.weight(.medium))
             .foregroundStyle(text)
-            .lineLimit(1)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(fill, in: shape)
             .contentShape(shape)
@@ -299,7 +342,9 @@ struct SpotPanelView: View {
                     .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
                     .lineLimit(1)
             }
-            if let symbol = part.symbol {
+            if work(part) != nil {
+                mark(part)
+            } else if let symbol = part.symbol {
                 Image(systemName: symbol)
                     .foregroundStyle(.white)
             }
