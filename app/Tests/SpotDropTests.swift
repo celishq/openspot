@@ -316,6 +316,63 @@ final class SpotDropTests: XCTestCase {
         XCTAssertEqual(log(), ["read", "work"])
     }
 
+    // MARK: Y1, Y2
+
+    /// The sheet of a staying script that takes `mov` files. It logs each line of its stdin, and prints a frame after each block.
+    private func stayingSheet(header: String = "") throws -> SpotSheet {
+        try sheet(header: "stay=true\ndrop=mov\n\(header)", """
+        while IFS= read -r line; do
+          printf '%s\\n' "$line" >> '\(path("blocks"))'
+          [ -n "$line" ] || printf 'row=A\\nrun=a\\n---\\n'
+        done
+        """)
+    }
+
+    /// The blocks that a staying script got, one string for each.
+    private func blocks() -> [String] {
+        let text = (try? String(contentsOfFile: path("blocks"), encoding: .utf8)) ?? ""
+        return text.components(separatedBy: "\n\n").filter { !$0.isEmpty }
+    }
+
+    func testADropReachesTheRunningStayingScriptAsOneBlockWithAValueLineForEachPath() async throws {
+        let sheet = try stayingSheet()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        let spaced = file("a b c.mov")
+        let dashed = file("-rf.mov")
+
+        XCTAssertTrue(sheet.drop([spaced, dashed]))
+
+        try await wait("the call") { self.blocks() == ["name=read", "name=drop\nvalue=\(spaced)\nvalue=\(dashed)"] }
+        XCTAssertEqual(log().count, 1)
+        XCTAssertTrue(sheet.calls.isEmpty)
+    }
+
+    func testADropStartsOneCopyOfAStayingScriptThatNothingWants() async throws {
+        let sheet = try stayingSheet()
+        let spaced = file("a b c.mov")
+        let dashed = file("-rf.mov")
+
+        XCTAssertTrue(sheet.drop([spaced, dashed]))
+
+        try await wait("the call") { self.blocks() == ["name=read", "name=drop\nvalue=\(spaced)\nvalue=\(dashed)"] }
+        XCTAssertEqual(log(), [""])
+    }
+
+    func testTwoDropsReachOneRunningStayingScriptAndNeitherWaits() async throws {
+        let sheet = try stayingSheet()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        let first = file("first.mov")
+        let second = file("second.mov")
+
+        XCTAssertTrue(sheet.drop([first]))
+        XCTAssertTrue(sheet.drop([second]))
+
+        try await wait("the calls") { self.blocks() == ["name=read", "name=drop\nvalue=\(first)", "name=drop\nvalue=\(second)"] }
+        XCTAssertEqual(log().count, 1)
+    }
+
     // MARK: D5
 
     /// Counts how often the sheet asks its owner for a choice of files.

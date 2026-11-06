@@ -43,10 +43,11 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: ["drop"] + paths)
     }
 
-    /// This call as one block for a script that stays: `name`, `value`, and one `field.<id>` for each value that stdin
-    /// holds in a normal call.
+    /// This call as one block for a script that stays: `name`, one `value` for each argument after it, and one
+    /// `field.<id>` for each value that stdin holds in a normal call.
     public func event(values: String? = nil) -> String {
-        let call = zip(["name", "value"], arguments).map { TextBlock.Field(key: $0, value: $1) }
+        let name = arguments.prefix(1).map { TextBlock.Field(key: "name", value: $0) }
+        let call = name + arguments.dropFirst().map { TextBlock.Field(key: "value", value: $0) }
         let held = values.flatMap { TextBlock.blocks(in: $0).first }?.fields ?? []
         return TextBlock(fields: call + held.map { .init(key: "field.\($0.key)", value: $0.value) }).text + "\n"
     }

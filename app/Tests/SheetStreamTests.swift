@@ -117,6 +117,7 @@ final class SheetStreamTests: XCTestCase {
         XCTAssertEqual(SpotAction.read.event(), "name=read\n\n")
         XCTAssertEqual(SpotAction.press("swap").event(), "name=swap\n\n")
         XCTAssertEqual(SpotAction.set("input", to: "one\ntwo").event(), "name=input\nvalue=one\\ntwo\n\n")
+        XCTAssertEqual(SpotAction.drop(paths: ["/a b.mov", "-rf.mov"]).event(), "name=drop\nvalue=/a b.mov\nvalue=-rf.mov\n\n")
     }
 
     func testAnEventHoldsEachValueOfTheSheet() {

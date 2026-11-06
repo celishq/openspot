@@ -356,8 +356,8 @@ when something first wants it, and the sheet shows with its first frame. When no
 After 2 seconds its group gets the terminate signal, and 2 seconds after that Openspot kills what still runs.
 
 It gets one block on stdin for each call, with a blank line after it: `name`, `value`, and one `field.<id>` for each value
-of the sheet. A pick, an action and a form reach the script that runs, and no call starts a second copy. It keeps its own
-state, and answers with frames.
+of the sheet. A `drop` has one `value` line for each path. A pick, an action, a form and a drop reach the script that runs,
+and no call starts a second copy. It keeps its own state, and answers with frames.
 
 If it ends and something still wants it, the next moment or call starts it again. After 3 failures in one minute, Openspot
 tells the person, and does not start it again until a scan finds its file changed.
