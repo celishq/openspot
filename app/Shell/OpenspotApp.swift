@@ -25,6 +25,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var trayBar: SpotTrayBar?
     private var menuBarDrag: SpotMenuBarDrag?
     private var fileChooser: SpotFileChooser?
+    private var update: AppUpdate?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -59,6 +60,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             Task { @MainActor in trigger.press() }
         }
         hotKeys = [panelKey, triggerKey].compactMap { $0 }
+        update = AppUpdate()
     }
 
     func applicationWillTerminate(_ notification: Notification) {

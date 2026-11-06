@@ -26,5 +26,15 @@
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>Openspot runs your plugins, and a plugin can ask another app to act, such as to paste.</string>
+	<key>SUAutomaticallyUpdate</key>
+	<true/>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/celishq/openspot/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>$(UPDATE_PUBLIC_KEY)</string>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
 </dict>
 </plist>

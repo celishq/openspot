@@ -3,6 +3,10 @@ options:
   bundleIdPrefix: dev.openspot
   deploymentTarget:
     macOS: "26.0"
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: 2.10.1
 settings:
   base:
     SWIFT_VERSION: "6.0"
@@ -12,6 +16,7 @@ settings:
     DEVELOPMENT_TEAM: NNK86LQK58
     MARKETING_VERSION: "0.1"
     CURRENT_PROJECT_VERSION: "1"
+    UPDATE_PUBLIC_KEY: ""
 targets:
   OpenspotCore:
     type: library.static
@@ -29,6 +34,7 @@ targets:
       - path: Shell
     dependencies:
       - target: OpenspotCore
+      - package: Sparkle
     info:
       path: Shell/Info.plist
       properties:
@@ -38,6 +44,11 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSMinimumSystemVersion: "26.0"
         LSUIElement: true
+        SUFeedURL: https://github.com/celishq/openspot/releases/latest/download/appcast.xml
+        SUPublicEDKey: $(UPDATE_PUBLIC_KEY)
+        SUEnableAutomaticChecks: true
+        SUAutomaticallyUpdate: true
+        SUVerifyUpdateBeforeExtraction: true
         NSAppleEventsUsageDescription: Openspot runs your plugins, and a plugin can ask another app to act, such as to paste.
     entitlements:
       path: Shell/Openspot.entitlements
@@ -53,6 +64,9 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.app
         DEVELOPMENT_TEAM: ""
+      configs:
+        Debug:
+          ENABLE_HARDENED_RUNTIME: NO
   OpenspotStandIn:
     type: tool
     platform: macOS
