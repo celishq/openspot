@@ -18,9 +18,6 @@ struct SpotSheetView: View {
     let onFormValue: (String, String) -> Void
     let onRun: (SpotItem) -> Void
     let onClose: () -> Void
-    @State private var edges = SpotScrollEdges()
-
-    private static let bottomFade = 2 * SpotTokens.padding
 
     private var row: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
@@ -30,7 +27,8 @@ struct SpotSheetView: View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             header
             if let panel {
-                SpotPanelView(panel: panel, work: work, onSet: onSet, onPress: onPress, recordingPart: recordingPart, onRecord: onRecord)
+                if panel.showsRows { Color.clear.frame(height: SpotTokens.listRowHeight) }
+                SpotPanelView(panel: panel, work: work, onSet: onSet, onPress: onPress, recordingPart: recordingPart, onRecord: onRecord, list: list, onRun: onRun)
             } else if let form {
                 SpotFormView(draft: form, onValue: onFormValue)
             } else {
@@ -40,13 +38,8 @@ struct SpotSheetView: View {
                         createLabel(createTitle)
                     }
                     .buttonStyle(.plain)
-                } else if list.shown.isEmpty {
-                    Text(emptyText)
-                        .font(SpotType.body)
-                        .modifier(SpotSecondaryText())
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    rows
+                    SpotRowsView(list: list, onRun: onRun)
                 }
             }
         }
@@ -62,7 +55,7 @@ struct SpotSheetView: View {
                         .font(SpotType.title)
                         .foregroundStyle(showsFill ? Color.black.opacity(SpotTokens.titleOpacity) : Color.white.opacity(SpotTokens.titleOpacity))
                         .lineLimit(1)
-                    if form == nil, let subtitle = entry.shownState.subtitle {
+                    if form == nil, let subtitle = shownSubtitle {
                         Text(subtitle)
                             .font(SpotType.detail)
                             .modifier(SpotSecondaryText(isOnWhite: showsFill))
@@ -73,6 +66,11 @@ struct SpotSheetView: View {
                 Spacer()
                 SpotRoundButton(symbol: "xmark", label: "Close", action: onClose)
             }
+    }
+
+    /// The second line of the header: the name of the selected button in a grid, which draws only its picture.
+    private var shownSubtitle: String? {
+        isOpen && list.perLine > 1 ? list.selectedItem?.title ?? entry.shownState.subtitle : entry.shownState.subtitle
     }
 
     /// The card's glyph, placed as the card places it until the sheet opens.
@@ -101,14 +99,6 @@ struct SpotSheetView: View {
         !isOpen && entry.state.on == true
     }
 
-    private var emptyText: String {
-        if list.isWaiting { return "Searching" }
-        if list.isLoading { return "Loading…" }
-        if list.hasFailed { return "Could not load" }
-        if list.search == .script && list.query.isEmpty { return "Type to search" }
-        return list.query.isEmpty ? "Nothing here yet" : "No results"
-    }
-
     private func createLabel(_ title: String) -> some View {
         Text(title)
             .font(SpotType.body)
@@ -119,67 +109,5 @@ struct SpotSheetView: View {
             .frame(height: SpotTokens.listRowHeight)
             .background(Color.white.opacity(SpotTokens.selectedFill), in: row)
             .contentShape(row)
-    }
-
-    private var rows: some View {
-        ScrollViewReader { proxy in
-            ScrollView(showsIndicators: false) {
-                LazyVStack(spacing: SpotTokens.listRowGap) {
-                    ForEach(Array(list.shown.enumerated()), id: \.element.run) { index, item in
-                        Button {
-                            onRun(item)
-                        } label: {
-                            rowLabel(item, isSelected: index == list.selected)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-            .safeAreaPadding(.top, SpotTokens.padding)
-            .safeAreaPadding(.bottom, SpotTokens.sheetFits(rows: list.shown.count) ? SpotTokens.padding : Self.bottomFade)
-            .modifier(SpotScrollEdgeTracker(edges: $edges))
-            .mask(edgeFade)
-            .padding(.vertical, -SpotTokens.padding)
-            .onChange(of: list.selectedItem?.run) { _, run in
-                if let run { proxy.scrollTo(run) }
-            }
-            .onChange(of: list.query) {
-                guard let run = list.shown.first?.run else { return }
-                DispatchQueue.main.async { proxy.scrollTo(run, anchor: .top) }
-            }
-        }
-    }
-
-    private var edgeFade: some View {
-        VStack(spacing: 0) {
-            LinearGradient(colors: [.black.opacity(1 - edges.top), .black], startPoint: .top, endPoint: .bottom)
-                .frame(height: SpotTokens.padding)
-            Color.black
-            LinearGradient(colors: [.black, .black.opacity(1 - edges.bottom)], startPoint: .top, endPoint: .bottom)
-                .frame(height: Self.bottomFade)
-        }
-    }
-
-    private func rowLabel(_ item: SpotItem, isSelected: Bool) -> some View {
-        HStack(spacing: SpotTokens.padding - 5) {
-            SpotItemIcon(item: item, size: SpotTokens.listIconSize)
-            VStack(alignment: .leading, spacing: SpotType.lineGap) {
-                Text(item.title)
-                    .font(SpotType.body)
-                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
-                    .lineLimit(1)
-                if let subtitle = item.subtitle {
-                    Text(subtitle)
-                        .font(SpotType.detail)
-                        .modifier(SpotSecondaryText())
-                        .lineLimit(1)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, SpotTokens.padding)
-        .frame(height: SpotTokens.listRowHeight)
-        .background(Color.white.opacity(isSelected ? SpotTokens.selectedFill : SpotTokens.fill), in: row)
-        .contentShape(row)
     }
 }

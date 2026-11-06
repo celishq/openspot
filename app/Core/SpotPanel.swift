@@ -37,9 +37,14 @@ public struct SpotPanel: Equatable, Sendable {
         return (keys + ["Esc Close"]).joined(separator: "   ")
     }
 
-    /// Whether the up and down keys select its parts. A sheet with a text area leaves them to that area.
+    /// Whether it draws the rows of the script in one of its areas, so that the search field and the arrows go to them.
+    public var showsRows: Bool {
+        layout?.repeated != nil
+    }
+
+    /// Whether the up and down keys select its parts. A sheet with a text area or with rows leaves them to those.
     public var takesArrows: Bool {
-        !parts.contains(where: \.isEditable) && parts.contains(where: \.isSelectable)
+        !showsRows && !parts.contains(where: \.isEditable) && parts.contains(where: \.isSelectable)
     }
 
     public var selectedPart: SpotPart? {

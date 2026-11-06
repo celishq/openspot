@@ -526,9 +526,9 @@ final class SpotsModel {
         SpotGrid().place(visible.map(\.size))
     }
 
-    /// Whether the panel shows its search field, which a form or a sheet of parts replaces.
+    /// Whether the panel shows its search field, which a form or a sheet of parts with no rows replaces.
     var showsSearch: Bool {
-        form == nil && openPanel == nil
+        form == nil && openPanel?.showsRows != false
     }
 
     var openPanel: SpotPanel? {
@@ -608,6 +608,10 @@ final class SpotsModel {
         openSheet?.list.move(by: step)
     }
 
+    func moveItemLine(by lines: Int) {
+        openSheet?.list.moveLine(by: lines)
+    }
+
     func runSelectedItem() {
         guard let item = openItems?.selectedItem else {
             createFromSearch()
@@ -682,7 +686,11 @@ final class SpotsModel {
             }
             return true
         }
-        if let panel = openPanel { return handlePanelKey(key, panel) }
+        if let panel = openPanel, !panel.showsRows { return handlePanelKey(key, panel) }
+        if let part = openPanel?.parts.first(where: { $0.key == key }) {
+            pressPart(part)
+            return true
+        }
         if key == ActionKey(name: "escape") {
             allowSheetMotion()
             if !stepBack() { dismiss() }
@@ -813,7 +821,7 @@ final class SpotsModel {
     /// The keys that work on the selected row or card, in words for the bottom of the panel.
     var hint: String {
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
-        if let panel = openPanel { return panel.hint { work(of: $0) != nil } }
+        if let panel = openPanel, !panel.showsRows { return panel.hint { work(of: $0) != nil } }
         let keys = target.flatMap { target in
             actionMenu(on: target)?.hint { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil }
         } ?? "Esc Close"

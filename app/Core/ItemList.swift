@@ -9,6 +9,7 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var recent: [String]
     public private(set) var shown: [SpotItem] = []
     public private(set) var selected = 0
+    public private(set) var perLine = 1
     public private(set) var isWaiting = false
     public private(set) var isLoading = false
     public private(set) var hasFailed = false
@@ -97,6 +98,21 @@ public struct ItemList: Equatable, Sendable {
 
     public mutating func move(by step: Int) {
         selected = min(max(selected + step, 0), max(shown.count - 1, 0))
+    }
+
+    /// Takes how many rows go on one line, as the script printed it.
+    public mutating func take(perLine: Int) {
+        self.perLine = max(perLine, 1)
+    }
+
+    /// Moves to another line and keeps the place in the line. A shorter last line takes its last item, and the first and the
+    /// last line stop the move.
+    public mutating func moveLine(by lines: Int) {
+        let target = selected + lines * perLine
+        guard target >= 0, !shown.isEmpty else { return }
+        let lastLine = (shown.count - 1) / perLine
+        guard target < shown.count || selected / perLine < lastLine else { return }
+        selected = min(target, shown.count - 1)
     }
 
     public mutating func remember(_ item: SpotItem) {

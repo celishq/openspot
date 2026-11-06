@@ -10,8 +10,17 @@ public struct SheetLayout: Equatable, Sendable {
     public let isDrawn: Bool
     public let keyParts: [SpotPart]
     public let areas: [String: SheetArea]
+    /// The area that the rows of a script flow through, with how many rows go on one line.
+    public let repeated: (area: String, perLine: Int)?
+    let repeatCount: Int
 
-    /// Reads the layout block of a sheet. Returns nil when the block has no `grid` or `keys`.
+    public static func == (first: SheetLayout, second: SheetLayout) -> Bool {
+        first.rows == second.rows && first.cards == second.cards && first.isDrawn == second.isDrawn
+            && first.keyParts == second.keyParts && first.repeated?.area == second.repeated?.area
+            && first.repeated?.perLine == second.repeated?.perLine
+    }
+
+    /// Reads the layout block of a sheet. Returns nil when the block has no `grid`, `keys` or `repeat`.
     public init?(block: TextBlock) {
         var rows: [[String]] = []
         var keys: [SpotPart] = []
@@ -26,6 +35,10 @@ public struct SheetLayout: Equatable, Sendable {
                 }
             }
         }
+        let repeats = block.values("repeat").map(Self.words)
+        repeated = repeats.first.flatMap { words in words.first.map { (area: $0, perLine: words.count > 1 ? Int(words[1]) ?? 0 : 0) } }
+        repeatCount = repeats.count
+        if rows.isEmpty, let area = repeated?.area { rows = [[area]] }
         guard !rows.isEmpty else { return nil }
         self.rows = rows
         self.cards = cards
@@ -48,6 +61,8 @@ public struct SheetLayout: Equatable, Sendable {
         isDrawn = false
         keyParts = []
         areas = Self.areas(in: rows)
+        repeated = nil
+        repeatCount = 0
     }
 
     /// The letter a part stands on: the letter it names, or in one column its own id.

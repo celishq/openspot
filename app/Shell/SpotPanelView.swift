@@ -11,6 +11,8 @@ struct SpotPanelView: View {
     let onPress: (SpotPart) -> Void
     var recordingPart: String?
     var onRecord: (SpotPart) -> Void = { _ in }
+    var list = ItemList()
+    var onRun: (SpotItem) -> Void = { _ in }
     @FocusState private var focus: String?
     @Environment(\.spotIsShown) private var isShown
 
@@ -55,6 +57,11 @@ struct SpotPanelView: View {
                     .fill(.white.opacity(SpotTokens.fill))
                     .frame(width: line.width, height: line.height)
                     .offset(x: line.minX, y: line.minY)
+            }
+            if let area = sheet.repeatFrame {
+                SpotRowsView(list: list, onRun: onRun)
+                    .frame(width: area.width, height: area.height)
+                    .offset(x: area.minX, y: area.minY)
             }
             ForEach(panel.parts) { part in
                 if let frame = sheet.frames[part.id] {
@@ -101,6 +108,7 @@ struct SpotPanelView: View {
     }
 
     private func focusFirstField() {
+        guard !panel.showsRows else { return }
         DispatchQueue.main.async { focus = panel.parts.first(where: \.isEditable)?.id }
     }
 

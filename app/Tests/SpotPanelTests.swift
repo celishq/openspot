@@ -147,7 +147,7 @@ final class SpotPanelTests: XCTestCase {
     }
 
     func testTheCatalogNamesEachControl() {
-        for word in ["`on=true`", "`level=70`", "`color=", "`option=", "`item=", "`text=", "`press=true`", "`metric=", "`point=", "`image=", "`block=progress`", "`keys=", "`card="] {
+        for word in ["`on=true`", "`level=70`", "`color=", "`option=", "`item=", "`text=", "`press=true`", "`metric=", "`point=", "`image=", "`block=progress`", "`keys=", "`card=", "`repeat=", "`glyph="] {
             XCTAssertTrue(PartCatalog.text.contains(word), word)
         }
     }

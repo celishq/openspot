@@ -51,6 +51,11 @@ public struct PluginOutput: Equatable, Sendable {
         summary?.value("search") == ItemSearch.script.rawValue ? .script : .local
     }
 
+    /// How many rows go on one line, when the script draws a repeated area.
+    public var perLine: Int? {
+        layout?.repeated?.perLine
+    }
+
     /// Whether recent picks sort first, unless it prints `recents=false`.
     public var keepsRecent: Bool {
         summary?.flag("recents") != false
@@ -58,7 +63,7 @@ public struct PluginOutput: Equatable, Sendable {
 
     /// All that is wrong with this output as one sheet of parts.
     public var sheetFaults: [String] {
-        (parts.isEmpty ? ["the sheet has no parts"] : []) + errors.map { "cannot read the block that starts: \($0)" } + partFaults
+        (parts.isEmpty && perLine == nil ? ["the sheet has no parts"] : []) + errors.map { "cannot read the block that starts: \($0)" } + partFaults
     }
 
     /// The kind of spot that this output makes.

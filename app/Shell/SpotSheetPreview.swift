@@ -9,6 +9,7 @@ struct SpotSheetPreview: View {
     var symbol = "square.dashed"
     var onSet: (SpotPart, String) -> Void = { _, _ in }
     var onPress: (SpotPart) -> Void = { _ in }
+    var list = ItemList()
 
     var body: some View {
         let frame = SpotTokens.panelRect(panel)
@@ -27,7 +28,8 @@ struct SpotSheetPreview: View {
                 Spacer()
                 SpotRoundButton(symbol: "xmark", label: "Close") {}
             }
-            SpotPanelView(panel: panel, onSet: onSet, onPress: onPress)
+            if panel.showsRows { Color.clear.frame(height: SpotTokens.listRowHeight) }
+            SpotPanelView(panel: panel, onSet: onSet, onPress: onPress, list: list)
         }
         .padding(SpotTokens.padding)
         .frame(width: frame.width, height: frame.height, alignment: .topLeading)

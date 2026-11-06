@@ -148,8 +148,8 @@ run=/Applications/Safari.app
 file=/Applications/Safari.app
 ```
 
-`row` and `run` are the only keys a list needs. Also use `symbol` for an SF Symbol, `file` for a file's icon, or `image`
-for a path to an image. `hides` is the ID of an action that this row does not offer. Repeat the line for each one.
+`row` and `run` are the only keys a list needs. Also use `symbol` for an SF Symbol, `file` for a file's icon, `image`
+for a path to an image, or `glyph` for a short text, such as an emoji. `hides` is the ID of an action that this row does not offer. Repeat the line for each one.
 
 Openspot searches the rows itself and sorts recent picks first. To change this, print one block before the rows on each
 read:
@@ -158,6 +158,27 @@ read:
 |---|---|
 | `search=script` | Each search change calls `<script> read <text>`. The script prints the rows that match. |
 | `recents=false` | Does not sort recent picks first. |
+
+To show rows as square buttons, print `repeat=<letter> <per line>` in that block. Each button draws its picture, and the
+title of the selected button shows in the sheet's header. To add parts around the rows, draw them. The repeated area scrolls,
+and the app draws the search field over the sheet:
+
+```text
+grid=t t t t t t t
+grid=a a a a a a a
+repeat=a 7
+
+part=tone
+cell=t
+title=Skin tone
+option=none:Yellow
+option=medium:Medium
+value=none
+
+row=thumbs up
+run=👍
+glyph=👍
+```
 
 ## Toggles and sliders
 

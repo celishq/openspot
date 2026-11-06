@@ -240,6 +240,59 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(output("grid=a b\n\npart=a\ncell=a\ntitle=A\n").partFaults, [])
     }
 
+    private let picker = """
+    grid=t t
+    grid=a a
+    repeat=a 7
+
+    part=tone
+    cell=t
+    title=Tone
+    option=x:X
+    value=x
+
+    row=one
+    run=1
+    glyph=😀
+    """
+
+    func testARepeatedAreaSharesTheFreeHeightUnderTheField() throws {
+        let sheet = try placement(picker)
+        let area = try XCTUnwrap(sheet.repeatFrame)
+
+        XCTAssertEqual(area.minY, SheetPlacement.rowHeight + SheetPlacement.gap)
+        XCTAssertEqual(sheet.height, SheetPlacement.maxHeight - SheetPlacement.fieldRoom)
+        XCTAssertEqual(area.maxY, sheet.height)
+        XCTAssertFalse(sheet.overflows)
+    }
+
+    func testRowsAndPartsShareOneSheet() throws {
+        let lines = output(picker)
+
+        XCTAssertEqual(lines.items.map(\.glyph), ["😀"])
+        XCTAssertEqual(lines.perLine, 7)
+        XCTAssertEqual(lines.sheetFaults, [])
+        XCTAssertFalse(try XCTUnwrap(SpotPanel(output: lines)).takesArrows)
+    }
+
+    func testRowsAloneNeedNoDrawing() {
+        let lines = output("repeat=a 7\n\nrow=one\nrun=1\nglyph=😀\n")
+
+        XCTAssertEqual(lines.perLine, 7)
+        XCTAssertEqual(lines.sheetFaults, [])
+        XCTAssertEqual(output("row=one\nrun=1\n").perLine, nil)
+    }
+
+    func testTheFaultsOfARepeat() {
+        func faults(_ text: String) -> [String] { output(text).partFaults }
+        let part = "\n\npart=a\ncell=a\ntitle=A\n"
+
+        XCTAssertEqual(faults("grid=a\nrepeat=z 2" + part), ["the repeat names z, which the drawing does not have"])
+        XCTAssertEqual(faults("grid=a\ngrid=b\nrepeat=a 2" + part), ["the part a stands on the repeated area a", "the part a sits in rows that stretch, so use item= for a list"])
+        XCTAssertEqual(faults("grid=a\ngrid=b\nrepeat=b 0" + part), ["the repeat needs a number of rows per line, such as repeat=b 7"])
+        XCTAssertEqual(faults("grid=a\ngrid=b\ngrid=c\nrepeat=b 2\nrepeat=c 2" + part), ["a sheet can repeat only one area"])
+    }
+
     func testASheetWithNoDrawingIsOneColumnOfLines() throws {
         let sheet = try placement("""
         section=lights

@@ -209,7 +209,8 @@ struct SpotsView: View {
     private var sheetRect: CGRect {
         if let form = model.form { return SpotTokens.formRect(form.draft.form) }
         if let panel = model.sheets[sheetID ?? ""]?.panel { return SpotTokens.panelRect(panel) }
-        return SpotTokens.sheetRect(rows: model.sheets[sheetID ?? ""]?.list.shown.count ?? 0)
+        let list = model.sheets[sheetID ?? ""]?.list
+        return SpotTokens.sheetRect(rows: list?.shown.count ?? 0, perLine: list?.perLine ?? 1)
     }
 
     /// Where the drop state lies. The install screen grows out of it and collapses back into it.
@@ -271,7 +272,7 @@ struct SpotsView: View {
     /// Whether the search field is drawn. A form, a sheet of parts and the drop state replace it.
     private var showsSearchField: Bool {
         guard model.form == nil, !coversGrid else { return false }
-        return !(sheetOpen && model.sheets[sheetID ?? ""]?.panel != nil)
+        return !(sheetOpen && model.sheets[sheetID ?? ""]?.panel?.showsRows == false)
     }
 
     private var openFrame: CGRect? {
@@ -336,7 +337,7 @@ struct SpotsView: View {
                 .onSubmit { model.runSelected() }
                 .onKeyPress(.downArrow) {
                     if model.openList != nil {
-                        model.moveItem(by: 1)
+                        model.moveItemLine(by: 1)
                     } else {
                         model.moveSelection(dx: 0, dy: 1)
                     }
@@ -344,7 +345,7 @@ struct SpotsView: View {
                 }
                 .onKeyPress(.upArrow) {
                     if model.openList != nil {
-                        model.moveItem(by: -1)
+                        model.moveItemLine(by: -1)
                     } else {
                         model.moveSelection(dx: 0, dy: -1)
                     }
@@ -352,7 +353,9 @@ struct SpotsView: View {
                 }
                 .onKeyPress(.leftArrow) {
                     if model.openList != nil {
-                        return .ignored
+                        guard (model.openItems?.perLine ?? 1) > 1 else { return .ignored }
+                        model.moveItem(by: -1)
+                        return .handled
                     }
                     if model.selectedIsSlider {
                         model.adjustSelected(by: -5)
@@ -363,7 +366,9 @@ struct SpotsView: View {
                 }
                 .onKeyPress(.rightArrow) {
                     if model.openList != nil {
-                        return .ignored
+                        guard (model.openItems?.perLine ?? 1) > 1 else { return .ignored }
+                        model.moveItem(by: 1)
+                        return .handled
                     }
                     if model.selectedIsSlider {
                         model.adjustSelected(by: 5)

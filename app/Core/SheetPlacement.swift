@@ -27,6 +27,8 @@ public struct SheetPlacement: Equatable, Sendable {
     public static let rowHeight: CGFloat = 40
     public static let maxRound: CGFloat = 44
     public static let dividerHeight: CGFloat = 1
+    /// The height of the search field over a sheet that repeats rows, with its gap.
+    public static let fieldRoom: CGFloat = 54
     /// How far text moves from a round button that sits on the divider at its edge.
     private static let seamClearance: CGFloat = 22
 
@@ -34,10 +36,12 @@ public struct SheetPlacement: Equatable, Sendable {
     public let lines: [CGRect]
     public let cards: [CGRect]
     public let height: CGFloat
+    /// Where the rows of the script flow.
+    public let repeatFrame: CGRect?
 
     /// Whether the content is taller than the panel, so that it scrolls.
     public var overflows: Bool {
-        height > Self.maxHeight
+        height > Self.maxHeight - (repeatFrame == nil ? 0 : Self.fieldRoom)
     }
 
     public init(parts: [SpotPart], layout: SheetLayout) {
@@ -67,9 +71,14 @@ public struct SheetPlacement: Equatable, Sendable {
             guard part.growsRow else { continue }
             for y in area.y0...area.y1 where !layout.hasDivider(inRow: y) { fillRows.insert(y) }
         }
+        let repeatArea = layout.repeated.flatMap { layout.areas[$0.area] }
+        if let repeatArea {
+            for y in repeatArea.y0...repeatArea.y1 where !layout.hasDivider(inRow: y) { fillRows.insert(y) }
+        }
         let gaps = gap * CGFloat(max(rows.count - 1, 0))
         if !fillRows.isEmpty {
-            let free = Self.maxHeight - heights.reduce(0, +) - gaps
+            let room = Self.maxHeight - (repeatArea == nil ? 0 : Self.fieldRoom)
+            let free = room - heights.reduce(0, +) - gaps
             if free > 0 { for y in fillRows { heights[y] += free / CGFloat(fillRows.count) } }
         }
 
@@ -157,6 +166,7 @@ public struct SheetPlacement: Equatable, Sendable {
             CGRect(x: 0, y: rowY[$0], width: Self.width, height: Self.dividerHeight)
         }
         cards = cardAreas.map(rect)
+        repeatFrame = repeatArea.map(rect)
         height = rows.isEmpty ? 0 : heights.reduce(0, +) + gaps
     }
 

@@ -25,6 +25,7 @@ public enum SheetFaults {
         }
         if Set(layout.rows.map(\.count)).count > 1 { faults.append("each grid line needs the same number of columns") }
         faults += letterFaults(layout, parts)
+        faults += repeatFaults(layout, parts)
         for (index, row) in layout.rows.enumerated() where row.contains(SheetLayout.divider) {
             if row.filter({ $0 != SheetLayout.divider }).count > 1 { faults.append("the divider in row \(index + 1) is not whole") }
         }
@@ -61,6 +62,18 @@ public enum SheetFaults {
             } else {
                 taken[letter] = part.id
             }
+        }
+        return faults
+    }
+
+    private static func repeatFaults(_ layout: SheetLayout, _ parts: [SpotPart]) -> [String] {
+        guard let repeated = layout.repeated else { return [] }
+        var faults: [String] = []
+        if layout.repeatCount > 1 { faults.append("a sheet can repeat only one area") }
+        if layout.areas[repeated.area] == nil { faults.append("the repeat names \(repeated.area), which the drawing does not have") }
+        if repeated.perLine < 1 { faults.append("the repeat needs a number of rows per line, such as repeat=\(repeated.area) 7") }
+        for part in parts where layout.letter(of: part) == repeated.area {
+            faults.append("the part \(part.id) stands on the repeated area \(repeated.area)")
         }
         return faults
     }

@@ -490,6 +490,7 @@ public final class SpotSheet {
         takeState(lines)
         takeValue(lines)
         list.take(search: lines.search)
+        list.take(perLine: lines.perLine ?? 1)
         takePanel(lines, generation: generation)
         list.replace(lines.items)
         selectKept()
@@ -669,6 +670,8 @@ public final class SpotSheet {
             lastAnswer = lines
             command = command.taking(lines)
             list.take(search: lines.search)
+            list.take(perLine: lines.perLine ?? 1)
+        list.take(perLine: lines.perLine ?? 1)
         }
         if lines.summary != nil || !lines.rows.isEmpty, let value = MetricValue(output: lines) { reading.take(value) }
         if list.isWaiting {
@@ -755,6 +758,7 @@ public final class SpotSheet {
         lastAnswer = lines
         command = command.taking(lines)
         list.take(search: lines.search)
+        list.take(perLine: lines.perLine ?? 1)
         list.answer(lines.items, to: query)
         answerArrived()
     }
