@@ -133,14 +133,18 @@ final class SharedSpotTests: XCTestCase {
         XCTAssertEqual(spot.files.map(\.path).sorted(), ["board.toml", "cpu.sh"])
     }
 
-    func testACompiledProgramDoesNotTravel() throws {
+    func testACompiledProgramTravelsAndStillRuns() throws {
         let program = plugins.appendingPathComponent("tool")
-        try Data([0xCF, 0xFA, 0xED, 0xFE, 0x00]).write(to: program)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: program.path)
+        try FileManager.default.copyItem(at: URL(fileURLWithPath: "/usr/bin/true"), to: program)
 
-        XCTAssertThrowsError(try sharing("tool")) { error in
-            XCTAssertEqual((error as? PluginError)?.reason, "tool is a program, and Openspot shares only what it can show.")
-        }
+        let read = try SharedSpot(data: sharing("tool").data)
+        try read.add(to: target)
+
+        let added = target.appendingPathComponent("tool")
+        XCTAssertEqual(try Data(contentsOf: added), try Data(contentsOf: program))
+        let process = try Process.run(added, arguments: [])
+        process.waitUntilExit()
+        XCTAssertEqual(process.terminationStatus, 0)
     }
 
     func testAShippedSpotDoesNotTravel() throws {
@@ -154,7 +158,7 @@ final class SharedSpotTests: XCTestCase {
         try plain("home/big.bin", Data(count: SharedSpot.sizeLimit + 1))
 
         XCTAssertThrowsError(try sharing("home/coffee")) { error in
-            XCTAssertEqual((error as? PluginError)?.reason, "This spot is over the 10 MB limit.")
+            XCTAssertEqual((error as? PluginError)?.reason, "This spot is over the 64 MB limit.")
         }
     }
 
@@ -183,17 +187,13 @@ final class SharedSpotTests: XCTestCase {
         assertRefused(document(#"{"path":"a","text":"x"},{"path":"a/b","text":"y"}"#), says: "twice")
     }
 
-    func testAProgramInAFileIsRefused() {
-        assertRefused(document(#"{"path":"a","executable":true,"data":"z/rt/g=="}"#), says: "is a program")
-    }
-
     func testTextThatHidesItsOrderIsRefused() throws {
         assertRefused(document(#"{"path":"a.sh","text":"safe‮evil"}"#), says: "hidden characters")
     }
 
     func testAFileOverTheSizeLimitIsRefused() throws {
         let text = String(repeating: "x", count: SharedSpot.sizeLimit + 1)
-        assertRefused(document(#"{"path":"a.sh","text":"\#(text)"}"#), says: "10 MB")
+        assertRefused(document(#"{"path":"a.sh","text":"\#(text)"}"#), says: "64 MB")
     }
 
     func testAddWritesEachFileWithItsMark() throws {

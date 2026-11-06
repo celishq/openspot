@@ -3,6 +3,8 @@ import Foundation
 /// What a person sees before they add a shared spot: its whole text and what runs by itself. It learns this from the text
 /// of the files, and runs none of them.
 public struct SpotReview: Equatable, Sendable {
+    static let textLimit = 256_000
+
     public let spot: SharedSpot
     public let name: String
     public let folder: URL
@@ -18,8 +20,13 @@ public struct SpotReview: Equatable, Sendable {
         self.spot = spot
         self.name = name
         self.folder = folder
-        subtitle = runs.isEmpty ? "Runs only when you use it" : "Runs by itself"
+        let programs = spot.files.filter { $0.isExecutable && !Self.canShow($0) }.map(\.path)
+        subtitle = !programs.isEmpty ? "Holds a program that you cannot read" : runs.isEmpty ? "Runs only when you use it" : "Runs by itself"
         text = [
+            programs.isEmpty ? nil : Self.section(
+                "Program that Openspot cannot show",
+                programs + ["It can do all that you can. Add it only if you trust the sender."]
+            ),
             Self.section("Runs by itself", runs),
             Self.section("Replaces, and moves the old file to the Trash", spot.replaced(in: folder)),
             Self.section("Will not load", scan.refused.map { "\($0.file): \($0.reason)" })
@@ -94,7 +101,13 @@ public struct SpotReview: Equatable, Sendable {
         lines.isEmpty ? nil : "\(title)\n\(lines.joined(separator: "\n"))\n\n"
     }
 
+    private static func canShow(_ file: SharedSpot.File) -> Bool {
+        file.text != nil && file.contents.count <= textLimit
+    }
+
     private static func shown(_ file: SharedSpot.File) -> String {
-        "\(file.path)\n\(file.text ?? "Not text, so Openspot cannot show it. \(file.contents.count) bytes.\n")"
+        if canShow(file), let text = file.text { return "\(file.path)\n\(text)" }
+        let reason = file.text == nil ? "Not text, so Openspot cannot show it." : "Too long to show."
+        return "\(file.path)\n\(reason) \(file.contents.count) bytes.\n"
     }
 }

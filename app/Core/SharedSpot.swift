@@ -1,7 +1,7 @@
 import Foundation
 
 /// A spot as one file that a person can send: the files it needs, with a format number. Each value of this type passed
-/// its checks, so it holds no path that leaves the plugins folder, no program and no text that hides its order.
+/// its checks, so it holds no path that leaves the plugins folder and no text that hides its order.
 public struct SharedSpot: Equatable, Sendable {
     public struct File: Equatable, Sendable {
         public let path: String
@@ -38,7 +38,7 @@ public struct SharedSpot: Equatable, Sendable {
     }
 
     public static let fileExtension = "spot"
-    static let sizeLimit = 10_000_000
+    static let sizeLimit = 64_000_000
     private static let format = 1
     private static let hiddenOrder: ClosedRange<UInt32> = 0x202A...0x202E
     private static let hiddenIsolate: ClosedRange<UInt32> = 0x2066...0x2069
@@ -52,9 +52,7 @@ public struct SharedSpot: Equatable, Sendable {
         var taken = Set<String>()
         for file in files {
             guard Self.isSafe(path: file.path) else { throw PluginError.fault("Openspot cannot use the path \(file.path).") }
-            let text = file.text
-            if file.isExecutable, text == nil { throw PluginError.fault("\(file.path) is a program, and Openspot shares only what it can show.") }
-            if let text, Self.hidesOrder(text) { throw PluginError.fault("\(file.path) has hidden characters that change what the text shows.") }
+            if let text = file.text, Self.hidesOrder(text) { throw PluginError.fault("\(file.path) has hidden characters that change what the text shows.") }
             guard taken.insert(Self.folded(file.path)).inserted else { throw PluginError.fault("This file holds \(file.path) twice.") }
             total += file.contents.count
         }

@@ -55,6 +55,37 @@ final class SpotReviewTests: XCTestCase {
         let text = try shown(SpotReview(spot: SharedSpot(files: files), name: "Home", folder: folder))
 
         XCTAssertTrue(text.contains("home/icon.png\nNot text, so Openspot cannot show it. 3 bytes."), text)
+        XCTAssertFalse(text.contains("Program"), text)
+    }
+
+    func testAProgramSaysThatItCannotBeShown() throws {
+        let files = [SharedSpot.File(path: "tool", isExecutable: true, contents: Data([0xCF, 0xFA, 0xED, 0xFE, 0x00]))]
+
+        let review = try SpotReview(spot: SharedSpot(files: files), name: "Tool", folder: folder)
+
+        XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
+        let text = try shown(review)
+        XCTAssertTrue(text.hasPrefix("Program that Openspot cannot show\ntool\nIt can do all that you can. Add it only if you trust the sender.\n\n"), text)
+    }
+
+    func testVeryLongTextIsNamedAndNotDrawn() throws {
+        let long = String(repeating: "x", count: SpotReview.textLimit + 1)
+        let files = [
+            SharedSpot.File(path: "a.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8)),
+            SharedSpot.File(path: "notes.txt", isExecutable: false, contents: Data(long.utf8))
+        ]
+
+        let text = try shown(SpotReview(spot: SharedSpot(files: files), name: "A", folder: folder))
+
+        XCTAssertFalse(text.contains(long.prefix(100)))
+        XCTAssertTrue(text.contains("notes.txt\nToo long to show. \(SpotReview.textLimit + 1) bytes."), text)
+    }
+
+    func testVeryLongExecutableTextCountsAsAProgram() throws {
+        let long = "#!/bin/sh\n" + String(repeating: "x", count: SpotReview.textLimit)
+        let files = [SharedSpot.File(path: "tool", isExecutable: true, contents: Data(long.utf8))]
+
+        XCTAssertEqual(try SpotReview(spot: SharedSpot(files: files), name: "T", folder: folder).subtitle, "Holds a program that you cannot read")
     }
 
     func testOnlyACommandKeyAddsIt() throws {

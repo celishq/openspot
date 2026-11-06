@@ -495,7 +495,8 @@ To send a spot to another person:
 3. Paste the file into a chat or a mail. Check it for secrets first, because Openspot does not.
 
 To add a spot that you got, double-click its `.spot` file, or drop it on the Openspot item in the menu bar or on the panel.
-Openspot shows what runs by itself, each file that it replaces and all of the text. Nothing runs until you press ⌘⏎ to add it.
+Openspot shows what runs by itself, each file that it replaces and all the text it can. It names each file that it cannot show,
+and a program comes first. Nothing runs until you press ⌘⏎ to add it.
 
 A `.spot` file is JSON. It holds a format number and the files:
 
@@ -511,7 +512,7 @@ A `.spot` file is JSON. It holds a format number and the files:
 - A script in a folder takes the whole folder. A widget takes each script that it places or opens.
 - A file that is not text uses `data`, in base64, in place of `text`.
 - Hidden files and `$OPENSPOT_DATA` stay behind.
-- A compiled program cannot travel, because Openspot cannot show it.
+- A compiled program travels, but no one can read it first. Add one only if you trust the sender.
 - A file with the same path is replaced, and the old file goes to the Trash.
 
 ## Check your work

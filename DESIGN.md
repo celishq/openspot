@@ -386,9 +386,9 @@ The command is on the path of each script. It also gives the tools for authors.
 | P1 | A plugin runs with the full access of the person. The app has no sandbox, and a script is not limited to capabilities. |
 | P2 | So a header cannot grant or deny power. A `uses` key would be only a label, and this design does not have one. |
 | P3 | Nothing runs on a scan (F2). A script runs only by a person's act or by a key in its text. |
-| P4 | Before a person adds a shared spot, Openspot shows all of its text and says what runs by itself. Only a modified key adds it. |
+| P4 | Before a person adds a shared spot, Openspot shows all the text it can, says what runs by itself and names each file it cannot show. Only a modified key adds it. |
 | P5 | Each usage text for a protected Mac feature is in the app. So a protected feature is a capability. |
-| P6 | A compiled program does not travel in a `.spot` file, because Openspot cannot show it (P4). |
+| P6 | A compiled program travels in a `.spot` file, and the review says first that no one can read it. A plugin can be any executable (F1), so sharing takes each of them. |
 | P7 | A `.spot` file has no signature and names no sender. Openspot warns the sender about secrets, and does not look for them. |
 
 ## 12. How to extend
