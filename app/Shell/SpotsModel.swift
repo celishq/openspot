@@ -127,6 +127,7 @@ final class SpotsModel {
     private var chainWatch: Task<Void, Never>?
     private(set) var recording: String?
     var setEntryKeyOn: (Bool) -> Void = { _ in }
+    var holdKeys: ([GlobalKey]) -> Void = { _ in }
     var dismiss: () -> Void = {}
     var show: () -> Void = {}
     var present: () -> Void = {}
@@ -181,6 +182,7 @@ final class SpotsModel {
             problems.append("No plugins in \(folder.url.path)")
         }
         runs.take(scan)
+        holdKeys(scan.globalKeys)
         arrangement = ConfigFile.standard().read().arrangement
         scanned = scan.commands
         rebuildEntries()
@@ -221,6 +223,11 @@ final class SpotsModel {
     /// Stops each call as the app quits.
     func quit() {
         runs.quit()
+    }
+
+    /// A person pressed a key that a script holds in every app.
+    func press(_ key: GlobalKey) {
+        sheets[key.spot]?.pressKey(key.call)
     }
 
     private func take(_ report: SpotSheet.Report, of id: String) {
@@ -939,7 +946,7 @@ final class SpotsModel {
     /// closes the panel, as a pick of any row does.
     func record(code: UInt32, modifiers: Shortcut.Modifiers) {
         guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
-            notify("Hold cmd, ctrl or option with a letter, a digit, space, return or tab.")
+            notify("Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.")
             return
         }
         let part = openPanel?.parts.first { $0.id == recording }

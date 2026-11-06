@@ -59,6 +59,12 @@ public struct Plugin: Equatable, Sendable {
             guard let number = Int(text) else { throw PluginError.fault("\(name) needs a number as its order") }
             order = number
         }
+        let globalKeys = try header.values("global").map { text in
+            guard let key = GlobalKey(text: text, spot: id) else {
+                throw PluginError.fault("\(name) has an unknown global: \(text). Write a key and a call, such as ctrl+option+left left")
+            }
+            return key
+        }
         let command = PluginCommand(
             id: id,
             name: name,
@@ -77,7 +83,8 @@ public struct Plugin: Equatable, Sendable {
             dataName: header.value("data") ?? id.split(separator: "/").first.map(String.init),
             hasSpot: read?.seconds == nil || hasKey,
             isOnGrid: header.flag("grid") ?? true,
-            headerSymbol: symbol
+            headerSymbol: symbol,
+            globalKeys: globalKeys
         )
         self.init(id: id, commands: [command])
     }

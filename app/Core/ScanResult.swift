@@ -17,6 +17,11 @@ public struct ScanResult: Equatable, Sendable {
         plugins.flatMap(\.commands).filter { $0.kind != .widget }
     }
 
+    /// The keys that the scripts hold in every app, in the order of the folder.
+    public var globalKeys: [GlobalKey] {
+        scripts.flatMap(\.globalKeys)
+    }
+
     /// Leaves out each widget that names a script with no `read` or a command no plugin has, and reports why.
     mutating func removeWidgetsWithLostParts() {
         let metrics = Set(scripts.filter { $0.read != nil }.map(\.id))

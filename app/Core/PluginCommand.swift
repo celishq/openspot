@@ -39,6 +39,8 @@ public struct PluginCommand: Equatable, Sendable {
     public let isOnGrid: Bool
     /// The `symbol` its header names, if any.
     public let headerSymbol: String?
+    /// The keys its header holds in every app.
+    public let globalKeys: [GlobalKey]
 
     public init(
         id: String,
@@ -65,7 +67,8 @@ public struct PluginCommand: Equatable, Sendable {
         dataName: String? = nil,
         hasSpot: Bool = true,
         isOnGrid: Bool = true,
-        headerSymbol: String? = nil
+        headerSymbol: String? = nil,
+        globalKeys: [GlobalKey] = []
     ) {
         self.id = id
         self.name = name
@@ -92,6 +95,7 @@ public struct PluginCommand: Equatable, Sendable {
         self.hasSpot = hasSpot
         self.isOnGrid = isOnGrid
         self.headerSymbol = headerSymbol
+        self.globalKeys = globalKeys
     }
 
     /// The sizes a person can prefer for its card. A widget has the size of its layout, and Updates needs room for its words.

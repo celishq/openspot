@@ -77,7 +77,7 @@ esac
 | A3 | A stopped run changes nothing. Only a call that ended by itself can report that there is nothing to show. |
 | A4 | Search text stays until the person presses Esc. |
 | A5 | Plugins, Settings and Updates ship with the app. Each answers the same calls, in Swift. Updates has `grid=false`, and prints `grid=true` when a downloaded update waits to install. It takes the first place of order 0, so its card shows with no scrolling. |
-| A6 | One global key opens the panel from any app, and the person chooses it. No other key is global. |
+| A6 | One global key opens the panel from any app, and the person chooses it. A script can also hold keys in every app with `global` in its header, and the person changes one by editing that line. |
 | A7 | The person arranges the grid: each `[[spots]]` table of `config.toml` names a spot by `id`, and can set `size` and `grid`. It overrides the plugin. A `size` is a preference, and the grid can still change it to fill a row. Listed spots take the order of the file. The Edit Spots mode writes this file. |
 | A8 | The app opens the panel unseen once as it starts, which runs each script with `panel` in its `read` and each script a widget places, and draws the panel. It waits for at most 2 seconds, then closes it and shows the toast "Openspot is ready". A script with only `sheet` in its `read` does not run. A press of the key in that time opens the panel at once. |
 | A9 | A sheet that moves out of its card and has no answer yet holds that motion for at most 150 ms for the first answer, so that it grows once, to its real size. A sheet with an answer moves at once. A sheet that still waits after that shows no search field, and its first answer sets its size on the same motion. |
@@ -129,6 +129,7 @@ Comment lines right under the first line, one `key=value` on each line. They can
 | `tray` | `true` | Shows it in the menu bar. Needs a number in its `read`, or `stay=true`. |
 | `stay` | `true` | The script stays running. Section 8. |
 | `drop` | A list of file extensions, `folder` or `*` | Its card takes files that a person drops. Section 5. |
+| `global` | A key and a call, such as `ctrl+option+left left`. One line for each key. | A press in any app runs `<script> <call>`, with no panel. |
 
 A file with no header key has one call: `<script>`, on a click.
 
@@ -153,6 +154,7 @@ A file with no header key has one call: `<script>`, on a click.
 | A change of a part | `<part> <value>` | Values of the sheet |
 | A press of a part | `<part>` | Values of the sheet |
 | A drop of files on a card | `drop <path> [path]...` | None |
+| A press of a key in `global` | `<call>` | None |
 
 | ID | Rule |
 |---|---|
@@ -162,6 +164,7 @@ A file with no header key has one call: `<script>`, on a click.
 | C4 | Openspot waits for a pause before it sends a change: 300 ms for text, also for `read <text>`, and 100 ms for a slider. |
 | C5 | Text that the person types stays as typed until they press something. |
 | C6 | A value over 64 KB is left out of the arguments, because the system limits them to about 1 MB. Stdin still holds it: a value of the sheet as it is, and any other value under the key `value`. |
+| C7 | Presses of `global` keys of one script run one at a time and in order. A press never stops a call, so fast presses all count. |
 
 ### Moments
 
@@ -411,6 +414,7 @@ The command is on the path of each script. It also gives the tools for authors.
 | P5 | Each usage text for a protected Mac feature is in the app. So a protected feature is a capability. |
 | P6 | A compiled program travels in a `.spot` file, and the review says first that no one can read it. A plugin can be any executable (F1), so sharing takes each of them. |
 | P7 | A `.spot` file has no signature and names no sender. Openspot warns the sender about secrets, and does not look for them. |
+| P8 | The review names each key that a shared spot holds in every app. |
 
 ## 12. How to extend
 
@@ -434,7 +438,7 @@ The code follows this document.
 
 | Decision | Why | Rejected |
 |---|---|---|
-| One global key | A launcher takes as little as it can from each other app. All else happens inside the panel. | A second global key that arms the letters of spots. |
+| One global key for the app, and more only in a script's text | A launcher takes as little as it can from each other app, but a window move through the panel is too slow. A line in the header is one fact in one file, and a scan reads it with no run. | A second global key that arms the letters of spots. Keys in a Settings list, which adds a second place for a fact. |
 | One call shape, with only `read` reserved | An author learns one line. A clash can happen only inside one file, and C1 and C2 cover it. | A word for each kind of call. An `action` word. Both add words to learn. |
 | Scripts, not a JS runtime | Goal 1. Shell gives each Mac tool at once, and a start costs about 5 ms. | JS only. It loses one-file shell scripts. |
 | JS waits | It can come later as one more executable, with `#!/usr/bin/env -S openspot run`, on JavaScriptCore. The contract does not change. It must provide `fetch`, timers and modules. | A JS level now. `node` and `bun` are not on each Mac. |

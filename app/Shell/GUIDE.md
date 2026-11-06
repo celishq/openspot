@@ -49,6 +49,7 @@ open -a Calendar
 | `tray` | `true` to show a metric in the menu bar. Needs a number in its `read`, or `stay=true`. |
 | `stay` | `true` to keep the script running. See "Sheets of parts". |
 | `drop` | A list of file extensions, `folder` or `*`. Its card takes files that a person drops. See "Drops". |
+| `global` | A key and a call, such as `global=ctrl+option+left left`. One line for each key. See "Global keys". |
 | `data` | The name of a data folder to share with other spots. See "Rules for scripts". |
 
 `read` is a list of moments, split by commas, such as `read=panel,60`. At each moment Openspot calls `<script> read`:
@@ -79,6 +80,7 @@ a call that prints no state, Openspot reads the script again.
 | `<script> on`, `off` | A toggle is pressed | Turns it on or off. |
 | `<script> level <number>` | A slider moves | Sets the level. |
 | `<script> drop <path> [path]...` | Files are dropped on its card, or chosen for it | Does its work on each file. |
+| `<script> <call>` | A key in `global` is pressed, in any app | Does its work. |
 
 `read` is the only reserved word. A part or an action cannot be called `read`, and `openspot check` reports it.
 
@@ -226,6 +228,25 @@ esac
 - A drop on a card with a running call waits, and runs when that call ends. It does not stop the call. A `read` does not hold a drop.
 - A click on a card with `drop` and no sheet opens a file chooser, and the choice runs the same call. A toggle and a slider keep their own click, and a card with a sheet opens its sheet.
 - A `drop` call runs as any other name does. It has no time limit, and it goes on with the panel closed. A second press of its card stops it.
+
+## Global keys
+
+A script can hold keys in every app. A press runs `<script> <call>` with no panel, and the script can print `toast=Done`.
+
+```sh
+#!/bin/sh
+# name=Music
+# global=ctrl+option+p pause
+case "$1" in
+  pause) osascript -e 'tell application "Music" to playpause' ;;
+esac
+```
+
+- A key holds cmd, ctrl or option, with a letter, a digit, an arrow, space, return or tab.
+- Presses run one at a time and in order. A press never stops a call, so keep the call short.
+- A key takes effect at the next scan, when the panel opens or the app starts. To change a key, edit its line.
+- The key that another spot or app uses first stays with it, and Openspot tells the person.
+- A key works with the panel open too, so the front app can be Openspot.
 
 ## Actions and forms
 
