@@ -198,7 +198,8 @@ public final class SpotRuns {
                 continuation.finish()
             })
         }
-        let process = ScriptProcess(url: command.url, arguments: action.arguments, mode: .once(input: input), limit: limit)
+        let sent = action.sent(input: input)
+        let process = ScriptProcess(url: command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit)
         do {
             let stream = try process.start()
             keep(process)

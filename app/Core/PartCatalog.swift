@@ -108,6 +108,8 @@ public enum PartCatalog {
     A call can keep printing. A line `---` ends a frame, and the app draws it at once. A frame with a layout replaces the \
     sheet, and a frame with only parts changes those parts, so print `part`, `cell` and the keys again for each one.
 
+    A value over 64 KB is left out of the arguments, and stdin still holds it.
+
     A `read` has 10 seconds until its first frame or its end, and it stops when nothing wants it, such as when its sheet \
     closes. Any other name has no time limit, and it keeps running with the sheet and the panel closed. A new value for a part \
     stops the older call of that part. A second press of a running part, action or card stops its call: each process in its \

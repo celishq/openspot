@@ -693,6 +693,47 @@ final class SpotRunsTests: XCTestCase {
         try await wait("the old state") { sheet.state.on == false }
     }
 
+    // MARK: C6
+
+    private static let big = String(repeating: "line \\ one=two\n", count: 2_000_000 / 15)
+
+    func testATwoMegabyteValueOfAPartIsLeftOutOfTheArgumentsAndStdinHoldsIt() async throws {
+        try script(header: "read=sheet", """
+        case "$1" in
+          read) printf 'part=input\\ntext=\\n' ;;
+          input) printf '%s' "$#" > '\(path("count"))'; cat > '\(path("got"))'; touch '\(path("done"))' ;;
+        esac
+        """)
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the part") { sheet.panel != nil }
+
+        sheet.set(try XCTUnwrap(sheet.panel?.parts.first), to: Self.big)
+
+        try await wait("the call") { self.exists("done") }
+        XCTAssertEqual(try String(contentsOfFile: path("count"), encoding: .utf8), "1")
+        let got = try String(contentsOfFile: path("got"), encoding: .utf8)
+        XCTAssertEqual(TextBlock.blocks(in: got).first?.value("input"), Self.big)
+    }
+
+    func testATwoMegabyteRunIsLeftOutOfTheArgumentsAndStdinHoldsItAsValue() async throws {
+        let url = try script(body: "printf '%s\\n' \"$#\"\ncat")
+
+        let text = try await runs.answer(of: PluginCommand(id: "script", name: "Script", url: url), .item(SpotItem(title: "A", run: Self.big)))
+
+        XCTAssertTrue(text.hasPrefix("1\n"))
+        XCTAssertEqual(TextBlock.blocks(in: String(text.dropFirst(2))).first?.value("value"), Self.big)
+    }
+
+    func testAValueOf64KilobytesStaysInTheArguments() async throws {
+        let url = try script(body: "printf '%s' \"${#2}\"")
+        let value = String(repeating: "x", count: 65_536)
+
+        let text = try await runs.answer(of: PluginCommand(id: "script", name: "Script", url: url), .set("a", to: value), input: "a=\(value)\n")
+
+        XCTAssertEqual(text, "65536")
+    }
+
     // MARK: L11
 
     func testAPressOfAPartWithinOneSecondOfItsStartDoesNothing() async throws {

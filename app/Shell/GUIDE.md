@@ -78,6 +78,9 @@ that prints no state, Openspot reads the script again.
 
 `read` is the only reserved word. A part or an action cannot be called `read`, and `openspot check` reports it.
 
+A value over 64 KB is left out of the arguments, because the system limits them. Stdin still holds it: a value of the sheet
+as it is, and any other value under the key `value`, such as `value=<run>`.
+
 ```sh
 #!/bin/sh
 # name=Notes

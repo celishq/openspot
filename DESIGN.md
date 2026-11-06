@@ -153,7 +153,7 @@ A file with no header key has one call: `<script>`, on a click.
 | C3 | An action with `form=true` first runs as `<action> [run]` with empty stdin, and the script prints `field` blocks. After the person fills the form, the same call runs with the values on stdin. |
 | C4 | Openspot waits for a pause before it sends a change: 300 ms for text, also for `read <text>`, and 100 ms for a slider. |
 | C5 | Text that the person types stays as typed until they press something. |
-| C6 | A value over 64 KB is left out of the arguments, because the system limits them to about 1 MB. Stdin still holds it. |
+| C6 | A value over 64 KB is left out of the arguments, because the system limits them to about 1 MB. Stdin still holds it: a value of the sheet as it is, and any other value under the key `value`. |
 
 ### Moments
 
@@ -413,11 +413,10 @@ Remove a row when the code follows the rule.
 | L6, G1 to G4 | `SpotSheet.calls` holds them, and nothing draws them | Running work does not show on a card, an action or the menu bar item. | L6, G1 to G4. |
 | D1 to D6 | `PluginCommand.drop`, `SpotSheet.calls` | The command keeps `drop`. Nothing else is built. | D1 to D6. |
 | K1 to K3 | `SpotTranslation`, `translate.sh` | The script starts `openspot translate --serve` and talks through fifos. | A handler that calls `openspot translate`, which reaches a helper that exits when idle. |
-| C6 | `ScriptProcess`, `SpotSheet` | A value over about 1 MB makes the call fail. | The value stays on stdin. |
 | W1, R8 | `ScriptProcess`, plugins | No `OPENSPOT_SH`. Six plugins hold their own escape code. | `OPENSPOT_SH`, and plugins that use it and that write files by R8. |
 | Y2 | `SpotSheet` | A pick or an action of a staying script, and a form, start a second copy. | Each call reaches the running script. |
 | L3, Y5 | `SpotSheet`, `SpotRuns.stay`, `SpotRuns.wants` | A staying script runs only while its sheet is open. | While something wants it. |
-| Docs | `GUIDE.md`, `PartCatalog` | They say that `launch`, `wake`, `drop` and `tray` with `stay` do not act yet. They do not teach C6, R8 or W1. | Follow each rule when it is built. |
+| Docs | `GUIDE.md`, `PartCatalog` | They say that `launch`, `wake`, `drop` and `tray` with `stay` do not act yet. They do not teach R8 or W1. | Follow each rule when it is built. |
 
 The tests in `SpotActionTests`, `SheetStreamTests`, `SpotPanelTests`, `SpotRunsTests` and `SamplePluginsTests` pin the calls. Read them
 before each change. Each change in this table is breaking, and no alias stays.
