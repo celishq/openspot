@@ -4,7 +4,6 @@ import Foundation
 /// newest one shows, so that an older answer never replaces a newer state.
 public struct SpotPanel: Equatable, Sendable {
     public private(set) var parts: [SpotPart]
-    public private(set) var every: TimeInterval?
     public private(set) var generation = 0
     public private(set) var layout: SheetLayout?
     private var changes: [String: Int] = [:]
@@ -13,7 +12,6 @@ public struct SpotPanel: Equatable, Sendable {
     public init?(output: PluginOutput) {
         guard !output.parts.isEmpty else { return nil }
         parts = output.parts
-        every = output.every
         layout = output.layout
     }
 
@@ -75,7 +73,6 @@ public struct SpotPanel: Equatable, Sendable {
         guard generation == self.generation, !output.parts.isEmpty else { return false }
         let kept = parts.first { $0.id == id }?.value
         parts = output.parts
-        every = output.every
         layout = output.layout
         if let id, let kept, let index = parts.firstIndex(where: { $0.id == id }) { parts[index].set(kept) }
         return true

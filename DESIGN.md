@@ -414,7 +414,6 @@ Remove a row when the code follows the rule.
 | D1 to D6 | `PluginCommand.drop`, `SpotSheet.calls` | The command keeps `drop`. Nothing else is built. | D1 to D6. |
 | K1 to K3 | `SpotTranslation`, `translate.sh` | The script starts `openspot translate --serve` and talks through fifos. | A handler that calls `openspot translate`, which reaches a helper that exits when idle. |
 | C6 | `ScriptProcess`, `SpotSheet` | A value over about 1 MB makes the call fail. | The value stays on stdin. |
-| `every=` | `PluginOutput`, `SpotRuns`, `PartCatalog`, `GUIDE.md` | A frame can print `every=`. | It is gone. A number in `read` does this. |
 | W1, R8 | `ScriptProcess`, plugins | No `OPENSPOT_SH`. Six plugins hold their own escape code. | `OPENSPOT_SH`, and plugins that use it and that write files by R8. |
 | Y2 | `SpotSheet` | A pick or an action of a staying script, and a form, start a second copy. | Each call reaches the running script. |
 | L3, Y5 | `SpotSheet`, `SpotRuns.stay`, `SpotRuns.wants` | A staying script runs only while its sheet is open. | While something wants it. |

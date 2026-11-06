@@ -56,11 +56,6 @@ public struct PluginOutput: Equatable, Sendable {
         summary?.flag("recents") != false
     }
 
-    /// How often an open sheet of parts asks to be read again, in seconds.
-    public var every: TimeInterval? {
-        summary?.number("every")
-    }
-
     /// All that is wrong with this output as one sheet of parts.
     public var sheetFaults: [String] {
         (parts.isEmpty ? ["the sheet has no parts"] : []) + errors.map { "cannot read the block that starts: \($0)" } + partFaults

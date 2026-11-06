@@ -56,11 +56,11 @@ open -a Calendar
 | none | Never. A click runs `<script>` with no argument. | A script that does one thing. |
 | `sheet` | When its sheet opens. | A list. |
 | `panel` | Each time the panel opens. | A toggle, a slider, or a list for the main search. |
-| a number | Every that many seconds. | A metric. It has no spot unless it also has a `key`. |
+| a number | Every that many seconds, while something wants it, such as its open sheet. | A metric. It has no spot unless it also has a `key`. |
 | `launch`, `wake` | Not yet. Openspot keeps these words, and does not act on them yet. | |
 
 A read must be safe at each moment that its header lists, so `read` does no work. A script has one read at a time. A
-`panel` or a `sheet` moment uses an answer that is younger than 5 seconds. A number and `every=` always run. After a call
+`panel` or a `sheet` moment uses an answer that is younger than 5 seconds. A number always runs. After a call
 that prints no state, Openspot reads the script again.
 
 ## The calls
@@ -248,8 +248,8 @@ The app owns each gap, row height and centre. A script says only which part goes
 | `keys=7 8 9 +` in the layout block | A row of key buttons. | `<word>` |
 
 The script holds no state. Each call gets all values on stdin, as one block such as `input=one\ntwo`. It prints the
-whole sheet again, or prints nothing to be read again. It can also print `toast=Saved`. In the layout block, `every=5`
-reads an open sheet again every 5 seconds.
+whole sheet again, or prints nothing to be read again. It can also print `toast=Saved`. To read an open sheet again every 5
+seconds, put a number in its header: `read=5`.
 
 Openspot shows a change at once, and only the answer to the newest change shows. It waits for a pause in typing and in
 a slider's motion. Text that the person is typing stays as typed until they press something.

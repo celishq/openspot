@@ -188,14 +188,34 @@ final class SpotRunsTests: XCTestCase {
         try await wait("the second read") { self.log().count == 2 }
     }
 
-    func testAnEveryReadAlwaysRuns() async throws {
+    func testANumberInReadReadsAnOpenSheetOnItsTimerWithAYoungAnswer() async throws {
+        try script(header: "read=1\nkey=a", "printf 'part=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+        try await pause(1.2)
+        XCTAssertEqual(log(), [])
+
+        sheet.open {}
+        try await wait("the first read") { sheet.panel != nil && sheet.calls.isEmpty }
+        XCTAssertEqual(log(), ["read"])
+
+        time += 1
+        try await wait("the read from the timer") { self.log() == ["read", "read"] }
+
+        sheet.close()
+        time += 1
+        try await pause(1.2)
+        XCTAssertEqual(log(), ["read", "read"])
+    }
+
+    func testAScriptThatPrintsEveryIsNotReadAgain() async throws {
         try script(header: "read=sheet", "printf 'every=1\\n\\npart=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         sheet.open {}
+        try await wait("the part") { sheet.panel != nil }
+        try await pause(1.2)
 
-        try await wait("a read from every") { self.log().count >= 2 }
-        XCTAssertEqual(time, Date(timeIntervalSince1970: 1000))
+        XCTAssertEqual(log(), ["read"])
         sheet.close()
     }
 

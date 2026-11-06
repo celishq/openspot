@@ -54,7 +54,6 @@ public final class SpotSheet {
     @ObservationIgnored private var selecting: String?
     @ObservationIgnored private var readsAgain = false
     @ObservationIgnored private var pauses: [String: Task<Void, Never>] = [:]
-    @ObservationIgnored private var nextRead: Task<Void, Never>?
     @ObservationIgnored private var live: ScriptProcess?
     @ObservationIgnored private var editing: String?
     @ObservationIgnored private var ready: (() -> Void)?
@@ -102,6 +101,7 @@ public final class SpotSheet {
         }
         onReady()
         read(need: need)
+        runs.updateClock()
     }
 
     /// Stops what only an open sheet needs. A read that nothing else wants stops. A call that does work goes on.
@@ -112,13 +112,13 @@ public final class SpotSheet {
             pause.cancel()
             pauses[key] = nil
         }
-        nextRead?.cancel()
         if let search = running(Self.searchKey) { stop(search) }
         live?.end()
         live = nil
         editing = nil
         ready = nil
         stopUnwantedRead()
+        runs.updateClock()
     }
 
     /// The panel closed: a sheet of parts closes and drops its values, so the next open reads again. A sheet of rows stays.
@@ -140,7 +140,6 @@ public final class SpotSheet {
     func prepareToQuit() {
         pauses.values.forEach { $0.cancel() }
         pauses = [:]
-        nextRead?.cancel()
     }
 
     /// Asks the script for what it shows. A request joins the read that runs (M1). A `panel` or a `sheet` moment uses an answer
@@ -159,7 +158,6 @@ public final class SpotSheet {
         if need == .moment, let answered, runs.now().timeIntervalSince(answered) < Self.answerAge {
             selectKept()
             showRunning()
-            readAgain()
             return
         }
         startRead(reports: need != .clock)
@@ -424,15 +422,13 @@ public final class SpotSheet {
         work?()
     }
 
-    /// Shows the parts a script printed, and keeps them fresh when it asks for that. An answer that a newer change outdated
-    /// does not show.
+    /// Shows the parts a script printed. An answer that a newer change outdated does not show.
     private func takePanel(_ lines: PluginOutput, generation: Int?) {
         if panel == nil {
             panel = SpotPanel(output: lines)
-        } else if panel?.take(lines, answering: generation ?? panel?.generation ?? 0) != true {
-            return
+        } else {
+            panel?.take(lines, answering: generation ?? panel?.generation ?? 0)
         }
-        readAgain()
     }
 
     /// Adds the last frame of each running call to an open sheet (L7).
@@ -440,16 +436,6 @@ public final class SpotSheet {
         guard isOpen else { return }
         for call in calls where call.doesWork {
             if let lines = call.output { panel?.merge(lines, keeping: editing) }
-        }
-    }
-
-    /// Reads an open sheet of parts again after the time it asks for. This always runs.
-    private func readAgain() {
-        nextRead?.cancel()
-        guard isOpen, let every = panel?.every else { return }
-        nextRead = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(every))
-            if !Task.isCancelled { self?.read(need: .clock) }
         }
     }
 

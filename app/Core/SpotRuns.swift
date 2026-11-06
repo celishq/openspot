@@ -213,9 +213,10 @@ public final class SpotRuns {
         processes.append(process)
     }
 
-    /// Keeps the timers going while the panel is open or while the menu bar shows a script.
-    private func updateClock() {
-        guard isPanelOpen || sheets.values.contains(where: \.command.isTray) else {
+    /// Keeps the timers going while the panel is open, while the menu bar shows a script, or while an open sheet has a number
+    /// in its `read`.
+    func updateClock() {
+        guard isPanelOpen || sheets.values.contains(where: { $0.command.isTray || ($0.isOpen && $0.command.read?.seconds != nil) }) else {
             clock?.cancel()
             clock = nil
             return
