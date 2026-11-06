@@ -4,6 +4,7 @@ import SwiftUI
 /// The actions of the selected row or card, each with its key.
 struct SpotActionMenuView: View {
     let menu: ActionMenu
+    var work: (ActionMenu.Row) -> ScriptCall? = { _ in nil }
     let onPress: (Int) -> Void
 
     private var shape: RoundedRectangle {
@@ -17,11 +18,14 @@ struct SpotActionMenuView: View {
                     onPress(index)
                 } label: {
                     HStack(spacing: SpotTokens.padding) {
-                        Text(menu.title(of: row))
+                        Text(menu.title(of: row, isRunning: work(row) != nil))
                             .font(SpotType.body)
                             .foregroundStyle(titleColor(of: row))
                             .lineLimit(1)
                         Spacer(minLength: 0)
+                        if let call = work(row) {
+                            SpotWorkMark(call: call, side: SpotTokens.workMark)
+                        }
                         Text(row.keyLabel)
                             .font(SpotType.detail)
                             .modifier(SpotSecondaryText())
@@ -40,7 +44,7 @@ struct SpotActionMenuView: View {
     }
 
     private func isConfirming(_ row: ActionMenu.Row) -> Bool {
-        menu.confirming != nil && row.action?.id == menu.confirming
+        work(row) == nil && menu.confirming != nil && row.action?.id == menu.confirming
     }
 
     private func fill(of row: ActionMenu.Row, at index: Int) -> Color {

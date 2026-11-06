@@ -297,6 +297,21 @@ A stopped call changes nothing. A call ends when its output closes, so a script 
 output of that child somewhere else. A failed call always tells the person. A failed `read` from a number only dims the
 last value.
 
+A call that does work reports its progress with the values that a metric prints:
+
+```text
+title=42%
+value=0.42
+detail=2 min left
+
+---
+```
+
+After the call has run for 1 second, its spot shows a ring from `value`, and a spinner with no `value`. Only the last frame
+counts. The `title` and the `detail` show on the spot only while the call runs. The Openspot item in the menu bar shows the
+oldest call and how many run, and a click on it opens the panel with that spot selected. The part or the action of the call
+shows that it runs, and says that a press stops it.
+
 Closing the panel closes a sheet of parts and drops its values, and the next open reads again. A sheet of rows stays open.
 
 A script with `# stay=true` in its header runs while something wants it, so that a model or a connection stays loaded

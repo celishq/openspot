@@ -117,7 +117,9 @@ public enum PartCatalog {
     stops the older call of that part. A second press of a running part, action or card stops its call: each process in its \
     group gets the terminate signal, and after 2 seconds Openspot kills what still runs. A press within 1 second of the start of \
     the call does nothing, so a double press does not stop it. Quitting Openspot stops each call. \
-    To outlive the app, start the work with `nohup` and then exit. A stopped call changes nothing. Closing the panel \
+    After 1 second, a call that does work shows on its part, its action, its spot and the Openspot item in the menu bar. Its \
+    last frame reports progress: `value` from 0 to 1 draws a ring, no `value` draws a spinner, and `title` and `detail` show on \
+    the spot only while the call runs. To outlive the app, start the work with `nohup` and then exit. A stopped call changes nothing. Closing the panel \
     closes a sheet of parts and drops its values.
 
     A script with `# stay=true` in its header runs while something wants it, so a model or a connection stays loaded between \

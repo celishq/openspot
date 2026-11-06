@@ -12,6 +12,7 @@ enum SpotTokens {
     static let cell: CGFloat = (gridWidth - columnGap * CGFloat(columns - 1)) / CGFloat(columns)
     static let rowHeight: CGFloat = 62
     static let glyphSize: CGFloat = 36
+    static let workMark: CGFloat = 16
     static let listRowHeight: CGFloat = 40
     static let listRowGap: CGFloat = 6
     static let listIconSize: CGFloat = 24

@@ -408,7 +408,6 @@ Remove a row when the code follows the rule.
 
 | Rules | Module | Today | Target |
 |---|---|---|---|
-| L6, G1 to G4 | `SpotSheet.calls` holds them, and nothing draws them | Running work does not show on a card, an action or the menu bar item. | L6, G1 to G4. |
 | D1 to D6 | `PluginCommand.drop`, `SpotSheet.calls` | The command keeps `drop`. Nothing else is built. | D1 to D6. |
 | K1 to K3 | `SpotTranslation`, `translate.sh` | The script starts `openspot translate --serve` and talks through fifos. | A handler that calls `openspot translate`, which reaches a helper that exits when idle. |
 | Docs | `GUIDE.md`, `PartCatalog` | They say that `drop` does not act yet. | Follow each rule when it is built. |

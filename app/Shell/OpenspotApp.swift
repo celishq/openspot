@@ -28,7 +28,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.button?.title = "⌘"
         item.button?.target = self
-        item.button?.action = #selector(togglePanel)
+        item.button?.action = #selector(pressItem)
         statusItem = item
         EditMenu.install()
         panel = SpotsPanel.make(model: model)
@@ -44,7 +44,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         model.confirm = { toast.show($0, symbol: ToastPanel.confirmSymbol) }
         let trigger = CommandTrigger(model: model, toast: toast)
         self.trigger = trigger
-        trayBar = SpotTrayBar(model: model)
+        trayBar = SpotTrayBar(model: model, openspotItem: item)
         model.reload()
         model.arrive(.launch)
         NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(didWake), name: NSWorkspace.didWakeNotification, object: nil)
@@ -63,6 +63,11 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     @objc private func didWake() {
         model.arrive(.wake)
+    }
+
+    /// A click on the Openspot item goes to running work, if any shows (G3).
+    @objc private func pressItem() {
+        if !model.openWork() { togglePanel() }
     }
 
     @objc func togglePanel() {

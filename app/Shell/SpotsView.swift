@@ -54,6 +54,7 @@ struct SpotsView: View {
                     rect: sheetRect,
                     form: model.form?.entry.id == entry.id ? model.form?.draft : nil,
                     panel: model.sheets[entry.id]?.panel,
+                    work: { model.work(of: $0) },
                     onSet: { model.setPart($0, to: $1) },
                     onPress: { model.pressPart($0) },
                     createTitle: model.createAction.map { "\($0.title): \(model.searchText)" },
@@ -83,7 +84,7 @@ struct SpotsView: View {
                 Color.clear
                     .contentShape(Rectangle())
                     .onTapGesture { model.closeMenu() }
-                SpotActionMenuView(menu: menu, onPress: { model.pressMenu(row: $0) })
+                SpotActionMenuView(menu: menu, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) })
                     .offset(x: SpotTokens.halo, y: menuTop(menu))
             }
         }

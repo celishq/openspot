@@ -47,6 +47,21 @@ final class SpotsModel {
         @MainActor var state: SpotState {
             sheet?.state ?? fixedState
         }
+
+        /// What the card shows: its own state, with the words of its running work over it.
+        @MainActor var shownState: SpotState {
+            sheet?.shownState ?? fixedState
+        }
+
+        /// The running work that its glyph shows.
+        @MainActor var work: ScriptCall? {
+            sheet?.work.first
+        }
+
+        /// Whether a press of the card stops its running work.
+        @MainActor var stopsOnPress: Bool {
+            sheet?.cardWork != nil
+        }
     }
 
     /// A form open in a sheet, with the action that asked for it. Its text stays when the panel closes.
@@ -253,6 +268,36 @@ final class SpotsModel {
     /// The marks of the scripts that show in the menu bar, by script.
     var trayMarks: [(id: String, mark: TrayMark)] {
         runs.trayMarks
+    }
+
+    /// What the Openspot item shows for running work.
+    var workMark: TrayMark? {
+        runs.workMark
+    }
+
+    /// Opens the panel with the spot of the oldest running work selected, or closes it when it already shows that. A search
+    /// stays, so a spot that it hides is not selected. Returns false when no work shows.
+    func openWork() -> Bool {
+        guard let id = runs.workSpot else { return false }
+        let spot = { self.visible.firstIndex { $0.id == id || $0.command.places.contains(id) } }
+        if isShown, openList == nil, spot() == selected {
+            dismiss()
+            return true
+        }
+        closeList()
+        show()
+        if let spot = spot() { selected = spot }
+        return true
+    }
+
+    /// The running call of a part of the open sheet.
+    func work(of part: SpotPart) -> ScriptCall? {
+        openSheet?.work(of: part)
+    }
+
+    /// The running call that a press of this row of the open menu stops.
+    func work(of row: ActionMenu.Row) -> ScriptCall? {
+        menuTarget.flatMap { sheets[$0.entry.id]?.work(of: row, item: $0.item) }
     }
 
     /// Opens the list of a metric that is also a list, or else selects the widget that places it. Closes the panel
@@ -504,8 +549,10 @@ final class SpotsModel {
 
     /// The keys that work on the selected row or card, in words for the bottom of the panel.
     var hint: String {
-        if let panel = openPanel { return panel.hint }
-        let keys = target.flatMap(actionMenu(on:))?.hint ?? "Esc Close"
+        if let panel = openPanel { return panel.hint { work(of: $0) != nil } }
+        let keys = target.flatMap { target in
+            actionMenu(on: target)?.hint { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil }
+        } ?? "Esc Close"
         return selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
     }
 
@@ -529,7 +576,8 @@ final class SpotsModel {
     }
 
     private func pressMenu() {
-        guard let row = menu?.press(), let target = menuTarget else { return }
+        let isRunning = menu.map { work(of: $0.rows[$0.selected]) != nil } ?? false
+        guard let row = menu?.press(isRunning: isRunning), let target = menuTarget else { return }
         closeMenu()
         if let action = row.action {
             run(action, on: target)

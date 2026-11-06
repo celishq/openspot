@@ -28,6 +28,7 @@ public final class SpotSheet {
     private static let pressPause: TimeInterval = 1
     private static let failureLimit = 3
     private static let failureWindow: TimeInterval = 60
+    private static let workPause: TimeInterval = 1
     private static let readKey = "read"
     private static let searchKey = "search"
     private static let cardKey = "card"
@@ -47,6 +48,7 @@ public final class SpotSheet {
     /// Each running call, the oldest first, with the last frame of each.
     public private(set) var calls: [ScriptCall] = []
     @ObservationIgnored public var onReport: (Report) -> Void = { _ in }
+    private var workPauses = 0
     @ObservationIgnored private let runs: SpotRuns
     @ObservationIgnored private let prepare: ([SpotItem]) async -> Void
     @ObservationIgnored private var answered: Date?
@@ -248,6 +250,36 @@ public final class SpotSheet {
         running(Self.cardKey) != nil
     }
 
+    /// The calls that show as running work: each one that does work and has run for 1 second, the oldest first (L6). A new
+    /// one shows by itself, because `workPauses` changes when its second has passed.
+    public var work: [ScriptCall] {
+        _ = workPauses
+        let time = runs.now()
+        return calls.filter { $0.doesWork && time.timeIntervalSince($0.started) >= Self.workPause }
+    }
+
+    /// The call of the card, once it shows, which a press of the card stops.
+    public var cardWork: ScriptCall? {
+        shown(Self.cardKey)
+    }
+
+    /// The call of this part, once it shows.
+    public func work(of part: SpotPart) -> ScriptCall? {
+        shown(Self.key(part: part.id))
+    }
+
+    /// The call that a press of this row of the actions menu stops, once it shows.
+    public func work(of row: ActionMenu.Row, item: SpotItem?) -> ScriptCall? {
+        if let action = row.action { return shown(Self.key(call: .action(action, item: item))) }
+        return shown(item.map { Self.key(call: .item($0)) } ?? Self.cardKey)
+    }
+
+    /// What the spot shows: its own state, with the words of its oldest running work over it while that runs (G4).
+    public var shownState: SpotState {
+        guard let call = work.first else { return state }
+        return state.showing(title: call.title, detail: call.detail)
+    }
+
     /// Runs a click on a card with no sheet: a toggle shows its new state at once. A second press stops the call, and a
     /// stopped toggle goes back.
     public func pressCard() {
@@ -319,6 +351,14 @@ public final class SpotSheet {
         "part:\(id)"
     }
 
+    private static func key(call action: SpotAction) -> String {
+        "call:\(action.arguments.joined(separator: "\n"))"
+    }
+
+    private func shown(_ key: String) -> ScriptCall? {
+        work.first { $0.key == key }
+    }
+
     private func running(_ key: String) -> ScriptCall? {
         calls.first { $0.key == key }
     }
@@ -353,6 +393,12 @@ public final class SpotSheet {
             await onEnd(end)
         }
         calls.append(call)
+        if call.doesWork {
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(Self.workPause))
+                self?.workPauses += 1
+            }
+        }
     }
 
     private func startRead(reports: Bool) {
@@ -689,7 +735,7 @@ public final class SpotSheet {
 
     /// Starts or stops the call of a person's press.
     private func press(_ action: SpotAction) {
-        let key = "call:\(action.arguments.joined(separator: "\n"))"
+        let key = Self.key(call: action)
         if let running = running(key) { return pressAgain(running) }
         work(action, key: key)
     }
@@ -749,7 +795,7 @@ public final class SpotSheet {
     /// Runs a call to its end, and returns all that it printed, or nil when it was stopped or pressed again. A second press
     /// stops it.
     private func text(of action: SpotAction, input: String?) async throws -> String? {
-        let key = "call:\(action.arguments.joined(separator: "\n"))"
+        let key = Self.key(call: action)
         if let running = running(key) {
             pressAgain(running)
             return nil

@@ -131,6 +131,13 @@ final class SpotPanelTests: XCTestCase {
         XCTAssertEqual(try panel("every=5\n\npart=a\ntitle=A\n").parts.map(\.id), ["a"])
     }
 
+    func testTheHintSaysThatAPressStopsARunningPart() throws {
+        let sheet = try panel("part=quit\ntitle=Quit\npress=true\nkey=cmd+q\n\npart=swap\ntitle=Swap\npress=true\nkey=cmd+s\n")
+
+        XCTAssertEqual(sheet.hint(stopping: { $0.id == "quit" }), "⌘Q Stop   ⌘S Swap   Esc Close")
+        XCTAssertEqual(sheet.hint(stopping: { _ in false }), sheet.hint)
+    }
+
     func testTheCatalogReportsWhatAPartCannotHold() {
         XCTAssertEqual(PluginOutput(text: lights).partFaults, [])
         XCTAssertEqual(PluginOutput(text: "part=a\ncolour=red\n").partFaults, ["the part a has an unknown key: colour"])

@@ -1,8 +1,9 @@
 import SwiftUI
 import OpenspotCore
 
-/// A spot: a glyph, then a title with a detail, then an accessory. A small card shows the glyph alone,
-/// a slider shows its title over its track, and a widget shows its places.
+/// A spot: a glyph, then a title with a detail, then an accessory. A small card shows the glyph alone, and a widget shows
+/// its places. A kind differs only in what fills a slot: a slider has its track as its detail, and running work takes the
+/// place of the glyph.
 struct SpotCardView: View {
     let entry: SpotsModel.Entry
     let size: SpotSize
@@ -13,6 +14,9 @@ struct SpotCardView: View {
     @State private var isHovered = false
     @GestureState private var isPressed = false
     @Environment(\.spotIsShown) private var isShown
+
+    /// How far a line reaches past the inset at its trailing end, where the round end of the card leaves room.
+    private static let lineReach: CGFloat = 6
 
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.corner(for: size), style: .continuous)
@@ -36,9 +40,7 @@ struct SpotCardView: View {
 
     @ViewBuilder
     private var content: some View {
-        if entry.kind == .slider {
-            sliderBody
-        } else if let layout = entry.command.layout {
+        if let layout = entry.command.layout {
             SpotWidgetView(layout: layout, places: entry.command.places, readings: readings, card: size)
         } else if size == .small {
             glyph.frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -66,9 +68,9 @@ struct SpotCardView: View {
             glyph
             text
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.trailing, entry.kind.opensSheet || size == .wide ? -SpotTokens.columnGap : 0)
             accessory
         }
+        .padding(.trailing, -Self.lineReach)
         .frame(maxHeight: .infinity)
     }
 
@@ -85,7 +87,7 @@ struct SpotCardView: View {
     }
 
     private var title: some View {
-        Text(entry.state.title)
+        Text(entry.shownState.title)
             .font(SpotType.title)
             .foregroundStyle(isFilled ? Color.black.opacity(SpotTokens.titleOpacity) : Color.white.opacity(SpotTokens.titleOpacity))
             .lineLimit(1)
@@ -94,7 +96,9 @@ struct SpotCardView: View {
     private var text: some View {
         VStack(alignment: .leading, spacing: SpotType.lineGap) {
             title
-            if let subtitle = entry.state.subtitle {
+            if entry.kind == .slider {
+                slider
+            } else if let subtitle = entry.shownState.subtitle {
                 Text(subtitle)
                     .font(SpotType.detail)
                     .modifier(SpotSecondaryText(isOnWhite: isFilled))
@@ -110,9 +114,8 @@ struct SpotCardView: View {
             Image(systemName: "chevron.right")
                 .font(.system(size: 9, weight: .semibold))
                 .foregroundStyle(isFilled ? Color.black : Color.white)
-                .padding(.trailing, -6)
         case .launch:
-            if size != .wide {
+            if size != .wide, !entry.stopsOnPress {
                 Text("Run")
                     .font(SpotType.action)
                     .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
@@ -123,22 +126,6 @@ struct SpotCardView: View {
         case .toggle, .slider, .widget:
             EmptyView()
         }
-    }
-
-    private var sliderBody: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            title
-            HStack(spacing: 10) {
-                Image(systemName: entry.symbol)
-                    .font(.system(size: 11, weight: .medium))
-                slider
-                Image(systemName: entry.symbol)
-                    .font(.system(size: 15, weight: .medium))
-            }
-            .foregroundStyle(.white)
-        }
-        .padding(.horizontal, 3)
-        .frame(maxHeight: .infinity, alignment: .center)
     }
 
     private var slider: some View {
@@ -159,7 +146,9 @@ struct SpotCardView: View {
 
     @ViewBuilder
     private var glyph: some View {
-        if let item = entry.item, item.icon != nil {
+        if let call = entry.work {
+            SpotWorkMark(call: call, stops: entry.stopsOnPress, isOnWhite: isFilled)
+        } else if let item = entry.item, item.icon != nil {
             SpotItemIcon(item: item, size: SpotTokens.glyphSize)
         } else {
             symbolGlyph

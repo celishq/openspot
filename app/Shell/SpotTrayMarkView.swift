@@ -59,6 +59,13 @@ struct SpotTrayMarkView: View {
         case .status(let title):
             dot(markColour)
             Text(title)
+        case .work(let fill, let count):
+            if let fill {
+                ring(fill: fill)
+            } else {
+                ProgressView().progressViewStyle(.circular).controlSize(.small).frame(width: Self.ring, height: Self.ring)
+            }
+            if let count { Text("\(count)") }
         }
     }
 
@@ -67,15 +74,8 @@ struct SpotTrayMarkView: View {
     }
 
     private func ring(fill: Double) -> some View {
-        ZStack {
-            Circle().stroke(.primary.opacity(Self.track), lineWidth: Self.ringLine)
-            Circle()
-                .trim(from: 0, to: fill)
-                .rotation(.degrees(-90))
-                .stroke(markColour, style: StrokeStyle(lineWidth: Self.ringLine, lineCap: .round))
-        }
-        .padding(Self.ringLine / 2)
-        .frame(width: Self.ring, height: Self.ring)
+        SpotRing(fill: fill, line: Self.ringLine, colour: markColour, track: .primary.opacity(Self.track))
+            .frame(width: Self.ring, height: Self.ring)
     }
 
     private func bars(_ points: [Double]) -> some View {

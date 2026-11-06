@@ -19,6 +19,8 @@ public struct TrayMark: Equatable, Sendable {
         case ring(fill: Double, title: String)
         case bars([Double], title: String)
         case status(String)
+        /// Running work: a ring from `fill`, or a spinner with none, and how many run when there is more than one.
+        case work(fill: Double?, count: Int?)
     }
 
     public static let barCount = 8
@@ -28,6 +30,15 @@ public struct TrayMark: Equatable, Sendable {
     public let content: Content
     public let isStale: Bool
     public let summary: String
+
+    /// What the Openspot item shows for running work, with the fill and the name of the oldest call.
+    public init(workFill: Double?, count: Int, name: String) {
+        symbol = nil
+        tone = nil
+        isStale = false
+        summary = count > 1 ? "\(count) running. \(name) is the oldest" : "\(name) is running"
+        content = .work(fill: workFill, count: count > 1 ? count : nil)
+    }
 
     public init?(reading: MetricReading) {
         guard let value = reading.value, !value.isHidden else { return nil }

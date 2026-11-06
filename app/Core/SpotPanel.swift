@@ -27,7 +27,12 @@ public struct SpotPanel: Equatable, Sendable {
 
     /// The keys of its parts, in words for the footer.
     public var hint: String {
-        let keys = parts.compactMap { part in part.key.map { "\($0.label) \(part.title ?? part.id.capitalized)" } }
+        hint(stopping: { _ in false })
+    }
+
+    /// The keys of its parts, in words for the footer. The key of a running part says that it stops the call.
+    public func hint(stopping isRunning: (SpotPart) -> Bool) -> String {
+        let keys = parts.compactMap { part in part.key.map { "\($0.label) \(isRunning(part) ? "Stop" : part.title ?? part.id.capitalized)" } }
         return (keys + ["Esc Close"]).joined(separator: "   ")
     }
 

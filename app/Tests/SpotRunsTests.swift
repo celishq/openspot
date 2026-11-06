@@ -734,6 +734,269 @@ final class SpotRunsTests: XCTestCase {
         XCTAssertEqual(text, "65536")
     }
 
+    // MARK: L6, G1 to G4
+
+    private static let progress = "printf 'title=42%%\\ndetail=2 min left\\nvalue=0.42\\n---\\n'\nsleep 30"
+
+    /// A body that waits for a file before each of these frames.
+    private func steps(_ steps: [(file: String, frame: String)]) -> String {
+        steps.map { "while [ ! -e '\(path($0.file))' ]; do sleep 0.02; done\nprintf '\($0.frame)\\n---\\n'" }.joined(separator: "\n") + "\nsleep 30"
+    }
+
+    private func touch(_ name: String) {
+        FileManager.default.createFile(atPath: path(name), contents: nil)
+    }
+
+    func testWorkShowsOnlyAfterItsCallHasRunForOneSecond() async throws {
+        try script(body: Self.progress)
+        let sheet = try sheet()
+
+        sheet.pressCard()
+        try await wait("the frame") { sheet.calls.first?.lastFrame != nil }
+        time += 0.9
+        XCTAssertTrue(sheet.work.isEmpty)
+        XCTAssertNil(sheet.cardWork)
+        XCTAssertNil(runs.workMark)
+        XCTAssertNil(runs.workSpot)
+        XCTAssertEqual(sheet.shownState, sheet.state)
+
+        time += 0.1
+        XCTAssertEqual(sheet.work.map(\.id), sheet.calls.map(\.id))
+        XCTAssertNotNil(runs.workMark)
+        XCTAssertEqual(runs.workSpot, "script")
+    }
+
+    func testAQuickCallNeverShows() async throws {
+        try script(body: "exit 0")
+        let sheet = try sheet()
+
+        sheet.pressCard()
+        try await wait("the end") { sheet.calls.isEmpty }
+        time += 5
+
+        XCTAssertTrue(sheet.work.isEmpty)
+        XCTAssertNil(runs.workMark)
+    }
+
+    func testAReadNeverShowsAsWork() async throws {
+        try script(header: "read=sheet", "sleep 30")
+        let sheet = try sheet()
+
+        sheet.read()
+        time += 5
+
+        XCTAssertEqual(sheet.calls.count, 1)
+        XCTAssertTrue(sheet.work.isEmpty)
+        XCTAssertNil(runs.workMark)
+        XCTAssertNil(runs.workSpot)
+    }
+
+    func testWorkShowsByItselfOnceItsSecondHasPassed() async throws {
+        let live = SpotRuns()
+        defer { live.quit() }
+        try script(body: "sleep 30")
+        live.take(try PluginFolder(url: folder).scan())
+        let sheet = try XCTUnwrap(live.sheets["script"])
+        sheet.pressCard()
+        let changes = expectation(description: "the second has passed")
+
+        XCTAssertNil(withObservationTracking { live.workMark } onChange: { changes.fulfill() })
+        await fulfillment(of: [changes], timeout: 5)
+
+        XCTAssertNotNil(live.workMark)
+    }
+
+    func testTheSpotShowsASpinnerWithNoValueAndARingFromValue() async throws {
+        try script(body: steps([
+            ("half", "value=0.42"),
+            ("over", "value=7"),
+            ("under", "value=-1"),
+            ("none", "title=Almost")
+        ]))
+        let sheet = try sheet()
+        sheet.pressCard()
+        time += 1
+        let call = try XCTUnwrap(sheet.work.first)
+        XCTAssertNil(call.fill)
+
+        touch("half")
+        try await wait("the value") { call.fill == 0.42 }
+        touch("over")
+        try await wait("the top") { call.fill == 1 }
+        touch("under")
+        try await wait("the bottom") { call.fill == 0 }
+        touch("none")
+        try await wait("no value") { call.title == "Almost" }
+        XCTAssertNil(call.fill)
+    }
+
+    func testAFramesWordsShowOnTheSpotOnlyWhileItsCallRuns() async throws {
+        try script(header: "name=Encode\nsubtitle=Videos", "printf 'title=42%%\\ndetail=2 min left\\n---\\n'\nwhile [ ! -e '\(path("end"))' ]; do sleep 0.02; done")
+        let sheet = try sheet()
+        sheet.pressCard()
+        try await wait("the frame") { sheet.calls.first?.lastFrame != nil }
+        XCTAssertEqual(sheet.shownState.title, "Encode")
+
+        time += 1
+        XCTAssertEqual(sheet.shownState.title, "42%")
+        XCTAssertEqual(sheet.shownState.subtitle, "2 min left")
+        XCTAssertEqual(sheet.state.title, "Encode")
+        XCTAssertEqual(sheet.state.subtitle, "Videos")
+
+        touch("end")
+        try await wait("the end") { sheet.calls.isEmpty }
+        XCTAssertEqual(sheet.shownState.title, "Encode")
+        XCTAssertEqual(sheet.shownState.subtitle, "Videos")
+    }
+
+    func testAFrameWithOnlyATitleKeepsTheDetailOfTheSpot() async throws {
+        try script(header: "name=Encode\nsubtitle=Videos", "printf 'title=42%%\\n---\\n'\nsleep 30")
+        let sheet = try sheet()
+        sheet.pressCard()
+        try await wait("the frame") { sheet.calls.first?.lastFrame != nil }
+        time += 1
+
+        XCTAssertEqual(sheet.shownState.title, "42%")
+        XCTAssertEqual(sheet.shownState.subtitle, "Videos")
+    }
+
+    func testAStoppedCallLeavesNothingOnTheSpotOrInTheMenuBar() async throws {
+        try script(header: "name=Encode", Self.progress)
+        let sheet = try sheet()
+        sheet.pressCard()
+        try await wait("the frame") { sheet.calls.first?.lastFrame != nil }
+        time += 1
+        XCTAssertEqual(sheet.shownState.title, "42%")
+
+        sheet.pressCard()
+
+        XCTAssertTrue(sheet.work.isEmpty)
+        XCTAssertEqual(sheet.shownState.title, "Encode")
+        XCTAssertNil(sheet.shownState.subtitle)
+        XCTAssertNil(runs.workMark)
+        XCTAssertNil(runs.workSpot)
+        try await pause()
+        XCTAssertEqual(log(), [""])
+    }
+
+    func testTheMenuBarShowsTheOldestCallOfAllScriptsAndHowManyRun() async throws {
+        try script("a", "sleep 30")
+        try script("z", "printf 'value=0.25\\n---\\n'\nsleep 30")
+        _ = try scanned()
+        let a = try XCTUnwrap(runs.sheets["a"])
+        let z = try XCTUnwrap(runs.sheets["z"])
+
+        z.pressCard()
+        try await wait("the frame") { z.calls.first?.lastFrame != nil }
+        time += 1
+        a.pressCard()
+        XCTAssertEqual(runs.workMark?.content, .work(fill: 0.25, count: nil))
+        XCTAssertEqual(runs.workSpot, "z")
+
+        time += 1
+        XCTAssertEqual(runs.workMark?.content, .work(fill: 0.25, count: 2))
+        XCTAssertEqual(runs.workSpot, "z")
+
+        z.stop(try XCTUnwrap(z.calls.first))
+        XCTAssertEqual(runs.workMark?.content, .work(fill: nil, count: nil))
+        XCTAssertEqual(runs.workSpot, "a")
+    }
+
+    func testTheSpotShowsItsOldestCall() async throws {
+        try script(header: "read=sheet", """
+        case "$1" in
+          read) printf 'part=a\\npress=true\\n\\npart=b\\npress=true\\n' ;;
+          a) printf 'title=A\\n---\\n'; sleep 30 ;;
+          b) printf 'title=B\\n---\\n'; sleep 30 ;;
+        esac
+        """)
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the parts") { sheet.panel != nil }
+        try await wait("the end of the read") { sheet.calls.isEmpty }
+        let parts = try XCTUnwrap(sheet.panel?.parts)
+
+        sheet.press(parts[1])
+        time += 1
+        sheet.press(parts[0])
+        try await wait("both frames") { sheet.calls.count == 2 && sheet.calls.allSatisfy { $0.lastFrame != nil } }
+        time += 1
+
+        XCTAssertEqual(sheet.work.count, 2)
+        XCTAssertEqual(sheet.shownState.title, "B")
+    }
+
+    func testARunningPartShowsOnThatPartOnly() async throws {
+        try script(header: "read=sheet", """
+        case "$1" in
+          read) printf 'part=go\\npress=true\\n\\npart=other\\ntitle=Other\\n' ;;
+          go) sleep 30 ;;
+        esac
+        """)
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the parts") { sheet.panel != nil }
+        let parts = try XCTUnwrap(sheet.panel?.parts)
+
+        sheet.press(parts[0])
+        XCTAssertNil(sheet.work(of: parts[0]))
+        time += 1
+
+        XCTAssertNotNil(sheet.work(of: parts[0]))
+        XCTAssertNil(sheet.work(of: parts[1]))
+        XCTAssertTrue(parts[0].isPressable)
+        XCTAssertFalse(parts[1].isPressable)
+        XCTAssertNil(sheet.cardWork)
+    }
+
+    func testARunningActionOrPickShowsOnItsRowOfTheMenu() async throws {
+        try script(header: "read=sheet", """
+        case "$1" in
+          read) printf 'action=go\\ntitle=Go\\nscope=command\\n\\naction=copy\\ntitle=Copy\\n\\nrow=A\\nrun=a\\n' ;;
+          go) sleep 30 ;;
+          open) sleep 30 ;;
+        esac
+        """)
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        let item = try XCTUnwrap(sheet.list.selectedItem)
+        let menu = try XCTUnwrap(ActionMenu(command: sheet.command, item: item))
+        let primary = try XCTUnwrap(menu.rows.first { $0.action == nil })
+        let go = try XCTUnwrap(menu.rows.first { $0.action?.id == "go" })
+        let copy = try XCTUnwrap(menu.rows.first { $0.action?.id == "copy" })
+
+        sheet.run(try XCTUnwrap(go.action), item: nil)
+        time += 1
+        XCTAssertNotNil(sheet.work(of: go, item: nil))
+        XCTAssertNil(sheet.work(of: copy, item: item))
+        XCTAssertNil(sheet.work(of: primary, item: item))
+
+        sheet.pick(item)
+        time += 1
+        XCTAssertNotNil(sheet.work(of: primary, item: item))
+        XCTAssertNil(sheet.cardWork)
+    }
+
+    func testARunningCardSaysThatAPressStopsItAndAPressDoes() async throws {
+        try script(body: "sleep 0.5\ntouch '\(path("went-on"))'")
+        let sheet = try sheet()
+        let menu = try XCTUnwrap(ActionMenu(command: sheet.command, item: nil))
+        let row = try XCTUnwrap(menu.rows.first)
+
+        sheet.pressCard()
+        XCTAssertNil(sheet.cardWork)
+        XCTAssertNil(sheet.work(of: row, item: nil))
+        time += 1
+
+        XCTAssertNotNil(sheet.cardWork)
+        XCTAssertNotNil(sheet.work(of: row, item: nil))
+        sheet.pressCard()
+        XCTAssertNil(sheet.cardWork)
+        try await pause(0.8)
+        XCTAssertFalse(exists("went-on"))
+    }
+
     // MARK: L11
 
     func testAPressOfAPartWithinOneSecondOfItsStartDoesNothing() async throws {

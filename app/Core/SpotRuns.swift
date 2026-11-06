@@ -123,6 +123,23 @@ public final class SpotRuns {
         }
     }
 
+    /// The running work of all scripts, the oldest first, with the ID of each script.
+    public var work: [(id: String, call: ScriptCall)] {
+        order.flatMap { id in (sheets[id]?.work ?? []).map { (id: id, call: $0) } }.sorted { $0.call.started < $1.call.started }
+    }
+
+    /// What the Openspot item shows for running work, or nothing when none shows.
+    public var workMark: TrayMark? {
+        let work = work
+        guard let oldest = work.first else { return nil }
+        return TrayMark(workFill: oldest.call.fill, count: work.count, name: sheets[oldest.id]?.command.name ?? oldest.id)
+    }
+
+    /// The ID of the script of the oldest running work, whose spot a click on the Openspot item selects.
+    public var workSpot: String? {
+        work.first?.id
+    }
+
     /// What each script last gave a widget to draw, by script.
     public var readings: [String: MetricReading] {
         sheets.mapValues(\.reading)
