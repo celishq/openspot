@@ -34,7 +34,7 @@ public struct SheetSandbox: Equatable, Sendable {
         return panel?.advance() ?? 0
     }
 
-    /// Shows a frame that a script printed, which its session draws.
+    /// Shows a frame that a script printed, which its sheet draws.
     public mutating func note(frame text: String) {
         self.text = text
         let output = PluginOutput(text: text)

@@ -3,14 +3,14 @@ import Observation
 import OpenspotCore
 
 /// The state of the sandbox window. It reads a sheet from typed text, a file it watches, or a script that it runs through
-/// the same session as the panel.
+/// the same sheet as the panel.
 @MainActor
 @Observable
 final class SpotSandboxModel {
     private static let watchPause: Duration = .milliseconds(500)
 
     private(set) var sandbox = SheetSandbox()
-    private let session: SpotSession?
+    private let sheet: SpotSheet?
     let file: URL?
     @ObservationIgnored private var written: Date?
 
@@ -20,11 +20,11 @@ final class SpotSandboxModel {
 
     /// Whether the left side is a script's answer, which a person does not edit here.
     var isScript: Bool {
-        session != nil
+        sheet != nil
     }
 
     var panel: SpotPanel? {
-        session?.panel ?? sandbox.panel
+        sheet?.panel ?? sandbox.panel
     }
 
     init(path: String?) {
@@ -32,11 +32,11 @@ final class SpotSandboxModel {
         self.file = file
         if let file, FileManager.default.isExecutableFile(atPath: file.path) {
             let isLive = PluginHeader(url: file).block.flag("live") ?? false
-            session = SpotSession(command: PluginCommand(id: file.lastPathComponent, name: file.lastPathComponent, url: file, kind: .list, isLive: isLive))
+            sheet = SpotSheet(command: PluginCommand(id: file.lastPathComponent, name: file.lastPathComponent, url: file, kind: .list, isLive: isLive))
         } else {
-            session = nil
+            sheet = nil
         }
-        session?.onReport = { [weak self] in self?.take($0) }
+        sheet?.onReport = { [weak self] in self?.take($0) }
         reload()
         watch()
     }
@@ -46,22 +46,22 @@ final class SpotSandboxModel {
     /// Takes text that a person typed, and saves it when the sandbox has a file.
     func edit(_ text: String) {
         sandbox.take(text: text)
-        guard let file, session == nil else { return }
+        guard let file, sheet == nil else { return }
         try? text.write(to: file, atomically: true, encoding: .utf8)
         written = Self.modified(file)
     }
 
     func set(_ part: SpotPart, to value: String) {
         sandbox.set(value, of: part.id)
-        session?.set(part, to: value)
+        sheet?.set(part, to: value)
     }
 
     func press(_ part: SpotPart) {
         sandbox.press(part.id)
-        session?.press(part)
+        sheet?.press(part)
     }
 
-    private func take(_ report: SpotSession.Report) {
+    private func take(_ report: SpotSheet.Report) {
         switch report {
         case .frame(let text): sandbox.note(frame: text)
         case .failure(let text), .toast(let text): sandbox.record(text)
@@ -73,9 +73,9 @@ final class SpotSandboxModel {
     private func reload() {
         guard let file else { return }
         written = Self.modified(file)
-        if let session {
-            session.close()
-            session.open {}
+        if let sheet {
+            sheet.close()
+            sheet.open {}
         } else {
             sandbox.take(text: (try? String(contentsOf: file, encoding: .utf8)) ?? "")
         }

@@ -50,10 +50,10 @@ struct SpotsView: View {
                 SpotSheetView(
                     entry: entry,
                     isOpen: sheetOpen,
-                    list: model.sessions[entry.id]?.list ?? ItemList(),
+                    list: model.sheets[entry.id]?.list ?? ItemList(),
                     rect: sheetRect,
                     form: model.form?.entry.id == entry.id ? model.form?.draft : nil,
-                    panel: model.sessions[entry.id]?.panel,
+                    panel: model.sheets[entry.id]?.panel,
                     onSet: { model.setPart($0, to: $1) },
                     onPress: { model.pressPart($0) },
                     createTitle: model.createAction.map { "\($0.title): \(model.searchText)" },
@@ -180,8 +180,8 @@ struct SpotsView: View {
 
     private var sheetRect: CGRect {
         if let form = model.form { return SpotTokens.formRect(form.draft.form) }
-        if let panel = model.sessions[sheetID ?? ""]?.panel { return SpotTokens.panelRect(panel) }
-        return SpotTokens.sheetRect(rows: model.sessions[sheetID ?? ""]?.list.shown.count ?? 0)
+        if let panel = model.sheets[sheetID ?? ""]?.panel { return SpotTokens.panelRect(panel) }
+        return SpotTokens.sheetRect(rows: model.sheets[sheetID ?? ""]?.list.shown.count ?? 0)
     }
 
     private var contentHeight: CGFloat {
@@ -226,7 +226,7 @@ struct SpotsView: View {
     /// Whether the search field is drawn. A form and a sheet of parts replace it.
     private var showsSearchField: Bool {
         guard model.form == nil else { return false }
-        return !(sheetOpen && model.sessions[sheetID ?? ""]?.panel != nil)
+        return !(sheetOpen && model.sheets[sheetID ?? ""]?.panel != nil)
     }
 
     private var openFrame: CGRect? {

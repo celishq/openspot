@@ -5,8 +5,8 @@ import Observation
 /// of one never stops a run of another, and a stopped run changes nothing.
 @MainActor
 @Observable
-public final class SpotSession {
-    /// What the session tells its owner.
+public final class SpotSheet {
+    /// What the sheet tells its owner.
     public enum Report: Sendable {
         case toast(String)
         case failure(String)

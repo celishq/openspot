@@ -2,11 +2,11 @@ import XCTest
 @testable import OpenspotCore
 
 @MainActor
-final class SpotSessionTests: XCTestCase {
+final class SpotSheetTests: XCTestCase {
     private var folder: URL!
 
     override func setUp() async throws {
-        folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-session-\(UUID().uuidString)")
+        folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-sheet-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     }
 
@@ -14,11 +14,11 @@ final class SpotSessionTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func make(name: String = "script", _ body: String, isLive: Bool = false, read: SpotRead? = nil) throws -> SpotSession {
+    private func make(name: String = "script", _ body: String, isLive: Bool = false, read: SpotRead? = nil) throws -> SpotSheet {
         let url = folder.appendingPathComponent("\(name).sh")
         try "#!/bin/sh\n\(body)\n".write(to: url, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
-        return SpotSession(command: PluginCommand(id: name, name: name, url: url, kind: .list, read: read, isLive: isLive))
+        return SpotSheet(command: PluginCommand(id: name, name: name, url: url, kind: .list, read: read, isLive: isLive))
     }
 
     private func path(_ name: String) -> String {
@@ -38,45 +38,45 @@ final class SpotSessionTests: XCTestCase {
     }
 
     func testARunThatEndsWithNoOutputEmptiesTheList() async throws {
-        let session = try make("[ -f '\(path("second"))' ] && exit 0\ntouch '\(path("second"))'\nprintf 'row=A\\nrun=a\\n'")
+        let sheet = try make("[ -f '\(path("second"))' ] && exit 0\ntouch '\(path("second"))'\nprintf 'row=A\\nrun=a\\n'")
 
-        session.read()
-        try await wait("the row") { session.list.shown.count == 1 }
-        session.read()
-        try await wait("no rows") { session.list.shown.isEmpty }
+        sheet.read()
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        sheet.read()
+        try await wait("no rows") { sheet.list.shown.isEmpty }
     }
 
     func testAReadReplacedByANewerOneLeavesTheRows() async throws {
-        let session = try make("""
+        let sheet = try make("""
         [ -f '\(path("second"))' ] || { touch '\(path("second"))'; printf 'row=A\\nrun=a\\n'; exit 0; }
         sleep 0.3
         printf 'row=A\\nrun=a\\n'
         """)
-        session.read()
-        try await wait("the row") { session.list.shown.count == 1 }
+        sheet.read()
+        try await wait("the row") { sheet.list.shown.count == 1 }
 
-        session.read()
-        session.read()
+        sheet.read()
+        sheet.read()
         var lowest = 1
         for _ in 0..<80 {
-            lowest = min(lowest, session.list.shown.count)
+            lowest = min(lowest, sheet.list.shown.count)
             try await Task.sleep(for: .milliseconds(10))
         }
 
         XCTAssertEqual(lowest, 1)
-        XCTAssertEqual(session.list.shown.count, 1)
+        XCTAssertEqual(sheet.list.shown.count, 1)
     }
 
     func testClosingLeavesAReadThatHasNoFrameYet() async throws {
-        let session = try make("sleep 0.2\nprintf 'row=A\\nrun=a\\n'")
+        let sheet = try make("sleep 0.2\nprintf 'row=A\\nrun=a\\n'")
 
-        session.open {}
-        session.close()
+        sheet.open {}
+        sheet.close()
 
-        try await wait("the row") { session.list.shown.count == 1 }
+        try await wait("the row") { sheet.list.shown.count == 1 }
     }
 
-    func testClosingOneSessionLeavesTheReadOfAnother() async throws {
+    func testClosingOneSheetLeavesTheReadOfAnother() async throws {
         let first = try make(name: "first", "printf 'part=a\\ntitle=A\\n---\\n'\nsleep 30")
         let second = try make(name: "second", "sleep 0.3\nprintf 'row=B\\nrun=b\\n'")
 
@@ -89,56 +89,56 @@ final class SpotSessionTests: XCTestCase {
     }
 
     func testClosingStopsAScriptThatKeepsPrinting() async throws {
-        let session = try make("""
+        let sheet = try make("""
         printf 'layout=none\\n\\npart=a\\ntitle=0\\n---\\n'
         sleep 0.3
         touch '\(path("went-on"))'
         printf 'part=a\\ntitle=1\\n---\\n'
         """)
 
-        session.open {}
-        try await wait("the first frame") { session.panel != nil }
-        session.close()
+        sheet.open {}
+        try await wait("the first frame") { sheet.panel != nil }
+        sheet.close()
         try await Task.sleep(for: .milliseconds(600))
 
         XCTAssertFalse(exists("went-on"))
-        XCTAssertEqual(session.panel?.parts.first?.title, "0")
+        XCTAssertEqual(sheet.panel?.parts.first?.title, "0")
     }
 
     func testAnOpenSheetTakesLaterFrames() async throws {
-        let session = try make("printf 'part=a\\ntitle=0\\n---\\n'\nsleep 0.1\nprintf 'part=a\\ntitle=1\\n---\\n'")
+        let sheet = try make("printf 'part=a\\ntitle=0\\n---\\n'\nsleep 0.1\nprintf 'part=a\\ntitle=1\\n---\\n'")
 
-        session.open {}
+        sheet.open {}
 
-        try await wait("the later frame") { session.panel?.parts.first?.title == "1" }
+        try await wait("the later frame") { sheet.panel?.parts.first?.title == "1" }
     }
 
     func testAnOlderAnswerDoesNotReplaceANewerChange() async throws {
-        let session = try make("""
+        let sheet = try make("""
         case "$1" in
           set) [ "$3" = old ] && sleep 0.3; printf 'part=a\\ntitle=%s\\ntext=x\\n' "$3" ;;
           *) printf 'part=a\\ntitle=start\\ntext=x\\n' ;;
         esac
         """)
-        session.open {}
-        try await wait("the sheet") { session.panel != nil }
-        let part = try XCTUnwrap(session.panel?.parts.first)
+        sheet.open {}
+        try await wait("the sheet") { sheet.panel != nil }
+        let part = try XCTUnwrap(sheet.panel?.parts.first)
 
-        session.set(part, to: "old")
-        session.set(part, to: "new")
+        sheet.set(part, to: "old")
+        sheet.set(part, to: "new")
 
-        try await wait("the newest answer") { session.panel?.parts.first?.title == "new" }
+        try await wait("the newest answer") { sheet.panel?.parts.first?.title == "new" }
         try await Task.sleep(for: .milliseconds(500))
-        XCTAssertEqual(session.panel?.parts.first?.title, "new")
-        XCTAssertEqual(session.panel?.parts.first?.value, "new")
+        XCTAssertEqual(sheet.panel?.parts.first?.title, "new")
+        XCTAssertEqual(sheet.panel?.parts.first?.value, "new")
     }
 
     func testAToastIsReported() async throws {
-        let session = try make("printf 'part=a\\ntitle=A\\n---\\n'\nprintf 'toast=Later\\n\\npart=a\\ntitle=B\\n---\\n'")
+        let sheet = try make("printf 'part=a\\ntitle=A\\n---\\n'\nprintf 'toast=Later\\n\\npart=a\\ntitle=B\\n---\\n'")
         var toasts: [String] = []
-        session.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
+        sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
 
-        session.open {}
+        sheet.open {}
 
         try await wait("the toast") { toasts == ["Later"] }
     }
@@ -155,45 +155,45 @@ final class SpotSessionTests: XCTestCase {
     """
 
     func testALiveSheetOpensWithItsFirstFrame() async throws {
-        let session = try make("sleep 0.2\n" + String(format: Self.counter, path("ended")), isLive: true)
+        let sheet = try make("sleep 0.2\n" + String(format: Self.counter, path("ended")), isLive: true)
         var isReady = false
 
-        session.open { isReady = true }
+        sheet.open { isReady = true }
         XCTAssertFalse(isReady)
 
         try await wait("the first frame") { isReady }
-        XCTAssertEqual(session.panel?.parts.first?.title, "0")
+        XCTAssertEqual(sheet.panel?.parts.first?.title, "0")
     }
 
     func testALiveScriptDoesNotStartBeforeItsSheetOpens() async throws {
-        let session = try make("touch '\(path("started"))'", isLive: true, read: .open)
+        let sheet = try make("touch '\(path("started"))'", isLive: true, read: .open)
 
-        session.read()
+        sheet.read()
         try await Task.sleep(for: .milliseconds(300))
 
         XCTAssertFalse(exists("started"))
     }
 
     func testClosingEndsALiveScriptAndTheNextOpenStartsAfresh() async throws {
-        let session = try make(String(format: Self.counter, path("ended")), isLive: true)
-        session.open {}
-        try await wait("the first frame") { session.panel != nil }
-        let part = try XCTUnwrap(session.panel?.parts.first)
-        session.press(part)
-        try await wait("the count") { session.panel?.parts.first?.title == "1" }
+        let sheet = try make(String(format: Self.counter, path("ended")), isLive: true)
+        sheet.open {}
+        try await wait("the first frame") { sheet.panel != nil }
+        let part = try XCTUnwrap(sheet.panel?.parts.first)
+        sheet.press(part)
+        try await wait("the count") { sheet.panel?.parts.first?.title == "1" }
 
-        session.close()
+        sheet.close()
         try await wait("the end of the script") { exists("ended") }
 
         var isReady = false
-        session.open { isReady = true }
+        sheet.open { isReady = true }
         try await wait("the new run") { isReady }
-        XCTAssertEqual(session.panel?.parts.first?.title, "0")
-        session.close()
+        XCTAssertEqual(sheet.panel?.parts.first?.title, "0")
+        sheet.close()
     }
 
     func testAPressJustBeforeClosingStillReachesALiveScript() async throws {
-        let session = try make("""
+        let sheet = try make("""
         while IFS= read -r line; do
           case "$line" in
             event=press) sleep 0.2; touch '\(path("copied"))' ;;
@@ -201,25 +201,25 @@ final class SpotSessionTests: XCTestCase {
           esac
         done
         """, isLive: true)
-        session.open {}
-        try await wait("the first frame") { session.panel != nil }
+        sheet.open {}
+        try await wait("the first frame") { sheet.panel != nil }
 
-        session.press(try XCTUnwrap(session.panel?.parts.first))
-        session.close()
+        sheet.press(try XCTUnwrap(sheet.panel?.parts.first))
+        sheet.close()
 
         try await wait("the copy") { exists("copied") }
     }
 
     func testAKeptSearchIsAskedAgainOnOpen() async throws {
-        let session = try make("printf 'row=Notes\\nrun=n\\n\\nrow=Mail\\nrun=m\\n'")
-        session.open {}
-        try await wait("the rows") { session.list.shown.count == 2 }
-        session.search("no")
-        session.close()
+        let sheet = try make("printf 'row=Notes\\nrun=n\\n\\nrow=Mail\\nrun=m\\n'")
+        sheet.open {}
+        try await wait("the rows") { sheet.list.shown.count == 2 }
+        sheet.search("no")
+        sheet.close()
 
-        session.open {}
+        sheet.open {}
 
-        XCTAssertEqual(session.list.query, "no")
-        try await wait("the match") { session.list.shown.map(\.title) == ["Notes"] }
+        XCTAssertEqual(sheet.list.query, "no")
+        try await wait("the match") { sheet.list.shown.map(\.title) == ["Notes"] }
     }
 }

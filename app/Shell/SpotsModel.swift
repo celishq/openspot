@@ -66,7 +66,7 @@ final class SpotsModel {
     var openList: String?
     private(set) var sheetMoves = true
     private var closingPick: (item: SpotItem, entry: Entry)?
-    private(set) var sessions: [String: SpotSession] = [:]
+    private(set) var sheets: [String: SpotSheet] = [:]
     var isShown = false {
         didSet {
             if isShown != oldValue { updateMetricLoop() }
@@ -97,8 +97,8 @@ final class SpotsModel {
         let scan = (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
         var entries: [Entry] = []
         var problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
-        scan.commands.filter { $0.kind == .list }.forEach { _ = session(for: $0) }
-        scan.commands.filter { $0.kind == .list && $0.read == .open }.forEach { sessions[$0.id]?.read() }
+        scan.commands.filter { $0.kind == .list }.forEach { _ = sheet(for: $0) }
+        scan.commands.filter { $0.kind == .list && $0.read == .open }.forEach { sheets[$0.id]?.read() }
         if scan.commands.allSatisfy({ $0.shipped != nil }) {
             problems.append("No plugins in \(folder.url.path)")
         }
@@ -106,7 +106,7 @@ final class SpotsModel {
             do {
                 let opened = try await command.opened(timeout: Self.stateTimeout)
                 if command.readsState, opened.command.kind == .list {
-                    session(for: opened.command).read()
+                    sheet(for: opened.command).read()
                 }
                 entries.append(Entry(command: opened.command, state: opened.state))
             } catch {
@@ -161,23 +161,23 @@ final class SpotsModel {
         }
     }
 
-    /// The session of a list command, with the command as the folder last gave it.
-    private func session(for command: PluginCommand) -> SpotSession {
-        if let session = sessions[command.id] {
-            session.update(command)
-            return session
+    /// The sheet of a list command, with the command as the folder last gave it.
+    private func sheet(for command: PluginCommand) -> SpotSheet {
+        if let sheet = sheets[command.id] {
+            sheet.update(command)
+            return sheet
         }
-        let session = SpotSession(
+        let sheet = SpotSheet(
             command: command,
             recent: UserDefaults.standard.stringArray(forKey: Self.recentKey(command.id)) ?? [],
             prepare: { await SpotIconStore.shared.prepare($0) }
         )
-        session.onReport = { [weak self] in self?.take($0, of: command.id) }
-        sessions[command.id] = session
-        return session
+        sheet.onReport = { [weak self] in self?.take($0, of: command.id) }
+        sheets[command.id] = sheet
+        return sheet
     }
 
-    private func take(_ report: SpotSession.Report, of id: String) {
+    private func take(_ report: SpotSheet.Report, of id: String) {
         switch report {
         case .toast(let text): confirm(text)
         case .failure(let text): notify(text)
@@ -207,7 +207,7 @@ final class SpotsModel {
             } catch {
                 notify("\(entry.state.title) failed. \(Self.reason(error))")
             }
-            if reloads || entry.command.pick == .stay { sessions[entry.id]?.read() }
+            if reloads || entry.command.pick == .stay { sheets[entry.id]?.read() }
             guard entry.kind != .slider, closingPick == nil,
                   let state = try? await entry.command.state(timeout: Self.stateTimeout),
                   let index = entries.firstIndex(where: { $0.id == entry.id }) else { return }
@@ -224,7 +224,7 @@ final class SpotsModel {
         }
         let spots = entries.filter { $0.state.title.localizedCaseInsensitiveContains(text) }
         let sources = entries.filter(\.command.isGlobal).sorted { $0.command.rank < $1.command.rank }
-        let found = SearchQuery(text: text).matching(in: sources.map { sessions[$0.id]?.list ?? ItemList() })
+        let found = SearchQuery(text: text).matching(in: sources.map { sheets[$0.id]?.list ?? ItemList() })
         visible = spots + found.prefix(Self.globalItemLimit).map { Entry(command: sources[$0.list].command, item: $0.item) }
     }
 
@@ -359,11 +359,11 @@ final class SpotsModel {
     }
 
     var openPanel: SpotPanel? {
-        openSession?.panel
+        openSheet?.panel
     }
 
-    private var openSession: SpotSession? {
-        openList.flatMap { sessions[$0] }
+    private var openSheet: SpotSheet? {
+        openList.flatMap { sheets[$0] }
     }
 
     var openEntry: Entry? {
@@ -371,15 +371,15 @@ final class SpotsModel {
     }
 
     var openItems: ItemList? {
-        openSession?.list
+        openSheet?.list
     }
 
     /// The text of the field: the search of the open list, or else the search of the spots.
     var searchText: String {
         get { openItems?.query ?? query }
         set {
-            if let openSession {
-                openSession.search(newValue)
+            if let openSheet {
+                openSheet.search(newValue)
             } else {
                 query = newValue
             }
@@ -400,23 +400,23 @@ final class SpotsModel {
 
     /// Opens a sheet and ends what another left running. The sheet of a live script opens with its first frame.
     private func open(_ id: String) {
-        guard let session = sessions[id] else { return }
-        sessions.values.filter { $0 !== session }.forEach { $0.close() }
-        session.open { [weak self] in self?.openList = id }
+        guard let sheet = sheets[id] else { return }
+        sheets.values.filter { $0 !== sheet }.forEach { $0.close() }
+        sheet.open { [weak self] in self?.openList = id }
     }
 
     func closeList() {
         openList = nil
-        sessions.values.forEach { $0.close() }
+        sheets.values.forEach { $0.close() }
     }
 
     /// Closes the sheet of a live script when the panel has faded, so that the next open starts it again.
     func panelDidHide() {
-        if openSession?.command.isLive == true {
+        if openSheet?.command.isLive == true {
             sheetMoves = false
             closeList()
         } else {
-            sessions.values.filter { $0.command.isLive }.forEach { $0.close() }
+            sheets.values.filter { $0.command.isLive }.forEach { $0.close() }
         }
     }
 
@@ -426,7 +426,7 @@ final class SpotsModel {
     }
 
     func moveItem(by step: Int) {
-        openSession?.list.move(by: step)
+        openSheet?.list.move(by: step)
     }
 
     func runSelectedItem() {
@@ -458,8 +458,8 @@ final class SpotsModel {
         guard let pick = closingPick else { return }
         closingPick = nil
         if pick.entry.command.keepsRecent {
-            sessions[pick.entry.id]?.list.remember(pick.item)
-            UserDefaults.standard.set(sessions[pick.entry.id]?.list.recent, forKey: Self.recentKey(pick.entry.id))
+            sheets[pick.entry.id]?.list.remember(pick.item)
+            UserDefaults.standard.set(sheets[pick.entry.id]?.list.recent, forKey: Self.recentKey(pick.entry.id))
         }
         sheetMoves = false
         closeList()
@@ -534,11 +534,11 @@ final class SpotsModel {
     }
 
     func setPart(_ part: SpotPart, to value: String) {
-        openSession?.set(part, to: value)
+        openSheet?.set(part, to: value)
     }
 
     func pressPart(_ part: SpotPart) {
-        openSession?.press(part)
+        openSheet?.press(part)
         if part.closes, isShown { dismiss() }
     }
 
@@ -663,7 +663,7 @@ final class SpotsModel {
             do {
                 let run = try await form.entry.command.submit(form.action, item: form.item, draft: form.draft, timeout: Self.actionTimeout)
                 self.form = nil
-                sessions[form.entry.id]?.read(selecting: run.isEmpty ? nil : run)
+                sheets[form.entry.id]?.read(selecting: run.isEmpty ? nil : run)
             } catch {
                 notify("\(form.action.title) failed. \(Self.reason(error))")
             }
