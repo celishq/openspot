@@ -408,9 +408,7 @@ Remove a row when the code follows the rule.
 
 | Rules | Module | Today | Target |
 |---|---|---|---|
-| D1 to D6 | `PluginCommand.drop`, `SpotSheet.calls` | The command keeps `drop`. Nothing else is built. | D1 to D6. |
 | K1 to K3 | `SpotTranslation`, `translate.sh` | The script starts `openspot translate --serve` and talks through fifos. | A handler that calls `openspot translate`, which reaches a helper that exits when idle. |
-| Docs | `GUIDE.md`, `PartCatalog` | They say that `drop` does not act yet. | Follow each rule when it is built. |
 
 The tests in `SpotActionTests`, `SheetStreamTests`, `SpotPanelTests`, `SpotRunsTests` and `SamplePluginsTests` pin the calls. Read them
 before each change. Each change in this table is breaking, and no alias stays.

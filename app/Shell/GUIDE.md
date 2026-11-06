@@ -47,7 +47,7 @@ open -a Calendar
 | `rank` | Shows its rows in the main search. A lower number comes first. Needs `panel`, `launch` or a number in its `read`. A number also needs a `key`, or Openspot refuses the plugin. |
 | `tray` | `true` to show a metric in the menu bar. Needs a number in its `read`, or `stay=true`. |
 | `stay` | `true` to keep the script running. See "Sheets of parts". |
-| `drop` | A list of file extensions, `folder` or `*`. Openspot keeps this key, and does not act on it yet. |
+| `drop` | A list of file extensions, `folder` or `*`. Its card takes files that a person drops. See "Drops". |
 
 `read` is a list of moments, split by commas, such as `read=panel,60`. At each moment Openspot calls `<script> read`:
 
@@ -76,6 +76,7 @@ a call that prints no state, Openspot reads the script again.
 | `<script> <part> [value]` | A part changes, or a press of a part | Prints the sheet, or nothing to be read again. |
 | `<script> on`, `off` | A toggle is pressed | Turns it on or off. |
 | `<script> level <number>` | A slider moves | Sets the level. |
+| `<script> drop <path> [path]...` | Files are dropped on its card, or chosen for it | Does its work on each file. |
 
 `read` is the only reserved word. A part or an action cannot be called `read`, and `openspot check` reports it.
 
@@ -167,6 +168,39 @@ Give the script `read=panel`, and let it print one block:
 | `level=70`, and `min=0` and `max=100` | A slider. |
 
 Both can print `title` and `detail`. The defaults come from the header.
+
+## Drops
+
+Add `drop` to the header, and the card takes files.
+
+```sh
+#!/bin/sh
+# name=To MP4
+# symbol=film
+# drop=mov,mkv,avi,webm
+case "$1" in
+  drop)
+    shift
+    for file; do
+      ffmpeg -y -i "$file" "${file%.*}.mp4" >/dev/null 2>&1 || exit 1
+    done
+    printf 'toast=Done\n'
+    ;;
+esac
+```
+
+| `drop` holds | The card takes |
+|---|---|
+| An extension, such as `mov` | A file with this extension, in upper or lower case. |
+| `folder` | A folder. A bundle, such as an app, is a folder. |
+| `*` | Each file and each folder. |
+
+- To drop files, drag them over the Openspot item in the menu bar. The panel opens and the focus stays where it is. The panel stays open until the drag ends.
+- A card takes a drag only when its `drop` takes each dragged file. Only that card shows it, when the drag is on it. A mix with one other file goes to no card.
+- A drop runs one call, `drop <path> [path]...`, and closes the panel. Each full path is its own argument, so write `"$file"` with its quotes.
+- A drop on a card with a running call waits, and runs when that call ends. It does not stop the call. A `read` does not hold a drop.
+- A click on a card with `drop` and no sheet opens a file chooser, and the choice runs the same call. A toggle and a slider keep their own click, and a card with a sheet opens its sheet.
+- A `drop` call runs as any other name does. It has no time limit, and it goes on with the panel closed. A second press of its card stops it.
 
 ## Actions and forms
 
