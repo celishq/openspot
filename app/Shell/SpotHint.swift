@@ -24,7 +24,7 @@ struct SpotHint: View {
         .font(SpotType.detail)
         .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
         .lineLimit(1)
-        .padding(.leading, HintWords(text).groups.first?.key == nil ? SpotTokens.hintEndPadding : SpotTokens.hintPillInset)
+        .padding(.leading, HintWords(text).groups.first?.key == nil ? SpotTokens.hintEndPadding : SpotTokens.hintKeyInset)
         .padding(.trailing, SpotTokens.hintEndPadding)
         .frame(height: SpotTokens.hintHeight + 2 * SpotTokens.hintPillInset)
         .modifier(SpotGlass(radius: SpotTokens.hintHeight / 2 + SpotTokens.hintPillInset, isBare: text.isEmpty))
