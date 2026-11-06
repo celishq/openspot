@@ -72,6 +72,8 @@ final class SpotsModel {
             if isShown != oldValue { updateMetricLoop() }
         }
     }
+    var entryKey = Shortcut.standard
+    private var isChainHeld = false
     var dismiss: () -> Void = {}
     var show: () -> Void = {}
     var notify: (String) -> Void = { _ in }
@@ -277,6 +279,31 @@ final class SpotsModel {
         sheetMoves = isShown
         show()
         open(id)
+    }
+
+    /// Notes which modifiers the person holds, so that each spot can show its letter while they match the entry key.
+    func takeHeld(_ modifiers: Shortcut.Modifiers) {
+        isChainHeld = modifiers == entryKey.modifiers
+    }
+
+    /// The letter that a spot shows while the person holds the modifiers of the entry key on the grid.
+    func chainLetter(of entry: Entry) -> String? {
+        guard isChainHeld, entry.item == nil, isOnGrid else { return nil }
+        return entry.command.key?.name.uppercased()
+    }
+
+    private var isOnGrid: Bool {
+        menu == nil && form == nil && openList == nil
+    }
+
+    /// Runs the spot whose letter this press holds, whatever the search shows. A spot with no sheet closes the panel.
+    func handleChain(code: UInt32, modifiers: Shortcut.Modifiers) -> Bool {
+        guard isOnGrid, let entry = entries.first(where: { entry in
+            entry.command.key.map { entryKey.chains(to: $0, code: code, modifiers: modifiers) } ?? false
+        }) else { return false }
+        press(entry.id)
+        if entry.kind == .toggle { dismiss() }
+        return true
     }
 
     private func run(_ entry: Entry) {

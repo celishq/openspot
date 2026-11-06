@@ -20,8 +20,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private let model = SpotsModel()
     private var panel: SpotsPanel?
     private var previousApp: NSRunningApplication?
-    private var trigger: CommandTrigger?
-    private var hotKeys: [HotKey.Registration] = []
+    private var hotKey: HotKey.Registration?
     private var trayBar: SpotTrayBar?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -42,17 +41,11 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         let toast = ToastPanel.make()
         model.notify = { toast.show($0, symbol: ToastPanel.failureSymbol) }
         model.confirm = { toast.show($0, symbol: ToastPanel.confirmSymbol) }
-        let trigger = CommandTrigger(model: model, toast: toast)
-        self.trigger = trigger
         trayBar = SpotTrayBar(model: model)
         Task { await model.reload() }
-        let panelKey = HotKey.register(code: UInt32(kVK_Space), modifiers: UInt32(controlKey)) { [weak self] in
+        hotKey = HotKey.register(code: UInt32(kVK_Space), modifiers: UInt32(controlKey)) { [weak self] in
             Task { @MainActor in self?.togglePanel() }
         }
-        let triggerKey = HotKey.register(code: UInt32(kVK_Space), modifiers: UInt32(optionKey)) {
-            Task { @MainActor in trigger.press() }
-        }
-        hotKeys = [panelKey, triggerKey].compactMap { $0 }
     }
 
     @objc func togglePanel() {

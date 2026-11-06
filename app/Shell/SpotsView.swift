@@ -258,6 +258,7 @@ struct SpotsView: View {
                     size: placement.size,
                     isSelected: placement.index == model.selected,
                     readings: entry.kind == .widget ? model.readings : [:],
+                    chainLetter: model.chainLetter(of: entry),
                     onTap: { model.tap(entry.id) },
                     onLevel: { model.setLevel(entry.id, to: $0) }
                 )

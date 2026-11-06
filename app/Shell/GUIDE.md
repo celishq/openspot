@@ -40,7 +40,7 @@ open -a Calendar
 | `name` | The title. The default comes from the file name. |
 | `symbol` | An SF Symbol name. |
 | `subtitle` | The second line. |
-| `key` | One letter that runs it after the trigger key. |
+| `key` | One letter. Hold the key that opens the panel, and press this letter to run it. |
 | `size` | `wide` (the default), `small`, `square` or `strip`. |
 | `order` | Its place in the grid. A lower number comes first, and the default is 0. |
 | `read` | When Openspot reads the script. See below. |
