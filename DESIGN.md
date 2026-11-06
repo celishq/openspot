@@ -76,7 +76,7 @@ esac
 | A2 | Each script that shows anything has one `SpotSheet` in Core. It holds the last frame of the script, its rows, its parts, its open state and its running calls. The card, the sheet, a widget and the menu bar all read from it, and no other place keeps what a script printed. A run of one script never stops a run of another. |
 | A3 | A stopped run changes nothing. Only a call that ended by itself can report that there is nothing to show. |
 | A4 | Search text stays until the person presses Esc. |
-| A5 | Plugins, Settings and Updates ship with the app. Each answers the same calls, in Swift. Updates has `grid=false`, and prints `grid=true` when a downloaded update waits to install. |
+| A5 | Plugins, Settings and Updates ship with the app. Each answers the same calls, in Swift. Updates has `grid=false`, and prints `grid=true` when a downloaded update waits to install. It takes the first place of order 0, so its card shows with no scrolling. |
 | A6 | One global key opens the panel from any app, and the person chooses it. No other key is global. |
 
 ## 4. The plugin file

@@ -65,6 +65,21 @@ final class UpdateSpotTests: XCTestCase {
         XCTAssertFalse(try command(spot()).headerState.isOnGrid)
     }
 
+    func testTheSpotComesBeforeEachSpotOfTheSameOrderInTheGrid() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-order-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let script = folder.appendingPathComponent("aaa.sh")
+        try Data("#!/bin/sh\n".utf8).write(to: script)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
+
+        let shipped = ShippedSpot.commands(folder: folder, guide: folder, app: "", update: spot())
+        let scan = try PluginFolder(url: folder).scan(shipped: shipped)
+
+        XCTAssertEqual(scan.commands.first?.name, "Updates")
+        XCTAssertEqual(scan.commands.dropFirst().first?.id, "aaa")
+    }
+
     func testWithRunningWorkTheFirstPressWarnsAndTheSecondRestarts() async throws {
         let spot = spot()
         await spot.take(ready: "0.3.0")
@@ -106,11 +121,11 @@ final class UpdateSpotTests: XCTestCase {
         XCTAssertEqual(restarts, 0)
     }
 
-    func testTheCardFollowsTheOtherShippedSpotsAndHasRoomForItsWords() throws {
+    func testTheCardComesFirstOfTheShippedSpotsAndHasRoomForItsWords() throws {
         let folder = URL(fileURLWithPath: "/tmp")
         let commands = ShippedSpot.commands(folder: folder, guide: folder, app: "", update: spot())
 
-        XCTAssertEqual(commands.map(\.name), ["Plugins", "Settings", "Updates"])
-        XCTAssertEqual(commands.last?.size, .wide)
+        XCTAssertEqual(commands.map(\.name), ["Updates", "Plugins", "Settings"])
+        XCTAssertEqual(commands.first?.size, .wide)
     }
 }
