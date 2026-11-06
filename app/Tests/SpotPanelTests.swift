@@ -140,9 +140,12 @@ final class SpotPanelTests: XCTestCase {
     }
 
     func testTheCatalogNamesEachControl() {
-        let names = TextBlock.blocks(in: PartCatalog.text).compactMap { $0.value("part") }
-
-        XCTAssertEqual(names, ["section", "line", "switch", "slider", "swatches", "menu", "text", "button"])
+        for word in ["`on=true`", "`level=70`", "`color=", "`option=", "`item=", "`text=", "`press=true`", "`metric=", "`point=", "`image=", "`block=progress`", "`keys=", "`card="] {
+            XCTAssertTrue(PartCatalog.text.contains(word), word)
+        }
+        for name in SheetLayout.named.keys {
+            XCTAssertTrue(PartCatalog.text.contains("`\(name)`"), name)
+        }
     }
 
     func testTheCallsOfAPanel() {

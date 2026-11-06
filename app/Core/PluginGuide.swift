@@ -37,6 +37,8 @@ public struct PluginGuide: Equatable, Sendable {
 
         Read the guide first: \(guide.path)
         Put the plugin in: \(folder.path)
+        To write a sheet of parts, read the language first: "\(app)" catalog
+        To see a sheet, run: "\(app)" check --sheet < sheet.txt, and "\(app)" render sheet.png < sheet.txt
         When it is ready, run this and fix each fault it reports: "\(app)" check "\(folder.path)"
         Tell me what the plugin runs on my computer.
 

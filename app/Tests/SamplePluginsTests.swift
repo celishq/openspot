@@ -568,7 +568,7 @@ final class SamplePluginsTests: XCTestCase {
 
             XCTAssertEqual(output.kind, .list)
             XCTAssertEqual(output.partFaults, [])
-            XCTAssertEqual(output.parts.map(\.id), ["source", "input", "swap", "target", "output"])
+            XCTAssertEqual(output.parts.map(\.id), ["source", "input", "target", "output", "swap"])
             XCTAssertEqual(self.text(of: "source", in: output), "auto")
             XCTAssertEqual(self.text(of: "target", in: output), "en")
         }

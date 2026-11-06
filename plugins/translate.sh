@@ -113,15 +113,15 @@ esac
 auto="Automatic"
 [ -n "$detected" ] && auto="Auto ($(name "$detected"))"
 
-printf 'part=source\noption=auto:%s\n' "$auto"
+printf 'layout=pair\n\n'
+
+printf 'part=source\ncell=from\noption=auto:%s\n' "$auto"
 options
 printf 'value=%s\n\n' "$source"
 
-printf 'part=input\ntext=%s\nlines=6\nplaceholder=Type or paste text\n\n' "$input"
+printf 'part=input\ncell=top\ntext=%s\nplaceholder=Type or paste text\n\n' "$input"
 
-printf 'section=swap\npress=arrow.up.arrow.down\nkey=cmd+shift+s\n\n'
-
-printf 'part=target\n'
+printf 'part=target\ncell=to\n'
 options
 printf 'value=%s\n\n' "$target"
 
@@ -133,10 +133,12 @@ case "$status" in
   *) notice= ;;
 esac
 
-printf 'part=output\ntext=%s\nlines=6\nplaceholder=Translation\nreadonly=true\n\n' "${notice:-$output}"
+printf 'part=output\ncell=bottom\ntext=%s\nplaceholder=Translation\nreadonly=true\n\n' "${notice:-$output}"
+
+printf 'part=swap\ncell=swap\npress=arrow.up.arrow.down\nkey=cmd+shift+s\n\n'
 
 if [ "$status" = missing ]; then
-  printf 'part=settings\ntitle=Open Settings\npress=true\n'
+  printf 'part=settings\ncell=action\nalign=right\nlook=chip\ntitle=Open Settings\npress=true\n'
 elif [ -n "$output" ]; then
-  printf 'part=copy\ntitle=Copy\npress=true\nkey=cmd+return\nclose=true\n'
+  printf 'part=copy\ncell=action\nalign=right\nlook=chip\ntitle=Copy\npress=true\nkey=cmd+return\nclose=true\n'
 fi
