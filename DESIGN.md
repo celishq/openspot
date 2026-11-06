@@ -72,7 +72,7 @@ esac
 
 | ID | Rule |
 |---|---|
-| A1 | One owner in Core starts each run of a script. No other code starts a process. |
+| A1 | One owner in Core starts each run of a script. No other code starts a script. A capability's helper and a shipped spot's tools are not scripts. |
 | A2 | Each script that shows anything has one `SpotSheet` in Core. It holds the last frame of the script, its rows, its parts, its open state and its running calls. The card, the sheet, a widget and the menu bar all read from it, and no other place keeps what a script printed. A run of one script never stops a run of another. |
 | A3 | A stopped run changes nothing. Only a call that ended by itself can report that there is nothing to show. |
 | A4 | Search text stays until the person presses Esc. |
@@ -192,7 +192,7 @@ esac
 | ID | Rule |
 |---|---|
 | D1 | A drag over the Openspot item in the menu bar opens the panel with no change of focus. The panel stays open until the drag ends. |
-| D2 | During a drag, only a card whose `drop` accepts each dragged file takes it, and only that card shows that it does. |
+| D2 | For the whole drag, each card whose `drop` accepts each dragged file shows that it does, and only such a card takes the drop. Other cards do not change. |
 | D3 | A drop runs one `drop` call with each path as its own argument, and closes the panel. |
 | D4 | A drop on a card with a running call waits, and runs when that call ends. It does not stop the call. |
 | D5 | A click on a card with `drop` and no sheet opens a file chooser, and the choice runs the same call. |
@@ -349,7 +349,7 @@ value=Hello
 
 | ID | Rule |
 |---|---|
-| Y1 | The block holds `name`, `value`, and one `field.<id>` for each value that stdin holds in a normal call. |
+| Y1 | The block holds `name`, `value`, and one `field.<id>` for each value that stdin holds in a normal call. A `drop` has one `value` line for each path. |
 | Y2 | Each call reaches the running script. No call starts a second copy of it. |
 | Y3 | A staying script starts when something first wants it. A sheet shows with its first frame. |
 | Y4 | To end a script, Openspot closes its stdin. Calls sent before that still run. After 2 seconds its group gets the terminate signal, and 2 seconds after that Openspot kills what still runs. |
@@ -408,6 +408,11 @@ Remove a row when the code follows the rule.
 
 | Rules | Module | Today | Target |
 |---|---|---|---|
+| D2 | `SpotCardView`, `SpotMenuBarDrag` | A card shows the mark only while the drag is on it. | Each card that accepts the files shows it for the whole drag. |
+| Y1, Y2 | `SpotSheet`, `SpotAction` | A `drop` on a staying script starts a second copy. | One block on stdin, with one `value` line for each path. |
+| L6 | `SpotSheet` | A call to a staying script has no `ScriptCall`, so it shows nothing. | Decide in the code whether one can show, and report it: Openspot cannot see where such a call ends. |
+| A3, L9 | `SpotRuns.quit` | A quit does not mark its calls as stopped, so M4 starts a `read` during the quit. | A stopped call changes nothing. |
+| C6 | `SheetFrameReader`, `TextBlock` | They loop over each byte. Several 1 MB values took 20 to 30 s in a Debug test. | A 1 MB paste answers in under 1 second in a Debug build, or a report of what limits it. |
 
 The tests in `SpotActionTests`, `SheetStreamTests`, `SpotPanelTests`, `SpotRunsTests` and `SamplePluginsTests` pin the calls. Read them
 before each change. Each change in this table is breaking, and no alias stays.
