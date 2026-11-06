@@ -96,8 +96,8 @@ final class SpotsModel {
     private(set) var panels: [String: SpotPanel] = [:]
     private var panelCall: Task<Void, Never>?
     private var panelRead: Task<Void, Never>?
-    private var panelStream: Task<Void, Never>?
-    private var isStreaming = false
+    private var reads: [String: Task<Void, Never>] = [:]
+    private var streaming: Set<String> = []
     private var lives: [String: LiveScript] = [:]
     private var liveEditing: [String: String] = [:]
 
@@ -193,33 +193,39 @@ final class SpotsModel {
         }
     }
 
-    /// Asks a list command for its items, and shows them when they arrive. A script that keeps printing frames changes
-    /// its open sheet until a newer call or the end of the sheet stops it.
+    /// Asks a list command for its items, and shows them when they arrive. A newer read of the command replaces this one.
+    /// A script that keeps printing frames changes its open sheet until a newer call or the end of the sheet stops it.
     private func loadItems(of command: PluginCommand, selecting run: String? = nil) {
         guard command.kind == .list else { return }
         prepareList(command)
         if command.isLive { return readLive(command) }
         guard command.search == .local else { return }
         lists[command.id]?.beginLoading()
-        stopStream()
-        panelStream = Task {
+        reads[command.id]?.cancel()
+        streaming.remove(command.id)
+        reads[command.id] = Task {
             var isFirst = true
             do {
                 for try await text in command.frames(.items(query: ""), input: panels[command.id]?.values, timeout: Self.itemsTimeout) {
+                    guard !Task.isCancelled else { return }
                     let lines = PluginOutput(text: text)
                     if isFirst {
                         await takeItems(lines, of: command, selecting: run)
+                        guard !Task.isCancelled else { return }
                         isFirst = false
-                        isStreaming = true
+                        streaming.insert(command.id)
                     } else {
                         guard openList == command.id else { break }
                         if let toast = lines.summary?.value("toast") { confirm(toast) }
                         panels[command.id]?.merge(lines)
                     }
                 }
+                guard !Task.isCancelled else { return }
                 if isFirst { await takeItems(PluginOutput(text: ""), of: command, selecting: run) }
+                streaming.remove(command.id)
             } catch {
                 guard !Task.isCancelled else { return }
+                streaming.remove(command.id)
                 lists[command.id]?.loadFailed()
                 notify("\(command.name) failed. \(Self.reason(error))")
             }
@@ -237,10 +243,10 @@ final class SpotsModel {
         }
     }
 
-    /// Stops a script that is still printing frames. A read that has given no frame yet goes on, and fills its list.
+    /// Stops each script that is still printing frames. A read that has given no frame yet goes on, and fills its list.
     private func stopStream() {
-        if isStreaming { panelStream?.cancel() }
-        isStreaming = false
+        streaming.forEach { reads[$0]?.cancel() }
+        streaming = []
     }
 
     /// Asks a live script for its sheet, and starts the script if it is not running.
