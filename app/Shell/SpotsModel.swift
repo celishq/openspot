@@ -97,6 +97,8 @@ final class SpotsModel {
     var isShown = false
     /// Whether a drag over the menu bar item opened the panel, so that it is not key and its field takes no focus.
     var isOpenForDrag = false
+    var updateSpot: UpdateSpot?
+
     var chooseFiles: (PluginCommand, @escaping ([String]) -> Void) -> Void = { _, _ in }
     var dismiss: () -> Void = {}
     var show: () -> Void = {}
@@ -124,13 +126,19 @@ final class SpotsModel {
         runs.readings
     }
 
+    /// The number of calls that a restart would stop.
+    var workCount: Int {
+        runs.work.count
+    }
+
     /// Reads the plugin folder again. No script runs for this, and each card shows its header until its answer arrives.
     func reload() {
         let folder = PluginFolder.standard()
         let shipped = ShippedSpot.commands(
             folder: folder.url,
             guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder.url,
-            app: Bundle.main.executablePath ?? ""
+            app: Bundle.main.executablePath ?? "",
+            update: updateSpot
         )
         let scan = (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
         var problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }

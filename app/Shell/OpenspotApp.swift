@@ -25,6 +25,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var trayBar: SpotTrayBar?
     private var menuBarDrag: SpotMenuBarDrag?
     private var fileChooser: SpotFileChooser?
+    private var update: AppUpdate?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -49,6 +50,9 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         let trigger = CommandTrigger(model: model, toast: toast)
         self.trigger = trigger
         trayBar = SpotTrayBar(model: model, openspotItem: item)
+        let update = AppUpdate { [model] in model.workCount }
+        self.update = update
+        model.updateSpot = update.spot
         model.reload()
         model.arrive(.launch)
         NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(didWake), name: NSWorkspace.didWakeNotification, object: nil)

@@ -213,11 +213,11 @@ public final class SpotRuns {
     }
 
     private func frames(of command: PluginCommand, _ action: SpotAction, input: String?, limit: TimeInterval?) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void) {
-        if case .plugins(let guide) = command.shipped {
+        if let shipped = command.shipped {
             let (stream, continuation) = AsyncThrowingStream.makeStream(of: String.self)
             let task = Task {
                 do {
-                    let text = try await guide.answer(action.arguments, input: input)
+                    let text = try await shipped.answer(action.arguments, input: input)
                     if !text.isEmpty { continuation.yield(text) }
                     continuation.finish()
                 } catch {

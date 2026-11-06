@@ -49,3 +49,15 @@ make test T=SpotRunsTests  # one test class, while you work on it
 
 - The team is `NNK86LQK58` (set in `app/project.yml`). Local builds use ad-hoc signing (`CODE_SIGN_IDENTITY "-"`).
 - Do not commit a signing identity or a provisioning profile.
+
+## Release
+
+```sh
+make release V=1.2.3         # verify, build, notarize, then publish a GitHub release with the DMG and the update feed
+make release-build V=1.2.3   # only the signed DMG in .temp/release
+```
+
+- Release from a clean `main` that matches `origin/main`.
+- The Keychain must hold the update key (Sparkle account `openspot`) and the notary login (profile `openspot`). A release
+  stops and names the command for each one that is missing.
+- Published apps read the feed URL and the public key, so do not change the bundle ID, the team or the key.
