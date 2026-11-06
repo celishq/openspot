@@ -91,6 +91,88 @@ final class ShellHelperTests: XCTestCase {
         XCTAssertEqual(output, big)
     }
 
+    func testBothFunctionsAnswerTheSameWhenAValueIsLarge() async throws {
+        let padding = String(repeating: "x", count: 5_000)
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let url = try script("PATH=/none\na=$(value a; printf x)\nprintf 'a=%s\\n' \"$(esc \"${a%x}\")\"\nprintf '%s' \"${a%x}\"", shell: shell)
+            for text in Self.hard {
+                let big = text + padding + text
+                let line = TextBlock(fields: [.init(key: "first", value: "not this"), .init(key: "a", value: big)]).text
+
+                let output = try await ScriptProcess.output(url: url, input: line, limit: 10)
+
+                XCTAssertEqual(output, TextBlock(fields: [.init(key: "a", value: big)]).text + big, "\(shell) \(text.debugDescription)")
+            }
+        }
+    }
+
+    private static let megabyte = 1_000_000
+
+    /// Each form of text that once made a shell loop slow.
+    private static let megabyteTexts = [
+        String(repeating: "a", count: megabyte),
+        String(repeating: "\\", count: megabyte),
+        String(repeating: "one line\n", count: megabyte / 9),
+        String(repeating: String(repeating: "a", count: 99) + "\\", count: megabyte / 100)
+    ]
+
+    /// The shortest time of up to three runs, because other work on this Mac can slow one run.
+    private func seconds(of url: URL, input: URL, output: URL) throws -> TimeInterval {
+        var best = TimeInterval.infinity
+        for _ in 0..<3 where best >= 1 {
+            best = min(best, try oneRun(of: url, input: input, output: output))
+        }
+        return best
+    }
+
+    /// Runs a script with a file on stdin and a file on stdout, so that only the script counts, and returns its seconds.
+    private func oneRun(of url: URL, input: URL, output: URL) throws -> TimeInterval {
+        FileManager.default.createFile(atPath: output.path, contents: nil)
+        let process = Process()
+        process.executableURL = url
+        process.environment = ProcessInfo.processInfo.environment
+        process.standardInput = try FileHandle(forReadingFrom: input)
+        process.standardOutput = try FileHandle(forWritingTo: output)
+        let ended = DispatchSemaphore(value: 0)
+        process.terminationHandler = { _ in ended.signal() }
+        let start = Date()
+        try process.run()
+        ended.wait()
+        return Date().timeIntervalSince(start)
+    }
+
+    func testValueFinishesAMegabyteInUnderASecond() throws {
+        let input = folder.appendingPathComponent("input")
+        let output = folder.appendingPathComponent("output")
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let url = try script("value big", shell: shell)
+            for text in Self.megabyteTexts {
+                let written = text.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\n", with: "\\n")
+                try "big=\(written)\n".write(to: input, atomically: true, encoding: .utf8)
+
+                XCTAssertLessThan(try seconds(of: url, input: input, output: output), 1, shell)
+                XCTAssertEqual(try String(contentsOf: output, encoding: .utf8) == text, true, shell)
+            }
+        }
+    }
+
+    func testEscFinishesAMegabyteInUnderASecond() throws {
+        let input = folder.appendingPathComponent("input")
+        let output = folder.appendingPathComponent("output")
+        try "".write(to: input, atomically: true, encoding: .utf8)
+        let file = folder.appendingPathComponent("text")
+        for shell in ["/bin/sh", "/bin/dash"] {
+            let url = try script("big=$(/bin/cat '\(file.path)')\nesc \"$big\"", shell: shell)
+            for text in Self.megabyteTexts {
+                try text.write(to: file, atomically: true, encoding: .utf8)
+
+                XCTAssertLessThan(try seconds(of: url, input: input, output: output), 1, shell)
+                let kept = text.hasSuffix("\n") ? String(text.dropLast()) : text
+                XCTAssertEqual(try TextBlock.blocks(in: "a=\(String(contentsOf: output, encoding: .utf8))\n").first?.fields.first?.value == kept, true, shell)
+            }
+        }
+    }
+
     func testAStayingScriptIsNotBlockedAndKeepsItsCallsOnStdin() async throws {
         let url = try script("""
         printf 'a=%s|%s\\n---\\n' "$(esc 'b\\c')" "$(value a)"

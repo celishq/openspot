@@ -212,7 +212,7 @@ The rest of the environment comes from the app. In a value, a new line is `\n` a
 
 | ID | Rule |
 |---|---|
-| W1 | `. "$OPENSPOT_SH"` gives a shell script two functions that start no program: `esc <text>` writes text as a value, and `value <id>` prints the real text of one value from stdin. Loading the file reads all of stdin once, so each `$(value id)` works in its subshell, and a script that loads it reads stdin only through `value`. A staying script keeps its stdin for its calls: `OPENSPOT_STAYS` is set for it, so loading reads nothing and `value` prints nothing. The contract does not need them. |
+| W1 | `. "$OPENSPOT_SH"` gives a shell script two functions: `esc <text>` writes text as a value, and `value <id>` prints the real text of one value from stdin. Loading the file starts `cat` once to read all of stdin, so each `$(value id)` works in its subshell, and a script that loads it reads stdin only through `value`. Up to 1 KB, each function starts no program. Above that, it starts `sed`, `tr` or `awk`, and it finishes 1 MB in under 1 second. A staying script keeps its stdin for its calls: `OPENSPOT_STAYS` is set for it, so loading reads nothing and `value` prints nothing. The contract does not need them. |
 
 ```sh
 . "$OPENSPOT_SH"

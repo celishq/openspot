@@ -1,17 +1,20 @@
-# The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc` and `value`, and starts no program.
+# The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc` and `value`. Loading starts `cat` once, and each function
+# starts `sed`, `tr` or `awk` only above 1 KB, where a shell loop is too slow.
 
 # All of stdin, read once now, because each `$(value id)` runs in a subshell that would lose it. A staying script keeps
 # its stdin for its calls, so this leaves it alone there.
 _openspot_stdin=
 if [ -z "${OPENSPOT_STAYS:-}" ]; then
-  while IFS= read -r _openspot_line || [ -n "$_openspot_line" ]; do
-    _openspot_stdin=$_openspot_stdin$_openspot_line'
-'
-  done
+  _openspot_stdin=$(/bin/cat; printf x)
+  _openspot_stdin=${_openspot_stdin%x}
 fi
 
 # Writes text as a value: a backslash as `\\` and a new line as `\n`.
 esc() {
+  if [ "${#1}" -gt 1024 ]; then
+    printf '%s\n' "$1" | LC_ALL=C /usr/bin/sed -e 's/\\/\\\\/g' -e '$!s/$/\\n/' | LC_ALL=C /usr/bin/tr -d '\n'
+    return
+  fi
   _openspot_more=
   while IFS= read -r _openspot_line; do
     [ -z "$_openspot_more" ] || printf '\\n'
@@ -38,6 +41,16 @@ EOF_OPENSPOT
 
 # Prints the real text of one value from stdin: `\n` as a new line and `\\` as a backslash. It prints nothing when stdin has no such value.
 value() (
+  if [ "${#_openspot_stdin}" -gt 1024 ]; then
+    printf %s "$_openspot_stdin" |
+      _OPENSPOT_ID=${1-} LC_ALL=C /usr/bin/awk 'index($0, ENVIRON["_OPENSPOT_ID"] "=") == 1 { printf "%s", substr($0, length(ENVIRON["_OPENSPOT_ID"]) + 2); exit }' |
+      LC_ALL=C /usr/bin/sed -e 's/\\\\/\
+/g' -e 's/\\\([^n]\)/\
+\1/g' -e 's/\\$/\
+/' -e 's/\\n/\\/g' |
+      LC_ALL=C /usr/bin/tr '\n\\' '\\\n'
+    return
+  fi
   while IFS= read -r _openspot_line; do
     case $_openspot_line in
       "${1-}="*)

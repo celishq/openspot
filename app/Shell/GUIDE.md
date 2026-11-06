@@ -121,7 +121,8 @@ To confirm what an action did, print `toast=Saved`. Openspot shows it, also with
 
 ## The shell helper
 
-A shell script can load two functions that start no program. It is optional.
+A shell script can load two functions. It is optional. Loading starts `cat` once. Up to 1 KB, each function starts no
+program. Above that, it starts `sed`, `tr` or `awk`, and it finishes 1 MB in under 1 second.
 
 ```sh
 #!/bin/sh
