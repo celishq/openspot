@@ -1,4 +1,4 @@
-.PHONY: verify plugins
+.PHONY: verify plugins release release-build
 
 verify:
 	sh scripts/check-core.sh
@@ -8,3 +8,9 @@ verify:
 plugins:
 	mkdir -p $(HOME)/.config/openspot
 	ln -sfn $(CURDIR)/plugins $(HOME)/.config/openspot/plugins
+
+release:
+	sh scripts/release.sh publish "$(V)"
+
+release-build:
+	sh scripts/release.sh build "$(V)"
