@@ -39,8 +39,7 @@ final class CapabilityTests: XCTestCase {
     /// A script that makes one call, and prints its answer.
     private func script(after: String = "") throws -> URL {
         let url = folder.appendingPathComponent("script-\(UUID().uuidString.prefix(8))")
-        try "#!/bin/sh\nprintf count | '\(tool.path)' call \(label)\n\(after)\n".write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        try "#!/bin/sh\nprintf count | '\(tool.path)' call \(label)\n\(after)\n".writeScript(to: url)
         return url
     }
 
@@ -99,7 +98,7 @@ final class CapabilityTests: XCTestCase {
     }
 
     func testTheHelperIsGoneAfterItsIdleTimeAndTheNextCallStartsANewOne() async throws {
-        setenv("STANDIN_IDLE", "1", 1)
+        setenv("STANDIN_IDLE", "0.5", 1)
 
         let id = pid_t(try field("pid", in: try await call()))
         XCTAssertTrue(isAlive(id))
@@ -115,11 +114,11 @@ final class CapabilityTests: XCTestCase {
     }
 
     func testACallPutsOffTheIdleExit() async throws {
-        setenv("STANDIN_IDLE", "3", 1)
+        setenv("STANDIN_IDLE", "1", 1)
         let id = try field("pid", in: try await call())
 
         for _ in 0..<4 {
-            try await Task.sleep(for: .seconds(1))
+            try await Task.sleep(for: .seconds(0.4))
             let next = try await call()
             XCTAssertEqual(try field("pid", in: next), id)
         }

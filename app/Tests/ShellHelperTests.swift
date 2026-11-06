@@ -16,8 +16,7 @@ final class ShellHelperTests: XCTestCase {
 
     private func script(_ body: String, shell: String = "/bin/sh") throws -> URL {
         let url = folder.appendingPathComponent(UUID().uuidString)
-        try "#!\(shell)\n. \"$OPENSPOT_SH\"\n\(body)\n".write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        try "#!\(shell)\n. \"$OPENSPOT_SH\"\n\(body)\n".writeScript(to: url)
         return url
     }
 

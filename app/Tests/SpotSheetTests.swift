@@ -16,8 +16,7 @@ final class SpotSheetTests: XCTestCase {
 
     private func make(name: String = "script", _ body: String, stays: Bool = false, read: SpotRead? = nil) throws -> SpotSheet {
         let url = folder.appendingPathComponent("\(name).sh")
-        try "#!/bin/sh\n\(body)\n".write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        try "#!/bin/sh\n\(body)\n".writeScript(to: url)
         return SpotRuns().sheet(for: PluginCommand(id: name, name: name, url: url, kind: .list, read: read ?? (stays ? nil : .sheet), stays: stays))
     }
 
@@ -49,7 +48,7 @@ final class SpotSheetTests: XCTestCase {
     func testAReadThatOthersJoinLeavesTheRows() async throws {
         let sheet = try make("""
         [ -f '\(path("second"))' ] || { touch '\(path("second"))'; printf 'row=A\\nrun=a\\n'; exit 0; }
-        sleep 0.3
+        sleep 0.2
         printf 'row=A\\nrun=a\\n'
         """)
         sheet.read()
@@ -72,7 +71,7 @@ final class SpotSheetTests: XCTestCase {
 
         sheet.open {}
         sheet.close()
-        try await Task.sleep(for: .milliseconds(500))
+        try await Task.sleep(for: .milliseconds(250))
 
         XCTAssertEqual(sheet.list.shown.count, 0)
         XCTAssertFalse(sheet.list.isLoading)
@@ -80,7 +79,7 @@ final class SpotSheetTests: XCTestCase {
 
     func testClosingOneSheetLeavesTheReadOfAnother() async throws {
         let first = try make(name: "first", "printf 'part=a\\ntitle=A\\n---\\n'\nsleep 30")
-        let second = try make(name: "second", "sleep 0.3\nprintf 'row=B\\nrun=b\\n'")
+        let second = try make(name: "second", "sleep 0.2\nprintf 'row=B\\nrun=b\\n'")
 
         first.open {}
         try await wait("the first frame") { first.panel != nil }
@@ -92,8 +91,9 @@ final class SpotSheetTests: XCTestCase {
 
     func testClosingStopsAScriptThatKeepsPrinting() async throws {
         let sheet = try make("""
+        echo $$ > '\(path("pid"))'
         printf 'layout=none\\n\\npart=a\\ntitle=0\\n---\\n'
-        sleep 0.3
+        sleep 5
         touch '\(path("went-on"))'
         printf 'part=a\\ntitle=1\\n---\\n'
         """)
@@ -101,7 +101,8 @@ final class SpotSheetTests: XCTestCase {
         sheet.open {}
         try await wait("the first frame") { sheet.panel != nil }
         sheet.close()
-        try await Task.sleep(for: .milliseconds(600))
+        let pid = try XCTUnwrap(Int32(try String(contentsOfFile: path("pid"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
+        try await wait("the end of the script") { kill(pid, 0) != 0 }
 
         XCTAssertFalse(exists("went-on"))
         XCTAssertEqual(sheet.panel?.parts.first?.title, "0")
@@ -118,7 +119,7 @@ final class SpotSheetTests: XCTestCase {
     func testAnOlderAnswerDoesNotReplaceANewerChange() async throws {
         let sheet = try make("""
         case "$1" in
-          a) [ "$2" = old ] && sleep 0.3; printf 'part=a\\ntitle=%s\\ntext=x\\n' "$2" ;;
+          a) [ "$2" = old ] && sleep 0.2; printf 'part=a\\ntitle=%s\\ntext=x\\n' "$2" ;;
           *) printf 'part=a\\ntitle=start\\ntext=x\\n' ;;
         esac
         """)
@@ -130,7 +131,7 @@ final class SpotSheetTests: XCTestCase {
         sheet.set(part, to: "new")
 
         try await wait("the newest answer") { sheet.panel?.parts.first?.title == "new" }
-        try await Task.sleep(for: .milliseconds(500))
+        try await Task.sleep(for: .milliseconds(250))
         XCTAssertEqual(sheet.panel?.parts.first?.title, "new")
         XCTAssertEqual(sheet.panel?.parts.first?.value, "new")
     }
@@ -171,7 +172,7 @@ final class SpotSheetTests: XCTestCase {
         let sheet = try make("touch '\(path("started"))'", stays: true, read: .panel)
 
         sheet.read()
-        try await Task.sleep(for: .milliseconds(300))
+        try await Task.sleep(for: .milliseconds(150))
 
         XCTAssertFalse(exists("started"))
     }
@@ -261,7 +262,7 @@ final class SpotSheetTests: XCTestCase {
         sheet.close()
 
         sheet.open {}
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(100))
 
         XCTAssertEqual(sheet.list.query, "rep")
         XCTAssertEqual(sheet.list.shown.map(\.title), ["rep"])
@@ -269,7 +270,7 @@ final class SpotSheetTests: XCTestCase {
 
     func testAStoppedSearchChangesNothing() async throws {
         let sheet = try make("""
-        [ "$2" = slow ] && sleep 0.3 && exit 0
+        [ "$2" = slow ] && sleep 0.2 && exit 0
         printf 'search=script\\n\\nrow=A\\nrun=a\\n'
         """)
         sheet.open {}
@@ -277,7 +278,7 @@ final class SpotSheetTests: XCTestCase {
 
         sheet.search("slow")
         sheet.close()
-        try await Task.sleep(for: .milliseconds(500))
+        try await Task.sleep(for: .milliseconds(250))
 
         XCTAssertEqual(sheet.list.shown.count, 1)
     }

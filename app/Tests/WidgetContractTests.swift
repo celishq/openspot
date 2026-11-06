@@ -15,8 +15,7 @@ final class WidgetContractTests: XCTestCase {
 
     private func script(_ name: String, _ text: String) throws {
         let url = folder.appendingPathComponent(name)
-        try text.write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        try text.writeScript(to: url)
     }
 
     private func widgets(_ text: String, file: String = "mine.toml") throws {

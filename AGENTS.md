@@ -33,11 +33,14 @@
 - A test proves behaviour through the public surface: inputs in, outputs out.
 - Fakes stand in only at I/O: the disk, the process, the clock.
 - Write the failing test first, then the code that passes it.
+- Write a script for a test with `writeScript(to:)`. macOS checks a new executable file on its first run, for 150 ms or more.
+- Give a test a short pause through a setting, such as `stopPause`, and keep one test of the real time. Wait for a fact; pause only to prove that nothing happened.
 
 ## Verify
 
 ```sh
-make verify   # the Core check, then the XCTest suite
+make verify                # the Core check, then the XCTest suite, with test classes in parallel
+make test T=SpotRunsTests  # one test class, while you work on it
 ```
 
 `make verify` runs `xcodegen generate` first, so the project file matches the folders on disk.
