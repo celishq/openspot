@@ -56,7 +56,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         trayBar = SpotTrayBar(model: model, openspotItem: item)
         let update = AppUpdate(runningWork: { [model] in model.workCount }, onReady: { [model] in model.updateIsReady() })
         self.update = update
-        model.updateSpot = update.spot
+        model.updateSpot = update?.spot
         model.applyConfig = { [weak self] in self?.applyConfig() }
         model.setEntryKeyOn = { [weak self] in self?.setEntryKey(on: $0) }
         model.present = { [weak self] in self?.presentPanel() }
