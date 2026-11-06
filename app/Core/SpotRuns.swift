@@ -82,6 +82,11 @@ public final class SpotRuns {
         updateClock()
     }
 
+    /// Whether a read of any script runs.
+    public var isReading: Bool {
+        sheets.values.contains(where: \.isReading)
+    }
+
     /// The panel closed: a sheet of parts closes and drops its values, and a read that nothing wants now stops.
     public func panelClosed() {
         isPanelOpen = false

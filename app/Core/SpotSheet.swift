@@ -260,6 +260,11 @@ public final class SpotSheet {
         change(.press(part.id), key: key, generation: generation, keeping: nil, closes: part.closes)
     }
 
+    /// Whether a read of this script runs.
+    var isReading: Bool {
+        running(Self.readKey) != nil
+    }
+
     /// Whether a call of the card runs.
     public var isCardRunning: Bool {
         running(Self.cardKey) != nil

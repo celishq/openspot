@@ -56,7 +56,7 @@ open -a Calendar
 |---|---|---|
 | none | Never. A click runs `<script>` with no argument. | A script that does one thing. |
 | `sheet` | When its sheet opens. | A list. |
-| `panel` | Each time the panel opens. | A toggle, a slider, or a list for the main search. |
+| `panel` | Each time the panel opens, and once as the app starts. | A toggle, a slider, or a list for the main search. |
 | a number | Every that many seconds, while something wants it, such as its open sheet. | A metric. It has no spot unless it also has a `key`. |
 | `launch` | When the app starts. | Work to do once, or a staying script that runs at all times. |
 | `wake` | When the Mac wakes. | A value that is old after a sleep. |

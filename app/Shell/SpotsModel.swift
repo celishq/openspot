@@ -87,6 +87,8 @@ final class SpotsModel {
     private static let globalItemLimit = 6
     private static let dragWatchPause: Duration = .milliseconds(100)
     private static let chainPause: Duration = .milliseconds(200)
+    private static let loadLimit: Duration = .seconds(2)
+    private static let loadPause: Duration = .milliseconds(20)
 
     var entries: [Entry] = [] {
         didSet { updateVisible() }
@@ -105,6 +107,8 @@ final class SpotsModel {
     private let runs: SpotRuns
     private var dragWatch: Task<Void, Never>?
     var isShown = false
+    /// Whether the app is opening the panel unseen as it starts, which a press of the key ends.
+    var isWarming = false
     /// Whether a drag over the menu bar item opened the panel, so that it is not key and its field takes no focus.
     var isOpenForDrag = false
     var updateSpot: UpdateSpot?
@@ -185,6 +189,14 @@ final class SpotsModel {
     func panelWillShow() {
         reload()
         runs.panelOpened()
+    }
+
+    /// Waits for the reads of the open panel, up to the limit of a load at launch.
+    func waitForReads() async {
+        let end = ContinuousClock.now + Self.loadLimit
+        while runs.isReading, ContinuousClock.now < end {
+            try? await Task.sleep(for: Self.loadPause)
+        }
     }
 
     /// A moment of the Mac arrived, such as a wake.

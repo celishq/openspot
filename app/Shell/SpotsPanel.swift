@@ -9,14 +9,42 @@ final class SpotsPanel: NSPanel {
 
     override var canBecomeKey: Bool { true }
 
+    /// Opens the panel unseen, so that the first real open has its answers, its views and a ready text field. It then closes
+    /// and runs the given work. A real open during this keeps the panel open.
+    func warm(then done: @escaping () -> Void) {
+        model?.isWarming = true
+        alphaValue = 0
+        ignoresMouseEvents = true
+        open { orderFrontRegardless() }
+        Task { @MainActor [weak self] in
+            await self?.model?.waitForReads()
+            self?.contentView?.layoutSubtreeIfNeeded()
+            self?.displayIfNeeded()
+            try? await Task.sleep(for: .seconds(2 * SpotMotion.fadeInDuration))
+            if self?.model?.isWarming == true {
+                self?.model?.isWarming = false
+                self?.hide()
+            }
+            done()
+        }
+    }
+
+    private func endWarming() {
+        model?.isWarming = false
+        alphaValue = 1
+        ignoresMouseEvents = false
+    }
+
     /// Brings the panel to the front and starts its open motion.
     func show() {
+        endWarming()
         model?.isOpenForDrag = false
         open { makeKeyAndOrderFront(nil) }
     }
 
     /// Shows the panel under a drag with no change of focus: it does not become key, and it closes when the drag ends.
     func showForDrag() {
+        endWarming()
         model?.prepareForDrag()
         open { orderFrontRegardless() }
     }
@@ -40,6 +68,8 @@ final class SpotsPanel: NSPanel {
         DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeOutDuration) {
             guard self.model?.isShown == false else { return }
             self.orderOut(nil)
+            self.alphaValue = 1
+            self.ignoresMouseEvents = false
             self.model?.finishPick()
             self.model?.panelDidHide()
         }
