@@ -1,5 +1,6 @@
 import AppKit
 import OpenspotCore
+import SwiftUI
 
 @MainActor
 @Observable
@@ -297,8 +298,12 @@ final class SpotsModel {
 
     func tap(_ id: String) {
         guard let position = visible.firstIndex(where: { $0.id == id }) else { return }
-        selected = position
-        if !isEditing { runSelected() }
+        if isEditing {
+            withAnimation(SpotMotion.edit) { selected = position }
+        } else {
+            selected = position
+            runSelected()
+        }
     }
 
     func setLevel(_ id: String, to value: Double) {
@@ -368,36 +373,44 @@ final class SpotsModel {
     func beginEditing() {
         guard openList == nil else { return }
         closeMenu()
-        query = ""
-        isEditing = true
-        updateVisible()
+        withAnimation(SpotMotion.edit) {
+            query = ""
+            isEditing = true
+            updateVisible()
+        }
     }
 
-    func endEditing() {
+    /// Ends Edit Spots. A panel that closes passes no motion, so that nothing moves during its fade.
+    func endEditing(motion: Animation? = SpotMotion.edit) {
         guard isEditing else { return }
-        isEditing = false
-        selected = 0
-        updateVisible()
+        withAnimation(motion) {
+            isEditing = false
+            selected = 0
+            updateVisible()
+        }
     }
 
     private func handleEditKey(_ key: ActionKey) {
         let order = visible.map(\.id)
-        switch (key.name, key.isShift) {
-        case ("escape", _): endEditing()
-        case ("left", false): moveSelection(dx: -1, dy: 0)
-        case ("right", false): moveSelection(dx: 1, dy: 0)
-        case ("up", false): moveSelection(dx: 0, dy: -1)
-        case ("down", false): moveSelection(dx: 0, dy: 1)
-        case ("left", true), ("up", true): moveSelectedSpot(to: selected - 1, in: order)
-        case ("right", true), ("down", true): moveSelectedSpot(to: selected + 1, in: order)
-        case ("s", _): stepSelectedSize()
-        case ("h", _): toggleSelectedOnGrid()
-        default: break
+        withAnimation(SpotMotion.edit) {
+            switch (key.name, key.isShift) {
+            case ("escape", _): endEditing()
+            case ("left", false): moveSelection(dx: -1, dy: 0)
+            case ("right", false): moveSelection(dx: 1, dy: 0)
+            case ("up", false): moveSelection(dx: 0, dy: -1)
+            case ("down", false): moveSelection(dx: 0, dy: 1)
+            case ("left", true), ("up", true): moveSelectedSpot(by: -1, in: order)
+            case ("right", true), ("down", true): moveSelectedSpot(by: 1, in: order)
+            case ("s", _): stepSelectedSize()
+            case ("h", _): toggleSelectedOnGrid()
+            default: break
+            }
         }
     }
 
-    private func moveSelectedSpot(to place: Int, in order: [String]) {
-        guard order.indices.contains(selected) else { return }
+    private func moveSelectedSpot(by step: Int, in order: [String]) {
+        guard order.indices.contains(selected),
+              let place = SpotGrid().nextPlace(of: selected, in: visible.map(\.size), step: step) else { return }
         moveSpot(order[selected], to: place)
     }
 
@@ -441,8 +454,10 @@ final class SpotsModel {
         } catch {
             notify("Openspot could not save the spots. \(Self.reason(error))")
         }
-        rebuildEntries()
-        if let place = visible.firstIndex(where: { $0.id == id }) { selected = place }
+        withAnimation(SpotMotion.edit) {
+            rebuildEntries()
+            if let place = visible.firstIndex(where: { $0.id == id }) { selected = place }
+        }
     }
 
     /// Runs the spot whose letter this press holds, whatever the search shows. A spot with no sheet closes the panel.

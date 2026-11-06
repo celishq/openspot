@@ -35,7 +35,7 @@ final class SpotsPanel: NSPanel {
         model?.takeHeld([])
         model?.stopRecording()
         model?.closeMenu()
-        model?.endEditing()
+        model?.endEditing(motion: nil)
         model?.isShown = false
         DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeOutDuration) {
             guard self.model?.isShown == false else { return }

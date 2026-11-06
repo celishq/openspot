@@ -71,6 +71,22 @@ public struct SpotGrid: Sendable {
             }
     }
 
+    /// The nearest place in the order, this way, that puts the spot somewhere else on the grid, or nil when none does. The
+    /// grid can move a spot back to fill a gap, so a step can pass over a place.
+    public func nextPlace(of index: Int, in sizes: [SpotSize], step: Int) -> Int? {
+        guard sizes.indices.contains(index) else { return nil }
+        let now = place(sizes)[index]
+        var candidate = index + step
+        while sizes.indices.contains(candidate) {
+            var next = sizes
+            next.insert(next.remove(at: index), at: candidate)
+            let there = place(next)[candidate]
+            if (there.row, there.column, there.size) != (now.row, now.column, now.size) { return candidate }
+            candidate += step
+        }
+        return nil
+    }
+
     /// Places a square with the spots beside it, and returns the number of rows it used.
     private func placeSquare(_ square: Spot, in queue: inout [Spot], row: Int, placements: inout [SpotPlacement]) -> Int {
         if let next = queue.first, next.size == .square {

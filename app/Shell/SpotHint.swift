@@ -6,6 +6,7 @@ struct SpotHint: View {
 
     var body: some View {
         Text(text)
+            .contentTransition(.opacity)
             .font(SpotType.detail)
             .modifier(SpotSecondaryText(strength: SpotTokens.hintLight))
             .lineLimit(1)

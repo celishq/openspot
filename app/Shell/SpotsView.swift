@@ -15,6 +15,7 @@ struct SpotsView: View {
     @State private var sheetHint = ""
     @State private var dropTarget: String?
     @State private var dragged: (id: String, offset: CGSize)?
+    @State private var hintIsForEdit = false
 
     private static let panelSpace = "panel"
     private static let wordRoll: CGFloat = 20
@@ -85,9 +86,14 @@ struct SpotsView: View {
                 .padding(.top, SpotTokens.halo)
                 .offset(y: sheetOpen ? SpotTokens.sheetFieldDrop : 0)
                 .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(showsSearchField ? 1 : 0) }
-                .allowsHitTesting(showsSearchField)
+                .opacity(model.isEditing ? 0 : 1)
+                .allowsHitTesting(showsSearchField && !model.isEditing)
             promptLayer
-            if model.isEditing { editHeader }
+                .opacity(model.isEditing ? 0 : 1)
+            if model.isEditing {
+                editHeader
+                    .transition(.opacity)
+            }
             if let menu = model.menu {
                 Color.clear
                     .contentShape(Rectangle())
@@ -123,7 +129,11 @@ struct SpotsView: View {
             searchFocused = shows
         }
         .onChange(of: model.hint, initial: true) { _, hint in
-            if model.openList == nil { gridHint = hint } else { sheetHint = hint }
+            let motion = model.isEditing || hintIsForEdit ? SpotMotion.hintFade : nil
+            hintIsForEdit = model.isEditing
+            withAnimation(motion) {
+                if model.openList == nil { gridHint = hint } else { sheetHint = hint }
+            }
         }
         .onChange(of: model.openList) { _, list in
             if list != nil { sheetHint = model.hint }
@@ -248,7 +258,7 @@ struct SpotsView: View {
 
     /// Whether the search field is drawn. A form and a sheet of parts replace it.
     private var showsSearchField: Bool {
-        guard model.form == nil, !model.isEditing else { return false }
+        guard model.form == nil else { return false }
         return !(sheetOpen && model.sheets[sheetID ?? ""]?.panel != nil)
     }
 
@@ -329,7 +339,7 @@ struct SpotsView: View {
         DragGesture(coordinateSpace: .named(Self.panelSpace))
             .onChanged { dragged = (entry.id, $0.translation) }
             .onEnded { drag in
-                dragged = nil
+                withAnimation(SpotMotion.edit) { dragged = nil }
                 let point = CGPoint(
                     x: drag.location.x - SpotTokens.halo,
                     y: drag.location.y + scrollOffset - Self.gridTop
