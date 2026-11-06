@@ -58,6 +58,14 @@ final class SpotsPanel: NSPanel {
         DispatchQueue.main.async { self.model?.isShown = true }
     }
 
+    /// Whether a point on the screen lies on the part of the panel that shows the drop state. The window is taller than that.
+    func showsDrop(at point: NSPoint) -> Bool {
+        guard let model, model.isShown else { return false }
+        let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
+        let height = SpotTokens.backdropHeight(rows: max(rows, SpotsModel.dropRows))
+        return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
+    }
+
     /// Starts the close motion, and takes the panel off the screen when it ends.
     func hide() {
         model?.takeHeld([])
@@ -121,7 +129,17 @@ final class SpotsPanel: NSPanel {
 
     override func resignKey() {
         super.resignKey()
-        if model?.isShown == true { hide() }
+        if model?.isShown == true, model?.isReviewing != true { hide() }
+    }
+
+    /// Takes ⌘V for a copied `.spot` file while the panel shows. The Edit menu takes the key before the panel sees it, so this
+    /// looks first. It goes by the key's place, which holds on any keyboard layout.
+    private func watchPaste(model: SpotsModel) {
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak model] event in
+            guard Int(event.keyCode) == kVK_ANSI_V, Self.modifiers(of: event.modifierFlags) == .command else { return event }
+            let isTaken = MainActor.assumeIsolated { model?.isShown == true && model?.pasteSpot() == true }
+            return isTaken ? nil : event
+        }
     }
 
     /// Takes the system's low-resolution glow off each text cursor whenever the cursor draws, so that none ever shows.
@@ -158,6 +176,7 @@ final class SpotsPanel: NSPanel {
         panel.isReleasedWhenClosed = false
         panel.isMovableByWindowBackground = false
         panel.contentView = NSHostingView(rootView: SpotsView(model: model))
+        panel.watchPaste(model: model)
         panel.center()
         return panel
     }

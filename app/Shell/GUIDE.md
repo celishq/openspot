@@ -488,6 +488,41 @@ dot show small, and a `title` shows as text.
 Print nothing to remove the item until the next read, such as when nothing is running. Widgets in the panel still show
 the metric.
 
+## Share a spot
+
+To send a spot to another person:
+
+1. Select the spot and press ⌘K.
+2. Choose "Copy to share", or press ⌘⇧C. This puts a `.spot` file on the clipboard.
+3. Paste the file into a chat or a mail. Check it for secrets first, because Openspot does not.
+
+To install a spot that you got, double-click its `.spot` file, drop it on the Openspot item in the menu bar or on the panel, or
+copy the file and press ⌘V in the panel. The path of the file in the search field also works. The panel says what the file is before you drop it.
+Openspot shows what runs by itself, each file that it replaces and all the text it can. It names each file that it cannot show,
+and a program comes first. Nothing runs until you press ⌘⏎ to add it.
+
+A `.spot` file is JSON. It holds a format number and the files:
+
+```json
+{
+  "files": [
+    { "executable": true, "path": "weather.sh", "text": "#!/bin/sh\nsay hello\n" }
+  ],
+  "format": 1
+}
+```
+
+- A script in a folder takes the whole folder. A widget takes each script that it places or opens.
+- A file that is not text uses `data`, in base64, in place of `text`.
+- Hidden files and `$OPENSPOT_DATA` stay behind.
+- A compiled program travels, but no one can read it first. Install one only if you trust the sender.
+- A file with the same path is replaced, and the old file goes to the Trash.
+
+## Delete a spot
+
+Select the spot and press ⌘⌫ twice, or press ⌘K and choose "Delete". Its file goes to the Trash. The other files of its folder and
+what it keeps in `$OPENSPOT_DATA` stay. A widget file goes whole, with each widget in it.
+
 ## Check your work
 
 Run this before you stop. It loads each plugin and reads each one that has a `read`. It prints each fault, and it exits

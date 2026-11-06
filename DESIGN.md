@@ -78,8 +78,8 @@ esac
 | A4 | Search text stays until the person presses Esc. |
 | A5 | Plugins, Settings and Updates ship with the app. Each answers the same calls, in Swift. Updates has `grid=false`, and prints `grid=true` when a downloaded update waits to install. It takes the first place of order 0, so its card shows with no scrolling. |
 | A6 | One global key opens the panel from any app, and the person chooses it. No other key is global. |
-| A8 | The app opens the panel unseen once as it starts, which runs each script with `panel` in its `read` and each script a widget places, and draws the panel. It waits for at most 2 seconds, then closes it and shows the toast "Openspot is ready". A script with only `sheet` in its `read` does not run. A press of the key in that time opens the panel at once. |
 | A7 | The person arranges the grid: each `[[spots]]` table of `config.toml` names a spot by `id`, and can set `size` and `grid`. It overrides the plugin. A `size` is a preference, and the grid can still change it to fill a row. Listed spots take the order of the file. The Edit Spots mode writes this file. |
+| A8 | The app opens the panel unseen once as it starts, which runs each script with `panel` in its `read` and each script a widget places, and draws the panel. It waits for at most 2 seconds, then closes it and shows the toast "Openspot is ready". A script with only `sheet` in its `read` does not run. A press of the key in that time opens the panel at once. |
 
 ## 4. The plugin file
 
@@ -391,8 +391,10 @@ The command is on the path of each script. It also gives the tools for authors.
 | P1 | A plugin runs with the full access of the person. The app has no sandbox, and a script is not limited to capabilities. |
 | P2 | So a header cannot grant or deny power. A `uses` key would be only a label, and this design does not have one. |
 | P3 | Nothing runs on a scan (F2). A script runs only by a person's act or by a key in its text. |
-| P4 | Before a person installs a shared plugin, Openspot shows its text. Sharing is not built yet. |
+| P4 | Before a person installs a shared spot, Openspot shows all the text it can, says what runs by itself and names each file it cannot show. Only a modified key installs it. |
 | P5 | Each usage text for a protected Mac feature is in the app. So a protected feature is a capability. |
+| P6 | A compiled program travels in a `.spot` file, and the review says first that no one can read it. A plugin can be any executable (F1), so sharing takes each of them. |
+| P7 | A `.spot` file has no signature and names no sender. Openspot warns the sender about secrets, and does not look for them. |
 
 ## 12. How to extend
 
@@ -432,6 +434,10 @@ The code follows this document.
 | A form is the same call | One call shape with no exception. | A `form` word. It is easier in shell, but it adds a word. |
 | Header in each file | Goal 1, and a scan runs nothing. | A manifest. It can still come later. |
 | No permission model | A script can already do all that the person can. A false limit is worse than none. | A `uses` key. |
+| A spot travels as a `.spot` file | A chat app takes a file of any size that a script has, and a double-click or a drop adds it. | Encoded text, which hits message limits and hides the code. A link, which needs a hosted page. |
+| A `.spot` file is JSON: a format number and files | A standard format that any editor shows. A header already holds each fact about a spot, so the file repeats none. | A zip file, which hides the text. A manifest. |
+| A spot travels with what it needs | A widget works only with the metrics it places, and a script in a folder can need the other files of that folder. `$OPENSPOT_DATA` stays behind, because it is private. | Only single scripts, which leaves widgets and folders out. |
+| A file of the same name is replaced, and the old one goes to the Trash | The review names each file it replaces. A new name would break the IDs that a widget places. | A new name for each clash. |
 
 **Where the Workers model stops.** A Worker runs in a sandbox, so a binding is both an API and a permission. A script has no
 sandbox, so here a binding is only an API (P1). A Durable Object loses its memory when it sleeps. A staying script is a real

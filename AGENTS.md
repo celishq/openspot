@@ -10,6 +10,8 @@
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
 - `plans/` holds design plans. It is git-ignored.
 - `.temp/` holds throwaway mock-ups and screenshots. It is git-ignored.
+- `.temp/openspot/` holds the plugins and the config of a Debug build, so that it never changes `plugins/` or
+  `~/.config/openspot`. The build fills it once from `plugins/`, and `make dev-state` resets it.
 
 ## Writing
 

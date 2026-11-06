@@ -17,6 +17,7 @@ settings:
     MARKETING_VERSION: "0.1"
     CURRENT_PROJECT_VERSION: "1"
     UPDATE_PUBLIC_KEY: ""
+    OPENSPOT_DEV_STATE: ""
 targets:
   OpenspotCore:
     type: library.static
@@ -49,7 +50,22 @@ targets:
         SUEnableAutomaticChecks: true
         SUAutomaticallyUpdate: true
         SUVerifyUpdateBeforeExtraction: true
+        OpenspotDevState: $(OPENSPOT_DEV_STATE)
         NSAppleEventsUsageDescription: Openspot runs your plugins, and a plugin can ask another app to act, such as to paste.
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Openspot spot
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Owner
+            LSItemContentTypes:
+              - dev.openspot.spot
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: dev.openspot.spot
+            UTTypeDescription: Openspot spot
+            UTTypeConformsTo:
+              - public.json
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - spot
     entitlements:
       path: Shell/Openspot.entitlements
       properties:
@@ -60,6 +76,13 @@ targets:
         script: |
           mkdir -p "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers"
           ln -sfn ../MacOS/Openspot "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers/openspot"
+      - name: Fill the dev state
+        basedOnDependencyAnalysis: false
+        script: |
+          if [ -n "$OPENSPOT_DEV_STATE" ] && [ ! -e "$OPENSPOT_DEV_STATE/plugins" ]; then
+            mkdir -p "$OPENSPOT_DEV_STATE"
+            cp -R "$SRCROOT/../plugins" "$OPENSPOT_DEV_STATE/plugins"
+          fi
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.app
@@ -67,6 +90,7 @@ targets:
       configs:
         Debug:
           ENABLE_HARDENED_RUNTIME: NO
+          OPENSPOT_DEV_STATE: $(SRCROOT)/../.temp/openspot
   OpenspotStandIn:
     type: tool
     platform: macOS
@@ -99,9 +123,6 @@ schemes:
         OpenspotCore: all
     run:
       config: Debug
-      environmentVariables:
-        OPENSPOT_PLUGINS: $(SRCROOT)/../plugins
-        OPENSPOT_CONFIG: $(SRCROOT)/../.temp/config
     test:
       environmentVariables:
         OPENSPOT_SH: $(SRCROOT)/Shell/openspot.sh
