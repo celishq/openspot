@@ -436,6 +436,7 @@ The code follows this document.
 | A form is the same call | One call shape with no exception. | A `form` word. It is easier in shell, but it adds a word. |
 | Header in each file | Goal 1, and a scan runs nothing. | A manifest. It can still come later. |
 | No permission model | A script can already do all that the person can. A false limit is worse than none. | A `uses` key. |
+| Three backdrop blur steps under the cards, at the system's sampling scale, with no constant redraw | An idle open panel took the GPU from about 70% to about 11% on a quiet desktop and about 30% over moving content, and the steps give a soft edge. | One step, which saves few points and shows an edge. A system material and Liquid Glass, which cost about the same and do not give this look. |
 | A spot travels as a `.spot` file | A chat app takes a file of any size that a script has, and a double-click or a drop adds it. | Encoded text, which hits message limits and hides the code. A link, which needs a hosted page. |
 | A `.spot` file is JSON: a format number and files | A standard format that any editor shows. A header already holds each fact about a spot, so the file repeats none. | A zip file, which hides the text. A manifest. |
 | A spot travels with what it needs | A widget works only with the metrics it places, and a script in a folder can need the other files of that folder. `$OPENSPOT_DATA` stays behind, because it is private. | Only single scripts, which leaves widgets and folders out. |

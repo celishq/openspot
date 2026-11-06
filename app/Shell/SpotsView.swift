@@ -110,11 +110,6 @@ struct SpotsView: View {
         .onDrop(of: [.fileURL], delegate: SpotAddDrop(model: model))
         .coordinateSpace(name: Self.panelSpace)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
-        .overlay {
-            SpotWholeRedraw(isActive: model.isShown, radius: SpotTokens.radius + SpotTokens.halo - Self.blurSteps[0].inset)
-                .padding(Self.blurSteps[0].inset)
-                .allowsHitTesting(false)
-        }
         .background(softBlur)
         .environment(\.spotIsShown, model.isShown)
         .preferredColorScheme(.dark)
