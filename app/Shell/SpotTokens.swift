@@ -24,7 +24,9 @@ enum SpotTokens {
     static let listIconSize: CGFloat = 24
     static let hintHeight: CGFloat = 14
     static let hintPillInset: CGFloat = 4
-    static let hintKeyHeight: CGFloat = 18
+    static let hintKeyHeight: CGFloat = 16
+    /// The gap from a key to the edge of the hint, the same on each side, so that the two curves share one centre.
+    static let hintKeyInset: CGFloat = hintHeight / 2 + hintPillInset - hintKeyHeight / 2
     static let hintKeyPadding: CGFloat = 5
     static let hintKeyGap: CGFloat = 4
     static let hintGroupGap: CGFloat = 12
