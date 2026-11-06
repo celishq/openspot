@@ -4,7 +4,8 @@ import OpenspotCore
 struct SpotSheetView: View {
     let entry: SpotsModel.Entry
     let isOpen: Bool
-    let headerIsHidden: Bool
+    /// Whether the header lies on the white fill of a card that is turned on.
+    let showsFill: Bool
     let list: ItemList
     let rect: CGRect
     let form: FormDraft?
@@ -33,7 +34,6 @@ struct SpotSheetView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             header
-                .opacity(headerIsHidden ? 0 : 1)
             VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
                 if let panel {
                     SpotPanelView(panel: panel, work: work, onSet: onSet, onPress: onPress, recordingPart: recording, onRecord: onRecord)
@@ -133,11 +133,6 @@ struct SpotSheetView: View {
             width: -(SpotTokens.glyphSize + SpotTokens.padding - 5),
             height: SpotTokens.height(rows: entry.size.rows) - SpotTokens.padding - wordsHeight - top
         )
-    }
-
-    /// Whether the sheet still lies on a card that is turned on, which is plain white.
-    private var showsFill: Bool {
-        !isOpen && entry.state.on == true
     }
 
     private var emptyText: String {

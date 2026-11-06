@@ -19,7 +19,8 @@ struct SpotsView: View {
     @State private var lastDrop: SpotDrop?
     @State private var partsLanded = false
     @State private var installIsClosing = false
-    @State private var headerIsHidden = false
+    @State private var fieldWordsAreHidden = false
+    @State private var sheetHasLeftCard = false
 
     private static let panelSpace = "panel"
     private static let fieldGap: CGFloat = 8
@@ -40,11 +41,11 @@ struct SpotsView: View {
                 scrollOffset = offset
             })
             .modifier(SpotScrollEdgeTracker(edges: $edges))
-            .mask(edges.gradient(height: backdropHeight))
+            .mask(edges.gradient(height: cardHeight))
             .mask(alignment: .top) {
-                SpotSoftBlur.cardMask(height: backdropHeight)
+                SpotSoftBlur.cardMask(height: cardHeight)
                     .resizable()
-                    .frame(height: backdropHeight)
+                    .frame(height: cardHeight)
             }
             .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: !coversGrid)) { $0.opacity(coversGrid ? 0 : 1) }
             hintLine
@@ -54,7 +55,7 @@ struct SpotsView: View {
                 SpotSheetView(
                     entry: entry,
                     isOpen: sheetOpen,
-                    headerIsHidden: headerIsHidden,
+                    showsFill: entry.state.on == true && !sheetHasLeftCard,
                     list: model.sheets[entry.id]?.list ?? ItemList(),
                     rect: sheetRect,
                     form: model.form?.entry.id == entry.id ? model.form?.draft : nil,
@@ -155,6 +156,7 @@ struct SpotsView: View {
             guard model.sheetMoves else {
                 sheetID = list
                 sheetOpen = list != nil
+                sheetHasLeftCard = list != nil
                 showsDrop = false
                 lastDrop = nil
                 model.allowSheetMotion()
@@ -193,13 +195,15 @@ struct SpotsView: View {
         }
     }
 
-    /// Hides the sheet's header while the field passes it on the way into or out of the sheet.
+    /// Hides the field's words while the field passes the sheet's header on the way into or out of the sheet, and changes the
+    /// colours of the header with the fill of its card.
     private func letFieldCrossHeader(isOpen: Bool) {
+        withAnimation(SpotMotion.sheetFade(isOpen: isOpen, isLate: !isOpen)) { sheetHasLeftCard = isOpen }
         guard sheetID != ShippedSpot.installID else { return }
-        withAnimation(SpotMotion.headerOut(isOpen: isOpen)) {
-            headerIsHidden = true
+        withAnimation(SpotMotion.wordsOut(isOpen: isOpen)) {
+            fieldWordsAreHidden = true
         } completion: {
-            withAnimation(SpotMotion.headerIn(isOpen: isOpen)) { headerIsHidden = false }
+            withAnimation(SpotMotion.wordsIn(isOpen: isOpen)) { fieldWordsAreHidden = false }
         }
     }
 
@@ -317,8 +321,9 @@ struct SpotsView: View {
         SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0)
     }
 
-    private var backdropHeight: CGFloat {
-        max(contentHeight, menuBackdropHeight)
+    /// The height of the shape that ends the cards. It follows only the grid, so that a sheet's motion swaps no image.
+    private var cardHeight: CGFloat {
+        max(gridHeight, menuBackdropHeight)
     }
 
     private var menuBackdropHeight: CGFloat {
@@ -536,7 +541,7 @@ struct SpotsView: View {
                     return .handled
                 }
         }
-        .opacity(showsDrop ? 0 : 1)
+        .opacity(showsDrop || fieldWordsAreHidden ? 0 : 1)
         .font(SpotType.input)
         .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
         .padding(.horizontal, SpotTokens.padding)
@@ -584,7 +589,7 @@ struct SpotsView: View {
         .font(SpotType.input)
         .foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
         .lineLimit(1)
-        .opacity(model.searchText.isEmpty && !showsDrop ? 1 : 0)
+        .opacity(model.searchText.isEmpty && !showsDrop && !fieldWordsAreHidden ? 1 : 0)
     }
 
     private var fieldRadius: CGFloat {

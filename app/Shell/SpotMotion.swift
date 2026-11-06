@@ -33,13 +33,13 @@ enum SpotMotion {
         return isLate ? .easeIn(duration: half).delay(half) : .easeOut(duration: half)
     }
 
-    /// The header leaves in the first quarter of a sheet's motion.
-    static func headerOut(isOpen: Bool) -> Animation {
+    /// The field's words leave in the first quarter of a sheet's motion.
+    static func wordsOut(isOpen: Bool) -> Animation {
         .easeOut(duration: (isOpen ? openDuration : closeDuration) / 4)
     }
 
-    /// The header returns in the second half of a sheet's motion, a quarter after it has left.
-    static func headerIn(isOpen: Bool) -> Animation {
+    /// The field's words return in the second half of a sheet's motion, a quarter after they have left.
+    static func wordsIn(isOpen: Bool) -> Animation {
         let duration = isOpen ? openDuration : closeDuration
         return .easeIn(duration: duration / 2).delay(duration / 4)
     }
