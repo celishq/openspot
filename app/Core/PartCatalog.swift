@@ -4,9 +4,10 @@ import Foundation
 public enum PartCatalog {
     private static let keys: Set<String> = [
         "part", "section", "title", "detail", "symbol", "on", "level", "min", "max", "color", "value", "option", "text",
-        "lines", "placeholder", "readonly", "press", "key", "close"
+        "lines", "placeholder", "readonly", "press", "key", "close", "cell", "fill", "align", "look", "block", "metric", "point",
+        "image", "item"
     ]
-    private static let controls = ["on", "level", "color", "option", "text"]
+    private static let controls = ["on", "level", "color", "option", "text", "metric", "point", "image", "item"]
 
     /// The catalog as blocks, for a person or an agent to read.
     public static let text = """
@@ -59,6 +60,21 @@ public enum PartCatalog {
         }
         faults += block.values("option").filter { !$0.contains(":") }.map { "the part \(name) needs an option as id:title: \($0)" }
         faults += block.values("color").filter { !isColor($0) }.map { "the part \(name) needs a color as #rrggbb: \($0)" }
+        if let look = block.value("look"), SpotPart.Look(rawValue: look) == nil || look == "key" {
+            faults.append("the part \(name) has an unknown look: \(look)")
+        }
+        if let align = block.value("align"), SpotPart.Align(rawValue: align) == nil {
+            faults.append("the part \(name) has an unknown align: \(align)")
+        }
+        if let kind = block.value("block"), kind != "progress" {
+            faults.append("the part \(name) has an unknown block: \(kind)")
+        }
+        if let level = block.number("level") {
+            let low = block.number("min") ?? 0, high = block.number("max") ?? 100
+            if level < low || level > high {
+                faults.append("the part \(name) has a level of \(Int(level)), outside \(Int(low)) to \(Int(high))")
+            }
+        }
         if let key = block.value("key"), ActionKey(text: key) == nil {
             faults.append("the part \(name) has an unknown key combination: \(key)")
         }

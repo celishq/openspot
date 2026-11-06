@@ -19,12 +19,26 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case swatches([String], value: String?)
         case menu([Option], value: String?)
         case text(String, lines: Int, placeholder: String?, isReadOnly: Bool)
+        case list([Option], value: String?)
+        case metric(String)
+        case chart([Double])
+        case image(String)
+        case progress(level: Double)
     }
 
     public enum Press: Equatable, Sendable {
         case none
         case line
         case symbol(String)
+    }
+
+    /// A look from the one set that the app owns. A script cannot set a size or a colour of its own.
+    public enum Look: String, Equatable, Sendable {
+        case tile, chip, strong, bare, section, key
+    }
+
+    public enum Align: String, Equatable, Sendable {
+        case left, center, right
     }
 
     private static let defaultLines = 4
@@ -38,6 +52,10 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let press: Press
     public let key: ActionKey?
     public let closes: Bool
+    public let cell: String?
+    public let fills: Bool
+    public let align: Align?
+    public let look: Look?
 
     /// Reads a block with a `part` or a `section` key.
     public init?(block: TextBlock) {
@@ -49,6 +67,10 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         symbol = block.value("symbol")
         key = block.value("key").flatMap(ActionKey.init(text:))
         closes = block.flag("close") ?? false
+        cell = block.value("cell")
+        fills = block.flag("fill") ?? false
+        align = block.value("align").flatMap(Align.init(rawValue:))
+        look = block.value("look").flatMap(Look.init(rawValue:))
         switch block.value("press") {
         case nil: press = .none
         case "true": press = .line
@@ -56,16 +78,22 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         }
         if let on = block.flag("on") {
             control = .toggle(on)
+        } else if block.value("block") == "progress" {
+            control = .progress(level: block.number("level") ?? 0)
+        } else if let metric = block.value("metric") {
+            control = .metric(metric)
+        } else if let image = block.value("image") {
+            control = .image(image)
+        } else if !block.values("point").isEmpty {
+            control = .chart(block.values("point").compactMap(Double.init))
+        } else if !block.values("item").isEmpty {
+            control = .list(block.values("item").map(Self.option), value: block.value("value"))
         } else if let level = block.number("level") {
             control = .slider(level: level, min: block.number("min") ?? 0, max: block.number("max") ?? 100)
         } else if !block.values("color").isEmpty {
             control = .swatches(block.values("color"), value: block.value("value"))
         } else if !block.values("option").isEmpty {
-            let options = block.values("option").map { option -> Option in
-                let pair = option.split(separator: ":", maxSplits: 1).map(String.init)
-                return Option(id: pair[0], title: pair.count > 1 ? pair[1] : pair[0])
-            }
-            control = .menu(options, value: block.value("value"))
+            control = .menu(block.values("option").map(Self.option), value: block.value("value"))
         } else if block.fields.contains(where: { $0.key == "text" }) {
             control = .text(
                 block.value("text") ?? "",
@@ -78,16 +106,53 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         }
     }
 
+    private static func option(_ text: String) -> Option {
+        let pair = text.split(separator: ":", maxSplits: 1).map(String.init)
+        return Option(id: pair[0], title: pair.count > 1 ? pair[1] : pair[0])
+    }
+
     /// The value of its control, as the script reads it. A line with no control has none.
     public var value: String? {
         switch control {
-        case .none: nil
+        case .none, .metric, .chart, .image, .progress: nil
         case .toggle(let on): on ? "true" : "false"
         case .slider(let level, _, _): String(Int(level.rounded()))
-        case .swatches(_, let value), .menu(_, let value): value
+        case .swatches(_, let value), .menu(_, let value), .list(_, let value): value
         case .text(let text, _, _, _): text
         }
     }
+
+    /// Whether it draws a block that takes all the height of its cell.
+    public var fillsHeight: Bool {
+        switch control {
+        case .text, .list, .metric, .chart, .image, .progress: true
+        default: look == .key
+        }
+    }
+
+    /// Whether it takes all the width of its cell. A small button or a menu keeps its own size.
+    public var fillsWidth: Bool {
+        if look == .chip || look == .bare { return title != nil && control != .none }
+        if case .symbol = press, title == nil, control == .none { return false }
+        return true
+    }
+
+    /// Whether it can scroll by itself, which rules out a sheet that scrolls around it.
+    public var scrollsItself: Bool {
+        switch control {
+        case .text, .list: true
+        default: false
+        }
+    }
+
+    /// How many rows it takes in a sheet with no drawing.
+    var flatRows: Int {
+        guard case .text(_, let lines, _, _) = control else { return 1 }
+        let height = CGFloat(lines) * Self.textLine + 2 * SheetPlacement.edge
+        return max(Int(((height + SheetPlacement.gap) / (SheetPlacement.rowHeight + SheetPlacement.gap)).rounded(.up)), 1)
+    }
+
+    private static let textLine: CGFloat = 17
 
     /// Whether the person types into it.
     public var isEditable: Bool {
@@ -98,7 +163,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     /// Takes a value that the person set.
     public mutating func set(_ value: String) {
         switch control {
-        case .none: break
+        case .none, .metric, .chart, .image, .progress: break
+        case .list(let items, _): control = .list(items, value: value)
         case .toggle: control = .toggle(value == "true")
         case .slider(_, let low, let high): control = .slider(level: Double(value) ?? low, min: low, max: high)
         case .swatches(let colors, _): control = .swatches(colors, value: value)

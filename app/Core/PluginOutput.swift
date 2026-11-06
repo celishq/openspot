@@ -13,6 +13,7 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var parts: [SpotPart] = []
     public private(set) var partFaults: [String] = []
     public private(set) var errors: [String] = []
+    public private(set) var layout: SheetLayout?
 
     public init(text: String) {
         var runs = Set<String>()
@@ -37,11 +38,19 @@ public struct PluginOutput: Equatable, Sendable {
                 errors.append(block.firstLine)
             }
         }
+        layout = summary.flatMap(SheetLayout.init(block:))
+        parts += layout?.keyParts ?? []
+        if !parts.isEmpty { partFaults += SheetFaults.of(layout: layout, summary: summary, parts: parts) }
     }
 
     /// How often an open sheet of parts asks to be read again, in seconds.
     public var every: TimeInterval? {
         summary?.number("every")
+    }
+
+    /// All that is wrong with this output as one sheet of parts.
+    public var sheetFaults: [String] {
+        (parts.isEmpty ? ["the sheet has no parts"] : []) + errors.map { "cannot read the block that starts: \($0)" } + partFaults
     }
 
     /// The kind of spot that this output makes.

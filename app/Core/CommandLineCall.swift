@@ -3,6 +3,7 @@ import Foundation
 /// What the `openspot` command was asked to do: `openspot <noun> <verb>`. No arguments start the app.
 public enum CommandLineCall: Equatable, Sendable {
     case check(String?)
+    case checkSheet
     case catalog
     case colorPick
     case translate(from: String?, to: String?)
@@ -12,6 +13,7 @@ public enum CommandLineCall: Equatable, Sendable {
 
     public static let usage = """
     openspot check [folder]                      Reports the faults of a plugins folder.
+    openspot check --sheet                       Reports the faults of a sheet on stdin.
     openspot catalog                             Prints each part that a script can print.
     openspot color pick                          Prints the colour the person picks.
     openspot translate [--from code] [--to code] Translates the text on stdin.
@@ -27,6 +29,10 @@ public enum CommandLineCall: Equatable, Sendable {
             return
         }
         guard !noun.hasPrefix("-") else { return nil }
+        if arguments == ["check", "--sheet"] {
+            self = .checkSheet
+            return
+        }
         let rest = Array(arguments.dropFirst())
         switch (noun, rest.first) {
         case ("check", _) where rest.count <= 1: self = .check(rest.first)

@@ -2,6 +2,10 @@ import XCTest
 @testable import OpenspotCore
 
 final class CommandLineCallTests: XCTestCase {
+    func testASheetCheckReadsStandardInput() {
+        XCTAssertEqual(CommandLineCall(arguments: ["check", "--sheet"]), .checkSheet)
+    }
+
     func testNoArgumentsAndSystemFlagsStartTheApp() {
         XCTAssertNil(CommandLineCall(arguments: []))
         XCTAssertNil(CommandLineCall(arguments: ["-NSDocumentRevisionsDebugMode", "YES"]))

@@ -117,7 +117,7 @@ printf 'part=source\noption=auto:%s\n' "$auto"
 options
 printf 'value=%s\n\n' "$source"
 
-printf 'part=input\ntext=%s\nlines=7\nplaceholder=Type or paste text\n\n' "$input"
+printf 'part=input\ntext=%s\nlines=6\nplaceholder=Type or paste text\n\n' "$input"
 
 printf 'section=swap\npress=arrow.up.arrow.down\nkey=cmd+shift+s\n\n'
 
@@ -133,7 +133,7 @@ case "$status" in
   *) notice= ;;
 esac
 
-printf 'part=output\ntext=%s\nlines=7\nplaceholder=Translation\nreadonly=true\n\n' "${notice:-$output}"
+printf 'part=output\ntext=%s\nlines=6\nplaceholder=Translation\nreadonly=true\n\n' "${notice:-$output}"
 
 if [ "$status" = missing ]; then
   printf 'part=settings\ntitle=Open Settings\npress=true\n'

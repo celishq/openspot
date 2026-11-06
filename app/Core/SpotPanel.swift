@@ -6,12 +6,19 @@ public struct SpotPanel: Equatable, Sendable {
     public private(set) var parts: [SpotPart]
     public private(set) var every: TimeInterval?
     public private(set) var generation = 0
+    public private(set) var layout: SheetLayout?
 
     /// Returns nil when a script prints no parts.
     public init?(output: PluginOutput) {
         guard !output.parts.isEmpty else { return nil }
         parts = output.parts
         every = output.every
+        layout = output.layout
+    }
+
+    /// Where its parts lie.
+    public var placement: SheetPlacement {
+        SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts))
     }
 
     /// All values as one block, for the script to read on its standard input.
@@ -47,6 +54,7 @@ public struct SpotPanel: Equatable, Sendable {
         let kept = parts.first { $0.id == id }?.value
         parts = output.parts
         every = output.every
+        layout = output.layout
         if let id, let kept, let index = parts.firstIndex(where: { $0.id == id }) { parts[index].set(kept) }
         return true
     }

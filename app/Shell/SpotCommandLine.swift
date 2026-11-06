@@ -19,6 +19,8 @@ enum SpotCommandLine {
             SpotColorPick.run()
         case .check(let path):
             check(path)
+        case .checkSheet:
+            checkSheet()
         case .translate(let from, let to):
             finish { try await SpotTranslation.answer(to: Self.standardInput, from: from, to: to) }
         case .translateLanguages:
@@ -40,6 +42,14 @@ enum SpotCommandLine {
             exit(faults.isEmpty ? 0 : 1)
         }
         dispatchMain()
+    }
+
+    /// Reports the faults of a sheet on standard input, and exits with 1 when there are any.
+    private static func checkSheet() -> Never {
+        let faults = PluginOutput(text: standardInput).sheetFaults
+        faults.forEach { print($0) }
+        print(faults.isEmpty ? "No faults." : "\(faults.count) faults.")
+        exit(faults.isEmpty ? 0 : 1)
     }
 
     /// Prints what the work returns and exits. A failure goes to stderr, with exit code 1.
