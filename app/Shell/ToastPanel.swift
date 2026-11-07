@@ -2,16 +2,17 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// A window at the top of the screen for toasts, so they show when the spots panel is closed. Only a toast with a fix takes
-/// input: a click on it, or its fix key, opens the fix (A15).
+/// A window at the top of the screen for toasts, so they show when the spots panel is closed. It is as large as its message.
+/// Only a toast with a fix takes input: a click on it, or its fix key, opens the fix (A15).
 final class ToastPanel: NSPanel {
     static let margin: CGFloat = 16
-    private static let size = NSSize(width: 560, height: 120)
+    private static let maxSize = NSSize(width: 560, height: 120)
     private static let duration: TimeInterval = 5
     static let failureSymbol = "exclamationmark.triangle.fill"
     static let confirmSymbol = "checkmark.circle.fill"
 
     private let toast = Toast()
+    private lazy var measure = NSHostingController(rootView: ToastView(toast: toast))
     private var shows = 0
     private var fixKey: HotKey.Registration?
 
@@ -22,8 +23,9 @@ final class ToastPanel: NSPanel {
         toast.message = message
         toast.symbol = symbol
         hold(fix: fix, key: key)
+        let size = measure.sizeThatFits(in: Self.maxSize)
         if let screen = NSScreen.main?.visibleFrame {
-            setFrameOrigin(NSPoint(x: screen.midX - Self.size.width / 2, y: screen.maxY - Self.size.height))
+            setFrame(NSRect(x: screen.midX - size.width / 2, y: screen.maxY - size.height, width: size.width, height: size.height), display: true)
         }
         orderFrontRegardless()
         DispatchQueue.main.async {
@@ -65,7 +67,7 @@ final class ToastPanel: NSPanel {
 
     static func make() -> ToastPanel {
         let panel = ToastPanel(
-            contentRect: NSRect(origin: .zero, size: size),
+            contentRect: NSRect(origin: .zero, size: maxSize),
             styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -78,7 +80,9 @@ final class ToastPanel: NSPanel {
         panel.ignoresMouseEvents = true
         panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        panel.contentView = NSHostingView(rootView: ToastView(toast: panel.toast))
+        let view = NSHostingView(rootView: ToastView(toast: panel.toast))
+        view.sizingOptions = []
+        panel.contentView = view
         return panel
     }
 }

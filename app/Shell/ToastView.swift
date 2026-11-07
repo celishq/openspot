@@ -16,6 +16,7 @@ struct ToastView: View {
                 .font(SpotType.body)
                 .foregroundStyle(SpotTheme.ink)
                 .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
             if let key = toast.key {
                 SpotKeyLabel(text: key.text, isRecording: false)
             }
@@ -26,7 +27,6 @@ struct ToastView: View {
         .contentShape(Rectangle())
         .onTapGesture { toast.open?() }
         .padding(ToastPanel.margin)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .environment(\.spotIsShown, toast.isShown)
     }
 }
