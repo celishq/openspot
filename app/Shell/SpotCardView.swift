@@ -190,9 +190,11 @@ struct SpotCardView: View {
         if isHiddenFromGrid {
             let inset = SpotTokens.corner(for: size) * SpotTokens.rimPoint - SpotTokens.keycap / 2
             Image(systemName: "eye.slash")
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
+                .background(Color(white: SpotTokens.keycapShade), in: RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(Color.white.opacity(SpotTokens.track)))
                 .offset(x: -inset, y: inset)
                 .allowsHitTesting(false)
         }
