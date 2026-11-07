@@ -86,7 +86,7 @@ esac
 | A12 | A first launch turns on each core spot that reads only local data, and only at a person's act or when the panel opens. Each other core spot is off until the person turns it on, such as one that runs by itself or needs other tools. A spot that is off runs nothing, and its data stays. A core spot that a spot that is on places or opens also loads. A file in the plugins folder with the same ID wins over a core spot, and is always on. |
 | A13 | Enter on a row of Spots turns the spot on or off, and keeps the panel open, because a person often changes several spots in a row. Select all, in its actions, turns each one on. |
 | A14 | A first launch has no `config.toml` and no spot in the plugins folder. It opens the panel on the grid, once, with no other screen. The key toast shows when the panel closes. The app does not open at login by default. |
-| A15 | A toast takes no input, except a failure toast with a link (R9). One fix key, ⌥⌘O by default, opens that link, and the person chooses the key in Settings. Openspot holds the fix key only while such a toast shows, so other apps keep it at all other times. |
+| A15 | A toast takes no input, except a failure toast with a fix: the link of a script (R9), or Settings for a key that Openspot cannot use. One fix key, ⌥⌘O by default, opens that fix, and the person chooses the key in Settings. Openspot holds the fix key only while such a toast shows, so other apps keep it at all other times. |
 
 ## 4. The plugin file
 
