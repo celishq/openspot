@@ -26,7 +26,7 @@ public enum ShippedSpot: Equatable, Sendable {
                 shipped: .spots(SpotCatalog(folder: folder, core: core, config: config, login: offersLogin ? login : nil))
             ),
             PluginCommand(
-                id: "openspot/settings",
+                id: Self.settingsID,
                 name: "Settings",
                 url: config.url,
                 kind: .list,
@@ -73,6 +73,7 @@ public enum ShippedSpot: Equatable, Sendable {
 
     /// The ID of the list of spots that a person can turn on.
     public static let spotsID = "openspot/spots"
+    public static let settingsID = "openspot/settings"
 
     /// The ID of the list of tools for authors.
     public static let buildID = "openspot/build"

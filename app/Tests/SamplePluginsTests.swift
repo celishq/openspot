@@ -280,6 +280,43 @@ final class SamplePluginsTests: XCTestCase {
         }
     }
 
+    func testAFixableFailureLinksItsFix() throws {
+        let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("plugins")
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-fix-\(UUID().uuidString)")
+        let tools = folder.appendingPathComponent("tools")
+        try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let image = folder.appendingPathComponent("Screenshot.png")
+        FileManager.default.createFile(atPath: image.path, contents: Data())
+        try "#!/bin/sh\necho '\(folder.path)'\n".writeScript(to: tools.appendingPathComponent("defaults"))
+        try "#!/bin/sh\nprintf '%s\\0' '\(image.path)'\n".writeScript(to: tools.appendingPathComponent("mdfind"))
+        try "#!/bin/sh\ncase \"$*\" in *keystroke*|*JavaScript*) exit 1 ;; esac\n".writeScript(to: tools.appendingPathComponent("osascript"))
+        for name in ["pbcopy", "pbpaste", "sleep"] {
+            try "#!/bin/sh\ncat >/dev/null 2>&1 &\n".writeScript(to: tools.appendingPathComponent(name))
+        }
+        let accessibility = "open=x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility\n"
+
+        for (script, arguments, fix) in [
+            ("paste-screenshot.sh", [], accessibility),
+            ("emoji.sh", ["paste", "x"], accessibility),
+            ("windows.sh", ["left"], accessibility)
+        ] {
+            let process = Process()
+            let out = Pipe()
+            process.executableURL = plugins.appendingPathComponent(script)
+            process.arguments = arguments
+            process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "HOME": folder.path, "OPENSPOT_DATA": folder.path]
+            process.standardOutput = out
+            process.standardError = FileHandle.nullDevice
+            try process.run()
+            process.waitUntilExit()
+            let text = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+
+            XCTAssertEqual(process.terminationStatus, 1, script)
+            XCTAssertEqual(text, fix, script)
+        }
+    }
+
     func testFilesSearchesItselfAndGivesNothingForATooShortSearch() async throws {
         let files = try XCTUnwrap(try scan.commands.first { $0.name == "Files" })
 

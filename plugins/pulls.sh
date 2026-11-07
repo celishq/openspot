@@ -25,10 +25,6 @@ fragment pull on PullRequest {
 
 # Prints the open pull requests of the person, then those that wait for their review, each one once.
 pulls() {
-  if ! command -v gh >/dev/null; then
-    echo "Install gh to see pull requests." >&2
-    exit 1
-  fi
   answer=$(gh api graphql -f query="$query" \
     -f mine="is:open is:pr author:@me archived:false" \
     -f asked="is:open is:pr review-requested:@me archived:false") || exit 1
@@ -39,6 +35,11 @@ pulls() {
 
 case "$1" in
   read)
+    if ! command -v gh >/dev/null; then
+      printf 'open=https://cli.github.com\n'
+      echo "Install gh to see pull requests." >&2
+      exit 1
+    fi
     list=$(pulls) || exit 1
     printf 'action=copy\ntitle=Copy link\nkey=cmd+return\nclose=true\n\n'
     printf '%s' "$list" | jq -r "$defs"'.[] | "row=\(.title | esc)\ndetail=\(about)\nrun=\(.url | esc)\nsymbol=\({good: "checkmark.circle", bad: "xmark.circle", warn: "clock"}[tone // ""] // "arrow.triangle.pull")"

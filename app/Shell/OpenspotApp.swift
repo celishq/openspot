@@ -60,7 +60,12 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         let toast = ToastPanel.make()
         model.notify = { toast.show($0, symbol: ToastPanel.failureSymbol) }
-        model.notifyFix = { toast.show($0, symbol: ToastPanel.failureSymbol, fix: $1, key: ConfigFile.standard().read().fixKey) }
+        model.notifyFix = { text, fix in
+            toast.show(text, symbol: ToastPanel.failureSymbol, fix: { NSWorkspace.shared.open(fix) }, key: ConfigFile.standard().read().fixKey)
+        }
+        model.notifyKeyFault = { [weak self] text in
+            toast.show(text, symbol: ToastPanel.failureSymbol, fix: { self?.openSettings() }, key: ConfigFile.standard().read().fixKey)
+        }
         model.confirm = { toast.show($0, symbol: ToastPanel.confirmSymbol) }
         trayBar = SpotTrayBar(model: model, openspotItem: item)
         let update = AppUpdate(runningWork: { [model] in model.workCount }, onReady: { [model] in model.updateIsReady() })
@@ -106,7 +111,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
                 faults.append("Openspot cannot use \(key.label) to open.")
             }
         }
-        if faults != configFaults, !faults.isEmpty { model.notify(faults.joined(separator: " ")) }
+        if faults != configFaults, !faults.isEmpty { model.notifyKeyFault(faults.joined(separator: " ")) }
         configFaults = faults
     }
 
@@ -140,7 +145,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
                 faults.append("\(key.spot) cannot use \(key.shortcut.label). It is already in use.")
             }
         }
-        if faults != keyFaults, !faults.isEmpty { model.notify(faults.joined(separator: " ")) }
+        if faults != keyFaults, !faults.isEmpty { model.notifyKeyFault(faults.joined(separator: " ")) }
         keyFaults = faults
     }
 
@@ -185,6 +190,12 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         previousApp = NSWorkspace.shared.frontmostApplication
         NSApp.activate(ignoringOtherApps: true)
         panel.show()
+    }
+
+    /// Shows the panel on the Settings sheet.
+    private func openSettings() {
+        if !model.isShown || model.isWarming { showPanel() }
+        model.openSettings()
     }
 
     /// Brings the panel to the front with the focus, also when a drag opened it or it already shows.
