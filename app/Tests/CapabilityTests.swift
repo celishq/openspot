@@ -98,7 +98,7 @@ final class CapabilityTests: XCTestCase {
     }
 
     func testTheHelperIsGoneAfterItsIdleTimeAndTheNextCallStartsANewOne() async throws {
-        setenv("STANDIN_IDLE", "0.5", 1)
+        setenv("STANDIN_IDLE", "1", 1)
 
         let id = pid_t(try field("pid", in: try await call()))
         XCTAssertTrue(isAlive(id))
@@ -114,11 +114,11 @@ final class CapabilityTests: XCTestCase {
     }
 
     func testACallPutsOffTheIdleExit() async throws {
-        setenv("STANDIN_IDLE", "1", 1)
+        setenv("STANDIN_IDLE", "2", 1)
         let id = try field("pid", in: try await call())
 
         for _ in 0..<4 {
-            try await Task.sleep(for: .seconds(0.4))
+            try await Task.sleep(for: .seconds(0.8))
             let next = try await call()
             XCTAssertEqual(try field("pid", in: next), id)
         }

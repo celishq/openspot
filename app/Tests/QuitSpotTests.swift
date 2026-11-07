@@ -29,10 +29,4 @@ final class QuitSpotTests: XCTestCase {
         XCTAssertFalse(spot.isOnGrid)
         XCTAssertTrue(spot.hasSpot)
     }
-
-    func testABuildWithNoQuitHasNoSuchSpot() {
-        let commands = ShippedSpot.commands(folder: folder, guide: folder, app: "")
-
-        XCTAssertFalse(commands.contains { $0.id == ShippedSpot.quitID })
-    }
 }

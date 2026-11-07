@@ -164,7 +164,6 @@ final class SpotRunsWantTests: SpotRunsCase {
 
         for text in ["r", "re", "rep"] {
             sheet.search(text)
-            try await pause(0.05)
         }
         XCTAssertEqual(log(), ["read"])
 

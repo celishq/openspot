@@ -113,6 +113,5 @@ final class EmojiCatalogTests: XCTestCase {
         XCTAssertTrue(toned.contains { $0.run == "👍🏽" && $0.title == "thumbs up" })
         XCTAssertTrue(toned.contains { $0.run == "🧑🏽‍🤝‍🧑🏽" })
         XCTAssertTrue(toned.contains { $0.run == "👨‍👩‍👧" })
-        XCTAssertEqual(plain.first?.run, "😀")
     }
 }

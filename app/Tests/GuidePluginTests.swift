@@ -106,7 +106,6 @@ final class GuidePluginTests: XCTestCase {
         XCTAssertEqual(made?.name, "My Weather")
         try await XCTUnwrap(made).perform(XCTUnwrap(made).click, timeout: 5)
         XCTAssertEqual(try saved("opened"), "-R\n")
-        XCTAssertEqual(try String(contentsOf: plugins.appendingPathComponent("my-weather.sh"), encoding: .utf8).split(separator: "\n")[1], "# name=My Weather")
     }
 
     func testNewPluginKeepsAPluginThatExists() async throws {

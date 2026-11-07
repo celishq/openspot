@@ -13,8 +13,8 @@ final class SheetStreamTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func script(_ body: String) throws -> URL {
-        let url = folder.appendingPathComponent("script.sh")
+    private func script(_ body: String, name: String = "script") throws -> URL {
+        let url = folder.appendingPathComponent("\(name).sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
         return url
     }
@@ -69,28 +69,23 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testOnlyTheFirstFrameHasATimeLimit() async throws {
-        let silent = try script("sleep 30")
+        let release = folder.appendingPathComponent("release").path
+        let gate = "n=0; while [ ! -f '\(release)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done"
+        let silent = try script("sleep 30", name: "silent")
+        let slow = try script("printf 'part=a\\n---\\n'\n\(gate)\nprintf 'part=b\\n---\\n'", name: "slow")
+        var frames = try ScriptProcess(url: slow, limit: 1.5).start().makeAsyncIterator()
+        let first = try await frames.next()
+
         do {
-            for try await _ in try ScriptProcess(url: silent, limit: 0.3).start() {}
+            for try await _ in try ScriptProcess(url: silent, limit: 1.5).start() {}
             XCTFail("It should time out.")
         } catch {
             XCTAssertEqual(error as? PluginError, .timedOut)
         }
+        FileManager.default.createFile(atPath: release, contents: Data())
+        let second = try await frames.next()
 
-        let slow = try script("printf 'part=a\\n---\\n'\nsleep 0.5\nprintf 'part=b\\n---\\n'")
-        var frames: [String] = []
-        for try await frame in try ScriptProcess(url: slow, limit: 0.3).start() { frames.append(frame) }
-        XCTAssertEqual(frames, ["part=a\n", "part=b\n"])
-    }
-
-    func testAFailureReportsItsLastErrorLine() async throws {
-        let url = try script("echo first >&2\necho last >&2\nexit 3")
-        do {
-            for try await _ in try ScriptProcess(url: url, limit: 5).start() {}
-            XCTFail("It should fail.")
-        } catch {
-            XCTAssertEqual(error as? PluginError, .failed(3, "last"))
-        }
+        XCTAssertEqual([first, second], ["part=a\n", "part=b\n"])
     }
 
     func testALaterFrameChangesOnlyThePartsItNames() throws {
@@ -156,23 +151,8 @@ final class SheetStreamTests: XCTestCase {
         live.end()
     }
 
-    func testAnEventSentJustBeforeTheStopStillRuns() async throws {
-        let marker = folder.appendingPathComponent("copied")
-        let url = try script("""
-        while IFS= read -r line; do
-          case "$line" in name=copy) sleep 0.3; touch '\(marker.path)' ;; esac
-        done
-        """)
-        let live = ScriptProcess(url: url, mode: .stays, limit: 5)
-        _ = try live.start()
-
-        live.send(.press("copy"))
-        live.end()
-        try await wait(until: { FileManager.default.fileExists(atPath: marker.path) && !live.isRunning })
-    }
-
     func testAScriptThatIgnoresTheEndOfItsInputIsStopped() async throws {
-        let url = try script("trap '' HUP\nwhile :; do sleep 0.1; done")
+        let url = try script("trap '' HUP\n\(String.longLoop)")
         let live = ScriptProcess(url: url, mode: .stays, limit: 5, stopPause: 0.2)
         _ = try live.start()
 

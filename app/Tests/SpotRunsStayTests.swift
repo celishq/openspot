@@ -73,8 +73,9 @@ final class SpotRunsStayTests: SpotRunsCase {
     func testASecondAskForAFormOfAStayingScriptLeavesTheFirstWaiting() async throws {
         try script(header: "stay=true", """
         while IFS= read -r line; do
+          printf '%s\\n' "$line" >> '\(path("asked"))'
           case "$line" in
-            name=new) sleep 0.2; printf 'title=New\\n\\nfield=a\\nlabel=A\\n---\\n' ;;
+            name=new) \(untilRelease); printf 'title=New\\n\\nfield=a\\nlabel=A\\n---\\n' ;;
             name=read) printf 'action=new\\ntitle=New\\nscope=command\\nform=true\\n---\\n' ;;
           esac
         done
@@ -85,10 +86,11 @@ final class SpotRunsStayTests: SpotRunsCase {
         let action = try XCTUnwrap(sheet.command.actions.first)
 
         async let first = sheet.form(action, item: nil)
-        try await pause(0.1)
+        try await wait("the first ask") { self.log("asked").contains("name=new") }
         let second = try await sheet.form(action, item: nil)
 
         XCTAssertNil(second)
+        openGate()
         let form = try await first
         XCTAssertEqual(form?.fields.map(\.name), ["a"])
     }

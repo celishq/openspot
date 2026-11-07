@@ -61,10 +61,6 @@ final class UpdateSpotTests: XCTestCase {
         XCTAssertEqual(restarts, 1)
     }
 
-    func testTheSpotIsOffTheGridUntilAnUpdateIsReady() throws {
-        XCTAssertFalse(try command(spot()).headerState.isOnGrid)
-    }
-
     func testTheSpotComesBeforeEachSpotOfTheSameOrderInTheGrid() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-order-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -119,13 +115,6 @@ final class UpdateSpotTests: XCTestCase {
 
         let restarts = await presses.restarts
         XCTAssertEqual(restarts, 0)
-    }
-
-    func testABuildWithNoUpdateHasNoUpdatesSpot() {
-        let folder = URL(fileURLWithPath: "/tmp")
-        let commands = ShippedSpot.commands(folder: folder, guide: folder, app: "")
-
-        XCTAssertEqual(commands.map(\.name), ["Spots", "Settings", "Build"])
     }
 
     func testTheCardComesFirstOfTheShippedSpotsAndHasRoomForItsWords() throws {

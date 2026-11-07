@@ -284,7 +284,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testARunningCardSaysThatAPressStopsItAndAPressDoes() async throws {
-        try script(body: "sleep 0.3\ntouch '\(path("went-on"))'")
+        try script(body: "sleep 5\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
         let menu = try XCTUnwrap(ActionMenu(command: sheet.command, item: nil))
         let row = try XCTUnwrap(menu.rows.first)
@@ -296,9 +296,11 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
         XCTAssertNotNil(sheet.cardWork)
         XCTAssertNotNil(sheet.work(of: row, item: nil))
+        try await wait("the call") { self.log() == [""] }
         sheet.pressCard()
         XCTAssertNil(sheet.cardWork)
-        try await pause(0.4)
+        XCTAssertFalse(sheet.isCardRunning)
+        try await allEnded()
         XCTAssertFalse(exists("went-on"))
     }
 
@@ -367,7 +369,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(header: "read=sheet", """
         case "$1" in
           read) printf 'action=new\\ntitle=New\\nscope=command\\nform=true\\n\\nrow=A\\nrun=a\\n' ;;
-          new) sleep 0.2; printf 'title=New\\n\\nfield=a\\nlabel=A\\n' ;;
+          new) \(untilRelease); printf 'title=New\\n\\nfield=a\\nlabel=A\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -380,6 +382,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         let second = try await sheet.form(action, item: nil)
 
         XCTAssertNil(second)
+        openGate()
         let form = try await first
         XCTAssertEqual(form?.fields.map(\.name), ["a"])
     }
@@ -388,33 +391,29 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(header: "read=sheet", """
         trap 'touch "\(path("stopped"))"; exit 0' TERM
         printf 'part=a\\ntitle=A\\n---\\n'
-        while :; do sleep 0.05; done
+        \(String.longLoop)
         """)
-        try script("deaf", "echo $$ > '\(path("deaf-pid"))'\ntrap '' TERM\n\(String.deafLoop)")
+        try script("deaf", "echo $$ > '\(path("deaf-pid"))'\ntrap '' TERM\n\(String.longLoop)")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the part") { sheet.panel != nil }
         let deaf = try XCTUnwrap(runs.sheets["deaf"])
         deaf.pressCard()
-        try await wait("the deaf script") { self.exists("deaf-pid") }
-        try await pause(0.1)
+        let pid = try await pid("deaf-pid")
         let started = Date()
 
         runs.quit()
 
         XCTAssertLessThan(Date().timeIntervalSince(started), 3)
         try await wait("the stop") { self.exists("stopped") }
-        let pid = try XCTUnwrap(Int32(try String(contentsOfFile: path("deaf-pid"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
         try await wait("the end of the deaf script") { kill(pid, 0) != 0 }
     }
 
     func testQuittingLeavesNoChildThatIgnoresTheTerminateSignal() async throws {
-        try script(body: "sh -c \"trap '' TERM; echo \\$\\$ > '\(path("pid"))'; \(String.deafLoop)\" >/dev/null 2>&1 &\nsleep 30")
+        try script(body: "sh -c \"trap '' TERM; echo \\$\\$ > '\(path("pid"))'; exec sleep 30\" >/dev/null 2>&1 &\nsleep 30")
         let sheet = try sheet()
         sheet.pressCard()
-        try await wait("the child") { self.exists("pid") }
-        try await pause(0.1)
-        let pid = try XCTUnwrap(Int32(try String(contentsOfFile: path("pid"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
+        let pid = try await pid("pid")
         let started = Date()
 
         runs.quit()
@@ -424,13 +423,11 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testQuittingLeavesNoChildOfACallThatItsStopAlreadyEnded() async throws {
-        try script(body: "echo $$ > '\(path("script"))'\nsh -c \"trap '' TERM; echo \\$\\$ > '\(path("pid"))'; \(String.deafLoop)\" >/dev/null 2>&1 &\nsleep 30")
+        try script(body: "echo $$ > '\(path("script"))'\nsh -c \"trap '' TERM; echo \\$\\$ > '\(path("pid"))'; exec sleep 30\" >/dev/null 2>&1 &\nsleep 30")
         let sheet = try sheet()
         sheet.pressCard()
-        try await wait("the child") { self.exists("pid") }
-        try await pause(0.1)
-        let child = try XCTUnwrap(Int32(try String(contentsOfFile: path("pid"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
-        let parent = try XCTUnwrap(Int32(try String(contentsOfFile: path("script"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
+        let child = try await pid("pid")
+        let parent = try await pid("script")
 
         sheet.stop(try XCTUnwrap(sheet.calls.first))
         try await wait("the end of the script") { kill(parent, 0) != 0 }
