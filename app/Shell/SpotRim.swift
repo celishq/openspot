@@ -109,6 +109,10 @@ private struct Backing: NSViewRepresentable {
             line.opacity = strength
         }
 
+        override var isFlipped: Bool {
+            true
+        }
+
         override func hitTest(_ point: NSPoint) -> NSView? {
             nil
         }
