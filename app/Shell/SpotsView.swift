@@ -429,6 +429,7 @@ struct SpotsView: View {
                     chainLetter: model.chainLetter(of: entry),
                     showsChain: model.showsChain,
                     isHiddenFromGrid: model.isEditing && !entry.isOnGrid,
+                    query: model.query,
                     onTap: { model.tap(entry.id) },
                     onLevel: { model.setLevel(entry.id, to: $0) }
                 )
