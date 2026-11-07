@@ -21,6 +21,9 @@ This is a spot called Hello. A click runs it. Openspot never runs a script only 
 Keep several scripts together in a folder if you want. Each executable file is one spot, and a file that is not
 executable can hold shared code.
 
+The core spots come with the app, and the person turns them on in the Spots list. A file in the plugins folder with the
+same name as a core spot takes its place, so to change a core spot, copy it there and edit the copy.
+
 ## The header
 
 Comment lines right under the first line say what a script is, one `key=value` on each line. They can start with `#`,

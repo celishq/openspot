@@ -8,10 +8,11 @@
   - `Shell/` — the menu bar app, the panel and the hotkey. Imports AppKit and SwiftUI.
   - `StandIn/` — a small program for tests: a capability that needs no Mac feature. It does not ship.
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
+- `plugins/` holds the source of the core spots. The build copies it into the app, and they run from there.
 - `plans/` holds design plans. It is git-ignored.
 - `.temp/` holds throwaway mock-ups and screenshots. It is git-ignored.
 - `.temp/openspot/` holds the plugins and the config of a Debug build, so that it never changes `plugins/` or
-  `~/.config/openspot`. The build fills it once from `plugins/`, and `make dev-state` resets it.
+  `~/.config/openspot`. The build fills it once from `plugins/`, and `make dev-state` resets it. `make dev-state EMPTY=1` leaves it empty, so that the core spots run from the app, as on a new Mac.
 
 ## Writing
 

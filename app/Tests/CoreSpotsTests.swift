@@ -169,6 +169,7 @@ final class CoreSpotsTests: XCTestCase {
         let place = PluginFolder(url: folder, core: plugins, enabled: ["overview"])
 
         XCTAssertEqual(place.coreChoices().count, 11)
+        XCTAssertEqual(place.coreChoices().filter { $0.subtitle == nil }.map(\.name), [])
         XCTAssertEqual(Set(try place.scan().scripts.map(\.id)), ["agents", "battery", "cpu", "disk"])
     }
 }
