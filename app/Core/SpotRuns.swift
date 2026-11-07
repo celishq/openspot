@@ -20,7 +20,7 @@ public final class SpotRuns {
     @ObservationIgnored private let tickPause: Duration
     @ObservationIgnored private let recent: (String) -> [String]
     @ObservationIgnored private let prepare: ([SpotItem]) async -> Void
-    @ObservationIgnored private var order: [String] = []
+    private var order: [String] = []
     @ObservationIgnored private var placed: Set<String> = []
     @ObservationIgnored private var asked: [String: Date] = [:]
     @ObservationIgnored private var clock: Task<Void, Never>?

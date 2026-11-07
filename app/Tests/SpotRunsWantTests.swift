@@ -1,3 +1,4 @@
+import Observation
 import XCTest
 @testable import OpenspotCore
 
@@ -65,6 +66,17 @@ final class SpotRunsWantTests: SpotRunsCase {
 
         XCTAssertEqual(runs.trayMarks.first?.mark.summary, "Pull requests: 2")
         XCTAssertEqual(sheet.list.shown.count, 2)
+    }
+
+    func testTheMenuBarHearsOfAMarkThatComesAfterItFirstLooked() async throws {
+        let changed = expectation(description: "a change of the marks")
+        changed.assertForOverFulfill = false
+        withObservationTracking { _ = runs.trayMarks } onChange: { changed.fulfill() }
+        try script("agents", header: "read=5\ntray=true", "printf 'row=a\\n'")
+
+        _ = try scanned()
+
+        await fulfillment(of: [changed], timeout: 2)
     }
 
     // MARK: L3, moments
