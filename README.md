@@ -1,7 +1,7 @@
 <div align="center">
   <img src="app/Shell/Assets.xcassets/AppIcon.appiconset/icon_256x256@2x.png" width="160" alt="Openspot icon">
   <h1>Openspot</h1>
-  <p><strong>The Mac launcher that you shape with small tools.</strong><br>Make tools for yourself with your agent, and share them with others.</p>
+  <p><strong>Minimal, native macOS launcher that your agent extends.</strong><br>Each tool is one file that you can send to a friend.</p>
   <p>
     <a href="https://github.com/celishq/openspot/releases/latest">Download</a> ·
     <a href="app/Shell/GUIDE.md">Make a tool</a> ·
