@@ -23,6 +23,9 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var panel: SpotsPanel?
     private var previousApp: NSRunningApplication?
     private var hotKey: HotKey.Registration?
+    private var wantedKeys: [GlobalKey] = []
+    private var heldKeys: [GlobalKey: HotKey.Registration] = [:]
+    private var keyFaults: [String] = []
     private var trayBar: SpotTrayBar?
     private var configFaults: [String] = []
     private var menuBarDrag: SpotMenuBarDrag?
@@ -59,6 +62,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         model.updateSpot = update?.spot
         model.applyConfig = { [weak self] in self?.applyConfig() }
         model.setEntryKeyOn = { [weak self] in self?.setEntryKey(on: $0) }
+        model.holdKeys = { [weak self] in
+            self?.wantedKeys = $0
+            self?.holdWantedKeys()
+        }
         model.present = { [weak self] in self?.presentPanel() }
         model.pointerIsOverDrop = { [weak self, weak item] in
             let point = NSEvent.mouseLocation
@@ -93,6 +100,35 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private func setEntryKey(on isOn: Bool) {
         hotKey.map(HotKey.unregister)
         hotKey = isOn ? register(model.entryKey) : nil
+        if isOn {
+            holdWantedKeys()
+        } else {
+            heldKeys.values.forEach(HotKey.unregister)
+            heldKeys = [:]
+        }
+    }
+
+    /// Holds the keys that the person assigned and lets go of the rest, unless a key is being recorded. A refused key is tried again at
+    /// the next scan, and the person sees why once.
+    private func holdWantedKeys() {
+        guard model.recording == nil else { return }
+        for (key, registration) in heldKeys where !wantedKeys.contains(key) {
+            HotKey.unregister(registration)
+            heldKeys[key] = nil
+        }
+        var faults: [String] = []
+        for key in wantedKeys where heldKeys[key] == nil {
+            let registration = HotKey.register(key.shortcut) { [weak self] in
+                Task { @MainActor in self?.model.press(key) }
+            }
+            if let registration {
+                heldKeys[key] = registration
+            } else {
+                faults.append("\(key.spot) cannot use \(key.shortcut.label). It is already in use.")
+            }
+        }
+        if faults != keyFaults, !faults.isEmpty { model.notify(faults.joined(separator: " ")) }
+        keyFaults = faults
     }
 
     private func register(_ key: Shortcut) -> HotKey.Registration? {

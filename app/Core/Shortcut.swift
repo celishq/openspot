@@ -2,7 +2,7 @@ import Foundation
 
 /// A key with the modifiers held over it, as a person writes it, such as ctrl+space.
 /// It holds cmd, ctrl or option, so that it never takes over normal typing.
-public struct Shortcut: Equatable, Sendable {
+public struct Shortcut: Hashable, Sendable {
     public struct Modifiers: OptionSet, Hashable, Sendable {
         public let rawValue: Int
 
@@ -20,7 +20,7 @@ public struct Shortcut: Equatable, Sendable {
         ("cmd", .command, "⌘"), ("ctrl", .control, "⌃"), ("option", .option, "⌥"), ("shift", .shift, "⇧")
     ]
     private static let markOrder: [Modifiers] = [.control, .option, .shift, .command]
-    private static let namedCodes: [String: UInt32] = ["space": 49, "return": 36, "tab": 48]
+    private static let namedCodes: [String: UInt32] = ["space": 49, "return": 36, "tab": 48, "left": 123, "right": 124, "down": 125, "up": 126]
 
     /// The key that opens the panel until the person chooses another.
     public static let standard = Shortcut(name: "space", code: 49, modifiers: .control)
