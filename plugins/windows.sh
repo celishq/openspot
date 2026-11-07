@@ -74,7 +74,8 @@ case "$1" in
     ;;
   full|center|left|right)
     if ! osascript -l JavaScript -e "$script" "$1" >/dev/null 2>&1; then
-      echo "Allow Openspot in Accessibility, then press the key again." >&2
+      printf 'open=x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility\n'
+      echo "Openspot cannot move the window. Allow it in Accessibility, then press the key again." >&2
       exit 1
     fi
     ;;

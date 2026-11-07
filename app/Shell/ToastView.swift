@@ -11,16 +11,32 @@ struct ToastView: View {
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(SpotTheme.ink)
             }
-            Text(toast.message)
+            Self.styled(toast.message)
+                .textRenderer(ToastKeyFill(fill: SpotTheme.ink.opacity(SpotTheme.track)))
                 .font(SpotType.body)
                 .foregroundStyle(SpotTheme.ink)
                 .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, ToastPanel.margin)
         .padding(.vertical, 10)
+        .frame(minWidth: ToastPanel.minWidth - 2 * ToastPanel.margin, alignment: .leading)
         .modifier(SpotGlass(radius: SpotTokens.rowHeight / 3))
+        .contentShape(Rectangle())
+        .onTapGesture { toast.open?() }
         .padding(ToastPanel.margin)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .environment(\.spotIsShown, toast.isShown)
+    }
+
+    /// The message as text, with each span in backticks marked as a key. Spaces beside a key leave room for its fill.
+    static func styled(_ message: String) -> Text {
+        let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        let parsed = (try? AttributedString(markdown: message, options: options)) ?? AttributedString(message)
+        return parsed.runs.reduce(Text(verbatim: "")) { text, run in
+            let words = String(parsed[run.range].characters)
+            guard run.inlinePresentationIntent?.contains(.code) == true else { return Text("\(text)\(Text(verbatim: words))") }
+            let key = Text(verbatim: "\u{2009}\(words)\u{2009}").customAttribute(ToastKeyFill.Key())
+            return Text("\(text)\(Text(verbatim: "\u{2009}"))\(key)\(Text(verbatim: "\u{2009}"))")
+        }
     }
 }

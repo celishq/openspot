@@ -26,6 +26,7 @@ final class SamplePluginsTests: XCTestCase {
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tools) }
         try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("pbcopy"))
+        try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("openspot"))
         for (script, call) in [("emoji.sh", "open"), ("files.sh", "copy"), ("pulls.sh", "copy")] {
             let process = Process()
             let out = Pipe()
@@ -247,6 +248,67 @@ final class SamplePluginsTests: XCTestCase {
         XCTAssertGreaterThan(lines.items.filter { $0.run.hasPrefix("/System/Applications/") }.count, 5)
     }
 
+    func testScreenshotPastesTheNewestCapture() throws {
+        let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("plugins")
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-capture-\(UUID().uuidString)")
+        let tools = folder.appendingPathComponent("tools")
+        try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let image = folder.appendingPathComponent("Screenshot.png")
+        let video = folder.appendingPathComponent("Screen Recording.mov")
+        let log = folder.appendingPathComponent("openspot")
+        try "#!/bin/sh\necho '\(folder.path)'\n".writeScript(to: tools.appendingPathComponent("defaults"))
+        try "#!/bin/sh\ncase \"$*\" in *kMDItemScreenCaptureType*) printf '%s\\0%s\\0' '\(image.path)' '\(video.path)' ;; esac\n".writeScript(to: tools.appendingPathComponent("mdfind"))
+        try "#!/bin/sh\necho \"$*\" >> '\(log.path)'\n".writeScript(to: tools.appendingPathComponent("openspot"))
+
+        for (newest, older) in [(video, image), (image, video)] {
+            try? FileManager.default.removeItem(at: log)
+            FileManager.default.createFile(atPath: older.path, contents: Data())
+            FileManager.default.createFile(atPath: newest.path, contents: Data())
+            try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -60)], ofItemAtPath: older.path)
+            try FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: newest.path)
+            let process = Process()
+            process.executableURL = plugins.appendingPathComponent("paste-screenshot.sh")
+            process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "HOME": folder.path]
+            try process.run()
+            process.waitUntilExit()
+
+            XCTAssertEqual(process.terminationStatus, 0, newest.lastPathComponent)
+            XCTAssertEqual(try String(contentsOf: log, encoding: .utf8), "clipboard copy \(newest.path)\nclipboard paste\n")
+        }
+    }
+
+    func testAFixableFailureLinksItsFix() throws {
+        let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("plugins")
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-fix-\(UUID().uuidString)")
+        let tools = folder.appendingPathComponent("tools")
+        try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        try "#!/bin/sh\ncase \"$*\" in *JavaScript*) exit 1 ;; esac\n".writeScript(to: tools.appendingPathComponent("osascript"))
+        let accessibility = "open=x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility\n"
+
+        for (script, arguments, fix, message) in [
+            ("windows.sh", ["left"], accessibility, "Openspot cannot move the window. Allow it in Accessibility, then press the key again.\n")
+        ] {
+            let process = Process()
+            let out = Pipe()
+            let errors = Pipe()
+            process.executableURL = plugins.appendingPathComponent(script)
+            process.arguments = arguments
+            process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "HOME": folder.path, "OPENSPOT_DATA": folder.path]
+            process.standardOutput = out
+            process.standardError = errors
+            try process.run()
+            process.waitUntilExit()
+            let text = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+            let said = String(data: errors.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+
+            XCTAssertEqual(process.terminationStatus, 1, script)
+            XCTAssertEqual(text, fix, script)
+            XCTAssertEqual(said, message, script)
+        }
+    }
+
     func testFilesSearchesItselfAndGivesNothingForATooShortSearch() async throws {
         let files = try XCTUnwrap(try scan.commands.first { $0.name == "Files" })
 
@@ -267,7 +329,8 @@ final class SamplePluginsTests: XCTestCase {
             ("open", "echo \"$1\" > '\(folder.path)/opened'"),
             ("curl", Self.fakeCurl(log: folder.appendingPathComponent("fetched").path)),
             ("gh", Self.fakeGh(answer: folder.appendingPathComponent("gh-answer").path)),
-            ("osascript", "cp '\(folder.path)/clipboard' '\(folder.path)/pasted'")
+            ("osascript", "cp '\(folder.path)/clipboard' '\(folder.path)/pasted'"),
+            ("openspot", Self.fakeClipboard(in: folder))
         ] {
             let tool = tools.appendingPathComponent(name)
             try "#!/bin/sh\n\(script)\n".writeScript(to: tool)
@@ -282,6 +345,11 @@ final class SamplePluginsTests: XCTestCase {
             try? FileManager.default.removeItem(at: folder)
         }
         try await body(folder)
+    }
+
+    /// The clipboard calls of the openspot command: a copy writes the file `clipboard`, and a paste copies it to `pasted`.
+    private static func fakeClipboard(in folder: URL) -> String {
+        "case \"$1 $2\" in 'clipboard copy') cat > '\(folder.path)/clipboard' ;; 'clipboard paste') cp '\(folder.path)/clipboard' '\(folder.path)/pasted' ;; esac"
     }
 
     /// Answers a query with the saved answer, or else with one pull request in each state.
@@ -605,7 +673,7 @@ final class SamplePluginsTests: XCTestCase {
                 try await links.perform(.item(try XCTUnwrap(downloads)), timeout: 5)
                 XCTFail("expected a failure")
             } catch let error as PluginError {
-                XCTAssertEqual(error.reason, "Cannot find \(folder.path)/Downloads.")
+                XCTAssertEqual(error.reason, "Openspot cannot find \(folder.path)/Downloads.")
             }
         }
     }
@@ -688,6 +756,7 @@ final class SamplePluginsTests: XCTestCase {
     private func fakeEmoji(in folder: URL) throws -> PluginCommand {
         let script = """
         #!/bin/sh
+        [ "$1" = clipboard ] && { \(Self.fakeClipboard(in: folder)); exit 0; }
         printf 'row=thumbs up, %s\\nrun=👍\\nglyph=👍\\n' "$3"
 
         """

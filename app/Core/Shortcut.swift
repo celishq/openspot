@@ -24,6 +24,8 @@ public struct Shortcut: Hashable, Sendable {
 
     /// The key that opens the panel until the person chooses another.
     public static let standard = Shortcut(name: "space", code: 49, modifiers: .control)
+    /// The key that opens the link of a failure toast, until the person picks another.
+    public static let fix = Shortcut(name: "o", code: 31, modifiers: [.command, .option])
 
     public let name: String
     public let code: UInt32
@@ -66,7 +68,7 @@ public struct Shortcut: Hashable, Sendable {
     /// The key as the Mac writes it, such as ⌃Space.
     /// The words that tell a person how to open the panel.
     public var openHint: String {
-        "Press \(label) to open Openspot"
+        "Press `\(label)` to open Openspot"
     }
 
     public var label: String {

@@ -33,7 +33,7 @@ final class CommandLinkTests: XCTestCase {
 
     func testSettingsListsTheRowOffUntilALinkPointsAtTheApp() throws {
         let off = PluginOutput(text: try settings(link).answer(["read"])).items
-        XCTAssertEqual(off.map(\.run), ["panel_key", CommandLink.run])
+        XCTAssertEqual(off.map(\.run), ["panel_key", "fix_key", CommandLink.run])
         XCTAssertEqual(off.last?.title, "Use openspot in Terminal")
         XCTAssertEqual(off.last?.isOn, false)
 

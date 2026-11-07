@@ -39,6 +39,13 @@ final class ConfigFileTests: XCTestCase {
         XCTAssertEqual(file.read().faults, [])
     }
 
+    func testTheFixKeyIsCommandOptionOUntilTheFileNamesAnother() {
+        XCTAssertEqual(Config(text: "").fixKey, Shortcut(text: "cmd+option+o"))
+        XCTAssertEqual(Config(text: "fix_key = \"ctrl+option+f\"\n").fixKey, Shortcut(text: "ctrl+option+f"))
+        XCTAssertNil(Config(text: "fix_key = \"f\"\n").fixKey)
+        XCTAssertEqual(Config(text: "fix_key = \"f\"\n").faults.count, 1)
+    }
+
     func testABadKeyGivesNoKeyAndAFault() {
         let config = Config(text: "panel_key = \"k\"\n")
 

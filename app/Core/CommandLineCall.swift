@@ -8,6 +8,9 @@ public enum CommandLineCall: Equatable, Sendable {
     case sandbox(String?)
     case catalog
     case colorPick
+    /// Copies a file, or the text on stdin with no file.
+    case clipboardCopy(String?)
+    case clipboardPaste
     case translate(from: String?, to: String?)
     case translateLanguages
     case emoji(tone: EmojiCatalog.Tone)
@@ -23,6 +26,8 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot sandbox [file]                      Opens a window to try a sheet from text, a file or a script.
     openspot catalog                             Prints each part that a script can print.
     openspot color pick                          Prints the colour the person picks.
+    openspot clipboard copy [file]               Copies the file as Finder does, or the text on stdin.
+    openspot clipboard paste                     Pastes the clipboard into the front app.
     openspot translate [--from code] [--to code] Translates the text on stdin.
     openspot translate languages                 Prints the languages it knows.
     openspot emoji [--tone name]                 Prints each emoji as a row, with its name in the language of the Mac.
@@ -49,6 +54,8 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("sandbox", _) where rest.count <= 1: self = .sandbox(rest.first)
         case ("render", let path?) where rest.count == 1: self = .render(path)
         case ("color", "pick") where rest.count == 1: self = .colorPick
+        case ("clipboard", "copy") where rest.count <= 2: self = .clipboardCopy(rest.dropFirst().first)
+        case ("clipboard", "paste") where rest.count == 1: self = .clipboardPaste
         case ("translate", "languages") where rest.count == 1: self = .translateLanguages
         case ("helper", let name?) where rest.count == 1: self = .helper(name)
         case ("emoji", nil): self = .emoji(tone: .none)
