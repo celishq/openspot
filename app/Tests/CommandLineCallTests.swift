@@ -59,6 +59,7 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["window", "move", "0", "25", "wide", "900"]), .unknown("window move 0 25 wide 900"))
         XCTAssertEqual(CommandLineCall(arguments: ["window", "move", "0", "25", "0", "900"]), .unknown("window move 0 25 0 900"))
         XCTAssertEqual(CommandLineCall(arguments: ["window", "move", "0", "0", "1/0", "1"]), .unknown("window move 0 0 1/0 1"))
+        XCTAssertEqual(CommandLineCall(arguments: ["window", "move", "0", "0", "50%%", "1"]), .unknown("window move 0 0 50%% 1"))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot window move frame..."))
     }
 

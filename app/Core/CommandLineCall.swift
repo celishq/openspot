@@ -31,9 +31,9 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  A tone is none, light, medium-light, medium, medium-dark or dark.
     openspot window frame                        Prints the front window, then the usable area of its screen:
                                                  x y width height x y width height, from the top left of the main screen.
-    openspot window move frame...                Moves the front window to a frame, x y width height, in points or, with a
-                                                 fraction such as 1/2, in parts of the area. With more frames, it moves to
-                                                 the frame after the one it holds now.
+    openspot window move frame...                Moves the front window to a frame, x y width height. 50%, 1/2 or a number
+                                                 from 0 to 1 is a part of the area, and any other number is points. With
+                                                 more frames, it moves to the frame after the one it holds now.
 
     """
 
