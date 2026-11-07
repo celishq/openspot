@@ -8,7 +8,6 @@ struct SpotRoundButton: View {
         case plain, floating, strong, bare
     }
 
-    private static let fillOpacity = 0.2
     private static let symbolRatio: CGFloat = 0.32
 
     let symbol: String
@@ -40,7 +39,7 @@ struct SpotRoundButton: View {
 
     private var fill: AnyShapeStyle {
         switch look {
-        case .plain: AnyShapeStyle(SpotTheme.ink.opacity(Self.fillOpacity))
+        case .plain: AnyShapeStyle(SpotTheme.ink.opacity(SpotTheme.control))
         case .floating: AnyShapeStyle(SpotTheme.float)
         case .strong: AnyShapeStyle(SpotTheme.solid)
         case .bare: AnyShapeStyle(Color.clear)

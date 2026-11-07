@@ -61,7 +61,7 @@ private struct Backing: NSViewRepresentable {
         /// Takes the rim's colours from the theme of this appearance.
         private func applyTheme() {
             let theme = SpotTheme.palette(for: effectiveAppearance)
-            sides.colors = [0, 0.3, 0.3, 0].map { theme.rimSides.withAlphaComponent($0).cgColor }
+            sides.colors = theme.rimSideStrengths.map { theme.rimSides.withAlphaComponent($0).cgColor }
             let alpha = theme.rimEnds.alphaComponent
             ends.colors = [alpha, 0, 0, alpha].map { theme.rimEnds.withAlphaComponent($0).cgColor }
             ends.compositingFilter = theme.rimAddsLight ? "plusL" : nil

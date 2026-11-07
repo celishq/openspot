@@ -15,7 +15,7 @@ struct SpotBlur: View, @preconcurrency Animatable {
     }
 }
 
-/// The system blur view behind a `SpotBlur`, with its tint hidden.
+/// The system blur view behind a `SpotBlur`, with its tint hidden. It stays dark, because only there it has the backdrop layer.
 private struct Backing: NSViewRepresentable {
     var radius: CGFloat
 
@@ -65,6 +65,7 @@ private struct Backing: NSViewRepresentable {
         let surface = Surface()
         surface.blendingMode = .behindWindow
         surface.state = .active
+        surface.appearance = NSAppearance(named: .darkAqua)
         surface.radius = radius
         return surface
     }

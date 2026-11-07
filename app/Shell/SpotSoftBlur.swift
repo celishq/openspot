@@ -29,7 +29,17 @@ struct SpotSoftBlur: NSViewRepresentable {
                 CATransaction.setDisableActions(true)
                 defer { CATransaction.commit() }
                 tintMask.contents = masks?.tint
-                filter = Self.filter(mask: masks?.blur)
+                filter = Self.filter(mask: masks?.blur, radius: theme.backdropBlur)
+                applyBlur()
+            }
+        }
+
+        /// The theme that sets its tint and its blur. The system view stays dark, because only there it has the backdrop layer.
+        var theme = SpotTheme.dark {
+            didSet {
+                guard theme.backdropBlur != oldValue.backdropBlur || theme.tint != oldValue.tint else { return }
+                filter = Self.filter(mask: masks?.blur, radius: theme.backdropBlur)
+                needsLayout = true
                 applyBlur()
             }
         }
@@ -41,11 +51,11 @@ struct SpotSoftBlur: NSViewRepresentable {
         private var appliedFilter: NSObject?
 
         /// A filter holds its mask from the first time it draws, so each mask has a filter of its own.
-        private static func filter(mask: CGImage?) -> NSObject? {
+        private static func filter(mask: CGImage?, radius: CGFloat) -> NSObject? {
             let filter = (NSClassFromString("CAFilter") as? NSObject.Type)?
                 .perform(NSSelectorFromString("filterWithType:"), with: filterType)?
                 .takeUnretainedValue() as? NSObject
-            filter?.setValue(SpotTokens.backdropBlur, forKey: "inputRadius")
+            filter?.setValue(radius, forKey: "inputRadius")
             filter?.setValue(true, forKey: "inputNormalizeEdges")
             filter?.setValue(mask, forKey: "inputMaskImage")
             return filter
@@ -63,7 +73,7 @@ struct SpotSoftBlur: NSViewRepresentable {
             }
             tint.frame = bounds
             tintMask.frame = bounds
-            tint.backgroundColor = SpotTheme.palette(for: effectiveAppearance).tint.cgColor
+            tint.backgroundColor = theme.tint.cgColor
             applyBlur()
         }
 
@@ -107,11 +117,14 @@ struct SpotSoftBlur: NSViewRepresentable {
         let surface = Surface()
         surface.blendingMode = .behindWindow
         surface.state = .active
+        surface.appearance = NSAppearance(named: .darkAqua)
+        surface.theme = SpotTheme.palette(for: context.environment.colorScheme)
         surface.masks = Self.masks(height: height)
         return surface
     }
 
     func updateNSView(_ surface: Surface, context: Context) {
+        surface.theme = SpotTheme.palette(for: context.environment.colorScheme)
         surface.masks = Self.masks(height: height)
     }
 

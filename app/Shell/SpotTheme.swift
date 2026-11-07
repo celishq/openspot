@@ -32,20 +32,32 @@ struct SpotTheme {
     let rimEnds: NSColor
     /// Whether the rim's ends add light to what lies behind them.
     let rimAddsLight: Bool
+    /// The strength of the rim's side line at its top, at its middle and at its foot.
+    let rimSideStrengths: [CGFloat]
+    /// What lies under a surface to cast its shadow, and that shadow.
+    let shadowBase: NSColor
+    let shadow: NSColor
+    /// The radius of the blur behind a surface.
+    let blur: CGFloat
+    /// The radius of the blur around the panel.
+    let backdropBlur: CGFloat
     /// The strengths of ink as a fill: a row or a field, a selected one, a glyph's disc and a chip.
     let fillStrength: Double
     let selectedStrength: Double
     let discStrength: Double
     let chipStrength: Double
     let menuSelectedStrength: Double
+    let controlStrength: Double
+    let trackStrength: Double
+    let secondaryStrength: Double
 
     static let dark = SpotTheme(
         ink: .white,
         solid: .white,
         onSolid: .black,
         glyphOnSolid: .controlAccentColor,
-        glass: .black.withAlphaComponent(0.55),
-        menuGlass: .black.withAlphaComponent(0.55),
+        glass: .black.withAlphaComponent(0.3),
+        menuGlass: .black.withAlphaComponent(0.3),
         tint: .black.withAlphaComponent(0.08),
         keycap: NSColor(white: 0.2, alpha: 1),
         float: NSColor(white: 0.34, alpha: 0.72),
@@ -56,21 +68,29 @@ struct SpotTheme {
         rimSides: .black,
         rimEnds: .white,
         rimAddsLight: true,
+        rimSideStrengths: [0, 0.3, 0.3, 0],
+        shadowBase: .clear,
+        shadow: .clear,
+        blur: 16,
+        backdropBlur: 2,
         fillStrength: 0.1,
         selectedStrength: 0.22,
         discStrength: 0.2,
         chipStrength: 0.25,
-        menuSelectedStrength: 0.3
+        menuSelectedStrength: 0.3,
+        controlStrength: 0.2,
+        trackStrength: 0.2,
+        secondaryStrength: 0.7
     )
 
     static let light = SpotTheme(
-        ink: NSColor(white: 0.08, alpha: 1),
+        ink: NSColor(white: 0.11, alpha: 1),
         solid: NSColor(white: 0.12, alpha: 1),
         onSolid: .white,
         glyphOnSolid: .white,
-        glass: .white.withAlphaComponent(0.85),
+        glass: .white.withAlphaComponent(0.86),
         menuGlass: .white,
-        tint: .white.withAlphaComponent(0.18),
+        tint: .white.withAlphaComponent(0.5),
         keycap: NSColor(white: 0.98, alpha: 1),
         float: NSColor(white: 0.96, alpha: 0.82),
         window: NSColor(white: 0.93, alpha: 1),
@@ -78,17 +98,29 @@ struct SpotTheme {
         confirm: NSColor(red: 0.78, green: 0.16, blue: 0.14, alpha: 1),
         onConfirm: .white,
         rimSides: .black,
-        rimEnds: .black.withAlphaComponent(0.45),
+        rimEnds: .white,
         rimAddsLight: false,
-        fillStrength: 0.05,
-        selectedStrength: 0.1,
-        discStrength: 0.08,
-        chipStrength: 0.1,
-        menuSelectedStrength: 0.1
+        rimSideStrengths: [0.1, 0.1, 0.1, 0.1],
+        shadowBase: .white,
+        shadow: .black.withAlphaComponent(0.1),
+        blur: 40,
+        backdropBlur: 14,
+        fillStrength: 0.04,
+        selectedStrength: 0.08,
+        discStrength: 0,
+        chipStrength: 0.08,
+        menuSelectedStrength: 0.08,
+        controlStrength: 0.05,
+        trackStrength: 0.08,
+        secondaryStrength: 0.58
     )
 
     static func palette(for appearance: NSAppearance) -> SpotTheme {
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
+    }
+
+    static func palette(for scheme: ColorScheme) -> SpotTheme {
+        scheme == .dark ? dark : light
     }
 
     /// The theme of the app's appearance now.
@@ -97,20 +129,24 @@ struct SpotTheme {
     }
 
     static let titleOpacity = 1.0
-    static let secondaryLight = 0.7
+    static var secondaryLight: Double { current.secondaryStrength }
     static var fill: Double { current.fillStrength }
     static var disc: Double { current.discStrength }
     static var chip: Double { current.chipStrength }
     static var selectedFill: Double { current.selectedStrength }
     static var menuSelected: Double { current.menuSelectedStrength }
     static let dragFill = 0.4
-    static let track = 0.2
+    static var track: Double { current.trackStrength }
+    static var control: Double { current.controlStrength }
+    static var blur: CGFloat { current.blur }
 
     static let ink = color(\.ink)
     static let solid = color(\.solid)
     static let onSolid = color(\.onSolid)
     static let glyphOnSolid = color(\.glyphOnSolid)
     static let glass = color(\.glass)
+    static let shadowBase = color(\.shadowBase)
+    static let shadow = color(\.shadow)
     static let menuGlass = color(\.menuGlass)
     static let keycap = color(\.keycap)
     static let float = color(\.float)

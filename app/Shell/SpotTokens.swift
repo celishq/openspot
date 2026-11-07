@@ -41,8 +41,6 @@ enum SpotTokens {
     static let formFieldGap: CGFloat = 12
     static let formTextHeight: CGFloat = 120
     static let halo: CGFloat = 90
-    static let backdropBlur: CGFloat = 2
-    static let cardBlur: CGFloat = 16
     static let panelWidth: CGFloat = gridWidth + 2 * halo
     static let panelHeight: CGFloat = 2 * halo + 7 * rowHeight + 6 * rowGap + hintBlock
     static let sheetMaxHeight: CGFloat = panelHeight - 2 * halo - hintBlock
