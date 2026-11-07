@@ -129,7 +129,7 @@ final class SpotsPanel: NSPanel {
 
     override func resignKey() {
         super.resignKey()
-        if model?.isShown == true, model?.isReviewing != true { hide() }
+        if model?.isShown == true, model?.holdsFocus != true { hide() }
     }
 
     /// Takes ⌘V for a copied `.spot` file while the panel shows. The Edit menu takes the key before the panel sees it, so this

@@ -334,7 +334,7 @@ final class SpotsModel {
         do {
             let place = PluginFolder(url: folder.url, core: folder.core, enabled: folder.enabled.union([item.run]))
             let scan = try place.scan()
-            guard let command = scan.commands.first(where: { $0.id == item.run }) else { return }
+            guard let command = scan.commands.first(where: { place.isCore($0) && PluginFolder.coreID(of: $0) == item.run }) else { return }
             closeList()
             show(try SpotReview(spot: SharedSpot(sharing: command, from: scan), folder: folder.url, canAdd: false))
         } catch {
@@ -353,6 +353,12 @@ final class SpotsModel {
     /// What the search field says as the open review grows out of it.
     var reviewDrop: SpotDrop? {
         reviewed.map(SpotDrop.init(reviewing:))
+    }
+
+    /// Whether the panel stays open when it loses the focus: for a review, and for the list of a first launch, because the
+    /// Mac can keep another app in front of an app that just started.
+    var holdsFocus: Bool {
+        isReviewing || (isFirstLaunch && openList == ShippedSpot.spotsID)
     }
 
     /// Whether a review shows, which stays open when the panel loses the focus.
@@ -411,7 +417,7 @@ final class SpotsModel {
         closeList()
         if isShown { dismiss() }
         do {
-            try ConfigFile.standard().turn(entry.id, on: false)
+            try ConfigFile.standard().turn(PluginFolder.coreID(of: entry.command), on: false)
             confirm("\(entry.command.name) is off")
             reload()
         } catch {

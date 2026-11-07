@@ -36,7 +36,7 @@ public struct SpotCatalog: Equatable, Sendable {
     }
 
     private func toggle(_ id: String) throws -> String {
-        guard choices.contains(where: { $0.id == id }) else { throw PluginError.failed(1, "Spots has no such spot.") }
+        guard choices.contains(where: { PluginFolder.coreID(of: $0) == id }) else { throw PluginError.failed(1, "Spots has no such spot.") }
         if own.contains(id) { return "toast=This spot is a file in your plugins folder.\n" }
         try config.turn(id, on: !config.read().arrangement.enabled.contains(id))
         return ""
@@ -60,10 +60,11 @@ public struct SpotCatalog: Equatable, Sendable {
             TextBlock(fields: [.init(key: "action", value: Self.reviewID), .init(key: "title", value: "Review code")])
         ]
         let spots = choices.map { command in
-            var fields: [TextBlock.Field] = [.init(key: "row", value: command.name), .init(key: "run", value: command.id), .init(key: "symbol", value: command.symbol)]
-            let detail = own.contains(command.id) ? "In your plugins folder" : command.subtitle
+            let id = PluginFolder.coreID(of: command)
+            var fields: [TextBlock.Field] = [.init(key: "row", value: command.name), .init(key: "run", value: id), .init(key: "symbol", value: command.symbol)]
+            let detail = own.contains(id) ? "In your plugins folder" : command.subtitle
             if let detail { fields.append(.init(key: "detail", value: detail)) }
-            fields.append(.init(key: "on", value: String(own.contains(command.id) || enabled.contains(command.id))))
+            fields.append(.init(key: "on", value: String(own.contains(id) || enabled.contains(id))))
             return TextBlock(fields: fields)
         }
         let build = TextBlock(fields: [

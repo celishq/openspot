@@ -83,6 +83,18 @@ final class SpotCatalogTests: XCTestCase {
         XCTAssertEqual(file.read().arrangement.enabled, [])
     }
 
+    func testTurningOnACoreWidgetLoadsItInAScan() async throws {
+        try "[[widgets]]\nname = \"Overview\"\nlayout = \"single\"\nplaces = [\"cpu\"]\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
+        let spot = try spot
+        let items = try await spot.items(timeout: 1).items
+        let row = try XCTUnwrap(items.first { $0.title == "Overview" })
+
+        try await spot.perform(.item(row), timeout: 1)
+
+        let scan = try PluginFolder(url: folder, core: core, enabled: file.read().arrangement.enabled).scan()
+        XCTAssertEqual(scan.commands.map(\.name), ["Overview"])
+    }
+
     func testAnUnknownSpotIsAFault() async throws {
         let catalog = SpotCatalog(folder: folder, core: core, config: file)
 

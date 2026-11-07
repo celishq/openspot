@@ -17,7 +17,7 @@ public enum ShippedSpot: Equatable, Sendable {
                 url: folder,
                 kind: .list,
                 size: .small,
-                symbol: "square.grid.2x2",
+                symbol: "puzzlepiece.extension",
                 subtitle: "Turn spots on",
                 key: CommandKey(name: "p"),
                 read: .sheet,

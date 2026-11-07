@@ -72,6 +72,11 @@ public struct PluginFolder: Sendable {
         ScanResult(plugins: coreFiles().compactMap { try? Plugin(file: $0.file, id: $0.id) }, refused: []).commands
     }
 
+    /// The ID that turns a core command on: the name of its file, which a widget shares with the others in that file.
+    public static func coreID(of command: PluginCommand) -> String {
+        command.url.deletingPathExtension().lastPathComponent
+    }
+
     /// Whether the app runs for the first time here: no config file, and no spot in the folder.
     public func isFirstLaunch(config: ConfigFile) -> Bool {
         guard !FileManager.default.fileExists(atPath: config.url.path) else { return false }
