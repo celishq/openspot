@@ -15,6 +15,8 @@ public enum CommandLineCall: Equatable, Sendable {
     case translateLanguages
     case emoji(tone: EmojiCatalog.Tone)
     case symbols
+    case windowFrame
+    case windowMove(WindowMove)
     /// Runs as the helper process of a capability. A script never makes this call, so the usage does not list it.
     case helper(String)
     case help
@@ -34,6 +36,11 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot emoji [--tone name]                 Prints each emoji as a row, with its name in the language of the Mac.
                                                  A tone is none, light, medium-light, medium, medium-dark or dark.
     openspot symbols                             Prints each symbol of the Character Viewer as a row, with its name and section.
+    openspot window frame                        Prints the front window, then the usable area of its screen:
+                                                 x y width height x y width height, from the top left of the main screen.
+    openspot window move frame...                Moves the front window to a frame, x y width height. 50%, 1/2 or a number
+                                                 from 0 to 1 is a part of the area, and any other number is points. With
+                                                 more frames, it moves to the frame after the one it holds now.
 
     """
 
@@ -68,6 +75,13 @@ public enum CommandLineCall: Equatable, Sendable {
                 return
             }
             self = .emoji(tone: tone)
+        case ("window", "frame") where rest.count == 1: self = .windowFrame
+        case ("window", "move") where rest.count > 1:
+            guard let move = WindowMove(words: Array(rest.dropFirst())) else {
+                self = .unknown(arguments.joined(separator: " "))
+                return
+            }
+            self = .windowMove(move)
         case ("translate", _):
             guard let options = Self.options(rest) else {
                 self = .unknown(arguments.joined(separator: " "))

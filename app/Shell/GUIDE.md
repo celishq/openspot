@@ -445,6 +445,8 @@ A script finds `openspot` on its path. It gives what macOS has no command for, i
 | `openspot translate languages` | Prints each language, with its name. |
 | `openspot emoji [--tone name]` | Prints each emoji as a row, with its name in the language of the Mac. A tone is `none`, `light`, `medium-light`, `medium`, `medium-dark` or `dark`. |
 | `openspot symbols` | Prints each symbol of the Character Viewer as a row, with its Unicode name and the title of its section in the language of the Mac. |
+| `openspot window frame` | Prints the front window, then the usable area of its screen, as `x y width height x y width height` in points from the top left of the main screen. Needs Accessibility. |
+| `openspot window move frame...` | Moves the front window to a frame, `x y width height`. A percent, a fraction or a plain number from 0 to 1 is a part of the usable area of the window's screen, so `0 0 1 1` and `0% 0% 100% 100%` fill it. Any other number is points. With more frames, such as `"0 0 1/4 1" "0 0 1/3 1"`, it moves to the frame after the one the window holds, within 20 points, or to the first. A window that keeps its own size holds the edges of the screen that the frame touches. Needs Accessibility. |
 
 When macOS already has a command, use it: `pbcopy`, `open`, `say`, `caffeinate`, `mdfind`, `screencapture`,
 `shortcuts run`, `osascript`.
