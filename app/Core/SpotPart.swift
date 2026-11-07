@@ -54,6 +54,9 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let cell: String?
     public let align: Align?
     public let look: Look?
+    /// The small mark of a line, drawn between its title and its detail as a widget draws it: a bar from `value`, or
+    /// bars from `point` lines with a detail.
+    public let mark: MetricValue?
 
     /// Reads a block with a `part` or a `section` key.
     public init?(block: TextBlock) {
@@ -83,7 +86,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
             control = .metric(metric)
         } else if let image = block.value("image") {
             control = .image(image)
-        } else if !block.values("point").isEmpty {
+        } else if !block.values("point").isEmpty, block.value("detail") == nil {
             control = .chart(block.values("point").compactMap(Double.init))
         } else if !block.values("item").isEmpty {
             control = .list(block.values("item").map(Self.option), value: block.value("value"))
@@ -102,6 +105,20 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         } else {
             control = .none
         }
+        mark = control == .none ? Self.mark(block) : nil
+    }
+
+    private static func mark(_ block: TextBlock) -> MetricValue? {
+        let points = block.values("point").compactMap(Double.init).filter(\.isFinite)
+        let value = block.number("value")
+        guard value != nil || !points.isEmpty else { return nil }
+        return MetricValue(
+            title: block.value("detail") ?? "",
+            tone: block.value("tone").flatMap(MetricValue.Tone.init),
+            value: value,
+            points: points.isEmpty ? nil : points,
+            max: block.number("max")
+        )
     }
 
     private static func option(_ text: String) -> Option {

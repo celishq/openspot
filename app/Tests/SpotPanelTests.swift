@@ -206,6 +206,30 @@ final class SpotPanelTests: XCTestCase {
         XCTAssertNil(sheet.selectedPart)
     }
 
+    func testALineWithAValueCarriesALevelMarkInItsTone() throws {
+        let part = try XCTUnwrap(try panel("part=left\ntitle=AirPods left\ndetail=12%\nvalue=0.12\ntone=bad\n").parts.first)
+
+        XCTAssertEqual(part.control, SpotPart.Control.none)
+        XCTAssertEqual(part.mark?.kind, .gauge)
+        XCTAssertEqual(part.mark?.fill, 0.12)
+        XCTAssertEqual(part.mark?.tone, .bad)
+    }
+
+    func testALineWithPointsAndADetailCarriesATrendMark() throws {
+        let part = try XCTUnwrap(try panel("part=cpu\ntitle=All cores\ndetail=30%\nmax=100\npoint=20\npoint=40\n").parts.first)
+
+        XCTAssertEqual(part.control, SpotPart.Control.none)
+        XCTAssertEqual(part.mark?.kind, .trend)
+        XCTAssertEqual(part.mark?.scaledPoints, [0.2, 0.4])
+    }
+
+    func testPointsWithNoDetailStillDrawAChartTile() throws {
+        let part = try XCTUnwrap(try panel("part=history\npoint=2\npoint=4\n").parts.first)
+
+        XCTAssertEqual(part.control, .chart([2, 4]))
+        XCTAssertNil(part.mark)
+    }
+
     func testTheArrowsScrollASheetWithNothingToSelect() throws {
         let sheet = try panel("part=mac\ntitle=This Mac\ndetail=100%\n\npart=swap\ntitle=Swap\ndetail=0 MB\n")
 
