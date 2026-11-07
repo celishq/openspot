@@ -63,12 +63,12 @@ struct SpotTheme {
         confirm: NSColor(red: 0.78, green: 0.16, blue: 0.14, alpha: 1),
         onConfirm: .white,
         rimEnds: .white.withAlphaComponent(0.5),
-        fillStrength: 0.04,
-        selectedStrength: 0.08,
+        fillStrength: 0.08,
+        selectedStrength: 0.12,
         discStrength: 0,
-        chipStrength: 0.08,
-        controlStrength: 0.05,
-        trackStrength: 0.08
+        chipStrength: 0.1,
+        controlStrength: 0.09,
+        trackStrength: 0.12
     )
 
     static func palette(for appearance: NSAppearance) -> SpotTheme {
