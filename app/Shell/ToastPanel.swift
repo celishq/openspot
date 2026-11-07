@@ -14,7 +14,6 @@ final class ToastPanel: NSPanel {
     static let confirmSymbol = "checkmark.circle.fill"
 
     private let toast = Toast()
-    private lazy var measure = NSHostingController(rootView: ToastView(toast: toast))
     private var shows = 0
     private var fixKey: HotKey.Registration?
 
@@ -25,6 +24,7 @@ final class ToastPanel: NSPanel {
         toast.message = message
         toast.symbol = symbol
         hold(fix: fix, key: key)
+        let measure = NSHostingController(rootView: ToastView(toast: toast))
         let width = min(max(measure.view.fittingSize.width, Self.minWidth), Self.maxSize.width)
         let size = measure.sizeThatFits(in: NSSize(width: width, height: Self.maxSize.height))
         if let screen = NSScreen.main?.visibleFrame {
