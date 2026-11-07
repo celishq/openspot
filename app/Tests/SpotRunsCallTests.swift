@@ -12,7 +12,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(header: "read=sheet", """
         case "$1" in
           read) [ -f '\(path("slow"))' ] && sleep 30; touch '\(path("slow"))'; printf 'title=1\\n\\nrow=A\\nrun=a\\n' ;;
-          open) sleep 2; touch '\(path("done"))' ;;
+          open) \(untilRelease); touch '\(path("done"))' ;;
         esac
         """)
         let sheet = try sheet()
@@ -20,6 +20,8 @@ final class SpotRunsCallTests: SpotRunsCase {
         sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
         sheet.read()
         try await wait("the row") { sheet.list.shown.count == 1 }
+        sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
+        try await wait("the work") { self.log().contains("open a") }
 
         sheet.read(need: .change)
         try await wait("the time limit") { !failures.isEmpty }
@@ -28,7 +30,8 @@ final class SpotRunsCallTests: SpotRunsCase {
         XCTAssertEqual(sheet.reading.value?.title, "1")
         XCTAssertTrue(sheet.reading.isStale)
 
-        sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
+        XCTAssertFalse(sheet.calls.isEmpty)
+        openGate()
         try await wait("the end of the work") { self.exists("done") }
     }
 

@@ -33,7 +33,11 @@ class SamplePluginsCase: XCTestCase {
     func turnCaffeinateOnAndOff(_ caffeinate: PluginCommand) async throws {
         let toast = try await caffeinate.perform(.item(SpotItem(title: "1 minute", run: "60")), timeout: 5)
         XCTAssertEqual(toast, "Caffeinate is on for 1 minute")
-        let started = try await caffeinate.state(timeout: 5)
+        var started = try await caffeinate.state(timeout: 5)
+        for _ in 0..<100 where started.on != true {
+            try await Task.sleep(for: .milliseconds(50))
+            started = try await caffeinate.state(timeout: 5)
+        }
         let first = try await caffeinate.items(timeout: 5).items.first
         XCTAssertEqual(started.on, true)
         XCTAssertEqual(first?.run, "off")

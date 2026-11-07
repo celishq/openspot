@@ -3,7 +3,7 @@ import Foundation
 extension String {
     /// A loop of a test script that ends by itself after 30 seconds, so that a script that a test fails to stop does not run
     /// for ever.
-    static let longLoop = "seq 300 | while read i; do sleep 0.1; done"
+    static let longLoop = "i=0; while [ $i -lt 300 ]; do sleep 0.1; i=$((i + 1)); done"
 
     /// Writes this text as an executable script. macOS checks each new executable file on its first run, for 150 ms or more,
     /// which a short time limit in a test can miss. So this takes a file that already ran: a file in the pool of this test
@@ -33,15 +33,19 @@ extension String {
         }
     }
 
-    /// The folder of script files that this test process alone reuses. Its first use removes the pools of processes that ended.
+    /// The folder of script files that this test process alone uses. It holds a lock on the folder until it exits, and the
+    /// next process to take the folder reuses its files, which macOS has already checked.
     private static let pool: URL = {
         let temp = FileManager.default.temporaryDirectory
-        let prefix = "openspot-test-scripts-"
-        for name in (try? FileManager.default.contentsOfDirectory(atPath: temp.path)) ?? [] where name.hasPrefix(prefix) {
-            guard let pid = Int32(name.dropFirst(prefix.count)), kill(pid, 0) != 0 else { continue }
-            try? FileManager.default.removeItem(at: temp.appendingPathComponent(name))
+        var number = 0
+        while true {
+            let folder = temp.appendingPathComponent("openspot-test-scripts-\(number)", isDirectory: true)
+            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let lock = open(folder.appendingPathComponent(".lock.new").path, O_CREAT | O_RDWR, 0o644)
+            if lock >= 0, flock(lock, LOCK_EX | LOCK_NB) == 0 { return folder }
+            close(lock)
+            number += 1
         }
-        return temp.appendingPathComponent(prefix + String(ProcessInfo.processInfo.processIdentifier), isDirectory: true)
     }()
 
     /// The number of names that a file has, which is 0 when the file is gone.

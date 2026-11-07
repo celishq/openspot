@@ -146,7 +146,7 @@ final class ScriptProcessTests: XCTestCase {
 
     /// A child that ignores the terminate signal, with its output somewhere else, so that its end does not close the call.
     private func deafChild() -> String {
-        "sh -c \"trap '' TERM; \(writesPid("child").replacingOccurrences(of: "$$", with: "\\$\\$")); \(String.longLoop)\" >/dev/null 2>&1 &\n"
+        "sh -c \"trap '' TERM; \(writesPid("child").replacingOccurrences(of: "$$", with: "\\$\\$")); exec sleep 30\" >/dev/null 2>&1 &\n"
     }
 
     private func pid(_ name: String) async throws -> Int32 {

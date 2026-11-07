@@ -13,8 +13,8 @@ final class SheetStreamTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func script(_ body: String) throws -> URL {
-        let url = folder.appendingPathComponent("script.sh")
+    private func script(_ body: String, name: String = "script") throws -> URL {
+        let url = folder.appendingPathComponent("\(name).sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
         return url
     }
@@ -69,18 +69,23 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testOnlyTheFirstFrameHasATimeLimit() async throws {
-        let silent = try script("sleep 30")
+        let release = folder.appendingPathComponent("release").path
+        let gate = "n=0; while [ ! -f '\(release)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done"
+        let silent = try script("sleep 30", name: "silent")
+        let slow = try script("printf 'part=a\\n---\\n'\n\(gate)\nprintf 'part=b\\n---\\n'", name: "slow")
+        var frames = try ScriptProcess(url: slow, limit: 1.5).start().makeAsyncIterator()
+        let first = try await frames.next()
+
         do {
             for try await _ in try ScriptProcess(url: silent, limit: 1.5).start() {}
             XCTFail("It should time out.")
         } catch {
             XCTAssertEqual(error as? PluginError, .timedOut)
         }
+        FileManager.default.createFile(atPath: release, contents: Data())
+        let second = try await frames.next()
 
-        let slow = try script("printf 'part=a\\n---\\n'\nsleep 2\nprintf 'part=b\\n---\\n'")
-        var frames: [String] = []
-        for try await frame in try ScriptProcess(url: slow, limit: 1.5).start() { frames.append(frame) }
-        XCTAssertEqual(frames, ["part=a\n", "part=b\n"])
+        XCTAssertEqual([first, second], ["part=a\n", "part=b\n"])
     }
 
     func testALaterFrameChangesOnlyThePartsItNames() throws {

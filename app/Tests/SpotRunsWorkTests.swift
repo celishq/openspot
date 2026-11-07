@@ -410,7 +410,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testQuittingLeavesNoChildThatIgnoresTheTerminateSignal() async throws {
-        try script(body: "sh -c \"trap '' TERM; echo \\$\\$ > '\(path("pid"))'; \(String.longLoop)\" >/dev/null 2>&1 &\nsleep 30")
+        try script(body: "sh -c \"trap '' TERM; echo \\$\\$ > '\(path("pid"))'; exec sleep 30\" >/dev/null 2>&1 &\nsleep 30")
         let sheet = try sheet()
         sheet.pressCard()
         let pid = try await pid("pid")
@@ -423,7 +423,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testQuittingLeavesNoChildOfACallThatItsStopAlreadyEnded() async throws {
-        try script(body: "echo $$ > '\(path("script"))'\nsh -c \"trap '' TERM; echo \\$\\$ > '\(path("pid"))'; \(String.longLoop)\" >/dev/null 2>&1 &\nsleep 30")
+        try script(body: "echo $$ > '\(path("script"))'\nsh -c \"trap '' TERM; echo \\$\\$ > '\(path("pid"))'; exec sleep 30\" >/dev/null 2>&1 &\nsleep 30")
         let sheet = try sheet()
         sheet.pressCard()
         let child = try await pid("pid")
