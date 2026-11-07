@@ -116,7 +116,7 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     func testAStopGivesTheScriptTheTerminateSignalAndTimeToEnd() async throws {
-        let plugin = try writePlugin("term.sh", "#!/bin/sh\ntrap 'sleep 0.1; touch \"\(path("cleaned"))\"; exit 0' TERM\nprintf 'a=1\\n---\\n'\nwhile :; do sleep 0.05; done\n")
+        let plugin = try writePlugin("term.sh", "#!/bin/sh\ntrap 'sleep 0.1; touch \"\(path("cleaned"))\"; exit 0' TERM\nprintf 'a=1\\n---\\n'\n\(String.longLoop)\n")
         let process = ScriptProcess(url: plugin.url)
         var frames = try process.start().makeAsyncIterator()
         _ = try await frames.next()
@@ -127,7 +127,7 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     func testAScriptThatIgnoresTheTerminateSignalEndsAfterTwoSeconds() async throws {
-        let plugin = try writePlugin("deaf.sh", "#!/bin/sh\ntrap '' TERM\nprintf 'a=1\\n---\\n'\n\(String.deafLoop)\n")
+        let plugin = try writePlugin("deaf.sh", "#!/bin/sh\ntrap '' TERM\nprintf 'a=1\\n---\\n'\n\(String.longLoop)\n")
         let process = ScriptProcess(url: plugin.url)
         var frames = try process.start().makeAsyncIterator()
         _ = try await frames.next()
@@ -146,7 +146,7 @@ final class ScriptProcessTests: XCTestCase {
 
     /// A child that ignores the terminate signal, with its output somewhere else, so that its end does not close the call.
     private func deafChild() -> String {
-        "sh -c \"trap '' TERM; \(writesPid("child").replacingOccurrences(of: "$$", with: "\\$\\$")); \(String.deafLoop)\" >/dev/null 2>&1 &\n"
+        "sh -c \"trap '' TERM; \(writesPid("child").replacingOccurrences(of: "$$", with: "\\$\\$")); \(String.longLoop)\" >/dev/null 2>&1 &\n"
     }
 
     private func pid(_ name: String) async throws -> Int32 {
@@ -168,7 +168,7 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     func testAScriptAndAChildThatIgnoreTheTerminateSignalAreGoneOnePauseAfterAStop() async throws {
-        let plugin = try writePlugin("deaf.sh", "#!/bin/sh\ntrap '' TERM\n\(writesPid("script"))\n\(deafChild())printf 'a=1\\n---\\n'\n\(String.deafLoop)\n")
+        let plugin = try writePlugin("deaf.sh", "#!/bin/sh\ntrap '' TERM\n\(writesPid("script"))\n\(deafChild())printf 'a=1\\n---\\n'\n\(String.longLoop)\n")
         let process = ScriptProcess(url: plugin.url, stopPause: Self.stopPause)
         var frames = try process.start().makeAsyncIterator()
         _ = try await frames.next()
@@ -211,7 +211,7 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     func testAnEndClosesTheInputThenStopsThenKillsTheGroupOfAStayingScript() async throws {
-        let plugin = try writePlugin("stay.sh", "#!/bin/sh\ntrap '' TERM\n\(writesPid("script"))\n\(deafChild())printf 'a=1\\n---\\n'\n\(String.deafLoop)\n")
+        let plugin = try writePlugin("stay.sh", "#!/bin/sh\ntrap '' TERM\n\(writesPid("script"))\n\(deafChild())printf 'a=1\\n---\\n'\n\(String.longLoop)\n")
         let live = ScriptProcess(url: plugin.url, mode: .stays, stopPause: Self.stopPause)
         var frames = try live.start().makeAsyncIterator()
         _ = try await frames.next()

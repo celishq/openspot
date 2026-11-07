@@ -251,7 +251,7 @@ final class SpotDropTests: XCTestCase {
         let sheet = try sheet(header: "read=sheet\ndrop=mov", """
         case "$1" in
           read) printf 'action=work\\ntitle=Work\\nscope=command\\n\\nrow=A\\nrun=a\\n' ;;
-          work) while [ ! -f '\(path("release"))' ]; do sleep 0.02; done; touch '\(path("worked"))' ;;
+          work) n=0; while [ ! -f '\(path("release"))' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done; touch '\(path("worked"))' ;;
         esac
         """)
         sheet.open {}

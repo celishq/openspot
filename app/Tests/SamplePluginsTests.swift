@@ -65,10 +65,12 @@ final class SamplePluginsTests: XCTestCase {
     func testTheCPUTrendGrowsWithEachRead() async throws {
         let cpu = try XCTUnwrap(try scan.metrics.first { $0.id == "cpu" })
 
-        let first = try await cpu.read(timeout: 10).points?.count ?? 0
-        let second = try await cpu.read(timeout: 10).points?.count ?? 0
+        try await withPrivateHome { _ in
+            let first = try await cpu.read(timeout: 10).points?.count ?? 0
+            let second = try await cpu.read(timeout: 10).points?.count ?? 0
 
-        XCTAssertGreaterThanOrEqual(second, min(first + 1, 30))
+            XCTAssertEqual(second, first + 1)
+        }
     }
 
     func testTheCPUTrendSurvivesABadHistoryAndAShortPath() async throws {
@@ -135,29 +137,28 @@ final class SamplePluginsTests: XCTestCase {
     func testCaffeinateReportsIfItIsOnAndOffersItsDurations() async throws {
         let caffeinate = try XCTUnwrap(try scan.commands.first { $0.name == "Caffeinate" })
 
-        let state = try await caffeinate.state(timeout: 5)
-        let lines = try await caffeinate.items(timeout: 5)
+        try await withPrivateHome { _ in
+            let state = try await caffeinate.state(timeout: 5)
+            let lines = try await caffeinate.items(timeout: 5)
 
-        XCTAssertEqual(state.title, "Caffeinate")
-        XCTAssertNotNil(state.on)
-        XCTAssertEqual(lines.items.map(\.run).filter { $0 != "off" }, ["1800", "3600", "7200", "0"])
-        XCTAssertEqual(lines.errors, [])
-        XCTAssertEqual(lines.pick, .close)
-        XCTAssertEqual(lines.primary, "Select")
-        XCTAssertFalse(lines.keepsRecent)
+            XCTAssertEqual(state.title, "Caffeinate")
+            XCTAssertEqual(state.on, false)
+            XCTAssertEqual(lines.items.map(\.run), ["1800", "3600", "7200", "0"])
+            XCTAssertEqual(lines.errors, [])
+            XCTAssertEqual(lines.pick, .close)
+            XCTAssertEqual(lines.primary, "Select")
+            XCTAssertFalse(lines.keepsRecent)
+        }
     }
 
     func testCaffeinateOffersTurnOffFirstAndStopsOnIt() async throws {
         let caffeinate = try XCTUnwrap(try scan.commands.first { $0.name == "Caffeinate" })
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-caffeinate-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let before = ProcessInfo.processInfo.environment["TMPDIR"]
-        setenv("TMPDIR", folder.path + "/", 1)
-        defer {
-            if let before { setenv("TMPDIR", before, 1) } else { unsetenv("TMPDIR") }
-            try? FileManager.default.removeItem(at: folder)
+        try await withPrivateHome { _ in
+            try await self.turnCaffeinateOnAndOff(caffeinate)
         }
+    }
 
+    private func turnCaffeinateOnAndOff(_ caffeinate: PluginCommand) async throws {
         let toast = try await caffeinate.perform(.item(SpotItem(title: "1 minute", run: "60")), timeout: 5)
         XCTAssertEqual(toast, "Caffeinate is on for 1 minute")
         let started = try await caffeinate.state(timeout: 5)
@@ -262,7 +263,7 @@ final class SamplePluginsTests: XCTestCase {
         XCTAssertEqual(lines.items, [])
     }
 
-    /// Runs with an empty home and with fake clipboard and open tools, so a test touches nothing of the person's.
+    /// Runs with an empty home and temp folder and with fake clipboard and open tools, so a test touches nothing of the person's.
     private func withPrivateHome(_ body: (URL) async throws -> Void) async throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-home-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
@@ -279,13 +280,14 @@ final class SamplePluginsTests: XCTestCase {
             let tool = tools.appendingPathComponent(name)
             try "#!/bin/sh\n\(script)\n".writeScript(to: tool)
         }
-        let home = ProcessInfo.processInfo.environment["HOME"]
-        let path = ProcessInfo.processInfo.environment["PATH"]
+        let before = ProcessInfo.processInfo.environment
         setenv("HOME", folder.path, 1)
+        setenv("TMPDIR", folder.path + "/", 1)
         setenv("PATH", "\(tools.path):/usr/bin:/bin", 1)
         defer {
-            if let home { setenv("HOME", home, 1) }
-            if let path { setenv("PATH", path, 1) }
+            for name in ["HOME", "TMPDIR", "PATH"] {
+                if let value = before[name] { setenv(name, value, 1) } else { unsetenv(name) }
+            }
             try? FileManager.default.removeItem(at: folder)
         }
         try await body(folder)

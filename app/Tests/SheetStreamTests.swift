@@ -162,7 +162,7 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAScriptThatIgnoresTheEndOfItsInputIsStopped() async throws {
-        let url = try script("trap '' HUP\nwhile :; do sleep 0.1; done")
+        let url = try script("trap '' HUP\n\(String.longLoop)")
         let live = ScriptProcess(url: url, mode: .stays, limit: 5, stopPause: 0.2)
         _ = try live.start()
 

@@ -390,9 +390,9 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(header: "read=sheet", """
         trap 'touch "\(path("stopped"))"; exit 0' TERM
         printf 'part=a\\ntitle=A\\n---\\n'
-        while :; do sleep 0.05; done
+        \(String.longLoop)
         """)
-        try script("deaf", "echo $$ > '\(path("deaf-pid"))'\ntrap '' TERM\n\(String.deafLoop)")
+        try script("deaf", "echo $$ > '\(path("deaf-pid"))'\ntrap '' TERM\n\(String.longLoop)")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the part") { sheet.panel != nil }
@@ -411,7 +411,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testQuittingLeavesNoChildThatIgnoresTheTerminateSignal() async throws {
-        try script(body: "sh -c \"trap '' TERM; echo \\$\\$ > '\(path("pid"))'; \(String.deafLoop)\" >/dev/null 2>&1 &\nsleep 30")
+        try script(body: "sh -c \"trap '' TERM; echo \\$\\$ > '\(path("pid"))'; \(String.longLoop)\" >/dev/null 2>&1 &\nsleep 30")
         let sheet = try sheet()
         sheet.pressCard()
         try await wait("the child") { self.exists("pid") }
@@ -426,7 +426,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testQuittingLeavesNoChildOfACallThatItsStopAlreadyEnded() async throws {
-        try script(body: "echo $$ > '\(path("script"))'\nsh -c \"trap '' TERM; echo \\$\\$ > '\(path("pid"))'; \(String.deafLoop)\" >/dev/null 2>&1 &\nsleep 30")
+        try script(body: "echo $$ > '\(path("script"))'\nsh -c \"trap '' TERM; echo \\$\\$ > '\(path("pid"))'; \(String.longLoop)\" >/dev/null 2>&1 &\nsleep 30")
         let sheet = try sheet()
         sheet.pressCard()
         try await wait("the child") { self.exists("pid") }
