@@ -436,7 +436,6 @@ A change to the meaning of a word that exists is a breaking change. Do not make 
 | Module | Differs from this document | Rule |
 |---|---|---|
 | `scripts/release.sh` | The DMG has no window layout. | Decisions |
-| `Shell/SpotsView.swift` | Off-grid cards dim in search. | Decisions |
 | `project.yml` | The build does not copy the core spots. | A11 |
 | `Core/PluginFolder.swift` | The scan reads one folder. | A11, A12 |
 | `Core/Config.swift` | A `[[spots]]` table has no `enabled` key. | A7 |

@@ -432,7 +432,7 @@ struct SpotsView: View {
                 .highPriorityGesture(moveGesture(of: entry), including: model.isEditing ? .all : .subviews)
                 .contextMenu { spotMenu(of: entry) }
                 .animation(SpotMotion.cardFade(isSheetOpen: sheetOpen, rowsAway: rowsAway(of: placement))) { $0.opacity(sheetOpen ? 0 : 1) }
-                .opacity(entry.id == sheetID ? 0 : entry.isOnGrid ? 1 : SpotTokens.offGridLight)
+                .opacity(entry.id == sheetID ? 0 : entry.isOnGrid || !model.isEditing ? 1 : SpotTokens.offGridLight)
             }
         }
         .frame(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows), alignment: .topLeading)
