@@ -53,7 +53,7 @@ struct SpotGridView: View {
                 .zIndex(dragged?.id == entry.id ? 1 : 0)
                 .highPriorityGesture(moveGesture(of: entry), including: model.isEditing ? .all : .subviews)
                 .contextMenu { spotMenu(of: entry) }
-                .animation(SpotMotion.cardFade(isSheetOpen: isSheetOpen, rowsAway: card.rowsAway)) { $0.opacity(isSheetOpen ? 0 : 1) }
+                .animation(SpotMotion.cardFade(isSheetOpen: isSheetOpen, rowsAway: card.rowsAway)) { $0.opacity(isSheetOpen ? SpotMotion.coveredCardOpacity : 1) }
                 .opacity(entry.id == openID ? 0 : 1)
             }
         }

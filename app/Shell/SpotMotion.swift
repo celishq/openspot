@@ -23,6 +23,8 @@ enum SpotMotion {
     static let edit = Animation.spring(duration: 0.3, bounce: 0)
     static let hintFade = Animation.easeOut(duration: 0.15)
     static let cardRowStagger = 0.025
+    /// How strong a card stays under an open sheet: too faint to see, but drawn, so its return redraws nothing.
+    static let coveredCardOpacity = 0.001
 
     static func sheet(isOpen: Bool) -> Animation {
         .spring(duration: isOpen ? openDuration : closeDuration, bounce: 0)

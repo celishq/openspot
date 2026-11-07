@@ -40,7 +40,7 @@ struct SpotGridGlass: View {
             .frame(width: SpotTokens.width(columns: card.size.columns), height: SpotTokens.height(rows: card.size.rows))
             .scaleEffect(card.scale * (isShown ? 1 : SpotMotion.hiddenScale))
             .offset(card.offset)
-            .animation(SpotMotion.cardFade(isSheetOpen: isSheetOpen, rowsAway: card.rowsAway)) { $0.opacity(isSheetOpen ? 0 : 1) }
+            .animation(SpotMotion.cardFade(isSheetOpen: isSheetOpen, rowsAway: card.rowsAway)) { $0.opacity(isSheetOpen ? SpotMotion.coveredCardOpacity : 1) }
             .opacity(card.isCovered ? 0 : 1)
     }
 }
