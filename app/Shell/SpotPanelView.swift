@@ -15,8 +15,8 @@ struct SpotPanelView: View {
     var onRun: (SpotItem) -> Void = { _ in }
     @FocusState private var focus: String?
     @State private var position = ScrollPosition(edge: .top)
-    @State private var scrolled = ScrollRoom(offset: 0, limit: 0)
-    @State private var aim: CGFloat?
+    @State private var limit: CGFloat = 0
+    @State private var aim: CGFloat = 0
     @Environment(\.spotIsShown) private var isShown
 
     private static let swatchSize: CGFloat = 22
@@ -38,16 +38,14 @@ struct SpotPanelView: View {
             if sheet.overflows {
                 ScrollView(showsIndicators: false) { canvas(sheet) }
                     .scrollPosition($position)
-                    .onScrollGeometryChange(for: ScrollRoom.self, of: { geometry in
-                        ScrollRoom(offset: geometry.contentOffset.y, limit: max(geometry.contentSize.height - geometry.containerSize.height, 0))
-                    }, action: { _, room in
-                        scrolled = room
-                        if let aim, abs(room.offset - aim) < 1 { self.aim = nil }
-                    })
+                    .onScrollGeometryChange(for: CGFloat.self, of: { max($0.contentSize.height - $0.containerSize.height, 0) }, action: { _, room in limit = room })
+                    .onScrollPhaseChange { _, phase, context in
+                        if phase == .idle { aim = context.geometry.contentOffset.y }
+                    }
                     .onChange(of: panel.nudge) { _, nudge in
                         guard let nudge else { return }
                         let row = SheetPlacement.rowHeight + SheetPlacement.gap
-                        let y = min(max((aim ?? scrolled.offset) + CGFloat(nudge.step) * row, 0), scrolled.limit)
+                        let y = min(max(aim + CGFloat(nudge.step) * row, 0), limit)
                         aim = y
                         withAnimation(SpotMotion.follow) { position.scrollTo(y: y) }
                     }
@@ -59,12 +57,6 @@ struct SpotPanelView: View {
         .onChange(of: isShown) { _, isShown in
             if isShown { DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeInDuration, execute: focusFirstField) }
         }
-    }
-
-    /// How far the sheet has scrolled, and how far it can.
-    private struct ScrollRoom: Equatable {
-        let offset: CGFloat
-        let limit: CGFloat
     }
 
     private func canvas(_ sheet: SheetPlacement) -> some View {
