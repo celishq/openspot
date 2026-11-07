@@ -16,8 +16,8 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Translate", "Apps", "Caffeinate", "Color picker", "Emoji", "Files", "Links", "Overview", "Screenshot", "Pull requests", "Snippets", "Spots", "Settings", "Build"])
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["t", "a", "c", "o", "e", "f", "l", nil, "v", "g", "n", "p", nil, nil])
+        XCTAssertEqual(scan.commands.map(\.name), ["Translate", "Apps", "Caffeinate", "Color picker", "Confetti", "Emoji", "Files", "Links", "Overview", "Screenshot", "Pull requests", "Snippets", "Windows", "Spots", "Settings", "Build"])
+        XCTAssertEqual(scan.commands.map(\.key?.name), ["t", "a", "c", "o", "k", "e", "f", "l", nil, "v", "g", "n", nil, "p", nil, nil])
     }
 
     func testACopyAsksForTheCopiedToast() throws {
@@ -38,6 +38,14 @@ final class SamplePluginsTests: XCTestCase {
             let text = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
             XCTAssertEqual(text, "toast=Copied\n", script)
         }
+    }
+
+    func testConfettiStaysOffTheGridAndItsSourceTypeChecks() async throws {
+        let confetti = try XCTUnwrap(try scan.commands.first { $0.id == "confetti" })
+        XCTAssertFalse(confetti.isOnGrid)
+        XCTAssertEqual(confetti.symbol, "party.popper")
+
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-typecheck", confetti.url.path])
     }
 
     func testNoMetricShowsTwiceInTheGrid() throws {
@@ -101,6 +109,51 @@ final class SamplePluginsTests: XCTestCase {
 
             XCTAssertEqual(faults, [])
         }
+    }
+
+    /// The frame that Windows gives a slot, on an area at 0 25 with a size of 1200 by 900.
+    private func windowFrame(_ slot: String, from window: String) async throws -> String {
+        let command = try XCTUnwrap(try scan.scripts.first { $0.name == "Windows" })
+        let words = ["frame", slot, "0", "25", "1200", "900"] + window.split(separator: " ").map(String.init)
+        let answer = try await SpotRuns().answer(of: command, SpotAction(arguments: words))
+        return answer.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    func testWindowsListsItsCommandsAndHoldsNoKey() throws {
+        let command = try XCTUnwrap(try scan.scripts.first { $0.name == "Windows" })
+
+        XCTAssertEqual(command.offers.map(\.id), ["full", "center", "left", "right"])
+        XCTAssertNil(command.key)
+    }
+
+    func testWindowsFillsTheAreaAndCentresAt65Percent() async throws {
+        let window = "100 100 400 300"
+
+        let full = try await windowFrame("full", from: window)
+        let center = try await windowFrame("center", from: window)
+
+        XCTAssertEqual(full, "0 25 1200 900")
+        XCTAssertEqual(center, "210 183 780 585")
+    }
+
+    func testWindowsRotatesASideThroughItsSizes() async throws {
+        let first = try await windowFrame("left", from: "100 100 400 300")
+        let second = try await windowFrame("left", from: first)
+        let third = try await windowFrame("left", from: second)
+        let fourth = try await windowFrame("left", from: third)
+        XCTAssertEqual([first, second, third, fourth], ["0 25 300 900", "0 25 400 900", "0 25 600 900", "0 25 300 900"])
+
+        let right = try await windowFrame("right", from: "100 100 400 300")
+        let nextRight = try await windowFrame("right", from: right)
+        XCTAssertEqual([right, nextRight], ["900 25 300 900", "800 25 400 900"])
+    }
+
+    func testWindowsStillRotatesAWindowThatKeepsItsOwnSize() async throws {
+        let wide = try await windowFrame("left", from: "0 25 350 900")
+        let rounded = try await windowFrame("left", from: "0 25 392 890")
+
+        XCTAssertEqual(wide, "0 25 400 900")
+        XCTAssertEqual(rounded, "0 25 600 900")
     }
 
     func testEveryCommandCanBeRun() throws {

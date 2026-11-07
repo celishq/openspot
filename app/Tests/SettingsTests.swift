@@ -41,6 +41,30 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(items.first?.shortcut, "option+space")
     }
 
+    func testTheSheetListsEachCommandOfAScriptAndGivesItAKey() async throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try "#!/bin/sh\n# name=Move\n# symbol=macwindow\n# command=left:Left side\n# command=right:Right side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        let runs = SpotRuns()
+
+        let before = try await spot.items(timeout: 1).items
+        XCTAssertEqual(before.map(\.title), ["Open Openspot", "Left side", "Right side"])
+        XCTAssertEqual(before.map(\.subtitle), [nil, "Move", "Move"])
+        XCTAssertEqual(before.dropFirst().map(\.shortcut), ["Record", "Record"])
+
+        _ = try await runs.answer(of: spot, .set("key:move:left", to: "ctrl+option+left"), input: "", limit: 1)
+        _ = try await runs.answer(of: spot, .set("key:move:left", to: "ctrl+option+up"), input: "", limit: 1)
+        _ = try await runs.answer(of: spot, .set("key:move:right", to: "ctrl+option+right"), input: "", limit: 1)
+
+        XCTAssertEqual(file.read().keys.map(\.command), ["left", "right"])
+        XCTAssertEqual(file.read().keys.map(\.shortcut.text), ["ctrl+option+up", "ctrl+option+right"])
+        let after = try await spot.items(timeout: 1).items
+        XCTAssertEqual(after.map(\.shortcut).dropFirst(), ["ctrl+option+up", "ctrl+option+right"])
+
+        _ = try await runs.answer(of: spot, SpotAction(arguments: ["clear", "key:move:left"]), input: "", limit: 1)
+
+        XCTAssertEqual(file.read().keys.map(\.command), ["right"])
+    }
+
     func testTheSheetListsTheStandardKeyWithNoFile() async throws {
         let items = try await spot.items(timeout: 1).items
 

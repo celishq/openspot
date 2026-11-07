@@ -23,7 +23,7 @@ final class LoginItemTests: XCTestCase {
     }
 
     private var settings: Settings {
-        Settings(file: ConfigFile(url: folder.appendingPathComponent("config.toml")), login: item)
+        Settings(file: ConfigFile(url: folder.appendingPathComponent("config.toml")), folder: folder, login: item)
     }
 
     func testSettingsListsTheRowWithItsState() throws {
@@ -49,7 +49,7 @@ final class LoginItemTests: XCTestCase {
     }
 
     func testWithNoLoginItemSettingsShowsNoRow() throws {
-        let plain = Settings(file: ConfigFile(url: folder.appendingPathComponent("config.toml")))
+        let plain = Settings(file: ConfigFile(url: folder.appendingPathComponent("config.toml")), folder: folder)
 
         XCTAssertEqual(PluginOutput(text: try plain.answer(["read"])).items.map(\.run), ["panel_key"])
     }

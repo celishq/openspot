@@ -94,8 +94,10 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: openspot.celis.ai
         DEVELOPMENT_TEAM: ""
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       configs:
         Debug:
+          ASSETCATALOG_COMPILER_APPICON_NAME: AppIconNightly
           ENABLE_HARDENED_RUNTIME: NO
           OPENSPOT_DEV_STATE: $(SRCROOT)/../.temp/openspot
   OpenspotStandIn:

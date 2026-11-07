@@ -5,7 +5,7 @@ This guide is for people and for AI agents. It tells you all that you need.
 A plugin is one executable file in the plugins folder, in any language. Openspot reads the folder each time the panel
 opens, so a new plugin needs no restart.
 
-The rule: a script prints data, and Openspot draws it. A plugin never draws.
+The rule: a script prints data, and Openspot draws it. A script can also open its own Mac window, which Openspot does not draw.
 
 ## The smallest plugin
 
@@ -23,6 +23,21 @@ executable can hold shared code.
 
 The core spots come with the app, and the person turns them on or off in the Spots list. A file in the plugins folder with the
 same name as a core spot takes its place, so to change a core spot, copy it there and edit the copy.
+
+## A Swift plugin
+
+A Swift file with `#!/usr/bin/env swift` on its first line is a script, with its header in `//` lines. `plugins/confetti.swift`
+is an example that opens its own window on each screen.
+
+```swift
+#!/usr/bin/env swift
+// name=Hello
+// symbol=hand.wave
+print("toast=Hello")
+```
+
+To run it, a Mac needs the Command Line Tools, from `xcode-select --install`. No Xcode app and no developer account are needed.
+A person who gets it as a `.spot` file needs no tools. See "Share a spot".
 
 ## The header
 
@@ -52,6 +67,7 @@ open -a Calendar
 | `tray` | `true` to show a metric in the menu bar. Needs a number in its `read`, or `stay=true`. |
 | `stay` | `true` to keep the script running. See "Sheets of parts". |
 | `drop` | A list of file extensions, `folder` or `*`. Its card takes files that a person drops. See "Drops". |
+| `command` | An ID and a title, such as `command=left:Left side`. One line for each command. See "Commands with keys". |
 | `data` | The name of a data folder to share with other spots. See "Rules for scripts". |
 
 `read` is a list of moments, split by commas, such as `read=panel,60`. At each moment Openspot calls `<script> read`:
@@ -82,6 +98,7 @@ a call that prints no state, Openspot reads the script again.
 | `<script> on`, `off` | A toggle is pressed | Turns it on or off. |
 | `<script> level <number>` | A slider moves | Sets the level. |
 | `<script> drop <path> [path]...` | Files are dropped on its card, or chosen for it | Does its work on each file. |
+| `<script> <id>` | A key that a person gave a `command` is pressed, in any app | Does its work. |
 
 `read` is the only reserved word. A part or an action cannot be called `read`, and `openspot check` reports it.
 
@@ -229,6 +246,33 @@ esac
 - A drop on a card with a running call waits, and runs when that call ends. It does not stop the call. A `read` does not hold a drop.
 - A click on a card with `drop` and no sheet opens a file chooser, and the choice runs the same call. A toggle and a slider keep their own click, and a card with a sheet opens its sheet.
 - A `drop` call runs as any other name does. It has no time limit, and it goes on with the panel closed. A second press of its card stops it.
+
+## Commands with keys
+
+A script lists what it can do, and the person chooses the keys. A script never holds a key.
+
+```sh
+#!/bin/sh
+# name=Music
+# command=pause:Play or pause
+case "$1" in
+  pause) osascript -e 'tell application "Music" to playpause' ;;
+esac
+```
+
+Settings shows one row for each command, and the person records a key there. A press in any app runs `<script> <id>` with no panel, and the script can print `toast=Done`. The file `config.toml` holds each key, and a person can also write it by hand:
+
+```text
+[[keys]]
+spot = "music"
+command = "pause"
+key = "ctrl+option+p"
+```
+
+- A key holds cmd, ctrl or option, with a letter, a digit, an arrow, space, return or tab.
+- Presses run one at a time and in order. A press never stops a call, so keep the call short.
+- A key that macOS refuses shows a toast. A hand edit takes effect when the panel next opens.
+- A key works with the panel open too, so the front app can be Openspot.
 
 ## Actions and forms
 
@@ -526,6 +570,7 @@ A `.spot` file is JSON. It holds a format number and the files:
 - A file that is not text uses `data`, in base64, in place of `text`.
 - Hidden files and `$OPENSPOT_DATA` stay behind.
 - A compiled program travels, but no one can read it first. Install one only if you trust the sender.
+- "Copy to share" compiles a Swift script for both kinds of Mac, and adds `<name>.program` beside it. The sender needs the Command Line Tools, and the receiver needs nothing. The source gives the header, the program runs in its place, and a program file is never a spot of its own. To run an edited source, delete the program.
 - A file with the same path is replaced, and the old file goes to the Trash.
 
 ## Delete a spot

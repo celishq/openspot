@@ -35,7 +35,7 @@ public enum ShippedSpot: Equatable, Sendable {
                 subtitle: "Choose your key",
                 read: .sheet,
                 order: 2,
-                shipped: .settings(Settings(file: config, login: login))
+                shipped: .settings(Settings(file: config, folder: folder, core: core, login: login))
             ),
             PluginCommand(
                 id: buildID,

@@ -104,6 +104,27 @@ public struct SharedSpot: Equatable, Sendable {
         try self.init(files: files)
     }
 
+    /// Whether a Swift script of this spot has no program beside it.
+    public var needsCompile: Bool {
+        !uncompiled.isEmpty
+    }
+
+    /// This spot with the program of each Swift script that has none, so that a Mac with no Swift tools can run it.
+    public func compiled(by program: SwiftProgram = SwiftProgram()) async throws -> SharedSpot {
+        var all = files
+        for (file, path) in uncompiled {
+            all.append(File(path: path, isExecutable: true, contents: try await program.build(source: file.contents)))
+        }
+        return try SharedSpot(files: all)
+    }
+
+    private var uncompiled: [(file: File, path: String)] {
+        files.compactMap { file in
+            guard file.isExecutable, let path = SwiftProgram.path(beside: file.path), !files.contains(where: { $0.path == path }) else { return nil }
+            return (file, path)
+        }
+    }
+
     /// The whole text of the `.spot` file.
     public var data: Data {
         let entries = files.map { file -> Entry in
@@ -209,6 +230,7 @@ public struct SharedSpot: Equatable, Sendable {
             let root = folder.map(String.init) ?? first.url.lastPathComponent
             guard !roots.contains(where: { $0.path == root }) else { continue }
             roots.append((root, folder == nil ? first.url : first.url.deletingLastPathComponent()))
+            if folder == nil, let program = SwiftProgram.file(beside: first.url) { roots.append((program.lastPathComponent, program)) }
             let neighbours = folder == nil ? [plugin] : scan.plugins.filter { $0.id.hasPrefix("\(root)/") }
             waiting += neighbours.flatMap(\.commands).flatMap { $0.places + ($0.opens.map { [$0] } ?? []) }
         }

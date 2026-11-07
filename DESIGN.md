@@ -17,7 +17,7 @@ The examples show the target contract. They are sketches, and the app does not r
 In order. An earlier goal wins when two goals conflict.
 
 1. **A small plugin costs almost nothing.** One executable file. No build, no manifest, no account, no SDK.
-2. **A plugin never draws.** A plugin prints data, and Openspot draws it. So each plugin looks right.
+2. **A plugin never draws in Openspot.** Openspot draws all that a script prints. So each plugin looks right. A script can also open its own Mac window, which is its own (goal 4).
 3. **Nothing runs by surprise.** Openspot runs a script only when a person acts or when the header of the script says so.
 4. **A plugin has real power.** It can use any Mac API, hold long-lived state and stream a long process.
 5. **A model can write a plugin.** The contract is small enough that a model can write a good plugin from this text alone.
@@ -77,7 +77,7 @@ esac
 | A3 | A stopped run changes nothing. Only a call that ended by itself can report that there is nothing to show. |
 | A4 | Search text stays until the person presses Esc. |
 | A5 | Spots, Build, Settings, Updates and Quit ship with the app. Quit has `grid=false`, and search finds it. Each answers the same calls, in Swift. Spots lists the spots that a person can turn on. Build holds the tools for authors, and has `grid=false`. Updates has `grid=false`, and prints `grid=true` when a downloaded update waits to install. It takes the first place of order 0, so its card shows with no scrolling. |
-| A6 | One global key opens the panel from any app, and the person chooses it. No other key is global. |
+| A6 | One global key opens the panel from any app, and the person chooses it. The person can also give a key to a command that a script lists in its header. A script never holds a key. |
 | A7 | The person arranges the grid: each `[[spots]]` table of `config.toml` names a spot by `id`, and can set `size` and `grid`. It overrides the plugin. A `size` is a preference, and the grid can still change it to fill a row. Listed spots take the order of the file. The Edit Spots mode writes this file. `enabled` turns a core spot on (A11). |
 | A8 | The app opens the panel unseen once as it starts, which runs each script with `panel` in its `read` and each script a widget places, and draws the panel. It waits for at most 2 seconds, then closes it and shows a toast that names the key: "Press ⌃Space to open Openspot". A script with only `sheet` in its `read` does not run. A press of the key in that time opens the panel at once. |
 | A9 | A sheet that moves out of its card and has no answer yet holds that motion for at most 150 ms for the first answer, so that it grows once, to its real size. A sheet with an answer moves at once. A sheet that still waits after that shows no search field, and its first answer sets its size on the same motion. |
@@ -133,6 +133,7 @@ Comment lines right under the first line, one `key=value` on each line. They can
 | `tray` | `true` | Shows it in the menu bar. Needs a number in its `read`, or `stay=true`. |
 | `stay` | `true` | The script stays running. Section 8. |
 | `drop` | A list of file extensions, `folder` or `*` | Its card takes files that a person drops. Section 5. |
+| `command` | An ID and a title, such as `left:Left side`. One line for each command. | A command that a person can give a key in Settings. A press in any app runs `<script> <id>`, with no panel. |
 
 A file with no header key has one call: `<script>`, on a click.
 
@@ -157,6 +158,7 @@ A file with no header key has one call: `<script>`, on a click.
 | A change of a part | `<part> <value>` | Values of the sheet |
 | A press of a part | `<part>` | Values of the sheet |
 | A drop of files on a card | `drop <path> [path]...` | None |
+| A press of a key that a person gave a command | `<id>` | None |
 
 | ID | Rule |
 |---|---|
@@ -166,6 +168,7 @@ A file with no header key has one call: `<script>`, on a click.
 | C4 | Openspot waits for a pause before it sends a change: 300 ms for text, also for `read <text>`, and 100 ms for a slider. |
 | C5 | Text that the person types stays as typed until they press something. |
 | C6 | A value over 64 KB is left out of the arguments, because the system limits them to about 1 MB. Stdin still holds it: a value of the sheet as it is, and any other value under the key `value`. |
+| C7 | Presses of assigned keys of one script run one at a time and in order. A press never stops a call, so fast presses all count. |
 
 ### Moments
 
@@ -285,7 +288,7 @@ A sheet is a drawing and parts. A person or a model says what goes where, and th
 | D3 | Each row has one height and each gap has one size, and the app owns both. A taller area takes more lines. |
 | D4 | Rows that hold text, a picture, a chart, a list or a repeated area share the free height. Other rows keep their height. |
 | D5 | `repeat=<letter> <per line>` flows the rows of a script into one area of the drawing, and that area scrolls. Rows keep one list path for search, keys and selection. |
-| D6 | A complex view is a Swift block in the app, which a script names and fills with data. A plugin still never draws. |
+| D6 | A complex view is a Swift block in the app, which a script names and fills with data. A plugin still never draws in Openspot. |
 
 ## 7. How long a call runs
 
@@ -414,8 +417,10 @@ The command is on the path of each script. It also gives the tools for authors.
 | P4 | Before a person installs a shared spot, Openspot shows all the text it can, says what runs by itself and names each file it cannot show. Only a modified key installs it. |
 | P5 | Each usage text for a protected Mac feature is in the app. So a protected feature is a capability. |
 | P6 | A compiled program travels in a `.spot` file, and the review says first that no one can read it. A plugin can be any executable (F1), so sharing takes each of them. |
+| P6a | "Copy to share" compiles a Swift script into a universal `<name>.program` beside its source, so that only the sender needs the Swift tools. A scan lists no `.program` file, the source gives the header, and the program runs in place of the source. The review says that the two may not match. |
 | P7 | A `.spot` file has no signature and names no sender. Openspot warns the sender about secrets, and does not look for them. |
-| P8 | A core spot needs no review before it turns on, because it is signed and notarized with the app. P4 stays for each `.spot` file. |
+| P8 | A spot cannot take a key by itself. Only a command that its header lists can have a key, and only the person assigns it. |
+| P9 | A core spot needs no review before it turns on, because it is signed and notarized with the app. P4 stays for each `.spot` file. |
 
 ## 12. How to extend
 
@@ -439,7 +444,7 @@ The code follows this document.
 
 | Decision | Why | Rejected |
 |---|---|---|
-| One global key | A launcher takes as little as it can from each other app. All else happens inside the panel. | A second global key that arms the letters of spots. |
+| A script lists commands, and the person gives them keys | A key depends on the person's hands and other apps, and a window move through the panel is too slow. The config file holds each key, so a clash has one place, and an update or a shared spot cannot change a key. A header lists the commands, so Settings shows them with no run. | A second global key that arms the letters of spots. A `global` key in the header, which lets a script take a key. |
 | One call shape, with only `read` reserved | An author learns one line. A clash can happen only inside one file, and C1 and C2 cover it. | A word for each kind of call. An `action` word. Both add words to learn. |
 | Scripts, not a JS runtime | Goal 1. Shell gives each Mac tool at once, and a start costs about 5 ms. | JS only. It loses one-file shell scripts. |
 | JS waits | It can come later as one more executable, with `#!/usr/bin/env -S openspot run`, on JavaScriptCore. The contract does not change. It must provide `fetch`, timers and modules. | A JS level now. `node` and `bun` are not on each Mac. |
@@ -456,8 +461,8 @@ The code follows this document.
 | Header in each file | Goal 1, and a scan runs nothing. | A manifest. It can still come later. |
 | No permission model | A script can already do all that the person can. A false limit is worse than none. | A `uses` key. |
 | A sheet is a drawing, with one row height | A model writes one form, and each result stays even. | Named layouts. Column ratios, row sizes and nested drawings, which add words that most sheets never need. Sixteen columns, which make long lines and cannot make thirds. |
-| Complex views are Swift blocks in the app | The text language stays small, and a plugin still never draws (goal 2). Third-party Swift views come in a later phase. | A view in a plugin now. It needs a build, a signing exception and trust in code that no one can read. |
-| One progressive backdrop blur close to the cards, and a dark tint that fades across a 90 pt margin, sampled at full scale, with no constant redraw | One layer gives a soft edge with no line and no second pass, and the long fade of the tint shows no shape, as Control Center does. The system's sampling scale keeps text low-resolution where the mask is zero. | Three masked blur steps, which show a line at the window edge at the system's scale. A system material and Liquid Glass, which do not give this look. |
+| Complex views are Swift blocks in the app | The text language stays small, and a plugin still never draws in Openspot (goal 2). Third-party Swift views come in a later phase. | A view in a plugin now. It needs a build, a signing exception and trust in code that no one can read. |
+| One progressive backdrop blur close to the cards, and a light dark tint that fades across a 90 pt margin, sampled at full scale, with no constant redraw | One layer gives a soft edge with no line and no second pass, and the long fade of the tint shows no shape, as Control Center does. The system's sampling scale keeps text low-resolution where the mask is zero. | Three masked blur steps, which show a line at the window edge at the system's scale. A system material and Liquid Glass, which do not give this look. |
 | A spot travels as a `.spot` file | A chat app takes a file of any size that a script has, and a double-click or a drop adds it. | Encoded text, which hits message limits and hides the code. A link, which needs a hosted page. |
 | A `.spot` file is JSON: a format number and files | A standard format that any editor shows. A header already holds each fact about a spot, so the file repeats none. | A zip file, which hides the text. A manifest. |
 | A spot travels with what it needs | A widget works only with the metrics it places, and a script in a folder can need the other files of that folder. `$OPENSPOT_DATA` stays behind, because it is private. | Only single scripts, which leaves widgets and folders out. |
@@ -498,7 +503,8 @@ Nothing.
    calls, and 11 ms for a call through a running helper with no translation, in a Debug build on one Mac. The first run after a
    build took 297 ms. A Release build and a Mac under memory pressure are not measured.
 7. Start times: about 5 ms for `sh`, 18 ms for `bun`, 25 ms for `python3`, 60 ms for `node` and 3.4 s for `swift file.swift`.
-   One Mac, trivial programs. A Swift plugin must be compiled.
+   One Mac, trivial programs. A later run of a small AppKit script took 1.1 s the first time and 0.37 s after that, and the
+   same program took 0.23 s compiled. So a Swift plugin can stay a script.
 8. C6: a 1 MB paste reaches the sheet in under 1 second in a Debug build, with the pause of C4. The drawing comes after that, in
    system views. In an off-screen window on one Mac, a Debug build took 1.6 s to draw 1 MB in an editable text part. A read-only
    text part took 4.1 to 4.6 s for 1 MB and drew no text, and it drew text at 500 KB, which took 2.9 s. A Release build and the

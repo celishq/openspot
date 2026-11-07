@@ -37,6 +37,7 @@ public struct SpotReview: Equatable, Sendable {
             programs.isEmpty ? nil : Self.section(
                 "Program that Openspot cannot show",
                 programs + ["It can do all that you can. Add it only if you trust the sender."]
+                    + (programs.contains { Self.hasSource($0, in: spot) } ? ["The source beside it may not match the program."] : [])
             ),
             runs.isEmpty ? "\(quiet)\n\n" : Self.section("Runs by itself", runs),
             Self.section("Replaces, and moves the old file to the Trash", spot.replaced(in: folder)),
@@ -114,6 +115,11 @@ public struct SpotReview: Equatable, Sendable {
 
     private static func section(_ title: String, _ lines: [String]) -> String? {
         lines.isEmpty ? nil : "\(title)\n\(lines.joined(separator: "\n"))\n\n"
+    }
+
+    /// Whether this path is the program of a Swift script in the spot.
+    private static func hasSource(_ path: String, in spot: SharedSpot) -> Bool {
+        spot.files.contains { SwiftProgram.path(beside: $0.path) == path }
     }
 
     private static func canShow(_ file: SharedSpot.File) -> Bool {

@@ -130,6 +130,7 @@ final class SpotsModel {
     private var chainWatch: Task<Void, Never>?
     private(set) var recording: String?
     var setEntryKeyOn: (Bool) -> Void = { _ in }
+    var holdKeys: ([GlobalKey]) -> Void = { _ in }
     var dismiss: () -> Void = {}
     var show: () -> Void = {}
     var present: () -> Void = {}
@@ -144,6 +145,7 @@ final class SpotsModel {
     private(set) var isEditing = false
     private var arrangement = SpotArrangement()
     private var scanned: [PluginCommand] = []
+    private var lastScan = ScanResult(plugins: [], refused: [])
 
     init() {
         runs = SpotRuns(
@@ -194,6 +196,8 @@ final class SpotsModel {
         let scan = (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
         let problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.take(scan)
+        lastScan = scan
+        holdAssignedKeys()
         arrangement = ConfigFile.standard().read().arrangement
         scanned = scan.commands
         rebuildEntries()
@@ -245,6 +249,15 @@ final class SpotsModel {
         runs.quit()
     }
 
+    private func holdAssignedKeys() {
+        holdKeys(lastScan.offered(ConfigFile.standard().read().keys))
+    }
+
+    /// A person pressed a key that they assigned to a command.
+    func press(_ key: GlobalKey) {
+        sheets[key.spot]?.pressKey(key.command)
+    }
+
     private func take(_ report: SpotSheet.Report, of id: String) {
         switch report {
         case .toast(let text): confirm(text)
@@ -252,7 +265,10 @@ final class SpotsModel {
         case .listChange:
             if !query.isEmpty || isEditing || cards.first(where: { $0.id == id }).map({ $0.isOnGrid != visible.contains { $0.id == id } }) == true { updateVisible() }
         case .frame:
-            if case .settings? = sheets[id]?.command.shipped { applyConfig() }
+            if case .settings? = sheets[id]?.command.shipped {
+                applyConfig()
+                holdAssignedKeys()
+            }
             if spotsChanged, id == ShippedSpot.spotsID { reloadUnderSheet() }
         case .chooseFiles:
             if let sheet = sheets[id] { chooseFiles(sheet.command) { sheet.drop($0) } }
@@ -395,18 +411,24 @@ final class SpotsModel {
     /// Puts the file of a spot on the clipboard, ready to paste into a chat, and warns the sender about secrets.
     private func share(_ entry: Entry) {
         if isShown { dismiss() }
-        do {
-            let folder = PluginFolder.standard()
-            let spot = try SharedSpot(sharing: entry.command, from: folder.scan())
-            let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
-            try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
-            let file = place.appendingPathComponent(SharedSpot.fileName(for: entry.command.name))
-            try spot.data.write(to: file)
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.writeObjects([file as NSURL])
-            confirm(spot.notice(name: entry.command.name))
-        } catch {
-            notify("\(entry.command.name) was not copied. \(Self.reason(error))")
+        Task {
+            do {
+                let folder = PluginFolder.standard()
+                var spot = try SharedSpot(sharing: entry.command, from: folder.scan())
+                if spot.needsCompile {
+                    confirm("Compiling \(entry.command.name)")
+                    spot = try await spot.compiled()
+                }
+                let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
+                try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
+                let file = place.appendingPathComponent(SharedSpot.fileName(for: entry.command.name))
+                try spot.data.write(to: file)
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.writeObjects([file as NSURL])
+                confirm(spot.notice(name: entry.command.name))
+            } catch {
+                notify("\(entry.command.name) was not copied. \(Self.reason(error))")
+            }
         }
     }
 
@@ -1009,7 +1031,7 @@ final class SpotsModel {
     /// closes the panel, as a pick of any row does.
     func record(code: UInt32, modifiers: Shortcut.Modifiers) {
         guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
-            notify("Hold cmd, ctrl or option with a letter, a digit, space, return or tab.")
+            notify("Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.")
             return
         }
         let part = openPanel?.parts.first { $0.id == recording }
