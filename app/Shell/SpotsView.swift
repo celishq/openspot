@@ -19,7 +19,6 @@ struct SpotsView: View {
     @State private var lastDrop: SpotDrop?
     @State private var partsLanded = false
     @State private var installIsClosing = false
-    @State private var fieldWordsAreHidden = false
     @State private var sheetHasLeftCard = false
 
     static let panelSpace = "panel"
@@ -187,6 +186,7 @@ struct SpotsView: View {
             }
             if let list {
                 sheetID = list
+                partsLanded = model.sheets[list]?.panel != nil
                 holdDropInField()
                 DispatchQueue.main.async {
                     letFieldCrossHeader(isOpen: true)
@@ -208,6 +208,7 @@ struct SpotsView: View {
                 } completion: {
                     if model.openList == nil {
                         sheetID = nil
+                        partsLanded = false
                         model.endReview()
                         if installIsClosing { hideDrop() }
                         installIsClosing = false
@@ -217,16 +218,9 @@ struct SpotsView: View {
         }
     }
 
-    /// Hides the field's words while the field passes the sheet's header on the way into or out of the sheet, and changes the
-    /// colours of the header with the fill of its card.
+    /// Changes the colours of the sheet's header with the fill of its card.
     private func letFieldCrossHeader(isOpen: Bool) {
         withAnimation(SpotMotion.fillFade(isOpen: isOpen)) { sheetHasLeftCard = isOpen }
-        guard sheetID != ShippedSpot.installID else { return }
-        withAnimation(SpotMotion.wordsOut(isOpen: isOpen)) {
-            fieldWordsAreHidden = true
-        } completion: {
-            withAnimation(SpotMotion.wordsIn(isOpen: isOpen)) { fieldWordsAreHidden = false }
-        }
     }
 
     /// Keeps the words of a review in the field, where they lie under the sheet's header as the sheet grows out of the field or
@@ -505,7 +499,8 @@ struct SpotsView: View {
                     return .handled
                 }
         }
-        .opacity(showsDrop || fieldWordsAreHidden ? 0 : 1)
+        .modifier(SpotFieldCrossing(isOpen: sheetOpen, crosses: sheetID != ShippedSpot.installID))
+        .opacity(showsDrop ? 0 : 1)
         .font(SpotType.input)
         .foregroundStyle(SpotTheme.ink)
         .padding(.horizontal, SpotTokens.padding)
@@ -553,7 +548,8 @@ struct SpotsView: View {
         .font(SpotType.input)
         .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
         .lineLimit(1)
-        .opacity(model.searchText.isEmpty && !showsDrop && !fieldWordsAreHidden ? 1 : 0)
+        .modifier(SpotFieldCrossing(isOpen: sheetOpen, crosses: sheetID != ShippedSpot.installID))
+        .opacity(model.searchText.isEmpty && !showsDrop ? 1 : 0)
     }
 
     private var fieldRadius: CGFloat {

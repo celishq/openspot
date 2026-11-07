@@ -41,17 +41,6 @@ enum SpotMotion {
         return isLate ? .easeIn(duration: half).delay(half) : .easeOut(duration: half)
     }
 
-    /// The field's words leave in the first quarter of a sheet's motion.
-    static func wordsOut(isOpen: Bool) -> Animation {
-        .easeOut(duration: (isOpen ? openDuration : closeDuration) / 4)
-    }
-
-    /// The field's words return in the second half of a sheet's motion, a quarter after they have left.
-    static func wordsIn(isOpen: Bool) -> Animation {
-        let duration = isOpen ? openDuration : closeDuration
-        return .easeIn(duration: duration / 2).delay(duration / 4)
-    }
-
     /// How a card fades: out as an opening sheet pushes it to the edge of the sheet's rect, and back in as a closing sheet
     /// brings it inside again, and in by the end of the close at the latest. `exit` is from `CardPush`.
     static func cardFade(isSheetOpen: Bool, exit: Double) -> Animation {
