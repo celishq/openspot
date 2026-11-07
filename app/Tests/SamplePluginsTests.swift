@@ -182,14 +182,18 @@ final class SamplePluginsTests: XCTestCase {
     func testAppsListsEachAppWithItsPathAndNoBadLine() async throws {
         let apps = try XCTUnwrap(try scan.commands.first { $0.name == "Apps" })
 
-        let lines = try await apps.items(timeout: 10)
-        let finder = try XCTUnwrap(lines.items.first { $0.title == "Finder" })
+        try await withPrivateHome { folder in
+            let found = ["/Applications/Zed.app", "/System/Applications/Notes.app", "/Applications/Back\\slash.app"]
+            try "#!/bin/sh\nprintf '%s\\n' \(found.map { "'\($0)'" }.joined(separator: " "))\n".writeScript(to: folder.appendingPathComponent("tools/find"))
 
-        XCTAssertEqual(lines.errors, [])
-        XCTAssertEqual(finder.run, "/System/Library/CoreServices/Finder.app")
-        XCTAssertEqual(finder.file, finder.run)
-        XCTAssertTrue(apps.isGlobal)
-        XCTAssertGreaterThan(lines.items.filter { $0.run.hasPrefix("/System/Applications/") }.count, 5)
+            let lines = try await apps.items(timeout: 10)
+
+            XCTAssertEqual(lines.errors, [])
+            XCTAssertEqual(lines.items.map(\.title), ["Back\\slash", "Finder", "Notes", "Zed"])
+            XCTAssertEqual(lines.items.map(\.run), ["/Applications/Back\\slash.app", "/System/Library/CoreServices/Finder.app", "/System/Applications/Notes.app", "/Applications/Zed.app"])
+            XCTAssertEqual(lines.items.map(\.file), lines.items.map(\.run))
+            XCTAssertTrue(apps.isGlobal)
+        }
     }
 
     func testScreenshotPastesTheNewestCapture() throws {
@@ -263,7 +267,8 @@ final class SamplePluginsTests: XCTestCase {
         XCTAssertEqual(lines.items, [])
     }
 
-    /// Runs with an empty home and temp folder and with fake clipboard and open tools, so a test touches nothing of the person's.
+    /// Runs with an empty home and temp folder and with fake clipboard, open and caffeinate tools, so a test touches nothing
+    /// of the person's. The fake caffeinate is a process of that name that only waits.
     private func withPrivateHome(_ body: (URL) async throws -> Void) async throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-home-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
@@ -275,7 +280,8 @@ final class SamplePluginsTests: XCTestCase {
             ("curl", Self.fakeCurl(log: folder.appendingPathComponent("fetched").path)),
             ("gh", Self.fakeGh(answer: folder.appendingPathComponent("gh-answer").path)),
             ("osascript", "cp '\(folder.path)/clipboard' '\(folder.path)/pasted'"),
-            ("openspot", Self.fakeClipboard(in: folder))
+            ("openspot", Self.fakeClipboard(in: folder)),
+            ("caffeinate", "exec /bin/bash -c 'exec -a caffeinate /bin/sleep 30'")
         ] {
             let tool = tools.appendingPathComponent(name)
             try "#!/bin/sh\n\(script)\n".writeScript(to: tool)
@@ -942,10 +948,12 @@ final class SamplePluginsTests: XCTestCase {
     }
 
     func testAppsAndFilesOfferToShowInFinder() async throws {
-        for name in ["Apps", "Files"] {
-            let command = try XCTUnwrap(try scan.commands.first { $0.name == name })
-            let actions = try await command.items(timeout: 10).actions
-            XCTAssertEqual(actions.first?.id, "reveal", name)
+        let commands = try ["Apps", "Files"].map { name in try XCTUnwrap(try scan.commands.first { $0.name == name }) }
+        try await withPrivateHome { _ in
+            for command in commands {
+                let actions = try await command.items(timeout: 10).actions
+                XCTAssertEqual(actions.first?.id, "reveal", command.name)
+            }
         }
     }
 }

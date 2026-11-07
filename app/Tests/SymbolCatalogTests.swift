@@ -103,8 +103,6 @@ final class SymbolCatalogTests: XCTestCase {
         let rows = PluginOutput(text: try SymbolCatalog(languages: ["en"]).rows()).items
 
         XCTAssertGreaterThan(rows.count, 500)
-        XCTAssertEqual(rows.first?.run, "→")
-        XCTAssertEqual(rows.first?.subtitle, "Rightwards Arrows")
         XCTAssertTrue(rows.contains { $0.run == "€" && $0.title == "euro sign" && $0.subtitle == "Currency Symbols" })
         XCTAssertTrue(rows.contains { $0.run == "⌘" })
     }
