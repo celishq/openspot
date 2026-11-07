@@ -258,9 +258,10 @@ final class SamplePluginsTests: XCTestCase {
         let log = folder.appendingPathComponent("openspot")
         try "#!/bin/sh\necho '\(folder.path)'\n".writeScript(to: tools.appendingPathComponent("defaults"))
         try "#!/bin/sh\ncase \"$*\" in *kMDItemScreenCaptureType*) printf '%s\\0%s\\0' '\(image.path)' '\(video.path)' ;; esac\n".writeScript(to: tools.appendingPathComponent("mdfind"))
-        try "#!/bin/sh\nprintf '%s\\n' \"$@\" > '\(log.path)'\n".writeScript(to: tools.appendingPathComponent("openspot"))
+        try "#!/bin/sh\necho \"$*\" >> '\(log.path)'\n".writeScript(to: tools.appendingPathComponent("openspot"))
 
         for (newest, older) in [(video, image), (image, video)] {
+            try? FileManager.default.removeItem(at: log)
             FileManager.default.createFile(atPath: older.path, contents: Data())
             FileManager.default.createFile(atPath: newest.path, contents: Data())
             try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -60)], ofItemAtPath: older.path)
@@ -272,7 +273,7 @@ final class SamplePluginsTests: XCTestCase {
             process.waitUntilExit()
 
             XCTAssertEqual(process.terminationStatus, 0, newest.lastPathComponent)
-            XCTAssertEqual(try String(contentsOf: log, encoding: .utf8), "clipboard\npaste\n\(newest.path)\n")
+            XCTAssertEqual(try String(contentsOf: log, encoding: .utf8), "clipboard copy \(newest.path)\nclipboard paste\n")
         }
     }
 

@@ -17,8 +17,10 @@ enum SpotCommandLine {
             exit(0)
         case .colorPick:
             SpotColorPick.run()
-        case .clipboardPaste(let path):
-            SpotClipboard.paste(path)
+        case .clipboardCopy(let path):
+            SpotClipboard.copy(path)
+        case .clipboardPaste:
+            SpotClipboard.paste()
         case .check(let path):
             check(path)
         case .sandbox(let path):

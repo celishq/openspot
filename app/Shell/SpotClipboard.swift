@@ -1,21 +1,26 @@
 import AppKit
 import ApplicationServices
 
-/// The clipboard for a script. It copies a file as Finder does, with the picture of an image, and pastes it into the front
-/// app with a ⌘V key event, which needs Accessibility.
+/// The clipboard for a script. It copies a file as Finder does, with the picture of an image, and pastes into the front app
+/// with a ⌘V key event, which needs Accessibility.
 @MainActor
 enum SpotClipboard {
     private static let accessibility = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
     private static let vKey: CGKeyCode = 9
 
-    /// Copies the file, then pastes it. A missing file or a missing permission prints the reason, and exits with 1.
-    static func paste(_ path: String) -> Never {
+    /// Copies the file. A missing file prints the reason, and exits with 1.
+    static func copy(_ path: String) -> Never {
         let url = URL(fileURLWithPath: path)
         guard FileManager.default.fileExists(atPath: url.path) else { fail("Openspot cannot find \(url.lastPathComponent).") }
         guard copy(url, to: .general) else { fail("Openspot could not copy \(url.lastPathComponent). Copy it from Finder instead.") }
+        exit(0)
+    }
+
+    /// Pastes the clipboard. With no Accessibility it prints the fix, and exits with 1.
+    static func paste() -> Never {
         guard AXIsProcessTrusted() else {
             print("open=\(accessibility)")
-            fail("Copied, but Openspot cannot paste. Press `⌘V`, or allow Openspot in Accessibility.")
+            fail("Openspot cannot paste. Press `⌘V` to paste, or allow Openspot in Accessibility.")
         }
         for isDown in [true, false] {
             let event = CGEvent(keyboardEventSource: nil, virtualKey: vKey, keyDown: isDown)
