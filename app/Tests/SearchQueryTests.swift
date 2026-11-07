@@ -111,6 +111,10 @@ final class SearchQueryTests: XCTestCase {
         XCTAssertEqual(titles("s", in: ["Safari", "Slack", "Mess"], recent: ["Slack"]), ["Slack", "Safari", "Mess"])
     }
 
+    func testAFrequentPickBeatsALaterOne() {
+        XCTAssertEqual(titles("s", in: ["Signal", "Slack", "Safari"], recent: ["Slack", "Safari", "Safari"]), ["Safari", "Slack", "Signal"])
+    }
+
     func testARecentPickDoesNotBeatABetterMatch() {
         XCTAssertEqual(titles("note", in: ["Keynote", "Notes"], recent: ["Keynote"]), ["Notes", "Keynote"])
     }

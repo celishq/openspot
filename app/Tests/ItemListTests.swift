@@ -235,12 +235,21 @@ final class ItemListTests: XCTestCase {
         XCTAssertEqual(list.shown.map(\.title), ["C", "A", "B"])
     }
 
+    func testEachPickCountsSoTheMostPickedComesFirst() {
+        var list = ItemList(items: items("A", "B", "C"), recent: ["A", "A"])
+
+        list.remember(SpotItem(title: "C", run: "C"))
+
+        XCTAssertEqual(list.recent, ["C", "A", "A"])
+        XCTAssertEqual(list.shown.map(\.title), ["A", "C", "B"])
+    }
+
     func testTheRecentListHasALimit() {
         var list = ItemList()
 
-        for number in 0..<50 { list.remember(SpotItem(title: "\(number)", run: "\(number)")) }
+        for number in 0..<150 { list.remember(SpotItem(title: "\(number)", run: "\(number)")) }
 
         XCTAssertEqual(list.recent.count, ItemList.recentLimit)
-        XCTAssertEqual(list.recent.first, "49")
+        XCTAssertEqual(list.recent.first, "149")
     }
 }
