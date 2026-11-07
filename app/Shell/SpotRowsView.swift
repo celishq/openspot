@@ -103,18 +103,13 @@ struct SpotRowsView: View {
     }
 
     private func rowLabel(_ item: SpotItem, isSelected: Bool) -> some View {
-        HStack(spacing: SpotTokens.padding - 5) {
+        let marks = SearchQuery(text: list.query).marks(in: item)
+        return HStack(spacing: SpotTokens.padding - 5) {
             SpotItemIcon(item: item, size: SpotTokens.listIconSize)
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
-                Text(item.title)
-                    .font(SpotType.body)
-                    .foregroundStyle(SpotTheme.ink)
-                    .lineLimit(1)
+                SpotMarkedText(text: item.title, marks: marks.title, font: SpotType.body, ink: SpotTheme.ink)
                 if let subtitle = item.subtitle {
-                    Text(subtitle)
-                        .font(SpotType.detail)
-                        .modifier(SpotSecondaryText())
-                        .lineLimit(1)
+                    SpotMarkedText(text: subtitle, marks: marks.subtitle, font: SpotType.detail, ink: SpotTheme.ink, strength: SpotTheme.secondaryLight)
                 }
             }
             Spacer(minLength: 0)

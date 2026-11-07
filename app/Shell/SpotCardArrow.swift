@@ -4,7 +4,8 @@ import SwiftUI
 struct SpotCardArrow: View {
     let isOnSolid: Bool
 
-    private static let rowInset: CGFloat = SpotTokens.padding - 6
+    /// The gap from the arrow of a row card to the card's trailing edge.
+    static let rowInset: CGFloat = SpotTokens.padding - 6
 
     var body: some View {
         Image(systemName: "chevron.right")

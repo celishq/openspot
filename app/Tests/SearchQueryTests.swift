@@ -53,8 +53,70 @@ final class SearchQueryTests: XCTestCase {
         XCTAssertEqual(SearchQuery(text: "note").matching(items).map(\.title), ["Keynote", "Mail"])
     }
 
+    func testTheWholeTitleBeatsATitleStart() {
+        XCTAssertEqual(titles("note", in: ["Notes", "Note"]), ["Note", "Notes"])
+    }
+
+    func testWordsMatchInAnyOrder() {
+        XCTAssertEqual(titles("code vis", in: ["Xcode", "Visual Studio Code"]), ["Visual Studio Code"])
+    }
+
+    func testAWordMayMatchInitials() {
+        XCTAssertEqual(titles("vs code", in: ["Xcode", "Visual Studio Code"]), ["Visual Studio Code"])
+    }
+
+    func testOneWordMayMatchTheTitleAndAnotherTheSubtitle() {
+        let items = [item("Chrome", subtitle: "Home profile"), item("Chrome", subtitle: "Work profile")]
+
+        XCTAssertEqual(SearchQuery(text: "chrome work").matching(items).map(\.subtitle), ["Work profile"])
+    }
+
+    func testAWordInTheTitleBeatsAWordInTheSubtitle() {
+        let items = [item("Mail", subtitle: "Work inbox"), item("Work Log")]
+
+        XCTAssertEqual(SearchQuery(text: "work").matching(items).map(\.title), ["Work Log", "Mail"])
+    }
+
+    func testLettersInOrderMatchLast() {
+        let items = [item("Safari"), item("Mail", subtitle: "sfr box")]
+
+        XCTAssertEqual(SearchQuery(text: "sfr").matching(items).map(\.title), ["Mail", "Safari"])
+    }
+
+    func testLettersInOrderStayInOneWord() {
+        XCTAssertEqual(titles("note", in: ["Android File Transfer", "Notes"]), ["Notes"])
+    }
+
+    func testLettersInOrderNeedThreeLetters() {
+        XCTAssertEqual(titles("sf", in: ["Safari"]), [])
+    }
+
+    func testMarksTheMatchedLettersOfEachWord() {
+        let marks = SearchQuery(text: "co vis").marks(in: item("Visual Studio Code"))
+
+        XCTAssertEqual(marks, SearchMarks(title: [0..<3, 14..<16], subtitle: []))
+    }
+
+    func testMarksEachInitial() {
+        XCTAssertEqual(SearchQuery(text: "vsc").marks(in: item("Visual Studio Code")).title, [0..<1, 7..<8, 14..<15])
+    }
+
+    func testMarksAWordInTheSubtitle() {
+        let marks = SearchQuery(text: "chrome work").marks(in: item("Chrome", subtitle: "Work profile"))
+
+        XCTAssertEqual(marks, SearchMarks(title: [0..<6], subtitle: [0..<4]))
+    }
+
+    func testAnEmptySearchMarksNothing() {
+        XCTAssertEqual(SearchQuery(text: "").marks(in: item("Safari")), SearchMarks(title: [], subtitle: []))
+    }
+
     func testARecentPickComesFirstWithinItsMatch() {
         XCTAssertEqual(titles("s", in: ["Safari", "Slack", "Mess"], recent: ["Slack"]), ["Slack", "Safari", "Mess"])
+    }
+
+    func testAFrequentPickBeatsALaterOne() {
+        XCTAssertEqual(titles("s", in: ["Signal", "Slack", "Safari"], recent: ["Slack", "Safari", "Safari"]), ["Safari", "Slack", "Signal"])
     }
 
     func testARecentPickDoesNotBeatABetterMatch() {

@@ -91,6 +91,8 @@ struct SpotTheme {
     /// The mark of the selected card, row or item, and of a drop.
     static let accent = Color.accentColor
     static let secondaryLight = 0.7
+    /// The strength of the letters that a search did not match, as a share of their usual strength.
+    static let unmarked = 0.8
     static let dragFill = 0.4
     @MainActor static var fill: Double { current.fillStrength }
     @MainActor static var disc: Double { current.discStrength }

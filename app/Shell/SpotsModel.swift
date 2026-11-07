@@ -84,7 +84,7 @@ final class SpotsModel {
 
     private typealias Target = (entry: Entry, item: SpotItem?)
 
-    private static let globalItemLimit = 6
+    private static let searchLimit = 8
     private static let pluginFolder = PluginFolder.standard()
     private static let dragWatchPause: Duration = .milliseconds(16)
     private static let chainPause: Duration = .milliseconds(200)
@@ -472,17 +472,20 @@ final class SpotsModel {
         entries.filter { $0.id != ShippedSpot.installID }
     }
 
-    /// Shows each spot the search finds, then the items it finds in the lists that offer them.
+    /// Shows the spots that the search finds and the items it finds in the lists that offer them, in one ranking.
     private func updateVisible() {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
             visible = cards.filter(\.isOnGrid) + (isEditing ? cards.filter { !$0.isOnGrid } : [])
             return
         }
-        let spots = cards.filter { $0.state.title.localizedCaseInsensitiveContains(text) || $0.command.name.localizedCaseInsensitiveContains(text) }
+        let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let spotList = ItemList(items: cards.map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.command.name].compactMap { $0 }.joined(separator: " "), run: $0.id) })
         let sources = entries.filter(\.command.isGlobal).sorted { $0.command.rank < $1.command.rank }
-        let found = SearchQuery(text: text).matching(in: sources.map { sheets[$0.id]?.list ?? ItemList() })
-        visible = spots + found.prefix(Self.globalItemLimit).map { Entry(command: sources[$0.list].command, item: $0.item) }
+        let found = SearchQuery(text: text).matching(in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() })
+        visible = found.prefix(Self.searchLimit).compactMap { match in
+            match.list == 0 ? spots[match.item.run] : Entry(command: sources[match.list - 1].command, item: match.item)
+        }
     }
 
     func moveSelection(dx: Int, dy: Int) {

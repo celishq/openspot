@@ -2,7 +2,7 @@ import Foundation
 
 /// The items of one list, with the text that searches them, the selected row and the recent picks.
 public struct ItemList: Equatable, Sendable {
-    public static let recentLimit = 20
+    public static let recentLimit = 100
 
     public private(set) var search: ItemSearch
     public private(set) var query = ""
@@ -120,8 +120,9 @@ public struct ItemList: Equatable, Sendable {
         selected = min(target, shown.count - 1)
     }
 
+    /// Adds a pick to the front of the recent picks, which keep each pick so that a count of them shows how often.
     public mutating func remember(_ item: SpotItem) {
-        recent = Array(([item.run] + recent.filter { $0 != item.run }).prefix(Self.recentLimit))
+        recent = Array(([item.run] + recent).prefix(Self.recentLimit))
         refresh()
     }
 

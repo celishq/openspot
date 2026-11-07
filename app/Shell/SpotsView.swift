@@ -75,6 +75,7 @@ struct SpotsView: View {
                         model.allowSheetMotion()
                         model.closeList()
                     },
+                    cardWidth: isInstall(entry) ? fieldRect.width : openFrame?.width ?? sheetRect.width,
                     nudge: { model.sheets[entry.id]?.nudge ?? SpotPanel.Nudge.rest }
                 )
                 .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: sheetOpen)) { $0.opacity(sourceWidget == nil || sheetOpen ? 1 : 0) }
@@ -468,6 +469,7 @@ struct SpotsView: View {
                     chainLetter: model.chainLetter(of: entry),
                     showsChain: model.showsChain,
                     isHiddenFromGrid: model.isEditing && !entry.isOnGrid,
+                    query: model.query,
                     onTap: { model.tap(entry.id) },
                     onLevel: { model.setLevel(entry.id, to: $0) }
                 )
