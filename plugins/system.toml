@@ -1,0 +1,5 @@
+[[widgets]]
+name = "System"
+subtitle = "Battery, CPU, memory and devices"
+layout = "hero"
+places = ["battery", "cpu", "memory", "devices"]
