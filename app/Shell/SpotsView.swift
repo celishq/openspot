@@ -355,7 +355,7 @@ struct SpotsView: View {
     private func hint(_ words: String, isShown: Bool, height: CGFloat) -> some View {
         SpotHint(text: words)
             .frame(width: SpotTokens.panelWidth)
-            .offset(y: height - SpotTokens.halo - SpotTokens.hintHeight - SpotTokens.hintPillInset)
+            .offset(y: height - SpotTokens.halo - SpotTokens.hintPillHeight)
             .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: isShown)) { $0.opacity(isShown ? 1 : 0) }
     }
 

@@ -5,7 +5,7 @@ import SwiftUI
 enum SpotTokens {
     static let radius: CGFloat = 26
     static let columnGap: CGFloat = 12
-    static let rowGap: CGFloat = 14
+    static let rowGap: CGFloat = 12
     static let padding: CGFloat = 13
     static let gridWidth: CGFloat = 292
     static let columns = 4
@@ -29,7 +29,9 @@ enum SpotTokens {
     static let hintKeyGap: CGFloat = 4
     static let hintGroupGap: CGFloat = 12
     static let hintEndPadding: CGFloat = 10
-    static let hintBlock: CGFloat = rowGap + hintHeight
+    static let hintPillHeight: CGFloat = hintHeight + 2 * hintPillInset
+    /// The room under the cards for the hint: one gap, then the hint's pill.
+    static let hintBlock: CGFloat = rowGap + hintPillHeight
     static let menuRowHeight: CGFloat = 32
     static let menuRowGap: CGFloat = 2
     static let menuPadding: CGFloat = 8
