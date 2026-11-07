@@ -10,6 +10,8 @@ struct SpotGlass: ViewModifier {
     var strength = 1.0
     /// Whether the surface draws its own blur. A card of the grid draws it only while pressed, over the grid's blur.
     var blursBehind = true
+    /// The size of a surface that keeps one size, which draws its rim from a picture.
+    var rimSize: CGSize?
     @Environment(\.spotIsShown) private var isShown
 
     func body(content: Content) -> some View {
@@ -28,12 +30,21 @@ struct SpotGlass: ViewModifier {
             }
             .animation(SpotMotion.surface(isShown: isShown), value: isShown)
             .overlay {
-                SpotRim(radius: radius)
+                rim
                     .opacity(isShown && !isSolid && !isBare ? 1 : 0)
                     .animation(SpotMotion.rim(isShown: isShown), value: isShown)
                     .allowsHitTesting(false)
             }
             .scaleEffect(isShown ? 1 : SpotMotion.hiddenScale)
             .animation(SpotMotion.surface(isShown: isShown), value: isShown)
+    }
+
+    @ViewBuilder
+    private var rim: some View {
+        if let rimSize {
+            SpotRimPicture(size: rimSize, radius: radius)
+        } else {
+            SpotRim(radius: radius)
+        }
     }
 }
