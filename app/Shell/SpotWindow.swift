@@ -10,7 +10,8 @@ struct SpotWindow {
 
     /// The focused window of the front app. It fails without Accessibility, or when that app shows no window.
     static func front() throws -> SpotWindow {
-        guard let app = NSWorkspace.shared.frontmostApplication, app.bundleIdentifier != Bundle.main.bundleIdentifier else {
+        guard let app = NSWorkspace.shared.frontmostApplication,
+              app.executableURL?.resolvingSymlinksInPath() != Bundle.main.executableURL?.resolvingSymlinksInPath() else {
             throw PluginError.fault("No app is in front.")
         }
         let owner = AXUIElementCreateApplication(app.processIdentifier)
