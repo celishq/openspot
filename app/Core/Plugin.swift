@@ -14,6 +14,7 @@ public struct Plugin: Equatable, Sendable {
 
     /// Reads a file with no run of it. Returns nil for a file that is neither. Throws a fault that names what is wrong.
     public init?(file url: URL, id: String) throws {
+        if SwiftProgram.isProgram(url) { return nil }
         if url.pathExtension == Self.widgetExtension {
             let document = try TomlDocument(text: try String(contentsOf: url, encoding: .utf8))
             self.init(id: id, commands: try (document.arrays["widgets"] ?? []).map { try Self.widget($0, id: id, url: url) })

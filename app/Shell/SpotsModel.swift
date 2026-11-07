@@ -365,18 +365,24 @@ final class SpotsModel {
     /// Puts the file of a spot on the clipboard, ready to paste into a chat, and warns the sender about secrets.
     private func share(_ entry: Entry) {
         if isShown { dismiss() }
-        do {
-            let folder = PluginFolder.standard()
-            let spot = try SharedSpot(sharing: entry.command, from: folder.scan(), in: folder)
-            let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
-            try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
-            let file = place.appendingPathComponent(SharedSpot.fileName(for: entry.command.name))
-            try spot.data.write(to: file)
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.writeObjects([file as NSURL])
-            confirm(spot.notice(name: entry.command.name))
-        } catch {
-            notify("\(entry.command.name) was not copied. \(Self.reason(error))")
+        Task {
+            do {
+                let folder = PluginFolder.standard()
+                var spot = try SharedSpot(sharing: entry.command, from: folder.scan(), in: folder)
+                if spot.needsCompile {
+                    confirm("Compiling \(entry.command.name)")
+                    spot = try await spot.compiled()
+                }
+                let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
+                try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
+                let file = place.appendingPathComponent(SharedSpot.fileName(for: entry.command.name))
+                try spot.data.write(to: file)
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.writeObjects([file as NSURL])
+                confirm(spot.notice(name: entry.command.name))
+            } catch {
+                notify("\(entry.command.name) was not copied. \(Self.reason(error))")
+            }
         }
     }
 

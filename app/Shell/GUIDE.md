@@ -5,7 +5,7 @@ This guide is for people and for AI agents. It tells you all that you need.
 A plugin is one executable file in the plugins folder, in any language. Openspot reads the folder each time the panel
 opens, so a new plugin needs no restart.
 
-The rule: a script prints data, and Openspot draws it. A plugin never draws.
+The rule: a script prints data, and Openspot draws it. A script can also open its own Mac window, which Openspot does not draw.
 
 ## The smallest plugin
 
@@ -20,6 +20,21 @@ This is a spot called Hello. A click runs it. Openspot never runs a script only 
 
 Keep several scripts together in a folder if you want. Each executable file is one spot, and a file that is not
 executable can hold shared code.
+
+## A Swift plugin
+
+A Swift file with `#!/usr/bin/env swift` on its first line is a script, with its header in `//` lines. `plugins/confetti.swift`
+is an example that opens its own window on each screen.
+
+```swift
+#!/usr/bin/env swift
+// name=Hello
+// symbol=hand.wave
+print("toast=Hello")
+```
+
+To run it, a Mac needs the Command Line Tools, from `xcode-select --install`. No Xcode app and no developer account are needed.
+A person who gets it as a `.spot` file needs no tools. See "Share a spot".
 
 ## The header
 
@@ -552,6 +567,7 @@ A `.spot` file is JSON. It holds a format number and the files:
 - A file that is not text uses `data`, in base64, in place of `text`.
 - Hidden files and `$OPENSPOT_DATA` stay behind.
 - A compiled program travels, but no one can read it first. Install one only if you trust the sender.
+- "Copy to share" compiles a Swift script for both kinds of Mac, and adds `<name>.program` beside it. The sender needs the Command Line Tools, and the receiver needs nothing. The source gives the header, the program runs in its place, and a program file is never a spot of its own. To run an edited source, delete the program.
 - A file with the same path is replaced, and the old file goes to the Trash.
 
 ## Delete a spot
