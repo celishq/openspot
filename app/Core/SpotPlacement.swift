@@ -12,4 +12,12 @@ public struct SpotPlacement: Equatable, Sendable {
         self.column = column
         self.size = size
     }
+
+    /// The way this spot moves when another spot opens: up or down if it lies above or below it, else to its side.
+    public func direction(awayFrom open: SpotPlacement) -> (columns: Int, rows: Int) {
+        if index == open.index { return (0, 0) }
+        if row + size.rows <= open.row { return (0, -1) }
+        if row >= open.row + open.size.rows { return (0, 1) }
+        return (column < open.column ? -1 : 1, 0)
+    }
 }
