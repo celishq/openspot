@@ -76,12 +76,16 @@ esac
 | A2 | Each script that shows anything has one `SpotSheet` in Core. It holds the last frame of the script, its rows, its parts, its open state and its running calls. The card, the sheet, a widget and the menu bar all read from it, and no other place keeps what a script printed. A run of one script never stops a run of another. |
 | A3 | A stopped run changes nothing. Only a call that ended by itself can report that there is nothing to show. |
 | A4 | Search text stays until the person presses Esc. |
-| A5 | Plugins, Settings and Updates ship with the app. Each answers the same calls, in Swift. Updates has `grid=false`, and prints `grid=true` when a downloaded update waits to install. It takes the first place of order 0, so its card shows with no scrolling. |
+| A5 | Spots, Build, Settings and Updates ship with the app. Each answers the same calls, in Swift. Spots lists the spots that a person can turn on. Build holds the tools for authors, and has `grid=false`. Updates has `grid=false`, and prints `grid=true` when a downloaded update waits to install. It takes the first place of order 0, so its card shows with no scrolling. |
 | A6 | One global key opens the panel from any app, and the person chooses it. No other key is global. |
-| A7 | The person arranges the grid: each `[[spots]]` table of `config.toml` names a spot by `id`, and can set `size` and `grid`. It overrides the plugin. A `size` is a preference, and the grid can still change it to fill a row. Listed spots take the order of the file. The Edit Spots mode writes this file. |
-| A8 | The app opens the panel unseen once as it starts, which runs each script with `panel` in its `read` and each script a widget places, and draws the panel. It waits for at most 2 seconds, then closes it and shows the toast "Openspot is ready". A script with only `sheet` in its `read` does not run. A press of the key in that time opens the panel at once. |
+| A7 | The person arranges the grid: each `[[spots]]` table of `config.toml` names a spot by `id`, and can set `size` and `grid`. It overrides the plugin. A `size` is a preference, and the grid can still change it to fill a row. Listed spots take the order of the file. The Edit Spots mode writes this file. `enabled` turns a core spot on (A11). |
+| A8 | The app opens the panel unseen once as it starts, which runs each script with `panel` in its `read` and each script a widget places, and draws the panel. It waits for at most 2 seconds, then closes it and shows a toast that names the key: "Press ⌃Space to open Openspot". A script with only `sheet` in its `read` does not run. A press of the key in that time opens the panel at once. |
 | A9 | A sheet that moves out of its card and has no answer yet holds that motion for at most 150 ms for the first answer, so that it grows once, to its real size. A sheet with an answer moves at once. A sheet that still waits after that shows no search field, and its first answer sets its size on the same motion. |
 | A10 | A dragged `.spot` file shows in the search field as an icon and a name, laid out as a sheet's header, and the grid stays. A drop, a paste or a double-click expands the field into the install screen, on the spring of a sheet, with the icon and the name in place, and pushes the grid as far as its lower edge moves. It closes back into the field. |
+| A11 | The core spots are the scripts in `plugins/` of this repo. The build copies them into the app, and each runs in place from there, so an app update also updates them and no copy stays on the disk. Nothing downloads. |
+| A12 | A core spot is off until the person turns it on. A spot that is off runs nothing, and its data stays. A core spot that a spot that is on places or opens also loads. A file in the plugins folder with the same ID wins over a core spot, and is always on. |
+| A13 | Enter on a row of Spots turns the spot on or off, and keeps the panel open, because a new user adds several spots in a row. |
+| A14 | A first launch has no `config.toml` and no spot in the plugins folder. It opens the panel on Spots, once, with no other screen. The key toast shows when the panel closes. No spot is on by default, and the app does not open at login by default. |
 
 ## 4. The plugin file
 
@@ -411,6 +415,7 @@ The command is on the path of each script. It also gives the tools for authors.
 | P5 | Each usage text for a protected Mac feature is in the app. So a protected feature is a capability. |
 | P6 | A compiled program travels in a `.spot` file, and the review says first that no one can read it. A plugin can be any executable (F1), so sharing takes each of them. |
 | P7 | A `.spot` file has no signature and names no sender. Openspot warns the sender about secrets, and does not look for them. |
+| P8 | A core spot needs no review before it turns on, because it is signed and notarized with the app. P4 stays for each `.spot` file. |
 
 ## 12. How to extend
 
@@ -428,7 +433,18 @@ A change to the meaning of a word that exists is a breaking change. Do not make 
 
 ## 13. Where the code differs today
 
-The code follows this document.
+| Module | Differs from this document | Rule |
+|---|---|---|
+| `scripts/release.sh` | The DMG has no window layout. | Decisions |
+| `Shell/SpotsView.swift` | Off-grid cards dim in search. | Decisions |
+| `project.yml` | The build does not copy the core spots. | A11 |
+| `Core/PluginFolder.swift` | The scan reads one folder. | A11, A12 |
+| `Core/Config.swift` | A `[[spots]]` table has no `enabled` key. | A7 |
+| `Core/SharedSpot.swift` | Sharing reads files only from the plugins folder. | A11 |
+| `Core/PluginFolder.swift`, `Shell/SpotsModel.swift` | Remove would trash a file in the app. | A12 |
+| `Core/ShippedSpot.swift`, `Core/PluginGuide.swift` | One Plugins spot holds all rows. | A5, A13 |
+| `Core/Settings.swift` | Settings has no login row. | A14 |
+| `Shell/SpotsModel.swift`, `Shell/OpenspotApp.swift` | The first launch shows a failure toast and no panel. | A8, A14 |
 
 ## 14. Decisions
 
@@ -457,6 +473,11 @@ The code follows this document.
 | A `.spot` file is JSON: a format number and files | A standard format that any editor shows. A header already holds each fact about a spot, so the file repeats none. | A zip file, which hides the text. A manifest. |
 | A spot travels with what it needs | A widget works only with the metrics it places, and a script in a folder can need the other files of that folder. `$OPENSPOT_DATA` stays behind, because it is private. | Only single scripts, which leaves widgets and folders out. |
 | A file of the same name is replaced, and the old one goes to the Trash | The review names each file it replaces. A new name would break the IDs that a widget places. | A new name for each clash. |
+
+| Core spots run in place from the app | A first run needs no network and cannot fail, and each app update also updates the spots. | A download of each spot or of a zip from GitHub, which can fail and leaves copies that go stale. A copy into the plugins folder at first launch, which also goes stale. |
+| `plugins/*.sh` stays the source | A person edits the real file, and a diff shows the changed line. | Only `.spot` files in the repo, which show a whole script as one changed line and still need a pack step. |
+| A DMG window that shows where to drag, with no background image | The app and Applications side by side say all that a person needs. | An image with an arrow, which needs upkeep. |
+| A card dims only in Edit Spots | Dimming says "hidden from the grid", which only that mode shows. In search a dim card looks disabled and is not. | Dimming wherever a card is off the grid. |
 
 **Where the Workers model stops.** A Worker runs in a sandbox, so a binding is both an API and a permission. A script has no
 sandbox, so here a binding is only an API (P1). A Durable Object loses its memory when it sleeps. A staying script is a real
