@@ -61,10 +61,13 @@ too. `make perf` checks it: p99 must stay under 8.3 ms.
 ```sh
 make verify                # the Core check, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
-make perf N=3              # times the frames of a sheet that opens and closes 20 times, in a Release build, 3 runs
+make perf N=3              # times a sheet that opens and closes 20 times, 3 runs; fails over the dropped-frame budget
 ```
 
 `make verify` runs `xcodegen generate` first, so the project file matches the folders on disk.
+
+Run `make perf` after a change to a view that moves, and compare it with the commit before by interleaved runs: the Mac's
+load moves the numbers more than most changes do.
 
 ## Signing
 
