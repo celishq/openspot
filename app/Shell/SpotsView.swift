@@ -56,8 +56,7 @@ struct SpotsView: View {
                     entry: entry,
                     cardSize: cardSize(of: entry),
                     isOpen: sheetOpen,
-                    isOn: entry.state.on == true,
-                    fillCovers: !sheetHasLeftCard,
+                    showsFill: entry.state.on == true && !sheetHasLeftCard,
                     list: model.sheets[entry.id]?.list ?? ItemList(),
                     rect: sheetRect,
                     form: model.form?.entry.id == entry.id ? model.form?.draft : nil,
@@ -77,6 +76,10 @@ struct SpotsView: View {
                         model.closeList()
                     }
                 )
+                .background {
+                    SpotTheme.solid
+                        .animation(SpotMotion.fillFade(isOpen: sheetOpen)) { $0.opacity(entry.state.on == true && !sheetOpen ? 1 : 0) }
+                }
                 .modifier(SpotSheetFrame(
                     rect: sheetOpen ? sheetRect : isInstall(entry) ? fieldRect : openFrame ?? sheetRect,
                     radius: sheetOpen ? SpotTokens.radius : isInstall(entry) ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: cardSize(of: entry)),
@@ -199,7 +202,7 @@ struct SpotsView: View {
     /// Hides the field's words while the field passes the sheet's header on the way into or out of the sheet, and changes the
     /// colours of the header with the fill of its card.
     private func letFieldCrossHeader(isOpen: Bool) {
-        withAnimation(SpotMotion.sheetFade(isOpen: isOpen, isLate: !isOpen)) { sheetHasLeftCard = isOpen }
+        withAnimation(SpotMotion.fillFade(isOpen: isOpen)) { sheetHasLeftCard = isOpen }
         guard sheetID != ShippedSpot.installID else { return }
         withAnimation(SpotMotion.wordsOut(isOpen: isOpen)) {
             fieldWordsAreHidden = true
@@ -276,18 +279,8 @@ struct SpotsView: View {
 
     /// The arrow of the card while its sheet moves. It stays in view until the close button takes its place at the edge.
     private func sheetArrow(of entry: SpotsModel.Entry) -> some View {
-        let frame = sheetOpen ? sheetRect : openFrame ?? sheetRect
-        return ZStack {
-            SpotCardArrow(isOnSolid: false)
-                .placed(isTall: (openFrame?.height ?? 0) > SpotTokens.rowHeight)
-            if entry.state.on == true {
-                SpotCardArrow(isOnSolid: true)
-                    .placed(isTall: (openFrame?.height ?? 0) > SpotTokens.rowHeight)
-                    .frame(width: frame.width, height: frame.height, alignment: .topTrailing)
-                    .modifier(SpotFillReach(size: frame.size, center: SpotSheetView.glyphCenter(isSmall: false), covers: !sheetHasLeftCard))
-            }
-        }
-        .frame(width: frame.width, height: frame.height, alignment: .topTrailing)
+        SpotCardArrow(isOnSolid: entry.state.on == true && !sheetOpen)
+            .placed(isTall: (openFrame?.height ?? 0) > SpotTokens.rowHeight)
             .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(sheetOpen ? 0 : 1) }
             .allowsHitTesting(false)
     }

@@ -88,9 +88,9 @@ struct SpotTheme {
         solid: NSColor(white: 0.12, alpha: 1),
         onSolid: .white,
         glyphOnSolid: .white,
-        glass: NSColor(white: 0.98, alpha: 0.9),
+        glass: .white.withAlphaComponent(0.5),
         menuGlass: .white,
-        tint: .white.withAlphaComponent(0.3),
+        tint: .black.withAlphaComponent(0.08),
         keycap: NSColor(white: 0.98, alpha: 1),
         float: NSColor(white: 0.96, alpha: 0.82),
         window: NSColor(white: 0.93, alpha: 1),
@@ -98,13 +98,13 @@ struct SpotTheme {
         confirm: NSColor(red: 0.78, green: 0.16, blue: 0.14, alpha: 1),
         onConfirm: .white,
         rimSides: .black,
-        rimEnds: .clear,
-        rimAddsLight: false,
-        rimSideStrengths: [0.07, 0.18, 0.18, 0.07],
-        shadowBase: .white,
-        shadow: .black.withAlphaComponent(0.05),
-        blur: 40,
-        backdropBlur: 14,
+        rimEnds: .white,
+        rimAddsLight: true,
+        rimSideStrengths: [0, 0.3, 0.3, 0],
+        shadowBase: .clear,
+        shadow: .clear,
+        blur: 16,
+        backdropBlur: 2,
         fillStrength: 0.04,
         selectedStrength: 0.08,
         discStrength: 0,
@@ -112,7 +112,7 @@ struct SpotTheme {
         menuSelectedStrength: 0.08,
         controlStrength: 0.05,
         trackStrength: 0.08,
-        secondaryStrength: 0.58
+        secondaryStrength: 0.7
     )
 
     static func palette(for appearance: NSAppearance) -> SpotTheme {
