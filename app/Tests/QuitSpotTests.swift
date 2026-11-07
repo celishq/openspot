@@ -13,7 +13,7 @@ final class QuitSpotTests: XCTestCase {
     func testACardPressQuitsTheApp() async throws {
         let presses = Presses()
         let commands = ShippedSpot.commands(folder: folder, guide: folder, app: "", quit: QuitSpot { await presses.press() })
-        let spot = try XCTUnwrap(commands.first { $0.name == "Quit Openspot" })
+        let spot = try XCTUnwrap(commands.first { $0.name == "Quit" })
 
         _ = try await spot.perform(spot.click, timeout: 1)
 

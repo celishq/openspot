@@ -66,7 +66,7 @@ public enum ShippedSpot: Equatable, Sendable {
             )
         }
         if let quit {
-            commands.append(PluginCommand(id: quitID, name: "Quit Openspot", url: folder, symbol: "power", shipped: .quit(quit), isOnGrid: false))
+            commands.append(PluginCommand(id: quitID, name: "Quit", url: folder, symbol: "power", subtitle: "Openspot", shipped: .quit(quit), isOnGrid: false))
         }
         return commands
     }
