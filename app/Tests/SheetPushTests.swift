@@ -45,4 +45,14 @@ final class SheetPushTests: XCTestCase {
         XCTAssertEqual(fade.lowerBound, 106.0 / 152, accuracy: 0.001)
         XCTAssertEqual(fade.upperBound, 1)
     }
+
+    func testACardLiesInTheRingOfCellsBetweenItAndTheOpenCard() {
+        XCTAssertEqual(push.ring(of: card(row: 1, column: 0)), 1)
+        XCTAssertEqual(push.ring(of: card(row: 0, column: 3)), 2)
+        XCTAssertEqual(push.ring(of: card(row: 4, column: 1)), 3)
+    }
+
+    func testAWideCardLiesInTheRingOfItsNearestCell() {
+        XCTAssertEqual(push.ring(of: SpotPlacement(index: 0, row: 2, column: 2, size: .wide)), 1)
+    }
 }

@@ -24,6 +24,7 @@ struct SpotGridView: View {
                 offset: offset(of: placement, id: entry.id),
                 scale: isSheetOpen && entry.id != openID ? SpotMotion.pushedScale : 1,
                 fade: push?.fade(of: placement) ?? 1...1,
+                ring: push?.ring(of: placement) ?? 0,
                 isCovered: entry.id == openID || SpotCardView.isFilled(entry, takesDrag: model.takesDrag(entry.id), isDropTarget: dropTarget == entry.id)
             )
         }
@@ -45,8 +46,9 @@ struct SpotGridView: View {
                     model: model
                 )
                 .onDrop(of: [.fileURL], delegate: SpotCardDrop(id: entry.id, model: model, target: $dropTarget))
-                .animation(SpotMotion.cardFade(isSheetOpen: isSheetOpen, fade: card.fade)) {
-                    $0.scaleEffect(card.scale).opacity(isSheetOpen ? SpotMotion.coveredCardOpacity : 1)
+                .animation(SpotMotion.cardShrink(isSheetOpen: isSheetOpen, fade: card.fade, ring: card.ring)) { $0.scaleEffect(card.scale) }
+                .animation(SpotMotion.cardFade(isSheetOpen: isSheetOpen, fade: card.fade, ring: card.ring)) {
+                    $0.opacity(isSheetOpen ? SpotMotion.coveredCardOpacity : 1)
                 }
                 .offset(card.offset)
                 .zIndex(dragged?.id == entry.id ? 1 : 0)

@@ -210,10 +210,11 @@ struct SpotsView: View {
             .animation(SpotMotion.blurFade(isSheetOpen: sheetOpen)) { $0.opacity(isShown ? 1 : 0) }
     }
 
-    /// How the open sheet pushes the cards of the grid, with the sheet's rect taken into the grid.
+    /// How the open sheet pushes the cards of the grid, with the sheet's rect taken into the grid. Its window starts at the
+    /// top of the search field, so a card that moves up is gone there.
     private func push(from card: SpotSheetCard) -> SheetPush {
         let origin = SpotTokens.gridOrigin(scrollOffset: scrollOffset)
-        let window = CGRect(x: -origin.x, y: -origin.y, width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
+        let window = CGRect(x: -origin.x, y: SpotTokens.halo - origin.y, width: SpotTokens.panelWidth, height: SpotTokens.panelHeight - SpotTokens.halo)
         return SheetPush(open: card.placement, sheet: sheetRect.offsetBy(dx: -origin.x, dy: -origin.y), window: window)
     }
 

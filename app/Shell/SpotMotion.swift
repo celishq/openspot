@@ -40,9 +40,23 @@ enum SpotMotion {
         return isLate ? .easeIn(duration: half).delay(half) : .easeOut(duration: half)
     }
 
-    /// How a pushed card fades and shrinks, in step with its push. `fade` is from `SheetPush`.
-    static func cardFade(isSheetOpen: Bool, fade: ClosedRange<Double>) -> Animation {
-        Animation(SpotCardFade(fade: fade, isOpen: isSheetOpen))
+    /// How much later each ring of cards around the open card starts to shrink and fade than the ring before it.
+    static let ringDelay = 0.02
+    static let lastDelayedRing = 4
+
+    /// How a pushed card shrinks, in step with its push. `fade` and `ring` are from `SheetPush`.
+    static func cardShrink(isSheetOpen: Bool, fade: ClosedRange<Double>, ring: Int) -> Animation {
+        Animation(SpotCardFade(fade: fade, isOpen: isSheetOpen, delay: delay(ofRing: ring)))
+    }
+
+    /// How a pushed card fades: over the second half of its shrink.
+    static func cardFade(isSheetOpen: Bool, fade: ClosedRange<Double>, ring: Int) -> Animation {
+        let half = (fade.lowerBound + fade.upperBound) / 2
+        return Animation(SpotCardFade(fade: half...fade.upperBound, isOpen: isSheetOpen, delay: delay(ofRing: ring)))
+    }
+
+    private static func delay(ofRing ring: Int) -> Double {
+        Double(min(max(ring - 1, 0), lastDelayedRing - 1)) * ringDelay
     }
 
     /// The share of its way that the spring of `sheet(isOpen:)` has moved the sheet after `time`.

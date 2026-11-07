@@ -38,4 +38,15 @@ public struct SheetPush: Equatable, Sendable {
         if let fade = push.fade(within: window) { return fade }
         return push.exit(from: sheet.insetBy(dx: -Self.reach, dy: -Self.reach))...1
     }
+
+    /// How many cells lie from the open card to the nearest cell of a card, across or along the grid.
+    public func ring(of placement: SpotPlacement) -> Int {
+        func gap(_ start: Int, _ length: Int, _ openStart: Int, _ openLength: Int) -> Int {
+            max(openStart - (start + length - 1), start - (openStart + openLength - 1), 0)
+        }
+        return max(
+            gap(placement.column, placement.size.columns, open.column, open.size.columns),
+            gap(placement.row, placement.size.rows, open.row, open.size.rows)
+        )
+    }
 }
