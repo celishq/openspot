@@ -3,6 +3,8 @@ import OpenspotCore
 
 struct SpotSheetView: View {
     let entry: SpotsModel.Entry
+    /// The size that the grid gives its card, which can differ from the size it prefers.
+    let cardSize: SpotSize
     let isOpen: Bool
     /// Whether the header lies on the white fill of a card that is turned on.
     let showsFill: Bool
@@ -114,12 +116,12 @@ struct SpotSheetView: View {
 
     /// Whether the sheet still lies on a 1x1 card, which shows its glyph alone.
     private var showsSmallCard: Bool {
-        !isOpen && entry.size == .small
+        !isOpen && cardSize == .small
     }
 
     /// Whether the sheet still lies on a card with room under its header, which shows only its glyph and its words.
     private var showsTallCard: Bool {
-        !isOpen && entry.size.rows > 1
+        !isOpen && cardSize.rows > 1
     }
 
     /// How far the words of the header lie from their place at the foot of a tall card.
@@ -128,7 +130,7 @@ struct SpotSheetView: View {
         let top = SpotTokens.padding + (row - wordsHeight) / 2
         return CGSize(
             width: -(SpotTokens.glyphSize + SpotTokens.padding - 5),
-            height: SpotTokens.height(rows: entry.size.rows) - SpotTokens.padding - wordsHeight - top
+            height: SpotTokens.height(rows: cardSize.rows) - SpotTokens.padding - wordsHeight - top
         )
     }
 

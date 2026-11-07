@@ -85,6 +85,7 @@ final class SpotsModel {
     private typealias Target = (entry: Entry, item: SpotItem?)
 
     private static let globalItemLimit = 6
+    private static let pluginFolder = PluginFolder.standard()
     private static let dragWatchPause: Duration = .milliseconds(16)
     private static let chainPause: Duration = .milliseconds(200)
     private static let loadLimit: Duration = .seconds(2)
@@ -115,6 +116,7 @@ final class SpotsModel {
     /// The shared spot that the open review shows, which exists only as long as that sheet.
     private var reviewed: SpotReview?
     private var isFirstLaunch = false
+    private var spotsChanged = false
     var isShown = false
     /// Whether the app is opening the panel unseen as it starts, which a press of the key ends.
     var isWarming = false
@@ -171,9 +173,11 @@ final class SpotsModel {
         isFirstLaunch = true
         try? ConfigFile.standard().begin()
         reload()
-        present()
         sheetMoves = false
-        open(ShippedSpot.spotsID)
+        sheets[ShippedSpot.spotsID]?.open(waits: true) { [weak self] in
+            self?.openList = ShippedSpot.spotsID
+            self?.present()
+        }
     }
 
     /// Reads the config file and the plugin folder again. No script runs for this, and each card shows its header until its
@@ -200,6 +204,15 @@ final class SpotsModel {
             notify(problems.joined(separator: " "))
         }
         self.problems = problems
+    }
+
+    /// Brings the grid up to date while a sheet covers it, so that the sheet closes onto the card's real place. The selected
+    /// card stays selected.
+    private func reloadUnderSheet() {
+        spotsChanged = false
+        let id = selectedEntry?.id
+        reload()
+        if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
     }
 
     private func rebuildEntries() {
@@ -243,6 +256,7 @@ final class SpotsModel {
             if !query.isEmpty || isEditing || cards.first(where: { $0.id == id }).map({ $0.isOnGrid != visible.contains { $0.id == id } }) == true { updateVisible() }
         case .frame:
             if case .settings? = sheets[id]?.command.shipped { applyConfig() }
+            if spotsChanged, id == ShippedSpot.spotsID { reloadUnderSheet() }
         case .chooseFiles:
             if let sheet = sheets[id] { chooseFiles(sheet.command) { sheet.drop($0) } }
         }
@@ -787,10 +801,8 @@ final class SpotsModel {
 
     func closeList() {
         stopRecording()
-        let closesSpots = openList == ShippedSpot.spotsID
         openList = nil
         sheets.values.forEach { $0.close() }
-        if closesSpots { reload() }
     }
 
     /// Closes each sheet of parts when the panel has faded, and stops the reads that nothing wants now. A sheet of rows stays
@@ -864,6 +876,7 @@ final class SpotsModel {
             open(ShippedSpot.buildID)
             return
         }
+        if entry.id == ShippedSpot.spotsID, action == nil { spotsChanged = true }
         if action == nil, item.shortcut != nil {
             toggleRecording(id: item.run)
             return
@@ -1050,7 +1063,7 @@ final class SpotsModel {
     /// The rows that the app adds for a selected card of the grid. A row of a list or an open sheet keeps its own Delete.
     private func extras(on target: Target) -> [CommandAction] {
         guard openList == nil, target.item == nil, target.entry.command.shipped == nil else { return [] }
-        guard !PluginFolder.standard().isCore(target.entry.command) else { return [.share, .turnOff] }
+        guard !Self.pluginFolder.isCore(target.entry.command) else { return [.share, .turnOff] }
         return [.share, .remove(widgets: widgets(sharingFileWith: target.entry))]
     }
 

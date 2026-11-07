@@ -23,9 +23,10 @@ final class SpotsPanel: NSPanel {
             try? await Task.sleep(for: .seconds(2 * SpotMotion.fadeInDuration))
             if self?.model?.isWarming == true {
                 self?.model?.isWarming = false
-                self?.hide()
+                self?.hide(then: done)
+            } else {
+                done()
             }
-            done()
         }
     }
 
@@ -66,14 +67,15 @@ final class SpotsPanel: NSPanel {
         return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
     }
 
-    /// Starts the close motion, and takes the panel off the screen when it ends.
-    func hide() {
+    /// Starts the close motion, and takes the panel off the screen when it ends. Then it runs the given work.
+    func hide(then done: (() -> Void)? = nil) {
         model?.takeHeld([])
         model?.stopRecording()
         model?.closeMenu()
         model?.endEditing(motion: nil)
         model?.isShown = false
         DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeOutDuration) {
+            defer { done?() }
             guard self.model?.isShown == false else { return }
             self.orderOut(nil)
             self.alphaValue = 1

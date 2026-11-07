@@ -54,6 +54,7 @@ struct SpotsView: View {
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
                 SpotSheetView(
                     entry: entry,
+                    cardSize: cardSize(of: entry),
                     isOpen: sheetOpen,
                     showsFill: entry.state.on == true && !sheetHasLeftCard,
                     list: model.sheets[entry.id]?.list ?? ItemList(),
@@ -81,7 +82,7 @@ struct SpotsView: View {
                 }
                 .modifier(SpotSheetFrame(
                     rect: sheetOpen ? sheetRect : isInstall(entry) ? fieldRect : openFrame ?? sheetRect,
-                    radius: sheetOpen ? SpotTokens.radius : isInstall(entry) ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: entry.size),
+                    radius: sheetOpen ? SpotTokens.radius : isInstall(entry) ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: cardSize(of: entry)),
                     ringOpacity: !sheetOpen && cardIsSelected(entry) ? 1 : 0,
                     arrow: cardShows(arrowOf: entry) ? AnyView(sheetArrow(of: entry)) : nil
                 ))
@@ -154,11 +155,15 @@ struct SpotsView: View {
         .onChange(of: model.openList) { _, list in
             if list != nil { sheetHint = model.hint }
             guard model.sheetMoves else {
-                sheetID = list
-                sheetOpen = list != nil
-                sheetHasLeftCard = list != nil
-                showsDrop = false
-                lastDrop = nil
+                var still = Transaction()
+                still.disablesAnimations = true
+                withTransaction(still) {
+                    sheetID = list
+                    sheetOpen = list != nil
+                    sheetHasLeftCard = list != nil
+                    showsDrop = false
+                    lastDrop = nil
+                }
                 model.allowSheetMotion()
                 if list == nil { model.endReview() }
                 return
@@ -371,6 +376,11 @@ struct SpotsView: View {
         guard model.form == nil, !coversGrid else { return false }
         guard sheetOpen else { return true }
         return shownPanel?.showsRows != false && model.sheets[sheetID ?? ""]?.awaitsFirstAnswer != true
+    }
+
+    /// The size that the grid gives the card of this sheet. Search and a short row can stretch a card past the size it prefers.
+    private func cardSize(of entry: SpotsModel.Entry) -> SpotSize {
+        model.placements.first { model.visible[$0.index].id == entry.id }?.size ?? entry.size
     }
 
     /// Where the card of the open sheet lies in the panel, which the grid and its scroll say.
