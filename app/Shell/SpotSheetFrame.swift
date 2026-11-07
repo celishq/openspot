@@ -1,3 +1,4 @@
+import OpenspotCore
 import SwiftUI
 
 /// Places the sheet in the panel, so that it can grow out of a card and collapse back into it. The content keeps the sheet's

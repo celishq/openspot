@@ -1,4 +1,5 @@
 import AppKit
+import OpenspotCore
 import SwiftUI
 
 /// One blur of what lies behind the window, with a dark tint. The tint grows from nothing at its edge across the whole margin,

@@ -23,11 +23,7 @@ struct SpotSheetCard {
 
     /// Where the card lies in the panel, with the grid scrolled this far.
     func frame(scrollOffset: CGFloat) -> CGRect {
-        CGRect(
-            x: SpotTokens.halo + CGFloat(placement.column) * (SpotTokens.cell + SpotTokens.columnGap),
-            y: SpotsView.gridTop + CGFloat(placement.row) * (SpotTokens.rowHeight + SpotTokens.rowGap) - scrollOffset,
-            width: SpotTokens.width(columns: placement.size.columns),
-            height: SpotTokens.height(rows: placement.size.rows)
-        )
+        let origin = SpotTokens.gridOrigin(scrollOffset: scrollOffset)
+        return placement.rect.offsetBy(dx: origin.x, dy: origin.y)
     }
 }

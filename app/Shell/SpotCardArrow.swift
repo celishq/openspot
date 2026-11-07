@@ -1,3 +1,4 @@
+import OpenspotCore
 import SwiftUI
 
 /// The arrow of a card that opens a sheet. A row card centres it at the round end, and a tall card puts it in the top corner.

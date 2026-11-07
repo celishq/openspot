@@ -1,3 +1,4 @@
+import OpenspotCore
 import SwiftUI
 
 /// A Control Center surface: a heavier blur, a light grey fill and a rim.

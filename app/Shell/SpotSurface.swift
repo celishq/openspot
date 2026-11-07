@@ -1,3 +1,4 @@
+import OpenspotCore
 import SwiftUI
 
 /// A Control Center surface at a rect of the panel: one blur of a fixed size seen through its shape, a tint, a fill and a

@@ -30,7 +30,6 @@ struct SpotsView: View {
     }
 
     static let panelSpace = "panel"
-    static let gridTop: CGFloat = SpotTokens.halo + SpotTokens.rowHeight + SpotTokens.rowGap
     private static let gridBottom: CGFloat = SpotTokens.halo + SpotTokens.hintBlock
 
     var body: some View {
@@ -42,16 +41,14 @@ struct SpotsView: View {
                     model: model,
                     isSheetOpen: sheetOpen,
                     openID: card?.id,
-                    open: card?.placement,
-                    openFrame: frame,
-                    sheetRect: sheetRect,
+                    push: card.map(push(from:)),
                     scrollOffset: $scrollOffset,
                     dropTarget: $dropTarget,
                     dragged: $dragged
                 )
                     .offset(y: gridPush)
                     .padding(.horizontal, SpotTokens.halo)
-                    .padding(.top, Self.gridTop)
+                    .padding(.top, SpotTokens.gridTop)
                     .padding(.bottom, Self.gridBottom)
             }
             .scrollPosition($scroll)
@@ -219,12 +216,12 @@ struct SpotsView: View {
         let placements = model.placements
         guard model.openList == nil, let spot = placements.first(where: { $0.index == model.selected }) else { return }
         let rows = placements.map { $0.row + $0.size.rows }.max() ?? 0
-        let top = Self.gridTop + CGFloat(spot.row) * (SpotTokens.rowHeight + SpotTokens.rowGap)
+        let top = SpotTokens.gridTop + spot.rect.minY
         let window = ScrollWindow(
             top: SpotTokens.halo + SpotTokens.rowHeight + SpotScrollEdges.fadeLength,
             bottom: SpotTokens.panelHeight - Self.gridBottom - SpotScrollEdges.fadeLength,
             viewHeight: SpotTokens.panelHeight,
-            contentHeight: Self.gridTop + SpotTokens.height(rows: rows) + Self.gridBottom
+            contentHeight: SpotTokens.gridTop + SpotTokens.height(rows: rows) + Self.gridBottom
         )
         let offset = window.offset(showing: top...(top + SpotTokens.height(rows: spot.size.rows)), from: scrollOffset)
         guard offset != scrollOffset else { return }
@@ -249,6 +246,12 @@ struct SpotsView: View {
             .frame(height: height)
             .transaction { $0.animation = nil }
             .animation(SpotMotion.blurFade(isSheetOpen: sheetOpen)) { $0.opacity(isShown ? 1 : 0) }
+    }
+
+    /// How the open sheet pushes the cards of the grid, with the sheet's rect taken into the grid.
+    private func push(from card: SpotSheetCard) -> SheetPush {
+        let origin = SpotTokens.gridOrigin(scrollOffset: scrollOffset)
+        return SheetPush(open: card.placement, sheet: sheetRect.offsetBy(dx: -origin.x, dy: -origin.y))
     }
 
     private var sheetRect: CGRect {

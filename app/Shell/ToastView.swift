@@ -1,3 +1,4 @@
+import OpenspotCore
 import SwiftUI
 
 /// A short message from Openspot on the same surface as a spot.

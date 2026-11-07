@@ -6,11 +6,9 @@ import SwiftUI
 struct SpotGridView: View {
     let model: SpotsModel
     let isSheetOpen: Bool
-    /// The card that the open sheet grows from, where it lies on the grid and in the panel, and the sheet's rect in the panel.
+    /// The card that the open sheet grows from, and how the sheet pushes the other cards.
     let openID: String?
-    let open: SpotPlacement?
-    let openFrame: CGRect?
-    let sheetRect: CGRect
+    let push: SheetPush?
     @Binding var scrollOffset: CGFloat
     @Binding var dropTarget: String?
     @Binding var dragged: (id: String, offset: CGSize)?
@@ -25,7 +23,7 @@ struct SpotGridView: View {
                 size: placement.size,
                 offset: offset(of: placement, id: entry.id),
                 scale: isSheetOpen && entry.id != openID ? SpotMotion.pushedScale : 1,
-                exit: exit(of: placement, id: entry.id),
+                exit: push?.exit(of: placement) ?? 1,
                 isCovered: entry.id == openID || SpotCardView.isFilled(entry, takesDrag: model.takesDrag(entry.id), isDropTarget: dropTarget == entry.id)
             )
         }
@@ -60,43 +58,12 @@ struct SpotGridView: View {
         .contentShape(Rectangle())
     }
 
-    /// The share of the sheet's motion at which a card goes further past the sheet's rect than the backdrop's tint reaches; 1
-    /// when no sheet is open or it never goes so far.
-    private func exit(of placement: SpotPlacement, id: String) -> Double {
-        guard let open, let openID, let openFrame, id != openID else { return 1 }
-        let card = rect(of: placement, id: id)
-        let openCard = rect(of: open, id: openID)
-        let sheet = sheetRect.offsetBy(dx: openCard.minX - openFrame.minX, dy: openCard.minY - openFrame.minY)
-        let shown = sheet.insetBy(dx: -SpotTokens.halo / 3, dy: -SpotTokens.halo / 3)
-        return CardPush(from: card, by: push(of: placement, isOpen: true)).exit(from: shown)
-    }
-
-    /// Where a card lies in the grid before a push or a drag.
-    private func rect(of placement: SpotPlacement, id: String) -> CGRect {
-        CGRect(
-            x: CGFloat(placement.column) * (SpotTokens.cell + SpotTokens.columnGap),
-            y: CGFloat(placement.row) * (SpotTokens.rowHeight + SpotTokens.rowGap),
-            width: SpotTokens.width(columns: placement.size.columns),
-            height: SpotTokens.height(rows: placement.size.rows)
-        )
-    }
-
     /// Where a card lies in the grid: its place, the push of an open sheet and the drag of Edit Spots.
     private func offset(of placement: SpotPlacement, id: String) -> CGSize {
-        let place = rect(of: placement, id: id)
-        let pushed = push(of: placement, isOpen: isSheetOpen)
+        let place = placement.rect
+        let pushed = isSheetOpen ? push?.offset(of: placement) ?? .zero : .zero
         let drag = dragged?.id == id ? dragged?.offset ?? .zero : .zero
         return CGSize(width: place.minX + pushed.width + drag.width, height: place.minY + pushed.height + drag.height)
-    }
-
-    /// How far the open sheet pushes a card: as far as the sheet's edge on the card's side moves from the card's own edge.
-    private func push(of placement: SpotPlacement, isOpen: Bool) -> CGSize {
-        guard isOpen, let from = openFrame, let open else { return .zero }
-        let away = placement.direction(awayFrom: open)
-        return CGSize(
-            width: away.columns < 0 ? sheetRect.minX - from.minX : away.columns > 0 ? sheetRect.maxX - from.maxX : 0,
-            height: away.rows < 0 ? sheetRect.minY - from.minY : away.rows > 0 ? sheetRect.maxY - from.maxY : 0
-        )
     }
 
     /// What a card offers on a right click: its preferred size, its place on the grid and Edit Spots.
@@ -124,7 +91,7 @@ struct SpotGridView: View {
                 withAnimation(SpotMotion.edit) { dragged = nil }
                 let point = CGPoint(
                     x: drag.location.x - SpotTokens.halo,
-                    y: drag.location.y + scrollOffset - SpotsView.gridTop
+                    y: drag.location.y + scrollOffset - SpotTokens.gridTop
                 )
                 let column = Int(point.x / (SpotTokens.cell + SpotTokens.columnGap))
                 let row = Int(point.y / (SpotTokens.rowHeight + SpotTokens.rowGap))
