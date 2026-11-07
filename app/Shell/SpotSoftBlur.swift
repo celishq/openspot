@@ -8,8 +8,6 @@ struct SpotSoftBlur: NSViewRepresentable {
     private static let blurSoftness: CGFloat = 20
     private static let tintInset: CGFloat = SpotTokens.halo * 0.58
     private static let tintSoftness: CGFloat = SpotTokens.halo / 4.7
-    private static let cardInset: CGFloat = SpotTokens.halo - 20
-    private static let cardSoftness: CGFloat = 8
 
     /// Black images whose alpha is the strength of the blur and of the tint at each point.
     struct Masks {
@@ -114,16 +112,6 @@ struct SpotSoftBlur: NSViewRepresentable {
 
     func updateNSView(_ surface: Surface, context: Context) {
         surface.masks = Self.masks(height: height)
-    }
-
-    private static var keptCardMasks: [CGFloat: Image] = [:]
-
-    /// The soft shape that ends the cards of a panel this tall. It is whole under the grid, and fades out inside the blur.
-    static func cardMask(height: CGFloat) -> Image {
-        if let image = keptCardMasks[height] { return image }
-        let image = mask(height: height, inset: cardInset, softness: cardSoftness).map { Image(decorative: $0, scale: 1) } ?? Image(systemName: "square.fill")
-        keptCardMasks[height] = image
-        return image
     }
 
     private static var kept: [CGFloat: Masks] = [:]

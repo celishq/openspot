@@ -42,11 +42,6 @@ struct SpotsView: View {
             })
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask(edges.gradient(height: cardHeight))
-            .mask(alignment: .top) {
-                SpotSoftBlur.cardMask(height: cardHeight)
-                    .resizable()
-                    .frame(height: cardHeight)
-            }
             .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: !coversGrid)) { $0.opacity(coversGrid ? 0 : 1) }
             hintLine
                 .opacity(model.isShown ? 1 : 0)

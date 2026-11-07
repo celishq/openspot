@@ -50,11 +50,12 @@ enum SpotMotion {
         return .easeIn(duration: duration / 2).delay(duration / 4)
     }
 
-    /// How the cards fade: out in the first half of an opening sheet, and back in on close, row by row from the sheet's card.
+    /// How the cards fade: out in the first third of an opening sheet, before a push takes them past the backdrop, and back
+    /// in over the second half of a close, once they are near their place, row by row from the sheet's card.
     static func cardFade(isSheetOpen: Bool, rowsAway: Int) -> Animation {
-        guard !isSheetOpen else { return sheetFade(isOpen: true, isLate: false) }
+        guard !isSheetOpen else { return .easeOut(duration: openDuration / 3) }
         let half = closeDuration / 2
-        return .easeOut(duration: half).delay(min(Double(rowsAway) * cardRowStagger, half))
+        return .easeOut(duration: half * 0.8).delay(half + min(Double(rowsAway) * cardRowStagger, half * 0.2))
     }
 
     /// The crossfade of the blur of the grid and the blur of the sheet.
