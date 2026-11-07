@@ -53,19 +53,19 @@ enum SpotMotion {
     }
 
     /// How a card fades: out as an opening sheet pushes it to the edge of the sheet's rect, and back in as a closing sheet
-    /// brings it inside again. `exit` is from `CardPush`.
+    /// brings it inside again, and in by the end of the close at the latest. `exit` is from `CardPush`.
     static func cardFade(isSheetOpen: Bool, exit: Double) -> Animation {
         guard !isSheetOpen else {
             return .easeOut(duration: cardFadeDuration).delay(max(sheetTime(isOpen: true, share: exit) - cardFadeDuration, 0))
         }
-        return .easeOut(duration: cardFadeDuration).delay(sheetTime(isOpen: false, share: 1 - exit))
+        return .easeOut(duration: cardFadeDuration).delay(min(sheetTime(isOpen: false, share: 1 - exit), closeDuration - cardFadeDuration))
     }
 
-    /// When the spring of `sheet(isOpen:)` has moved the sheet this share of its way.
+    /// When the spring of `sheet(isOpen:)` has moved the sheet this share of its way, at most its duration.
     static func sheetTime(isOpen: Bool, share: Double) -> Double {
         let duration = isOpen ? openDuration : closeDuration
         let pace = 2 * Double.pi / duration
-        var range = (0.0, duration * 2)
+        var range = (0.0, duration)
         for _ in 0..<24 {
             let time = (range.0 + range.1) / 2
             if 1 - (1 + pace * time) * exp(-pace * time) < share { range.0 = time } else { range.1 = time }
