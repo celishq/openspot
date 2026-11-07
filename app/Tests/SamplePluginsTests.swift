@@ -111,12 +111,21 @@ final class SamplePluginsTests: XCTestCase {
         }
     }
 
-    /// The frame that Windows gives a slot, on an area at 0 25 with a size of 1200 by 900.
-    private func windowFrame(_ slot: String, from window: String) async throws -> String {
-        let command = try XCTUnwrap(try scan.scripts.first { $0.name == "Windows" })
-        let words = ["frame", slot, "0", "25", "1200", "900"] + window.split(separator: " ").map(String.init)
-        let answer = try await SpotRuns().answer(of: command, SpotAction(arguments: words))
-        return answer.trimmingCharacters(in: .whitespacesAndNewlines)
+    /// The arguments that Windows passes to `openspot` for a slot, one per line.
+    private func windowCall(_ slot: String) throws -> String {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-windows-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        try "#!/bin/sh\nprintf '%s\\n' \"$@\"\n".writeScript(to: folder.appendingPathComponent("openspot"))
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = [try XCTUnwrap(try scan.scripts.first { $0.name == "Windows" }).url.path, slot]
+        process.environment = ["PATH": "\(folder.path):/usr/bin:/bin"]
+        let output = Pipe()
+        process.standardOutput = output
+        try process.run()
+        process.waitUntilExit()
+        return String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
     }
 
     func testWindowsListsItsCommandsAndHoldsNoKey() throws {
@@ -126,34 +135,11 @@ final class SamplePluginsTests: XCTestCase {
         XCTAssertNil(command.key)
     }
 
-    func testWindowsFillsTheAreaAndCentresAt65Percent() async throws {
-        let window = "100 100 400 300"
-
-        let full = try await windowFrame("full", from: window)
-        let center = try await windowFrame("center", from: window)
-
-        XCTAssertEqual(full, "0 25 1200 900")
-        XCTAssertEqual(center, "210 183 780 585")
-    }
-
-    func testWindowsRotatesASideThroughItsSizes() async throws {
-        let first = try await windowFrame("left", from: "100 100 400 300")
-        let second = try await windowFrame("left", from: first)
-        let third = try await windowFrame("left", from: second)
-        let fourth = try await windowFrame("left", from: third)
-        XCTAssertEqual([first, second, third, fourth], ["0 25 300 900", "0 25 400 900", "0 25 600 900", "0 25 300 900"])
-
-        let right = try await windowFrame("right", from: "100 100 400 300")
-        let nextRight = try await windowFrame("right", from: right)
-        XCTAssertEqual([right, nextRight], ["900 25 300 900", "800 25 400 900"])
-    }
-
-    func testWindowsStillRotatesAWindowThatKeepsItsOwnSize() async throws {
-        let wide = try await windowFrame("left", from: "0 25 350 900")
-        let rounded = try await windowFrame("left", from: "0 25 392 890")
-
-        XCTAssertEqual(wide, "0 25 400 900")
-        XCTAssertEqual(rounded, "0 25 600 900")
+    func testWindowsPlacesEachSlotWithOneMoveOfTemplates() throws {
+        XCTAssertEqual(try windowCall("full"), "window\nmove\n0 0 1/1 1\n")
+        XCTAssertEqual(try windowCall("center"), "window\nmove\n7/40 7/40 13/20 13/20\n")
+        XCTAssertEqual(try windowCall("left"), "window\nmove\n0 0 1/4 1\n0 0 1/3 1\n0 0 1/2 1\n")
+        XCTAssertEqual(try windowCall("right"), "window\nmove\n3/4 0 1/4 1\n2/3 0 1/3 1\n1/2 0 1/2 1\n")
     }
 
     func testEveryCommandCanBeRun() throws {
