@@ -476,7 +476,7 @@ A change to the meaning of a word that exists is a breaking change. Do not make 
 | Core spots run in place from the app | A first run needs no network and cannot fail, and each app update also updates the spots. | A download of each spot or of a zip from GitHub, which can fail and leaves copies that go stale. A copy into the plugins folder at first launch, which also goes stale. |
 | `plugins/*.sh` stays the source | A person edits the real file, and a diff shows the changed line. | Only `.spot` files in the repo, which show a whole script as one changed line and still need a pack step. |
 | A DMG window that shows where to drag, with no background image | The app and Applications side by side say all that a person needs. | An image with an arrow, which needs upkeep. |
-| A card dims only in Edit Spots | Dimming says "hidden from the grid", which only that mode shows. In search a dim card looks disabled and is not. | Dimming wherever a card is off the grid. |
+| A hidden card keeps its full strength, and Edit Spots marks it with `eye.slash` | The mark says "hidden from the grid", which only that mode shows. A dim card looks disabled, and it is not. | Dimming the card at 40%. A card with no fill, which is weak on a light backdrop. |
 
 **Where the Workers model stops.** A Worker runs in a sandbox, so a binding is both an API and a permission. A script has no
 sandbox, so here a binding is only an API (P1). A Durable Object loses its memory when it sleeps. A staying script is a real

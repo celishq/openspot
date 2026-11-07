@@ -13,6 +13,7 @@ struct SpotCardView: View {
     let readings: [String: MetricReading]
     let chainLetter: String?
     let showsChain: Bool
+    let isHiddenFromGrid: Bool
     let onTap: () -> Void
     let onLevel: (Double) -> Void
     @State private var isHovered = false
@@ -35,6 +36,7 @@ struct SpotCardView: View {
             .overlay(shape.fill((isFilled ? Color.black : Color.white).opacity(showsPress ? 0.12 : isHovered ? 0.08 : 0)).allowsHitTesting(false))
             .overlay(shape.strokeBorder(Color.accentColor, lineWidth: 2).animation(nil) { $0.opacity(isSelected ? 1 : 0) }.opacity(isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { keycap }
+            .overlay(alignment: .topTrailing) { hiddenMark }
             .contentShape(shape)
             .onHover { isHovered = $0 }
             .onTapGesture(perform: onTap)
@@ -178,6 +180,20 @@ struct SpotCardView: View {
                 .offset(x: -inset, y: inset)
                 .opacity(showsChain ? 1 : 0)
                 .animation(SpotMotion.keycap, value: showsChain)
+                .allowsHitTesting(false)
+        }
+    }
+
+    /// The mark that says Edit Spots shows this card and the grid does not.
+    @ViewBuilder
+    private var hiddenMark: some View {
+        if isHiddenFromGrid {
+            let inset = SpotTokens.corner(for: size) * SpotTokens.rimPoint - SpotTokens.keycap / 2
+            Image(systemName: "eye.slash")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.white)
+                .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
+                .offset(x: -inset, y: inset)
                 .allowsHitTesting(false)
         }
     }
