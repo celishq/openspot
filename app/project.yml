@@ -76,6 +76,13 @@ targets:
         script: |
           mkdir -p "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers"
           ln -sfn ../MacOS/Openspot "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers/openspot"
+      - name: Copy the core spots
+        basedOnDependencyAnalysis: false
+        script: |
+          core="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots"
+          rm -rf "$core"
+          mkdir -p "$(dirname "$core")"
+          cp -RL "$SRCROOT/../plugins" "$core"
       - name: Fill the dev state
         basedOnDependencyAnalysis: false
         script: |

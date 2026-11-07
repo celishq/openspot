@@ -78,6 +78,7 @@
 		66F449574C33E4F12F11C832 /* SpotRim.swift in Sources */ = {isa = PBXBuildFile; fileRef = 384FA0117E3FA9189E3F0449 /* SpotRim.swift */; };
 		68A50DEEB887A754F0DFAACD /* SearchQueryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 993ACD223429E2D7E989A884 /* SearchQueryTests.swift */; };
 		69B0AAE1C99E59DC9E31C1BF /* SpotSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE29CB081FBF6165437B34B4 /* SpotSize.swift */; };
+		6B08DAE4383D074596964CA5 /* CoreSpotsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA6B0D4E912ED2F8DDF8428A /* CoreSpotsTests.swift */; };
 		6D204CF624ED73CF425B5B0E /* SpotSandboxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE8A913019A7646F3D1032B2 /* SpotSandboxView.swift */; };
 		73F8F78384565E22BCB1EF1D /* SpotRuns.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70B813E7A7CFAD7ACEAB46A /* SpotRuns.swift */; };
 		7403B03956F00FA9780EF6FC /* SpotRowsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E71C12312973A578639A1628 /* SpotRowsView.swift */; };
@@ -353,6 +354,7 @@
 		B544E30E1DA9391508F10DD2 /* ActionKeyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionKeyTests.swift; sourceTree = "<group>"; };
 		B7001A523458221C81566C7E /* HintWords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HintWords.swift; sourceTree = "<group>"; };
 		B806653171F89517A90699CA /* MetricKind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricKind.swift; sourceTree = "<group>"; };
+		BA6B0D4E912ED2F8DDF8428A /* CoreSpotsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreSpotsTests.swift; sourceTree = "<group>"; };
 		BA7CB04E1CE0920F52CDF971 /* PluginFolder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginFolder.swift; sourceTree = "<group>"; };
 		BA83FEB9ADE31C13E14CF521 /* SearchPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPrompt.swift; sourceTree = "<group>"; };
 		BDB7CA4DF0E0220924943676 /* ScrollWindowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollWindowTests.swift; sourceTree = "<group>"; };
@@ -457,6 +459,7 @@
 				B2D62D8B5553AF2E9EF9AFF3 /* CommandKeyTests.swift */,
 				144AE8063E284949FC39AC18 /* CommandLineCallTests.swift */,
 				F6FD2BEB19EFA48253618461 /* ConfigFileTests.swift */,
+				BA6B0D4E912ED2F8DDF8428A /* CoreSpotsTests.swift */,
 				4CF096BD2E9025B33FF465C8 /* EmojiCatalogTests.swift */,
 				D34F4DF9EE6D7D1505F40662 /* FileIconTests.swift */,
 				81708547DDCAC262759EB258 /* FormDraftTests.swift */,
@@ -676,6 +679,7 @@
 				45EA41131230D384D6FC1213 /* Resources */,
 				9377494807D855EA77601A31 /* Frameworks */,
 				FA5BD7132374A84E31CCF0E4 /* Link the openspot command */,
+				9A5AB7CBDD408EEAF102FD46 /* Copy the core spots */,
 				0D4FDAB32F3B0E2B15E19EB2 /* Fill the dev state */,
 			);
 			buildRules = (
@@ -847,6 +851,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "if [ -n \"$OPENSPOT_DEV_STATE\" ] && [ ! -e \"$OPENSPOT_DEV_STATE/plugins\" ]; then\n  mkdir -p \"$OPENSPOT_DEV_STATE\"\n  cp -R \"$SRCROOT/../plugins\" \"$OPENSPOT_DEV_STATE/plugins\"\nfi\n";
+		};
+		9A5AB7CBDD408EEAF102FD46 /* Copy the core spots */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy the core spots";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "core=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots\"\nrm -rf \"$core\"\nmkdir -p \"$(dirname \"$core\")\"\ncp -RL \"$SRCROOT/../plugins\" \"$core\"\n";
 		};
 		FA5BD7132374A84E31CCF0E4 /* Link the openspot command */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -1023,6 +1046,7 @@
 				4B7C93C33BDED640FF7F5819 /* CommandKeyTests.swift in Sources */,
 				B2E3C86E6FCF335C8CFD98EE /* CommandLineCallTests.swift in Sources */,
 				7BC0C70985AB0064E9D7068D /* ConfigFileTests.swift in Sources */,
+				6B08DAE4383D074596964CA5 /* CoreSpotsTests.swift in Sources */,
 				C624547B076FE8A68F13BF37 /* EmojiCatalogTests.swift in Sources */,
 				3B8FBB08AF6DE22373101644 /* FileIconTests.swift in Sources */,
 				0D925E836160D970705BB7A4 /* FormDraftTests.swift in Sources */,

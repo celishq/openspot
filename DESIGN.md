@@ -436,11 +436,6 @@ A change to the meaning of a word that exists is a breaking change. Do not make 
 | Module | Differs from this document | Rule |
 |---|---|---|
 | `scripts/release.sh` | The DMG has no window layout. | Decisions |
-| `project.yml` | The build does not copy the core spots. | A11 |
-| `Core/PluginFolder.swift` | The scan reads one folder. | A11, A12 |
-| `Core/Config.swift` | A `[[spots]]` table has no `enabled` key. | A7 |
-| `Core/SharedSpot.swift` | Sharing reads files only from the plugins folder. | A11 |
-| `Core/PluginFolder.swift`, `Shell/SpotsModel.swift` | Remove would trash a file in the app. | A12 |
 | `Core/ShippedSpot.swift`, `Core/PluginGuide.swift` | One Plugins spot holds all rows. | A5, A13 |
 | `Core/Settings.swift` | Settings has no login row. | A14 |
 | `Shell/SpotsModel.swift`, `Shell/OpenspotApp.swift` | The first launch shows a failure toast and no panel. | A8, A14 |

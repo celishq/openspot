@@ -351,7 +351,7 @@ final class SpotsModel {
         if isShown { dismiss() }
         do {
             let folder = PluginFolder.standard()
-            let spot = try SharedSpot(sharing: entry.command, from: folder.scan(), in: folder)
+            let spot = try SharedSpot(sharing: entry.command, from: folder.scan())
             let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
             try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
             let file = place.appendingPathComponent(SharedSpot.fileName(for: entry.command.name))
@@ -374,6 +374,19 @@ final class SpotsModel {
             reload()
         } catch {
             notify("\(entry.command.name) was not removed. \(Self.reason(error))")
+        }
+    }
+
+    /// Turns a core spot off. Its data stays, and it can come back from the Spots list.
+    private func turnOff(_ entry: Entry) {
+        closeList()
+        if isShown { dismiss() }
+        do {
+            try ConfigFile.standard().turn(entry.id, on: false)
+            confirm("\(entry.command.name) is off")
+            reload()
+        } catch {
+            notify("\(entry.command.name) was not turned off. \(Self.reason(error))")
         }
     }
 
@@ -990,6 +1003,7 @@ final class SpotsModel {
     /// The rows that the app adds for a selected card of the grid. A row of a list or an open sheet keeps its own Delete.
     private func extras(on target: Target) -> [CommandAction] {
         guard openList == nil, target.item == nil, target.entry.command.shipped == nil else { return [] }
+        guard !PluginFolder.standard().isCore(target.entry.command) else { return [.share, .turnOff] }
         return [.share, .remove(widgets: widgets(sharingFileWith: target.entry))]
     }
 
@@ -1049,6 +1063,8 @@ final class SpotsModel {
             share(target.entry)
         } else if action.id == CommandAction.removeID {
             remove(target.entry)
+        } else if action == .turnOff {
+            turnOff(target.entry)
         } else if action.isForm {
             openForm(action, on: target)
         } else if action.after == .stay {
