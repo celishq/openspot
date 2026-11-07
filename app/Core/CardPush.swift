@@ -24,4 +24,22 @@ public struct CardPush: Equatable, Sendable {
             return min(Double((limit - edge) / move), 1)
         }.min() ?? 1
     }
+
+    /// The shares of the push from when the card's leading edge meets the edge of `bounds` until its centre does; nil when the
+    /// card stays inside.
+    public func fade(within bounds: CGRect) -> ClosedRange<Double>? {
+        let axes = [
+            (from.maxX, from.midX, by.width, bounds.maxX),
+            (-from.minX, -from.midX, -by.width, -bounds.minX),
+            (from.maxY, from.midY, by.height, bounds.maxY),
+            (-from.minY, -from.midY, -by.height, -bounds.minY)
+        ]
+        let fades = axes.compactMap { edge, centre, move, limit -> ClosedRange<Double>? in
+            guard move > 0, centre + move > limit else { return nil }
+            let start = max(Double((limit - edge) / move), 0)
+            let end = min(max(Double((limit - centre) / move), start), 1)
+            return start...end
+        }
+        return fades.min { $0.upperBound < $1.upperBound }
+    }
 }

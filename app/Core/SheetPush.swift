@@ -1,7 +1,7 @@
 import Foundation
 
 /// How an open sheet moves the other cards of the grid. Each card is pushed away from the sheet's card as far as the
-/// sheet's edge on its side moves, and fades by the time it goes further past the sheet than the backdrop's tint reaches.
+/// sheet's edge on its side moves, and fades as it crosses the window's edge.
 public struct SheetPush: Equatable, Sendable {
     /// How far past the sheet's rect a card may go before it is gone.
     public static let reach = SpotTokens.halo / 3
@@ -10,10 +10,13 @@ public struct SheetPush: Equatable, Sendable {
     public let open: SpotPlacement
     /// The sheet's rect, in the grid.
     public let sheet: CGRect
+    /// The rect of the window, in the grid.
+    public let window: CGRect
 
-    public init(open: SpotPlacement, sheet: CGRect) {
+    public init(open: SpotPlacement, sheet: CGRect, window: CGRect) {
         self.open = open
         self.sheet = sheet
+        self.window = window
     }
 
     /// How far the open sheet pushes a card.
@@ -26,11 +29,13 @@ public struct SheetPush: Equatable, Sendable {
         )
     }
 
-    /// The share of the sheet's motion at which a card has gone past the reach of the tint; 1 for the sheet's own card and
-    /// for one that never goes so far.
-    public func exit(of placement: SpotPlacement) -> Double {
-        guard placement.index != open.index else { return 1 }
-        let shown = sheet.insetBy(dx: -Self.reach, dy: -Self.reach)
-        return CardPush(from: placement.rect, by: offset(of: placement)).exit(from: shown)
+    /// The shares of the sheet's motion over which a card fades: from when its leading edge meets the window's edge until
+    /// its centre does. A card that stays in the window fades once it has gone past the sheet's rect, and the sheet's own
+    /// card never fades.
+    public func fade(of placement: SpotPlacement) -> ClosedRange<Double> {
+        guard placement.index != open.index else { return 1...1 }
+        let push = CardPush(from: placement.rect, by: offset(of: placement))
+        if let fade = push.fade(within: window) { return fade }
+        return push.exit(from: sheet.insetBy(dx: -Self.reach, dy: -Self.reach))...1
     }
 }

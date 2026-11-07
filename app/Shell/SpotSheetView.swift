@@ -85,6 +85,7 @@ struct SpotSheetView: View {
                         .frame(width: max(sheetWordsWidth, 0), alignment: .leading)
                         .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: !isOpen)) { $0.opacity(isOpen ? 1 : 0) }
                 }
+                .frame(width: max(sheetWordsWidth, 0), alignment: .leading)
                 .offset(showsTallCard ? tallCardShift : .zero)
                 .opacity(showsSmallCard ? 0 : 1)
             }

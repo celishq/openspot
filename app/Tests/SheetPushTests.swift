@@ -4,7 +4,8 @@ import XCTest
 final class SheetPushTests: XCTestCase {
     private let push = SheetPush(
         open: SpotPlacement(index: 5, row: 1, column: 1, size: .small),
-        sheet: CGRect(x: 0, y: -76, width: SpotTokens.gridWidth, height: 400)
+        sheet: CGRect(x: 0, y: -76, width: SpotTokens.gridWidth, height: 400),
+        window: CGRect(x: -24, y: -100, width: 300, height: 600)
     )
 
     private func card(row: Int, column: Int) -> SpotPlacement {
@@ -27,12 +28,21 @@ final class SheetPushTests: XCTestCase {
         XCTAssertEqual(push.offset(of: card(row: 1, column: 0)), CGSize(width: -75, height: 0))
     }
 
-    func testTheOpenCardStaysAndIsReachedAtOnce() {
+    func testTheOpenCardStaysAndNeverFades() {
         XCTAssertEqual(push.offset(of: push.open), .zero)
-        XCTAssertEqual(push.exit(of: push.open), 1)
+        XCTAssertEqual(push.fade(of: push.open), 1...1)
     }
 
-    func testACardFadesWhenItGoesPastTheReachOfTheTint() {
-        XCTAssertEqual(push.exit(of: card(row: 0, column: 1)), 106.0 / 152, accuracy: 0.001)
+    func testACardFadesFromWhenItsLeadingEdgeMeetsTheWindowsEdgeUntilItsCentreDoes() {
+        let fade = push.fade(of: card(row: 0, column: 1))
+        XCTAssertEqual(fade.lowerBound, 100.0 / 152, accuracy: 0.001)
+        XCTAssertEqual(fade.upperBound, 132.0 / 152, accuracy: 0.001)
+    }
+
+    func testACardThatStaysInTheWindowFadesAfterItLeavesTheSheet() {
+        let wide = SheetPush(open: push.open, sheet: push.sheet, window: CGRect(x: -1000, y: -1000, width: 3000, height: 3000))
+        let fade = wide.fade(of: card(row: 0, column: 1))
+        XCTAssertEqual(fade.lowerBound, 106.0 / 152, accuracy: 0.001)
+        XCTAssertEqual(fade.upperBound, 1)
     }
 }

@@ -213,7 +213,8 @@ struct SpotsView: View {
     /// How the open sheet pushes the cards of the grid, with the sheet's rect taken into the grid.
     private func push(from card: SpotSheetCard) -> SheetPush {
         let origin = SpotTokens.gridOrigin(scrollOffset: scrollOffset)
-        return SheetPush(open: card.placement, sheet: sheetRect.offsetBy(dx: -origin.x, dy: -origin.y))
+        let window = CGRect(x: -origin.x, y: -origin.y, width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
+        return SheetPush(open: card.placement, sheet: sheetRect.offsetBy(dx: -origin.x, dy: -origin.y), window: window)
     }
 
     private var sheetRect: CGRect {

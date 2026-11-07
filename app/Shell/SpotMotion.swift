@@ -14,7 +14,7 @@ enum SpotMotion {
     static let hiddenScale = 1.04
     static let backdropHiddenScale = 1.02
     static let pressedScale = 1.04
-    static let pushedScale = 0.92
+    static let pushedScale = 0.7
     static let pressedGlass = 1.5
     static let press = Animation.spring(duration: 0.2, bounce: 0.2)
     static let follow = Animation.easeOut(duration: 0.2)
@@ -22,7 +22,6 @@ enum SpotMotion {
     static let keycap = Animation.easeOut(duration: 0.12)
     static let edit = Animation.spring(duration: 0.3, bounce: 0)
     static let hintFade = Animation.easeOut(duration: 0.15)
-    static let cardFadeDuration = 0.06
     /// How strong a card stays under an open sheet: too faint to see, but drawn, so its return redraws nothing.
     static let coveredCardOpacity = 0.001
 
@@ -41,25 +40,15 @@ enum SpotMotion {
         return isLate ? .easeIn(duration: half).delay(half) : .easeOut(duration: half)
     }
 
-    /// How a card fades: out as an opening sheet pushes it to the edge of the sheet's rect, and back in as a closing sheet
-    /// brings it inside again, and in by the end of the close at the latest. `exit` is from `CardPush`.
-    static func cardFade(isSheetOpen: Bool, exit: Double) -> Animation {
-        guard !isSheetOpen else {
-            return .easeOut(duration: cardFadeDuration).delay(max(sheetTime(isOpen: true, share: exit) - cardFadeDuration, 0))
-        }
-        return .easeOut(duration: cardFadeDuration).delay(min(sheetTime(isOpen: false, share: 1 - exit), closeDuration - cardFadeDuration))
+    /// How a pushed card fades and shrinks, in step with its push. `fade` is from `SheetPush`.
+    static func cardFade(isSheetOpen: Bool, fade: ClosedRange<Double>) -> Animation {
+        Animation(SpotCardFade(fade: fade, isOpen: isSheetOpen))
     }
 
-    /// When the spring of `sheet(isOpen:)` has moved the sheet this share of its way, at most its duration.
-    static func sheetTime(isOpen: Bool, share: Double) -> Double {
-        let duration = isOpen ? openDuration : closeDuration
-        let pace = 2 * Double.pi / duration
-        var range = (0.0, duration)
-        for _ in 0..<24 {
-            let time = (range.0 + range.1) / 2
-            if 1 - (1 + pace * time) * exp(-pace * time) < share { range.0 = time } else { range.1 = time }
-        }
-        return range.0
+    /// The share of its way that the spring of `sheet(isOpen:)` has moved the sheet after `time`.
+    static func sheetShare(isOpen: Bool, at time: Double) -> Double {
+        let pace = 2 * Double.pi / (isOpen ? openDuration : closeDuration)
+        return 1 - (1 + pace * time) * exp(-pace * time)
     }
 
     /// The crossfade of the blur of the grid and the blur of the sheet.

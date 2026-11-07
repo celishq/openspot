@@ -1,8 +1,8 @@
 import OpenspotCore
 import SwiftUI
 
-/// The cards of the panel on their grid, over one blur. An open sheet pushes each other card away from its own card, shrinks
-/// it, and fades it before it leaves the sheet's rect. A change of the panel that does not reach these inputs leaves the grid as it is.
+/// The cards of the panel on their grid, over one blur. An open sheet pushes each other card away from its own card, and
+/// fades and shrinks it as it crosses the window's edge. A change of the panel that does not reach these inputs leaves the grid as it is.
 struct SpotGridView: View {
     let model: SpotsModel
     let isSheetOpen: Bool
@@ -23,7 +23,7 @@ struct SpotGridView: View {
                 size: placement.size,
                 offset: offset(of: placement, id: entry.id),
                 scale: isSheetOpen && entry.id != openID ? SpotMotion.pushedScale : 1,
-                exit: push?.exit(of: placement) ?? 1,
+                fade: push?.fade(of: placement) ?? 1...1,
                 isCovered: entry.id == openID || SpotCardView.isFilled(entry, takesDrag: model.takesDrag(entry.id), isDropTarget: dropTarget == entry.id)
             )
         }
@@ -45,12 +45,13 @@ struct SpotGridView: View {
                     model: model
                 )
                 .onDrop(of: [.fileURL], delegate: SpotCardDrop(id: entry.id, model: model, target: $dropTarget))
-                .scaleEffect(card.scale)
+                .animation(SpotMotion.cardFade(isSheetOpen: isSheetOpen, fade: card.fade)) {
+                    $0.scaleEffect(card.scale).opacity(isSheetOpen ? SpotMotion.coveredCardOpacity : 1)
+                }
                 .offset(card.offset)
                 .zIndex(dragged?.id == entry.id ? 1 : 0)
                 .highPriorityGesture(moveGesture(of: entry), including: model.isEditing ? .all : .subviews)
                 .contextMenu { spotMenu(of: entry) }
-                .animation(SpotMotion.cardFade(isSheetOpen: isSheetOpen, exit: card.exit)) { $0.opacity(isSheetOpen ? SpotMotion.coveredCardOpacity : 1) }
                 .opacity(entry.id == openID ? 0 : 1)
             }
         }
