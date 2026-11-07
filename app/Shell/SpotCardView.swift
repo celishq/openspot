@@ -14,6 +14,7 @@ struct SpotCardView: View {
     let chainLetter: String?
     let showsChain: Bool
     let isHiddenFromGrid: Bool
+    var query = ""
     let onTap: () -> Void
     let onLevel: (Double) -> Void
     @State private var isHovered = false
@@ -99,11 +100,12 @@ struct SpotCardView: View {
         }
     }
 
+    private var marks: SearchMarks {
+        SearchQuery(text: query).marks(in: SpotItem(title: entry.shownState.title, subtitle: entry.shownState.subtitle, run: entry.id))
+    }
+
     private var title: some View {
-        Text(entry.shownState.title)
-            .font(SpotType.title)
-            .foregroundStyle(isFilled ? SpotTheme.onSolid : SpotTheme.ink)
-            .lineLimit(1)
+        SpotMarkedText(text: entry.shownState.title, marks: marks.title, font: SpotType.title, ink: isFilled ? SpotTheme.onSolid : SpotTheme.ink)
     }
 
     private var text: some View {
@@ -112,10 +114,7 @@ struct SpotCardView: View {
             if entry.kind == .slider {
                 slider
             } else if let subtitle = entry.shownState.subtitle {
-                Text(subtitle)
-                    .font(SpotType.detail)
-                    .modifier(SpotSecondaryText(isOnSolid: isFilled))
-                    .lineLimit(1)
+                SpotMarkedText(text: subtitle, marks: marks.subtitle, font: SpotType.detail, ink: isFilled ? SpotTheme.onSolid : SpotTheme.ink, strength: SpotTheme.secondaryLight)
             }
         }
     }
