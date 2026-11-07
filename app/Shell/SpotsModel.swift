@@ -192,7 +192,8 @@ final class SpotsModel {
             update: updateSpot,
             core: folder.core,
             login: AppLogin.item,
-            offersLogin: isFirstLaunch
+            offersLogin: isFirstLaunch,
+            quit: QuitSpot { await NSApp.terminate(nil) }
         ) + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
         let scan = (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
         let problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }

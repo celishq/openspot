@@ -106,6 +106,7 @@
 		8A095CEF6571FB8B78568CD2 /* PluginFolderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0782EF217E4751597CC6415 /* PluginFolderTests.swift */; };
 		8C2E9FF1A5B2544D271E4713 /* ScriptProcessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8612986697AC04A580A55E75 /* ScriptProcessTests.swift */; };
 		8CF130CA715AD8F18889DD91 /* SheetFrameReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25409C9E248808A4847E8320 /* SheetFrameReader.swift */; };
+		8E52FD6E40B42AAFC8C74F1F /* QuitSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA09C84349C2BE5E07A3084B /* QuitSpotTests.swift */; };
 		8E9C45D3841D293AAFAA28F2 /* EditMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 549DD6A76762877757F6D843 /* EditMenu.swift */; };
 		8F30A9EF38737A67528EAE03 /* ShellHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1676F1A9C3F0901AD19016D /* ShellHelperTests.swift */; };
 		9186A05ED662CFE0762644E7 /* SpotTrayBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = F16B29B68165E0EF690CE59D /* SpotTrayBar.swift */; };
@@ -132,6 +133,7 @@
 		A67FB54C403612762B1C5185 /* TrayMarkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8871F0DEA0292B7C5FCC70 /* TrayMarkTests.swift */; };
 		A8EC47902F8BAC4FA8055793 /* SpotState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F907E44A6B18B92A90AF91D /* SpotState.swift */; };
 		A98B253F14794749E440BF5E /* AppLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8B7C83C17467C6AE0649026 /* AppLogin.swift */; };
+		AA5EAEC98186630A05C006A2 /* QuitSpot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57AEB061B5096DF8957AB21 /* QuitSpot.swift */; };
 		AB977B0F6CD84A53E274E6D7 /* GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = 6DA5EDFC09AA6ED85FA1FE5B /* GUIDE.md */; };
 		AC39CA7F07B7C5529B0DA2B8 /* SharedSpot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 527A8D2882688E290A938157 /* SharedSpot.swift */; };
 		AD563AD39C216A1E99111FE2 /* SpotSheetPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = E391CE054A56AFB1132FD112 /* SpotSheetPreview.swift */; };
@@ -372,6 +374,7 @@
 		BFFFB66DDEB2E15E7C4696F2 /* SpotAddDrop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotAddDrop.swift; sourceTree = "<group>"; };
 		C021CF9F5B97B67736BE3E06 /* CommandLineCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandLineCall.swift; sourceTree = "<group>"; };
 		C2AF7F3368C6EB87F43EC079 /* SpotWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotWidgetView.swift; sourceTree = "<group>"; };
+		C57AEB061B5096DF8957AB21 /* QuitSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitSpot.swift; sourceTree = "<group>"; };
 		C78D5403366E77E466027DDC /* SpotSandbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSandbox.swift; sourceTree = "<group>"; };
 		C898CFB3AD0FCEF4FE717081 /* MetricReading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricReading.swift; sourceTree = "<group>"; };
 		CAB5FE54A72D40D0E6886F04 /* SpotFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFormView.swift; sourceTree = "<group>"; };
@@ -404,6 +407,7 @@
 		E6783066F18B3F7801CCCFBD /* HexColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HexColor.swift; sourceTree = "<group>"; };
 		E71C12312973A578639A1628 /* SpotRowsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRowsView.swift; sourceTree = "<group>"; };
 		E8E5DA89D87550A90A66EA7F /* MetricValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricValue.swift; sourceTree = "<group>"; };
+		EA09C84349C2BE5E07A3084B /* QuitSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitSpotTests.swift; sourceTree = "<group>"; };
 		ED035311DE84A145FEA4940B /* SpotGlass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotGlass.swift; sourceTree = "<group>"; };
 		EDC57EBB360B00029B2C77E8 /* SpotKindTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotKindTests.swift; sourceTree = "<group>"; };
 		F06E95F6AF356EBFD00D06E1 /* SpotRunsReadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRunsReadTests.swift; sourceTree = "<group>"; };
@@ -486,6 +490,7 @@
 				B0782EF217E4751597CC6415 /* PluginFolderTests.swift */,
 				7D7938BBC25113A8B3F1BC98 /* PluginHeaderTests.swift */,
 				DBD05CBBD0E23D0F98B74AB7 /* PluginOutputTests.swift */,
+				EA09C84349C2BE5E07A3084B /* QuitSpotTests.swift */,
 				4C5939868A8BC2E7F5717AD6 /* SamplePluginsTests.swift */,
 				7524080673E3B05F48D0A150 /* ScriptFile.swift */,
 				8612986697AC04A580A55E75 /* ScriptProcessTests.swift */,
@@ -642,6 +647,7 @@
 				5C611C6D44F2A23B53C8FB5C /* PluginGuide.swift */,
 				4C8C706E0624B044F0CB6CF0 /* PluginHeader.swift */,
 				8DCD3DFB824167199052271C /* PluginOutput.swift */,
+				C57AEB061B5096DF8957AB21 /* QuitSpot.swift */,
 				7636C3ADEE9DFA0A2EF75CC9 /* Refusal.swift */,
 				2791291CB794E1310B2CF7B9 /* ScanResult.swift */,
 				460DCD2E955C085C7F46564A /* ScriptCall.swift */,
@@ -954,6 +960,7 @@
 				A4DE725E6F40AFD05FC56CFF /* PluginGuide.swift in Sources */,
 				C630389F78169FE5CD722981 /* PluginHeader.swift in Sources */,
 				178BE2921D465C43FACFE712 /* PluginOutput.swift in Sources */,
+				AA5EAEC98186630A05C006A2 /* QuitSpot.swift in Sources */,
 				E0F7BD9BB960C57EFFF76285 /* Refusal.swift in Sources */,
 				EB914BFF6EBEACEA0F5C25D4 /* ScanResult.swift in Sources */,
 				D0EAC4567B25BECFF5A8BF5E /* ScriptCall.swift in Sources */,
@@ -1082,6 +1089,7 @@
 				8A095CEF6571FB8B78568CD2 /* PluginFolderTests.swift in Sources */,
 				37C033FE3E07D593823DD408 /* PluginHeaderTests.swift in Sources */,
 				95DA3CE2F7CF54EAB8C9C294 /* PluginOutputTests.swift in Sources */,
+				8E52FD6E40B42AAFC8C74F1F /* QuitSpotTests.swift in Sources */,
 				4E1955C194A8F2DAF8B71A1D /* SamplePluginsTests.swift in Sources */,
 				573FB56CB885927B24156B1C /* ScriptFile.swift in Sources */,
 				8C2E9FF1A5B2544D271E4713 /* ScriptProcessTests.swift in Sources */,
