@@ -9,7 +9,7 @@ public enum ShippedSpot: Equatable, Sendable {
     case review(SpotReview)
 
     /// The commands of the shipped spots, in the order of the grid.
-    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil, core: URL? = nil, login: LoginItem? = nil) -> [PluginCommand] {
+    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil, core: URL? = nil, login: LoginItem? = nil, offersLogin: Bool = false) -> [PluginCommand] {
         var commands = [
             PluginCommand(
                 id: spotsID,
@@ -22,7 +22,7 @@ public enum ShippedSpot: Equatable, Sendable {
                 key: CommandKey(name: "p"),
                 read: .sheet,
                 order: 1,
-                shipped: .spots(SpotCatalog(folder: folder, core: core, config: config))
+                shipped: .spots(SpotCatalog(folder: folder, core: core, config: config, login: offersLogin ? login : nil))
             ),
             PluginCommand(
                 id: "openspot/settings",

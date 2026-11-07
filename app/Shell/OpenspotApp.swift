@@ -66,7 +66,14 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         model.reload()
         model.arrive(.launch)
-        panel?.warm { [model] in model.confirm("Openspot is ready") }
+        let isFirstLaunch = PluginFolder.standard().isFirstLaunch(config: .standard())
+        panel?.warm { [model] in
+            if isFirstLaunch {
+                model.beginFirstLaunch()
+            } else {
+                model.confirm(model.entryKey.openHint)
+            }
+        }
         isLaunched = true
         if !openedAtLaunch.isEmpty { model.review(openedAtLaunch) }
         NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(didWake), name: NSWorkspace.didWakeNotification, object: nil)

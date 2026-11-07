@@ -114,6 +114,7 @@ final class SpotsModel {
     var pointerIsOverDrop: () -> Bool = { false }
     /// The shared spot that the open review shows, which exists only as long as that sheet.
     private var reviewed: SpotReview?
+    private var isFirstLaunch = false
     var isShown = false
     /// Whether the app is opening the panel unseen as it starts, which a press of the key ends.
     var isWarming = false
@@ -164,6 +165,17 @@ final class SpotsModel {
         runs.work.count
     }
 
+    /// Opens the panel on the Spots list, once, for a person who has no spots yet. The toast with the key waits for the
+    /// panel to close.
+    func beginFirstLaunch() {
+        isFirstLaunch = true
+        try? ConfigFile.standard().begin()
+        reload()
+        present()
+        sheetMoves = false
+        open(ShippedSpot.spotsID)
+    }
+
     /// Reads the config file and the plugin folder again. No script runs for this, and each card shows its header until its
     /// answer arrives.
     func reload() {
@@ -175,13 +187,11 @@ final class SpotsModel {
             app: Bundle.main.executablePath ?? "",
             update: updateSpot,
             core: folder.core,
-            login: AppLogin.item
+            login: AppLogin.item,
+            offersLogin: isFirstLaunch
         ) + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
         let scan = (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
-        var problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
-        if scan.commands.allSatisfy({ $0.shipped != nil }) {
-            problems.append("No plugins in \(folder.url.path)")
-        }
+        let problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.take(scan)
         arrangement = ConfigFile.standard().read().arrangement
         scanned = scan.commands
@@ -781,6 +791,10 @@ final class SpotsModel {
     /// open.
     func panelDidHide() {
         runs.panelClosed()
+        if isFirstLaunch, !isWarming {
+            isFirstLaunch = false
+            confirm(entryKey.openHint)
+        }
         if let openSheet, !openSheet.isOpen {
             sheetMoves = false
             openList = nil

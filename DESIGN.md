@@ -433,10 +433,7 @@ A change to the meaning of a word that exists is a breaking change. Do not make 
 
 ## 13. Where the code differs today
 
-| Module | Differs from this document | Rule |
-|---|---|---|
-| `scripts/release.sh` | The DMG has no window layout. | Decisions |
-| `Shell/SpotsModel.swift`, `Shell/OpenspotApp.swift` | The first launch shows a failure toast and no panel. | A8, A14 |
+The code follows this document.
 
 ## 14. Decisions
 
@@ -507,3 +504,5 @@ Nothing.
    real panel are not measured.
 9. Y2: a copy that Openspot ended still runs the calls that it has, for up to 4 seconds (Y4). A call in that time starts a new
    copy, because the old one has no open stdin. So two copies can run for that time.
+
+10. A11: whether notarization and Gatekeeper accept the scripts in `Contents/Resources/spots`. A signed Release build passes `codesign --verify --deep --strict`. Only a published release proves the rest.

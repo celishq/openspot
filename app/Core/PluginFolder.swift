@@ -72,6 +72,12 @@ public struct PluginFolder: Sendable {
         ScanResult(plugins: coreFiles().compactMap { try? Plugin(file: $0.file, id: $0.id) }, refused: []).commands
     }
 
+    /// Whether the app runs for the first time here: no config file, and no spot in the folder.
+    public func isFirstLaunch(config: ConfigFile) -> Bool {
+        guard !FileManager.default.fileExists(atPath: config.url.path) else { return false }
+        return ((try? PluginFolder(url: url).scan())?.commands ?? []).isEmpty
+    }
+
     /// Whether a command runs from the core folder of the app.
     public func isCore(_ command: PluginCommand) -> Bool {
         guard let core, command.shipped == nil else { return false }

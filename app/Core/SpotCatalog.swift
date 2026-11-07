@@ -10,11 +10,14 @@ public struct SpotCatalog: Equatable, Sendable {
     public let folder: URL
     public let core: URL?
     public let config: ConfigFile
+    /// The row that a first launch offers.
+    public let login: LoginItem?
 
-    public init(folder: URL, core: URL?, config: ConfigFile) {
+    public init(folder: URL, core: URL?, config: ConfigFile, login: LoginItem? = nil) {
         self.folder = folder
         self.core = core
         self.config = config
+        self.login = login
     }
 
     /// Answers one call with the text a script would print. A change prints nothing, which asks for a new read.
@@ -22,6 +25,9 @@ public struct SpotCatalog: Equatable, Sendable {
         switch arguments.first {
         case "read":
             return rows
+        case "open" where arguments.dropFirst().first == LoginItem.run:
+            try login?.toggle()
+            return ""
         case "open":
             return try toggle(arguments.dropFirst().first ?? "")
         default:
@@ -67,6 +73,7 @@ public struct SpotCatalog: Equatable, Sendable {
             .init(key: "symbol", value: "hammer"),
             .init(key: "hides", value: Self.reviewID)
         ])
-        return (head + spots + [build]).map(\.text).joined(separator: "\n")
+        let loginRow = login.map { TextBlock(fields: $0.row.fields + [.init(key: "hides", value: Self.reviewID)]) }
+        return (head + spots + (loginRow.map { [$0] } ?? []) + [build]).map(\.text).joined(separator: "\n")
     }
 }
