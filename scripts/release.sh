@@ -35,7 +35,7 @@ if [ "$stage" = publish ]; then
 fi
 
 rm -rf "$out"
-mkdir -p "$out/disk"
+mkdir -p "$out"
 (cd app && xcodegen generate >/dev/null)
 xcodebuild -resolvePackageDependencies -project app/Openspot.xcodeproj -scheme Openspot \
   -clonedSourcePackagesDirPath "$packages" >"$out/build.log" 2>&1 || fail "Sparkle did not download. See $out/build.log"
@@ -59,9 +59,7 @@ xcodebuild -project app/Openspot.xcodeproj -scheme Openspot -configuration Relea
 xcodebuild -exportArchive -archivePath "$archive" -exportPath "$out/export" -exportOptionsPlist "$out/export.plist" \
   >>"$out/build.log" 2>&1 || fail "The export failed. See $out/build.log"
 
-ditto "$out/export/Openspot.app" "$out/disk/Openspot.app"
-ln -s /Applications "$out/disk/Applications"
-hdiutil create -quiet -volname Openspot -srcfolder "$out/disk" -fs APFS -format ULFO "$dmg"
+sh scripts/dmg.sh "$out/export/Openspot.app" "$dmg"
 codesign --sign "Developer ID Application" --timestamp "$dmg"
 
 if [ "$stage" = publish ]; then
