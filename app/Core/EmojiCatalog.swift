@@ -25,7 +25,6 @@ public struct EmojiCatalog: Sendable {
 
     public static let standardResources = URL(fileURLWithPath: "/System/Library/PrivateFrameworks/CoreEmoji.framework/Versions/A/Resources")
 
-    private static let fallbackLanguage = "en"
     private static let regionMark = "@"
     private static let handshake: Unicode.Scalar = "\u{1F91D}"
     private static let pictureMark: Unicode.Scalar = "\u{FE0F}"
@@ -61,22 +60,12 @@ public struct EmojiCatalog: Sendable {
     }
 
     private func names() throws -> [String: String] {
-        for folder in folders {
+        for folder in LanguageCodes(languages: languages).all {
             let url = resources.appendingPathComponent("\(folder).lproj/AppleName.strings")
             guard let data = try? Data(contentsOf: url) else { continue }
             if let names = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: String] { return names }
         }
         throw PluginError.fault(Self.missing)
-    }
-
-    /// The names of the folders to try, in order: each language with its region, then with no region, then the last resort.
-    private var folders: [String] {
-        let exact = languages.flatMap { language -> [String] in
-            let words = language.split(separator: "-").map(String.init)
-            guard let first = words.first else { return [] }
-            return [words.joined(separator: "_"), words.dropLast().joined(separator: "_"), first].filter { !$0.isEmpty }
-        }
-        return exact + [Self.fallbackLanguage]
     }
 
     /// Each form that the Mac can draw, in its order: the text runs of a binary file.

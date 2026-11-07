@@ -20,6 +20,11 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["emoji", "--tone"]), .unknown("emoji --tone"))
     }
 
+    func testSymbolsTakeNoOptions() {
+        XCTAssertEqual(CommandLineCall(arguments: ["symbols"]), .symbols)
+        XCTAssertEqual(CommandLineCall(arguments: ["symbols", "--tone", "dark"]), .unknown("symbols --tone dark"))
+    }
+
     func testASandboxCanNameAFile() {
         XCTAssertEqual(CommandLineCall(arguments: ["sandbox"]), .sandbox(nil))
         XCTAssertEqual(CommandLineCall(arguments: ["sandbox", "a.txt"]), .sandbox("a.txt"))

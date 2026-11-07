@@ -36,6 +36,8 @@ enum SpotCommandLine {
             finish { await SpotTranslation.languages() }
         case .emoji(let tone):
             finish { try EmojiCatalog().rows(tone: tone) }
+        case .symbols:
+            finish { try SymbolCatalog().rows() }
         }
     }
 
