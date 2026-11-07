@@ -33,7 +33,7 @@ struct SpotCardView: View {
             .padding(SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))
-            .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, strength: showsPress ? SpotMotion.pressedGlass : 1))
+            .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, strength: SpotMotion.pressedGlass, blursBehind: showsPress))
             .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : isHovered ? 0.08 : 0)).allowsHitTesting(false))
             .overlay(Color.clear.modifier(SpotSelectionRing(isSelected: isSelected, shape: shape)).opacity(isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { keycap }
@@ -74,7 +74,12 @@ struct SpotCardView: View {
     }
 
     private var isFilled: Bool {
-        isOn && dropFill == 0
+        Self.isFilled(entry, takesDrag: takesDrag, isDropTarget: isDropTarget)
+    }
+
+    /// Whether a card draws the solid fill of a spot that is on, which no drag or drop tints.
+    static func isFilled(_ entry: SpotsModel.Entry, takesDrag: Bool, isDropTarget: Bool) -> Bool {
+        entry.state.on == true && !takesDrag && !isDropTarget
     }
 
     private var row: some View {

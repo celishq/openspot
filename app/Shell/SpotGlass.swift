@@ -8,6 +8,8 @@ struct SpotGlass: ViewModifier {
     var isBare = false
 
     var strength = 1.0
+    /// Whether the surface draws its own blur. A card of the grid draws it only while pressed, over the grid's blur.
+    var blursBehind = true
     @Environment(\.spotIsShown) private var isShown
 
     func body(content: Content) -> some View {
@@ -16,10 +18,12 @@ struct SpotGlass: ViewModifier {
             .opacity(isShown ? 1 : 0)
             .animation(SpotMotion.surface(isShown: isShown), value: isShown)
             .background {
-                SpotBlur(radius: isShown ? SpotTheme.blur * strength : 0)
-                    .overlay(SpotTheme.glass)
-                    .clipShape(shape)
-                    .opacity(isShown && !isSolid && !isBare ? 1 : 0)
+                if blursBehind {
+                    SpotBlur(radius: isShown ? SpotTheme.blur * strength : 0)
+                        .overlay(SpotTheme.glass)
+                        .clipShape(shape)
+                        .opacity(isShown && !isSolid && !isBare ? 1 : 0)
+                }
                 shape.fill(SpotTheme.solid).opacity(isShown && isSolid ? 1 : 0)
             }
             .animation(SpotMotion.surface(isShown: isShown), value: isShown)

@@ -2,7 +2,8 @@ import AppKit
 import QuartzCore
 
 /// A run that opens and closes the sheet of one spot again and again and writes the time of each frame to a file.
-/// `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`. The panel stays almost clear, takes no focus and no clicks.
+/// `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`. The panel stays almost clear, takes no focus and no clicks,
+/// unless `OPENSPOT_SEEN` asks for a picture.
 @MainActor
 final class SpotMotionProbe: NSObject {
     private let model: SpotsModel
@@ -11,6 +12,8 @@ final class SpotMotionProbe: NSObject {
     private let spot: String?
     private let presses: Int
     private let pause: Double
+    /// Whether the panel shows in full, for a picture of it.
+    private let isSeen: Bool
     private var link: CADisplayLink?
     private var frames: [CFTimeInterval] = []
     private var start: CFTimeInterval = 0
@@ -23,13 +26,16 @@ final class SpotMotionProbe: NSObject {
         spot = environment["OPENSPOT_SPOT"].flatMap { $0.isEmpty ? nil : $0 }
         presses = 2 * (Int(environment["OPENSPOT_CYCLES"] ?? "") ?? 20)
         pause = Double(environment["OPENSPOT_PAUSE"] ?? "") ?? 0.15
+        isSeen = environment["OPENSPOT_SEEN"] != nil
     }
 
     /// Shows the panel, waits for its reads, then starts the presses.
     func run(show: () -> Void) {
         show()
-        panel.alphaValue = 0.02
-        panel.ignoresMouseEvents = true
+        if !isSeen {
+            panel.alphaValue = 0.02
+            panel.ignoresMouseEvents = true
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.begin() }
     }
 

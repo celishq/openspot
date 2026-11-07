@@ -437,6 +437,15 @@ struct SpotsView: View {
         )
     }
 
+    /// Where a card lies in the grid: its place, the push of an open sheet and the drag of Edit Spots.
+    private func offset(of placement: SpotPlacement, id: String, pushed: CGSize) -> CGSize {
+        let drag = dragged?.id == id ? dragged?.offset ?? .zero : .zero
+        return CGSize(
+            width: CGFloat(placement.column) * (SpotTokens.cell + SpotTokens.columnGap) + pushed.width + drag.width,
+            height: CGFloat(placement.row) * (SpotTokens.rowHeight + SpotTokens.rowGap) + pushed.height + drag.height
+        )
+    }
+
     /// How many rows lie between this card and the card of the sheet.
     private func rowsAway(of placement: SpotPlacement, from open: SpotPlacement?) -> Int {
         guard let open else { return 0 }
@@ -449,11 +458,21 @@ struct SpotsView: View {
         let openID = cardID
         let open = placements.first { model.visible[$0.index].id == openID }
         let frame = openFrame
+        let glass = placements.map { placement in
+            let entry = model.visible[placement.index]
+            return SpotGridGlass.Card(
+                id: entry.id,
+                size: placement.size,
+                offset: offset(of: placement, id: entry.id, pushed: push(of: placement, from: open, frame: frame)),
+                scale: sheetOpen && entry.id != openID ? SpotMotion.pushedScale : 1,
+                rowsAway: rowsAway(of: placement, from: open),
+                isCovered: entry.id == openID || SpotCardView.isFilled(entry, takesDrag: model.takesDrag(entry.id), isDropTarget: dropTarget == entry.id)
+            )
+        }
         return ZStack(alignment: .topLeading) {
-            ForEach(placements.map { (id: model.visible[$0.index].id, placement: $0) }, id: \.id) { spot in
-                let placement = spot.placement
+            SpotGridGlass(cards: glass, isSheetOpen: sheetOpen, size: CGSize(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows)))
+            ForEach(Array(zip(placements, glass)), id: \.1.id) { placement, card in
                 let entry = model.visible[placement.index]
-                let pushed = push(of: placement, from: open, frame: frame)
                 SpotCardView(
                     entry: entry,
                     size: placement.size,
@@ -469,15 +488,12 @@ struct SpotsView: View {
                     onLevel: { model.setLevel(entry.id, to: $0) }
                 )
                 .onDrop(of: [.fileURL], delegate: SpotCardDrop(id: entry.id, model: model, target: $dropTarget))
-                .scaleEffect(sheetOpen && entry.id != openID ? SpotMotion.pushedScale : 1)
-                .offset(
-                    x: CGFloat(placement.column) * (SpotTokens.cell + SpotTokens.columnGap) + pushed.width + (dragged?.id == entry.id ? dragged?.offset.width ?? 0 : 0),
-                    y: CGFloat(placement.row) * (SpotTokens.rowHeight + SpotTokens.rowGap) + pushed.height + (dragged?.id == entry.id ? dragged?.offset.height ?? 0 : 0)
-                )
+                .scaleEffect(card.scale)
+                .offset(card.offset)
                 .zIndex(dragged?.id == entry.id ? 1 : 0)
                 .highPriorityGesture(moveGesture(of: entry), including: model.isEditing ? .all : .subviews)
                 .contextMenu { spotMenu(of: entry) }
-                .animation(SpotMotion.cardFade(isSheetOpen: sheetOpen, rowsAway: rowsAway(of: placement, from: open))) { $0.opacity(sheetOpen ? 0 : 1) }
+                .animation(SpotMotion.cardFade(isSheetOpen: sheetOpen, rowsAway: card.rowsAway)) { $0.opacity(sheetOpen ? 0 : 1) }
                 .opacity(entry.id == openID ? 0 : 1)
             }
         }
