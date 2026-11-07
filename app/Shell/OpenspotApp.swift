@@ -30,6 +30,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var configFaults: [String] = []
     private var menuBarDrag: SpotMenuBarDrag?
     private var fileChooser: SpotFileChooser?
+    private var motionProbe: SpotMotionProbe?
     private var update: AppUpdate?
     private var isLaunched = false
     private var openedAtLaunch: [URL] = []
@@ -68,6 +69,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         model.confirm = { toast.show($0, symbol: ToastPanel.confirmSymbol) }
         trayBar = SpotTrayBar(model: model, openspotItem: item)
+        if let panel, let probe = SpotMotionProbe(model: model, panel: panel) {
+            motionProbe = probe
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { probe.run(show: panel.show) }
+        }
         let update = AppUpdate(runningWork: { [model] in model.workCount }, onReady: { [model] in model.updateIsReady() })
         self.update = update
         model.updateSpot = update?.spot

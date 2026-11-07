@@ -46,6 +46,7 @@
 ```sh
 make verify                # the Core check, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
+make perf N=3              # times the frames of a sheet that opens and closes 20 times, in a Release build, 3 runs
 ```
 
 `make verify` runs `xcodegen generate` first, so the project file matches the folders on disk.
