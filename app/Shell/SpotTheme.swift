@@ -13,8 +13,6 @@ struct SpotTheme {
     let glyphOnSolid: NSColor
     /// The shade of a surface over its blur.
     let glass: NSColor
-    /// The shade of a menu, which lies over the panel's own rows.
-    let menuGlass: NSColor
     /// The shade around the panel, at its full strength.
     let tint: NSColor
     let keycap: NSColor
@@ -56,7 +54,6 @@ struct SpotTheme {
         onSolid: .black,
         glyphOnSolid: .controlAccentColor,
         glass: .black.withAlphaComponent(0.3),
-        menuGlass: .black.withAlphaComponent(0.3),
         tint: .black.withAlphaComponent(0.08),
         keycap: NSColor(white: 0.2, alpha: 1),
         float: NSColor(white: 0.34, alpha: 0.72),
@@ -87,7 +84,6 @@ struct SpotTheme {
         onSolid: .white,
         glyphOnSolid: .white,
         glass: .white.withAlphaComponent(0.5),
-        menuGlass: .white,
         tint: .black.withAlphaComponent(0.08),
         keycap: NSColor(white: 0.98, alpha: 1),
         float: NSColor(white: 0.96, alpha: 0.82),
@@ -143,7 +139,6 @@ struct SpotTheme {
     static let glass = color(\.glass)
     static let shadowBase = color(\.shadowBase)
     static let shadow = color(\.shadow)
-    static let menuGlass = color(\.menuGlass)
     static let keycap = color(\.keycap)
     static let float = color(\.float)
     static let window = color(\.window)

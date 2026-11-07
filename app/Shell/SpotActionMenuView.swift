@@ -41,7 +41,7 @@ struct SpotActionMenuView: View {
         }
         .padding(SpotTokens.menuPadding)
         .frame(width: SpotTokens.gridWidth)
-        .modifier(SpotGlass(radius: SpotTokens.radius - SpotTokens.padding + SpotTokens.menuPadding, shade: SpotTheme.menuGlass))
+        .modifier(SpotGlass(radius: SpotTokens.radius - SpotTokens.padding + SpotTokens.menuPadding))
     }
 
     private func isConfirming(_ row: ActionMenu.Row) -> Bool {

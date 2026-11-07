@@ -10,7 +10,6 @@ struct SpotGlass: ViewModifier {
     private static let shadowDrop: CGFloat = 3
 
     var strength = 1.0
-    var shade = SpotTheme.glass
     @Environment(\.spotIsShown) private var isShown
 
     func body(content: Content) -> some View {
@@ -23,7 +22,7 @@ struct SpotGlass: ViewModifier {
                     .shadow(color: SpotTheme.shadow, radius: Self.shadowRadius, y: Self.shadowDrop)
                     .opacity(isShown && !isBare ? 1 : 0)
                 SpotBlur(radius: isShown ? SpotTheme.blur * strength : 0)
-                    .overlay(shade)
+                    .overlay(SpotTheme.glass)
                     .clipShape(shape)
                     .opacity(isShown && !isSolid && !isBare ? 1 : 0)
                 shape.fill(SpotTheme.solid).opacity(isShown && isSolid ? 1 : 0)
