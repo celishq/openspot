@@ -2,26 +2,27 @@ import Foundation
 
 /// A spot that ships with the app, so that it shows whatever the plugins folder holds.
 public enum ShippedSpot: Equatable, Sendable {
-    case plugins(PluginGuide)
+    case spots(SpotCatalog)
+    case build(PluginGuide)
     case settings(Settings)
     case updates(UpdateSpot)
     case review(SpotReview)
 
     /// The commands of the shipped spots, in the order of the grid.
-    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil) -> [PluginCommand] {
+    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil, core: URL? = nil) -> [PluginCommand] {
         var commands = [
             PluginCommand(
-                id: "openspot/plugins",
-                name: "Plugins",
+                id: spotsID,
+                name: "Spots",
                 url: folder,
                 kind: .list,
                 size: .small,
-                symbol: "puzzlepiece.extension",
-                subtitle: "Add your own",
+                symbol: "square.grid.2x2",
+                subtitle: "Turn spots on",
                 key: CommandKey(name: "p"),
-                read: .panel,
+                read: .sheet,
                 order: 1,
-                shipped: .plugins(PluginGuide(folder: folder, guide: guide, app: app))
+                shipped: .spots(SpotCatalog(folder: folder, core: core, config: config))
             ),
             PluginCommand(
                 id: "openspot/settings",
@@ -34,6 +35,19 @@ public enum ShippedSpot: Equatable, Sendable {
                 read: .sheet,
                 order: 2,
                 shipped: .settings(Settings(file: config))
+            ),
+            PluginCommand(
+                id: buildID,
+                name: "Build",
+                url: folder,
+                kind: .list,
+                size: .small,
+                symbol: "hammer",
+                subtitle: "Make your own",
+                read: .sheet,
+                order: 3,
+                shipped: .build(PluginGuide(folder: folder, guide: guide, app: app)),
+                isOnGrid: false
             )
         ]
         if let update {
@@ -52,6 +66,12 @@ public enum ShippedSpot: Equatable, Sendable {
         }
         return commands
     }
+
+    /// The ID of the list of spots that a person can turn on.
+    public static let spotsID = "openspot/spots"
+
+    /// The ID of the list of tools for authors.
+    public static let buildID = "openspot/build"
 
     /// The ID of the sheet that shows a shared spot, which has no card in the grid.
     public static let installID = "openspot/install"
@@ -74,7 +94,8 @@ public enum ShippedSpot: Equatable, Sendable {
     /// Answers one call with the text a script would print.
     func answer(_ arguments: [String], input: String?) async throws -> String {
         switch self {
-        case .plugins(let guide): try await guide.answer(arguments, input: input)
+        case .spots(let catalog): try catalog.answer(arguments)
+        case .build(let guide): try await guide.answer(arguments, input: input)
         case .settings(let settings): try settings.answer(arguments)
         case .updates(let update): try await update.answer(arguments)
         case .review(let review): try review.answer(arguments)

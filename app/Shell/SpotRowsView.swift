@@ -120,6 +120,11 @@ struct SpotRowsView: View {
             if let shortcut = item.shortcut {
                 SpotKeyLabel(text: shortcut, isRecording: recording == item.run)
             }
+            if item.isOn {
+                Image(systemName: "checkmark")
+                    .font(SpotType.body.weight(.semibold))
+                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, SpotTokens.padding)

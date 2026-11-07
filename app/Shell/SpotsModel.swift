@@ -173,7 +173,8 @@ final class SpotsModel {
             folder: folder.url,
             guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder.url,
             app: Bundle.main.executablePath ?? "",
-            update: updateSpot
+            update: updateSpot,
+            core: folder.core
         ) + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
         let scan = (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
         var problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
@@ -308,17 +309,34 @@ final class SpotsModel {
         form = nil
         closeList()
         endReview()
-        let moves = isShown
         do {
-            let review = try SpotReview(spot: SharedSpot(contentsOf: url), folder: PluginFolder.standard().url)
-            reviewed = review
-            present()
-            sheetMoves = moves
-            open(ShippedSpot.command(reviewing: review).id)
+            show(try SpotReview(spot: SharedSpot(contentsOf: url), folder: PluginFolder.standard().url))
             if urls.count > 1 { notify("Openspot installs one spot at a time.") }
         } catch {
             notify(Self.reason(error))
         }
+    }
+
+    /// Shows the text of a core spot, which is on or off, with no way to add it.
+    private func reviewCore(_ item: SpotItem) {
+        let folder = PluginFolder.standard()
+        do {
+            let place = PluginFolder(url: folder.url, core: folder.core, enabled: folder.enabled.union([item.run]))
+            let scan = try place.scan()
+            guard let command = scan.commands.first(where: { $0.id == item.run }) else { return }
+            closeList()
+            show(try SpotReview(spot: SharedSpot(sharing: command, from: scan), folder: folder.url, canAdd: false))
+        } catch {
+            notify(Self.reason(error))
+        }
+    }
+
+    private func show(_ review: SpotReview) {
+        let moves = isShown
+        reviewed = review
+        present()
+        sheetMoves = moves
+        open(ShippedSpot.command(reviewing: review).id)
     }
 
     /// What the search field says as the open review grows out of it.
@@ -752,8 +770,10 @@ final class SpotsModel {
 
     func closeList() {
         stopRecording()
+        let closesSpots = openList == ShippedSpot.spotsID
         openList = nil
         sheets.values.forEach { $0.close() }
+        if closesSpots { reload() }
     }
 
     /// Closes each sheet of parts when the panel has faded, and stops the reads that nothing wants now. A sheet of rows stays
@@ -817,6 +837,12 @@ final class SpotsModel {
     }
 
     private func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil) {
+        if action == nil, item.run == SpotCatalog.buildRun {
+            closeList()
+            sheetMoves = true
+            open(ShippedSpot.buildID)
+            return
+        }
         if action == nil, item.shortcut != nil {
             toggleRecording(id: item.run)
             return
@@ -1061,6 +1087,8 @@ final class SpotsModel {
     private func run(_ action: CommandAction, on target: Target) {
         if action == .share {
             share(target.entry)
+        } else if action.id == SpotCatalog.reviewID, let item = target.item {
+            reviewCore(item)
         } else if action.id == CommandAction.removeID {
             remove(target.entry)
         } else if action == .turnOff {

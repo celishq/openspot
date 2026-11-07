@@ -13,9 +13,11 @@ public struct SpotReview: Equatable, Sendable {
     public let folder: URL
     public let subtitle: String
     private let text: String
+    private let canAdd: Bool
 
-    /// Reads a spot for a plugins folder. Throws a fault when it gives no spot or cannot go into that folder.
-    public init(spot: SharedSpot, folder: URL) throws {
+    /// Reads a spot for a plugins folder. Throws a fault when it gives no spot or cannot go into that folder. With `canAdd`
+    /// false it only shows the text.
+    public init(spot: SharedSpot, folder: URL, canAdd: Bool = true) throws {
         if let clash = spot.clash(in: folder) { throw PluginError.fault(clash) }
         let scan = try Self.scan(of: spot)
         let commands = scan.plugins.flatMap(\.commands)
@@ -23,6 +25,7 @@ public struct SpotReview: Equatable, Sendable {
         guard let primary else { throw PluginError.fault("This file holds no spot.") }
         let runs = Self.selfRuns(in: scan)
         self.spot = spot
+        self.canAdd = canAdd
         name = primary.name
         symbol = primary.symbol
         description = primary.subtitle
@@ -46,7 +49,7 @@ public struct SpotReview: Equatable, Sendable {
         switch arguments.first {
         case "read":
             return sheet
-        case Self.installPart:
+        case Self.installPart where canAdd:
             try spot.add(to: folder)
             return TextBlock(fields: [.init(key: "toast", value: "\(name) added")]).text
         default:
@@ -55,14 +58,10 @@ public struct SpotReview: Equatable, Sendable {
     }
 
     private var sheet: String {
-        [
+        guard canAdd else { return [TextBlock(fields: [.init(key: "grid", value: "t")]).text, reviewPart.text].joined(separator: "\n") }
+        return [
             TextBlock(fields: [.init(key: "grid", value: "t"), .init(key: "grid", value: "a")]).text,
-            TextBlock(fields: [
-                .init(key: "part", value: "review"),
-                .init(key: "cell", value: "t"),
-                .init(key: "readonly", value: "true"),
-                .init(key: "text", value: text)
-            ]).text,
+            reviewPart.text,
             TextBlock(fields: [
                 .init(key: "part", value: Self.installPart),
                 .init(key: "cell", value: "a"),
@@ -73,6 +72,15 @@ public struct SpotReview: Equatable, Sendable {
                 .init(key: "look", value: "strong")
             ]).text
         ].joined(separator: "\n")
+    }
+
+    private var reviewPart: TextBlock {
+        TextBlock(fields: [
+            .init(key: "part", value: "review"),
+            .init(key: "cell", value: "t"),
+            .init(key: "readonly", value: "true"),
+            .init(key: "text", value: text)
+        ])
     }
 
     /// Reads the spot as a scan would, from a folder that holds only its files.

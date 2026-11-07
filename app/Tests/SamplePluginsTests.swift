@@ -16,8 +16,8 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Translate", "Apps", "Caffeinate", "Color picker", "Emoji", "Files", "Links", "Overview", "Screenshot", "Pull requests", "Snippets", "Plugins", "Settings"])
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["t", "a", "c", "o", "e", "f", "l", nil, "v", "g", "n", "p", nil])
+        XCTAssertEqual(scan.commands.map(\.name), ["Translate", "Apps", "Caffeinate", "Color picker", "Emoji", "Files", "Links", "Overview", "Screenshot", "Pull requests", "Snippets", "Spots", "Settings", "Build"])
+        XCTAssertEqual(scan.commands.map(\.key?.name), ["t", "a", "c", "o", "e", "f", "l", nil, "v", "g", "n", "p", nil, nil])
     }
 
     func testNoMetricShowsTwiceInTheGrid() throws {
@@ -27,7 +27,7 @@ final class SamplePluginsTests: XCTestCase {
     }
 
     func testTheSpotsFitThePanelWithNoScrolling() throws {
-        let placements = SpotGrid().place(try scan.commands.map(\.size))
+        let placements = SpotGrid().place(try scan.commands.filter(\.isOnGrid).map(\.size))
         let rows = placements.map { $0.row + $0.size.rows }.max()
 
         XCTAssertEqual(rows, 6)

@@ -12,8 +12,10 @@ public struct SpotItem: Equatable, Sendable {
     public let hides: [String]?
     /// The key this row shows. A pick records the next key that the person presses.
     public let shortcut: String?
+    /// Whether this row shows that its thing is on.
+    public let isOn: Bool
 
-    public init(title: String, subtitle: String? = nil, run: String, symbol: String? = nil, file: String? = nil, image: String? = nil, glyph: String? = nil, hides: [String]? = nil, shortcut: String? = nil) {
+    public init(title: String, subtitle: String? = nil, run: String, symbol: String? = nil, file: String? = nil, image: String? = nil, glyph: String? = nil, hides: [String]? = nil, shortcut: String? = nil, isOn: Bool = false) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -23,6 +25,7 @@ public struct SpotItem: Equatable, Sendable {
         self.glyph = glyph
         self.hides = hides
         self.shortcut = shortcut
+        self.isOn = isOn
     }
 
     /// Reads the block of one row. It needs a run value.
@@ -38,7 +41,8 @@ public struct SpotItem: Equatable, Sendable {
             image: block.value("image"),
             glyph: block.value("glyph"),
             hides: hides.isEmpty ? nil : hides,
-            shortcut: block.value("shortcut")
+            shortcut: block.value("shortcut"),
+            isOn: block.flag("on") ?? false
         )
     }
 

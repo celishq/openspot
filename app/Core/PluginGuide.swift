@@ -1,6 +1,6 @@
 import Foundation
 
-/// The Plugins spot, which ships with the app. It answers the calls a list script answers, in Swift.
+/// The Build spot, which ships with the app. It answers the calls a list script answers, in Swift.
 public struct PluginGuide: Equatable, Sendable {
     public let folder: URL
     public let guide: URL
@@ -25,7 +25,7 @@ public struct PluginGuide: Equatable, Sendable {
             try await open(arguments.dropFirst().first ?? "")
             return ""
         default:
-            throw PluginError.failed(1, "Plugins cannot do that.")
+            throw PluginError.failed(1, "Build cannot do that.")
         }
     }
 
@@ -43,8 +43,6 @@ public struct PluginGuide: Equatable, Sendable {
 
         """
     }
-
-    private static let pluginsPage = "https://github.com/celishq/openspot/tree/main/plugins"
 
     private static let rows = """
     recents=false
@@ -74,11 +72,6 @@ public struct PluginGuide: Equatable, Sendable {
     detail=Add a script here to install a plugin
     run=folder
     symbol=folder
-
-    row=Get plugins
-    detail=Download a plugin from GitHub, then add it to the folder
-    run=get
-    symbol=arrow.down.circle
     """
 
     private static let form = """
@@ -102,10 +95,8 @@ public struct PluginGuide: Equatable, Sendable {
         case "folder":
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             try await tool(["open", folder.path])
-        case "get":
-            try await tool(["open", Self.pluginsPage])
         default:
-            throw PluginError.failed(1, "Plugins has no such row.")
+            throw PluginError.failed(1, "Build has no such row.")
         }
     }
 
