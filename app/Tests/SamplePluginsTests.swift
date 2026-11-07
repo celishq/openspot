@@ -16,7 +16,7 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Translate", "Apps", "Caffeinate", "Color picker", "Confetti", "Emoji", "Files", "Links", "Paste latest screenshot", "Pull requests", "Snippets", "System details", "System", "Windows", "Spots", "Settings", "Build"])
+        XCTAssertEqual(scan.commands.map(\.name), ["Translate", "Apps", "Caffeinate", "Color picker", "Confetti", "Emojis & Symbols", "Files", "Links", "Paste latest screenshot", "Pull requests", "Snippets", "System details", "System", "Windows", "Spots", "Settings", "Build"])
         XCTAssertEqual(scan.commands.map(\.key?.name), ["t", "a", "c", "o", "k", "e", "f", "l", "v", "g", "n", nil, nil, nil, "p", nil, nil])
     }
 
@@ -756,12 +756,15 @@ final class SamplePluginsTests: XCTestCase {
     private func fakeEmoji(in folder: URL) throws -> PluginCommand {
         let script = """
         #!/bin/sh
-        [ "$1" = clipboard ] && { \(Self.fakeClipboard(in: folder)); exit 0; }
-        printf 'row=thumbs up, %s\\nrun=👍\\nglyph=👍\\n' "$3"
+        case "$1" in
+          clipboard) \(Self.fakeClipboard(in: folder)) ;;
+          emoji) printf 'row=thumbs up, %s\\nrun=👍\\nglyph=👍\\n\\n' "$3" ;;
+          symbols) printf 'row=rightwards arrow\\ndetail=Rightwards Arrows\\nrun=→\\nglyph=→\\n' ;;
+        esac
 
         """
         try script.writeScript(to: folder.appendingPathComponent("tools/openspot"))
-        return try XCTUnwrap(try scan.commands.first { $0.name == "Emoji" })
+        return try XCTUnwrap(try scan.commands.first { $0.name == "Emojis & Symbols" })
     }
 
     func testEmojiIsAGridWithItsToneAndNoFaults() async throws {
@@ -770,7 +773,8 @@ final class SamplePluginsTests: XCTestCase {
 
             XCTAssertEqual(output.sheetFaults, [])
             XCTAssertEqual(output.perLine, 7)
-            XCTAssertEqual(output.items.map(\.title), ["thumbs up, none"])
+            XCTAssertEqual(output.items.map(\.title), ["thumbs up, none", "rightwards arrow"])
+            XCTAssertEqual(output.items.last?.subtitle, "Rightwards Arrows")
             XCTAssertEqual(self.text(of: "tone", in: output), "none")
             XCTAssertEqual(output.primary, "Copy")
         }
@@ -784,7 +788,7 @@ final class SamplePluginsTests: XCTestCase {
             let output = try await emoji.items(timeout: 10)
 
             XCTAssertEqual(self.text(of: "tone", in: output), "dark")
-            XCTAssertEqual(output.items.map(\.title), ["thumbs up, dark"])
+            XCTAssertEqual(output.items.map(\.title), ["thumbs up, dark", "rightwards arrow"])
         }
     }
 

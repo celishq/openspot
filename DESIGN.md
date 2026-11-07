@@ -410,6 +410,7 @@ The command is on the path of each script. It also gives the tools for authors.
 | `openspot translate` | Capability: translates text on this Mac, and keeps each pair of languages loaded (K2). |
 | `openspot translate languages` | Capability: the languages it knows. |
 | `openspot emoji [--tone name]` | Capability: each emoji with its name in the language of the Mac, as rows. |
+| `openspot symbols` | Capability: each symbol of the Character Viewer with its Unicode name and its section, as rows. |
 
 ## 11. Security
 

@@ -1,7 +1,7 @@
 #!/bin/sh
-# name=Emoji
+# name=Emojis & Symbols
 # symbol=face.smiling
-# subtitle=Copy an emoji
+# subtitle=Copy an emoji or a symbol
 # key=e
 # size=small
 # read=sheet
@@ -33,6 +33,7 @@ case "$1" in
     printf 'option=none:Yellow\noption=light:Light\noption=medium-light:Medium light\noption=medium:Medium\noption=medium-dark:Medium dark\noption=dark:Dark\n'
     printf 'value=%s\n\n' "$tone"
     openspot emoji --tone "$tone"
+    openspot symbols
     ;;
   tone)
     remember "$2"
