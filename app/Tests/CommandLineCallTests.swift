@@ -51,6 +51,15 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["--help"]), .help)
     }
 
+    func testAWindowCallReadsItsFrame() {
+        XCTAssertEqual(CommandLineCall(arguments: ["window", "frame"]), .windowFrame)
+        XCTAssertEqual(CommandLineCall(arguments: ["window", "move", "-1440", "25", "720", "900"]), .windowMove(x: -1440, y: 25, width: 720, height: 900))
+        XCTAssertEqual(CommandLineCall(arguments: ["window", "move", "0", "25", "720"]), .unknown("window move 0 25 720"))
+        XCTAssertEqual(CommandLineCall(arguments: ["window", "move", "0", "25", "wide", "900"]), .unknown("window move 0 25 wide 900"))
+        XCTAssertEqual(CommandLineCall(arguments: ["window", "move", "0", "25", "0", "900"]), .unknown("window move 0 25 0 900"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot window move x y width height"))
+    }
+
     func testAnUnknownCallAsksForHelp() {
         XCTAssertEqual(CommandLineCall(arguments: ["paint"]), .unknown("paint"))
         XCTAssertEqual(CommandLineCall(arguments: ["color", "mix"]), .unknown("color mix"))

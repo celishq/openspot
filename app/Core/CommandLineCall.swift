@@ -11,6 +11,8 @@ public enum CommandLineCall: Equatable, Sendable {
     case translate(from: String?, to: String?)
     case translateLanguages
     case emoji(tone: EmojiCatalog.Tone)
+    case windowFrame
+    case windowMove(x: Int, y: Int, width: Int, height: Int)
     /// Runs as the helper process of a capability. A script never makes this call, so the usage does not list it.
     case helper(String)
     case help
@@ -27,6 +29,9 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot translate languages                 Prints the languages it knows.
     openspot emoji [--tone name]                 Prints each emoji as a row, with its name in the language of the Mac.
                                                  A tone is none, light, medium-light, medium, medium-dark or dark.
+    openspot window frame                        Prints the front window, then the usable area of its screen:
+                                                 x y width height x y width height, from the top left of the main screen.
+    openspot window move x y width height        Moves the front window to this frame.
 
     """
 
@@ -58,6 +63,14 @@ public enum CommandLineCall: Equatable, Sendable {
                 return
             }
             self = .emoji(tone: tone)
+        case ("window", "frame") where rest.count == 1: self = .windowFrame
+        case ("window", "move") where rest.count == 5:
+            let numbers = rest.dropFirst().compactMap { Int($0) }
+            guard numbers.count == 4, numbers[2] > 0, numbers[3] > 0 else {
+                self = .unknown(arguments.joined(separator: " "))
+                return
+            }
+            self = .windowMove(x: numbers[0], y: numbers[1], width: numbers[2], height: numbers[3])
         case ("translate", _):
             guard let options = Self.options(rest) else {
                 self = .unknown(arguments.joined(separator: " "))
