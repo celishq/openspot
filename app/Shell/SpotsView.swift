@@ -74,7 +74,8 @@ struct SpotsView: View {
                     onClose: {
                         model.allowSheetMotion()
                         model.closeList()
-                    }
+                    },
+                    cardWidth: isInstall(entry) ? fieldRect.width : openFrame?.width ?? sheetRect.width
                 )
                 .background {
                     SpotTheme.solid
