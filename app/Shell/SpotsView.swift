@@ -56,7 +56,8 @@ struct SpotsView: View {
                     entry: entry,
                     cardSize: cardSize(of: entry),
                     isOpen: sheetOpen,
-                    showsFill: entry.state.on == true && !sheetHasLeftCard,
+                    isOn: entry.state.on == true,
+                    fillCovers: !sheetHasLeftCard,
                     list: model.sheets[entry.id]?.list ?? ItemList(),
                     rect: sheetRect,
                     form: model.form?.entry.id == entry.id ? model.form?.draft : nil,
@@ -76,10 +77,6 @@ struct SpotsView: View {
                         model.closeList()
                     }
                 )
-                .background {
-                    SpotTheme.solid
-                        .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(entry.state.on == true && !sheetOpen ? 1 : 0) }
-                }
                 .modifier(SpotSheetFrame(
                     rect: sheetOpen ? sheetRect : isInstall(entry) ? fieldRect : openFrame ?? sheetRect,
                     radius: sheetOpen ? SpotTokens.radius : isInstall(entry) ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: cardSize(of: entry)),
@@ -279,8 +276,18 @@ struct SpotsView: View {
 
     /// The arrow of the card while its sheet moves. It stays in view until the close button takes its place at the edge.
     private func sheetArrow(of entry: SpotsModel.Entry) -> some View {
-        SpotCardArrow(isOnSolid: entry.state.on == true && !sheetOpen)
-            .placed(isTall: (openFrame?.height ?? 0) > SpotTokens.rowHeight)
+        let frame = sheetOpen ? sheetRect : openFrame ?? sheetRect
+        return ZStack {
+            SpotCardArrow(isOnSolid: false)
+                .placed(isTall: (openFrame?.height ?? 0) > SpotTokens.rowHeight)
+            if entry.state.on == true {
+                SpotCardArrow(isOnSolid: true)
+                    .placed(isTall: (openFrame?.height ?? 0) > SpotTokens.rowHeight)
+                    .frame(width: frame.width, height: frame.height, alignment: .topTrailing)
+                    .modifier(SpotFillReach(size: frame.size, center: SpotSheetView.glyphCenter(isSmall: false), covers: !sheetHasLeftCard))
+            }
+        }
+        .frame(width: frame.width, height: frame.height, alignment: .topTrailing)
             .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(sheetOpen ? 0 : 1) }
             .allowsHitTesting(false)
     }

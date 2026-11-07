@@ -6,8 +6,8 @@ import SwiftUI
 struct SpotSoftBlur: NSViewRepresentable {
     private static let blurInset: CGFloat = SpotTokens.halo - 5
     private static let blurSoftness: CGFloat = 20
-    private static let tintInset: CGFloat = SpotTokens.halo / 2
-    private static let tintSoftness: CGFloat = SpotTokens.halo / 3
+    private static let tintInset: CGFloat = SpotTokens.halo * 0.58
+    private static let tintSoftness: CGFloat = SpotTokens.halo / 4.7
     private static let cardInset: CGFloat = SpotTokens.halo - 20
     private static let cardSoftness: CGFloat = 8
 

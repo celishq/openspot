@@ -6,8 +6,10 @@ struct SpotSheetView: View {
     /// The size that the grid gives its card, which can differ from the size it prefers.
     let cardSize: SpotSize
     let isOpen: Bool
-    /// Whether the header lies on the white fill of a card that is turned on.
-    let showsFill: Bool
+    /// Whether the card is turned on, which gives its header the solid fill until the sheet leaves the card.
+    let isOn: Bool
+    /// Whether the solid fill still covers the header. It grows out of the glyph and shrinks into it, so that no point is half of each.
+    let fillCovers: Bool
     let list: ItemList
     let rect: CGRect
     let form: FormDraft?
@@ -32,7 +34,7 @@ struct SpotSheetView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
-            header
+            header(showsFill: false)
             VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
                 if let panel {
                     if panel.showsRows { Color.clear.frame(height: SpotTokens.listRowHeight) }
@@ -55,11 +57,29 @@ struct SpotSheetView: View {
         }
         .padding(SpotTokens.padding)
         .frame(width: rect.width, height: rect.height, alignment: .topLeading)
+        .overlay(alignment: .topLeading) {
+            if isOn { solidCard }
+        }
     }
 
-    private var header: some View {
+    /// The card's look on the solid fill, cut to a circle around the glyph that covers the whole card or nothing.
+    private var solidCard: some View {
+        header(showsFill: true)
+            .padding(SpotTokens.padding)
+            .frame(width: rect.width, height: rect.height, alignment: .topLeading)
+            .background(SpotTheme.solid)
+            .modifier(SpotFillReach(size: rect.size, center: Self.glyphCenter(isSmall: showsSmallCard), covers: fillCovers))
+            .allowsHitTesting(false)
+    }
+
+    /// The middle of the glyph in the sheet's frame.
+    static func glyphCenter(isSmall: Bool) -> CGPoint {
+        CGPoint(x: SpotTokens.padding + glyphShift(isSmall: isSmall) + SpotTokens.glyphSize / 2, y: SpotTokens.padding + SpotTokens.glyphSize / 2)
+    }
+
+    private func header(showsFill: Bool) -> some View {
             HStack(spacing: SpotTokens.padding - 5) {
-                glyph
+                glyph(showsFill: showsFill)
                 VStack(alignment: .leading, spacing: SpotType.lineGap) {
                     Text(form?.form.title ?? entry.shownState.title)
                         .font(SpotType.title)
@@ -99,7 +119,7 @@ struct SpotSheetView: View {
     }
 
     /// The card's glyph, placed as the card places it until the sheet opens.
-    private var glyph: some View {
+    private func glyph(showsFill: Bool) -> some View {
         Group {
             if let call = entry.work {
                 SpotWorkMark(call: call, isOnSolid: showsFill)
@@ -111,7 +131,12 @@ struct SpotSheetView: View {
                     .background(SpotTheme.ink.opacity(showsSmallCard || showsFill ? 0 : SpotTheme.disc), in: Circle())
             }
         }
-        .offset(x: showsSmallCard ? (SpotTokens.cell - SpotTokens.glyphSize) / 2 - SpotTokens.padding : 0)
+        .offset(x: Self.glyphShift(isSmall: showsSmallCard))
+    }
+
+    /// How far the glyph lies right of its place in the header, to sit in the middle of a 1x1 card.
+    private static func glyphShift(isSmall: Bool) -> CGFloat {
+        isSmall ? (SpotTokens.cell - SpotTokens.glyphSize) / 2 - SpotTokens.padding : 0
     }
 
     /// Whether the sheet still lies on a 1x1 card, which shows its glyph alone.

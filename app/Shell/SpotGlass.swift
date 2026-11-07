@@ -6,8 +6,8 @@ struct SpotGlass: ViewModifier {
     var radius: CGFloat = SpotTokens.radius
     var isSolid = false
     var isBare = false
-    private static let shadowRadius: CGFloat = 8
-    private static let shadowDrop: CGFloat = 2
+    private static let shadowRadius: CGFloat = 10
+    private static let shadowDrop: CGFloat = 3
 
     var strength = 1.0
     var shade = SpotTheme.glass
