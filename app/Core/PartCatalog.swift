@@ -5,7 +5,7 @@ public enum PartCatalog {
     private static let keys: Set<String> = [
         "part", "section", "title", "detail", "symbol", "on", "level", "min", "max", "color", "value", "option", "text",
         "placeholder", "readonly", "press", "key", "close", "cell", "align", "look", "block", "metric", "point",
-        "image", "item", "shortcut"
+        "image", "item", "shortcut", "tone"
     ]
     private static let controls = ["on", "level", "color", "option", "text", "metric", "point", "image", "item", "shortcut"]
 
@@ -62,6 +62,8 @@ public enum PartCatalog {
     | Keys | Shows | Calls the script with |
     |---|---|---|
     | `title`, `detail`, `symbol` | A line: the title on the left, the detail on the right. | |
+    | A line with `value=0.84`, or with `point=3` lines and optional `max` | A small mark before the detail: a bar from \
+    `value`, or bars from the points. `tone=good`, `warn` or `bad` colours it. | |
     | `on=true` or `on=false` | A switch at the end of the line. | `<id> true` or `false` |
     | `level=70`, optional `min`, `max`, `title`, `symbol` | A slider, from 0 to 100 unless `min` and `max` say. Give each slider a `title` or a `symbol`. | `<id> <number>` |
     | `color=#ff0000` for each colour, `value=#ff0000` | A row of swatches. One `color=` with a `title` is one small swatch at the end of the line. | `<id> <color>` |
@@ -146,6 +148,9 @@ public enum PartCatalog {
         }
         if let align = block.value("align"), SpotPart.Align(rawValue: align) == nil {
             faults.append("the part \(name) has an unknown align: \(align)")
+        }
+        if let tone = block.value("tone"), MetricValue.Tone(rawValue: tone) == nil {
+            faults.append("the part \(name) has an unknown tone: \(tone)")
         }
         if let kind = block.value("block"), kind != "progress" {
             faults.append("the part \(name) has an unknown block: \(kind)")

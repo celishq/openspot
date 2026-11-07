@@ -144,6 +144,8 @@ final class SpotPanelTests: XCTestCase {
         XCTAssertEqual(PluginOutput(text: "part=a\noption=English\n").partFaults, ["the part a needs an option as id:title: English"])
         XCTAssertEqual(PluginOutput(text: "part=a\ncolor=red\n").partFaults, ["the part a needs a color as #rrggbb: red"])
         XCTAssertEqual(PluginOutput(text: "part=a\nkey=nope+a\n").partFaults, ["the part a has an unknown key combination: nope+a"])
+        XCTAssertEqual(PluginOutput(text: "part=a\ntitle=A\ndetail=9%\nvalue=0.09\ntone=bad\n").partFaults, [])
+        XCTAssertEqual(PluginOutput(text: "part=a\ntitle=A\ndetail=9%\nvalue=0.09\ntone=red\n").partFaults, ["the part a has an unknown tone: red"])
     }
 
     func testTheCatalogNamesEachControl() {

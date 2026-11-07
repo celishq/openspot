@@ -346,6 +346,7 @@ The app owns each gap, row height and centre. A script says only which part goes
 | Prints | Shows | Openspot calls |
 |---|---|---|
 | `title`, `detail`, `symbol` | A line, with a value on the right. | |
+| A line with `value=0.84`, or `point=3` lines and `max` | A small bar or bars before the value, as a widget draws them. `tone` colours it. | |
 | `on=true` | A switch. | `<id> true` or `false` |
 | `level=70`, `min`, `max` | A slider. | `<id> <number>` |
 | `color=#ff0000` for each swatch, `value` | A row of colours. | `<id> <color>` |

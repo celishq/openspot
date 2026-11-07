@@ -23,6 +23,7 @@ struct SpotPanelView: View {
     private static let barGap: CGFloat = 3
     private static let narrowCell: CGFloat = 80
     private static let narrowGap: CGFloat = 2
+    private static let markValueWidth: CGFloat = 36
     private static let keyFont = Font.system(size: 18, weight: .medium)
     private static let metricFont = Font.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit()
 
@@ -177,12 +178,16 @@ struct SpotPanelView: View {
             if part.title != nil || part.detail != nil {
                 Spacer(minLength: 0)
             }
+            if let mark = part.mark {
+                SpotLineMark(value: mark)
+            }
             if let detail = part.detail {
                 Text(detail)
                     .font(SpotType.detail)
                     .modifier(SpotSecondaryText())
                     .lineLimit(1)
                     .layoutPriority(1)
+                    .frame(minWidth: part.mark == nil ? nil : Self.markValueWidth, alignment: .trailing)
             }
             if case .symbol(let symbol) = part.press {
                 SpotRoundButton(
