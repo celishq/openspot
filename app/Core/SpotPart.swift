@@ -138,6 +138,11 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         }
     }
 
+    /// Whether its mark is a ring around its symbol, at the start of the line, in place of a bar before its detail.
+    public var ringsSymbol: Bool {
+        mark?.kind == .gauge && symbol != nil
+    }
+
     /// Whether it draws a block that takes all the height of its cell.
     public var fillsHeight: Bool {
         switch control {

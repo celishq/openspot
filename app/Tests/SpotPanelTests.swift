@@ -217,6 +217,12 @@ final class SpotPanelTests: XCTestCase {
         XCTAssertEqual(part.mark?.tone, .bad)
     }
 
+    func testALevelWithASymbolRingsTheSymbolAndALevelAloneDoesNot() throws {
+        let parts = try panel("part=mac\ntitle=Mac\nsymbol=macbook\ndetail=80%\nvalue=0.8\n\npart=swap\ntitle=Swap\ndetail=80%\nvalue=0.8\n").parts
+
+        XCTAssertEqual(parts.map(\.ringsSymbol), [true, false])
+    }
+
     func testALineWithPointsAndADetailCarriesATrendMark() throws {
         let part = try XCTUnwrap(try panel("part=cpu\ntitle=All cores\ndetail=30%\nmax=100\npoint=20\npoint=40\n").parts.first)
 

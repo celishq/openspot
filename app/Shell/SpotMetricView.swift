@@ -11,7 +11,7 @@ struct SpotMetricView: View {
     let size: CGSize
 
     private static let bigRingLine: CGFloat = 8
-    private static let smallRingLine: CGFloat = 4
+    static let smallRingLine: CGFloat = 4
     static let barLine: CGFloat = 4
     static let trendBar: CGFloat = 3
     static let trendGap: CGFloat = 2

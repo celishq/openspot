@@ -1,24 +1,38 @@
 import OpenspotCore
 import SwiftUI
 
-/// The small mark of a sheet line, in the sizes of a widget's marks: a bar for a gauge, or bars for the newest points of a
-/// trend, scaled to the highest that shows unless the trend has a top. A tone colours it, and else it is white.
+/// The small mark of a sheet line, in the sizes of a widget's marks: a ring around a symbol when it gets one, a bar for a
+/// gauge, or bars for the newest points of a trend, scaled to the highest that shows unless the trend has a top. A tone
+/// colours it, and else it is white.
 struct SpotLineMark: View {
     let value: MetricValue
+    var symbol: String?
+
+    static let ringSide: CGFloat = 30
 
     private var colour: Color {
         value.tone.map(SpotMetricView.colour) ?? SpotTheme.ink
     }
 
     var body: some View {
-        Group {
-            if value.kind == .trend {
-                bars.frame(height: SpotMetricView.lineTrendHeight)
-            } else {
-                bar
+        if let symbol {
+            ZStack {
+                SpotRing(fill: value.fill, line: SpotMetricView.smallRingLine, colour: colour)
+                Image(systemName: symbol)
+                    .font(.system(size: Self.ringSide * 0.42))
+                    .foregroundStyle(SpotTheme.ink)
             }
+            .frame(width: Self.ringSide, height: Self.ringSide)
+        } else {
+            Group {
+                if value.kind == .trend {
+                    bars.frame(height: SpotMetricView.lineTrendHeight)
+                } else {
+                    bar
+                }
+            }
+            .frame(width: SpotMetricView.edgeMarkWidth)
         }
-        .frame(width: SpotMetricView.edgeMarkWidth)
     }
 
     private var bar: some View {
