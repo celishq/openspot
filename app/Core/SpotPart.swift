@@ -54,6 +54,9 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let cell: String?
     public let align: Align?
     public let look: Look?
+    /// The small mark of a line, drawn as a widget draws it: a ring around its detail from `value`, or bars before its
+    /// detail from `point` lines.
+    public let mark: MetricValue?
 
     /// Reads a block with a `part` or a `section` key.
     public init?(block: TextBlock) {
@@ -83,7 +86,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
             control = .metric(metric)
         } else if let image = block.value("image") {
             control = .image(image)
-        } else if !block.values("point").isEmpty {
+        } else if !block.values("point").isEmpty, block.value("detail") == nil {
             control = .chart(block.values("point").compactMap(Double.init))
         } else if !block.values("item").isEmpty {
             control = .list(block.values("item").map(Self.option), value: block.value("value"))
@@ -102,6 +105,20 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         } else {
             control = .none
         }
+        mark = control == .none ? Self.mark(block) : nil
+    }
+
+    private static func mark(_ block: TextBlock) -> MetricValue? {
+        let points = block.values("point").compactMap(Double.init).filter(\.isFinite)
+        let value = block.number("value")
+        guard value != nil || !points.isEmpty else { return nil }
+        return MetricValue(
+            title: block.value("detail") ?? "",
+            tone: block.value("tone").flatMap(MetricValue.Tone.init),
+            value: value,
+            points: points.isEmpty ? nil : points,
+            max: block.number("max")
+        )
     }
 
     private static func option(_ text: String) -> Option {
@@ -119,6 +136,12 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case .text(let text, _, _): text
         case .shortcut(let text): text
         }
+    }
+
+    /// The words in the ring of a level, which takes the place of its detail: the detail with no percent sign.
+    public var ringWords: String? {
+        guard mark?.kind == .gauge, let detail else { return nil }
+        return detail.hasSuffix("%") ? String(detail.dropLast()) : detail
     }
 
     /// Whether it draws a block that takes all the height of its cell.

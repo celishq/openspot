@@ -31,6 +31,12 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(commands.map(\.key?.name), ["p", nil, nil])
     }
 
+    func testTheMainSearchFindsItsRowsAfterThoseOfTheCoreSpots() throws {
+        XCTAssertTrue(try spot.isGlobal)
+        XCTAssertTrue(try spot.read?.has(.panel) == true)
+        XCTAssertGreaterThan(try spot.rank, 3)
+    }
+
     func testTheSheetListsTheKeyOfTheFile() async throws {
         try file.set("panel_key", to: "option+space")
 

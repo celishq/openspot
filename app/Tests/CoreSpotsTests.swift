@@ -163,13 +163,13 @@ final class CoreSpotsTests: XCTestCase {
         XCTAssertEqual(PluginFolder.standard(environment: ["OPENSPOT_CONFIG": home.path], home: root).enabled, ["apps"])
     }
 
-    func testTheRepoSpotsGiveThirteenChoicesAndOverviewBringsItsFourParts() throws {
+    func testTheRepoSpotsGiveThirteenChoicesAndSystemBringsItsMetricsAndSheet() throws {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let plugins = repo.appendingPathComponent("plugins")
-        let place = PluginFolder(url: folder, core: plugins, enabled: ["overview"])
+        let place = PluginFolder(url: folder, core: plugins, enabled: ["system"])
 
         XCTAssertEqual(place.coreChoices().count, 13)
         XCTAssertEqual(place.coreChoices().filter { $0.subtitle == nil }.map(\.name), [])
-        XCTAssertEqual(Set(try place.scan().scripts.map(\.id)), ["agents", "battery", "cpu", "disk"])
+        XCTAssertEqual(Set(try place.scan().scripts.map(\.id)), ["battery", "cpu", "devices", "memory", "system-info"])
     }
 }

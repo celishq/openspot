@@ -144,6 +144,8 @@ final class SpotPanelTests: XCTestCase {
         XCTAssertEqual(PluginOutput(text: "part=a\noption=English\n").partFaults, ["the part a needs an option as id:title: English"])
         XCTAssertEqual(PluginOutput(text: "part=a\ncolor=red\n").partFaults, ["the part a needs a color as #rrggbb: red"])
         XCTAssertEqual(PluginOutput(text: "part=a\nkey=nope+a\n").partFaults, ["the part a has an unknown key combination: nope+a"])
+        XCTAssertEqual(PluginOutput(text: "part=a\ntitle=A\ndetail=9%\nvalue=0.09\ntone=bad\n").partFaults, [])
+        XCTAssertEqual(PluginOutput(text: "part=a\ntitle=A\ndetail=9%\nvalue=0.09\ntone=red\n").partFaults, ["the part a has an unknown tone: red"])
     }
 
     func testTheCatalogNamesEachControl() {
@@ -204,6 +206,58 @@ final class SpotPanelTests: XCTestCase {
 
         XCTAssertFalse(sheet.takesArrows)
         XCTAssertNil(sheet.selectedPart)
+    }
+
+    func testALineWithAValueCarriesALevelMarkInItsTone() throws {
+        let part = try XCTUnwrap(try panel("part=left\ntitle=AirPods left\ndetail=12%\nvalue=0.12\ntone=bad\n").parts.first)
+
+        XCTAssertEqual(part.control, SpotPart.Control.none)
+        XCTAssertEqual(part.mark?.kind, .gauge)
+        XCTAssertEqual(part.mark?.fill, 0.12)
+        XCTAssertEqual(part.mark?.tone, .bad)
+    }
+
+    func testALevelRingsItsNumberWithNoPercentSignAndATrendOrAPlainLineDoesNot() throws {
+        let parts = try panel("part=mac\ntitle=Mac\ndetail=80%\nvalue=0.8\n\npart=cpu\ntitle=CPU\ndetail=30%\npoint=3\n\npart=swap\ntitle=Swap\ndetail=0 MB\n").parts
+
+        XCTAssertEqual(parts.map(\.ringWords), ["80", nil, nil])
+    }
+
+    func testALineWithNoIconKeepsTheIconColumnOnlyInAListWhereALineHasOne() throws {
+        let list = try panel("section=cpu\ntitle=CPU\n\npart=all\ntitle=All\nsymbol=cpu\n\npart=top\ntitle=launchd\n")
+        let plain = try panel("part=top\ntitle=launchd\n")
+        let drawn = try panel("grid=a b\n\npart=all\ncell=a\ntitle=All\nsymbol=cpu\n\npart=top\ncell=b\ntitle=launchd\n")
+
+        XCTAssertEqual(list.parts.map(list.keepsIconColumn), [false, false, true])
+        XCTAssertEqual(plain.parts.map(plain.keepsIconColumn), [false])
+        XCTAssertEqual(drawn.parts.map(drawn.keepsIconColumn), [false, false])
+    }
+
+    func testALineWithPointsAndADetailCarriesATrendMark() throws {
+        let part = try XCTUnwrap(try panel("part=cpu\ntitle=All cores\ndetail=30%\nmax=100\npoint=20\npoint=40\n").parts.first)
+
+        XCTAssertEqual(part.control, SpotPart.Control.none)
+        XCTAssertEqual(part.mark?.kind, .trend)
+        XCTAssertEqual(part.mark?.scaledPoints, [0.2, 0.4])
+    }
+
+    func testPointsWithNoDetailStillDrawAChartTile() throws {
+        let part = try XCTUnwrap(try panel("part=history\npoint=2\npoint=4\n").parts.first)
+
+        XCTAssertEqual(part.control, .chart([2, 4]))
+        XCTAssertNil(part.mark)
+    }
+
+    func testTheArrowsScrollASheetWithNothingToSelect() throws {
+        let sheet = try panel("part=mac\ntitle=This Mac\ndetail=100%\n\npart=swap\ntitle=Swap\ndetail=0 MB\n")
+
+        XCTAssertTrue(sheet.scrollsByArrows)
+    }
+
+    func testTheArrowsDoNotScrollASheetWithAPartToSelect() throws {
+        let sheet = try panel("part=mac\ntitle=This Mac\n\npart=key\nshortcut=ctrl+space\n")
+
+        XCTAssertFalse(sheet.scrollsByArrows)
     }
 
     func testTheSelectionSurvivesANewAnswerAndMovesOnWhenThePartEnds() throws {

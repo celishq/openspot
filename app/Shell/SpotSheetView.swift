@@ -24,7 +24,11 @@ struct SpotSheetView: View {
     /// How far the close button lies from its place at the card's edge. Nil for a card with no arrow, where the frame cuts it.
     let closeShift: CGFloat?
     let onClose: () -> Void
+    /// The width of the card or field that the sheet grows out of and collapses into.
+    let cardWidth: CGFloat
+    let nudge: () -> SpotPanel.Nudge
     @State private var wordsHeight: CGFloat = 0
+    @State private var arrowWidth: CGFloat = 0
 
     private var row: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
@@ -33,10 +37,11 @@ struct SpotSheetView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
             header
+                .offset(y: showsRowCard ? (SpotTokens.rowHeight - SpotTokens.glyphSize) / 2 - SpotTokens.padding : 0)
             VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
                 if let panel {
                     if panel.showsRows { Color.clear.frame(height: SpotTokens.listRowHeight) }
-                    SpotPanelView(panel: panel, work: work, onSet: onSet, onPress: onPress, recordingPart: recording, onRecord: onRecord, list: list, onRun: onRun)
+                    SpotPanelView(panel: panel, work: work, onSet: onSet, onPress: onPress, recordingPart: recording, onRecord: onRecord, list: list, onRun: onRun, nudge: nudge)
                 } else if let form {
                     SpotFormView(draft: form, onValue: onFormValue)
                 } else {
@@ -72,12 +77,28 @@ struct SpotSheetView: View {
                             .lineLimit(1)
                     }
                 }
+                .modifier(SpotWordsWidth(width: wordsWidth))
                 .onGeometryChange(for: CGFloat.self, of: \.size.height) { wordsHeight = $0 }
                 .offset(showsTallCard ? tallCardShift : .zero)
                 .opacity(showsSmallCard ? 0 : 1)
-                Spacer()
-                closeButton
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .trailing) { closeButton }
+            .background {
+                SpotCardArrow(isOnSolid: false)
+                    .hidden()
+                    .onGeometryChange(for: CGFloat.self, of: \.size.width) { arrowWidth = $0 }
+            }
+    }
+
+    /// The width of the header's words: up to the close button in the sheet, and as wide as the card gives them before it opens.
+    private var wordsWidth: CGFloat {
+        let gap = SpotTokens.padding - 5
+        let lead = SpotTokens.padding + SpotTokens.glyphSize + gap
+        if isOpen { return rect.width - lead - gap - SpotTokens.glyphSize - SpotTokens.padding }
+        if cardSize.rows > 1 { return cardWidth - 2 * SpotTokens.padding }
+        let arrow = closeShift == nil ? 0 : arrowWidth + gap
+        return max(cardWidth - SpotCardArrow.rowInset - arrow - lead, 0)
     }
 
     /// The second line of the header: the name of the selected button in a grid, which draws only its picture.
@@ -117,6 +138,11 @@ struct SpotSheetView: View {
     /// Whether the sheet still lies on a 1x1 card, which shows its glyph alone.
     private var showsSmallCard: Bool {
         !isOpen && cardSize == .small
+    }
+
+    /// Whether the sheet still lies on a card one row high, which centres its glyph in that row.
+    private var showsRowCard: Bool {
+        !isOpen && cardSize.rows == 1
     }
 
     /// Whether the sheet still lies on a card with room under its header, which shows only its glyph and its words.

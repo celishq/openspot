@@ -13,6 +13,7 @@ struct SpotPanelView: View {
     var onRecord: (SpotPart) -> Void = { _ in }
     var list = ItemList()
     var onRun: (SpotItem) -> Void = { _ in }
+    var nudge: () -> SpotPanel.Nudge = { SpotPanel.Nudge.rest }
     @FocusState private var focus: String?
     @Environment(\.spotIsShown) private var isShown
 
@@ -22,6 +23,8 @@ struct SpotPanelView: View {
     private static let barGap: CGFloat = 3
     private static let narrowCell: CGFloat = 80
     private static let narrowGap: CGFloat = 2
+    private static let markValueWidth: CGFloat = 36
+    private static let symbolWidth: CGFloat = 22
     private static let keyFont = Font.system(size: 18, weight: .medium)
     private static let metricFont = Font.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit()
 
@@ -34,6 +37,7 @@ struct SpotPanelView: View {
         Group {
             if sheet.overflows {
                 ScrollView(showsIndicators: false) { canvas(sheet) }
+                    .modifier(SpotArrowScroll(nudge: nudge))
             } else {
                 canvas(sheet)
             }
@@ -163,7 +167,12 @@ struct SpotPanelView: View {
             if !hasRoundMark(part), work(part) != nil {
                 mark(part)
             } else if let symbol = part.symbol {
-                Image(systemName: symbol).modifier(SpotSecondaryText())
+                Image(systemName: symbol)
+                    .modifier(SpotSecondaryText())
+                    .frame(width: Self.symbolWidth)
+            }
+            else if panel.keepsIconColumn(part) {
+                Color.clear.frame(width: Self.symbolWidth, height: 0)
             }
             if let title = part.title {
                 Text(title)
@@ -175,12 +184,16 @@ struct SpotPanelView: View {
             if part.title != nil || part.detail != nil {
                 Spacer(minLength: 0)
             }
-            if let detail = part.detail {
+            if let mark = part.mark {
+                SpotLineMark(value: mark, words: part.ringWords)
+            }
+            if let detail = part.detail, part.ringWords == nil {
                 Text(detail)
                     .font(SpotType.detail)
                     .modifier(SpotSecondaryText())
                     .lineLimit(1)
                     .layoutPriority(1)
+                    .frame(minWidth: part.mark == nil ? nil : Self.markValueWidth, alignment: .trailing)
             }
             if case .symbol(let symbol) = part.press {
                 SpotRoundButton(

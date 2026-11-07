@@ -347,6 +347,7 @@ The app owns each gap, row height and centre. A script says only which part goes
 | Prints | Shows | Openspot calls |
 |---|---|---|
 | `title`, `detail`, `symbol` | A line, with a value on the right. | |
+| A line with `value=0.84`, or `point=3` lines and `max` | A small bar or bars before the value, as a widget draws them. `tone` colours it. | |
 | `on=true` | A switch. | `<id> true` or `false` |
 | `level=70`, `min`, `max` | A slider. | `<id> <number>` |
 | `color=#ff0000` for each swatch, `value` | A row of colours. | `<id> <color>` |
@@ -452,7 +453,8 @@ keeps each pair of languages in memory, and they leave memory 30 seconds after t
 this. It never starts, finds or stops anything, and it stays a handler that runs once for each call, as `translate.sh` does.
 When a call cannot start what it needs, it exits with code 1 and one line on stderr that says the cause and the fix.
 
-To use `openspot` in a terminal, link it: `ln -s <path to Openspot.app>/Contents/Helpers/openspot /usr/local/bin/openspot`.
+To use `openspot` in a terminal, turn on Use openspot in Terminal in Settings. It links `/usr/local/bin/openspot` to the
+command inside the app, and macOS asks for your password when that folder needs it.
 
 ## Metrics
 
@@ -502,7 +504,8 @@ opens = "links"
 ```
 
 `places` fills the cells of the layout in order, and each cell needs one metric. `opens` is optional: it names the
-command that Enter or a click runs. `key` also works.
+command that Enter or a click runs. `key` also works. Its sheet grows out of the widget. Give that
+command `grid=false`, so that it has no card of its own.
 
 A widget can also draw its own layout, in the same letters as a sheet's `grid`. Each letter is a rectangle, `.` is empty,
 and `places` names a metric for each letter:
