@@ -1,48 +1,36 @@
 import OpenspotCore
 import SwiftUI
 
-/// The small mark of a sheet line, in the sizes of a widget's marks: a ring around a symbol when it gets one, a bar for a
-/// gauge, or bars for the newest points of a trend, scaled to the highest that shows unless the trend has a top. A tone
-/// colours it, and else it is white.
+/// The small mark of a sheet line: a thin ring around its words for a level, or bars for the newest points of a trend,
+/// scaled to the highest that shows unless the trend has a top. A tone colours it, and else it is white.
 struct SpotLineMark: View {
     let value: MetricValue
-    var symbol: String?
+    var words: String?
 
-    static let ringSide: CGFloat = 30
+    private static let ringSide: CGFloat = 30
+    private static let ringLine: CGFloat = 2
 
     private var colour: Color {
         value.tone.map(SpotMetricView.colour) ?? SpotTheme.ink
     }
 
     var body: some View {
-        if let symbol {
+        if let words {
             ZStack {
-                SpotRing(fill: value.fill, line: SpotMetricView.smallRingLine, colour: colour)
-                Image(systemName: symbol)
-                    .font(.system(size: Self.ringSide * 0.42))
+                SpotRing(fill: value.fill, line: Self.ringLine, colour: colour)
+                Text(words)
+                    .font(SpotType.controlValue)
                     .foregroundStyle(SpotTheme.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .padding(Self.ringLine * 2)
             }
             .frame(width: Self.ringSide, height: Self.ringSide)
         } else {
-            Group {
-                if value.kind == .trend {
-                    bars.frame(height: SpotMetricView.lineTrendHeight)
-                } else {
-                    bar
-                }
-            }
-            .frame(width: SpotMetricView.edgeMarkWidth)
+            bars
+                .frame(height: SpotMetricView.lineTrendHeight)
+                .frame(width: SpotMetricView.edgeMarkWidth)
         }
-    }
-
-    private var bar: some View {
-        GeometryReader { room in
-            ZStack(alignment: .leading) {
-                Capsule().fill(SpotTheme.ink.opacity(SpotTheme.track))
-                Capsule().fill(colour).frame(width: room.size.width * value.fill)
-            }
-        }
-        .frame(height: SpotMetricView.barLine)
     }
 
     private var bars: some View {

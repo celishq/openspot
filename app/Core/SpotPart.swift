@@ -54,8 +54,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let cell: String?
     public let align: Align?
     public let look: Look?
-    /// The small mark of a line, drawn between its title and its detail as a widget draws it: a bar from `value`, or
-    /// bars from `point` lines with a detail.
+    /// The small mark of a line, drawn as a widget draws it: a ring around its detail from `value`, or bars before its
+    /// detail from `point` lines.
     public let mark: MetricValue?
 
     /// Reads a block with a `part` or a `section` key.
@@ -138,9 +138,10 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         }
     }
 
-    /// Whether its mark is a ring around its symbol, at the start of the line, in place of a bar before its detail.
-    public var ringsSymbol: Bool {
-        mark?.kind == .gauge && symbol != nil
+    /// The words in the ring of a level, which takes the place of its detail: the detail with no percent sign.
+    public var ringWords: String? {
+        guard mark?.kind == .gauge, let detail else { return nil }
+        return detail.hasSuffix("%") ? String(detail.dropLast()) : detail
     }
 
     /// Whether it draws a block that takes all the height of its cell.

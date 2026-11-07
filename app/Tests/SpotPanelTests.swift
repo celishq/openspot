@@ -217,10 +217,10 @@ final class SpotPanelTests: XCTestCase {
         XCTAssertEqual(part.mark?.tone, .bad)
     }
 
-    func testALevelWithASymbolRingsTheSymbolAndALevelAloneDoesNot() throws {
-        let parts = try panel("part=mac\ntitle=Mac\nsymbol=macbook\ndetail=80%\nvalue=0.8\n\npart=swap\ntitle=Swap\ndetail=80%\nvalue=0.8\n").parts
+    func testALevelRingsItsNumberWithNoPercentSignAndATrendOrAPlainLineDoesNot() throws {
+        let parts = try panel("part=mac\ntitle=Mac\ndetail=80%\nvalue=0.8\n\npart=cpu\ntitle=CPU\ndetail=30%\npoint=3\n\npart=swap\ntitle=Swap\ndetail=0 MB\n").parts
 
-        XCTAssertEqual(parts.map(\.ringsSymbol), [true, false])
+        XCTAssertEqual(parts.map(\.ringWords), ["80", nil, nil])
     }
 
     func testALineWithPointsAndADetailCarriesATrendMark() throws {

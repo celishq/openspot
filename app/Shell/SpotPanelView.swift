@@ -165,8 +165,6 @@ struct SpotPanelView: View {
         HStack(spacing: frame.rect.width < Self.narrowCell ? Self.narrowGap : Self.lineGap) {
             if !hasRoundMark(part), work(part) != nil {
                 mark(part)
-            } else if let mark = part.mark, part.ringsSymbol {
-                SpotLineMark(value: mark, symbol: part.symbol)
             } else if let symbol = part.symbol {
                 Image(systemName: symbol).modifier(SpotSecondaryText())
             }
@@ -180,16 +178,16 @@ struct SpotPanelView: View {
             if part.title != nil || part.detail != nil {
                 Spacer(minLength: 0)
             }
-            if let mark = part.mark, !part.ringsSymbol {
-                SpotLineMark(value: mark)
+            if let mark = part.mark {
+                SpotLineMark(value: mark, words: part.ringWords)
             }
-            if let detail = part.detail {
+            if let detail = part.detail, part.ringWords == nil {
                 Text(detail)
                     .font(SpotType.detail)
                     .modifier(SpotSecondaryText())
                     .lineLimit(1)
                     .layoutPriority(1)
-                    .frame(minWidth: part.mark == nil || part.ringsSymbol ? nil : Self.markValueWidth, alignment: .trailing)
+                    .frame(minWidth: part.mark == nil ? nil : Self.markValueWidth, alignment: .trailing)
             }
             if case .symbol(let symbol) = part.press {
                 SpotRoundButton(
