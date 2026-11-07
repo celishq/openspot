@@ -247,6 +247,39 @@ final class SamplePluginsTests: XCTestCase {
         XCTAssertGreaterThan(lines.items.filter { $0.run.hasPrefix("/System/Applications/") }.count, 5)
     }
 
+    func testScreenshotCopiesTheNewestCaptureAndAVideoAsAFile() throws {
+        let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("plugins")
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-capture-\(UUID().uuidString)")
+        let tools = folder.appendingPathComponent("tools")
+        try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let image = folder.appendingPathComponent("Screenshot.png")
+        let video = folder.appendingPathComponent("Screen Recording.mov")
+        let log = folder.appendingPathComponent("osascript")
+        try "#!/bin/sh\necho '\(folder.path)'\n".writeScript(to: tools.appendingPathComponent("defaults"))
+        try "#!/bin/sh\ncase \"$*\" in *kMDItemScreenCaptureType*) printf '%s\\0%s\\0' '\(image.path)' '\(video.path)' ;; esac\n".writeScript(to: tools.appendingPathComponent("mdfind"))
+        try "#!/bin/sh\nprintf '%s\\n' \"$@\" >> '\(log.path)'\n".writeScript(to: tools.appendingPathComponent("osascript"))
+        try "#!/bin/sh\n".writeScript(to: tools.appendingPathComponent("sleep"))
+
+        for (newest, older, form) in [(video, image, "NSURL"), (image, video, "PNGf")] {
+            try? FileManager.default.removeItem(at: log)
+            FileManager.default.createFile(atPath: older.path, contents: Data())
+            FileManager.default.createFile(atPath: newest.path, contents: Data())
+            try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -60)], ofItemAtPath: older.path)
+            try FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: newest.path)
+            let process = Process()
+            process.executableURL = plugins.appendingPathComponent("paste-screenshot.sh")
+            process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "HOME": folder.path]
+            try process.run()
+            process.waitUntilExit()
+            let calls = (try? String(contentsOf: log, encoding: .utf8)) ?? ""
+
+            XCTAssertEqual(process.terminationStatus, 0, newest.lastPathComponent)
+            XCTAssertTrue(calls.contains(newest.path), calls)
+            XCTAssertTrue(calls.contains(form), calls)
+        }
+    }
+
     func testFilesSearchesItselfAndGivesNothingForATooShortSearch() async throws {
         let files = try XCTUnwrap(try scan.commands.first { $0.name == "Files" })
 

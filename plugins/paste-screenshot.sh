@@ -6,16 +6,18 @@
 # size=small
 folder=$(defaults read com.apple.screencapture location 2>/dev/null || echo "$HOME/Desktop")
 case "$folder" in "~"*) folder="$HOME${folder#\~}" ;; esac
-file=$(mdfind -0 -onlyin "$folder" 'kMDItemIsScreenCapture = 1' | xargs -0 ls -1t 2>/dev/null | head -n 1)
+file=$(mdfind -0 -onlyin "$folder" 'kMDItemIsScreenCapture = 1 || kMDItemScreenCaptureType = "*"' | xargs -0 ls -1t 2>/dev/null | head -n 1)
+image='set the clipboard to (read (POSIX file (item 1 of argv)) as'
 case "$file" in
-  *.png) class='«class PNGf»' ;;
-  *.jpg|*.jpeg) class='«class JPEG»' ;;
-  *.tif|*.tiff) class='«class TIFF»' ;;
-  "") echo "No screenshot found." >&2; exit 1 ;;
-  *) echo "This screenshot type cannot be copied." >&2; exit 1 ;;
+  *.png) copy="$image «class PNGf»)" ;;
+  *.jpg|*.jpeg) copy="$image «class JPEG»)" ;;
+  *.tif|*.tiff) copy="$image «class TIFF»)" ;;
+  *.mov|*.mp4) copy="tell current application's NSPasteboard's generalPasteboard() to writeObjects:{current application's NSURL's fileURLWithPath:(item 1 of argv)}" ;;
+  "") echo "No screenshot or recording found." >&2; exit 1 ;;
+  *) echo "This capture type cannot be copied." >&2; exit 1 ;;
 esac
-if ! osascript -e 'on run argv' -e "set the clipboard to (read (POSIX file (item 1 of argv)) as $class)" -e 'end run' "$file" 2>/dev/null; then
-  echo "The screenshot could not be copied." >&2
+if ! osascript -e 'use framework "AppKit"' -e 'use scripting additions' -e 'on run argv' -e "current application's NSPasteboard's generalPasteboard()'s clearContents()" -e "$copy" -e 'end run' "$file" 2>/dev/null; then
+  echo "The capture could not be copied." >&2
   exit 1
 fi
 sleep 0.3
