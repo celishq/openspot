@@ -369,7 +369,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(header: "read=sheet", """
         case "$1" in
           read) printf 'action=new\\ntitle=New\\nscope=command\\nform=true\\n\\nrow=A\\nrun=a\\n' ;;
-          new) sleep 0.2; printf 'title=New\\n\\nfield=a\\nlabel=A\\n' ;;
+          new) \(untilRelease); printf 'title=New\\n\\nfield=a\\nlabel=A\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -382,6 +382,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         let second = try await sheet.form(action, item: nil)
 
         XCTAssertNil(second)
+        openGate()
         let form = try await first
         XCTAssertEqual(form?.fields.map(\.name), ["a"])
     }
@@ -398,15 +399,13 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try await wait("the part") { sheet.panel != nil }
         let deaf = try XCTUnwrap(runs.sheets["deaf"])
         deaf.pressCard()
-        try await wait("the deaf script") { self.exists("deaf-pid") }
-        try await pause(0.1)
+        let pid = try await pid("deaf-pid")
         let started = Date()
 
         runs.quit()
 
         XCTAssertLessThan(Date().timeIntervalSince(started), 3)
         try await wait("the stop") { self.exists("stopped") }
-        let pid = try XCTUnwrap(Int32(try String(contentsOfFile: path("deaf-pid"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
         try await wait("the end of the deaf script") { kill(pid, 0) != 0 }
     }
 
@@ -414,9 +413,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(body: "sh -c \"trap '' TERM; echo \\$\\$ > '\(path("pid"))'; \(String.longLoop)\" >/dev/null 2>&1 &\nsleep 30")
         let sheet = try sheet()
         sheet.pressCard()
-        try await wait("the child") { self.exists("pid") }
-        try await pause(0.1)
-        let pid = try XCTUnwrap(Int32(try String(contentsOfFile: path("pid"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
+        let pid = try await pid("pid")
         let started = Date()
 
         runs.quit()
@@ -429,10 +426,8 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(body: "echo $$ > '\(path("script"))'\nsh -c \"trap '' TERM; echo \\$\\$ > '\(path("pid"))'; \(String.longLoop)\" >/dev/null 2>&1 &\nsleep 30")
         let sheet = try sheet()
         sheet.pressCard()
-        try await wait("the child") { self.exists("pid") }
-        try await pause(0.1)
-        let child = try XCTUnwrap(Int32(try String(contentsOfFile: path("pid"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
-        let parent = try XCTUnwrap(Int32(try String(contentsOfFile: path("script"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
+        let child = try await pid("pid")
+        let parent = try await pid("script")
 
         sheet.stop(try XCTUnwrap(sheet.calls.first))
         try await wait("the end of the script") { kill(parent, 0) != 0 }

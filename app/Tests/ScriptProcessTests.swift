@@ -132,16 +132,16 @@ final class ScriptProcessTests: XCTestCase {
         var frames = try process.start().makeAsyncIterator()
         _ = try await frames.next()
 
+        let started = Date()
         process.stop()
-        try await Task.sleep(for: .seconds(1))
-        XCTAssertTrue(process.isRunning)
-        try await Task.sleep(for: .seconds(1.5))
+        try await wait(seconds: 10) { !process.isRunning }
 
-        XCTAssertFalse(process.isRunning)
+        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), 2)
     }
 
+    /// A line that writes the pid of its shell to the file `name` whole, so that a reader never sees it half written.
     private func writesPid(_ name: String) -> String {
-        "echo $$ > '\(path(name))'"
+        "echo $$ > '\(path(name)).new' && mv '\(path(name)).new' '\(path(name))'"
     }
 
     /// A child that ignores the terminate signal, with its output somewhere else, so that its end does not close the call.
@@ -150,8 +150,7 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     private func pid(_ name: String) async throws -> Int32 {
-        for _ in 0..<300 where !exists(name) { try await Task.sleep(for: .milliseconds(10)) }
-        try await Task.sleep(for: .milliseconds(50))
+        for _ in 0..<500 where !exists(name) { try await Task.sleep(for: .milliseconds(10)) }
         return try XCTUnwrap(Int32(try String(contentsOfFile: path(name), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
     }
 
@@ -159,8 +158,8 @@ final class ScriptProcessTests: XCTestCase {
         kill(pid, 0) == 0
     }
 
-    private func wait(until fact: () -> Bool) async throws {
-        for _ in 0..<500 {
+    private func wait(seconds: Int = 5, until fact: () -> Bool) async throws {
+        for _ in 0..<(seconds * 100) {
             if fact() { return }
             try await Task.sleep(for: .milliseconds(10))
         }
@@ -270,14 +269,15 @@ final class ScriptProcessTests: XCTestCase {
     }
 
     func testAOutOfTimeFirstFrameStopsTheScript() async throws {
-        let plugin = try writePlugin("late.sh", "#!/bin/sh\nsleep 0.4\ntouch '\(path("went-on"))'\n")
+        let plugin = try writePlugin("late.sh", "#!/bin/sh\n\(writesPid("script"))\nsleep 30\ntouch '\(path("went-on"))'\n")
 
         do {
-            _ = try await ScriptProcess.output(url: plugin.url, limit: 0.2)
+            _ = try await ScriptProcess.output(url: plugin.url, limit: 1)
             XCTFail("expected a timeout")
         } catch PluginError.timedOut {
         }
-        try await Task.sleep(for: .seconds(0.4))
+        let script = try await pid("script")
+        try await wait { !self.runs(script) }
 
         XCTAssertFalse(exists("went-on"))
     }

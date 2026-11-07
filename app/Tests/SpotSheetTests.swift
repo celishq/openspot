@@ -107,12 +107,13 @@ final class SpotSheetTests: XCTestCase {
     }
 
     func testAClosedSheetDoesNotOpenWhenItsAnswerComes() async throws {
-        let sheet = try holding("printf 'row=A\\nrun=a\\n'", pause: 0.02)
+        let sheet = try holding("printf 'row=A\\nrun=a\\n'\ntouch '\(path("answered"))'", pause: 0.02)
         var isOpened = false
 
         sheet.open(waits: true) { isOpened = true }
         sheet.close()
-        try await Task.sleep(for: .milliseconds(60))
+        for _ in 0..<500 where !exists("answered") { try await Task.sleep(for: .milliseconds(10)) }
+        try await Task.sleep(for: .milliseconds(200))
 
         XCTAssertFalse(isOpened)
     }

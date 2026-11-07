@@ -71,15 +71,15 @@ final class SheetStreamTests: XCTestCase {
     func testOnlyTheFirstFrameHasATimeLimit() async throws {
         let silent = try script("sleep 30")
         do {
-            for try await _ in try ScriptProcess(url: silent, limit: 0.3).start() {}
+            for try await _ in try ScriptProcess(url: silent, limit: 1.5).start() {}
             XCTFail("It should time out.")
         } catch {
             XCTAssertEqual(error as? PluginError, .timedOut)
         }
 
-        let slow = try script("printf 'part=a\\n---\\n'\nsleep 0.5\nprintf 'part=b\\n---\\n'")
+        let slow = try script("printf 'part=a\\n---\\n'\nsleep 2\nprintf 'part=b\\n---\\n'")
         var frames: [String] = []
-        for try await frame in try ScriptProcess(url: slow, limit: 0.3).start() { frames.append(frame) }
+        for try await frame in try ScriptProcess(url: slow, limit: 1.5).start() { frames.append(frame) }
         XCTAssertEqual(frames, ["part=a\n", "part=b\n"])
     }
 

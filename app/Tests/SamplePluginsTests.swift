@@ -767,22 +767,22 @@ final class SamplePluginsTests: XCTestCase {
         }
     }
 
-    /// Reads a sheet, and returns how long its first parts took and how many options its target menu ends with.
+    /// Reads a sheet, and returns the options of its target menu with its first parts, and after `release` appears.
     @MainActor
-    private static func firstParts(of command: PluginCommand) async throws -> (seconds: TimeInterval, options: Int) {
-        let sheet = SpotRuns().sheet(for: command)
-        let start = Date()
+    private static func targetOptions(of command: PluginCommand, release: URL) async throws -> (first: Int, last: Int) {
+        let runs = SpotRuns()
+        defer { runs.quit() }
+        let sheet = runs.sheet(for: command)
         let options: () -> Int = {
             guard case .menu(let options, _)? = sheet.panel?.parts.first(where: { $0.id == "target" })?.control else { return 0 }
             return options.count
         }
         sheet.open {}
-        while sheet.panel == nil, Date().timeIntervalSince(start) < 10 { try await Task.sleep(for: .milliseconds(10)) }
-        let seconds = Date().timeIntervalSince(start)
-        while options() < 2, Date().timeIntervalSince(start) < 10 { try await Task.sleep(for: .milliseconds(10)) }
-        let count = options()
-        sheet.close()
-        return (seconds, count)
+        for _ in 0..<1000 where sheet.panel == nil { try await Task.sleep(for: .milliseconds(10)) }
+        let first = options()
+        FileManager.default.createFile(atPath: release.path, contents: Data())
+        for _ in 0..<1000 where options() < 2 { try await Task.sleep(for: .milliseconds(10)) }
+        return (first, options())
     }
 
     func testAReadAnswersWithItsFirstFrame() async throws {
@@ -801,13 +801,15 @@ final class SamplePluginsTests: XCTestCase {
             _ = try self.fakeTranslate(in: folder)
             let tool = folder.appendingPathComponent("tools/openspot")
             let fake = try String(contentsOf: tool, encoding: .utf8)
-            try fake.replacingOccurrences(of: "if [ \"$2\" = languages ]; then", with: "if [ \"$2\" = languages ]; then\n  sleep 1").writeScript(to: tool)
+            let release = folder.appendingPathComponent("release")
+            let wait = "n=0; while [ ! -f '\(release.path)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done"
+            try fake.replacingOccurrences(of: "if [ \"$2\" = languages ]; then", with: "if [ \"$2\" = languages ]; then\n  \(wait)").writeScript(to: tool)
             let translate = try XCTUnwrap(try self.scan.commands.first { $0.name == "Translate" })
 
-            let result = try await Self.firstParts(of: translate)
+            let options = try await Self.targetOptions(of: translate, release: release)
 
-            XCTAssertLessThan(result.seconds, 1)
-            XCTAssertEqual(result.options, 2)
+            XCTAssertLessThan(options.first, 2)
+            XCTAssertEqual(options.last, 2)
         }
     }
 
