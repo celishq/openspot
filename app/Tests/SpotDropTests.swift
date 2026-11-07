@@ -320,7 +320,7 @@ final class SpotDropTests: XCTestCase {
         XCTAssertTrue(sheet.drop([file]))
 
         try await wait("the drop") { self.log().contains("drop \(file)") }
-        XCTAssertEqual(failures, ["Script failed. gone"])
+        XCTAssertEqual(failures, ["gone"])
     }
 
     func testTwoWaitingDropsRunInTurn() async throws {
@@ -549,7 +549,7 @@ final class SpotDropTests: XCTestCase {
 
         XCTAssertTrue(sheet.drop([file("a.mov")]))
 
-        try await wait("the failure") { failures == ["Script failed. broken"] }
+        try await wait("the failure") { failures == ["broken"] }
     }
 
     func testAStoppedDropChangesNothingAndItsSilenceIsNoAnswer() async throws {

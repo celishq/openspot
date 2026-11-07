@@ -60,6 +60,12 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         let toast = ToastPanel.make()
         model.notify = { toast.show($0, symbol: ToastPanel.failureSymbol) }
+        model.notifyFix = { text, fix in
+            toast.show(text, symbol: ToastPanel.failureSymbol, fix: { NSWorkspace.shared.open(fix) }, key: ConfigFile.standard().read().fixKey)
+        }
+        model.notifyKeyFault = { [weak self] text in
+            toast.show(text, symbol: ToastPanel.failureSymbol, fix: { self?.openSettings() }, key: ConfigFile.standard().read().fixKey)
+        }
         model.confirm = { toast.show($0, symbol: ToastPanel.confirmSymbol) }
         trayBar = SpotTrayBar(model: model, openspotItem: item)
         let update = AppUpdate(runningWork: { [model] in model.workCount }, onReady: { [model] in model.updateIsReady() })
@@ -102,10 +108,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
                 hotKey = registration
                 model.entryKey = key
             } else {
-                faults.append("Openspot cannot use \(key.label) to open.")
+                faults.append("Openspot cannot use `\(key.label)` to open, because another app uses it. Choose another key.")
             }
         }
-        if faults != configFaults, !faults.isEmpty { model.notify(faults.joined(separator: " ")) }
+        if faults != configFaults, !faults.isEmpty { model.notifyKeyFault(faults.joined(separator: " ")) }
         configFaults = faults
     }
 
@@ -136,10 +142,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             if let registration {
                 heldKeys[key] = registration
             } else {
-                faults.append("\(key.spot) cannot use \(key.shortcut.label). It is already in use.")
+                faults.append("\(key.spot) cannot use `\(key.shortcut.label)`, because another app uses it. Choose another key.")
             }
         }
-        if faults != keyFaults, !faults.isEmpty { model.notify(faults.joined(separator: " ")) }
+        if faults != keyFaults, !faults.isEmpty { model.notifyKeyFault(faults.joined(separator: " ")) }
         keyFaults = faults
     }
 
@@ -184,6 +190,12 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         previousApp = NSWorkspace.shared.frontmostApplication
         NSApp.activate(ignoringOtherApps: true)
         panel.show()
+    }
+
+    /// Shows the panel on the Settings sheet.
+    private func openSettings() {
+        if !model.isShown || model.isWarming { showPanel() }
+        model.openSettings()
     }
 
     /// Brings the panel to the front with the focus, also when a drag opened it or it already shows.

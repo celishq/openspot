@@ -48,7 +48,7 @@ check_path() {
   case "$1" in
     /*)
       if [ ! -e "$1" ]; then
-        echo "Cannot find $1." >&2
+        echo "Openspot cannot find $1." >&2
         exit 1
       fi
       ;;

@@ -42,9 +42,19 @@ final class SettingsTests: XCTestCase {
 
         let items = try await spot.items(timeout: 1).items
 
-        XCTAssertEqual(items.map(\.run), ["panel_key"])
+        XCTAssertEqual(items.map(\.run), ["panel_key", "fix_key"])
         XCTAssertEqual(items.first?.title, "Open Openspot")
         XCTAssertEqual(items.first?.shortcut, "option+space")
+    }
+
+    func testTheSheetListsTheFixKeyAndChangesIt() async throws {
+        let before = try await spot.items(timeout: 1).items
+        XCTAssertEqual(before.last?.title, "Open a fix")
+        XCTAssertEqual(before.last?.shortcut, "cmd+option+o")
+
+        _ = try await SpotRuns().answer(of: spot, .set("fix_key", to: "ctrl+option+f"), input: "", limit: 1)
+
+        XCTAssertEqual(file.read().fixKey, Shortcut(text: "ctrl+option+f"))
     }
 
     func testTheSheetListsEachCommandOfAScriptAndGivesItAKey() async throws {
@@ -53,9 +63,9 @@ final class SettingsTests: XCTestCase {
         let runs = SpotRuns()
 
         let before = try await spot.items(timeout: 1).items
-        XCTAssertEqual(before.map(\.title), ["Open Openspot", "Left side", "Right side"])
-        XCTAssertEqual(before.map(\.subtitle), [nil, "Move", "Move"])
-        XCTAssertEqual(before.dropFirst().map(\.shortcut), ["Record", "Record"])
+        XCTAssertEqual(before.map(\.title), ["Open Openspot", "Open a fix", "Left side", "Right side"])
+        XCTAssertEqual(before.map(\.subtitle), [nil, nil, "Move", "Move"])
+        XCTAssertEqual(before.dropFirst(2).map(\.shortcut), ["Record", "Record"])
 
         _ = try await runs.answer(of: spot, .set("key:move:left", to: "ctrl+option+left"), input: "", limit: 1)
         _ = try await runs.answer(of: spot, .set("key:move:left", to: "ctrl+option+up"), input: "", limit: 1)
@@ -64,7 +74,7 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(file.read().keys.map(\.command), ["left", "right"])
         XCTAssertEqual(file.read().keys.map(\.shortcut.text), ["ctrl+option+up", "ctrl+option+right"])
         let after = try await spot.items(timeout: 1).items
-        XCTAssertEqual(after.map(\.shortcut).dropFirst(), ["ctrl+option+up", "ctrl+option+right"])
+        XCTAssertEqual(after.map(\.shortcut).dropFirst(2), ["ctrl+option+up", "ctrl+option+right"])
 
         _ = try await runs.answer(of: spot, SpotAction(arguments: ["clear", "key:move:left"]), input: "", limit: 1)
 

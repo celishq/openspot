@@ -1,7 +1,7 @@
 #!/bin/sh
-# name=Emoji
+# name=Emojis & Symbols
 # symbol=face.smiling
-# subtitle=Copy an emoji
+# subtitle=Copy an emoji or a symbol
 # key=e
 # size=small
 # read=sheet
@@ -33,6 +33,7 @@ case "$1" in
     printf 'option=none:Yellow\noption=light:Light\noption=medium-light:Medium light\noption=medium:Medium\noption=medium-dark:Medium dark\noption=dark:Dark\n'
     printf 'value=%s\n\n' "$tone"
     openspot emoji --tone "$tone"
+    openspot symbols
     ;;
   tone)
     remember "$2"
@@ -41,20 +42,16 @@ case "$1" in
     remember "$(next_tone)"
     ;;
   open)
-    printf '%s' "$2" | pbcopy
+    printf '%s' "$2" | openspot clipboard copy
     echo "toast=Copied"
     ;;
   paste)
     previous=$(pbpaste; printf x)
-    printf '%s' "$2" | pbcopy
-    sleep 0.2
-    if ! osascript -e 'tell application "System Events" to keystroke "v" using command down' 2>/dev/null; then
-      echo "Copied. Press Command-V, or allow Openspot in Accessibility." >&2
-      exit 1
-    fi
+    printf '%s' "$2" | openspot clipboard copy
+    openspot clipboard paste || exit 1
     sleep 0.3
     if [ "$previous" != x ]; then
-      printf '%s' "${previous%x}" | pbcopy
+      printf '%s' "${previous%x}" | openspot clipboard copy
     fi
     ;;
 esac

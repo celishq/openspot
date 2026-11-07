@@ -63,7 +63,7 @@ final class SpotSandboxModel {
     private func take(_ report: SpotSheet.Report) {
         switch report {
         case .frame(let text): sandbox.note(frame: text)
-        case .failure(let text), .toast(let text): sandbox.record(text)
+        case .failure(let text), .toast(let text), .failureWithFix(let text, _): sandbox.record(text)
         case .listChange, .chooseFiles: break
         }
     }

@@ -135,6 +135,8 @@ final class SpotsModel {
     var show: () -> Void = {}
     var present: () -> Void = {}
     var notify: (String) -> Void = { _ in }
+    var notifyFix: (String, URL) -> Void = { _, _ in }
+    var notifyKeyFault: (String) -> Void = { _ in }
     var applyConfig: () -> Void = {}
     var confirm: (String) -> Void = { _ in }
     private var problems: [String] = []
@@ -263,6 +265,7 @@ final class SpotsModel {
         switch report {
         case .toast(let text): confirm(text)
         case .failure(let text): notify(text)
+        case .failureWithFix(let text, let fix): notifyFix(text, fix)
         case .listChange:
             if !query.isEmpty || isEditing || cards.first(where: { $0.id == id }).map({ $0.isOnGrid != visible.contains { $0.id == id } }) == true { updateVisible() }
         case .frame:
@@ -817,6 +820,10 @@ final class SpotsModel {
             return false
         }
         return true
+    }
+
+    func openSettings() {
+        open(ShippedSpot.settingsID)
     }
 
     /// Opens a sheet and ends what another left running. The sheet of a staying script opens with its first frame.

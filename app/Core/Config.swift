@@ -4,6 +4,8 @@ import Foundation
 public struct Config: Equatable, Sendable {
     /// The key that opens the panel. Nil when the file asks for one that it cannot use.
     public private(set) var panelKey: Shortcut? = .standard
+    /// The key that opens the link of a failure toast. Nil when the file asks for one that it cannot use.
+    public private(set) var fixKey: Shortcut? = .fix
     public private(set) var faults: [String] = []
     public private(set) var arrangement = SpotArrangement()
     /// The keys that the person assigned to commands of scripts.
@@ -18,19 +20,22 @@ public struct Config: Equatable, Sendable {
             faults = ["config.toml: \((error as? PluginError)?.reason ?? String(describing: error))"]
             return
         }
-        for key in (Array(document.values.keys) + Array(document.arrays.keys)).sorted() where !["panel_key", "spots", "keys"].contains(key) {
+        for key in (Array(document.values.keys) + Array(document.arrays.keys)).sorted() where !["panel_key", "fix_key", "spots", "keys"].contains(key) {
             faults.append("config.toml: \(key) is not a setting.")
         }
         arrangement = SpotArrangement(choices: (document.arrays["spots"] ?? []).compactMap { choice(of: $0) })
         keys = (document.arrays["keys"] ?? []).compactMap { key(of: $0) }
-        guard let value = document.values["panel_key"] else { return }
-        if case .string(let text) = value, let shortcut = Shortcut(text: text) {
-            panelKey = shortcut
-        } else {
-            panelKey = nil
-            let word = if case .string(let text) = value { text } else { "this value" }
-            faults.append("config.toml: panel_key cannot use \(word). Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.")
-        }
+        panelKey = shortcut(document.values["panel_key"], named: "panel_key", or: .standard)
+        fixKey = shortcut(document.values["fix_key"], named: "fix_key", or: .fix)
+    }
+
+    /// Reads one key setting. A value that it cannot use is a fault, and gives no key.
+    private mutating func shortcut(_ value: TomlDocument.Value?, named name: String, or standard: Shortcut) -> Shortcut? {
+        guard let value else { return standard }
+        if case .string(let text) = value, let shortcut = Shortcut(text: text) { return shortcut }
+        let word = if case .string(let text) = value { text } else { "this value" }
+        faults.append("config.toml: \(name) cannot use \(word). Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.")
+        return nil
     }
 
     /// Reads one `[[keys]]` table. A table that it cannot use is a fault.

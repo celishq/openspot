@@ -20,6 +20,11 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["emoji", "--tone"]), .unknown("emoji --tone"))
     }
 
+    func testSymbolsTakeNoOptions() {
+        XCTAssertEqual(CommandLineCall(arguments: ["symbols"]), .symbols)
+        XCTAssertEqual(CommandLineCall(arguments: ["symbols", "--tone", "dark"]), .unknown("symbols --tone dark"))
+    }
+
     func testASandboxCanNameAFile() {
         XCTAssertEqual(CommandLineCall(arguments: ["sandbox"]), .sandbox(nil))
         XCTAssertEqual(CommandLineCall(arguments: ["sandbox", "a.txt"]), .sandbox("a.txt"))
@@ -44,6 +49,9 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["check", "/a"]), .check("/a"))
         XCTAssertEqual(CommandLineCall(arguments: ["catalog"]), .catalog)
         XCTAssertEqual(CommandLineCall(arguments: ["color", "pick"]), .colorPick)
+        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "copy", "/a b.mov"]), .clipboardCopy("/a b.mov"))
+        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "paste"]), .clipboardPaste)
+        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "copy"]), .clipboardCopy(nil))
         XCTAssertEqual(CommandLineCall(arguments: ["translate", "languages"]), .translateLanguages)
         XCTAssertEqual(CommandLineCall(arguments: ["translate"]), .translate(from: nil, to: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["translate", "--from", "ru", "--to", "en"]), .translate(from: "ru", to: "en"))

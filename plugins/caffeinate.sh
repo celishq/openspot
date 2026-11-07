@@ -20,7 +20,7 @@ remember() {
 
 stop() {
   if [ "$running" = 1 ] && ! kill "$pid"; then
-    echo "Could not turn off Caffeinate." >&2
+    echo "Openspot could not turn off Caffeinate. Try again." >&2
     exit 1
   fi
   rm -f "$record"

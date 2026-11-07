@@ -8,9 +8,13 @@ public enum CommandLineCall: Equatable, Sendable {
     case sandbox(String?)
     case catalog
     case colorPick
+    /// Copies a file, or the text on stdin with no file.
+    case clipboardCopy(String?)
+    case clipboardPaste
     case translate(from: String?, to: String?)
     case translateLanguages
     case emoji(tone: EmojiCatalog.Tone)
+    case symbols
     case windowFrame
     case windowMove(WindowMove)
     /// Runs as the helper process of a capability. A script never makes this call, so the usage does not list it.
@@ -25,10 +29,13 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot sandbox [file]                      Opens a window to try a sheet from text, a file or a script.
     openspot catalog                             Prints each part that a script can print.
     openspot color pick                          Prints the colour the person picks.
+    openspot clipboard copy [file]               Copies the file as Finder does, or the text on stdin.
+    openspot clipboard paste                     Pastes the clipboard into the front app.
     openspot translate [--from code] [--to code] Translates the text on stdin.
     openspot translate languages                 Prints the languages it knows.
     openspot emoji [--tone name]                 Prints each emoji as a row, with its name in the language of the Mac.
                                                  A tone is none, light, medium-light, medium, medium-dark or dark.
+    openspot symbols                             Prints each symbol of the Character Viewer as a row, with its name and section.
     openspot window frame                        Prints the front window, then the usable area of its screen:
                                                  x y width height x y width height, from the top left of the main screen.
     openspot window move frame...                Moves the front window to a frame, x y width height. 50%, 1/2 or a number
@@ -56,9 +63,12 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("sandbox", _) where rest.count <= 1: self = .sandbox(rest.first)
         case ("render", let path?) where rest.count == 1: self = .render(path)
         case ("color", "pick") where rest.count == 1: self = .colorPick
+        case ("clipboard", "copy") where rest.count <= 2: self = .clipboardCopy(rest.dropFirst().first)
+        case ("clipboard", "paste") where rest.count == 1: self = .clipboardPaste
         case ("translate", "languages") where rest.count == 1: self = .translateLanguages
         case ("helper", let name?) where rest.count == 1: self = .helper(name)
         case ("emoji", nil): self = .emoji(tone: .none)
+        case ("symbols", nil): self = .symbols
         case ("emoji", "--tone") where rest.count == 2:
             guard let tone = EmojiCatalog.Tone(rawValue: rest[1]) else {
                 self = .unknown(arguments.joined(separator: " "))

@@ -17,6 +17,12 @@ enum SpotCommandLine {
             exit(0)
         case .colorPick:
             SpotColorPick.run()
+        case .clipboardCopy(let path?):
+            SpotClipboard.copy(path)
+        case .clipboardCopy(nil):
+            SpotClipboard.copy(text: standardInput)
+        case .clipboardPaste:
+            SpotClipboard.paste()
         case .check(let path):
             check(path)
         case .sandbox(let path):
@@ -36,6 +42,8 @@ enum SpotCommandLine {
             finish { await SpotTranslation.languages() }
         case .emoji(let tone):
             finish { try EmojiCatalog().rows(tone: tone) }
+        case .symbols:
+            finish { try SymbolCatalog().rows() }
         case .windowFrame:
             answer { try SpotWindow.front().frameText }
         case .windowMove(let move):

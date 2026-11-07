@@ -12,12 +12,15 @@ struct SpotWindow {
     static func front() throws -> SpotWindow {
         guard let app = NSWorkspace.shared.frontmostApplication,
               app.executableURL?.resolvingSymlinksInPath() != Bundle.main.executableURL?.resolvingSymlinksInPath() else {
-            throw PluginError.fault("No app is in front.")
+            throw PluginError.fault("Openspot cannot find a window in front.")
         }
         let owner = AXUIElementCreateApplication(app.processIdentifier)
         guard let window = attribute(owner, kAXFocusedWindowAttribute) ?? attribute(owner, kAXMainWindowAttribute) else {
-            guard AXIsProcessTrusted() else { throw PluginError.fault("Allow Openspot in Accessibility, then press the key again.") }
-            throw PluginError.fault("\(app.localizedName ?? "The front app") shows no window.")
+            guard AXIsProcessTrusted() else {
+                print("open=\(SpotClipboard.accessibility)")
+                throw PluginError.fault("Openspot cannot move the window. Allow it in Accessibility, then press the key again.")
+            }
+            throw PluginError.fault("Openspot cannot find a window of \(app.localizedName ?? "the front app").")
         }
         return SpotWindow(element: window as! AXUIElement)
     }
@@ -72,7 +75,7 @@ struct SpotWindow {
     private func set<T>(_ name: String, _ type: AXValueType, _ value: T) throws {
         var value = value
         guard let raw = AXValueCreate(type, &value), AXUIElementSetAttributeValue(element, name as CFString, raw) == .success else {
-            throw PluginError.fault("The front window cannot move.")
+            throw PluginError.fault("Openspot cannot move this window.")
         }
     }
 }
