@@ -11,12 +11,14 @@ public struct Settings: Equatable, Sendable {
     public let folder: URL
     public let core: URL?
     public let login: LoginItem?
+    public let link: CommandLink?
 
-    public init(file: ConfigFile, folder: URL, core: URL? = nil, login: LoginItem? = nil) {
+    public init(file: ConfigFile, folder: URL, core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil) {
         self.file = file
         self.folder = folder
         self.core = core
         self.login = login
+        self.link = link
     }
 
     /// Answers one call with the text a script would print. A change prints nothing, which asks for a new read.
@@ -27,6 +29,8 @@ public struct Settings: Equatable, Sendable {
         case "open" where arguments.dropFirst().first == LoginItem.run:
             try login?.toggle()
             return ""
+        case "open" where arguments.dropFirst().first == CommandLink.run:
+            return try link?.toggle() ?? ""
         case Self.panelKey:
             try file.set(Self.panelKey, to: try shortcut(from: arguments).text)
             return ""
@@ -53,7 +57,8 @@ public struct Settings: Equatable, Sendable {
             }
         }
         let login = self.login.map { [$0.row.text] } ?? []
-        return (["recents=false\n", "action=open\ntitle=Change\nclose=false\n", "action=\(Self.clear)\ntitle=Remove key\n", panel] + login + rows).joined(separator: "\n")
+        let link = self.link.map { [$0.row.text] } ?? []
+        return (["recents=false\n", "action=open\ntitle=Change\nclose=false\n", "action=\(Self.clear)\ntitle=Remove key\n", panel] + login + link + rows).joined(separator: "\n")
     }
 
     private func shortcut(from arguments: [String]) throws -> Shortcut {

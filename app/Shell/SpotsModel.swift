@@ -190,6 +190,7 @@ final class SpotsModel {
             update: updateSpot,
             core: folder.core,
             login: AppLogin.item,
+            link: AppCommandLink.item,
             offersLogin: isFirstLaunch,
             quit: QuitSpot { await NSApp.terminate(nil) }
         ) + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])

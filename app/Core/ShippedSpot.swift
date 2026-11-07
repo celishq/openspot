@@ -10,7 +10,7 @@ public enum ShippedSpot: Equatable, Sendable {
     case quit(QuitSpot)
 
     /// The commands of the shipped spots, in the order of the grid.
-    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil, core: URL? = nil, login: LoginItem? = nil, offersLogin: Bool = false, quit: QuitSpot? = nil) -> [PluginCommand] {
+    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil, core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil, offersLogin: Bool = false, quit: QuitSpot? = nil) -> [PluginCommand] {
         var commands = [
             PluginCommand(
                 id: spotsID,
@@ -35,7 +35,7 @@ public enum ShippedSpot: Equatable, Sendable {
                 subtitle: "Choose your key",
                 read: .sheet,
                 order: 2,
-                shipped: .settings(Settings(file: config, folder: folder, core: core, login: login))
+                shipped: .settings(Settings(file: config, folder: folder, core: core, login: login, link: link))
             ),
             PluginCommand(
                 id: buildID,
