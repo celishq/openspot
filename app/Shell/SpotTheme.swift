@@ -83,7 +83,7 @@ struct SpotTheme {
         solid: NSColor(white: 0.12, alpha: 1),
         onSolid: .white,
         glyphOnSolid: .white,
-        glass: .white.withAlphaComponent(0.5),
+        glass: .white.withAlphaComponent(0.85),
         tint: .black.withAlphaComponent(0.08),
         keycap: NSColor(white: 0.98, alpha: 1),
         float: NSColor(white: 0.96, alpha: 0.82),
