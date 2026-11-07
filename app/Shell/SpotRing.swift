@@ -4,8 +4,8 @@ import SwiftUI
 struct SpotRing: View {
     let fill: Double
     let line: CGFloat
-    var colour = Color.white
-    var track = Color.white.opacity(SpotTokens.track)
+    var colour = SpotTheme.ink
+    var track = SpotTheme.ink.opacity(SpotTheme.track)
 
     var body: some View {
         ZStack {

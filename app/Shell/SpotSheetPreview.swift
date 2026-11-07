@@ -18,11 +18,11 @@ struct SpotSheetPreview: View {
             HStack(spacing: SpotTokens.padding - 5) {
                 Image(systemName: symbol)
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(SpotTheme.ink)
                     .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
-                    .background(Color.white.opacity(0.2), in: Circle())
+                    .background(SpotTheme.ink.opacity(SpotTheme.disc), in: Circle())
                 VStack(alignment: .leading, spacing: SpotType.lineGap) {
-                    Text(title).font(SpotType.title).foregroundStyle(.white)
+                    Text(title).font(SpotType.title).foregroundStyle(SpotTheme.ink)
                     Text(subtitle).font(SpotType.detail).modifier(SpotSecondaryText())
                 }
                 Spacer()
@@ -33,7 +33,7 @@ struct SpotSheetPreview: View {
         }
         .padding(SpotTokens.padding)
         .frame(width: frame.width, height: frame.height, alignment: .topLeading)
-        .background(Color(white: 0.3), in: shape)
-        .overlay { shape.strokeBorder(.white.opacity(0.25), lineWidth: 1) }
+        .background(SpotTheme.preview, in: shape)
+        .overlay { shape.strokeBorder(SpotTheme.ink.opacity(SpotTheme.chip), lineWidth: 1) }
     }
 }

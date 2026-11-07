@@ -28,13 +28,14 @@ struct SpotSoftBlur: NSViewRepresentable {
                 CATransaction.begin()
                 CATransaction.setDisableActions(true)
                 defer { CATransaction.commit() }
-                tint.contents = masks?.tint
+                tintMask.contents = masks?.tint
                 filter = Self.filter(mask: masks?.blur)
                 applyBlur()
             }
         }
 
         private let tint = CALayer()
+        private let tintMask = CALayer()
 
         private var filter: NSObject?
         private var appliedFilter: NSObject?
@@ -56,11 +57,13 @@ struct SpotSoftBlur: NSViewRepresentable {
             CATransaction.setDisableActions(true)
             defer { CATransaction.commit() }
             if tint.superlayer == nil {
-                tint.opacity = Float(SpotTokens.backdropShade)
                 tint.zPosition = 1
+                tint.mask = tintMask
                 layer?.addSublayer(tint)
             }
             tint.frame = bounds
+            tintMask.frame = bounds
+            tint.backgroundColor = SpotTheme.palette(for: effectiveAppearance).tint.cgColor
             applyBlur()
         }
 
@@ -76,6 +79,7 @@ struct SpotSoftBlur: NSViewRepresentable {
 
         override func viewDidChangeEffectiveAppearance() {
             super.viewDidChangeEffectiveAppearance()
+            needsLayout = true
             DispatchQueue.main.async { self.applyBlur() }
         }
 

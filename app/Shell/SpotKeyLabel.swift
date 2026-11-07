@@ -9,11 +9,11 @@ struct SpotKeyLabel: View {
     var body: some View {
         Text(isRecording ? "Press keys" : Shortcut(text: text)?.label ?? text)
             .font(SpotType.action)
-            .foregroundStyle(.white)
+            .foregroundStyle(SpotTheme.ink)
             .padding(.horizontal, SpotTokens.padding)
             .padding(.vertical, 5)
             .fixedSize()
-            .background(Color.white.opacity(SpotTokens.selectedFill), in: Capsule())
+            .background(SpotTheme.ink.opacity(SpotTheme.selectedFill), in: Capsule())
             .contentShape(Capsule())
     }
 }

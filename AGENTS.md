@@ -30,6 +30,7 @@
 
 - `Core/` imports neither AppKit nor SwiftUI. `make verify` runs `scripts/check-core.sh`, which fails when it does.
 - Logic that a window needs goes in `Core/`. Only drawing and window handling go in `Shell/`.
+- Each colour and strength of the panel is in `Shell/SpotTheme.swift`, and a new theme is one more value there.
 
 ## Tests
 

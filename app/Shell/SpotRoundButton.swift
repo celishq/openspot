@@ -10,7 +10,6 @@ struct SpotRoundButton: View {
 
     private static let fillOpacity = 0.2
     private static let symbolRatio: CGFloat = 0.32
-    private static let floatFill = Color(white: 0.34).opacity(0.72)
 
     let symbol: String
     let label: String
@@ -23,11 +22,11 @@ struct SpotRoundButton: View {
         Button(action: action) {
             Group {
                 if let work {
-                    SpotWorkMark(call: work, side: size, stops: true, isOnWhite: look == .strong)
+                    SpotWorkMark(call: work, side: size, stops: true, isOnSolid: look == .strong)
                 } else {
                     Image(systemName: symbol)
                         .font(.system(size: max(size * Self.symbolRatio, 10), weight: .semibold))
-                        .foregroundStyle(look == .strong ? .black : .white)
+                        .foregroundStyle(look == .strong ? SpotTheme.onSolid : SpotTheme.ink)
                         .frame(width: size, height: size)
                 }
             }
@@ -41,9 +40,9 @@ struct SpotRoundButton: View {
 
     private var fill: AnyShapeStyle {
         switch look {
-        case .plain: AnyShapeStyle(Color.white.opacity(Self.fillOpacity))
-        case .floating: AnyShapeStyle(Self.floatFill)
-        case .strong: AnyShapeStyle(Color.white)
+        case .plain: AnyShapeStyle(SpotTheme.ink.opacity(Self.fillOpacity))
+        case .floating: AnyShapeStyle(SpotTheme.float)
+        case .strong: AnyShapeStyle(SpotTheme.solid)
         case .bare: AnyShapeStyle(Color.clear)
         }
     }

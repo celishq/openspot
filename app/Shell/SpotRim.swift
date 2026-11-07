@@ -41,13 +41,10 @@ private struct Backing: NSViewRepresentable {
             wantsLayer = true
             layer?.addSublayer(sides)
             layer?.addSublayer(ends)
-            sides.colors = [0, 0.3, 0.3, 0].map { NSColor.black.withAlphaComponent($0).cgColor }
             sides.locations = [0, 0.3, 0.7, 1]
             sides.mask = sideLine
-            ends.colors = [1, 0, 0, 1].map { NSColor.white.withAlphaComponent($0).cgColor }
             ends.locations = [0, 0.3, 0.7, 1]
             ends.mask = endLines
-            ends.compositingFilter = "plusL"
             endLines.addSublayer(glowClip)
             endLines.addSublayer(wideLine)
             endLines.addSublayer(thinLine)
@@ -59,6 +56,20 @@ private struct Backing: NSViewRepresentable {
             setUp(wideLine, lineWidth: 1, strength: 0.25)
             setUp(thinLine, lineWidth: 0.5, strength: 0.15)
             setUp(glow, lineWidth: 2, strength: 0.3)
+        }
+
+        /// Takes the rim's colours from the theme of this appearance.
+        private func applyTheme() {
+            let theme = SpotTheme.palette(for: effectiveAppearance)
+            sides.colors = [0, 0.3, 0.3, 0].map { theme.rimSides.withAlphaComponent($0).cgColor }
+            let alpha = theme.rimEnds.alphaComponent
+            ends.colors = [alpha, 0, 0, alpha].map { theme.rimEnds.withAlphaComponent($0).cgColor }
+            ends.compositingFilter = theme.rimAddsLight ? "plusL" : nil
+        }
+
+        override func viewDidChangeEffectiveAppearance() {
+            super.viewDidChangeEffectiveAppearance()
+            needsLayout = true
         }
 
         @available(*, unavailable)
@@ -90,6 +101,7 @@ private struct Backing: NSViewRepresentable {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
             defer { CATransaction.commit() }
+            applyTheme()
             let scale = window?.backingScaleFactor ?? 2
             for part in [sides, ends, sideLine, endLines, glowClip, glow, wideLine, thinLine] as [CALayer] {
                 part.frame = bounds

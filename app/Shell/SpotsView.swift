@@ -77,7 +77,7 @@ struct SpotsView: View {
                     }
                 )
                 .background {
-                    Color.white
+                    SpotTheme.solid
                         .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(entry.state.on == true && !sheetOpen ? 1 : 0) }
                 }
                 .modifier(SpotSheetFrame(
@@ -113,7 +113,6 @@ struct SpotsView: View {
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
         .background(softBlur)
         .environment(\.spotIsShown, model.isShown)
-        .preferredColorScheme(.dark)
         .onChange(of: model.isShown) { _, isShown in
             guard isShown else {
                 searchFocused = false
@@ -280,7 +279,7 @@ struct SpotsView: View {
 
     /// The arrow of the card while its sheet moves. It stays in view until the close button takes its place at the edge.
     private func sheetArrow(of entry: SpotsModel.Entry) -> some View {
-        SpotCardArrow(isOnWhite: entry.state.on == true && !sheetOpen)
+        SpotCardArrow(isOnSolid: entry.state.on == true && !sheetOpen)
             .placed(isTall: (openFrame?.height ?? 0) > SpotTokens.rowHeight)
             .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(sheetOpen ? 0 : 1) }
             .allowsHitTesting(false)
@@ -491,7 +490,7 @@ struct SpotsView: View {
         HStack {
             Text("Edit Spots")
                 .font(SpotType.input)
-                .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
             Spacer()
             SpotRoundButton(symbol: "checkmark", label: "Done") { model.endEditing() }
         }
@@ -559,7 +558,7 @@ struct SpotsView: View {
         }
         .opacity(showsDrop || fieldWordsAreHidden ? 0 : 1)
         .font(SpotType.input)
-        .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+        .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
         .padding(.horizontal, SpotTokens.padding)
         .frame(height: fieldIsInSheet ? SpotTokens.listRowHeight : SpotTokens.rowHeight)
         .overlay {
@@ -569,7 +568,7 @@ struct SpotsView: View {
                     .opacity(showsDrop ? 1 : 0)
             }
         }
-        .background(Color.white.opacity(fieldIsInSheet ? SpotTokens.fill : 0), in: RoundedRectangle(cornerRadius: fieldRadius, style: .continuous))
+        .background(SpotTheme.ink.opacity(fieldIsInSheet ? SpotTheme.fill : 0), in: RoundedRectangle(cornerRadius: fieldRadius, style: .continuous))
         .modifier(SpotGlass(radius: fieldRadius, isBare: fieldIsInSheet || sheetID == ShippedSpot.installID))
     }
 
@@ -603,7 +602,7 @@ struct SpotsView: View {
             }
         }
         .font(SpotType.input)
-        .foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
+        .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
         .lineLimit(1)
         .opacity(model.searchText.isEmpty && !showsDrop && !fieldWordsAreHidden ? 1 : 0)
     }

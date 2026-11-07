@@ -467,7 +467,8 @@ The code follows this document.
 | `plugins/*.sh` stays the source | A person edits the real file, and a diff shows the changed line. | Only `.spot` files in the repo, which show a whole script as one changed line and still need a pack step. |
 | A DMG window that shows where to drag, with no background image | The app and Applications side by side say all that a person needs. | An image with an arrow, which needs upkeep. |
 | A hidden card keeps its full strength, and Edit Spots marks it with `eye.slash` | The mark says "hidden from the grid", which only that mode shows. A dim card looks disabled, and it is not. | Dimming the card at 40%. A card with no fill, which is weak on a light backdrop. |
-| Cards take a shade that gives white text 4.5:1 over a white window | Glass follows what lies behind it, so the lightest backdrop sets the shade. The cards blur what lies behind the window, so the tint around them does not darken them. | A lighter shade, which measured 2.3:1 over white. |
+| Dark cards take a shade that gives white text 4.5:1 over a white window | Glass follows what lies behind it, so the lightest backdrop sets the shade. The cards blur what lies behind the window, so the tint around them does not darken them. | A lighter shade, which measured 2.3:1 over white. |
+| The panel follows the Mac's appearance, with white bubbles and dark text in Light mode, and a dark turned-on card | Dark text on a strong white fill reads on any backdrop. A dark turned-on card stays apart from the selection ring in the accent colour. | A look that reacts to what lies behind the panel, which flips as windows move. An accent turned-on card, which hides the ring. |
 
 **Where the Workers model stops.** A Worker runs in a sandbox, so a binding is both an API and a permission. A script has no
 sandbox, so here a binding is only an API (P1). A Durable Object loses its memory when it sleeps. A staying script is a real

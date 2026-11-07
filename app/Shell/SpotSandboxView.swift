@@ -17,12 +17,11 @@ struct SpotSandboxView: View {
     var body: some View {
         HStack(spacing: 0) {
             source
-            Rectangle().fill(.white.opacity(SpotTokens.fill)).frame(width: 1)
+            Rectangle().fill(SpotTheme.ink.opacity(SpotTheme.fill)).frame(width: 1)
             result
         }
         .frame(width: Self.textWidth + Self.sideWidth + 1, height: Self.height)
-        .background(Color(white: 0.16))
-        .preferredColorScheme(.dark)
+        .background(SpotTheme.window)
     }
 
     private var source: some View {
@@ -65,9 +64,9 @@ struct SpotSandboxView: View {
                     .modifier(SpotSecondaryText())
                     .frame(width: SpotTokens.gridWidth, height: SpotTokens.glyphSize)
             }
-            lines(model.sandbox.faults.isEmpty ? ["No faults"] : model.sandbox.faults, color: model.sandbox.faults.isEmpty ? .white.opacity(SpotTokens.secondaryLight) : .orange)
+            lines(model.sandbox.faults.isEmpty ? ["No faults"] : model.sandbox.faults, color: model.sandbox.faults.isEmpty ? SpotTheme.ink.opacity(SpotTheme.secondaryLight) : .orange)
             if !model.sandbox.log.isEmpty {
-                lines(model.sandbox.log, color: .white.opacity(SpotTokens.secondaryLight))
+                lines(model.sandbox.log, color: SpotTheme.ink.opacity(SpotTheme.secondaryLight))
             }
             Spacer(minLength: 0)
         }

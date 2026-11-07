@@ -40,22 +40,22 @@ struct SpotFormView: View {
                 TextField(
                     field.label,
                     text: value(of: field),
-                    prompt: Text(field.placeholder ?? field.label).foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
+                    prompt: Text(field.placeholder ?? field.label).foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
                 )
                 .labelsHidden()
                 .textFieldStyle(.plain)
                 .focused($focus, equals: field.name)
             }
             .font(SpotType.body)
-            .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+            .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
             .padding(.horizontal, SpotTokens.padding)
             .frame(height: SpotTokens.listRowHeight)
-            .background(Color.white.opacity(SpotTokens.fill), in: shape)
+            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
         case .multiline:
             TextEditor(text: value(of: field))
                 .scrollContentBackground(.hidden)
                 .font(SpotType.body)
-                .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
                 .focused($focus, equals: field.name)
                 .onKeyPress(.tab) {
                     moveFocus(from: field)
@@ -64,7 +64,7 @@ struct SpotFormView: View {
                 .padding(.horizontal, SpotTokens.padding - 5)
                 .padding(.vertical, SpotTokens.padding - 5)
                 .frame(height: SpotTokens.formTextHeight)
-                .background(Color.white.opacity(SpotTokens.fill), in: shape)
+                .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
         }
     }
 

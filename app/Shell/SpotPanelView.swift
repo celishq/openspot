@@ -24,7 +24,6 @@ struct SpotPanelView: View {
     private static let narrowGap: CGFloat = 2
     private static let keyFont = Font.system(size: 18, weight: .medium)
     private static let metricFont = Font.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit()
-    private static let topFill = Color(white: 0.34).opacity(0.72)
 
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
@@ -48,13 +47,13 @@ struct SpotPanelView: View {
     private func canvas(_ sheet: SheetPlacement) -> some View {
         ZStack(alignment: .topLeading) {
             ForEach(Array(sheet.cards.enumerated()), id: \.offset) { _, card in
-                shape.fill(Color.white.opacity(SpotTokens.fill))
+                shape.fill(SpotTheme.ink.opacity(SpotTheme.fill))
                     .frame(width: card.width, height: card.height)
                     .offset(x: card.minX, y: card.minY)
             }
             ForEach(Array(sheet.lines.enumerated()), id: \.offset) { _, line in
                 Rectangle()
-                    .fill(.white.opacity(SpotTokens.fill))
+                    .fill(SpotTheme.ink.opacity(SpotTheme.fill))
                     .frame(width: line.width, height: line.height)
                     .offset(x: line.minX, y: line.minY)
             }
@@ -82,7 +81,7 @@ struct SpotPanelView: View {
             .frame(width: frame.rect.width, height: frame.rect.height, alignment: Self.alignment(frame))
             .background {
                 if isSelected(part), part.look != .tile {
-                    shape.fill(Color.white.opacity(SpotTokens.selectedFill)).padding(-SpotTokens.controlPadding)
+                    shape.fill(SpotTheme.ink.opacity(SpotTheme.selectedFill)).padding(-SpotTokens.controlPadding)
                 }
             }
             .offset(x: frame.rect.minX, y: frame.rect.minY)
@@ -169,7 +168,7 @@ struct SpotPanelView: View {
             if let title = part.title {
                 Text(title)
                     .font(part.isSection || part.look == .section ? SpotType.title : SpotType.body)
-                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
                     .lineLimit(1)
                     .layoutPriority(1)
             }
@@ -207,7 +206,7 @@ struct SpotPanelView: View {
     private func pressLabel(_ part: SpotPart, words: String, font: Font) -> some View {
         if let call = work(part) {
             HStack(spacing: SpotTokens.placeGap / 2) {
-                SpotWorkMark(call: call, side: SpotTokens.workMark, isOnWhite: part.look == .strong)
+                SpotWorkMark(call: call, side: SpotTokens.workMark, isOnSolid: part.look == .strong)
                 Text("Stop").font(font).lineLimit(1)
             }
         } else {
@@ -228,17 +227,17 @@ struct SpotPanelView: View {
                         Text(part.title ?? part.id).font(Self.keyFont)
                     }
                 }
-                .foregroundStyle(.white)
+                .foregroundStyle(SpotTheme.ink)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.white.opacity(SpotTokens.selectedFill), in: shape)
+                    .background(SpotTheme.ink.opacity(SpotTheme.selectedFill), in: shape)
                     .contentShape(shape)
             case .chip:
                 pressLabel(part, words: part.title ?? part.id, font: SpotType.action)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(SpotTheme.ink)
                     .padding(.horizontal, SpotTokens.padding)
                     .padding(.vertical, 5)
                     .fixedSize()
-                    .background(frame.isOnTop ? AnyShapeStyle(Self.topFill) : AnyShapeStyle(Color.white.opacity(SpotTokens.selectedFill)), in: Capsule())
+                    .background(frame.isOnTop ? AnyShapeStyle(SpotTheme.float) : AnyShapeStyle(SpotTheme.ink.opacity(SpotTheme.selectedFill)), in: Capsule())
                     .background(frame.isOnTop ? AnyShapeStyle(.thinMaterial) : AnyShapeStyle(Color.clear), in: Capsule())
                     .contentShape(Capsule())
             case .bare:
@@ -251,20 +250,20 @@ struct SpotPanelView: View {
                 .contentShape(Rectangle())
             case .strong where frame.isOnTop:
                 pressLabel(part, words: part.title ?? part.id.capitalized, font: SpotType.action)
-                    .foregroundStyle(.black)
+                    .foregroundStyle(SpotTheme.onSolid)
                     .padding(.horizontal, SpotTokens.padding)
                     .padding(.vertical, 5)
                     .fixedSize()
-                    .background(Color.white, in: Capsule())
+                    .background(SpotTheme.solid, in: Capsule())
                     .contentShape(Capsule())
             case .strong:
-                centeredLine(part, text: .black, fill: Color.white)
+                centeredLine(part, text: SpotTheme.onSolid, fill: SpotTheme.solid)
             case .tile:
                 labelled(part, frame)
                     .modifier(TileLook(isOn: true, isSelected: isSelected(part)))
                     .contentShape(shape)
             default:
-                centeredLine(part, text: .white, fill: Color.white.opacity(SpotTokens.selectedFill))
+                centeredLine(part, text: SpotTheme.ink, fill: SpotTheme.ink.opacity(SpotTheme.selectedFill))
             }
         }
         .buttonStyle(.plain)
@@ -310,7 +309,7 @@ struct SpotPanelView: View {
             HStack(spacing: 4) {
                 Text(options.first { $0.id == value }?.title ?? options.first?.title ?? "")
                     .font(SpotType.detail)
-                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
                     .lineLimit(1)
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.system(size: 9, weight: .semibold))
@@ -318,7 +317,7 @@ struct SpotPanelView: View {
             }
             .padding(.horizontal, frame.isOnTop ? 10 : 0)
             .padding(.vertical, frame.isOnTop ? 5 : 0)
-            .background(frame.isOnTop ? AnyShapeStyle(Self.topFill) : AnyShapeStyle(Color.clear), in: Capsule())
+            .background(frame.isOnTop ? AnyShapeStyle(SpotTheme.float) : AnyShapeStyle(Color.clear), in: Capsule())
             .background(frame.isOnTop ? AnyShapeStyle(.thinMaterial) : AnyShapeStyle(Color.clear), in: Capsule())
         }
         .menuStyle(.button)
@@ -340,18 +339,18 @@ struct SpotPanelView: View {
             if let title = part.title {
                 Text(title)
                     .font(SpotType.body)
-                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
                     .lineLimit(1)
             }
             if work(part) != nil {
                 mark(part)
             } else if let symbol = part.symbol {
                 Image(systemName: symbol)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(SpotTheme.ink)
             }
             Slider(value: Binding(get: { level }, set: { onSet(part, String(Int($0.rounded()))) }), in: low...max(high, low + 1))
                 .controlSize(.small)
-                .tint(.white)
+                .tint(SpotTheme.ink)
                 .labelsHidden()
         }
     }
@@ -372,7 +371,7 @@ struct SpotPanelView: View {
                 .fill(Self.color(color))
                 .frame(width: size, height: size)
                 .overlay {
-                    if isChosen { Circle().strokeBorder(.white, lineWidth: 2) }
+                    if isChosen { Circle().strokeBorder(SpotTheme.ink, lineWidth: 2) }
                 }
                 .contentShape(Circle())
         }
@@ -397,12 +396,12 @@ struct SpotPanelView: View {
                     Button { onSet(part, item.id) } label: {
                         Text(item.title)
                             .font(SpotType.body)
-                            .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                            .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
                             .lineLimit(1)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, SpotTokens.controlPadding)
                             .frame(height: SheetPlacement.rowHeight)
-                            .background(Color.white.opacity(item.id == value ? SpotTokens.selectedFill : 0), in: shape)
+                            .background(SpotTheme.ink.opacity(item.id == value ? SpotTheme.selectedFill : 0), in: shape)
                             .contentShape(shape)
                     }
                     .buttonStyle(.plain)
@@ -415,7 +414,7 @@ struct SpotPanelView: View {
         VStack(alignment: part.look == .bare ? .trailing : .leading, spacing: SpotType.lineGap) {
             Text(number)
                 .font(Self.metricFont)
-                .foregroundStyle(.white)
+                .foregroundStyle(SpotTheme.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
             if let title = part.title {
@@ -427,7 +426,7 @@ struct SpotPanelView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: part.look == .bare ? .trailing : .leading)
         .padding(.horizontal, part.look == .bare ? 0 : SpotTokens.padding)
-        .background(Color.white.opacity(part.look == .bare ? 0 : SpotTokens.fill), in: shape)
+        .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)
     }
 
     private func chart(_ points: [Double]) -> some View {
@@ -436,14 +435,14 @@ struct SpotPanelView: View {
             HStack(alignment: .bottom, spacing: Self.barGap) {
                 ForEach(Array(points.enumerated()), id: \.offset) { _, point in
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(.white.opacity(0.7))
+                        .fill(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
                         .frame(height: room.size.height * max(point, 0) / top)
                 }
             }
             .frame(maxHeight: .infinity, alignment: .bottom)
         }
         .padding(SpotTokens.padding)
-        .background(Color.white.opacity(SpotTokens.fill), in: shape)
+        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
     }
 
     /// The picture at a file path. A file it cannot read shows an empty tile.
@@ -452,7 +451,7 @@ struct SpotPanelView: View {
             if let picture = NSImage(contentsOfFile: path) {
                 Image(nsImage: picture).resizable().scaledToFill()
             } else {
-                Color.white.opacity(SpotTokens.fill)
+                SpotTheme.ink.opacity(SpotTheme.fill)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -464,7 +463,7 @@ struct SpotPanelView: View {
             HStack {
                 Text(part.title ?? "")
                     .font(SpotType.body)
-                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
                     .lineLimit(1)
                 Spacer(minLength: Self.lineGap)
                 if let detail = part.detail {
@@ -473,7 +472,7 @@ struct SpotPanelView: View {
             }
             ProgressView(value: min(max(level, 0), 100), total: 100)
                 .progressViewStyle(.linear)
-                .tint(.white)
+                .tint(SpotTheme.ink)
                 .controlSize(.small)
         }
         .frame(maxHeight: .infinity)
@@ -501,14 +500,14 @@ struct SpotPanelView: View {
             }
             if text.isEmpty, let placeholder {
                 Text(placeholder)
-                    .foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
+                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
                     .allowsHitTesting(false)
                     .padding(space)
             }
         }
         .font(SpotType.body)
-        .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
-        .background(Color.white.opacity(frame.isInCard ? 0 : SpotTokens.fill), in: shape)
+        .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
+        .background(SpotTheme.ink.opacity(frame.isInCard ? 0 : SpotTheme.fill), in: shape)
     }
 }
 
@@ -522,7 +521,7 @@ private struct TileLook: ViewModifier {
             content
                 .padding(.horizontal, SpotTokens.padding)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.white.opacity(isSelected ? SpotTokens.selectedFill : SpotTokens.fill), in: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous))
+                .background(SpotTheme.ink.opacity(isSelected ? SpotTheme.selectedFill : SpotTheme.fill), in: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous))
         } else {
             content
         }

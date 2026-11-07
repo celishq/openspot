@@ -10,13 +10,13 @@ struct SpotDropView: View {
         HStack(spacing: SpotTokens.padding - 5) {
             Image(systemName: drop.symbol)
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(SpotTheme.ink)
                 .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
-                .background(Color.white.opacity(0.2), in: Circle())
+                .background(SpotTheme.ink.opacity(SpotTheme.disc), in: Circle())
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 Text(drop.title)
                     .font(SpotType.title)
-                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
                     .lineLimit(1)
                 if let detail = drop.detail {
                     Text(detail)

@@ -9,11 +9,11 @@ struct ToastView: View {
             if let symbol = toast.symbol {
                 Image(systemName: symbol)
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(SpotTheme.ink)
             }
             Text(toast.message)
                 .font(SpotType.body)
-                .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
                 .lineLimit(3)
         }
         .padding(.horizontal, ToastPanel.margin)
@@ -22,6 +22,5 @@ struct ToastView: View {
         .padding(ToastPanel.margin)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .environment(\.spotIsShown, toast.isShown)
-        .preferredColorScheme(.dark)
     }
 }

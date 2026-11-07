@@ -63,12 +63,12 @@ struct SpotSheetView: View {
                 VStack(alignment: .leading, spacing: SpotType.lineGap) {
                     Text(form?.form.title ?? entry.shownState.title)
                         .font(SpotType.title)
-                        .foregroundStyle(showsFill ? Color.black.opacity(SpotTokens.titleOpacity) : Color.white.opacity(SpotTokens.titleOpacity))
+                        .foregroundStyle(showsFill ? SpotTheme.onSolid : SpotTheme.ink)
                         .lineLimit(1)
                     if form == nil, let subtitle = shownSubtitle {
                         Text(subtitle)
                             .font(SpotType.detail)
-                            .modifier(SpotSecondaryText(isOnWhite: showsFill))
+                            .modifier(SpotSecondaryText(isOnSolid: showsFill))
                             .lineLimit(1)
                     }
                 }
@@ -102,13 +102,13 @@ struct SpotSheetView: View {
     private var glyph: some View {
         Group {
             if let call = entry.work {
-                SpotWorkMark(call: call, isOnWhite: showsFill)
+                SpotWorkMark(call: call, isOnSolid: showsFill)
             } else {
                 Image(systemName: entry.symbol)
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(showsFill ? Color.accentColor : Color.white)
+                    .foregroundStyle(showsFill ? SpotTheme.glyphOnSolid : SpotTheme.ink)
                     .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
-                    .background(Color.white.opacity(showsSmallCard || showsFill ? 0 : 0.2), in: Circle())
+                    .background(SpotTheme.ink.opacity(showsSmallCard || showsFill ? 0 : SpotTheme.disc), in: Circle())
             }
         }
         .offset(x: showsSmallCard ? (SpotTokens.cell - SpotTokens.glyphSize) / 2 - SpotTokens.padding : 0)
@@ -137,12 +137,12 @@ struct SpotSheetView: View {
     private func createLabel(_ title: String) -> some View {
         Text(title)
             .font(SpotType.body)
-            .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+            .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
             .lineLimit(1)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, SpotTokens.padding)
             .frame(height: SpotTokens.listRowHeight)
-            .background(Color.white.opacity(SpotTokens.selectedFill), in: row)
+            .background(SpotTheme.ink.opacity(SpotTheme.selectedFill), in: row)
             .contentShape(row)
     }
 }

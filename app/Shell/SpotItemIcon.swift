@@ -18,7 +18,7 @@ struct SpotItemIcon: View {
         } else if let symbol = item.symbol {
             Image(systemName: symbol)
                 .font(.system(size: size * 0.7, weight: .medium))
-                .foregroundStyle(.white)
+                .foregroundStyle(SpotTheme.ink)
                 .frame(width: size, height: size)
         }
     }

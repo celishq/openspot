@@ -81,7 +81,7 @@ struct SpotRowsView: View {
                 } label: {
                     SpotItemIcon(item: item, size: SpotTokens.listIconSize)
                         .frame(width: side, height: side)
-                        .background(Color.white.opacity(index == list.selected ? SpotTokens.selectedFill : SpotTokens.fill), in: row)
+                        .background(SpotTheme.ink.opacity(index == list.selected ? SpotTheme.selectedFill : SpotTheme.fill), in: row)
                         .contentShape(row)
                 }
                 .buttonStyle(.plain)
@@ -107,7 +107,7 @@ struct SpotRowsView: View {
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 Text(item.title)
                     .font(SpotType.body)
-                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
                     .lineLimit(1)
                 if let subtitle = item.subtitle {
                     Text(subtitle)
@@ -123,13 +123,13 @@ struct SpotRowsView: View {
             if item.isOn {
                 Image(systemName: "checkmark")
                     .font(SpotType.body.weight(.semibold))
-                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, SpotTokens.padding)
         .frame(height: SpotTokens.listRowHeight)
-        .background(Color.white.opacity(isSelected ? SpotTokens.selectedFill : SpotTokens.fill), in: row)
+        .background(SpotTheme.ink.opacity(isSelected ? SpotTheme.selectedFill : SpotTheme.fill), in: row)
         .contentShape(row)
     }
 }

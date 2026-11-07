@@ -25,7 +25,7 @@ enum SpotSheetPicture {
         let size = SpotTokens.panelRect(panel).size
         let view = NSHostingView(rootView: SpotSheetPreview(panel: panel, list: Self.list(of: output))
             .padding(margin)
-            .background(Color(white: 0.16))
+            .background(SpotTheme.window)
             .preferredColorScheme(.dark))
         let frame = NSRect(x: -9000, y: -9000, width: size.width + 2 * margin, height: size.height + 2 * margin)
         let window = NSWindow(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false)

@@ -1,12 +1,11 @@
 import SwiftUI
 
-/// Secondary text: plain white at less strength, so it stays below the title on any backdrop. On a white card it is
-/// plain dark text.
+/// Secondary text: ink at less strength, so it stays below the title on any backdrop.
 struct SpotSecondaryText: ViewModifier {
-    var isOnWhite = false
-    var strength = SpotTokens.secondaryLight
+    var isOnSolid = false
+    var strength = SpotTheme.secondaryLight
 
     func body(content: Content) -> some View {
-        content.foregroundStyle(isOnWhite ? .black.opacity(SpotTokens.secondaryLight) : .white.opacity(strength))
+        content.foregroundStyle((isOnSolid ? SpotTheme.onSolid : SpotTheme.ink).opacity(isOnSolid ? SpotTheme.secondaryLight : strength))
     }
 }

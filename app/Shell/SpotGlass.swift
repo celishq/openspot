@@ -1,12 +1,13 @@
 import SwiftUI
 
 /// A Control Center surface: a heavier blur, a light grey fill and a rim.
-/// A solid surface is plain white, with no rim. A bare surface draws no blur and no rim.
+/// A solid surface is the plain solid colour, with no rim. A bare surface draws no blur and no rim.
 struct SpotGlass: ViewModifier {
     var radius: CGFloat = SpotTokens.radius
     var isSolid = false
     var isBare = false
     var strength = 1.0
+    var shade = SpotTheme.glass
     @Environment(\.spotIsShown) private var isShown
 
     func body(content: Content) -> some View {
@@ -16,10 +17,10 @@ struct SpotGlass: ViewModifier {
             .animation(SpotMotion.surface(isShown: isShown), value: isShown)
             .background {
                 SpotBlur(radius: isShown ? SpotTokens.cardBlur * strength : 0)
-                    .overlay(Color.black.opacity(SpotTokens.glassShade))
+                    .overlay(shade)
                     .clipShape(shape)
                     .opacity(isShown && !isSolid && !isBare ? 1 : 0)
-                shape.fill(Color.white).opacity(isShown && isSolid ? 1 : 0)
+                shape.fill(SpotTheme.solid).opacity(isShown && isSolid ? 1 : 0)
             }
             .animation(SpotMotion.surface(isShown: isShown), value: isShown)
             .overlay {
