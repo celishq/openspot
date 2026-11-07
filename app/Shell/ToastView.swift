@@ -17,12 +17,14 @@ struct ToastView: View {
                 .foregroundStyle(SpotTheme.ink)
                 .lineLimit(3)
                 .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
             if let key = toast.key {
                 SpotKeyLabel(text: key.text, isRecording: false)
             }
         }
         .padding(.horizontal, ToastPanel.margin)
         .padding(.vertical, 10)
+        .frame(minWidth: ToastPanel.minWidth - 2 * ToastPanel.margin)
         .modifier(SpotGlass(radius: SpotTokens.rowHeight / 3))
         .contentShape(Rectangle())
         .onTapGesture { toast.open?() }

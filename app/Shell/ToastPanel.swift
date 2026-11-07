@@ -2,10 +2,12 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// A window at the top of the screen for toasts, so they show when the spots panel is closed. It is as large as its message.
+/// A window at the top of the screen for toasts, so they show when the spots panel is closed. It is as large as its message,
+/// from 360 to 560 pt wide.
 /// Only a toast with a fix takes input: a click on it, or its fix key, opens the fix (A15).
 final class ToastPanel: NSPanel {
     static let margin: CGFloat = 16
+    static let minWidth: CGFloat = 360
     private static let maxSize = NSSize(width: 560, height: 120)
     private static let duration: TimeInterval = 5
     static let failureSymbol = "exclamationmark.triangle.fill"
@@ -23,7 +25,8 @@ final class ToastPanel: NSPanel {
         toast.message = message
         toast.symbol = symbol
         hold(fix: fix, key: key)
-        let size = measure.sizeThatFits(in: Self.maxSize)
+        let width = min(max(measure.view.fittingSize.width, Self.minWidth), Self.maxSize.width)
+        let size = measure.sizeThatFits(in: NSSize(width: width, height: Self.maxSize.height))
         if let screen = NSScreen.main?.visibleFrame {
             setFrame(NSRect(x: screen.midX - size.width / 2, y: screen.maxY - size.height, width: size.width, height: size.height), display: true)
         }
