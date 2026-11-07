@@ -22,8 +22,9 @@ public struct PluginGuide: Equatable, Sendable {
             try await makePlugin(named: TextBlock.blocks(in: input ?? "").first?.value("name") ?? "")
             return ""
         case "open":
-            try await open(arguments.dropFirst().first ?? "")
-            return ""
+            let row = arguments.dropFirst().first ?? ""
+            try await open(row)
+            return row == "prompt" ? "toast=Copied\n" : ""
         default:
             throw PluginError.failed(1, "Build cannot do that.")
         }

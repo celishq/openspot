@@ -46,6 +46,7 @@ case "$1" in
     ;;
   copy)
     printf '%s' "$2" | pbcopy
+    echo "toast=Copied"
     ;;
   open)
     open "$2"

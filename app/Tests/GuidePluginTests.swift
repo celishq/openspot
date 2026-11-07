@@ -75,6 +75,12 @@ final class GuidePluginTests: XCTestCase {
         XCTAssertTrue(prompt.contains("check"))
     }
 
+    func testThePromptSaysItIsCopied() async throws {
+        let toast = try await guide().perform(.item(SpotItem(title: "Copy", run: "prompt")), timeout: 5)
+
+        XCTAssertEqual(toast, "Copied")
+    }
+
     func testTheRowsOpenTheGuideAndTheFolder() async throws {
         let guide = try guide()
 

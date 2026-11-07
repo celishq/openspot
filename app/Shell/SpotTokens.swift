@@ -43,8 +43,8 @@ enum SpotTokens {
     static let formTextHeight: CGFloat = 120
     static let halo: CGFloat = 90
     static let backdropBlur: CGFloat = 2
-    static let backdropShade = 0.08
-    static let glassShade = 0.3
+    static let backdropShade = 0.2
+    static let glassShade = 0.55
     static let titleOpacity = 1.0
     static let secondaryLight = 0.7
     static let fill = 0.1
