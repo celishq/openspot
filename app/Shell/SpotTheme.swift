@@ -46,7 +46,6 @@ struct SpotTheme {
     let selectedStrength: Double
     let discStrength: Double
     let chipStrength: Double
-    let menuSelectedStrength: Double
     let controlStrength: Double
     let trackStrength: Double
     let secondaryStrength: Double
@@ -77,7 +76,6 @@ struct SpotTheme {
         selectedStrength: 0.22,
         discStrength: 0.2,
         chipStrength: 0.25,
-        menuSelectedStrength: 0.3,
         controlStrength: 0.2,
         trackStrength: 0.2,
         secondaryStrength: 0.7
@@ -109,7 +107,6 @@ struct SpotTheme {
         selectedStrength: 0.08,
         discStrength: 0,
         chipStrength: 0.08,
-        menuSelectedStrength: 0.08,
         controlStrength: 0.05,
         trackStrength: 0.08,
         secondaryStrength: 0.7
@@ -134,7 +131,6 @@ struct SpotTheme {
     static var disc: Double { current.discStrength }
     static var chip: Double { current.chipStrength }
     static var selectedFill: Double { current.selectedStrength }
-    static var menuSelected: Double { current.menuSelectedStrength }
     static let dragFill = 0.4
     static var track: Double { current.trackStrength }
     static var control: Double { current.controlStrength }

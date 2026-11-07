@@ -142,7 +142,8 @@ struct SpotSheetView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, SpotTokens.padding)
             .frame(height: SpotTokens.listRowHeight)
-            .background(SpotTheme.ink.opacity(SpotTheme.selectedFill), in: row)
+            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
+            .modifier(SpotSelectionRing(isSelected: true, shape: row))
             .contentShape(row)
     }
 }

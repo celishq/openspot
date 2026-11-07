@@ -81,7 +81,7 @@ struct SpotPanelView: View {
             .frame(width: frame.rect.width, height: frame.rect.height, alignment: Self.alignment(frame))
             .background {
                 if isSelected(part), part.look != .tile {
-                    shape.fill(SpotTheme.ink.opacity(SpotTheme.selectedFill)).padding(-SpotTokens.controlPadding)
+                    shape.strokeBorder(Color.accentColor, lineWidth: SpotSelectionRing<RoundedRectangle>.width).padding(-SpotTokens.controlPadding)
                 }
             }
             .offset(x: frame.rect.minX, y: frame.rect.minY)
@@ -521,7 +521,8 @@ private struct TileLook: ViewModifier {
             content
                 .padding(.horizontal, SpotTokens.padding)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(SpotTheme.ink.opacity(isSelected ? SpotTheme.selectedFill : SpotTheme.fill), in: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous))
+                .background(SpotTheme.ink.opacity(SpotTheme.fill), in: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous))
+                .modifier(SpotSelectionRing(isSelected: isSelected, shape: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)))
         } else {
             content
         }

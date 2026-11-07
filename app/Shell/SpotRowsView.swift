@@ -81,7 +81,8 @@ struct SpotRowsView: View {
                 } label: {
                     SpotItemIcon(item: item, size: SpotTokens.listIconSize)
                         .frame(width: side, height: side)
-                        .background(SpotTheme.ink.opacity(index == list.selected ? SpotTheme.selectedFill : SpotTheme.fill), in: row)
+                        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
+                        .modifier(SpotSelectionRing(isSelected: index == list.selected, shape: row, width: SpotSelectionRing<RoundedRectangle>.thinWidth))
                         .contentShape(row)
                 }
                 .buttonStyle(.plain)
@@ -129,7 +130,8 @@ struct SpotRowsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, SpotTokens.padding)
         .frame(height: SpotTokens.listRowHeight)
-        .background(SpotTheme.ink.opacity(isSelected ? SpotTheme.selectedFill : SpotTheme.fill), in: row)
+        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
+        .modifier(SpotSelectionRing(isSelected: isSelected, shape: row))
         .contentShape(row)
     }
 }
