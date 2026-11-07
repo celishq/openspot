@@ -156,6 +156,10 @@ public final class SpotSheet {
         panel?.move(by: step)
     }
 
+    public func scrollPanel(by step: Int) {
+        panel?.scroll(by: step)
+    }
+
     /// The panel closed: a sheet of parts closes and drops its values, so the next open reads again. A sheet of rows stays.
     func panelClosed() {
         if panel != nil || command.stays {

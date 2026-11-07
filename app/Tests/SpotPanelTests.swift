@@ -206,6 +206,22 @@ final class SpotPanelTests: XCTestCase {
         XCTAssertNil(sheet.selectedPart)
     }
 
+    func testTheArrowsScrollASheetWithNothingToSelect() throws {
+        var sheet = try panel("part=mac\ntitle=This Mac\ndetail=100%\n\npart=swap\ntitle=Swap\ndetail=0 MB\n")
+
+        sheet.scroll(by: 1)
+        sheet.scroll(by: 1)
+
+        XCTAssertTrue(sheet.scrollsByArrows)
+        XCTAssertEqual(sheet.nudge, SpotPanel.Nudge(step: 1, serial: 2))
+    }
+
+    func testTheArrowsDoNotScrollASheetWithAPartToSelect() throws {
+        let sheet = try panel("part=mac\ntitle=This Mac\n\npart=key\nshortcut=ctrl+space\n")
+
+        XCTAssertFalse(sheet.scrollsByArrows)
+    }
+
     func testTheSelectionSurvivesANewAnswerAndMovesOnWhenThePartEnds() throws {
         var sheet = try panel("part=key\nshortcut=ctrl+space\n")
         sheet.move(by: 1)

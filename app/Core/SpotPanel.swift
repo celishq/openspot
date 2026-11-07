@@ -3,9 +3,16 @@ import Foundation
 /// The parts of a sheet with what the person has set. Each change takes a new generation, and only the answer to the
 /// newest one shows, so that an older answer never replaces a newer state.
 public struct SpotPanel: Equatable, Sendable {
+    /// One press of an arrow that asks the sheet to scroll by a row. A new press takes the next serial.
+    public struct Nudge: Equatable, Sendable {
+        public let step: Int
+        public let serial: Int
+    }
+
     public private(set) var parts: [SpotPart]
     public private(set) var generation = 0
     public private(set) var layout: SheetLayout?
+    public private(set) var nudge: Nudge?
     private var selected: String?
     private var changes: [String: Int] = [:]
 
@@ -45,6 +52,15 @@ public struct SpotPanel: Equatable, Sendable {
     /// Whether the up and down keys select its parts. A sheet with a text area or with rows leaves them to those.
     public var takesArrows: Bool {
         !showsRows && !parts.contains(where: \.isEditable) && parts.contains(where: \.isSelectable)
+    }
+
+    /// Whether the up and down keys scroll it: it has no part to select, no text area and no rows.
+    public var scrollsByArrows: Bool {
+        !showsRows && !parts.contains(where: \.isEditable) && !parts.contains(where: \.isSelectable)
+    }
+
+    public mutating func scroll(by step: Int) {
+        nudge = Nudge(step: step, serial: (nudge?.serial ?? 0) + 1)
     }
 
     /// The part that return uses: the one the person moved to, or else the first that takes a selection.

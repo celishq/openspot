@@ -14,6 +14,9 @@ struct SpotPanelView: View {
     var list = ItemList()
     var onRun: (SpotItem) -> Void = { _ in }
     @FocusState private var focus: String?
+    @State private var position = ScrollPosition(edge: .top)
+    @State private var scrolled = ScrollRoom(offset: 0, limit: 0)
+    @State private var aim: CGFloat?
     @Environment(\.spotIsShown) private var isShown
 
     private static let swatchSize: CGFloat = 22
@@ -34,6 +37,20 @@ struct SpotPanelView: View {
         Group {
             if sheet.overflows {
                 ScrollView(showsIndicators: false) { canvas(sheet) }
+                    .scrollPosition($position)
+                    .onScrollGeometryChange(for: ScrollRoom.self, of: { geometry in
+                        ScrollRoom(offset: geometry.contentOffset.y, limit: max(geometry.contentSize.height - geometry.containerSize.height, 0))
+                    }, action: { _, room in
+                        scrolled = room
+                        if let aim, abs(room.offset - aim) < 1 { self.aim = nil }
+                    })
+                    .onChange(of: panel.nudge) { _, nudge in
+                        guard let nudge else { return }
+                        let row = SheetPlacement.rowHeight + SheetPlacement.gap
+                        let y = min(max((aim ?? scrolled.offset) + CGFloat(nudge.step) * row, 0), scrolled.limit)
+                        aim = y
+                        withAnimation(SpotMotion.follow) { position.scrollTo(y: y) }
+                    }
             } else {
                 canvas(sheet)
             }
@@ -42,6 +59,12 @@ struct SpotPanelView: View {
         .onChange(of: isShown) { _, isShown in
             if isShown { DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeInDuration, execute: focusFirstField) }
         }
+    }
+
+    /// How far the sheet has scrolled, and how far it can.
+    private struct ScrollRoom: Equatable {
+        let offset: CGFloat
+        let limit: CGFloat
     }
 
     private func canvas(_ sheet: SheetPlacement) -> some View {
