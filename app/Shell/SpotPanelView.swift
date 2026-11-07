@@ -24,6 +24,7 @@ struct SpotPanelView: View {
     private static let narrowCell: CGFloat = 80
     private static let narrowGap: CGFloat = 2
     private static let markValueWidth: CGFloat = 36
+    private static let symbolWidth: CGFloat = 22
     private static let keyFont = Font.system(size: 18, weight: .medium)
     private static let metricFont = Font.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit()
 
@@ -166,7 +167,9 @@ struct SpotPanelView: View {
             if !hasRoundMark(part), work(part) != nil {
                 mark(part)
             } else if let symbol = part.symbol {
-                Image(systemName: symbol).modifier(SpotSecondaryText())
+                Image(systemName: symbol)
+                    .modifier(SpotSecondaryText())
+                    .frame(width: Self.symbolWidth)
             }
             if let title = part.title {
                 Text(title)
