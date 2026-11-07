@@ -7,12 +7,14 @@ public struct SpotPanel: Equatable, Sendable {
     public struct Nudge: Equatable, Sendable {
         public let step: Int
         public let serial: Int
+
+        /// No press yet.
+        public static let rest = Nudge(step: 0, serial: 0)
     }
 
     public private(set) var parts: [SpotPart]
     public private(set) var generation = 0
     public private(set) var layout: SheetLayout?
-    public private(set) var nudge: Nudge?
     private var selected: String?
     private var changes: [String: Int] = [:]
 
@@ -57,10 +59,6 @@ public struct SpotPanel: Equatable, Sendable {
     /// Whether the up and down keys scroll it: it has no part to select, no text area and no rows.
     public var scrollsByArrows: Bool {
         !showsRows && !parts.contains(where: \.isEditable) && !parts.contains(where: \.isSelectable)
-    }
-
-    public mutating func scroll(by step: Int) {
-        nudge = Nudge(step: step, serial: (nudge?.serial ?? 0) + 1)
     }
 
     /// The part that return uses: the one the person moved to, or else the first that takes a selection.

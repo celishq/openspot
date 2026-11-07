@@ -24,6 +24,7 @@ struct SpotSheetView: View {
     /// How far the close button lies from its place at the card's edge. Nil for a card with no arrow, where the frame cuts it.
     let closeShift: CGFloat?
     let onClose: () -> Void
+    let nudge: () -> SpotPanel.Nudge
     @State private var wordsHeight: CGFloat = 0
 
     private var row: RoundedRectangle {
@@ -36,7 +37,7 @@ struct SpotSheetView: View {
             VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
                 if let panel {
                     if panel.showsRows { Color.clear.frame(height: SpotTokens.listRowHeight) }
-                    SpotPanelView(panel: panel, work: work, onSet: onSet, onPress: onPress, recordingPart: recording, onRecord: onRecord, list: list, onRun: onRun)
+                    SpotPanelView(panel: panel, work: work, onSet: onSet, onPress: onPress, recordingPart: recording, onRecord: onRecord, list: list, onRun: onRun, nudge: nudge)
                 } else if let form {
                     SpotFormView(draft: form, onValue: onFormValue)
                 } else {

@@ -43,6 +43,8 @@ public final class SpotSheet {
         didSet { onReport(.listChange) }
     }
     public private(set) var panel: SpotPanel?
+    /// The last arrow press that asks the parts to scroll. It lives apart from the parts, so that a press redraws only the scroll.
+    public private(set) var nudge = SpotPanel.Nudge.rest
     public private(set) var isOpen = false
     public private(set) var state: SpotState {
         didSet { if state != oldValue { onReport(.listChange) } }
@@ -157,7 +159,7 @@ public final class SpotSheet {
     }
 
     public func scrollPanel(by step: Int) {
-        panel?.scroll(by: step)
+        nudge = SpotPanel.Nudge(step: step, serial: nudge.serial + 1)
     }
 
     /// The panel closed: a sheet of parts closes and drops its values, so the next open reads again. A sheet of rows stays.

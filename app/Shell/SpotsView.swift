@@ -74,7 +74,8 @@ struct SpotsView: View {
                     onClose: {
                         model.allowSheetMotion()
                         model.closeList()
-                    }
+                    },
+                    nudge: { model.sheets[entry.id]?.nudge ?? SpotPanel.Nudge.rest }
                 )
                 .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: sheetOpen)) { $0.opacity(sourceWidget == nil || sheetOpen ? 1 : 0) }
                 .overlay(alignment: .topLeading) {

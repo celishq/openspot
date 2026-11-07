@@ -13,10 +13,8 @@ struct SpotPanelView: View {
     var onRecord: (SpotPart) -> Void = { _ in }
     var list = ItemList()
     var onRun: (SpotItem) -> Void = { _ in }
+    var nudge: () -> SpotPanel.Nudge = { SpotPanel.Nudge.rest }
     @FocusState private var focus: String?
-    @State private var position = ScrollPosition(edge: .top)
-    @State private var limit: CGFloat = 0
-    @State private var aim: CGFloat = 0
     @Environment(\.spotIsShown) private var isShown
 
     private static let swatchSize: CGFloat = 22
@@ -37,18 +35,7 @@ struct SpotPanelView: View {
         Group {
             if sheet.overflows {
                 ScrollView(showsIndicators: false) { canvas(sheet) }
-                    .scrollPosition($position)
-                    .onScrollGeometryChange(for: CGFloat.self, of: { max($0.contentSize.height - $0.containerSize.height, 0) }, action: { _, room in limit = room })
-                    .onScrollPhaseChange { _, phase, context in
-                        if phase == .idle { aim = context.geometry.contentOffset.y }
-                    }
-                    .onChange(of: panel.nudge) { _, nudge in
-                        guard let nudge else { return }
-                        let row = SheetPlacement.rowHeight + SheetPlacement.gap
-                        let y = min(max(aim + CGFloat(nudge.step) * row, 0), limit)
-                        aim = y
-                        withAnimation(SpotMotion.follow) { position.scrollTo(y: y) }
-                    }
+                    .modifier(SpotArrowScroll(nudge: nudge))
             } else {
                 canvas(sheet)
             }
