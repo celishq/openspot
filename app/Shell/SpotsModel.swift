@@ -101,7 +101,14 @@ final class SpotsModel {
             updateVisible()
         }
     }
-    private(set) var visible: [Entry] = []
+    private(set) var visible: [Entry] = [] {
+        didSet {
+            let sizes = visible.map(\.size)
+            if sizes != oldValue.map(\.size) { placements = SpotGrid().place(sizes) }
+        }
+    }
+    /// Where each visible spot lies on the grid, in the order of `visible`.
+    private(set) var placements: [SpotPlacement] = []
     var selected = 0
     var openList: String?
     private(set) var sheetMoves = true
@@ -767,10 +774,6 @@ final class SpotsModel {
         let list = visible
         guard list.indices.contains(selected) else { return nil }
         return list[selected]
-    }
-
-    var placements: [SpotPlacement] {
-        SpotGrid().place(visible.map(\.size))
     }
 
     /// Whether the panel shows its search field, which a form or a sheet of parts with no rows replaces.

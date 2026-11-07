@@ -395,9 +395,9 @@ struct SpotsView: View {
 
     /// The card that the open sheet grows from: its own card on the grid, or else a widget that opens it.
     private var cardID: String? {
-        let cards = model.placements.map { model.visible[$0.index] }
-        if cards.contains(where: { $0.id == sheetID }) { return sheetID }
-        return cards.first { $0.kind == .widget && $0.command.opens == sheetID }?.id
+        guard let sheetID else { return nil }
+        if model.visible.contains(where: { $0.id == sheetID }) { return sheetID }
+        return model.visible.first { $0.kind == .widget && $0.command.opens == sheetID }?.id
     }
 
     /// The widget that opened the sheet, whose look the sheet takes at the size of its card.
@@ -427,10 +427,8 @@ struct SpotsView: View {
         )
     }
 
-    private func push(of placement: SpotPlacement) -> CGSize {
-        guard sheetOpen, let from = openFrame,
-              let open = model.placements.first(where: { model.visible[$0.index].id == cardID })
-        else { return .zero }
+    private func push(of placement: SpotPlacement, from open: SpotPlacement?, frame: CGRect?) -> CGSize {
+        guard sheetOpen, let from = frame, let open else { return .zero }
         let away = placement.direction(awayFrom: open)
         let sheet = sheetRect
         return CGSize(
@@ -440,19 +438,22 @@ struct SpotsView: View {
     }
 
     /// How many rows lie between this card and the card of the sheet.
-    private func rowsAway(of placement: SpotPlacement) -> Int {
-        guard let open = model.placements.first(where: { model.visible[$0.index].id == cardID }) else { return 0 }
+    private func rowsAway(of placement: SpotPlacement, from open: SpotPlacement?) -> Int {
+        guard let open else { return 0 }
         return abs(placement.row - open.row)
     }
 
     private var grid: some View {
         let placements = model.placements
         let rows = placements.map { $0.row + $0.size.rows }.max() ?? 0
+        let openID = cardID
+        let open = placements.first { model.visible[$0.index].id == openID }
+        let frame = openFrame
         return ZStack(alignment: .topLeading) {
             ForEach(placements.map { (id: model.visible[$0.index].id, placement: $0) }, id: \.id) { spot in
                 let placement = spot.placement
                 let entry = model.visible[placement.index]
-                let pushed = push(of: placement)
+                let pushed = push(of: placement, from: open, frame: frame)
                 SpotCardView(
                     entry: entry,
                     size: placement.size,
@@ -468,7 +469,7 @@ struct SpotsView: View {
                     onLevel: { model.setLevel(entry.id, to: $0) }
                 )
                 .onDrop(of: [.fileURL], delegate: SpotCardDrop(id: entry.id, model: model, target: $dropTarget))
-                .scaleEffect(sheetOpen && entry.id != cardID ? SpotMotion.pushedScale : 1)
+                .scaleEffect(sheetOpen && entry.id != openID ? SpotMotion.pushedScale : 1)
                 .offset(
                     x: CGFloat(placement.column) * (SpotTokens.cell + SpotTokens.columnGap) + pushed.width + (dragged?.id == entry.id ? dragged?.offset.width ?? 0 : 0),
                     y: CGFloat(placement.row) * (SpotTokens.rowHeight + SpotTokens.rowGap) + pushed.height + (dragged?.id == entry.id ? dragged?.offset.height ?? 0 : 0)
@@ -476,8 +477,8 @@ struct SpotsView: View {
                 .zIndex(dragged?.id == entry.id ? 1 : 0)
                 .highPriorityGesture(moveGesture(of: entry), including: model.isEditing ? .all : .subviews)
                 .contextMenu { spotMenu(of: entry) }
-                .animation(SpotMotion.cardFade(isSheetOpen: sheetOpen, rowsAway: rowsAway(of: placement))) { $0.opacity(sheetOpen ? 0 : 1) }
-                .opacity(entry.id == cardID ? 0 : 1)
+                .animation(SpotMotion.cardFade(isSheetOpen: sheetOpen, rowsAway: rowsAway(of: placement, from: open))) { $0.opacity(sheetOpen ? 0 : 1) }
+                .opacity(entry.id == openID ? 0 : 1)
             }
         }
         .frame(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows), alignment: .topLeading)
