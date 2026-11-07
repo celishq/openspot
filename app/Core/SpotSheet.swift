@@ -908,8 +908,14 @@ public final class SpotSheet {
         }
     }
 
+    /// Tells the person about a failed call: the script's own message when it gave one, or else what Openspot saw.
     private func fail(_ error: Error) {
-        let text = "\(command.name) failed. \((error as? PluginError)?.reason ?? error.localizedDescription)"
+        let text = switch error as? PluginError {
+        case .failed(_, let message) where !message.isEmpty, .failedWithFix(_, let message, _) where !message.isEmpty: message
+        case .timedOut: "\(command.name) took too long, so Openspot stopped it."
+        case let error?: "\(command.name) failed. \(error.reason)"
+        case nil: "\(command.name) failed. \(error.localizedDescription)"
+        }
         if case .failedWithFix(_, _, let fix) = error as? PluginError { return onReport(.failureWithFix(text, fix)) }
         onReport(.failure(text))
     }

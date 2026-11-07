@@ -604,8 +604,8 @@ A toast and a failure line are read in a second. Write each one as you would tel
 | Instead of | Write |
 |---|---|
 | `Oops! Something went wrong.` | `Openspot cannot find a screenshot.` |
-| `Error 1: osascript failed.` | ``Copied. Press `⌘V`, or allow Openspot in Accessibility.`` |
-| `You did not install gh.` | `Pull requests need gh. Install it from cli.github.com.` |
+| `Error 1: osascript failed.` | ``Copied, but Openspot cannot paste. Press `⌘V`, or allow Openspot in Accessibility.`` |
+| `You did not install gh.` | `Pull requests need the gh tool. Install it, then open this again.` |
 
 ## Rules for scripts
 

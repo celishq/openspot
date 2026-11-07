@@ -296,11 +296,11 @@ final class SamplePluginsTests: XCTestCase {
         }
         let accessibility = "open=x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility\n"
 
-        let paste = "Copied. Press `⌘V`, or allow Openspot in Accessibility.\n"
+        let paste = "Copied, but Openspot cannot paste. Press `⌘V`, or allow Openspot in Accessibility.\n"
         for (script, arguments, fix, message) in [
             ("paste-screenshot.sh", [], accessibility, paste),
             ("emoji.sh", ["paste", "x"], accessibility, paste),
-            ("windows.sh", ["left"], accessibility, "Allow Openspot in Accessibility, then press the key again.\n")
+            ("windows.sh", ["left"], accessibility, "Openspot cannot move the window. Allow it in Accessibility, then press the key again.\n")
         ] {
             let process = Process()
             let out = Pipe()
@@ -679,7 +679,7 @@ final class SamplePluginsTests: XCTestCase {
                 try await links.perform(.item(try XCTUnwrap(downloads)), timeout: 5)
                 XCTFail("expected a failure")
             } catch let error as PluginError {
-                XCTAssertEqual(error.reason, "Cannot find \(folder.path)/Downloads.")
+                XCTAssertEqual(error.reason, "Openspot cannot find \(folder.path)/Downloads.")
             }
         }
     }

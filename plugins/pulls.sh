@@ -37,7 +37,7 @@ case "$1" in
   read)
     if ! command -v gh >/dev/null; then
       printf 'open=https://cli.github.com\n'
-      echo "Install gh to see pull requests." >&2
+      echo "Pull requests need the gh tool. Install it, then open this again." >&2
       exit 1
     fi
     list=$(pulls) || exit 1
