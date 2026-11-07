@@ -136,8 +136,8 @@ final class SamplePluginsTests: XCTestCase {
     }
 
     func testWindowsPlacesEachSlotWithOneMoveOfTemplates() throws {
-        XCTAssertEqual(try windowCall("full"), "window\nmove\n0 0 1/1 1\n")
-        XCTAssertEqual(try windowCall("center"), "window\nmove\n7/40 7/40 13/20 13/20\n")
+        XCTAssertEqual(try windowCall("full"), "window\nmove\n0 0 1 1\n")
+        XCTAssertEqual(try windowCall("center"), "window\nmove\n0.175 0.175 0.65 0.65\n")
         XCTAssertEqual(try windowCall("left"), "window\nmove\n0 0 1/4 1\n0 0 1/3 1\n0 0 1/2 1\n")
         XCTAssertEqual(try windowCall("right"), "window\nmove\n3/4 0 1/4 1\n2/3 0 1/3 1\n1/2 0 1/2 1\n")
     }
