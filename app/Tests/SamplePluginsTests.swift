@@ -247,7 +247,7 @@ final class SamplePluginsTests: XCTestCase {
         XCTAssertGreaterThan(lines.items.filter { $0.run.hasPrefix("/System/Applications/") }.count, 5)
     }
 
-    func testScreenshotCopiesTheNewestCaptureAndAVideoAsAFile() throws {
+    func testScreenshotPastesTheNewestCapture() throws {
         let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("plugins")
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-capture-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
@@ -255,14 +255,12 @@ final class SamplePluginsTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: folder) }
         let image = folder.appendingPathComponent("Screenshot.png")
         let video = folder.appendingPathComponent("Screen Recording.mov")
-        let log = folder.appendingPathComponent("osascript")
+        let log = folder.appendingPathComponent("openspot")
         try "#!/bin/sh\necho '\(folder.path)'\n".writeScript(to: tools.appendingPathComponent("defaults"))
         try "#!/bin/sh\ncase \"$*\" in *kMDItemScreenCaptureType*) printf '%s\\0%s\\0' '\(image.path)' '\(video.path)' ;; esac\n".writeScript(to: tools.appendingPathComponent("mdfind"))
-        try "#!/bin/sh\nprintf '%s\\n' \"$@\" >> '\(log.path)'\n".writeScript(to: tools.appendingPathComponent("osascript"))
-        try "#!/bin/sh\n".writeScript(to: tools.appendingPathComponent("sleep"))
+        try "#!/bin/sh\nprintf '%s\\n' \"$@\" > '\(log.path)'\n".writeScript(to: tools.appendingPathComponent("openspot"))
 
-        for (newest, older, form) in [(video, image, "NSURL"), (image, video, "PNGf")] {
-            try? FileManager.default.removeItem(at: log)
+        for (newest, older) in [(video, image), (image, video)] {
             FileManager.default.createFile(atPath: older.path, contents: Data())
             FileManager.default.createFile(atPath: newest.path, contents: Data())
             try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -60)], ofItemAtPath: older.path)
@@ -272,11 +270,9 @@ final class SamplePluginsTests: XCTestCase {
             process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "HOME": folder.path]
             try process.run()
             process.waitUntilExit()
-            let calls = (try? String(contentsOf: log, encoding: .utf8)) ?? ""
 
             XCTAssertEqual(process.terminationStatus, 0, newest.lastPathComponent)
-            XCTAssertTrue(calls.contains(newest.path), calls)
-            XCTAssertTrue(calls.contains(form), calls)
+            XCTAssertEqual(try String(contentsOf: log, encoding: .utf8), "clipboard\npaste\n\(newest.path)\n")
         }
     }
 
@@ -286,10 +282,6 @@ final class SamplePluginsTests: XCTestCase {
         let tools = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        let image = folder.appendingPathComponent("Screenshot.png")
-        FileManager.default.createFile(atPath: image.path, contents: Data())
-        try "#!/bin/sh\necho '\(folder.path)'\n".writeScript(to: tools.appendingPathComponent("defaults"))
-        try "#!/bin/sh\nprintf '%s\\0' '\(image.path)'\n".writeScript(to: tools.appendingPathComponent("mdfind"))
         try "#!/bin/sh\ncase \"$*\" in *keystroke*|*JavaScript*) exit 1 ;; esac\n".writeScript(to: tools.appendingPathComponent("osascript"))
         for name in ["pbcopy", "pbpaste", "sleep"] {
             try "#!/bin/sh\ncat >/dev/null 2>&1 &\n".writeScript(to: tools.appendingPathComponent(name))
@@ -298,7 +290,6 @@ final class SamplePluginsTests: XCTestCase {
 
         let paste = "Copied, but Openspot cannot paste. Press `⌘V`, or allow Openspot in Accessibility.\n"
         for (script, arguments, fix, message) in [
-            ("paste-screenshot.sh", [], accessibility, paste),
             ("emoji.sh", ["paste", "x"], accessibility, paste),
             ("windows.sh", ["left"], accessibility, "Openspot cannot move the window. Allow it in Accessibility, then press the key again.\n")
         ] {

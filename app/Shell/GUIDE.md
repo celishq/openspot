@@ -438,6 +438,7 @@ A script finds `openspot` on its path. It gives what macOS has no command for, i
 | `openspot render <file.png>` | Draws the sheet on stdin to a picture. |
 | `openspot sandbox [file]` | Opens a window to try a sheet from text, a file or a script. |
 | `openspot color pick` | Prints the colour the person picks. Prints nothing on a cancel. |
+| `openspot clipboard paste <file>` | Copies the file as Finder does, with the picture of an image, and pastes it into the front app. Without Accessibility it prints the `open=` fix and exits with 1. |
 | `openspot translate [--from code] [--to code]` | Translates the text on stdin on this Mac. Prints `text` and `from`, or `status=missing`, `unsupported`, `unknown` or `failed`. |
 | `openspot translate languages` | Prints each language, with its name. |
 | `openspot emoji [--tone name]` | Prints each emoji as a row, with its name in the language of the Mac. A tone is `none`, `light`, `medium-light`, `medium`, `medium-dark` or `dark`. |
