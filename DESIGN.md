@@ -405,7 +405,7 @@ The command is on the path of each script. It also gives the tools for authors.
 | `openspot render <file.png>` | Draws the sheet on stdin to a picture. |
 | `openspot sandbox [file]` | Opens a window to try a sheet from text, a file or a script. |
 | `openspot color pick` | Capability: the colour the person picks. |
-| `openspot clipboard copy <file>` | Capability: copies a file as Finder does. `clipboard` holds each clipboard call. |
+| `openspot clipboard copy [file]` | Capability: copies a file as Finder does, or the text on stdin. `clipboard` holds each clipboard call. |
 | `openspot clipboard paste` | Capability: pastes the clipboard into the front app. |
 | `openspot translate` | Capability: translates text on this Mac, and keeps each pair of languages loaded (K2). |
 | `openspot translate languages` | Capability: the languages it knows. |

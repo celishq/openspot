@@ -16,6 +16,12 @@ enum SpotClipboard {
         exit(0)
     }
 
+    static func copy(text: String) -> Never {
+        NSPasteboard.general.clearContents()
+        guard NSPasteboard.general.setString(text, forType: .string) else { fail("Openspot could not copy the text. Try again.") }
+        exit(0)
+    }
+
     /// Pastes the clipboard. With no Accessibility it prints the fix, and exits with 1.
     static func paste() -> Never {
         guard AXIsProcessTrusted() else {

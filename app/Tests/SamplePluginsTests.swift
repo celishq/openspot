@@ -26,6 +26,7 @@ final class SamplePluginsTests: XCTestCase {
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tools) }
         try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("pbcopy"))
+        try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("openspot"))
         for (script, call) in [("emoji.sh", "open"), ("files.sh", "copy"), ("pulls.sh", "copy")] {
             let process = Process()
             let out = Pipe()
@@ -283,15 +284,10 @@ final class SamplePluginsTests: XCTestCase {
         let tools = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        try "#!/bin/sh\ncase \"$*\" in *keystroke*|*JavaScript*) exit 1 ;; esac\n".writeScript(to: tools.appendingPathComponent("osascript"))
-        for name in ["pbcopy", "pbpaste", "sleep"] {
-            try "#!/bin/sh\ncat >/dev/null 2>&1 &\n".writeScript(to: tools.appendingPathComponent(name))
-        }
+        try "#!/bin/sh\ncase \"$*\" in *JavaScript*) exit 1 ;; esac\n".writeScript(to: tools.appendingPathComponent("osascript"))
         let accessibility = "open=x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility\n"
 
-        let paste = "Copied, but Openspot cannot paste. Press `⌘V`, or allow Openspot in Accessibility.\n"
         for (script, arguments, fix, message) in [
-            ("emoji.sh", ["paste", "x"], accessibility, paste),
             ("windows.sh", ["left"], accessibility, "Openspot cannot move the window. Allow it in Accessibility, then press the key again.\n")
         ] {
             let process = Process()
@@ -333,7 +329,8 @@ final class SamplePluginsTests: XCTestCase {
             ("open", "echo \"$1\" > '\(folder.path)/opened'"),
             ("curl", Self.fakeCurl(log: folder.appendingPathComponent("fetched").path)),
             ("gh", Self.fakeGh(answer: folder.appendingPathComponent("gh-answer").path)),
-            ("osascript", "cp '\(folder.path)/clipboard' '\(folder.path)/pasted'")
+            ("osascript", "cp '\(folder.path)/clipboard' '\(folder.path)/pasted'"),
+            ("openspot", Self.fakeClipboard(in: folder))
         ] {
             let tool = tools.appendingPathComponent(name)
             try "#!/bin/sh\n\(script)\n".writeScript(to: tool)
@@ -348,6 +345,11 @@ final class SamplePluginsTests: XCTestCase {
             try? FileManager.default.removeItem(at: folder)
         }
         try await body(folder)
+    }
+
+    /// The clipboard calls of the openspot command: a copy writes the file `clipboard`, and a paste copies it to `pasted`.
+    private static func fakeClipboard(in folder: URL) -> String {
+        "case \"$1 $2\" in 'clipboard copy') cat > '\(folder.path)/clipboard' ;; 'clipboard paste') cp '\(folder.path)/clipboard' '\(folder.path)/pasted' ;; esac"
     }
 
     /// Answers a query with the saved answer, or else with one pull request in each state.
@@ -754,6 +756,7 @@ final class SamplePluginsTests: XCTestCase {
     private func fakeEmoji(in folder: URL) throws -> PluginCommand {
         let script = """
         #!/bin/sh
+        [ "$1" = clipboard ] && { \(Self.fakeClipboard(in: folder)); exit 0; }
         printf 'row=thumbs up, %s\\nrun=👍\\nglyph=👍\\n' "$3"
 
         """

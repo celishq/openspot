@@ -79,21 +79,16 @@ case "$1" in
   paste)
     text=$(content "$2" && printf x) || exit 1
     previous=$(pbpaste; printf x)
-    printf '%s' "${text%x}" | pbcopy
-    sleep 0.2
-    if ! osascript -e 'tell application "System Events" to keystroke "v" using command down' 2>/dev/null; then
-      printf 'open=x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility\n'
-      echo 'Copied, but Openspot cannot paste. Press `⌘V`, or allow Openspot in Accessibility.' >&2
-      exit 1
-    fi
+    printf '%s' "${text%x}" | openspot clipboard copy
+    openspot clipboard paste || exit 1
     sleep 0.3
     if [ "$previous" != x ]; then
-      printf '%s' "${previous%x}" | pbcopy
+      printf '%s' "${previous%x}" | openspot clipboard copy
     fi
     ;;
   open)
     text=$(content "$2" && printf x) || exit 1
-    printf '%s' "${text%x}" | pbcopy
+    printf '%s' "${text%x}" | openspot clipboard copy
     echo "toast=Copied"
     ;;
 esac
