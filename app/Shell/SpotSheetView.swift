@@ -71,19 +71,14 @@ struct SpotSheetView: View {
     private var header: some View {
             HStack(spacing: SpotTokens.padding - 5) {
                 glyph
-                VStack(alignment: .leading, spacing: SpotType.lineGap) {
-                    Text(form?.form.title ?? entry.shownState.title)
-                        .font(SpotType.title)
-                        .foregroundStyle(showsFill ? SpotTheme.onSolid : SpotTheme.ink)
-                        .lineLimit(1)
-                    if form == nil, let subtitle = shownSubtitle {
-                        Text(subtitle)
-                            .font(SpotType.detail)
-                            .modifier(SpotSecondaryText(isOnSolid: showsFill))
-                            .lineLimit(1)
-                    }
+                ZStack(alignment: .topLeading) {
+                    words(subtitle: entry.shownState.subtitle)
+                        .frame(width: max(cardWordsWidth, 0), alignment: .leading)
+                        .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(isOpen ? 0 : 1) }
+                    words(subtitle: openSubtitle)
+                        .frame(width: max(sheetWordsWidth, 0), alignment: .leading)
+                        .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: !isOpen)) { $0.opacity(isOpen ? 1 : 0) }
                 }
-                .modifier(SpotWordsWidth(width: wordsWidth))
                 .onGeometryChange(for: CGFloat.self, of: \.size.height) { wordsHeight = $0 }
                 .offset(showsTallCard ? tallCardShift : .zero)
                 .opacity(showsSmallCard ? 0 : 1)
@@ -97,19 +92,39 @@ struct SpotSheetView: View {
             }
     }
 
-    /// The width of the header's words: up to the close button in the sheet, and as wide as the card gives them before it opens.
-    private var wordsWidth: CGFloat {
-        let gap = SpotTokens.padding - 5
-        let lead = SpotTokens.padding + SpotTokens.glyphSize + gap
-        if isOpen { return rect.width - lead - gap - SpotTokens.glyphSize - SpotTokens.padding }
-        if cardSize.rows > 1 { return cardWidth - 2 * SpotTokens.padding }
-        let arrow = closeShift == nil ? 0 : arrowWidth + gap
-        return max(cardWidth - SpotCardArrow.rowInset - arrow - lead, 0)
+    /// The title and the second line of the header, in one copy of its words.
+    private func words(subtitle: String?) -> some View {
+        VStack(alignment: .leading, spacing: SpotType.lineGap) {
+            Text(form?.form.title ?? entry.shownState.title)
+                .font(SpotType.title)
+                .foregroundStyle(showsFill ? SpotTheme.onSolid : SpotTheme.ink)
+                .lineLimit(1)
+            if form == nil, let subtitle {
+                Text(subtitle)
+                    .font(SpotType.detail)
+                    .modifier(SpotSecondaryText(isOnSolid: showsFill))
+                    .lineLimit(1)
+            }
+        }
     }
 
-    /// The second line of the header: the name of the selected button in a grid, which draws only its picture.
-    private var shownSubtitle: String? {
-        isOpen && list.perLine > 1 ? list.selectedItem?.title ?? entry.shownState.subtitle : entry.shownState.subtitle
+    private static let wordsGap = SpotTokens.padding - 5
+
+    /// The width of the words up to the close button in the open sheet.
+    private var sheetWordsWidth: CGFloat {
+        rect.width - SpotTokens.padding - SpotTokens.glyphSize - 2 * Self.wordsGap - SpotTokens.glyphSize - SpotTokens.padding
+    }
+
+    /// The width that the card gives the words before the sheet opens.
+    private var cardWordsWidth: CGFloat {
+        if cardSize.rows > 1 { return cardWidth - 2 * SpotTokens.padding }
+        let arrow = closeShift == nil ? 0 : arrowWidth + Self.wordsGap
+        return max(cardWidth - SpotCardArrow.rowInset - arrow - SpotTokens.padding - SpotTokens.glyphSize - Self.wordsGap, 0)
+    }
+
+    /// The second line of the open sheet's header: the name of the selected button in a grid, which draws only its picture.
+    private var openSubtitle: String? {
+        list.perLine > 1 ? list.selectedItem?.title ?? entry.shownState.subtitle : entry.shownState.subtitle
     }
 
     /// The close button, which stays at the moving edge of the sheet and takes the place of the card's arrow.

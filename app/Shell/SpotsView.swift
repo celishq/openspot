@@ -98,16 +98,16 @@ struct SpotsView: View {
                         .animation(SpotMotion.fillFade(isOpen: sheetOpen)) { $0.opacity(entry.state.on == true && !sheetOpen ? 1 : 0) }
                 }
                 .modifier(SpotSheetFrame(
-                    rect: sheetOpen ? sheetRect : isInstall(entry) ? fieldRect : frame ?? sheetRect,
+                    rect: sheetOpen ? sheetRect : closedRect(of: entry, frame: frame),
                     radius: sheetOpen ? SpotTokens.radius : isInstall(entry) ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: card?.placement.size ?? entry.size),
+                    sheetRect: sheetRect,
+                    shift: sheetOpen ? .zero : shift(to: closedRect(of: entry, frame: frame)),
                     showsRing: !sheetOpen && cardIsSelected(card?.widget ?? entry),
-                    arrow: cardShows(arrowOf: entry, card: card, frame: frame) ? AnyView(sheetArrow(of: entry, frame: frame)) : nil
+                    arrow: cardShows(arrowOf: entry, card: card, frame: frame) ? AnyView(sheetArrow(of: entry, frame: frame)) : nil,
+                    arrowBox: frame?.size ?? .zero
                 ))
             }
             searchField
-                .padding(.horizontal, fieldIsInSheet ? SpotTokens.halo + SpotTokens.padding : SpotTokens.halo)
-                .padding(.top, SpotTokens.halo)
-                .offset(y: fieldIsInSheet ? SpotTokens.sheetFieldDrop : 0)
                 .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: showsSearchField)) { $0.opacity(showsSearchField ? 1 : 0) }
                 .opacity(model.isEditing ? 0 : 1)
                 .allowsHitTesting(showsSearchField && !model.isEditing)
@@ -286,6 +286,16 @@ struct SpotsView: View {
         return SpotTokens.sheetRect(rows: shape?.rows ?? 0, perLine: shape?.perLine ?? 1)
     }
 
+    /// The rect that the sheet grows out of and collapses into: its card, or the field for the install screen.
+    private func closedRect(of entry: SpotsModel.Entry, frame: CGRect?) -> CGRect {
+        isInstall(entry) ? fieldRect : frame ?? sheetRect
+    }
+
+    /// How far the sheet's content lies from its open place when it lies on a closed rect.
+    private func shift(to closed: CGRect) -> CGSize {
+        CGSize(width: closed.minX - sheetRect.minX, height: closed.minY - sheetRect.minY)
+    }
+
     /// Whether the card of this open sheet draws an arrow. A 1x1 card shows its glyph alone, and a widget draws none.
     private func cardShows(arrowOf entry: SpotsModel.Entry, card: SheetCard?, frame: CGRect?) -> Bool {
         entry.kind == .list && card?.widget == nil && (frame?.width ?? 0) > SpotTokens.cell
@@ -444,11 +454,63 @@ struct SpotsView: View {
         .offset(x: SpotTokens.halo, y: SpotTokens.halo)
     }
 
+    /// The field: a surface that grows from its place at rest to its row in the sheet, with its glyph and its words on top,
+    /// which keep one size and move by offsets alone.
     private var searchField: some View {
-        HStack(spacing: Self.fieldGap) {
-            Image(systemName: "magnifyingglass")
-                .modifier(SpotSecondaryText())
-                .frame(width: fieldIsInSheet ? SpotTokens.listIconSize : SpotTokens.glyphSize)
+        let place = fieldIsInSheet ? fieldRowRect : fieldRect
+        let top = SpotTokens.halo + (fieldIsInSheet ? SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2 : 0)
+        let glyphLeft = SpotTokens.halo + SpotTokens.padding + (fieldIsInSheet ? SpotTokens.padding + (SpotTokens.listIconSize - SpotTokens.glyphSize) / 2 : 0)
+        return ZStack(alignment: .topLeading) {
+            SpotSurface(rect: place, radius: fieldRadius, glass: fieldIsInSheet || sheetID == ShippedSpot.installID ? 0 : 1, fill: fieldIsInSheet ? 1 : 0)
+            ZStack(alignment: .topLeading) {
+                Image(systemName: "magnifyingglass")
+                    .modifier(SpotSecondaryText())
+                    .frame(width: SpotTokens.glyphSize, height: SpotTokens.rowHeight)
+                    .offset(x: glyphLeft, y: top)
+                searchText
+                    .frame(width: Self.fieldTextWidth, height: SpotTokens.rowHeight, alignment: .leading)
+                    .offset(x: fieldTextLeft, y: top)
+            }
+            .modifier(SpotFieldCrossing(isOpen: sheetOpen, crosses: sheetID != ShippedSpot.installID))
+            .opacity(showsDrop ? 0 : 1)
+            .opacity(model.isShown ? 1 : 0)
+            .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
+            if let lastDrop {
+                SpotDropView(drop: lastDrop)
+                    .padding(.horizontal, SpotTokens.padding)
+                    .frame(width: fieldRect.width, height: fieldRect.height)
+                    .offset(x: fieldRect.minX, y: fieldRect.minY)
+                    .opacity(showsDrop ? 1 : 0)
+            }
+        }
+        .font(SpotType.input)
+        .foregroundStyle(SpotTheme.ink)
+        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
+        .scaleEffect(model.isShown ? 1 : SpotMotion.hiddenScale, anchor: UnitPoint(x: 0.5, y: fieldRect.midY / SpotTokens.panelHeight))
+        .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
+    }
+
+    /// The field's row in an open sheet.
+    private var fieldRowRect: CGRect {
+        CGRect(
+            x: SpotTokens.halo + SpotTokens.padding,
+            y: SpotTokens.halo + SpotTokens.sheetFieldDrop,
+            width: SpotTokens.gridWidth - 2 * SpotTokens.padding,
+            height: SpotTokens.listRowHeight
+        )
+    }
+
+    /// The width of the field's words, as narrow as its row in a sheet, so that it stays one size.
+    private static let fieldTextWidth = SpotTokens.gridWidth - 4 * SpotTokens.padding - SpotTokens.listIconSize - fieldGap
+
+    /// Where the field's words start, at rest and in a sheet.
+    private var fieldTextLeft: CGFloat {
+        fieldIsInSheet
+            ? SpotTokens.halo + 2 * SpotTokens.padding + SpotTokens.listIconSize + Self.fieldGap
+            : SpotTokens.halo + SpotTokens.padding + SpotTokens.glyphSize + Self.fieldGap
+    }
+
+    private var searchText: some View {
             SpotSearchText(model: model, title: "\(SearchPrompt.verb) \(sheetOpen ? sheetWord : SearchPrompt.grid)")
                 .textFieldStyle(.plain)
                 .focused($searchFocused)
@@ -500,31 +562,13 @@ struct SpotsView: View {
                     model.openBigView()
                     return .handled
                 }
-        }
-        .modifier(SpotFieldCrossing(isOpen: sheetOpen, crosses: sheetID != ShippedSpot.installID))
-        .opacity(showsDrop ? 0 : 1)
-        .font(SpotType.input)
-        .foregroundStyle(SpotTheme.ink)
-        .padding(.horizontal, SpotTokens.padding)
-        .frame(height: fieldIsInSheet ? SpotTokens.listRowHeight : SpotTokens.rowHeight)
-        .overlay {
-            if let lastDrop {
-                SpotDropView(drop: lastDrop)
-                    .padding(.horizontal, SpotTokens.padding)
-                    .opacity(showsDrop ? 1 : 0)
-            }
-        }
-        .background(SpotTheme.ink.opacity(fieldIsInSheet ? SpotTheme.fill : 0), in: RoundedRectangle(cornerRadius: fieldRadius, style: .continuous))
-        .modifier(SpotGlass(radius: fieldRadius, isBare: fieldIsInSheet || sheetID == ShippedSpot.installID))
     }
 
     /// The empty field's words, as a layer of their own that moves with the field by offsets alone, which stay smooth where
     /// layout rounds to whole pixels.
     private var promptLayer: some View {
         let top = SpotTokens.halo + (fieldIsInSheet ? SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2 : 0)
-        let left = fieldIsInSheet
-            ? SpotTokens.halo + 2 * SpotTokens.padding + SpotTokens.listIconSize + Self.fieldGap
-            : SpotTokens.halo + SpotTokens.padding + SpotTokens.glyphSize + Self.fieldGap
+        let left = fieldTextLeft
         return promptWords
             .frame(height: SpotTokens.rowHeight)
             .offset(x: left, y: top)
