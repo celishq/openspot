@@ -17,7 +17,7 @@ The examples show the target contract. They are sketches, and the app does not r
 In order. An earlier goal wins when two goals conflict.
 
 1. **A small plugin costs almost nothing.** One executable file. No build, no manifest, no account, no SDK.
-2. **A plugin never draws.** A plugin prints data, and Openspot draws it. So each plugin looks right.
+2. **A plugin never draws in Openspot.** Openspot draws all that a script prints. So each plugin looks right. A script can also open its own Mac window, which is its own (goal 4).
 3. **Nothing runs by surprise.** Openspot runs a script only when a person acts or when the header of the script says so.
 4. **A plugin has real power.** It can use any Mac API, hold long-lived state and stream a long process.
 5. **A model can write a plugin.** The contract is small enough that a model can write a good plugin from this text alone.
@@ -281,7 +281,7 @@ A sheet is a drawing and parts. A person or a model says what goes where, and th
 | D3 | Each row has one height and each gap has one size, and the app owns both. A taller area takes more lines. |
 | D4 | Rows that hold text, a picture, a chart, a list or a repeated area share the free height. Other rows keep their height. |
 | D5 | `repeat=<letter> <per line>` flows the rows of a script into one area of the drawing, and that area scrolls. Rows keep one list path for search, keys and selection. |
-| D6 | A complex view is a Swift block in the app, which a script names and fills with data. A plugin still never draws. |
+| D6 | A complex view is a Swift block in the app, which a script names and fills with data. A plugin still never draws in Openspot. |
 
 ## 7. How long a call runs
 
@@ -451,7 +451,7 @@ The code follows this document.
 | Header in each file | Goal 1, and a scan runs nothing. | A manifest. It can still come later. |
 | No permission model | A script can already do all that the person can. A false limit is worse than none. | A `uses` key. |
 | A sheet is a drawing, with one row height | A model writes one form, and each result stays even. | Named layouts. Column ratios, row sizes and nested drawings, which add words that most sheets never need. Sixteen columns, which make long lines and cannot make thirds. |
-| Complex views are Swift blocks in the app | The text language stays small, and a plugin still never draws (goal 2). Third-party Swift views come in a later phase. | A view in a plugin now. It needs a build, a signing exception and trust in code that no one can read. |
+| Complex views are Swift blocks in the app | The text language stays small, and a plugin still never draws in Openspot (goal 2). Third-party Swift views come in a later phase. | A view in a plugin now. It needs a build, a signing exception and trust in code that no one can read. |
 | One progressive backdrop blur close to the cards, and a light dark tint that fades across a 90 pt margin, sampled at full scale, with no constant redraw | One layer gives a soft edge with no line and no second pass, and the long fade of the tint shows no shape, as Control Center does. The system's sampling scale keeps text low-resolution where the mask is zero. | Three masked blur steps, which show a line at the window edge at the system's scale. A system material and Liquid Glass, which do not give this look. |
 | A spot travels as a `.spot` file | A chat app takes a file of any size that a script has, and a double-click or a drop adds it. | Encoded text, which hits message limits and hides the code. A link, which needs a hosted page. |
 | A `.spot` file is JSON: a format number and files | A standard format that any editor shows. A header already holds each fact about a spot, so the file repeats none. | A zip file, which hides the text. A manifest. |
@@ -487,7 +487,8 @@ Nothing.
    calls, and 11 ms for a call through a running helper with no translation, in a Debug build on one Mac. The first run after a
    build took 297 ms. A Release build and a Mac under memory pressure are not measured.
 7. Start times: about 5 ms for `sh`, 18 ms for `bun`, 25 ms for `python3`, 60 ms for `node` and 3.4 s for `swift file.swift`.
-   One Mac, trivial programs. A Swift plugin must be compiled.
+   One Mac, trivial programs. A later run of a small AppKit script took 1.1 s the first time and 0.37 s after that, and the
+   same program took 0.23 s compiled. So a Swift plugin can stay a script.
 8. C6: a 1 MB paste reaches the sheet in under 1 second in a Debug build, with the pause of C4. The drawing comes after that, in
    system views. In an off-screen window on one Mac, a Debug build took 1.6 s to draw 1 MB in an editable text part. A read-only
    text part took 4.1 to 4.6 s for 1 MB and drew no text, and it drew text at 500 KB, which took 2.9 s. A Release build and the

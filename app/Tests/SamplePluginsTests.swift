@@ -16,8 +16,16 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Translate", "Apps", "Caffeinate", "Color picker", "Emoji", "Files", "Links", "Overview", "Screenshot", "Pull requests", "Snippets", "Plugins", "Settings"])
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["t", "a", "c", "o", "e", "f", "l", nil, "v", "g", "n", "p", nil])
+        XCTAssertEqual(scan.commands.map(\.name), ["Translate", "Apps", "Caffeinate", "Color picker", "Confetti", "Emoji", "Files", "Links", "Overview", "Screenshot", "Pull requests", "Snippets", "Plugins", "Settings"])
+        XCTAssertEqual(scan.commands.map(\.key?.name), ["t", "a", "c", "o", "k", "e", "f", "l", nil, "v", "g", "n", "p", nil])
+    }
+
+    func testConfettiStaysOffTheGridAndItsSourceTypeChecks() async throws {
+        let confetti = try XCTUnwrap(try scan.commands.first { $0.id == "confetti" })
+        XCTAssertFalse(confetti.isOnGrid)
+        XCTAssertEqual(confetti.symbol, "party.popper")
+
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-typecheck", confetti.url.path])
     }
 
     func testNoMetricShowsTwiceInTheGrid() throws {
@@ -27,7 +35,7 @@ final class SamplePluginsTests: XCTestCase {
     }
 
     func testTheSpotsFitThePanelWithNoScrolling() throws {
-        let placements = SpotGrid().place(try scan.commands.map(\.size))
+        let placements = SpotGrid().place(try scan.commands.filter(\.isOnGrid).map(\.size))
         let rows = placements.map { $0.row + $0.size.rows }.max()
 
         XCTAssertEqual(rows, 6)
