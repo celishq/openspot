@@ -8,8 +8,7 @@ struct SpotsView: View {
     @State private var edges = SpotScrollEdges()
     @State private var scroll = ScrollPosition()
     @State private var scrollOffset: CGFloat = 0
-    @State private var sheetID: String?
-    @State private var sheetOpen = false
+    @State private var transition = SheetTransition()
     @State private var gridHint = ""
     @State private var sheetHint = ""
     @State private var dropTarget: String?
@@ -18,8 +17,17 @@ struct SpotsView: View {
     @State private var showsDrop = false
     @State private var lastDrop: SpotDrop?
     @State private var partsLanded = false
-    @State private var installIsClosing = false
     @State private var sheetHasLeftCard = false
+
+    /// The sheet that is built, from its first frame on its card to the end of its close.
+    private var sheetID: String? {
+        transition.id
+    }
+
+    /// Whether the sheet is open or on its way there.
+    private var sheetOpen: Bool {
+        transition.isOpen
+    }
 
     static let panelSpace = "panel"
     private static let fieldGap: CGFloat = 8
@@ -176,8 +184,7 @@ struct SpotsView: View {
                 var still = Transaction()
                 still.disablesAnimations = true
                 withTransaction(still) {
-                    sheetID = list
-                    sheetOpen = list != nil
+                    if let list { transition.show(list, moves: false) } else { transition.hide(moves: false) }
                     sheetHasLeftCard = list != nil
                     showsDrop = false
                     lastDrop = nil
@@ -186,35 +193,33 @@ struct SpotsView: View {
                 if list == nil { model.endReview() }
                 return
             }
+            holdDropInField()
             if let list {
-                sheetID = list
+                transition.show(list, moves: true)
                 partsLanded = model.sheets[list]?.panel != nil
-                holdDropInField()
                 DispatchQueue.main.async {
                     letFieldCrossHeader(isOpen: true)
                     withAnimation(SpotMotion.sheet(isOpen: true), completionCriteria: .removed) {
-                        sheetOpen = true
+                        transition.start()
                     } completion: {
-                        if sheetOpen, sheetID == ShippedSpot.installID {
+                        transition.finish(.opening)
+                        if transition.isOpen, transition.id == ShippedSpot.installID {
                             showsDrop = false
                             lastDrop = nil
                         }
                     }
                 }
             } else {
-                holdDropInField()
-                installIsClosing = sheetID == ShippedSpot.installID
+                let wasInstall = transition.id == ShippedSpot.installID
                 letFieldCrossHeader(isOpen: false)
                 withAnimation(SpotMotion.sheet(isOpen: false), completionCriteria: .removed) {
-                    sheetOpen = false
+                    transition.hide(moves: true)
                 } completion: {
-                    if model.openList == nil {
-                        sheetID = nil
-                        partsLanded = false
-                        model.endReview()
-                        if installIsClosing { hideDrop() }
-                        installIsClosing = false
-                    }
+                    transition.finish(.closing)
+                    guard transition.phase == .closed else { return }
+                    partsLanded = false
+                    model.endReview()
+                    if wasInstall { hideDrop() }
                 }
             }
         }
@@ -326,7 +331,7 @@ struct SpotsView: View {
 
     /// Whether a sheet is out or a drop is taken, which sets the time of each fade and which hint shows.
     private var surfaceIsOut: Bool {
-        sheetOpen || (showsDrop && !installIsClosing)
+        sheetOpen || (showsDrop && !(transition.phase == .closing && sheetID == ShippedSpot.installID))
     }
 
     /// Whether the field lies in the open sheet. The install screen grows out of the field, which stays where it is.
