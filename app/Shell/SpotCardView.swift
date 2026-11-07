@@ -15,8 +15,8 @@ struct SpotCardView: View {
     let showsChain: Bool
     let isHiddenFromGrid: Bool
     var query = ""
-    let onTap: () -> Void
-    let onLevel: (Double) -> Void
+    /// The model that a tap and a slide go to.
+    let model: SpotsModel
     @State private var isHovered = false
     @GestureState private var isPressed = false
     @Environment(\.spotIsShown) private var isShown
@@ -40,7 +40,7 @@ struct SpotCardView: View {
             .overlay(alignment: .topTrailing) { hiddenMark }
             .contentShape(shape)
             .onHover { isHovered = $0 }
-            .onTapGesture(perform: onTap)
+            .onTapGesture { model.tap(entry.id) }
             .simultaneousGesture(DragGesture(minimumDistance: 0).updating($isPressed) { _, pressed, _ in pressed = true })
             .animation(.easeInOut(duration: 0.2), value: isOn)
             .scaleEffect(showsPress ? SpotMotion.pressedScale : 1)
@@ -147,7 +147,7 @@ struct SpotCardView: View {
         let low = entry.state.min ?? 0
         let high = entry.state.max ?? 100
         return Slider(
-            value: Binding(get: { entry.state.level ?? low }, set: { onLevel($0.rounded()) }),
+            value: Binding(get: { entry.state.level ?? low }, set: { model.setLevel(entry.id, to: $0.rounded()) }),
             in: low...high
         )
         .controlSize(.small)

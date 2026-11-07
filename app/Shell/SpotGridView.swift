@@ -44,8 +44,7 @@ struct SpotGridView: View {
                     showsChain: model.showsChain,
                     isHiddenFromGrid: model.isEditing && !entry.isOnGrid,
                     query: model.query,
-                    onTap: { model.tap(entry.id) },
-                    onLevel: { model.setLevel(entry.id, to: $0) }
+                    model: model
                 )
                 .onDrop(of: [.fileURL], delegate: SpotCardDrop(id: entry.id, model: model, target: $dropTarget))
                 .scaleEffect(card.scale)
