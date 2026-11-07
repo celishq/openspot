@@ -39,10 +39,12 @@ public struct ConfigFile: Equatable, Sendable {
         try save((settings + (settings.isEmpty ? [] : [""]) + [arrangement.text]).joined(separator: "\n") + "\n")
     }
 
-    /// Makes the file, with each default, when it does not exist.
-    public func begin() throws {
+    /// Makes the file, with these core spots on and each other default, when it does not exist.
+    public func begin(enabling ids: [String]) throws {
         guard !FileManager.default.fileExists(atPath: url.path) else { return }
-        try save("")
+        var arrangement = SpotArrangement()
+        ids.forEach { arrangement.set(isEnabled: true, of: $0) }
+        try save(ids.isEmpty ? "" : arrangement.text + "\n")
     }
 
     /// Turns a core spot on or off, and keeps each other choice.

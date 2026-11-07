@@ -32,7 +32,7 @@ final class FirstLaunchTests: XCTestCase {
     }
 
     func testAConfigWithNoSpotsIsNotAFirstLaunch() throws {
-        try file.begin()
+        try file.begin(enabling: [])
 
         XCTAssertFalse(isFirst)
     }
@@ -44,13 +44,40 @@ final class FirstLaunchTests: XCTestCase {
         XCTAssertFalse(isFirst)
     }
 
-    func testBeginLeavesAFileThatHoldsEachDefaultAndKeepsAnOldFile() throws {
-        try file.begin()
+    func testBeginWritesTheStartingSpotsAndKeepsAnOldFile() throws {
+        try file.begin(enabling: ["apps", "files"])
         XCTAssertEqual(file.read().faults, [])
+        XCTAssertEqual(file.read().arrangement.enabled, ["apps", "files"])
 
         try file.set("panel_key", to: "option+space")
-        try file.begin()
+        try file.begin(enabling: ["links"])
         XCTAssertEqual(file.read().panelKey, Shortcut(text: "option+space"))
+        XCTAssertEqual(file.read().arrangement.enabled, ["apps", "files"])
+    }
+
+    func testBeginWithNoSpotsStillEndsTheFirstLaunch() throws {
+        try file.begin(enabling: [])
+
+        XCTAssertFalse(isFirst)
+    }
+
+    func testNineQuietSpotsStartOnAndTheTwoThatRunByThemselvesStayOff() throws {
+        let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let place = PluginFolder(url: plugins, core: repo.appendingPathComponent("plugins"))
+
+        let starting = place.startingSpots()
+
+        XCTAssertEqual(starting.count, 9)
+        XCTAssertFalse(starting.contains("overview"))
+        XCTAssertFalse(starting.contains("pulls"))
+        let scan = try PluginFolder(url: plugins, core: place.core, enabled: Set(starting)).scan()
+        XCTAssertEqual(scan.refused, [])
+        XCTAssertEqual(scan.commands.count, 9)
+        XCTAssertFalse(scan.scripts.contains { $0.read?.seconds != nil })
+    }
+
+    func testWithNoCoreFolderNoSpotsStartOn() {
+        XCTAssertEqual(PluginFolder(url: plugins).startingSpots(), [])
     }
 
     func testTheKeyToastNamesTheKeyInUse() throws {

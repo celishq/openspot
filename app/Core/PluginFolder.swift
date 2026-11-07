@@ -2,6 +2,8 @@ import Foundation
 
 public struct PluginFolder: Sendable {
     private static let coreName = "spots"
+    /// The core spots that start on: each reads only local data, and only at a person's act or when the panel opens.
+    private static let startingIDs: Set<String> = ["apps", "caffeinate", "color-picker", "emoji", "files", "links", "paste-screenshot", "snippets", "translate"]
 
     public let url: URL
     /// The folder of the core spots in the app. A scan skips it when it does not exist.
@@ -81,6 +83,11 @@ public struct PluginFolder: Sendable {
     public func isFirstLaunch(config: ConfigFile) -> Bool {
         guard !FileManager.default.fileExists(atPath: config.url.path) else { return false }
         return ((try? PluginFolder(url: url).scan())?.commands ?? []).isEmpty
+    }
+
+    /// The IDs of the core spots that a first launch turns on, in the order of the grid.
+    public func startingSpots() -> [String] {
+        coreChoices().map(Self.coreID(of:)).filter(Self.startingIDs.contains)
     }
 
     /// Whether a command runs from the core folder of the app.

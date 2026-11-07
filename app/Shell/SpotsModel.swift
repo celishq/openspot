@@ -171,7 +171,7 @@ final class SpotsModel {
     /// panel to close.
     func beginFirstLaunch() {
         isFirstLaunch = true
-        try? ConfigFile.standard().begin()
+        try? ConfigFile.standard().begin(enabling: Self.pluginFolder.startingSpots())
         reload()
         sheetMoves = false
         sheets[ShippedSpot.spotsID]?.open(waits: true) { [weak self] in
