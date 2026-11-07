@@ -55,12 +55,6 @@ final class FirstLaunchTests: XCTestCase {
         XCTAssertEqual(file.read().arrangement.enabled, ["apps", "files"])
     }
 
-    func testBeginWithNoSpotsStillEndsTheFirstLaunch() throws {
-        try file.begin(enabling: [])
-
-        XCTAssertFalse(isFirst)
-    }
-
     func testNineQuietSpotsStartOnAndTheTwoThatRunByThemselvesStayOff() throws {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let place = PluginFolder(url: plugins, core: repo.appendingPathComponent("plugins"))

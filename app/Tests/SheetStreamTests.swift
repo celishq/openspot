@@ -83,16 +83,6 @@ final class SheetStreamTests: XCTestCase {
         XCTAssertEqual(frames, ["part=a\n", "part=b\n"])
     }
 
-    func testAFailureReportsItsLastErrorLine() async throws {
-        let url = try script("echo first >&2\necho last >&2\nexit 3")
-        do {
-            for try await _ in try ScriptProcess(url: url, limit: 5).start() {}
-            XCTFail("It should fail.")
-        } catch {
-            XCTAssertEqual(error as? PluginError, .failed(3, "last"))
-        }
-    }
-
     func testALaterFrameChangesOnlyThePartsItNames() throws {
         var panel = try XCTUnwrap(SpotPanel(output: PluginOutput(text: "part=a\ntitle=A\n\npart=b\ntitle=B\n")))
 

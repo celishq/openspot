@@ -284,7 +284,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testARunningCardSaysThatAPressStopsItAndAPressDoes() async throws {
-        try script(body: "sleep 0.3\ntouch '\(path("went-on"))'")
+        try script(body: "sleep 5\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
         let menu = try XCTUnwrap(ActionMenu(command: sheet.command, item: nil))
         let row = try XCTUnwrap(menu.rows.first)
@@ -296,9 +296,11 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
         XCTAssertNotNil(sheet.cardWork)
         XCTAssertNotNil(sheet.work(of: row, item: nil))
+        try await wait("the call") { self.log() == [""] }
         sheet.pressCard()
         XCTAssertNil(sheet.cardWork)
-        try await pause(0.4)
+        XCTAssertFalse(sheet.isCardRunning)
+        try await allEnded()
         XCTAssertFalse(exists("went-on"))
     }
 

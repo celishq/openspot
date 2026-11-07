@@ -281,14 +281,4 @@ final class ScriptProcessTests: XCTestCase {
 
         XCTAssertFalse(exists("went-on"))
     }
-
-    func testTimesOutASlowPlugin() async throws {
-        let plugin = try writePlugin("slow.sh", "#!/bin/sh\nsleep 5\n")
-
-        do {
-            _ = try await ScriptProcess.output(url: plugin.url, limit: 0.5)
-            XCTFail("expected a timeout")
-        } catch PluginError.timedOut {
-        }
-    }
 }

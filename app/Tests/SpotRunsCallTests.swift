@@ -301,21 +301,6 @@ final class SpotRunsCallTests: SpotRunsCase {
         XCTAssertEqual(log(), ["read", "go"])
     }
 
-    func testASecondPressOfARunningCardStopsIt() async throws {
-        try script(body: "sleep 5\ntouch '\(path("went-on"))'")
-        let sheet = try sheet()
-
-        sheet.pressCard()
-        XCTAssertTrue(sheet.isCardRunning)
-        try await wait("the call") { self.log() == [""] }
-        time += 1
-        sheet.pressCard()
-        XCTAssertFalse(sheet.isCardRunning)
-        try await allEnded()
-
-        XCTAssertFalse(exists("went-on"))
-    }
-
     func testAStoppedToggleGoesBack() async throws {
         try script(header: "read=panel", "[ \"$1\" = read ] && { printf 'on=false\\n'; exit 0; }\nsleep 5")
         let sheet = try sheet()

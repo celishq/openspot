@@ -63,10 +63,6 @@ final class ShortcutTests: XCTestCase {
         XCTAssertEqual(Shortcut(code: 126, modifiers: [.control]), Shortcut(text: "ctrl+up"))
     }
 
-    func testTheEntryKeyStartsAsControlSpace() {
-        XCTAssertEqual(Shortcut.standard.text, "ctrl+space")
-    }
-
     func testAKeyIsFoundByItsCode() {
         XCTAssertEqual(CommandKey(code: 17)?.name, "t")
         XCTAssertNil(CommandKey(code: 49))

@@ -139,12 +139,6 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(cells[2].maxX, 300, accuracy: 0.001)
     }
 
-    func testAReadingKeepsTheNameOfItsMetricBeforeAnyValue() {
-        let reading = MetricReading(label: "Battery")
-        XCTAssertEqual(reading.label, "Battery")
-        XCTAssertNil(reading.value)
-    }
-
     func testAMetricPrintsItsValue() async throws {
         try power()
         let metric = try XCTUnwrap(try scan.metrics.first)

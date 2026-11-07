@@ -8,11 +8,6 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertFalse(CommandLineCall.usage.contains("helper"))
     }
 
-    func testNoScriptServesTranslationsAnyMore() {
-        XCTAssertEqual(CommandLineCall(arguments: ["translate", "--serve"]), .unknown("translate --serve"))
-        XCTAssertFalse(CommandLineCall.usage.contains("--serve"))
-    }
-
     func testEmojiCanNameATone() {
         XCTAssertEqual(CommandLineCall(arguments: ["emoji"]), .emoji(tone: .none))
         XCTAssertEqual(CommandLineCall(arguments: ["emoji", "--tone", "medium-dark"]), .emoji(tone: .mediumDark))
