@@ -60,13 +60,15 @@ struct SpotGridView: View {
         .contentShape(Rectangle())
     }
 
-    /// The share of the sheet's motion at which a card leaves the sheet's rect; 1 when no sheet is open or it never leaves.
+    /// The share of the sheet's motion at which a card goes further past the sheet's rect than the backdrop's tint reaches; 1
+    /// when no sheet is open or it never goes so far.
     private func exit(of placement: SpotPlacement, id: String) -> Double {
         guard let open, let openID, let openFrame, id != openID else { return 1 }
         let card = rect(of: placement, id: id)
         let openCard = rect(of: open, id: openID)
         let sheet = sheetRect.offsetBy(dx: openCard.minX - openFrame.minX, dy: openCard.minY - openFrame.minY)
-        return CardPush(from: card, by: push(of: placement, isOpen: true)).exit(from: sheet)
+        let shown = sheet.insetBy(dx: -SpotTokens.halo / 3, dy: -SpotTokens.halo / 3)
+        return CardPush(from: card, by: push(of: placement, isOpen: true)).exit(from: shown)
     }
 
     /// Where a card lies in the grid before a push or a drag.
