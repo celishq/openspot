@@ -480,7 +480,7 @@ final class SpotsModel {
             return
         }
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let spotList = ItemList(items: cards.map { SpotItem(title: $0.state.title, subtitle: $0.command.name, run: $0.id) })
+        let spotList = ItemList(items: cards.map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.command.name].compactMap { $0 }.joined(separator: " "), run: $0.id) })
         let sources = entries.filter(\.command.isGlobal).sorted { $0.command.rank < $1.command.rank }
         let found = SearchQuery(text: text).matching(in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() })
         visible = found.prefix(Self.searchLimit).compactMap { match in
