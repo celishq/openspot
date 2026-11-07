@@ -13,13 +13,13 @@ struct SpotMetricView: View {
     private static let bigRingLine: CGFloat = 8
     private static let smallRingLine: CGFloat = 4
     private static let barLine: CGFloat = 4
-    private static let trendBar: CGFloat = 3
-    private static let trendGap: CGFloat = 2
-    private static let oldBar = 0.55
+    static let trendBar: CGFloat = 3
+    static let trendGap: CGFloat = 2
+    static let oldBar = 0.55
     private static let dot: CGFloat = 7
     private static let rowLine: CGFloat = 15
-    private static let edgeMarkWidth: CGFloat = 44
-    private static let lineTrendHeight: CGFloat = 12
+    static let edgeMarkWidth: CGFloat = 44
+    static let lineTrendHeight: CGFloat = 12
     private static let controlBars = CGSize(width: 33, height: 16)
 
     private var kind: MetricKind { reading?.kind ?? .value }

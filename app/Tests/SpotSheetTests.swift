@@ -64,6 +64,20 @@ final class SpotSheetTests: XCTestCase {
         sheet.close()
     }
 
+    func testAnArrowPressNudgesTheScrollAndLeavesThePartsAsTheyWere() async throws {
+        let sheet = try holding("printf 'part=a\\ntitle=A\\n'", pause: 0.02)
+        sheet.open(waits: true) {}
+        try await wait("the parts") { sheet.panel != nil }
+        let parts = sheet.panel
+
+        sheet.scrollPanel(by: 1)
+        sheet.scrollPanel(by: -1)
+
+        XCTAssertEqual(sheet.nudge, SpotPanel.Nudge(step: -1, serial: 2))
+        XCTAssertEqual(sheet.panel, parts)
+        sheet.close()
+    }
+
     func testASheetSaysItAwaitsItsFirstAnswerUntilItComes() async throws {
         let sheet = try holding("sleep 0.2\nprintf 'part=a\\ntitle=A\\n'", pause: 0.02)
 

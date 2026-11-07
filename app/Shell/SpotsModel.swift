@@ -987,6 +987,10 @@ final class SpotsModel {
             openSheet?.movePart(by: key.name == "up" ? -1 : 1)
             return true
         }
+        if panel.scrollsByArrows, key == ActionKey(name: "up") || key == ActionKey(name: "down") {
+            openSheet?.scrollPanel(by: key.name == "up" ? -1 : 1)
+            return true
+        }
         if let part = panel.parts.first(where: { $0.key == key }) {
             pressPart(part)
             return true

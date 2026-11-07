@@ -26,6 +26,7 @@ struct SpotSheetView: View {
     let onClose: () -> Void
     /// The width of the card or field that the sheet grows out of and collapses into.
     let cardWidth: CGFloat
+    let nudge: () -> SpotPanel.Nudge
     @State private var wordsHeight: CGFloat = 0
     @State private var arrowWidth: CGFloat = 0
 
@@ -40,7 +41,7 @@ struct SpotSheetView: View {
             VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
                 if let panel {
                     if panel.showsRows { Color.clear.frame(height: SpotTokens.listRowHeight) }
-                    SpotPanelView(panel: panel, work: work, onSet: onSet, onPress: onPress, recordingPart: recording, onRecord: onRecord, list: list, onRun: onRun)
+                    SpotPanelView(panel: panel, work: work, onSet: onSet, onPress: onPress, recordingPart: recording, onRecord: onRecord, list: list, onRun: onRun, nudge: nudge)
                 } else if let form {
                     SpotFormView(draft: form, onValue: onFormValue)
                 } else {

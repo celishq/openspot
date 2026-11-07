@@ -1,5 +1,0 @@
-[[widgets]]
-name = "Overview"
-subtitle = "CPU, battery, disk and agents"
-layout = "hero"
-places = ["agents", "battery", "cpu", "disk"]

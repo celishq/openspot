@@ -16,8 +16,8 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Translate", "Apps", "Caffeinate", "Color picker", "Confetti", "Emoji", "Files", "Links", "Overview", "Paste latest screenshot", "Pull requests", "Snippets", "Windows", "Spots", "Settings", "Build"])
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["t", "a", "c", "o", "k", "e", "f", "l", nil, "v", "g", "n", nil, "p", nil, nil])
+        XCTAssertEqual(scan.commands.map(\.name), ["Translate", "Apps", "Caffeinate", "Color picker", "Confetti", "Emoji", "Files", "Links", "Paste latest screenshot", "Pull requests", "Snippets", "System details", "System", "Windows", "Spots", "Settings", "Build"])
+        XCTAssertEqual(scan.commands.map(\.key?.name), ["t", "a", "c", "o", "k", "e", "f", "l", "v", "g", "n", nil, nil, nil, "p", nil, nil])
     }
 
     func testACopyAsksForTheCopiedToast() throws {
