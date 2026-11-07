@@ -36,6 +36,7 @@ public final class SpotSheet {
     private static let cardKey = "card"
     private static let levelKey = "level"
     private static let heldKey = "held"
+    private static let globalKey = "global"
 
     public private(set) var command: PluginCommand
     public var list: ItemList {
@@ -72,6 +73,7 @@ public final class SpotSheet {
     @ObservationIgnored private var ready: (() -> Void)?
     @ObservationIgnored private var held: (() -> Void)?
     @ObservationIgnored private var waitingDrops: [[String]] = []
+    @ObservationIgnored private var waitingKeys: [String] = []
 
     init(command: PluginCommand, runs: SpotRuns, recent: [String], prepare: @escaping ([SpotItem]) async -> Void) {
         self.command = command
@@ -213,6 +215,7 @@ public final class SpotSheet {
         pauses.values.forEach { $0.cancel() }
         pauses = [:]
         waitingDrops = []
+        waitingKeys = []
         readsAgain = false
         calls.forEach(stop)
         live = nil
@@ -340,6 +343,17 @@ public final class SpotSheet {
         work(.drop(paths: waitingDrops.removeFirst()), key: Self.cardKey)
     }
 
+    /// Takes a press of a key that a person assigned to a command. Presses run one at a time and in order, and none stops a call.
+    public func pressKey(_ call: String) {
+        waitingKeys.append(call)
+        startWaitingKey()
+    }
+
+    private func startWaitingKey() {
+        guard !waitingKeys.isEmpty, running(Self.globalKey) == nil else { return }
+        work(.press(waitingKeys.removeFirst()), key: Self.globalKey)
+    }
+
     /// Takes a new level of a slider on a card, which shows at once and reaches the script after a pause.
     public func setLevel(_ value: Double) {
         let next = state.withLevel(value)
@@ -446,6 +460,7 @@ public final class SpotSheet {
             self?.calls.removeAll { $0 === call }
             await onEnd(end)
             self?.startWaitingDrop()
+            self?.startWaitingKey()
         }
         calls.append(call)
         if call.doesWork {

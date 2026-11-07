@@ -52,6 +52,17 @@ final class ShortcutTests: XCTestCase {
         XCTAssertFalse(entry.chains(to: letter, code: 0, modifiers: [.option]))
     }
 
+    func testReadsAnArrowKey() throws {
+        let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+option+left"))
+
+        XCTAssertEqual(shortcut.code, 123)
+        XCTAssertEqual(Shortcut(text: "ctrl+right")?.code, 124)
+        XCTAssertEqual(Shortcut(text: "ctrl+down")?.code, 125)
+        XCTAssertEqual(Shortcut(text: "ctrl+up")?.code, 126)
+        XCTAssertEqual(shortcut.label, "⌃⌥Left")
+        XCTAssertEqual(Shortcut(code: 126, modifiers: [.control]), Shortcut(text: "ctrl+up"))
+    }
+
     func testTheEntryKeyStartsAsControlSpace() {
         XCTAssertEqual(Shortcut.standard.text, "ctrl+space")
     }

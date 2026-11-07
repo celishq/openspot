@@ -36,6 +36,23 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertEqual(runs.workSpot, "script")
     }
 
+    func testKeyPressesRunInOrderAndNeverStopACall() async throws {
+        try script(body: "[ \"$1\" = a ] && while [ ! -e '\(path("go"))' ]; do sleep 0.02; done")
+        let sheet = try sheet()
+
+        sheet.pressKey("a")
+        sheet.pressKey("a")
+        sheet.pressKey("b")
+        try await wait("the first call") { self.log() == ["a"] }
+        time += 2
+        sheet.pressKey("a")
+        try await pause(0.1)
+        XCTAssertEqual(log(), ["a"])
+
+        touch("go")
+        try await wait("each press") { self.log() == ["a", "a", "b", "a"] }
+    }
+
     func testAQuickCallNeverShows() async throws {
         try script(body: "exit 0")
         let sheet = try sheet()
