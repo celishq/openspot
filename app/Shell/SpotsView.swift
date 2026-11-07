@@ -8,7 +8,6 @@ struct SpotsView: View {
     @State private var edges = SpotScrollEdges()
     @State private var scroll = ScrollPosition()
     @State private var scrollOffset: CGFloat = 0
-    @State private var transition = SheetTransition()
     @State private var gridHint = ""
     @State private var sheetHint = ""
     @State private var dropTarget: String?
@@ -16,17 +15,15 @@ struct SpotsView: View {
     @State private var hintIsForEdit = false
     @State private var showsDrop = false
     @State private var lastDrop: SpotDrop?
-    @State private var partsLanded = false
-    @State private var sheetHasLeftCard = false
 
     /// The sheet that is built, from its first frame on its card to the end of its close.
     private var sheetID: String? {
-        transition.id
+        model.transition.id
     }
 
     /// Whether the sheet is open or on its way there.
     private var sheetOpen: Bool {
-        transition.isOpen
+        model.transition.isOpen
     }
 
     static let panelSpace = "panel"
@@ -69,7 +66,7 @@ struct SpotsView: View {
                     frame: frame,
                     sheetRect: sheetRect,
                     isOpen: sheetOpen,
-                    hasLeftCard: sheetHasLeftCard,
+                    hasLeftCard: model.sheetHasLeftCard,
                     panel: shownPanel
                 )
             }
@@ -120,13 +117,7 @@ struct SpotsView: View {
                 hideDrop()
             }
         }
-        .onChange(of: model.sheets[sheetID ?? ""]?.panel != nil) { _, hasParts in
-            guard sheetOpen else {
-                partsLanded = hasParts
-                return
-            }
-            withAnimation(SpotMotion.sheet(isOpen: true)) { partsLanded = hasParts }
-        }
+        .animation(SpotMotion.sheet(isOpen: true), value: shownPanel != nil)
         .onChange(of: model.selected) {
             showSelected()
         }
@@ -144,54 +135,25 @@ struct SpotsView: View {
         }
         .onChange(of: model.openList) { _, list in
             if list != nil { sheetHint = model.hint }
-            guard model.sheetMoves else {
+            if model.transition.phase == .ready || model.transition.phase == .closing {
+                holdDropInField()
+            } else {
                 var still = Transaction()
                 still.disablesAnimations = true
                 withTransaction(still) {
-                    if let list { transition.show(list, moves: false) } else { transition.hide(moves: false) }
-                    sheetHasLeftCard = list != nil
                     showsDrop = false
                     lastDrop = nil
                 }
-                model.allowSheetMotion()
-                if list == nil { model.endReview() }
-                return
-            }
-            holdDropInField()
-            if let list {
-                transition.show(list, moves: true)
-                partsLanded = model.sheets[list]?.panel != nil
-                DispatchQueue.main.async {
-                    letFieldCrossHeader(isOpen: true)
-                    withAnimation(SpotMotion.sheet(isOpen: true), completionCriteria: .removed) {
-                        transition.start()
-                    } completion: {
-                        transition.finish(.opening)
-                        if transition.isOpen, transition.id == ShippedSpot.installID {
-                            showsDrop = false
-                            lastDrop = nil
-                        }
-                    }
-                }
-            } else {
-                let wasInstall = transition.id == ShippedSpot.installID
-                letFieldCrossHeader(isOpen: false)
-                withAnimation(SpotMotion.sheet(isOpen: false), completionCriteria: .removed) {
-                    transition.hide(moves: true)
-                } completion: {
-                    transition.finish(.closing)
-                    guard transition.phase == .closed else { return }
-                    partsLanded = false
-                    model.endReview()
-                    if wasInstall { hideDrop() }
-                }
             }
         }
-    }
-
-    /// Changes the colours of the sheet's header with the fill of its card.
-    private func letFieldCrossHeader(isOpen: Bool) {
-        withAnimation(SpotMotion.fillFade(isOpen: isOpen)) { sheetHasLeftCard = isOpen }
+        .onChange(of: model.transition) { old, new in
+            if new.phase == .open, new.id == ShippedSpot.installID {
+                showsDrop = false
+                lastDrop = nil
+            } else if new.phase == .closed, old.id == ShippedSpot.installID {
+                hideDrop()
+            }
+        }
     }
 
     /// Keeps the words of a review in the field, where they lie under the sheet's header as the sheet grows out of the field or
@@ -261,9 +223,9 @@ struct SpotsView: View {
         return SpotTokens.sheetRect(rows: shape?.rows ?? 0, perLine: shape?.perLine ?? 1)
     }
 
-    /// The parts of the open sheet, once they have landed. They arrive in one change with the sheet's new size, on its spring.
+    /// The parts of the open sheet. Parts that land after the sheet opened arrive with its new size, on its spring.
     private var shownPanel: SpotPanel? {
-        partsLanded ? model.sheets[sheetID ?? ""]?.panel : nil
+        model.sheets[sheetID ?? ""]?.panel
     }
 
     /// How far the install screen pushes the grid: as far as its lower edge moves.
@@ -273,7 +235,7 @@ struct SpotsView: View {
 
     /// Whether a sheet is out or a drop is taken, which sets the time of each fade and which hint shows.
     private var surfaceIsOut: Bool {
-        sheetOpen || (showsDrop && !(transition.phase == .closing && sheetID == ShippedSpot.installID))
+        sheetOpen || (showsDrop && !(model.transition.phase == .closing && sheetID == ShippedSpot.installID))
     }
 
     /// Whether the field lies in the open sheet. The install screen grows out of the field, which stays where it is.

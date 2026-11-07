@@ -44,8 +44,9 @@ too. `make perf` checks it: p99 must stay under 8.3 ms.
   that has corners, a rim or words.
 - Change words by a crossfade of two laid-out copies, not by a reflow.
 - Draw blur from one fixed view behind the moving shapes. Do not put an AppKit view in a view that moves or resizes.
-- A press changes one value in one transaction. Do not chain `onChange`, `DispatchQueue.main.async` or animation
-  completions to start a motion, and do not write state from `onGeometryChange` during a motion.
+- The model starts a motion, not a view: no `onChange` chain, and no state written from `onGeometryChange` during a motion.
+  A view that is just built lies at its first place for one turn, and its motion starts on the next turn. SwiftUI animates
+  a view by the first change it sees in an update, so the animated change goes first, or alone.
 - Hide a view that comes back with a mask or with opacity 0.001, not with opacity 0, which drops its drawing.
 
 ## Tests
