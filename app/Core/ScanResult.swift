@@ -17,9 +17,9 @@ public struct ScanResult: Equatable, Sendable {
         plugins.flatMap(\.commands).filter { $0.kind != .widget }
     }
 
-    /// The keys that the scripts hold in every app, in the order of the folder.
-    public var globalKeys: [GlobalKey] {
-        scripts.flatMap(\.globalKeys)
+    /// The assigned keys whose script still lists their command.
+    public func offered(_ keys: [GlobalKey]) -> [GlobalKey] {
+        keys.filter { key in scripts.contains { $0.id == key.spot && $0.offers.contains { $0.id == key.command } } }
     }
 
     /// Leaves out each widget that names a script with no `read` or a command no plugin has, and reports why.

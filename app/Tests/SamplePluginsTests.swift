@@ -91,11 +91,11 @@ final class SamplePluginsTests: XCTestCase {
         return answer.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    func testWindowsHoldsOneKeyForEachArrow() throws {
+    func testWindowsListsItsCommandsAndHoldsNoKey() throws {
         let command = try XCTUnwrap(try scan.scripts.first { $0.name == "Windows" })
 
-        XCTAssertEqual(command.globalKeys.map(\.shortcut.text), ["ctrl+option+up", "ctrl+option+down", "ctrl+option+left", "ctrl+option+right"])
-        XCTAssertEqual(command.globalKeys.map(\.call), ["full", "center", "left", "right"])
+        XCTAssertEqual(command.offers.map(\.id), ["full", "center", "left", "right"])
+        XCTAssertNil(command.key)
     }
 
     func testWindowsFillsTheAreaAndCentresAt65Percent() async throws {

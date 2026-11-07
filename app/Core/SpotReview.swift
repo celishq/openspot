@@ -36,7 +36,6 @@ public struct SpotReview: Equatable, Sendable {
                 programs + ["It can do all that you can. Add it only if you trust the sender."]
             ),
             runs.isEmpty ? "\(quiet)\n\n" : Self.section("Runs by itself", runs),
-            Self.section("Holds keys in every app", Self.heldKeys(in: scan)),
             Self.section("Replaces, and moves the old file to the Trash", spot.replaced(in: folder)),
             Self.section("Will not load", scan.refused.map { "\($0.file): \($0.reason)" })
         ].compactMap { $0 }.joined() + spot.files.map(Self.shown).joined(separator: "\n")
@@ -102,13 +101,6 @@ public struct SpotReview: Equatable, Sendable {
                 moments.append("when the panel opens")
             }
             return moments.isEmpty ? nil : "\(script.name): \(moments.joined(separator: ", "))"
-        }
-    }
-
-    /// A line for each script that holds keys, which names them.
-    private static func heldKeys(in scan: ScanResult) -> [String] {
-        scan.scripts.filter { !$0.globalKeys.isEmpty }.map { script in
-            "\(script.name): \(script.globalKeys.map(\.shortcut.label).joined(separator: ", "))"
         }
     }
 

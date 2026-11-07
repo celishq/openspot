@@ -33,7 +33,7 @@ public enum ShippedSpot: Equatable, Sendable {
                 subtitle: "Choose your key",
                 read: .sheet,
                 order: 2,
-                shipped: .settings(Settings(file: config))
+                shipped: .settings(Settings(file: config, folder: folder))
             )
         ]
         if let update {

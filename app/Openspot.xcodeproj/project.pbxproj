@@ -167,6 +167,7 @@
 		D77AEFBB1612719D1095B350 /* SheetArea.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4138D14A21D00325D6DBEDB9 /* SheetArea.swift */; };
 		D95BD9D0E07611E30130D5A0 /* SpotSheetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9037A1D22EDADFA7C3BDBE81 /* SpotSheetTests.swift */; };
 		DA005CD0819119BA528E2769 /* SpotRunsWorkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68122EC7ACEF5F0A5EB80CFB /* SpotRunsWorkTests.swift */; };
+		DA057FF4A9C9E3CDE40F244F /* CommandOffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7EFA18CE92889105EC4060D /* CommandOffer.swift */; };
 		DBCDB67A200CFCCBB895BCCE /* SpotReview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 845F6667C175DA0D11204811 /* SpotReview.swift */; };
 		DE9BA1EC17C67EB58537ED04 /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2DA6BE8E20EB5E18DB2B113 /* ToastView.swift */; };
 		DEF2BE06211A4489B0807CFC /* SpotSandbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = C78D5403366E77E466027DDC /* SpotSandbox.swift */; };
@@ -402,6 +403,7 @@
 		F4D9AD172F48940343FF9AF0 /* Capability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Capability.swift; sourceTree = "<group>"; };
 		F5B93CD01C6D5FE17346B1C3 /* SpotsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotsPanel.swift; sourceTree = "<group>"; };
 		F6FD2BEB19EFA48253618461 /* ConfigFileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigFileTests.swift; sourceTree = "<group>"; };
+		F7EFA18CE92889105EC4060D /* CommandOffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandOffer.swift; sourceTree = "<group>"; };
 		F8C11359EC58C3ADD300C79C /* ItemList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemList.swift; sourceTree = "<group>"; };
 		F9D84E8481C5D31F2C8AF972 /* TranslationTargets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationTargets.swift; sourceTree = "<group>"; };
 		FA0A0CC4AB97014955A99CB6 /* ActionKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionKey.swift; sourceTree = "<group>"; };
@@ -603,6 +605,7 @@
 				ADA5B47F43EAEA04185AE9FC /* CommandAction.swift */,
 				2BFDC9AC30BD6976E037E11A /* CommandKey.swift */,
 				C021CF9F5B97B67736BE3E06 /* CommandLineCall.swift */,
+				F7EFA18CE92889105EC4060D /* CommandOffer.swift */,
 				01B0A430AAAA24A466FFE908 /* Config.swift */,
 				DD31E61912B28C1E91FDC33B /* ConfigFile.swift */,
 				774D72ACBE8FD9E50EEDD344 /* EmojiCatalog.swift */,
@@ -894,6 +897,7 @@
 				F11F4B4F7092F072A3C7E63C /* CommandAction.swift in Sources */,
 				BB5896B8259540E3B47209AA /* CommandKey.swift in Sources */,
 				0D91D4496EAE5754C1A90B2F /* CommandLineCall.swift in Sources */,
+				DA057FF4A9C9E3CDE40F244F /* CommandOffer.swift in Sources */,
 				B91D284D93564E1AD42F117C /* Config.swift in Sources */,
 				613CCFCF5707057600DED8F3 /* ConfigFile.swift in Sources */,
 				1F24FD07F4D69F885E0C71BC /* EmojiCatalog.swift in Sources */,

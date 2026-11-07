@@ -108,7 +108,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Holds what the scripts ask for and lets go of the rest, unless a key is being recorded. A refused key is tried again at
+    /// Holds the keys that the person assigned and lets go of the rest, unless a key is being recorded. A refused key is tried again at
     /// the next scan, and the person sees why once.
     private func holdWantedKeys() {
         guard model.recording == nil else { return }

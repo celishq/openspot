@@ -343,7 +343,7 @@ public final class SpotSheet {
         work(.drop(paths: waitingDrops.removeFirst()), key: Self.cardKey)
     }
 
-    /// Takes a press of a key that the script holds in every app. Presses run one at a time and in order, and none stops a call.
+    /// Takes a press of a key that a person assigned to a command. Presses run one at a time and in order, and none stops a call.
     public func pressKey(_ call: String) {
         waitingKeys.append(call)
         startWaitingKey()

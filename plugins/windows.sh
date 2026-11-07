@@ -1,12 +1,12 @@
 #!/bin/sh
 # name=Windows
 # symbol=macwindow
-# subtitle=⌃⌥ and an arrow
+# subtitle=Give each command a key in Settings
 # grid=false
-# global=ctrl+option+up full
-# global=ctrl+option+down center
-# global=ctrl+option+left left
-# global=ctrl+option+right right
+# command=full:Full screen
+# command=center:Centre
+# command=left:Left side
+# command=right:Right side
 script='
 const margin = 20;
 
@@ -79,6 +79,6 @@ case "$1" in
     fi
     ;;
   *)
-    printf 'toast=Press ⌃⌥ and an arrow to move the front window\n'
+    printf 'toast=Give each command a key in Settings\n'
     ;;
 esac

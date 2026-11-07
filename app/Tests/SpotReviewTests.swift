@@ -161,12 +161,6 @@ final class SpotReviewTests: XCTestCase {
         XCTAssertTrue(text.hasPrefix("Runs by itself\nWeather: when the panel opens, when the Mac wakes, when Openspot starts, every 30 seconds\n"), text)
     }
 
-    func testItNamesEachKeyAScriptHolds() throws {
-        let text = try shown(review("name=Move\nglobal=ctrl+option+up full\nglobal=ctrl+option+left left"))
-
-        XCTAssertTrue(text.contains("Holds keys in every app\nMove: ⌃⌥Up, ⌃⌥Left\n"), text)
-    }
-
     func testAStayingScriptSaysSo() throws {
         let review = try review("name=Weather\nstay=true\nread=sheet")
 

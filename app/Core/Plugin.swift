@@ -59,11 +59,11 @@ public struct Plugin: Equatable, Sendable {
             guard let number = Int(text) else { throw PluginError.fault("\(name) needs a number as its order") }
             order = number
         }
-        let globalKeys = try header.values("global").map { text in
-            guard let key = GlobalKey(text: text, spot: id) else {
-                throw PluginError.fault("\(name) has an unknown global: \(text). Write a key and a call, such as ctrl+option+left left")
+        let offers = try header.values("command").map { text in
+            guard let offer = CommandOffer(text: text) else {
+                throw PluginError.fault("\(name) has an unknown command: \(text). Write an ID and a title, such as left:Left side")
             }
-            return key
+            return offer
         }
         let command = PluginCommand(
             id: id,
@@ -84,7 +84,7 @@ public struct Plugin: Equatable, Sendable {
             hasSpot: read?.seconds == nil || hasKey,
             isOnGrid: header.flag("grid") ?? true,
             headerSymbol: symbol,
-            globalKeys: globalKeys
+            offers: offers
         )
         self.init(id: id, commands: [command])
     }

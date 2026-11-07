@@ -30,13 +30,25 @@ public struct ConfigFile: Equatable, Sendable {
         try save(lines.joined(separator: "\n") + "\n")
     }
 
-    /// Writes the choices for the spots in place of the ones the file holds, and keeps the settings above them.
+    /// Writes the choices for the spots in place of the ones the file holds, and keeps the settings and the keys.
     public func write(_ arrangement: SpotArrangement) throws {
+        try writeTables(arrangement, keys: read().keys)
+    }
+
+    /// Writes the assigned keys in place of the ones the file holds, and keeps the settings and the choices for the spots.
+    public func write(keys: [GlobalKey]) throws {
+        try writeTables(read().arrangement, keys: keys)
+    }
+
+    /// Writes all the tables under the settings. It throws for a file that it cannot read, so that its tables stay.
+    private func writeTables(_ arrangement: SpotArrangement, keys: [GlobalKey]) throws {
         let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+        _ = try TomlDocument(text: text)
         let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
         var settings = Array(lines.prefix { !$0.hasPrefix("[[") })
         while settings.last == "" { settings.removeLast() }
-        try save((settings + (settings.isEmpty ? [] : [""]) + [arrangement.text]).joined(separator: "\n") + "\n")
+        let tables = ([arrangement.text] + keys.map(\.text)).filter { !$0.isEmpty }.joined(separator: "\n\n")
+        try save((settings + (settings.isEmpty ? [] : [""]) + [tables]).joined(separator: "\n") + "\n")
     }
 
     private func save(_ text: String) throws {

@@ -142,6 +142,7 @@ final class SpotsModel {
     private(set) var isEditing = false
     private var arrangement = SpotArrangement()
     private var scanned: [PluginCommand] = []
+    private var lastScan = ScanResult(plugins: [], refused: [])
 
     init() {
         runs = SpotRuns(
@@ -182,7 +183,8 @@ final class SpotsModel {
             problems.append("No plugins in \(folder.url.path)")
         }
         runs.take(scan)
-        holdKeys(scan.globalKeys)
+        lastScan = scan
+        holdAssignedKeys()
         arrangement = ConfigFile.standard().read().arrangement
         scanned = scan.commands
         rebuildEntries()
@@ -225,9 +227,13 @@ final class SpotsModel {
         runs.quit()
     }
 
-    /// A person pressed a key that a script holds in every app.
+    private func holdAssignedKeys() {
+        holdKeys(lastScan.offered(ConfigFile.standard().read().keys))
+    }
+
+    /// A person pressed a key that they assigned to a command.
     func press(_ key: GlobalKey) {
-        sheets[key.spot]?.pressKey(key.call)
+        sheets[key.spot]?.pressKey(key.command)
     }
 
     private func take(_ report: SpotSheet.Report, of id: String) {
@@ -237,7 +243,10 @@ final class SpotsModel {
         case .listChange:
             if !query.isEmpty || isEditing || cards.first(where: { $0.id == id }).map({ $0.isOnGrid != visible.contains { $0.id == id } }) == true { updateVisible() }
         case .frame:
-            if case .settings? = sheets[id]?.command.shipped { applyConfig() }
+            if case .settings? = sheets[id]?.command.shipped {
+                applyConfig()
+                holdAssignedKeys()
+            }
         case .chooseFiles:
             if let sheet = sheets[id] { chooseFiles(sheet.command) { sheet.drop($0) } }
         }

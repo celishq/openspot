@@ -1,17 +1,19 @@
 import Foundation
 
-/// A key that a script holds in every app, with the call that a press makes, as a header writes it: `ctrl+option+left left`.
+/// A key that a person assigned, which runs one command of a script from any app.
 public struct GlobalKey: Hashable, Sendable {
     public let spot: String
+    public let command: String
     public let shortcut: Shortcut
-    public let call: String
 
-    /// Reads a key and a call. Returns nil for any other words, and for the reserved call `read`.
-    public init?(text: String, spot: String) {
-        let words = text.split(whereSeparator: \.isWhitespace).map(String.init)
-        guard words.count == 2, let shortcut = Shortcut(text: words[0]), words[1] != "read" else { return nil }
+    public init(spot: String, command: String, shortcut: Shortcut) {
         self.spot = spot
+        self.command = command
         self.shortcut = shortcut
-        self.call = words[1]
+    }
+
+    /// The lines of this key in the config file.
+    var text: String {
+        "[[keys]]\nspot = \"\(spot)\"\ncommand = \"\(command)\"\nkey = \"\(shortcut.text)\""
     }
 }
