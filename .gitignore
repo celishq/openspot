@@ -1,2 +1,5 @@
 plans/
 .temp/
+*.xcuserstate
+xcuserdata/
+.DS_Store
