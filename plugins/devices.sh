@@ -2,16 +2,28 @@
 # name=Devices
 # symbol=airpods
 # read=60
-/usr/sbin/system_profiler SPBluetoothDataType 2>/dev/null | awk '
-  /^      Connected:/ { on = 1; next }
-  /^      [^ ]/ { on = 0 }
-  on && /^          [^ ]/ { name = $0; sub(/^ +/, "", name); sub(/:$/, "", name); sub(/^.*’s /, "", name) }
-  on && /Battery Level:/ && !/Case/ {
-    level = $NF; sub("%", "", level)
-    if (low == "" || level + 0 < low + 0) { low = level; lowName = name }
-  }
+
+# Prints one line for each battery of each connected device: its name, the part, then the level.
+levels() {
+  /usr/sbin/system_profiler SPBluetoothDataType 2>/dev/null | awk '
+    /^      Connected:/ { on = 1; next }
+    /^      [^ ]/ { on = 0 }
+    on && /^          [^ ]/ { name = $0; sub(/^ +/, "", name); sub(/:$/, "", name); sub(/^.*’s /, "", name) }
+    on && /Battery Level:/ {
+      part = $0; sub(/^ +/, "", part); sub(/ ?Battery Level:.*/, "", part)
+      level = $NF; sub("%", "", level)
+      printf "%s\t%s\t%s\n", name, part, level
+    }'
+}
+
+if [ "$1" = levels ]; then
+  levels
+  exit 0
+fi
+levels | awk -F'\t' '
+  $2 != "Case" && (low == "" || $3 + 0 < low + 0) { low = $3; name = $1 }
   END {
     if (low == "") { printf "title=–\ndetail=No devices\nvalue=0\n"; exit }
-    symbol = lowName ~ /AirPods/ ? "airpods" : lowName ~ /Keyboard/ ? "keyboard" : lowName ~ /Mouse/ ? "magicmouse" : "headphones"
-    printf "title=%d%%\ndetail=%s\nsymbol=%s\nvalue=%.2f\ntone=%s\n", low, lowName, symbol, low / 100, (low <= 20 ? "bad" : "")
+    symbol = name ~ /AirPods/ ? "airpods" : name ~ /Keyboard/ ? "keyboard" : name ~ /Mouse/ ? "magicmouse" : "headphones"
+    printf "title=%d%%\ndetail=%s\nsymbol=%s\nvalue=%.2f\ntone=%s\n", low, name, symbol, low / 100, (low <= 20 ? "bad" : "")
   }'

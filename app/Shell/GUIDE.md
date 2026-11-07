@@ -500,7 +500,8 @@ opens = "links"
 ```
 
 `places` fills the cells of the layout in order, and each cell needs one metric. `opens` is optional: it names the
-command that Enter or a click runs. `key` also works.
+command that Enter or a click runs. `key` also works. Its sheet grows out of the widget. Give that
+command `grid=false`, so that it has no card of its own.
 
 A widget can also draw its own layout, in the same letters as a sheet's `grid`. Each letter is a rectangle, `.` is empty,
 and `places` names a metric for each letter:
