@@ -76,6 +76,15 @@ struct SpotsView: View {
                         model.closeList()
                     }
                 )
+                .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: sheetOpen)) { $0.opacity(sourceWidget == nil || sheetOpen ? 1 : 0) }
+                .overlay(alignment: .topLeading) {
+                    if let widget = sourceWidget, let frame = openFrame {
+                        widgetLook(widget)
+                            .frame(width: frame.width, height: frame.height)
+                            .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(sheetOpen ? 0 : 1) }
+                            .allowsHitTesting(false)
+                    }
+                }
                 .background {
                     SpotTheme.solid
                         .animation(SpotMotion.fillFade(isOpen: sheetOpen)) { $0.opacity(entry.state.on == true && !sheetOpen ? 1 : 0) }
@@ -83,7 +92,7 @@ struct SpotsView: View {
                 .modifier(SpotSheetFrame(
                     rect: sheetOpen ? sheetRect : isInstall(entry) ? fieldRect : openFrame ?? sheetRect,
                     radius: sheetOpen ? SpotTokens.radius : isInstall(entry) ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: cardSize(of: entry)),
-                    showsRing: !sheetOpen && cardIsSelected(entry),
+                    showsRing: !sheetOpen && cardIsSelected(sourceWidget ?? entry),
                     arrow: cardShows(arrowOf: entry) ? AnyView(sheetArrow(of: entry)) : nil
                 ))
             }
@@ -387,6 +396,28 @@ struct SpotsView: View {
         let cards = model.placements.map { model.visible[$0.index] }
         if cards.contains(where: { $0.id == sheetID }) { return sheetID }
         return cards.first { $0.kind == .widget && $0.command.opens == sheetID }?.id
+    }
+
+    /// The widget that opened the sheet, whose look the sheet takes at the size of its card.
+    private var sourceWidget: SpotsModel.Entry? {
+        guard cardID != sheetID else { return nil }
+        return model.visible.first { $0.id == cardID }
+    }
+
+    private func widgetLook(_ widget: SpotsModel.Entry) -> some View {
+        SpotCardView(
+            entry: widget,
+            size: cardSize(of: widget),
+            isSelected: false,
+            takesDrag: false,
+            isDropTarget: false,
+            readings: model.readings,
+            chainLetter: nil,
+            showsChain: false,
+            isHiddenFromGrid: false,
+            onTap: {},
+            onLevel: { _ in }
+        )
     }
 
     /// Where the card of the open sheet lies in the panel, which the grid and its scroll say.

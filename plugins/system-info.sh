@@ -1,7 +1,7 @@
 #!/bin/sh
 # name=System details
 # symbol=gauge.with.dots.needle.50percent
-# read=sheet
+# read=panel
 # grid=false
 here=$(dirname "$0")
 
