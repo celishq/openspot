@@ -167,17 +167,13 @@ final class SpotsModel {
         runs.work.count
     }
 
-    /// Opens the panel on the Spots list, once, for a person who has no spots yet. The toast with the key waits for the
-    /// panel to close.
+    /// Opens the panel on the grid, once, for a person who has no spots yet. The toast with the key waits for the panel to
+    /// close.
     func beginFirstLaunch() {
         isFirstLaunch = true
         try? ConfigFile.standard().begin(enabling: Self.pluginFolder.startingSpots())
         reload()
-        sheetMoves = false
-        sheets[ShippedSpot.spotsID]?.open(waits: true) { [weak self] in
-            self?.openList = ShippedSpot.spotsID
-            self?.present()
-        }
+        present()
     }
 
     /// Reads the config file and the plugin folder again. No script runs for this, and each card shows its header until its
@@ -370,10 +366,10 @@ final class SpotsModel {
         reviewed.map(SpotDrop.init(reviewing:))
     }
 
-    /// Whether the panel stays open when it loses the focus: for a review, and for the list of a first launch, because the
-    /// Mac can keep another app in front of an app that just started.
+    /// Whether the panel stays open when it loses the focus: for a review, and for a first launch, because the Mac can keep
+    /// another app in front of an app that just started.
     var holdsFocus: Bool {
-        isReviewing || (isFirstLaunch && openList == ShippedSpot.spotsID)
+        isReviewing || isFirstLaunch
     }
 
     /// Whether a review shows, which stays open when the panel loses the focus.
