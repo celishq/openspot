@@ -3,6 +3,7 @@ import Foundation
 /// The Settings spot, which ships with the app. It answers the calls a sheet script answers, in Swift.
 public struct Settings: Equatable, Sendable {
     private static let panelKey = "panel_key"
+    private static let fixKey = "fix_key"
     private static let keyPrefix = "key:"
     private static let clear = "clear"
 
@@ -27,8 +28,8 @@ public struct Settings: Equatable, Sendable {
         case "open" where arguments.dropFirst().first == LoginItem.run:
             try login?.toggle()
             return ""
-        case Self.panelKey:
-            try file.set(Self.panelKey, to: try shortcut(from: arguments).text)
+        case Self.panelKey, Self.fixKey:
+            try file.set(arguments[0], to: try shortcut(from: arguments).text)
             return ""
         case Self.clear:
             if let run = arguments.dropFirst().first, let found = target(of: run) { try assign(nil, to: found) }
@@ -44,6 +45,7 @@ public struct Settings: Equatable, Sendable {
     private var sheet: String {
         let config = file.read()
         let panel = "row=Open Openspot\nrun=\(Self.panelKey)\nsymbol=keyboard\nhides=\(Self.clear)\nshortcut=\((config.panelKey ?? .standard).text)\n"
+        let fix = "row=Open a fix\nrun=\(Self.fixKey)\nsymbol=wrench.and.screwdriver\nhides=\(Self.clear)\nshortcut=\((config.fixKey ?? .fix).text)\n"
         let scripts = (try? PluginFolder(url: folder, core: core, enabled: config.arrangement.enabled).scan())?.scripts ?? []
         let rows = scripts.flatMap { script in
             script.offers.map { offer -> String in
@@ -53,7 +55,7 @@ public struct Settings: Equatable, Sendable {
             }
         }
         let login = self.login.map { [$0.row.text] } ?? []
-        return (["recents=false\n", "action=open\ntitle=Change\nclose=false\n", "action=\(Self.clear)\ntitle=Remove key\n", panel] + login + rows).joined(separator: "\n")
+        return (["recents=false\n", "action=open\ntitle=Change\nclose=false\n", "action=\(Self.clear)\ntitle=Remove key\n", panel, fix] + login + rows).joined(separator: "\n")
     }
 
     private func shortcut(from arguments: [String]) throws -> Shortcut {

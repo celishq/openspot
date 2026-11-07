@@ -1,3 +1,4 @@
+import OpenspotCore
 import SwiftUI
 
 /// A short message from Openspot on the same surface as a spot.
@@ -15,10 +16,15 @@ struct ToastView: View {
                 .font(SpotType.body)
                 .foregroundStyle(SpotTheme.ink)
                 .lineLimit(3)
+            if let key = toast.key {
+                SpotKeyLabel(text: key.text, isRecording: false)
+            }
         }
         .padding(.horizontal, ToastPanel.margin)
         .padding(.vertical, 10)
         .modifier(SpotGlass(radius: SpotTokens.rowHeight / 3))
+        .contentShape(Rectangle())
+        .onTapGesture { toast.open?() }
         .padding(ToastPanel.margin)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .environment(\.spotIsShown, toast.isShown)

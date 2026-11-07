@@ -65,6 +65,17 @@ final class SpotRunsCallTests: SpotRunsCase {
         try await wait("the failure") { failures == ["Script failed. gone"] }
     }
 
+    func testAFailedCallThatPrintsALinkTellsThePersonWithItsFix() async throws {
+        try script(body: "printf 'open=x-apple.systempreferences:pane\\n'\necho 'Allow it.' >&2\nexit 1")
+        let sheet = try sheet()
+        var fixes: [String] = []
+        sheet.onReport = { if case .failureWithFix(let text, let fix) = $0 { fixes.append("\(text) \(fix.absoluteString)") } }
+
+        sheet.pressCard()
+
+        try await wait("the failure") { fixes == ["Script failed. Allow it. x-apple.systempreferences:pane"] }
+    }
+
     func testAReadStopsWhenThePanelThatWantedItCloses() async throws {
         try script(header: "read=panel\nrank=1", "printf 'row=A\\nrun=a\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
         let sheet = try sheet()

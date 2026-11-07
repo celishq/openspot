@@ -10,6 +10,8 @@ public final class SpotSheet {
     public enum Report: Sendable {
         case toast(String)
         case failure(String)
+        /// A failure with a link that opens its fix (R9).
+        case failureWithFix(String, URL)
         case frame(String)
         case listChange
         /// A click on a card that takes files and has no sheet: the owner asks the person for files, and gives them to `drop`.
@@ -907,6 +909,8 @@ public final class SpotSheet {
     }
 
     private func fail(_ error: Error) {
-        onReport(.failure("\(command.name) failed. \((error as? PluginError)?.reason ?? error.localizedDescription)"))
+        let text = "\(command.name) failed. \((error as? PluginError)?.reason ?? error.localizedDescription)"
+        if case .failedWithFix(_, _, let fix) = error as? PluginError { return onReport(.failureWithFix(text, fix)) }
+        onReport(.failure(text))
     }
 }

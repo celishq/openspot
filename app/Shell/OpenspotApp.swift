@@ -60,6 +60,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         let toast = ToastPanel.make()
         model.notify = { toast.show($0, symbol: ToastPanel.failureSymbol) }
+        model.notifyFix = { toast.show($0, symbol: ToastPanel.failureSymbol, fix: $1, key: ConfigFile.standard().read().fixKey) }
         model.confirm = { toast.show($0, symbol: ToastPanel.confirmSymbol) }
         trayBar = SpotTrayBar(model: model, openspotItem: item)
         let update = AppUpdate(runningWork: { [model] in model.workCount }, onReady: { [model] in model.updateIsReady() })
