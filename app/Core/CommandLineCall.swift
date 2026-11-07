@@ -12,7 +12,7 @@ public enum CommandLineCall: Equatable, Sendable {
     case translateLanguages
     case emoji(tone: EmojiCatalog.Tone)
     case windowFrame
-    case windowMove(x: Int, y: Int, width: Int, height: Int)
+    case windowMove(WindowMove)
     /// Runs as the helper process of a capability. A script never makes this call, so the usage does not list it.
     case helper(String)
     case help
@@ -31,7 +31,9 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  A tone is none, light, medium-light, medium, medium-dark or dark.
     openspot window frame                        Prints the front window, then the usable area of its screen:
                                                  x y width height x y width height, from the top left of the main screen.
-    openspot window move x y width height        Moves the front window to this frame.
+    openspot window move frame...                Moves the front window to a frame, x y width height, in points or, with a
+                                                 fraction such as 1/2, in parts of the area. With more frames, it moves to
+                                                 the frame after the one it holds now.
 
     """
 
@@ -64,13 +66,12 @@ public enum CommandLineCall: Equatable, Sendable {
             }
             self = .emoji(tone: tone)
         case ("window", "frame") where rest.count == 1: self = .windowFrame
-        case ("window", "move") where rest.count == 5:
-            let numbers = rest.dropFirst().compactMap { Int($0) }
-            guard numbers.count == 4, numbers[2] > 0, numbers[3] > 0 else {
+        case ("window", "move") where rest.count > 1:
+            guard let move = WindowMove(words: Array(rest.dropFirst())) else {
                 self = .unknown(arguments.joined(separator: " "))
                 return
             }
-            self = .windowMove(x: numbers[0], y: numbers[1], width: numbers[2], height: numbers[3])
+            self = .windowMove(move)
         case ("translate", _):
             guard let options = Self.options(rest) else {
                 self = .unknown(arguments.joined(separator: " "))

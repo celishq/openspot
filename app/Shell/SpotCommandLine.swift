@@ -38,8 +38,8 @@ enum SpotCommandLine {
             finish { try EmojiCatalog().rows(tone: tone) }
         case .windowFrame:
             answer { try SpotWindow.front().frameText }
-        case .windowMove(let x, let y, let width, let height):
-            answer { try SpotWindow.front().move(to: CGRect(x: x, y: y, width: width, height: height)); return "" }
+        case .windowMove(let move):
+            answer { try SpotWindow.front().move(move); return "" }
         }
     }
 

@@ -442,7 +442,7 @@ A script finds `openspot` on its path. It gives what macOS has no command for, i
 | `openspot translate languages` | Prints each language, with its name. |
 | `openspot emoji [--tone name]` | Prints each emoji as a row, with its name in the language of the Mac. A tone is `none`, `light`, `medium-light`, `medium`, `medium-dark` or `dark`. |
 | `openspot window frame` | Prints the front window, then the usable area of its screen, as `x y width height x y width height` in points from the top left of the main screen. Needs Accessibility. |
-| `openspot window move x y width height` | Moves the front window to this frame. A window that keeps its own size holds the edges of the screen that the frame touches. Needs Accessibility. |
+| `openspot window move frame...` | Moves the front window to a frame, `x y width height`. A frame with a fraction, such as `0 0 1/2 1`, is in parts of the usable area of the window's screen, and any other frame is in points. With more frames, such as `"0 0 1/4 1" "0 0 1/3 1"`, it moves to the frame after the one the window holds, within 20 points, or to the first. A window that keeps its own size holds the edges of the screen that the frame touches. Needs Accessibility. |
 
 When macOS already has a command, use it: `pbcopy`, `open`, `say`, `caffeinate`, `mdfind`, `screencapture`,
 `shortcuts run`, `osascript`.

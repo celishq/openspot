@@ -51,13 +51,15 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["--help"]), .help)
     }
 
-    func testAWindowCallReadsItsFrame() {
+    func testAWindowCallReadsItsFrames() {
         XCTAssertEqual(CommandLineCall(arguments: ["window", "frame"]), .windowFrame)
-        XCTAssertEqual(CommandLineCall(arguments: ["window", "move", "-1440", "25", "720", "900"]), .windowMove(x: -1440, y: 25, width: 720, height: 900))
+        XCTAssertEqual(CommandLineCall(arguments: ["window", "move", "-1440", "25", "720", "900"]), .windowMove(WindowMove(words: ["-1440", "25", "720", "900"])!))
+        XCTAssertEqual(CommandLineCall(arguments: ["window", "move", "0 0 1/4 1", "0 0 1/3 1"]), .windowMove(WindowMove(words: ["0", "0", "1/4", "1", "0", "0", "1/3", "1"])!))
         XCTAssertEqual(CommandLineCall(arguments: ["window", "move", "0", "25", "720"]), .unknown("window move 0 25 720"))
         XCTAssertEqual(CommandLineCall(arguments: ["window", "move", "0", "25", "wide", "900"]), .unknown("window move 0 25 wide 900"))
         XCTAssertEqual(CommandLineCall(arguments: ["window", "move", "0", "25", "0", "900"]), .unknown("window move 0 25 0 900"))
-        XCTAssertTrue(CommandLineCall.usage.contains("openspot window move x y width height"))
+        XCTAssertEqual(CommandLineCall(arguments: ["window", "move", "0", "0", "1/0", "1"]), .unknown("window move 0 0 1/0 1"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot window move frame..."))
     }
 
     func testAnUnknownCallAsksForHelp() {

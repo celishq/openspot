@@ -34,14 +34,18 @@ struct SpotWindow {
             .map { String(Int($0.rounded())) }.joined(separator: " ")) + "\n"
     }
 
-    /// Moves the window to the target first and sizes it there, so the edge of the screen never cuts the new size.
-    func move(to target: CGRect) throws {
+    /// Moves the window to its target first and sizes it there, so the edge of the screen never cuts the new size.
+    func move(_ move: WindowMove) throws {
+        let window = frame
+        let centre = CGPoint(x: window.midX, y: window.midY)
+        let area = move.needsArea ? Self.area(holding: centre) : .zero
+        let target = move.target(window: window, area: area)
         try set(kAXPositionAttribute, .cgPoint, target.origin)
         try set(kAXSizeAttribute, .cgSize, target.size)
         let size = frame.size
         guard size != target.size else { return }
-        let place = WindowPlace(target: target, area: Self.area(holding: CGPoint(x: target.midX, y: target.midY)))
-        let origin = place.origin(for: size)
+        let bounds = move.needsArea ? area : Self.area(holding: CGPoint(x: target.midX, y: target.midY))
+        let origin = WindowMove.origin(of: size, target: target, area: bounds)
         if origin != target.origin { try set(kAXPositionAttribute, .cgPoint, origin) }
     }
 
