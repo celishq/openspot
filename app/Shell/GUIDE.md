@@ -34,6 +34,7 @@ print("toast=Hello")
 ```
 
 To run it, a Mac needs the Command Line Tools, from `xcode-select --install`. No Xcode app and no developer account are needed.
+A person who gets it as a `.spot` file needs no tools. See "Share a spot".
 
 ## The header
 
@@ -537,6 +538,7 @@ A `.spot` file is JSON. It holds a format number and the files:
 - A file that is not text uses `data`, in base64, in place of `text`.
 - Hidden files and `$OPENSPOT_DATA` stay behind.
 - A compiled program travels, but no one can read it first. Install one only if you trust the sender.
+- "Copy to share" compiles a Swift script for both kinds of Mac, and adds `<name>.program` beside it. The sender needs the Command Line Tools, and the receiver needs nothing. The source gives the header, the program runs in its place, and a program file is never a spot of its own. To run an edited source, delete the program.
 - A file with the same path is replaced, and the old file goes to the Trash.
 
 ## Delete a spot

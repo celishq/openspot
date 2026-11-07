@@ -410,6 +410,7 @@ The command is on the path of each script. It also gives the tools for authors.
 | P4 | Before a person installs a shared spot, Openspot shows all the text it can, says what runs by itself and names each file it cannot show. Only a modified key installs it. |
 | P5 | Each usage text for a protected Mac feature is in the app. So a protected feature is a capability. |
 | P6 | A compiled program travels in a `.spot` file, and the review says first that no one can read it. A plugin can be any executable (F1), so sharing takes each of them. |
+| P6a | "Copy to share" compiles a Swift script into a universal `<name>.program` beside its source, so that only the sender needs the Swift tools. A scan lists no `.program` file, the source gives the header, and the program runs in place of the source. The review says that the two may not match. |
 | P7 | A `.spot` file has no signature and names no sender. Openspot warns the sender about secrets, and does not look for them. |
 
 ## 12. How to extend
