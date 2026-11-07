@@ -10,7 +10,8 @@ struct SpotGridGlass: View {
         let size: SpotSize
         let offset: CGSize
         let scale: CGFloat
-        let rowsAway: Int
+        /// The share of the sheet's growth at which it lies over this card.
+        let reach: Double
         /// Whether the card draws a solid fill or lies under the open sheet, so no blur shows through it.
         let isCovered: Bool
     }
@@ -40,7 +41,7 @@ struct SpotGridGlass: View {
             .frame(width: SpotTokens.width(columns: card.size.columns), height: SpotTokens.height(rows: card.size.rows))
             .scaleEffect(card.scale * (isShown ? 1 : SpotMotion.hiddenScale))
             .offset(card.offset)
-            .animation(SpotMotion.cardFade(isSheetOpen: isSheetOpen, rowsAway: card.rowsAway)) { $0.opacity(isSheetOpen ? SpotMotion.coveredCardOpacity : 1) }
+            .animation(SpotMotion.cardFade(isSheetOpen: isSheetOpen, reach: card.reach)) { $0.opacity(isSheetOpen ? SpotMotion.coveredCardOpacity : 1) }
             .opacity(card.isCovered ? 0 : 1)
     }
 }
