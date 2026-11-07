@@ -8,7 +8,7 @@ final class SpotCatalogTests: XCTestCase {
     private var core: URL!
     private var file: ConfigFile!
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         root = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-catalog-\(UUID().uuidString)")
         folder = root.appendingPathComponent("plugins")
         core = root.appendingPathComponent("core")
@@ -20,7 +20,7 @@ final class SpotCatalogTests: XCTestCase {
         try "#!/bin/sh\n# read=5\n".writeScript(to: core.appendingPathComponent("cpu.sh"))
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         try? FileManager.default.removeItem(at: root)
     }
 

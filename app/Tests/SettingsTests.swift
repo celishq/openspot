@@ -16,11 +16,11 @@ final class SettingsTests: XCTestCase {
         }
     }
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-settings-\(UUID().uuidString)")
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         try? FileManager.default.removeItem(at: folder)
     }
 

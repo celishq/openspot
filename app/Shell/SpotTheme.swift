@@ -76,7 +76,7 @@ struct SpotTheme {
     }
 
     /// The theme of the app's appearance now.
-    private static var current: SpotTheme {
+    @MainActor private static var current: SpotTheme {
         palette(for: NSApp?.effectiveAppearance ?? NSAppearance.currentDrawing())
     }
 
@@ -92,12 +92,12 @@ struct SpotTheme {
     static let accent = Color.accentColor
     static let secondaryLight = 0.7
     static let dragFill = 0.4
-    static var fill: Double { current.fillStrength }
-    static var disc: Double { current.discStrength }
-    static var chip: Double { current.chipStrength }
-    static var selectedFill: Double { current.selectedStrength }
-    static var track: Double { current.trackStrength }
-    static var control: Double { current.controlStrength }
+    @MainActor static var fill: Double { current.fillStrength }
+    @MainActor static var disc: Double { current.discStrength }
+    @MainActor static var chip: Double { current.chipStrength }
+    @MainActor static var selectedFill: Double { current.selectedStrength }
+    @MainActor static var track: Double { current.trackStrength }
+    @MainActor static var control: Double { current.controlStrength }
 
     static let ink = color(\.ink)
     static let solid = color(\.solid)

@@ -6,12 +6,12 @@ final class SwiftProgramTests: XCTestCase {
     private var folder: URL!
     private let source = Data("#!/usr/bin/env swift\n// name=Hello\nprint(\"hello\")\n".utf8)
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-swift-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         try? FileManager.default.removeItem(at: folder)
     }
 

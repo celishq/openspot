@@ -24,6 +24,6 @@ public struct PluginHeader: Equatable, Sendable {
         let file = try? FileHandle(forReadingFrom: url)
         let data = (try? file?.read(upToCount: Self.limit)) ?? Data()
         try? file?.close()
-        self.init(text: String(decoding: data ?? Data(), as: UTF8.self))
+        self.init(text: String(decoding: data, as: UTF8.self))
     }
 }

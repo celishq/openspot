@@ -1,5 +1,6 @@
 import AppKit
 
+@MainActor
 enum EditMenu {
     static func install() {
         let main = NSMenu()

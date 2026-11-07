@@ -83,7 +83,7 @@ final class BigPasteTests: XCTestCase {
         for (name, text) in Self.texts {
             var panel = try XCTUnwrap(SpotPanel(output: PluginOutput(text: "part=input\ntext=\n\npart=output\ntext=\n")))
             var values = ""
-            try milliseconds("panel set", of: name) { panel.set(text, of: "input") }
+            milliseconds("panel set", of: name) { panel.set(text, of: "input") }
             milliseconds("stdin block", of: name) { values = panel.values }
             var sent: (arguments: [String], input: String?) = ([], nil)
             milliseconds("arguments", of: name) { sent = SpotAction.set("input", to: text).sent(input: values) }

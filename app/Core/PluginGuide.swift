@@ -19,7 +19,7 @@ public struct PluginGuide: Equatable, Sendable {
             return Self.rows
         case "new":
             guard let input, !input.isEmpty else { return Self.form }
-            try await makePlugin(named: TextBlock.blocks(in: input ?? "").first?.value("name") ?? "")
+            try await makePlugin(named: TextBlock.blocks(in: input).first?.value("name") ?? "")
             return ""
         case "open":
             let row = arguments.dropFirst().first ?? ""
