@@ -229,7 +229,8 @@ public final class ScriptProcess: @unchecked Sendable {
             guard !isStopped else { return lock.withLock { ended = true } }
             if hasExited, process.terminationStatus != 0 {
                 let line = lastErrors.text.split(separator: "\n").last.map(String.init) ?? ""
-                finish(throwing: PluginError.failed(process.terminationStatus, line))
+                let fix = reader.finish().flatMap { PluginOutput(text: $0).summary?.value("open") }.flatMap(URL.init(string:))
+                finish(throwing: fix.map { PluginError.failedWithFix(process.terminationStatus, line, $0) } ?? PluginError.failed(process.terminationStatus, line))
                 return
             }
             if let frame = reader.finish() { yield(frame) }

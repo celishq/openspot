@@ -28,7 +28,7 @@ final class LoginItemTests: XCTestCase {
 
     func testSettingsListsTheRowWithItsState() throws {
         let off = PluginOutput(text: try settings.answer(["read"])).items
-        XCTAssertEqual(off.map(\.run), ["panel_key", LoginItem.run])
+        XCTAssertEqual(off.map(\.run), ["panel_key", "fix_key", LoginItem.run])
         XCTAssertEqual(off.last?.title, "Open at login")
         XCTAssertEqual(off.last?.isOn, false)
 
@@ -51,6 +51,6 @@ final class LoginItemTests: XCTestCase {
     func testWithNoLoginItemSettingsShowsNoRow() throws {
         let plain = Settings(file: ConfigFile(url: folder.appendingPathComponent("config.toml")), folder: folder)
 
-        XCTAssertEqual(PluginOutput(text: try plain.answer(["read"])).items.map(\.run), ["panel_key"])
+        XCTAssertEqual(PluginOutput(text: try plain.answer(["read"])).items.map(\.run), ["panel_key", "fix_key"])
     }
 }

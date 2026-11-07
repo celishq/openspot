@@ -26,7 +26,7 @@ public enum ShippedSpot: Equatable, Sendable {
                 shipped: .spots(SpotCatalog(folder: folder, core: core, config: config, login: offersLogin ? login : nil))
             ),
             PluginCommand(
-                id: "openspot/settings",
+                id: Self.settingsID,
                 name: "Settings",
                 url: config.url,
                 kind: .list,
@@ -74,6 +74,7 @@ public enum ShippedSpot: Equatable, Sendable {
 
     /// The ID of the list of spots that a person can turn on.
     public static let spotsID = "openspot/spots"
+    public static let settingsID = "openspot/settings"
 
     /// The place of the rows of Settings in the main search: after those of the core spots.
     public static let settingsRank = 10

@@ -86,6 +86,7 @@ esac
 | A12 | A first launch turns on each core spot that reads only local data, and only at a person's act or when the panel opens. Each other core spot is off until the person turns it on, such as one that runs by itself or needs other tools. A spot that is off runs nothing, and its data stays. A core spot that a spot that is on places or opens also loads. A file in the plugins folder with the same ID wins over a core spot, and is always on. |
 | A13 | Enter on a row of Spots turns the spot on or off, and keeps the panel open, because a person often changes several spots in a row. Select all, in its actions, turns each one on. |
 | A14 | A first launch has no `config.toml` and no spot in the plugins folder. It opens the panel on the grid, once, with no other screen. The key toast shows when the panel closes. The app does not open at login by default. |
+| A15 | A toast takes no input, except a failure toast with a fix: the link of a script (R9), or Settings for a key that Openspot cannot use. One fix key, ⌥⌘O by default, opens that fix, and the person chooses the key in Settings. Openspot holds the fix key only while such a toast shows, so other apps keep it at all other times. |
 
 ## 4. The plugin file
 
@@ -258,6 +259,7 @@ A script prints plain text. Each line is `key=value`, and a blank line ends a bl
 | R6 | `search=script` makes each search change call `read <text>`. Otherwise Openspot searches the rows itself. |
 | R7 | `recents=false` does not sort recent picks first. |
 | R8 | A script writes a file to a temp name, then moves it. A stop can come at any time, and two calls of one script can run at the same time, so a file must never be half written. |
+| R9 | A failed call can print `open=<url>`, such as the System Settings pane that fixes the failure. Its toast then names the fix key, and the key or a click on the toast opens the URL. |
 
 ### Streaming
 
@@ -403,6 +405,8 @@ The command is on the path of each script. It also gives the tools for authors.
 | `openspot render <file.png>` | Draws the sheet on stdin to a picture. |
 | `openspot sandbox [file]` | Opens a window to try a sheet from text, a file or a script. |
 | `openspot color pick` | Capability: the colour the person picks. |
+| `openspot clipboard copy [file]` | Capability: copies a file as Finder does, or the text on stdin. `clipboard` holds each clipboard call. |
+| `openspot clipboard paste` | Capability: pastes the clipboard into the front app. |
 | `openspot translate` | Capability: translates text on this Mac, and keeps each pair of languages loaded (K2). |
 | `openspot translate languages` | Capability: the languages it knows. |
 | `openspot emoji [--tone name]` | Capability: each emoji with its name in the language of the Mac, as rows. |
@@ -446,6 +450,7 @@ The code follows this document.
 | Decision | Why | Rejected |
 |---|---|---|
 | A script lists commands, and the person gives them keys | A key depends on the person's hands and other apps, and a window move through the panel is too slow. The config file holds each key, so a clash has one place, and an update or a shared spot cannot change a key. A header lists the commands, so Settings shows them with no run. | A second global key that arms the letters of spots. A `global` key in the header, which lets a script take a key. |
+| A failure links its fix, and one key opens it | A person who meets a fixable failure, such as a missing permission, reaches the fix with no search through System Settings. The key works with no mouse, and the script knows the fix, so the app guesses nothing. | A click only, which needs the mouse. A key held at all times, which takes it from other apps. The app reading the error text for a known fix. |
 | One call shape, with only `read` reserved | An author learns one line. A clash can happen only inside one file, and C1 and C2 cover it. | A word for each kind of call. An `action` word. Both add words to learn. |
 | Scripts, not a JS runtime | Goal 1. Shell gives each Mac tool at once, and a start costs about 5 ms. | JS only. It loses one-file shell scripts. |
 | JS waits | It can come later as one more executable, with `#!/usr/bin/env -S openspot run`, on JavaScriptCore. The contract does not change. It must provide `fetch`, timers and modules. | A JS level now. `node` and `bun` are not on each Mac. |

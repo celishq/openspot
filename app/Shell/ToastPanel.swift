@@ -1,25 +1,34 @@
 import AppKit
+import OpenspotCore
 import SwiftUI
 
-/// A window at the top of the screen for toasts, so they show when the spots panel is closed. It takes no input.
+/// A window at the top of the screen for toasts, so they show when the spots panel is closed. It is as large as its message,
+/// from 360 to 560 pt wide.
+/// Only a toast with a fix takes input: a click on it, or its fix key, opens the fix (A15).
 final class ToastPanel: NSPanel {
     static let margin: CGFloat = 16
-    private static let size = NSSize(width: 560, height: 120)
+    static let minWidth: CGFloat = 360
+    private static let maxSize = NSSize(width: 560, height: 120)
     private static let duration: TimeInterval = 5
     static let failureSymbol = "exclamationmark.triangle.fill"
     static let confirmSymbol = "checkmark.circle.fill"
 
     private let toast = Toast()
     private var shows = 0
+    private var fixKey: HotKey.Registration?
 
-    /// Shows a message, in place of any toast on screen, and hides it after a while.
-    func show(_ message: String, symbol: String? = nil, for duration: TimeInterval = ToastPanel.duration) {
+    /// Shows a message, in place of any toast on screen, and hides it after a while. A fix opens on a click or on its key.
+    func show(_ message: String, symbol: String? = nil, fix: (() -> Void)? = nil, key: Shortcut? = nil, for duration: TimeInterval = ToastPanel.duration) {
         shows += 1
         let current = shows
-        toast.message = message
         toast.symbol = symbol
+        let held = hold(fix: fix, key: key)
+        toast.message = held.map { "\(message) Press `\($0.label)` to fix it." } ?? message
+        let measure = NSHostingController(rootView: ToastView(toast: toast))
+        let width = min(max(measure.view.fittingSize.width.rounded(.up) + 1, Self.minWidth), Self.maxSize.width)
+        let size = measure.sizeThatFits(in: NSSize(width: width, height: Self.maxSize.height))
         if let screen = NSScreen.main?.visibleFrame {
-            setFrameOrigin(NSPoint(x: screen.midX - Self.size.width / 2, y: screen.maxY - Self.size.height))
+            setFrame(NSRect(x: screen.midX - size.width / 2, y: screen.maxY - size.height, width: size.width, height: size.height), display: true)
         }
         orderFrontRegardless()
         DispatchQueue.main.async {
@@ -33,15 +42,35 @@ final class ToastPanel: NSPanel {
     func hide() {
         shows += 1
         let current = shows
+        hold(fix: nil, key: nil)
         toast.isShown = false
         DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeOutDuration) {
             if self.shows == current { self.orderOut(nil) }
         }
     }
 
+    /// Holds the fix key and takes clicks while a fix shows, and lets go of both when none does. It returns the key it holds.
+    @discardableResult
+    private func hold(fix: (() -> Void)?, key: Shortcut?) -> Shortcut? {
+        fixKey.map(HotKey.unregister)
+        fixKey = nil
+        ignoresMouseEvents = fix == nil
+        guard let fix else {
+            toast.open = nil
+            return nil
+        }
+        let open = { [weak self] in
+            fix()
+            self?.hide()
+        }
+        toast.open = open
+        fixKey = key.flatMap { HotKey.register($0) { DispatchQueue.main.async(execute: open) } }
+        return fixKey == nil ? nil : key
+    }
+
     static func make() -> ToastPanel {
         let panel = ToastPanel(
-            contentRect: NSRect(origin: .zero, size: size),
+            contentRect: NSRect(origin: .zero, size: maxSize),
             styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -54,7 +83,9 @@ final class ToastPanel: NSPanel {
         panel.ignoresMouseEvents = true
         panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        panel.contentView = NSHostingView(rootView: ToastView(toast: panel.toast))
+        let view = NSHostingView(rootView: ToastView(toast: panel.toast))
+        view.sizingOptions = []
+        panel.contentView = view
         return panel
     }
 }

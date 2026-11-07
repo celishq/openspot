@@ -33,6 +33,7 @@
 		178BE2921D465C43FACFE712 /* PluginOutput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCD3DFB824167199052271C /* PluginOutput.swift */; };
 		1847C82CBD188D7F2484EED3 /* HotKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96AC0CDE42355E19E796FFAE /* HotKey.swift */; };
 		1B2CDB90B88E5511523F2326 /* SheetLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48B0DA6204425E910C82D1D7 /* SheetLayoutTests.swift */; };
+		1C5513C1518BAA418B2B6937 /* ToastKeyFill.swift in Sources */ = {isa = PBXBuildFile; fileRef = C664808B1A46AF0AA8233C5C /* ToastKeyFill.swift */; };
 		1CF5567E1D24FC45AE351B57 /* FormDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16E37DCD672217857DB73934 /* FormDraft.swift */; };
 		1F24FD07F4D69F885E0C71BC /* EmojiCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 774D72ACBE8FD9E50EEDD344 /* EmojiCatalog.swift */; };
 		20F1C05159DE44BAE6387F89 /* SpotDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B9CA12646EEE78E08CEF188 /* SpotDrop.swift */; };
@@ -180,6 +181,7 @@
 		C65DE74FA9B67DB602B6B757 /* SpotCardDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB18034A90A96E5ED8CA2E79 /* SpotCardDrop.swift */; };
 		C6BB91711A222B342C5FD009 /* HintWordsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9756A9831F7CC7547E1A21 /* HintWordsTests.swift */; };
 		C9D26DAF8D6E073BEB6E59C3 /* SpotGridTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70703B1BFAD84794E4BDC0F9 /* SpotGridTests.swift */; };
+		CA98728DF366EEBBF0FAB00E /* SpotClipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0523CC82C92E57786781468E /* SpotClipboard.swift */; };
 		CFE9BE7D1CDECFAA81B2707A /* WidgetContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4012FD215365D288F1795BF /* WidgetContractTests.swift */; };
 		D0853BD9A204D54B685B5463 /* SpotItemIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9ACD221E8461529481D59D6 /* SpotItemIcon.swift */; };
 		D0EAC4567B25BECFF5A8BF5E /* ScriptCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 460DCD2E955C085C7F46564A /* ScriptCall.swift */; };
@@ -253,6 +255,7 @@
 /* Begin PBXFileReference section */
 		01B0A430AAAA24A466FFE908 /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
 		04798119A31A08BDE55ED6D1 /* libOpenspotCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libOpenspotCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		0523CC82C92E57786781468E /* SpotClipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotClipboard.swift; sourceTree = "<group>"; };
 		0F907E44A6B18B92A90AF91D /* SpotState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotState.swift; sourceTree = "<group>"; };
 		11FA6738CE20CE193C88328F /* SpotsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotsView.swift; sourceTree = "<group>"; };
 		129273D774E702C4EB45C7C5 /* SpotScrollEdges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotScrollEdges.swift; sourceTree = "<group>"; };
@@ -411,6 +414,7 @@
 		C021CF9F5B97B67736BE3E06 /* CommandLineCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandLineCall.swift; sourceTree = "<group>"; };
 		C2AF7F3368C6EB87F43EC079 /* SpotWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotWidgetView.swift; sourceTree = "<group>"; };
 		C57AEB061B5096DF8957AB21 /* QuitSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitSpot.swift; sourceTree = "<group>"; };
+		C664808B1A46AF0AA8233C5C /* ToastKeyFill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastKeyFill.swift; sourceTree = "<group>"; };
 		C78D5403366E77E466027DDC /* SpotSandbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSandbox.swift; sourceTree = "<group>"; };
 		C898CFB3AD0FCEF4FE717081 /* MetricReading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricReading.swift; sourceTree = "<group>"; };
 		CAB5FE54A72D40D0E6886F04 /* SpotFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFormView.swift; sourceTree = "<group>"; };
@@ -596,6 +600,7 @@
 				7AF64B7C7D83478071FBA554 /* SpotCardArrow.swift */,
 				AB18034A90A96E5ED8CA2E79 /* SpotCardDrop.swift */,
 				29D87E637245D924392B0CBD /* SpotCardView.swift */,
+				0523CC82C92E57786781468E /* SpotClipboard.swift */,
 				991D6EB4A6FC8BDC66EE881C /* SpotColorPick.swift */,
 				9A79E1287F1726472B52F5D9 /* SpotCommandLine.swift */,
 				873CF527CBEBF574F09ADE15 /* SpotDropView.swift */,
@@ -641,6 +646,7 @@
 				FFA0E88C6EA6F2DAC65085C5 /* SpotWordsWidth.swift */,
 				D2CE690829AA48E7013D75DB /* SpotWorkMark.swift */,
 				6CEEF90F3087D628E2368481 /* Toast.swift */,
+				C664808B1A46AF0AA8233C5C /* ToastKeyFill.swift */,
 				8ED0A32D0C3888D989253A52 /* ToastPanel.swift */,
 				D2DA6BE8E20EB5E18DB2B113 /* ToastView.swift */,
 			);
@@ -1089,6 +1095,7 @@
 				C5DEB59774090B123247F24A /* SpotCardArrow.swift in Sources */,
 				C65DE74FA9B67DB602B6B757 /* SpotCardDrop.swift in Sources */,
 				83E9BD9EBD7A861547398E00 /* SpotCardView.swift in Sources */,
+				CA98728DF366EEBBF0FAB00E /* SpotClipboard.swift in Sources */,
 				5B9A7435C4B143508A6A2403 /* SpotColorPick.swift in Sources */,
 				79F6BD82A98F056C608E3188 /* SpotCommandLine.swift in Sources */,
 				0FF14D4927D8D84A08033B60 /* SpotDropView.swift in Sources */,
@@ -1134,6 +1141,7 @@
 				06BF828CEDAD11165C8D1264 /* SpotsPanel.swift in Sources */,
 				927FD535232D68CF32CA2B6E /* SpotsView.swift in Sources */,
 				9889E0DB93EF97E330BC8F78 /* Toast.swift in Sources */,
+				1C5513C1518BAA418B2B6937 /* ToastKeyFill.swift in Sources */,
 				4D2D3079AB708D453D5B9938 /* ToastPanel.swift in Sources */,
 				DE9BA1EC17C67EB58537ED04 /* ToastView.swift in Sources */,
 			);

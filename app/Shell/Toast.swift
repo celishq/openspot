@@ -6,5 +6,6 @@ import Observation
 final class Toast {
     var message = ""
     var symbol: String?
+    var open: (() -> Void)?
     var isShown = false
 }

@@ -313,7 +313,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the first failure") { told().count == 1 }
         runs.arrive(.wake)
         try await wait("the second failure") { told().count == 2 }
-        XCTAssertEqual(told(), ["Script failed. broken", "Script failed. broken"])
+        XCTAssertEqual(told(), ["broken", "broken"])
         runs.arrive(.wake)
         try await wait("the third failure") { told().count == 3 }
         XCTAssertEqual(told().last, Self.givenUp)

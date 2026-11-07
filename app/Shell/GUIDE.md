@@ -139,7 +139,8 @@ A block is a row when it has `row`, an action when it has `action`, and a form f
 block says how the spot itself looks, and it can hold `search` and `recents`. Printing nothing means that there is nothing
 to show.
 
-To confirm what an action did, print `toast=Saved`. Openspot shows it, also with the panel closed.
+To confirm what an action did, print `toast=Saved`. Openspot shows it, also with the panel closed. Put a key in backticks, such as
+``toast=Press `⌘V` ``, and the toast shows it as a key.
 
 ## The shell helper
 
@@ -438,6 +439,8 @@ A script finds `openspot` on its path. It gives what macOS has no command for, i
 | `openspot render <file.png>` | Draws the sheet on stdin to a picture. |
 | `openspot sandbox [file]` | Opens a window to try a sheet from text, a file or a script. |
 | `openspot color pick` | Prints the colour the person picks. Prints nothing on a cancel. |
+| `openspot clipboard copy [file]` | Copies the file as Finder does, with the picture of an image. With no file, it copies the text on stdin. |
+| `openspot clipboard paste` | Pastes the clipboard into the front app. Without Accessibility it prints the `open=` fix and exits with 1. |
 | `openspot translate [--from code] [--to code]` | Translates the text on stdin on this Mac. Prints `text` and `from`, or `status=missing`, `unsupported`, `unknown` or `failed`. |
 | `openspot translate languages` | Prints each language, with its name. |
 | `openspot emoji [--tone name]` | Prints each emoji as a row, with its name in the language of the Mac. A tone is `none`, `light`, `medium-light`, `medium`, `medium-dark` or `dark`. |
@@ -591,9 +594,31 @@ with 1 when there is a fault. It does not run a script with no `read`.
 openspot check <plugins folder>
 ```
 
+## Messages
+
+A toast and a failure line are read in a second. Write each one as you would tell a friend what happened.
+
+- Say what happened, and why when you know it. Never write "Something went wrong" when you know the cause.
+- Say what still worked, such as `Copied.`
+- Say how to fix it, with the exact step. When a link opens the fix, also print `open=<url>`.
+- When the person cannot fix it, say what to try next.
+- Name the problem, not the act of the person that caused it. Do not blame another app; say what Openspot could not do.
+- Use plain words. No error codes, no internal names, no words such as "fetch" or "credentials".
+- Keep a calm tone. No "Oops", no jokes and no exclamation marks. Write "please" only when the person can do nothing.
+- Use one or two short sentences. Put each key in backticks, such as `` `⌘V` ``.
+
+| Instead of | Write |
+|---|---|
+| `Oops! Something went wrong.` | `Openspot cannot find a screenshot.` |
+| `Error 1: osascript failed.` | ``Copied, but Openspot cannot paste. Press `⌘V`, or allow Openspot in Accessibility.`` |
+| `You did not install gh.` | `Pull requests need the gh tool. Install it, then open this again.` |
+
 ## Rules for scripts
 
 - Print only the data. Send each message for the person to stderr. When a script fails, its last stderr line shows.
+- When a failure has a fix that a link opens, also print `open=<url>`, such as
+  `open=x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility`. The toast names the fix key, and the key
+  or a click opens the link.
 - Exit with 0 on success. Any other code is a failure.
 - Be fast in `read`. It has 10 seconds until its first frame or its end. Reads run at the same time, so a slow script delays no other. Any other name has no limit.
 - Keep files in `$OPENSPOT_DATA`, not in the plugin folder. Openspot creates this folder for each spot. Scripts in one plugin

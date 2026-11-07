@@ -23,7 +23,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
         sheet.read(need: .change)
         try await wait("the time limit") { !failures.isEmpty }
-        XCTAssertEqual(failures, ["Script failed. It took too long."])
+        XCTAssertEqual(failures, ["Script took too long, so Openspot stopped it."])
         XCTAssertEqual(sheet.list.shown.count, 1)
         XCTAssertEqual(sheet.reading.value?.title, "1")
         XCTAssertTrue(sheet.reading.isStale)
@@ -62,7 +62,18 @@ final class SpotRunsCallTests: SpotRunsCase {
 
         sheet.pressCard()
 
-        try await wait("the failure") { failures == ["Script failed. gone"] }
+        try await wait("the failure") { failures == ["gone"] }
+    }
+
+    func testAFailedCallThatPrintsALinkTellsThePersonWithItsFix() async throws {
+        try script(body: "printf 'open=x-apple.systempreferences:pane\\n'\necho 'Allow it.' >&2\nexit 1")
+        let sheet = try sheet()
+        var fixes: [String] = []
+        sheet.onReport = { if case .failureWithFix(let text, let fix) = $0 { fixes.append("\(text) \(fix.absoluteString)") } }
+
+        sheet.pressCard()
+
+        try await wait("the failure") { fixes == ["Allow it. x-apple.systempreferences:pane"] }
     }
 
     func testAReadStopsWhenThePanelThatWantedItCloses() async throws {
