@@ -7,11 +7,13 @@ public struct SpotArrangement: Equatable, Sendable {
         public let id: String
         public var size: SpotSize?
         public var isOnGrid: Bool?
+        public var isEnabled: Bool?
 
-        public init(id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil) {
+        public init(id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil, isEnabled: Bool? = nil) {
             self.id = id
             self.size = size
             self.isOnGrid = isOnGrid
+            self.isEnabled = isEnabled
         }
     }
 
@@ -27,6 +29,11 @@ public struct SpotArrangement: Equatable, Sendable {
 
     public func isOnGrid(of id: String) -> Bool? {
         choices.first { $0.id == id }?.isOnGrid
+    }
+
+    /// The IDs of the core spots that the person turned on.
+    public var enabled: Set<String> {
+        Set(choices.filter { $0.isEnabled == true }.map(\.id))
     }
 
     /// The commands in the order of the grid: each listed one takes a place that a listed one holds, in the order of the
@@ -51,6 +58,10 @@ public struct SpotArrangement: Equatable, Sendable {
         change(id) { $0.isOnGrid = isOnGrid }
     }
 
+    public mutating func set(isEnabled: Bool, of id: String) {
+        change(id) { $0.isEnabled = isEnabled }
+    }
+
     private mutating func change(_ id: String, _ work: (inout Choice) -> Void) {
         if !choices.contains(where: { $0.id == id }) { choices.append(Choice(id: id)) }
         choices.indices.filter { choices[$0].id == id }.forEach { work(&choices[$0]) }
@@ -62,6 +73,7 @@ public struct SpotArrangement: Equatable, Sendable {
             var lines = ["[[spots]]", "id = \"\(choice.id)\""]
             if let name = choice.size?.name { lines.append("size = \"\(name)\"") }
             if let isOnGrid = choice.isOnGrid { lines.append("grid = \(isOnGrid)") }
+            if let isEnabled = choice.isEnabled { lines.append("enabled = \(isEnabled)") }
             return lines.joined(separator: "\n")
         }.joined(separator: "\n\n")
     }

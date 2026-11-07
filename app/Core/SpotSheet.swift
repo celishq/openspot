@@ -103,7 +103,7 @@ public final class SpotSheet {
 
     /// Whether an open sheet still waits for the first answer, so that it cannot yet say what kind of sheet it is.
     public var awaitsFirstAnswer: Bool {
-        isOpen && answered == nil && panel == nil && list.search == .local && list.isLoading
+        isOpen && answered == nil && panel == nil && list.search == .local && list.isLoading && !list.holdsItems
     }
 
     /// Asks for the first answer, and runs the given work when it arrives.

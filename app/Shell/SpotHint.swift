@@ -13,7 +13,7 @@ struct SpotHint: View {
                         Text(key)
                             .padding(.horizontal, SpotTokens.hintKeyPadding)
                             .frame(height: SpotTokens.hintKeyHeight)
-                            .background(Color.white.opacity(SpotTokens.track), in: Capsule())
+                            .background(SpotTheme.ink.opacity(SpotTheme.track), in: Capsule())
                     }
                     if !group.words.isEmpty {
                         Text(group.words)
@@ -22,11 +22,11 @@ struct SpotHint: View {
             }
         }
         .font(SpotType.detail)
-        .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+        .foregroundStyle(SpotTheme.ink)
         .lineLimit(1)
         .padding(.leading, HintWords(text).groups.first?.key == nil ? SpotTokens.hintEndPadding : SpotTokens.hintKeyInset)
         .padding(.trailing, SpotTokens.hintEndPadding)
-        .frame(height: SpotTokens.hintHeight + 2 * SpotTokens.hintPillInset)
+        .frame(height: SpotTokens.hintPillHeight)
         .modifier(SpotGlass(radius: SpotTokens.hintHeight / 2 + SpotTokens.hintPillInset, isBare: text.isEmpty))
         .frame(maxWidth: .infinity, alignment: .center)
         .allowsHitTesting(false)

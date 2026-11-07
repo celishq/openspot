@@ -85,6 +85,7 @@ final class SpotsModel {
     private typealias Target = (entry: Entry, item: SpotItem?)
 
     private static let globalItemLimit = 6
+    private static let pluginFolder = PluginFolder.standard()
     private static let dragWatchPause: Duration = .milliseconds(16)
     private static let chainPause: Duration = .milliseconds(200)
     private static let loadLimit: Duration = .seconds(2)
@@ -114,6 +115,8 @@ final class SpotsModel {
     var pointerIsOverDrop: () -> Bool = { false }
     /// The shared spot that the open review shows, which exists only as long as that sheet.
     private var reviewed: SpotReview?
+    private var isFirstLaunch = false
+    private var spotsChanged = false
     var isShown = false
     /// Whether the app is opening the panel unseen as it starts, which a press of the key ends.
     var isWarming = false
@@ -166,6 +169,15 @@ final class SpotsModel {
         runs.work.count
     }
 
+    /// Opens the panel on the grid, once, for a person who has no spots yet. The toast with the key waits for the panel to
+    /// close.
+    func beginFirstLaunch() {
+        isFirstLaunch = true
+        try? ConfigFile.standard().begin(enabling: Self.pluginFolder.startingSpots())
+        reload()
+        present()
+    }
+
     /// Reads the config file and the plugin folder again. No script runs for this, and each card shows its header until its
     /// answer arrives.
     func reload() {
@@ -175,13 +187,14 @@ final class SpotsModel {
             folder: folder.url,
             guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder.url,
             app: Bundle.main.executablePath ?? "",
-            update: updateSpot
+            update: updateSpot,
+            core: folder.core,
+            login: AppLogin.item,
+            offersLogin: isFirstLaunch,
+            quit: QuitSpot { await NSApp.terminate(nil) }
         ) + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
         let scan = (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
-        var problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
-        if scan.commands.allSatisfy({ $0.shipped != nil }) {
-            problems.append("No plugins in \(folder.url.path)")
-        }
+        let problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.take(scan)
         lastScan = scan
         holdAssignedKeys()
@@ -192,6 +205,15 @@ final class SpotsModel {
             notify(problems.joined(separator: " "))
         }
         self.problems = problems
+    }
+
+    /// Brings the grid up to date while a sheet covers it, so that the sheet closes onto the card's real place. The selected
+    /// card stays selected.
+    private func reloadUnderSheet() {
+        spotsChanged = false
+        let id = selectedEntry?.id
+        reload()
+        if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
     }
 
     private func rebuildEntries() {
@@ -247,6 +269,7 @@ final class SpotsModel {
                 applyConfig()
                 holdAssignedKeys()
             }
+            if spotsChanged, id == ShippedSpot.spotsID { reloadUnderSheet() }
         case .chooseFiles:
             if let sheet = sheets[id] { chooseFiles(sheet.command) { sheet.drop($0) } }
         }
@@ -324,22 +347,45 @@ final class SpotsModel {
         form = nil
         closeList()
         endReview()
-        let moves = isShown
         do {
-            let review = try SpotReview(spot: SharedSpot(contentsOf: url), folder: PluginFolder.standard().url)
-            reviewed = review
-            present()
-            sheetMoves = moves
-            open(ShippedSpot.command(reviewing: review).id)
+            show(try SpotReview(spot: SharedSpot(contentsOf: url), folder: PluginFolder.standard().url))
             if urls.count > 1 { notify("Openspot installs one spot at a time.") }
         } catch {
             notify(Self.reason(error))
         }
     }
 
+    /// Shows the text of a core spot, which is on or off, with no way to add it.
+    private func reviewCore(_ item: SpotItem) {
+        let folder = PluginFolder.standard()
+        do {
+            let place = PluginFolder(url: folder.url, core: folder.core, enabled: folder.enabled.union([item.run]))
+            let scan = try place.scan()
+            guard let command = scan.commands.first(where: { place.isCore($0) && PluginFolder.coreID(of: $0) == item.run }) else { return }
+            closeList()
+            show(try SpotReview(spot: SharedSpot(sharing: command, from: scan), folder: folder.url, canAdd: false))
+        } catch {
+            notify(Self.reason(error))
+        }
+    }
+
+    private func show(_ review: SpotReview) {
+        let moves = isShown
+        reviewed = review
+        present()
+        sheetMoves = moves
+        open(ShippedSpot.command(reviewing: review).id)
+    }
+
     /// What the search field says as the open review grows out of it.
     var reviewDrop: SpotDrop? {
         reviewed.map(SpotDrop.init(reviewing:))
+    }
+
+    /// Whether the panel stays open when it loses the focus: for a review, and for a first launch, because the Mac can keep
+    /// another app in front of an app that just started.
+    var holdsFocus: Bool {
+        isReviewing || isFirstLaunch
     }
 
     /// Whether a review shows, which stays open when the panel loses the focus.
@@ -368,7 +414,7 @@ final class SpotsModel {
         Task {
             do {
                 let folder = PluginFolder.standard()
-                var spot = try SharedSpot(sharing: entry.command, from: folder.scan(), in: folder)
+                var spot = try SharedSpot(sharing: entry.command, from: folder.scan())
                 if spot.needsCompile {
                     confirm("Compiling \(entry.command.name)")
                     spot = try await spot.compiled()
@@ -396,6 +442,19 @@ final class SpotsModel {
             reload()
         } catch {
             notify("\(entry.command.name) was not removed. \(Self.reason(error))")
+        }
+    }
+
+    /// Turns a core spot off. Its data stays, and it can come back from the Spots list.
+    private func turnOff(_ entry: Entry) {
+        closeList()
+        if isShown { dismiss() }
+        do {
+            try ConfigFile.standard().turn(PluginFolder.coreID(of: entry.command), on: false)
+            confirm("\(entry.command.name) is off")
+            reload()
+        } catch {
+            notify("\(entry.command.name) was not turned off. \(Self.reason(error))")
         }
     }
 
@@ -769,6 +828,10 @@ final class SpotsModel {
     /// open.
     func panelDidHide() {
         runs.panelClosed()
+        if isFirstLaunch, !isWarming {
+            isFirstLaunch = false
+            confirm(entryKey.openHint)
+        }
         if let openSheet, !openSheet.isOpen {
             sheetMoves = false
             openList = nil
@@ -826,6 +889,13 @@ final class SpotsModel {
     }
 
     private func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil) {
+        if action == nil, item.run == SpotCatalog.buildRun {
+            closeList()
+            sheetMoves = true
+            open(ShippedSpot.buildID)
+            return
+        }
+        if entry.id == ShippedSpot.spotsID, action == nil { spotsChanged = true }
         if action == nil, item.shortcut != nil {
             toggleRecording(id: item.run)
             return
@@ -1012,6 +1082,7 @@ final class SpotsModel {
     /// The rows that the app adds for a selected card of the grid. A row of a list or an open sheet keeps its own Delete.
     private func extras(on target: Target) -> [CommandAction] {
         guard openList == nil, target.item == nil, target.entry.command.shipped == nil else { return [] }
+        guard !Self.pluginFolder.isCore(target.entry.command) else { return [.share, .turnOff] }
         return [.share, .remove(widgets: widgets(sharingFileWith: target.entry))]
     }
 
@@ -1069,11 +1140,16 @@ final class SpotsModel {
     private func run(_ action: CommandAction, on target: Target) {
         if action == .share {
             share(target.entry)
+        } else if action.id == SpotCatalog.reviewID, let item = target.item {
+            reviewCore(item)
         } else if action.id == CommandAction.removeID {
             remove(target.entry)
+        } else if action == .turnOff {
+            turnOff(target.entry)
         } else if action.isForm {
             openForm(action, on: target)
         } else if action.after == .stay {
+            if action.id == SpotCatalog.selectAllID { spotsChanged = true }
             sheets[target.entry.id]?.run(action, item: target.item)
         } else if let item = target.item {
             pick(item, of: target.entry, action: action)

@@ -36,33 +36,32 @@ final class GuidePluginTests: XCTestCase {
     }
 
     private func guide() throws -> PluginCommand {
-        try XCTUnwrap(ShippedSpot.commands(folder: plugins, guide: guideURL, app: "/Apps/Openspot").first { $0.name == "Plugins" })
+        try XCTUnwrap(ShippedSpot.commands(folder: plugins, guide: guideURL, app: "/Apps/Openspot").first { $0.name == "Build" })
     }
 
     private func saved(_ name: String) throws -> String {
         try String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8)
     }
 
-    func testThePluginsSpotShowsWithAnEmptyFolderAndKeepsItsKey() throws {
+    func testTheSpotsSpotShowsWithAnEmptyFolderAndKeepsItsKey() throws {
         try "#!/bin/sh\n# key=p\n".writeScript(to: plugins.appendingPathComponent("mine.sh"))
         let shipped = ShippedSpot.commands(folder: plugins, guide: guideURL, app: "")
 
         let scan = try PluginFolder(url: plugins).scan(shipped: shipped)
 
-        XCTAssertEqual(scan.commands.first { $0.key?.name == "p" }?.name, "Plugins")
+        XCTAssertEqual(scan.commands.first { $0.key?.name == "p" }?.name, "Spots")
         XCTAssertEqual(scan.refused, [Refusal(file: "mine", reason: "Mine cannot use key p, because another command has it")])
     }
 
-    func testThePluginsSpotListsItsRowsAndItsAction() async throws {
+    func testTheBuildSpotListsItsRowsAndItsAction() async throws {
         let guide = try guide()
 
-        let opened = try await guide.opened(timeout: 5)
         let lines = try await guide.items(timeout: 5)
 
-        XCTAssertEqual(opened.command.kind, .list)
-        XCTAssertEqual(opened.command.actions.map(\.id), ["new"])
-        XCTAssertFalse(opened.command.keepsRecent)
-        XCTAssertEqual(lines.items.map(\.run), ["prompt", "sandbox", "guide", "folder", "get"])
+        XCTAssertEqual(guide.kind, .list)
+        XCTAssertEqual(lines.actions.map(\.id), ["new"])
+        XCTAssertFalse(lines.keepsRecent)
+        XCTAssertEqual(lines.items.map(\.run), ["prompt", "sandbox", "guide", "folder"])
         XCTAssertEqual(lines.errors, [])
     }
 
@@ -76,6 +75,12 @@ final class GuidePluginTests: XCTestCase {
         XCTAssertTrue(prompt.contains("check"))
     }
 
+    func testThePromptSaysItIsCopied() async throws {
+        let toast = try await guide().perform(.item(SpotItem(title: "Copy", run: "prompt")), timeout: 5)
+
+        XCTAssertEqual(toast, "Copied")
+    }
+
     func testTheRowsOpenTheGuideAndTheFolder() async throws {
         let guide = try guide()
 
@@ -84,12 +89,6 @@ final class GuidePluginTests: XCTestCase {
 
         try await guide.perform(.item(SpotItem(title: "Folder", run: "folder")), timeout: 5)
         XCTAssertTrue(try saved("opened").contains(plugins.path))
-    }
-
-    func testGetPluginsOpensTheFolderOnGitHub() async throws {
-        try await guide().perform(.item(SpotItem(title: "Get", run: "get")), timeout: 5)
-
-        XCTAssertEqual(try saved("opened"), "https://github.com/celishq/openspot/tree/main/plugins\n")
     }
 
     func testNewPluginMakesAWorkingPlugin() async throws {

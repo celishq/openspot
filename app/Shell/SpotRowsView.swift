@@ -81,7 +81,8 @@ struct SpotRowsView: View {
                 } label: {
                     SpotItemIcon(item: item, size: SpotTokens.listIconSize)
                         .frame(width: side, height: side)
-                        .background(Color.white.opacity(index == list.selected ? SpotTokens.selectedFill : SpotTokens.fill), in: row)
+                        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
+                        .modifier(SpotSelectionRing(isSelected: index == list.selected, shape: row, width: SpotSelectionRing<RoundedRectangle>.thinWidth))
                         .contentShape(row)
                 }
                 .buttonStyle(.plain)
@@ -107,7 +108,7 @@ struct SpotRowsView: View {
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 Text(item.title)
                     .font(SpotType.body)
-                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                    .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
                 if let subtitle = item.subtitle {
                     Text(subtitle)
@@ -120,11 +121,17 @@ struct SpotRowsView: View {
             if let shortcut = item.shortcut {
                 SpotKeyLabel(text: shortcut, isRecording: recording == item.run)
             }
+            if item.isOn {
+                Image(systemName: "checkmark")
+                    .font(SpotType.body.weight(.semibold))
+                    .foregroundStyle(SpotTheme.ink)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, SpotTokens.padding)
         .frame(height: SpotTokens.listRowHeight)
-        .background(Color.white.opacity(isSelected ? SpotTokens.selectedFill : SpotTokens.fill), in: row)
+        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
+        .modifier(SpotSelectionRing(isSelected: isSelected, shape: row))
         .contentShape(row)
     }
 }

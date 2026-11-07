@@ -7,7 +7,8 @@ struct SpotWorkMark: View {
     let call: ScriptCall
     var side = SpotTokens.glyphSize
     var stops = false
-    var isOnWhite = false
+    var isOnSolid = false
+    @Environment(\.colorScheme) private var scheme
 
     private static let thickLine: CGFloat = 4
     private static let thinLine: CGFloat = 2.5
@@ -19,7 +20,7 @@ struct SpotWorkMark: View {
     }
 
     private var colour: Color {
-        isOnWhite ? .accentColor : .white
+        isOnSolid ? SpotTheme.glyphOnSolid : SpotTheme.ink
     }
 
     var body: some View {
@@ -29,13 +30,13 @@ struct SpotWorkMark: View {
                     fill: fill,
                     line: isLarge ? Self.thickLine : Self.thinLine,
                     colour: colour,
-                    track: (isOnWhite ? Color.black : Color.white).opacity(SpotTokens.track)
+                    track: (isOnSolid ? SpotTheme.onSolid : SpotTheme.ink).opacity(SpotTheme.track)
                 )
             } else {
                 ProgressView()
                     .progressViewStyle(.circular)
                     .controlSize(isLarge ? .regular : .small)
-                    .environment(\.colorScheme, isOnWhite ? .light : .dark)
+                    .environment(\.colorScheme, isOnSolid ? (scheme == .dark ? .light : .dark) : scheme)
             }
             if stops {
                 RoundedRectangle(cornerRadius: side * Self.squareCorner)

@@ -16,8 +16,28 @@ final class SamplePluginsTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Translate", "Apps", "Caffeinate", "Color picker", "Confetti", "Emoji", "Files", "Links", "Overview", "Screenshot", "Pull requests", "Snippets", "Windows", "Plugins", "Settings"])
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["t", "a", "c", "o", "k", "e", "f", "l", nil, "v", "g", "n", nil, "p", nil])
+        XCTAssertEqual(scan.commands.map(\.name), ["Translate", "Apps", "Caffeinate", "Color picker", "Confetti", "Emoji", "Files", "Links", "Overview", "Screenshot", "Pull requests", "Snippets", "Windows", "Spots", "Settings", "Build"])
+        XCTAssertEqual(scan.commands.map(\.key?.name), ["t", "a", "c", "o", "k", "e", "f", "l", nil, "v", "g", "n", nil, "p", nil, nil])
+    }
+
+    func testACopyAsksForTheCopiedToast() throws {
+        let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("plugins")
+        let tools = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-copy-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tools) }
+        try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("pbcopy"))
+        for (script, call) in [("emoji.sh", "open"), ("files.sh", "copy"), ("pulls.sh", "copy")] {
+            let process = Process()
+            let out = Pipe()
+            process.executableURL = plugins.appendingPathComponent(script)
+            process.arguments = [call, "x"]
+            process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "OPENSPOT_DATA": tools.path, "HOME": tools.path]
+            process.standardOutput = out
+            try process.run()
+            process.waitUntilExit()
+            let text = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+            XCTAssertEqual(text, "toast=Copied\n", script)
+        }
     }
 
     func testConfettiStaysOffTheGridAndItsSourceTypeChecks() async throws {

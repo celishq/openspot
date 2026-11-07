@@ -94,12 +94,12 @@ public struct SharedSpot: Equatable, Sendable {
 
     /// Collects a spot from the plugins folder, with what it needs: the whole folder of a script in a folder, and each
     /// script that a widget places or opens. Hidden files stay behind.
-    public init(sharing command: PluginCommand, from scan: ScanResult, in folder: PluginFolder) throws {
+    public init(sharing command: PluginCommand, from scan: ScanResult) throws {
         guard command.shipped == nil else { throw PluginError.fault("\(command.name) comes with Openspot, so it cannot be shared.") }
         var total = 0
         var files: [File] = []
         for root in Self.roots(of: command, in: scan) {
-            files += try Self.files(at: folder.url.appendingPathComponent(root), path: root, total: &total)
+            files += try Self.files(at: root.url, path: root.path, total: &total)
         }
         try self.init(files: files)
     }
@@ -218,8 +218,8 @@ public struct SharedSpot: Equatable, Sendable {
     }
 
     /// The files and folders at the top of the plugins folder that a command needs, with its own first.
-    private static func roots(of command: PluginCommand, in scan: ScanResult) -> [String] {
-        var roots: [String] = []
+    private static func roots(of command: PluginCommand, in scan: ScanResult) -> [(path: String, url: URL)] {
+        var roots: [(path: String, url: URL)] = []
         var waiting = [command.id]
         while !waiting.isEmpty {
             let id = waiting.removeFirst()
@@ -228,9 +228,9 @@ public struct SharedSpot: Equatable, Sendable {
             else { continue }
             let folder = plugin.id.split(separator: "/", maxSplits: 1).count > 1 ? plugin.id.split(separator: "/")[0] : nil
             let root = folder.map(String.init) ?? first.url.lastPathComponent
-            guard !roots.contains(root) else { continue }
-            roots.append(root)
-            if folder == nil, let program = SwiftProgram.file(beside: first.url) { roots.append(program.lastPathComponent) }
+            guard !roots.contains(where: { $0.path == root }) else { continue }
+            roots.append((root, folder == nil ? first.url : first.url.deletingLastPathComponent()))
+            if folder == nil, let program = SwiftProgram.file(beside: first.url) { roots.append((program.lastPathComponent, program)) }
             let neighbours = folder == nil ? [plugin] : scan.plugins.filter { $0.id.hasPrefix("\(root)/") }
             waiting += neighbours.flatMap(\.commands).flatMap { $0.places + ($0.opens.map { [$0] } ?? []) }
         }

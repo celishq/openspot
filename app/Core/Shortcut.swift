@@ -64,6 +64,11 @@ public struct Shortcut: Hashable, Sendable {
     }
 
     /// The key as the Mac writes it, such as ⌃Space.
+    /// The words that tell a person how to open the panel.
+    public var openHint: String {
+        "Press \(label) to open Openspot"
+    }
+
     public var label: String {
         let marks = Self.markOrder.filter(modifiers.contains).compactMap { held in
             Self.modifierWords.first { $0.modifier == held }?.mark

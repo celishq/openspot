@@ -7,12 +7,16 @@ public struct Settings: Equatable, Sendable {
     private static let clear = "clear"
 
     public let file: ConfigFile
-    /// The plugins folder, whose headers list the commands that can take a key.
+    /// The plugins folder and the core folder, whose headers list the commands that can take a key.
     public let folder: URL
+    public let core: URL?
+    public let login: LoginItem?
 
-    public init(file: ConfigFile, folder: URL) {
+    public init(file: ConfigFile, folder: URL, core: URL? = nil, login: LoginItem? = nil) {
         self.file = file
         self.folder = folder
+        self.core = core
+        self.login = login
     }
 
     /// Answers one call with the text a script would print. A change prints nothing, which asks for a new read.
@@ -20,6 +24,9 @@ public struct Settings: Equatable, Sendable {
         switch arguments.first {
         case "read":
             return sheet
+        case "open" where arguments.dropFirst().first == LoginItem.run:
+            try login?.toggle()
+            return ""
         case Self.panelKey:
             try file.set(Self.panelKey, to: try shortcut(from: arguments).text)
             return ""
@@ -37,7 +44,7 @@ public struct Settings: Equatable, Sendable {
     private var sheet: String {
         let config = file.read()
         let panel = "row=Open Openspot\nrun=\(Self.panelKey)\nsymbol=keyboard\nhides=\(Self.clear)\nshortcut=\((config.panelKey ?? .standard).text)\n"
-        let scripts = (try? PluginFolder(url: folder).scan())?.scripts ?? []
+        let scripts = (try? PluginFolder(url: folder, core: core, enabled: config.arrangement.enabled).scan())?.scripts ?? []
         let rows = scripts.flatMap { script in
             script.offers.map { offer -> String in
                 let key = config.keys.first { $0.spot == script.id && $0.command == offer.id }
@@ -45,7 +52,8 @@ public struct Settings: Equatable, Sendable {
                 return "row=\(offer.title)\ndetail=\(script.name)\nrun=\(Self.keyPrefix)\(script.id):\(offer.id)\nsymbol=\(script.symbol)\n\(hides)shortcut=\(key?.shortcut.text ?? "Record")\n"
             }
         }
-        return (["recents=false\n", "action=open\ntitle=Change\n", "action=\(Self.clear)\ntitle=Remove key\n", panel] + rows).joined(separator: "\n")
+        let login = self.login.map { [$0.row.text] } ?? []
+        return (["recents=false\n", "action=open\ntitle=Change\nclose=false\n", "action=\(Self.clear)\ntitle=Remove key\n", panel] + login + rows).joined(separator: "\n")
     }
 
     private func shortcut(from arguments: [String]) throws -> Shortcut {

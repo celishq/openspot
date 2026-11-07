@@ -100,7 +100,7 @@ final class SwiftProgramTests: XCTestCase {
         let place = PluginFolder(url: folder)
         let scan = try place.scan()
 
-        let spot = try SharedSpot(sharing: try XCTUnwrap(scan.commands.first), from: scan, in: place)
+        let spot = try SharedSpot(sharing: try XCTUnwrap(scan.commands.first), from: scan)
 
         XCTAssertEqual(spot.files.map(\.path), ["hello.swift", "hello.program"])
     }

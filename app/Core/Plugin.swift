@@ -136,6 +136,7 @@ public struct Plugin: Equatable, Sendable {
             url: url,
             kind: .widget,
             size: size,
+            subtitle: text("subtitle"),
             key: try key(text("key"), of: name),
             layout: layout,
             places: places,

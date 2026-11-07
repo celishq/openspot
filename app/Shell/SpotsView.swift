@@ -54,6 +54,7 @@ struct SpotsView: View {
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
                 SpotSheetView(
                     entry: entry,
+                    cardSize: cardSize(of: entry),
                     isOpen: sheetOpen,
                     showsFill: entry.state.on == true && !sheetHasLeftCard,
                     list: model.sheets[entry.id]?.list ?? ItemList(),
@@ -76,13 +77,13 @@ struct SpotsView: View {
                     }
                 )
                 .background {
-                    Color.white
-                        .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(entry.state.on == true && !sheetOpen ? 1 : 0) }
+                    SpotTheme.solid
+                        .animation(SpotMotion.fillFade(isOpen: sheetOpen)) { $0.opacity(entry.state.on == true && !sheetOpen ? 1 : 0) }
                 }
                 .modifier(SpotSheetFrame(
                     rect: sheetOpen ? sheetRect : isInstall(entry) ? fieldRect : openFrame ?? sheetRect,
-                    radius: sheetOpen ? SpotTokens.radius : isInstall(entry) ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: entry.size),
-                    ringOpacity: !sheetOpen && cardIsSelected(entry) ? 1 : 0,
+                    radius: sheetOpen ? SpotTokens.radius : isInstall(entry) ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: cardSize(of: entry)),
+                    showsRing: !sheetOpen && cardIsSelected(entry),
                     arrow: cardShows(arrowOf: entry) ? AnyView(sheetArrow(of: entry)) : nil
                 ))
             }
@@ -112,7 +113,6 @@ struct SpotsView: View {
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
         .background(softBlur)
         .environment(\.spotIsShown, model.isShown)
-        .preferredColorScheme(.dark)
         .onChange(of: model.isShown) { _, isShown in
             guard isShown else {
                 searchFocused = false
@@ -154,11 +154,15 @@ struct SpotsView: View {
         .onChange(of: model.openList) { _, list in
             if list != nil { sheetHint = model.hint }
             guard model.sheetMoves else {
-                sheetID = list
-                sheetOpen = list != nil
-                sheetHasLeftCard = list != nil
-                showsDrop = false
-                lastDrop = nil
+                var still = Transaction()
+                still.disablesAnimations = true
+                withTransaction(still) {
+                    sheetID = list
+                    sheetOpen = list != nil
+                    sheetHasLeftCard = list != nil
+                    showsDrop = false
+                    lastDrop = nil
+                }
                 model.allowSheetMotion()
                 if list == nil { model.endReview() }
                 return
@@ -198,7 +202,7 @@ struct SpotsView: View {
     /// Hides the field's words while the field passes the sheet's header on the way into or out of the sheet, and changes the
     /// colours of the header with the fill of its card.
     private func letFieldCrossHeader(isOpen: Bool) {
-        withAnimation(SpotMotion.sheetFade(isOpen: isOpen, isLate: !isOpen)) { sheetHasLeftCard = isOpen }
+        withAnimation(SpotMotion.fillFade(isOpen: isOpen)) { sheetHasLeftCard = isOpen }
         guard sheetID != ShippedSpot.installID else { return }
         withAnimation(SpotMotion.wordsOut(isOpen: isOpen)) {
             fieldWordsAreHidden = true
@@ -275,7 +279,7 @@ struct SpotsView: View {
 
     /// The arrow of the card while its sheet moves. It stays in view until the close button takes its place at the edge.
     private func sheetArrow(of entry: SpotsModel.Entry) -> some View {
-        SpotCardArrow(isOnWhite: entry.state.on == true && !sheetOpen)
+        SpotCardArrow(isOnSolid: entry.state.on == true && !sheetOpen)
             .placed(isTall: (openFrame?.height ?? 0) > SpotTokens.rowHeight)
             .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(sheetOpen ? 0 : 1) }
             .allowsHitTesting(false)
@@ -351,7 +355,7 @@ struct SpotsView: View {
     private func hint(_ words: String, isShown: Bool, height: CGFloat) -> some View {
         SpotHint(text: words)
             .frame(width: SpotTokens.panelWidth)
-            .offset(y: height - SpotTokens.halo - SpotTokens.hintHeight - SpotTokens.hintPillInset)
+            .offset(y: height - SpotTokens.halo - SpotTokens.hintPillHeight)
             .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: isShown)) { $0.opacity(isShown ? 1 : 0) }
     }
 
@@ -371,6 +375,11 @@ struct SpotsView: View {
         guard model.form == nil, !coversGrid else { return false }
         guard sheetOpen else { return true }
         return shownPanel?.showsRows != false && model.sheets[sheetID ?? ""]?.awaitsFirstAnswer != true
+    }
+
+    /// The size that the grid gives the card of this sheet. Search and a short row can stretch a card past the size it prefers.
+    private func cardSize(of entry: SpotsModel.Entry) -> SpotSize {
+        model.placements.first { model.visible[$0.index].id == entry.id }?.size ?? entry.size
     }
 
     /// Where the card of the open sheet lies in the panel, which the grid and its scroll say.
@@ -419,6 +428,7 @@ struct SpotsView: View {
                     readings: entry.kind == .widget ? model.readings : [:],
                     chainLetter: model.chainLetter(of: entry),
                     showsChain: model.showsChain,
+                    isHiddenFromGrid: model.isEditing && !entry.isOnGrid,
                     onTap: { model.tap(entry.id) },
                     onLevel: { model.setLevel(entry.id, to: $0) }
                 )
@@ -432,7 +442,7 @@ struct SpotsView: View {
                 .highPriorityGesture(moveGesture(of: entry), including: model.isEditing ? .all : .subviews)
                 .contextMenu { spotMenu(of: entry) }
                 .animation(SpotMotion.cardFade(isSheetOpen: sheetOpen, rowsAway: rowsAway(of: placement))) { $0.opacity(sheetOpen ? 0 : 1) }
-                .opacity(entry.id == sheetID ? 0 : entry.isOnGrid ? 1 : SpotTokens.offGridLight)
+                .opacity(entry.id == sheetID ? 0 : 1)
             }
         }
         .frame(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows), alignment: .topLeading)
@@ -480,7 +490,7 @@ struct SpotsView: View {
         HStack {
             Text("Edit Spots")
                 .font(SpotType.input)
-                .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                .foregroundStyle(SpotTheme.ink)
             Spacer()
             SpotRoundButton(symbol: "checkmark", label: "Done") { model.endEditing() }
         }
@@ -548,7 +558,7 @@ struct SpotsView: View {
         }
         .opacity(showsDrop || fieldWordsAreHidden ? 0 : 1)
         .font(SpotType.input)
-        .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+        .foregroundStyle(SpotTheme.ink)
         .padding(.horizontal, SpotTokens.padding)
         .frame(height: fieldIsInSheet ? SpotTokens.listRowHeight : SpotTokens.rowHeight)
         .overlay {
@@ -558,7 +568,7 @@ struct SpotsView: View {
                     .opacity(showsDrop ? 1 : 0)
             }
         }
-        .background(Color.white.opacity(fieldIsInSheet ? SpotTokens.fill : 0), in: RoundedRectangle(cornerRadius: fieldRadius, style: .continuous))
+        .background(SpotTheme.ink.opacity(fieldIsInSheet ? SpotTheme.fill : 0), in: RoundedRectangle(cornerRadius: fieldRadius, style: .continuous))
         .modifier(SpotGlass(radius: fieldRadius, isBare: fieldIsInSheet || sheetID == ShippedSpot.installID))
     }
 
@@ -592,7 +602,7 @@ struct SpotsView: View {
             }
         }
         .font(SpotType.input)
-        .foregroundStyle(.white.opacity(SpotTokens.secondaryLight))
+        .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
         .lineLimit(1)
         .opacity(model.searchText.isEmpty && !showsDrop && !fieldWordsAreHidden ? 1 : 0)
     }

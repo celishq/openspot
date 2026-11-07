@@ -36,7 +36,7 @@ final class SharedSpotTests: XCTestCase {
         let folder = PluginFolder(url: plugins)
         let scan = try folder.scan()
         let command = try XCTUnwrap(scan.plugins.flatMap(\.commands).first { $0.id == id })
-        return try SharedSpot(sharing: command, from: scan, in: folder)
+        return try SharedSpot(sharing: command, from: scan)
     }
 
     private func document(_ files: String, format: Int = 1) -> Data {
@@ -124,11 +124,11 @@ final class SharedSpotTests: XCTestCase {
 
         """.utf8))
         let folder = PluginFolder(url: plugins)
-        let shipped = PluginCommand(id: "openspot/plugins", name: "Plugins", url: plugins, kind: .list, shipped: .plugins(PluginGuide(folder: plugins, guide: plugins, app: "")))
+        let shipped = PluginCommand(id: "openspot/plugins", name: "Plugins", url: plugins, kind: .list, shipped: .build(PluginGuide(folder: plugins, guide: plugins, app: "")))
         let scan = try folder.scan(shipped: [shipped])
         let widget = try XCTUnwrap(scan.commands.first { $0.id == "board/Desk" })
 
-        let spot = try SharedSpot(sharing: widget, from: scan, in: folder)
+        let spot = try SharedSpot(sharing: widget, from: scan)
 
         XCTAssertEqual(spot.files.map(\.path).sorted(), ["board.toml", "cpu.sh"])
     }
@@ -148,9 +148,9 @@ final class SharedSpotTests: XCTestCase {
     }
 
     func testAShippedSpotDoesNotTravel() throws {
-        let shipped = PluginCommand(id: "openspot/plugins", name: "Plugins", url: plugins, shipped: .plugins(PluginGuide(folder: plugins, guide: plugins, app: "")))
+        let shipped = PluginCommand(id: "openspot/plugins", name: "Plugins", url: plugins, shipped: .build(PluginGuide(folder: plugins, guide: plugins, app: "")))
 
-        XCTAssertThrowsError(try SharedSpot(sharing: shipped, from: ScanResult(plugins: [], refused: []), in: PluginFolder(url: plugins)))
+        XCTAssertThrowsError(try SharedSpot(sharing: shipped, from: ScanResult(plugins: [], refused: [])))
     }
 
     func testAFolderOverTheSizeLimitDoesNotTravel() throws {

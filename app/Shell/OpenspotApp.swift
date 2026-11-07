@@ -78,7 +78,14 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         model.reload()
         model.arrive(.launch)
-        panel?.warm { [model] in model.confirm("Openspot is ready") }
+        let isFirstLaunch = PluginFolder.standard().isFirstLaunch(config: .standard())
+        panel?.warm { [model] in
+            if isFirstLaunch {
+                model.beginFirstLaunch()
+            } else {
+                model.confirm(model.entryKey.openHint)
+            }
+        }
         isLaunched = true
         if !openedAtLaunch.isEmpty { model.review(openedAtLaunch) }
         NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(didWake), name: NSWorkspace.didWakeNotification, object: nil)
@@ -185,7 +192,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
         panel?.show()
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.dropSettle) { [weak self] in
-            guard self?.model.isReviewing == true else { return }
+            guard self?.model.holdsFocus == true else { return }
             NSApp.activate(ignoringOtherApps: true)
             self?.panel?.makeKeyAndOrderFront(nil)
         }

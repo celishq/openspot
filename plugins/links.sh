@@ -178,7 +178,9 @@ case "$1" in
     load | jq -c --arg id "$2" 'map(select(.id != $id))' | store
     ;;
   copy)
-    link "$2" | pbcopy
+    url=$(link "$2") || exit 1
+    printf '%s' "$url" | pbcopy
+    echo "toast=Copied"
     ;;
   reveal)
     url=$(link "$2") || exit 1

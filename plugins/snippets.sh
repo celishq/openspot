@@ -93,5 +93,6 @@ case "$1" in
   open)
     text=$(content "$2" && printf x) || exit 1
     printf '%s' "${text%x}" | pbcopy
+    echo "toast=Copied"
     ;;
 esac

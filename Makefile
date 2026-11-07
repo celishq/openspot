@@ -15,8 +15,8 @@ plugins:
 
 dev-state:
 	rm -rf .temp/openspot
-	mkdir -p .temp/openspot
-	cp -R plugins .temp/openspot/plugins
+	mkdir -p .temp/openspot/plugins
+	[ -n "$(EMPTY)" ] || cp -R plugins/. .temp/openspot/plugins/
 
 release:
 	sh scripts/release.sh publish "$(V)"

@@ -28,6 +28,7 @@ case "$1" in
     ;;
   copy)
     printf '%s' "$2" | LC_ALL=en_US.UTF-8 pbcopy
+    echo "toast=Copied"
     ;;
   open)
     open "$2"

@@ -6,8 +6,8 @@ import SwiftUI
 struct SpotSoftBlur: NSViewRepresentable {
     private static let blurInset: CGFloat = SpotTokens.halo - 5
     private static let blurSoftness: CGFloat = 20
-    private static let tintInset: CGFloat = SpotTokens.halo / 2
-    private static let tintSoftness: CGFloat = SpotTokens.halo / 3
+    private static let tintInset: CGFloat = SpotTokens.halo * 0.58
+    private static let tintSoftness: CGFloat = SpotTokens.halo / 4.7
     private static let cardInset: CGFloat = SpotTokens.halo - 20
     private static let cardSoftness: CGFloat = 8
 
@@ -28,23 +28,24 @@ struct SpotSoftBlur: NSViewRepresentable {
                 CATransaction.begin()
                 CATransaction.setDisableActions(true)
                 defer { CATransaction.commit() }
-                tint.contents = masks?.tint
-                filter = Self.filter(mask: masks?.blur)
+                tintMask.contents = masks?.tint
+                filter = Self.filter(mask: masks?.blur, radius: SpotTheme.backdropBlur)
                 applyBlur()
             }
         }
 
         private let tint = CALayer()
+        private let tintMask = CALayer()
 
         private var filter: NSObject?
         private var appliedFilter: NSObject?
 
         /// A filter holds its mask from the first time it draws, so each mask has a filter of its own.
-        private static func filter(mask: CGImage?) -> NSObject? {
+        private static func filter(mask: CGImage?, radius: CGFloat) -> NSObject? {
             let filter = (NSClassFromString("CAFilter") as? NSObject.Type)?
                 .perform(NSSelectorFromString("filterWithType:"), with: filterType)?
                 .takeUnretainedValue() as? NSObject
-            filter?.setValue(SpotTokens.backdropBlur, forKey: "inputRadius")
+            filter?.setValue(radius, forKey: "inputRadius")
             filter?.setValue(true, forKey: "inputNormalizeEdges")
             filter?.setValue(mask, forKey: "inputMaskImage")
             return filter
@@ -56,11 +57,13 @@ struct SpotSoftBlur: NSViewRepresentable {
             CATransaction.setDisableActions(true)
             defer { CATransaction.commit() }
             if tint.superlayer == nil {
-                tint.opacity = Float(SpotTokens.backdropShade)
                 tint.zPosition = 1
+                tint.mask = tintMask
                 layer?.addSublayer(tint)
             }
             tint.frame = bounds
+            tintMask.frame = bounds
+            tint.backgroundColor = SpotTheme.tint.cgColor
             applyBlur()
         }
 
@@ -76,6 +79,7 @@ struct SpotSoftBlur: NSViewRepresentable {
 
         override func viewDidChangeEffectiveAppearance() {
             super.viewDidChangeEffectiveAppearance()
+            needsLayout = true
             DispatchQueue.main.async { self.applyBlur() }
         }
 
@@ -103,6 +107,7 @@ struct SpotSoftBlur: NSViewRepresentable {
         let surface = Surface()
         surface.blendingMode = .behindWindow
         surface.state = .active
+        surface.appearance = NSAppearance(named: .darkAqua)
         surface.masks = Self.masks(height: height)
         return surface
     }

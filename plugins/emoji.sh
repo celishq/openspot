@@ -42,6 +42,7 @@ case "$1" in
     ;;
   open)
     printf '%s' "$2" | pbcopy
+    echo "toast=Copied"
     ;;
   paste)
     previous=$(pbpaste; printf x)

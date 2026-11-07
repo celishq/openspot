@@ -128,7 +128,7 @@ struct SpotMetricView: View {
                 ring(side: min(size.width, size.height), line: Self.smallRingLine) {
                     Text(title)
                         .font(SpotType.controlValue)
-                        .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                        .foregroundStyle(SpotTheme.ink)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                 }
@@ -173,7 +173,7 @@ struct SpotMetricView: View {
             if kind == .status { dot(markColour) }
             Text(title)
                 .font(font)
-                .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                .foregroundStyle(SpotTheme.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
         }
@@ -203,7 +203,7 @@ struct SpotMetricView: View {
         if let name = reading?.symbol {
             Image(systemName: name)
                 .font(SpotType.small)
-                .foregroundStyle(.white)
+                .foregroundStyle(SpotTheme.ink)
         }
     }
 
@@ -215,7 +215,7 @@ struct SpotMetricView: View {
 
     /// The colour of a mark: what its tone means, or else its tint, or else white.
     private var markColour: Color {
-        value?.tone.map(Self.colour) ?? tint ?? .white
+        value?.tone.map(Self.colour) ?? tint ?? SpotTheme.ink
     }
 
     private static func colour(_ tint: MetricTint) -> Color {
@@ -239,7 +239,7 @@ struct SpotMetricView: View {
             VStack(spacing: 0) {
                 Text(title)
                     .font(SpotType.ringValue)
-                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                    .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
                 if let detail = value?.detail {
@@ -264,7 +264,7 @@ struct SpotMetricView: View {
     private func bar(fill: Double) -> some View {
         GeometryReader { room in
             ZStack(alignment: .leading) {
-                Capsule().fill(.white.opacity(SpotTokens.track))
+                Capsule().fill(SpotTheme.ink.opacity(SpotTheme.track))
                 Capsule().fill(markColour).frame(width: room.size.width * fill)
             }
         }
@@ -301,7 +301,7 @@ struct SpotMetricView: View {
                 Spacer(minLength: 0)
                 Text(title)
                     .font(SpotType.value)
-                    .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                    .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
             }
             .padding(.bottom, 4)
@@ -310,7 +310,7 @@ struct SpotMetricView: View {
                     if let tone = row.tone { dot(Self.colour(tone)) }
                     Text(row.title)
                         .font(SpotType.detail)
-                        .foregroundStyle(.white.opacity(SpotTokens.titleOpacity))
+                        .foregroundStyle(SpotTheme.ink)
                         .lineLimit(1)
                     Spacer(minLength: 0)
                     if let detail = row.detail {

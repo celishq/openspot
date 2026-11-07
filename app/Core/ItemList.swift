@@ -22,6 +22,11 @@ public struct ItemList: Equatable, Sendable {
         refresh()
     }
 
+    /// Whether it holds rows, shown or not.
+    public var holdsItems: Bool {
+        !all.isEmpty
+    }
+
     public var selectedItem: SpotItem? {
         shown.indices.contains(selected) ? shown[selected] : nil
     }

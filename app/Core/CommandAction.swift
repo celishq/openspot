@@ -23,6 +23,9 @@ public struct CommandAction: Equatable, Sendable {
 
     public static let removeID = "openspot.remove"
 
+    /// The row that turns a core spot off. Its file stays in the app, and its data stays.
+    public static let turnOff = CommandAction(id: "openspot.turn-off", title: "Turn off", key: ActionKey(text: "cmd+backspace"), scope: .command, after: .close)
+
     public let id: String
     public let title: String
     public let key: ActionKey?

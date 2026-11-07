@@ -1,16 +1,14 @@
 import OpenspotCore
 import SwiftUI
 
-/// The round button of a sheet, with one symbol, such as close or swap. A button that floats on other content has a
-/// background of its own, so that nothing shows through it. While its call runs, it shows that work and says Stop.
+/// The round button of a sheet, with one symbol, such as close or swap. A button that floats on other content has the
+/// sheet's own glass under it, so that it looks like a button on the sheet and nothing sharp shows through it. While its call runs, it shows that work and says Stop.
 struct SpotRoundButton: View {
     enum Look {
         case plain, floating, strong, bare
     }
 
-    private static let fillOpacity = 0.2
     private static let symbolRatio: CGFloat = 0.32
-    private static let floatFill = Color(white: 0.34).opacity(0.72)
 
     let symbol: String
     let label: String
@@ -23,16 +21,16 @@ struct SpotRoundButton: View {
         Button(action: action) {
             Group {
                 if let work {
-                    SpotWorkMark(call: work, side: size, stops: true, isOnWhite: look == .strong)
+                    SpotWorkMark(call: work, side: size, stops: true, isOnSolid: look == .strong)
                 } else {
                     Image(systemName: symbol)
                         .font(.system(size: max(size * Self.symbolRatio, 10), weight: .semibold))
-                        .foregroundStyle(look == .strong ? .black : .white)
+                        .foregroundStyle(look == .strong ? SpotTheme.onSolid : SpotTheme.ink)
                         .frame(width: size, height: size)
                 }
             }
                 .background(fill, in: Circle())
-                .background(look == .floating ? AnyShapeStyle(.thinMaterial) : AnyShapeStyle(Color.clear), in: Circle())
+                .background { if look == .floating { SpotFloatGlass(shape: Circle()) } }
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
@@ -41,9 +39,9 @@ struct SpotRoundButton: View {
 
     private var fill: AnyShapeStyle {
         switch look {
-        case .plain: AnyShapeStyle(Color.white.opacity(Self.fillOpacity))
-        case .floating: AnyShapeStyle(Self.floatFill)
-        case .strong: AnyShapeStyle(Color.white)
+        case .plain: AnyShapeStyle(SpotTheme.ink.opacity(SpotTheme.control))
+        case .floating: AnyShapeStyle(SpotTheme.ink.opacity(SpotTheme.control))
+        case .strong: AnyShapeStyle(SpotTheme.solid)
         case .bare: AnyShapeStyle(Color.clear)
         }
     }

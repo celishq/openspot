@@ -1,5 +1,6 @@
 #!/bin/sh
 # symbol=cup.and.saucer.fill
+# subtitle=Keep the Mac awake
 # key=c
 # size=small
 # read=panel
