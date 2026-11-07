@@ -108,7 +108,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
                 hotKey = registration
                 model.entryKey = key
             } else {
-                faults.append("Openspot cannot use \(key.label) to open.")
+                faults.append("Openspot cannot use `\(key.label)` to open.")
             }
         }
         if faults != configFaults, !faults.isEmpty { model.notifyKeyFault(faults.joined(separator: " ")) }
@@ -142,7 +142,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             if let registration {
                 heldKeys[key] = registration
             } else {
-                faults.append("\(key.spot) cannot use \(key.shortcut.label). It is already in use.")
+                faults.append("\(key.spot) cannot use `\(key.shortcut.label)`. It is already in use.")
             }
         }
         if faults != keyFaults, !faults.isEmpty { model.notifyKeyFault(faults.joined(separator: " ")) }

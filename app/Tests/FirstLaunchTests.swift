@@ -81,8 +81,8 @@ final class FirstLaunchTests: XCTestCase {
     }
 
     func testTheKeyToastNamesTheKeyInUse() throws {
-        XCTAssertEqual(Shortcut.standard.openHint, "Press ⌃Space to open Openspot")
-        XCTAssertEqual(try XCTUnwrap(Shortcut(text: "option+k")).openHint, "Press ⌥K to open Openspot")
+        XCTAssertEqual(Shortcut.standard.openHint, "Press `⌃Space` to open Openspot")
+        XCTAssertEqual(try XCTUnwrap(Shortcut(text: "option+k")).openHint, "Press `⌥K` to open Openspot")
     }
 
     func testTheFirstLaunchListOffersTheLoginRowAndAPickTurnsItOn() throws {
