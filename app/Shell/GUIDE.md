@@ -588,6 +588,25 @@ with 1 when there is a fault. It does not run a script with no `read`.
 openspot check <plugins folder>
 ```
 
+## Messages
+
+A toast and a failure line are read in a second. Write each one as you would tell a friend what happened.
+
+- Say what happened, and why when you know it. Never write "Something went wrong" when you know the cause.
+- Say what still worked, such as `Copied.`
+- Say how to fix it, with the exact step. When a link opens the fix, also print `open=<url>`.
+- When the person cannot fix it, say what to try next.
+- Name the problem, not the act of the person that caused it. Do not blame another app; say what Openspot could not do.
+- Use plain words. No error codes, no internal names, no words such as "fetch" or "credentials".
+- Keep a calm tone. No "Oops", no jokes and no exclamation marks. Write "please" only when the person can do nothing.
+- Use one or two short sentences. Put each key in backticks, such as `` `⌘V` ``.
+
+| Instead of | Write |
+|---|---|
+| `Oops! Something went wrong.` | `Openspot cannot find a screenshot.` |
+| `Error 1: osascript failed.` | ``Copied. Press `⌘V`, or allow Openspot in Accessibility.`` |
+| `You did not install gh.` | `Pull requests need gh. Install it from cli.github.com.` |
+
 ## Rules for scripts
 
 - Print only the data. Send each message for the person to stderr. When a script fails, its last stderr line shows.
