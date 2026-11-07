@@ -20,7 +20,7 @@ public struct SheetPlacement: Equatable, Sendable {
         public let clearBottom: CGFloat
     }
 
-    public static let width: CGFloat = 266
+    public static let width: CGFloat = 263
     public static let maxHeight: CGFloat = 442
     public static let gap: CGFloat = 6
     public static let edge: CGFloat = 13

@@ -4,13 +4,13 @@ import SwiftUI
 
 enum SpotTokens {
     static let radius: CGFloat = 26
-    static let columnGap: CGFloat = 12
+    static let columnGap: CGFloat = 11
     static let rowGap: CGFloat = 12
     static let padding: CGFloat = 13
-    static let gridWidth: CGFloat = 292
+    static let gridWidth: CGFloat = 289
     static let columns = 4
     static let cell: CGFloat = (gridWidth - columnGap * CGFloat(columns - 1)) / CGFloat(columns)
-    static let rowHeight: CGFloat = 62
+    static let rowHeight: CGFloat = 64
     static let glyphSize: CGFloat = 36
     static let workMark: CGFloat = 16
     static let keycap: CGFloat = 20
