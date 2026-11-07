@@ -84,7 +84,7 @@ esac
 | A10 | A dragged `.spot` file shows in the search field as an icon and a name, laid out as a sheet's header, and the grid stays. A drop, a paste or a double-click expands the field into the install screen, on the spring of a sheet, with the icon and the name in place, and pushes the grid as far as its lower edge moves. It closes back into the field. |
 | A11 | The core spots are the scripts in `plugins/` of this repo. The build copies them into the app, and each runs in place from there, so an app update also updates them and no copy stays on the disk. Nothing downloads. |
 | A12 | A core spot is off until the person turns it on. A spot that is off runs nothing, and its data stays. A core spot that a spot that is on places or opens also loads. A file in the plugins folder with the same ID wins over a core spot, and is always on. |
-| A13 | Enter on a row of Spots turns the spot on or off, and keeps the panel open, because a new user adds several spots in a row. |
+| A13 | Enter on a row of Spots turns the spot on or off, and keeps the panel open, because a new user adds several spots in a row. Select all, in its actions, turns each one on. |
 | A14 | A first launch has no `config.toml` and no spot in the plugins folder. It opens the panel on Spots, once, with no other screen. The key toast shows when the panel closes. No spot is on by default, and the app does not open at login by default. |
 
 ## 4. The plugin file

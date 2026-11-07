@@ -6,6 +6,8 @@ public struct SpotCatalog: Equatable, Sendable {
     public static let buildRun = "openspot.build"
     /// The action that shows the text of a core spot, which the panel answers.
     public static let reviewID = "openspot.review"
+    /// The action that turns each core spot on.
+    public static let selectAllID = "openspot.select-all"
 
     public let folder: URL
     public let core: URL?
@@ -25,6 +27,9 @@ public struct SpotCatalog: Equatable, Sendable {
         switch arguments.first {
         case "read":
             return rows
+        case Self.selectAllID:
+            try selectAll()
+            return ""
         case "open" where arguments.dropFirst().first == LoginItem.run:
             try login?.toggle()
             return ""
@@ -42,6 +47,17 @@ public struct SpotCatalog: Equatable, Sendable {
         return ""
     }
 
+    /// Turns each core spot on. A file in the plugins folder stays as it is, because it is always on.
+    private func selectAll() throws {
+        let own = own
+        var arrangement = config.read().arrangement
+        for command in choices {
+            let id = PluginFolder.coreID(of: command)
+            if !own.contains(id) { arrangement.set(isEnabled: true, of: id) }
+        }
+        try config.write(arrangement)
+    }
+
     private var choices: [PluginCommand] {
         PluginFolder(url: folder, core: core).coreChoices().sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
@@ -57,6 +73,7 @@ public struct SpotCatalog: Equatable, Sendable {
         let head = [
             TextBlock(fields: [.init(key: "recents", value: "false")]),
             TextBlock(fields: [.init(key: "action", value: "open"), .init(key: "title", value: "Select"), .init(key: "close", value: "false")]),
+            TextBlock(fields: [.init(key: "action", value: Self.selectAllID), .init(key: "title", value: "Select all"), .init(key: "key", value: "cmd+shift+a"), .init(key: "scope", value: "command")]),
             TextBlock(fields: [.init(key: "action", value: Self.reviewID), .init(key: "title", value: "Review code")])
         ]
         let spots = choices.map { command in

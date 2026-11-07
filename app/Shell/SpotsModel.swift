@@ -1130,6 +1130,7 @@ final class SpotsModel {
         } else if action.isForm {
             openForm(action, on: target)
         } else if action.after == .stay {
+            if action.id == SpotCatalog.selectAllID { spotsChanged = true }
             sheets[target.entry.id]?.run(action, item: target.item)
         } else if let item = target.item {
             pick(item, of: target.entry, action: action)

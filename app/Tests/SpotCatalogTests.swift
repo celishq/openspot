@@ -95,6 +95,51 @@ final class SpotCatalogTests: XCTestCase {
         XCTAssertEqual(scan.commands.map(\.name), ["Overview"])
     }
 
+    func testAReadAfterAPickIsNotAFirstAnswer() async throws {
+        let runs = SpotRuns()
+        let sheet = runs.sheet(for: try spot)
+        sheet.open {}
+        for _ in 0..<200 where sheet.list.shown.isEmpty { try await Task.sleep(for: .milliseconds(5)) }
+
+        sheet.pick(SpotItem(title: "Apps", run: "apps"))
+
+        var waited = false
+        for _ in 0..<200 where sheet.list.shown.first?.isOn != true {
+            waited = waited || sheet.awaitsFirstAnswer
+            await Task.yield()
+            try await Task.sleep(for: .milliseconds(1))
+        }
+        XCTAssertFalse(waited || sheet.awaitsFirstAnswer)
+    }
+
+    func testAListWithRowsNeverWaitsForAFirstAnswerOnASlowRead() {
+        var list = ItemList()
+        XCTAssertFalse(list.holdsItems)
+        list.replace([SpotItem(title: "Apps", run: "apps")])
+        XCTAssertTrue(list.holdsItems)
+        list.beginLoading()
+        XCTAssertTrue(list.holdsItems)
+    }
+
+    func testSelectAllTurnsEachCoreSpotOnAndSkipsAFolderFile() async throws {
+        try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("apps.sh"))
+        let catalog = SpotCatalog(folder: folder, core: core, config: file)
+
+        XCTAssertEqual(try catalog.answer([SpotCatalog.selectAllID]), "")
+
+        XCTAssertEqual(file.read().arrangement.enabled, ["zebra"])
+    }
+
+    func testSelectAllIsACommandActionWithAKey() async throws {
+        let actions = try await spot.items(timeout: 1).actions
+        let action = try XCTUnwrap(actions.first { $0.id == SpotCatalog.selectAllID })
+
+        XCTAssertEqual(action.title, "Select all")
+        XCTAssertEqual(action.scope, .command)
+        XCTAssertEqual(action.after, .stay)
+        XCTAssertNotNil(action.key)
+    }
+
     func testAnUnknownSpotIsAFault() async throws {
         let catalog = SpotCatalog(folder: folder, core: core, config: file)
 
@@ -115,7 +160,7 @@ final class SpotCatalogTests: XCTestCase {
     func testItOffersAReviewOfACoreSpot() async throws {
         let actions = try await spot.items(timeout: 1).actions
 
-        XCTAssertEqual(actions.map(\.id), [SpotCatalog.reviewID])
+        XCTAssertTrue(actions.map(\.id).contains(SpotCatalog.reviewID))
     }
 
     func testAReviewThatCannotAddShowsTheTextWithNoAddPart() throws {
