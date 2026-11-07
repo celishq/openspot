@@ -63,7 +63,7 @@ struct SpotsView: View {
                     cardSize: card?.placement.size ?? entry.size,
                     isOpen: sheetOpen,
                     showsFill: entry.state.on == true && !sheetHasLeftCard,
-                    list: model.sheets[entry.id]?.list ?? ItemList(),
+                    sheet: model.sheets[entry.id],
                     rect: sheetRect,
                     form: model.form?.entry.id == entry.id ? model.form?.draft : nil,
                     panel: shownPanel,
@@ -72,7 +72,7 @@ struct SpotsView: View {
                     onPress: { model.pressPart($0) },
                     recording: model.recording,
                     onRecord: { model.toggleRecording($0) },
-                    createTitle: model.createAction.map { "\($0.title): \(model.searchText)" },
+                    createTitle: { model.createAction.map { "\($0.title): \(model.searchText)" } },
                     onCreate: { model.createFromSearch() },
                     onFormValue: { model.setFormValue($0, for: $1) },
                     onRun: { model.runItem($0) },
@@ -161,11 +161,13 @@ struct SpotsView: View {
         .onChange(of: model.showsSearch) { _, shows in
             searchFocused = shows
         }
-        .onChange(of: model.hint, initial: true) { _, hint in
-            let motion = model.isEditing || hintIsForEdit || lastDrop != nil ? SpotMotion.hintFade : nil
-            hintIsForEdit = model.isEditing
-            withAnimation(motion) {
-                if model.openList == nil, model.spotDrop == nil { gridHint = hint } else { sheetHint = hint }
+        .background {
+            SpotHintWatch(model: model) { hint in
+                let motion = model.isEditing || hintIsForEdit || lastDrop != nil ? SpotMotion.hintFade : nil
+                hintIsForEdit = model.isEditing
+                withAnimation(motion) {
+                    if model.openList == nil, model.spotDrop == nil { gridHint = hint } else { sheetHint = hint }
+                }
             }
         }
         .onChange(of: model.openList) { _, list in
@@ -280,8 +282,8 @@ struct SpotsView: View {
     private var sheetRect: CGRect {
         if let form = model.form { return SpotTokens.formRect(form.draft.form) }
         if let shownPanel { return SpotTokens.panelRect(shownPanel) }
-        let list = model.sheets[sheetID ?? ""]?.list
-        return SpotTokens.sheetRect(rows: list?.shown.count ?? 0, perLine: list?.perLine ?? 1)
+        let shape = model.sheets[sheetID ?? ""]?.shape
+        return SpotTokens.sheetRect(rows: shape?.rows ?? 0, perLine: shape?.perLine ?? 1)
     }
 
     /// Whether the card of this open sheet draws an arrow. A 1x1 card shows its glyph alone, and a widget draws none.
@@ -447,7 +449,7 @@ struct SpotsView: View {
             Image(systemName: "magnifyingglass")
                 .modifier(SpotSecondaryText())
                 .frame(width: fieldIsInSheet ? SpotTokens.listIconSize : SpotTokens.glyphSize)
-            TextField("\(SearchPrompt.verb) \(sheetOpen ? sheetWord : SearchPrompt.grid)", text: Binding(get: { model.searchText }, set: { model.searchText = $0 }), prompt: Text(""))
+            SpotSearchText(model: model, title: "\(SearchPrompt.verb) \(sheetOpen ? sheetWord : SearchPrompt.grid)")
                 .textFieldStyle(.plain)
                 .focused($searchFocused)
                 .onSubmit { model.runSelected() }
@@ -549,7 +551,7 @@ struct SpotsView: View {
         .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
         .lineLimit(1)
         .modifier(SpotFieldCrossing(isOpen: sheetOpen, crosses: sheetID != ShippedSpot.installID))
-        .opacity(model.searchText.isEmpty && !showsDrop ? 1 : 0)
+        .modifier(SpotEmptyField(model: model, isHidden: showsDrop))
     }
 
     private var fieldRadius: CGFloat {

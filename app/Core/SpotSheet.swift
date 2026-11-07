@@ -42,12 +42,24 @@ public final class SpotSheet {
 
     public private(set) var command: PluginCommand
     public var list: ItemList {
-        didSet { onReport(.listChange) }
+        didSet {
+            settle()
+            onReport(.listChange)
+        }
     }
-    public private(set) var panel: SpotPanel?
+    public private(set) var panel: SpotPanel? {
+        didSet { settle() }
+    }
     /// The last arrow press that asks the parts to scroll. It lives apart from the parts, so that a press redraws only the scroll.
     public private(set) var nudge = SpotPanel.Nudge.rest
-    public private(set) var isOpen = false
+    public private(set) var isOpen = false {
+        didSet { settle() }
+    }
+    /// How many rows the list shows, and how many on a line. It changes only when they do, so a move of the selection leaves
+    /// a view that sizes itself by it alone.
+    public private(set) var shape = Shape(rows: 0, perLine: 1)
+    /// Whether an open sheet still waits for the first answer, so that it cannot yet say what kind of sheet it is.
+    public private(set) var awaitsFirstAnswer = false
     public private(set) var state: SpotState {
         didSet { if state != oldValue { onReport(.listChange) } }
     }
@@ -59,7 +71,9 @@ public final class SpotSheet {
     private var workPauses = 0
     @ObservationIgnored private let runs: SpotRuns
     @ObservationIgnored private let prepare: ([SpotItem]) async -> Void
-    @ObservationIgnored private var answered: Date?
+    @ObservationIgnored private var answered: Date? {
+        didSet { settle() }
+    }
     @ObservationIgnored private var lastAnswer: PluginOutput?
     @ObservationIgnored private var hasAsked = false
     @ObservationIgnored private var waiter: (() -> Void)?
@@ -86,6 +100,7 @@ public final class SpotSheet {
         list = ItemList(recent: recent)
         state = command.headerState
         reading = MetricReading(label: command.name, headerSymbol: command.headerSymbol)
+        settle()
     }
 
     nonisolated deinit {}
@@ -105,9 +120,23 @@ public final class SpotSheet {
         command.readsState && !hasAsked
     }
 
-    /// Whether an open sheet still waits for the first answer, so that it cannot yet say what kind of sheet it is.
-    public var awaitsFirstAnswer: Bool {
-        isOpen && answered == nil && panel == nil && list.search == .local && list.isLoading && !list.holdsItems
+    /// The rows and the line length of a list.
+    public struct Shape: Equatable, Sendable {
+        public let rows: Int
+        public let perLine: Int
+
+        public init(rows: Int, perLine: Int) {
+            self.rows = rows
+            self.perLine = perLine
+        }
+    }
+
+    /// Takes the shape and the wait from the list, the parts and the answer, and stores each only when it changes.
+    private func settle() {
+        let next = Shape(rows: list.shown.count, perLine: list.perLine)
+        if next != shape { shape = next }
+        let waits = isOpen && answered == nil && panel == nil && list.search == .local && list.isLoading && !list.holdsItems
+        if waits != awaitsFirstAnswer { awaitsFirstAnswer = waits }
     }
 
     /// Asks for the first answer, and runs the given work when it arrives.

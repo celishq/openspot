@@ -8,7 +8,8 @@ struct SpotSheetView: View {
     let isOpen: Bool
     /// Whether the header lies on the white fill of a card that is turned on.
     let showsFill: Bool
-    let list: ItemList
+    /// The sheet whose rows it shows. The view reads them itself, so that a change of the rows reaches only this view.
+    let sheet: SpotSheet?
     let rect: CGRect
     let form: FormDraft?
     let panel: SpotPanel?
@@ -17,7 +18,8 @@ struct SpotSheetView: View {
     let onPress: (SpotPart) -> Void
     let recording: String?
     let onRecord: (SpotPart) -> Void
-    let createTitle: String?
+    /// The words of the button that makes a new item from the search, read by this view, or nil when there is none.
+    let createTitle: () -> String?
     let onCreate: () -> Void
     let onFormValue: (String, String) -> Void
     let onRun: (SpotItem) -> Void
@@ -28,6 +30,10 @@ struct SpotSheetView: View {
     let cardWidth: CGFloat
     let nudge: () -> SpotPanel.Nudge
     @State private var wordsHeight: CGFloat = 0
+
+    private var list: ItemList {
+        sheet?.list ?? ItemList()
+    }
     @State private var arrowWidth: CGFloat = 0
 
     private var row: RoundedRectangle {
@@ -46,7 +52,7 @@ struct SpotSheetView: View {
                     SpotFormView(draft: form, onValue: onFormValue)
                 } else {
                     Color.clear.frame(height: SpotTokens.listRowHeight)
-                    if let createTitle {
+                    if let createTitle = createTitle() {
                         Button(action: onCreate) {
                             createLabel(createTitle)
                         }
