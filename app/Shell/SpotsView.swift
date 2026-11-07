@@ -283,9 +283,9 @@ struct SpotsView: View {
         return SpotTokens.sheetRect(rows: list?.shown.count ?? 0, perLine: list?.perLine ?? 1)
     }
 
-    /// Whether the card of this open sheet draws an arrow. A 1x1 card shows its glyph alone.
+    /// Whether the card of this open sheet draws an arrow. A 1x1 card shows its glyph alone, and a widget draws none.
     private func cardShows(arrowOf entry: SpotsModel.Entry) -> Bool {
-        entry.kind == .list && (openFrame?.width ?? 0) > SpotTokens.cell
+        entry.kind == .list && sourceWidget == nil && (openFrame?.width ?? 0) > SpotTokens.cell
     }
 
     /// The arrow of the card while its sheet moves. It stays in view until the close button takes its place at the edge.
@@ -406,20 +406,14 @@ struct SpotsView: View {
         return model.visible.first { $0.id == cardID }
     }
 
+    /// The places of the widget without its glass, since the sheet draws the glass under them.
+    @ViewBuilder
     private func widgetLook(_ widget: SpotsModel.Entry) -> some View {
-        SpotCardView(
-            entry: widget,
-            size: cardSize(of: widget),
-            isSelected: false,
-            takesDrag: false,
-            isDropTarget: false,
-            readings: model.readings,
-            chainLetter: nil,
-            showsChain: false,
-            isHiddenFromGrid: false,
-            onTap: {},
-            onLevel: { _ in }
-        )
+        if let layout = widget.command.layout {
+            let size = cardSize(of: widget)
+            SpotWidgetView(layout: layout, places: widget.command.places, readings: model.readings, card: size)
+                .padding(SpotTokens.cardPadding(for: size, isWidget: true))
+        }
     }
 
     /// Where the card of the open sheet lies in the panel, which the grid and its scroll say.
