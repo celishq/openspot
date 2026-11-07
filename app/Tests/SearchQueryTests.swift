@@ -83,6 +83,10 @@ final class SearchQueryTests: XCTestCase {
         XCTAssertEqual(SearchQuery(text: "sfr").matching(items).map(\.title), ["Mail", "Safari"])
     }
 
+    func testLettersInOrderStayInOneWord() {
+        XCTAssertEqual(titles("note", in: ["Android File Transfer", "Notes"]), ["Notes"])
+    }
+
     func testLettersInOrderNeedThreeLetters() {
         XCTAssertEqual(titles("sf", in: ["Safari"]), [])
     }

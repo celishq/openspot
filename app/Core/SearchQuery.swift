@@ -2,9 +2,9 @@ import Foundation
 
 /// Text that finds and ranks items. The whole title ranks first, then the title start. Otherwise each word must match,
 /// and the worst word sets the rank: a word start, the initials in order, any part of the title, a word start of the
-/// subtitle, any part of the subtitle, then three or more letters in order in the title. Within a rank, picked items come
-/// first, the most picked before the latest, then the given order. Across lists, a pick beats any other item of its
-/// rank, then an earlier list wins.
+/// subtitle, any part of the subtitle, then three or more letters in order in one word of the title. Within a rank,
+/// picked items come first, the most picked before the latest, then the given order. Across lists, a pick beats any
+/// other item of its rank, then an earlier list wins.
 public struct SearchQuery: Equatable, Sendable {
     public let text: String
     private let letters: [String]
@@ -88,7 +88,7 @@ public struct SearchQuery: Equatable, Sendable {
             if let start = inSubtitle.first(where: subtitle.starts.contains) { return (5, [], [span(start)]) }
             if let start = inSubtitle.first { return (6, [], [span(start)]) }
         }
-        if word.count >= 3, let found = title.inOrder(word, among: Array(title.letters.indices)) {
+        if word.count >= 3, let found = title.inOneWord(word) {
             return (7, found.map { $0..<$0 + 1 }, [])
         }
         return nil
@@ -115,6 +115,11 @@ public struct SearchQuery: Equatable, Sendable {
         func occurrences(of word: [String]) -> [Int] {
             guard !word.isEmpty, word.count <= letters.count else { return [] }
             return (0...(letters.count - word.count)).filter { letters[$0..<$0 + word.count].elementsEqual(word) }
+        }
+
+        /// The offsets of the first word whose letters spell the word in order.
+        func inOneWord(_ word: [String]) -> [Int]? {
+            zip(starts, starts.dropFirst() + [letters.count]).lazy.compactMap { inOrder(word, among: Array($0..<$1)) }.first
         }
 
         /// The first offsets among the given ones whose letters spell the word in order.
