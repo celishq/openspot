@@ -23,6 +23,6 @@ fi
 sleep 0.3
 if ! osascript -e 'tell application "System Events" to keystroke "v" using command down' 2>/dev/null; then
   printf 'open=x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility\n'
-  echo "Copied. Press ⌘V, or allow Openspot in Accessibility." >&2
+  echo 'Copied. Press `⌘V`, or allow Openspot in Accessibility.' >&2
   exit 1
 fi

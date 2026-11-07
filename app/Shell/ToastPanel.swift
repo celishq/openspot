@@ -21,11 +21,11 @@ final class ToastPanel: NSPanel {
     func show(_ message: String, symbol: String? = nil, fix: (() -> Void)? = nil, key: Shortcut? = nil, for duration: TimeInterval = ToastPanel.duration) {
         shows += 1
         let current = shows
-        toast.message = message
         toast.symbol = symbol
-        hold(fix: fix, key: key)
+        let held = hold(fix: fix, key: key)
+        toast.message = held.map { "\(message) Press `\($0.label)` to fix it." } ?? message
         let measure = NSHostingController(rootView: ToastView(toast: toast))
-        let width = min(max(measure.view.fittingSize.width, Self.minWidth), Self.maxSize.width)
+        let width = min(max(measure.view.fittingSize.width.rounded(.up) + 1, Self.minWidth), Self.maxSize.width)
         let size = measure.sizeThatFits(in: NSSize(width: width, height: Self.maxSize.height))
         if let screen = NSScreen.main?.visibleFrame {
             setFrame(NSRect(x: screen.midX - size.width / 2, y: screen.maxY - size.height, width: size.width, height: size.height), display: true)
@@ -49,15 +49,15 @@ final class ToastPanel: NSPanel {
         }
     }
 
-    /// Holds the fix key and takes clicks while a fix shows, and lets go of both when none does.
-    private func hold(fix: (() -> Void)?, key: Shortcut?) {
+    /// Holds the fix key and takes clicks while a fix shows, and lets go of both when none does. It returns the key it holds.
+    @discardableResult
+    private func hold(fix: (() -> Void)?, key: Shortcut?) -> Shortcut? {
         fixKey.map(HotKey.unregister)
         fixKey = nil
         ignoresMouseEvents = fix == nil
         guard let fix else {
             toast.open = nil
-            toast.key = nil
-            return
+            return nil
         }
         let open = { [weak self] in
             fix()
@@ -65,7 +65,7 @@ final class ToastPanel: NSPanel {
         }
         toast.open = open
         fixKey = key.flatMap { HotKey.register($0) { DispatchQueue.main.async(execute: open) } }
-        toast.key = fixKey == nil ? nil : key
+        return fixKey == nil ? nil : key
     }
 
     static func make() -> ToastPanel {

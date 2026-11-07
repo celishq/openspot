@@ -139,7 +139,8 @@ A block is a row when it has `row`, an action when it has `action`, and a form f
 block says how the spot itself looks, and it can hold `search` and `recents`. Printing nothing means that there is nothing
 to show.
 
-To confirm what an action did, print `toast=Saved`. Openspot shows it, also with the panel closed.
+To confirm what an action did, print `toast=Saved`. Openspot shows it, also with the panel closed. Put a key in backticks, such as
+``toast=Press `⌘V` ``, and the toast shows it as a key.
 
 ## The shell helper
 

@@ -296,24 +296,28 @@ final class SamplePluginsTests: XCTestCase {
         }
         let accessibility = "open=x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility\n"
 
-        for (script, arguments, fix) in [
-            ("paste-screenshot.sh", [], accessibility),
-            ("emoji.sh", ["paste", "x"], accessibility),
-            ("windows.sh", ["left"], accessibility)
+        let paste = "Copied. Press `⌘V`, or allow Openspot in Accessibility.\n"
+        for (script, arguments, fix, message) in [
+            ("paste-screenshot.sh", [], accessibility, paste),
+            ("emoji.sh", ["paste", "x"], accessibility, paste),
+            ("windows.sh", ["left"], accessibility, "Allow Openspot in Accessibility, then press the key again.\n")
         ] {
             let process = Process()
             let out = Pipe()
+            let errors = Pipe()
             process.executableURL = plugins.appendingPathComponent(script)
             process.arguments = arguments
             process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "HOME": folder.path, "OPENSPOT_DATA": folder.path]
             process.standardOutput = out
-            process.standardError = FileHandle.nullDevice
+            process.standardError = errors
             try process.run()
             process.waitUntilExit()
             let text = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+            let said = String(data: errors.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
 
             XCTAssertEqual(process.terminationStatus, 1, script)
             XCTAssertEqual(text, fix, script)
+            XCTAssertEqual(said, message, script)
         }
     }
 
