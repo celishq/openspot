@@ -6,6 +6,7 @@ struct ToastKeyFill: TextRenderer {
     struct Key: TextAttribute {}
 
     private static let radius: CGFloat = 4
+    private static let padding: CGFloat = 3
     let fill: Color
 
     func draw(layout: Text.Layout, in context: inout GraphicsContext) {
@@ -13,7 +14,7 @@ struct ToastKeyFill: TextRenderer {
             for run in line {
                 if run[Key.self] != nil {
                     let shape = RoundedRectangle(cornerRadius: Self.radius, style: .continuous)
-                    context.fill(shape.path(in: run.typographicBounds.rect), with: .color(fill))
+                    context.fill(shape.path(in: run.typographicBounds.rect.insetBy(dx: -Self.padding, dy: 0)), with: .color(fill))
                 }
                 context.draw(run)
             }
