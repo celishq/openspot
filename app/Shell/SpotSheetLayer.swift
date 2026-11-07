@@ -19,30 +19,15 @@ struct SpotSheetLayer: View {
 
     var body: some View {
         SpotSheetView(
+            model: model,
             entry: entry,
             cardSize: card?.placement.size ?? entry.size,
             isOpen: isOpen,
             showsFill: entry.state.on == true && !hasLeftCard,
-            sheet: model.sheets[entry.id],
             rect: sheetRect,
-            form: model.form?.entry.id == entry.id ? model.form?.draft : nil,
             panel: panel,
-            work: { model.work(of: $0) },
-            onSet: { model.setPart($0, to: $1) },
-            onPress: { model.pressPart($0) },
-            recording: model.recording,
-            onRecord: { model.toggleRecording($0) },
-            createTitle: { model.createAction.map { "\($0.title): \(model.searchText)" } },
-            onCreate: { model.createFromSearch() },
-            onFormValue: { model.setFormValue($0, for: $1) },
-            onRun: { model.runItem($0) },
             closeShift: isInstall ? 0 : showsArrow ? (frame?.width ?? sheetRect.width) - sheetRect.width : nil,
-            onClose: {
-                model.allowSheetMotion()
-                model.closeList()
-            },
-            cardWidth: isInstall ? SpotFieldView.rect.width : frame?.width ?? sheetRect.width,
-            nudge: { model.sheets[entry.id]?.nudge ?? SpotPanel.Nudge.rest }
+            cardWidth: isInstall ? SpotFieldView.rect.width : frame?.width ?? sheetRect.width
         )
         .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(card?.widget == nil || isOpen ? 1 : 0) }
         .overlay(alignment: .topLeading) {

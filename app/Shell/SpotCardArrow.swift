@@ -7,10 +7,12 @@ struct SpotCardArrow: View {
 
     /// The gap from the arrow of a row card to the card's trailing edge.
     static let rowInset: CGFloat = SpotTokens.padding - 6
+    static let width: CGFloat = 7
 
     var body: some View {
         Image(systemName: "chevron.right")
             .font(.system(size: 9, weight: .semibold))
+            .frame(width: Self.width)
             .foregroundStyle(isOnSolid ? SpotTheme.onSolid : SpotTheme.ink)
     }
 
