@@ -27,10 +27,9 @@ enum SpotMotion {
         .spring(duration: isOpen ? openDuration : closeDuration, bounce: 0)
     }
 
-    /// The change of an on card's fill: the first quarter of an open, and the last quarter of a close.
+    /// The change of an on card's fill: the first quarter of an open, and the last 40% of a close.
     static func fillFade(isOpen: Bool) -> Animation {
-        let duration = isOpen ? openDuration : closeDuration
-        return isOpen ? .easeOut(duration: duration / 4) : .easeIn(duration: duration / 4).delay(duration * 3 / 4)
+        isOpen ? .easeOut(duration: openDuration / 4) : .easeInOut(duration: closeDuration * 0.4).delay(closeDuration * 0.6)
     }
 
     /// The half of a sheet's motion that a part fades in, so that two looks of one place never overlap.

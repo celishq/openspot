@@ -98,7 +98,7 @@ struct SpotTheme {
         confirm: NSColor(red: 0.78, green: 0.16, blue: 0.14, alpha: 1),
         onConfirm: .white,
         rimSides: .black,
-        rimEnds: .white,
+        rimEnds: .white.withAlphaComponent(0.5),
         rimAddsLight: true,
         rimSideStrengths: [0, 0.3, 0.3, 0],
         shadowBase: .clear,
