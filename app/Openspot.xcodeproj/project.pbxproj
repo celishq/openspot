@@ -78,6 +78,7 @@
 		57F70B25BAA7A839A01DF12E /* ItemPick.swift in Sources */ = {isa = PBXBuildFile; fileRef = 885F30718D7143D315BB77E4 /* ItemPick.swift */; };
 		588F35D7533A33CE2F8AA40A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 5D46E63C968896AC610529D8 /* Sparkle */; };
 		5B9A7435C4B143508A6A2403 /* SpotColorPick.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991D6EB4A6FC8BDC66EE881C /* SpotColorPick.swift */; };
+		5CFE0A2BD994F9DB0024AA3E /* SearchMarks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9748BC383B5784132CBF4EDF /* SearchMarks.swift */; };
 		5D4ADFD59D075BF4ECCC839F /* OpenspotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A093123650150BDB564E8AA8 /* OpenspotApp.swift */; };
 		5F0014E9C76E21BB6217E7A6 /* SpotKeyLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 829F2EB5916D1F06B678FA2D /* SpotKeyLabel.swift */; };
 		5FD205ACC061559C92B6D0F9 /* SpotTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A02C33EDB778056C6A93629 /* SpotTheme.swift */; };
@@ -351,6 +352,7 @@
 		907FD030E6A97CFF9983DE45 /* OpenspotStandIn */ = {isa = PBXFileReference; includeInIndex = 0; path = OpenspotStandIn; sourceTree = BUILT_PRODUCTS_DIR; };
 		94B0E4567AE631D558192FF8 /* openspot.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = openspot.sh; sourceTree = "<group>"; };
 		96AC0CDE42355E19E796FFAE /* HotKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKey.swift; sourceTree = "<group>"; };
+		9748BC383B5784132CBF4EDF /* SearchMarks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchMarks.swift; sourceTree = "<group>"; };
 		98423F0E430034DA2CB5998A /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		98DF19CC5B909FFF6AFC9A88 /* TranslationTargetsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationTargetsTests.swift; sourceTree = "<group>"; };
 		991D6EB4A6FC8BDC66EE881C /* SpotColorPick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotColorPick.swift; sourceTree = "<group>"; };
@@ -688,6 +690,7 @@
 				460DCD2E955C085C7F46564A /* ScriptCall.swift */,
 				4F76EE32BFF0C76A3FFDAF04 /* ScriptProcess.swift */,
 				5C9F298411AB34EF072C6A70 /* ScrollWindow.swift */,
+				9748BC383B5784132CBF4EDF /* SearchMarks.swift */,
 				BA83FEB9ADE31C13E14CF521 /* SearchPrompt.swift */,
 				A68222F1D38C22003786E5AB /* SearchQuery.swift */,
 				FFCDA02E5A39DB101D14153D /* Settings.swift */,
@@ -1006,6 +1009,7 @@
 				D0EAC4567B25BECFF5A8BF5E /* ScriptCall.swift in Sources */,
 				9437113588A85052FC06E708 /* ScriptProcess.swift in Sources */,
 				12694369393B4311080F6DAF /* ScrollWindow.swift in Sources */,
+				5CFE0A2BD994F9DB0024AA3E /* SearchMarks.swift in Sources */,
 				C53A4B9A0F047839D54E875E /* SearchPrompt.swift in Sources */,
 				7A5C67249F946A7802505890 /* SearchQuery.swift in Sources */,
 				0F395EFD608E949B6484843D /* Settings.swift in Sources */,
