@@ -223,6 +223,16 @@ final class SpotPanelTests: XCTestCase {
         XCTAssertEqual(parts.map(\.ringWords), ["80", nil, nil])
     }
 
+    func testALineWithNoIconKeepsTheIconColumnOnlyInAListWhereALineHasOne() throws {
+        let list = try panel("section=cpu\ntitle=CPU\n\npart=all\ntitle=All\nsymbol=cpu\n\npart=top\ntitle=launchd\n")
+        let plain = try panel("part=top\ntitle=launchd\n")
+        let drawn = try panel("grid=a b\n\npart=all\ncell=a\ntitle=All\nsymbol=cpu\n\npart=top\ncell=b\ntitle=launchd\n")
+
+        XCTAssertEqual(list.parts.map(list.keepsIconColumn), [false, false, true])
+        XCTAssertEqual(plain.parts.map(plain.keepsIconColumn), [false])
+        XCTAssertEqual(drawn.parts.map(drawn.keepsIconColumn), [false, false])
+    }
+
     func testALineWithPointsAndADetailCarriesATrendMark() throws {
         let part = try XCTUnwrap(try panel("part=cpu\ntitle=All cores\ndetail=30%\nmax=100\npoint=20\npoint=40\n").parts.first)
 

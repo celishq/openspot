@@ -171,6 +171,9 @@ struct SpotPanelView: View {
                     .modifier(SpotSecondaryText())
                     .frame(width: Self.symbolWidth)
             }
+            else if panel.keepsIconColumn(part) {
+                Color.clear.frame(width: Self.symbolWidth, height: 0)
+            }
             if let title = part.title {
                 Text(title)
                     .font(part.isSection || part.look == .section ? SpotType.title : SpotType.body)

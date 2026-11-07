@@ -61,6 +61,13 @@ public struct SpotPanel: Equatable, Sendable {
         !showsRows && !parts.contains(where: \.isEditable) && !parts.contains(where: \.isSelectable)
     }
 
+    /// Whether a part with no icon keeps an empty icon column, so that its words line up with the lines that have one. Only a
+    /// line in a sheet with no drawing does, and only when another line there has an icon.
+    public func keepsIconColumn(_ part: SpotPart) -> Bool {
+        layout == nil && !part.isSection && part.look != .section && part.symbol == nil && !part.fillsHeight
+            && parts.contains { !$0.isSection && $0.symbol != nil }
+    }
+
     /// The part that return uses: the one the person moved to, or else the first that takes a selection.
     public var selectedPart: SpotPart? {
         guard takesArrows else { return nil }
