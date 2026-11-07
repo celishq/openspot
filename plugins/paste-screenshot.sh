@@ -1,7 +1,7 @@
 #!/bin/sh
-# name=Screenshot
+# name=Paste latest screenshot
 # symbol=doc.on.clipboard.fill
-# subtitle=Paste latest
+# subtitle=From the screenshot folder
 # key=v
 # size=small
 folder=$(defaults read com.apple.screencapture location 2>/dev/null || echo "$HOME/Desktop")
