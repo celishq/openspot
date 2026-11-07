@@ -28,9 +28,11 @@ struct SpotsView: View {
     private static let gridBottom: CGFloat = SpotTokens.halo + SpotTokens.hintBlock
 
     var body: some View {
+        let card = sheetCard
+        let frame = card.map(frame(of:))
         ZStack(alignment: .topLeading) {
             ScrollView(showsIndicators: false) {
-                grid
+                grid(card: card, frame: frame)
                     .offset(y: gridPush)
                     .padding(.horizontal, SpotTokens.halo)
                     .padding(.top, Self.gridTop)
@@ -49,7 +51,7 @@ struct SpotsView: View {
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
                 SpotSheetView(
                     entry: entry,
-                    cardSize: cardSize(of: entry),
+                    cardSize: card?.placement.size ?? entry.size,
                     isOpen: sheetOpen,
                     showsFill: entry.state.on == true && !sheetHasLeftCard,
                     list: model.sheets[entry.id]?.list ?? ItemList(),
@@ -65,18 +67,18 @@ struct SpotsView: View {
                     onCreate: { model.createFromSearch() },
                     onFormValue: { model.setFormValue($0, for: $1) },
                     onRun: { model.runItem($0) },
-                    closeShift: isInstall(entry) ? 0 : cardShows(arrowOf: entry) ? (openFrame?.width ?? sheetRect.width) - sheetRect.width : nil,
+                    closeShift: isInstall(entry) ? 0 : cardShows(arrowOf: entry, card: card, frame: frame) ? (frame?.width ?? sheetRect.width) - sheetRect.width : nil,
                     onClose: {
                         model.allowSheetMotion()
                         model.closeList()
                     },
-                    cardWidth: isInstall(entry) ? fieldRect.width : openFrame?.width ?? sheetRect.width,
+                    cardWidth: isInstall(entry) ? fieldRect.width : frame?.width ?? sheetRect.width,
                     nudge: { model.sheets[entry.id]?.nudge ?? SpotPanel.Nudge.rest }
                 )
-                .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: sheetOpen)) { $0.opacity(sourceWidget == nil || sheetOpen ? 1 : 0) }
+                .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: sheetOpen)) { $0.opacity(card?.widget == nil || sheetOpen ? 1 : 0) }
                 .overlay(alignment: .topLeading) {
-                    if let widget = sourceWidget, let frame = openFrame {
-                        widgetLook(widget)
+                    if let widget = card?.widget, let frame {
+                        widgetLook(widget, size: card?.placement.size ?? widget.size)
                             .frame(width: frame.width, height: frame.height)
                             .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(sheetOpen ? 0 : 1) }
                             .allowsHitTesting(false)
@@ -87,10 +89,10 @@ struct SpotsView: View {
                         .animation(SpotMotion.fillFade(isOpen: sheetOpen)) { $0.opacity(entry.state.on == true && !sheetOpen ? 1 : 0) }
                 }
                 .modifier(SpotSheetFrame(
-                    rect: sheetOpen ? sheetRect : isInstall(entry) ? fieldRect : openFrame ?? sheetRect,
-                    radius: sheetOpen ? SpotTokens.radius : isInstall(entry) ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: cardSize(of: entry)),
-                    showsRing: !sheetOpen && cardIsSelected(sourceWidget ?? entry),
-                    arrow: cardShows(arrowOf: entry) ? AnyView(sheetArrow(of: entry)) : nil
+                    rect: sheetOpen ? sheetRect : isInstall(entry) ? fieldRect : frame ?? sheetRect,
+                    radius: sheetOpen ? SpotTokens.radius : isInstall(entry) ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: card?.placement.size ?? entry.size),
+                    showsRing: !sheetOpen && cardIsSelected(card?.widget ?? entry),
+                    arrow: cardShows(arrowOf: entry, card: card, frame: frame) ? AnyView(sheetArrow(of: entry, frame: frame)) : nil
                 ))
             }
             searchField
@@ -279,14 +281,14 @@ struct SpotsView: View {
     }
 
     /// Whether the card of this open sheet draws an arrow. A 1x1 card shows its glyph alone, and a widget draws none.
-    private func cardShows(arrowOf entry: SpotsModel.Entry) -> Bool {
-        entry.kind == .list && sourceWidget == nil && (openFrame?.width ?? 0) > SpotTokens.cell
+    private func cardShows(arrowOf entry: SpotsModel.Entry, card: SheetCard?, frame: CGRect?) -> Bool {
+        entry.kind == .list && card?.widget == nil && (frame?.width ?? 0) > SpotTokens.cell
     }
 
     /// The arrow of the card while its sheet moves. It stays in view until the close button takes its place at the edge.
-    private func sheetArrow(of entry: SpotsModel.Entry) -> some View {
+    private func sheetArrow(of entry: SpotsModel.Entry, frame: CGRect?) -> some View {
         SpotCardArrow(isOnSolid: entry.state.on == true && !sheetOpen)
-            .placed(isTall: (openFrame?.height ?? 0) > SpotTokens.rowHeight)
+            .placed(isTall: (frame?.height ?? 0) > SpotTokens.rowHeight)
             .animation(SpotMotion.sheetFade(isOpen: sheetOpen, isLate: !sheetOpen)) { $0.opacity(sheetOpen ? 0 : 1) }
             .allowsHitTesting(false)
     }
@@ -383,37 +385,37 @@ struct SpotsView: View {
         return shownPanel?.showsRows != false && model.sheets[sheetID ?? ""]?.awaitsFirstAnswer != true
     }
 
-    /// The size that the grid gives the card of this sheet. Search and a short row can stretch a card past the size it prefers.
-    private func cardSize(of entry: SpotsModel.Entry) -> SpotSize {
-        model.placements.first { model.visible[$0.index].id == cardID }?.size ?? entry.size
+    /// The card that the open sheet grows from, on the grid. Its size can differ from the size it prefers.
+    private struct SheetCard {
+        let id: String
+        let placement: SpotPlacement
+        /// The widget that opens the sheet, whose look the sheet takes at the size of its card. Nil for the sheet's own card.
+        let widget: SpotsModel.Entry?
     }
 
     /// The card that the open sheet grows from: its own card on the grid, or else a widget that opens it.
-    private var cardID: String? {
+    private var sheetCard: SheetCard? {
         guard let sheetID else { return nil }
-        if model.visible.contains(where: { $0.id == sheetID }) { return sheetID }
-        return model.visible.first { $0.kind == .widget && $0.command.opens == sheetID }?.id
-    }
-
-    /// The widget that opened the sheet, whose look the sheet takes at the size of its card.
-    private var sourceWidget: SpotsModel.Entry? {
-        guard cardID != sheetID else { return nil }
-        return model.visible.first { $0.id == cardID }
+        let visible = model.visible
+        let index = visible.firstIndex { $0.id == sheetID }
+            ?? visible.firstIndex { $0.kind == .widget && $0.command.opens == sheetID }
+        guard let index, let placement = model.placements.first(where: { $0.index == index }) else { return nil }
+        let entry = visible[index]
+        return SheetCard(id: entry.id, placement: placement, widget: entry.id == sheetID ? nil : entry)
     }
 
     /// The places of the widget without its glass, since the sheet draws the glass under them.
     @ViewBuilder
-    private func widgetLook(_ widget: SpotsModel.Entry) -> some View {
+    private func widgetLook(_ widget: SpotsModel.Entry, size: SpotSize) -> some View {
         if let layout = widget.command.layout {
-            let size = cardSize(of: widget)
             SpotWidgetView(layout: layout, places: widget.command.places, readings: model.readings, card: size)
                 .padding(SpotTokens.cardPadding(for: size, isWidget: true))
         }
     }
 
     /// Where the card of the open sheet lies in the panel, which the grid and its scroll say.
-    private var openFrame: CGRect? {
-        guard let spot = model.placements.first(where: { model.visible[$0.index].id == cardID }) else { return nil }
+    private func frame(of card: SheetCard) -> CGRect {
+        let spot = card.placement
         return CGRect(
             x: SpotTokens.halo + CGFloat(spot.column) * (SpotTokens.cell + SpotTokens.columnGap),
             y: Self.gridTop + CGFloat(spot.row) * (SpotTokens.rowHeight + SpotTokens.rowGap) - scrollOffset,
@@ -447,12 +449,11 @@ struct SpotsView: View {
         return abs(placement.row - open.row)
     }
 
-    private var grid: some View {
+    private func grid(card: SheetCard?, frame: CGRect?) -> some View {
         let placements = model.placements
         let rows = placements.map { $0.row + $0.size.rows }.max() ?? 0
-        let openID = cardID
-        let open = placements.first { model.visible[$0.index].id == openID }
-        let frame = openFrame
+        let openID = card?.id
+        let open = card?.placement
         let glass = placements.map { placement in
             let entry = model.visible[placement.index]
             return SpotGridGlass.Card(
