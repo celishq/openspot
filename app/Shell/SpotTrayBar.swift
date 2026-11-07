@@ -3,7 +3,7 @@ import OpenspotCore
 import SwiftUI
 
 /// The menu bar items of the metrics that ask to show there, and running work on the Openspot item. An item comes and goes
-/// with its mark, and the Openspot item goes back to its title.
+/// with its mark, and the Openspot item goes back to its image.
 @MainActor
 final class SpotTrayBar: NSObject {
     /// A view that leaves each click to the button that holds it.
@@ -18,14 +18,14 @@ final class SpotTrayBar: NSObject {
 
     private let model: SpotsModel
     private let openspotItem: NSStatusItem
-    private let openspotTitle: String
+    private let openspotImage: NSImage?
     private var work: Shown?
     private var shown: [String: Shown] = [:]
 
     init(model: SpotsModel, openspotItem: NSStatusItem) {
         self.model = model
         self.openspotItem = openspotItem
-        openspotTitle = openspotItem.button?.title ?? ""
+        openspotImage = openspotItem.button?.image
         super.init()
         update()
     }
@@ -46,18 +46,18 @@ final class SpotTrayBar: NSObject {
         drawWork(workMark)
     }
 
-    /// Shows running work on the Openspot item, in place of its title.
+    /// Shows running work on the Openspot item, in place of its image.
     private func drawWork(_ mark: TrayMark?) {
         guard let mark else {
             work?.host.removeFromSuperview()
             work = nil
-            openspotItem.button?.title = openspotTitle
+            openspotItem.button?.image = openspotImage
             openspotItem.button?.toolTip = nil
-            openspotItem.button?.setAccessibilityLabel(nil)
+            openspotItem.button?.setAccessibilityLabel("Openspot")
             openspotItem.length = NSStatusItem.variableLength
             return
         }
-        openspotItem.button?.title = ""
+        openspotItem.button?.image = nil
         let shown = work ?? Shown(item: openspotItem, host: makeHost(mark: mark, in: openspotItem))
         work = shown
         draw(mark, in: shown)

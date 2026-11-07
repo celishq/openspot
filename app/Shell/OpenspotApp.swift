@@ -36,7 +36,12 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        item.button?.title = "⌘"
+        #if DEBUG
+        item.button?.image = NSImage(named: "TrayMarkNightly")
+        #else
+        item.button?.image = NSImage(named: "TrayMark")
+        #endif
+        item.button?.setAccessibilityLabel("Openspot")
         item.button?.target = self
         item.button?.action = #selector(pressItem)
         statusItem = item
