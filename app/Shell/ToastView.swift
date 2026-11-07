@@ -12,7 +12,7 @@ struct ToastView: View {
                     .foregroundStyle(SpotTheme.ink)
             }
             Self.styled(toast.message)
-                .textRenderer(ToastKeyFill(fill: SpotTheme.ink.opacity(SpotTheme.selectedFill)))
+                .textRenderer(ToastKeyFill(fill: SpotTheme.ink.opacity(SpotTheme.track)))
                 .font(SpotType.body)
                 .foregroundStyle(SpotTheme.ink)
                 .lineLimit(3)
