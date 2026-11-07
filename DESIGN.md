@@ -436,7 +436,6 @@ A change to the meaning of a word that exists is a breaking change. Do not make 
 | Module | Differs from this document | Rule |
 |---|---|---|
 | `scripts/release.sh` | The DMG has no window layout. | Decisions |
-| `Core/Settings.swift` | Settings has no login row. | A14 |
 | `Shell/SpotsModel.swift`, `Shell/OpenspotApp.swift` | The first launch shows a failure toast and no panel. | A8, A14 |
 
 ## 14. Decisions

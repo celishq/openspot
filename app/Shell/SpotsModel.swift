@@ -174,7 +174,8 @@ final class SpotsModel {
             guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder.url,
             app: Bundle.main.executablePath ?? "",
             update: updateSpot,
-            core: folder.core
+            core: folder.core,
+            login: AppLogin.item
         ) + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
         let scan = (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
         var problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
