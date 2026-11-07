@@ -13,7 +13,7 @@ struct ToastView: View {
             }
             Text(toast.message)
                 .font(SpotType.body)
-                .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
+                .foregroundStyle(SpotTheme.ink)
                 .lineLimit(3)
         }
         .padding(.horizontal, ToastPanel.margin)

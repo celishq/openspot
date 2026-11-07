@@ -16,7 +16,7 @@ struct SpotDropView: View {
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 Text(drop.title)
                     .font(SpotType.title)
-                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
+                    .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
                 if let detail = drop.detail {
                     Text(detail)

@@ -31,10 +31,10 @@ struct SpotCardView: View {
         ZStack(alignment: .topLeading) { content }
             .padding(SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
-            .background(shape.fill(Color.accentColor).opacity(dropFill))
+            .background(shape.fill(SpotTheme.accent).opacity(dropFill))
             .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, strength: showsPress ? SpotMotion.pressedGlass : 1))
             .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : isHovered ? 0.08 : 0)).allowsHitTesting(false))
-            .overlay(shape.strokeBorder(Color.accentColor, lineWidth: 2).animation(nil) { $0.opacity(isSelected ? 1 : 0) }.opacity(isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
+            .overlay(Color.clear.modifier(SpotSelectionRing(isSelected: isSelected, shape: shape)).opacity(isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { keycap }
             .overlay(alignment: .topTrailing) { hiddenMark }
             .contentShape(shape)
@@ -129,7 +129,7 @@ struct SpotCardView: View {
             if size != .wide, !entry.stopsOnPress {
                 Text("Run")
                     .font(SpotType.action)
-                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
+                    .foregroundStyle(SpotTheme.ink)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 6)
                     .background(SpotTheme.ink.opacity(SpotTheme.chip), in: Capsule())

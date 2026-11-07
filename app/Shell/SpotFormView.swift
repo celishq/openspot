@@ -47,7 +47,7 @@ struct SpotFormView: View {
                 .focused($focus, equals: field.name)
             }
             .font(SpotType.body)
-            .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
+            .foregroundStyle(SpotTheme.ink)
             .padding(.horizontal, SpotTokens.padding)
             .frame(height: SpotTokens.listRowHeight)
             .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
@@ -55,7 +55,7 @@ struct SpotFormView: View {
             TextEditor(text: value(of: field))
                 .scrollContentBackground(.hidden)
                 .font(SpotType.body)
-                .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
+                .foregroundStyle(SpotTheme.ink)
                 .focused($focus, equals: field.name)
                 .onKeyPress(.tab) {
                     moveFocus(from: field)

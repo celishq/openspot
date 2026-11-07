@@ -30,13 +30,7 @@ struct SpotRoundButton: View {
                 }
             }
                 .background(fill, in: Circle())
-                .background {
-                    if look == .floating {
-                        SpotBlur(radius: SpotTheme.blur)
-                            .overlay(SpotTheme.glass)
-                            .clipShape(Circle())
-                    }
-                }
+                .background { if look == .floating { SpotFloatGlass(shape: Circle()) } }
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)

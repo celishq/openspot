@@ -6,8 +6,6 @@ struct SpotGlass: ViewModifier {
     var radius: CGFloat = SpotTokens.radius
     var isSolid = false
     var isBare = false
-    private static let shadowRadius: CGFloat = 10
-    private static let shadowDrop: CGFloat = 3
 
     var strength = 1.0
     @Environment(\.spotIsShown) private var isShown
@@ -18,9 +16,6 @@ struct SpotGlass: ViewModifier {
             .opacity(isShown ? 1 : 0)
             .animation(SpotMotion.surface(isShown: isShown), value: isShown)
             .background {
-                shape.fill(SpotTheme.shadowBase)
-                    .shadow(color: SpotTheme.shadow, radius: Self.shadowRadius, y: Self.shadowDrop)
-                    .opacity(isShown && !isBare ? 1 : 0)
                 SpotBlur(radius: isShown ? SpotTheme.blur * strength : 0)
                     .overlay(SpotTheme.glass)
                     .clipShape(shape)

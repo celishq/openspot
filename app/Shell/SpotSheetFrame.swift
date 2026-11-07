@@ -4,7 +4,7 @@ import SwiftUI
 struct SpotSheetFrame: ViewModifier {
     let rect: CGRect
     let radius: CGFloat
-    let ringOpacity: Double
+    let showsRing: Bool
     /// The arrow of the card, which stays at the moving edge of the frame as the sheet grows out of the card.
     var arrow: AnyView?
 
@@ -15,7 +15,11 @@ struct SpotSheetFrame: ViewModifier {
             .clipped()
             .modifier(SpotGlass(radius: radius))
             .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(Color.accentColor, lineWidth: 2).animation(SpotMotion.sheetFade(isOpen: ringOpacity == 0, isLate: ringOpacity > 0)) { $0.opacity(ringOpacity) })
+            .modifier(SpotSelectionRing(
+                isSelected: showsRing,
+                shape: RoundedRectangle(cornerRadius: radius, style: .continuous),
+                motion: SpotMotion.sheetFade(isOpen: !showsRing, isLate: showsRing)
+            ))
             .offset(x: rect.minX, y: rect.minY)
     }
 }

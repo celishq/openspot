@@ -137,7 +137,7 @@ struct SpotSheetView: View {
     private func createLabel(_ title: String) -> some View {
         Text(title)
             .font(SpotType.body)
-            .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
+            .foregroundStyle(SpotTheme.ink)
             .lineLimit(1)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, SpotTokens.padding)

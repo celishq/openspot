@@ -22,7 +22,7 @@ struct SpotHint: View {
             }
         }
         .font(SpotType.detail)
-        .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
+        .foregroundStyle(SpotTheme.ink)
         .lineLimit(1)
         .padding(.leading, HintWords(text).groups.first?.key == nil ? SpotTokens.hintEndPadding : SpotTokens.hintKeyInset)
         .padding(.trailing, SpotTokens.hintEndPadding)

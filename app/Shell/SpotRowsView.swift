@@ -108,7 +108,7 @@ struct SpotRowsView: View {
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 Text(item.title)
                     .font(SpotType.body)
-                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
+                    .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
                 if let subtitle = item.subtitle {
                     Text(subtitle)
@@ -124,7 +124,7 @@ struct SpotRowsView: View {
             if item.isOn {
                 Image(systemName: "checkmark")
                     .font(SpotType.body.weight(.semibold))
-                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
+                    .foregroundStyle(SpotTheme.ink)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

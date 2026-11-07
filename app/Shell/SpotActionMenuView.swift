@@ -53,6 +53,6 @@ struct SpotActionMenuView: View {
     }
 
     private func titleColor(of row: ActionMenu.Row) -> Color {
-        isConfirming(row) ? SpotTheme.onConfirm : SpotTheme.ink.opacity(SpotTheme.titleOpacity)
+        isConfirming(row) ? SpotTheme.onConfirm : SpotTheme.ink
     }
 }

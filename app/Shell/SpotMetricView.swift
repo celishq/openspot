@@ -128,7 +128,7 @@ struct SpotMetricView: View {
                 ring(side: min(size.width, size.height), line: Self.smallRingLine) {
                     Text(title)
                         .font(SpotType.controlValue)
-                        .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
+                        .foregroundStyle(SpotTheme.ink)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                 }
@@ -173,7 +173,7 @@ struct SpotMetricView: View {
             if kind == .status { dot(markColour) }
             Text(title)
                 .font(font)
-                .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
+                .foregroundStyle(SpotTheme.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
         }
@@ -239,7 +239,7 @@ struct SpotMetricView: View {
             VStack(spacing: 0) {
                 Text(title)
                     .font(SpotType.ringValue)
-                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
+                    .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
                 if let detail = value?.detail {
@@ -301,7 +301,7 @@ struct SpotMetricView: View {
                 Spacer(minLength: 0)
                 Text(title)
                     .font(SpotType.value)
-                    .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
+                    .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
             }
             .padding(.bottom, 4)
@@ -310,7 +310,7 @@ struct SpotMetricView: View {
                     if let tone = row.tone { dot(Self.colour(tone)) }
                     Text(row.title)
                         .font(SpotType.detail)
-                        .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
+                        .foregroundStyle(SpotTheme.ink)
                         .lineLimit(1)
                     Spacer(minLength: 0)
                     if let detail = row.detail {

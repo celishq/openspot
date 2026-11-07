@@ -29,17 +29,7 @@ struct SpotSoftBlur: NSViewRepresentable {
                 CATransaction.setDisableActions(true)
                 defer { CATransaction.commit() }
                 tintMask.contents = masks?.tint
-                filter = Self.filter(mask: masks?.blur, radius: theme.backdropBlur)
-                applyBlur()
-            }
-        }
-
-        /// The theme that sets its tint and its blur. The system view stays dark, because only there it has the backdrop layer.
-        var theme = SpotTheme.dark {
-            didSet {
-                guard theme.backdropBlur != oldValue.backdropBlur || theme.tint != oldValue.tint else { return }
-                filter = Self.filter(mask: masks?.blur, radius: theme.backdropBlur)
-                needsLayout = true
+                filter = Self.filter(mask: masks?.blur, radius: SpotTheme.backdropBlur)
                 applyBlur()
             }
         }
@@ -73,7 +63,7 @@ struct SpotSoftBlur: NSViewRepresentable {
             }
             tint.frame = bounds
             tintMask.frame = bounds
-            tint.backgroundColor = theme.tint.cgColor
+            tint.backgroundColor = SpotTheme.tint.cgColor
             applyBlur()
         }
 
@@ -118,13 +108,11 @@ struct SpotSoftBlur: NSViewRepresentable {
         surface.blendingMode = .behindWindow
         surface.state = .active
         surface.appearance = NSAppearance(named: .darkAqua)
-        surface.theme = SpotTheme.palette(for: context.environment.colorScheme)
         surface.masks = Self.masks(height: height)
         return surface
     }
 
     func updateNSView(_ surface: Surface, context: Context) {
-        surface.theme = SpotTheme.palette(for: context.environment.colorScheme)
         surface.masks = Self.masks(height: height)
     }
 

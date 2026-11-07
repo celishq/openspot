@@ -83,7 +83,7 @@ struct SpotsView: View {
                 .modifier(SpotSheetFrame(
                     rect: sheetOpen ? sheetRect : isInstall(entry) ? fieldRect : openFrame ?? sheetRect,
                     radius: sheetOpen ? SpotTokens.radius : isInstall(entry) ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: cardSize(of: entry)),
-                    ringOpacity: !sheetOpen && cardIsSelected(entry) ? 1 : 0,
+                    showsRing: !sheetOpen && cardIsSelected(entry),
                     arrow: cardShows(arrowOf: entry) ? AnyView(sheetArrow(of: entry)) : nil
                 ))
             }
@@ -490,7 +490,7 @@ struct SpotsView: View {
         HStack {
             Text("Edit Spots")
                 .font(SpotType.input)
-                .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
+                .foregroundStyle(SpotTheme.ink)
             Spacer()
             SpotRoundButton(symbol: "checkmark", label: "Done") { model.endEditing() }
         }
@@ -558,7 +558,7 @@ struct SpotsView: View {
         }
         .opacity(showsDrop || fieldWordsAreHidden ? 0 : 1)
         .font(SpotType.input)
-        .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.titleOpacity))
+        .foregroundStyle(SpotTheme.ink)
         .padding(.horizontal, SpotTokens.padding)
         .frame(height: fieldIsInSheet ? SpotTokens.listRowHeight : SpotTokens.rowHeight)
         .overlay {
