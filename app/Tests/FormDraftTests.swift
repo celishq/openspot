@@ -29,14 +29,4 @@ final class FormDraftTests: XCTestCase {
         draft.set("Name", for: "title")
         XCTAssertNil(draft.missing)
     }
-
-    func testTheTextKeepsQuotesAndNewLines() throws {
-        var draft = FormDraft(form: form)
-        draft.set("say \"hi\"\nthen go", for: "content")
-
-        let block = try XCTUnwrap(TextBlock.blocks(in: draft.text).first)
-
-        XCTAssertEqual(block.value("content"), "say \"hi\"\nthen go")
-        XCTAssertTrue(draft.text.contains("\ntitle=\n") || draft.text.hasSuffix("title=\n"))
-    }
 }

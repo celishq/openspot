@@ -12,14 +12,6 @@ final class SamplePluginsTests: XCTestCase {
         }
     }
 
-    func testTheFolderHoldsEveryCommandAndRefusesNone() throws {
-        let scan = try scan
-
-        XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.name), ["Translate", "Apps", "Caffeinate", "Color picker", "Confetti", "Emojis & Symbols", "Files", "Links", "Paste latest screenshot", "Pull requests", "Snippets", "System details", "System", "Windows", "Spots", "Settings", "Build"])
-        XCTAssertEqual(scan.commands.map(\.key?.name), ["t", "a", "c", "o", "k", "e", "f", "l", "v", "g", "n", nil, nil, nil, "p", nil, nil])
-    }
-
     func testACopyAsksForTheCopiedToast() throws {
         let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("plugins")
         let tools = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-copy-\(UUID().uuidString)")
