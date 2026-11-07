@@ -190,6 +190,7 @@ final class SpotsModel {
             update: updateSpot,
             core: folder.core,
             login: AppLogin.item,
+            link: AppCommandLink.item,
             offersLogin: isFirstLaunch,
             quit: QuitSpot { await NSApp.terminate(nil) }
         ) + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
@@ -669,6 +670,10 @@ final class SpotsModel {
 
     private func run(_ entry: Entry) {
         if let item = entry.item, let list = entries.first(where: { $0.id == entry.command.id }) {
+            if item.shortcut != nil, openList != list.id {
+                sheetMoves = true
+                open(list.id)
+            }
             pick(item, of: list)
             return
         }

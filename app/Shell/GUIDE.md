@@ -449,7 +449,8 @@ keeps each pair of languages in memory, and they leave memory 30 seconds after t
 this. It never starts, finds or stops anything, and it stays a handler that runs once for each call, as `translate.sh` does.
 When a call cannot start what it needs, it exits with code 1 and one line on stderr that says the cause and the fix.
 
-To use `openspot` in a terminal, link it: `ln -s <path to Openspot.app>/Contents/Helpers/openspot /usr/local/bin/openspot`.
+To use `openspot` in a terminal, turn on Use openspot in Terminal in Settings. It links `/usr/local/bin/openspot` to the
+command inside the app, and macOS asks for your password when that folder needs it.
 
 ## Metrics
 
