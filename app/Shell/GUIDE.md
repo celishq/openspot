@@ -590,6 +590,9 @@ openspot check <plugins folder>
 ## Rules for scripts
 
 - Print only the data. Send each message for the person to stderr. When a script fails, its last stderr line shows.
+- When a failure has a fix that a link opens, also print `open=<url>`, such as
+  `open=x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility`. The toast names the fix key, and the key
+  or a click opens the link.
 - Exit with 0 on success. Any other code is a failure.
 - Be fast in `read`. It has 10 seconds until its first frame or its end. Reads run at the same time, so a slow script delays no other. Any other name has no limit.
 - Keep files in `$OPENSPOT_DATA`, not in the plugin folder. Openspot creates this folder for each spot. Scripts in one plugin
