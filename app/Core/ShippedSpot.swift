@@ -33,7 +33,8 @@ public enum ShippedSpot: Equatable, Sendable {
                 size: .small,
                 symbol: "gearshape",
                 subtitle: "Choose your key",
-                read: .sheet,
+                read: SpotRead(moments: [.panel, .sheet]),
+                rank: settingsRank,
                 order: 2,
                 shipped: .settings(Settings(file: config, folder: folder, core: core, login: login, link: link))
             ),
@@ -73,6 +74,9 @@ public enum ShippedSpot: Equatable, Sendable {
 
     /// The ID of the list of spots that a person can turn on.
     public static let spotsID = "openspot/spots"
+
+    /// The place of the rows of Settings in the main search: after those of the core spots.
+    public static let settingsRank = 10
 
     /// The ID of the list of tools for authors.
     public static let buildID = "openspot/build"
