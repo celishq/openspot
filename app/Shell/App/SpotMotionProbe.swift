@@ -1,9 +1,9 @@
 import AppKit
 import QuartzCore
 
-/// A run that opens and closes the sheet of one spot again and again and writes the time of each frame to a file.
-/// `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`. The panel stays almost clear, takes no focus and no clicks,
-/// unless `OPENSPOT_SEEN` asks for a picture.
+/// A run that opens and closes the sheet of one spot again and again, or with `OPENSPOT_ACTION` moves down its rows or types
+/// in its search, and writes the time of each frame to a file. `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`.
+/// The panel stays almost clear, takes no focus and no clicks, unless `OPENSPOT_SEEN` asks for a picture.
 @MainActor
 final class SpotMotionProbe: NSObject {
     private let model: SpotsModel
@@ -14,6 +14,7 @@ final class SpotMotionProbe: NSObject {
     private let pause: Double
     /// Whether the panel shows in full, for a picture of it.
     private let isSeen: Bool
+    private let action: String?
     private var link: CADisplayLink?
     private var frames: [CFTimeInterval] = []
     private var start: CFTimeInterval = 0
@@ -27,6 +28,7 @@ final class SpotMotionProbe: NSObject {
         presses = 2 * (Int(environment["OPENSPOT_CYCLES"] ?? "") ?? 20)
         pause = Double(environment["OPENSPOT_PAUSE"] ?? "") ?? 0.15
         isSeen = environment["OPENSPOT_SEEN"] != nil
+        action = environment["OPENSPOT_ACTION"].flatMap { $0.isEmpty ? nil : $0 }
     }
 
     /// Shows the panel, waits for its reads, then starts the presses.
@@ -45,8 +47,35 @@ final class SpotMotionProbe: NSObject {
         let link = view.displayLink(target: self, selector: #selector(tick))
         link.add(to: .main, forMode: .common)
         self.link = link
-        start = CACurrentMediaTime()
-        press(target.id, left: presses)
+        guard let action else {
+            start = CACurrentMediaTime()
+            return press(target.id, left: presses)
+        }
+        model.press(target.id)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            self.start = CACurrentMediaTime()
+            if action == "typing" { self.type(left: self.presses) } else { self.arrow(left: self.presses) }
+        }
+    }
+
+    /// Moves down one line of the open rows for each step, and back up for each second half of the steps.
+    private func arrow(left: Int) {
+        guard left > 0 else { return end() }
+        model.moveItemLine(by: left > presses / 2 ? 1 : -1)
+        DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.arrow(left: left - 1) }
+    }
+
+    /// Types a word into the search of the open rows a letter at a time, then clears it, again and again.
+    private func type(left: Int) {
+        guard left > 0 else { return end() }
+        let word = "smile"
+        let length = left % (word.count + 1)
+        model.searchText = String(word.prefix(length))
+        DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.type(left: left - 1) }
+    }
+
+    private func end() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.finish(with: self.report()) }
     }
 
     private func press(_ id: String, left: Int) {
