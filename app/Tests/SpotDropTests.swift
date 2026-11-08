@@ -394,11 +394,11 @@ final class SpotDropTests: XCTestCase {
         """)
     }
 
-    /// The blocks that a staying script got, one string for each, with no `call` line.
+    /// The blocks that a staying script got, one string for each, with no `call` or `reason` line.
     private func blocks() -> [String] {
         let text = (try? String(contentsOfFile: path("blocks"), encoding: .utf8)) ?? ""
         return text.components(separatedBy: "\n\n").filter { !$0.isEmpty }.map { block in
-            block.split(separator: "\n").filter { !$0.hasPrefix("call=") }.joined(separator: "\n")
+            block.split(separator: "\n").filter { !$0.hasPrefix("call=") && !$0.hasPrefix("reason=") }.joined(separator: "\n")
         }
     }
 
