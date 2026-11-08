@@ -7,6 +7,8 @@ public enum PartCatalog {
         "placeholder", "readonly", "required", "type", "key", "close", "confirm", "scope", "form", "align", "look", "point",
         "image", "shortcut", "tone", "tint"
     ])
+    /// The kinds whose blocks can hold keys of the plugin's own, which a view reads.
+    private static let open: Set<String> = ["view"]
 
     /// The catalog, for a person or a model to read. It holds the whole language, so a sheet can be written from it alone.
     public static var text: String {
@@ -137,7 +139,8 @@ public enum PartCatalog {
     /// What is wrong with a block of a part, in words for a person or an agent.
     public static func faults(in block: TextBlock) -> [String] {
         let name = block.fields.first?.value ?? ""
-        var faults = block.fields.map(\.key).filter { !keys.contains($0) }.map { "the part \(name) has an unknown key: \($0)" }
+        let isOpen = open.contains(block.fields.first?.key ?? "")
+        var faults = isOpen ? [] : block.fields.map(\.key).filter { !keys.contains($0) }.map { "the part \(name) has an unknown key: \($0)" }
         faults += block.values("option").filter { !$0.contains(":") }.map { "the part \(name) needs an option as id:title: \($0)" }
         faults += block.values("color").filter { !isColor($0) }.map { "the part \(name) needs a color as #rrggbb: \($0)" }
         if let look = block.value("look"), SpotPart.Look(rawValue: look) == nil || look == "key" {

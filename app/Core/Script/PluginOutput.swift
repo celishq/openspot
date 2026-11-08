@@ -17,6 +17,10 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var layout: SheetLayout?
     /// The block of the first `text`, `gauge` or `graph`, which is the value of a metric (H1).
     public private(set) var metric: TextBlock?
+    /// The block of the first `view`, whose keys the plugin's view reads (V4).
+    public private(set) var view: TextBlock?
+    /// The drawings of the spot's card and of the menu bar, with the components that they place (U5).
+    public private(set) var face = CardFace.none
     /// The drawing that the rows flow through (U7). With no `repeat` block, the rows are a list.
     public private(set) var drawing = RepeatDrawing.list
     /// Each template that draws rows, by its name (U8).
@@ -66,6 +70,7 @@ public struct PluginOutput: Equatable, Sendable {
             } else if let kind, SpotPart.kinds.contains(kind), let part = SpotPart(block: block) {
                 if kind == "field" { fields.append(block) }
                 if metric == nil, ["text", "gauge", "graph"].contains(kind) { metric = block }
+                if view == nil, kind == "view" { view = block }
                 parts.append(part)
                 partFaults += PartCatalog.faults(in: block)
             } else if summary == nil, block == head {
@@ -78,6 +83,15 @@ public struct PluginOutput: Equatable, Sendable {
             }
         }
         self.layout = layout
+        face = CardFace(head: head, parts: parts)
+        if let id = face.trayID, let block = blocks.first(where: { $0.fields.first?.value == id && ["text", "gauge", "graph"].contains($0.fields.first?.key ?? "") }) {
+            metric = block
+        }
+        for drawing in face.drawings.values {
+            for id in Set(drawing.joined()) where id != SheetLayout.empty && !parts.contains(where: { $0.id == id }) {
+                partFaults.append("the card drawing names \(id), which no component has")
+            }
+        }
         parts += layout?.keyParts ?? []
         for id in [Self.reserved] + Self.defaults where parts.contains(where: { $0.id == id }) {
             partFaults.append("a part cannot be called \(id)")

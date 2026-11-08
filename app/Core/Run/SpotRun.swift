@@ -347,6 +347,14 @@ public final class SpotRun {
         work(action, key: Self.cardKey, undo: before)
     }
 
+    /// Takes a change or a press of a component that the card draws (U5). The card shows a new value at once, and the call
+    /// sends `<id> [value]`.
+    public func setCardPart(_ id: String, to value: String?) {
+        guard let value else { return work(.press(id), key: Self.key(part: id)) }
+        state = state.setting(value, of: id)
+        work(.set(id, to: value), key: Self.key(part: id))
+    }
+
     /// Takes files that a person dropped or chose, and returns whether the card takes them. They run as one `drop` call, once
     /// no call that does work runs. A running call goes on.
     @discardableResult

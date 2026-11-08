@@ -65,7 +65,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let mark: MetricValue?
 
     /// The kinds of block that make a part, in the order of the table in spec 02 (U2).
-    public static let kinds = ["text", "gauge", "graph", "picture", "switch", "slider", "field", "choice", "key", "button", "section"]
+    public static let kinds = ["text", "gauge", "graph", "picture", "view", "switch", "slider", "field", "choice", "key", "button", "section"]
 
     /// Reads a block whose first key is a kind of part. Its value is the id, and the kind decides the control.
     public init?(block: TextBlock) {

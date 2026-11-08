@@ -15,6 +15,8 @@ public struct SpotState: Equatable, Sendable {
     public let values: [String: [String]]
     /// The id of the switch or the slider that its card changes, which a change of the card sends (U12).
     public let control: String?
+    /// The drawings of its card, with the components that they place (U5).
+    public private(set) var face: CardFace
 
     public init(
         title: String,
@@ -26,7 +28,8 @@ public struct SpotState: Equatable, Sendable {
         isOnGrid: Bool = true,
         size: SpotSize? = nil,
         values: [String: [String]] = [:],
-        control: String? = nil
+        control: String? = nil,
+        face: CardFace = .none
     ) {
         self.title = title
         self.subtitle = subtitle
@@ -38,6 +41,7 @@ public struct SpotState: Equatable, Sendable {
         self.size = size
         self.values = values
         self.control = control
+        self.face = face
     }
 
     /// Reads how a spot looks from what its script printed: the words of its head, `tone=on` in its head for a spot that
@@ -62,14 +66,15 @@ public struct SpotState: Equatable, Sendable {
             max: level?.2,
             isOnGrid: header.isOnGrid,
             size: block?.value("size").flatMap(SpotSize.init(name:)) ?? header.size,
-            control: control?.id
+            control: control?.id,
+            face: output.face
         )
     }
 
     /// This state with each value of a block, which a view draws.
     public func holding(_ block: TextBlock?) -> SpotState {
         let values = Dictionary(grouping: block?.fields ?? [], by: \.key).mapValues { $0.map(\.value) }
-        return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, values: values, control: control)
+        return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, values: values, control: control, face: face)
     }
 
     /// This state with what a frame of a running call changes: the `tone` of its head and the value of its card's control.
@@ -81,22 +86,29 @@ public struct SpotState: Equatable, Sendable {
         let part = output.parts.first { $0.id == control }
         if case .toggle(let value)? = part?.control { on = value }
         if case .slider(let value, _, _)? = part?.control { level = value }
-        return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, values: values, control: control)
+        return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, values: values, control: control, face: face)
+    }
+
+    /// This state with a value that the person set on a component of its card, before the script answers.
+    public func setting(_ value: String, of id: String) -> SpotState {
+        var next = self
+        next.face.set(value, of: id)
+        return next
     }
 
     /// This state with its switch set, as a press of its card sets it before the script answers.
     public func switched(on: Bool) -> SpotState {
-        SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, values: values, control: control)
+        SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, values: values, control: control, face: face)
     }
 
     /// This state with the words of a running call over its own. A word the call leaves out stays.
     public func showing(title: String?, detail: String?) -> SpotState {
-        SpotState(title: title ?? self.title, subtitle: detail ?? subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, values: values, control: control)
+        SpotState(title: title ?? self.title, subtitle: detail ?? subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, values: values, control: control, face: face)
     }
 
     /// This state, on the grid or off it.
     func onGrid(_ isOnGrid: Bool) -> SpotState {
-        SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, values: values, control: control)
+        SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, values: values, control: control, face: face)
     }
 
     public func adjusted(by delta: Double) -> SpotState {
@@ -108,6 +120,6 @@ public struct SpotState: Equatable, Sendable {
         let low = self.min ?? 0
         let high = self.max ?? 100
         let next = Swift.min(Swift.max(value, low), high)
-        return SpotState(title: title, subtitle: subtitle, on: on, level: next, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, values: values, control: control)
+        return SpotState(title: title, subtitle: subtitle, on: on, level: next, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, values: values, control: control, face: face)
     }
 }

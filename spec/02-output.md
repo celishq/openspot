@@ -48,7 +48,7 @@ component cannot take a default id of 01 (C1).
 | `gauge`   | A ring in a square area, a bar in a wide one.           | `value` from 0 to 1                                             |                        |
 | `graph`   | Bars. The last bar is the newest.                       | `point`, one line for each bar, and `max`                       |                        |
 | `picture` | A picture that fills its area.                          | `symbol`, `file`, `image` or `glyph`                            |                        |
-| `view`    | A SwiftUI view of the plugin (03).                      | `source`                                                        |                        |
+| `view`    | The SwiftUI view that the header names (03).            | any key that the view reads                                     |                        |
 | `switch`  | A switch.                                               | `on`                                                            | `<id> true` or `false` |
 | `slider`  | A slider. It sends when the person lets go.             | `level`, `min`, `max`                                           | `<id> <number>`        |
 | `field`   | A text field.                                           | `text`, `placeholder`, `type=multiline`, `required`, `readonly` | `<id> <text>`          |
@@ -209,5 +209,3 @@ chooses what the menu bar shows. Printing nothing removes the item until the nex
 | ---------- | ----------------------------------------------------------------------------------- | ----- |
 | U8, U9     | A row cannot draw a `field` slot; a list row has room for two lines.                | 2     |
 | U11        | A frame replaces the rows.                                                          | 2     |
-| U5         | A card has no drawing of its own: it draws its picture, its words and its control.   | 4     |
-| `view`     | A view fills the whole card from the header's `view` (03).                          | 5     |

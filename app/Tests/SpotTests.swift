@@ -50,13 +50,14 @@ final class SpotTests: XCTestCase {
         XCTAssertEqual(state, SpotState(title: "Focus", subtitle: "On", on: true, control: "focus"))
     }
 
-    func testOnlyASpotWithAViewKeepsTheValuesOfItsHead() throws {
-        let output = PluginOutput(text: "title=3\npoint=1\npoint=2\n")
+    func testOnlyASpotWithAViewKeepsTheValuesOfItsViewBlock() throws {
+        let output = PluginOutput(text: "view=cups\ntitle=3\npoint=1\npoint=2\n")
         let plain = Spot(id: "cups", name: "Cups", url: URL(fileURLWithPath: "/plugins/cups.sh"), read: .panel)
         let drawn = Spot(id: "cups", name: "Cups", url: URL(fileURLWithPath: "/plugins/cups.sh"), read: .panel, view: "/plugins/cups.swift")
 
         XCTAssertEqual(try plain.state(of: output).values, [:])
-        XCTAssertEqual(try drawn.state(of: output).values, ["title": ["3"], "point": ["1", "2"]])
+        XCTAssertEqual(try drawn.state(of: output).values, ["view": ["cups"], "title": ["3"], "point": ["1", "2"]])
+        XCTAssertTrue(try drawn.state(of: output).face.hasView)
     }
 
     func testAStateKeepsWhatItLeavesOutFromTheHeader() async throws {

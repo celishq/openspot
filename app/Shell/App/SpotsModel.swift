@@ -375,6 +375,11 @@ final class SpotsModel {
         sheets[id]?.setLevel(value)
     }
 
+    /// Sends a change or a press of a component that a card draws (U5).
+    func setCardPart(_ id: String, _ part: String, to value: String?) {
+        sheets[id]?.setCardPart(part, to: value)
+    }
+
     func runSelected() {
         guard !isEditing else { return }
         if openList != nil {

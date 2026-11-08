@@ -221,7 +221,7 @@ public struct Spot: Equatable, Sendable {
         guard readsState else { return headerState }
         guard output.summary != nil || output.errors.isEmpty else { throw PluginError.badState }
         var state = SpotState(output: output, header: headerState)
-        if view != nil { state = state.holding(output.summary) }
+        if view != nil { state = state.holding(output.view) }
         guard shipped != nil, let isOnGrid = output.summary?.flag("grid") else { return state }
         return state.onGrid(isOnGrid)
     }
