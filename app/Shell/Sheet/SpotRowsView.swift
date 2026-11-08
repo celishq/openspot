@@ -49,11 +49,12 @@ struct SpotRowsView: View {
             .mask(edgeFade)
             .padding(.vertical, -SpotTokens.padding)
             .onChange(of: list.selectedItem?.run) { _, run in
-                if let run { proxy.scrollTo(run) }
+                guard let run else { return }
+                if isGrid { proxy.scrollTo(list.selected) } else { proxy.scrollTo(run) }
             }
             .onChange(of: list.query) {
                 guard let run = list.shown.first?.run else { return }
-                DispatchQueue.main.async { proxy.scrollTo(run, anchor: .top) }
+                DispatchQueue.main.async { if isGrid { proxy.scrollTo(0, anchor: .top) } else { proxy.scrollTo(run, anchor: .top) } }
             }
         }
     }
@@ -75,20 +76,28 @@ struct SpotRowsView: View {
         let side = SpotTokens.square(perLine: list.perLine)
         let columns = Array(repeating: GridItem(.fixed(side), spacing: SpotTokens.listRowGap), count: list.perLine)
         return LazyVGrid(columns: columns, spacing: SpotTokens.listRowGap) {
-            ForEach(Array(list.shown.enumerated()), id: \.element.run) { index, item in
+            ForEach(list.shown.indices, id: \.self) { index in
+                let item = list.shown[index]
                 Button {
                     onRun(item)
                 } label: {
-                    SpotItemIcon(item: item, size: SpotTokens.listIconSize)
-                        .frame(width: side, height: side)
-                        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
-                        .modifier(SpotSelectionRing(isSelected: index == list.selected, shape: row, width: SpotSelectionRing<RoundedRectangle>.thinWidth))
-                        .contentShape(row)
+                    SpotGridCell(item: item, side: side).equatable()
                 }
                 .buttonStyle(.plain)
-                .help(item.title)
-                .accessibilityLabel(item.title)
             }
+        }
+        .overlay(alignment: .topLeading) { ring(side: side) }
+    }
+
+    /// The one ring of the grid, over the selected cell, so that a new selection redraws no cell.
+    @ViewBuilder
+    private func ring(side: CGFloat) -> some View {
+        if list.selectedItem != nil {
+            let step = side + SpotTokens.listRowGap
+            Color.clear
+                .frame(width: side, height: side)
+                .modifier(SpotSelectionRing(isSelected: true, shape: row, width: SpotSelectionRing<RoundedRectangle>.thinWidth))
+                .offset(x: CGFloat(list.selected % list.perLine) * step, y: CGFloat(list.selected / list.perLine) * step)
         }
     }
 
@@ -128,5 +137,20 @@ struct SpotRowsView: View {
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .modifier(SpotSelectionRing(isSelected: isSelected, shape: row))
         .contentShape(row)
+    }
+}
+
+/// One square of the grid. It depends on its item alone, so that a move of the selection leaves it as it is.
+private struct SpotGridCell: View, Equatable {
+    let item: SpotItem
+    let side: CGFloat
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
+        SpotItemIcon(item: item, size: SpotTokens.listIconSize)
+            .frame(width: side, height: side)
+            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
+            .contentShape(shape)
+            .accessibilityLabel(item.title)
     }
 }
