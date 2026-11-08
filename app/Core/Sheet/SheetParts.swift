@@ -43,7 +43,13 @@ public struct SheetParts: Equatable, Sendable {
     /// The keys of its parts, in words for the footer. The key of a running part says that it stops the call.
     public func hint(stopping isRunning: (SpotPart) -> Bool) -> String {
         let keys = parts.compactMap { part in part.key.map { "\($0.label) \(isRunning(part) ? "Stop" : part.title ?? part.id.capitalized)" } }
-        return (keys + ["Esc Close"]).joined(separator: "   ")
+        let close = parts.contains { $0.key == ActionKey(name: "escape") } ? [] : ["Esc Close"]
+        return (keys + close).joined(separator: "   ")
+    }
+
+    /// Whether its drawing places a button with a key, so that the footer shows the keys of its parts also beside rows.
+    public var drawsKeys: Bool {
+        parts.contains { part in part.key != nil && layout?.areas[part.id] != nil }
     }
 
     /// Whether it draws the rows of the script in one of its areas, so that the search field and the arrows go to them.

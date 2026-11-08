@@ -90,10 +90,10 @@ public enum PartCatalog {
     | Key | Does |
     |---|---|
     | `icon=wifi` | A picture: an SF Symbol name, a path of a picture file such as `cup.png`, any other path for its Finder icon, or text such as 😀. |
-    | `shortcut=cmd+return` | Adds a keyboard key to a button. The hint under the sheet shows it. Use cmd, shift and one letter, digit, return or backspace. |
+    | `shortcut=cmd+return` | Adds a keyboard key to a button. The hint under the sheet shows it. Use cmd, shift and one letter, digit, return or backspace, or `escape` alone, which then presses the button in place of closing the sheet. |
     | `close=true` | Closes the panel after a press. |
     | `align=left`, `right` or `center` | Places a component that is smaller than its cell. |
-    | `look=tile`, `chip`, `strong` or `bare` | The box of a text, a number or a button. `tile` is a filled row. `chip` is a small capsule button. `strong` is the one main button, white. `bare` shows a button or a number with no fill. |
+    | `look=tile`, `chip`, `strong` or `bare` | The box of a text, a number or a button. `tile` is a filled row. `chip` is a small capsule button. `strong` is the one main button, white, and a small capsule with `align`. A chip shows its key. `bare` shows a button or a number with no fill. |
 
     """
 

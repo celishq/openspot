@@ -132,6 +132,23 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(try panel("grid=swap\n\nbutton=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\n").hint, "⌘⇧S Swap   Esc Close")
     }
 
+    func testAButtonCanTakeEscapeAndThenTheHintHasNoCloseOfItsOwn() throws {
+        let sheet = try panel("grid=cancel remove\n\nbutton=cancel\ntitle=Cancel\nshortcut=escape\n\nbutton=remove\ntitle=Move to Trash\nshortcut=cmd+return\n")
+
+        XCTAssertEqual(sheet.parts.first?.key, ActionKey(name: "escape"))
+        XCTAssertEqual(sheet.hint, "Esc Cancel   ⌘⏎ Move to Trash")
+        XCTAssertEqual(PluginOutput(text: "text=a\nshortcut=cmd+escape\n").partFaults, ["the part a has an unknown key combination: cmd+escape"])
+    }
+
+    func testASheetOfRowsDrawsKeysOnlyWhenItsDrawingPlacesAButtonWithAKey() throws {
+        let rows = "repeat=files\n\nrow=a\ntitle=A\n\n"
+        let drawn = try XCTUnwrap(SheetParts(output: PluginOutput(text: "grid=files\ngrid=cancel\n\n\(rows)button=cancel\nshortcut=escape\n")))
+        let actions = SheetParts(output: PluginOutput(text: "grid=files\n\n\(rows)text=t\n\nbutton=reveal\nshortcut=cmd+return\n"))
+
+        XCTAssertTrue(drawn.drawsKeys)
+        XCTAssertEqual(actions?.drawsKeys, false)
+    }
+
     func testAnEveryLineIsAnUnknownKeyThatASheetSkips() throws {
         XCTAssertEqual(PluginOutput(text: "every=5\n\ntext=a\ntitle=A\n").sheetFaults, [])
         XCTAssertEqual(try panel("every=5\n\ntext=a\ntitle=A\n").parts.map(\.id), ["a"])

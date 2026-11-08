@@ -1,6 +1,6 @@
 import Foundation
 
-/// A key with its modifiers, as a script names it, such as cmd+return or cmd+shift+n.
+/// A key with its modifiers, as a script names it, such as cmd+return or cmd+shift+n, or `escape` alone.
 public struct ActionKey: Hashable, Sendable {
     public let name: String
     public let isCommand: Bool
@@ -16,6 +16,11 @@ public struct ActionKey: Hashable, Sendable {
         var parts = text.lowercased().split(separator: "+").map(String.init)
         guard let last = parts.popLast() else { return nil }
         guard parts.allSatisfy({ $0 == "cmd" || $0 == "shift" }) else { return nil }
+        if last == "escape" {
+            guard parts.isEmpty else { return nil }
+            self.init(name: last)
+            return
+        }
         let isNamed = last == "return" || last == "backspace"
         guard isNamed || (last.count == 1 && last.first?.isLetter == true) || (last.count == 1 && last.first?.isNumber == true) else { return nil }
         self.init(name: last, isCommand: parts.contains("cmd"), isShift: parts.contains("shift"))
@@ -27,6 +32,7 @@ public struct ActionKey: Hashable, Sendable {
         switch name {
         case "return": key = "⏎"
         case "backspace": key = "⌫"
+        case "escape": return "Esc"
         default: key = name.uppercased()
         }
         return (isCommand ? "⌘" : "") + (isShift ? "⇧" : "") + key

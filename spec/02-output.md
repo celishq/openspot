@@ -63,7 +63,8 @@ Each kind also takes `title`, `detail`, `tone` and `icon`. The value of `icon` s
 of a picture file, such as `cups.png`, draws the picture; any other path draws the file's Finder icon; a name of lowercase
 letters, digits and dots, such as `wifi`, is an SF Symbol; and any other text, such as `😀`, is drawn as it is. `tone` is `good`,
 `warn` or `bad` for a colour that means something, and `on` for a plain dot that says that a thing is active. `look` is
-the box of a text, a number or a button: `tile`, `bare`, and on a button also `chip` or `strong`. A key that a kind does not take is skipped.
+the box of a text, a number or a button: `tile`, `bare`, and on a button also `chip` or `strong`. A `strong` button with
+`align` is a capsule, as a `chip` is, and a chip shows its key. A key that a kind does not take is skipped.
 
 ## Drawings
 
@@ -85,7 +86,8 @@ one, so a button with no drawing of its own is always an action. `pad=7 8 9 +` i
 A `button` that a drawing places is drawn. A `button` that no drawing places is an action (U6): it shows in the ⌘K menu,
 its `shortcut` works directly, and with no row selected it acts on the whole spot. An action on a row is `<script> <id> <row id>`.
 `scope=command` keeps an action on the whole spot when a row is selected. `close=true` closes the panel after it runs, and
-`confirm` asks for a second press, such as `Press again to delete`.
+`confirm` asks for a second press, such as `Press again to delete`. `shortcut=escape` on a drawn button presses it in place
+of closing the sheet, such as a Cancel.
 
 Enter on a row is the action `open`, which each spot has. A `button=open` gives it its word with `title`, and
 `close=false` keeps the panel open after a pick.
