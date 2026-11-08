@@ -30,7 +30,7 @@ final class EmojiCatalogTests: XCTestCase {
     private func write(keywords: String, language: String = "en") throws {
         let place = folder.appendingPathComponent("Keywords")
         try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
-        try keywords.write(to: place.appendingPathComponent("\(language).tsv"), atomically: true, encoding: .utf8)
+        try (Data(keywords.utf8) as NSData).compressed(using: .lzma).write(to: place.appendingPathComponent("\(language).tsv.xz"))
     }
 
     private func rows(tone: EmojiCatalog.Tone = .none, languages: [String] = ["en"]) throws -> [SpotItem] {

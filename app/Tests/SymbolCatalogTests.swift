@@ -112,7 +112,7 @@ final class SymbolCatalogTests: XCTestCase {
         try write(category: "Arrows", data: "→")
         let place = folder.appendingPathComponent("Keywords")
         try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
-        try "→\tarrow\tright\n".write(to: place.appendingPathComponent("en.tsv"), atomically: true, encoding: .utf8)
+        try (Data("→\tarrow\tright\n".utf8) as NSData).compressed(using: .lzma).write(to: place.appendingPathComponent("en.tsv.xz"))
 
         XCTAssertEqual(try rows().first?.keywords, ["arrow", "right"])
     }

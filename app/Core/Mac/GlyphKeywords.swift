@@ -1,6 +1,6 @@
 import Foundation
 
-/// The CLDR keywords of each emoji and symbol, in the first language of the Mac that has them, read from the files that
+/// The CLDR keywords of each emoji and symbol, in the first language of the Mac that has them, read from the xz files that
 /// the app holds. A glyph with no keywords, or a folder with no files, gives none.
 public struct GlyphKeywords: Sendable {
     /// The folder in the app, found from the real executable, so that the `openspot` command, a link to it, finds it too.
@@ -15,8 +15,9 @@ public struct GlyphKeywords: Sendable {
     public init(folder: URL? = standardFolder, languages: [String] = Locale.preferredLanguages) {
         words = folder.flatMap { folder in
             LanguageCodes(languages: languages).all.lazy
-                .compactMap { try? String(contentsOf: folder.appendingPathComponent("\($0).tsv"), encoding: .utf8) }
+                .compactMap { try? (Data(contentsOf: folder.appendingPathComponent("\($0).tsv.xz")) as NSData).decompressed(using: .lzma) }
                 .first
+                .map { String(decoding: $0 as Data, as: UTF8.self) }
         }.map(Self.read) ?? [:]
     }
 

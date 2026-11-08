@@ -1,4 +1,4 @@
-"""Writes the CLDR keywords of each emoji and symbol to app/Keywords, one file per language of the Mac's emoji names.
+"""Writes the CLDR keywords of each emoji and symbol to app/Keywords, one xz file per language of the Mac's emoji names.
 
 Each line holds a glyph, then its keywords, split by tabs. A glyph has no presentation mark and no skin tone.
 Run from the project root: python3 scripts/emoji-keywords.py
@@ -6,6 +6,7 @@ Run from the project root: python3 scripts/emoji-keywords.py
 
 import io
 import json
+import lzma
 import shutil
 import tarfile
 import urllib.request
@@ -62,7 +63,8 @@ def main():
     OUT.mkdir(parents=True)
     for language in LANGUAGES:
         lines = [glyph + "\t" + "\t".join(words) for glyph, words in sorted(keywords(language).items())]
-        (OUT / (language.replace("-", "_") + ".tsv")).write_text("\n".join(lines) + "\n")
+        text = ("\n".join(lines) + "\n").encode()
+        (OUT / (language.replace("-", "_") + ".tsv.xz")).write_bytes(lzma.compress(text, preset=9 | lzma.PRESET_EXTREME))
     shutil.copy(TEMP / PACKAGES["annotations"] / "package" / "LICENSE", OUT / "LICENSE")
 
 
