@@ -70,8 +70,9 @@ places = ["agents", "battery", "cpu", "disk"]
 opens = "links"
 ```
 
-`places` names one tool for each cell, by its file name with no extension. The layouts are `single`, `hero`, `pair` and
-`row`. A widget can also draw its own layout, such as `grid = ["a a b b", "a a c c"]` with
+`places` names one tool for each cell, by its ID: its path with no extension, such as `cpu` or `home/coffee`. A widget in a
+folder with its tools names them by file name alone, and the whole folder is shared as one. The layouts are `single`,
+`hero`, `pair` and `row`. A widget can also draw its own layout, such as `grid = ["a a b b", "a a c c"]` with
 `places = { a = "agents", b = "battery", c = "cpu" }`. `opens` names the tool that a click opens, and that tool has no card of its own.
 
 Settings gives a key to each command that a tool lists. It writes the key to `~/.config/openspot/config.toml`, and you can

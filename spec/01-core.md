@@ -12,6 +12,9 @@ A plugin is one executable file, in any language, at the top of the plugins fold
 at most one spot (F4), and its ID is its path with no extension, such as `home/coffee` (F5). A file that is not executable
 can hold shared code.
 
+A plugin of more than one file lives in a folder of its own, one folder down, such as a script with its view or a widget
+with its metrics (F10). The folder is one unit: it is shared whole, and its scripts share one data folder.
+
 ```sh
 #!/bin/sh
 say hello

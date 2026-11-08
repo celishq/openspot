@@ -25,8 +25,9 @@ struct SpotView: View {
 }
 ```
 
-`view=<file>` in the header names a SwiftUI view that the card of the spot draws (V1). The path starts at the folder of the
-script, and the file ends in `.swift`. The file is not executable, so it is not a spot of its own.
+`view=<file>` in the header names a SwiftUI view that the card of the spot draws (V1). The script and its view lie in a
+folder of their own, such as `cups/cups.sh` and `cups/cups.swift` (F10). The path starts at the folder of the script, and
+the file ends in `.swift`. The file is not executable, so it is not a spot of its own.
 
 ## The view
 
