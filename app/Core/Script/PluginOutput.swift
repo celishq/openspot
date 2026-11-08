@@ -33,6 +33,8 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var ends: [String] = []
 
     private static let reserved = "read"
+    /// The keys of a call block for a staying script, which a value of the sheet would take the place of.
+    private static let callKeys = ["call", "arg"]
     /// The app's own events. A part cannot take one, and a button can take only `open`, to change the pick.
     private static let defaults = ["run", "open", "drop"]
     private static let button = "button"
@@ -110,7 +112,7 @@ public struct PluginOutput: Equatable, Sendable {
             }
         }
         parts += layout?.keyParts ?? []
-        for id in [Self.reserved] + Self.defaults where parts.contains(where: { $0.id == id }) {
+        for id in [Self.reserved] + Self.callKeys + Self.defaults where parts.contains(where: { $0.id == id }) {
             partFaults.append("a part cannot be called \(id)")
         }
         if !parts.isEmpty { partFaults += SheetFaults.of(layout: layout, summary: summary, parts: parts) }

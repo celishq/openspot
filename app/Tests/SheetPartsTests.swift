@@ -171,6 +171,12 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(PluginOutput(text: "button=read\ntitle=A\n").partFaults, ["an action cannot be called read"])
     }
 
+    func testAPartCalledCallOrArgIsAFaultBecauseAStayingScriptReadsThoseKeys() {
+        for id in ["call", "arg"] {
+            XCTAssertEqual(PluginOutput(text: "field=\(id)\ntext=A\n").partFaults, ["a part cannot be called \(id)"])
+        }
+    }
+
     func testAPartOrAnActionWithADefaultIdIsAFaultButAnOpenActionChangesThePick() {
         for id in ["run", "open", "drop"] {
             XCTAssertEqual(PluginOutput(text: "text=\(id)\ntitle=A\n").partFaults, ["a part cannot be called \(id)"])

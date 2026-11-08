@@ -60,6 +60,7 @@ open -a Calendar
 | `data`                   | The name of a data folder to share with other spots.                                                                                                                 |
 | `drop`                   | The files that its card takes: extensions such as `mov,mkv`, `folder`, or `*`.                                                                                       |
 | `command`                | `<id>:<title>[:<icon>]`, a command that the person can give a key. One line for each.                                                                                  |
+| `stay`                   | `true` keeps one process that takes each call on stdin and prints frames at any time (04).                                                                           |
 
 With `panel` in its `read`, the head of a frame can change `size`. The person's choice wins (F9). A script with `command`
 lines has no card on the grid, because its commands are what it gives.
@@ -104,7 +105,8 @@ A script gets:
 - **Arguments:** the id and its values. A value over 64 KB goes on stdin only (C6).
 - **Stdin:** what the person filled in, as one block. A value that is not a field of the sheet comes as `value=`.
 - **Environment:** `OPENSPOT_DATA`, a folder for its files, shared by one plugin folder or by one `data` name.
-  `OPENSPOT_SH`, the shell helper. `PATH`, with the `openspot` command first (W1).
+  `OPENSPOT_SH`, the shell helper. `PATH`, with the `openspot` command first (W1). `OPENSPOT_STAY=true` in a staying
+  script (04).
 
 ```sh
 #!/bin/sh
@@ -171,6 +173,6 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | The first key names the kind of a block.                                      | A kind found from any key.          |
 | Escape codes report and never act.                                            | OSC 8 as `link`.                    |
 | A person can see and stop each call, so a call has no time limit.             | A `job` key.                        |
-| Each script runs once for each call. State lives in files or in a capability. | A process that stays between calls. |
+| A script runs once for each call, unless its header says `stay=true` (04).    | A process that stays by default.    |
 | The header is in each file, and a scan runs nothing.                          | A manifest.                         |
 | A plugin runs with the full access of the person (P1, P2).                    | A `uses` key, or a sandbox.         |

@@ -45,6 +45,9 @@ These rules come from the way Nostr writes its NIPs.
 | -------------------------------------------------------------------------------------------------------- | -------------------- | ---- |
 | `title`, `icon`, `detail`, `shortcut`, `size`, `read`, `data`, `drop`, `command` | Header key           | 01   |
 | `global`, `tray`                                                                                         | Header key           | 02   |
+| `stay`                                                                                                   | Header key           | 04   |
+| `end`                                                                                                    | Head key             | 04   |
+| `call`, `arg`, `stop`                                                                                    | Stdin key            | 04   |
 | `sheet`, `panel`, a number, `launch`, `wake`                                                             | Moment               | 01   |
 | `toast`, `link`                                                                                          | Head key             | 01   |
 | `text`, `number`, `gauge`, `graph`, `picture`, `spot`, `switch`, `slider`, `field`, `choice`, `hotkey`, `button`, `section`, `repeat`, `template`, `row` | Block kind | 02 |
@@ -53,6 +56,7 @@ These rules come from the way Nostr writes its NIPs.
 | `read`                                                                                                   | Reserved word        | 01   |
 | `run`, `open`, `drop`                                                                                    | Default id           | 01   |
 | `OPENSPOT_REASON`, `OPENSPOT_DATA`, `OPENSPOT_SH`                                                        | Environment variable | 01   |
+| `OPENSPOT_STAY`                                                                                          | Environment variable | 04   |
 | `openspot <noun> <verb>`                                                                                 | Command              | 01   |
 
 ## How to extend
