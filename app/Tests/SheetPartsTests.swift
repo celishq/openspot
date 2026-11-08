@@ -165,6 +165,16 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(PluginOutput(text: "action=read\ntitle=A\n").partFaults, ["an action cannot be called read"])
     }
 
+    func testAPartOrAnActionWithADefaultIdIsAFaultButAnOpenActionChangesThePick() {
+        for id in ["run", "open", "drop", "on", "off", "level"] {
+            XCTAssertEqual(PluginOutput(text: "part=\(id)\ntitle=A\n").partFaults, ["a part cannot be called \(id)"])
+        }
+        for id in ["run", "drop", "on", "off", "level"] {
+            XCTAssertEqual(PluginOutput(text: "action=\(id)\ntitle=A\n").partFaults, ["an action cannot be called \(id)"])
+        }
+        XCTAssertEqual(PluginOutput(text: "action=open\ntitle=Show\n").partFaults, [])
+    }
+
     func testArrowsSelectThePartsThatReturnCanUse() throws {
         var sheet = try panel("""
         part=key

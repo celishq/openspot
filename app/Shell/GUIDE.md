@@ -100,7 +100,9 @@ a call that prints no state, Openspot reads the script again.
 | `<script> drop <path> [path]...` | Files are dropped on its card, or chosen for it | Does its work on each file. |
 | `<script> <id>` | A key that a person gave a `command` is pressed, in any app | Does its work. |
 
-`read` is the only reserved word. A part or an action cannot be called `read`, and `openspot check` reports it.
+`read` is the only reserved word. `run`, `open`, `drop`, `on`, `off` and `level` are default ids: the app's own events.
+A part cannot use a default id, and an action can use only `open`, to change what Enter does. `openspot check` reports a
+clash.
 
 A value over 64 KB is left out of the arguments, because the system limits them. Stdin still holds it: a value of the sheet
 as it is, and any other value under the key `value`, such as `value=<run>`.

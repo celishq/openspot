@@ -16,6 +16,8 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var layout: SheetLayout?
 
     private static let reserved = "read"
+    /// The app's own events. A part cannot take one, and an action can take only `open`, to change the pick.
+    private static let defaults = ["run", "open", "drop", "on", "off", "level"]
 
     public init(text: String) {
         var runs = Set<String>()
@@ -42,7 +44,9 @@ public struct PluginOutput: Equatable, Sendable {
         }
         layout = summary.flatMap(SheetLayout.init(block:))
         parts += layout?.keyParts ?? []
-        if parts.contains(where: { $0.id == Self.reserved }) { partFaults.append("a part cannot be called \(Self.reserved)") }
+        for id in [Self.reserved] + Self.defaults where parts.contains(where: { $0.id == id }) {
+            partFaults.append("a part cannot be called \(id)")
+        }
         if !parts.isEmpty { partFaults += SheetFaults.of(layout: layout, summary: summary, parts: parts) }
     }
 
@@ -75,7 +79,7 @@ public struct PluginOutput: Equatable, Sendable {
 
     /// Keeps an action. The `open` action sets the word for Enter, and whether a pick stays in the panel.
     private mutating func take(action id: String, _ block: TextBlock) {
-        if id == Self.reserved { partFaults.append("an action cannot be called \(Self.reserved)") }
+        if id == Self.reserved || (Self.defaults.contains(id) && id != "open") { partFaults.append("an action cannot be called \(id)") }
         if id == "open" {
             primary = block.value("title")
             pick = block.flag("close") == false ? .stay : .close

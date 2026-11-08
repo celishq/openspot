@@ -454,7 +454,6 @@ A change to the meaning of a word that exists is a breaking change. Do not make 
 
 | Rules | Module | Today |
 |---|---|---|
-| C1 | `Core/Script/PluginOutput.swift` | Reserves `read` only. |
 | R10, R11 | `Core/Script/PluginOutput.swift`, `Core/Run/SpotRun.swift` | Finds a kind by any key of a block. Reads `toast` from the head only. |
 | M6 | `Core/Run/*`, `Core/Script/ScriptProcess.swift` | A read does not know its moment. |
 | Y7 | `Core/Run/SpotRun.swift`, `Core/Script/SpotAction.swift` | A staying call has no id, no end and no stop. |
