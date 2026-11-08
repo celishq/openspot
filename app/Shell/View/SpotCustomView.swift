@@ -4,11 +4,13 @@ import SwiftUI
 /// A plugin's own view, which fills its whole card and is clipped to the card's shape. It gets the head of the last read
 /// and the card's size, inset, corner and theme, and it draws only: a press goes to the card (V3, V5). A card loads
 /// it, and draws itself as any card with running work while it builds. A view that fails shows why, shrunk to fit.
+/// The view exists only while the panel shows, so a hidden panel runs none of its work.
 struct SpotCustomView: View {
     let source: String
     let values: [String: [String]]
     let card: SpotSize
     let views: SpotViews
+    @Environment(\.spotIsShown) private var isShown
 
     private var size: CGSize {
         CGSize(width: SpotTokens.width(columns: card.columns), height: SpotTokens.height(rows: card.rows))
@@ -46,8 +48,10 @@ struct SpotCustomView: View {
         switch views.phase(of: source) {
         case .building:
             EmptyView()
-        case .ready(let make):
+        case .ready(let make) where isShown:
             make(values, room, { _ in })
+        case .ready:
+            EmptyView()
         case .failed(let reason):
             Text(reason)
                 .font(SpotType.detail)
