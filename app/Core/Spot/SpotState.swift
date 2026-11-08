@@ -9,6 +9,10 @@ public struct SpotState: Equatable, Sendable {
     public let max: Double?
     /// Whether the grid shows the spot. Search and its key find it either way.
     public let isOnGrid: Bool
+    /// The size of its card that a read asks for. Nil keeps the header's.
+    public let size: SpotSize?
+    /// The place in the grid that a read asks for. Nil keeps the header's.
+    public let order: Int?
 
     public init(
         title: String,
@@ -17,7 +21,9 @@ public struct SpotState: Equatable, Sendable {
         level: Double? = nil,
         min: Double? = nil,
         max: Double? = nil,
-        isOnGrid: Bool = true
+        isOnGrid: Bool = true,
+        size: SpotSize? = nil,
+        order: Int? = nil
     ) {
         self.title = title
         self.subtitle = subtitle
@@ -26,6 +32,8 @@ public struct SpotState: Equatable, Sendable {
         self.min = min
         self.max = max
         self.isOnGrid = isOnGrid
+        self.size = size
+        self.order = order
     }
 
     /// Reads the block that says how a spot looks, and keeps what the block leaves out from the header.
@@ -37,18 +45,20 @@ public struct SpotState: Equatable, Sendable {
             level: block?.number("level"),
             min: block?.number("min"),
             max: block?.number("max"),
-            isOnGrid: block?.flag("grid") ?? header.isOnGrid
+            isOnGrid: block?.flag("grid") ?? header.isOnGrid,
+            size: block?.value("size").flatMap(SpotSize.init(name:)) ?? header.size,
+            order: block?.value("order").flatMap { Int($0) } ?? header.order
         )
     }
 
     /// This state with what a frame of a running call changes: only its `on` and its `level`. Its words stay the spot's own.
     public func taking(_ block: TextBlock) -> SpotState {
-        SpotState(title: title, subtitle: subtitle, on: block.flag("on") ?? on, level: block.number("level") ?? level, min: self.min, max: self.max, isOnGrid: isOnGrid)
+        SpotState(title: title, subtitle: subtitle, on: block.flag("on") ?? on, level: block.number("level") ?? level, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, order: order)
     }
 
     /// This state with the words of a running call over its own. A word the call leaves out stays.
     public func showing(title: String?, detail: String?) -> SpotState {
-        SpotState(title: title ?? self.title, subtitle: detail ?? subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid)
+        SpotState(title: title ?? self.title, subtitle: detail ?? subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, order: order)
     }
 
     public func adjusted(by delta: Double) -> SpotState {
@@ -60,6 +70,6 @@ public struct SpotState: Equatable, Sendable {
         let low = self.min ?? 0
         let high = self.max ?? 100
         let next = Swift.min(Swift.max(value, low), high)
-        return SpotState(title: title, subtitle: subtitle, on: on, level: next, min: self.min, max: self.max, isOnGrid: isOnGrid)
+        return SpotState(title: title, subtitle: subtitle, on: on, level: next, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, order: order)
     }
 }

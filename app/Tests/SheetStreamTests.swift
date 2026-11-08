@@ -37,6 +37,30 @@ final class SheetStreamTests: XCTestCase {
         XCTAssertNil(reader.finish())
     }
 
+    // MARK: R12
+
+    func testATerminalProgressCodeIsAFrameWithItsValue() {
+        var reader = SheetFrameReader()
+
+        XCTAssertEqual(reader.read(Data("Copying\u{1b}]9;4;1;42\u{07}".utf8)), ["value=0.42\n"])
+        XCTAssertEqual(reader.read(Data("\u{1b}]9;4;1".utf8)), [])
+        XCTAssertEqual(reader.read(Data(";50\u{1b}\\\n".utf8)), ["value=0.5\n"])
+        XCTAssertEqual(reader.read(Data("\u{1b}]9;4;3;0\u{07}\u{1b}]9;4;0;0\u{07}".utf8)), [])
+    }
+
+    func testATerminalNotificationCodeIsAFrameWithItsToast() {
+        var reader = SheetFrameReader()
+
+        XCTAssertEqual(reader.read(Data("\u{1b}]9;Build done\u{07}".utf8)), ["toast=Build done\n"])
+    }
+
+    func testEachOtherEscapeCodeLeavesTheText() {
+        var reader = SheetFrameReader()
+
+        XCTAssertEqual(reader.read(Data("title=\u{1b}[1;31mRed\u{1b}[0m\n\u{1b}]8;;https://a.b\u{07}link\u{1b}]8;;\u{07}\u{1b}=".utf8)), [])
+        XCTAssertEqual(reader.finish(), "title=Red\nlink")
+    }
+
     func testAScriptWithNoMarkGivesOneFrameWhenItEnds() async throws {
         let url = try script("printf 'part=a\\ntitle=A\\n'")
         var frames: [String] = []

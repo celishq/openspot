@@ -23,6 +23,66 @@ final class SpotRunsStayTests: SpotRunsCase {
     done
     """
 
+    // MARK: Y7
+
+    private static let ends = """
+    while IFS= read -r line; do
+      printf '%%s\\n' "$line" >> '%@'
+      case "$line" in
+        name=*) name=${line#name=} ;;
+        id=*) id=${line#id=} ;;
+        stop=*) touch '%@'; name=stop ;;
+        '')
+          case "$name" in
+            stop) ;;
+            go) ( while [ ! -f '%@' ]; do sleep 0.05; done; printf 'end=%%s\\n---\\n' "$id" ) & ;;
+            *) printf 'action=go\\ntitle=Go\\nscope=command\\n\\nrow=A\\nrun=a\\n\\nend=%%s\\n---\\n' "$id" ;;
+          esac
+          name= ;;
+      esac
+    done
+    """
+
+    func testEachCallOfAStayingScriptHasItsOwnId() async throws {
+        try staying()
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+
+        sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
+
+        try await wait("the call") { self.blocks(ids: true) == ["name=read\nid=1", "name=open\nvalue=a\nid=2"] }
+    }
+
+    func testACallRunsUntilItsEndOnceTheScriptPrintsEnds() async throws {
+        try script(header: "stay=true", String(format: Self.ends, path("blocks"), path("done"), path("done")))
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the action") { sheet.command.actions.count == 1 }
+
+        sheet.run(try XCTUnwrap(sheet.command.actions.first), item: nil)
+        try await wait("the running call") { sheet.calls.count == 1 }
+        try "".write(toFile: path("done"), atomically: true, encoding: .utf8)
+
+        try await wait("the end") { sheet.calls.isEmpty }
+    }
+
+    func testASecondPressSendsAStopWithTheIdOfTheCall() async throws {
+        try script(header: "stay=true", String(format: Self.ends, path("blocks"), path("done"), path("done")))
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the action") { sheet.command.actions.count == 1 }
+        let action = try XCTUnwrap(sheet.command.actions.first)
+        sheet.run(action, item: nil)
+        try await wait("the running call") { sheet.calls.count == 1 }
+        time += 2
+
+        sheet.run(action, item: nil)
+
+        XCTAssertTrue(sheet.calls.isEmpty)
+        try await wait("the stop") { self.blocks(ids: true).last == "stop=2" }
+    }
+
     func testAPickReachesTheRunningStayingScript() async throws {
         try staying()
         let sheet = try sheet()

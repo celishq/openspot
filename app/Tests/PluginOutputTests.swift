@@ -42,6 +42,25 @@ final class PluginOutputTests: XCTestCase {
         XCTAssertEqual(output.errors, [])
     }
 
+    func testTheFirstKeyOfABlockNamesItsKind() {
+        let output = PluginOutput(text: "title=Places\n\ndetail=Late\nrow=Kyiv\nrun=kyiv\n\nrow=Lviv\nrun=lviv\n")
+
+        XCTAssertEqual(output.items.map(\.run), ["lviv"])
+        XCTAssertEqual(output.errors, ["detail=Late"])
+    }
+
+    func testAnEffectIsAKeyOfTheHeadOrABlockOfItsOwnAtAnyPlace() {
+        let head = PluginOutput(text: "toast=Saved\nopen=https://example.com\n")
+        let after = PluginOutput(text: "row=A\nrun=a\n\ntoast=Saved\n\nopen=https://example.com\n")
+
+        XCTAssertEqual(head.toast, "Saved")
+        XCTAssertEqual(head.open, "https://example.com")
+        XCTAssertEqual(after.toast, "Saved")
+        XCTAssertEqual(after.open, "https://example.com")
+        XCTAssertEqual(after.items.map(\.run), ["a"])
+        XCTAssertEqual(after.errors, [])
+    }
+
     func testReadsEachKeyOfAnAction() {
         let output = PluginOutput(text: """
         action=new

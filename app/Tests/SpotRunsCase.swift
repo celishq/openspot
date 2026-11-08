@@ -108,10 +108,12 @@ class SpotRunsCase: XCTestCase {
         """)
     }
 
-    /// The blocks that a staying script got, one string for each.
-    func blocks() -> [String] {
+    /// The blocks that a staying script got, one string for each, with no `id` line unless `ids` keeps it.
+    func blocks(ids: Bool = false) -> [String] {
         let text = (try? String(contentsOfFile: path("blocks"), encoding: .utf8)) ?? ""
-        return text.components(separatedBy: "\n\n").filter { !$0.isEmpty }
+        return text.components(separatedBy: "\n\n").filter { !$0.isEmpty }.map { block in
+            ids ? block : block.split(separator: "\n").filter { !$0.hasPrefix("id=") }.joined(separator: "\n")
+        }
     }
 
     /// The first scanned script's sheet, with each failure that it tells the person, before the script can start.

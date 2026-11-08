@@ -1,6 +1,7 @@
 # Build an Openspot plugin
 
-This guide is for people and for AI agents. It tells you all that you need.
+This guide is for people and for AI agents. It tells you all that you need. Each part after this one is a spec of its own,
+from 01 Core to 09 MCP, and only 01 is needed for every plugin.
 
 A plugin is one executable file in the plugins folder, in any language. Openspot reads the folder each time the panel
 opens, so a new plugin needs no restart.
@@ -37,7 +38,68 @@ print("toast=Hello")
 ```
 
 To run it, a Mac needs the Command Line Tools, from `xcode-select --install`. No Xcode app and no developer account are needed.
-A person who gets it as a `.spot` file needs no tools. See "Share a spot".
+A person who gets it as a `.spot` file needs no tools. See 08 Sharing.
+
+## Check your work
+
+Run this before you stop. It loads each plugin and reads each one that has a `read`. It prints each fault, and it exits
+with 1 when there is a fault. It does not run a script with no `read`.
+
+```text
+openspot check <plugins folder>
+```
+
+## Messages
+
+A toast and a failure line are read in a second. Write each one as you would tell a friend what happened.
+
+- Say what happened, and why when you know it. Never write "Something went wrong" when you know the cause.
+- Say what still worked, such as `Copied.`
+- Say how to fix it, with the exact step. When a link opens the fix, also print `open=<url>`.
+- When the person cannot fix it, say what to try next.
+- Name the problem, not the act of the person that caused it. Do not blame another app; say what Openspot could not do.
+- Use plain words. No error codes, no internal names, no words such as "fetch" or "credentials".
+- Keep a calm tone. No "Oops", no jokes and no exclamation marks. Write "please" only when the person can do nothing.
+- Use one or two short sentences. Put each key in backticks, such as `` `⌘V` ``.
+
+| Instead of | Write |
+|---|---|
+| `Oops! Something went wrong.` | `Openspot cannot find a screenshot.` |
+| `Error 1: osascript failed.` | ``Copied, but Openspot cannot paste. Press `⌘V`, or allow Openspot in Accessibility.`` |
+| `You did not install gh.` | `Pull requests need the gh tool. Install it, then open this again.` |
+
+## Rules for scripts
+
+- Print only the data. Send each message for the person to stderr. When a script fails, its last stderr line shows.
+- When a failure has a fix that a link opens, also print `open=<url>`, such as
+  `open=x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility`. The toast names the fix key, and the key
+  or a click opens the link.
+- Exit with 0 on success. Any other code is a failure.
+- Be fast in `read`. It has 10 seconds until its first frame or its end. Reads run at the same time, so a slow script delays no other. Any other call has no limit.
+- Keep files in `$OPENSPOT_DATA`, not in the plugin folder. Openspot creates this folder for each spot. Scripts in one plugin
+  folder share it. To share it with other spots, give each one the same `data=<name>` in its header.
+- Write a file to a temp name, then move it: `... > "$file.$$" && mv "$file.$$" "$file"`. A stop can come at any time, and two
+  calls of one script can run at the same time, so a file must never be half written.
+- Use short plain words in sentence case. Start an action's name with a verb.
+- Do not use a `key` that another plugin has. The first plugin keeps it.
+- A plugin runs with the full access of the person. If you are an agent, tell the person what yours runs.
+
+# 01 Core
+
+`final` · Required for every plugin and every host.
+
+```text
+<script> read [text]          safe: show what you have
+<script> <id> [value]...      act: something happened to this id
+values on stdin               frames of key=value blocks on stdout
+```
+
+1. **Format:** a line is `key=value`. A blank line ends a block. A line `---` ends a frame. `\n` and `\\` are the only
+   escapes. The header is the same format, in comment lines.
+2. **Kind:** the first key of a block names its kind. The app skips a kind that it does not know.
+3. **Calls:** `read` is safe, and the app runs it at the moments the header lists. Any other call acts, and runs only when
+   the person acts. An id is one that the script printed or listed, or a default id of the app.
+4. **Life:** an exit ends a call. A press stops it. Only `stay=true` (05) keeps a script running for more calls.
 
 ## The header
 
@@ -59,16 +121,16 @@ open -a Calendar
 | `symbol` | An SF Symbol name. |
 | `subtitle` | The second line. |
 | `key` | One letter. Hold the key that opens the panel, and press this letter to run it. |
-| `size` | `wide` (the default), `small`, `square` or `strip`. |
+| `size` | `wide` (the default), `small`, `square`, `strip` or `large`. |
 | `order` | Its place in the grid. A lower number comes first, and the default is 0. |
-| `grid` | `false` to keep the spot off the grid. Search and its key still find it. With `panel` in its `read`, the first block can print `grid=true` or `grid=false` to change this. |
+| `grid` | `false` to keep the spot off the grid. Search and its key still find it. |
 | `read` | When Openspot reads the script. See below. |
-| `rank` | Shows its rows in the main search. A lower number comes first. Needs `panel`, `launch` or a number in its `read`. A number also needs a `key`, or Openspot refuses the plugin. |
-| `tray` | `true` to show a metric in the menu bar. Needs a number in its `read`, or `stay=true`. |
-| `stay` | `true` to keep the script running. See "Sheets of parts". |
-| `drop` | A list of file extensions, `folder` or `*`. Its card takes files that a person drops. See "Drops". |
-| `command` | An ID, a title and an optional SF Symbol, such as `command=left:Left side:rectangle.lefthalf.inset.filled`. One line for each command. Without a symbol, its row shows the `symbol` of the script. See "Commands with keys". |
-| `data` | The name of a data folder to share with other spots. See "Rules for scripts". |
+| `data` | The name of a data folder to share with other spots. See "Rules for scripts" in 00. |
+
+Other specs add keys: `rank` (02), `drop` and `command` (04), `stay` (05), `tray` (06) and `mcp` (09).
+
+With `panel` in its `read`, the first block that a script prints can change `grid`, `size` and `order`. The person's choice in
+Settings wins.
 
 `read` is a list of moments, split by commas, such as `read=panel,60`. At each moment Openspot calls `<script> read`:
 
@@ -77,13 +139,16 @@ open -a Calendar
 | none | Never. A click runs `<script>` with no argument. | A script that does one thing. |
 | `sheet` | When its sheet opens. | A list. |
 | `panel` | Each time the panel opens, and once as the app starts. | A toggle, a slider, or a list for the main search. |
-| a number | Every that many seconds, while something wants it, such as its open sheet. | A metric. It has no spot unless it also has a `key`. |
+| a number | Every that many seconds, while something wants it, such as its open sheet. | A metric (06). |
 | `launch` | When the app starts. | Work to do once, or a staying script that runs at all times. |
 | `wake` | When the Mac wakes. | A value that is old after a sleep. |
 
 A read must be safe at each moment that its header lists, so `read` does no work. A script has one read at a time. A
 `panel` or a `sheet` moment uses an answer that is younger than 5 seconds. A number, `launch` and `wake` always run. After
 a call that prints no state, Openspot reads the script again.
+
+A read gets the reason in `OPENSPOT_REASON`: `panel`, `sheet`, `timer`, `launch`, `wake`, `search` or `change`. So a
+script can do less on a timer than when its sheet opens.
 
 ## The calls
 
@@ -92,15 +157,17 @@ a call that prints no state, Openspot reads the script again.
 | `<script>` | A click, with no `read` in its header | Does its work. |
 | `<script> read [text]` | A moment, a sheet opens, or the search changes with `search=script` | Prints what to show. |
 | `<script> run` | A click on a card with no sheet, with a `read` in its header | Does its work. |
-| `<script> open <run>` | A row is picked | Opens the row. |
-| `<script> <action> [run]` | An action runs | Does it. With `form=true` and empty stdin, it prints the fields. A filled form comes on stdin. |
-| `<script> <part> [value]` | A part changes, or a press of a part | Prints the sheet, or nothing to be read again. |
+| `<script> open <run>` | A row is picked (02) | Opens the row. |
+| `<script> <action> [run]` | An action runs (02) | Does it. |
+| `<script> <part> [value]` | A part changes, or a press of a part (03) | Prints the sheet, or nothing to be read again. |
 | `<script> on`, `off` | A toggle is pressed | Turns it on or off. |
 | `<script> level <number>` | A slider moves | Sets the level. |
-| `<script> drop <path> [path]...` | Files are dropped on its card, or chosen for it | Does its work on each file. |
-| `<script> <id>` | A key that a person gave a `command` is pressed, in any app | Does its work. |
+| `<script> drop <path> [path]...` | Files are dropped on its card (04) | Does its work on each file. |
+| `<script> <id>` | A key that a person gave a command is pressed (04) | Does its work. |
 
-`read` is the only reserved word. A part or an action cannot be called `read`, and `openspot check` reports it.
+`read` is the only reserved word. `run`, `open`, `drop`, `on`, `off` and `level` are default ids: the app's own events.
+A part cannot use a default id, and an action can use only `open`, to change what Enter does. `openspot check` reports a
+clash.
 
 A value over 64 KB is left out of the arguments, because the system limits them. Stdin still holds it: a value of the sheet
 as it is, and any other value under the key `value`, such as `value=<run>`.
@@ -135,12 +202,24 @@ run=/Applications/Notes.app
   script, such as a file name or a web page, write it with `esc` (see "The shell helper").
 - For many rows in one pipe, use `sed 's/\\/\\\\/g'`. With `jq -r`, use `def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");` and write `"row=\(.title | esc)"`.
 
-A block is a row when it has `row`, an action when it has `action`, and a form field when it has `field`. The first other
-block says how the spot itself looks, and it can hold `search` and `recents`. Printing nothing means that there is nothing
-to show.
+The first key of a block names its kind: `row`, `action`, `field`, `part`, `section`, `toast` or `open`. So write that
+key first. The first block with another first key says how the spot itself looks, and it can hold `search` and `recents`.
+A later block with another first key is skipped, and `openspot check` reports it. Printing nothing means that there is
+nothing to show.
 
-To confirm what an action did, print `toast=Saved`. Openspot shows it, also with the panel closed. Put a key in backticks, such as
-``toast=Press `⌘V` ``, and the toast shows it as a key.
+To confirm what an action did, print `toast=Saved`, in the first block or as a block of its own at any place. Openspot shows
+it, also with the panel closed. Put a key in backticks, such as ``toast=Press `⌘V` ``, and the toast shows it as a key.
+
+## Toggles and sliders
+
+Give the script `read=panel`, and let it print one block:
+
+| Prints | Shows |
+|---|---|
+| `on=true` or `on=false` | A toggle. |
+| `level=70`, and `min=0` and `max=100` | A slider. |
+
+Both can print `title` and `detail`. The defaults come from the header.
 
 ## The shell helper
 
@@ -160,7 +239,126 @@ printf 'part=output\ntext=%s\n' "$(esc "$input")"
 - `$(...)` drops the new lines at the end of a value. To keep them, write `text=$(value id; printf x)` and use `${text%x}`.
 - A script with `stay=true` keeps its stdin for its calls. There, `esc` works, and `value` prints nothing.
 
-## Lists
+## How long a call runs
+
+A call can keep printing, as `ffmpeg` does. A line `---` ends a frame, and the app draws it at once. A frame with a layout
+replaces the sheet, and a frame with only parts changes those parts.
+
+Two rules decide how long a call runs:
+
+- A `read` has 10 seconds until its first frame or its end. It stops when nothing wants it, so a stream from a `read` stops
+  when its sheet closes.
+- Any other call has no time limit. It keeps running with the sheet and the panel closed, and Openspot keeps its last frame
+  for the sheet. With no open sheet, a frame shows only its `toast`, its `on` and its `level`.
+
+These stop a call:
+
+- A new value for a part stops the older call of that part.
+- A second press of a running part, action or card stops its call. Each process in its group gets the terminate signal.
+  After 2 seconds, Openspot kills what still runs. A press within 1 second of the start of the call does nothing, so a
+  double press does not stop it.
+- Quitting Openspot stops each call. To outlive the app, start the work with `nohup` and then exit. A stop reaches the whole
+  group, so `nohup` does not protect a child while its script still runs.
+
+A stopped call changes nothing. A call ends when its output closes, so a script that leaves a child running sends the
+output of that child somewhere else. A failed call always tells the person. A failed `read` from a number only dims the
+last value.
+
+A call that does work reports its progress with the values that a metric prints:
+
+```text
+title=42%
+value=0.42
+detail=2 min left
+
+---
+```
+
+After the call has run for 1 second, its spot shows a ring from `value`, and a spinner with no `value`. Only the last frame
+counts. The `title` and the `detail` show on the spot only while the call runs. The Openspot item in the menu bar shows the
+oldest call and how many run, and a click on it opens the panel with that spot selected. The part or the action of the call
+shows that it runs, and says that a press stops it.
+
+A tool that already reports progress to a terminal needs no change. Openspot reads the progress code `ESC ] 9;4;1;<percent>`
+as `value`, and the notification code `ESC ] 9;<text>` as a toast, each as a frame of its own. It removes each other escape
+code, such as a colour, from the text.
+
+## Rules
+
+| ID | Rule |
+|---|---|
+| F1 | A plugin is one executable file, in any language, at the top of the plugins folder or one folder down. |
+| F2 | Openspot learns what a plugin is from its header. A scan never runs a script. |
+| F3 | Openspot scans the folder each time the panel opens, so a new plugin needs no restart. |
+| F4 | One file gives at most one spot. It can offer many actions, which it prints. |
+| F5 | The ID of a plugin is its path with no extension, such as `home/coffee`. |
+| F6 | A header key that is not valid refuses that plugin. Openspot reports why and loads the others. |
+| F9 | The header gives `grid`, `size` and `order`. With `panel` in its `read`, the head of a frame can change them, and a frame with no such key keeps the header's value. The person's `config.toml` wins over both. |
+| C1 | `read` is the only reserved word. `run`, `open`, `drop`, `on`, `off` and `level` are default ids: the app's own events. A part cannot use a default id, and an action can use only `open`, to change it. `openspot check` reports a clash. |
+| C2 | A new default id reaches only a script whose header or output asks for it. |
+| C4 | Openspot waits for a pause before it sends a change of text or of a slider. |
+| C5 | Text that the person types stays as typed until they press something. |
+| C6 | A value too long for the arguments goes on stdin only. |
+| M1 | A script has one read at a time. A new request joins the read that runs. |
+| M2 | A `panel` or `sheet` moment takes an answer younger than 5 seconds. A change, a number, `launch` and `wake` always read. |
+| M3 | Reads run at the same time. The panel never waits for one script. A spot shows its header until its answer arrives. |
+| M4 | After a call that shows no state, Openspot reads the script once. |
+| M5 | A read must be safe at each moment that its header lists. Only its author can promise this. |
+| M6 | A read gets `OPENSPOT_REASON`: `panel`, `sheet`, `timer`, `launch`, `wake`, `search` or `change`. |
+| W1 | Arguments hold the id and its values. Stdin holds what the person filled in, as one block. `OPENSPOT_DATA` names a folder for its files, and `data=<name>` shares one. `OPENSPOT_SH` names an optional shell helper with `esc` and `value`. `PATH` has the `openspot` command first. |
+| R1 | What a script prints decides how its spot shows: rows, actions or parts make a list, `level` a slider, `on` a toggle. |
+| R2 | A line with an unknown key is skipped. |
+| R3 | Exit 0 is success. Any other code is a failure, and the last line on stderr shows to the person. |
+| R4 | Printing nothing means that there is nothing to show. |
+| R5 | `toast` shows at once, also with the panel closed. |
+| R8 | A stop can come at any time, and two calls can run at once, so a script never leaves a file half written. |
+| R9 | A failure can print `open=<url>`, the place that fixes it, and the person's fix key opens it. |
+| R10 | The kinds are `row`, `action`, `field`, `part`, `section`, `toast`, `open` and `end`. The first block with another first key is the head. A later one is skipped, and `openspot check` reports it. |
+| R11 | `toast` and `open` can be keys of the head, or blocks of their own at any place. |
+| R12 | Openspot reads OSC 9;4 as the progress `value` and OSC 9 as a `toast`, in any output, and removes each other escape code. A code never makes the app act. |
+| S1 | A line `---` ends a frame, and so does the end of the output. Openspot draws each frame at once. Any call can stream. |
+| S2 | A frame with a layout replaces the sheet. A frame with only parts changes those parts. |
+| S3 | A frame with no open sheet shows only its `toast` and its state. Openspot keeps the last frame for the sheet. |
+| A3 | A stopped call changes nothing. Only a call that ended by itself can report that there is nothing to show. |
+| L1 | A `read` has 10 seconds until its first frame or its end, and it stops when nothing wants it. |
+| L2 | Any other call has no time limit. It keeps running with the sheet and the panel closed. |
+| L3 | Something wants a script while its open sheet shows, while the open panel shows it in a widget or reads it at `panel`, while the menu bar shows it, or at all times with `launch` in its `read`. |
+| L4 | A new value for a part stops the older call of that part, and only the newest answer shows. |
+| L5 | A second press of a running part, action or card stops its call: terminate to its group, and kill 2 seconds later. |
+| L6 | A call that runs 1 second shows on its part, its action, its spot and the menu bar item, so the person can find and stop it. A call to a staying script shows only by Y7. |
+| L7 | When a sheet opens, Openspot reads, then adds the last frame of each running call. |
+| L8 | The end of a call shows its `toast`. A failed call always tells the person. A failed timer read only dims the last value. |
+| L9 | Quitting Openspot stops each call. |
+| L10 | A call ends when its output closes. |
+| L11 | A press within 1 second of the start of a call does nothing, so a double press does not stop it. |
+| G1 | A running call shows a ring from the `value` of its last frame, or a spinner with no `value`. |
+| G2 | The menu bar item shows the oldest running call and how many run. |
+| G3 | A click on that item opens the panel with that spot selected. |
+| G4 | A frame's `title` and `detail` show on the spot only while its call runs. |
+| P1 | A plugin runs with the full access of the person. There is no sandbox. |
+| P2 | So a header cannot grant or deny power, and there is no `uses` key. |
+| P3 | Nothing runs on a scan (F2). |
+
+## Why not
+
+| Decision | Why | Rejected |
+|---|---|---|
+| The app's events are default ids, and `read` is the only reserved word | A model writes `case "$1" in` with one branch for each id. A default id is one more branch, with no verb to learn. | A verb for each kind of call, such as `pick`, `set` and `do`. |
+| The first key names the kind | A model and a person see what a block is from its first line, and a new kind is one new key. | A kind found from any key of a block. |
+| Escape codes report and never act | A script can print text from the web, and printed text must not open a link. | OSC 8 as `open`. |
+| A failure links its fix, and one key opens it | The script knows the fix, so the app guesses nothing, and the key works with no mouse. | Reading the error text for a known fix. |
+| Scripts, not a JS runtime | Shell gives each Mac tool at once, and a start costs about 5 ms. JS can come later as one more executable. | JS only. |
+| Lifetime from rules | A person can see and stop work, so work needs no limit and no key. | A `job` key. A lifetime value. |
+| Hooks are moments of `read` | Each need so far is a refresh at a moment, and `stay=true` covers the rest. | A `hook` call. |
+| Streaming needs no key | A long call only prints more. | A stream mode. |
+| Header in each file, no manifest | Goal 1, and a scan runs nothing. | A manifest. |
+| No permission model | A script can already do all that the person can. A false limit is worse than none. | A `uses` key. |
+
+# 02 Lists
+
+`final` · Needs 01.
+
+## Rows
 
 A script that prints rows is a list. Each row is one block:
 
@@ -183,9 +381,12 @@ read:
 | `search=script` | Each search change calls `<script> read <text>`. The script prints the rows that match. |
 | `recents=false` | Does not sort recent picks first. |
 
+`rank=<number>` in the header shows its rows in the main search. A lower number comes first. It needs `panel`, `launch` or a
+number in its `read`. A number also needs a `key`, or Openspot refuses the plugin.
+
 To show rows as square buttons, print `repeat=<letter> <per line>` in that block. Each button draws its picture, and the
-title of the selected button shows in the sheet's header. To add parts around the rows, draw them. The repeated area scrolls,
-and the app draws the search field over the sheet:
+title of the selected button shows in the sheet's header. To add parts around the rows, draw them (03). The repeated area
+scrolls, and the app draws the search field over the sheet:
 
 ```text
 grid=t t t t t t t
@@ -203,78 +404,6 @@ row=thumbs up
 run=👍
 glyph=👍
 ```
-
-## Toggles and sliders
-
-Give the script `read=panel`, and let it print one block:
-
-| Prints | Shows |
-|---|---|
-| `on=true` or `on=false` | A toggle. |
-| `level=70`, and `min=0` and `max=100` | A slider. |
-
-Both can print `title` and `detail`. The defaults come from the header.
-
-## Drops
-
-Add `drop` to the header, and the card takes files.
-
-```sh
-#!/bin/sh
-# name=To MP4
-# symbol=film
-# drop=mov,mkv,avi,webm
-case "$1" in
-  drop)
-    shift
-    for file; do
-      ffmpeg -y -i "$file" "${file%.*}.mp4" >/dev/null 2>&1 || exit 1
-    done
-    printf 'toast=Done\n'
-    ;;
-esac
-```
-
-| `drop` holds | The card takes |
-|---|---|
-| An extension, such as `mov` | A file with this extension, in upper or lower case. |
-| `folder` | A folder. A bundle, such as an app, is a folder. |
-| `*` | Each file and each folder. |
-
-- To drop files, drag them over the Openspot item in the menu bar. The panel opens and the focus stays where it is. The panel stays open until the drag ends.
-- A card takes a drag only when its `drop` takes each dragged file. For the whole drag, each such card changes its fill, and the card under the drag fills fully, because it takes the drop. Other cards do not change. A mix with one other file goes to no card.
-- A drop runs one call, `drop <path> [path]...`, and closes the panel. Each full path is its own argument, so write `"$file"` with its quotes.
-- A drop on a card with a running call waits, and runs when that call ends. It does not stop the call. A `read` does not hold a drop.
-- A click on a card with `drop` and no sheet opens a file chooser, and the choice runs the same call. A toggle and a slider keep their own click, and a card with a sheet opens its sheet.
-- A `drop` call runs as any other name does. It has no time limit, and it goes on with the panel closed. A second press of its card stops it.
-
-## Commands with keys
-
-A script lists what it can do, and the person chooses the keys. A script never holds a key.
-
-```sh
-#!/bin/sh
-# name=Music
-# command=pause:Play or pause
-case "$1" in
-  pause) osascript -e 'tell application "Music" to playpause' ;;
-esac
-```
-
-Settings shows one row for each command, and the person records a key there. A press in any app runs `<script> <id>` with no panel, and the script can print `toast=Done`. The file `config.toml` holds each key, and a person can also write it by hand:
-
-```text
-[[keys]]
-spot = "music"
-command = "pause"
-key = "ctrl+option+p"
-```
-
-- A script with commands and no `read` opens to the rows of its own commands, where the person records keys as in Settings.
-- A key holds cmd, ctrl or option, with a letter, a digit, an arrow, space, return or tab.
-- Presses run one at a time and in order. A press never stops a call, so keep the call short.
-- A key that macOS refuses shows a toast. A hand edit takes effect when the panel next opens.
-- A key works with the panel open too, so the front app can be Openspot.
 
 ## Actions and forms
 
@@ -316,7 +445,23 @@ A field needs `field`, its name, and `label`. `type` is `text` (the default) or 
 are optional. After the person fills the form, the same call runs with the values on stdin as one block, such as
 `text=one\ntwo`, and it can print the `run` value of the row to select.
 
-## Sheets of parts
+## Rules
+
+| ID | Rule |
+|---|---|
+| C3 | A form is the same call twice: first with empty stdin, when the script prints its fields, then with the values on stdin. |
+| R6 | `search=script` sends each search change to the script as `read <text>`. Otherwise Openspot searches the rows. |
+| R7 | `recents=false` does not sort recent picks first. |
+
+## Why not
+
+| Decision | Why | Rejected |
+|---|---|---|
+| A form is the same call | One call shape with no exception. | A `form` word, which is easier in shell but adds a word. |
+
+# 03 Sheets
+
+`final` · Needs 01.
 
 A script that prints parts opens a sheet of them, with no search field. Run `openspot catalog` for the whole language,
 with examples. A model can write a good sheet from that text alone.
@@ -368,59 +513,7 @@ seconds, put a number in its header: `read=5`.
 Openspot shows a change at once, and only the answer to the newest change shows. It waits for a pause in typing and in
 a slider's motion. Text that the person is typing stays as typed until they press something.
 
-A call can keep printing, as `ffmpeg` does. A line `---` ends a frame, and the app draws it at once. A frame with a layout
-replaces the sheet, and a frame with only parts changes those parts.
-
-Two rules decide how long a call runs:
-
-- A `read` has 10 seconds until its first frame or its end. It stops when nothing wants it, so a stream from a `read` stops
-  when its sheet closes.
-- Any other name has no time limit. It keeps running with the sheet and the panel closed, and Openspot keeps its last frame
-  for the sheet. With no open sheet, a frame shows only its `toast`, its `on` and its `level`.
-
-These stop a call:
-
-- A new value for a part stops the older call of that part.
-- A second press of a running part, action or card stops its call. Each process in its group gets the terminate signal.
-  After 2 seconds, Openspot kills what still runs. A press within 1 second of the start of the call does nothing, so a
-  double press does not stop it.
-- Quitting Openspot stops each call. To outlive the app, start the work with `nohup` and then exit. A stop reaches the whole
-  group, so `nohup` does not protect a child while its script still runs.
-
-A stopped call changes nothing. A call ends when its output closes, so a script that leaves a child running sends the
-output of that child somewhere else. A failed call always tells the person. A failed `read` from a number only dims the
-last value.
-
-A call that does work reports its progress with the values that a metric prints:
-
-```text
-title=42%
-value=0.42
-detail=2 min left
-
----
-```
-
-After the call has run for 1 second, its spot shows a ring from `value`, and a spinner with no `value`. Only the last frame
-counts. The `title` and the `detail` show on the spot only while the call runs. The Openspot item in the menu bar shows the
-oldest call and how many run, and a click on it opens the panel with that spot selected. The part or the action of the call
-shows that it runs, and says that a press stops it.
-
 Closing the panel closes a sheet of parts and drops its values, and the next open reads again. A sheet of rows stays open.
-
-A script with `# stay=true` in its header runs while something wants it, so that a model or a connection stays loaded
-between calls. Something wants it while its sheet is open and the panel is open, while the panel is open and a widget
-places it or `panel` is in its `read`, while the menu bar shows it, or at all times with `launch` in its `read`. It starts
-when something first wants it, and the sheet shows with its first frame. When nothing wants it, Openspot closes its input.
-After 2 seconds its group gets the terminate signal, and 2 seconds after that Openspot kills what still runs.
-
-It gets one block on stdin for each call, with a blank line after it: `name`, `value`, and one `field.<id>` for each value
-of the sheet. A `drop` has one `value` line for each path. A pick, an action, a form and a drop reach the script that runs,
-and no call starts a second copy. It keeps its own state, and answers with frames. Openspot cannot see where such a call
-ends, so it shows no running mark and a press does not stop it. Say what the script does in its own frames.
-
-If it ends and something still wants it, the next moment or call starts it again. After 3 failures in one minute, Openspot
-tells the person, and does not start it again until a scan finds its file changed.
 
 To read the sheet when the panel opens, so that it opens at its full size, use `read=panel`. Otherwise use `read=sheet`.
 
@@ -428,37 +521,169 @@ To try a sheet, run `openspot sandbox`, or `openspot sandbox <file>` to watch a 
 sheet and its faults at once. `openspot check --sheet` reports the faults of a sheet on stdin, and `openspot render
 <file.png>` draws it to a picture.
 
-## The openspot command
+## Rules
 
-A script finds `openspot` on its path. It gives what macOS has no command for, in plain text.
-
-| Call | Does |
+| ID | Rule |
 |---|---|
-| `openspot check [folder]` | Reports the faults of a plugins folder. |
-| `openspot check --sheet` | Reports the faults of a sheet on stdin. |
-| `openspot catalog` | Prints the whole sheet language, with examples. |
-| `openspot render <file.png>` | Draws the sheet on stdin to a picture. |
-| `openspot sandbox [file]` | Opens a window to try a sheet from text, a file or a script. |
-| `openspot color pick` | Prints the colour the person picks. Prints nothing on a cancel. |
-| `openspot clipboard copy [file]` | Copies the file as Finder does, with the picture of an image. With no file, it copies the text on stdin. |
-| `openspot clipboard paste` | Pastes the clipboard into the front app. Without Accessibility it prints the `open=` fix and exits with 1. |
-| `openspot translate [--from code] [--to code]` | Translates the text on stdin on this Mac. Prints `text` and `from`, or `status=missing`, `unsupported`, `unknown` or `failed`. |
-| `openspot translate languages` | Prints each language, with its name. |
-| `openspot emoji [--tone name]` | Prints each emoji as a row, with its name in the language of the Mac. A tone is `none`, `light`, `medium-light`, `medium`, `medium-dark` or `dark`. |
-| `openspot symbols` | Prints each symbol of the Character Viewer as a row, with its Unicode name and the title of its section in the language of the Mac. |
-| `openspot window frame` | Prints the front window, then the usable area of its screen, as `x y width height x y width height` in points from the top left of the main screen. Needs Accessibility. |
-| `openspot window move frame...` | Moves the front window to a frame, `x y width height`. A percent, a fraction or a plain number from 0 to 1 is a part of the usable area of the window's screen, so `0 0 1 1` and `0% 0% 100% 100%` fill it. Any other number is points. With more frames, such as `"0 0 1/4 1" "0 0 1/3 1"`, it moves to the frame after the one the window holds, within 20 points, or to the first. A window that keeps its own size holds the edges of the screen that the frame touches. Needs Accessibility. |
+| B1 | A sheet draws its layout with `grid=` lines. There are no named layouts. |
+| B2 | The words of a `grid=` line set the columns, so there is no width to set. |
+| B3 | Each row has one height and each gap one size, and the app owns both. |
+| B4 | Rows that hold text, a picture, a chart, a list or a repeated area share the free height. |
+| B5 | `repeat=<letter> <per line>` flows the rows into one area, which scrolls. |
+| B6 | A complex view is a Swift block in the app, which a script names and fills with data. |
+| G5 | A sheet of parts can show a part with `block=progress`. |
+| K5 | Closing the panel closes a sheet of parts and drops its values. A sheet of rows stays open. |
 
-When macOS already has a command, use it: `pbcopy`, `open`, `say`, `caffeinate`, `mdfind`, `screencapture`,
-`shortcuts run`, `osascript`.
+## Why not
 
-A capability works the same from a script and from a terminal. It can stay loaded between calls: `openspot translate`
-keeps each pair of languages in memory, and they leave memory 30 seconds after the last call. Your script does nothing for
-this. It never starts, finds or stops anything, and it stays a handler that runs once for each call, as `translate.sh` does.
-When a call cannot start what it needs, it exits with code 1 and one line on stderr that says the cause and the fix.
+| Decision | Why | Rejected |
+|---|---|---|
+| A sheet is a drawing, with one row height | A model writes one form, and each result stays even. | Named layouts, ratios and nested drawings. |
+| Complex views are Swift blocks in the app | The text language stays small, and a plugin never draws in Openspot. | A view in a plugin now. |
 
-To use `openspot` in a terminal, turn on Use openspot in Terminal in Settings. It links `/usr/local/bin/openspot` to the
-command inside the app, and macOS asks for your password when that folder needs it.
+# 04 Triggers
+
+`final` · Needs 01.
+
+Two header keys start a call from outside the panel's search: `drop` for files, and `command` for a key in any app.
+
+## Drops
+
+Add `drop` to the header, and the card takes files.
+
+```sh
+#!/bin/sh
+# name=To MP4
+# symbol=film
+# drop=mov,mkv,avi,webm
+case "$1" in
+  drop)
+    shift
+    for file; do
+      ffmpeg -y -i "$file" "${file%.*}.mp4" >/dev/null 2>&1 || exit 1
+    done
+    printf 'toast=Done\n'
+    ;;
+esac
+```
+
+| `drop` holds | The card takes |
+|---|---|
+| An extension, such as `mov` | A file with this extension, in upper or lower case. |
+| `folder` | A folder. A bundle, such as an app, is a folder. |
+| `*` | Each file and each folder. |
+
+- To drop files, drag them over the Openspot item in the menu bar. The panel opens and the focus stays where it is. The panel stays open until the drag ends.
+- A card takes a drag only when its `drop` takes each dragged file. For the whole drag, each such card changes its fill, and the card under the drag fills fully, because it takes the drop. Other cards do not change. A mix with one other file goes to no card.
+- A drop runs one call, `drop <path> [path]...`, and closes the panel. Each full path is its own argument, so write `"$file"` with its quotes.
+- A drop on a card with a running call waits, and runs when that call ends. It does not stop the call. A `read` does not hold a drop.
+- A click on a card with `drop` and no sheet opens a file chooser, and the choice runs the same call. A toggle and a slider keep their own click, and a card with a sheet opens its sheet.
+- A `drop` call runs as any other call does. It has no time limit, and it goes on with the panel closed. A second press of its card stops it.
+
+## Commands with keys
+
+A script lists what it can do, and the person chooses the keys. A script never holds a key.
+
+```sh
+#!/bin/sh
+# name=Music
+# command=pause:Play or pause
+case "$1" in
+  pause) osascript -e 'tell application "Music" to playpause' ;;
+esac
+```
+
+`command` holds an ID, a title and an optional SF Symbol, such as `command=left:Left side:rectangle.lefthalf.inset.filled`,
+one line for each command. Without a symbol, its row shows the `symbol` of the script.
+
+Settings shows one row for each command, and the person records a key there. A press in any app runs `<script> <id>` with no panel, and the script can print `toast=Done`. The file `config.toml` holds each key, and a person can also write it by hand:
+
+```text
+[[keys]]
+spot = "music"
+command = "pause"
+key = "ctrl+option+p"
+```
+
+- A script with commands and no `read` opens to the rows of its own commands, where the person records keys as in Settings.
+- A key holds cmd, ctrl or option, with a letter, a digit, an arrow, space, return or tab.
+- Presses run one at a time and in order. A press never stops a call, so keep the call short.
+- A key that macOS refuses shows a toast. A hand edit takes effect when the panel next opens.
+- A key works with the panel open too, so the front app can be Openspot.
+
+## Rules
+
+| ID | Rule |
+|---|---|
+| D1 | A drag over the Openspot item in the menu bar opens the panel with no change of focus, until the drag ends. |
+| D2 | During a drag, each card whose `drop` takes every dragged file shows it, and only such a card takes the drop. |
+| D3 | A drop is one `drop` call, with each path as its own argument, and it closes the panel. |
+| D4 | A drop on a card with a running call waits for that call. It does not stop it. |
+| D5 | A click on a card with `drop` and no sheet opens a file chooser, and the choice runs the same call. |
+| D6 | A `drop` call runs as any other call does. |
+| C7 | Presses of the keys of one script run one at a time and in order. A press of a key never stops a call. |
+| P8 | Only a command that a header lists can have a key, and only the person assigns it. |
+
+## Why not
+
+| Decision | Why | Rejected |
+|---|---|---|
+| A script lists commands, and the person gives them keys | A key depends on the person's hands and apps, and the config holds each key in one place. | A `global` key in the header. |
+
+# 05 Stay
+
+`draft` · Needs 01.
+
+A plugin keeps state in this order of preference: files in `OPENSPOT_DATA`, a capability that stays loaded (07), or
+`stay=true`.
+
+A script with `# stay=true` in its header runs while something wants it, so that a model or a connection stays loaded
+between calls. Something wants it while its sheet is open and the panel is open, while the panel is open and a widget
+places it or `panel` is in its `read`, while the menu bar shows it, or at all times with `launch` in its `read`. It starts
+when something first wants it, and the sheet shows with its first frame. When nothing wants it, Openspot closes its input.
+After 2 seconds its group gets the terminate signal, and 2 seconds after that Openspot kills what still runs.
+
+It gets one block on stdin for each call, with a blank line after it: `name`, `value`, one `field.<id>` for each value
+of the sheet, and the `id` of the call. A `drop` has one `value` line for each path. A pick, an action, a form and a drop
+reach the script that runs, and no call starts a second copy. It keeps its own state, and answers with frames.
+
+```text
+name=input
+value=Hello
+id=4
+
+```
+
+To show that a call runs, print `end=<id>` when it is done, as a block of its own. Once a script has printed one `end`,
+each later call shows as running until its `end`, the script keeps running for it, and a second press sends the block
+`stop=<id>`. A script that never prints `end` shows no running mark, and a press does not stop its calls.
+
+If it ends and something still wants it, the next moment or call starts it again. After 3 failures in one minute, Openspot
+tells the person, and does not start it again until a scan finds its file changed.
+
+## Rules
+
+| ID | Rule |
+|---|---|
+| Y1 | A staying script gets one block on stdin for each call: `name`, `value`, `field.<id>` for each value of the sheet, and `id`. |
+| Y2 | Each call reaches the running script. No call starts a second copy. |
+| Y3 | A staying script starts when something first wants it (L3). |
+| Y4 | To end it, Openspot closes its stdin, then terminates its group after 2 seconds and kills it 2 seconds later. |
+| Y5 | If it ends and something still wants it, the next call starts it again. After 3 failures in one minute, it waits for a changed file, and the person is told. |
+| Y6 | Openspot can stop a staying script at any time. What must survive goes in `OPENSPOT_DATA`. |
+| Y7 | Once a script has printed one `end=<id>`, each later call runs until its own `end`, and the script keeps running for it. A second press sends `stop=<id>`. |
+
+## Why not
+
+| Decision | Why | Rejected |
+|---|---|---|
+| A staying script says so in its header | A normal script reads stdin to its end, so the app must close stdin before the answer. | The app keeps any process that stays alive after `end=<id>`. |
+| A stop is the block `stop=<id>` | No name of a part or an action can clash with it. | `name=stop`. |
+| `stay` exists beside capabilities | A socket or a compiled program has its own state. | Only capabilities. |
+
+# 06 Metrics
+
+`final` · Needs 01.
 
 ## Metrics
 
@@ -540,8 +765,8 @@ the value and the mark, so keep the title short, such as `84%`.
 
 ## The menu bar
 
-Add `tray=true` to the header of a metric to show it in the menu bar. It needs no widget. Openspot then reads it all the
-time, so choose a `read` that is not too short.
+Add `tray=true` to the header of a metric to show it in the menu bar. It needs no widget, and it needs a number in its
+`read`, or `stay=true`. Openspot then reads it all the time, so choose a `read` that is not too short.
 
 A click opens the panel on the metric's list if it also has a `key`. If not, the panel opens and selects a widget that
 places it.
@@ -551,6 +776,74 @@ dot show small, and a `title` shows as text.
 
 Print nothing to remove the item until the next read, such as when nothing is running. Widgets in the panel still show
 the metric.
+
+## Rules
+
+| ID | Rule |
+|---|---|
+| F7 | A script with a number in its `read` and no `key` has no spot. A widget or the menu bar can show it. |
+| F8 | Widgets are in a `.toml` file, because a person writes them by hand. A widget runs nothing. |
+| H1 | A widget or the menu bar can show any script with a `read`, by its ID. A failed read keeps the last value, dimmed. |
+| H2 | A widget places metrics in a named layout or a `grid` drawing. Each place takes its form from the room of its cell. |
+
+# 07 Capabilities
+
+`final` · Needs 01.
+
+A script finds `openspot` on its path. It gives what macOS has no command for, in plain text.
+
+| Call | Does |
+|---|---|
+| `openspot check [folder]` | Reports the faults of a plugins folder. |
+| `openspot check --sheet` | Reports the faults of a sheet on stdin. |
+| `openspot catalog` | Prints the whole sheet language, with examples. |
+| `openspot render <file.png>` | Draws the sheet on stdin to a picture. |
+| `openspot sandbox [file]` | Opens a window to try a sheet from text, a file or a script. |
+| `openspot color pick` | Prints the colour the person picks. Prints nothing on a cancel. |
+| `openspot clipboard copy [file]` | Copies the file as Finder does, with the picture of an image. With no file, it copies the text on stdin. |
+| `openspot clipboard paste` | Pastes the clipboard into the front app. Without Accessibility it prints the `open=` fix and exits with 1. |
+| `openspot translate [--from code] [--to code]` | Translates the text on stdin on this Mac. Prints `text` and `from`, or `status=missing`, `unsupported`, `unknown` or `failed`. |
+| `openspot translate languages` | Prints each language, with its name. |
+| `openspot emoji [--tone name]` | Prints each emoji as a row, with its name in the language of the Mac. A tone is `none`, `light`, `medium-light`, `medium`, `medium-dark` or `dark`. |
+| `openspot symbols` | Prints each symbol of the Character Viewer as a row, with its Unicode name and the title of its section in the language of the Mac. |
+| `openspot window frame` | Prints the front window, then the usable area of its screen, as `x y width height x y width height` in points from the top left of the main screen. Needs Accessibility. |
+| `openspot window move frame...` | Moves the front window to a frame, `x y width height`. A percent, a fraction or a plain number from 0 to 1 is a part of the usable area of the window's screen, so `0 0 1 1` and `0% 0% 100% 100%` fill it. Any other number is points. With more frames, such as `"0 0 1/4 1" "0 0 1/3 1"`, it moves to the frame after the one the window holds, within 20 points, or to the first. A window that keeps its own size holds the edges of the screen that the frame touches. Needs Accessibility. |
+
+When macOS already has a command, use it: `pbcopy`, `open`, `say`, `caffeinate`, `mdfind`, `screencapture`,
+`shortcuts run`, `osascript`.
+
+A capability works the same from a script and from a terminal. It can stay loaded between calls: `openspot translate`
+keeps each pair of languages in memory, and they leave memory 30 seconds after the last call. Your script does nothing for
+this. It never starts, finds or stops anything, and it stays a handler that runs once for each call, as `translate.sh` does.
+When a call cannot start what it needs, it exits with code 1 and one line on stderr that says the cause and the fix.
+
+To use `openspot` in a terminal, turn on Use openspot in Terminal in Settings. It links `/usr/local/bin/openspot` to the
+command inside the app, and macOS asks for your password when that folder needs it.
+
+## Rules
+
+| ID | Rule |
+|---|---|
+| K1 | A capability is `openspot <noun> <verb>`. It works the same from a script and from a terminal. |
+| K2 | A capability with state keeps it in a helper. The helper starts at the first call, and exits after 30 seconds with no call. |
+| K3 | A script never starts, finds or stops a helper, and the app does not track it. |
+| K4 | A capability prints `status=<word>` when it cannot answer. |
+| P5 | Each usage text for a protected Mac feature is in the app, so a protected feature is a capability. |
+
+A capability is added only when macOS has no command for it, when it needs a usage text in the app, or when it needs state
+between calls.
+
+## Why not
+
+| Decision | Why | Rejected |
+|---|---|---|
+| State behind a capability | A script stays a handler, with no fifo and no server. | A server in each plugin. |
+| A capability exits when idle | One rule, the same from a terminal, and the app does not track sheets for it. | State that ends with its sheet. |
+| The platform's own command, with no wrapper of the same name | A script stays in the shell that authors and models know, and nothing is left to maintain. | `openspot copy` beside `pbcopy`. |
+
+# 08 Sharing
+
+`final` · Needs 01.
 
 ## Share a spot
 
@@ -588,46 +881,45 @@ A `.spot` file is JSON. It holds a format number and the files:
 Select the spot and press ⌘⌫ twice, or press ⌘K and choose "Delete". Its file goes to the Trash. The other files of its folder and
 what it keeps in `$OPENSPOT_DATA` stay. A widget file goes whole, with each widget in it.
 
-## Check your work
+## Rules
 
-Run this before you stop. It loads each plugin and reads each one that has a `read`. It prints each fault, and it exits
-with 1 when there is a fault. It does not run a script with no `read`.
+| ID | Rule |
+|---|---|
+| P4 | Before a person installs a shared spot, Openspot shows all the text it can, says what runs by itself and names each file that it cannot show. Only a modified key installs it. |
+| P6 | A `.spot` file can carry a compiled program, and the review says first that no one can read it. "Copy to share" compiles a Swift script into `<name>.program` beside its source, and the program runs in its place. |
+| P7 | A `.spot` file has no signature. Openspot warns the sender about secrets, and does not look for them. |
+| P9 | A core spot needs no review, because it is signed with the app. |
+
+## Why not
+
+| Decision | Why | Rejected |
+|---|---|---|
+| A spot travels as a `.spot` file of JSON: a format number and its files | A chat takes a file of any size, any editor shows JSON, and the header already holds each fact. | Encoded text, a zip, a link. |
+| A spot travels with what it needs | A widget works only with the metrics it places, and a script in a folder can need its other files. | Only single scripts. |
+| A shared file of the same path replaces the old one, which goes to the Trash | A new name would break the IDs that a widget places. | A new name for each clash. |
+
+# 09 MCP
+
+`draft` · Needs 01 and 02.
+
+An MCP server that talks over stdio can be a spot. Write an executable file that starts it, with `mcp=true` in its
+header. This one needs Node.js:
 
 ```text
-openspot check <plugins folder>
+#!/bin/sh
+# name=Files
+# symbol=folder
+# mcp=true
+exec npx -y @modelcontextprotocol/server-filesystem "$HOME/Documents"
 ```
 
-## Messages
+- Its sheet lists each tool as an action and each resource as a row. A tool with input asks for it in a form.
+- A tool's text answer and a picked resource's text show as a toast.
+- Each call starts the server, and the server ends after its answer. Openspot reads only the header in a scan.
+- A tool called `read` or with a default id does not show.
 
-A toast and a failure line are read in a second. Write each one as you would tell a friend what happened.
+## Rules
 
-- Say what happened, and why when you know it. Never write "Something went wrong" when you know the cause.
-- Say what still worked, such as `Copied.`
-- Say how to fix it, with the exact step. When a link opens the fix, also print `open=<url>`.
-- When the person cannot fix it, say what to try next.
-- Name the problem, not the act of the person that caused it. Do not blame another app; say what Openspot could not do.
-- Use plain words. No error codes, no internal names, no words such as "fetch" or "credentials".
-- Keep a calm tone. No "Oops", no jokes and no exclamation marks. Write "please" only when the person can do nothing.
-- Use one or two short sentences. Put each key in backticks, such as `` `⌘V` ``.
-
-| Instead of | Write |
+| ID | Rule |
 |---|---|
-| `Oops! Something went wrong.` | `Openspot cannot find a screenshot.` |
-| `Error 1: osascript failed.` | ``Copied, but Openspot cannot paste. Press `⌘V`, or allow Openspot in Accessibility.`` |
-| `You did not install gh.` | `Pull requests need the gh tool. Install it, then open this again.` |
-
-## Rules for scripts
-
-- Print only the data. Send each message for the person to stderr. When a script fails, its last stderr line shows.
-- When a failure has a fix that a link opens, also print `open=<url>`, such as
-  `open=x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility`. The toast names the fix key, and the key
-  or a click opens the link.
-- Exit with 0 on success. Any other code is a failure.
-- Be fast in `read`. It has 10 seconds until its first frame or its end. Reads run at the same time, so a slow script delays no other. Any other name has no limit.
-- Keep files in `$OPENSPOT_DATA`, not in the plugin folder. Openspot creates this folder for each spot. Scripts in one plugin
-  folder share it. To share it with other spots, give each one the same `data=<name>` in its header.
-- Write a file to a temp name, then move it: `... > "$file.$$" && mv "$file.$$" "$file"`. A stop can come at any time, and two
-  calls of one script can run at the same time, so a file must never be half written.
-- Use short plain words in sentence case. Start an action's name with a verb.
-- Do not use a `key` that another plugin has. The first plugin keeps it.
-- A plugin runs with the full access of the person. If you are an agent, tell the person what yours runs.
+| F10 | A script with `mcp=true` is an MCP server on stdio. Its tools are actions, and its resources are rows. A scan never starts it. |

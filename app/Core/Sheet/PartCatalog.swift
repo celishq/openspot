@@ -120,7 +120,7 @@ public enum PartCatalog {
     ## Rules
 
     - Every letter in a drawing needs one part, and two parts cannot share a letter.
-    - A part cannot be called `read`.
+    - A part cannot be called `read`, `run`, `open`, `drop`, `on`, `off` or `level`.
     - Do not use a key that this page does not name.
     - Use at most one `look=strong`.
     - Keep titles short: about 7 letters fit in one column of four, with a control in the same cell.

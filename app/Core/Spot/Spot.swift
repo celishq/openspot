@@ -27,6 +27,8 @@ public struct Spot: Equatable, Sendable {
     public let shipped: ShippedSpot?
     /// Whether the script stays running and takes calls on its standard input.
     public let stays: Bool
+    /// Whether the file is an MCP server on stdio, whose calls the app answers in Swift (F10).
+    public let isMcp: Bool
     /// The file extensions that its card takes, with `folder` and `*`.
     public let drop: [String]
     /// Whether the menu bar shows it.
@@ -64,6 +66,7 @@ public struct Spot: Equatable, Sendable {
         opens: String? = nil,
         shipped: ShippedSpot? = nil,
         stays: Bool = false,
+        isMcp: Bool = false,
         drop: [String] = [],
         isTray: Bool = false,
         dataName: String? = nil,
@@ -91,6 +94,7 @@ public struct Spot: Equatable, Sendable {
         self.opens = opens
         self.shipped = shipped
         self.stays = stays
+        self.isMcp = isMcp
         self.drop = drop
         self.isTray = isTray
         self.dataName = dataName

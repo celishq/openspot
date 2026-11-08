@@ -8,8 +8,8 @@ final class SpotsModel {
     /// One card: a script, which reads from its sheet, or a widget, or a row that the main search found.
     struct Entry: Identifiable {
         let id: String
-        let size: SpotSize
         let item: SpotItem?
+        private let sizeChoice: SpotSize?
         private let sheet: SpotRun?
         private let fixedCommand: Spot
         private let fixedState: SpotState
@@ -17,7 +17,7 @@ final class SpotsModel {
 
         init(command: Spot, sheet: SpotRun?, choice: SpotArrangement = SpotArrangement()) {
             id = command.id
-            size = choice.size(of: command.id) ?? command.size
+            sizeChoice = choice.size(of: command.id)
             gridChoice = choice.isOnGrid(of: command.id)
             item = nil
             self.sheet = sheet
@@ -28,7 +28,7 @@ final class SpotsModel {
         /// A wide card for an item that the main search found in a list.
         init(command: Spot, item: SpotItem) {
             id = "\(command.id)\n\(item.run)"
-            size = .wide
+            sizeChoice = .wide
             gridChoice = nil
             self.item = item
             sheet = nil
@@ -38,6 +38,11 @@ final class SpotsModel {
 
         @MainActor var command: Spot {
             sheet?.command ?? fixedCommand
+        }
+
+        /// The size of its card: the person's choice, or else what its last read says, or else its header (F9).
+        @MainActor var size: SpotSize {
+            sizeChoice ?? state.size ?? command.size
         }
 
         /// Whether the grid shows it: the person's choice, or else what the spot says.
@@ -104,7 +109,7 @@ final class SpotsModel {
     private(set) var visible: [Entry] = [] {
         didSet {
             let sizes = visible.map(\.size)
-            if sizes != oldValue.map(\.size) { placements = SpotGrid().place(sizes) }
+            if sizes != placements.map(\.size) { placements = SpotGrid().place(sizes) }
         }
     }
     /// Where each visible spot lies on the grid, in the order of `visible`.
@@ -238,7 +243,14 @@ final class SpotsModel {
     }
 
     func rebuildEntries() {
-        entries = arrangement.ordered(scanned).map { Entry(command: $0, sheet: runs.sheets[$0.id], choice: arrangement) }
+        entries = ordered().map { Entry(command: $0, sheet: runs.sheets[$0.id], choice: arrangement) }
+    }
+
+    /// The scanned spots in the order that their last reads say, and the person's order in the config over it.
+    private func ordered() -> [Spot] {
+        let order = { (spot: Spot) in self.runs.sheets[spot.id]?.state.order ?? spot.order }
+        let sorted = scanned.enumerated().sorted { (order($0.element), $0.offset) < (order($1.element), $1.offset) }.map(\.element)
+        return arrangement.ordered(sorted)
     }
 
     /// Looks at the plugin folder and asks each script that the panel shows, at the same time.
@@ -285,7 +297,10 @@ final class SpotsModel {
         case .failure(let text): notify(text)
         case .failureWithFix(let text, let fix): notifyFix(text, fix)
         case .listChange:
-            if !query.isEmpty || isEditing || cards.first(where: { $0.id == id }).map({ $0.isOnGrid != visible.contains { $0.id == id } }) == true { updateVisible() }
+            if ordered().map(\.id) != entries.map(\.id) {
+                rebuildEntries()
+                updateVisible()
+            } else if visible.map(\.size) != placements.map(\.size) || !query.isEmpty || isEditing || cards.first(where: { $0.id == id }).map({ $0.isOnGrid != visible.contains { $0.id == id } }) == true { updateVisible() }
         case .frame:
             if sheets[id]?.command.setsKeys == true {
                 applyConfig()

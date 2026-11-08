@@ -1,4 +1,4 @@
-.PHONY: verify test perf plugins dev-state release release-build
+.PHONY: verify test perf guide plugins dev-state release release-build
 
 verify:
 	sh scripts/check-core.sh
@@ -9,6 +9,9 @@ verify:
 test:
 	cd app && xcodegen generate >/dev/null
 	cd app && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Openspot.xcodeproj -scheme Openspot -destination 'platform=macOS' -only-testing:OpenspotTests/$(T) test
+
+guide:
+	sh scripts/guide.sh
 
 perf:
 	sh scripts/motion-perf.sh $(N)

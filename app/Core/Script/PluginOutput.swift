@@ -1,7 +1,7 @@
 import Foundation
 
-/// What a script prints, sorted by the key that says what each block is: `row`, `action`, `field`, `part` or `section`.
-/// The first other block says how the spot itself looks. Each `run` value appears once.
+/// What a script prints, sorted by the first key of each block: `row`, `action`, `field`, `part`, `section`, or the
+/// effects `toast`, `open` and `end`. The first other block says how the spot itself looks. Each `run` value appears once.
 public struct PluginOutput: Equatable, Sendable {
     public private(set) var summary: TextBlock?
     public private(set) var rows: [TextBlock] = []
@@ -14,35 +14,48 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var partFaults: [String] = []
     public private(set) var errors: [String] = []
     public private(set) var layout: SheetLayout?
+    public private(set) var toast: String?
+    /// The link of an `open` effect, such as the fix of a failure.
+    public private(set) var open: String?
+    /// The ids of the calls of a staying script that this frame ends.
+    public private(set) var ends: [String] = []
 
     private static let reserved = "read"
+    /// The app's own events. A part cannot take one, and an action can take only `open`, to change the pick.
+    private static let defaults = ["run", "open", "drop", "on", "off", "level"]
 
     public init(text: String) {
         var runs = Set<String>()
         for block in TextBlock.blocks(in: text) {
-            if block.value("row") != nil {
+            let kind = block.fields.first?.key
+            if kind == "row" {
                 rows.append(block)
                 if let item = SpotItem(block: block) {
                     if runs.insert(item.run).inserted { items.append(item) }
                 } else {
                     errors.append(block.firstLine)
                 }
-            } else if let id = block.value("action") {
+            } else if kind == "action", let id = block.value("action") {
                 take(action: id, block)
-            } else if block.value("field") != nil {
+            } else if kind == "field" {
                 fields.append(block)
-            } else if let part = SpotPart(block: block) {
+            } else if kind == "part" || kind == "section", let part = SpotPart(block: block) {
                 parts.append(part)
                 partFaults += PartCatalog.faults(in: block)
             } else if summary == nil, !block.fields.isEmpty {
                 summary = block
+                take(effects: block)
+            } else if kind == "toast" || kind == "open" || kind == "end" {
+                take(effects: block)
             } else {
                 errors.append(block.firstLine)
             }
         }
         layout = summary.flatMap(SheetLayout.init(block:))
         parts += layout?.keyParts ?? []
-        if parts.contains(where: { $0.id == Self.reserved }) { partFaults.append("a part cannot be called \(Self.reserved)") }
+        for id in [Self.reserved] + Self.defaults where parts.contains(where: { $0.id == id }) {
+            partFaults.append("a part cannot be called \(id)")
+        }
         if !parts.isEmpty { partFaults += SheetFaults.of(layout: layout, summary: summary, parts: parts) }
     }
 
@@ -73,9 +86,15 @@ public struct PluginOutput: Equatable, Sendable {
         return summary?.flag("on") != nil ? .toggle : .launch
     }
 
+    private mutating func take(effects block: TextBlock) {
+        toast = block.value("toast") ?? toast
+        open = block.value("open") ?? open
+        if let end = block.value("end") { ends.append(end) }
+    }
+
     /// Keeps an action. The `open` action sets the word for Enter, and whether a pick stays in the panel.
     private mutating func take(action id: String, _ block: TextBlock) {
-        if id == Self.reserved { partFaults.append("an action cannot be called \(Self.reserved)") }
+        if id == Self.reserved || (Self.defaults.contains(id) && id != "open") { partFaults.append("an action cannot be called \(id)") }
         if id == "open" {
             primary = block.value("title")
             pick = block.flag("close") == false ? .stay : .close
