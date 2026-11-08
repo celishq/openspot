@@ -270,6 +270,7 @@ command = "pause"
 key = "ctrl+option+p"
 ```
 
+- A script with commands and no `read` opens to the rows of its own commands, where the person records keys as in Settings.
 - A key holds cmd, ctrl or option, with a letter, a digit, an arrow, space, return or tab.
 - Presses run one at a time and in order. A press never stops a call, so keep the call short.
 - A key that macOS refuses shows a toast. A hand edit takes effect when the panel next opens.

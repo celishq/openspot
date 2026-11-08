@@ -134,7 +134,7 @@ Comment lines right under the first line, one `key=value` on each line. They can
 | `tray` | `true` | Shows it in the menu bar. Needs a number in its `read`, or `stay=true`. |
 | `stay` | `true` | The script stays running. Section 8. |
 | `drop` | A list of file extensions, `folder` or `*` | Its card takes files that a person drops. Section 5. |
-| `command` | An ID, a title and an optional SF Symbol, such as `left:Left side:rectangle.lefthalf.inset.filled`. One line for each command. | A command that a person can give a key in Settings. A press in any app runs `<script> <id>`, with no panel. |
+| `command` | An ID, a title and an optional SF Symbol, such as `left:Left side:rectangle.lefthalf.inset.filled`. One line for each command. | A command that a person can give a key in Settings. A press in any app runs `<script> <id>`, with no panel. A script with commands and no `read` opens to the rows of its own commands. |
 
 A file with no header key has one call: `<script>`, on a click.
 

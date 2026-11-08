@@ -14,7 +14,7 @@ public struct Spot: Equatable, Sendable {
     public let symbol: String
     public let subtitle: String?
     public private(set) var key: CommandKey?
-    public let read: SpotRead?
+    public private(set) var read: SpotRead?
     public private(set) var pick: ItemPick
     public let rank: Int
     public let order: Int
@@ -41,6 +41,8 @@ public struct Spot: Equatable, Sendable {
     public let headerSymbol: String?
     /// The commands its header lists, which a person can give keys.
     public let offers: [CommandOffer]
+    /// The Settings rows of its own commands, which its sheet shows. Nil for a spot that draws its own sheet.
+    public private(set) var keyList: SettingsSpot?
 
     public init(
         id: String,
@@ -103,6 +105,22 @@ public struct Spot: Equatable, Sendable {
         if kind == .widget { return [] }
         if case .updates? = shipped { return SpotSize.all.filter { $0.columns > 1 } }
         return SpotSize.all
+    }
+
+    /// The same spot, which opens to the keys of its commands when it lists commands and has no read of its own.
+    func listingKeys(with settings: SettingsSpot) -> Spot {
+        guard !offers.isEmpty, read == nil, shipped == nil else { return self }
+        var spot = self
+        spot.kind = .list
+        spot.read = .sheet
+        spot.keyList = settings.keys(of: id)
+        return spot
+    }
+
+    /// Whether its sheet changes the keys in the config file.
+    public var setsKeys: Bool {
+        if case .settings? = shipped { return true }
+        return keyList != nil
     }
 
     /// Whether its rows join the main search.

@@ -45,7 +45,8 @@ public struct PluginFolder: Sendable {
 
     /// Reads each executable and widget file, at the top of the folder or one folder down, after the shipped commands.
     /// Then it reads each core spot that is on, and each core file that a spot needs. When two commands share a key, the
-    /// first keeps it. A file in the folder hides a core file with the same ID.
+    /// first keeps it. A file in the folder hides a core file with the same ID. With Settings among the shipped commands,
+    /// a script that lists commands and has no read opens to their keys.
     public func scan(shipped: [Spot] = []) throws -> ScanResult {
         var result = ScanResult(plugins: shipped.isEmpty ? [] : [Plugin(id: "openspot", commands: shipped)], refused: [])
         var taken = Set(shipped.compactMap(\.key?.name))
@@ -66,6 +67,9 @@ public struct PluginFolder: Sendable {
             Self.read(file, id: id, into: &result, taken: &taken)
         }
         result.removeWidgetsWithLostParts()
+        if let settings = shipped.lazy.compactMap({ if case .settings(let settings)? = $0.shipped { settings } else { nil } }).first {
+            result.listKeys(with: settings)
+        }
         return result
     }
 
