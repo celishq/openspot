@@ -107,17 +107,19 @@ final class ViewLibraryTests: XCTestCase {
     @MainActor
     func testTheCheckNamesAViewThatIsMissingOrDoesNotCompile() async throws {
         let plugins = folder.appendingPathComponent("plugins")
-        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# view=lost.swift\n".writeScript(to: plugins.appendingPathComponent("lost.sh"))
-        try "#!/bin/sh\n# view=bad.swift\n".writeScript(to: plugins.appendingPathComponent("bad.sh"))
-        try Data("struct".utf8).write(to: plugins.appendingPathComponent("bad.swift"))
+        for name in ["lost", "bad"] {
+            try FileManager.default.createDirectory(at: plugins.appendingPathComponent(name), withIntermediateDirectories: true)
+        }
+        try "#!/bin/sh\n# view=lost.swift\n".writeScript(to: plugins.appendingPathComponent("lost/lost.sh"))
+        try "#!/bin/sh\n# view=bad.swift\n".writeScript(to: plugins.appendingPathComponent("bad/bad.sh"))
+        try Data("struct".utf8).write(to: plugins.appendingPathComponent("bad/bad.swift"))
         let views = try tools(compiler: "echo 'bad.swift:1:7: error: expected identifier' >&2; exit 1")
 
         let faults = await PluginCheck(folder: PluginFolder(url: plugins), views: views).faults()
 
         XCTAssertEqual(faults, [
-            "bad: This view does not compile. bad.swift:1:7: error: expected identifier",
-            "lost: Openspot cannot find the view lost.swift."
+            "bad/bad: This view does not compile. bad.swift:1:7: error: expected identifier",
+            "lost/lost: Openspot cannot find the view lost.swift."
         ])
     }
 
@@ -154,28 +156,16 @@ final class ViewLibraryTests: XCTestCase {
         XCTAssertTrue(text.hasPrefix("Program that Openspot cannot show\nhome/cups.view\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
     }
 
-    func testSharingTakesTheLibraryBesideATopLevelView() throws {
-        let plugins = folder.appendingPathComponent("plugins")
-        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# view=cups.swift\n".writeScript(to: plugins.appendingPathComponent("cups.sh"))
-        try Data(view.utf8).write(to: plugins.appendingPathComponent("cups.swift"))
-        try Data("built".utf8).write(to: plugins.appendingPathComponent("cups.view"))
-        let scan = try PluginFolder(url: plugins).scan()
-
-        let spot = try SharedSpot(sharing: try XCTUnwrap(scan.commands.first), from: scan)
-
-        XCTAssertEqual(spot.files.map(\.path), ["cups.sh", "cups.swift", "cups.view"])
-    }
-
     func testRemovingASpotAlsoTakesItsViewAndItsLibrary() throws {
         let plugins = folder.appendingPathComponent("plugins")
-        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# view=cups.swift\n".writeScript(to: plugins.appendingPathComponent("cups.sh"))
-        try "#!/bin/sh\n".writeScript(to: plugins.appendingPathComponent("other.sh"))
-        try Data(view.utf8).write(to: plugins.appendingPathComponent("cups.swift"))
-        try Data("built".utf8).write(to: plugins.appendingPathComponent("cups.view"))
+        let cups = plugins.appendingPathComponent("cups")
+        try FileManager.default.createDirectory(at: cups, withIntermediateDirectories: true)
+        try "#!/bin/sh\n# view=cups.swift\n".writeScript(to: cups.appendingPathComponent("cups.sh"))
+        try "#!/bin/sh\n".writeScript(to: cups.appendingPathComponent("other.sh"))
+        try Data(view.utf8).write(to: cups.appendingPathComponent("cups.swift"))
+        try Data("built".utf8).write(to: cups.appendingPathComponent("cups.view"))
         let place = PluginFolder(url: plugins)
-        let spot = try XCTUnwrap(try place.scan().commands.first { $0.id == "cups" })
+        let spot = try XCTUnwrap(try place.scan().commands.first { $0.id == "cups/cups" })
         var discarded: [String] = []
 
         try place.remove(spot) { discarded.append($0.lastPathComponent) }

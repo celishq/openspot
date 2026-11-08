@@ -51,4 +51,12 @@ final class PluginHeaderTests: XCTestCase {
             XCTAssertEqual((error as? PluginError)?.reason, "Cups needs a Swift file for its view, such as view=cups.swift")
         }
     }
+
+    func testAViewInATopLevelScriptIsRefusedWithTheFolderToMoveTo() {
+        let header = PluginHeader(text: "#!/bin/sh\n# name=Cups\n# view=cups.swift\n").block
+
+        XCTAssertThrowsError(try Plugin(script: URL(fileURLWithPath: "/plugins/cups.sh"), header: header, id: "cups")) { error in
+            XCTAssertEqual((error as? PluginError)?.reason, "Cups has a view, so it needs a folder of its own. Move cups.sh and cups.swift into a folder such as cups/")
+        }
+    }
 }

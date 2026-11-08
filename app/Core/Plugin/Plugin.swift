@@ -62,6 +62,9 @@ public struct Plugin: Equatable, Sendable {
         if let view, URL(fileURLWithPath: view).pathExtension != SwiftProgram.sourceExtension {
             throw PluginError.fault("\(name) needs a Swift file for its view, such as view=\(url.deletingPathExtension().lastPathComponent).swift")
         }
+        if let view, !id.contains("/") {
+            throw PluginError.fault("\(name) has a view, so it needs a folder of its own. Move \(url.lastPathComponent) and \(view) into a folder such as \(id)/")
+        }
         let command = Spot(
             id: id,
             name: name,
