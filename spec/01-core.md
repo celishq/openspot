@@ -46,18 +46,18 @@ refuses that plugin, and the others still load (F6).
 open -a Calendar
 ```
 
-| Key | Meaning |
-|---|---|
-| `name` | The title. The default comes from the file name. |
-| `symbol` | An SF Symbol name. |
+| Key                      | Meaning                                                                                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                   | The title. The default comes from the file name.                                                                                                                     |
+| `symbol`                 | An SF Symbol name.                                                                                                                                                   |
 | `image`, `file`, `glyph` | A picture in place of the symbol: an image, a file's icon, or a short text such as an emoji. A path that does not start with `/` starts at the folder of the script. |
-| `subtitle` | The second line. |
-| `key` | One letter. Hold the key that opens the panel, and press this letter to run it. |
-| `size` | The size it prefers: `wide` (the default), `small`, `square`, `strip` or `large`. The grid can change it. |
-| `read` | The moments when Openspot reads the script. |
-| `data` | The name of a data folder to share with other spots. |
-| `drop` | The files that its card takes: extensions such as `mov,mkv`, `folder`, or `*`. |
-| `command` | `<id>:<title>[:<symbol>]`, a command that the person can give a key. One line for each. |
+| `subtitle`               | The second line.                                                                                                                                                     |
+| `key`                    | One letter. Hold the key that opens the panel, and press this letter to run it.                                                                                      |
+| `size`                   | The size it prefers: `wide` (the default), `small`, `square`, `strip` or `large`. The grid can change it.                                                            |
+| `read`                   | The moments when Openspot reads the script.                                                                                                                          |
+| `data`                   | The name of a data folder to share with other spots.                                                                                                                 |
+| `drop`                   | The files that its card takes: extensions such as `mov,mkv`, `folder`, or `*`.                                                                                       |
+| `command`                | `<id>:<title>[:<symbol>]`, a command that the person can give a key. One line for each.                                                                              |
 
 With `panel` in its `read`, the head of a frame can change `size`. The person's choice wins (F9). A script with `command`
 lines has no card on the grid, because its commands are what it gives.
@@ -66,14 +66,14 @@ lines has no card on the grid, because its commands are what it gives.
 
 `read` lists moments, split by commas, such as `read=panel,60`. At each moment Openspot calls `<script> read`.
 
-| Moment | Openspot reads it |
-|---|---|
-| none | Never. A click runs `<script>` with no argument. |
-| `sheet` | When its sheet opens. |
-| `panel` | Each time the panel opens, and once as the app starts. |
-| a number | Every that many seconds, while something wants it. |
-| `launch` | When the app starts. |
-| `wake` | When the Mac wakes. |
+| Moment   | Openspot reads it                                      |
+| -------- | ------------------------------------------------------ |
+| none     | Never. A click runs `<script>` with no argument.       |
+| `sheet`  | When its sheet opens.                                  |
+| `panel`  | Each time the panel opens, and once as the app starts. |
+| a number | Every that many seconds, while something wants it.     |
+| `launch` | When the app starts.                                   |
+| `wake`   | When the Mac wakes.                                    |
 
 A read must be safe at each moment that its header lists, and only its author can promise this (M5). A script has one read
 at a time (M1). After a call that prints no state, Openspot reads the script once (M4). `OPENSPOT_REASON` gives the
@@ -82,17 +82,17 @@ a widget or the menu bar shows it, or while the open panel reads it at `panel` (
 
 ## The calls
 
-| Call | When |
-|---|---|
-| `<script>` | A click, with no `read` in its header. |
-| `<script> read [text]` | A moment, or a search change with `search=script` (02). |
-| `<script> run` | A click on a card with no sheet, with a `read` in its header. |
-| `<script> open <run>` | A row is picked (02). |
-| `<script> <action> [run]` | An action runs (02). |
-| `<script> <part> [value]` | A part changes or is pressed (02). |
-| `<script> on`, `off`, `level <number>` | A toggle or a slider changes (02). |
-| `<script> drop <path> [path]...` | Files are dropped on its card, each path as its own argument (D3). |
-| `<script> <command>` | A key that the person gave a command is pressed. |
+| Call                                   | When                                                               |
+| -------------------------------------- | ------------------------------------------------------------------ |
+| `<script>`                             | A click, with no `read` in its header.                             |
+| `<script> read [text]`                 | A moment, or a search change with `search=script` (02).            |
+| `<script> run`                         | A click on a card with no sheet, with a `read` in its header.      |
+| `<script> open <run>`                  | A row is picked (02).                                              |
+| `<script> <action> [run]`              | An action runs (02).                                               |
+| `<script> <part> [value]`              | A part changes or is pressed (02).                                 |
+| `<script> on`, `off`, `level <number>` | A toggle or a slider changes (02).                                 |
+| `<script> drop <path> [path]...`       | Files are dropped on its card, each path as its own argument (D3). |
+| `<script> <command>`                   | A key that the person gave a command is pressed.                   |
 
 `read` is the only reserved word. `run`, `open`, `drop`, `on`, `off` and `level` are default ids. A part cannot use a
 default id, and an action can use only `open` (C1). A new default id reaches only a script that asks for it (C2).
@@ -157,19 +157,19 @@ each fault.
 A toast or a failure line says what happened, and why when you know it. It says what still worked, and how to fix the
 rest with the exact step. Use plain words, a calm tone, and one or two short sentences, with each key in backticks.
 
-| Instead of | Write |
-|---|---|
-| `Oops! Something went wrong.` | `Openspot cannot find a screenshot.` |
-| `Error 1: osascript failed.` | ``Copied, but Openspot cannot paste. Press `⌘V`, or allow Openspot in Accessibility.`` |
+| Instead of                    | Write                                                                                  |
+| ----------------------------- | -------------------------------------------------------------------------------------- |
+| `Oops! Something went wrong.` | `Openspot cannot find a screenshot.`                                                   |
+| `Error 1: osascript failed.`  | ``Copied, but Openspot cannot paste. Press `⌘V`, or allow Openspot in Accessibility.`` |
 
 ## Decisions
 
-| Decision | Rejected |
-|---|---|
-| The app's events are default ids, and `read` is the only reserved word. | A verb for each kind of call. |
-| The first key names the kind of a block. | A kind found from any key. |
-| Escape codes report and never act. | OSC 8 as `open`. |
-| A person can see and stop each call, so a call has no time limit. | A `job` key. |
+| Decision                                                                      | Rejected                            |
+| ----------------------------------------------------------------------------- | ----------------------------------- |
+| The app's events are default ids, and `read` is the only reserved word.       | A verb for each kind of call.       |
+| The first key names the kind of a block.                                      | A kind found from any key.          |
+| Escape codes report and never act.                                            | OSC 8 as `open`.                    |
+| A person can see and stop each call, so a call has no time limit.             | A `job` key.                        |
 | Each script runs once for each call. State lives in files or in a capability. | A process that stays between calls. |
-| The header is in each file, and a scan runs nothing. | A manifest. |
-| A plugin runs with the full access of the person (P1, P2). | A `uses` key, or a sandbox. |
+| The header is in each file, and a scan runs nothing.                          | A manifest.                         |
+| A plugin runs with the full access of the person (P1, P2).                    | A `uses` key, or a sandbox.         |

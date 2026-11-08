@@ -3,10 +3,10 @@
 These specs are the contract between a plugin and Openspot. The build joins them in order into one `GUIDE.md` inside the
 app, which the Build spot opens and copies for an AI. How the app itself works is in its code and in `app/RULES.md`.
 
-| Spec | Status | Needs | What it holds |
-|---|---|---|---|
-| [01 Core](01-core.md) | final | | The file, the format, the header, the moments, the calls and the life of a call. |
-| [02 What a script prints](02-output.md) | final | 01 | Rows, actions, forms, toggles, sliders, sheets and metrics. |
+| Spec                                    | Status | Needs | What it holds                                                                    |
+| --------------------------------------- | ------ | ----- | -------------------------------------------------------------------------------- |
+| [01 Core](01-core.md)                   | final  |       | The file, the format, the header, the moments, the calls and the life of a call. |
+| [02 What a script prints](02-output.md) | final  | 01    | Rows, actions, forms, toggles, sliders, sheets and metrics.                      |
 
 Specs 00 and 03 to 10 are gone. Their numbers are not used again.
 
@@ -40,24 +40,20 @@ These rules come from the way Nostr writes its NIPs.
 
 ## Registry
 
-| Word | Kind | Spec |
-|---|---|---|
-| `name`, `symbol`, `image`, `file`, `glyph`, `subtitle`, `key`, `size`, `read`, `data`, `drop`, `command` | Header key | 01 |
-| `rank`, `tray` | Header key | 02 |
-| `sheet`, `panel`, a number, `launch`, `wake` | Moment | 01 |
-| `toast`, `open` | Block kind | 01 |
-| `row`, `action`, `field`, `part`, `section` | Block kind | 02 |
-| `read` | Reserved word | 01 |
-| `run`, `open`, `drop`, `on`, `off`, `level` | Default id | 01 |
-| `OPENSPOT_REASON`, `OPENSPOT_DATA`, `OPENSPOT_SH` | Environment variable | 01 |
-| `openspot <noun> <verb>` | Command | 01 |
+| Word                                                                                                     | Kind                 | Spec |
+| -------------------------------------------------------------------------------------------------------- | -------------------- | ---- |
+| `name`, `symbol`, `image`, `file`, `glyph`, `subtitle`, `key`, `size`, `read`, `data`, `drop`, `command` | Header key           | 01   |
+| `rank`, `tray`                                                                                           | Header key           | 02   |
+| `sheet`, `panel`, a number, `launch`, `wake`                                                             | Moment               | 01   |
+| `toast`, `open`                                                                                          | Block kind           | 01   |
+| `row`, `action`, `field`, `part`, `section`                                                              | Block kind           | 02   |
+| `read`                                                                                                   | Reserved word        | 01   |
+| `run`, `open`, `drop`, `on`, `off`, `level`                                                              | Default id           | 01   |
+| `OPENSPOT_REASON`, `OPENSPOT_DATA`, `OPENSPOT_SH`                                                        | Environment variable | 01   |
+| `openspot <noun> <verb>`                                                                                 | Command              | 01   |
 
 ## How to extend
 
 An old script never sees a word that it did not ask for. To add a default id, a moment, an environment variable, an
 `openspot` noun, a part or a block kind, add one word to one spec and to the registry. An old app skips a key or a block
 that it does not know (R2, R10), and a new default id reaches only a script that asks for it (C2).
-
-## Open items
-
-1. What macOS does when a compiled program under Openspot calls a protected API. A person must try it on a Mac.
