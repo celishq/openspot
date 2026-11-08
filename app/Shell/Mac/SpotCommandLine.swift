@@ -29,6 +29,8 @@ enum SpotCommandLine {
             SpotSandbox.run(path: path)
         case .render(let path):
             SpotSheetPicture.run(text: standardInput, path: path)
+        case .renderCard(let size, let path):
+            SpotCardPicture.run(text: standardInput, size: size, path: path)
         case .checkSheet:
             checkSheet()
         case .translate(let from, let to):

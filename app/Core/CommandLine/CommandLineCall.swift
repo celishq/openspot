@@ -5,6 +5,8 @@ public enum CommandLineCall: Equatable, Sendable {
     case check(String?)
     case checkSheet
     case render(String)
+    /// Draws the card of the output on stdin at a size, from its drawing for that size.
+    case renderCard(SpotSize, String)
     case sandbox(String?)
     case catalog
     case colorPick
@@ -26,6 +28,7 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot check [folder]                      Reports the faults of a plugins folder.
     openspot check --sheet                       Reports the faults of a sheet on stdin.
     openspot render <file.png>                   Draws the sheet on stdin to a picture.
+    openspot render --card <size> <file.png>     Draws its card at a size, such as wide, to a picture.
     openspot sandbox [file]                      Opens a window to try a sheet from text, a file or a script.
     openspot catalog                             Prints each part that a script can print.
     openspot color pick                          Prints the colour the person picks.
@@ -61,6 +64,9 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("check", _) where rest.count <= 1: self = .check(rest.first)
         case ("catalog", nil): self = .catalog
         case ("sandbox", _) where rest.count <= 1: self = .sandbox(rest.first)
+        case ("render", "--card") where rest.count == 3:
+            guard let size = SpotSize(name: rest[1]) else { self = .unknown(arguments.joined(separator: " ")); return }
+            self = .renderCard(size, rest[2])
         case ("render", let path?) where rest.count == 1: self = .render(path)
         case ("color", "pick") where rest.count == 1: self = .colorPick
         case ("clipboard", "copy") where rest.count <= 2: self = .clipboardCopy(rest.dropFirst().first)

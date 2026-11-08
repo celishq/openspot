@@ -10,11 +10,21 @@ struct SpotSlotView: View {
     var body: some View {
         switch part.control {
         case .toggle(let on):
-            Toggle("", isOn: Binding(get: { on }, set: { onSlot(part.id, $0 ? "true" : "false") }))
+            let toggle = Toggle("", isOn: Binding(get: { on }, set: { onSlot(part.id, $0 ? "true" : "false") }))
                 .toggleStyle(.switch)
                 .controlSize(.mini)
                 .labelsHidden()
                 .tint(SpotTheme.ink)
+            ViewThatFits(in: .horizontal) {
+                if part.title != nil || part.detail != nil {
+                    HStack(spacing: 8) {
+                        words.fixedSize()
+                        Spacer(minLength: 0)
+                        toggle
+                    }
+                }
+                toggle
+            }
         case .slider(let level, let low, let high):
             SpotSlotSlider(level: level, low: low, high: high) { onSlot(part.id, String(Int($0.rounded()))) }
         case .menu(let options, let value), .list(let options, let value):
@@ -31,18 +41,26 @@ struct SpotSlotView: View {
                 .tint(SpotTheme.ink)
                 .controlSize(.small)
         case .chart(let points):
-            SpotSlotBars(points: points)
+            VStack(alignment: .leading, spacing: SpotType.lineGap) {
+                if part.title != nil || part.detail != nil { words.fixedSize(horizontal: false, vertical: true) }
+                SpotSlotBars(points: points)
+            }
         case .shortcut(let text):
             SpotKeyLabel(text: text, isRecording: false)
         case .text(let text, let placeholder, let isReadOnly):
             SpotSlotField(text: text, placeholder: placeholder ?? part.title ?? "", isReadOnly: isReadOnly) { onSlot(part.id, $0) }
         case .metric(let number):
-            Text(number)
-                .font(.system(size: 28, weight: .semibold, design: .rounded))
-                .foregroundStyle(SpotTheme.ink)
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: SpotType.lineGap) {
+                Text(number)
+                    .font(.system(size: 28, weight: .semibold, design: .rounded))
+                    .foregroundStyle(SpotTheme.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                if let label = part.title {
+                    Text(label).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         case .image(let path):
             picture(icon: .image(path))
         default:
