@@ -35,7 +35,8 @@ Openspot searches the rows itself and sorts recent picks first. The head can cha
 - `repeat=<letter> <per line>` flows the rows as square buttons into one area of the drawing, which scrolls (B5).
 
 `global=true` in the header shows the rows in the main search too. It needs `panel`, `launch` or a number in its `read`,
-and a number also needs a `key`. Openspot ranks them by the person's picks, and the script cannot.
+and a number also needs a `key`. Openspot ranks them by the person's picks, and the script cannot. With no `key`, the spot
+has no card on the grid until the person places one.
 
 ## Actions and forms
 

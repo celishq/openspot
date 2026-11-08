@@ -62,6 +62,7 @@ final class FirstLaunchTests: XCTestCase {
         let starting = place.startingSpots()
 
         XCTAssertFalse(starting.isEmpty)
+        XCTAssertTrue(starting.contains("settings"))
         let scan = try PluginFolder(url: plugins, core: place.core, enabled: Set(starting)).scan()
         XCTAssertEqual(scan.refused, [])
         XCTAssertFalse(scan.scripts.contains { $0.read?.seconds != nil })
