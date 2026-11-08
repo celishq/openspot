@@ -33,6 +33,11 @@ public struct ScanResult: Equatable, Sendable {
         keys.filter { key in scripts.contains { $0.id == key.spot && $0.offers.contains { $0.id == key.command } } }
     }
 
+    /// Makes each script that lists commands and has no read open to the keys of its commands.
+    mutating func listKeys(with settings: SettingsSpot) {
+        plugins = plugins.map { Plugin(id: $0.id, commands: $0.commands.map { $0.listingKeys(with: settings) }) }
+    }
+
     /// Leaves out each widget that names a script with no `read` or a command no plugin has, and reports why.
     mutating func removeWidgetsWithLostParts() {
         let metrics = Set(scripts.filter { $0.read != nil }.map(\.id))

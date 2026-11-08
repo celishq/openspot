@@ -81,6 +81,33 @@ final class SettingsSpotTests: XCTestCase {
         XCTAssertEqual(file.read().keys.map(\.command), ["right"])
     }
 
+    func testARowShowsTheIconOfItsCommandOrElseOfItsScript() async throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try "#!/bin/sh\n# name=Move\n# symbol=macwindow\n# command=left:Left side:rectangle.lefthalf.filled\n# command=right:Right side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+
+        let items = try await spot.items(timeout: 1).items
+
+        XCTAssertEqual(items.dropFirst(2).map(\.symbol), ["rectangle.lefthalf.filled", "macwindow"])
+        XCTAssertEqual(items.dropFirst(2).map(\.title), ["Left side", "Right side"])
+    }
+
+    func testAScriptWithCommandsAndNoReadOpensToTheKeysOfItsOwnCommands() async throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try "#!/bin/sh\n# name=Move\n# command=left:Left side\n[ \"$1\" = left ] && printf 'toast=Left\\n'\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# name=Other\n# command=up:Up\n".writeScript(to: folder.appendingPathComponent("other.sh"))
+        let scan = try PluginFolder(url: folder).scan(shipped: ShippedSpot.commands(folder: folder, guide: folder, app: "", config: file))
+        let move = try XCTUnwrap(scan.commands.first { $0.id == "move" })
+        let runs = SpotRuns()
+
+        XCTAssertEqual(move.kind, .list)
+        let items = try await move.items(timeout: 1).items
+        XCTAssertEqual(items.map(\.title), ["Left side"])
+        _ = try await runs.answer(of: move, .set("key:move:left", to: "ctrl+option+left"), limit: 1)
+        XCTAssertEqual(file.read().keys.map(\.command), ["left"])
+        let press = try await runs.answer(of: move, .press("left"), limit: 5)
+        XCTAssertEqual(press, "toast=Left\n")
+    }
+
     func testTheSheetListsTheStandardKeyWithNoFile() async throws {
         let items = try await spot.items(timeout: 1).items
 

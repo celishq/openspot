@@ -236,7 +236,7 @@ public final class SpotRuns {
     }
 
     private func frames(of command: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String] = [:]) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void) {
-        if let shipped = command.shipped {
+        if let shipped = command.keyList.flatMap({ $0.answers(action.arguments) ? ShippedSpot.settings($0) : nil }) ?? command.shipped {
             return answered { try await shipped.answer(action.arguments, input: input) }
         }
         if command.isMcp {

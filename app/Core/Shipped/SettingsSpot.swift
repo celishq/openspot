@@ -13,13 +13,27 @@ public struct SettingsSpot: Equatable, Sendable {
     public let core: URL?
     public let login: LoginItem?
     public let link: CommandLink?
+    /// The ID of the one script whose commands it lists. Nil lists the keys of the app and of every script.
+    public let only: String?
 
-    public init(file: ConfigFile, folder: URL, core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil) {
+    public init(file: ConfigFile, folder: URL, core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil, only: String? = nil) {
         self.file = file
         self.folder = folder
         self.core = core
         self.login = login
         self.link = link
+        self.only = only
+    }
+
+    /// The keys of one script's commands alone.
+    public func keys(of script: String) -> SettingsSpot {
+        SettingsSpot(file: file, folder: folder, core: core, only: script)
+    }
+
+    /// Whether it answers this call: a read, or a change of a key. Any other call goes to the script.
+    public func answers(_ arguments: [String]) -> Bool {
+        guard let first = arguments.first else { return false }
+        return first == "read" || first == Self.clear || first.hasPrefix(Self.keyPrefix)
     }
 
     /// Answers one call with the text a script would print. A change prints nothing, which asks for a new read.
@@ -50,17 +64,18 @@ public struct SettingsSpot: Equatable, Sendable {
         let config = file.read()
         let panel = "row=Open Openspot\nrun=\(Self.panelKey)\nsymbol=keyboard\nhides=\(Self.clear)\nshortcut=\((config.panelKey ?? .standard).text)\n"
         let fix = "row=Open a fix\nrun=\(Self.fixKey)\nsymbol=wrench.and.screwdriver\nhides=\(Self.clear)\nshortcut=\((config.fixKey ?? .fix).text)\n"
-        let scripts = (try? PluginFolder(url: folder, core: core, enabled: config.arrangement.enabled).scan())?.scripts ?? []
+        let scripts = ((try? PluginFolder(url: folder, core: core, enabled: config.arrangement.enabled).scan())?.scripts ?? []).filter { only == nil || $0.id == only }
         let rows = scripts.flatMap { script in
             script.offers.map { offer -> String in
                 let key = config.keys.first { $0.spot == script.id && $0.command == offer.id }
                 let hides = key == nil ? "hides=\(Self.clear)\n" : ""
-                return "row=\(offer.title)\ndetail=\(script.name)\nrun=\(Self.keyPrefix)\(script.id):\(offer.id)\nsymbol=\(script.symbol)\n\(hides)shortcut=\(key?.shortcut.text ?? "Record")\n"
+                return "row=\(offer.title)\ndetail=\(script.name)\nrun=\(Self.keyPrefix)\(script.id):\(offer.id)\nsymbol=\(offer.symbol ?? script.symbol)\n\(hides)shortcut=\(key?.shortcut.text ?? "Record")\n"
             }
         }
         let login = self.login.map { [$0.row.text] } ?? []
         let link = self.link.map { [$0.row.text] } ?? []
-        return (["recents=false\n", "action=open\ntitle=Change\nclose=false\n", "action=\(Self.clear)\ntitle=Remove key\n", panel, fix] + login + link + rows).joined(separator: "\n")
+        let app = only == nil ? [panel, fix] + login + link : []
+        return (["recents=false\n", "action=open\ntitle=Change\nclose=false\n", "action=\(Self.clear)\ntitle=Remove key\n"] + app + rows).joined(separator: "\n")
     }
 
     private func shortcut(from arguments: [String]) throws -> Shortcut {

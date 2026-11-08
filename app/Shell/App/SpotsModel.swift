@@ -302,7 +302,7 @@ final class SpotsModel {
                 updateVisible()
             } else if visible.map(\.size) != placements.map(\.size) || !query.isEmpty || isEditing || cards.first(where: { $0.id == id }).map({ $0.isOnGrid != visible.contains { $0.id == id } }) == true { updateVisible() }
         case .frame:
-            if case .settings? = sheets[id]?.command.shipped {
+            if sheets[id]?.command.setsKeys == true {
                 applyConfig()
                 holdAssignedKeys()
             }
