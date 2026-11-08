@@ -107,7 +107,8 @@ This is a complete plugin. It is a spot called Hello, and a click runs it.
 | F6 | A header key that is not valid refuses that plugin. Openspot reports the reason and loads the others. |
 | F7 | A script with a number in its `read` and no `key` has no spot. A widget or the menu bar can show it. |
 | F8 | Widgets are in a `.toml` file, because a person writes them by hand. A widget runs nothing. |
-| F9 | `grid=false` keeps a spot off the grid. It differs from F7: search and its key still find the spot. A script with `panel` in its `read` can print `grid=true` or `grid=false` to change this, and a frame with no `grid` keeps the header's value. A stopped call changes nothing. |
+| F9 | `grid=false` keeps a spot off the grid. It differs from F7: search and its key still find the spot. A script with `panel` in its `read` can print `grid=true` or `grid=false`, `size` and `order` in its head to change them, and a frame with no such key keeps the header's value. `config.toml` wins over both (A7). A stopped call changes nothing. |
+| F10 | A script with `mcp=true` in its header is an MCP server on stdio. Its tools are actions, and its resources are rows. A scan never starts it. |
 
 ### Header
 
@@ -163,7 +164,7 @@ A file with no header key has one call: `<script>`, on a click.
 
 | ID | Rule |
 |---|---|
-| C1 | A plugin cannot print a part or an action called `read`. `openspot check` reports it. |
+| C1 | `read` is the only reserved word. `run`, `open`, `drop`, `on`, `off` and `level` are default ids: the app's own events. A part cannot use a default id, and an action can use only `open`, to change it. `openspot check` reports a clash. |
 | C2 | A new built-in name reaches only a script whose header or output asks for it. |
 | C3 | An action with `form=true` first runs as `<action> [run]` with empty stdin, and the script prints `field` blocks. After the person fills the form, the same call runs with the values on stdin. |
 | C4 | Openspot waits for a pause before it sends a change: 300 ms for text, also for `read <text>`, and 100 ms for a slider. |
@@ -188,6 +189,7 @@ A file with no header key has one call: `<script>`, on a click.
 | M3 | Reads run at the same time. The panel never waits for one script. A spot shows its header until its answer arrives. |
 | M4 | After a call with no frame, or with frames that show no `on`, `level` or part, Openspot reads a script that has a `read` key once, by M1. |
 | M5 | A read must be safe at each moment that its header lists. Only the author of the header can promise this. |
+| M6 | A read gets `OPENSPOT_REASON`: `panel`, `sheet`, `timer`, `launch`, `wake`, `search` or `change`. |
 
 ### Drops
 
@@ -240,14 +242,17 @@ printf 'row=%s\n' "$(esc "$name")"
 
 A script prints plain text. Each line is `key=value`, and a blank line ends a block.
 
-| A block has | It is |
+The first key of a block names its kind.
+
+| First key | It is |
 |---|---|
 | `row` | A row of a list. |
 | `action` | An action. `action=open` sets the word for Enter on a row. |
 | `field` | A form field. |
 | `part` | A part of a sheet. |
 | `section` | A new group of parts. |
-| Anything else, first | How the spot itself looks: `title`, `detail`, `on`, `level`, `grid`, `toast`, `search`, `recents`, a layout. |
+| `toast`, `open` | An effect (R5, R9). |
+| Any other, in the first block | The head: how the spot itself looks: `title`, `detail`, `on`, `level`, `grid`, `size`, `order`, `toast`, `search`, `recents`, a layout. |
 
 | ID | Rule |
 |---|---|
@@ -260,6 +265,9 @@ A script prints plain text. Each line is `key=value`, and a blank line ends a bl
 | R7 | `recents=false` does not sort recent picks first. |
 | R8 | A script writes a file to a temp name, then moves it. A stop can come at any time, and two calls of one script can run at the same time, so a file must never be half written. |
 | R9 | A failed call can print `open=<url>`, such as the System Settings pane that fixes the failure. Its toast then names the fix key, and the key or a click on the toast opens the URL. |
+| R10 | A block whose first key is not a kind, after the head, is skipped, and `openspot check` reports it. A new kind is a new first key. |
+| R11 | `toast` and `open` can be keys of the head, or a block of their own at any place in a frame. |
+| R12 | Openspot reads OSC 9;4 as the progress `value` and OSC 9 as a `toast`, in any output, and removes each other escape code. |
 
 ### Streaming
 
@@ -385,6 +393,7 @@ value=Hello
 | Y4 | To end a script, Openspot closes its stdin. Calls sent before that still run. After 2 seconds its group gets the terminate signal, and 2 seconds after that Openspot kills what still runs. |
 | Y5 | If a staying script ends and something still wants it, the next moment or call starts it again. After 3 failures in one minute, Openspot does not start it again until the next scan that finds it changed, and it tells the person. |
 | Y6 | Openspot can stop a staying script at any time. What must survive goes in `OPENSPOT_DATA`. |
+| Y7 | Each call block has an `id`. A script that prints `end=<id>` ends that call, so its spot shows it as running until then. A second press sends `name=stop` with that `id`. A call of a script that never prints `end` shows no running mark, as before. |
 
 ## 9. Widgets and the menu bar
 
@@ -443,7 +452,15 @@ A change to the meaning of a word that exists is a breaking change. Do not make 
 
 ## 13. Where the code differs today
 
-The code follows this document.
+| Rules | Module | Today |
+|---|---|---|
+| C1 | `Core/Script/PluginOutput.swift` | Reserves `read` only. |
+| R10, R11 | `Core/Script/PluginOutput.swift`, `Core/Run/SpotRun.swift` | Finds a kind by any key of a block. Reads `toast` from the head only. |
+| M6 | `Core/Run/*`, `Core/Script/ScriptProcess.swift` | A read does not know its moment. |
+| Y7 | `Core/Run/SpotRun.swift`, `Core/Script/SpotAction.swift` | A staying call has no id, no end and no stop. |
+| F9 | `Core/Plugin/Plugin.swift`, `Core/Run/SpotRun.swift` | A read sets only `grid`. |
+| R12 | `Core/Script/SheetFrameReader.swift` | Keeps escape codes as text. |
+| F10 | `Core/Plugin/*` | No MCP. |
 
 ## 14. Decisions
 
@@ -451,6 +468,8 @@ The code follows this document.
 |---|---|---|
 | A script lists commands, and the person gives them keys | A key depends on the person's hands and other apps, and a window move through the panel is too slow. The config file holds each key, so a clash has one place, and an update or a shared spot cannot change a key. A header lists the commands, so Settings shows them with no run. | A second global key that arms the letters of spots. A `global` key in the header, which lets a script take a key. |
 | A failure links its fix, and one key opens it | A person who meets a fixable failure, such as a missing permission, reaches the fix with no search through System Settings. The key works with no mouse, and the script knows the fix, so the app guesses nothing. | A click only, which needs the mouse. A key held at all times, which takes it from other apps. The app reading the error text for a known fix. |
+| A staying script says so in its header | A normal script reads stdin to its end, as the shell helper does, so the app must close stdin before the script answers. A process cannot ask for more calls after that. | The app keeps any process that prints `end=<id>` and stays alive. |
+| The app's events are default ids | A model writes `case "$1" in` with one branch for each id it printed. A default id is one more branch, with no verb to learn. | A verb for each kind of call, such as `pick`, `set` and `do`, which adds a second `case`. |
 | One call shape, with only `read` reserved | An author learns one line. A clash can happen only inside one file, and C1 and C2 cover it. | A word for each kind of call. An `action` word. Both add words to learn. |
 | Scripts, not a JS runtime | Goal 1. Shell gives each Mac tool at once, and a start costs about 5 ms. | JS only. It loses one-file shell scripts. |
 | JS waits | It can come later as one more executable, with `#!/usr/bin/env -S openspot run`, on JavaScriptCore. The contract does not change. It must provide `fetch`, timers and modules. | A JS level now. `node` and `bun` are not on each Mac. |

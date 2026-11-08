@@ -3,3 +3,4 @@ plans/
 *.xcuserstate
 xcuserdata/
 .DS_Store
+.claude/worktrees/
