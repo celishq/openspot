@@ -207,7 +207,6 @@ chooses what the menu bar shows. Printing nothing removes the item until the nex
 
 | Rule       | Today                                                                               | Phase |
 | ---------- | ----------------------------------------------------------------------------------- | ----- |
-| U2, U3, U6 | Reads `part=`, `action=` and `field=` blocks.                                       | 1     |
 | U7, U8, U9 | Repeats only as `repeat=<area> <per line>`; rows have no template.                  | 2     |
 | U11        | A frame replaces the rows.                                                          | 2     |
 | U5, U12    | Cards draw a kind from the head: `on`, `level`, and a metric's `title` and `value`. | 4     |
