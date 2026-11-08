@@ -3,10 +3,10 @@
 # symbol=macwindow
 # subtitle=Give each command a key in Settings
 # grid=false
-# command=full:Full screen
-# command=center:Centre
-# command=left:Left side
-# command=right:Right side
+# command=full:Full screen:rectangle.inset.filled
+# command=center:Centre:rectangle.center.inset.filled
+# command=left:Left side:rectangle.lefthalf.inset.filled
+# command=right:Right side:rectangle.righthalf.inset.filled
 case "$1" in
   full) openspot window move "0 0 1 1" ;;
   center) openspot window move "0.175 0.175 0.65 0.65" ;;

@@ -67,7 +67,7 @@ open -a Calendar
 | `tray` | `true` to show a metric in the menu bar. Needs a number in its `read`, or `stay=true`. |
 | `stay` | `true` to keep the script running. See "Sheets of parts". |
 | `drop` | A list of file extensions, `folder` or `*`. Its card takes files that a person drops. See "Drops". |
-| `command` | An ID and a title, such as `command=left:Left side`. One line for each command. See "Commands with keys". |
+| `command` | An ID, a title and an optional SF Symbol, such as `command=left:Left side:rectangle.lefthalf.inset.filled`. One line for each command. Without a symbol, its row shows the `symbol` of the script. See "Commands with keys". |
 | `data` | The name of a data folder to share with other spots. See "Rules for scripts". |
 
 `read` is a list of moments, split by commas, such as `read=panel,60`. At each moment Openspot calls `<script> read`:

@@ -81,6 +81,16 @@ final class SettingsSpotTests: XCTestCase {
         XCTAssertEqual(file.read().keys.map(\.command), ["right"])
     }
 
+    func testARowShowsTheIconOfItsCommandOrElseOfItsScript() async throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try "#!/bin/sh\n# name=Move\n# symbol=macwindow\n# command=left:Left side:rectangle.lefthalf.filled\n# command=right:Right side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+
+        let items = try await spot.items(timeout: 1).items
+
+        XCTAssertEqual(items.dropFirst(2).map(\.symbol), ["rectangle.lefthalf.filled", "macwindow"])
+        XCTAssertEqual(items.dropFirst(2).map(\.title), ["Left side", "Right side"])
+    }
+
     func testTheSheetListsTheStandardKeyWithNoFile() async throws {
         let items = try await spot.items(timeout: 1).items
 
