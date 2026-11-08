@@ -34,17 +34,19 @@ class SamplePluginsCase: XCTestCase {
         let toast = try await caffeinate.perform(.item(SpotItem(title: "1 minute", run: "60")), timeout: 5)
         XCTAssertEqual(toast, "Caffeinate is on for 1 minute")
         var started = try await caffeinate.state(timeout: 5)
-        for _ in 0..<100 where started.on != true {
+        for _ in 0..<100 where started.subtitle == "Off" {
             try await Task.sleep(for: .milliseconds(50))
             started = try await caffeinate.state(timeout: 5)
         }
         let first = try await caffeinate.items(timeout: 5).items.first
+        XCTAssertEqual(started.subtitle, "1m left")
         XCTAssertEqual(started.on, true)
         XCTAssertEqual(first?.run, "off")
 
         let stopToast = try await caffeinate.perform(.item(try XCTUnwrap(first)), timeout: 5)
         XCTAssertEqual(stopToast, "Caffeinate is off")
         let stopped = try await caffeinate.state(timeout: 5)
+        XCTAssertEqual(stopped.subtitle, "Off")
         XCTAssertEqual(stopped.on, false)
     }
 

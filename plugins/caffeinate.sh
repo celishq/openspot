@@ -43,8 +43,7 @@ case "$1" in
         fi
       fi
     fi
-    printf 'detail=%s\nrecents=false\n\n' "$detail"
-    printf 'switch=awake\ntitle=Keep awake\ndetail=%s\non=%s\n\n' "$detail" "$on"
+    printf 'detail=%s\non=%s\nrecents=false\n\n' "$detail" "$on"
     printf 'button=open\ntitle=Select\n\n'
     if [ "$running" = 1 ]; then
       printf 'row=off\ntitle=Turn off\n\n'
@@ -53,16 +52,6 @@ case "$1" in
     printf 'row=3600\ntitle=1 hour\n\n'
     printf 'row=7200\ntitle=2 hours\n\n'
     printf 'row=0\ntitle=Until turned off\n'
-    ;;
-  awake)
-    stop
-    if [ "$2" = true ]; then
-      nohup caffeinate -di >/dev/null 2>&1 &
-      remember "$! 0"
-      echo "toast=Caffeinate is on until you turn it off"
-    else
-      echo "toast=Caffeinate is off"
-    fi
     ;;
   open)
     case "$2" in
