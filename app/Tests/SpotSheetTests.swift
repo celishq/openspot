@@ -5,6 +5,7 @@ import XCTest
 @MainActor
 final class SpotSheetTests: XCTestCase {
     private var folder: URL!
+    private var runs: [SpotRuns] = []
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-sheet-\(UUID().uuidString)")
@@ -12,13 +13,17 @@ final class SpotSheetTests: XCTestCase {
     }
 
     override func tearDown() async throws {
+        runs.forEach { $0.quit() }
+        runs = []
         try? FileManager.default.removeItem(at: folder)
     }
 
     private func make(name: String = "script", _ body: String, stays: Bool = false, read: SpotRead? = nil) throws -> SpotSheet {
         let url = folder.appendingPathComponent("\(name).sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
-        return SpotRuns().sheet(for: PluginCommand(id: name, name: name, url: url, kind: .list, read: read ?? (stays ? nil : .sheet), stays: stays))
+        let made = SpotRuns()
+        runs.append(made)
+        return made.sheet(for: PluginCommand(id: name, name: name, url: url, kind: .list, read: read ?? (stays ? nil : .sheet), stays: stays))
     }
 
     private func path(_ name: String) -> String {
@@ -40,7 +45,9 @@ final class SpotSheetTests: XCTestCase {
     private func holding(_ body: String, pause: TimeInterval) throws -> SpotSheet {
         let url = folder.appendingPathComponent("held.sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
-        return SpotRuns(firstAnswerPause: pause).sheet(for: PluginCommand(id: "held", name: "held", url: url, kind: .list, read: .sheet))
+        let made = SpotRuns(firstAnswerPause: pause)
+        runs.append(made)
+        return made.sheet(for: PluginCommand(id: "held", name: "held", url: url, kind: .list, read: .sheet))
     }
 
     func testASheetThatWaitsOpensWithItsFirstAnswer() async throws {
@@ -106,7 +113,7 @@ final class SpotSheetTests: XCTestCase {
 
         sheet.open(waits: true) { isOpened = true }
         sheet.close()
-        try await Task.sleep(for: .milliseconds(60))
+        try await Task.sleep(for: .milliseconds(300))
 
         XCTAssertFalse(isOpened)
     }

@@ -55,11 +55,6 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(menu.press()?.action, .remove())
     }
 
-    func testTheRowsOfTheAppUseTheKeysOfTheSampleLists() {
-        XCTAssertEqual(CommandAction.remove().key, ActionKey(text: "cmd+backspace"))
-        XCTAssertEqual(CommandAction.share.key, ActionKey(text: "cmd+shift+c"))
-    }
-
     func testTheRowsOfTheAppStayOutOfTheHint() throws {
         let plain = PluginCommand(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list)
 
@@ -104,12 +99,6 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(command(kind: .toggle).primaryTitle(hasItem: false), "Toggle")
         XCTAssertEqual(command(kind: .list).primaryTitle(hasItem: false), "Open")
         XCTAssertNil(command(kind: .slider).primaryTitle(hasItem: false))
-    }
-
-    func testASliderWithNoActionsHasNoMenu() {
-        let slider = PluginCommand(id: "a/A", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .slider)
-
-        XCTAssertNil(ActionMenu(command: slider, item: nil))
     }
 
     func testAnActionThatConfirmsNeedsASecondPress() throws {

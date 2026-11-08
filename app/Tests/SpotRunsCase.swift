@@ -73,6 +73,25 @@ class SpotRunsCase: XCTestCase {
         try await wait("the end of each script") { pids.allSatisfy { kill($0, 0) != 0 } }
     }
 
+    /// The pid that a script wrote to the file `name` with `echo $$`, once its whole line is there.
+    func pid(_ name: String) async throws -> Int32 {
+        var text = ""
+        try await wait("the pid in \(name)") {
+            text = (try? String(contentsOfFile: self.path(name), encoding: .utf8)) ?? ""
+            return text.hasSuffix("\n")
+        }
+        return try XCTUnwrap(Int32(text.trimmingCharacters(in: .whitespacesAndNewlines)))
+    }
+
+    /// A shell loop that waits for `openGate()`, for 30 seconds at most.
+    var untilRelease: String {
+        "n=0; while [ ! -f '\(path("release"))' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done"
+    }
+
+    func openGate() {
+        FileManager.default.createFile(atPath: path("release"), contents: Data())
+    }
+
     func pause(_ seconds: Double = 0.2) async throws {
         try await Task.sleep(for: .seconds(seconds))
     }

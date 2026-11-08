@@ -55,12 +55,22 @@ too. `make perf` checks it: p99 must stay under 8.3 ms.
 - Fakes stand in only at I/O: the disk, the process, the clock.
 - Write the failing test first, then the code that passes it.
 - Write a script for a test with `writeScript(to:)`. macOS checks a new executable file on its first run, for 150 ms or more.
-- Give a test a short pause through a setting, such as `stopPause`, and keep one test of the real time. Wait for a fact; pause only to prove that nothing happened.
+- Give a test a short pause through a setting, such as `stopPause`, and keep one test of the real time.
+- Wait for a fact, never for a pause. To prove that a stopped thing does nothing more, give its action a long delay, stop it,
+  wait for its end, then check.
+- A time limit in a test catches a hang or a slow algorithm, not a slow Mac. Give it ten times the normal time or more.
+- A test is independent. It writes only in its own folder, ends each process that it starts before it returns, and passes
+  alone, in any order and beside any other test class.
+- A test is the same on each Mac. It reads no state of the person, such as the home folder, the clipboard or a record in
+  `TMPDIR`, no installed app, and no system data whose content changes with macOS. A fake on the `PATH` stands in for a
+  tool that changes the Mac, such as `caffeinate` or `system_profiler`.
+- `make verify` runs `scripts/check-tests.sh`, which fails on a test that reads the real home or the clipboard, or that
+  blocks its thread with a sleep.
 
 ## Verify
 
 ```sh
-make verify                # the Core check, then the XCTest suite, with test classes in parallel
+make verify                # the Core and Tests checks, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
 make perf N=3              # times a sheet that opens and closes 20 times, 3 runs; fails over the dropped-frame budget
 ```

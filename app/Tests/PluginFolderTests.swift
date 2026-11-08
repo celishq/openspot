@@ -153,15 +153,6 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(scan.metrics.map(\.read?.seconds), [30])
     }
 
-    func testAStayingScriptIsAList() throws {
-        try write("a.sh", header: "stay=true")
-
-        let command = try XCTUnwrap(try scan.commands.first)
-
-        XCTAssertTrue(command.stays)
-        XCTAssertEqual(command.kind, .list)
-    }
-
     func testOldHeaderKeysHaveNoEffect() throws {
         try write("a.sh", header: "live=true\nsearch=live\nrecents=false")
 

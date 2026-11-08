@@ -235,16 +235,14 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testOneSlowScriptDoesNotDelayAnother() async throws {
-        try script("slow", header: "read=panel\nrank=1", "sleep 2\nprintf 'row=S\\nrun=s\\n'")
+        try script("slow", header: "read=panel\nrank=1", "\(untilRelease)\nprintf 'row=S\\nrun=s\\n'")
         try script("fast", header: "read=panel\nrank=2", "printf 'row=F\\nrun=f\\n'")
         _ = try scanned()
-        let started = Date()
 
         runs.panelOpened()
 
         let fast = try XCTUnwrap(runs.sheets["fast"])
         try await wait("the fast answer") { fast.list.shown.count == 1 }
-        XCTAssertLessThan(Date().timeIntervalSince(started), 1)
         XCTAssertEqual(runs.sheets["slow"]?.list.shown.count, 0)
     }
 

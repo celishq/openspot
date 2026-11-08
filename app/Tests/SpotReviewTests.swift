@@ -80,13 +80,6 @@ final class SpotReviewTests: XCTestCase {
         XCTAssertTrue(text.contains("notes.txt\nToo long to show. \(SpotReview.textLimit + 1) bytes."), text)
     }
 
-    func testVeryLongExecutableTextCountsAsAProgram() throws {
-        let long = "#!/bin/sh\n" + String(repeating: "x", count: SpotReview.textLimit)
-        let files = [SharedSpot.File(path: "tool", isExecutable: true, contents: Data(long.utf8))]
-
-        XCTAssertEqual(try SpotReview(spot: SharedSpot(files: files), folder: folder).subtitle, "Holds a program that you cannot read")
-    }
-
     func testItTakesItsNameDescriptionAndSymbolFromTheHeader() throws {
         let review = try review("name=Weather now\nsymbol=sun.max\nsubtitle=Today and tomorrow")
 

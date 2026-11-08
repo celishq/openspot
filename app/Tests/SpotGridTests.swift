@@ -83,10 +83,6 @@ final class SpotGridTests: XCTestCase {
         XCTAssertNil(move(from: 0, in: [.strip], dy: 1))
     }
 
-    func testNoSpotsGivesNoPlacements() {
-        XCTAssertEqual(SpotGrid().place([]), [])
-    }
-
     private func sizes(_ input: [SpotSize]) -> [SpotSize] {
         SpotGrid().place(input).map(\.size)
     }

@@ -5,7 +5,7 @@ import ApplicationServices
 /// with a ⌘V key event, which needs Accessibility.
 @MainActor
 enum SpotClipboard {
-    private static let accessibility = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+    static let accessibility = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
     private static let vKey: CGKeyCode = 9
 
     /// Copies the file. A missing file prints the reason, and exits with 1.

@@ -44,6 +44,10 @@ enum SpotCommandLine {
             finish { try EmojiCatalog().rows(tone: tone) }
         case .symbols:
             finish { try SymbolCatalog().rows() }
+        case .windowFrame:
+            answer { try SpotWindow.front().frameText }
+        case .windowMove(let move):
+            answer { try SpotWindow.front().move(move); return "" }
         }
     }
 
@@ -69,6 +73,17 @@ enum SpotCommandLine {
         faults.forEach { print($0) }
         print(faults.isEmpty ? "No faults." : "\(faults.count) faults.")
         exit(faults.isEmpty ? 0 : 1)
+    }
+
+    /// Prints what the work returns on the main thread and exits. A failure goes to stderr, with exit code 1.
+    private static func answer(_ work: () throws -> String) -> Never {
+        do {
+            print(try work(), terminator: "")
+            exit(0)
+        } catch {
+            FileHandle.standardError.write(Data("\((error as? PluginError)?.reason ?? error.localizedDescription)\n".utf8))
+            exit(1)
+        }
     }
 
     /// Prints what the work returns and exits. A failure goes to stderr, with exit code 1.

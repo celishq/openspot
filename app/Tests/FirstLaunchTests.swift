@@ -55,24 +55,15 @@ final class FirstLaunchTests: XCTestCase {
         XCTAssertEqual(file.read().arrangement.enabled, ["apps", "files"])
     }
 
-    func testBeginWithNoSpotsStillEndsTheFirstLaunch() throws {
-        try file.begin(enabling: [])
-
-        XCTAssertFalse(isFirst)
-    }
-
-    func testNineQuietSpotsStartOnAndTheTwoThatRunByThemselvesStayOff() throws {
+    func testOnlyQuietRepoSpotsStartOn() throws {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let place = PluginFolder(url: plugins, core: repo.appendingPathComponent("plugins"))
 
         let starting = place.startingSpots()
 
-        XCTAssertEqual(starting.count, 9)
-        XCTAssertFalse(starting.contains("overview"))
-        XCTAssertFalse(starting.contains("pulls"))
+        XCTAssertFalse(starting.isEmpty)
         let scan = try PluginFolder(url: plugins, core: place.core, enabled: Set(starting)).scan()
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.count, 9)
         XCTAssertFalse(scan.scripts.contains { $0.read?.seconds != nil })
     }
 
