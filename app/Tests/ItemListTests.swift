@@ -252,4 +252,15 @@ final class ItemListTests: XCTestCase {
         XCTAssertEqual(list.recent.count, ItemList.recentLimit)
         XCTAssertEqual(list.recent.first, "149")
     }
+
+    func testEachKeystrokeInALargeListAnswersQuickly() {
+        let rows = (0..<5_096).map { SpotItem(title: "rightwards arrow with hook \($0)", subtitle: "Rightwards Arrows", run: "\($0)") }
+        var list = ItemList(items: rows)
+        let started = Date()
+
+        for text in ["w", "wi", "wit", "with", "with h"] { list.search(text) }
+
+        let time = Date().timeIntervalSince(started) / 5
+        XCTAssertLessThan(time, 1)
+    }
 }

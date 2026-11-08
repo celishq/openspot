@@ -14,10 +14,12 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var isLoading = false
     public private(set) var hasFailed = false
     private(set) var all: [SpotItem]
+    private(set) var folded: [FoldedItem]
 
     public init(items: [SpotItem] = [], recent: [String] = [], search: ItemSearch = .local) {
         self.search = search
         all = items
+        folded = items.map(FoldedItem.init)
         self.recent = recent
         refresh()
     }
@@ -92,6 +94,7 @@ public struct ItemList: Equatable, Sendable {
         isLoading = false
         hasFailed = false
         all = items
+        folded = items.map(FoldedItem.init)
         refresh()
         guard selected > 0 else { return }
         selected = shown.firstIndex { $0.run == run } ?? min(selected, max(shown.count - 1, 0))
@@ -127,6 +130,6 @@ public struct ItemList: Equatable, Sendable {
     }
 
     private mutating func refresh() {
-        shown = search == .script ? all : SearchQuery(text: query).matching(all, recent: recent)
+        shown = search == .script ? all : SearchQuery(text: query).matching(folded, recent: recent)
     }
 }
