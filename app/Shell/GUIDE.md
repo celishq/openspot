@@ -411,6 +411,10 @@ counts. The `title` and the `detail` show on the spot only while the call runs. 
 oldest call and how many run, and a click on it opens the panel with that spot selected. The part or the action of the call
 shows that it runs, and says that a press stops it.
 
+A tool that already reports progress to a terminal needs no change. Openspot reads the progress code `ESC ] 9;4;1;<percent>`
+as `value`, and the notification code `ESC ] 9;<text>` as a toast, each as a frame of its own. It removes each other escape
+code, such as a colour, from the text.
+
 Closing the panel closes a sheet of parts and drops its values, and the next open reads again. A sheet of rows stays open.
 
 A script with `# stay=true` in its header runs while something wants it, so that a model or a connection stays loaded
