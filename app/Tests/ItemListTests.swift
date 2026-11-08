@@ -2,6 +2,17 @@ import XCTest
 @testable import OpenspotCore
 
 final class ItemListTests: XCTestCase {
+    func testTheSameItemsAgainTakeNoNewWork() {
+        let rows = (0..<6000).map { SpotItem(title: "Ключ настройки \($0)", subtitle: "Системные настройки", run: "\($0)", keywords: ["громкость", "звук", "экран"]) }
+        var list = ItemList(items: rows)
+        let started = Date()
+
+        for _ in 0..<10 { list.replace(rows) }
+
+        XCTAssertLessThan(Date().timeIntervalSince(started), 0.5)
+        XCTAssertEqual(list.shown.count, 6000)
+    }
+
     func testAListThatLearnsTheScriptSearchesWaitsForAnAnswerToItsText() {
         var list = ItemList(items: [SpotItem(title: "Notes", run: "n"), SpotItem(title: "Mail", run: "m")])
         list.search("no")

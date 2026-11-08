@@ -6,7 +6,7 @@ public enum FileIcon: Hashable, Sendable {
     case type(String)
     case image(String)
 
-    private static let ownIconExtensions: Set<String> = ["app", "prefpane"]
+    private static let ownIconExtensions: Set<String> = ["app", "appex", "prefpane"]
 
     public init(path: String) {
         let suffix = (path as NSString).pathExtension.lowercased()

@@ -11,6 +11,12 @@ final class FileIconTests: XCTestCase {
         XCTAssertEqual(FileIcon(path: "/Applications/Safari.app"), .file("/Applications/Safari.app"))
     }
 
+    func testAnExtensionHasItsOwnIcon() {
+        let pane = "/System/Library/ExtensionKit/Extensions/Wi-Fi.appex"
+
+        XCTAssertEqual(FileIcon(path: pane), .file(pane))
+    }
+
     func testAPathWithNoExtensionHasItsOwnIcon() {
         XCTAssertEqual(FileIcon(path: "/Users/me/Downloads"), .file("/Users/me/Downloads"))
     }

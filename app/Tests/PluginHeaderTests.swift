@@ -14,6 +14,18 @@ final class PluginHeaderTests: XCTestCase {
         XCTAssertTrue(command.hasSpot)
     }
 
+    func testAGlobalScriptWithNoKeyHasNoCardOnTheGrid() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-grid-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let searchOnly = folder.appendingPathComponent("search.sh"), keyed = folder.appendingPathComponent("keyed.sh")
+        try "#!/bin/sh\n# read=panel\n# global=true\n".writeScript(to: searchOnly)
+        try "#!/bin/sh\n# read=panel\n# global=true\n# key=k\n".writeScript(to: keyed)
+
+        XCTAssertFalse(try XCTUnwrap(try Plugin(file: searchOnly, id: "search")?.commands.first).headerState.isOnGrid)
+        XCTAssertTrue(try XCTUnwrap(try Plugin(file: keyed, id: "keyed")?.commands.first).headerState.isOnGrid)
+    }
+
     func testReadsTheCommentLinesUnderTheFirstLine() {
         let header = PluginHeader(text: "#!/bin/sh\n# name=Morning\n#\n# Prose has no key.\n#symbol=sun.max\nsay hello\n# key=m\n")
 
