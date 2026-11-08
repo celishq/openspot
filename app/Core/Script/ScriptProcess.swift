@@ -103,10 +103,14 @@ public final class ScriptProcess: @unchecked Sendable {
         return stream
     }
 
-    /// Sends one call to the script as a block, with the values of its sheet, in the order of the calls.
-    public func send(_ action: SpotAction, values: String? = nil) {
+    /// Sends one call to the script as a block, with the values of its sheet and its `id`, in the order of the calls.
+    public func send(_ action: SpotAction, values: String? = nil, id: Int? = nil) {
+        send(text: action.event(values: values, id: id))
+    }
+
+    /// Sends a block as it is, in the order of the calls.
+    public func send(text: String) {
         let handle = input.fileHandleForWriting
-        let text = action.event(values: values)
         writes.async { try? handle.write(contentsOf: Data(text.utf8)) }
     }
 

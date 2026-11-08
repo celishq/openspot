@@ -393,10 +393,12 @@ final class SpotDropTests: XCTestCase {
         """)
     }
 
-    /// The blocks that a staying script got, one string for each.
+    /// The blocks that a staying script got, one string for each, with no `id` line.
     private func blocks() -> [String] {
         let text = (try? String(contentsOfFile: path("blocks"), encoding: .utf8)) ?? ""
-        return text.components(separatedBy: "\n\n").filter { !$0.isEmpty }
+        return text.components(separatedBy: "\n\n").filter { !$0.isEmpty }.map { block in
+            block.split(separator: "\n").filter { !$0.hasPrefix("id=") }.joined(separator: "\n")
+        }
     }
 
     func testADropReachesTheRunningStayingScriptAsOneBlockWithAValueLineForEachPath() async throws {

@@ -393,7 +393,7 @@ value=Hello
 | Y4 | To end a script, Openspot closes its stdin. Calls sent before that still run. After 2 seconds its group gets the terminate signal, and 2 seconds after that Openspot kills what still runs. |
 | Y5 | If a staying script ends and something still wants it, the next moment or call starts it again. After 3 failures in one minute, Openspot does not start it again until the next scan that finds it changed, and it tells the person. |
 | Y6 | Openspot can stop a staying script at any time. What must survive goes in `OPENSPOT_DATA`. |
-| Y7 | Each call block has an `id`. A script that prints `end=<id>` ends that call, so its spot shows it as running until then. A second press sends `name=stop` with that `id`. A call of a script that never prints `end` shows no running mark, as before. |
+| Y7 | Each call block has an `id`. Once a script has printed one `end=<id>`, each later call shows as running until its own `end`, and the script keeps running for it. A second press sends the block `stop=<id>`, which no part or action name can be. A call of a script that never prints `end` shows no running mark, as before. |
 
 ## 9. Widgets and the menu bar
 
@@ -454,7 +454,6 @@ A change to the meaning of a word that exists is a breaking change. Do not make 
 
 | Rules | Module | Today |
 |---|---|---|
-| Y7 | `Core/Run/SpotRun.swift`, `Core/Script/SpotAction.swift` | A staying call has no id, no end and no stop. |
 | F9 | `Core/Plugin/Plugin.swift`, `Core/Run/SpotRun.swift` | A read sets only `grid`. |
 | R12 | `Core/Script/SheetFrameReader.swift` | Keeps escape codes as text. |
 | F10 | `Core/Plugin/*` | No MCP. |

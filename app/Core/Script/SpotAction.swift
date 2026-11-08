@@ -43,13 +43,19 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: ["drop"] + paths)
     }
 
-    /// This call as one block for a script that stays: `name`, one `value` for each argument after it, and one
-    /// `field.<id>` for each value that stdin holds in a normal call.
-    public func event(values: String? = nil) -> String {
+    /// This call as one block for a script that stays: `name`, one `value` for each argument after it, one `field.<id>`
+    /// for each value that stdin holds in a normal call, and the `id` of the call when it has one.
+    public func event(values: String? = nil, id: Int? = nil) -> String {
         let name = arguments.prefix(1).map { TextBlock.Field(key: "name", value: $0) }
         let call = name + arguments.dropFirst().map { TextBlock.Field(key: "value", value: $0) }
         let held = values.flatMap { TextBlock.blocks(in: $0).first }?.fields ?? []
-        return TextBlock(fields: call + held.map { .init(key: "field.\($0.key)", value: $0.value) }).text + "\n"
+        let mark = id.map { [TextBlock.Field(key: "id", value: String($0))] } ?? []
+        return TextBlock(fields: call + held.map { .init(key: "field.\($0.key)", value: $0.value) } + mark).text + "\n"
+    }
+
+    /// The block that asks a staying script to stop the call with this `id`.
+    public static func stopEvent(id: Int) -> String {
+        "stop=\(id)\n\n"
     }
 
     /// What a process gets for this call. A value over 64 KB leaves the arguments, because the system limits them. Stdin

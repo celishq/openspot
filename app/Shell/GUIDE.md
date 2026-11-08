@@ -419,10 +419,13 @@ places it or `panel` is in its `read`, while the menu bar shows it, or at all ti
 when something first wants it, and the sheet shows with its first frame. When nothing wants it, Openspot closes its input.
 After 2 seconds its group gets the terminate signal, and 2 seconds after that Openspot kills what still runs.
 
-It gets one block on stdin for each call, with a blank line after it: `name`, `value`, and one `field.<id>` for each value
-of the sheet. A `drop` has one `value` line for each path. A pick, an action, a form and a drop reach the script that runs,
-and no call starts a second copy. It keeps its own state, and answers with frames. Openspot cannot see where such a call
-ends, so it shows no running mark and a press does not stop it. Say what the script does in its own frames.
+It gets one block on stdin for each call, with a blank line after it: `name`, `value`, one `field.<id>` for each value
+of the sheet, and the `id` of the call. A `drop` has one `value` line for each path. A pick, an action, a form and a drop
+reach the script that runs, and no call starts a second copy. It keeps its own state, and answers with frames.
+
+To show that a call runs, print `end=<id>` when it is done, as a block of its own. Once a script has printed one `end`,
+each later call shows as running until its `end`, the script keeps running for it, and a second press sends the block
+`stop=<id>`. A script that never prints `end` shows no running mark, and a press does not stop its calls.
 
 If it ends and something still wants it, the next moment or call starts it again. After 3 failures in one minute, Openspot
 tells the person, and does not start it again until a scan finds its file changed.
