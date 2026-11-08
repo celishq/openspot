@@ -1,78 +1,46 @@
 import Metal
 import SwiftUI
 
-/// The battery as the Mac once drew it: an outline with a nub, filled to its level with a glossy liquid in which bubbles
-/// rise from the bottom. The number and the detail use the card's own type. A bolt shows while it charges.
+/// The battery as the Mac once drew it, as big as the card: a glossy liquid fills the card from the left to its level,
+/// and bubbles rise in it from the bottom. The number and the detail use the card's own type, and turn white where the
+/// liquid covers them. A bolt shows while it charges.
 struct SpotView: View {
     let spot: SpotInput
     @State private var start = Date()
 
     private static let fill = 1.0
-    private static let line: CGFloat = 2
-    private static let gap: CGFloat = 3
 
     private var level: Double { min(1, max(0, (Double(spot["title"] ?? "") ?? 0) / 100)) }
     private var isCharging: Bool { spot["state"] == "charging" }
-    private var isTall: Bool { spot.size.height > 100 }
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1 / 60)) { context in
             let time = context.date.timeIntervalSince(start)
             let shown = level * (1 - pow(1 - min(time / Self.fill, 1), 3))
-            Group {
-                if isTall {
-                    VStack(alignment: .leading, spacing: 0) {
-                        words
-                        Spacer(minLength: 0)
-                        battery(time: time, shown: shown, height: 44)
-                    }
+            let frame = Liquid.shared?.frame(size: spot.size, time: Float(time), level: Float(shown), isCharging: isCharging)
+            ZStack(alignment: .leading) {
+                if let frame {
+                    Image(decorative: frame, scale: Liquid.scale)
+                    words.foregroundStyle(spot.ink)
+                    words.foregroundStyle(.white).mask(Image(decorative: frame, scale: Liquid.scale))
                 } else {
-                    HStack(spacing: 10) {
-                        words
-                        battery(time: time, shown: shown, height: 26)
-                    }
+                    words.foregroundStyle(spot.ink)
                 }
             }
-            .padding(spot.inset)
-            .frame(width: spot.size.width, height: spot.size.height, alignment: .topLeading)
         }
-        .foregroundStyle(spot.ink)
         .onAppear { start = Date() }
     }
 
     private var words: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(spot["title"].map { "\($0)%" } ?? "–").font(isTall ? spot.font.metric : spot.font.value)
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(spot["title"].map { "\($0)%" } ?? "–").font(spot.font.metric)
+            if isCharging {
+                Image(systemName: "bolt.fill").font(spot.font.detail)
+            }
             Text(spot["detail"] ?? "").font(spot.font.detail).opacity(spot.secondary)
         }
-        .fixedSize()
-    }
-
-    private func battery(time: Double, shown: Double, height: CGFloat) -> some View {
-        let corner = height * 0.24
-        return HStack(spacing: 1.5) {
-            GeometryReader { place in
-                let inner = CGSize(width: place.size.width - 2 * (Self.line + Self.gap), height: place.size.height - 2 * (Self.line + Self.gap))
-                ZStack {
-                    RoundedRectangle(cornerRadius: corner, style: .continuous)
-                        .strokeBorder(spot.ink.opacity(0.4), lineWidth: Self.line)
-                    if let frame = Liquid.shared?.frame(size: inner, time: Float(time), level: Float(shown), isCharging: isCharging) {
-                        Image(decorative: frame, scale: Liquid.scale)
-                            .clipShape(RoundedRectangle(cornerRadius: corner - Self.line - Self.gap / 2, style: .continuous))
-                    }
-                    if isCharging {
-                        Image(systemName: "bolt.fill")
-                            .font(.system(size: height * 0.5, weight: .bold))
-                            .foregroundStyle(.white)
-                            .shadow(color: .black.opacity(0.35), radius: 1, y: 0.5)
-                    }
-                }
-            }
-            .frame(height: height)
-            RoundedRectangle(cornerRadius: 1.5, style: .continuous)
-                .fill(spot.ink.opacity(0.4))
-                .frame(width: 3.5, height: height * 0.36)
-        }
+        .padding(.horizontal, spot.inset + 6)
+        .frame(width: spot.size.width, height: spot.size.height, alignment: .leading)
     }
 }
 
@@ -109,7 +77,7 @@ final class Liquid {
             float3 green = float3(0.30, 0.78, 0.22);
             float3 base = mix(mix(red, amber, smoothstep(0.08, 0.11, u.level)), green, smoothstep(0.18, 0.21, u.level));
 
-            float edge = u.level * u.aspect + 0.035 * sin(uv.y * 7.0 + u.time * 2.2) + 0.02 * sin(uv.y * 13.0 - u.time * 3.4);
+            float edge = u.level * u.aspect + 0.03 * sin(uv.y * 7.0 + u.time * 2.2) + 0.018 * sin(uv.y * 13.0 - u.time * 3.4);
             float inside = smoothstep(edge + 0.02, edge - 0.02, x);
 
             float3 color = mix(base * 1.15, base * 0.72, smoothstep(0.15, 0.85, uv.y));
@@ -119,14 +87,14 @@ final class Liquid {
             color += float3(0.55) * exp(-pow((x - edge) * 26.0, 2.0)) * inside;
 
             float bubbles = 0.0;
-            float count = u.charging > 0.5 ? 16.0 : 7.0;
-            for (int i = 0; i < 16; i++) {
+            float count = u.charging > 0.5 ? 24.0 : 10.0;
+            for (int i = 0; i < 24; i++) {
                 float n = float(i);
                 if (n >= count) { break; }
                 float speed = 0.35 + 0.45 * hash(n + 3.1);
                 float by = 1.1 - fract(u.time * speed + hash(n + 7.7));
                 float bx = hash(n + 1.3) * max(edge - 0.08, 0.0) + 0.04 + 0.03 * sin(u.time * 3.0 + n * 2.0);
-                float r = 0.045 + 0.05 * hash(n + 5.9);
+                float r = 0.035 + 0.04 * hash(n + 5.9);
                 float dist = length(float2((x - bx) * 1.0, uv.y - by));
                 float ring = smoothstep(r, r * 0.78, dist) - smoothstep(r * 0.72, r * 0.35, dist) * 0.75;
                 float shine = smoothstep(r * 0.35, 0.0, length(float2(x - bx + r * 0.35, uv.y - by + r * 0.35)));
