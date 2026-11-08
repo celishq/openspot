@@ -16,6 +16,8 @@ struct SpotSheetLayer: View {
     let hasLeftCard: Bool
     /// The parts of the sheet, once they have landed.
     let panel: SheetParts?
+    /// The mask of the grid's cards, which fades a closed sheet at the ends of the scroll as the grid fades its card.
+    let cardMask: LinearGradient
 
     var body: some View {
         SpotSheetView(
@@ -51,6 +53,12 @@ struct SpotSheetLayer: View {
             arrow: showsArrow ? AnyView(arrow) : nil,
             arrowBox: frame?.size ?? .zero
         ))
+        .mask {
+            ZStack {
+                cardMask
+                Color.black.opacity(isOpen ? 1 : 0)
+            }
+        }
     }
 
     /// The rect that the sheet grows out of and collapses into: its card, or the field for the install screen.

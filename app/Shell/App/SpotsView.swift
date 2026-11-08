@@ -67,7 +67,8 @@ struct SpotsView: View {
                     sheetRect: sheetRect,
                     isOpen: sheetOpen,
                     hasLeftCard: model.sheetHasLeftCard,
-                    panel: shownPanel
+                    panel: shownPanel,
+                    cardMask: edges.gradient(height: cardHeight)
                 )
             }
             SpotFieldView(
