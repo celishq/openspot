@@ -6,7 +6,7 @@ final class CardFaceTests: XCTestCase {
     grid.wide=time power
     grid.large=time time power power
     grid.large=date date date date
-    value=time
+    main=time
 
     text=date
     title=Sunday
@@ -40,13 +40,13 @@ final class CardFaceTests: XCTestCase {
     }
 
     func testTheNamedSwitchSaysWhetherTheCardIsOnWhereverItPrints() {
-        let text = "value=power\n\nswitch=other\non=false\n\nswitch=power\non=true\n"
+        let text = "main=power\n\nswitch=other\non=false\n\nswitch=power\non=true\n"
         XCTAssertEqual(SpotState(output: PluginOutput(text: text), header: SpotState(title: "Clock")).on, true)
         XCTAssertNil(SpotState(output: PluginOutput(text: "switch=a\non=true\n\nswitch=b\non=false\n"), header: SpotState(title: "Clock")).on)
     }
 
     func testANameThatNoValueHasAndAnUnknownPlaceAreFaults() {
-        XCTAssertEqual(PluginOutput(text: "value=gone\n\nbutton=go\n").partFaults, ["the head names the value gone, which no text, number, gauge, graph, switch or slider has"])
+        XCTAssertEqual(PluginOutput(text: "main=gone\n\nbutton=go\n").partFaults, ["the head names gone as main, which no text, number, gauge, graph, switch or slider has"])
         XCTAssertEqual(PluginOutput(text: "grid.tray=a\n\ntext=a\ntitle=A\n").partFaults, ["the head draws grid.tray, which is not a place"])
     }
 

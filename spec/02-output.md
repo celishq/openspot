@@ -173,18 +173,18 @@ each later frame of the same read changes only what it prints (U11).
 The head is the one block with no kind, at any place in the output, and it is not drawn. It holds four groups:
 
 - the drawing: `grid=`, `card=` and `pad=` lines for the sheet, and `grid.<size>=` lines for the card;
-- the spot: `value`, and `title`, `detail` and `size` for its card;
+- the spot: `main`, and `title`, `detail` and `size` for its card;
 - the rows: `search` and `recents`;
 - the effects: `toast` and `open`.
 
 A second block with no kind is an error.
 
-## The value
+## The main component
 
-`value=<id>` in the head names the component that stands for the spot (H1). With no `value=`, the only `text`, `gauge`,
+`main=<id>` in the head names the component that stands for the spot (H1). With no `main=`, the only `text`, `number`, `gauge`,
 `graph`, `switch` or `slider` of the output stands for it, and with two or more, none does. The menu bar, a widget and a
-`spot` component show a `text`, `gauge` or `graph` value. A `switch` value shows on the card whether its thing is on, also
-when the switch is in the sheet. A `gauge` value is the progress of a call that runs.
+`spot` component show a main `text`, `number`, `gauge` or `graph`. A main `switch` shows on the card whether its thing is
+on, also when the switch is in the sheet. A main `gauge` is the progress of a call that runs.
 
 ## The card
 
@@ -196,7 +196,7 @@ A press on a card area that is not a control opens the spot's sheet, or calls `<
 
 ## Metrics
 
-A metric is a spot with a number in its `read`, and its value is a `text`, a `gauge` or a `graph`. A
+A metric is a spot with a number in its `read`, and its main component is a `text`, a `number`, a `gauge` or a `graph`. A
 widget or the menu bar can show any script with a `read`, by its ID (H1). A script with a number in its `read` and no
 `key` has no spot of its own (F7).
 
@@ -220,7 +220,7 @@ printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'
 | A button that no drawing places is an action, so a verb is one kind in two places.                          | An `action` block beside a `button`.         |
 | A template draws a row, and a repeat's drawing places rows, so lists, grids and bentos are one rule.        | `repeat=<area> <per line>` in the head.      |
 | A form is the same call twice, so each call has one shape.                                                  | A `form` word.                               |
-| One `value=` names what stands for a spot, so moving a block changes nothing.                              | The first `text`, `gauge` or `switch` of the output, and `grid.tray=`. |
+| One `main=` names what stands for a spot, so moving a block changes nothing.                               | The first `text`, `gauge` or `switch` of the output, and `grid.tray=`. |
 | One `icon` key, whose value says what the picture is.                                                      | `symbol`, `file`, `image` and `glyph`.       |
 | A look only draws a box, and a kind or a drawing says the rest.                                             | `look=large`, `look=list` and `look=section`. |
 | A complex view is a `view` of the plugin in an area, so the text language stays small.                      | More words for each new look.                |

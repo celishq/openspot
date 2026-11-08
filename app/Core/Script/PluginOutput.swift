@@ -15,7 +15,7 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var partFaults: [String] = []
     public private(set) var errors: [String] = []
     public private(set) var layout: SheetLayout?
-    /// The block of the component that stands for the spot (H1): the one that `value=<id>` in the head names, or else the
+    /// The block of the component that stands for the spot (H1): the one that `main=<id>` in the head names, or else the
     /// only `text`, `gauge`, `graph`, `switch` or `slider`.
     public private(set) var value: TextBlock?
     /// The block of the first `view`, whose keys the plugin's view reads (V4).
@@ -93,9 +93,9 @@ public struct PluginOutput: Equatable, Sendable {
         parts = parts.map { $0.drawn(in: layout) }
         face = CardFace(head: head, parts: parts)
         let values = blocks.filter { Self.valueKinds.contains($0.fields.first?.key ?? "") }
-        if let id = head?.value("value") {
+        if let id = head?.value("main") {
             value = values.first { $0.fields.first?.value == id }
-            if value == nil { partFaults.append("the head names the value \(id), which no text, number, gauge, graph, switch or slider has") }
+            if value == nil { partFaults.append("the head names \(id) as main, which no text, number, gauge, graph, switch or slider has") }
         } else if values.count == 1 {
             value = values.first
         }
