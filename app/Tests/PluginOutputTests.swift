@@ -18,7 +18,7 @@ final class PluginOutputTests: XCTestCase {
         title=Caffeinate
         on=true
 
-        action=copy
+        button=copy
         title=Copy
         key=cmd+return
         close=true
@@ -63,13 +63,13 @@ final class PluginOutputTests: XCTestCase {
 
     func testReadsEachKeyOfAnAction() {
         let output = PluginOutput(text: """
-        action=new
+        button=new
         title=New
         key=cmd+n
         scope=command
         form=true
 
-        action=delete
+        button=delete
         title=Delete
         close=true
         confirm=Delete this?
@@ -82,13 +82,13 @@ final class PluginOutputTests: XCTestCase {
     }
 
     func testAnActionItCannotReadIsReportedByItsFirstLine() {
-        XCTAssertEqual(PluginOutput(text: "action=a\n").errors, ["action=a"])
-        XCTAssertEqual(PluginOutput(text: "action=b\ntitle=B\nkey=ctrl+b\n").errors, ["action=b"])
-        XCTAssertEqual(PluginOutput(text: "action=c\ntitle=C\nscope=world\n").errors, ["action=c"])
+        XCTAssertEqual(PluginOutput(text: "button=a\n").errors, ["button=a"])
+        XCTAssertEqual(PluginOutput(text: "button=b\ntitle=B\nkey=ctrl+b\n").errors, ["button=b"])
+        XCTAssertEqual(PluginOutput(text: "button=c\ntitle=C\nscope=world\n").errors, ["button=c"])
     }
 
     func testTheOpenActionSetsTheWordForEnterAndThePick() {
-        let copy = PluginOutput(text: "action=open\ntitle=Copy\nclose=false\n")
+        let copy = PluginOutput(text: "button=open\ntitle=Copy\nclose=false\n")
 
         XCTAssertEqual(copy.actions, [])
         XCTAssertEqual(copy.primary, "Copy")
@@ -122,7 +122,7 @@ final class PluginOutputTests: XCTestCase {
         XCTAssertEqual(PluginOutput(text: "on=true\n").kind, .toggle)
         XCTAssertEqual(PluginOutput(text: "level=7\n").kind, .slider)
         XCTAssertEqual(PluginOutput(text: "on=true\n\nrow=A\nrun=a\n").kind, .list)
-        XCTAssertEqual(PluginOutput(text: "action=new\ntitle=New\n").kind, .list)
+        XCTAssertEqual(PluginOutput(text: "button=new\ntitle=New\n").kind, .list)
     }
 
     func testWhatItPrintsDecidesTheKindOfMetric() throws {
@@ -156,7 +156,7 @@ final class PluginOutputTests: XCTestCase {
 
     func testPrintingNothingHidesAMetric() {
         XCTAssertEqual(MetricValue(output: PluginOutput(text: ""))?.isHidden, true)
-        XCTAssertEqual(MetricValue(output: PluginOutput(text: "action=copy\ntitle=Copy\n"))?.isHidden, true)
+        XCTAssertEqual(MetricValue(output: PluginOutput(text: "button=copy\ntitle=Copy\n"))?.isHidden, true)
     }
 
     func testAReadingOfRowsCountsZeroWhenThereIsNothingToShow() throws {
@@ -179,14 +179,14 @@ final class PluginOutputTests: XCTestCase {
         title=New
 
         field=text
-        label=Text
+        title=Text
         type=multiline
         value=one\\ntwo
         required=true
         placeholder=Say it
 
         field=name
-        label=Name
+        title=Name
         """))
 
         XCTAssertEqual(form, ItemForm(title: "New", fields: [
@@ -196,7 +196,7 @@ final class PluginOutputTests: XCTestCase {
     }
 
     func testAFormNeedsATitleAndALabelForEachField() {
-        XCTAssertNil(ItemForm(output: PluginOutput(text: "field=a\nlabel=A\n")))
+        XCTAssertNil(ItemForm(output: PluginOutput(text: "field=a\ntitle=A\n")))
         XCTAssertNil(ItemForm(output: PluginOutput(text: "title=New\n\nfield=a\n")))
     }
 

@@ -65,9 +65,9 @@ public struct SheetLayout: Equatable, Sendable {
         repeatCount = 0
     }
 
-    /// The letter a part stands on: the letter it names, or in one column its own id.
+    /// The area a part fills, which its id names (U4). A key of a keypad fills the cell of its word.
     public func letter(of part: SpotPart) -> String? {
-        isDrawn ? part.cell : part.id
+        part.look == .key ? Self.keyCell(part.id) : part.id
     }
 
     public func hasDivider(inRow y: Int) -> Bool {
@@ -85,11 +85,9 @@ public struct SheetLayout: Equatable, Sendable {
 
     private static func keyPart(_ word: String) -> SpotPart? {
         SpotPart(block: TextBlock(fields: [
-            .init(key: "part", value: word),
-            .init(key: "cell", value: keyCell(word)),
+            .init(key: "button", value: word),
             .init(key: "title", value: word),
-            .init(key: "look", value: "key"),
-            .init(key: "press", value: "true")
+            .init(key: "look", value: "key")
         ]))
     }
 

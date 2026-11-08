@@ -346,7 +346,7 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testTheCheckFaultsAPartOrAnActionCalledRead() async throws {
-        try script("tools.sh", "#!/bin/sh\n# read=sheet\nprintf 'action=read\\ntitle=A\\n\\nrow=A\\nrun=a\\n\\npart=read\\ntitle=B\\n'\n")
+        try script("tools.sh", "#!/bin/sh\n# read=sheet\nprintf 'button=read\\ntitle=A\\n\\nrow=A\\nrun=a\\n\\ntext=read\\ntitle=B\\n'\n")
 
         let faults = await PluginCheck(folder: PluginFolder(url: folder)).faults()
 

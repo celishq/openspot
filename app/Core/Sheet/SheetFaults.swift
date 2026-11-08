@@ -48,20 +48,11 @@ public enum SheetFaults {
 
     private static func letterFaults(_ layout: SheetLayout, _ parts: [SpotPart]) -> [String] {
         var faults: [String] = []
-        var taken: [String: String] = [:]
+        var taken = Set<String>()
         for part in parts {
-            guard let letter = layout.letter(of: part) else {
-                faults.append("the part \(part.id) has no cell")
-                continue
-            }
-            if layout.areas[letter] == nil {
-                faults.append("the part \(part.id) names the cell \(letter), which the drawing does not have")
-            }
-            if let other = taken[letter] {
-                faults.append("the parts \(other) and \(part.id) share the cell \(letter)")
-            } else {
-                taken[letter] = part.id
-            }
+            guard let letter = layout.letter(of: part) else { continue }
+            if layout.areas[letter] == nil { faults.append("the part \(part.id) is not in the drawing") }
+            if !taken.insert(part.id).inserted { faults.append("two parts are called \(part.id)") }
         }
         return faults
     }

@@ -30,10 +30,10 @@ final class SheetStreamTests: XCTestCase {
     func testAMarkEndsAFrameWhereverAChunkStops() {
         var reader = SheetFrameReader()
 
-        XCTAssertEqual(reader.read(Data("part=a\n-".utf8)), [])
-        XCTAssertEqual(reader.read(Data("--\npart=".utf8)), ["part=a\n"])
+        XCTAssertEqual(reader.read(Data("text=a\n-".utf8)), [])
+        XCTAssertEqual(reader.read(Data("--\ntext=".utf8)), ["text=a\n"])
         XCTAssertEqual(reader.read(Data("b".utf8)), [])
-        XCTAssertEqual(reader.finish(), "part=b")
+        XCTAssertEqual(reader.finish(), "text=b")
         XCTAssertNil(reader.finish())
     }
 
@@ -62,20 +62,20 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAScriptWithNoMarkGivesOneFrameWhenItEnds() async throws {
-        let url = try script("printf 'part=a\\ntitle=A\\n'")
+        let url = try script("printf 'text=a\\ntitle=A\\n'")
         var frames: [String] = []
 
         for try await frame in try ScriptProcess(url: url, limit: 5).start() { frames.append(frame) }
 
-        XCTAssertEqual(frames, ["part=a\ntitle=A\n"])
+        XCTAssertEqual(frames, ["text=a\ntitle=A\n"])
     }
 
     func testAFrameArrivesWhileTheScriptRuns() async throws {
-        let url = try script("printf 'part=a\\n---\\n'\nsleep 30")
+        let url = try script("printf 'text=a\\n---\\n'\nsleep 30")
         let started = Date()
 
         for try await frame in try ScriptProcess(url: url, limit: 5).start() {
-            XCTAssertEqual(frame, "part=a\n")
+            XCTAssertEqual(frame, "text=a\n")
             break
         }
 
@@ -84,7 +84,7 @@ final class SheetStreamTests: XCTestCase {
 
     func testEndingTheStreamStopsTheScript() async throws {
         let marker = folder.appendingPathComponent("alive")
-        let url = try script("printf 'part=a\\n---\\n'\nsleep 0.3\ntouch '\(marker.path)'")
+        let url = try script("printf 'text=a\\n---\\n'\nsleep 0.3\ntouch '\(marker.path)'")
 
         for try await _ in try ScriptProcess(url: url, limit: 5).start() { break }
         try await Task.sleep(for: .seconds(0.5))
@@ -96,7 +96,7 @@ final class SheetStreamTests: XCTestCase {
         let release = folder.appendingPathComponent("release").path
         let gate = "n=0; while [ ! -f '\(release)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done"
         let silent = try script("sleep 30", name: "silent")
-        let slow = try script("printf 'part=a\\n---\\n'\n\(gate)\nprintf 'part=b\\n---\\n'", name: "slow")
+        let slow = try script("printf 'text=a\\n---\\n'\n\(gate)\nprintf 'text=b\\n---\\n'", name: "slow")
         var frames = try ScriptProcess(url: slow, limit: 1.5).start().makeAsyncIterator()
         let first = try await frames.next()
 
@@ -109,32 +109,32 @@ final class SheetStreamTests: XCTestCase {
         FileManager.default.createFile(atPath: release, contents: Data())
         let second = try await frames.next()
 
-        XCTAssertEqual([first, second], ["part=a\n", "part=b\n"])
+        XCTAssertEqual([first, second], ["text=a\n", "text=b\n"])
     }
 
     func testALaterFrameChangesOnlyThePartsItNames() throws {
-        var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "part=a\ntitle=A\n\npart=b\ntitle=B\n")))
+        var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "text=a\ntitle=A\n\ntext=b\ntitle=B\n")))
 
-        panel.merge(PluginOutput(text: "part=b\ntitle=New\n"))
+        panel.merge(PluginOutput(text: "text=b\ntitle=New\n"))
         XCTAssertEqual(panel.parts.map(\.title), ["A", "New"])
 
-        panel.merge(PluginOutput(text: "part=c\ntitle=C\n"))
+        panel.merge(PluginOutput(text: "text=c\ntitle=C\n"))
         XCTAssertEqual(panel.parts.map(\.id), ["a", "b", "c"])
     }
 
     func testAFrameWithALayoutReplacesTheSheet() throws {
-        var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "part=a\ntitle=A\n\npart=b\ntitle=B\n")))
+        var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "text=a\ntitle=A\n\ntext=b\ntitle=B\n")))
 
-        panel.merge(PluginOutput(text: "grid=c\n\npart=c\ncell=c\ntitle=C\n"))
+        panel.merge(PluginOutput(text: "grid=c\n\ntext=c\ntitle=C\n"))
 
         XCTAssertEqual(panel.parts.map(\.id), ["c"])
         XCTAssertNotNil(panel.layout)
     }
 
     func testAFrameKeepsTheTextThePersonIsTyping() throws {
-        var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "part=a\ntext=typed\n")))
+        var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "field=a\ntext=typed\n")))
 
-        panel.merge(PluginOutput(text: "part=a\ntext=old\n"), keeping: "a")
+        panel.merge(PluginOutput(text: "field=a\ntext=old\n"), keeping: "a")
 
         XCTAssertEqual(panel.parts.first?.value, "typed")
     }

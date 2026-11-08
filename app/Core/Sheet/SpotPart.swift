@@ -35,7 +35,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     /// A look from the one set that the app owns. A script cannot set a size or a colour of its own.
     public enum Look: String, Equatable, Sendable {
-        case tile, chip, strong, bare, section, key
+        case tile, chip, strong, bare, section, key, large, list
     }
 
     public enum Align: String, Equatable, Sendable {
@@ -51,61 +51,65 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let press: Press
     public let key: ActionKey?
     public let closes: Bool
-    public let cell: String?
     public let align: Align?
     public let look: Look?
     /// The small mark of a line, drawn as a widget draws it: a ring around its detail from `value`, or bars before its
     /// detail from `point` lines.
     public let mark: MetricValue?
 
-    /// Reads a block with a `part` or a `section` key.
+    /// The kinds of block that make a part, in the order of the table in spec 02 (U2).
+    public static let kinds = ["text", "gauge", "graph", "picture", "switch", "slider", "field", "choice", "key", "button", "section"]
+
+    /// Reads a block whose first key is a kind of part. Its value is the id, and the kind decides the control.
     public init?(block: TextBlock) {
-        guard let id = block.value("part") ?? block.value("section") else { return nil }
+        guard let kind = block.fields.first?.key, Self.kinds.contains(kind), let id = block.value(kind) else { return nil }
         self.id = id
-        isSection = block.value("section") != nil
-        title = block.value("title")
-        detail = block.value("detail")
-        symbol = block.value("symbol")
+        isSection = kind == "section"
+        let isLarge = kind == "text" && block.value("look") == "large"
+        title = isLarge ? block.value("detail") : block.value("title")
+        detail = isLarge ? nil : block.value("detail")
         key = block.value("key").flatMap(ActionKey.init(text:))
         closes = block.flag("close") ?? false
-        cell = block.value("cell")
         align = block.value("align").flatMap(Align.init(rawValue:))
         look = block.value("look").flatMap(Look.init(rawValue:))
-        switch block.value("press") {
-        case nil: press = .none
-        case "true": press = .line
-        case let name?: press = .symbol(name)
-        }
-        if let on = block.flag("on") {
-            control = .toggle(on)
-        } else if block.value("block") == "progress" {
-            control = .progress(level: block.number("level") ?? 0)
-        } else if let shortcut = block.value("shortcut") {
-            control = .shortcut(shortcut)
-        } else if let metric = block.value("metric") {
-            control = .metric(metric)
-        } else if let image = block.value("image") {
-            control = .image(image)
-        } else if !block.values("point").isEmpty, block.value("detail") == nil {
-            control = .chart(block.values("point").compactMap(Double.init))
-        } else if !block.values("item").isEmpty {
-            control = .list(block.values("item").map(Self.option), value: block.value("value"))
-        } else if let level = block.number("level") {
-            control = .slider(level: level, min: block.number("min") ?? 0, max: block.number("max") ?? 100)
-        } else if !block.values("color").isEmpty {
-            control = .swatches(block.values("color"), value: block.value("value"))
-        } else if !block.values("option").isEmpty {
-            control = .menu(block.values("option").map(Self.option), value: block.value("value"))
-        } else if block.fields.contains(where: { $0.key == "text" }) {
-            control = .text(
-                block.value("text") ?? "",
-                placeholder: block.value("placeholder"),
-                isReadOnly: block.flag("readonly") ?? false
-            )
+        let symbol = block.value("symbol")
+        if kind == "button" {
+            self.symbol = nil
+            press = symbol.map(Press.symbol) ?? .line
         } else {
+            self.symbol = symbol
+            press = .none
+        }
+        switch kind {
+        case "switch":
+            control = .toggle(block.flag("on") ?? false)
+        case "gauge":
+            control = .progress(level: (block.number("value") ?? 0) * 100)
+        case "graph":
+            control = .chart(block.values("point").compactMap(Double.init))
+        case "picture":
+            control = block.value("image").map(Control.image) ?? .none
+        case "slider":
+            control = .slider(level: block.number("level") ?? 0, min: block.number("min") ?? 0, max: block.number("max") ?? 100)
+        case "field":
+            control = .text(block.value("text") ?? "", placeholder: block.value("placeholder"), isReadOnly: block.flag("readonly") ?? false)
+        case "key":
+            control = .shortcut(block.value("shortcut") ?? "")
+        case "choice":
+            let options = block.values("option").map(Self.option)
+            if !block.values("color").isEmpty {
+                control = .swatches(block.values("color"), value: block.value("value"))
+            } else if block.value("look") == "list" {
+                control = .list(options, value: block.value("value"))
+            } else {
+                control = .menu(options, value: block.value("value"))
+            }
+        case "text" where isLarge:
+            control = .metric(block.value("title") ?? "")
+        default:
             control = .none
         }
-        mark = control == .none ? Self.mark(block) : nil
+        mark = control == .none && kind == "text" ? Self.mark(block) : nil
     }
 
     private static func mark(_ block: TextBlock) -> MetricValue? {

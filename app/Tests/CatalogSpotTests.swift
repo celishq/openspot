@@ -170,7 +170,7 @@ final class CatalogSpotTests: XCTestCase {
         let review = try ReviewSpot(spot: shared, folder: folder, canAdd: false)
         let sheet = try review.answer(["read"])
 
-        XCTAssertFalse(sheet.contains("part=install"))
+        XCTAssertFalse(sheet.contains("text=install"))
         XCTAssertTrue(sheet.contains("apps.sh"))
     }
 

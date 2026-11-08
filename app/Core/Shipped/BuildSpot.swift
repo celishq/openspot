@@ -48,7 +48,7 @@ public struct BuildSpot: Equatable, Sendable {
     private static let rows = """
     recents=false
 
-    action=new
+    button=new
     title=New plugin
     key=cmd+n
     scope=command
@@ -79,7 +79,7 @@ public struct BuildSpot: Equatable, Sendable {
     title=New plugin
 
     field=name
-    label=Name
+    title=Name
     required=true
     placeholder=Weather
     """

@@ -25,11 +25,11 @@ next_tone() {
 
 case "$1" in
   read)
-    printf 'grid=t t t t t t t\ngrid=a a a a a a a\nrepeat=a 7\n\n'
-    printf 'action=open\ntitle=Copy\n\n'
-    printf 'action=paste\ntitle=Paste\nkey=cmd+return\nclose=true\n\n'
-    printf 'action=next-tone\ntitle=Next skin tone\nkey=cmd+t\nscope=command\n\n'
-    printf 'part=tone\ncell=t\ntitle=Skin tone\n'
+    printf 'grid=tone tone tone tone tone tone tone\ngrid=a a a a a a a\nrepeat=a 7\n\n'
+    printf 'button=open\ntitle=Copy\n\n'
+    printf 'button=paste\ntitle=Paste\nkey=cmd+return\nclose=true\n\n'
+    printf 'button=next-tone\ntitle=Next skin tone\nkey=cmd+t\nscope=command\n\n'
+    printf 'choice=tone\ntitle=Skin tone\n'
     printf 'option=none:Yellow\noption=light:Light\noption=medium-light:Medium light\noption=medium:Medium\noption=medium-dark:Medium dark\noption=dark:Dark\n'
     printf 'value=%s\n\n' "$tone"
     openspot emoji --tone "$tone"

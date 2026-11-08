@@ -51,7 +51,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testASheetThatWaitsOpensWithItsFirstAnswer() async throws {
-        let sheet = try holding("printf 'part=a\\ntitle=A\\n'", pause: 30)
+        let sheet = try holding("printf 'text=a\\ntitle=A\\n'", pause: 30)
         var partsAtOpen: Bool?
 
         sheet.open(waits: true) { partsAtOpen = sheet.panel != nil }
@@ -73,7 +73,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAnArrowPressNudgesTheScrollAndLeavesThePartsAsTheyWere() async throws {
-        let sheet = try holding("printf 'part=a\\ntitle=A\\n'", pause: 0.02)
+        let sheet = try holding("printf 'text=a\\ntitle=A\\n'", pause: 0.02)
         sheet.open(waits: true) {}
         try await wait("the parts") { sheet.panel != nil }
         let parts = sheet.panel
@@ -87,7 +87,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testASheetSaysItAwaitsItsFirstAnswerUntilItComes() async throws {
-        let sheet = try holding("sleep 0.2\nprintf 'part=a\\ntitle=A\\n'", pause: 0.02)
+        let sheet = try holding("sleep 0.2\nprintf 'text=a\\ntitle=A\\n'", pause: 0.02)
 
         sheet.open(waits: true) {}
 
@@ -160,7 +160,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testClosingOneSheetLeavesTheReadOfAnother() async throws {
-        let first = try make(name: "first", "printf 'part=a\\ntitle=A\\n---\\n'\nsleep 30")
+        let first = try make(name: "first", "printf 'text=a\\ntitle=A\\n---\\n'\nsleep 30")
         let second = try make(name: "second", "sleep 0.2\nprintf 'row=B\\nrun=b\\n'")
 
         first.open {}
@@ -174,10 +174,10 @@ final class SpotRunTests: XCTestCase {
     func testClosingStopsAScriptThatKeepsPrinting() async throws {
         let sheet = try make("""
         echo $$ > '\(path("pid"))'
-        printf 'title=Sheet\\n\\npart=a\\ntitle=0\\n---\\n'
+        printf 'title=Sheet\\n\\ntext=a\\ntitle=0\\n---\\n'
         sleep 5
         touch '\(path("went-on"))'
-        printf 'part=a\\ntitle=1\\n---\\n'
+        printf 'text=a\\ntitle=1\\n---\\n'
         """)
 
         sheet.open {}
@@ -191,7 +191,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAnOpenSheetTakesLaterFrames() async throws {
-        let sheet = try make("printf 'part=a\\ntitle=0\\n---\\n'\nsleep 0.1\nprintf 'part=a\\ntitle=1\\n---\\n'")
+        let sheet = try make("printf 'text=a\\ntitle=0\\n---\\n'\nsleep 0.1\nprintf 'text=a\\ntitle=1\\n---\\n'")
 
         sheet.open {}
 
@@ -201,8 +201,8 @@ final class SpotRunTests: XCTestCase {
     func testAnOlderAnswerDoesNotReplaceANewerChange() async throws {
         let sheet = try make("""
         case "$1" in
-          a) [ "$2" = old ] && sleep 0.2; printf 'part=a\\ntitle=%s\\ntext=x\\n' "$2" ;;
-          *) printf 'part=a\\ntitle=start\\ntext=x\\n' ;;
+          a) [ "$2" = old ] && sleep 0.2; printf 'field=a\\ntitle=%s\\ntext=x\\n' "$2" ;;
+          *) printf 'field=a\\ntitle=start\\ntext=x\\n' ;;
         esac
         """)
         sheet.open {}
@@ -219,7 +219,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAToastIsReported() async throws {
-        let sheet = try make("printf 'part=a\\ntitle=A\\n---\\n'\nprintf 'toast=Later\\n\\npart=a\\ntitle=B\\n---\\n'")
+        let sheet = try make("printf 'text=a\\ntitle=A\\n---\\n'\nprintf 'toast=Later\\n\\ntext=a\\ntitle=B\\n---\\n'")
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
 

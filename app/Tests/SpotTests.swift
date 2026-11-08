@@ -78,7 +78,7 @@ final class SpotTests: XCTestCase {
 
     func testOpeningGivesTheKindAndTheActionsThatItPrints() async throws {
         let command = try writeCommand(kind: .launch, read: .panel, """
-        printf 'on=true\\n\\naction=open\\ntitle=Select\\n\\naction=copy\\ntitle=Copy\\n\\nrow=A\\nrun=a\\n'
+        printf 'on=true\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=A\\nrun=a\\n'
         """)
 
         let opened = try await command.opened(timeout: 5)
@@ -111,7 +111,7 @@ final class SpotTests: XCTestCase {
 
     func testAFormIsTheCallOfItsActionWithEmptyStdin() async throws {
         let command = try writeCommand(kind: .list, """
-        [ "$1" = new ] && [ -z "$(cat)" ] && printf 'title=New\\n\\nfield=title\\nlabel=Name\\n'
+        [ "$1" = new ] && [ -z "$(cat)" ] && printf 'title=New\\n\\nfield=title\\ntitle=Name\\n'
         """)
 
         let form = try await command.form(CommandAction(id: "new", title: "New", isForm: true), item: nil, timeout: 5)
@@ -121,7 +121,7 @@ final class SpotTests: XCTestCase {
 
     func testAFormOfARowGetsTheRunOfThatRow() async throws {
         let command = try writeCommand(kind: .list, """
-        [ "$1 $2" = "edit one" ] && printf 'title=Edit\\n\\nfield=title\\nlabel=Name\\n'
+        [ "$1 $2" = "edit one" ] && printf 'title=Edit\\n\\nfield=title\\ntitle=Name\\n'
         """)
 
         let form = try await command.form(CommandAction(id: "edit", title: "Edit", isForm: true), item: SpotItem(title: "One", run: "one"), timeout: 5)

@@ -12,44 +12,37 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     private let pair = """
-    grid=s s . .
-    grid=i i i i
-    grid=i i i x
-    grid=- - - x
-    grid=t t . x
-    grid=o o o o
-    grid=o o o c
-    card=s i t o
+    grid=source source . .
+    grid=input input input input
+    grid=input input input swap
+    grid=- - - swap
+    grid=target target . swap
+    grid=output output output output
+    grid=output output output copy
+    card=source input target output
 
-    part=source
-    cell=s
+    choice=source
     option=en:English
     value=en
 
-    part=input
-    cell=i
+    field=input
     text=Hello
 
-    part=target
-    cell=t
+    choice=target
     option=ru:Russian
     value=ru
 
-    part=output
-    cell=o
+    field=output
     text=Привет
     readonly=true
 
-    part=swap
-    cell=x
-    press=arrow.up.arrow.down
+    button=swap
+    symbol=arrow.up.arrow.down
 
-    part=copy
-    cell=c
+    button=copy
     look=chip
     align=right
     title=Copy
-    press=true
     """
 
     func testALetterFillsTheRectangleAroundItsCells() throws {
@@ -67,20 +60,16 @@ final class SheetLayoutTests: XCTestCase {
         grid=a b
         grid=c d
 
-        part=a
-        cell=a
+        text=a
         title=A
 
-        part=b
-        cell=b
+        text=b
         title=B
 
-        part=c
-        cell=c
+        text=c
         title=C
 
-        part=d
-        cell=d
+        text=d
         title=D
         """).frames
 
@@ -92,13 +81,13 @@ final class SheetLayoutTests: XCTestCase {
 
     func testARowOfKeysHasTheOneRowHeight() throws {
         let sheet = try placement("""
-        grid=v v
+        grid=value value
         keys=1 2
         keys=0 0
 
-        part=value
-        cell=v
-        metric=1
+        text=value
+        title=1
+        look=large
         """)
 
         XCTAssertEqual(try XCTUnwrap(sheet.frames["value"]).rect.height, SheetPlacement.rowHeight)
@@ -107,7 +96,7 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testTilesHaveTheOneRowHeightAndGap() throws {
-        let sheet = try XCTUnwrap(SheetParts(output: PluginOutput(text: "part=a\ntitle=A\nlook=tile\n\npart=b\ntitle=B\nlook=tile\n"))).placement
+        let sheet = try XCTUnwrap(SheetParts(output: PluginOutput(text: "text=a\ntitle=A\nlook=tile\n\ntext=b\ntitle=B\nlook=tile\n"))).placement
 
         XCTAssertEqual(try XCTUnwrap(sheet.frames["a"]).rect.height, SheetPlacement.rowHeight)
         XCTAssertEqual(try XCTUnwrap(sheet.frames["b"]).rect.minY, SheetPlacement.rowHeight + SheetPlacement.gap)
@@ -115,7 +104,7 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testARoundButtonOnALineShrinksToTheRow() throws {
-        let frame = try XCTUnwrap(try placement("part=reload\ntitle=Reload\npress=arrow.clockwise\n").frames["reload"])
+        let frame = try XCTUnwrap(try placement("grid=reload\n\nbutton=reload\ntitle=Reload\nsymbol=arrow.clockwise\n").frames["reload"])
 
         XCTAssertEqual(frame.rect.height, SheetPlacement.rowHeight)
         XCTAssertEqual(frame.roundSize, SheetPlacement.rowHeight)
@@ -127,12 +116,10 @@ final class SheetLayoutTests: XCTestCase {
         grid=-
         grid=b
 
-        part=a
-        cell=a
+        text=a
         title=A
 
-        part=b
-        cell=b
+        text=b
         title=B
         """)
 
@@ -153,16 +140,14 @@ final class SheetLayoutTests: XCTestCase {
 
     func testAPartInACornerHasOneInsetFromBothEdges() throws {
         let sheet = try placement("""
-        grid=t t
-        grid=t c
+        grid=note note
+        grid=note save
 
-        part=note
-        cell=t
+        field=note
         text=Hello
 
-        part=save
-        cell=c
-        press=checkmark
+        button=save
+        symbol=checkmark
         """)
         let note = try XCTUnwrap(sheet.frames["note"]), save = try XCTUnwrap(sheet.frames["save"])
 
@@ -175,31 +160,27 @@ final class SheetLayoutTests: XCTestCase {
 
     func testTextStepsAwayFromAPartOverItsEdge() throws {
         let sheet = try placement("""
-        grid=d d
-        grid=b b
+        grid=target target
+        grid=output output
 
-        part=target
-        cell=d
+        choice=target
         option=a:A
         value=a
 
-        part=output
-        cell=b
+        field=output
         text=Hello
         """)
         XCTAssertEqual(try XCTUnwrap(sheet.frames["output"]).clearTop, 0)
 
         let over = try placement("""
-        grid=d b
-        grid=b b
+        grid=target output
+        grid=output output
 
-        part=target
-        cell=d
+        choice=target
         option=a:A
         value=a
 
-        part=output
-        cell=b
+        field=output
         text=Hello
         """)
         XCTAssertGreaterThan(try XCTUnwrap(over.frames["output"]).clearTop, 0)
@@ -215,13 +196,13 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testRowsWithOnlyLinesKeepTheirHeight() throws {
-        let sheet = try placement("grid=a\ngrid=b\n\npart=a\ncell=a\ntitle=A\n\npart=b\ncell=b\ntitle=B\n")
+        let sheet = try placement("grid=a\ngrid=b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")
 
         XCTAssertEqual(sheet.height, 2 * SheetPlacement.rowHeight + SheetPlacement.gap)
     }
 
     func testTheWordsOfALineSetTheColumns() throws {
-        let sheet = try placement("grid=a b b b\n\npart=a\ncell=a\ntitle=A\n\npart=b\ncell=b\ntitle=B\n")
+        let sheet = try placement("grid=a b b b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")
         let a = try XCTUnwrap(sheet.frames["a"]).rect, b = try XCTUnwrap(sheet.frames["b"]).rect
 
         XCTAssertEqual(b.width, 3 * a.width + 2 * SheetPlacement.gap, accuracy: 0.01)
@@ -237,16 +218,15 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testALetterWithNoPartStaysEmpty() {
-        XCTAssertEqual(output("grid=a b\n\npart=a\ncell=a\ntitle=A\n").partFaults, [])
+        XCTAssertEqual(output("grid=a b\n\ntext=a\ntitle=A\n").partFaults, [])
     }
 
     private let picker = """
-    grid=t t
+    grid=tone tone
     grid=a a
     repeat=a 7
 
-    part=tone
-    cell=t
+    choice=tone
     title=Tone
     option=x:X
     value=x
@@ -285,7 +265,7 @@ final class SheetLayoutTests: XCTestCase {
 
     func testTheFaultsOfARepeat() {
         func faults(_ text: String) -> [String] { output(text).partFaults }
-        let part = "\n\npart=a\ncell=a\ntitle=A\n"
+        let part = "\n\ntext=a\ntitle=A\n"
 
         XCTAssertEqual(faults("grid=a\nrepeat=z 2" + part), ["the repeat names z, which the drawing does not have"])
         XCTAssertEqual(faults("grid=a\ngrid=b\nrepeat=a 2" + part), ["the part a stands on the repeated area a", "the part a sits in rows that stretch, so use item= for a list"])
@@ -299,14 +279,14 @@ final class SheetLayoutTests: XCTestCase {
         title=Lights
         on=true
 
-        part=left
+        switch=left
         title=Left
         on=false
 
         section=power
         title=Power
 
-        part=battery
+        text=battery
         title=Battery
         detail=68%
         """)
@@ -316,7 +296,7 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testKeysAreCalledByTheirWords() throws {
-        let parts = output("grid=v v\nkeys=. -\n\npart=value\ncell=v\nmetric=0\n").parts
+        let parts = output("grid=value value\nkeys=. -\n\ntext=value\ntitle=0\nlook=large\n").parts
 
         XCTAssertEqual(parts.map(\.id), ["value", ".", "-"])
         XCTAssertEqual(parts[1].press, .line)
@@ -325,7 +305,7 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testAPartStartsWithItsPartKey() throws {
-        let first = output("grid=p\ngrid=p\n\npart=job\nblock=progress\ncell=p\ntitle=Copying\nlevel=30\n")
+        let first = output("grid=job\ngrid=job\n\ngauge=job\ntitle=Copying\nvalue=0.3\n")
         let later = output("grid=p\ngrid=p\n\nblock=progress\npart=job\ncell=p\ntitle=Copying\nlevel=30\n")
 
         XCTAssertEqual(first.parts.first?.control, .progress(level: 30))
@@ -336,33 +316,32 @@ final class SheetLayoutTests: XCTestCase {
     func testTheFaultsOfADrawing() {
         func faults(_ text: String) -> [String] { output(text).partFaults }
 
-        XCTAssertEqual(faults("grid=a b\ngrid=a\n\npart=a\ncell=a\ntitle=A\n\npart=b\ncell=b\ntitle=B\n"), ["each grid line needs the same number of columns"])
-        XCTAssertEqual(faults("grid=a\n\npart=a\ncell=a\ntitle=A\n\npart=b\ntitle=B\n"), ["the part b has no cell"])
-        XCTAssertEqual(faults("grid=a\n\npart=a\ncell=a\ntitle=A\n\npart=b\ncell=c\ntitle=B\n"), ["the part b names the cell c, which the drawing does not have"])
-        XCTAssertEqual(faults("grid=a\n\npart=a\ncell=a\ntitle=A\n\npart=b\ncell=a\ntitle=B\n"), ["the parts a and b share the cell a"])
-        XCTAssertEqual(faults("grid=a\ncard=a z\n\npart=a\ncell=a\ntitle=A\n"), ["the card names z, which the drawing does not have"])
-        XCTAssertEqual(faults("grid=a b\n\npart=a\ncell=a\nlook=strong\npress=play\n\npart=b\ncell=b\nlook=strong\npress=stop\n"), ["only one part can use look=strong"])
-        XCTAssertEqual(faults("grid=a - b\n\npart=a\ncell=a\ntitle=A\n\npart=b\ncell=b\ntitle=B\n"), ["the divider in row 1 is not whole"])
-        XCTAssertEqual(faults("grid=a b\ngrid=b a\n\npart=a\ncell=a\ntitle=A\n\npart=b\ncell=b\ntitle=B\n"), ["a and b overlap at one size, so neither lies on top"])
-        XCTAssertEqual(faults("layout=pair\n\npart=a\ntitle=A\n"), ["a sheet has no layout key, so draw it with grid= lines"])
+        XCTAssertEqual(faults("grid=a b\ngrid=a\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), ["each grid line needs the same number of columns"])
+        XCTAssertEqual(faults("grid=a\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), ["the part b is not in the drawing"])
+        XCTAssertEqual(faults("grid=a\n\ntext=a\ntitle=A\n\ntext=a\ntitle=B\n"), ["two parts are called a"])
+        XCTAssertEqual(faults("grid=a\ncard=a z\n\ntext=a\ntitle=A\n"), ["the card names z, which the drawing does not have"])
+        XCTAssertEqual(faults("grid=a b\n\nbutton=a\nlook=strong\nsymbol=play\n\nbutton=b\nlook=strong\nsymbol=stop\n"), ["only one part can use look=strong"])
+        XCTAssertEqual(faults("grid=a - b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), ["the divider in row 1 is not whole"])
+        XCTAssertEqual(faults("grid=a b\ngrid=b a\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), ["a and b overlap at one size, so neither lies on top"])
+        XCTAssertEqual(faults("layout=pair\n\ntext=a\ntitle=A\n"), ["a sheet has no layout key, so draw it with grid= lines"])
     }
 
     func testACheckOfOneSheetReportsWhatCannotBeRead() {
-        XCTAssertEqual(output("grid=a\n\npart=a\ncell=a\ntitle=A\n").sheetFaults, [])
-        XCTAssertEqual(output("grid=a\n\ntitle=A\n\npart=a\ncell=a\ntitle=A\n").sheetFaults, ["cannot read the block that starts: title=A"])
+        XCTAssertEqual(output("grid=a\n\ntext=a\ntitle=A\n").sheetFaults, [])
+        XCTAssertEqual(output("grid=a\n\ntitle=A\n\ntext=a\ntitle=A\n").sheetFaults, ["cannot read the block that starts: title=A"])
         XCTAssertEqual(output("grid=a\n").sheetFaults, ["the sheet has no parts"])
     }
 
     func testTheFaultsThatComeFromSize() {
         func faults(_ text: String) -> [String] { output(text).partFaults }
 
-        XCTAssertEqual(faults("part=a\nlevel=255\n"), ["the part a has a level of 255, outside 0 to 100"])
-        XCTAssertEqual(faults("part=a\nlevel=255\nmax=255\n"), [])
-        XCTAssertEqual(faults("grid=a b c d\ngrid=a b c d\n\npart=a\ncell=a\nmetric=1\n\npart=b\ncell=b\ntitle=B\n\npart=c\ncell=c\ntitle=C\n\npart=d\ncell=d\ntitle=D\n"), ["the part a needs at least 2 columns of 4 for its number"])
-        XCTAssertEqual(faults("grid=a a\n\npart=a\ncell=a\nmetric=1\ntitle=CPU\n"), ["the part a needs at least 2 rows for its number and title"])
-        XCTAssertEqual(faults("grid=p p\n\npart=p\ncell=p\nblock=progress\nlevel=1\n"), ["the part p needs at least 2 rows for its title and bar"])
-        XCTAssertEqual(faults("grid=a b c d\n\npart=a\ncell=a\ntitle=A very long title indeed\n\npart=b\ncell=b\ntitle=B\n\npart=c\ncell=c\ntitle=C\n\npart=d\ncell=d\ntitle=D\n"), ["the title of the part a may not fit its cell"])
-        XCTAssertEqual(faults("grid=a b\ngrid=t b\n\npart=a\ncell=a\ntitle=Item\n\npart=t\ncell=t\ntitle=Other\n\npart=b\ncell=b\ntext=Hi\n"), ["the part a sits in rows that stretch, so use item= for a list", "the part t sits in rows that stretch, so use item= for a list"])
-        XCTAssertEqual(faults(String(repeating: "grid=a\n", count: 20) + "\npart=a\ncell=a\ntext=Hi\n"), ["the drawing is too tall: 914pt of 442pt"])
+        XCTAssertEqual(faults("slider=a\nlevel=255\n"), ["the part a has a level of 255, outside 0 to 100"])
+        XCTAssertEqual(faults("slider=a\nlevel=255\nmax=255\n"), [])
+        XCTAssertEqual(faults("grid=a b c d\ngrid=a b c d\n\ntext=a\ntitle=1\nlook=large\n\ntext=b\ntitle=B\n\ntext=c\ntitle=C\n\ntext=d\ntitle=D\n"), ["the part a needs at least 2 columns of 4 for its number"])
+        XCTAssertEqual(faults("grid=a a\n\ntext=a\ntitle=1\nlook=large\ndetail=CPU\n"), ["the part a needs at least 2 rows for its number and title"])
+        XCTAssertEqual(faults("grid=p p\n\ngauge=p\nvalue=0.01\n"), ["the part p needs at least 2 rows for its title and bar"])
+        XCTAssertEqual(faults("grid=a b c d\n\ntext=a\ntitle=A very long title indeed\n\ntext=b\ntitle=B\n\ntext=c\ntitle=C\n\ntext=d\ntitle=D\n"), ["the title of the part a may not fit its cell"])
+        XCTAssertEqual(faults("grid=a b\ngrid=t b\n\ntext=a\ntitle=Item\n\ntext=t\ntitle=Other\n\nfield=b\ntext=Hi\n"), ["the part a sits in rows that stretch, so use item= for a list", "the part t sits in rows that stretch, so use item= for a list"])
+        XCTAssertEqual(faults(String(repeating: "grid=a\n", count: 20) + "\nfield=a\ntext=Hi\n"), ["the drawing is too tall: 914pt of 442pt"])
     }
 }

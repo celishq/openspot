@@ -74,8 +74,8 @@ group areas onto one raised card.
 `tray` for the menu bar (U5). A card's drawing can have more lines than the card has rows: the app divides its room
 evenly. A place with no drawing takes the drawing of the nearest smaller size, and a spot with none keeps its default card.
 
-With no `grid=` line, the sheet is one column of its components in the order that they print, and a `section` starts a new
-group. `keys=7 8 9 +` in the head draws a line of keys, and a press of one sends `<word>`.
+With no `grid=` line, the sheet is one column of its components other than buttons, in the order that they print, and a
+`section` starts a new group. `keys=7 8 9 +` in the head draws a line of keys, and a press of one sends `<word>`.
 
 ## Buttons and actions
 

@@ -153,7 +153,7 @@ final class SettingsSpotTests: XCTestCase {
 
     func testAPartRecordsAKeyAndReportsItsValue() throws {
         var part = try XCTUnwrap(SpotPart(block: TextBlock(fields: [
-            .init(key: "part", value: "open"), .init(key: "title", value: "Open"), .init(key: "shortcut", value: "ctrl+k")
+            .init(key: "key", value: "open"), .init(key: "title", value: "Open"), .init(key: "shortcut", value: "ctrl+k")
         ])))
 
         XCTAssertEqual(part.value, "ctrl+k")
@@ -163,7 +163,7 @@ final class SettingsSpotTests: XCTestCase {
 
     func testTheCatalogTeachesThePartAndFindsABadKey() {
         XCTAssertTrue(PartCatalog.text.contains("`shortcut="))
-        XCTAssertEqual(PluginOutput(text: "part=a\nshortcut=k\n").partFaults, ["the part a needs a shortcut that holds cmd, ctrl or option: k"])
-        XCTAssertEqual(PluginOutput(text: "part=a\nshortcut=ctrl+k\n").partFaults, [])
+        XCTAssertEqual(PluginOutput(text: "key=a\nshortcut=k\n").partFaults, ["the part a needs a shortcut that holds cmd, ctrl or option: k"])
+        XCTAssertEqual(PluginOutput(text: "key=a\nshortcut=ctrl+k\n").partFaults, [])
     }
 }

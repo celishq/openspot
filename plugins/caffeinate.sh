@@ -44,7 +44,7 @@ case "$1" in
       fi
     fi
     printf 'detail=%s\non=%s\nrecents=false\n\n' "$detail" "$on"
-    printf 'action=open\ntitle=Select\n\n'
+    printf 'button=open\ntitle=Select\n\n'
     if [ "$running" = 1 ]; then
       printf 'row=Turn off\nrun=off\n\n'
     fi

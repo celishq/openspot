@@ -294,11 +294,11 @@ final class SamplePluginsTests: SamplePluginsCase {
     func testAReadAnswersWithItsFirstFrame() async throws {
         try await withPrivateHome { folder in
             let url = folder.appendingPathComponent("frames.sh")
-            try "#!/bin/sh\nprintf 'part=a\\n---\\n'\nprintf 'part=b\\n'\n".writeScript(to: url)
+            try "#!/bin/sh\nprintf 'text=a\\n---\\n'\nprintf 'text=b\\n'\n".writeScript(to: url)
 
             let text = try await SpotRuns().answer(of: Spot(id: "frames", name: "Frames", url: url), .read, limit: 5)
 
-            XCTAssertEqual(text, "part=a\n")
+            XCTAssertEqual(text, "text=a\n")
         }
     }
 

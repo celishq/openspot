@@ -76,7 +76,7 @@ public struct SettingsSpot: Equatable, Sendable {
         let login = self.login.map { [$0.row.text] } ?? []
         let link = self.link.map { [$0.row.text] } ?? []
         let app = only == nil ? [panel, fix] + login + link : []
-        return (["recents=false\n", "action=open\ntitle=Change\nclose=false\n", "action=\(Self.clear)\ntitle=Remove key\n"] + app + rows).joined(separator: "\n")
+        return (["recents=false\n", "button=open\ntitle=Change\nclose=false\n", "button=\(Self.clear)\ntitle=Remove key\n"] + app + rows).joined(separator: "\n")
     }
 
     private func shortcut(from arguments: [String]) throws -> Shortcut {

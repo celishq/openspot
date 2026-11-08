@@ -192,7 +192,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testTheSpotShowsItsOldestCall() async throws {
         try script(header: "read=sheet", """
         case "$1" in
-          read) printf 'part=a\\npress=true\\n\\npart=b\\npress=true\\n' ;;
+          read) printf 'grid=a b\\n\\nbutton=a\\ntitle=A\\n\\nbutton=b\\ntitle=B\\n' ;;
           a) printf 'title=A\\n---\\n'; sleep 30 ;;
           b) printf 'title=B\\n---\\n'; sleep 30 ;;
         esac
@@ -216,7 +216,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testARunningPartShowsOnThatPartOnly() async throws {
         try script(header: "read=sheet", """
         case "$1" in
-          read) printf 'part=go\\npress=true\\n\\npart=other\\ntitle=Other\\n' ;;
+          read) printf 'grid=go other\\n\\nbutton=go\\ntitle=Go\\n\\ntext=other\\ntitle=Other\\n' ;;
           go) sleep 30 ;;
         esac
         """)
@@ -239,7 +239,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testARunningActionOrPickShowsOnItsRowOfTheMenu() async throws {
         try script(header: "read=sheet", """
         case "$1" in
-          read) printf 'action=go\\ntitle=Go\\nscope=command\\n\\naction=copy\\ntitle=Copy\\n\\nrow=A\\nrun=a\\n' ;;
+          read) printf 'button=go\\ntitle=Go\\nscope=command\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=A\\nrun=a\\n' ;;
           go) sleep 30 ;;
           open) sleep 30 ;;
         esac
@@ -291,7 +291,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testAPressOfAPartWithinOneSecondOfItsStartDoesNothing() async throws {
         try script(header: "read=sheet", """
         case "$1" in
-          read) printf 'part=go\\ntitle=Go\\npress=true\\n' ;;
+          read) printf 'grid=go\\n\\nbutton=go\\ntitle=Go\\n' ;;
           go) sleep 0.2; touch '\(path("done"))' ;;
         esac
         """)
@@ -312,7 +312,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testAPickOrAnActionWithinOneSecondOfItsStartDoesNothing() async throws {
         try script(header: "read=sheet", """
         case "$1" in
-          read) printf 'action=go\\ntitle=Go\\nscope=command\\n\\nrow=A\\nrun=a\\n' ;;
+          read) printf 'button=go\\ntitle=Go\\nscope=command\\n\\nrow=A\\nrun=a\\n' ;;
           go) sleep 0.2; touch '\(path("action"))' ;;
           open) sleep 0.2; touch '\(path("pick"))' ;;
         esac
@@ -350,8 +350,8 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testASecondAskForAFormWithinOneSecondLeavesTheFirstRunning() async throws {
         try script(header: "read=sheet", """
         case "$1" in
-          read) printf 'action=new\\ntitle=New\\nscope=command\\nform=true\\n\\nrow=A\\nrun=a\\n' ;;
-          new) \(untilRelease); printf 'title=New\\n\\nfield=a\\nlabel=A\\n' ;;
+          read) printf 'button=new\\ntitle=New\\nscope=command\\nform=true\\n\\nrow=A\\nrun=a\\n' ;;
+          new) \(untilRelease); printf 'title=New\\n\\nfield=a\\ntitle=A\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -372,7 +372,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testQuittingStopsEachCall() async throws {
         try script(header: "read=sheet", """
         trap 'touch "\(path("stopped"))"; exit 0' TERM
-        printf 'part=a\\ntitle=A\\n---\\n'
+        printf 'text=a\\ntitle=A\\n---\\n'
         \(String.longLoop)
         """)
         try script("deaf", "echo $$ > '\(path("deaf-pid"))'\ntrap '' TERM\n\(String.longLoop)")

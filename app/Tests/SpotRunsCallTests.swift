@@ -136,12 +136,12 @@ final class SpotRunsCallTests: SpotRunsCase {
 
     private static let worker = """
     case "$1" in
-      read) printf 'title=Sheet\\n\\npart=go\\ntitle=Go\\npress=true\\n\\npart=bar\\ntitle=idle\\n' ;;
+      read) printf 'title=Sheet\\ngrid=go\\ngrid=bar\\n\\nbutton=go\\ntitle=Go\\n\\ntext=bar\\ntitle=idle\\n' ;;
       go)
-        printf 'toast=Started\\non=true\\n\\npart=bar\\ntitle=half\\n---\\n'
+        printf 'toast=Started\\non=true\\n\\ntext=bar\\ntitle=half\\n---\\n'
         sleep 0.3
         touch '%@'
-        printf 'toast=Done\\n\\npart=bar\\ntitle=done\\n'
+        printf 'toast=Done\\n\\ntext=bar\\ntitle=done\\n'
         ;;
     esac
     """
@@ -166,15 +166,15 @@ final class SpotRunsCallTests: SpotRunsCase {
 
         try await wait("the end of the work") { self.exists("done") && sheet.calls.isEmpty }
         XCTAssertEqual(toasts, ["Started", "Done"])
-        XCTAssertEqual(sheet.lastFrame, "toast=Done\n\npart=bar\ntitle=done\n")
+        XCTAssertEqual(sheet.lastFrame, "toast=Done\n\ntext=bar\ntitle=done\n")
         XCTAssertNil(sheet.panel)
     }
 
     func testAFrameWithNoOpenSheetShowsOnlyItsToastAndItsState() async throws {
         try script(header: "read=panel", """
         case "$1" in
-          read) printf 'on=false\\n\\nrow=A\\nrun=a\\n\\npart=bar\\ntitle=idle\\n' ;;
-          open) printf 'toast=Saved\\non=true\\ntitle=Other\\n\\npart=bar\\ntitle=work\\n' ;;
+          read) printf 'on=false\\n\\nrow=A\\nrun=a\\n\\ntext=bar\\ntitle=idle\\n' ;;
+          open) printf 'toast=Saved\\non=true\\ntitle=Other\\n\\ntext=bar\\ntitle=work\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -194,8 +194,8 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testOpeningASheetAddsTheLastFrameOfEachRunningCall() async throws {
         try script(header: "read=sheet", """
         case "$1" in
-          read) printf 'part=go\\ntitle=Go\\npress=true\\n\\npart=bar\\ntitle=idle\\n' ;;
-          go) printf 'part=bar\\ntitle=half\\n---\\n'; sleep 30 ;;
+          read) printf 'grid=go\\ngrid=bar\\n\\nbutton=go\\ntitle=Go\\n\\ntext=bar\\ntitle=idle\\n' ;;
+          go) printf 'text=bar\\ntitle=half\\n---\\n'; sleep 30 ;;
         esac
         """)
         let sheet = try sheet()
@@ -216,9 +216,9 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testANewValueStopsTheOlderCallOfThatPartAndNoOther() async throws {
         try script(header: "read=sheet", """
         case "$1" in
-          read) printf 'part=a\\non=false\\n\\npart=b\\non=false\\n\\npart=out\\ntitle=none\\n' ;;
-          a) [ "$2" = true ] && { sleep 30; touch '\(path("old-a"))'; exit 0; }; touch '\(path("new-a"))'; printf 'part=out\\ntitle=new\\n' ;;
-          b) \(untilRelease); touch '\(path("b"))'; printf 'part=out\\ntitle=b\\n' ;;
+          read) printf 'switch=a\\non=false\\n\\nswitch=b\\non=false\\n\\ntext=out\\ntitle=none\\n' ;;
+          a) [ "$2" = true ] && { sleep 30; touch '\(path("old-a"))'; exit 0; }; touch '\(path("new-a"))'; printf 'text=out\\ntitle=new\\n' ;;
+          b) \(untilRelease); touch '\(path("b"))'; printf 'text=out\\ntitle=b\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -243,9 +243,9 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testAnOlderCallOfAnotherPartLeavesAPartThatChangedSince() async throws {
         try script(header: "read=sheet", """
         case "$1" in
-          read) printf 'part=a\\non=false\\n\\npart=b\\non=false\\n' ;;
-          a) sleep 0.2; printf 'part=a\\non=true\\n\\npart=b\\non=false\\n' ;;
-          b) printf 'part=b\\non=true\\n' ;;
+          read) printf 'switch=a\\non=false\\n\\nswitch=b\\non=false\\n' ;;
+          a) sleep 0.2; printf 'switch=a\\non=true\\n\\nswitch=b\\non=false\\n' ;;
+          b) printf 'switch=b\\non=true\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -263,7 +263,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testASecondPressOfARunningPartStopsItAndChangesNothing() async throws {
         try script(header: "read=sheet", """
         case "$1" in
-          read) printf 'part=go\\ntitle=Go\\npress=true\\n' ;;
+          read) printf 'grid=go\\n\\nbutton=go\\ntitle=Go\\n' ;;
           go) sleep 5; touch '\(path("went-on"))' ;;
         esac
         """)
@@ -286,7 +286,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testASecondPressOfARunningActionStopsIt() async throws {
         try script(header: "read=sheet", """
         case "$1" in
-          read) printf 'action=go\\ntitle=Go\\nscope=command\\n\\nrow=A\\nrun=a\\n' ;;
+          read) printf 'button=go\\ntitle=Go\\nscope=command\\n\\nrow=A\\nrun=a\\n' ;;
           go) sleep 5; touch '\(path("went-on"))' ;;
         esac
         """)
@@ -326,7 +326,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testATwoMegabyteValueOfAPartIsLeftOutOfTheArgumentsAndStdinHoldsIt() async throws {
         try script(header: "read=sheet", """
         case "$1" in
-          read) printf 'part=input\\ntext=\\n' ;;
+          read) printf 'field=input\\ntext=\\n' ;;
           input) printf '%s' "$#" > '\(path("count"))'; cat > '\(path("got"))'; touch '\(path("done"))' ;;
         esac
         """)

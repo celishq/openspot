@@ -72,9 +72,9 @@ public struct CatalogSpot: Equatable, Sendable {
         let own = own
         let head = [
             TextBlock(fields: [.init(key: "recents", value: "false")]),
-            TextBlock(fields: [.init(key: "action", value: "open"), .init(key: "title", value: "Select"), .init(key: "close", value: "false")]),
-            TextBlock(fields: [.init(key: "action", value: Self.selectAllID), .init(key: "title", value: "Select all"), .init(key: "key", value: "cmd+shift+a"), .init(key: "scope", value: "command")]),
-            TextBlock(fields: [.init(key: "action", value: Self.reviewID), .init(key: "title", value: "Review code")])
+            TextBlock(fields: [.init(key: "button", value: "open"), .init(key: "title", value: "Select"), .init(key: "close", value: "false")]),
+            TextBlock(fields: [.init(key: "button", value: Self.selectAllID), .init(key: "title", value: "Select all"), .init(key: "key", value: "cmd+shift+a"), .init(key: "scope", value: "command")]),
+            TextBlock(fields: [.init(key: "button", value: Self.reviewID), .init(key: "title", value: "Review code")])
         ]
         let spots = choices.map { command in
             let id = PluginFolder.coreID(of: command)

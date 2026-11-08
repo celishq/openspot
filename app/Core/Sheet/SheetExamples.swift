@@ -9,188 +9,162 @@ public enum SheetExamples {
 
     public static let all: [Example] = [
         Example(name: "text in, text out", text: """
-        grid=s s . .
-        grid=i i i i
-        grid=i i i x
-        grid=- - - x
-        grid=t t . x
-        grid=o o o o
-        grid=o o o c
-        card=s i t o
+        grid=source source . .
+        grid=input input input input
+        grid=input input input swap
+        grid=- - - swap
+        grid=target target . swap
+        grid=output output output output
+        grid=output output output copy
+        card=source input target output
 
-        part=source
-        cell=s
+        choice=source
         option=auto:Automatic
         option=en:English
         value=auto
 
-        part=input
-        cell=i
+        field=input
         text=Good morning
         placeholder=Type or paste text
 
-        part=target
-        cell=t
+        choice=target
         option=fr:French
         option=de:German
         value=fr
 
-        part=output
-        cell=o
+        field=output
         text=Bonjour
         readonly=true
 
-        part=swap
-        cell=x
-        press=arrow.up.arrow.down
+        button=swap
+        symbol=arrow.up.arrow.down
         key=cmd+shift+s
 
-        part=copy
-        cell=c
+        button=copy
         align=right
         look=chip
         title=Copy
-        press=true
         key=cmd+return
         close=true
 
         """),
         Example(name: "a picture with actions", text: """
-        grid=a a a a
-        grid=a a a a
-        grid=a a a a
-        grid=a a p p
-        grid=a a p p
-        grid=t t t t
-        grid=s s s s
-        grid=. b n .
+        grid=art art art art
+        grid=art art art art
+        grid=art art art art
+        grid=art art play play
+        grid=art art play play
+        grid=song song song song
+        grid=position position position position
+        grid=. previous following .
 
-        part=art
-        cell=a
+        picture=art
         image=/System/Library/Desktop Pictures/.thumbnails/Sequoia.heic
 
-        part=play
-        cell=p
+        button=play
         look=strong
-        press=pause.fill
+        symbol=pause.fill
 
-        part=song
-        cell=t
+        text=song
         title=Night drive
         detail=2:14 / 3:40
 
-        part=position
-        cell=s
+        slider=position
         level=60
 
-        part=previous
-        cell=b
+        button=previous
         look=bare
-        press=backward.fill
+        symbol=backward.fill
 
-        part=following
-        cell=n
+        button=following
         look=bare
-        press=forward.fill
+        symbol=forward.fill
 
         """),
         Example(name: "a long task", text: """
-        grid=f f f f
-        grid=q q r r
-        grid=p p p p
-        grid=p p p p
-        grid=l l l l
-        grid=l l l c
-        card=f q r
+        grid=file file file file
+        grid=quality quality format format
+        grid=status status status status
+        grid=status status status status
+        grid=log log log log
+        grid=log log log stop
+        card=file quality format
 
-        part=file
-        cell=f
+        text=file
         title=Demo.mov
         detail=1.2 GB
 
-        part=quality
-        cell=q
+        choice=quality
         option=high:High quality
         option=low:Low quality
         value=high
 
-        part=format
-        cell=r
+        choice=format
         align=right
         option=mp4:MP4
         value=mp4
 
-        part=status
-        cell=p
-        block=progress
+        gauge=status
         title=Converting
         detail=1:12 left
-        level=62
+        value=0.62
 
-        part=log
-        cell=l
+        field=log
         text=frame= 4120 fps= 96\\nframe= 4216 fps= 97
         readonly=true
 
-        part=stop
-        cell=c
+        button=stop
         align=right
         look=chip
         title=Stop
-        press=true
 
         """),
         Example(name: "messages and a field", text: """
-        grid=m m m m
-        grid=i i i i
-        grid=i i i i
-        grid=a i i s
+        grid=messages messages messages messages
+        grid=question question question question
+        grid=question question question question
+        grid=model question question ask
 
-        part=messages
-        cell=m
+        field=messages
         text=Why do the checks fail?\\n\\nThe build step cannot find the module.
         readonly=true
 
-        part=question
-        cell=i
+        field=question
         text=
         placeholder=Ask
 
-        part=model
-        cell=a
+        choice=model
         align=left
         option=fast:Fast
         option=deep:Deep
         value=fast
 
-        part=ask
-        cell=s
+        button=ask
         look=strong
-        press=arrow.up
+        symbol=arrow.up
         key=cmd+return
 
         """),
         Example(name: "numbers around a chart", text: """
-        grid=a a b b
-        grid=a a b b
-        grid=g g g r
-        grid=g g g g
-        grid=g g g g
-        grid=c c d d
-        grid=c c d d
+        grid=cpu cpu memory memory
+        grid=cpu cpu memory memory
+        grid=history history history refresh
+        grid=history history history history
+        grid=history history history history
+        grid=disk disk battery battery
+        grid=disk disk battery battery
 
-        part=cpu
-        cell=a
-        metric=42%
-        title=CPU
+        text=cpu
+        title=42%
+        look=large
+        detail=CPU
 
-        part=memory
-        cell=b
-        metric=61%
-        title=Memory
+        text=memory
+        title=61%
+        look=large
+        detail=Memory
 
-        part=history
-        cell=g
+        graph=history
         point=2
         point=4
         point=3
@@ -198,144 +172,126 @@ public enum SheetExamples {
         point=8
         point=5
 
-        part=refresh
-        cell=r
-        press=arrow.clockwise
+        button=refresh
+        symbol=arrow.clockwise
 
-        part=disk
-        cell=c
-        metric=312 GB
-        title=Disk free
+        text=disk
+        title=312 GB
+        look=large
+        detail=Disk free
 
-        part=battery
-        cell=d
-        metric=68%
-        title=Battery
+        text=battery
+        title=68%
+        look=large
+        detail=Battery
 
         """),
         Example(name: "a list and a preview", text: """
-        grid=l l d d
-        grid=l l d d
-        grid=l l d c
-        grid=b b b b
+        grid=items items preview preview
+        grid=items items preview preview
+        grid=items items preview copy
+        grid=paste paste paste paste
 
-        part=items
-        cell=l
-        item=address:Address
-        item=signature:Signature
-        item=link:Meeting link
+        choice=items
+        option=address:Address
+        look=list
+        option=signature:Signature
+        option=link:Meeting link
         value=address
 
-        part=preview
-        cell=d
+        field=preview
         text=Rosenthaler Str. 40\\n10178 Berlin
         readonly=true
 
-        part=copy
-        cell=c
+        button=copy
         align=right
         look=chip
         title=Copy
-        press=true
 
-        part=paste
-        cell=b
+        button=paste
         look=strong
         title=Paste
-        press=true
         key=cmd+return
 
         """),
         Example(name: "a drawing with a floating button", text: """
-        grid=t t t t
-        grid=t t t t
-        grid=t t t c
+        grid=note note note note
+        grid=note note note note
+        grid=note note note save
 
-        part=note
-        cell=t
+        field=note
         text=Buy milk\\nCall the bank
 
-        part=save
-        cell=c
+        button=save
         look=strong
-        press=checkmark
+        symbol=checkmark
         key=cmd+return
         close=true
 
         """),
         Example(name: "a drawing of settings", text: """
-        grid=a a a a
-        grid=b b b b
-        grid=s s s s
-        grid=e e e e
-        grid=l m h r
+        grid=heating heating heating heating
+        grid=room room room room
+        grid=target target target target
+        grid=colors colors colors colors
+        grid=low mid high reset
         grid=- - - -
-        grid=q q q q
+        grid=quit quit quit quit
 
-        part=heating
-        cell=a
+        switch=heating
         look=section
         title=Heating
         on=true
 
-        part=room
-        cell=b
+        text=room
         title=Room
         detail=21°
 
-        part=target
-        cell=s
+        slider=target
         title=Target
         level=40
 
-        part=colors
-        cell=e
+        choice=colors
         color=#e8c07d
         color=#e8edf7
         color=#d4524a
         color=#6fbf6a
         value=#d4524a
 
-        part=low
-        cell=l
+        choice=low
         title=Low
         color=#5fe0d2
 
-        part=mid
-        cell=m
+        choice=mid
         title=Mid
         color=#5a64e6
 
-        part=high
-        cell=h
+        choice=high
         title=High
         color=#d632d8
 
-        part=reset
-        cell=r
+        button=reset
         align=right
         look=bare
-        press=arrow.counterclockwise
+        symbol=arrow.counterclockwise
 
-        part=quit
-        cell=q
+        button=quit
         look=bare
         title=Quit
-        press=true
         key=cmd+q
 
         """),
         Example(name: "a drawing with keys", text: """
-        grid=v v v v
+        grid=value value value value
         keys=7 8 9 ÷
         keys=4 5 6 ×
         keys=1 2 3 −
         keys=0 0 . +
         keys=C C C =
 
-        part=value
-        cell=v
-        metric=1,284
+        text=value
+        title=1,284
+        look=large
         look=bare
 
         """)

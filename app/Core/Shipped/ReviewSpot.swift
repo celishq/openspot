@@ -59,15 +59,13 @@ public struct ReviewSpot: Equatable, Sendable {
     }
 
     private var sheet: String {
-        guard canAdd else { return [TextBlock(fields: [.init(key: "grid", value: "t")]).text, reviewPart.text].joined(separator: "\n") }
+        guard canAdd else { return [TextBlock(fields: [.init(key: "grid", value: "review")]).text, reviewPart.text].joined(separator: "\n") }
         return [
-            TextBlock(fields: [.init(key: "grid", value: "t"), .init(key: "grid", value: "a")]).text,
+            TextBlock(fields: [.init(key: "grid", value: "review"), .init(key: "grid", value: Self.installPart)]).text,
             reviewPart.text,
             TextBlock(fields: [
-                .init(key: "part", value: Self.installPart),
-                .init(key: "cell", value: "a"),
+                .init(key: "button", value: Self.installPart),
                 .init(key: "title", value: "Add"),
-                .init(key: "press", value: "true"),
                 .init(key: "key", value: "cmd+return"),
                 .init(key: "close", value: "true"),
                 .init(key: "look", value: "strong")
@@ -77,8 +75,7 @@ public struct ReviewSpot: Equatable, Sendable {
 
     private var reviewPart: TextBlock {
         TextBlock(fields: [
-            .init(key: "part", value: "review"),
-            .init(key: "cell", value: "t"),
+            .init(key: "field", value: "review"),
             .init(key: "readonly", value: "true"),
             .init(key: "text", value: text)
         ])

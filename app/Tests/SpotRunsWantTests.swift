@@ -8,7 +8,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     // MARK: K5
 
     func testClosingThePanelClosesASheetOfPartsAndTheNextOpenReads() async throws {
-        try script(header: "read=sheet", "printf 'part=a\\ntext=one\\n'")
+        try script(header: "read=sheet", "printf 'field=a\\ntext=one\\n'")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the part") { sheet.panel != nil }
@@ -202,7 +202,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testTheSandboxClicksAFileWithNoRead() async throws {
-        let url = try script(body: "printf 'part=a\\ntitle=%s\\n' \"$#\"")
+        let url = try script(body: "printf 'text=a\\ntitle=%s\\n' \"$#\"")
         let sheet = runs.sheet(for: SheetSandbox.command(file: url))
 
         sheet.open {}
@@ -212,7 +212,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testTheSandboxReadsAFileWithARead() async throws {
-        let url = try script(header: "read=panel", "printf 'part=a\\ntitle=%s\\n' \"$1\"")
+        let url = try script(header: "read=panel", "printf 'text=a\\ntitle=%s\\n' \"$1\"")
         let sheet = runs.sheet(for: SheetSandbox.command(file: url))
 
         sheet.open {}

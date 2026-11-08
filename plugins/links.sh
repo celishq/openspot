@@ -123,13 +123,13 @@ form() {
   jq -nr --arg title "$1" --argjson v "$2" "$esc"'"title=\($title)
 
 field=title
-label=Name
-value=\($v.title | esc)
+title=Name
+text=\($v.title | esc)
 required=true
 
 field=url
-label=Link
-value=\($v.url | esc)
+title=Link
+text=\($v.url | esc)
 required=true
 placeholder=example.com or ~/Downloads"'
 }
@@ -138,11 +138,11 @@ prepare
 
 case "$1" in
   read)
-    printf 'action=copy\ntitle=Copy\nkey=cmd+return\nclose=true\n\n'
-    printf 'action=reveal\ntitle=Show in Finder\nkey=cmd+r\nclose=true\n\n'
-    printf 'action=edit\ntitle=Edit\nkey=cmd+e\nform=true\n\n'
-    printf 'action=delete\ntitle=Delete\nkey=cmd+backspace\nconfirm=Press again to delete\n\n'
-    printf 'action=new\ntitle=New link\nkey=cmd+n\nscope=command\nform=true\n\n'
+    printf 'button=copy\ntitle=Copy\nkey=cmd+return\nclose=true\n\n'
+    printf 'button=reveal\ntitle=Show in Finder\nkey=cmd+r\nclose=true\n\n'
+    printf 'button=edit\ntitle=Edit\nkey=cmd+e\nform=true\n\n'
+    printf 'button=delete\ntitle=Delete\nkey=cmd+backspace\nconfirm=Press again to delete\n\n'
+    printf 'button=new\ntitle=New link\nkey=cmd+n\nscope=command\nform=true\n\n'
     found=$(ls "$icons" 2>/dev/null | jq -R . | jq -sc .)
     load | jq -r --arg icons "$icons" --argjson found "$found" --arg home "$HOME" "$esc"'.[]
       | if (.url | test("^[/~]")) then

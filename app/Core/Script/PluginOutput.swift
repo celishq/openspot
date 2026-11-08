@@ -1,7 +1,8 @@
 import Foundation
 
-/// What a script prints, sorted by the first key of each block: `row`, `action`, `field`, `part`, `section`, or the
-/// effects `toast` and `open`. The first other block says how the spot itself looks. Each `run` value appears once.
+/// What a script prints, sorted by the first key of each block: `row`, a kind of part, or the effects `toast` and `open`.
+/// The first other block says how the spot itself looks. A button that the drawing does not place is an action (U6). Each
+/// `run` value appears once.
 public struct PluginOutput: Equatable, Sendable {
     public private(set) var summary: TextBlock?
     public private(set) var rows: [TextBlock] = []
@@ -19,28 +20,36 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var open: String?
 
     private static let reserved = "read"
-    /// The app's own events. A part cannot take one, and an action can take only `open`, to change the pick.
+    /// The app's own events. A part cannot take one, and a button can take only `open`, to change the pick.
     private static let defaults = ["run", "open", "drop", "on", "off", "level"]
+    private static let button = "button"
+
+    /// Whether a first key names a row or a part, so that the block is not the head.
+    private static func isKind(_ key: String) -> Bool {
+        key == "row" || SpotPart.kinds.contains(key)
+    }
 
     public init(text: String) {
         var runs = Set<String>()
-        for block in TextBlock.blocks(in: text) {
+        let blocks = TextBlock.blocks(in: text)
+        let head = blocks.first { block in block.fields.first.map { !Self.isKind($0.key) } ?? false }
+        let layout = head.flatMap(SheetLayout.init(block:))
+        for block in blocks {
             let kind = block.fields.first?.key
-            if kind == "row" {
+            if kind == Self.button, let id = block.value(Self.button), layout?.areas[id] == nil {
+                take(action: id, block)
+            } else if kind == "row" {
                 rows.append(block)
                 if let item = SpotItem(block: block) {
                     if runs.insert(item.run).inserted { items.append(item) }
                 } else {
                     errors.append(block.firstLine)
                 }
-            } else if kind == "action", let id = block.value("action") {
-                take(action: id, block)
-            } else if kind == "field" {
-                fields.append(block)
-            } else if kind == "part" || kind == "section", let part = SpotPart(block: block) {
+            } else if let kind, SpotPart.kinds.contains(kind), let part = SpotPart(block: block) {
+                if kind == "field" { fields.append(block) }
                 parts.append(part)
                 partFaults += PartCatalog.faults(in: block)
-            } else if summary == nil, !block.fields.isEmpty {
+            } else if summary == nil, block == head {
                 summary = block
                 take(effects: block)
             } else if kind == "toast" || kind == "open" {
@@ -49,7 +58,7 @@ public struct PluginOutput: Equatable, Sendable {
                 errors.append(block.firstLine)
             }
         }
-        layout = summary.flatMap(SheetLayout.init(block:))
+        self.layout = layout
         parts += layout?.keyParts ?? []
         for id in [Self.reserved] + Self.defaults where parts.contains(where: { $0.id == id }) {
             partFaults.append("a part cannot be called \(id)")
