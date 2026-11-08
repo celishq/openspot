@@ -2,7 +2,7 @@ import Foundation
 
 /// The compiled form of a Swift script, which travels beside its source so that a Mac with no Swift tools can run it.
 public struct SwiftProgram: Sendable {
-    private static let sourceExtension = "swift"
+    static let sourceExtension = "swift"
     private static let programExtension = "program"
     private static let platform = "apple-macos26.0"
     private static let kinds = ["arm64", "x86_64"]

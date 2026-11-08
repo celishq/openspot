@@ -231,6 +231,9 @@ public struct SharedSpot: Equatable, Sendable {
             guard !roots.contains(where: { $0.path == root }) else { continue }
             roots.append((root, folder == nil ? first.url : first.url.deletingLastPathComponent()))
             if folder == nil, let program = SwiftProgram.file(beside: first.url) { roots.append((program.lastPathComponent, program)) }
+            if folder == nil, let view = first.view.map(URL.init(fileURLWithPath:)), view.deletingLastPathComponent() == first.url.deletingLastPathComponent() {
+                roots.append((view.lastPathComponent, view))
+            }
             let neighbours = folder == nil ? [plugin] : scan.plugins.filter { $0.id.hasPrefix("\(root)/") }
             waiting += neighbours.flatMap(\.commands).flatMap { $0.places + ($0.opens.map { [$0] } ?? []) }
         }

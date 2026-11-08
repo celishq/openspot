@@ -58,6 +58,10 @@ public struct Plugin: Equatable, Sendable {
             }
             return offer
         }
+        let view = header.value("view")
+        if let view, URL(fileURLWithPath: view).pathExtension != SwiftProgram.sourceExtension {
+            throw PluginError.fault("\(name) needs a Swift file for its view, such as view=\(url.deletingPathExtension().lastPathComponent).swift")
+        }
         let command = Spot(
             id: id,
             name: name,
@@ -78,7 +82,8 @@ public struct Plugin: Equatable, Sendable {
             offers: offers,
             file: header.value("file").map { Self.path($0, beside: url) },
             image: header.value("image").map { Self.path($0, beside: url) },
-            glyph: header.value("glyph")
+            glyph: header.value("glyph"),
+            view: view.map { Self.path($0, beside: url) }
         )
         self.init(id: id, commands: [command])
     }

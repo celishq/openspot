@@ -34,4 +34,21 @@ final class PluginHeaderTests: XCTestCase {
     func testABlankLineEndsTheHeader() {
         XCTAssertNil(PluginHeader(text: "#!/bin/sh\n\n# name=Late\n").block.value("name"))
     }
+
+    func testAViewIsASwiftFileBesideTheScript() throws {
+        let folder = URL(fileURLWithPath: "/plugins/home")
+        let header = PluginHeader(text: "#!/bin/sh\n# view=cups.swift\n").block
+
+        let spot = try XCTUnwrap(try Plugin(script: folder.appendingPathComponent("cups.sh"), header: header, id: "home/cups").commands.first)
+
+        XCTAssertEqual(spot.view, "/plugins/home/cups.swift")
+    }
+
+    func testAViewThatIsNoSwiftFileIsRefused() {
+        let header = PluginHeader(text: "#!/bin/sh\n# name=Cups\n# view=cups.txt\n").block
+
+        XCTAssertThrowsError(try Plugin(script: URL(fileURLWithPath: "/plugins/cups.sh"), header: header, id: "cups")) { error in
+            XCTAssertEqual((error as? PluginError)?.reason, "Cups needs a Swift file for its view, such as view=cups.swift")
+        }
+    }
 }

@@ -32,6 +32,14 @@ final class SharedSpotTests: XCTestCase {
         try data.write(to: url)
     }
 
+    func testATopLevelScriptTravelsWithItsView() throws {
+        try script("cups.sh", "#!/bin/sh\n# view=cups.swift\n")
+        try plain("cups.swift", Data("import SwiftUI\n".utf8))
+        try plain("other.swift", Data("import SwiftUI\n".utf8))
+
+        XCTAssertEqual(try sharing("cups").files.map(\.path), ["cups.sh", "cups.swift"])
+    }
+
     private func sharing(_ id: String) throws -> SharedSpot {
         let folder = PluginFolder(url: plugins)
         let scan = try folder.scan()
