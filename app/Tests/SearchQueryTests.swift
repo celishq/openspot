@@ -160,4 +160,29 @@ final class SearchQueryTests: XCTestCase {
     func testAnEmptySearchOfSeveralListsKeepsListOrder() {
         XCTAssertEqual(found("", in: [list(["Docs"]), list(["Apps"])]), ["Docs", "Apps"])
     }
+
+    func testAKeywordFindsItsItem() {
+        let items = [SpotItem(title: "grinning face", run: "a", keywords: ["happy", "smile"]), item("Notes")]
+
+        XCTAssertEqual(SearchQuery(text: "smil").matching(items).map(\.title), ["grinning face"])
+    }
+
+    func testAWordInTheTitleBeatsAKeyword() {
+        let items = [SpotItem(title: "grinning face", run: "a", keywords: ["smile"]), item("smile cat")]
+
+        XCTAssertEqual(SearchQuery(text: "smile").matching(items).map(\.title), ["smile cat", "grinning face"])
+    }
+
+    func testAKeywordBeatsASubtitle() {
+        let items = [item("Mail", subtitle: "heart box"), SpotItem(title: "red", run: "b", keywords: ["heart"])]
+
+        XCTAssertEqual(SearchQuery(text: "heart").matching(items).map(\.title), ["red", "Mail"])
+    }
+
+    func testTheGlyphFindsItsItemFirst() {
+        let items = [item("arrow"), SpotItem(title: "rightwards arrow", run: "→", glyph: "→"), SpotItem(title: "red heart", run: "❤️", glyph: "❤️")]
+
+        XCTAssertEqual(SearchQuery(text: "→").matching(items).map(\.title), ["rightwards arrow"])
+        XCTAssertEqual(SearchQuery(text: "❤").matching(items).map(\.title), ["red heart"])
+    }
 }

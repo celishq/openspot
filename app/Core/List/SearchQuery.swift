@@ -1,9 +1,9 @@
 import Foundation
 
-/// Text that finds and ranks items. The whole title ranks first, then the title start. Otherwise each word must match,
-/// and the worst word sets the rank: a word start, the initials in order, any part of the title, a word start of the
-/// subtitle, any part of the subtitle, then three or more letters in order in one word of the title. Within a rank,
-/// picked items come first, the most picked before the latest, then the given order. Across lists, a pick beats any
+/// Text that finds and ranks items. The glyph and the whole title rank first, then the title start. Otherwise each word
+/// must match, and the worst word sets the rank: a word start, the initials, any part of the title, a keyword start, a word
+/// start of the subtitle, any part of the subtitle, then three or more letters in order in one word of the title. Within a
+/// rank, picked items come first, the most picked before the latest, then the given order. Across lists, a pick beats any
 /// other item of its rank, then an earlier list wins.
 public struct SearchQuery: Equatable, Sendable {
     public let text: String
@@ -62,6 +62,7 @@ public struct SearchQuery: Equatable, Sendable {
 
     private func match(_ item: FoldedItem) -> (rank: Int, marks: SearchMarks)? {
         guard !words.isEmpty else { return (0, SearchMarks(title: [], subtitle: [])) }
+        if let glyph = item.glyph, glyph == FoldedItem.plain(text) { return (0, SearchMarks(title: [], subtitle: [])) }
         let title = item.title
         if title.letters == letters { return (0, SearchMarks(title: [0..<letters.count], subtitle: [])) }
         if title.letters.starts(with: letters) { return (1, SearchMarks(title: [0..<letters.count], subtitle: [])) }
@@ -69,7 +70,7 @@ public struct SearchQuery: Equatable, Sendable {
         var rank = 0
         var marks: (title: [Range<Int>], subtitle: [Range<Int>]) = ([], [])
         for word in words {
-            guard let found = Self.match(word, title: title, subtitle: subtitle) else { return nil }
+            guard let found = Self.match(word, title: title, keywords: item.keywords, subtitle: subtitle) else { return nil }
             rank = max(rank, found.rank)
             marks.title += found.title
             marks.subtitle += found.subtitle
@@ -77,19 +78,20 @@ public struct SearchQuery: Equatable, Sendable {
         return (rank, SearchMarks(title: marks.title, subtitle: marks.subtitle))
     }
 
-    private static func match(_ word: [UInt64], title: FoldedText, subtitle: FoldedText?) -> (rank: Int, title: [Range<Int>], subtitle: [Range<Int>])? {
+    private static func match(_ word: [UInt64], title: FoldedText, keywords: [FoldedText], subtitle: FoldedText?) -> (rank: Int, title: [Range<Int>], subtitle: [Range<Int>])? {
         let span = { (start: Int) in start..<start + word.count }
         let inTitle = title.occurrences(of: word)
         if let start = inTitle.first(where: title.starts.contains) { return (2, [span(start)], []) }
         if let found = title.inOrder(word, among: title.starts) { return (3, found.map { $0..<$0 + 1 }, []) }
         if let start = inTitle.first { return (4, [span(start)], []) }
+        if keywords.contains(where: { $0.letters.starts(with: word) }) { return (5, [], []) }
         if let subtitle {
             let inSubtitle = subtitle.occurrences(of: word)
-            if let start = inSubtitle.first(where: subtitle.starts.contains) { return (5, [], [span(start)]) }
-            if let start = inSubtitle.first { return (6, [], [span(start)]) }
+            if let start = inSubtitle.first(where: subtitle.starts.contains) { return (6, [], [span(start)]) }
+            if let start = inSubtitle.first { return (7, [], [span(start)]) }
         }
         if word.count >= 3, let found = title.inOneWord(word) {
-            return (7, found.map { $0..<$0 + 1 }, [])
+            return (8, found.map { $0..<$0 + 1 }, [])
         }
         return nil
     }
