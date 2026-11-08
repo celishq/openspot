@@ -31,7 +31,7 @@ the file ends in `.swift`. The file is not executable, so it is not a spot of it
 
 ## The view
 
-The file declares `struct SpotView: View` with `let spot: SpotInput`, and it has no top-level code (V2). Openspot gives
+The file declares `struct SpotView: View` with `let spot: SpotInput`, and it has no top-level code. Openspot gives
 `SpotInput`:
 
 | Member             | Gives                                                             |
@@ -63,7 +63,7 @@ the Command Line Tools. A view that does not compile shows the first error in it
 A shared spot carries the compiled view beside its source as `<name>.view`, for both kinds of Mac, and Openspot uses it in
 place of the source (V7).
 
-The view runs inside Openspot (V8). A crash in it quits Openspot, and a slow `body` slows the panel. Do the work in the
+The view runs inside Openspot. A crash in it quits Openspot, and a slow `body` slows the panel. Do the work in the
 script, and keep `body` to drawing what the script printed.
 
 ## Decisions

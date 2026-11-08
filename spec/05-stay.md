@@ -1,4 +1,4 @@
-# 04 Stay
+# 05 Stay
 
 `draft` `optional` · Needs 01 and 02.
 
@@ -45,7 +45,7 @@ of the call to stop.
 
 The script prints frames at any time, also with no call, such as when a message comes from another process. It ends each
 call with `end=<n>` in the head of a frame (Y7). The frame that ends a read is its answer, and it replaces all that the
-spot shows. Any other frame changes only what it prints (U11), so a frame that no read asked for never replaces the sheet.
+spot shows. Any other frame changes only what it prints, so a frame that no read asked for never replaces the sheet.
 
 A call shows as running until its `end`, and a second press sends the block `stop=<n>`. A call that never ends runs until
 the script ends.
@@ -55,11 +55,11 @@ the script ends.
 It runs while something wants it: its open sheet, a widget or the menu bar that shows it, the open panel with `panel` in
 its `read`, or a call that waits for its `end` (Y3). With `launch` in its `read`, it runs from the start of the app to its
 quit. When nothing wants it, Openspot closes its stdin. The script must end then, and so must each process that it
-started. After 2 seconds its process group gets the terminate signal, and 2 seconds later the kill signal (Y4).
+started. After 2 seconds its process group gets the terminate signal, and 2 seconds later the kill signal.
 
 If it ends and something still wants it, the next moment or call starts it again. After 3 failures in one minute, Openspot
 tells the person, and starts it again only when a scan finds its file changed (Y5). Openspot can stop it at any time, so
-what must survive goes in `OPENSPOT_DATA` (Y6). `OPENSPOT_STAY=true` is in its environment.
+what must survive goes in `OPENSPOT_DATA`. `OPENSPOT_STAY=true` is in its environment.
 
 ## Decisions
 

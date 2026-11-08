@@ -32,15 +32,14 @@ shortcut=cmd+backspace
 confirm=Press again to forget
 ```
 
-A script prints components, and a drawing places them (R1). The app owns each canvas, each size, each gap and each
+A script prints components, and a drawing places them. The app owns each canvas, each size, each gap and each
 colour. A script says only what goes where.
 
 ## Components
 
-A component is one block. Its first line is `<kind>=<id>`: the key is the kind, and the value is its id (U2). This is not
-the `key=value` of a setting: the key says what the block is, and the value names it. The id names the area that the
+A component is one block. Its first line is `<kind>=<id>`: the key is the kind, and the value is its id (U2). The id names the area that the
 component fills, the event that it sends, and the thing that moves when it changes. Ids are unique in one output, and a
-component cannot take a default id of 01 (C1).
+component cannot take a default id of 01.
 
 | Kind      | Shows                                                   | Its own keys                                                    | Sends                  |
 | --------- | ------------------------------------------------------- | --------------------------------------------------------------- | ---------------------- |
@@ -60,7 +59,7 @@ component cannot take a default id of 01 (C1).
 | `section` | A title over the lines that follow it.                  |                                                                 |                        |
 | `repeat`  | The rows of the output (see Repeats).                   | `grid` lines                                                    |                        |
 
-Each kind also takes `title`, `detail`, `tone` and `icon` (U3). The value of `icon` says what the picture is: a path
+Each kind also takes `title`, `detail`, `tone` and `icon`. The value of `icon` says what the picture is: a path
 of a picture file, such as `cups.png`, draws the picture; any other path draws the file's Finder icon; a name of lowercase
 letters, digits and dots, such as `wifi`, is an SF Symbol; and any other text, such as `😀`, is drawn as it is. `tone` is `good`,
 `warn` or `bad` for a colour that means something, and `on` for a plain dot that says that a thing is active. `look` is
@@ -68,9 +67,9 @@ the box of a text, a number or a button: `tile`, `bare`, and on a button also `c
 
 ## Drawings
 
-A drawing places components. Each `grid=` line of the head is one line of the sheet, and each word is one cell (B1). A
+A drawing places components. Each `grid=` line of the head is one line of the sheet, and each word is one cell. A
 word is the id of a component, `.` is an empty cell, and `-` draws a divider across the line. The words of a line set the
-columns, so there is no width to set (B2). A component fills the rectangle of cells that its id covers, and each id covers
+columns, so there is no width to set. A component fills the rectangle of cells that its id covers, and each id covers
 a rectangle (U4). A smaller component that lies in a larger one sits on top of it, at the edge it touches. `card=` lines
 group areas onto one raised card.
 
@@ -93,7 +92,7 @@ Enter on a row is the action `open`, which each spot has. A `button=open` gives 
 
 A button with `form=true` asks for values first. The call runs once with empty stdin, and it prints a `title` in its head
 and one `field` for each value. Then the same call runs with the values on stdin, and it can print the id of the row to
-select (C3).
+select.
 
 ## Rows
 
@@ -115,15 +114,12 @@ always flow through a repeat, and with no `repeat` block they flow through a lis
 
 Openspot searches the rows itself and sorts recent picks first. The head can change this on each read:
 
-- `search=script` sends each search change as `<script> read <text>`, and the script prints the rows that match (R6).
-- `recents=false` does not sort recent picks first (R7).
-
-`global=true` in the header shows the rows in the main search too. It needs `panel`, `launch` or a number in its `read`,
-and a number also needs a `shortcut`. Openspot ranks them by the person's picks, and the script cannot.
+- `search=script` sends each search change as `<script> read <text>`, and the script prints the rows that match.
+- `recents=false` does not sort recent picks first.
 
 ## Repeats and templates
 
-A `repeat` flows the rows through its area (B5). Its own `grid=` lines are a drawing in which each word is the place of
+A `repeat` flows the rows through its area. Its own `grid=` lines are a drawing in which each word is the place of
 one row, and the drawing repeats down for as long as there are rows (U7). Rows take the places in the order in which each
 word first shows.
 
@@ -165,19 +161,19 @@ in a row sends `<script> <slot> <row id> [value]` (U9), and a row hides one with
 
 ## Values and frames
 
-The script holds no state. Each call gets the value of each switch, slider, field, choice and hotkey on stdin as one block,
-and it prints the whole output again, or nothing to be read again (B6). The app draws a change at once, and drops the
+The script holds no state. Each call gets the values on stdin (01), and prints the whole output again, or nothing to be
+read again. The app draws a change at once, and drops the
 answer to a call that a newer change has outdated (U10). The first frame of a read replaces all that the spot shows, and
-each later frame of the same read changes only what it prints (U11).
+each later frame of the same read changes only what it prints.
 
 The head is the one block with no kind, at any place in the output, and it is not drawn. It holds four groups:
 
 - the drawing: `grid=`, `card=` and `pad=` lines for the sheet, and `grid.<size>=` lines for the card;
 - the spot: `main`, and `title`, `detail` and `size` for its card;
 - the rows: `search` and `recents`;
-- the effects: `toast`, `link=<url>`, which opens the URL, and `end=<call>`, which ends a call of a staying script (04).
+- the effects: `toast`, `link=<url>`, which opens the URL, and `end=<call>`, which ends a call of a staying script (05).
 
-A second block with no kind is an error.
+A second block with no kind is skipped, and Openspot reports it.
 
 ## The main component
 
@@ -208,7 +204,7 @@ widget or the menu bar can show any script with a `read`, by its ID (H1). A scri
 printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'
 ```
 
-`tray=true` in the header shows the metric in the menu bar. It needs a number in its `read`. Printing nothing removes the item until the next read.
+`tray=true` in the header (01) shows it in the menu bar.
 
 ## Decisions
 
