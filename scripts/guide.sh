@@ -1,8 +1,8 @@
 #!/bin/sh
-# Joins the specs 00 to 09 into the one guide that the app bundles and that an AI reads. Edit the specs, then run this.
+# Joins the specs 00 to 99 into the one guide that the app bundles and that an AI reads, at the path given.
 set -e
+out=${1:?usage: guide.sh <output file>}
 cd "$(dirname "$0")/.."
-out=app/Shell/GUIDE.md
 first=1
 for spec in spec/[0-9][0-9]-*.md; do
   [ -n "$first" ] || printf '\n'

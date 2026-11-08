@@ -154,6 +154,8 @@ struct SpotSheetView: View {
         Group {
             if let call = entry.work {
                 SpotWorkMark(call: call, isOnSolid: showsFill)
+            } else if entry.showsHeaderPicture {
+                SpotItemIcon(icon: entry.command.icon, glyph: entry.command.glyph, symbol: nil, size: SpotTokens.glyphSize)
             } else {
                 Image(systemName: entry.symbol)
                     .font(.system(size: 17, weight: .semibold))

@@ -1,7 +1,7 @@
 import Foundation
 
 /// What a script prints, sorted by the first key of each block: `row`, `action`, `field`, `part`, `section`, or the
-/// effects `toast`, `open` and `end`. The first other block says how the spot itself looks. Each `run` value appears once.
+/// effects `toast` and `open`. The first other block says how the spot itself looks. Each `run` value appears once.
 public struct PluginOutput: Equatable, Sendable {
     public private(set) var summary: TextBlock?
     public private(set) var rows: [TextBlock] = []
@@ -17,8 +17,6 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var toast: String?
     /// The link of an `open` effect, such as the fix of a failure.
     public private(set) var open: String?
-    /// The ids of the calls of a staying script that this frame ends.
-    public private(set) var ends: [String] = []
 
     private static let reserved = "read"
     /// The app's own events. A part cannot take one, and an action can take only `open`, to change the pick.
@@ -45,7 +43,7 @@ public struct PluginOutput: Equatable, Sendable {
             } else if summary == nil, !block.fields.isEmpty {
                 summary = block
                 take(effects: block)
-            } else if kind == "toast" || kind == "open" || kind == "end" {
+            } else if kind == "toast" || kind == "open" {
                 take(effects: block)
             } else {
                 errors.append(block.firstLine)
@@ -89,7 +87,6 @@ public struct PluginOutput: Equatable, Sendable {
     private mutating func take(effects block: TextBlock) {
         toast = block.value("toast") ?? toast
         open = block.value("open") ?? open
-        if let end = block.value("end") { ends.append(end) }
     }
 
     /// Keeps an action. The `open` action sets the word for Enter, and whether a pick stays in the panel.

@@ -12,7 +12,7 @@ Code and tests name a rule by its ID.
 | A4 | Search text stays until the person presses Esc. |
 | A5 | Spots, Build, Settings, Updates and Quit ship with the app and answer the same calls, in Swift. |
 | A6 | One global key opens the panel, and the person chooses it. A script never holds a key (P8). |
-| A7 | The person arranges the grid in `config.toml`: order, `size`, `grid` and `enabled`. It wins over the plugin. A size is a preference, and the grid can change it to fill a row. |
+| A7 | The person arranges the grid in `config.toml`: order, `size`, `grid`, `enabled` and `global`, which takes a list out of the main search. It wins over the plugin. A size is a preference, and the grid can change it to fill a row. With no choice, the person's files come first, the newest first, then the core spots. |
 | A8 | The app opens the panel unseen once as it starts, so that each `panel` read runs. It waits at most 2 seconds, then shows a toast that names the key. |
 | A9 | A sheet with no answer yet holds its motion for at most 150 ms, so that it grows once, to its real size. |
 | A10 | A dragged `.spot` file shows in the search field, and a drop, a paste or a double-click opens the install screen from there. |
@@ -21,6 +21,35 @@ Code and tests name a rule by its ID.
 | A13 | Enter on a row of Spots turns that spot on or off, and keeps the panel open. |
 | A14 | A first launch has no config and no plugin, opens the panel on the grid once, and does not open at login. |
 | A15 | A toast takes no input, except a failure with a fix (R9). One fix key, which the person chooses, opens it, and only while the toast shows. |
+| A16 | The main search ranks the best match first. Then the most weight of picks, where each pick weighs 0.9 of the one after it, then the spots, then each list in the order of the grid. A list that the person never picked from shows at most 3 rows. |
+| M2 | A `panel` or `sheet` moment takes an answer younger than 5 seconds. A change, a number, `launch` and `wake` always read. |
+| M3 | Reads run at the same time. The panel never waits for one script. A spot shows its header until its answer arrives. |
+| C4 | Openspot waits for a pause before it sends a change of text or of a slider. Text that the person types stays as typed until they press something. |
+| K5 | Closing the panel closes a sheet of parts and drops its values. A sheet of rows stays open. |
+| L6 | A call that runs 1 second shows on its part, its action, its spot and the menu bar item, so the person can find and stop it. |
+| L7 | When a sheet opens, Openspot reads, then adds the last frame of each running call. |
+| L11 | A press within 1 second of the start of a call does nothing, so a double press does not stop it. |
+| G1 | A running call shows a ring from the `value` of its last frame, or a spinner with no `value`. |
+| G3 | The menu bar item shows the oldest running call and how many run. A click on it opens the panel with that spot selected. |
+| G4 | A frame's `title` and `detail` show on the spot only while its call runs. |
+| D2 | During a drag, only a card whose `drop` takes every dragged file shows it and takes the drop. |
+| D6 | A `drop` call runs as any other call does. |
+| D5 | A click on a card with `drop` and no sheet opens a file chooser, and the choice runs the same call. A drag over the menu bar item opens the panel with no change of focus, and a drop closes it. |
+| K2 | A capability's helper starts at its first call, and exits after 30 seconds with no call. The app does not track it. |
+
+## Sharing
+
+A spot travels as a `.spot` file: JSON with `"format": 1` and `files`, a list of `path`, `executable`, and `text` or
+`data` in base64. A script in a folder takes the whole folder, and a widget file takes each script that it places or
+opens. Hidden files and `$OPENSPOT_DATA` stay behind. A file of the same path replaces the old one, which goes to the
+Trash.
+
+| ID | Rule |
+|---|---|
+| P4 | Before a person installs a shared spot, Openspot shows all the text it can, says what runs by itself and names each file that it cannot show. Only a modified key installs it. |
+| P6 | A `.spot` file can carry a Swift script's `<name>.program`, compiled for both kinds of Mac, which runs in its place. The review says first that no one can read it. |
+| P7 | A `.spot` file has no signature. Openspot warns the sender about secrets, and does not look for them. |
+| P9 | A core spot needs no review, because it is signed with the app. |
 
 ## Decisions
 
@@ -32,5 +61,7 @@ Code and tests name a rule by its ID.
 | The panel follows the Mac's appearance. Light mode has near-white bubbles with a hairline edge, dark text and a dark turned-on card | Dark text on a strong white fill reads on any backdrop. A dark turned-on card stays apart from the selection ring. | A look that reacts to what lies behind the panel. An accent turned-on card, which hides the ring. |
 | A hidden card keeps its full strength, and Edit Spots marks it with `eye.slash` | A dim card looks disabled, and it is not. | Dimming the card at 40%. A card with no fill. |
 | A DMG window that shows where to drag, with no background image | The app and Applications side by side say all that a person needs. | An image with an arrow. |
+| A `.spot` file of JSON: a format number and its files | A chat takes a file of any size, any editor shows JSON, and each header already holds each fact. | Encoded text, a zip, a link. |
+| A shared file of the same path replaces the old one | A new name would break the IDs that a widget places. | A new name for each clash. |
 
 Each colour, strength and blur radius is in `Shell/Surface/SpotTheme.swift`.

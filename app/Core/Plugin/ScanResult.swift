@@ -20,7 +20,8 @@ public struct ScanResult: Equatable, Sendable {
 
     /// The commands with a card, in their grid order: a lower `order` first, and otherwise as the folder sorts them.
     public var commands: [Spot] {
-        plugins.flatMap(\.commands).filter(\.hasSpot).sorted { $0.order < $1.order }
+        plugins.flatMap(\.commands).filter(\.hasSpot).enumerated()
+            .sorted { ($0.element.order, $0.offset) < ($1.element.order, $1.offset) }.map(\.element)
     }
 
     /// Each script, with a card or not. A widget is not a script.
@@ -39,6 +40,12 @@ public struct ScanResult: Equatable, Sendable {
     }
 
     /// Leaves out each widget that names a script with no `read` or a command no plugin has, and reports why.
+    /// Takes each script that a widget opens off the grid.
+    mutating func keepOpenedOffTheGrid() {
+        let opened = Set(plugins.flatMap(\.commands).compactMap(\.opens))
+        plugins = plugins.map { Plugin(id: $0.id, commands: $0.commands.map { opened.contains($0.id) ? $0.offTheGrid() : $0 }) }
+    }
+
     mutating func removeWidgetsWithLostParts() {
         let metrics = Set(scripts.filter { $0.read != nil }.map(\.id))
         let commands = Set(commands.map(\.id))

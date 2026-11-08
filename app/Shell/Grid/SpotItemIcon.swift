@@ -1,12 +1,25 @@
 import OpenspotCore
 import SwiftUI
 
-/// The picture of an item: its image or the icon of its file, or else its glyph, or else its symbol, or else nothing.
+/// The picture of an item or a spot: its image or the icon of its file, or else its glyph, or else its symbol, or else nothing.
 struct SpotItemIcon: View {
-    let item: SpotItem
+    let icon: FileIcon?
+    let glyph: String?
+    let symbol: String?
     let size: CGFloat
 
     private static let glyphScale = 0.8
+
+    init(item: SpotItem, size: CGFloat) {
+        self.init(icon: item.icon, glyph: item.glyph, symbol: item.symbol, size: size)
+    }
+
+    init(icon: FileIcon?, glyph: String?, symbol: String?, size: CGFloat) {
+        self.icon = icon
+        self.glyph = glyph
+        self.symbol = symbol
+        self.size = size
+    }
 
     /// Draws ahead the colour emoji of these items at this size, so that their icons find them ready.
     static func prepare(_ items: ArraySlice<SpotItem>, size: CGFloat) {
@@ -14,16 +27,16 @@ struct SpotItemIcon: View {
     }
 
     var body: some View {
-        if let icon = item.icon {
+        if let icon {
             SpotFileIconView(icon: icon, size: size)
-        } else if let glyph = item.glyph, let picture = SpotGlyphPicture.image(glyph, side: size, fontSize: size * Self.glyphScale) {
+        } else if let glyph, let picture = SpotGlyphPicture.image(glyph, side: size, fontSize: size * Self.glyphScale) {
             Image(decorative: picture, scale: SpotGlyphPicture.scale)
                 .frame(width: size, height: size)
-        } else if let glyph = item.glyph {
+        } else if let glyph {
             Text(glyph)
                 .font(.system(size: size * Self.glyphScale))
                 .frame(width: size, height: size)
-        } else if let symbol = item.symbol {
+        } else if let symbol {
             Image(systemName: symbol)
                 .font(.system(size: size * 0.7, weight: .medium))
                 .foregroundStyle(SpotTheme.ink)

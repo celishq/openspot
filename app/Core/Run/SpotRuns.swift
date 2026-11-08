@@ -47,7 +47,6 @@ public final class SpotRuns {
     nonisolated deinit {}
 
     /// Takes a new look at the plugin folder. Each script keeps its sheet, and a sheet whose script is gone stops its reads.
-    /// A staying script that something wants starts.
     public func take(_ scan: ScanResult) {
         let scripts = scan.scripts
         placed = Set(scan.commands.flatMap(\.places))
@@ -57,7 +56,7 @@ public final class SpotRuns {
             sheet.close()
             sheet.stopReads()
         }
-        scripts.forEach { sheet(for: $0).scanned() }
+        scripts.forEach { _ = sheet(for: $0) }
         updateClock()
     }
 
@@ -99,7 +98,6 @@ public final class SpotRuns {
     }
 
     /// A moment arrived: reads each script whose `read` lists it, all at the same time. Only `panel` can use a young answer.
-    /// A staying script that something wants and that ended starts again.
     public func arrive(_ moment: SpotRead.Moment) {
         let reason: ReadReason = switch moment {
         case .launch: .launch
@@ -110,7 +108,6 @@ public final class SpotRuns {
         for sheet in sheets.values where sheet.command.read?.has(moment) == true {
             sheet.read(need: moment == .panel ? .moment : .clock, reason: reason)
         }
-        sheets.values.forEach { $0.settleLive() }
     }
 
     /// Reads each wanted script whose number of seconds has passed.
@@ -130,7 +127,7 @@ public final class SpotRuns {
         clock = nil
         let live = processes.filter(\.needsFinish)
         sheets.values.forEach { $0.prepareToQuit() }
-        live.forEach { $0.leave() }
+        live.forEach { $0.stop() }
         let deadline = Date().addingTimeInterval(stopPause)
         live.forEach { $0.finish(by: deadline) }
     }
@@ -173,13 +170,6 @@ public final class SpotRuns {
     /// Runs one call with no sheet, and returns all that it prints. A `read` runs until it gives its first frame, which is what
     /// a sheet takes as its answer.
     public func answer(of command: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil) async throws -> String {
-        if command.stays, action == .read {
-            let (script, frames) = try stay(command, limit: limit)
-            defer { script.end() }
-            script.send(.read)
-            for try await frame in frames { return frame }
-            return ""
-        }
         let (stream, halt) = frames(of: command, action, input: input, limit: limit)
         if action == .read {
             defer { halt() }
@@ -227,34 +217,12 @@ public final class SpotRuns {
         return call
     }
 
-    /// Starts a script that stays, and returns it with its frames.
-    func stay(_ command: Spot, limit: TimeInterval?) throws -> (ScriptProcess, AsyncThrowingStream<String, Error>) {
-        let script = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, mode: .stays, limit: limit, stopPause: stopPause, dataName: command.dataName)
-        let frames = try script.start()
-        keep(script)
-        return (script, frames)
-    }
-
     private func frames(of command: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String] = [:]) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void) {
         if let shipped = command.keyList.flatMap({ $0.answers(action.arguments) ? ShippedSpot.settings($0) : nil }) ?? command.shipped {
             return answered { try await shipped.answer(action.arguments, input: input) }
         }
-        if command.isMcp {
-            let process = ScriptProcess(url: command.url, mode: .stays, stopPause: stopPause, dataName: command.dataName, lines: true)
-            do {
-                let lines = try process.start()
-                keep(process)
-                let (stream, halt) = answered { try await McpSpot(process: process, lines: lines).answer(action.arguments, input: input) }
-                return (stream, {
-                    process.stop()
-                    halt()
-                })
-            } catch {
-                return (AsyncThrowingStream { $0.finish(throwing: error) }, {})
-            }
-        }
         let sent = action.sent(input: input)
-        let process = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: command.dataName, variables: variables)
+        let process = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, arguments: sent.arguments, input: sent.input, limit: limit, stopPause: stopPause, dataName: command.dataName, variables: variables)
         do {
             let stream = try process.start()
             keep(process)

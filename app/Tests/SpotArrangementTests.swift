@@ -54,10 +54,15 @@ final class SpotArrangementTests: XCTestCase {
         [[spots]]
         id = "files"
         grid = false
+        global = false
         """)
 
         XCTAssertEqual(config.faults, [])
-        XCTAssertEqual(config.arrangement.choices, [choice("apps", size: .small), choice("files", isOnGrid: false)])
+        XCTAssertEqual(config.arrangement.choices, [
+            choice("apps", size: .small),
+            SpotArrangement.Choice(id: "files", isOnGrid: false, isGlobal: false)
+        ])
+        XCTAssertEqual(config.arrangement.isGlobal(of: "files"), false)
     }
 
     func testTheConfigReportsWhatItCannotUseAndKeepsTheRest() {

@@ -172,32 +172,6 @@ final class ShellHelperTests: XCTestCase {
         }
     }
 
-    func testAStayingScriptIsNotBlockedAndKeepsItsCallsOnStdin() async throws {
-        let url = try script("""
-        printf 'a=%s|%s\\n---\\n' "$(esc 'b\\c')" "$(value a)"
-        while IFS= read -r line; do
-          [ -z "$line" ] || printf 'got=%s\\n---\\n' "$line"
-        done
-        """)
-        let live = ScriptProcess(url: url, mode: .stays, limit: 3)
-        defer { live.end() }
-        var frames = try live.start().makeAsyncIterator()
-
-        let first = try await frames.next()
-        live.send(.press("go"))
-        let second = try await frames.next()
-
-        XCTAssertEqual(first, "a=b\\\\c|\n")
-        XCTAssertEqual(second, "got=name=go\n")
-    }
-
-    func testAStayingRunSaysSoAndAnyOtherRunDoesNot() {
-        let base = ["HOME": folder.path, "OPENSPOT_STAYS": "true"]
-
-        XCTAssertEqual(ScriptProcess.environment(base: base, app: "", stays: true)["OPENSPOT_STAYS"], "true")
-        XCTAssertNil(ScriptProcess.environment(base: base, app: "")["OPENSPOT_STAYS"])
-    }
-
     func testTheFileInTheBundleOfTheAppComesFirst() throws {
         let contents = folder.appendingPathComponent("Openspot.app/Contents")
         let resources = contents.appendingPathComponent("Resources")

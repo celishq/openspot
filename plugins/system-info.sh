@@ -2,7 +2,6 @@
 # name=System details
 # symbol=gauge.with.dots.needle.50percent
 # read=panel
-# grid=false
 here=$(dirname "$0")
 
 # Prints what a metric script in this folder reads as the value and the mark of a line.

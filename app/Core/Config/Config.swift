@@ -64,7 +64,8 @@ public struct Config: Equatable, Sendable {
         }
         if case .boolean(let isOnGrid)? = table["grid"] { choice.isOnGrid = isOnGrid }
         if case .boolean(let isEnabled)? = table["enabled"] { choice.isEnabled = isEnabled }
-        for key in table.keys.sorted() where !["id", "size", "grid", "enabled"].contains(key) {
+        if case .boolean(let isGlobal)? = table["global"] { choice.isGlobal = isGlobal }
+        for key in table.keys.sorted() where !["id", "size", "grid", "enabled", "global"].contains(key) {
             faults.append("config.toml: \(key) is not a setting of a spot.")
         }
         return choice

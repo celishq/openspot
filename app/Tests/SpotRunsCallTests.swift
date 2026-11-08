@@ -80,7 +80,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAReadStopsWhenThePanelThatWantedItCloses() async throws {
-        try script(header: "read=panel\nrank=1", "printf 'row=A\\nrun=a\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
+        try script(header: "read=panel\nglobal=true", "printf 'row=A\\nrun=a\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the first frame") { sheet.list.shown.count == 1 }
@@ -93,7 +93,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testClosingASheetLeavesAReadThatThePanelWants() async throws {
-        try script(header: "read=panel\nrank=1", "sleep 0.2\nprintf 'row=A\\nrun=a\\n'")
+        try script(header: "read=panel\nglobal=true", "sleep 0.2\nprintf 'row=A\\nrun=a\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}

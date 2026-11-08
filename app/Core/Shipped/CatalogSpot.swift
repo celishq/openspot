@@ -79,6 +79,7 @@ public struct CatalogSpot: Equatable, Sendable {
         let spots = choices.map { command in
             let id = PluginFolder.coreID(of: command)
             var fields: [TextBlock.Field] = [.init(key: "row", value: command.name), .init(key: "run", value: id), .init(key: "symbol", value: command.symbol)]
+            fields += [("image", command.image), ("file", command.file), ("glyph", command.glyph)].compactMap { key, value in value.map { .init(key: key, value: $0) } }
             let detail = own.contains(id) ? "In your plugins folder" : command.subtitle
             if let detail { fields.append(.init(key: "detail", value: detail)) }
             fields.append(.init(key: "on", value: String(own.contains(id) || enabled.contains(id))))

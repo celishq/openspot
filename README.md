@@ -4,7 +4,7 @@
   <p><strong>Minimal, native macOS launcher that your agent extends.</strong><br>Each tool is one file that you can send to a friend.</p>
   <p>
     <a href="https://github.com/celishq/openspot/releases/latest">Download</a> ·
-    <a href="app/Shell/GUIDE.md">Make a tool</a> ·
+    <a href="spec/README.md">Make a tool</a> ·
     <a href="CONTRIBUTING.md">Contribute</a>
   </p>
   <sub>Requires macOS 26 or later.</sub>
@@ -38,7 +38,7 @@ Openspot gives each tool the same clean look and the power of your Mac. Your too
 **Ask your agent.** Paste this into your coding agent, and change the last line:
 
 ```text
-Read https://raw.githubusercontent.com/celishq/openspot/main/app/Shell/GUIDE.md.
+Read https://raw.githubusercontent.com/celishq/openspot/main/spec/README.md and each spec it links.
 Then make an Openspot tool in ~/.config/openspot/plugins that shows the weather here.
 ```
 
@@ -56,6 +56,32 @@ echo "toast=Hello"
 **Add one you got.** Double-click the `.spot` file, read what it runs and press ⌘⏎.
 
 The [`plugins`](plugins) folder has more tools to copy, such as battery, windows and a color picker.
+
+## Widgets and keys
+
+A widget shows the live values of several tools on one card. Write it in a `.toml` file in the plugins folder:
+
+```toml
+[[widgets]]
+name = "Morning"
+layout = "hero"
+places = ["agents", "battery", "cpu", "disk"]
+opens = "links"
+```
+
+`places` names one tool for each cell, by its file name with no extension. The layouts are `single`, `hero`, `pair` and
+`row`. A widget can also draw its own layout, such as `grid = ["a a b b", "a a c c"]` with
+`places = { a = "agents", b = "battery", c = "cpu" }`. `opens` names the tool that a click opens, and that tool has no card of its own.
+
+Settings gives a key to each command that a tool lists. It writes the key to `~/.config/openspot/config.toml`, and you can
+write it there by hand too:
+
+```text
+[[keys]]
+spot = "music"
+command = "pause"
+key = "ctrl+option+p"
+```
 
 ## License
 

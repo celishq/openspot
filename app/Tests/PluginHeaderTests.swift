@@ -2,9 +2,9 @@ import XCTest
 @testable import OpenspotCore
 
 final class PluginHeaderTests: XCTestCase {
-    func testAHeaderKeepsASpotOffTheGridAndInTheScan() throws {
+    func testAScriptWithCommandsHasNoCardOnTheGridAndStaysInTheScan() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-grid-\(UUID().uuidString)")
-        try Data("#!/bin/sh\n# grid=false\n".utf8).write(to: url)
+        try Data("#!/bin/sh\n# command=left:Left side\n".utf8).write(to: url)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
         defer { try? FileManager.default.removeItem(at: url) }
 

@@ -110,10 +110,6 @@ public enum PartCatalog {
     the spot only while the call runs. To outlive the app, start the work with `nohup` and then exit. A stopped call changes nothing. Closing the panel \
     closes a sheet of parts and drops its values.
 
-    A script with `# stay=true` in its header runs while something wants it, so a model or a connection stays loaded between \
-    calls: its open sheet, the menu bar, or `launch` in its `read`. It gets one block on its standard input for each call, with a blank line after it: `name`, `value`, and one \
-    `field.<id>` for each value of the sheet. It keeps its own state, and answers with frames. It must end when its input ends.
-
     """
 
     private static let rules = """

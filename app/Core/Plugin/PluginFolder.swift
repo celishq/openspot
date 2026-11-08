@@ -60,13 +60,14 @@ public struct PluginFolder: Sendable {
                 let stem = file.deletingPathExtension().lastPathComponent
                 let id = isFolder.boolValue ? "\(entry.lastPathComponent)/\(stem)" : stem
                 ownIDs.insert(id)
-                Self.read(file, id: id, into: &result, taken: &taken)
+                Self.read(file, id: id, into: &result, taken: &taken, isDated: true)
             }
         }
         for (file, id) in wantedCoreFiles(after: result, hiding: ownIDs) {
             Self.read(file, id: id, into: &result, taken: &taken)
         }
         result.removeWidgetsWithLostParts()
+        result.keepOpenedOffTheGrid()
         if let settings = shipped.lazy.compactMap({ if case .settings(let settings)? = $0.shipped { settings } else { nil } }).first {
             result.listKeys(with: settings)
         }
@@ -78,7 +79,7 @@ public struct PluginFolder: Sendable {
     public func coreChoices() -> [Spot] {
         let commands = ScanResult(plugins: coreFiles().compactMap { try? Plugin(file: $0.file, id: $0.id) }, refused: []).commands
         let opened = Set(commands.compactMap(\.opens))
-        return commands.filter { $0.isOnGrid || !opened.contains($0.id) }
+        return commands.filter { !opened.contains($0.id) }
     }
 
     /// The ID that turns a core command on: the name of its file, which a widget shares with the others in that file.
@@ -110,11 +111,14 @@ public struct PluginFolder: Sendable {
         if let program = SwiftProgram.file(beside: command.url) { try discard(program) }
     }
 
-    /// Adds what one file gives, and reports a fault or a key that is taken.
-    private static func read(_ file: URL, id: String, into result: inout ScanResult, taken: inout Set<String>) {
+    /// Adds what one file gives, and reports a fault or a key that is taken. A dated file takes its place in the grid by the
+    /// date it was added.
+    private static func read(_ file: URL, id: String, into result: inout ScanResult, taken: inout Set<String>, isDated: Bool = false) {
         do {
             guard let plugin = try Plugin(file: file, id: id) else { return }
+            let added = isDated ? (try? file.resourceValues(forKeys: [.creationDateKey]).creationDate) : nil
             let commands = plugin.commands.map { command -> Spot in
+                let command = added.map(command.added(at:)) ?? command
                 guard let key = command.key, !taken.insert(key.name).inserted else { return command }
                 result.refused.append(ScanResult.Refusal(file: id, reason: "\(command.name) cannot use key \(key.name), because another command has it"))
                 return command.withoutKey()

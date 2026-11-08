@@ -147,6 +147,24 @@ final class SearchQueryTests: XCTestCase {
         XCTAssertEqual(found("s", in: [list(["Site"]), list(["Safari"], recent: ["Safari"])]), ["Safari", "Site"])
     }
 
+    func testMorePicksWinAcrossListsAndEachPickBeatsAnEarlierList() {
+        let lists = [list(["Site", "Sun"], recent: ["Sun"]), list(["Safari"], recent: ["Safari", "Safari"])]
+
+        XCTAssertEqual(found("s", in: lists), ["Safari", "Sun", "Site"])
+    }
+
+    func testALatePickOutweighsManyOldOnes() {
+        let recent = ["Slack"] + Array(repeating: "Mess", count: 29) + Array(repeating: "Safari", count: 5)
+
+        XCTAssertEqual(titles("s", in: ["Safari", "Slack"], recent: recent), ["Slack", "Safari"])
+    }
+
+    func testAListAfterTheFirstWithNoPickGivesAtMostItsLimit() {
+        let lists = [list(["Spot", "Star", "Stop"]), list(["Sa", "Sb", "Sc"]), list(["Sd", "Se", "Sf"], recent: ["Sf"])]
+
+        XCTAssertEqual(SearchQuery(text: "s").matching(in: lists, unpickedLimit: 2).map(\.item.title), ["Sf", "Spot", "Star", "Stop", "Sa", "Sb", "Sd", "Se"])
+    }
+
     func testRecentPicksKeepTheirOrderWithinAList() {
         XCTAssertEqual(found("s", in: [list(["Safari", "Slack"], recent: ["Slack", "Safari"])]), ["Slack", "Safari"])
     }

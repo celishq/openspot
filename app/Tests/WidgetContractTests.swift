@@ -167,14 +167,15 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(try scan.metrics.filter(\.isTray).map(\.id), ["power"])
     }
 
-    func testOnlyAMetricOrAStayingScriptCanShowInTheMenuBar() throws {
+    func testOnlyAMetricCanShowInTheMenuBar() throws {
         try script("one.sh", "#!/bin/sh\n# tray=true\n")
         try script("two.sh", "#!/bin/sh\n# read=panel\n# tray=true\n")
         try script("three.sh", "#!/bin/sh\n# stay=true\n# tray=true\n")
 
         XCTAssertEqual(try scan.refused, [
-            ScanResult.Refusal(file: "one", reason: "One needs a number in its read, or stay=true, to show in the menu bar"),
-            ScanResult.Refusal(file: "two", reason: "Two needs a number in its read, or stay=true, to show in the menu bar")
+            ScanResult.Refusal(file: "one", reason: "One needs a number in its read to show in the menu bar"),
+            ScanResult.Refusal(file: "three", reason: "Three needs a number in its read to show in the menu bar"),
+            ScanResult.Refusal(file: "two", reason: "Two needs a number in its read to show in the menu bar")
         ])
     }
 
@@ -246,10 +247,10 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testALostKeyKeepsTheRestOfTheCommand() throws {
-        try script("one.sh", "#!/bin/sh\n# key=x\n# read=panel\n# rank=1\n")
-        try script("two.sh", "#!/bin/sh\n# key=x\n# read=panel\n# rank=2\n")
+        try script("one.sh", "#!/bin/sh\n# key=x\n# read=panel\n# global=true\n")
+        try script("two.sh", "#!/bin/sh\n# key=x\n# read=panel\n# global=true\n")
 
-        XCTAssertEqual(try scan.commands.map(\.rank), [1, 2])
+        XCTAssertEqual(try scan.commands.map(\.isGlobal), [true, true])
     }
 
     func testEveryLayoutFillsItsSizeWithNoOverlap() {

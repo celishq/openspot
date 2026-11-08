@@ -3,7 +3,7 @@
 # subtitle=Open a link
 # key=l
 # read=panel
-# rank=1
+# global=true
 export LC_ALL=en_US.UTF-8
 data="$OPENSPOT_DATA/links.json"
 icons="$OPENSPOT_DATA/icons"

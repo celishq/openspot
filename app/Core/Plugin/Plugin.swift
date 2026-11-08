@@ -36,31 +36,21 @@ public struct Plugin: Equatable, Sendable {
             }
             read = parsed
         }
-        let isMcp = header.flag("mcp") ?? false
-        if isMcp, read == nil { read = .sheet }
         let isTray = header.flag("tray") ?? false
-        let stays = header.flag("stay") ?? false
         let hasKey = header.value("key") != nil
-        if read?.seconds == nil, isTray, !stays {
-            throw PluginError.fault("\(name) needs a number in its read, or stay=true, to show in the menu bar")
+        if read?.seconds == nil, isTray {
+            throw PluginError.fault("\(name) needs a number in its read to show in the menu bar")
         }
         let sizeName = header.value("size") ?? "wide"
         guard let size = SpotSize(name: sizeName) else { throw PluginError.fault("\(name) has an unknown size: \(sizeName)") }
-        var rank = Spot.lastRank
-        if let text = header.value("rank") {
-            guard let number = Int(text) else { throw PluginError.fault("\(name) needs a number as its rank") }
+        let isGlobal = header.flag("global") ?? false
+        if isGlobal {
             guard read?.has(.panel) == true || read?.has(.launch) == true || read?.seconds != nil else {
                 throw PluginError.fault("\(name) needs panel, launch or a number in its read to join the main search")
             }
             guard read?.seconds == nil || hasKey else {
                 throw PluginError.fault("\(name) needs a key to join the main search, because a number in its read and no key gives it no spot")
             }
-            rank = number
-        }
-        var order = 0
-        if let text = header.value("order") {
-            guard let number = Int(text) else { throw PluginError.fault("\(name) needs a number as its order") }
-            order = number
         }
         let offers = try header.values("command").map { text in
             guard let offer = CommandOffer(text: text) else {
@@ -72,25 +62,30 @@ public struct Plugin: Equatable, Sendable {
             id: id,
             name: name,
             url: url,
-            kind: stays || rank != Spot.lastRank || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch,
+            kind: isGlobal || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch,
             size: size,
             symbol: symbol ?? "app",
             subtitle: header.value("subtitle"),
             key: try Self.key(header.value("key"), of: name),
             read: read,
-            rank: rank,
-            order: order,
-            stays: stays,
-            isMcp: isMcp,
+            isGlobal: isGlobal,
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             isTray: isTray,
             dataName: header.value("data") ?? id.split(separator: "/").first.map(String.init),
             hasSpot: read?.seconds == nil || hasKey,
-            isOnGrid: header.flag("grid") ?? true,
+            isOnGrid: offers.isEmpty,
             headerSymbol: symbol,
-            offers: offers
+            offers: offers,
+            file: header.value("file").map { Self.path($0, beside: url) },
+            image: header.value("image").map { Self.path($0, beside: url) },
+            glyph: header.value("glyph")
         )
         self.init(id: id, commands: [command])
+    }
+
+    /// A path that the header names: a full path stays, and any other starts at the folder of the script.
+    private static func path(_ text: String, beside url: URL) -> String {
+        text.hasPrefix("/") ? text : url.deletingLastPathComponent().appendingPathComponent(text).path
     }
 
     /// The name a file gives when it has no `name` line: its words with a capital first letter.

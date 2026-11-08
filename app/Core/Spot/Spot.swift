@@ -2,7 +2,6 @@ import Foundation
 
 /// One executable of a plugin, with the look its spot takes. A widget runs nothing, and places scripts in a layout.
 public struct Spot: Equatable, Sendable {
-    public static let lastRank = Int.max
     private static let folderWord = "folder"
     private static let anyWord = "*"
 
@@ -16,8 +15,10 @@ public struct Spot: Equatable, Sendable {
     public private(set) var key: CommandKey?
     public private(set) var read: SpotRead?
     public private(set) var pick: ItemPick
-    public let rank: Int
-    public let order: Int
+    /// Whether its rows join the main search.
+    public let isGlobal: Bool
+    /// Its place in the grid before the person's choice: a lower number first. The person's newest file comes first.
+    public private(set) var order: Int
     public private(set) var keepsRecent = true
     public private(set) var primary: String?
     public private(set) var actions: [CommandAction]
@@ -25,10 +26,6 @@ public struct Spot: Equatable, Sendable {
     public let places: [String]
     public let opens: String?
     public let shipped: ShippedSpot?
-    /// Whether the script stays running and takes calls on its standard input.
-    public let stays: Bool
-    /// Whether the file is an MCP server on stdio, whose calls the app answers in Swift (F10).
-    public let isMcp: Bool
     /// The file extensions that its card takes, with `folder` and `*`.
     public let drop: [String]
     /// Whether the menu bar shows it.
@@ -37,10 +34,16 @@ public struct Spot: Equatable, Sendable {
     public let dataName: String?
     /// Whether it has a card. A script with a number in its `read` and no `key` has none (F7).
     public let hasSpot: Bool
-    /// Whether the grid shows its card until a frame says otherwise (F9).
-    public let isOnGrid: Bool
+    /// Whether the grid shows its card. A script with commands, or one that a widget opens, has no card on the grid.
+    public private(set) var isOnGrid: Bool
     /// The `symbol` its header names, if any.
     public let headerSymbol: String?
+    /// The file whose icon its header names, as a full path.
+    public let file: String?
+    /// The image its header names, as a full path.
+    public let image: String?
+    /// The short text, such as an emoji, that its header names as its picture.
+    public let glyph: String?
     /// The commands its header lists, which a person can give keys.
     public let offers: [CommandOffer]
     /// The Settings rows of its own commands, which its sheet shows. Nil for a spot that draws its own sheet.
@@ -57,7 +60,7 @@ public struct Spot: Equatable, Sendable {
         key: CommandKey? = nil,
         read: SpotRead? = nil,
         pick: ItemPick = .close,
-        rank: Int = Spot.lastRank,
+        isGlobal: Bool = false,
         order: Int = 0,
         primary: String? = nil,
         actions: [CommandAction] = [],
@@ -65,15 +68,16 @@ public struct Spot: Equatable, Sendable {
         places: [String] = [],
         opens: String? = nil,
         shipped: ShippedSpot? = nil,
-        stays: Bool = false,
-        isMcp: Bool = false,
         drop: [String] = [],
         isTray: Bool = false,
         dataName: String? = nil,
         hasSpot: Bool = true,
         isOnGrid: Bool = true,
         headerSymbol: String? = nil,
-        offers: [CommandOffer] = []
+        offers: [CommandOffer] = [],
+        file: String? = nil,
+        image: String? = nil,
+        glyph: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -85,7 +89,7 @@ public struct Spot: Equatable, Sendable {
         self.key = key
         self.read = read
         self.pick = pick
-        self.rank = rank
+        self.isGlobal = isGlobal
         self.order = order
         self.primary = primary
         self.actions = actions
@@ -93,8 +97,6 @@ public struct Spot: Equatable, Sendable {
         self.places = places
         self.opens = opens
         self.shipped = shipped
-        self.stays = stays
-        self.isMcp = isMcp
         self.drop = drop
         self.isTray = isTray
         self.dataName = dataName
@@ -102,6 +104,14 @@ public struct Spot: Equatable, Sendable {
         self.isOnGrid = isOnGrid
         self.headerSymbol = headerSymbol
         self.offers = offers
+        self.file = file
+        self.image = image
+        self.glyph = glyph
+    }
+
+    /// The picture its header names in place of its symbol: its image, or else the icon of its file.
+    public var icon: FileIcon? {
+        image.map(FileIcon.image) ?? file.map(FileIcon.init(path:))
     }
 
     /// The sizes a person can prefer for its card. A widget has the size of its layout, and Updates needs room for its words.
@@ -121,15 +131,24 @@ public struct Spot: Equatable, Sendable {
         return spot
     }
 
+    /// The same spot, placed in the grid by the date its file was added: the newest first.
+    func added(at date: Date) -> Spot {
+        var spot = self
+        spot.order = -Int(date.timeIntervalSince1970)
+        return spot
+    }
+
+    /// The same spot, off the grid.
+    func offTheGrid() -> Spot {
+        var spot = self
+        spot.isOnGrid = false
+        return spot
+    }
+
     /// Whether its sheet changes the keys in the config file.
     public var setsKeys: Bool {
         if case .settings? = shipped { return true }
         return keyList != nil
-    }
-
-    /// Whether its rows join the main search.
-    public var isGlobal: Bool {
-        rank != Self.lastRank
     }
 
     /// The state the header gives, shown before the command answers or when it cannot.
@@ -139,7 +158,7 @@ public struct Spot: Equatable, Sendable {
 
     /// Whether the panel asks the command how it looks each time it opens.
     public var readsState: Bool {
-        read?.has(.panel) == true && !isGlobal && !stays
+        read?.has(.panel) == true && !isGlobal
     }
 
     /// The call that a click on its card makes: `run`, or no argument for a file with no `read`.
@@ -196,7 +215,9 @@ public struct Spot: Equatable, Sendable {
     public func state(of output: PluginOutput) throws -> SpotState {
         guard readsState else { return headerState }
         guard output.summary != nil || output.errors.isEmpty else { throw PluginError.badState }
-        return SpotState(block: output.summary, header: headerState)
+        let state = SpotState(block: output.summary, header: headerState)
+        guard shipped != nil, let isOnGrid = output.summary?.flag("grid") else { return state }
+        return state.onGrid(isOnGrid)
     }
 
     /// The actions that fit: those an item does not hide, and only the command's own with no item.

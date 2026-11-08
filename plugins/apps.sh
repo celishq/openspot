@@ -3,7 +3,7 @@
 # subtitle=Open app
 # key=a
 # read=panel
-# rank=2
+# global=true
 case "$1" in
   read)
     printf 'action=reveal\ntitle=Show in Finder\nkey=cmd+return\nclose=true\n\n'

@@ -78,24 +78,6 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertNil(runs.workSpot)
     }
 
-    func testACallToAStayingScriptNeverShowsAsWorkAndItsFrameDoesNotMakeItShow() async throws {
-        try staying(frame: "title=42%%\\nvalue=0.42\\n")
-        let sheet = try sheet()
-        sheet.open {}
-        try await wait("the frame") { self.blocks() == ["name=read"] && sheet.lastFrame != nil }
-        let before = sheet.state
-
-        sheet.pick(SpotItem(title: "A", run: "a"))
-        try await wait("the call") { self.blocks() == ["name=read", "name=open\nvalue=a"] }
-        time += 5
-
-        XCTAssertTrue(sheet.calls.isEmpty)
-        XCTAssertTrue(sheet.work.isEmpty)
-        XCTAssertNil(runs.workMark)
-        XCTAssertNil(runs.workSpot)
-        XCTAssertEqual(sheet.shownState, before)
-    }
-
     func testWorkShowsByItselfOnceItsSecondHasPassed() async throws {
         let live = SpotRuns()
         defer { live.quit() }
@@ -476,24 +458,5 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try await pause()
 
         XCTAssertEqual(log(), ["read"])
-    }
-
-    func testAQuitChangesNothingOnAStayingScriptThatFailsAsItEnds() async throws {
-        try script(header: "stay=true\nread=launch", """
-        while IFS= read -r line; do
-          [ -n "$line" ] || printf 'title=A\\n---\\n'
-        done
-        exit 3
-        """)
-        let (sheet, told) = try toldSheet()
-        runs.arrive(.launch)
-        try await wait("the value") { sheet.reading.value?.title == "A" }
-
-        runs.quit()
-        try await pause()
-
-        XCTAssertEqual(told(), [])
-        XCTAssertFalse(sheet.reading.isStale)
-        XCTAssertEqual(log().count, 1)
     }
 }

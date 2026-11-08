@@ -18,12 +18,12 @@ final class SpotRunTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func make(name: String = "script", _ body: String, stays: Bool = false, read: SpotRead? = nil) throws -> SpotRun {
+    private func make(name: String = "script", _ body: String, read: SpotRead? = nil) throws -> SpotRun {
         let url = folder.appendingPathComponent("\(name).sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
         let made = SpotRuns()
         runs.append(made)
-        return made.sheet(for: Spot(id: name, name: name, url: url, kind: .list, read: read ?? (stays ? nil : .sheet), stays: stays))
+        return made.sheet(for: Spot(id: name, name: name, url: url, kind: .list, read: read ?? .sheet))
     }
 
     private func path(_ name: String) -> String {
@@ -226,91 +226,6 @@ final class SpotRunTests: XCTestCase {
         sheet.open {}
 
         try await wait("the toast") { toasts == ["Later"] }
-    }
-
-    private static let counter = """
-    count=0
-    trap 'touch "%@"' EXIT
-    while IFS= read -r line; do
-      case "$line" in
-        name=a) count=$((count + 1)) ;;
-        '') printf 'part=a\\ntitle=%%s\\npress=true\\n---\\n' "$count" ;;
-      esac
-    done
-    """
-
-    func testAStayingSheetOpensWithItsFirstFrame() async throws {
-        let sheet = try make("sleep 0.2\n" + String(format: Self.counter, path("ended")), stays: true)
-        var isReady = false
-
-        sheet.open { isReady = true }
-        XCTAssertFalse(isReady)
-
-        try await wait("the first frame") { isReady }
-        XCTAssertEqual(sheet.panel?.parts.first?.title, "0")
-    }
-
-    func testAStayingScriptDoesNotStartBeforeItsSheetOpens() async throws {
-        let sheet = try make("touch '\(path("started"))'", stays: true, read: .panel)
-
-        sheet.read()
-        try await Task.sleep(for: .milliseconds(150))
-
-        XCTAssertFalse(exists("started"))
-    }
-
-    func testClosingEndsAStayingScriptAndTheNextOpenStartsAfresh() async throws {
-        let sheet = try make(String(format: Self.counter, path("ended")), stays: true)
-        sheet.open {}
-        try await wait("the first frame") { sheet.panel != nil }
-        let part = try XCTUnwrap(sheet.panel?.parts.first)
-        sheet.press(part)
-        try await wait("the count") { sheet.panel?.parts.first?.title == "1" }
-
-        sheet.close()
-        try await wait("the end of the script") { exists("ended") }
-
-        var isReady = false
-        sheet.open { isReady = true }
-        try await wait("the new run") { isReady }
-        XCTAssertEqual(sheet.panel?.parts.first?.title, "0")
-        sheet.close()
-    }
-
-    func testAPressJustBeforeClosingStillReachesAStayingScript() async throws {
-        let sheet = try make("""
-        while IFS= read -r line; do
-          case "$line" in
-            name=copy) sleep 0.2; touch '\(path("copied"))' ;;
-            '') printf 'part=copy\\ntitle=Copy\\npress=true\\n---\\n' ;;
-          esac
-        done
-        """, stays: true)
-        sheet.open {}
-        try await wait("the first frame") { sheet.panel != nil }
-
-        sheet.press(try XCTUnwrap(sheet.panel?.parts.first))
-        sheet.close()
-
-        try await wait("the copy") { exists("copied") }
-    }
-
-    func testAStayingScriptGetsEachValueOfTheSheetInItsBlock() async throws {
-        let sheet = try make("""
-        while IFS= read -r line; do
-          case "$line" in
-            field.input=*) seen=${line#field.input=} ;;
-            '') printf 'part=input\\ntext=x\\n\\npart=seen\\ntitle=%s\\n---\\n' "$seen" ;;
-          esac
-        done
-        """, stays: true)
-        sheet.open {}
-        try await wait("the first frame") { sheet.panel != nil }
-
-        sheet.press(try XCTUnwrap(sheet.panel?.parts.first))
-
-        try await wait("the value") { sheet.panel?.parts.last?.title == "x" }
-        sheet.close()
     }
 
     func testAScriptThatSearchesGetsReadWithTheText() async throws {

@@ -131,7 +131,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testAPanelOpenAndASheetOpenWithinFiveSecondsRunOnce() async throws {
-        try script(header: "read=panel\nrank=1", "printf 'row=A\\nrun=a\\n'")
+        try script(header: "read=panel\nglobal=true", "printf 'row=A\\nrun=a\\n'")
         let sheet = try sheet()
 
         runs.panelOpened()
@@ -280,8 +280,8 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testOneSlowScriptDoesNotDelayAnother() async throws {
-        try script("slow", header: "read=panel\nrank=1", "\(untilRelease)\nprintf 'row=S\\nrun=s\\n'")
-        try script("fast", header: "read=panel\nrank=2", "printf 'row=F\\nrun=f\\n'")
+        try script("slow", header: "read=panel\nglobal=true", "\(untilRelease)\nprintf 'row=S\\nrun=s\\n'")
+        try script("fast", header: "read=panel\nglobal=true", "printf 'row=F\\nrun=f\\n'")
         _ = try scanned()
 
         runs.panelOpened()

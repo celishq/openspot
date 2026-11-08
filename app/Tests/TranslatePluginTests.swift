@@ -26,7 +26,6 @@ final class TranslatePluginTests: SamplePluginsCase {
 
             let output = try await translate.items(timeout: 10)
 
-            XCTAssertFalse(translate.stays)
             XCTAssertEqual(translate.read, .sheet)
             XCTAssertEqual(translate.kind, .list)
             XCTAssertEqual(output.kind, .list)
