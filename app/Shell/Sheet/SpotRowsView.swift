@@ -6,6 +6,8 @@ struct SpotRowsView: View {
     let list: ItemList
     var recording: String?
     let onRun: (SpotItem) -> Void
+    /// Reads the selected row where it is called. Nil reads it from the list.
+    var selection: (() -> Int)?
     @State private var edges = SpotScrollEdges()
     @State private var position = ScrollPosition(edge: .top)
     @State private var reading = GridScrollReading()
@@ -14,6 +16,10 @@ struct SpotRowsView: View {
 
     private var row: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
+    }
+
+    private var selected: () -> Int {
+        selection ?? { [list] in list.selected }
     }
 
     private var isGrid: Bool {
@@ -58,8 +64,8 @@ struct SpotRowsView: View {
             ScrollView(showsIndicators: false) { lines }
                 .safeAreaPadding(.top, SpotTokens.padding)
                 .safeAreaPadding(.bottom, bottomInset)
-                .onChange(of: list.selectedItem?.run) { _, run in
-                    if let run { proxy.scrollTo(run) }
+                .onChange(of: selected()) { _, index in
+                    if list.shown.indices.contains(index) { proxy.scrollTo(list.shown[index].run) }
                 }
                 .onChange(of: list.query) {
                     guard let run = list.shown.first?.run else { return }
@@ -83,37 +89,21 @@ struct SpotRowsView: View {
         .onScrollPhaseChange { _, phase, context in
             if phase == .idle { reading.aim = context.geometry.contentOffset.y }
         }
-        .onChange(of: list.selected) { showSelected() }
+        .modifier(GridFollow(selection: selected, perLine: list.perLine, bottomFade: Self.bottomFade, position: $position, reading: reading))
         .onChange(of: list.query) {
             reading.aim = 0
             position.scrollTo(y: 0)
         }
     }
 
-    /// Scrolls the grid until the line of the selected cell lies clear of the fades at its two ends.
-    private func showSelected() {
-        guard reading.viewHeight > 0 else { return }
-        let side = SpotTokens.square(perLine: list.perLine)
-        let top = SpotTokens.padding + CGFloat(list.selected / list.perLine) * (side + SpotTokens.listRowGap)
-        let window = ScrollWindow(
-            top: SpotTokens.padding,
-            bottom: reading.viewHeight - Self.bottomFade,
-            viewHeight: reading.viewHeight,
-            contentHeight: reading.contentHeight
-        )
-        let offset = window.offset(showing: top...(top + side), from: reading.aim)
-        guard offset != reading.aim else { return }
-        reading.aim = offset
-        withAnimation(SpotMotion.arrowScroll) { position.scrollTo(y: offset) }
-    }
-
     private var lines: some View {
-        LazyVStack(spacing: SpotTokens.listRowGap) {
+        let selectedIndex = selected()
+        return LazyVStack(spacing: SpotTokens.listRowGap) {
             ForEach(Array(list.shown.enumerated()), id: \.element.run) { index, item in
                 Button {
                     onRun(item)
                 } label: {
-                    rowLabel(item, isSelected: index == list.selected)
+                    rowLabel(item, isSelected: index == selectedIndex)
                 }
                 .buttonStyle(.plain)
             }
@@ -131,19 +121,7 @@ struct SpotRowsView: View {
                     .onTapGesture { onRun(item) }
             }
         }
-        .overlay(alignment: .topLeading) { ring(side: side) }
-    }
-
-    /// The one ring of the grid, over the selected cell, so that a new selection redraws no cell.
-    @ViewBuilder
-    private func ring(side: CGFloat) -> some View {
-        if list.selectedItem != nil {
-            let step = side + SpotTokens.listRowGap
-            Color.clear
-                .frame(width: side, height: side)
-                .modifier(SpotSelectionRing(isSelected: true, shape: row, width: SpotSelectionRing<RoundedRectangle>.thinWidth))
-                .offset(x: CGFloat(list.selected % list.perLine) * step, y: CGFloat(list.selected / list.perLine) * step)
-        }
+        .overlay(alignment: .topLeading) { GridRing(selection: selected, count: list.shown.count, perLine: list.perLine, side: side) }
     }
 
     private var edgeFade: some View {
@@ -207,4 +185,57 @@ private final class GridScrollReading {
     var viewHeight: CGFloat = 0
     var contentHeight: CGFloat = 0
     var aim: CGFloat = 0
+}
+
+/// The one ring of the grid, over the selected cell. It alone reads the selection, so that a move redraws no cell.
+private struct GridRing: View {
+    let selection: () -> Int
+    let count: Int
+    let perLine: Int
+    let side: CGFloat
+
+    var body: some View {
+        let index = selection()
+        if index < count {
+            let step = side + SpotTokens.listRowGap
+            Color.clear
+                .frame(width: side, height: side)
+                .modifier(SpotSelectionRing(
+                    isSelected: true,
+                    shape: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous),
+                    width: SpotSelectionRing<RoundedRectangle>.thinWidth
+                ))
+                .offset(x: CGFloat(index % perLine) * step, y: CGFloat(index / perLine) * step)
+        }
+    }
+}
+
+/// Scrolls the grid until the line of the selected cell lies clear of the fades at its two ends. It alone reads the
+/// selection, so that a move reruns only this modifier.
+private struct GridFollow: ViewModifier {
+    let selection: () -> Int
+    let perLine: Int
+    let bottomFade: CGFloat
+    @Binding var position: ScrollPosition
+    let reading: GridScrollReading
+
+    func body(content: Content) -> some View {
+        content.onChange(of: selection()) { _, index in show(index) }
+    }
+
+    private func show(_ index: Int) {
+        guard reading.viewHeight > 0 else { return }
+        let side = SpotTokens.square(perLine: perLine)
+        let top = SpotTokens.padding + CGFloat(index / perLine) * (side + SpotTokens.listRowGap)
+        let window = ScrollWindow(
+            top: SpotTokens.padding,
+            bottom: reading.viewHeight - bottomFade,
+            viewHeight: reading.viewHeight,
+            contentHeight: reading.contentHeight
+        )
+        let offset = window.offset(showing: top...(top + side), from: reading.aim)
+        guard offset != reading.aim else { return }
+        reading.aim = offset
+        withAnimation(SpotMotion.arrowScroll) { position.scrollTo(y: offset) }
+    }
 }
