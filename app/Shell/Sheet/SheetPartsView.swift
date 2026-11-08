@@ -16,6 +16,8 @@ struct SheetPartsView: View {
     var onSlot: (SpotItem, String, String?) -> Void = { _, _, _ in }
     var selection: (() -> Int)?
     var nudge: () -> SheetParts.Nudge = { SheetParts.Nudge.rest }
+    /// The plugin's own view at the size of the area of a `view` component (V1).
+    var customView: (CGSize) -> SpotCustomView? = { _ in nil }
     @FocusState private var focus: String?
     @Environment(\.spotIsShown) private var isShown
 
@@ -78,7 +80,7 @@ struct SheetPartsView: View {
     }
 
     private func placed(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
-        content(part, frame)
+        drawn(part, frame)
             .frame(
                 maxWidth: frame.horizontal == .fill ? .infinity : nil,
                 maxHeight: frame.vertical == .fill ? .infinity : nil,
@@ -115,6 +117,15 @@ struct SheetPartsView: View {
     private func focusFirstField() {
         guard !panel.showsRows else { return }
         DispatchQueue.main.async { focus = panel.parts.first(where: \.isEditable)?.id }
+    }
+
+    @ViewBuilder
+    private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
+        if part.kind == "view" {
+            customView(frame.rect.size)
+        } else {
+            content(part, frame)
+        }
     }
 
     @ViewBuilder

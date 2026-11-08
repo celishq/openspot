@@ -344,4 +344,14 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(faults("grid=a b\ngrid=t b\n\ntext=a\ntitle=Item\n\ntext=t\ntitle=Other\n\nfield=b\ntext=Hi\n"), ["the part a sits in rows that stretch, so use a choice with look=list for a list", "the part t sits in rows that stretch, so use a choice with look=list for a list"])
         XCTAssertEqual(faults(String(repeating: "grid=a\n", count: 20) + "\nfield=a\ntext=Hi\n"), ["the drawing is too tall: 914pt of 442pt"])
     }
+
+    func testAViewFillsItsAreaOfASheetAndSharesTheFreeHeight() throws {
+        let sheet = try placement("grid=chart chart\ngrid=chart chart\ngrid=go go\n\nview=chart\npoint=1\n\nbutton=go\ntitle=Go\n")
+        let frame = try XCTUnwrap(sheet.frames["chart"])
+
+        XCTAssertEqual(frame.vertical, .fill)
+        XCTAssertGreaterThan(frame.rect.height, SheetPlacement.rowHeight * 2)
+        XCTAssertEqual(output("grid=chart\n\nview=chart\n").sheetFaults, [])
+    }
+
 }

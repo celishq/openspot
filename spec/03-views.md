@@ -46,8 +46,9 @@ The file declares `struct SpotView: View` with `let spot: SpotInput`, and it has
 | `spot.accent`      | The accent colour.                                                |
 | `spot.font`        | The fonts of the cards: `title`, `detail`, `metric` and `value`.  |
 
-The view fills its area of a card drawing, such as `grid.large=cups cups chart chart`, and with no card drawing it fills
-the whole card and is clipped to the card's shape (V3). Put `.padding(spot.inset)` on words so that they line up with other
+The view fills its area of a card drawing, such as `grid.large=cups cups chart chart`, or of a sheet drawing, and with no
+card drawing it fills the whole card and is clipped to the card's shape (V3). In a sheet, its lines share the free height,
+as a graph's do. Put `.padding(spot.inset)` on words so that they line up with other
 cards. The area's size comes from the drawing, the card's `size` and the person, and the view cannot change it. The view
 gets the keys of its own block in each frame, and a frame that does not print it keeps the last ones (V4). A new frame
 draws the same view again, so its `@State` stays.
@@ -74,8 +75,3 @@ script, and keep `body` to drawing what the script printed.
 | The view runs in Openspot's process, so it moves with the panel.           | A view in its own process, which macOS cannot place in another app's view. |
 | The header names the view file, and a component places it, so a scan knows each view without a run. | A `source` key in the component, read only by a run. |
 
-## What the app does not do yet
-
-| Rule | Today                          | Phase |
-| ---- | ------------------------------ | ----- |
-| V1   | A sheet does not draw a view.  | later |

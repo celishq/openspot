@@ -59,8 +59,14 @@ struct SpotSheetView: View {
                         onRun: { model.runItem($0) },
                         onSlot: { model.slot($1, of: $0, to: $2) },
                         selection: selection,
-                        nudge: { model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest }
+                        nudge: { model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest },
+                        customView: { room in
+                            entry.command.view.map { SpotCustomView(source: $0, values: entry.state.values, card: entry.state.size ?? .square, room: room, views: model.views) }
+                        }
                     )
+                    .task(id: panel.parts.contains { $0.kind == "view" } ? entry.command.view : nil) {
+                        if let view = entry.command.view, panel.parts.contains(where: { $0.kind == "view" }) { await model.views.load(view) }
+                    }
                 } else if let form {
                     SpotFormView(draft: form, onValue: { model.setFormValue($0, for: $1) })
                 } else {

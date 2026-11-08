@@ -161,7 +161,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     /// Whether it draws a block that takes all the height of its cell.
     public var fillsHeight: Bool {
-        switch control {
+        if kind == "view" { return true }
+        return switch control {
         case .text, .list, .metric, .chart, .image, .progress: true
         default: look == .pad
         }
@@ -184,7 +185,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     /// Whether its rows share the free height of a sheet.
     var growsRow: Bool {
-        switch control {
+        if kind == "view" { return true }
+        return switch control {
         case .text, .list, .chart, .image: true
         default: false
         }
