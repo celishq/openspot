@@ -119,35 +119,7 @@ public struct Plugin: Equatable, Sendable {
         if case .strings(let drawing)? = table["grid"] {
             return try drawn(drawing, table, name: name, id: id, url: url)
         }
-        guard let layoutName = text("layout") else { throw PluginError.fault("\(name) needs a layout or a grid") }
-        guard let layout = WidgetLayout(name: layoutName) else {
-            throw PluginError.fault("\(name) has an unknown layout: \(layoutName). Use single, hero, pair or row")
-        }
-        guard case .strings(let places)? = table["places"], places.count == layout.slots.count else {
-            throw PluginError.fault("\(name) needs \(layout.slots.count) places for the \(layoutName) layout")
-        }
-        var size = layout.size
-        if let sizeName = text("size") {
-            guard layout == .single else {
-                throw PluginError.fault("\(name) cannot take a size, because the \(layoutName) layout sets its own")
-            }
-            guard let asked = SpotSize(name: sizeName) else {
-                throw PluginError.fault("\(name) has an unknown size: \(sizeName)")
-            }
-            size = asked
-        }
-        return Spot(
-            id: "\(id)/\(name)",
-            name: name,
-            url: url,
-            kind: .widget,
-            size: size,
-            subtitle: text("subtitle"),
-            key: try key(text("key"), of: name),
-            layout: layout,
-            places: places.map { Self.tool($0, beside: url, id: id) },
-            opens: text("opens").map { Self.tool($0, beside: url, id: id) }
-        )
+        throw PluginError.fault("\(name) needs a grid, such as grid = [\"a a b b\"]")
     }
 
     /// A widget with a drawing of its own, whose `places` names a metric for each letter.

@@ -22,9 +22,11 @@ final class WidgetContractTests: XCTestCase {
         try text.write(to: folder.appendingPathComponent(file), atomically: true, encoding: .utf8)
     }
 
-    private func widget(name: String = "Now", layout: String, places: [String], more: String = "") throws {
-        let list = places.map { "\"\($0)\"" }.joined(separator: ", ")
-        try widgets("[[widgets]]\nname = \"\(name)\"\nlayout = \"\(layout)\"\nplaces = [\(list)]\n\(more)\n")
+    private func widget(name: String = "Now", grid: [String] = ["a a b b"], places: [String], more: String = "") throws {
+        let lines = grid.map { "\"\($0)\"" }.joined(separator: ", ")
+        let letters = ["a", "b", "c", "d"]
+        let table = zip(letters, places).map { "\($0) = \"\($1)\"" }.joined(separator: ", ")
+        try widgets("[[widgets]]\nname = \"\(name)\"\ngrid = [\(lines)]\nplaces = { \(table) }\n\(more)\n")
     }
 
     private func power(_ body: String = "printf 'gauge=power\\ntitle=84%%\\nvalue=0.84\\ntone=good\\n'") throws {
@@ -35,9 +37,9 @@ final class WidgetContractTests: XCTestCase {
         get throws { try PluginFolder(url: folder).scan() }
     }
 
-    private func single(size: String?, layout: String = "single", places: Int = 1) throws {
+    private func single(size: String?) throws {
         try power()
-        try widget(layout: layout, places: Array(repeating: "power", count: places), more: size.map { "size = \"\($0)\"" } ?? "")
+        try widget(grid: ["a"], places: ["power"], more: size.map { "size = \"\($0)\"" } ?? "")
     }
 
     func testAWidgetInAFolderNamesItsOwnToolsByFileNameAndOthersByID() throws {
@@ -45,7 +47,7 @@ final class WidgetContractTests: XCTestCase {
         try script("morning/power.sh", "#!/bin/sh\n# read=5\nprintf 'title=1\\n'\n")
         try script("morning/notes.sh", "#!/bin/sh\n# read=sheet\n")
         try power()
-        try "[[widgets]]\nname = \"Now\"\nlayout = \"pair\"\nplaces = [\"power\", \"morning/power\"]\nopens = \"notes\"\n"
+        try "[[widgets]]\nname = \"Now\"\ngrid = [\"a a b b\"]\nplaces = { a = \"power\", b = \"morning/power\" }\nopens = \"notes\"\n"
             .write(to: folder.appendingPathComponent("morning/widgets.toml"), atomically: true, encoding: .utf8)
 
         let result = try scan
@@ -56,19 +58,14 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(result.refused, [])
     }
 
-    func testASingleWidgetIsSquareUnlessItAsksForAnotherSize() throws {
+    func testAOneLineDrawingIsAStripUnlessItAsksForAnotherSize() throws {
         try single(size: nil)
-        XCTAssertEqual(try scan.commands.first?.size, .square)
+        XCTAssertEqual(try scan.commands.first?.size, .strip)
     }
 
     func testASingleWidgetCanAskToBeSmall() throws {
         try single(size: "small")
         XCTAssertEqual(try scan.commands.first?.size, .small)
-    }
-
-    func testOnlyASingleWidgetTakesASize() throws {
-        try single(size: "small", layout: "pair", places: 2)
-        XCTAssertEqual(try scan.refused.first?.reason, "Now cannot take a size, because the pair layout sets its own")
     }
 
     func testASingleWidgetRefusesAnUnknownSize() throws {
@@ -77,20 +74,24 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testAPlaceTakesItsFormFromTheCardItFills() {
-        let slot = WidgetLayout.single.slots[0]
-        XCTAssertEqual(WidgetLayout.single.form(of: slot, on: .small), .control)
-        XCTAssertEqual(WidgetLayout.single.form(of: slot, on: .wide), .half)
-        XCTAssertEqual(WidgetLayout.single.form(of: slot, on: .strip), .half)
-        XCTAssertEqual(WidgetLayout.single.form(of: slot, on: .square), .big)
+        let single = WidgetLayout(drawing: ["a"])
+        let slot = single.slots[0]
+        XCTAssertEqual(single.form(of: slot, on: .small), .control)
+        XCTAssertEqual(single.form(of: slot, on: .wide), .half)
+        XCTAssertEqual(single.form(of: slot, on: .strip), .half)
+        XCTAssertEqual(single.form(of: slot, on: .square), .big)
     }
 
-    func testAHeroHasOneBigPlaceAndThreeLines() {
-        XCTAssertEqual(WidgetLayout.hero.slots.map { WidgetLayout.hero.form(of: $0, on: .large) }, [.big, .line, .line, .line])
+    func testOneBigPlaceBesideThreeLines() {
+        let hero = WidgetLayout(drawing: ["a a b b", "a a c c", "a a d d"])
+        XCTAssertEqual(hero.slots.map { hero.form(of: $0, on: .large) }, [.big, .line, .line, .line])
     }
 
     func testAPlaceInARowOrAPairTakesItsFormFromItsCell() {
-        XCTAssertEqual(WidgetLayout.row.slots.map { WidgetLayout.row.form(of: $0, on: .strip) }, [.stat, .stat, .stat, .stat])
-        XCTAssertEqual(WidgetLayout.pair.slots.map { WidgetLayout.pair.form(of: $0, on: .strip) }, [.half, .half])
+        let row = WidgetLayout(drawing: ["a b c d"])
+        let pair = WidgetLayout(drawing: ["a a b b"])
+        XCTAssertEqual(row.slots.map { row.form(of: $0, on: .strip) }, [.stat, .stat, .stat, .stat])
+        XCTAssertEqual(pair.slots.map { pair.form(of: $0, on: .strip) }, [.half, .half])
     }
 
     func testAWidgetWithADrawingPlacesAMetricOnEachLetter() throws {
@@ -140,7 +141,7 @@ final class WidgetContractTests: XCTestCase {
 
     func testCellsKeepOneGapAndAWiderOneBetweenTheSides() throws {
         let room = CGSize(width: 300, height: 100)
-        let hero = WidgetLayout.hero
+        let hero = WidgetLayout(drawing: ["a a b b", "a a c c", "a a d d"])
         let rects = hero.slots.map { hero.rect(of: $0, in: room, gap: 8, sideGap: 20) }
 
         XCTAssertEqual(rects[1].minX - rects[0].maxX, 20, accuracy: 0.001)
@@ -200,14 +201,15 @@ final class WidgetContractTests: XCTestCase {
         try widgets("""
         [[widgets]]
         name = "Now"
-        layout = "pair"
-        places = ["power", "power"]
+        grid = ["a a b b"]
+        places = { a = "power", b = "power" }
         key = "w"
 
         [[widgets]]
         name = "Then"
-        layout = "single"
-        places = ["power"]
+        grid = ["a"]
+        places = { a = "power" }
+        size = "square"
         """)
 
         let scan = try scan
@@ -217,25 +219,25 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(scan.commands.map(\.id), ["mine/Now", "mine/Then"])
         XCTAssertEqual(widget.kind, .widget)
         XCTAssertEqual(widget.size, .strip)
-        XCTAssertEqual(widget.layout, .pair)
+        XCTAssertEqual(widget.layout, WidgetLayout(drawing: ["a a b b"]))
         XCTAssertEqual(widget.places, ["power", "power"])
         XCTAssertEqual(widget.key?.name, "w")
     }
 
-    func testAWidgetNeedsOnePlaceForEachSlot() throws {
-        try widget(layout: "hero", places: ["power"])
+    func testAWidgetNeedsAMetricForEachLetter() throws {
+        try widget(grid: ["a a b b", "a a c c"], places: ["power"])
 
-        XCTAssertEqual(try scan.refused.first?.reason, "Now needs 4 places for the hero layout")
+        XCTAssertEqual(try scan.refused.first?.reason, "Now needs a metric for the letter b")
     }
 
-    func testAnUnknownLayoutIsRefusedAndNamesTheChoices() throws {
-        try widget(layout: "circle", places: ["power"])
+    func testAWidgetWithANamedLayoutIsRefusedAndAskedForAGrid() throws {
+        try widgets("[[widgets]]\nname = \"Now\"\nlayout = \"pair\"\nplaces = [\"power\", \"power\"]\n")
 
-        XCTAssertEqual(try scan.refused.first?.reason, "Now has an unknown layout: circle. Use single, hero, pair or row")
+        XCTAssertEqual(try scan.refused.first?.reason, "Now needs a grid, such as grid = [\"a a b b\"]")
     }
 
     func testAWidgetThatNamesAMissingMetricIsLeftOutAndReported() throws {
-        try widget(layout: "pair", places: ["power", "none"])
+        try widget(places: ["power", "none"])
 
         let scan = try scan
 
@@ -245,7 +247,7 @@ final class WidgetContractTests: XCTestCase {
 
     func testAWidgetThatOpensAMissingCommandIsLeftOutAndReported() throws {
         try power()
-        try widget(layout: "pair", places: ["power", "power"], more: "opens = \"nothing\"")
+        try widget(places: ["power", "power"], more: "opens = \"nothing\"")
 
         let scan = try scan
 
@@ -270,7 +272,7 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testEveryLayoutFillsItsSizeWithNoOverlap() {
-        for layout in WidgetLayout.all {
+        for layout in [["a"], ["a a b b", "a a c c", "a a d d"], ["a a b b"], ["a b c d"]].map({ WidgetLayout(drawing: $0) }) {
             var cells = Set<[Int]>()
             for slot in layout.slots {
                 for row in slot.y0...slot.y1 {

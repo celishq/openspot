@@ -81,7 +81,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script("cups", header: "read=30")
         try script("tool", header: "read=sheet\nkey=t")
         try script("once")
-        try "[[widgets]]\nname = \"W\"\nlayout = \"single\"\nplaces = [\"cups\"]\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\nname = \"W\"\ngrid = [\"a\"]\nplaces = { a = \"cups\" }\nsize = \"square\"\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
 
         let scan = try scanned()
 
@@ -244,7 +244,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script("tray", header: "read=5\ntray=true", log: "tray", "printf 'title=1\\n'")
         try script("placed", header: "read=5", log: "placed", "printf 'title=1\\n'")
         try script("idle", header: "read=5", log: "idle", "printf 'title=1\\n'")
-        try "[[widgets]]\nname = \"W\"\nlayout = \"single\"\nplaces = [\"placed\"]\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\nname = \"W\"\ngrid = [\"a\"]\nplaces = { a = \"placed\" }\nsize = \"square\"\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
 
         _ = try scanned()
         try await wait("the tray read") { self.log("tray").count == 1 }

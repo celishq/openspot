@@ -65,15 +65,15 @@ A widget shows the live values of several tools on one card. Write it in a `.tom
 ```toml
 [[widgets]]
 name = "Morning"
-layout = "hero"
-places = ["agents", "battery", "cpu", "disk"]
+grid = ["a a b b", "a a c c", "a a d d"]
+places = { a = "agents", b = "battery", c = "cpu", d = "disk" }
 opens = "links"
 ```
 
-`places` names one tool for each cell, by its ID: its path with no extension, such as `cpu` or `home/coffee`. A widget in a
-folder with its tools names them by file name alone, and the whole folder is shared as one. The layouts are `single`,
-`hero`, `pair` and `row`. A widget can also draw its own layout, such as `grid = ["a a b b", "a a c c"]` with
-`places = { a = "agents", b = "battery", c = "cpu" }`. `opens` names the tool that a click opens, and that tool has no card of its own.
+`grid` draws the card in letters, one line for each row, and each letter is one place. `places` names one tool for each
+letter, by its ID: its path with no extension, such as `cpu` or `home/coffee`. A widget in a folder with its tools names
+them by file name alone, and the whole folder is shared as one. `opens` names the tool that a click opens, and that tool
+has no card of its own.
 
 Settings gives a key to each command that a tool lists. It writes the key to `~/.config/openspot/config.toml`, and you can
 write it there by hand too:
