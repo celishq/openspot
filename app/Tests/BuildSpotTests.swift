@@ -6,10 +6,11 @@ final class BuildSpotTests: XCTestCase {
     private var plugins: URL!
     private var guideText = ""
     private var guideURL: URL!
+    private var root: URL!
     private let path = ProcessInfo.processInfo.environment["PATH"]
 
     override func setUpWithError() throws {
-        let root = URL(fileURLWithPath: #filePath)
+        root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-guide-\(UUID().uuidString)")
         plugins = folder.appendingPathComponent("plugins")
@@ -139,6 +140,15 @@ final class BuildSpotTests: XCTestCase {
         let faults = await PluginCheck(folder: PluginFolder(url: plugins)).faults()
 
         XCTAssertEqual(faults, [])
+    }
+
+    func testTheGuideIsTheSpecsJoinedInOrder() throws {
+        let specs = root.appendingPathComponent("spec")
+        let names = try FileManager.default.contentsOfDirectory(atPath: specs.path).filter { $0.first?.isNumber == true && $0.hasSuffix(".md") }.sorted()
+        let joined = try names.map { try String(contentsOf: specs.appendingPathComponent($0), encoding: .utf8) }.joined(separator: "\n")
+
+        XCTAssertEqual(names.first, "00-guide.md")
+        XCTAssertTrue(guideText == joined, "app/Shell/GUIDE.md differs from spec/. Run make guide.")
     }
 
     func testTheGuideAndTheCatalogTeachNoOldKeyOrCall() {
