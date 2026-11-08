@@ -28,7 +28,7 @@ pane() {
     strings=$(for table in "$1/Contents/Resources/"*.loctable; do plutil -convert json -o - "$table" 2>/dev/null; done \
       | jq -s -c --arg full "$full" --arg base "$base" 'map(.[$full] // .[$base] // .en // {}) | add // {}')
   fi
-  plutil -convert json -o - "$info" | jq -r --arg app "$1" --arg link "$link" --arg full "$full" --arg base "$base" \
+  plutil -convert json -o - "$info" | jq -r --arg app "$1" --arg link "$link" --arg settings "/System/Applications/System Settings.app" --arg full "$full" --arg base "$base" \
     --argjson names "$names" --argjson strings "$strings" --argjson terms "$terms" '
     def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");
     . as $info
@@ -41,12 +41,11 @@ pane() {
        else [] end) as $titles
     | select($titles | length > 0)
     | (if ($info | has("CFBundleIcons") or has("CFBundleIconName")) then "icon=\($app)" else "icon=gearshape" end) as $icon
-    | (if ($info | has("CFBundleIcons") or has("CFBundleIconName")) then "badge=\($app)\n" else "" end) as $badge
     | ($link + $info.CFBundleIdentifier) as $pane
-    | ($titles[] | "row=\($pane)#\(esc)\ntitle=\(esc)\ndetail=System Settings\n\($icon)\n"),
+    | ($titles[] | "row=\($pane)#\(esc)\ntitle=\(esc)\ndetail=System Settings\n\($icon)\nbadge=\($settings)\n"),
       ($terms | to_entries[] | .key as $anchor | (.value.localizableStrings // [])[]
         | select(.title != null and (.title | ascii_downcase) != ($titles[0] | ascii_downcase))
-        | "row=\($pane)?\($anchor)#\(.title | esc)\ntitle=\(.title | esc)\ndetail=System Settings › \($titles[0] | esc)\nicon=gearshape\n\($badge)"
+        | "row=\($pane)?\($anchor)#\(.title | esc)\ntitle=\(.title | esc)\ndetail=System Settings › \($titles[0] | esc)\n\($icon)\nbadge=\($settings)\n"
           + ((.index // "") | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(. != "")) | map("keyword=\(esc)\n") | join("")))'
 }
 
