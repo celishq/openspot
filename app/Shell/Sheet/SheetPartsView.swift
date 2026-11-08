@@ -192,8 +192,8 @@ struct SheetPartsView: View {
                     .font(SpotType.detail)
                     .modifier(SpotSecondaryText())
                     .lineLimit(1)
-                    .layoutPriority(2)
                     .frame(minWidth: part.mark == nil ? nil : Self.markValueWidth, alignment: .trailing)
+                    .layoutPriority(2)
             }
             if case .symbol(let symbol) = part.press {
                 SpotRoundButton(
