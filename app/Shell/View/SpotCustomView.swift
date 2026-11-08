@@ -2,7 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 /// A plugin's own view in its card, fed by the head of its last read. It draws only, and a press goes to the card (V5).
-/// While it builds the place stays empty, and a view that fails shows why.
+/// While it builds the place stays empty, and a view that fails shows why, shrunk to fit its place.
 struct SpotCustomView: View {
     let source: String
     let values: [String: [String]]
@@ -28,6 +28,7 @@ struct SpotCustomView: View {
         case .failed(let reason):
             Text(reason)
                 .font(SpotType.detail)
+                .minimumScaleFactor(0.5)
                 .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
         }
     }
