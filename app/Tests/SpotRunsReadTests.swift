@@ -90,14 +90,14 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testASheetKeepsItsLastFrameRowsPartsAndValue() async throws {
-        try script(header: "read=sheet", "printf 'title=3\\ntone=good\\n\\nrow=A\\nrun=a\\n\\ntext=b\\ntitle=B\\n'")
+        try script(header: "read=sheet", "printf 'text=m\\ntitle=3\\ntone=good\\n\\nrow=A\\nrun=a\\n\\ntext=b\\ntitle=B\\n'")
         let sheet = try sheet()
 
         sheet.open {}
 
         try await wait("the answer") { sheet.list.shown.count == 1 }
-        XCTAssertEqual(sheet.lastFrame, "title=3\ntone=good\n\nrow=A\nrun=a\n\ntext=b\ntitle=B\n")
-        XCTAssertEqual(sheet.panel?.parts.map(\.id), ["b"])
+        XCTAssertEqual(sheet.lastFrame, "text=m\ntitle=3\ntone=good\n\nrow=A\nrun=a\n\ntext=b\ntitle=B\n")
+        XCTAssertEqual(sheet.panel?.parts.map(\.id), ["m", "b"])
         XCTAssertEqual(sheet.reading.value?.title, "3")
         XCTAssertEqual(sheet.reading.value?.tone, .good)
         XCTAssertTrue(sheet.isOpen)

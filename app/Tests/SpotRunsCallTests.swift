@@ -39,7 +39,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(header: "read=5\ntray=true", """
         [ -f '\(path("second"))' ] && exit 1
         touch '\(path("second"))'
-        printf 'title=3\\n'
+        printf 'text=m\\ntitle=3\\n'
         """)
         let sheet = try sheet()
         var failures: [String] = []

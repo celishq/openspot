@@ -130,11 +130,11 @@ final class PluginOutputTests: XCTestCase {
             try XCTUnwrap(MetricValue(output: PluginOutput(text: text))).kind
         }
 
-        XCTAssertEqual(try kind("title=3\n"), .value)
-        XCTAssertEqual(try kind("title=3\nsymbol=star\ntone=good\n"), .value)
-        XCTAssertEqual(try kind("title=Up\ntone=good\n"), .status)
-        XCTAssertEqual(try kind("title=84%\nvalue=0.84\n"), .gauge)
-        XCTAssertEqual(try kind("title=2\npoint=1\npoint=2\n"), .trend)
+        XCTAssertEqual(try kind("text=m\ntitle=3\n"), .value)
+        XCTAssertEqual(try kind("text=m\ntitle=3\nsymbol=star\ntone=good\n"), .value)
+        XCTAssertEqual(try kind("text=m\ntitle=Up\ntone=good\n"), .status)
+        XCTAssertEqual(try kind("gauge=m\ntitle=84%\nvalue=0.84\n"), .gauge)
+        XCTAssertEqual(try kind("graph=m\ntitle=2\npoint=1\npoint=2\n"), .trend)
         XCTAssertEqual(try kind("row=Build\n"), .rows)
     }
 
@@ -142,7 +142,7 @@ final class PluginOutputTests: XCTestCase {
         let rows = "row=One\ndetail=2m\ntone=bad\n\nrow=Two\n"
 
         let counted = try XCTUnwrap(MetricValue(output: PluginOutput(text: rows)))
-        let titled = try XCTUnwrap(MetricValue(output: PluginOutput(text: "title=Many\n\n" + rows)))
+        let titled = try XCTUnwrap(MetricValue(output: PluginOutput(text: "text=m\ntitle=Many\n\n" + rows)))
 
         XCTAssertEqual(counted.title, "2")
         XCTAssertEqual(counted.rows, [.init(title: "One", detail: "2m", tone: .bad), .init(title: "Two")])
@@ -150,8 +150,8 @@ final class PluginOutputTests: XCTestCase {
     }
 
     func testAMetricCanSetATintAndAnUnknownOneIsSkipped() {
-        XCTAssertEqual(MetricValue(output: PluginOutput(text: "title=1\ntint=green\n"))?.tint, .green)
-        XCTAssertNil(MetricValue(output: PluginOutput(text: "title=1\ntint=beige\n"))?.tint)
+        XCTAssertEqual(MetricValue(output: PluginOutput(text: "text=m\ntitle=1\ntint=green\n"))?.tint, .green)
+        XCTAssertNil(MetricValue(output: PluginOutput(text: "text=m\ntitle=1\ntint=beige\n"))?.tint)
     }
 
     func testPrintingNothingHidesAMetric() {

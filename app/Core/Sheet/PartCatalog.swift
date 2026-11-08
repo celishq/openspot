@@ -5,7 +5,7 @@ public enum PartCatalog {
     private static let keys: Set<String> = Set(SpotPart.kinds).union([
         "title", "detail", "symbol", "file", "glyph", "on", "level", "min", "max", "color", "value", "option", "text",
         "placeholder", "readonly", "required", "type", "key", "close", "confirm", "scope", "form", "align", "look", "point",
-        "image", "shortcut", "tone"
+        "image", "shortcut", "tone", "tint"
     ])
 
     /// The catalog, for a person or a model to read. It holds the whole language, so a sheet can be written from it alone.

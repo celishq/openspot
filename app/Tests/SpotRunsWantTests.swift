@@ -38,8 +38,8 @@ final class SpotRunsWantTests: SpotRunsCase {
     // MARK: F7
 
     func testAWidgetCanPlaceAnyScriptWithARead() async throws {
-        try script("onpanel", header: "read=panel\nkey=p", log: "onpanel", "printf 'title=P\\n'")
-        try script("onsheet", header: "read=sheet\nkey=s", log: "onsheet", "printf 'title=S\\n'")
+        try script("onpanel", header: "read=panel\nkey=p", log: "onpanel", "printf 'text=m\\ntitle=P\\n'")
+        try script("onsheet", header: "read=sheet\nkey=s", log: "onsheet", "printf 'text=m\\ntitle=S\\n'")
         try "[[widgets]]\nname = \"W\"\nlayout = \"pair\"\nplaces = [\"onpanel\", \"onsheet\"]\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
         _ = try scanned()
         XCTAssertEqual(log("onsheet"), [])
@@ -59,7 +59,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testTheMenuBarShowsWhatTheSheetHolds() async throws {
-        try script("pulls", header: "name=Pull requests\nread=120\nkey=g\ntray=true", "printf 'title=2\\n\\nrow=A\\nrun=a\\n\\nrow=B\\nrun=b\\n'")
+        try script("pulls", header: "name=Pull requests\nread=120\nkey=g\ntray=true", "printf 'text=m\\ntitle=2\\n\\nrow=A\\nrun=a\\n\\nrow=B\\nrun=b\\n'")
         let sheet = try sheet("pulls")
 
         try await wait("the mark") { !self.runs.trayMarks.isEmpty }
@@ -84,7 +84,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     func testEachMomentReadsOnlyTheScriptsThatListIt() async throws {
         try script("onlaunch", header: "read=launch", log: "onlaunch", "printf 'title=L\\n'")
         try script("onwake", header: "read=wake", log: "onwake", "printf 'title=W\\n'")
-        try script("onpanel", header: "read=panel", log: "onpanel", "printf 'title=P\\n'")
+        try script("onpanel", header: "read=panel", log: "onpanel", "printf 'text=m\\ntitle=P\\n'")
         _ = try scanned()
         try await pause(0.1)
         XCTAssertEqual(log("onlaunch") + log("onwake") + log("onpanel"), [])

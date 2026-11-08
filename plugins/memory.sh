@@ -9,4 +9,4 @@ case $(/usr/sbin/sysctl -n kern.memorystatus_vm_pressure_level) in
   2) detail="Pressure high"; tone=warn ;;
   *) detail="Pressure normal"; tone="" ;;
 esac
-printf 'title=%s%%\ndetail=%s\nvalue=%s\ntone=%s\n' "$used" "$detail" "$(awk "BEGIN{print $used/100}")" "$tone"
+printf 'gauge=memory\ntitle=%s%%\ndetail=%s\nvalue=%s\ntone=%s\n' "$used" "$detail" "$(awk "BEGIN{print $used/100}")" "$tone"

@@ -210,5 +210,4 @@ chooses what the menu bar shows. Printing nothing removes the item until the nex
 | U8, U9     | A row cannot draw a `field` slot; a list row has room for two lines.                | 2     |
 | U11        | A frame replaces the rows.                                                          | 2     |
 | U5         | A card has no drawing of its own: it draws its picture, its words and its control.   | 4     |
-| H1         | A metric is the head of its output.                                                 | 4     |
 | `view`     | A view fills the whole card from the header's `view` (03).                          | 5     |

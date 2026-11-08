@@ -15,6 +15,8 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var partFaults: [String] = []
     public private(set) var errors: [String] = []
     public private(set) var layout: SheetLayout?
+    /// The block of the first `text`, `gauge` or `graph`, which is the value of a metric (H1).
+    public private(set) var metric: TextBlock?
     /// The drawing that the rows flow through (U7). With no `repeat` block, the rows are a list.
     public private(set) var drawing = RepeatDrawing.list
     /// Each template that draws rows, by its name (U8).
@@ -63,6 +65,7 @@ public struct PluginOutput: Equatable, Sendable {
                 }
             } else if let kind, SpotPart.kinds.contains(kind), let part = SpotPart(block: block) {
                 if kind == "field" { fields.append(block) }
+                if metric == nil, ["text", "gauge", "graph"].contains(kind) { metric = block }
                 parts.append(part)
                 partFaults += PartCatalog.faults(in: block)
             } else if summary == nil, block == head {
