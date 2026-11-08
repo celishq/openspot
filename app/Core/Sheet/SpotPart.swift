@@ -43,6 +43,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     }
 
     public let id: String
+    /// The kind that its first key names, such as `switch`.
+    public let kind: String
     public let isSection: Bool
     public let title: String?
     public let detail: String?
@@ -69,6 +71,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public init?(block: TextBlock) {
         guard let kind = block.fields.first?.key, Self.kinds.contains(kind), let id = block.value(kind) else { return nil }
         self.id = id
+        self.kind = kind
         isSection = kind == "section"
         let isLarge = kind == "text" && block.value("look") == "large"
         title = isLarge ? block.value("detail") : block.value("title")

@@ -107,4 +107,15 @@ final class RepeatTemplateTests: XCTestCase {
         let item = try XCTUnwrap(list.shown.first)
         XCTAssertEqual(list.template(of: item)?.parts(of: item).last?.control, .toggle(true))
     }
+
+    func testARowGivesSlotsOfTheirOwnSizeTheirWidthAndTheRestToWords() throws {
+        let output = PluginOutput(text: apps)
+        let safari = try XCTUnwrap(output.items.first)
+        let template = try XCTUnwrap(output.template(of: safari))
+        let frames = RowPlacement(drawing: template.drawing(), parts: template.parts(of: safari), size: CGSize(width: 260, height: 40)).frames
+
+        XCTAssertEqual(frames["pic"], CGRect(x: 0, y: 0, width: 40, height: 40))
+        XCTAssertEqual(frames["quit"], CGRect(x: 220, y: 0, width: 40, height: 40))
+        XCTAssertEqual(frames["name"], CGRect(x: 48, y: 0, width: 164, height: 40))
+    }
 }

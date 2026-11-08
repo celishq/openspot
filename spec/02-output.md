@@ -207,7 +207,7 @@ chooses what the menu bar shows. Printing nothing removes the item until the nex
 
 | Rule       | Today                                                                               | Phase |
 | ---------- | ----------------------------------------------------------------------------------- | ----- |
-| U7, U8, U9 | Repeats only as `repeat=<area> <per line>`; rows have no template.                  | 2     |
+| U8, U9     | A row cannot draw a `field` slot; a list row has room for two lines.                | 2     |
 | U11        | A frame replaces the rows.                                                          | 2     |
 | U5, U12    | Cards draw a kind from the head: `on`, `level`, and a metric's `title` and `value`. | 4     |
 | C1         | The calls `on`, `off` and `level <number>` of a toggle or a slider card.            | 4     |

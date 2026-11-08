@@ -57,6 +57,7 @@ struct SpotSheetView: View {
                         onRecord: { model.toggleRecording($0) },
                         list: list,
                         onRun: { model.runItem($0) },
+                        onSlot: { model.slot($1, of: $0, to: $2) },
                         selection: selection,
                         nudge: { model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest }
                     )
@@ -70,7 +71,7 @@ struct SpotSheetView: View {
                         }
                         .buttonStyle(.plain)
                     } else {
-                        SpotRowsView(list: list, recording: model.recording, onRun: { model.runItem($0) }, selection: selection)
+                        SpotRowsView(list: list, recording: model.recording, onRun: { model.runItem($0) }, selection: selection, onSlot: { model.slot($1, of: $0, to: $2) })
                     }
                 }
             }
