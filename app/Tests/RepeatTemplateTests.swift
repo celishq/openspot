@@ -148,4 +148,33 @@ final class RepeatTemplateTests: XCTestCase {
 
         XCTAssertEqual(output.template(of: row)?.parts(of: row).last?.control, .text("Call back", placeholder: nil, isReadOnly: false))
     }
+
+    func testAListRowTakesOneRowHeightForEachTwoLinesOfItsDrawing() {
+        let output = PluginOutput(text: """
+        template=row
+        grid=name
+        grid=info
+        grid=bar
+        text=name
+        text=info
+        gauge=bar
+
+        template=short
+        grid=name
+        text=name
+
+        row=a
+        name=A
+
+        row=b
+        as=short
+        name=B
+        """)
+        var list = ItemList(items: output.items)
+        list.take(drawing: output.drawing, templates: output.templates)
+
+        XCTAssertEqual(output.items.map { list.span(of: $0) }, [2, 1])
+        XCTAssertEqual(list.spans, 3)
+    }
+
 }

@@ -144,6 +144,16 @@ public struct ItemList: Equatable, Sendable {
         templates[item.template ?? RowTemplate.defaultName]
     }
 
+    /// How many list row heights a row takes in a list.
+    public func span(of item: SpotItem) -> Int {
+        template(of: item)?.span ?? 1
+    }
+
+    /// How many list row heights the shown rows take in a list.
+    public var spans: Int {
+        shown.reduce(0) { $0 + span(of: $1) }
+    }
+
     /// Whether the rows flow through a drawing of places of more than one size.
     public var isBento: Bool {
         drawing.perLine == nil

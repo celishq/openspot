@@ -60,7 +60,7 @@ struct SpotRowsView: View {
     }
 
     private var bottomInset: CGFloat {
-        SpotTokens.sheetFits(rows: list.shown.count, perLine: list.perLine) ? SpotTokens.padding : Self.bottomFade
+        SpotTokens.sheetFits(rows: list.perLine == 1 ? list.spans : list.shown.count, perLine: list.perLine) ? SpotTokens.padding : Self.bottomFade
     }
 
     private var lineScroll: some View {
@@ -152,13 +152,14 @@ struct SpotRowsView: View {
 
     /// A row that its template draws. A press outside its controls picks it.
     private func templateRow(_ item: SpotItem, template: RowTemplate, isSelected: Bool) -> some View {
-        SpotTemplateRow(
+        let height = SpotTokens.listRowHeight(span: template.span)
+        return SpotTemplateRow(
             item: item,
             template: template,
-            size: CGSize(width: SheetPlacement.width - 2 * SpotTokens.padding, height: SpotTokens.listRowHeight - 8)
+            size: CGSize(width: SheetPlacement.width - 2 * SpotTokens.padding, height: height - 8)
         ) { onSlot(item, $0, $1) }
         .padding(.horizontal, SpotTokens.padding)
-        .frame(height: SpotTokens.listRowHeight)
+        .frame(height: height)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .modifier(SpotSelectionRing(isSelected: isSelected, shape: row))
         .contentShape(row)

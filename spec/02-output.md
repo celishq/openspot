@@ -134,7 +134,8 @@ default, is a list.
 
 A `template` block draws a row. Each `<kind>=<slot>` line in it gives a slot a kind, and its `grid=` lines place the slots.
 `grid.<columns>x<rows>=` lines draw the row in a place of that many cells of the repeat, such as `grid.2x2=` for the large
-place of a bento, and a place with no drawing of its size takes the nearest smaller one (U8). A row picks a template with
+place of a bento, and a place with no drawing of its size takes the nearest smaller one (U8). In a list, a row takes one row height for each
+two lines of its drawing. A row picks a template with
 `as=<name>`, and `template=row` draws each row that names none. With no template, a row is drawn by the default template:
 its own keys `title`, `detail`, `symbol`, `file`, `image`, `glyph`, `tone` and `shortcut` are its slots, as a picture, its
 words, a dot and a key. A slot of a template cannot take the name of a key of a row (U14).
@@ -212,8 +213,3 @@ printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'
 | One `value=` names what stands for a spot, so moving a block changes nothing.                              | The first `text`, `gauge` or `switch` of the output, and `grid.tray=`. |
 | A complex view is a `view` of the plugin in an area, so the text language stays small.                      | More words for each new look.                |
 
-## What the app does not do yet
-
-| Rule       | Today                                                                               | Phase |
-| ---------- | ----------------------------------------------------------------------------------- | ----- |
-| U8         | A list row has room for two lines.                                                  | later |

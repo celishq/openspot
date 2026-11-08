@@ -148,7 +148,7 @@ public final class SpotRun {
     private func settle() {
         let next = list.isBento
             ? Shape(rows: list.drawing.lineCount(rows: list.shown.count) * list.drawing.columns, perLine: list.drawing.columns)
-            : Shape(rows: list.shown.count, perLine: list.perLine)
+            : Shape(rows: list.perLine == 1 ? list.spans : list.shown.count, perLine: list.perLine)
         if next != shape { shape = next }
         let waits = isOpen && answered == nil && panel == nil && list.search == .local && list.isLoading && !list.holdsItems
         if waits != awaitsFirstAnswer { awaitsFirstAnswer = waits }

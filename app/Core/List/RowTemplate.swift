@@ -63,6 +63,11 @@ public struct RowTemplate: Equatable, Sendable {
         return drawings[""] ?? [slots]
     }
 
+    /// How many list row heights a row of it takes in a list: one for each two lines of its drawing (U8).
+    public var span: Int {
+        max(1, (drawing().count + 1) / 2)
+    }
+
     /// The parts that draw a row in this template. A slot that the row hides is left out.
     public func parts(of item: SpotItem) -> [SpotPart] {
         slots.compactMap { slot in

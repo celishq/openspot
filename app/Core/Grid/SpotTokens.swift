@@ -62,6 +62,11 @@ public enum SpotTokens {
         isWidget && size == .small ? controlPadding : padding
     }
 
+    /// The height of a list row that takes this many list row heights, with the gaps between them.
+    public static func listRowHeight(span: Int) -> CGFloat {
+        CGFloat(span) * listRowHeight + CGFloat(span - 1) * listRowGap
+    }
+
     /// How far a sheet's rows start below its top edge.
     public static let sheetRowsTop: CGFloat = sheetFieldDrop + listRowHeight + rowGap
 
