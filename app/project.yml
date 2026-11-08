@@ -83,6 +83,12 @@ targets:
           rm -rf "$core"
           mkdir -p "$(dirname "$core")"
           cp -RL "$SRCROOT/../plugins" "$core"
+      - name: Copy the emoji keywords
+        basedOnDependencyAnalysis: false
+        script: |
+          keywords="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Keywords"
+          rm -rf "$keywords"
+          cp -R "$SRCROOT/Keywords" "$keywords"
       - name: Fill the dev state
         basedOnDependencyAnalysis: false
         script: |

@@ -32,7 +32,8 @@ final class SymbolCatalogTests: XCTestCase {
     }
 
     private func rows(languages: [String] = ["en"]) throws -> [SpotItem] {
-        PluginOutput(text: try SymbolCatalog(resources: folder, languages: languages).rows()).items
+        let keywords = GlyphKeywords(folder: folder.appendingPathComponent("Keywords"), languages: languages)
+        return PluginOutput(text: try SymbolCatalog(resources: folder, languages: languages, keywords: keywords).rows()).items
     }
 
     func testRowsFollowTheOrderOfTheCharacterViewer() throws {
@@ -105,5 +106,14 @@ final class SymbolCatalogTests: XCTestCase {
         XCTAssertGreaterThan(rows.count, 500)
         XCTAssertTrue(rows.contains { $0.run == "€" && $0.title == "euro sign" && $0.subtitle == "Currency Symbols" })
         XCTAssertTrue(rows.contains { $0.run == "⌘" })
+    }
+
+    func testARowTakesTheKeywordsOfItsSymbol() throws {
+        try write(category: "Arrows", data: "→")
+        let place = folder.appendingPathComponent("Keywords")
+        try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
+        try (Data("→\tarrow\tright\n".utf8) as NSData).compressed(using: .lzma).write(to: place.appendingPathComponent("en.tsv.xz"))
+
+        XCTAssertEqual(try rows().first?.keywords, ["arrow", "right"])
     }
 }

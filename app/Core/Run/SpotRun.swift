@@ -41,11 +41,33 @@ public final class SpotRun {
     private static let globalKey = "global"
 
     public private(set) var command: Spot
+    @ObservationIgnored private var rows: ItemList
+
+    /// The rows of the sheet. A move of the selection alone tells only the readers of `selection`, so that a held arrow key
+    /// redraws what shows the selection and nothing else.
     public var list: ItemList {
-        didSet {
+        get {
+            access(keyPath: \.list)
+            return rows
+        }
+        set {
+            let moved = newValue.selected != rows.selected
+            if newValue.differsOnlyInSelection(from: rows) {
+                withMutation(keyPath: \.selection) { rows = newValue }
+            } else if moved {
+                withMutation(keyPath: \.selection) { withMutation(keyPath: \.list) { rows = newValue } }
+            } else {
+                withMutation(keyPath: \.list) { rows = newValue }
+            }
             settle()
             onReport(.listChange)
         }
+    }
+
+    /// The index of the selected row among the shown rows.
+    public var selection: Int {
+        access(keyPath: \.selection)
+        return rows.selected
     }
     public private(set) var panel: SheetParts? {
         didSet { settle() }
@@ -100,7 +122,7 @@ public final class SpotRun {
         self.command = command
         self.runs = runs
         self.prepare = prepare
-        list = ItemList(recent: recent)
+        rows = ItemList(recent: recent)
         state = command.headerState
         reading = MetricReading(label: command.name, headerSymbol: command.headerSymbol)
         settle()

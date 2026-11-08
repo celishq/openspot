@@ -8,9 +8,17 @@ struct SpotItemIcon: View {
 
     private static let glyphScale = 0.8
 
+    /// Draws ahead the colour emoji of these items at this size, so that their icons find them ready.
+    static func prepare(_ items: ArraySlice<SpotItem>, size: CGFloat) {
+        SpotGlyphPicture.prepare(items.compactMap(\.glyph), side: size, fontSize: size * glyphScale)
+    }
+
     var body: some View {
         if let icon = item.icon {
             SpotFileIconView(icon: icon, size: size)
+        } else if let glyph = item.glyph, let picture = SpotGlyphPicture.image(glyph, side: size, fontSize: size * Self.glyphScale) {
+            Image(decorative: picture, scale: SpotGlyphPicture.scale)
+                .frame(width: size, height: size)
         } else if let glyph = item.glyph {
             Text(glyph)
                 .font(.system(size: size * Self.glyphScale))

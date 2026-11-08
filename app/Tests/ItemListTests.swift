@@ -14,6 +14,10 @@ final class ItemListTests: XCTestCase {
     }
 
     private func items(_ titles: String...) -> [SpotItem] {
+        items(titles)
+    }
+
+    private func items(_ titles: [String]) -> [SpotItem] {
         titles.map { SpotItem(title: $0, run: $0) }
     }
 
@@ -251,5 +255,36 @@ final class ItemListTests: XCTestCase {
 
         XCTAssertEqual(list.recent.count, ItemList.recentLimit)
         XCTAssertEqual(list.recent.first, "149")
+    }
+
+    func testEachKeystrokeInALargeListAnswersQuickly() {
+        let rows = (0..<5_096).map { SpotItem(title: "rightwards arrow with hook \($0)", subtitle: "Rightwards Arrows", run: "\($0)") }
+        var list = ItemList(items: rows)
+        let started = Date()
+
+        for text in ["w", "wi", "wit", "with", "with h"] { list.search(text) }
+
+        let time = Date().timeIntervalSince(started) / 5
+        XCTAssertLessThan(time, 1)
+    }
+
+    func testAGrowingSearchFindsWhatAFreshSearchFinds() {
+        let titles = ["axbxc", "abc", "Abacus", "cab", "a b c", "xabcx", "Notes"]
+        var typed = ItemList(items: items(titles))
+        for text in ["a", "ab", "abc", "abc ", "abc b"] {
+            typed.search(text)
+            var fresh = ItemList(items: items(titles))
+            fresh.search(text)
+
+            XCTAssertEqual(typed.shown.map(\.title), fresh.shown.map(\.title), text)
+        }
+    }
+
+    func testAShorterSearchFindsAgainWhatTheLongerOneDropped() {
+        var list = ItemList(items: items("Safari", "Notes"))
+        list.search("sa")
+        list.search("s")
+
+        XCTAssertEqual(list.shown.map(\.title), ["Safari", "Notes"])
     }
 }
