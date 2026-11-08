@@ -16,7 +16,7 @@ public enum SheetFaults {
     public static func of(layout: SheetLayout?, summary: TextBlock?, parts: [SpotPart]) -> [String] {
         var faults: [String] = []
         if summary?.value("layout") != nil { faults.append("a sheet has no layout key, so draw it with grid= lines") }
-        guard let layout else {
+        guard let layout, layout.isDrawn else {
             let flat = SheetPlacement(parts: parts, layout: SheetLayout(flat: parts))
             if flat.overflows, parts.contains(where: \.scrollsItself) {
                 faults.append("the sheet is too tall for a part that scrolls: \(Int(flat.height))pt of \(Int(SheetPlacement.maxHeight))pt")

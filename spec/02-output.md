@@ -212,8 +212,6 @@ chooses what the menu bar shows. Printing nothing removes the item until the nex
 | Rule       | Today                                                                               | Phase |
 | ---------- | ----------------------------------------------------------------------------------- | ----- |
 | U8, U9     | A row cannot draw a `field` slot; a list row has room for two lines.                | 3     |
-| U11        | A frame replaces the rows.                                                          | 2     |
-| U13        | A sheet with components and rows and no drawing does not show its rows.              | 2     |
 | U14        | A slot can take the name of a key of a row.                                         | 3     |
 | U12        | `tone=on` in the head shows that a card is on.                                      | 4     |
 | R12        | A call reports progress with `title` and `value` in its head.                       | 4     |

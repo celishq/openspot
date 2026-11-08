@@ -21,7 +21,7 @@ public struct SheetLayout: Equatable, Sendable {
     }
 
     /// Reads the layout block of a sheet, with the area of its repeat and how many rows go on its line. Returns nil when
-    /// there is no `grid`, `keys` or repeat.
+    /// there is no `grid` or `keys`.
     public init?(block: TextBlock?, repeating: (area: String, perLine: Int)? = nil, repeats: Int = 0) {
         let block = block ?? TextBlock(fields: [])
         var rows: [[String]] = []
@@ -39,7 +39,6 @@ public struct SheetLayout: Equatable, Sendable {
         }
         repeated = repeating
         repeatCount = repeats
-        if rows.isEmpty, let area = repeated?.area { rows = [[area]] }
         guard !rows.isEmpty else { return nil }
         self.rows = rows
         self.cards = cards
@@ -48,21 +47,22 @@ public struct SheetLayout: Equatable, Sendable {
         areas = Self.areas(in: rows)
     }
 
-    /// One column of lines, in the order of the parts. A section with a title starts with a divider, and a section with
-    /// no title is only a divider.
-    public init(flat parts: [SpotPart]) {
+    /// The default drawing (U13): one column of lines in the order of the parts, then the area of the rows. A section with a
+    /// title starts with a divider, and a section with no title is only a divider.
+    public init(flat parts: [SpotPart], repeating: (area: String, perLine: Int)? = nil) {
         var rows: [[String]] = []
         for part in parts {
             if part.isSection, !rows.isEmpty { rows.append([Self.divider]) }
             if part.isSection, part.title == nil, part.press == .none, part.control == .none { continue }
             rows.append([part.id])
         }
+        if let repeating { rows.append([repeating.area]) }
         self.rows = rows
         cards = []
         isDrawn = false
         keyParts = []
         areas = Self.areas(in: rows)
-        repeated = nil
+        repeated = repeating
         repeatCount = 0
     }
 

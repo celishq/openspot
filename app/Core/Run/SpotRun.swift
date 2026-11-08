@@ -565,7 +565,7 @@ public final class SpotRun {
         list.take(search: lines.search)
         list.take(drawing: lines.drawing, templates: lines.templates)
         takePanel(lines, generation: generation)
-        list.replace(lines.items)
+        if lines.replacesRows { list.replace(lines.items) }
         selectKept()
         if list.search == .script, !list.query.isEmpty { ask() }
         showRunning()

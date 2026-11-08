@@ -118,4 +118,21 @@ final class RepeatTemplateTests: XCTestCase {
         XCTAssertEqual(frames["quit"], CGRect(x: 220, y: 0, width: 40, height: 40))
         XCTAssertEqual(frames["name"], CGRect(x: 48, y: 0, width: 164, height: 40))
     }
+
+    func testASheetWithNoDrawingShowsItsComponentsThenItsRows() throws {
+        let output = PluginOutput(text: "text=note\ntitle=Note\n\nbutton=copy\ntitle=Copy\n\nrow=A\nrun=a\n")
+
+        XCTAssertEqual(output.layout?.rows, [["note"], ["rows"]])
+        XCTAssertEqual(output.layout?.repeated?.area, "rows")
+        XCTAssertEqual(output.actions.map(\.id), ["copy"])
+        XCTAssertTrue(try XCTUnwrap(SheetParts(output: output)).showsRows)
+        XCTAssertEqual(output.sheetFaults, [])
+    }
+
+    func testAFrameOfComponentsKeepsTheRowsAndAnEmptyRepeatClearsThem() {
+        XCTAssertFalse(PluginOutput(text: "switch=power\non=true\n\ntext=note\ntitle=Note\n").replacesRows)
+        XCTAssertTrue(PluginOutput(text: "text=note\ntitle=Note\n\nrow=A\nrun=a\n").replacesRows)
+        XCTAssertTrue(PluginOutput(text: "text=note\ntitle=Note\n\nrepeat=list\n").replacesRows)
+        XCTAssertTrue(PluginOutput(text: "").replacesRows)
+    }
 }

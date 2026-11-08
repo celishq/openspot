@@ -23,6 +23,8 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var face = CardFace.none
     /// The drawing that the rows flow through (U7). With no `repeat` block, the rows are a list.
     public private(set) var drawing = RepeatDrawing.list
+    /// Whether it prints a `repeat` block, which replaces the rows also when it holds none (U11).
+    public private(set) var printsRepeat = false
     /// Each template that draws rows, by its name (U8).
     public private(set) var templates: [String: RowTemplate] = [:]
     public private(set) var toast: String?
@@ -35,6 +37,8 @@ public struct PluginOutput: Equatable, Sendable {
     private static let button = "button"
     private static let repeatKind = "repeat"
     private static let templateKind = "template"
+    /// The area of the rows in the default drawing of a sheet with no `repeat` block (U13).
+    private static let rowsArea = "rows"
 
     /// Whether a first key names a row or a part, so that the block is not the head.
     private static func isKind(_ key: String) -> Bool {
@@ -48,17 +52,14 @@ public struct PluginOutput: Equatable, Sendable {
         let repeats = blocks.filter { $0.fields.first?.key == Self.repeatKind }
         let repeated = repeats.first.flatMap { block in block.value(Self.repeatKind).map { (block, $0) } }
         if let (block, _) = repeated { drawing = RepeatDrawing(block: block) }
-        let layout = SheetLayout(
-            block: head,
-            repeating: repeated.map { (area: $0.1, perLine: drawing.perLine ?? drawing.columns) },
-            repeats: repeats.count
-        )
+        printsRepeat = repeated != nil
+        let drawn = head.flatMap { SheetLayout(block: $0) }
         for block in blocks {
             let kind = block.fields.first?.key
             if kind == Self.repeatKind { continue }
             if kind == Self.templateKind {
                 if let template = RowTemplate(block: block) { templates[template.name] = template } else { errors.append(block.firstLine) }
-            } else if kind == Self.button, let id = block.value(Self.button), layout?.areas[id] == nil {
+            } else if kind == Self.button, let id = block.value(Self.button), drawn?.areas[id] == nil {
                 take(action: id, block)
             } else if kind == "row" {
                 rows.append(block)
@@ -82,6 +83,10 @@ public struct PluginOutput: Equatable, Sendable {
                 errors.append(block.firstLine)
             }
         }
+        let repeating = repeated.map { (area: $0.1, perLine: drawing.perLine ?? drawing.columns) }
+            ?? (!rows.isEmpty && !parts.isEmpty ? (area: Self.rowsArea, perLine: 1) : nil)
+        let layout = SheetLayout(block: head, repeating: repeating, repeats: repeats.count)
+            ?? repeating.map { SheetLayout(flat: parts, repeating: $0) }
         self.layout = layout
         face = CardFace(head: head, parts: parts)
         if let id = face.trayID, let block = blocks.first(where: { $0.fields.first?.value == id && ["text", "gauge", "graph"].contains($0.fields.first?.key ?? "") }) {
@@ -113,6 +118,12 @@ public struct PluginOutput: Equatable, Sendable {
     /// How many rows go on one line, when the script prints a repeat.
     public var perLine: Int? {
         layout?.repeated?.perLine
+    }
+
+    /// Whether a frame changes the rows: it prints rows or a repeat, or it is no sheet of components. A sheet of components
+    /// that prints neither keeps its rows (U11).
+    public var replacesRows: Bool {
+        !rows.isEmpty || printsRepeat || parts.isEmpty
     }
 
     /// The template that draws a row: the one it names, or else `template=row`.
