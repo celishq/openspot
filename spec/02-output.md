@@ -49,6 +49,7 @@ component cannot take a default id of 01 (C1).
 | `graph`   | Bars. The last bar is the newest.                       | `point`, one line for each bar, and `max`                       |                        |
 | `picture` | A picture that fills its area.                          | `symbol`, `file`, `image` or `glyph`                            |                        |
 | `view`    | The SwiftUI view that the header names (03).            | any key that the view reads                                     |                        |
+| `spot`    | The value of the spot with this id, as a widget shows it. |                                                               |                        |
 | `switch`  | A switch.                                               | `on`                                                            | `<id> true` or `false` |
 | `slider`  | A slider. It sends when the person lets go.             | `level`, `min`, `max`                                           | `<id> <number>`        |
 | `field`   | A text field.                                           | `text`, `placeholder`, `type=multiline`, `required`, `readonly` | `<id> <text>`          |

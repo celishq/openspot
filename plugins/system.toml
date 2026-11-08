@@ -1,6 +1,6 @@
 [[widgets]]
 name = "System"
 subtitle = "Battery, CPU, memory and devices"
-layout = "hero"
-places = ["battery", "cpu", "memory", "devices"]
+grid = ["b b c c", "b b m m", "b b d d"]
+places = { b = "battery", c = "cpu", m = "memory", d = "devices" }
 opens = "system-info"

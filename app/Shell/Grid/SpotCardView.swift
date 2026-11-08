@@ -53,7 +53,7 @@ struct SpotCardView: View {
     @ViewBuilder
     private var content: some View {
         if entry.item == nil, let drawing = entry.state.face.drawing(for: size) {
-            SpotCardDrawing(drawing: drawing, face: entry.state.face, card: size, view: { room in
+            SpotCardDrawing(drawing: drawing, face: entry.state.face, card: size, readings: readings, view: { room in
                 drawnView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, views: model.views) }
             }) { model.setCardPart(entry.id, $0, to: $1) }
         } else if let view = drawnView {

@@ -21,7 +21,12 @@ public final class SpotRuns {
     @ObservationIgnored private let recent: (String) -> [String]
     @ObservationIgnored private let prepare: ([SpotItem]) async -> Void
     private var order: [String] = []
-    @ObservationIgnored private var placed: Set<String> = []
+    @ObservationIgnored private var placedByFiles: Set<String> = []
+
+    /// Each script that a widget file or a `spot` component of a card places, which the open panel reads.
+    private var placed: Set<String> {
+        placedByFiles.union(sheets.values.flatMap { $0.state.face.parts.filter { $0.kind == "spot" }.map(\.id) })
+    }
     @ObservationIgnored private var asked: [String: Date] = [:]
     @ObservationIgnored private var clock: Task<Void, Never>?
     @ObservationIgnored private var processes: [ScriptProcess] = []
@@ -49,7 +54,7 @@ public final class SpotRuns {
     /// Takes a new look at the plugin folder. Each script keeps its sheet, and a sheet whose script is gone stops its reads.
     public func take(_ scan: ScanResult) {
         let scripts = scan.scripts
-        placed = Set(scan.commands.flatMap(\.places))
+        placedByFiles = Set(scan.commands.flatMap(\.places))
         order = scripts.map(\.id)
         for (id, sheet) in sheets where !order.contains(id) {
             sheets[id] = nil

@@ -178,6 +178,7 @@ public struct Plugin: Equatable, Sendable {
             url: url,
             kind: .widget,
             size: layout.size,
+            subtitle: text("subtitle"),
             key: try key(text("key"), of: name),
             layout: layout,
             places: layout.letters.compactMap { places[$0] }.map { tool($0, beside: url, id: id) },
