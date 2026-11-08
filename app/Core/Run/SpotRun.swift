@@ -608,7 +608,7 @@ public final class SpotRun {
     }
 
     private func report(toastOf lines: PluginOutput) {
-        if let toast = lines.summary?.value("toast") { onReport(.toast(toast)) }
+        if let toast = lines.toast { onReport(.toast(toast)) }
     }
 
     private func selectKept() {

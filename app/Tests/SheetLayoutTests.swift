@@ -324,10 +324,13 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(parts[2].look, .key)
     }
 
-    func testAPartCanStartWithAnyKey() throws {
-        let parts = output("grid=p\ngrid=p\n\nblock=progress\npart=job\ncell=p\ntitle=Copying\nlevel=30\n").parts
+    func testAPartStartsWithItsPartKey() throws {
+        let first = output("grid=p\ngrid=p\n\npart=job\nblock=progress\ncell=p\ntitle=Copying\nlevel=30\n")
+        let later = output("grid=p\ngrid=p\n\nblock=progress\npart=job\ncell=p\ntitle=Copying\nlevel=30\n")
 
-        XCTAssertEqual(parts.first?.control, .progress(level: 30))
+        XCTAssertEqual(first.parts.first?.control, .progress(level: 30))
+        XCTAssertEqual(later.parts, [])
+        XCTAssertEqual(later.errors, ["block=progress"])
     }
 
     func testTheFaultsOfADrawing() {

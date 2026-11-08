@@ -137,12 +137,13 @@ run=/Applications/Notes.app
   script, such as a file name or a web page, write it with `esc` (see "The shell helper").
 - For many rows in one pipe, use `sed 's/\\/\\\\/g'`. With `jq -r`, use `def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");` and write `"row=\(.title | esc)"`.
 
-A block is a row when it has `row`, an action when it has `action`, and a form field when it has `field`. The first other
-block says how the spot itself looks, and it can hold `search` and `recents`. Printing nothing means that there is nothing
-to show.
+The first key of a block names its kind: `row`, `action`, `field`, `part`, `section`, `toast` or `open`. So write that
+key first. The first block with another first key says how the spot itself looks, and it can hold `search` and `recents`.
+A later block with another first key is skipped, and `openspot check` reports it. Printing nothing means that there is
+nothing to show.
 
-To confirm what an action did, print `toast=Saved`. Openspot shows it, also with the panel closed. Put a key in backticks, such as
-``toast=Press `⌘V` ``, and the toast shows it as a key.
+To confirm what an action did, print `toast=Saved`, in the first block or as a block of its own at any place. Openspot shows
+it, also with the panel closed. Put a key in backticks, such as ``toast=Press `⌘V` ``, and the toast shows it as a key.
 
 ## The shell helper
 
