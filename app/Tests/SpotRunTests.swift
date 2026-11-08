@@ -86,6 +86,21 @@ final class SpotRunTests: XCTestCase {
         sheet.close()
     }
 
+    func testOnlyTheFirstPartsOfASheetArriveThroughTheArrival() async throws {
+        let sheet = try holding("printf 'text=a\\ntitle=A\\n---\\n'\nsleep 0.1\nprintf 'text=a\\ntitle=B\\n---\\n'", pause: 0.02)
+        var arrivals = 0
+        runs.last?.partsArrival = { _, bring in
+            arrivals += 1
+            bring()
+        }
+
+        sheet.open(waits: true) {}
+
+        try await wait("the later parts") { sheet.panel?.parts.first?.title == "B" }
+        XCTAssertEqual(arrivals, 1)
+        sheet.close()
+    }
+
     func testASheetSaysItAwaitsItsFirstAnswerUntilItComes() async throws {
         let sheet = try holding("sleep 0.2\nprintf 'text=a\\ntitle=A\\n'", pause: 0.02)
 

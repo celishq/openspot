@@ -58,7 +58,7 @@ open -a Calendar
 | `drop`                   | The files that its card takes: extensions such as `mov,mkv`, `folder`, or `*`.                                                                                       |
 | `command`                | `<id>:<title>[:<icon>]`, a command that the person can give a key. One line for each.                                                                                  |
 | `view`                   | A SwiftUI file beside the script, such as `view=cups.swift` (03).                                                                                                    |
-| `global`                 | `true` shows its rows in the main search too. It needs `panel`, `launch` or a number in its `read`, and a number also needs a `shortcut`. Openspot ranks the rows by the person's picks. |
+| `global`                 | `true` shows its rows in the main search too. It needs `panel`, `launch` or a number in its `read`, and a number also needs a `shortcut`. Openspot ranks the rows by the person's picks. With no `shortcut`, the spot has no card on the grid until the person places one. |
 | `tray`                   | `true` shows its main value in the menu bar. It needs a number in its `read`. Printing nothing removes the item until the next read. |
 | `stay`                   | `true` keeps one process that takes each call on stdin and prints frames at any time (05).                                                                           |
 

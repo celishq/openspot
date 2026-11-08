@@ -7,6 +7,8 @@ struct FoldedItem: Equatable, Sendable {
     let subtitle: FoldedText?
     let keywords: [FoldedText]
     let glyph: String?
+    /// One bit for each letter in its title, subtitle and keywords, so that a search skips an item that lacks a letter.
+    let letterBits: UInt64
 
     init(_ item: SpotItem) {
         self.item = item
@@ -14,6 +16,7 @@ struct FoldedItem: Equatable, Sendable {
         subtitle = item.subtitle.map(FoldedText.init)
         keywords = item.keywords.map(FoldedText.init)
         glyph = item.glyph.map(Self.plain)
+        letterBits = ([title] + (subtitle.map { [$0] } ?? []) + keywords).reduce(0) { $0 | FoldedText.bits(of: $1.letters) }
     }
 
     /// Text with no mark that asks for a picture or a text form, so that both forms of a glyph are equal.

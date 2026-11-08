@@ -90,6 +90,8 @@ public final class SpotRun {
     /// Each running call, the oldest first, with the last frame of each.
     public private(set) var calls: [ScriptCall] = []
     @ObservationIgnored public var onReport: (Report) -> Void = { _ in }
+    /// Makes the change that brings the sheet its first parts.
+    @ObservationIgnored public var partsArrival: (() -> Void) -> Void = { $0() }
     private var workPauses = 0
     @ObservationIgnored private let runs: SpotRuns
     @ObservationIgnored private let prepare: ([SpotItem]) async -> Void
@@ -692,7 +694,7 @@ public final class SpotRun {
         if lines.parts.isEmpty {
             panel = nil
         } else if panel == nil {
-            panel = SheetParts(output: lines)
+            partsArrival { panel = SheetParts(output: lines) }
         } else {
             panel?.take(lines, answering: generation ?? panel?.generation ?? 0)
         }

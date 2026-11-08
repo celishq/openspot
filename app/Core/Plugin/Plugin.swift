@@ -83,7 +83,7 @@ public struct Plugin: Equatable, Sendable {
             isTray: isTray,
             dataName: header.value("data") ?? id.split(separator: "/").first.map(String.init),
             hasSpot: read?.seconds == nil || hasKey,
-            isOnGrid: offers.isEmpty,
+            isOnGrid: offers.isEmpty && (hasKey || !isGlobal),
             headerSymbol: symbol,
             offers: offers,
             file: icon?.file.map { Self.path($0, beside: url) },

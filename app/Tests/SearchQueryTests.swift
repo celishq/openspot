@@ -6,6 +6,18 @@ final class SearchQueryTests: XCTestCase {
         SpotItem(title: title, subtitle: subtitle, run: title)
     }
 
+    func testASearchSkipsQuicklyTheRowsThatLackItsLetters() {
+        let rows = (0..<6000).map { SpotItem(title: "Setting \($0)", subtitle: "System Settings › Pane \($0 % 50)", run: "\($0)", keywords: ["volume", "display", "sound", "power", "network"]) }
+        let list = ItemList(items: rows)
+        let started = Date()
+
+        for text in ["zebra", "quiz", "jazz", "fizz", "buzz", "kiwi", "fjord", "zx", "jinx", "quay"] {
+            XCTAssertEqual(SearchQuery(text: text, layouts: []).matching(in: [list]).count, 0)
+        }
+
+        XCTAssertLessThan(Date().timeIntervalSince(started), 0.5)
+    }
+
     private func titles(_ text: String, in titles: [String], recent: [String] = []) -> [String] {
         SearchQuery(text: text).matching(titles.map { item($0) }, recent: recent).map(\.title)
     }

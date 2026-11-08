@@ -105,15 +105,18 @@ public struct ItemList: Equatable, Sendable {
         hasFailed = true
     }
 
-    /// Takes fresh items. A selection at the top stays at the top, and any other stays on its item when it is still there.
+    /// Takes fresh items, and folds them only when they differ. A selection at the top stays at the top, and any other stays
+    /// on its item when it is still there.
     public mutating func replace(_ items: [SpotItem]) {
         let run = selectedItem?.run
         isLoading = false
         hasFailed = false
-        all = items
-        folded = items.map(FoldedItem.init)
-        narrowing = nil
-        refresh()
+        if items != all {
+            all = items
+            folded = items.map(FoldedItem.init)
+            narrowing = nil
+            refresh()
+        }
         guard selected > 0 else { return }
         selected = shown.firstIndex { $0.run == run } ?? min(selected, max(shown.count - 1, 0))
     }

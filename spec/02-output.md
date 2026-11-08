@@ -114,7 +114,9 @@ always flow through a repeat, and with no `repeat` block they flow through a lis
 
 Openspot searches the rows itself and sorts recent picks first. The head can change this on each read:
 
-- `search=script` sends each search change as `<script> read <text>`, and the script prints the rows that match.
+- `search=script` sends each search change as `<script> read <text> [form]...`, and the script prints the rows that match
+  any of them. A form is another text that the person may have meant, such as the text typed in another keyboard layout
+  or spelled in Latin letters.
 - `recents=false` does not sort recent picks first.
 
 ## Repeats and templates

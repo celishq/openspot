@@ -115,6 +115,7 @@ public struct SearchQuery: Equatable, Sendable {
     }
 
     private static func match(_ form: Form, in item: FoldedItem, loose: Bool) -> (rank: Int, marks: SearchMarks)? {
+        guard form.letterBits & ~item.letterBits == 0 else { return nil }
         let title = item.title
         if title.letters == form.letters { return (0, SearchMarks(title: [0..<form.letters.count], subtitle: [])) }
         if title.letters.starts(with: form.letters) { return (1, SearchMarks(title: [0..<form.letters.count], subtitle: [])) }
@@ -152,10 +153,12 @@ public struct SearchQuery: Equatable, Sendable {
     private struct Form: Equatable, Sendable {
         let letters: [UInt64]
         let words: [[UInt64]]
+        let letterBits: UInt64
 
         init(_ text: String) {
             letters = text.map(FoldedText.code)
             words = text.split(whereSeparator: \.isWhitespace).map { $0.map(FoldedText.code) }
+            letterBits = words.reduce(0) { $0 | FoldedText.bits(of: $1) }
         }
     }
 }
