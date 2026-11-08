@@ -1,7 +1,7 @@
 # Build an Openspot plugin
 
 This guide is for people and for AI agents. It tells you all that you need. Each part after this one is a spec of its own,
-from 01 Core to 08 Sharing, and only 01 is needed for every plugin.
+and only 01 Core is needed for every plugin.
 
 A plugin is one executable file in the plugins folder, in any language. Openspot reads the folder each time the panel
 opens, so a new plugin needs no restart.
@@ -68,18 +68,12 @@ A toast and a failure line are read in a second. Write each one as you would tel
 | `Error 1: osascript failed.` | ``Copied, but Openspot cannot paste. Press `⌘V`, or allow Openspot in Accessibility.`` |
 | `You did not install gh.` | `Pull requests need the gh tool. Install it, then open this again.` |
 
-## Rules for scripts
+## Good habits
 
-- Print only the data. Send each message for the person to stderr. When a script fails, its last stderr line shows.
-- When a failure has a fix that a link opens, also print `open=<url>`, such as
-  `open=x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility`. The toast names the fix key, and the key
-  or a click opens the link.
-- Exit with 0 on success. Any other code is a failure.
-- Be fast in `read`. It has 10 seconds until its first frame or its end. Reads run at the same time, so a slow script delays no other. Any other call has no limit.
-- Keep files in `$OPENSPOT_DATA`, not in the plugin folder. Openspot creates this folder for each spot. Scripts in one plugin
-  folder share it. To share it with other spots, give each one the same `data=<name>` in its header.
-- Write a file to a temp name, then move it: `... > "$file.$$" && mv "$file.$$" "$file"`. A stop can come at any time, and two
-  calls of one script can run at the same time, so a file must never be half written.
+- Print only the data. Send each message for the person to stderr.
+- Be fast in `read`, and do no work there.
+- Keep files in `$OPENSPOT_DATA`, not in the plugin folder.
+- Write a file to a temp name, then move it: `... > "$file.$$" && mv "$file.$$" "$file"`.
 - Use short plain words in sentence case. Start an action's name with a verb.
 - Do not use a `key` that another plugin has. The first plugin keeps it.
 - A plugin runs with the full access of the person. If you are an agent, tell the person what yours runs.

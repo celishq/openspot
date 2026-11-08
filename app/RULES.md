@@ -21,6 +21,18 @@ Code and tests name a rule by its ID.
 | A13 | Enter on a row of Spots turns that spot on or off, and keeps the panel open. |
 | A14 | A first launch has no config and no plugin, opens the panel on the grid once, and does not open at login. |
 | A15 | A toast takes no input, except a failure with a fix (R9). One fix key, which the person chooses, opens it, and only while the toast shows. |
+| M2 | A `panel` or `sheet` moment takes an answer younger than 5 seconds. A change, a number, `launch` and `wake` always read. |
+| M3 | Reads run at the same time. The panel never waits for one script. A spot shows its header until its answer arrives. |
+| C4 | Openspot waits for a pause before it sends a change of text or of a slider. Text that the person types stays as typed until they press something. |
+| K5 | Closing the panel closes a sheet of parts and drops its values. A sheet of rows stays open. |
+| L6 | A call that runs 1 second shows on its part, its action, its spot and the menu bar item, so the person can find and stop it. A call to a staying script shows only by Y7. |
+| L7 | When a sheet opens, Openspot reads, then adds the last frame of each running call. |
+| L11 | A press within 1 second of the start of a call does nothing, so a double press does not stop it. |
+| G1 | A running call shows a ring from the `value` of its last frame, or a spinner with no `value`. |
+| G3 | The menu bar item shows the oldest running call and how many run. A click on it opens the panel with that spot selected. |
+| G4 | A frame's `title` and `detail` show on the spot only while its call runs. |
+| D5 | A click on a card with `drop` and no sheet opens a file chooser, and the choice runs the same call. A drag over the menu bar item opens the panel with no change of focus, and a drop closes it. |
+| K2 | A capability's helper starts at its first call, and exits after 30 seconds with no call. The app does not track it. |
 
 ## Decisions
 

@@ -8,15 +8,17 @@ for an AI. The joined file is not in the repo. The rules of the app that no auth
 
 | Spec | Status | Needs | What it holds |
 |---|---|---|---|
-| [00 Guide](00-guide.md) | final | | How to write, check and word a plugin. |
-| [01 Core](01-core.md) | final | | The format, the header, the calls, the frames, the moments and how long a call runs. |
-| [02 Lists](02-lists.md) | final | 01 | Rows, search, actions and forms. |
-| [03 Sheets](03-sheets.md) | final | 01 | Parts in a drawing. |
-| [04 Triggers](04-triggers.md) | final | 01 | Drops and commands with keys. |
+| [00 Guide](00-guide.md) | final | | How to write, check and word a plugin. It teaches, and holds no rule. |
+| [01 Core](01-core.md) | final | | The format, the header, the moments, the calls, frames, the life of a call, and triggers. |
+| [02 What a script prints](02-output.md) | final | 01 | Rows, actions, forms, toggles, sliders, sheets and metrics. |
+| ~~03 Sheets~~ | | | Merged into 02. |
+| ~~04 Triggers~~ | | | Merged into 01. |
 | [05 Stay](05-stay.md) | draft | 01 | A script that keeps running between calls. |
-| [06 Metrics](06-metrics.md) | final | 01 | Live values in widgets and the menu bar. |
+| ~~06 Metrics~~ | | | Merged into 02. Widgets moved to 10. |
 | [07 Capabilities](07-capabilities.md) | final | 01 | The `openspot` command. |
 | [08 Sharing](08-sharing.md) | final | 01 | The `.spot` file. |
+| ~~09 MCP~~ | | | Removed. It can come back as a new spec when people ask for it. |
+| [10 Files a person writes](10-person-files.md) | final | 01, 02 | Widgets and `config.toml`. |
 
 ## How a spec is written
 
@@ -49,23 +51,20 @@ These rules come from the way Nostr writes its NIPs.
 
 | Word | Kind | Spec |
 |---|---|---|
-| `name`, `symbol`, `subtitle`, `key`, `size`, `order`, `grid`, `read`, `data` | Header key | 01 |
-| `rank` | Header key | 02 |
-| `drop`, `command` | Header key | 04 |
+| `name`, `symbol`, `subtitle`, `key`, `size`, `order`, `grid`, `read`, `data`, `drop`, `command` | Header key | 01 |
+| `rank`, `tray` | Header key | 02 |
 | `stay` | Header key | 05 |
-| `tray` | Header key | 06 |
 | `sheet`, `panel`, a number, `launch`, `wake` | Moment of `read` | 01 |
 | `toast`, `open` | Block kind | 01 |
-| `row`, `action`, `field` | Block kind | 02 |
-| `part`, `section` | Block kind | 03 |
+| `row`, `action`, `field`, `part`, `section` | Block kind | 02 |
 | `end` | Block kind | 05 |
 | `stop` | Block kind on stdin | 05 |
 | `read` | Reserved word | 01 |
-| `run`, `open`, `on`, `off`, `level` | Default id | 01 |
-| `drop` | Default id | 04 |
+| `run`, `open`, `drop`, `on`, `off`, `level` | Default id | 01 |
 | `OPENSPOT_REASON`, `OPENSPOT_DATA`, `OPENSPOT_SH` | Environment variable | 01 |
 | `check`, `catalog`, `render`, `sandbox`, `color`, `clipboard`, `translate`, `emoji`, `symbols`, `window` | Capability noun | 07 |
 | `.spot` | File | 08 |
+| Widget `.toml`, `config.toml` | File | 10 |
 
 ## Goals
 
