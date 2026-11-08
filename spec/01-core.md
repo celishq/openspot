@@ -141,7 +141,7 @@ with only components changes those components (S2).
   `open=<url>`, the place that fixes it (R9).
 - A stop can come at any time, and two calls can run at once, so a script never leaves a file half written (R8).
 
-A call reports progress with a `gauge` in a frame (02): its `title`, its `detail` and its `value`, such as `title=42%` and
+A call reports progress with its `gauge` value in a frame (02): its `title`, its `detail` and its `value`, such as `title=42%` and
 `value=0.42`. Openspot reads the codes `ESC ] 9;4;1;<percent>` as `value` and `ESC ] 9;<text>` as a toast, and removes each
 other escape code (R12).
 

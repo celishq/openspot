@@ -44,19 +44,16 @@ public struct SpotState: Equatable, Sendable {
         self.face = face
     }
 
-    /// Reads how a spot looks from what its script printed: the words of its head, and the first switch, which says whether
-    /// its card is on, and the first slider. A spot
-    /// whose output is one switch or one slider takes that control's words for its card (U12). What the output leaves out
-    /// comes from the header.
+    /// Reads how a spot looks from what its script printed: the words of its head, and its value, which says whether its card
+    /// is on or at what level. A spot whose output is one switch or one slider takes that control's words for its card (U12).
+    /// What the output leaves out comes from the header.
     public init(output: PluginOutput, header: SpotState) {
         let block = output.summary
-        let toggle = output.parts.first { $0.kind == "switch" }
-        let slider = output.parts.first { $0.kind == "slider" }
         let control = output.control
         var on: Bool?
-        if case .toggle(let value)? = toggle?.control { on = value }
+        if case .toggle(let value)? = output.valuePart?.control { on = value }
         var level: (Double, Double, Double)?
-        if case .slider(let value, let low, let high)? = slider?.control { level = (value, low, high) }
+        if case .slider(let value, let low, let high)? = output.valuePart?.control { level = (value, low, high) }
         self.init(
             title: block?.value("title") ?? control?.title ?? header.title,
             subtitle: block?.value("detail") ?? control?.detail ?? header.subtitle,
@@ -77,12 +74,12 @@ public struct SpotState: Equatable, Sendable {
         return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, values: values, control: control, face: face)
     }
 
-    /// This state with what a frame of a running call changes: the value of its card's control, or of its first switch.
+    /// This state with what a frame of a running call changes: the value of its card's control, or of its value.
     /// Its words stay the spot's own.
     public func taking(_ output: PluginOutput) -> SpotState {
         var on = self.on
         var level = self.level
-        let part = output.parts.first { $0.id == control } ?? output.parts.first { $0.kind == "switch" }
+        let part = output.parts.first { $0.id == control } ?? output.valuePart
         if case .toggle(let value)? = part?.control { on = value }
         if case .slider(let value, _, _)? = part?.control { level = value }
         return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, values: values, control: control, face: face)

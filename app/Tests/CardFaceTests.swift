@@ -6,7 +6,7 @@ final class CardFaceTests: XCTestCase {
     grid.wide=time power
     grid.large=time time power power
     grid.large=date date date date
-    grid.tray=time
+    value=time
 
     text=date
     title=Sunday
@@ -30,8 +30,24 @@ final class CardFaceTests: XCTestCase {
         XCTAssertEqual(face.parts.map(\.id), ["date", "time", "power"])
     }
 
-    func testTheTrayDrawingChoosesTheValueOfTheMenuBar() {
+    func testTheHeadNamesTheValueThatTheMenuBarShows() {
         XCTAssertEqual(MetricValue(output: PluginOutput(text: clock))?.title, "14:20")
+    }
+
+    func testWithNoNameTheOnlyValueStandsForTheSpotAndTwoStandForNone() {
+        XCTAssertEqual(MetricValue(output: PluginOutput(text: "text=a\ntitle=A\n\nbutton=b\ntitle=B\n"))?.title, "A")
+        XCTAssertNil(PluginOutput(text: "text=a\ntitle=A\n\ntext=b\ntitle=B\n").value)
+    }
+
+    func testTheNamedSwitchSaysWhetherTheCardIsOnWhereverItPrints() {
+        let text = "value=power\n\nswitch=other\non=false\n\nswitch=power\non=true\n"
+        XCTAssertEqual(SpotState(output: PluginOutput(text: text), header: SpotState(title: "Clock")).on, true)
+        XCTAssertNil(SpotState(output: PluginOutput(text: "switch=a\non=true\n\nswitch=b\non=false\n"), header: SpotState(title: "Clock")).on)
+    }
+
+    func testANameThatNoValueHasAndAnUnknownPlaceAreFaults() {
+        XCTAssertEqual(PluginOutput(text: "value=gone\n\nbutton=go\n").partFaults, ["the head names the value gone, which no text, gauge, graph, switch or slider has"])
+        XCTAssertEqual(PluginOutput(text: "grid.tray=a\n\ntext=a\ntitle=A\n").partFaults, ["the head draws grid.tray, which is not a place"])
     }
 
     func testACardDrawingThatNamesNoComponentIsAFault() {

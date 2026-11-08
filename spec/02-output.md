@@ -71,8 +71,7 @@ columns, so there is no width to set (B2). A component fills the rectangle of ce
 a rectangle (U4). A smaller component that lies in a larger one sits on top of it, at the edge it touches. `card=` lines
 group areas onto one raised card.
 
-`grid.<place>=` lines draw another place of the spot: `small`, `wide`, `square`, `strip` and `large` for its card, and
-`tray` for the menu bar (U5). A card's drawing can have more lines than the card has rows: the app divides its room
+`grid.<size>=` lines draw the spot's card at a size: `small`, `wide`, `square`, `strip` or `large` (U5). A card's drawing can have more lines than the card has rows: the app divides its room
 evenly. A place with no drawing takes the drawing of the nearest smaller size, and a spot with none keeps its default card.
 
 With no `grid=` line, the sheet takes its default drawing: one column of each component that is not a button, in the order
@@ -166,8 +165,15 @@ and it prints the whole output again, or nothing to be read again (B6). The app 
 answer to a call that a newer change has outdated (U10). A repeat keeps its rows until a frame prints rows again, so a
 frame can change one switch alone (U11).
 
-The head is the first block with no kind. It holds the drawings, `title` and `detail` for the spot's card, `size`,
-`search`, `recents`, `toast` and `open`. A head is not drawn.
+The head is the first block with no kind. It holds the drawings, `value`, `title` and `detail` for the spot's card,
+`size`, `search`, `recents`, `toast` and `open`. A head is not drawn.
+
+## The value
+
+`value=<id>` in the head names the component that stands for the spot (H1). With no `value=`, the only `text`, `gauge`,
+`graph`, `switch` or `slider` of the output stands for it, and with two or more, none does. The menu bar, a widget and a
+`spot` component show a `text`, `gauge` or `graph` value. A `switch` value shows on the card whether its thing is on, also
+when the switch is in the sheet. A `gauge` value is the progress of a call that runs.
 
 ## The card
 
@@ -175,12 +181,11 @@ A spot with no `grid.<size>=` draws its default card: its picture, its title, it
 sheet (U12). A spot whose output is one `switch` or one `slider` and nothing else draws that control as its card, with the
 control's `title` and `detail`, and a press of the card changes it.
 
-A card shows that its thing is on while the first `switch` of the output is on, also when the switch is in its sheet. A
-press on a card area that is not a control opens the spot's sheet, or calls `<script> run` when it has none.
+A press on a card area that is not a control opens the spot's sheet, or calls `<script> run` when it has none.
 
 ## Metrics
 
-A metric is a spot with a number in its `read`, and the first `text`, `gauge` or `graph` that it prints is its value. A
+A metric is a spot with a number in its `read`, and its value is a `text`, a `gauge` or a `graph`. A
 widget or the menu bar can show any script with a `read`, by its ID (H1). A script with a number in its `read` and no
 `key` has no spot of its own (F7).
 
@@ -192,8 +197,7 @@ widget or the menu bar can show any script with a `read`, by its ID (H1). A scri
 printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'
 ```
 
-`tray=true` in the header shows the metric in the menu bar. It needs a number in its `read`. A `grid.tray=` drawing
-chooses what the menu bar shows. Printing nothing removes the item until the next read.
+`tray=true` in the header shows the metric in the menu bar. It needs a number in its `read`. Printing nothing removes the item until the next read.
 
 ## Decisions
 
@@ -205,6 +209,7 @@ chooses what the menu bar shows. Printing nothing removes the item until the nex
 | A button that no drawing places is an action, so a verb is one kind in two places.                          | An `action` block beside a `button`.         |
 | A template draws a row, and a repeat's drawing places rows, so lists, grids and bentos are one rule.        | `repeat=<area> <per line>` in the head.      |
 | A form is the same call twice, so each call has one shape.                                                  | A `form` word.                               |
+| One `value=` names what stands for a spot, so moving a block changes nothing.                              | The first `text`, `gauge` or `switch` of the output, and `grid.tray=`. |
 | A complex view is a `view` of the plugin in an area, so the text language stays small.                      | More words for each new look.                |
 
 ## What the app does not do yet

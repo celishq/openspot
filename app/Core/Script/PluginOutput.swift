@@ -15,10 +15,9 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var partFaults: [String] = []
     public private(set) var errors: [String] = []
     public private(set) var layout: SheetLayout?
-    /// The block of the first `text`, `gauge` or `graph`, which is the value of a metric (H1).
-    public private(set) var metric: TextBlock?
-    /// The block of the first `gauge`, which is the progress of a call that runs (R12).
-    public private(set) var progress: TextBlock?
+    /// The block of the component that stands for the spot (H1): the one that `value=<id>` in the head names, or else the
+    /// only `text`, `gauge`, `graph`, `switch` or `slider`.
+    public private(set) var value: TextBlock?
     /// The block of the first `view`, whose keys the plugin's view reads (V4).
     public private(set) var view: TextBlock?
     /// The drawings of the spot's card and of the menu bar, with the components that they place (U5).
@@ -41,6 +40,8 @@ public struct PluginOutput: Equatable, Sendable {
     private static let templateKind = "template"
     /// The area of the rows in the default drawing of a sheet with no `repeat` block (U13).
     private static let rowsArea = "rows"
+    /// The kinds of component that can stand for the spot.
+    private static let valueKinds: Set<String> = ["text", "gauge", "graph", "switch", "slider"]
 
     /// Whether a first key names a row or a part, so that the block is not the head.
     private static func isKind(_ key: String) -> Bool {
@@ -77,9 +78,7 @@ public struct PluginOutput: Equatable, Sendable {
                 }
             } else if let kind, SpotPart.kinds.contains(kind), let part = SpotPart(block: block) {
                 if kind == "field" { fields.append(block) }
-                if metric == nil, ["text", "gauge", "graph"].contains(kind) { metric = block }
                 if view == nil, kind == "view" { view = block }
-                if progress == nil, kind == "gauge" { progress = block }
                 parts.append(part)
                 partFaults += PartCatalog.faults(in: block)
             } else if summary == nil, block == head {
@@ -97,8 +96,15 @@ public struct PluginOutput: Equatable, Sendable {
             ?? repeating.map { SheetLayout(flat: parts, repeating: $0) }
         self.layout = layout
         face = CardFace(head: head, parts: parts)
-        if let id = face.trayID, let block = blocks.first(where: { $0.fields.first?.value == id && ["text", "gauge", "graph"].contains($0.fields.first?.key ?? "") }) {
-            metric = block
+        let values = blocks.filter { Self.valueKinds.contains($0.fields.first?.key ?? "") }
+        if let id = head?.value("value") {
+            value = values.first { $0.fields.first?.value == id }
+            if value == nil { partFaults.append("the head names the value \(id), which no text, gauge, graph, switch or slider has") }
+        } else if values.count == 1 {
+            value = values.first
+        }
+        for field in head?.fields ?? [] where field.key.hasPrefix("grid.") && !CardFace.places.contains(String(field.key.dropFirst(5))) {
+            partFaults.append("the head draws \(field.key), which is not a place")
         }
         for drawing in face.drawings.values {
             for id in Set(drawing.joined()) where id != SheetLayout.empty && !parts.contains(where: { $0.id == id }) {
@@ -116,6 +122,21 @@ public struct PluginOutput: Equatable, Sendable {
     public var control: SpotPart? {
         guard items.isEmpty, actions.isEmpty, parts.count == 1, let part = parts.first else { return nil }
         return part.kind == "switch" || part.kind == "slider" ? part : nil
+    }
+
+    /// The value when it is a `text`, `gauge` or `graph`, which a widget and the menu bar show.
+    public var metric: TextBlock? {
+        ["text", "gauge", "graph"].contains(value?.fields.first?.key ?? "") ? value : nil
+    }
+
+    /// The value when it is a `gauge`, which is the progress of a call that runs (R12).
+    public var progress: TextBlock? {
+        value?.fields.first?.key == "gauge" ? value : nil
+    }
+
+    /// The component of the value.
+    public var valuePart: SpotPart? {
+        value.flatMap { block in parts.first { $0.id == block.fields.first?.value } }
     }
 
     /// Who searches its rows: the script when it prints `search=script`.

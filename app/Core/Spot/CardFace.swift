@@ -4,7 +4,7 @@ import Foundation
 /// components that the drawings place (U5). A size with no drawing takes the drawing of the nearest smaller size.
 public struct CardFace: Equatable, Sendable {
     /// The places a drawing can name, from the smallest card.
-    public static let places = ["small", "wide", "square", "strip", "large", "tray"]
+    public static let places = ["small", "wide", "square", "strip", "large"]
 
     public private(set) var drawings: [String: [[String]]]
     public private(set) var parts: [SpotPart]
@@ -36,11 +36,6 @@ public struct CardFace: Equatable, Sendable {
     /// Whether a `view` component places the plugin's view, which fills the card when no drawing places it (V3).
     public var hasView: Bool {
         parts.contains { $0.kind == "view" }
-    }
-
-    /// The id that the menu bar shows, from the first word of `grid.tray=`.
-    public var trayID: String? {
-        drawings["tray"]?.first?.first
     }
 
     /// Takes a value that the person set on the card, so that it shows before the script answers.
