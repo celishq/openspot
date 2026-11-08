@@ -126,12 +126,9 @@ struct SpotRowsView: View {
         return LazyVGrid(columns: columns, spacing: SpotTokens.listRowGap) {
             ForEach(list.shown.indices, id: \.self) { index in
                 let item = list.shown[index]
-                Button {
-                    onRun(item)
-                } label: {
-                    SpotGridCell(item: item, side: side).equatable()
-                }
-                .buttonStyle(.plain)
+                SpotGridCell(item: item, side: side)
+                    .equatable()
+                    .onTapGesture { onRun(item) }
             }
         }
         .overlay(alignment: .topLeading) { ring(side: side) }
@@ -200,6 +197,7 @@ private struct SpotGridCell: View, Equatable {
             .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
             .contentShape(shape)
             .accessibilityLabel(item.title)
+            .accessibilityAddTraits(.isButton)
     }
 }
 

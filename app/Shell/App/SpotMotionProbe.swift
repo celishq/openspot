@@ -52,10 +52,18 @@ final class SpotMotionProbe: NSObject {
             return press(target.id, left: presses)
         }
         model.press(target.id)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+        whenRowsArrive {
             self.start = CACurrentMediaTime()
             if action == "typing" { self.type(left: self.presses) } else { self.arrow(left: self.presses) }
         }
+    }
+
+    /// Runs the work a second after the open sheet holds its rows.
+    private func whenRowsArrive(_ work: @escaping () -> Void) {
+        guard let list = model.openItems, list.holdsItems, !list.isLoading else {
+            return DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { self.whenRowsArrive(work) }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: work)
     }
 
     /// Moves down one line of the open rows for each step, and back up for each second half of the steps.

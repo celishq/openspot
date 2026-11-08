@@ -11,6 +11,9 @@ struct SpotItemIcon: View {
     var body: some View {
         if let icon = item.icon {
             SpotFileIconView(icon: icon, size: size)
+        } else if let glyph = item.glyph, let picture = SpotGlyphPicture.image(glyph, side: size, fontSize: size * Self.glyphScale) {
+            Image(decorative: picture, scale: SpotGlyphPicture.scale)
+                .frame(width: size, height: size)
         } else if let glyph = item.glyph {
             Text(glyph)
                 .font(.system(size: size * Self.glyphScale))
