@@ -637,7 +637,7 @@ public final class SpotRun {
         pauses[Self.searchKey] = nil
         var hasAnswer = false
         start(
-            .items(query: query),
+            .items(query: query, forms: SearchQuery(text: query).forms),
             key: Self.searchKey,
             input: nil,
             limit: runs.readLimit,

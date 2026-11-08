@@ -28,7 +28,9 @@ file=/Applications/Safari.app
 
 Openspot searches the rows itself and sorts recent picks first. The head can change this on each read:
 
-- `search=script` sends each search change as `<script> read <text>`, and the script prints the rows that match (R6).
+- `search=script` sends each search change as `<script> read <text> [form]...`, and the script prints the rows that match
+  any of them (R6). A form is another text that the person may have meant, such as the text typed in another keyboard
+  layout or spelled in Latin letters.
 - `recents=false` does not sort recent picks first (R7).
 - `repeat=<letter> <per line>` flows the rows as square buttons into one area of the drawing, which scrolls (B5).
 

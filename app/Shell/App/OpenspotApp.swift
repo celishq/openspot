@@ -51,6 +51,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         model.chooseFiles = { [weak self] in self?.chooseFiles(for: $0, then: $1) }
         EditMenu.install()
+        SpotKeyLayouts.start()
         panel = SpotsPanel.make(model: model)
         model.dismiss = { [weak self] in
             self?.panel?.hide()

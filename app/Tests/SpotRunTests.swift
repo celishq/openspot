@@ -238,6 +238,16 @@ final class SpotRunTests: XCTestCase {
         try await wait("the answer to the text") { sheet.list.shown.map(\.title) == ["read:rep"] }
     }
 
+    func testAScriptThatSearchesGetsEachFormOfTheText() async throws {
+        let sheet = try make("printf 'search=script\\n\\nrow=%s:%s\\nrun=a\\n' \"$2\" \"$3\"")
+        sheet.open {}
+        try await wait("the first answer") { sheet.list.shown.map(\.title) == [":"] }
+
+        sheet.search("сафари")
+
+        try await wait("the answer to the text") { sheet.list.shown.map(\.title) == ["сафари:safari"] }
+    }
+
     func testTextTypedBeforeTheFirstAnswerGoesToAScriptThatSearches() async throws {
         let sheet = try make("""
         [ -n "$2" ] || sleep 0.2

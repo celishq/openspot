@@ -151,7 +151,7 @@ public struct ItemList: Equatable, Sendable {
             return
         }
         let next = SearchQuery(text: query)
-        let among = narrowing.flatMap { $0.query.narrows(to: next.text) ? $0.matches : nil } ?? Array(folded.indices)
+        let among = narrowing.flatMap { $0.query.narrows(to: next) ? $0.matches : nil } ?? Array(folded.indices)
         let ranked = next.ranking(folded, among: among, recent: recent)
         narrowing = Narrowing(query: next, matches: ranked.sorted())
         shown = ranked.map { folded[$0].item }
