@@ -58,7 +58,12 @@ public struct PluginOutput: Equatable, Sendable {
             let kind = block.fields.first?.key
             if kind == Self.repeatKind { continue }
             if kind == Self.templateKind {
-                if let template = RowTemplate(block: block) { templates[template.name] = template } else { errors.append(block.firstLine) }
+                if let template = RowTemplate(block: block) {
+                    templates[template.name] = template
+                    partFaults += template.faults
+                } else {
+                    errors.append(block.firstLine)
+                }
             } else if kind == Self.button, let id = block.value(Self.button), drawn?.areas[id] == nil {
                 take(action: id, block)
             } else if kind == "row" {

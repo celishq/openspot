@@ -45,6 +45,11 @@ public struct RowTemplate: Equatable, Sendable {
         self.shared = shared
     }
 
+    /// What is wrong with it: a slot that takes the name of a key of a row (U14).
+    public var faults: [String] {
+        slots.filter(SpotItem.ownKeys.contains).map { "the template \(name) has a slot called \($0), which is a key of a row" }
+    }
+
     /// The drawing for a place of a size such as `2x2`: its own, or else the largest that fits in it, or else the one for any
     /// place, or else one line of the slots in order.
     public func drawing(for size: String = "") -> [[String]] {

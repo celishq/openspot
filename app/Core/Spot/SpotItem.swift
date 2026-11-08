@@ -23,7 +23,8 @@ public struct SpotItem: Equatable, Sendable {
     /// Each line of its block that is not one of its own keys, from which the slots of a template take their values.
     public let fields: [TextBlock.Field]
 
-    private static let ownKeys: Set<String> = [
+    /// The keys that a row reads itself, which are the slots of the default template (U14).
+    public static let ownKeys: Set<String> = [
         "row", "run", "detail", "symbol", "file", "image", "glyph", "hides", "keyword", "shortcut", "on", "tone", "as"
     ]
 

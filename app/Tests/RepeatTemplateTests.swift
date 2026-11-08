@@ -135,4 +135,17 @@ final class RepeatTemplateTests: XCTestCase {
         XCTAssertTrue(PluginOutput(text: "text=note\ntitle=Note\n\nrepeat=list\n").replacesRows)
         XCTAssertTrue(PluginOutput(text: "").replacesRows)
     }
+
+    func testASlotCannotTakeTheNameOfAKeyOfARow() {
+        let output = PluginOutput(text: "repeat=a\n\ntemplate=row\ngrid=on name\nswitch=on\ntext=name\n\nrow=A\nrun=a\n")
+
+        XCTAssertEqual(output.partFaults, ["the template row has a slot called on, which is a key of a row"])
+    }
+
+    func testAFieldSlotHoldsTheTextOfItsRow() throws {
+        let output = PluginOutput(text: "repeat=a\n\ntemplate=row\ngrid=name note\ntext=name\nfield=note\n\nrow=A\nrun=a\nnote=Call back\n")
+        let row = try XCTUnwrap(output.items.first)
+
+        XCTAssertEqual(output.template(of: row)?.parts(of: row).last?.control, .text("Call back", placeholder: nil, isReadOnly: false))
+    }
 }

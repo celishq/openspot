@@ -34,6 +34,8 @@ struct SpotSlotView: View {
             SpotSlotBars(points: points)
         case .shortcut(let text):
             SpotKeyLabel(text: text, isRecording: false)
+        case .text(let text, let placeholder, let isReadOnly):
+            SpotSlotField(text: text, placeholder: placeholder ?? part.title ?? "", isReadOnly: isReadOnly) { onSlot(part.id, $0) }
         case .metric(let number):
             Text(number)
                 .font(.system(size: 28, weight: .semibold, design: .rounded))
@@ -93,6 +95,27 @@ struct SpotSlotView: View {
                 .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: tone, side: side) }
                 .frame(width: room.size.width, height: room.size.height)
         }
+    }
+}
+
+/// A text field in a row, which sends its text when the person presses Return.
+private struct SpotSlotField: View {
+    let text: String
+    let placeholder: String
+    let isReadOnly: Bool
+    let onSubmit: (String) -> Void
+    @State private var typed: String?
+
+    var body: some View {
+        TextField(placeholder, text: Binding(get: { typed ?? text }, set: { typed = $0 }))
+            .textFieldStyle(.plain)
+            .font(SpotType.body)
+            .foregroundStyle(SpotTheme.ink)
+            .disabled(isReadOnly)
+            .onSubmit {
+                if let typed { onSubmit(typed) }
+                typed = nil
+            }
     }
 }
 
