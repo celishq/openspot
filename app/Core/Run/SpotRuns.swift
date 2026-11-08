@@ -237,20 +237,21 @@ public final class SpotRuns {
 
     private func frames(of command: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String] = [:]) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void) {
         if let shipped = command.shipped {
-            let (stream, continuation) = AsyncThrowingStream.makeStream(of: String.self)
-            let task = Task {
-                do {
-                    let text = try await shipped.answer(action.arguments, input: input)
-                    if !text.isEmpty { continuation.yield(text) }
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
+            return answered { try await shipped.answer(action.arguments, input: input) }
+        }
+        if command.isMcp {
+            let process = ScriptProcess(url: command.url, mode: .stays, stopPause: stopPause, dataName: command.dataName, lines: true)
+            do {
+                let lines = try process.start()
+                keep(process)
+                let (stream, halt) = answered { try await McpSpot(process: process, lines: lines).answer(action.arguments, input: input) }
+                return (stream, {
+                    process.stop()
+                    halt()
+                })
+            } catch {
+                return (AsyncThrowingStream { $0.finish(throwing: error) }, {})
             }
-            return (stream, {
-                task.cancel()
-                continuation.finish()
-            })
         }
         let sent = action.sent(input: input)
         let process = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: command.dataName, variables: variables)
@@ -261,6 +262,24 @@ public final class SpotRuns {
         } catch {
             return (AsyncThrowingStream { $0.finish(throwing: error) }, {})
         }
+    }
+
+    /// The frames of an answer that Swift gives in the app: one frame with all its text.
+    private func answered(by work: @escaping @Sendable () async throws -> String) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void) {
+        let (stream, continuation) = AsyncThrowingStream.makeStream(of: String.self)
+        let task = Task {
+            do {
+                let text = try await work()
+                if !text.isEmpty { continuation.yield(text) }
+                continuation.finish()
+            } catch {
+                continuation.finish(throwing: error)
+            }
+        }
+        return (stream, {
+            task.cancel()
+            continuation.finish()
+        })
     }
 
     private func keep(_ process: ScriptProcess) {

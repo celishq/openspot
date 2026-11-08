@@ -69,6 +69,7 @@ open -a Calendar
 | `drop` | A list of file extensions, `folder` or `*`. Its card takes files that a person drops. See "Drops". |
 | `command` | An ID and a title, such as `command=left:Left side`. One line for each command. See "Commands with keys". |
 | `data` | The name of a data folder to share with other spots. See "Rules for scripts". |
+| `mcp` | `true` for an MCP server on stdio. See "MCP servers". |
 
 `read` is a list of moments, split by commas, such as `read=panel,60`. At each moment Openspot calls `<script> read`:
 
@@ -439,6 +440,24 @@ To read the sheet when the panel opens, so that it opens at its full size, use `
 To try a sheet, run `openspot sandbox`, or `openspot sandbox <file>` to watch a file or run a script. It shows the real
 sheet and its faults at once. `openspot check --sheet` reports the faults of a sheet on stdin, and `openspot render
 <file.png>` draws it to a picture.
+
+## MCP servers
+
+An MCP server that talks over stdio can be a spot. Write an executable file that starts it, with `mcp=true` in its
+header. This one needs Node.js:
+
+```text
+#!/bin/sh
+# name=Files
+# symbol=folder
+# mcp=true
+exec npx -y @modelcontextprotocol/server-filesystem "$HOME/Documents"
+```
+
+- Its sheet lists each tool as an action and each resource as a row. A tool with input asks for it in a form.
+- A tool's text answer and a picked resource's text show as a toast.
+- Each call starts the server, and the server ends after its answer. Openspot reads only the header in a scan.
+- A tool called `read` or with a default id does not show.
 
 ## The openspot command
 

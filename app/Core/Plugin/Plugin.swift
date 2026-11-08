@@ -36,6 +36,8 @@ public struct Plugin: Equatable, Sendable {
             }
             read = parsed
         }
+        let isMcp = header.flag("mcp") ?? false
+        if isMcp, read == nil { read = .sheet }
         let isTray = header.flag("tray") ?? false
         let stays = header.flag("stay") ?? false
         let hasKey = header.value("key") != nil
@@ -79,6 +81,7 @@ public struct Plugin: Equatable, Sendable {
             rank: rank,
             order: order,
             stays: stays,
+            isMcp: isMcp,
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             isTray: isTray,
             dataName: header.value("data") ?? id.split(separator: "/").first.map(String.init),

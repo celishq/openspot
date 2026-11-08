@@ -452,9 +452,7 @@ A change to the meaning of a word that exists is a breaking change. Do not make 
 
 ## 13. Where the code differs today
 
-| Rules | Module | Today |
-|---|---|---|
-| F10 | `Core/Plugin/*` | No MCP. |
+The code follows this document.
 
 ## 14. Decisions
 
