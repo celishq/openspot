@@ -24,6 +24,7 @@ struct SpotGridView: View {
                 offset: offset(of: placement, id: entry.id),
                 scale: isSheetOpen && entry.id != openID ? SpotMotion.pushedScale : 1,
                 fade: push?.fade(of: placement) ?? 1...1,
+                anchor: anchor(of: placement),
                 isCovered: entry.id == openID || SpotCardView.isFilled(entry, takesDrag: model.takesDrag(entry.id), isDropTarget: dropTarget == entry.id)
             )
         }
@@ -46,7 +47,7 @@ struct SpotGridView: View {
                 )
                 .onDrop(of: [.fileURL], delegate: SpotCardDrop(id: entry.id, model: model, target: $dropTarget))
                 .animation(SpotMotion.cardFade(isSheetOpen: isSheetOpen, fade: card.fade)) {
-                    $0.scaleEffect(card.scale).opacity(isSheetOpen ? SpotMotion.coveredCardOpacity : 1)
+                    $0.scaleEffect(card.scale, anchor: card.anchor).opacity(isSheetOpen ? SpotMotion.coveredCardOpacity : 1)
                 }
                 .offset(card.offset)
                 .zIndex(dragged?.id == entry.id ? 1 : 0)
@@ -65,6 +66,13 @@ struct SpotGridView: View {
         let pushed = isSheetOpen ? push?.offset(of: placement) ?? .zero : .zero
         let drag = dragged?.id == id ? dragged?.offset ?? .zero : .zero
         return CGSize(width: place.minX + pushed.width + drag.width, height: place.minY + pushed.height + drag.height)
+    }
+
+    /// The side of a card that faces the open sheet, which stays in step with the sheet's edge as the card shrinks.
+    private func anchor(of placement: SpotPlacement) -> UnitPoint {
+        guard let push else { return .center }
+        let away = placement.direction(awayFrom: push.open)
+        return away.columns < 0 ? .trailing : away.columns > 0 ? .leading : away.rows < 0 ? .bottom : away.rows > 0 ? .top : .center
     }
 
     /// What a card offers on a right click: its preferred size, its place on the grid and Edit Spots.

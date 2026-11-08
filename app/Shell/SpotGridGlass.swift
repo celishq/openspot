@@ -12,6 +12,8 @@ struct SpotGridGlass: View {
         let scale: CGFloat
         /// The shares of the sheet's motion over which this card fades.
         let fade: ClosedRange<Double>
+        /// The point the card shrinks towards.
+        let anchor: UnitPoint
         /// Whether the card draws a solid fill or lies under the open sheet, so no blur shows through it.
         let isCovered: Bool
     }
@@ -46,7 +48,7 @@ struct SpotGridGlass: View {
         RoundedRectangle(cornerRadius: SpotTokens.corner(for: card.size), style: .continuous)
             .frame(width: SpotTokens.width(columns: card.size.columns), height: SpotTokens.height(rows: card.size.rows))
             .animation(SpotMotion.cardFade(isSheetOpen: isSheetOpen, fade: card.fade)) {
-                $0.scaleEffect(card.scale).opacity(isSheetOpen ? SpotMotion.coveredCardOpacity : 1)
+                $0.scaleEffect(card.scale, anchor: card.anchor).opacity(isSheetOpen ? SpotMotion.coveredCardOpacity : 1)
             }
             .scaleEffect(isShown ? 1 : SpotMotion.hiddenScale)
             .offset(card.offset)
