@@ -6,7 +6,7 @@ import XCTest
 final class SpotRunsWorkTests: SpotRunsCase {
     // MARK: L6, G1 to G4
 
-    private static let progress = "printf 'title=42%%\\ndetail=2 min left\\nvalue=0.42\\n---\\n'\nsleep 30"
+    private static let progress = "printf 'gauge=progress\\ntitle=42%%\\ndetail=2 min left\\nvalue=0.42\\n---\\n'\nsleep 30"
 
     /// A body that waits for a file before each of these frames.
     private func steps(_ steps: [(file: String, frame: String)]) -> String {
@@ -95,10 +95,10 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
     func testTheSpotShowsASpinnerWithNoValueAndARingFromValue() async throws {
         try script(body: steps([
-            ("half", "value=0.42"),
-            ("over", "value=7"),
-            ("under", "value=-1"),
-            ("none", "title=Almost")
+            ("half", "gauge=progress\\nvalue=0.42"),
+            ("over", "gauge=progress\\nvalue=7"),
+            ("under", "gauge=progress\\nvalue=-1"),
+            ("none", "gauge=progress\\ntitle=Almost")
         ]))
         let sheet = try sheet()
         sheet.pressCard()
@@ -118,7 +118,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAFramesWordsShowOnTheSpotOnlyWhileItsCallRuns() async throws {
-        try script(header: "name=Encode\nsubtitle=Videos", "printf 'title=42%%\\ndetail=2 min left\\n---\\n'\nwhile [ ! -e '\(path("end"))' ]; do sleep 0.02; done")
+        try script(header: "name=Encode\nsubtitle=Videos", "printf 'gauge=progress\\ntitle=42%%\\ndetail=2 min left\\n---\\n'\nwhile [ ! -e '\(path("end"))' ]; do sleep 0.02; done")
         let sheet = try sheet()
         sheet.pressCard()
         try await wait("the frame") { sheet.calls.first?.lastFrame != nil }
@@ -137,7 +137,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAFrameWithOnlyATitleKeepsTheDetailOfTheSpot() async throws {
-        try script(header: "name=Encode\nsubtitle=Videos", "printf 'title=42%%\\n---\\n'\nsleep 30")
+        try script(header: "name=Encode\nsubtitle=Videos", "printf 'gauge=progress\\ntitle=42%%\\n---\\n'\nsleep 30")
         let sheet = try sheet()
         sheet.pressCard()
         try await wait("the frame") { sheet.calls.first?.lastFrame != nil }
@@ -168,7 +168,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
     func testTheMenuBarShowsTheOldestCallOfAllScriptsAndHowManyRun() async throws {
         try script("a", "sleep 30")
-        try script("z", "printf 'value=0.25\\n---\\n'\nsleep 30")
+        try script("z", "printf 'gauge=progress\\nvalue=0.25\\n---\\n'\nsleep 30")
         _ = try scanned()
         let a = try XCTUnwrap(runs.sheets["a"])
         let z = try XCTUnwrap(runs.sheets["z"])
@@ -193,8 +193,8 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(header: "read=sheet", """
         case "$1" in
           read) printf 'grid=a b\\n\\nbutton=a\\ntitle=A\\n\\nbutton=b\\ntitle=B\\n' ;;
-          a) printf 'title=A\\n---\\n'; sleep 30 ;;
-          b) printf 'title=B\\n---\\n'; sleep 30 ;;
+          a) printf 'gauge=progress\\ntitle=A\\n---\\n'; sleep 30 ;;
+          b) printf 'gauge=progress\\ntitle=B\\n---\\n'; sleep 30 ;;
         esac
         """)
         let sheet = try sheet()

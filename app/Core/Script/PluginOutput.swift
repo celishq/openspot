@@ -17,6 +17,8 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var layout: SheetLayout?
     /// The block of the first `text`, `gauge` or `graph`, which is the value of a metric (H1).
     public private(set) var metric: TextBlock?
+    /// The block of the first `gauge`, which is the progress of a call that runs (R12).
+    public private(set) var progress: TextBlock?
     /// The block of the first `view`, whose keys the plugin's view reads (V4).
     public private(set) var view: TextBlock?
     /// The drawings of the spot's card and of the menu bar, with the components that they place (U5).
@@ -77,6 +79,7 @@ public struct PluginOutput: Equatable, Sendable {
                 if kind == "field" { fields.append(block) }
                 if metric == nil, ["text", "gauge", "graph"].contains(kind) { metric = block }
                 if view == nil, kind == "view" { view = block }
+                if progress == nil, kind == "gauge" { progress = block }
                 parts.append(part)
                 partFaults += PartCatalog.faults(in: block)
             } else if summary == nil, block == head {

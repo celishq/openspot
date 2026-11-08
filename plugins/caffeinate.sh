@@ -30,9 +30,9 @@ stop() {
 case "$1" in
   read)
     detail="Off"
-    tone=
+    on=false
     if [ "$running" = 1 ]; then
-      tone=on
+      on=true
       detail="Until off"
       if [ "$end" != 0 ]; then
         left=$(( (end - $(date +%s) + 59) / 60 ))
@@ -43,7 +43,8 @@ case "$1" in
         fi
       fi
     fi
-    printf 'detail=%s\ntone=%s\nrecents=false\n\n' "$detail" "$tone"
+    printf 'detail=%s\nrecents=false\n\n' "$detail"
+    printf 'switch=awake\ntitle=Keep awake\ndetail=%s\non=%s\n\n' "$detail" "$on"
     printf 'button=open\ntitle=Select\n\n'
     if [ "$running" = 1 ]; then
       printf 'row=Turn off\nrun=off\n\n'
@@ -52,6 +53,16 @@ case "$1" in
     printf 'row=1 hour\nrun=3600\n\n'
     printf 'row=2 hours\nrun=7200\n\n'
     printf 'row=Until turned off\nrun=0\n'
+    ;;
+  awake)
+    stop
+    if [ "$2" = true ]; then
+      nohup caffeinate -di >/dev/null 2>&1 &
+      remember "$! 0"
+      echo "toast=Caffeinate is on until you turn it off"
+    else
+      echo "toast=Caffeinate is off"
+    fi
     ;;
   open)
     case "$2" in

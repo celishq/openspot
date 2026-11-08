@@ -45,7 +45,7 @@ class SamplePluginsCase: XCTestCase {
         let stopToast = try await caffeinate.perform(.item(try XCTUnwrap(first)), timeout: 5)
         XCTAssertEqual(stopToast, "Caffeinate is off")
         let stopped = try await caffeinate.state(timeout: 5)
-        XCTAssertNil(stopped.on)
+        XCTAssertEqual(stopped.on, false)
     }
 
     /// Runs with an empty home and temp folder and with fake clipboard, open and caffeinate tools, so a test touches nothing

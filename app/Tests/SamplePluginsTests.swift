@@ -112,7 +112,7 @@ final class SamplePluginsTests: SamplePluginsCase {
             let lines = try await caffeinate.items(timeout: 5)
 
             XCTAssertEqual(state.title, "Caffeinate")
-            XCTAssertNil(state.on)
+            XCTAssertEqual(state.on, false)
             XCTAssertEqual(lines.items.map(\.run), ["1800", "3600", "7200", "0"])
             XCTAssertEqual(lines.errors, [])
             XCTAssertEqual(lines.pick, .close)
@@ -125,6 +125,26 @@ final class SamplePluginsTests: SamplePluginsCase {
         let caffeinate = try XCTUnwrap(try scan.commands.first { $0.name == "Caffeinate" })
         try await withPrivateHome { _ in
             try await self.turnCaffeinateOnAndOff(caffeinate)
+        }
+    }
+
+    func testCaffeinateTurnsOnAndOffFromItsSwitch() async throws {
+        let caffeinate = try XCTUnwrap(try scan.commands.first { $0.name == "Caffeinate" })
+
+        try await withPrivateHome { _ in
+            let on = try await caffeinate.perform(.set("awake", to: "true"), timeout: 5)
+            var state = try await caffeinate.state(timeout: 5)
+            for _ in 0..<100 where state.on != true {
+                try await Task.sleep(for: .milliseconds(50))
+                state = try await caffeinate.state(timeout: 5)
+            }
+            let off = try await caffeinate.perform(.set("awake", to: "false"), timeout: 5)
+
+            XCTAssertEqual(on, "Caffeinate is on until you turn it off")
+            XCTAssertEqual(state.on, true)
+            XCTAssertEqual(off, "Caffeinate is off")
+            let after = try await caffeinate.state(timeout: 5)
+            XCTAssertEqual(after.on, false)
         }
     }
 

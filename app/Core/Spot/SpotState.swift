@@ -44,8 +44,8 @@ public struct SpotState: Equatable, Sendable {
         self.face = face
     }
 
-    /// Reads how a spot looks from what its script printed: the words of its head, `tone=on` in its head for a spot that
-    /// is on, and the first switch and slider. A spot
+    /// Reads how a spot looks from what its script printed: the words of its head, and the first switch, which says whether
+    /// its card is on, and the first slider. A spot
     /// whose output is one switch or one slider takes that control's words for its card (U12). What the output leaves out
     /// comes from the header.
     public init(output: PluginOutput, header: SpotState) {
@@ -53,7 +53,7 @@ public struct SpotState: Equatable, Sendable {
         let toggle = output.parts.first { $0.kind == "switch" }
         let slider = output.parts.first { $0.kind == "slider" }
         let control = output.control
-        var on: Bool? = block?.value("tone") == MetricValue.Tone.on.rawValue ? true : nil
+        var on: Bool?
         if case .toggle(let value)? = toggle?.control { on = value }
         var level: (Double, Double, Double)?
         if case .slider(let value, let low, let high)? = slider?.control { level = (value, low, high) }
@@ -77,13 +77,12 @@ public struct SpotState: Equatable, Sendable {
         return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, values: values, control: control, face: face)
     }
 
-    /// This state with what a frame of a running call changes: the `tone` of its head and the value of its card's control.
+    /// This state with what a frame of a running call changes: the value of its card's control, or of its first switch.
     /// Its words stay the spot's own.
     public func taking(_ output: PluginOutput) -> SpotState {
         var on = self.on
         var level = self.level
-        if let tone = output.summary?.value("tone") { on = tone == MetricValue.Tone.on.rawValue ? true : nil }
-        let part = output.parts.first { $0.id == control }
+        let part = output.parts.first { $0.id == control } ?? output.parts.first { $0.kind == "switch" }
         if case .toggle(let value)? = part?.control { on = value }
         if case .slider(let value, _, _)? = part?.control { level = value }
         return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, size: size, values: values, control: control, face: face)

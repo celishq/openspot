@@ -79,7 +79,7 @@ final class SpotTests: XCTestCase {
 
     func testOpeningGivesTheKindAndTheActionsThatItPrints() async throws {
         let command = try writeCommand(kind: .launch, read: .panel, """
-        printf 'tone=on\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=A\\nrun=a\\n'
+        printf 'switch=power\\non=true\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=A\\nrun=a\\n'
         """)
 
         let opened = try await command.opened(timeout: 5)

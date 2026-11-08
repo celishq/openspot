@@ -174,7 +174,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(header: "read=panel", """
         case "$1" in
           read) printf 'detail=Idle\\n\\nrow=A\\nrun=a\\n\\ntext=bar\\ntitle=idle\\n' ;;
-          open) printf 'toast=Saved\\ntone=on\\ntitle=Other\\n\\ntext=bar\\ntitle=work\\n' ;;
+          open) printf 'toast=Saved\\ntitle=Other\\n\\nswitch=power\\non=true\\n\\ntext=bar\\ntitle=work\\n' ;;
         esac
         """)
         let sheet = try sheet()

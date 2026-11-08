@@ -42,9 +42,9 @@ final class SheetStreamTests: XCTestCase {
     func testATerminalProgressCodeIsAFrameWithItsValue() {
         var reader = SheetFrameReader()
 
-        XCTAssertEqual(reader.read(Data("Copying\u{1b}]9;4;1;42\u{07}".utf8)), ["value=0.42\n"])
+        XCTAssertEqual(reader.read(Data("Copying\u{1b}]9;4;1;42\u{07}".utf8)), ["gauge=progress\nvalue=0.42\n"])
         XCTAssertEqual(reader.read(Data("\u{1b}]9;4;1".utf8)), [])
-        XCTAssertEqual(reader.read(Data(";50\u{1b}\\\n".utf8)), ["value=0.5\n"])
+        XCTAssertEqual(reader.read(Data(";50\u{1b}\\\n".utf8)), ["gauge=progress\nvalue=0.5\n"])
         XCTAssertEqual(reader.read(Data("\u{1b}]9;4;3;0\u{07}\u{1b}]9;4;0;0\u{07}".utf8)), [])
     }
 
