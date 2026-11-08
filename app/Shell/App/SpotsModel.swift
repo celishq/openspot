@@ -592,7 +592,7 @@ final class SpotsModel {
         open(ShippedSpot.settingsID)
     }
 
-    /// Opens a sheet and ends what another left running.
+    /// Opens a sheet and ends what another left running. The sheet of a staying script opens with its first frame.
     func open(_ id: String) {
         guard let sheet = sheets[id] else { return }
         sheets.values.filter { $0 !== sheet }.forEach { $0.close() }

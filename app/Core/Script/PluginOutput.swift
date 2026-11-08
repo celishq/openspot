@@ -1,7 +1,7 @@
 import Foundation
 
 /// What a script prints, sorted by the first key of each block: `row` or a kind of part. The one other block is the head,
-/// which says how the spot itself looks and holds the effects `toast` and `link`. A button that the drawing does not place is an action (U6). Each
+/// which says how the spot itself looks and holds the effects `toast`, `link` and `end`. A button that the drawing does not place is an action (U6). Each
 /// `run` value appears once.
 public struct PluginOutput: Equatable, Sendable {
     public private(set) var summary: TextBlock?
@@ -29,6 +29,8 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var toast: String?
     /// The URL of a `link` effect, which opens it, such as the fix of a failure.
     public private(set) var link: String?
+    /// The ids of the calls of a staying script that this frame ends.
+    public private(set) var ends: [String] = []
 
     private static let reserved = "read"
     /// The app's own events. A part cannot take one, and a button can take only `open`, to change the pick.
@@ -169,6 +171,7 @@ public struct PluginOutput: Equatable, Sendable {
     private mutating func take(effects block: TextBlock) {
         toast = block.value("toast") ?? toast
         link = block.value("link") ?? link
+        if let end = block.value("end") { ends.append(end) }
     }
 
     /// Keeps an action. The `open` action sets the word for Enter, and whether a pick stays in the panel.

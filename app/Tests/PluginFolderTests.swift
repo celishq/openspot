@@ -102,6 +102,7 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertFalse(command.readsState)
         XCTAssertEqual(command.pick, .close)
         XCTAssertFalse(command.isGlobal)
+        XCTAssertFalse(command.stays)
         XCTAssertEqual(command.click.arguments, ["run"])
     }
 
@@ -174,6 +175,7 @@ final class PluginFolderTests: XCTestCase {
         let command = try XCTUnwrap(try scan.commands.first)
 
         XCTAssertEqual(try scan.refused, [])
+        XCTAssertFalse(command.stays)
         XCTAssertEqual(command.kind, .launch)
         XCTAssertTrue(command.keepsRecent)
         XCTAssertTrue(command.isOnGrid)

@@ -1,19 +1,25 @@
 import Foundation
 
-/// One process of a script, and the only way to start one. It gives frames as the script prints them, and ends when its
-/// output closes.
+/// One process of a script, and the only way to start one. `once` gives it one input, and `stays` keeps its input open
+/// for calls. Both give frames as the script prints them, and end when its output closes.
 public final class ScriptProcess: @unchecked Sendable {
+    public enum Mode: Sendable {
+        case once(input: String?)
+        case stays
+    }
+
     private static let exitPause: TimeInterval = 1
     private static let errorsPause: TimeInterval = 0.5
     private static let forcePause: TimeInterval = 0.1
 
     private let process = Process()
-    private let given: String?
+    private let mode: Mode
     private let limit: TimeInterval?
     private let dataName: String?
     private let variables: [String: String]
     private let stopPause: TimeInterval
     private let input = Pipe()
+    private let writes = DispatchQueue(label: "openspot.script")
     private let exit = DispatchSemaphore(value: 0)
     private let lock = NSLock()
     private var continuation: AsyncThrowingStream<String, Error>.Continuation?
@@ -22,14 +28,14 @@ public final class ScriptProcess: @unchecked Sendable {
     private var ended = false
     private var killsLater = false
 
-    /// `input` is its standard input. `limit` is the time the script has to its first frame or its end. With none, it has
-    /// no limit. `stopPause` is the time between each step of a stop. `variables` add to its environment.
-    public init(url: URL, arguments: [String] = [], input: String? = nil, limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:]) {
+    /// `limit` is the time the script has to its first frame or its end. With none, it has no limit. `stopPause` is the time
+    /// between each step of a stop. `variables` add to its environment.
+    public init(url: URL, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:]) {
         self.dataName = dataName
         self.variables = variables
         process.executableURL = url
         process.arguments = arguments
-        self.given = input
+        self.mode = mode
         self.limit = limit
         self.stopPause = stopPause
     }
@@ -37,7 +43,7 @@ public final class ScriptProcess: @unchecked Sendable {
     /// The environment of a script: the `openspot` command of this app on its path, the data folder, which this creates, and
     /// the shell helper in the bundle of the app. With no bundle, as in a test, the helper is what `base` names. `dataName`
     /// names a folder of its own inside the data of the app.
-    public static func environment(base: [String: String], app: String, dataName: String? = nil) -> [String: String] {
+    public static func environment(base: [String: String], app: String, stays: Bool = false, dataName: String? = nil) -> [String: String] {
         let contents = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent()
         let helpers = contents.appendingPathComponent("Helpers").path
         let home = base["HOME"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? FileManager.default.homeDirectoryForCurrentUser
@@ -47,23 +53,33 @@ public final class ScriptProcess: @unchecked Sendable {
         var environment = base.merging(["PATH": "\(helpers):\(base["PATH"] ?? "")", "OPENSPOT_DATA": data.path], uniquingKeysWith: { _, new in new })
         let shell = contents.appendingPathComponent("Resources/openspot.sh").path
         if FileManager.default.fileExists(atPath: shell) { environment["OPENSPOT_SH"] = shell }
+        environment["OPENSPOT_STAY"] = stays ? "true" : nil
         return environment
     }
 
     /// Runs a process once, and returns all that it prints.
     public static func output(url: URL, arguments: [String] = [], input: String? = nil, limit: TimeInterval? = nil) async throws -> String {
         var text = ""
-        for try await frame in try ScriptProcess(url: url, arguments: arguments, input: input, limit: limit).start() {
+        for try await frame in try ScriptProcess(url: url, arguments: arguments, mode: .once(input: input), limit: limit).start() {
             text += frame
         }
         return text
     }
 
     /// Starts the process, and returns its frames. A line `---` ends a frame, and so does the end of the output. Ending the
-    /// stream early stops the process.
+    /// stream early stops a process that runs once.
     public func start() throws -> AsyncThrowingStream<String, Error> {
-        process.standardInput = given == nil ? FileHandle.nullDevice : input
-        process.environment = Self.environment(base: ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", dataName: dataName).merging(variables) { _, new in new }
+        var text: String?
+        var stays = false
+        switch mode {
+        case .stays:
+            stays = true
+            process.standardInput = input
+        case .once(let given):
+            text = given
+            process.standardInput = given == nil ? FileHandle.nullDevice : input
+        }
+        process.environment = Self.environment(base: ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", stays: stays, dataName: dataName).merging(variables) { _, new in new }
         let output = Pipe()
         process.standardOutput = output
         let errors = Pipe()
@@ -72,11 +88,11 @@ public final class ScriptProcess: @unchecked Sendable {
         process.terminationHandler = { _ in exit.signal() }
         signal(SIGPIPE, SIG_IGN)
         try process.run()
-        if let given { writeAndClose(given) }
+        if let text { writeAndClose(text) }
         let (stream, continuation) = AsyncThrowingStream.makeStream(of: String.self)
         lock.withLock { self.continuation = continuation }
         continuation.onTermination = { [self] reason in
-            if case .cancelled = reason { stop() }
+            if case .cancelled = reason, case .once = mode { stop() }
         }
         if let limit {
             DispatchQueue.global().asyncAfter(deadline: .now() + limit) { [self] in
@@ -85,6 +101,30 @@ public final class ScriptProcess: @unchecked Sendable {
         }
         follow(output: output, errors: errors)
         return stream
+    }
+
+    /// Sends one call to the script as a block, with its `id` and the values of its sheet, in the order of the calls.
+    public func send(_ action: SpotAction, values: String? = nil, id: Int) {
+        send(text: action.event(values: values, id: id))
+    }
+
+    /// Sends a block as it is, in the order of the calls.
+    public func send(text: String) {
+        let handle = input.fileHandleForWriting
+        writes.async { try? handle.write(contentsOf: Data(text.utf8)) }
+    }
+
+    /// Closes its input after the calls already sent, which ends a script that reads to the end. After 2 seconds its group
+    /// gets the terminate signal, and 2 seconds later Openspot kills what still runs.
+    public func end() {
+        closeInput()
+        DispatchQueue.global().asyncAfter(deadline: .now() + stopPause) { [self] in
+            if lock.withLock({ ended && !stopped }) {
+                stopGroup()
+            } else {
+                stop()
+            }
+        }
     }
 
     /// Stops the call: its stream ends now with no error, and each process in its group gets the terminate signal. After 2
@@ -112,6 +152,15 @@ public final class ScriptProcess: @unchecked Sendable {
         lock.withLock { !ended || killsLater }
     }
 
+    /// Asks the process to end as quitting does: a staying script's input closes, and any other process stops.
+    func leave() {
+        if case .stays = mode {
+            closeInput()
+        } else {
+            stop()
+        }
+    }
+
     /// Waits for the end of each process in its group, up to the time given. Ends what still runs by force after that.
     func finish(by deadline: Date) {
         _ = waitForExit(seconds: deadline.timeIntervalSinceNow)
@@ -120,6 +169,11 @@ public final class ScriptProcess: @unchecked Sendable {
         deliver(SIGTERM)
         Thread.sleep(forTimeInterval: Self.forcePause)
         deliver(SIGKILL)
+    }
+
+    private func closeInput() {
+        let handle = input.fileHandleForWriting
+        writes.async { try? handle.close() }
     }
 
     private func writeAndClose(_ text: String) {

@@ -117,6 +117,11 @@ public enum PartCatalog {
     the spot only while the call runs. To outlive the app, start the work with `nohup` and then exit. A stopped call changes nothing. Closing the panel \
     closes a sheet of parts and drops its values.
 
+    A script with `# stay=true` in its header is one process that talks both ways, such as a local server: it runs while something \
+    wants it, and from launch to quit with `launch` in its `read`. Each call reaches it on stdin as one block and a blank line: \
+    `call=<n>`, one `arg` for each argument of a normal call, and the values of the sheet. It prints frames at any time. \
+    `end=<n>` in the head ends a call, and a second press sends the block `stop=<n>`. It must end when its input ends.
+
     """
 
     private static let rules = """

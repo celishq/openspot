@@ -138,4 +138,67 @@ final class SheetStreamTests: XCTestCase {
 
         XCTAssertEqual(panel.parts.first?.value, "typed")
     }
+
+    func testEventsAreBlocks() {
+        XCTAssertEqual(SpotAction.read.event(id: 1), "call=1\narg=read\n\n")
+        XCTAssertEqual(SpotAction.press("swap").event(id: 2), "call=2\narg=swap\n\n")
+        XCTAssertEqual(SpotAction.set("input", to: "one\ntwo").event(id: 3), "call=3\narg=input\narg=one\\ntwo\n\n")
+        XCTAssertEqual(SpotAction.drop(paths: ["/a b.mov", "-rf.mov"]).event(id: 4), "call=4\narg=drop\narg=/a b.mov\narg=-rf.mov\n\n")
+    }
+
+    func testAnEventHoldsEachValueOfTheSheet() {
+        let values = "input=one\\ntwo\nsource=auto\n"
+
+        XCTAssertEqual(
+            SpotAction.set("source", to: "auto").event(values: values, id: 7),
+            "call=7\narg=source\narg=auto\ninput=one\\ntwo\nsource=auto\n\n"
+        )
+    }
+
+    func testALiveScriptAnswersEachEventAndKeepsItsState() async throws {
+        let url = try script("""
+        count=0
+        while IFS= read -r line; do
+          [ -n "$line" ] || { count=$((count + 1)); printf 'part=a\\ntitle=%s\\n---\\n' "$count"; }
+        done
+        """)
+        let live = ScriptProcess(url: url, mode: .stays, limit: 5)
+        var frames = try live.start().makeAsyncIterator()
+
+        live.send(.read, id: 1)
+        let first = try await frames.next()
+        live.send(.press("a"), id: 2)
+        let second = try await frames.next()
+
+        XCTAssertEqual(first, "part=a\ntitle=1\n")
+        XCTAssertEqual(second, "part=a\ntitle=2\n")
+        live.end()
+    }
+
+    func testAScriptThatIgnoresTheEndOfItsInputIsStopped() async throws {
+        let url = try script("trap '' HUP\n\(String.longLoop)")
+        let live = ScriptProcess(url: url, mode: .stays, limit: 5, stopPause: 0.2)
+        _ = try live.start()
+
+        live.end()
+        try await wait(until: { !live.isRunning })
+    }
+
+    func testAScriptThatStaysIsAList() throws {
+        let url = try script("# stay=true\n# read=panel")
+        let command = try XCTUnwrap(try Plugin(file: url, id: "script")).commands.first
+
+        XCTAssertEqual(command?.stays, true)
+        XCTAssertEqual(command?.kind, .list)
+        XCTAssertEqual(command?.readsState, false)
+    }
+
+    func testAPlainFirstReadOfAStayingScriptGivesItsFirstFrame() async throws {
+        let url = try script("# stay=true\nwhile IFS= read -r line; do [ -n \"$line\" ] || printf 'text=a\\ntitle=A\\n---\\n'; done")
+        let command = Spot(id: "a", name: "A", url: url, kind: .list, stays: true)
+
+        let output = try await command.items(timeout: 5)
+
+        XCTAssertEqual(output.parts.map(\.id), ["a"])
+    }
 }

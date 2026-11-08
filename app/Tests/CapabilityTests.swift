@@ -155,7 +155,7 @@ final class CapabilityTests: XCTestCase {
 
     func testACallerStoppedDuringACallLeavesTheHelperAlive() async throws {
         let id = pid_t(try field("pid", in: try await call()))
-        let process = ScriptProcess(url: tool, arguments: ["call", label], input: "slow")
+        let process = ScriptProcess(url: tool, arguments: ["call", label], mode: .once(input: "slow"))
         _ = try process.start()
         try await Task.sleep(for: .milliseconds(500))
 
