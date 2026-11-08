@@ -77,9 +77,17 @@ public struct Plugin: Equatable, Sendable {
             hasSpot: read?.seconds == nil || hasKey,
             isOnGrid: offers.isEmpty,
             headerSymbol: symbol,
-            offers: offers
+            offers: offers,
+            file: header.value("file").map { Self.path($0, beside: url) },
+            image: header.value("image").map { Self.path($0, beside: url) },
+            glyph: header.value("glyph")
         )
         self.init(id: id, commands: [command])
+    }
+
+    /// A path that the header names: a full path stays, and any other starts at the folder of the script.
+    private static func path(_ text: String, beside url: URL) -> String {
+        text.hasPrefix("/") ? text : url.deletingLastPathComponent().appendingPathComponent(text).path
     }
 
     /// The name a file gives when it has no `name` line: its words with a capital first letter.

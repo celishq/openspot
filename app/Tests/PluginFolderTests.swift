@@ -72,6 +72,22 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(one.url.lastPathComponent, "one.sh")
     }
 
+    func testAHeaderNamesAPictureAsARowDoesAndAPathStartsAtItsFolder() throws {
+        try write("cup.sh", header: "image=icons/cup.png")
+        try write("safari.sh", header: "file=/Applications/Safari.app")
+        try write("tea.sh", header: "glyph=🍵")
+
+        let commands = try scan.commands
+        let cup = try XCTUnwrap(commands.first { $0.id == "cup" })
+        let safari = try XCTUnwrap(commands.first { $0.id == "safari" })
+        let tea = try XCTUnwrap(commands.first { $0.id == "tea" })
+
+        XCTAssertEqual(cup.icon, .image(cup.url.deletingLastPathComponent().appendingPathComponent("icons/cup.png").path))
+        XCTAssertEqual(safari.icon, .file("/Applications/Safari.app"))
+        XCTAssertNil(tea.icon)
+        XCTAssertEqual(tea.glyph, "🍵")
+    }
+
     func testAScriptWithNoHeaderIsAWideLaunchSpotNamedAfterItsFile() throws {
         try write("say-hello_now.sh")
 

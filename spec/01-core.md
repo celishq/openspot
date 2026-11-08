@@ -50,6 +50,7 @@ open -a Calendar
 |---|---|
 | `name` | The title. The default comes from the file name. |
 | `symbol` | An SF Symbol name. |
+| `image`, `file`, `glyph` | A picture in place of the symbol: an image, a file's icon, or a short text such as an emoji. A path that does not start with `/` starts at the folder of the script. |
 | `subtitle` | The second line. |
 | `key` | One letter. Hold the key that opens the panel, and press this letter to run it. |
 | `size` | The size it prefers: `wide` (the default), `small`, `square`, `strip` or `large`. The grid can change it. |

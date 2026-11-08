@@ -38,6 +38,12 @@ public struct Spot: Equatable, Sendable {
     public private(set) var isOnGrid: Bool
     /// The `symbol` its header names, if any.
     public let headerSymbol: String?
+    /// The file whose icon its header names, as a full path.
+    public let file: String?
+    /// The image its header names, as a full path.
+    public let image: String?
+    /// The short text, such as an emoji, that its header names as its picture.
+    public let glyph: String?
     /// The commands its header lists, which a person can give keys.
     public let offers: [CommandOffer]
     /// The Settings rows of its own commands, which its sheet shows. Nil for a spot that draws its own sheet.
@@ -68,7 +74,10 @@ public struct Spot: Equatable, Sendable {
         hasSpot: Bool = true,
         isOnGrid: Bool = true,
         headerSymbol: String? = nil,
-        offers: [CommandOffer] = []
+        offers: [CommandOffer] = [],
+        file: String? = nil,
+        image: String? = nil,
+        glyph: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -95,6 +104,14 @@ public struct Spot: Equatable, Sendable {
         self.isOnGrid = isOnGrid
         self.headerSymbol = headerSymbol
         self.offers = offers
+        self.file = file
+        self.image = image
+        self.glyph = glyph
+    }
+
+    /// The picture its header names in place of its symbol: its image, or else the icon of its file.
+    public var icon: FileIcon? {
+        image.map(FileIcon.image) ?? file.map(FileIcon.init(path:))
     }
 
     /// The sizes a person can prefer for its card. A widget has the size of its layout, and Updates needs room for its words.

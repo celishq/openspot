@@ -58,6 +58,11 @@ final class SpotsModel {
             item?.symbol ?? command.symbol
         }
 
+        /// Whether the card draws the image, the file icon or the glyph that its header names, in place of a symbol.
+        @MainActor var showsHeaderPicture: Bool {
+            item?.symbol == nil && (command.icon != nil || command.glyph != nil)
+        }
+
         @MainActor var state: SpotState {
             sheet?.state ?? fixedState
         }
