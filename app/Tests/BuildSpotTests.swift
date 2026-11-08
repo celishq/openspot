@@ -153,7 +153,7 @@ final class BuildSpotTests: XCTestCase {
 
         XCTAssertEqual(script.terminationStatus, 0)
         XCTAssertTrue(try String(contentsOf: out, encoding: .utf8) == guideText)
-        XCTAssertTrue(guideText.hasPrefix("# Build an Openspot plugin"))
+        XCTAssertTrue(guideText.hasPrefix("# 01 Core"))
     }
 
     func testTheGuideAndTheCatalogTeachNoOldKeyOrCall() {
@@ -163,8 +163,9 @@ final class BuildSpotTests: XCTestCase {
         }
     }
 
-    func testTheWidgetExampleInTheGuideLoads() throws {
-        let example = try XCTUnwrap(blocks("toml").first)
+    func testTheWidgetExampleInTheReadmeLoads() throws {
+        let readme = try String(contentsOf: root.appendingPathComponent("README.md"), encoding: .utf8)
+        let example = try XCTUnwrap(readme.components(separatedBy: "```toml\n").dropFirst().first?.components(separatedBy: "```").first)
         let widgets = try XCTUnwrap(try TomlDocument(text: example).arrays["widgets"])
         guard case .string(let layout)? = widgets.first?["layout"], case .strings(let places)? = widgets.first?["places"] else {
             return XCTFail("no layout or places")

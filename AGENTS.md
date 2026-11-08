@@ -20,7 +20,7 @@
 - A name is a noun for what a thing is. No `-er`/`-or` suffix (`Manager`, `Handler`, `Renderer`).
 - One primary type per file. The filename matches it.
 - Nouns own their data. Verbs are methods on the noun that owns the data.
-- A toast or a failure line follows "Messages" in `spec/00-guide.md`.
+- A toast or a failure line follows "Messages" in `spec/01-core.md`.
 
 ## Docstrings
 

@@ -25,14 +25,30 @@ Code and tests name a rule by its ID.
 | M3 | Reads run at the same time. The panel never waits for one script. A spot shows its header until its answer arrives. |
 | C4 | Openspot waits for a pause before it sends a change of text or of a slider. Text that the person types stays as typed until they press something. |
 | K5 | Closing the panel closes a sheet of parts and drops its values. A sheet of rows stays open. |
-| L6 | A call that runs 1 second shows on its part, its action, its spot and the menu bar item, so the person can find and stop it. A call to a staying script shows only by Y7. |
+| L6 | A call that runs 1 second shows on its part, its action, its spot and the menu bar item, so the person can find and stop it. |
 | L7 | When a sheet opens, Openspot reads, then adds the last frame of each running call. |
 | L11 | A press within 1 second of the start of a call does nothing, so a double press does not stop it. |
 | G1 | A running call shows a ring from the `value` of its last frame, or a spinner with no `value`. |
 | G3 | The menu bar item shows the oldest running call and how many run. A click on it opens the panel with that spot selected. |
 | G4 | A frame's `title` and `detail` show on the spot only while its call runs. |
+| D2 | During a drag, only a card whose `drop` takes every dragged file shows it and takes the drop. |
+| D6 | A `drop` call runs as any other call does. |
 | D5 | A click on a card with `drop` and no sheet opens a file chooser, and the choice runs the same call. A drag over the menu bar item opens the panel with no change of focus, and a drop closes it. |
 | K2 | A capability's helper starts at its first call, and exits after 30 seconds with no call. The app does not track it. |
+
+## Sharing
+
+A spot travels as a `.spot` file: JSON with `"format": 1` and `files`, a list of `path`, `executable`, and `text` or
+`data` in base64. A script in a folder takes the whole folder, and a widget file takes each script that it places or
+opens. Hidden files and `$OPENSPOT_DATA` stay behind. A file of the same path replaces the old one, which goes to the
+Trash.
+
+| ID | Rule |
+|---|---|
+| P4 | Before a person installs a shared spot, Openspot shows all the text it can, says what runs by itself and names each file that it cannot show. Only a modified key installs it. |
+| P6 | A `.spot` file can carry a Swift script's `<name>.program`, compiled for both kinds of Mac, which runs in its place. The review says first that no one can read it. |
+| P7 | A `.spot` file has no signature. Openspot warns the sender about secrets, and does not look for them. |
+| P9 | A core spot needs no review, because it is signed with the app. |
 
 ## Decisions
 
@@ -44,5 +60,7 @@ Code and tests name a rule by its ID.
 | The panel follows the Mac's appearance. Light mode has near-white bubbles with a hairline edge, dark text and a dark turned-on card | Dark text on a strong white fill reads on any backdrop. A dark turned-on card stays apart from the selection ring. | A look that reacts to what lies behind the panel. An accent turned-on card, which hides the ring. |
 | A hidden card keeps its full strength, and Edit Spots marks it with `eye.slash` | A dim card looks disabled, and it is not. | Dimming the card at 40%. A card with no fill. |
 | A DMG window that shows where to drag, with no background image | The app and Applications side by side say all that a person needs. | An image with an arrow. |
+| A `.spot` file of JSON: a format number and its files | A chat takes a file of any size, any editor shows JSON, and each header already holds each fact. | Encoded text, a zip, a link. |
+| A shared file of the same path replaces the old one | A new name would break the IDs that a widget places. | A new name for each clash. |
 
 Each colour, strength and blur radius is in `Shell/Surface/SpotTheme.swift`.

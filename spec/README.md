@@ -1,70 +1,14 @@
 # Openspot specs
 
-These specs are the plugin contract of Openspot. Each one is a feature that a host can support or skip on its own, and
-that an author can ignore. 00 and 01 are required.
-
-The build joins the numbered specs in order into one `GUIDE.md` inside the app, which the Build spot opens and copies
-for an AI. The joined file is not in the repo. The rules of the app that no author sees are in `app/RULES.md`.
+These specs are the contract between a plugin and Openspot. The build joins them in order into one `GUIDE.md` inside the
+app, which the Build spot opens and copies for an AI. How the app itself works is in its code and in `app/RULES.md`.
 
 | Spec | Status | Needs | What it holds |
 |---|---|---|---|
-| [00 Guide](00-guide.md) | final | | How to write, check and word a plugin. It teaches, and holds no rule. |
-| [01 Core](01-core.md) | final | | The format, the header, the moments, the calls, frames, the life of a call, and triggers. |
+| [01 Core](01-core.md) | final | | The file, the format, the header, the moments, the calls and the life of a call. |
 | [02 What a script prints](02-output.md) | final | 01 | Rows, actions, forms, toggles, sliders, sheets and metrics. |
-| ~~03 Sheets~~ | | | Merged into 02. |
-| ~~04 Triggers~~ | | | Merged into 01. |
-| [05 Stay](05-stay.md) | draft | 01 | A script that keeps running between calls. |
-| ~~06 Metrics~~ | | | Merged into 02. Widgets moved to 10. |
-| [07 Capabilities](07-capabilities.md) | final | 01 | The `openspot` command. |
-| [08 Sharing](08-sharing.md) | final | 01 | The `.spot` file. |
-| ~~09 MCP~~ | | | Removed. It can come back as a new spec when people ask for it. |
-| [10 Files a person writes](10-person-files.md) | final | 01, 02 | Widgets and `config.toml`. |
 
-## How a spec is written
-
-These rules come from the way Nostr writes its NIPs.
-
-1. **One spec, one feature.** A host that skips a spec still works, and so does a script that ignores it. Only 00 and 01
-   are required.
-2. **The head.** A spec starts with its number and name, then its markers in backticks: `draft` or `final`, and
-   `required` or `optional`. A line names the specs it needs.
-3. **Only the contract.** A spec says what passes between a script and the host: the header, the arguments, stdin,
-   stdout, the environment and the files. It does not say how the host draws, which keys the panel uses, or how the host
-   is tuned. Each host chooses those, and `app/RULES.md` holds the choices of this app.
-4. **A number only when a script needs it.** The 10 seconds of a `read` is in the spec, because a script must be fast
-   for it. A delay that only the host feels, such as a cache or a kill timer, is not.
-5. **The example first.** Show the wire format with one real example, then give the rules. A section that teaches more
-   than the contract belongs in 00.
-6. **Rules in the text.** Write each rule once, in the prose, with `must`, `should` or `can`. Do not repeat it in a table.
-7. **Stable IDs.** A rule keeps an ID, such as `C3`, only when code, a test or another spec names it. Do not change or
-   reuse an ID.
-8. **Decisions.** A spec can end with a short table of decisions: a choice that later work must not break, with the
-   rejected one. How the app does a decision belongs in the code and its tests.
-9. **One way to do one thing.** A new spec does not give a second way to do what a spec already does.
-10. **Each word in one spec.** A header key, a block kind, a default id, an environment variable and a capability are
-    each defined in one spec, and the registry below names it.
-11. **Final is final.** A draft can change. It becomes final when a real use proves it. A final spec does not change the
-    meaning of a word: a new feature is a new word or a new spec. A word that is no longer good stays in the registry,
-    struck through, with the word that replaces it.
-
-## Registry
-
-| Word | Kind | Spec |
-|---|---|---|
-| `name`, `symbol`, `subtitle`, `key`, `size`, `order`, `grid`, `read`, `data`, `drop`, `command` | Header key | 01 |
-| `rank`, `tray` | Header key | 02 |
-| `stay` | Header key | 05 |
-| `sheet`, `panel`, a number, `launch`, `wake` | Moment of `read` | 01 |
-| `toast`, `open` | Block kind | 01 |
-| `row`, `action`, `field`, `part`, `section` | Block kind | 02 |
-| `end` | Block kind | 05 |
-| `stop` | Block kind on stdin | 05 |
-| `read` | Reserved word | 01 |
-| `run`, `open`, `drop`, `on`, `off`, `level` | Default id | 01 |
-| `OPENSPOT_REASON`, `OPENSPOT_DATA`, `OPENSPOT_SH` | Environment variable | 01 |
-| `check`, `catalog`, `render`, `sandbox`, `color`, `clipboard`, `translate`, `emoji`, `symbols`, `window` | Capability noun | 07 |
-| `.spot` | File | 08 |
-| Widget `.toml`, `config.toml` | File | 10 |
+Specs 00 and 03 to 10 are gone. Their numbers are not used again.
 
 ## Goals
 
@@ -74,23 +18,46 @@ In order. An earlier goal wins when two goals conflict.
 2. **Openspot draws a plugin's data.** A script prints data, and Openspot draws it. A plugin can add its own SwiftUI
    view to its spot, and a script can open its own Mac window.
 3. **Nothing runs by surprise.** Openspot runs a script only when a person acts or when its header says so.
-4. **A plugin has real power.** It can use any Mac API, hold long-lived state and stream a long process.
+4. **A plugin has real power.** It can use any Mac API, keep state in files and stream a long process.
 5. **An LLM writes a working plugin.** With `GUIDE.md` alone, an LLM writes a plugin that passes `openspot check` and
    works on the first try.
 
+## How a spec is written
+
+These rules come from the way Nostr writes its NIPs.
+
+1. **One spec, one feature.** A host that skips a spec still works, and so does a script that ignores it.
+2. **The head.** The number and the name, then `draft` or `final`, and `required` or `optional`, then the specs it needs.
+3. **Only the contract.** What passes between a script and the host: the header, the arguments, stdin, stdout and the
+   environment. Not how the host draws, its keys or its timings, unless a script must be written for a number.
+4. **The example first.** One real example, then the rules.
+5. **Each rule once,** in the prose. A rule keeps an ID, such as `C3`, only when code or a test names it, and an ID is
+   never changed or used again.
+6. **A short table of decisions** at the end: each choice that later work must not break, with the one it rejected.
+7. **One way to do one thing,** and each word in one spec, as the registry shows.
+8. **Final is final.** A draft becomes final when a real use proves it. A final spec never changes the meaning of a word:
+   a new feature is a new word or a new spec.
+
+## Registry
+
+| Word | Kind | Spec |
+|---|---|---|
+| `name`, `symbol`, `subtitle`, `key`, `size`, `order`, `grid`, `read`, `data`, `drop`, `command` | Header key | 01 |
+| `rank`, `tray` | Header key | 02 |
+| `sheet`, `panel`, a number, `launch`, `wake` | Moment | 01 |
+| `toast`, `open` | Block kind | 01 |
+| `row`, `action`, `field`, `part`, `section` | Block kind | 02 |
+| `read` | Reserved word | 01 |
+| `run`, `open`, `drop`, `on`, `off`, `level` | Default id | 01 |
+| `OPENSPOT_REASON`, `OPENSPOT_DATA`, `OPENSPOT_SH` | Environment variable | 01 |
+| `openspot <noun> <verb>` | Command | 01 |
+
 ## How to extend
 
-An old script never sees a word that it did not ask for.
-
-| ID | To add | Do this |
-|---|---|---|
-| X1 | A default id | One row in Core. It reaches only a script that asks for it (C2). |
-| X2 | A moment | One word for `read`, in one place in Core. |
-| X3 | A value for a script | One environment variable. |
-| X4 | A Mac feature | One `openspot <noun> <verb>` (07). |
-| X5 | A part or a value to draw | One entry in the catalog. An old app skips the key (R2). |
-| X6 | A kind of block | One first key. An old app skips the block (R10). |
+An old script never sees a word that it did not ask for. To add a default id, a moment, an environment variable, an
+`openspot` noun, a part or a block kind, add one word to one spec and to the registry. An old app skips a key or a block
+that it does not know (R2, R10), and a new default id reaches only a script that asks for it (C2).
 
 ## Open items
 
-1. P5: what macOS does when a compiled program under Openspot calls a protected API. A person must try it on a Mac.
+1. What macOS does when a compiled program under Openspot calls a protected API. A person must try it on a Mac.

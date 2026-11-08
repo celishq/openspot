@@ -143,7 +143,7 @@ printf 'title=3\ndetail=Last at 14:20\n'
 means something. `tint` is a colour name, such as `teal`, for a colour that only helps a person find the metric. A printed
 `symbol` changes the symbol of the header.
 
-`tray=true` in the header shows the metric in the menu bar. It needs a number in its `read`, or `stay=true`. Printing
+`tray=true` in the header shows the metric in the menu bar. It needs a number in its `read`. Printing
 nothing removes the item until the next read.
 
 ## Decisions
