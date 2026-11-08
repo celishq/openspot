@@ -26,6 +26,7 @@ final class ViewLibraryTests: XCTestCase {
         let compile = compiler ?? "echo x >> '\(builds)'; while [ $# -gt 0 ]; do [ \"$1\" = -o ] && printf built > \"$2\"; shift; done"
         try "#!/bin/sh\n\(selector)\n".writeScript(to: place.appendingPathComponent("xcode-select"))
         try "#!/bin/sh\n\(compile)\n".writeScript(to: place.appendingPathComponent("swiftc"))
+        try "#!/bin/sh\nwhile [ $# -gt 0 ]; do [ \"$1\" = -output ] && printf both > \"$2\"; shift; done\n".writeScript(to: place.appendingPathComponent("lipo"))
         return ViewLibrary(cache: cache, tools: place)
     }
 
@@ -118,5 +119,51 @@ final class ViewLibraryTests: XCTestCase {
             "bad: This view does not compile. bad.swift:1:7: error: expected identifier",
             "lost: Openspot cannot find the view lost.swift."
         ])
+    }
+
+    private var sharedCups: SharedSpot {
+        get throws {
+            try SharedSpot(files: [
+                .init(path: "home/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n# view=cups.swift\n".utf8)),
+                .init(path: "home/cups.swift", isExecutable: false, contents: Data(view.utf8))
+            ])
+        }
+    }
+
+    func testASharedSpotTravelsWithAViewBuiltForBothKindsOfMac() async throws {
+        let spot = try sharedCups
+
+        XCTAssertTrue(spot.needsCompile)
+        let compiled = try await spot.compiled(views: try tools())
+
+        XCTAssertFalse(compiled.needsCompile)
+        XCTAssertEqual(compiled.files.map(\.path), ["home/cups.sh", "home/cups.swift", "home/cups.view"])
+        XCTAssertEqual(compiled.files.last?.contents, Data("both".utf8))
+        XCTAssertEqual(compiled.files.last?.isExecutable, false)
+    }
+
+    func testTheReviewSaysThatAViewLibraryIsCodeThatMayNotMatchItsSource() throws {
+        var files = try sharedCups.files
+        files.append(.init(path: "home/cups.view", isExecutable: false, contents: Data([0xCF, 0xFA, 0xED, 0xFE, 0x00])))
+
+        let review = try ReviewSpot(spot: try SharedSpot(files: files), folder: folder)
+
+        XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
+        let part = try XCTUnwrap(PluginOutput(text: try review.answer(["read"])).parts.first { $0.id == "review" })
+        guard case .text(let text, _, _) = part.control else { throw PluginError.badForm }
+        XCTAssertTrue(text.hasPrefix("Program that Openspot cannot show\nhome/cups.view\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
+    }
+
+    func testSharingTakesTheLibraryBesideATopLevelView() throws {
+        let plugins = folder.appendingPathComponent("plugins")
+        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
+        try "#!/bin/sh\n# view=cups.swift\n".writeScript(to: plugins.appendingPathComponent("cups.sh"))
+        try Data(view.utf8).write(to: plugins.appendingPathComponent("cups.swift"))
+        try Data("built".utf8).write(to: plugins.appendingPathComponent("cups.view"))
+        let scan = try PluginFolder(url: plugins).scan()
+
+        let spot = try SharedSpot(sharing: try XCTUnwrap(scan.commands.first), from: scan)
+
+        XCTAssertEqual(spot.files.map(\.path), ["cups.sh", "cups.swift", "cups.view"])
     }
 }

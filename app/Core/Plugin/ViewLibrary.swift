@@ -54,9 +54,14 @@ public struct ViewLibrary: Sendable {
         return ViewLibrary(cache: root.appendingPathComponent("views", isDirectory: true))
     }
 
-    /// The path of the library that travels beside a view's source.
+    /// The path of the library that travels beside a view's source, relative when the source path is.
     static func path(beside source: String) -> String {
-        URL(fileURLWithPath: source).deletingPathExtension().appendingPathExtension(libraryExtension).path
+        (source as NSString).deletingPathExtension + "." + libraryExtension
+    }
+
+    /// Whether a file of this path is the library of a view.
+    static func isLibrary(_ path: String) -> Bool {
+        (path as NSString).pathExtension == libraryExtension
     }
 
     /// The library of a view: the one that travels beside its source, else one built for this Mac. Throws a fault that

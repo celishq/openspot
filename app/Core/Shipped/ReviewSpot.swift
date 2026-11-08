@@ -30,7 +30,7 @@ public struct ReviewSpot: Equatable, Sendable {
         symbol = primary.symbol
         description = primary.subtitle
         self.folder = folder
-        let programs = spot.files.filter { $0.isExecutable && !Self.canShow($0) }.map(\.path)
+        let programs = spot.files.filter { ($0.isExecutable || ViewLibrary.isLibrary($0.path)) && !Self.canShow($0) }.map(\.path)
         let quiet = "Runs only when you use it"
         subtitle = !programs.isEmpty ? "Holds a program that you cannot read" : primary.subtitle ?? (runs.isEmpty ? quiet : "Runs by itself")
         text = [
@@ -117,9 +117,9 @@ public struct ReviewSpot: Equatable, Sendable {
         lines.isEmpty ? nil : "\(title)\n\(lines.joined(separator: "\n"))\n\n"
     }
 
-    /// Whether this path is the program of a Swift script in the spot.
+    /// Whether this path is the program of a Swift script or the library of a view in the spot.
     private static func hasSource(_ path: String, in spot: SharedSpot) -> Bool {
-        spot.files.contains { SwiftProgram.path(beside: $0.path) == path }
+        spot.files.contains { SwiftProgram.path(beside: $0.path) == path || (URL(fileURLWithPath: $0.path).pathExtension == SwiftProgram.sourceExtension && ViewLibrary.path(beside: $0.path) == path) }
     }
 
     private static func canShow(_ file: SharedSpot.File) -> Bool {

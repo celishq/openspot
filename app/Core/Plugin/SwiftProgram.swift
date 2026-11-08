@@ -5,7 +5,8 @@ public struct SwiftProgram: Sendable {
     static let sourceExtension = "swift"
     private static let programExtension = "program"
     private static let platform = "apple-macos26.0"
-    private static let kinds = ["arm64", "x86_64"]
+    /// The kinds of Mac that a shared build runs on.
+    static let kinds = ["arm64", "x86_64"]
 
     private let tools: URL
 

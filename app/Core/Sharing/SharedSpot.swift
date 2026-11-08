@@ -104,16 +104,21 @@ public struct SharedSpot: Equatable, Sendable {
         try self.init(files: files)
     }
 
-    /// Whether a Swift script of this spot has no program beside it.
+    /// Whether a Swift script or a view of this spot has no program beside it.
     public var needsCompile: Bool {
-        !uncompiled.isEmpty
+        !uncompiled.isEmpty || !unbuiltViews.isEmpty
     }
 
-    /// This spot with the program of each Swift script that has none, so that a Mac with no Swift tools can run it.
-    public func compiled(by program: SwiftProgram = SwiftProgram()) async throws -> SharedSpot {
+    /// This spot with the program of each Swift script and the library of each view that has none, so that a Mac with no
+    /// Swift tools can run it (V7).
+    public func compiled(by program: SwiftProgram = SwiftProgram(), views: ViewLibrary = .standard()) async throws -> SharedSpot {
         var all = files
         for (file, path) in uncompiled {
             all.append(File(path: path, isExecutable: true, contents: try await program.build(source: file.contents)))
+        }
+        for (file, path) in unbuiltViews {
+            let name = URL(fileURLWithPath: file.path).lastPathComponent
+            all.append(File(path: path, isExecutable: false, contents: try await views.build(source: file.contents, named: name, kinds: SwiftProgram.kinds)))
         }
         return try SharedSpot(files: all)
     }
@@ -121,6 +126,18 @@ public struct SharedSpot: Equatable, Sendable {
     private var uncompiled: [(file: File, path: String)] {
         files.compactMap { file in
             guard file.isExecutable, let path = SwiftProgram.path(beside: file.path), !files.contains(where: { $0.path == path }) else { return nil }
+            return (file, path)
+        }
+    }
+
+    /// Each view that a script's header names, with the path of the library that it lacks.
+    private var unbuiltViews: [(file: File, path: String)] {
+        files.compactMap { script in
+            guard script.isExecutable, let text = script.text, let name = PluginHeader(text: text).block.value("view"), !name.hasPrefix("/") else { return nil }
+            let folder = (script.path as NSString).deletingLastPathComponent
+            let source = folder.isEmpty ? name : "\(folder)/\(name)"
+            let path = ViewLibrary.path(beside: source)
+            guard let file = files.first(where: { $0.path == source }), !files.contains(where: { $0.path == path }) else { return nil }
             return (file, path)
         }
     }
@@ -233,6 +250,8 @@ public struct SharedSpot: Equatable, Sendable {
             if folder == nil, let program = SwiftProgram.file(beside: first.url) { roots.append((program.lastPathComponent, program)) }
             if folder == nil, let view = first.view.map(URL.init(fileURLWithPath:)), view.deletingLastPathComponent() == first.url.deletingLastPathComponent() {
                 roots.append((view.lastPathComponent, view))
+                let library = URL(fileURLWithPath: ViewLibrary.path(beside: view.path))
+                if FileManager.default.fileExists(atPath: library.path) { roots.append((library.lastPathComponent, library)) }
             }
             let neighbours = folder == nil ? [plugin] : scan.plugins.filter { $0.id.hasPrefix("\(root)/") }
             waiting += neighbours.flatMap(\.commands).flatMap { $0.places + ($0.opens.map { [$0] } ?? []) }
