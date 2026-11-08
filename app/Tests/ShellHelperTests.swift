@@ -172,6 +172,32 @@ final class ShellHelperTests: XCTestCase {
         }
     }
 
+    func testNextReadsEachCallOfAStayingScriptWithItsArgumentsAndValues() async throws {
+        let url = try script("""
+        while next; do
+          if [ -n "$stop" ]; then printf 'stopped=%s\\n---\\n' "$stop"; continue; fi
+          printf 'got=%s|%s|%s|%s|%s\\n---\\n' "$call" "$reason" "$(arg 1)" "$(arg 2)" "$(value note)"
+        done
+        printf 'over=1\\n'
+        """)
+        let live = ScriptProcess(url: url, mode: .stays, limit: 5)
+        var frames = try live.start().makeAsyncIterator()
+
+        live.send(.read, values: "note=a\\\\b\n", id: 1, reason: .panel)
+        let first = try await frames.next()
+        live.send(.set("input", to: "one\ntwo"), id: 2)
+        let second = try await frames.next()
+        live.send(text: SpotAction.stopEvent(id: 2))
+        let third = try await frames.next()
+        live.end()
+        let last = try await frames.next()
+
+        XCTAssertEqual(first, "got=1|panel|read||a\\b\n")
+        XCTAssertEqual(second, "got=2||input|one\ntwo|\n")
+        XCTAssertEqual(third, "stopped=2\n")
+        XCTAssertEqual(last, "over=1\n")
+    }
+
     func testAStayingScriptIsNotBlockedAndKeepsItsCallsOnStdin() async throws {
         let url = try script("""
         printf 'a=%s|%s\\n---\\n' "$(esc 'b\\c')" "$(value a)"
