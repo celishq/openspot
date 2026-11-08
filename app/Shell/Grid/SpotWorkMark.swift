@@ -4,7 +4,8 @@ import SwiftUI
 /// Running work in one slot: a ring from its fill, or the system's spinner with no fill. A square inside says that a press
 /// stops it. It takes the place of whatever the slot shows when no work runs.
 struct SpotWorkMark: View {
-    let call: ScriptCall
+    /// The call that runs, or nil for work of the app, which shows the spinner.
+    let call: ScriptCall?
     var side = SpotTokens.glyphSize
     var stops = false
     var isOnSolid = false
@@ -25,7 +26,7 @@ struct SpotWorkMark: View {
 
     var body: some View {
         ZStack {
-            if let fill = call.fill {
+            if let fill = call?.fill {
                 SpotRing(
                     fill: fill,
                     line: isLarge ? Self.thickLine : Self.thinLine,
