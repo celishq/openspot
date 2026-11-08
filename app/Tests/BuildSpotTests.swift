@@ -17,8 +17,9 @@ final class BuildSpotTests: XCTestCase {
         let tools = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
-        guideURL = root.appendingPathComponent("app/Shell/GUIDE.md")
-        guideText = try String(contentsOf: guideURL, encoding: .utf8)
+        guideURL = folder.appendingPathComponent("GUIDE.md")
+        guideText = try joinedSpecs()
+        try guideText.write(to: guideURL, atomically: true, encoding: .utf8)
         for (name, script) in [("pbcopy", "cat > '\(folder.path)/clipboard'"), ("open", "echo \"$1\" > '\(folder.path)/opened'")] {
             let tool = tools.appendingPathComponent(name)
             try "#!/bin/sh\n\(script)\n".writeScript(to: tool)
@@ -143,12 +144,16 @@ final class BuildSpotTests: XCTestCase {
     }
 
     func testTheGuideIsTheSpecsJoinedInOrder() throws {
-        let specs = root.appendingPathComponent("spec")
-        let names = try FileManager.default.contentsOfDirectory(atPath: specs.path).filter { $0.first?.isNumber == true && $0.hasSuffix(".md") }.sorted()
-        let joined = try names.map { try String(contentsOf: specs.appendingPathComponent($0), encoding: .utf8) }.joined(separator: "\n")
+        let out = folder.appendingPathComponent("built.md")
+        let script = Process()
+        script.executableURL = URL(fileURLWithPath: "/bin/sh")
+        script.arguments = [root.appendingPathComponent("scripts/guide.sh").path, out.path]
+        try script.run()
+        script.waitUntilExit()
 
-        XCTAssertEqual(names.first, "00-guide.md")
-        XCTAssertTrue(guideText == joined, "app/Shell/GUIDE.md differs from spec/. Run make guide.")
+        XCTAssertEqual(script.terminationStatus, 0)
+        XCTAssertTrue(try String(contentsOf: out, encoding: .utf8) == guideText)
+        XCTAssertTrue(guideText.hasPrefix("# Build an Openspot plugin"))
     }
 
     func testTheGuideAndTheCatalogTeachNoOldKeyOrCall() {
@@ -167,4 +172,12 @@ final class BuildSpotTests: XCTestCase {
 
         XCTAssertEqual(WidgetLayout(name: layout)?.slots.count, places.count)
     }
+
+    /// The specs `00` to `99` of `spec/`, joined in order with one blank line between them.
+    private func joinedSpecs() throws -> String {
+        let specs = root.appendingPathComponent("spec")
+        let names = try FileManager.default.contentsOfDirectory(atPath: specs.path).filter { $0.first?.isNumber == true && $0.hasSuffix(".md") }.sorted()
+        return try names.map { try String(contentsOf: specs.appendingPathComponent($0), encoding: .utf8) }.joined(separator: "\n")
+    }
+
 }

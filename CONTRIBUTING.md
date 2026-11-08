@@ -4,7 +4,7 @@ Fixes and new plugins are welcome. For a large change, open an issue first.
 
 ## Add a plugin
 
-Add one file to [`plugins`](plugins). The [plugin guide](app/Shell/GUIDE.md) tells you all that you need. It is joined from [`spec/`](spec).
+Add one file to [`plugins`](plugins). The [plugin specs](spec/README.md) tell you all that you need.
 
 ## Change the app
 
@@ -27,6 +27,6 @@ make verify
 ## Follow the rules
 
 - [`AGENTS.md`](AGENTS.md) has the repo conventions.
-- [`spec/`](spec) is the plugin contract, and [`app/RULES.md`](app/RULES.md) holds the rules of the app. If your change differs from them, change them first. Run `make guide` after you change a spec.
+- [`spec/`](spec) is the plugin contract, and [`app/RULES.md`](app/RULES.md) holds the rules of the app. If your change differs from them, change them first.
 
 By contributing, you agree that your work is under the [MIT License](LICENSE).

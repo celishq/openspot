@@ -3,8 +3,8 @@
 These specs are the plugin contract of Openspot. Each one is a feature that a host can support or skip on its own, and
 that an author can ignore. 00 and 01 are required.
 
-The app joins `00` to `08` in order into one `GUIDE.md`, which the Build spot opens and copies for an AI. Edit the specs,
-never the joined file. The rules of the app that no author sees are in `app/RULES.md`.
+The build joins the numbered specs in order into one `GUIDE.md` inside the app, which the Build spot opens and copies
+for an AI. The joined file is not in the repo. The rules of the app that no author sees are in `app/RULES.md`.
 
 | Spec | Status | Needs | What it holds |
 |---|---|---|---|

@@ -76,6 +76,10 @@ targets:
         script: |
           mkdir -p "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers"
           ln -sfn ../MacOS/Openspot "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers/openspot"
+      - name: Join the guide
+        basedOnDependencyAnalysis: false
+        script: |
+          sh "$SRCROOT/../scripts/guide.sh" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/GUIDE.md"
       - name: Copy the core spots
         basedOnDependencyAnalysis: false
         script: |

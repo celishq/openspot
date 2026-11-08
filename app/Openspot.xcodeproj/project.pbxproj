@@ -169,7 +169,6 @@
 		AB2E84CC3D2D7627555DC134 /* SpotRoundButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB3C463D807C5294C4367A9 /* SpotRoundButton.swift */; };
 		AB86C0A4DC2B9C60D33CCDB9 /* SpotArrowScroll.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FBF38806826AAD61118F1A5 /* SpotArrowScroll.swift */; };
 		AB8A2C67138918199AD3D2BE /* SearchQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 385F2DE8E51252AF29605552 /* SearchQuery.swift */; };
-		AB977B0F6CD84A53E274E6D7 /* GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = 6DA5EDFC09AA6ED85FA1FE5B /* GUIDE.md */; };
 		ABAA920A347478B84E176701 /* SheetTransitionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A8037FD906485D608A99586 /* SheetTransitionTests.swift */; };
 		AD65AE506B888A4FEC756D28 /* SpotCardDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E3EAD963C88CC694AF48001 /* SpotCardDrop.swift */; };
 		AFAD216C7558111B31ECD03E /* SpotGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97A09B4D4F88E55986E6C8FB /* SpotGrid.swift */; };
@@ -367,7 +366,6 @@
 		6916BF58BB7B209E090B9B95 /* SpotStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotStateTests.swift; sourceTree = "<group>"; };
 		6BE566EA52FD95472C996740 /* SpotFloatGlass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFloatGlass.swift; sourceTree = "<group>"; };
 		6D966C009208F239C65FE779 /* SheetFrameReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetFrameReader.swift; sourceTree = "<group>"; };
-		6DA5EDFC09AA6ED85FA1FE5B /* GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = GUIDE.md; sourceTree = "<group>"; };
 		6FA8009A9A17D22296C068AE /* Spot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spot.swift; sourceTree = "<group>"; };
 		70703B1BFAD84794E4BDC0F9 /* SpotGridTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotGridTests.swift; sourceTree = "<group>"; };
 		70A41B43814742034E568CF4 /* SpotRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRing.swift; sourceTree = "<group>"; };
@@ -846,7 +844,6 @@
 			isa = PBXGroup;
 			children = (
 				344B4D81ADE4C8F2D324AE25 /* Assets.xcassets */,
-				6DA5EDFC09AA6ED85FA1FE5B /* GUIDE.md */,
 				1B7CF0FE4A88F09730375B32 /* Info.plist */,
 				1A7B9BD93ED61437DAF52A78 /* Openspot.entitlements */,
 				94B0E4567AE631D558192FF8 /* openspot.sh */,
@@ -1045,6 +1042,7 @@
 				45EA41131230D384D6FC1213 /* Resources */,
 				9377494807D855EA77601A31 /* Frameworks */,
 				FA5BD7132374A84E31CCF0E4 /* Link the openspot command */,
+				1DAD7541105D3747B4671C0E /* Join the guide */,
 				9A5AB7CBDD408EEAF102FD46 /* Copy the core spots */,
 				0D4FDAB32F3B0E2B15E19EB2 /* Fill the dev state */,
 			);
@@ -1176,7 +1174,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				D4D2D213DA58080CE5691B80 /* Assets.xcassets in Resources */,
-				AB977B0F6CD84A53E274E6D7 /* GUIDE.md in Resources */,
 				D76F7916D5206BF1C167FCA1 /* openspot.sh in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1218,6 +1215,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "if [ -n \"$OPENSPOT_DEV_STATE\" ] && [ ! -e \"$OPENSPOT_DEV_STATE/plugins\" ]; then\n  mkdir -p \"$OPENSPOT_DEV_STATE\"\n  cp -R \"$SRCROOT/../plugins\" \"$OPENSPOT_DEV_STATE/plugins\"\nfi\n";
+		};
+		1DAD7541105D3747B4671C0E /* Join the guide */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Join the guide";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "sh \"$SRCROOT/../scripts/guide.sh\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/GUIDE.md\"\n";
 		};
 		9A5AB7CBDD408EEAF102FD46 /* Copy the core spots */ = {
 			isa = PBXShellScriptBuildPhase;
