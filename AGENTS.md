@@ -11,6 +11,7 @@
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
 - `plugins/` holds the source of the core spots. The build copies it into the app, and they run from there.
+- `examples/` holds plugins that show a feature, such as a view. The app does not ship them, and a test checks them.
 - `plans/` holds design plans. It is git-ignored.
 - `.temp/` holds throwaway mock-ups and screenshots. It is git-ignored.
 - `.temp/openspot/` holds the plugins and the config of a Debug build, so that it never changes `plugins/` or

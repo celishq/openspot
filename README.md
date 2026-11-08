@@ -56,6 +56,7 @@ echo "toast=Hello"
 **Add one you got.** Double-click the `.spot` file, read what it runs and press ⌘⏎.
 
 The [`plugins`](plugins) folder has more tools to copy, such as battery, windows and a color picker.
+The [`examples`](examples) folder has a tool that draws its card with its own SwiftUI view, as [spec 03](spec/03-views.md) describes.
 
 ## Widgets and keys
 
