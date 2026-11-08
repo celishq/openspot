@@ -47,12 +47,12 @@ case "$1" in
     printf 'switch=awake\ntitle=Keep awake\ndetail=%s\non=%s\n\n' "$detail" "$on"
     printf 'button=open\ntitle=Select\n\n'
     if [ "$running" = 1 ]; then
-      printf 'row=Turn off\nrun=off\n\n'
+      printf 'row=off\ntitle=Turn off\n\n'
     fi
-    printf 'row=30 minutes\nrun=1800\n\n'
-    printf 'row=1 hour\nrun=3600\n\n'
-    printf 'row=2 hours\nrun=7200\n\n'
-    printf 'row=Until turned off\nrun=0\n'
+    printf 'row=1800\ntitle=30 minutes\n\n'
+    printf 'row=3600\ntitle=1 hour\n\n'
+    printf 'row=7200\ntitle=2 hours\n\n'
+    printf 'row=0\ntitle=Until turned off\n'
     ;;
   awake)
     stop

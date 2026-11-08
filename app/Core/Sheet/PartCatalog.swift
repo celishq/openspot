@@ -45,7 +45,7 @@ public enum PartCatalog {
     A `repeat=a` block flows the rows of the script through the area `a`, and the area scrolls. Its own `grid=` lines are \
     a drawing in which each word is the place of one row, and the drawing repeats down: `grid=a` is a list, \
     `grid=a b c d e f g` is seven square buttons to a line, and `grid=a a b c` with `grid=a a d e` is one large place and \
-    four small ones. A row is a block with `row=<title>`, `run=<value>` and a picture, and a row is picked by \
+    four small ones. A row is a block with `row=<id>`, `title` and a picture, and a row is picked by \
     `open <value>`. A square button shows `glyph=<text>`, `symbol`, `image` or `file`, and `row` is the word that a search \
     finds. The app draws the search field over the sheet. A sheet can repeat one area.
 

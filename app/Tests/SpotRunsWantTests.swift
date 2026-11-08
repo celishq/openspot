@@ -24,7 +24,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testClosingThePanelLeavesASheetOfRowsOpen() async throws {
-        try script(header: "read=sheet", "printf 'row=A\\nrun=a\\n'")
+        try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
@@ -72,7 +72,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testTheMenuBarShowsWhatTheSheetHolds() async throws {
-        try script("pulls", header: "name=Pull requests\nread=120\nkey=g\ntray=true", "printf 'text=m\\ntitle=2\\n\\nrow=A\\nrun=a\\n\\nrow=B\\nrun=b\\n'")
+        try script("pulls", header: "name=Pull requests\nread=120\nkey=g\ntray=true", "printf 'text=m\\ntitle=2\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'")
         let sheet = try sheet("pulls")
 
         try await wait("the mark") { !self.runs.trayMarks.isEmpty }
@@ -118,7 +118,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testAnOpenSheetOfRowsIsNotReadWithThePanelClosedAndIsReadWhenThePanelOpens() async throws {
-        try script(header: "read=5\nkey=a", "printf 'row=A\\nrun=a\\n'")
+        try script(header: "read=5\nkey=a", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -141,7 +141,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testAStreamOfAnOpenSheetOfRowsStopsWhenThePanelClosesAndStartsWhenItOpens() async throws {
-        try script(header: "read=sheet", "printf 'row=A\\nrun=a\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
+        try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -170,7 +170,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     // MARK: C4, the main search, sandbox
 
     func testSearchTextReachesTheScriptAfterAPause() async throws {
-        try script(header: "read=sheet", "printf 'search=script\\n\\nrow=%s\\nrun=a\\n' \"${2:-none}\"")
+        try script(header: "read=sheet", "printf 'search=script\\n\\nrow=a\\ntitle=%s\\n' \"${2:-none}\"")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the first answer") { sheet.list.shown.map(\.title) == ["none"] }
@@ -187,7 +187,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     func testANewKeyStopsTheOlderSearch() async throws {
         try script(header: "read=sheet", """
         [ "$2" = slow ] && { sleep 5; touch '\(path("went-on"))'; }
-        printf 'search=script\\n\\nrow=%s\\nrun=a\\n' "${2:-none}"
+        printf 'search=script\\n\\nrow=a\\ntitle=%s\\n' "${2:-none}"
         """)
         let sheet = try sheet()
         sheet.open {}

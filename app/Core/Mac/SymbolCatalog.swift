@@ -33,9 +33,9 @@ public struct SymbolCatalog: Sendable {
                 let subtitle = titles[key ?? "CategoryName-\(category)"]
                 for symbol in list.split(separator: ",").map(Self.symbol) where seen.insert(symbol).inserted {
                     guard let name = Self.name(of: symbol) else { continue }
-                    var fields: [TextBlock.Field] = [.init(key: "row", value: name)]
+                    var fields: [TextBlock.Field] = [.init(key: "row", value: symbol), .init(key: "title", value: name)]
                     if let subtitle { fields.append(.init(key: "detail", value: subtitle)) }
-                    fields += [.init(key: "run", value: symbol), .init(key: "glyph", value: symbol)]
+                    fields += [.init(key: "glyph", value: symbol)]
                     fields += keywords.of(symbol).map { .init(key: "keyword", value: $0) }
                     text += TextBlock(fields: fields).text + "\n"
                 }

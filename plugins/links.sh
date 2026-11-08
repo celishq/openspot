@@ -146,10 +146,10 @@ case "$1" in
     found=$(ls "$icons" 2>/dev/null | jq -R . | jq -sc .)
     load | jq -r --arg icons "$icons" --argjson found "$found" --arg home "$HOME" "$esc"'.[]
       | if (.url | test("^[/~]")) then
-          "row=\(.title | esc)\ndetail=\(.url | esc)\nrun=\(.id | esc)\nfile=\(.url | if startswith("~") then $home + .[1:] else . end | esc)\n"
+          "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.url | esc)\nfile=\(.url | if startswith("~") then $home + .[1:] else . end | esc)\n"
         else
           (.url | sub("^[a-zA-Z][a-zA-Z0-9+.-]*:(//)?"; "") | sub("[/?#].*$"; "")) as $host
-          | "row=\(.title | esc)\ndetail=\($host | esc)\nrun=\(.id | esc)\nsymbol=link\nhides=reveal\n"
+          | "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\($host | esc)\nsymbol=link\nhides=reveal\n"
           + (if ($found | index($host + ".icon")) then "image=\("\($icons)/\($host).icon" | esc)\n" else "" end)
         end'
     fetch_missing >/dev/null 2>&1 </dev/null &

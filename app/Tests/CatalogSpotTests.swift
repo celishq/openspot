@@ -185,7 +185,7 @@ final class CatalogSpotTests: XCTestCase {
     }
 
     func testTheRowOfACoreSpotReadsOnFromItsBlock() throws {
-        let block = try XCTUnwrap(TextBlock.blocks(in: "row=Apps\nrun=apps\non=true\n").first)
+        let block = try XCTUnwrap(TextBlock.blocks(in: "row=apps\ntitle=Apps\non=true\n").first)
 
         XCTAssertEqual(SpotItem(block: block)?.isOn, true)
     }

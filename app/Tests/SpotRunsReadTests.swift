@@ -24,7 +24,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     // MARK: M6
 
     func testEachReadKnowsWhyItRuns() async throws {
-        try script(header: "read=launch,wake,panel,sheet\nkey=r", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'row=A\\nrun=a\\n'")
+        try script(header: "read=launch,wake,panel,sheet\nkey=r", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         var expected: [String] = []
         func step(_ reason: String, _ act: () -> Void) async throws {
@@ -56,7 +56,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testAReadOfTheSearchSaysSo() async throws {
-        try script(header: "read=sheet\nkey=r", "echo \"$OPENSPOT_REASON $*\" >> '\(path("reasons"))'\nprintf 'search=script\\n\\nrow=A\\nrun=a\\n'")
+        try script(header: "read=sheet\nkey=r", "echo \"$OPENSPOT_REASON $*\" >> '\(path("reasons"))'\nprintf 'search=script\\n\\nrow=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         sheet.open(onReady: {})
@@ -90,13 +90,13 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testASheetKeepsItsLastFrameRowsPartsAndValue() async throws {
-        try script(header: "read=sheet", "printf 'text=m\\ntitle=3\\ntone=good\\n\\nrow=A\\nrun=a\\n\\ntext=b\\ntitle=B\\n'")
+        try script(header: "read=sheet", "printf 'text=m\\ntitle=3\\ntone=good\\n\\nrow=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n'")
         let sheet = try sheet()
 
         sheet.open {}
 
         try await wait("the answer") { sheet.list.shown.count == 1 }
-        XCTAssertEqual(sheet.lastFrame, "text=m\ntitle=3\ntone=good\n\nrow=A\nrun=a\n\ntext=b\ntitle=B\n")
+        XCTAssertEqual(sheet.lastFrame, "text=m\ntitle=3\ntone=good\n\nrow=a\ntitle=A\n\ntext=b\ntitle=B\n")
         XCTAssertEqual(sheet.panel?.parts.map(\.id), ["m", "b"])
         XCTAssertEqual(sheet.reading.value?.title, "3")
         XCTAssertEqual(sheet.reading.value?.tone, .good)
@@ -119,7 +119,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     // MARK: M1, M2, M3, M4
 
     func testARequestJoinsTheReadThatRuns() async throws {
-        try script(header: "read=sheet", "sleep 0.2\nprintf 'row=A\\nrun=a\\n'")
+        try script(header: "read=sheet", "sleep 0.2\nprintf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         sheet.read()
@@ -131,7 +131,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testAPanelOpenAndASheetOpenWithinFiveSecondsRunOnce() async throws {
-        try script(header: "read=panel\nglobal=true", "printf 'row=A\\nrun=a\\n'")
+        try script(header: "read=panel\nglobal=true", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         runs.panelOpened()
@@ -146,7 +146,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testAPanelOpenAndASheetOpenAtOnceRunOnce() async throws {
-        try script(header: "read=panel\nkey=c", "sleep 0.2\nprintf 'detail=Off\\n\\nrow=A\\nrun=a\\n'")
+        try script(header: "read=panel\nkey=c", "sleep 0.2\nprintf 'detail=Off\\n\\nrow=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         runs.panelOpened()
@@ -157,7 +157,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testAnAnswerOlderThanFiveSecondsIsReadAgain() async throws {
-        try script(header: "read=sheet", "printf 'row=A\\nrun=a\\n'")
+        try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
@@ -182,7 +182,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testALaunchOrAWakeReadAlwaysRuns() async throws {
-        try script(header: "read=launch,wake\nkey=a", "printf 'row=A\\nrun=a\\n'")
+        try script(header: "read=launch,wake\nkey=a", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         runs.arrive(.launch)
@@ -270,7 +270,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testAChangeDuringARunningReadReadsOnceMoreAfterIt() async throws {
-        try script(header: "read=sheet", "sleep 0.2\nprintf 'row=A\\nrun=a\\n'")
+        try script(header: "read=sheet", "sleep 0.2\nprintf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         sheet.read()
@@ -280,8 +280,8 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testOneSlowScriptDoesNotDelayAnother() async throws {
-        try script("slow", header: "read=panel\nglobal=true", "\(untilRelease)\nprintf 'row=S\\nrun=s\\n'")
-        try script("fast", header: "read=panel\nglobal=true", "printf 'row=F\\nrun=f\\n'")
+        try script("slow", header: "read=panel\nglobal=true", "\(untilRelease)\nprintf 'row=s\\ntitle=S\\n'")
+        try script("fast", header: "read=panel\nglobal=true", "printf 'row=f\\ntitle=F\\n'")
         _ = try scanned()
 
         runs.panelOpened()
@@ -316,7 +316,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testAPressBeforeTheFirstAnswerWaitsForIt() async throws {
-        try script(header: "read=panel\nkey=c", "sleep 0.2\nprintf 'row=A\\nrun=a\\n'")
+        try script(header: "read=panel\nkey=c", "sleep 0.2\nprintf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         XCTAssertTrue(sheet.awaitsAnswer)
         var kind: SpotKind?
@@ -342,7 +342,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testACallWithOnlyAToastReadsOnce() async throws {
-        try script(header: "read=sheet", "[ \"$1\" = read ] && printf 'row=A\\nrun=a\\n'\n[ \"$1\" = open ] && printf 'toast=Done\\n'\nexit 0")
+        try script(header: "read=sheet", "[ \"$1\" = read ] && printf 'row=a\\ntitle=A\\n'\n[ \"$1\" = open ] && printf 'toast=Done\\n'\nexit 0")
         let sheet = try sheet()
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }

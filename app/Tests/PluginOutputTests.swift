@@ -3,8 +3,8 @@ import XCTest
 
 final class PluginOutputTests: XCTestCase {
     func testAScriptPrintsWhoSearchesItsRowsAndWhetherRecentPicksMoveUp() {
-        let plain = PluginOutput(text: "row=A\nrun=a\n")
-        let printed = PluginOutput(text: "search=script\nrecents=false\n\nrow=A\nrun=a\n")
+        let plain = PluginOutput(text: "row=a\ntitle=A\n")
+        let printed = PluginOutput(text: "search=script\nrecents=false\n\nrow=a\ntitle=A\n")
 
         XCTAssertEqual(plain.search, .local)
         XCTAssertTrue(plain.keepsRecent)
@@ -23,13 +23,13 @@ final class PluginOutputTests: XCTestCase {
         key=cmd+return
         close=true
 
-        row=Safari
+        row=/Applications/Safari.app
+        title=Safari
         detail=Browser
-        run=/Applications/Safari.app
         file=/Applications/Safari.app
 
-        row=Off
-        run=off
+        row=off
+        title=Off
         symbol=power
         """)
 
@@ -43,7 +43,7 @@ final class PluginOutputTests: XCTestCase {
     }
 
     func testTheFirstKeyOfABlockNamesItsKind() {
-        let output = PluginOutput(text: "title=Places\n\ndetail=Late\nrow=Kyiv\nrun=kyiv\n\nrow=Lviv\nrun=lviv\n")
+        let output = PluginOutput(text: "title=Places\n\ndetail=Late\nrow=kyiv\ntitle=Kyiv\n\nrow=lviv\ntitle=Lviv\n")
 
         XCTAssertEqual(output.items.map(\.run), ["lviv"])
         XCTAssertEqual(output.errors, ["detail=Late"])
@@ -51,7 +51,7 @@ final class PluginOutputTests: XCTestCase {
 
     func testAnEffectIsAKeyOfTheHeadOrABlockOfItsOwnAtAnyPlace() {
         let head = PluginOutput(text: "toast=Saved\nopen=https://example.com\n")
-        let after = PluginOutput(text: "row=A\nrun=a\n\ntoast=Saved\n\nopen=https://example.com\n")
+        let after = PluginOutput(text: "row=a\ntitle=A\n\ntoast=Saved\n\nopen=https://example.com\n")
 
         XCTAssertEqual(head.toast, "Saved")
         XCTAssertEqual(head.open, "https://example.com")
@@ -96,10 +96,10 @@ final class PluginOutputTests: XCTestCase {
         XCTAssertEqual(PluginOutput(text: "").pick, .close)
     }
 
-    func testReportsARowWithNoRunAndABlockThatSaysNothing() {
-        let output = PluginOutput(text: "row=Lost\ndetail=x\n\nnot an item\n\nrow=Kept\nrun=1\n")
+    func testReportsARowWithNoIdAndABlockThatSaysNothing() {
+        let output = PluginOutput(text: "row=\ndetail=x\n\nnot an item\n\nrow=1\ntitle=Kept\n")
 
-        XCTAssertEqual(output.errors, ["row=Lost", "not an item"])
+        XCTAssertEqual(output.errors, ["row=", "not an item"])
         XCTAssertEqual(output.items.map(\.title), ["Kept"])
     }
 
@@ -108,7 +108,7 @@ final class PluginOutputTests: XCTestCase {
     }
 
     func testKeepsTheFirstItemOfEachRunValue() {
-        XCTAssertEqual(PluginOutput(text: "row=One\nrun=same\n\nrow=Two\nrun=same\n").items.map(\.title), ["One"])
+        XCTAssertEqual(PluginOutput(text: "row=same\ntitle=One\n\nrow=same\ntitle=Two\n").items.map(\.title), ["One"])
     }
 
     func testNoOutputIsNothing() {
@@ -121,7 +121,7 @@ final class PluginOutputTests: XCTestCase {
         XCTAssertEqual(PluginOutput(text: "title=Hi\n").kind, .launch)
         XCTAssertEqual(PluginOutput(text: "switch=power\non=true\n").kind, .toggle)
         XCTAssertEqual(PluginOutput(text: "slider=volume\nlevel=7\n").kind, .slider)
-        XCTAssertEqual(PluginOutput(text: "switch=power\non=true\n\nrow=A\nrun=a\n").kind, .list)
+        XCTAssertEqual(PluginOutput(text: "switch=power\non=true\n\nrow=a\ntitle=A\n").kind, .list)
         XCTAssertEqual(PluginOutput(text: "button=new\ntitle=New\n").kind, .list)
     }
 
@@ -201,7 +201,7 @@ final class PluginOutputTests: XCTestCase {
     }
 
     func testARowReadsEachKeyword() {
-        let output = PluginOutput(text: "row=grinning face\nrun=😀\nkeyword=happy\nkeyword=smile\n")
+        let output = PluginOutput(text: "row=😀\ntitle=grinning face\nkeyword=happy\nkeyword=smile\n")
 
         XCTAssertEqual(output.items.first?.keywords, ["happy", "smile"])
     }

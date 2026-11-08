@@ -79,7 +79,7 @@ final class SpotTests: XCTestCase {
 
     func testOpeningGivesTheKindAndTheActionsThatItPrints() async throws {
         let command = try writeCommand(kind: .launch, read: .panel, """
-        printf 'switch=power\\non=true\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=A\\nrun=a\\n'
+        printf 'switch=power\\non=true\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=a\\ntitle=A\\n'
         """)
 
         let opened = try await command.opened(timeout: 5)
@@ -92,7 +92,7 @@ final class SpotTests: XCTestCase {
 
     func testReadsTheItemsACommandPrintsForRead() async throws {
         let command = try writeCommand(kind: .list, """
-        [ "$1" = read ] && [ -z "$2" ] && printf 'row=Safari\\nrun=/Safari.app\\n'
+        [ "$1" = read ] && [ -z "$2" ] && printf 'row=/Safari.app\\ntitle=Safari\\n'
         """)
 
         let lines = try await command.items(timeout: 5)
@@ -102,7 +102,7 @@ final class SpotTests: XCTestCase {
 
     func testPassesTheSearchToAList() async throws {
         let command = try writeCommand(kind: .list, """
-        printf 'row=%s\\nrun=%s\\n' "$2" "$1"
+        printf 'row=%s\\ntitle=%s\\n' "$1" "$2"
         """)
 
         let lines = try await command.items(query: "rep", timeout: 5)

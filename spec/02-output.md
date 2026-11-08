@@ -17,13 +17,13 @@ on=true
 
 repeat=nets
 
-row=Home
-run=home
+row=home
+title=Home
 symbol=wifi
 tone=on
 
-row=Office
-run=office
+row=office
+title=Office
 symbol=wifi
 
 button=forget
@@ -82,30 +82,31 @@ one, so a button with no drawing of its own is always an action. `keys=7 8 9 +` 
 ## Buttons and actions
 
 A `button` that a drawing places is drawn. A `button` that no drawing places is an action (U6): it shows in the ⌘K menu,
-its `key` works directly, and with no row selected it acts on the whole spot. An action on a row is `<script> <id> <run>`.
+its `key` works directly, and with no row selected it acts on the whole spot. An action on a row is `<script> <id> <row id>`.
 `scope=command` keeps an action on the whole spot when a row is selected. `close=true` closes the panel after it runs, and
 `confirm` asks for a second press, such as `Press again to delete`.
 
 `button=open` sets what Enter does on a row: `title` is its word, and `close=false` keeps the panel open after a pick.
 
 A button with `form=true` asks for values first. The call runs once with empty stdin, and it prints a `title` in its head
-and one `field` for each value. Then the same call runs with the values on stdin, and it can print the `run` of the row to
+and one `field` for each value. Then the same call runs with the values on stdin, and it can print the id of the row to
 select (C3).
 
 ## Rows
 
-A `row` block is one item: `row` is its title, and `run` is the value that a pick sends as `<script> open <run>`. Rows
+A `row` block is one item: `row=<id>` names it, and a pick sends `<script> open <id>`. Its `title` is the words it shows, and with no `title` it shows its id. Rows
 always flow through a repeat, and with no `repeat` block they flow through a list.
 
 | Key                                | Meaning                                                                        |
 | ---------------------------------- | ------------------------------------------------------------------------------ |
-| `row`, `run`                       | Required.                                                                      |
+| `row`                              | Required: the id.                                                              |
+| `title`                            | The first line. Its id, when it has none.                                      |
 | `detail`                           | The second line.                                                               |
 | `symbol`, `file`, `image`, `glyph` | The picture.                                                                   |
 | `tone`                             | A dot on the picture.                                                          |
 | `hides`                            | The id of a button that this row does not offer. Repeat the line for each one. |
 | `keyword`                          | A word that finds the row in a search, which the row does not show.            |
-| `shortcut`                         | A key at the end of the row. A pick records a new key and calls `<run> <key>`. |
+| `shortcut`                         | A key at the end of the row. A pick records a new key and calls `<id> <key>`. |
 | `as`                               | The template that draws this row.                                              |
 | `<slot>`, `<slot>.<key>`           | The value of a slot of its template, and any other key of that slot.           |
 
@@ -136,7 +137,7 @@ A `template` block draws a row. Each `<kind>=<slot>` line in it gives a slot a k
 `grid.<columns>x<rows>=` lines draw the row in a place of that many cells of the repeat, such as `grid.2x2=` for the large
 place of a bento, and a place with no drawing of its size takes the nearest smaller one (U8). A row picks a template with
 `as=<name>`, and `template=row` draws each row that names none. With no template, a row is drawn by the default template:
-its own keys `row`, `detail`, `symbol`, `file`, `image`, `glyph`, `tone` and `shortcut` are its slots, as a picture, its
+its own keys `title`, `detail`, `symbol`, `file`, `image`, `glyph`, `tone` and `shortcut` are its slots, as a picture, its
 words, a dot and a key. A slot of a template cannot take the name of a key of a row (U14).
 
 ```text
@@ -147,8 +148,8 @@ text=name
 button=quit
 quit.symbol=xmark.circle
 
-row=Safari
-run=/Applications/Safari.app
+row=/Applications/Safari.app
+title=Safari
 pic.file=/Applications/Safari.app
 name=Safari
 tone=on
@@ -157,7 +158,7 @@ tone=on
 A row fills a slot by its id. `<slot>=<value>` sets the main key of the slot's kind: `title` on a text and a button,
 `value` on a gauge, `point` on a graph, `on` on a switch, `level` on a slider, `text` on a field, `value` on a choice, and
 `shortcut` on a key. `<slot>.<key>=` sets any other key, in the template for each row or in the row for one row. A control
-in a row sends `<script> <slot> <run> [value]` (U9), and a row hides one with `hides=<slot>`.
+in a row sends `<script> <slot> <row id> [value]` (U9), and a row hides one with `hides=<slot>`.
 
 ## Values and frames
 

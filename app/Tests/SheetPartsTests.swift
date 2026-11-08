@@ -50,7 +50,7 @@ final class SheetPartsTests: XCTestCase {
 
     func testAScriptThatPrintsPartsIsAList() {
         XCTAssertEqual(PluginOutput(text: lights).kind, .list)
-        XCTAssertNil(SheetParts(output: PluginOutput(text: "row=A\nrun=a\n")))
+        XCTAssertNil(SheetParts(output: PluginOutput(text: "row=a\ntitle=A\n")))
     }
 
     func testWhatABlockPrintsDecidesItsControl() throws {

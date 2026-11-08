@@ -54,24 +54,24 @@ public struct BuildSpot: Equatable, Sendable {
     scope=command
     form=true
 
-    row=Copy prompt for AI
+    row=prompt
+    title=Copy prompt for AI
     detail=Have an AI build a plugin for you
-    run=prompt
     symbol=sparkles
 
-    row=Try a sheet
+    row=sandbox
+    title=Try a sheet
     detail=Build a layout and see it at once
-    run=sandbox
     symbol=square.grid.2x2
 
-    row=Read the guide
+    row=guide
+    title=Read the guide
     detail=How plugins and widgets work
-    run=guide
     symbol=book
 
-    row=Open plugins folder
+    row=folder
+    title=Open plugins folder
     detail=Add a script here to install a plugin
-    run=folder
     symbol=folder
     """
 

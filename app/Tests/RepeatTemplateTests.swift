@@ -13,14 +13,14 @@ final class RepeatTemplateTests: XCTestCase {
     quit.symbol=xmark.circle
     quit.title=Quit
 
-    row=Safari
-    run=/Applications/Safari.app
+    row=/Applications/Safari.app
+    title=Safari
     file=/Applications/Safari.app
     name=Safari
     tone=on
 
-    row=Notes
-    run=/Applications/Notes.app
+    row=/Applications/Notes.app
+    title=Notes
     name=Notes
     hides=quit
     """
@@ -35,7 +35,7 @@ final class RepeatTemplateTests: XCTestCase {
     }
 
     func testOneLineOfSingleCellsIsAGrid() {
-        let output = PluginOutput(text: "grid=tone\ngrid=a\n\nrepeat=a\ngrid=a b c d e f g\n\nchoice=tone\noption=none:Yellow\n\nrow=x\nrun=x\n")
+        let output = PluginOutput(text: "grid=tone\ngrid=a\n\nrepeat=a\ngrid=a b c d e f g\n\nchoice=tone\noption=none:Yellow\n\nrow=x\ntitle=x\n")
 
         XCTAssertEqual(output.drawing.perLine, 7)
         XCTAssertEqual(output.perLine, 7)
@@ -98,7 +98,7 @@ final class RepeatTemplateTests: XCTestCase {
     }
 
     func testAValueSetInARowShowsBeforeTheAnswer() throws {
-        let output = PluginOutput(text: "repeat=devices\n\ntemplate=row\ngrid=name power\ntext=name\nswitch=power\n\nrow=AirPods\nrun=airpods\npower=false\n")
+        let output = PluginOutput(text: "repeat=devices\n\ntemplate=row\ngrid=name power\ntext=name\nswitch=power\n\nrow=airpods\ntitle=AirPods\npower=false\n")
         var list = ItemList(items: output.items)
         list.take(drawing: output.drawing, templates: output.templates)
 
@@ -120,7 +120,7 @@ final class RepeatTemplateTests: XCTestCase {
     }
 
     func testASheetWithNoDrawingShowsItsComponentsThenItsRows() throws {
-        let output = PluginOutput(text: "text=note\ntitle=Note\n\nbutton=copy\ntitle=Copy\n\nrow=A\nrun=a\n")
+        let output = PluginOutput(text: "text=note\ntitle=Note\n\nbutton=copy\ntitle=Copy\n\nrow=a\ntitle=A\n")
 
         XCTAssertEqual(output.layout?.rows, [["note"], ["rows"]])
         XCTAssertEqual(output.layout?.repeated?.area, "rows")
@@ -131,19 +131,19 @@ final class RepeatTemplateTests: XCTestCase {
 
     func testAFrameOfComponentsKeepsTheRowsAndAnEmptyRepeatClearsThem() {
         XCTAssertFalse(PluginOutput(text: "switch=power\non=true\n\ntext=note\ntitle=Note\n").replacesRows)
-        XCTAssertTrue(PluginOutput(text: "text=note\ntitle=Note\n\nrow=A\nrun=a\n").replacesRows)
+        XCTAssertTrue(PluginOutput(text: "text=note\ntitle=Note\n\nrow=a\ntitle=A\n").replacesRows)
         XCTAssertTrue(PluginOutput(text: "text=note\ntitle=Note\n\nrepeat=list\n").replacesRows)
         XCTAssertTrue(PluginOutput(text: "").replacesRows)
     }
 
     func testASlotCannotTakeTheNameOfAKeyOfARow() {
-        let output = PluginOutput(text: "repeat=a\n\ntemplate=row\ngrid=on name\nswitch=on\ntext=name\n\nrow=A\nrun=a\n")
+        let output = PluginOutput(text: "repeat=a\n\ntemplate=row\ngrid=on name\nswitch=on\ntext=name\n\nrow=a\ntitle=A\n")
 
         XCTAssertEqual(output.partFaults, ["the template row has a slot called on, which is a key of a row"])
     }
 
     func testAFieldSlotHoldsTheTextOfItsRow() throws {
-        let output = PluginOutput(text: "repeat=a\n\ntemplate=row\ngrid=name note\ntext=name\nfield=note\n\nrow=A\nrun=a\nnote=Call back\n")
+        let output = PluginOutput(text: "repeat=a\n\ntemplate=row\ngrid=name note\ntext=name\nfield=note\n\nrow=a\ntitle=A\nnote=Call back\n")
         let row = try XCTUnwrap(output.items.first)
 
         XCTAssertEqual(output.template(of: row)?.parts(of: row).last?.control, .text("Call back", placeholder: nil, isReadOnly: false))

@@ -106,11 +106,12 @@ final class TextBlockTests: XCTestCase {
         XCTAssertEqual(MetricValue(output: PluginOutput(text: "text=m\ntitle=A\ntone=purple\nfuture=key")), MetricValue(title: "A"))
     }
 
-    func testAnItemNeedsARowAndARun() {
-        XCTAssertNil(SpotItem(block: TextBlock.blocks(in: "row=Only")[0]))
-        XCTAssertNil(SpotItem(block: TextBlock.blocks(in: "run=only")[0]))
+    func testAnItemNeedsARowIdAndTakesItAsItsTitleWhenItHasNone() {
+        XCTAssertNil(SpotItem(block: TextBlock.blocks(in: "row=")[0]))
+        XCTAssertNil(SpotItem(block: TextBlock.blocks(in: "title=Only")[0]))
+        XCTAssertEqual(SpotItem(block: TextBlock.blocks(in: "row=😀")[0])?.title, "😀")
         XCTAssertEqual(
-            SpotItem(block: TextBlock.blocks(in: "row=A\nrun=a\ndetail=B\nsymbol=s\nfile=/f\nimage=/i\nhides=x\nhides=y")[0]),
+            SpotItem(block: TextBlock.blocks(in: "row=a\ntitle=A\ndetail=B\nsymbol=s\nfile=/f\nimage=/i\nhides=x\nhides=y")[0]),
             SpotItem(title: "A", subtitle: "B", run: "a", symbol: "s", file: "/f", image: "/i", hides: ["x", "y"])
         )
     }

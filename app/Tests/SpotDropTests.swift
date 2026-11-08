@@ -255,7 +255,7 @@ final class SpotDropTests: XCTestCase {
     private func busySheet() async throws -> SpotRun {
         let sheet = try sheet(header: "read=sheet\ndrop=mov", """
         case "$1" in
-          read) printf 'button=work\\ntitle=Work\\nscope=command\\n\\nrow=A\\nrun=a\\n' ;;
+          read) printf 'button=work\\ntitle=Work\\nscope=command\\n\\nrow=a\\ntitle=A\\n' ;;
           work) \(untilRelease); touch '\(path("worked"))' ;;
         esac
         """)
@@ -311,7 +311,7 @@ final class SpotDropTests: XCTestCase {
     func testAWaitingDropRunsAfterTheRunningCallFails() async throws {
         let sheet = try sheet(header: "read=sheet\ndrop=mov", """
         case "$1" in
-          read) printf 'button=work\\ntitle=Work\\nscope=command\\n\\nrow=A\\nrun=a\\n' ;;
+          read) printf 'button=work\\ntitle=Work\\nscope=command\\n\\nrow=a\\ntitle=A\\n' ;;
           work) sleep 0.2; echo gone >&2; exit 3 ;;
         esac
         """)
@@ -507,7 +507,7 @@ final class SpotDropTests: XCTestCase {
     func testAStoppedDropChangesNothingAndItsSilenceIsNoAnswer() async throws {
         let sheet = try sheet(header: "read=sheet\ndrop=mov", """
         case "$1" in
-          read) printf 'row=A\\nrun=a\\n' ;;
+          read) printf 'row=a\\ntitle=A\\n' ;;
           drop) sleep 5; touch '\(path("went-on"))' ;;
         esac
         """)
@@ -525,7 +525,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testADropWithNoFrameReadsOnce() async throws {
-        let sheet = try sheet(header: "read=sheet\ndrop=mov", "[ \"$1\" = read ] && printf 'row=A\\nrun=a\\n'\nexit 0")
+        let sheet = try sheet(header: "read=sheet\ndrop=mov", "[ \"$1\" = read ] && printf 'row=a\\ntitle=A\\n'\nexit 0")
         let file = file("a.mov")
 
         XCTAssertTrue(sheet.drop([file]))

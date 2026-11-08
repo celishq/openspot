@@ -26,7 +26,7 @@ case "$1" in
             folder = $0
             sub(/\/[^\/]*$/, "", folder)
             if (index(folder, home) == 1) folder = "~" substr(folder, length(home) + 1)
-            printf "row=%s\ndetail=%s\nrun=%s\nfile=%s\n\n", $NF, folder, $0, $0
+            printf "row=%s\ntitle=%s\ndetail=%s\nfile=%s\n\n", $0, $NF, folder, $0
           }'
     ;;
   reveal)

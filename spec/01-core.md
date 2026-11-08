@@ -90,8 +90,8 @@ a widget or the menu bar shows it, or while the open panel reads it at `panel` (
 | `<script>`                             | A click, with no `read` in its header.                             |
 | `<script> read [text] [form]...`       | A moment, or a search change with `search=script` (02).            |
 | `<script> run`                         | A click on a card with no sheet, with a `read` in its header.      |
-| `<script> open <run>`                  | A row is picked (02).                                              |
-| `<script> <id> [run] [value]`          | A component changes or is pressed, with the `run` of its row (02). |
+| `<script> open <row id>`               | A row is picked (02).                                              |
+| `<script> <id> [row id] [value]`       | A component changes or is pressed, with the id of its row (02).    |
 | `<script> drop <path> [path]...`       | Files are dropped on its card, each path as its own argument (D3). |
 | `<script> <command>`                   | A key that the person gave a command is pressed.                   |
 
@@ -113,7 +113,7 @@ A script gets:
 # name=Notes
 # read=sheet
 case "$1" in
-  read) printf 'row=Today\nrun=today\n' ;;
+  read) printf 'row=today\ntitle=Today\n' ;;
   open) open -a Notes ;;
 esac
 ```

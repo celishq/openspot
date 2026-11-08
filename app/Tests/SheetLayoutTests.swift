@@ -233,8 +233,8 @@ final class SheetLayoutTests: XCTestCase {
     option=x:X
     value=x
 
-    row=one
-    run=1
+    row=1
+    title=one
     glyph=😀
     """
 
@@ -258,11 +258,11 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testRowsAloneNeedNoDrawing() {
-        let lines = output("repeat=a\ngrid=a b c d e f g\n\nrow=one\nrun=1\nglyph=😀\n")
+        let lines = output("repeat=a\ngrid=a b c d e f g\n\nrow=1\ntitle=one\nglyph=😀\n")
 
         XCTAssertEqual(lines.perLine, 7)
         XCTAssertEqual(lines.sheetFaults, [])
-        XCTAssertEqual(output("row=one\nrun=1\n").perLine, nil)
+        XCTAssertEqual(output("row=1\ntitle=one\n").perLine, nil)
     }
 
     func testTheFaultsOfARepeat() {

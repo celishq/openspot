@@ -63,7 +63,7 @@ apps() {
     | sort -f -u \
     | awk -F'\t' 'NR == FNR { live[$0] = 1; next }
       {
-        printf "row=%s\nrun=%s\nfile=%s\nname=%s\n", $1, $2, $2, $1
+        printf "row=%s\ntitle=%s\nfile=%s\nname=%s\n", $2, $1, $2, $1
         if ($2 in live) print "tone=on"; else print "hides=quit"
         if ($2 ~ /^\/System\//) print "hides=uninstall"
         print ""
@@ -90,8 +90,8 @@ uninstall_sheet() {
     keep=true
     grep -Fxq "$path" "$kept" 2>/dev/null && keep=false
     where=$(dirname "$path" | sed "s#^$HOME#~#")
-    printf 'row=%s\nrun=%s\nfile=%s\nname=%s\nname.detail=%s\ntrash=%s\n\n' \
-      "$(esc "$(basename "$path")")" "$(esc "$path")" "$(esc "$path")" "$(esc "$(basename "$path")")" "$(esc "$where")" "$keep"
+    printf 'row=%s\ntitle=%s\nfile=%s\nname=%s\nname.detail=%s\ntrash=%s\n\n' \
+      "$(esc "$path")" "$(esc "$(basename "$path")")" "$(esc "$path")" "$(esc "$(basename "$path")")" "$(esc "$where")" "$keep"
   done
 }
 

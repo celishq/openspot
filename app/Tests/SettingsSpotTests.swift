@@ -137,7 +137,7 @@ final class SettingsSpotTests: XCTestCase {
     }
 
     func testARowCarriesItsKey() {
-        let items = PluginOutput(text: "row=Open\nrun=open\nshortcut=ctrl+k\n\nrow=Other\nrun=other\n").items
+        let items = PluginOutput(text: "row=open\ntitle=Open\nshortcut=ctrl+k\n\nrow=other\ntitle=Other\n").items
 
         XCTAssertEqual(items.map(\.shortcut), ["ctrl+k", nil])
     }

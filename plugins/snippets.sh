@@ -50,7 +50,7 @@ case "$1" in
     printf 'button=edit\ntitle=Edit\nkey=cmd+e\nform=true\n\n'
     printf 'button=delete\ntitle=Delete\nkey=cmd+backspace\nconfirm=Press again to delete\n\n'
     printf 'button=new\ntitle=New snippet\nkey=cmd+n\nscope=command\nform=true\n\n'
-    load | jq -r "$esc"'.[] | "row=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\nrun=\(.id | esc)\n"'
+    load | jq -r "$esc"'.[] | "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\n"'
     ;;
   new)
     title=$(value title)

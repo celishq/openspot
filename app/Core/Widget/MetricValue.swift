@@ -63,7 +63,7 @@ public struct MetricValue: Equatable, Sendable {
     /// count themselves, and all else needs a title.
     public init?(output: PluginOutput) {
         let rows = output.rows.compactMap { block in
-            block.value("row").map { Row(title: $0, detail: block.value("detail"), tone: block.value("tone").flatMap(Tone.init)) }
+            block.value("row").map { Row(title: block.value("title") ?? $0, detail: block.value("detail"), tone: block.value("tone").flatMap(Tone.init)) }
         }
         guard let block = output.metric else {
             guard output.errors.isEmpty || !rows.isEmpty else { return nil }

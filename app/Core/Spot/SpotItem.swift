@@ -25,7 +25,7 @@ public struct SpotItem: Equatable, Sendable {
 
     /// The keys that a row reads itself, which are the slots of the default template (U14).
     public static let ownKeys: Set<String> = [
-        "row", "run", "detail", "symbol", "file", "image", "glyph", "hides", "keyword", "shortcut", "on", "tone", "as"
+        "row", "title", "detail", "symbol", "file", "image", "glyph", "hides", "keyword", "shortcut", "on", "tone", "as"
     ]
 
     public init(title: String, subtitle: String? = nil, run: String, symbol: String? = nil, file: String? = nil, image: String? = nil, glyph: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, isOn: Bool = false, tone: MetricValue.Tone? = nil, template: String? = nil, fields: [TextBlock.Field] = []) {
@@ -45,9 +45,10 @@ public struct SpotItem: Equatable, Sendable {
         self.fields = fields
     }
 
-    /// Reads the block of one row. It needs a run value.
+    /// Reads the block of one row: `row=<id>`, which a pick sends, and `title`, which is the id when it has none.
     public init?(block: TextBlock) {
-        guard let title = block.value("row"), let run = block.value("run") else { return nil }
+        guard let run = block.value("row") else { return nil }
+        let title = block.value("title") ?? run
         let hides = block.values("hides")
         self.init(
             title: title,

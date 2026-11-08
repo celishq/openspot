@@ -42,7 +42,7 @@ case "$1" in
     fi
     list=$(pulls) || exit 1
     printf 'button=copy\ntitle=Copy link\nkey=cmd+return\nclose=true\n\n'
-    printf '%s' "$list" | jq -r "$defs"'.[] | "row=\(.title | esc)\ndetail=\(about)\nrun=\(.url | esc)\nsymbol=\({good: "checkmark.circle", bad: "xmark.circle", warn: "clock"}[tone // ""] // "arrow.triangle.pull")"
+    printf '%s' "$list" | jq -r "$defs"'.[] | "row=\(.url | esc)\ntitle=\(.title | esc)\ndetail=\(about)\nsymbol=\({good: "checkmark.circle", bad: "xmark.circle", warn: "clock"}[tone // ""] // "arrow.triangle.pull")"
       + (tone | if . then "\ntone=\(.)" else "" end) + "\n"'
     ;;
   copy)
