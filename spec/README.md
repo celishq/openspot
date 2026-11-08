@@ -6,8 +6,8 @@ app, which the Build spot opens and copies for an AI. How the app itself works i
 | Spec                                    | Status | Needs | What it holds                                                                    |
 | --------------------------------------- | ------ | ----- | -------------------------------------------------------------------------------- |
 | [01 Core](01-core.md)                   | final  |       | The file, the format, the header, the moments, the calls and the life of a call. |
-| [02 What a script prints](02-output.md) | final  | 01    | Rows, actions, forms, toggles, sliders, sheets and metrics.                      |
-| [03 Views](03-views.md)                 | draft  | 01 02 | A plugin's own SwiftUI view in its card.                                         |
+| [02 What a script prints](02-output.md) | draft  | 01    | Components, drawings, rows, repeats, buttons, cards and metrics.                 |
+| [03 Views](03-views.md)                 | draft  | 01 02 | A plugin's own SwiftUI view in an area.                                          |
 
 Specs 00 and 04 to 10 are gone. Their numbers are not used again.
 
@@ -45,12 +45,13 @@ These rules come from the way Nostr writes its NIPs.
 | -------------------------------------------------------------------------------------------------------- | -------------------- | ---- |
 | `name`, `symbol`, `image`, `file`, `glyph`, `subtitle`, `key`, `size`, `read`, `data`, `drop`, `command` | Header key           | 01   |
 | `global`, `tray`                                                                                         | Header key           | 02   |
-| `view`                                                                                                   | Header key           | 03   |
 | `sheet`, `panel`, a number, `launch`, `wake`                                                             | Moment               | 01   |
 | `toast`, `open`                                                                                          | Block kind           | 01   |
-| `row`, `action`, `field`, `part`, `section`                                                              | Block kind           | 02   |
+| `text`, `gauge`, `graph`, `picture`, `switch`, `slider`, `field`, `choice`, `key`, `button`, `section`, `repeat`, `template`, `row` | Block kind | 02 |
+| `view`                                                                                                   | Block kind           | 03   |
+| `grid`, `grid.<place>`, `card`, `keys`                                                                   | Head key             | 02   |
 | `read`                                                                                                   | Reserved word        | 01   |
-| `run`, `open`, `drop`, `on`, `off`, `level`                                                              | Default id           | 01   |
+| `run`, `open`, `drop`                                                                                    | Default id           | 01   |
 | `OPENSPOT_REASON`, `OPENSPOT_DATA`, `OPENSPOT_SH`                                                        | Environment variable | 01   |
 | `openspot <noun> <verb>`                                                                                 | Command              | 01   |
 

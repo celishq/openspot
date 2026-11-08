@@ -91,14 +91,12 @@ a widget or the menu bar shows it, or while the open panel reads it at `panel` (
 | `<script> read [text] [form]...`       | A moment, or a search change with `search=script` (02).            |
 | `<script> run`                         | A click on a card with no sheet, with a `read` in its header.      |
 | `<script> open <run>`                  | A row is picked (02).                                              |
-| `<script> <action> [run]`              | An action runs (02).                                               |
-| `<script> <part> [value]`              | A part changes or is pressed (02).                                 |
-| `<script> on`, `off`, `level <number>` | A toggle or a slider changes (02).                                 |
+| `<script> <id> [run] [value]`          | A component changes or is pressed, with the `run` of its row (02). |
 | `<script> drop <path> [path]...`       | Files are dropped on its card, each path as its own argument (D3). |
 | `<script> <command>`                   | A key that the person gave a command is pressed.                   |
 
-`read` is the only reserved word. `run`, `open`, `drop`, `on`, `off` and `level` are default ids. A part cannot use a
-default id, and an action can use only `open` (C1). A new default id reaches only a script that asks for it (C2).
+`read` is the only reserved word. `run`, `open` and `drop` are default ids. A component cannot use a default id, and a
+button can use only `open` (C1). A new default id reaches only a script that asks for it (C2).
 
 A drop on a card with a running call waits for that call (D4). Presses of the keys of one script run one at a time, in
 order, and never stop a call (C7). Only the person gives a command its key (P8).
@@ -127,23 +125,23 @@ Loading it reads all of stdin.
 #!/bin/sh
 . "$OPENSPOT_SH"
 input=$(value input)
-printf 'part=output\ntext=%s\n' "$(esc "$input")"
+printf 'field=output\ntext=%s\n' "$(esc "$input")"
 ```
 
 ## Frames and the life of a call
 
-A call can keep printing, and Openspot draws each frame at once (S1). A frame with a layout replaces the sheet, and a frame
-with only parts changes those parts (S2).
+A call can keep printing, and Openspot draws each frame at once (S1). A frame with a drawing replaces the sheet, and a frame
+with only components changes those components (S2).
 
 - A `read` has 10 seconds until its first frame or its end (L1). Any other call has no time limit (L2).
-- A new value for a part stops the older call of that part (L4). A second press of a running call stops it: its process
+- A new value for a component stops the older call of that component (L4). A second press of a running call stops it: its process
   group gets the terminate signal, and then the kill signal (L5). Quitting Openspot stops each call (L9).
 - A call ends when its output closes (L10). A stopped call changes nothing (A3).
 - Exit 0 is success. Any other code is a failure, and the last line on stderr shows to the person (R3). A failure can print
   `open=<url>`, the place that fixes it (R9).
 - A stop can come at any time, and two calls can run at once, so a script never leaves a file half written (R8).
 
-A call reports progress with the values of a metric (02), such as `title=42%` and `value=0.42`. Openspot reads the codes
+A call reports progress with `title` and `value` in the head of a frame, such as `title=42%` and `value=0.42`. Openspot reads the codes
 `ESC ] 9;4;1;<percent>` as `value` and `ESC ] 9;<text>` as a toast, and removes each other escape code (R12).
 
 ## The openspot command

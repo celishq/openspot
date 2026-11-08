@@ -6,8 +6,7 @@
 #!/bin/sh
 # name=Cups today
 # read=panel
-# view=cups.swift
-printf 'title=3\npoint=1\npoint=0\npoint=2\n'
+printf 'grid.wide=cups\n\nview=cups\nsource=cups.swift\ntitle=3\npoint=1\npoint=0\npoint=2\n'
 ```
 
 ```swift
@@ -25,7 +24,7 @@ struct SpotView: View {
 }
 ```
 
-`view=<file>` in the header names a SwiftUI view that the card of the spot draws (V1). The script and its view lie in a
+A `view` component (02) names a SwiftUI file in its `source`, and the view fills the area of that component (V1). The script and its view lie in a
 folder of their own, such as `cups/cups.sh` and `cups/cups.swift` (F10). The path starts at the folder of the script, and
 the file ends in `.swift`. The file is not executable, so it is not a spot of its own.
 
@@ -36,9 +35,9 @@ The file declares `struct SpotView: View` with `let spot: SpotInput`, and it has
 
 | Member             | Gives                                                             |
 | ------------------ | ----------------------------------------------------------------- |
-| `spot["key"]`      | The last value of a key in the head of the last read, or nil.     |
+| `spot["key"]`      | The last value of a key in the view's own block, or nil.          |
 | `spot.all("key")`  | Each value of a key, in order, for a key that repeats.            |
-| `spot.size`        | The size of the whole card.                                       |
+| `spot.size`        | The size of its area.                                             |
 | `spot.inset`       | The space that other cards keep between their edge and words.     |
 | `spot.corner`      | The corner radius of the card.                                    |
 | `spot.ink`         | The colour of words, which follows light and dark.                |
@@ -46,10 +45,11 @@ The file declares `struct SpotView: View` with `let spot: SpotInput`, and it has
 | `spot.accent`      | The accent colour.                                                |
 | `spot.font`        | The fonts of the cards: `title`, `detail`, `metric` and `value`.  |
 
-The view fills the whole card, in place of the picture and the words, and Openspot clips it to the card's shape (V3). Put
-`.padding(spot.inset)` on words so that they line up with other cards. The card's size comes from `size`
-and from the person, and the view cannot change it. With `panel` in its `read`, the view gets the head of each read, and a
-read with no head gives no values (V4). A new read draws the same view again, so its `@State` stays.
+The view fills its area, and Openspot clips it to the card's shape where the area touches the card's edge (V3). A drawing
+such as `grid.wide=cups` gives it the whole card. Put `.padding(spot.inset)` on words so that they line up with other
+cards. The area's size comes from the drawing, the card's `size` and the person, and the view cannot change it. The view
+gets the keys of its own block in each frame, and a frame that does not print it keeps the last ones (V4). A new frame
+draws the same view again, so its `@State` stays.
 
 The view only draws. A press on the card works as on any card (V5).
 
@@ -69,6 +69,12 @@ script, and keep `body` to drawing what the script printed.
 | Decision                                                                   | Rejected                                         |
 | -------------------------------------------------------------------------- | ------------------------------------------------ |
 | One Swift file, compiled by Openspot, with no package and no build step.   | A Swift package, or a bundle that the author builds. |
-| The script holds the state, and the view draws the head of its read.      | A view that runs its own work or keeps its own data. |
+| The script holds the state, and the view draws its own block.             | A view that runs its own work or keeps its own data. |
 | The view runs in Openspot's process, so it moves with the panel.           | A view in its own process, which macOS cannot place in another app's view. |
-| A card draws the view, and a sheet draws only the app's parts for now.     | A view in a sheet before a view can take a press. |
+| A view is a component in an area, beside the app's own components.        | A view that fills the whole card from the header. |
+
+## What the app does not do yet
+
+| Rule       | Today                                                                  | Phase |
+| ---------- | ---------------------------------------------------------------------- | ----- |
+| V1, V3, V4 | `view=<file>` in the header, a view that fills the card, and the head. | 5     |
