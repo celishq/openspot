@@ -145,8 +145,8 @@ public struct Plugin: Equatable, Sendable {
             subtitle: text("subtitle"),
             key: try key(text("key"), of: name),
             layout: layout,
-            places: places,
-            opens: text("opens")
+            places: places.map { Self.tool($0, beside: url, id: id) },
+            opens: text("opens").map { Self.tool($0, beside: url, id: id) }
         )
     }
 
@@ -180,8 +180,17 @@ public struct Plugin: Equatable, Sendable {
             size: layout.size,
             key: try key(text("key"), of: name),
             layout: layout,
-            places: layout.letters.compactMap { places[$0] },
-            opens: text("opens")
+            places: layout.letters.compactMap { places[$0] }.map { tool($0, beside: url, id: id) },
+            opens: text("opens").map { tool($0, beside: url, id: id) }
         )
+    }
+
+    /// The ID of a tool that a widget names: a script of the widget's own folder by its file name first, else the name as an
+    /// ID (F10).
+    private static func tool(_ name: String, beside url: URL, id: String) -> String {
+        guard !name.contains("/"), let folder = id.split(separator: "/").first, id.contains("/") else { return name }
+        let files = (try? FileManager.default.contentsOfDirectory(at: url.deletingLastPathComponent(), includingPropertiesForKeys: nil)) ?? []
+        let isOwn = files.contains { $0.deletingPathExtension().lastPathComponent == name && FileManager.default.isExecutableFile(atPath: $0.path) }
+        return isOwn ? "\(folder)/\(name)" : name
     }
 }

@@ -40,6 +40,22 @@ final class WidgetContractTests: XCTestCase {
         try widget(layout: layout, places: Array(repeating: "power", count: places), more: size.map { "size = \"\($0)\"" } ?? "")
     }
 
+    func testAWidgetInAFolderNamesItsOwnToolsByFileNameAndOthersByID() throws {
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("morning"), withIntermediateDirectories: true)
+        try script("morning/power.sh", "#!/bin/sh\n# read=5\nprintf 'title=1\\n'\n")
+        try script("morning/notes.sh", "#!/bin/sh\n# read=sheet\n")
+        try power()
+        try "[[widgets]]\nname = \"Now\"\nlayout = \"pair\"\nplaces = [\"power\", \"morning/power\"]\nopens = \"notes\"\n"
+            .write(to: folder.appendingPathComponent("morning/widgets.toml"), atomically: true, encoding: .utf8)
+
+        let result = try scan
+        let widget = try XCTUnwrap(result.commands.first { $0.kind == .widget })
+
+        XCTAssertEqual(widget.places, ["morning/power", "morning/power"])
+        XCTAssertEqual(widget.opens, "morning/notes")
+        XCTAssertEqual(result.refused, [])
+    }
+
     func testASingleWidgetIsSquareUnlessItAsksForAnotherSize() throws {
         try single(size: nil)
         XCTAssertEqual(try scan.commands.first?.size, .square)
