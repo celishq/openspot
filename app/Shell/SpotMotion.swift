@@ -40,17 +40,6 @@ enum SpotMotion {
         return isLate ? .easeIn(duration: half).delay(half) : .easeOut(duration: half)
     }
 
-    /// How a pushed card fades and shrinks, in step with its push. `fade` is from `SheetPush`.
-    static func cardFade(isSheetOpen: Bool, fade: ClosedRange<Double>) -> Animation {
-        Animation(SpotCardFade(fade: fade, isOpen: isSheetOpen))
-    }
-
-    /// The share of its way that the spring of `sheet(isOpen:)` has moved the sheet after `time`.
-    static func sheetShare(isOpen: Bool, at time: Double) -> Double {
-        let pace = 2 * Double.pi / (isOpen ? openDuration : closeDuration)
-        return 1 - (1 + pace * time) * exp(-pace * time)
-    }
-
     /// The crossfade of the blur of the grid and the blur of the sheet.
     static func blurFade(isSheetOpen: Bool) -> Animation {
         .easeOut(duration: isSheetOpen ? openDuration : closeDuration)

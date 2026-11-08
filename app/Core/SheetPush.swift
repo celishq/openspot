@@ -26,10 +26,17 @@ public struct SheetPush: Equatable, Sendable {
         )
     }
 
-    /// The shares of the sheet's motion over which a card fades and shrinks: from its start until the card's centre meets
-    /// the window's edge, or the whole motion for a card that stays in the window. The sheet's own card never fades.
-    public func fade(of placement: SpotPlacement) -> ClosedRange<Double> {
-        guard placement.index != open.index else { return 1...1 }
-        return CardPush(from: placement.rect, by: offset(of: placement)).fade(within: window) ?? 0...1
+    /// How far a card that has moved this far has faded and shrunk, from 0 to 1: the share of its way from its place until
+    /// its centre meets the window's edge, or of its whole push when it stays in the window. Nil for a card that the push
+    /// leaves in place, and 0 for the sheet's own card.
+    public func fade(of placement: SpotPlacement, movedBy moved: CGSize) -> Double? {
+        guard placement.index != open.index else { return 0 }
+        let push = offset(of: placement)
+        let length = (push.width * push.width + push.height * push.height).squareRoot()
+        guard length > 0 else { return nil }
+        let along = (moved.width * push.width + moved.height * push.height) / length
+        let end = CardPush(from: placement.rect, by: push).fade(within: window)?.upperBound ?? 1
+        guard end > 0 else { return 1 }
+        return min(max(Double(along / length) / end, 0), 1)
     }
 }

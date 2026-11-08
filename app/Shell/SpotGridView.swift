@@ -21,15 +21,12 @@ struct SpotGridView: View {
             return SpotGridGlass.Card(
                 id: entry.id,
                 size: placement.size,
-                offset: offset(of: placement, id: entry.id),
-                scale: isSheetOpen && entry.id != openID ? SpotMotion.pushedScale : 1,
-                fade: push?.fade(of: placement) ?? 1...1,
-                anchor: anchor(of: placement),
+                motion: motion(of: placement, id: entry.id),
                 isCovered: entry.id == openID || SpotCardView.isFilled(entry, takesDrag: model.takesDrag(entry.id), isDropTarget: dropTarget == entry.id)
             )
         }
         return ZStack(alignment: .topLeading) {
-            SpotGridGlass(cards: glass, isSheetOpen: isSheetOpen, size: CGSize(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows)))
+            SpotGridGlass(cards: glass, size: CGSize(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows)))
             ForEach(Array(zip(placements, glass)), id: \.1.id) { placement, card in
                 let entry = model.visible[placement.index]
                 SpotCardView(
@@ -46,10 +43,7 @@ struct SpotGridView: View {
                     model: model
                 )
                 .onDrop(of: [.fileURL], delegate: SpotCardDrop(id: entry.id, model: model, target: $dropTarget))
-                .animation(SpotMotion.cardFade(isSheetOpen: isSheetOpen, fade: card.fade)) {
-                    $0.scaleEffect(card.scale, anchor: card.anchor).opacity(isSheetOpen ? SpotMotion.coveredCardOpacity : 1)
-                }
-                .offset(card.offset)
+                .modifier(card.motion)
                 .zIndex(dragged?.id == entry.id ? 1 : 0)
                 .highPriorityGesture(moveGesture(of: entry), including: model.isEditing ? .all : .subviews)
                 .contextMenu { spotMenu(of: entry) }
@@ -60,12 +54,21 @@ struct SpotGridView: View {
         .contentShape(Rectangle())
     }
 
-    /// Where a card lies in the grid: its place, the push of an open sheet and the drag of Edit Spots.
-    private func offset(of placement: SpotPlacement, id: String) -> CGSize {
+    /// Where a card lies in the grid, from its place, the drag of Edit Spots and the push of an open sheet, and how it
+    /// shrinks and fades on that push.
+    private func motion(of placement: SpotPlacement, id: String) -> SpotPushedCard {
         let place = placement.rect
-        let pushed = isSheetOpen ? push?.offset(of: placement) ?? .zero : .zero
         let drag = dragged?.id == id ? dragged?.offset ?? .zero : .zero
-        return CGSize(width: place.minX + pushed.width + drag.width, height: place.minY + pushed.height + drag.height)
+        let base = CGSize(width: place.minX + drag.width, height: place.minY + drag.height)
+        let pushed = isSheetOpen ? push?.offset(of: placement) ?? .zero : .zero
+        return SpotPushedCard(
+            offset: CGSize(width: base.width + pushed.width, height: base.height + pushed.height),
+            share: isSheetOpen && id != openID ? 1 : 0,
+            base: base,
+            push: push,
+            placement: placement,
+            anchor: anchor(of: placement)
+        )
     }
 
     /// The side of a card that faces the open sheet, which stays in step with the sheet's edge as the card shrinks.

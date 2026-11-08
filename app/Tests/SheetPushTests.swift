@@ -30,15 +30,21 @@ final class SheetPushTests: XCTestCase {
 
     func testTheOpenCardStaysAndNeverFades() {
         XCTAssertEqual(push.offset(of: push.open), .zero)
-        XCTAssertEqual(push.fade(of: push.open), 1...1)
+        XCTAssertEqual(push.fade(of: push.open, movedBy: .zero), 0)
     }
 
-    func testACardFadesFromItsFirstPlaceUntilItsCentreMeetsTheWindowsEdge() {
-        XCTAssertEqual(push.fade(of: card(row: 0, column: 1)), 0...(132.0 / 152))
+    func testACardHasFadedByTheShareOfItsWayToWhereItsCentreMeetsTheWindowsEdge() {
+        XCTAssertEqual(push.fade(of: card(row: 0, column: 1), movedBy: CGSize(width: 0, height: -66)) ?? -1, 0.5, accuracy: 0.001)
+        XCTAssertEqual(push.fade(of: card(row: 0, column: 1), movedBy: CGSize(width: 0, height: -140)), 1)
     }
 
     func testACardThatStaysInTheWindowFadesOverItsWholePush() {
         let wide = SheetPush(open: push.open, sheet: push.sheet, window: CGRect(x: -1000, y: -1000, width: 3000, height: 3000))
-        XCTAssertEqual(wide.fade(of: card(row: 0, column: 1)), 0...1)
+        XCTAssertEqual(wide.fade(of: card(row: 0, column: 1), movedBy: CGSize(width: 0, height: -76)) ?? -1, 0.5, accuracy: 0.001)
+    }
+
+    func testACardThatThePushLeavesInPlaceHasNoFadeOfItsOwn() {
+        let tall = SheetPush(open: push.open, sheet: CGRect(x: 75, y: 0, width: 64, height: 300), window: push.window)
+        XCTAssertNil(tall.fade(of: card(row: 1, column: 0), movedBy: .zero))
     }
 }
