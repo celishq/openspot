@@ -280,8 +280,9 @@ struct SpotsView: View {
     }
 
     private func hint(_ words: String, isShown: Bool, height: CGFloat) -> some View {
-        SpotHint(text: words)
+        SpotHint(text: words, onPress: model.pressHint)
             .frame(width: SpotTokens.panelWidth)
+            .allowsHitTesting(isShown)
             .offset(y: height - SpotTokens.halo - SpotTokens.hintPillHeight)
             .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: isShown)) { $0.opacity(isShown ? 1 : 0) }
     }

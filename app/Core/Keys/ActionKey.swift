@@ -26,6 +26,28 @@ public struct ActionKey: Hashable, Sendable {
         self.init(name: last, isCommand: parts.contains("cmd"), isShift: parts.contains("shift"))
     }
 
+    /// Reads a key as the footer writes it, such as ⌘⇧N, ⏎ or Esc. A label with only modifiers is no key.
+    public init?(label: String) {
+        if label == "Esc" {
+            self.init(name: "escape")
+            return
+        }
+        var rest = Substring(label)
+        let isCommand = rest.hasPrefix("⌘")
+        if isCommand { rest = rest.dropFirst() }
+        let isShift = rest.hasPrefix("⇧")
+        if isShift { rest = rest.dropFirst() }
+        let name: String
+        switch rest {
+        case "⏎", "↩": name = "return"
+        case "⌫": name = "backspace"
+        default:
+            guard rest.count == 1, let first = rest.first, first.isLetter || first.isNumber else { return nil }
+            name = rest.lowercased()
+        }
+        self.init(name: name, isCommand: isCommand, isShift: isShift)
+    }
+
     /// The key as the Mac writes it, such as ⌘⇧N.
     public var label: String {
         let key: String

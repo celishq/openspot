@@ -77,7 +77,10 @@ final class AppsPluginTests: SamplePluginsCase {
             let sheet = try await apps.items(timeout: 10)
 
             XCTAssertEqual(sheet.summary?.value("title"), "Delete Zed")
-            XCTAssertEqual(sheet.parts.map(\.id), ["cancel", "remove"])
+            XCTAssertEqual(sheet.parts.map(\.id), [])
+            XCTAssertEqual(sheet.actions.map(\.id), ["cancel", "remove"])
+            XCTAssertEqual(sheet.actions.map(\.key), [ActionKey(name: "escape"), ActionKey(name: "return", isCommand: true)])
+            XCTAssertEqual(sheet.actions.map(\.scope), [.command, .command])
             XCTAssertEqual(Set(sheet.items.map(\.run)), [
                 app.path, support.deletingLastPathComponent().path, cache.deletingLastPathComponent().path, preferences.path
             ])

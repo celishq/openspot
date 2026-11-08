@@ -35,6 +35,10 @@ extension SpotsModel {
             pressPart(part)
             return true
         }
+        if key == ActionKey(name: "escape"), let target, let action = target.entry.command.actions(for: target.item).first(where: { $0.key == key }) {
+            run(action, on: target)
+            return true
+        }
         if key == ActionKey(name: "escape") {
             allowSheetMotion()
             if !stepBack() { dismiss() }
@@ -55,6 +59,12 @@ extension SpotsModel {
             run(action, on: target)
         }
         return true
+    }
+
+    /// Does what the key of a footer label does, as if it were pressed: Return runs the selected row.
+    func pressHint(_ label: String) {
+        guard let key = ActionKey(label: label) else { return }
+        if !handleKey(key), key == ActionKey(name: "return") { runSelected() }
     }
 
     /// Takes the keys of the parts, Esc, the arrows and return, and leaves all others to the text areas. A part's own Esc wins

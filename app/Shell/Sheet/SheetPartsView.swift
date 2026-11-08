@@ -258,7 +258,7 @@ struct SheetPartsView: View {
                     .background(SpotTheme.ink.opacity(SpotTheme.selectedFill), in: shape)
                     .contentShape(shape)
             case .chip:
-                chipLabel(part, words: part.title ?? part.id)
+                pressLabel(part, words: part.title ?? part.id, font: SpotType.action)
                     .foregroundStyle(SpotTheme.ink)
                     .padding(.horizontal, SpotTokens.padding)
                     .padding(.vertical, 5)
@@ -274,8 +274,8 @@ struct SheetPartsView: View {
                     }
                 }
                 .contentShape(Rectangle())
-            case .strong where frame.isOnTop || part.align != nil:
-                chipLabel(part, words: part.title ?? part.id.capitalized)
+            case .strong where frame.isOnTop:
+                pressLabel(part, words: part.title ?? part.id.capitalized, font: SpotType.action)
                     .foregroundStyle(SpotTheme.onSolid)
                     .padding(.horizontal, SpotTokens.padding)
                     .padding(.vertical, 5)
@@ -293,16 +293,6 @@ struct SheetPartsView: View {
             }
         }
         .buttonStyle(.plain)
-    }
-
-    /// The words of a chip, with its key after them in the secondary ink.
-    private func chipLabel(_ part: SpotPart, words: String) -> some View {
-        HStack(spacing: SpotTokens.placeGap / 2) {
-            pressLabel(part, words: words, font: SpotType.action)
-            if work(part) == nil, let key = part.key {
-                Text(key.label).font(SpotType.action).modifier(SpotSecondaryText(isOnSolid: part.look == .strong))
-            }
-        }
     }
 
     private func centeredLine(_ part: SpotPart, text: Color, fill: Color) -> some View {

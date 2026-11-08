@@ -81,11 +81,11 @@ uninstall_sheet() {
   printf 'title=Delete %s\ndetail=Move the app and its files to the Trash\n' "$name"
   i=0
   while [ "$i" -lt "$lines" ]; do printf 'grid=files files files files\n'; i=$((i + 1)); done
-  printf 'grid=. cancel remove remove\n\n'
+  printf '\n'
   printf 'repeat=files\n\n'
   printf 'template=row\ngrid=pic name name name name trash\npicture=pic\ntext=name\nswitch=trash\n\n'
-  printf 'button=cancel\ntitle=Cancel\nlook=chip\nalign=right\nshortcut=escape\n\n'
-  printf 'button=remove\ntitle=Move to Trash\nlook=strong\nalign=right\nshortcut=cmd+return\n\n'
+  printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=command\n\n'
+  printf 'button=remove\ntitle=Move to Trash\nshortcut=cmd+return\nscope=command\n\n'
   printf '%s\n' "$files" | while IFS= read -r path; do
     keep=true
     grep -Fxq "$path" "$kept" 2>/dev/null && keep=false

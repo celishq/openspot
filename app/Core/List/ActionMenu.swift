@@ -32,9 +32,13 @@ public struct ActionMenu: Equatable, Sendable {
         hint(stopping: { _ in false })
     }
 
-    /// The first keys and the key of this menu, in words for a footer. The key of a running row says that it stops the call.
+    /// The first two keys, an action that holds Esc, and the key of this menu, in words for a footer. The key of a running row
+    /// says that it stops the call.
     public func hint(stopping isRunning: (Row) -> Bool) -> String {
-        let keys = rows.filter { !$0.keyLabel.isEmpty && !$0.isQuiet }.prefix(2).map { "\($0.keyLabel) \(isRunning($0) ? Self.stopTitle(of: $0) : $0.title)" }
+        let keyed = rows.filter { !$0.keyLabel.isEmpty && !$0.isQuiet }
+        let isEscape = { (row: Row) in row.action?.key == ActionKey(name: "escape") }
+        let shown = Array(keyed.filter { !isEscape($0) }.prefix(2)) + keyed.filter(isEscape)
+        let keys = shown.map { "\($0.keyLabel) \(isRunning($0) ? Self.stopTitle(of: $0) : $0.title)" }
         return (keys + ["⌘K Actions"]).joined(separator: "   ")
     }
 

@@ -81,6 +81,29 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(menu.rows.map(\.title), ["Open", "New"])
     }
 
+    func testTheHintAlsoNamesAnActionThatHoldsEscape() throws {
+        let cancel = CommandAction(id: "cancel", title: "Cancel", key: ActionKey(text: "escape"), scope: .command)
+        let trash = CommandAction(id: "remove", title: "Move to Trash", key: ActionKey(text: "cmd+return"), scope: .command)
+        let sheet = Spot(id: "apps", name: "Apps", url: URL(fileURLWithPath: "/bin/true"), kind: .list, actions: [cancel, trash])
+
+        XCTAssertEqual(ActionMenu(command: sheet, item: item)?.hint, "⏎ Open   ⌘⏎ Move to Trash   Esc Cancel   ⌘K Actions")
+    }
+
+    func testAKeyLabelOfTheFooterNamesItsKey() {
+        XCTAssertEqual(ActionKey(label: "⌘⇧N"), ActionKey(name: "n", isCommand: true, isShift: true))
+        XCTAssertEqual(ActionKey(label: "⌘⏎"), ActionKey(name: "return", isCommand: true))
+        XCTAssertEqual(ActionKey(label: "⏎"), ActionKey(name: "return"))
+        XCTAssertEqual(ActionKey(label: "↩"), ActionKey(name: "return"))
+        XCTAssertEqual(ActionKey(label: "⌘⌫"), ActionKey(name: "backspace", isCommand: true))
+        XCTAssertEqual(ActionKey(label: "Esc"), ActionKey(name: "escape"))
+        XCTAssertEqual(ActionKey(label: "⌘K"), ActionKey(name: "k", isCommand: true))
+        XCTAssertNil(ActionKey(label: "⇧"))
+        for text in ["cmd+shift+n", "cmd+return", "escape", "cmd+backspace", "s"] {
+            let key = ActionKey(text: text)
+            XCTAssertEqual(key.flatMap { ActionKey(label: $0.label) }, key, text)
+        }
+    }
+
     func testAnOpenListWithNoSelectedItemLeavesOutOpen() throws {
         let menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, showsPrimary: false))
 
