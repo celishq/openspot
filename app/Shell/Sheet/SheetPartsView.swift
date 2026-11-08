@@ -234,7 +234,7 @@ struct SheetPartsView: View {
     private func lineButton(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         Button { onPress(part) } label: {
             switch part.look {
-            case .key:
+            case .pad:
                 Group {
                     if let call = work(part) {
                         SpotWorkMark(call: call, side: SpotTokens.workMark, stops: true)

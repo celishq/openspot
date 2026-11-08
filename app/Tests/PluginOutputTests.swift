@@ -20,7 +20,7 @@ final class PluginOutputTests: XCTestCase {
 
         button=copy
         title=Copy
-        key=cmd+return
+        shortcut=cmd+return
         close=true
 
         row=/Applications/Safari.app
@@ -65,7 +65,7 @@ final class PluginOutputTests: XCTestCase {
         let output = PluginOutput(text: """
         button=new
         title=New
-        key=cmd+n
+        shortcut=cmd+n
         scope=command
         form=true
 
@@ -83,7 +83,7 @@ final class PluginOutputTests: XCTestCase {
 
     func testAnActionItCannotReadIsReportedByItsFirstLine() {
         XCTAssertEqual(PluginOutput(text: "button=a\n").errors, ["button=a"])
-        XCTAssertEqual(PluginOutput(text: "button=b\ntitle=B\nkey=ctrl+b\n").errors, ["button=b"])
+        XCTAssertEqual(PluginOutput(text: "button=b\ntitle=B\nshortcut=ctrl+b\n").errors, ["button=b"])
         XCTAssertEqual(PluginOutput(text: "button=c\ntitle=C\nscope=world\n").errors, ["button=c"])
     }
 

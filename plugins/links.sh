@@ -138,11 +138,11 @@ prepare
 
 case "$1" in
   read)
-    printf 'button=copy\ntitle=Copy\nkey=cmd+return\nclose=true\n\n'
-    printf 'button=reveal\ntitle=Show in Finder\nkey=cmd+r\nclose=true\n\n'
-    printf 'button=edit\ntitle=Edit\nkey=cmd+e\nform=true\n\n'
-    printf 'button=delete\ntitle=Delete\nkey=cmd+backspace\nconfirm=Press again to delete\n\n'
-    printf 'button=new\ntitle=New link\nkey=cmd+n\nscope=command\nform=true\n\n'
+    printf 'button=copy\ntitle=Copy\nshortcut=cmd+return\nclose=true\n\n'
+    printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+r\nclose=true\n\n'
+    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\n\n'
+    printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\n\n'
+    printf 'button=new\ntitle=New link\nshortcut=cmd+n\nscope=command\nform=true\n\n'
     found=$(ls "$icons" 2>/dev/null | jq -R . | jq -sc .)
     load | jq -r --arg icons "$icons" --argjson found "$found" --arg home "$HOME" "$esc"'.[]
       | if (.url | test("^[/~]")) then

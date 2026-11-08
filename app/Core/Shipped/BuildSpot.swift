@@ -50,7 +50,7 @@ public struct BuildSpot: Equatable, Sendable {
 
     button=new
     title=New plugin
-    key=cmd+n
+    shortcut=cmd+n
     scope=command
     form=true
 

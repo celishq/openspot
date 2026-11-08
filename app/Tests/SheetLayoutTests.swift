@@ -82,8 +82,8 @@ final class SheetLayoutTests: XCTestCase {
     func testARowOfKeysHasTheOneRowHeight() throws {
         let sheet = try placement("""
         grid=value value
-        keys=1 2
-        keys=0 0
+        pad=1 2
+        pad=0 0
 
         text=value
         title=1
@@ -296,12 +296,12 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testKeysAreCalledByTheirWords() throws {
-        let parts = output("grid=value value\nkeys=. -\n\ntext=value\ntitle=0\nlook=large\n").parts
+        let parts = output("grid=value value\npad=. -\n\ntext=value\ntitle=0\nlook=large\n").parts
 
         XCTAssertEqual(parts.map(\.id), ["value", ".", "-"])
         XCTAssertEqual(parts[1].press, .line)
         XCTAssertEqual(parts[1].title, ".")
-        XCTAssertEqual(parts[2].look, .key)
+        XCTAssertEqual(parts[2].look, .pad)
     }
 
     func testAPartStartsWithItsPartKey() throws {

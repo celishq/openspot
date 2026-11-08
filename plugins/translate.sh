@@ -110,12 +110,12 @@ show() {
 
   printf 'field=output\ntext=%s\nplaceholder=Translation\nreadonly=true\n\n' "$output"
 
-  printf 'button=swap\nsymbol=arrow.up.arrow.down\nkey=cmd+shift+s\n\n'
+  printf 'button=swap\nsymbol=arrow.up.arrow.down\nshortcut=cmd+shift+s\n\n'
 
   if [ "$corner" = settings ]; then
     printf 'button=settings\nalign=right\nlook=chip\ntitle=Open Settings\n'
   elif [ "$corner" = copy ]; then
-    printf 'button=copy\nalign=right\nlook=chip\ntitle=Copy\nkey=cmd+return\nclose=true\n'
+    printf 'button=copy\nalign=right\nlook=chip\ntitle=Copy\nshortcut=cmd+return\nclose=true\n'
   fi
 }
 

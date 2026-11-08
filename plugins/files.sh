@@ -6,8 +6,8 @@
 case "$1" in
   read)
     printf 'search=script\n\n'
-    printf 'button=reveal\ntitle=Show in Finder\nkey=cmd+return\nclose=true\n\n'
-    printf 'button=copy\ntitle=Copy path\nkey=cmd+shift+c\nclose=true\n\n'
+    printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\nclose=true\n\n'
+    printf 'button=copy\ntitle=Copy path\nshortcut=cmd+shift+c\nclose=true\n\n'
     shift
     predicate=''
     for text in "$@"; do

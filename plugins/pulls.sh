@@ -41,7 +41,7 @@ case "$1" in
       exit 1
     fi
     list=$(pulls) || exit 1
-    printf 'button=copy\ntitle=Copy link\nkey=cmd+return\nclose=true\n\n'
+    printf 'button=copy\ntitle=Copy link\nshortcut=cmd+return\nclose=true\n\n'
     printf '%s' "$list" | jq -r "$defs"'.[] | "row=\(.url | esc)\ntitle=\(.title | esc)\ndetail=\(about)\nsymbol=\({good: "checkmark.circle", bad: "xmark.circle", warn: "clock"}[tone // ""] // "arrow.triangle.pull")"
       + (tone | if . then "\ntone=\(.)" else "" end) + "\n"'
     ;;

@@ -46,10 +46,10 @@ required=true"'
 case "$1" in
   read)
     printf 'button=open\ntitle=Copy\n\n'
-    printf 'button=paste\ntitle=Paste\nkey=cmd+return\nclose=true\n\n'
-    printf 'button=edit\ntitle=Edit\nkey=cmd+e\nform=true\n\n'
-    printf 'button=delete\ntitle=Delete\nkey=cmd+backspace\nconfirm=Press again to delete\n\n'
-    printf 'button=new\ntitle=New snippet\nkey=cmd+n\nscope=command\nform=true\n\n'
+    printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\nclose=true\n\n'
+    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\n\n'
+    printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\n\n'
+    printf 'button=new\ntitle=New snippet\nshortcut=cmd+n\nscope=command\nform=true\n\n'
     load | jq -r "$esc"'.[] | "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\n"'
     ;;
   new)

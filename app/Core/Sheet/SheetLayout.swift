@@ -29,7 +29,7 @@ public struct SheetLayout: Equatable, Sendable {
         let cards = block.values("card").map(Self.words)
         for field in block.fields where !field.value.isEmpty {
             if field.key == "grid" { rows.append(Self.words(field.value)) }
-            if field.key == "keys" {
+            if field.key == "pad" {
                 let words = Self.words(field.value)
                 rows.append(words.map(Self.keyCell))
                 for word in words where !keys.contains(where: { $0.id == word }) {
@@ -68,7 +68,7 @@ public struct SheetLayout: Equatable, Sendable {
 
     /// The area a part fills, which its id names (U4). A key of a keypad fills the cell of its word.
     public func letter(of part: SpotPart) -> String? {
-        part.look == .key ? Self.keyCell(part.id) : part.id
+        part.look == .pad ? Self.keyCell(part.id) : part.id
     }
 
     public func hasDivider(inRow y: Int) -> Bool {
@@ -88,7 +88,7 @@ public struct SheetLayout: Equatable, Sendable {
         SpotPart(block: TextBlock(fields: [
             .init(key: "button", value: word),
             .init(key: "title", value: word),
-            .init(key: "look", value: "key")
+            .init(key: "look", value: "pad")
         ]))
     }
 

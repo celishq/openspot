@@ -38,13 +38,13 @@ public enum SheetExamples {
 
         button=swap
         symbol=arrow.up.arrow.down
-        key=cmd+shift+s
+        shortcut=cmd+shift+s
 
         button=copy
         align=right
         look=chip
         title=Copy
-        key=cmd+return
+        shortcut=cmd+return
         close=true
 
         """),
@@ -142,7 +142,7 @@ public enum SheetExamples {
         button=ask
         look=strong
         symbol=arrow.up
-        key=cmd+return
+        shortcut=cmd+return
 
         """),
         Example(name: "numbers around a chart", text: """
@@ -211,7 +211,7 @@ public enum SheetExamples {
         button=paste
         look=strong
         title=Paste
-        key=cmd+return
+        shortcut=cmd+return
 
         """),
         Example(name: "a drawing with a floating button", text: """
@@ -225,7 +225,7 @@ public enum SheetExamples {
         button=save
         look=strong
         symbol=checkmark
-        key=cmd+return
+        shortcut=cmd+return
         close=true
 
         """),
@@ -278,16 +278,16 @@ public enum SheetExamples {
         button=quit
         look=bare
         title=Quit
-        key=cmd+q
+        shortcut=cmd+q
 
         """),
         Example(name: "a drawing with keys", text: """
         grid=value value value value
-        keys=7 8 9 ÷
-        keys=4 5 6 ×
-        keys=1 2 3 −
-        keys=0 0 . +
-        keys=C C C =
+        pad=7 8 9 ÷
+        pad=4 5 6 ×
+        pad=1 2 3 −
+        pad=0 0 . +
+        pad=C C C =
 
         text=value
         title=1,284

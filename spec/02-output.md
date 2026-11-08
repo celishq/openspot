@@ -28,7 +28,7 @@ symbol=wifi
 
 button=forget
 title=Forget
-key=cmd+backspace
+shortcut=cmd+backspace
 confirm=Press again to forget
 ```
 
@@ -54,14 +54,14 @@ component cannot take a default id of 01 (C1).
 | `slider`  | A slider. It sends when the person lets go.             | `level`, `min`, `max`                                           | `<id> <number>`        |
 | `field`   | A text field.                                           | `text`, `placeholder`, `type=multiline`, `required`, `readonly` | `<id> <text>`          |
 | `choice`  | A menu of `option` lines, or swatches of `color` lines. | `option=<id>:<title>`, `color`, `value`                         | `<id> <option id>`     |
-| `key`     | A key that a press records.                             | `shortcut`                                                      | `<id> <key>`           |
-| `button`  | A button, or an action (see below).                     | `key`, `confirm`, `close`, `look`, `form`, `scope`              | `<id>`                 |
+| `shortcut` | A key combination that a press records.               | `value`                                                         | `<id> <shortcut>`      |
+| `button`  | A button, or an action (see below).                     | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`         | `<id>`                 |
 | `section` | A title over the lines that follow it.                  |                                                                 |                        |
 | `repeat`  | The rows of the output (see Repeats).                   | `grid` lines                                                    |                        |
 
 Each kind also takes `title`, `detail`, `tone` and a picture: `symbol`, `file`, `image` or `glyph` (U3). `tone` is `good`,
 `warn` or `bad` for a colour that means something, and `on` for a plain dot that says that a thing is active. `look` is
-`tile`, `chip`, `strong`, `bare` or `key` on a button, and `large` on a text. A key that a kind does not take is skipped.
+`tile`, `chip`, `strong`, `bare` or `pad` on a button, and `large` on a text. A key that a kind does not take is skipped.
 
 ## Drawings
 
@@ -77,12 +77,12 @@ evenly. A place with no drawing takes the drawing of the nearest smaller size, a
 
 With no `grid=` line, the sheet takes its default drawing: one column of each component that is not a button, in the order
 that they print, then its rows (U13). A `section` starts a new group. A drawing names a button only when the script draws
-one, so a button with no drawing of its own is always an action. `keys=7 8 9 +` in the head draws a line of keys, and a press of one sends `<word>`.
+one, so a button with no drawing of its own is always an action. `pad=7 8 9 +` in the head draws a line of keypad buttons, and a press of one sends `<word>`.
 
 ## Buttons and actions
 
 A `button` that a drawing places is drawn. A `button` that no drawing places is an action (U6): it shows in the ⌘K menu,
-its `key` works directly, and with no row selected it acts on the whole spot. An action on a row is `<script> <id> <row id>`.
+its `shortcut` works directly, and with no row selected it acts on the whole spot. An action on a row is `<script> <id> <row id>`.
 `scope=command` keeps an action on the whole spot when a row is selected. `close=true` closes the panel after it runs, and
 `confirm` asks for a second press, such as `Press again to delete`.
 
@@ -106,7 +106,7 @@ always flow through a repeat, and with no `repeat` block they flow through a lis
 | `tone`                             | A dot on the picture.                                                          |
 | `hides`                            | The id of a button that this row does not offer. Repeat the line for each one. |
 | `keyword`                          | A word that finds the row in a search, which the row does not show.            |
-| `shortcut`                         | A key at the end of the row. A pick records a new key and calls `<id> <key>`. |
+| `shortcut`                         | A key at the end of the row. A pick records a new key and calls `<id> <shortcut>`. |
 | `as`                               | The template that draws this row.                                              |
 | `<slot>`, `<slot>.<key>`           | The value of a slot of its template, and any other key of that slot.           |
 
@@ -156,13 +156,12 @@ tone=on
 ```
 
 A row fills a slot by its id. `<slot>=<value>` sets the main key of the slot's kind: `title` on a text and a button,
-`value` on a gauge, `point` on a graph, `on` on a switch, `level` on a slider, `text` on a field, `value` on a choice, and
-`shortcut` on a key. `<slot>.<key>=` sets any other key, in the template for each row or in the row for one row. A control
+`value` on a gauge, `point` on a graph, `on` on a switch, `level` on a slider, `text` on a field, `value` on a choice and a shortcut. `<slot>.<key>=` sets any other key, in the template for each row or in the row for one row. A control
 in a row sends `<script> <slot> <row id> [value]` (U9), and a row hides one with `hides=<slot>`.
 
 ## Values and frames
 
-The script holds no state. Each call gets the value of each switch, slider, field, choice and key on stdin as one block,
+The script holds no state. Each call gets the value of each switch, slider, field, choice and shortcut on stdin as one block,
 and it prints the whole output again, or nothing to be read again (B6). The app draws a change at once, and drops the
 answer to a call that a newer change has outdated (U10). A repeat keeps its rows until a frame prints rows again, so a
 frame can change one switch alone (U11).

@@ -49,9 +49,9 @@ quit_app() {
 }
 
 apps() {
-  printf 'button=reveal\ntitle=Show in Finder\nkey=cmd+return\nclose=true\n\n'
-  printf 'button=quit\ntitle=Quit\nkey=cmd+shift+q\n\n'
-  printf 'button=uninstall\ntitle=Delete\nkey=cmd+backspace\n\n'
+  printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\nclose=true\n\n'
+  printf 'button=quit\ntitle=Quit\nshortcut=cmd+shift+q\n\n'
+  printf 'button=uninstall\ntitle=Delete\nshortcut=cmd+backspace\n\n'
   printf 'template=row\ngrid=pic name name name name quit\npicture=pic\ntext=name\nbutton=quit\nquit.symbol=xmark.circle\nquit.title=Quit\n\n'
   live="$data/running"
   { echo; running; } > "$live"
@@ -85,7 +85,7 @@ uninstall_sheet() {
   printf 'repeat=files\n\n'
   printf 'template=row\ngrid=pic name name name name trash\npicture=pic\ntext=name\nswitch=trash\n\n'
   printf 'button=cancel\ntitle=Cancel\n\n'
-  printf 'button=remove\ntitle=Move to Trash\nlook=strong\nkey=cmd+return\n\n'
+  printf 'button=remove\ntitle=Move to Trash\nlook=strong\nshortcut=cmd+return\n\n'
   printf '%s\n' "$files" | while IFS= read -r path; do
     keep=true
     grep -Fxq "$path" "$kept" 2>/dev/null && keep=false

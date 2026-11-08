@@ -90,7 +90,7 @@ public enum SheetFaults {
             default:
                 break
             }
-            if let title = part.title, part.look != .key, !part.fillsHeight {
+            if let title = part.title, part.look != .pad, !part.fillsHeight {
                 var control = part.control == .none && part.press != .line ? 0 : controlWidth
                 if case .swatches = part.control { control = smallSwatchWidth }
                 let detail = part.detail.map { CGFloat($0.count) * detailLetterWidth + 2 * SheetPlacement.gap } ?? 0

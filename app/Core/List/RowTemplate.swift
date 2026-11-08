@@ -8,7 +8,7 @@ public struct RowTemplate: Equatable, Sendable {
     /// The key that each kind of slot takes from `<slot>=<value>`.
     private static let mainKeys = [
         "text": "title", "button": "title", "gauge": "value", "graph": "point", "switch": "on", "slider": "level",
-        "field": "text", "choice": "value", "key": "shortcut"
+        "field": "text", "choice": "value", "shortcut": "value"
     ]
     private static let pictureKeys = ["symbol", "file", "image", "glyph"]
 

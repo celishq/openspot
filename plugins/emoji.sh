@@ -27,8 +27,8 @@ case "$1" in
   read)
     printf 'grid=tone tone tone tone tone tone tone\ngrid=a a a a a a a\n\nrepeat=a\ngrid=a b c d e f g\n\n'
     printf 'button=open\ntitle=Copy\n\n'
-    printf 'button=paste\ntitle=Paste\nkey=cmd+return\nclose=true\n\n'
-    printf 'button=next-tone\ntitle=Next skin tone\nkey=cmd+t\nscope=command\n\n'
+    printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\nclose=true\n\n'
+    printf 'button=next-tone\ntitle=Next skin tone\nshortcut=cmd+t\nscope=command\n\n'
     printf 'choice=tone\ntitle=Skin tone\n'
     printf 'option=none:Yellow\noption=light:Light\noption=medium-light:Medium light\noption=medium:Medium\noption=medium-dark:Medium dark\noption=dark:Dark\n'
     printf 'value=%s\n\n' "$tone"

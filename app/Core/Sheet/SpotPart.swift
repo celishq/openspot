@@ -35,7 +35,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     /// A look from the one set that the app owns. A script cannot set a size or a colour of its own.
     public enum Look: String, Equatable, Sendable {
-        case tile, chip, strong, bare, section, key, large, list
+        case tile, chip, strong, bare, section, pad, large, list
     }
 
     public enum Align: String, Equatable, Sendable {
@@ -65,7 +65,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let mark: MetricValue?
 
     /// The kinds of block that make a part, in the order of the table in spec 02 (U2).
-    public static let kinds = ["text", "gauge", "graph", "picture", "view", "spot", "switch", "slider", "field", "choice", "key", "button", "section"]
+    public static let kinds = ["text", "gauge", "graph", "picture", "view", "spot", "switch", "slider", "field", "choice", "shortcut", "button", "section"]
 
     /// Reads a block whose first key is a kind of part. Its value is the id, and the kind decides the control.
     public init?(block: TextBlock) {
@@ -76,7 +76,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         let isLarge = kind == "text" && block.value("look") == "large"
         title = isLarge ? block.value("detail") : block.value("title")
         detail = isLarge ? nil : block.value("detail")
-        key = block.value("key").flatMap(ActionKey.init(text:))
+        key = kind == "shortcut" ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
         closes = block.flag("close") ?? false
         align = block.value("align").flatMap(Align.init(rawValue:))
         look = block.value("look").flatMap(Look.init(rawValue:))
@@ -104,8 +104,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
             control = .slider(level: block.number("level") ?? 0, min: block.number("min") ?? 0, max: block.number("max") ?? 100)
         case "field":
             control = .text(block.value("text") ?? "", placeholder: block.value("placeholder"), isReadOnly: block.flag("readonly") ?? false)
-        case "key":
-            control = .shortcut(block.value("shortcut") ?? "")
+        case "shortcut":
+            control = .shortcut(block.value("value") ?? "")
         case "choice":
             let options = block.values("option").map(Self.option)
             if !block.values("color").isEmpty {
@@ -163,7 +163,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public var fillsHeight: Bool {
         switch control {
         case .text, .list, .metric, .chart, .image, .progress: true
-        default: look == .key
+        default: look == .pad
         }
     }
 

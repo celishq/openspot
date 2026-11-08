@@ -4,7 +4,7 @@ import Foundation
 public enum PartCatalog {
     private static let keys: Set<String> = Set(SpotPart.kinds).union([
         "title", "detail", "symbol", "file", "glyph", "on", "level", "min", "max", "color", "value", "option", "text",
-        "placeholder", "readonly", "required", "type", "key", "close", "confirm", "scope", "form", "align", "look", "point",
+        "placeholder", "readonly", "required", "type", "close", "confirm", "scope", "form", "align", "look", "point",
         "image", "shortcut", "tone", "tint"
     ])
     /// The kinds whose blocks can hold keys of the plugin's own, which a view reads.
@@ -39,7 +39,7 @@ public enum PartCatalog {
     - `card=source input` makes these components share one background. Their text loses its own box.
     - A smaller area inside or across a larger one floats on top, with its own blurred background. This is how you make a \
     floating button. Text moves clear of it.
-    - `keys=7 8 9 +` adds a row of key buttons. Use it for any keypad, in place of a button for each key. A word that \
+    - `pad=7 8 9 +` adds a row of keypad buttons. Use it for any keypad, in place of a button for each key. A word that \
     repeats next to itself spans those cells. Pressing a key calls `<word>`.
 
     A `repeat=a` block flows the rows of the script through the area `a`, and the area scrolls. Its own `grid=` lines are \
@@ -60,7 +60,7 @@ public enum PartCatalog {
     your own.
 
     A sheet with no drawing is one column of its components, and `section=<id>` starts a new group with a divider. A button \
-    that no drawing places is an action: it shows in the ⌘K menu, and its `key` works directly.
+    that no drawing places is an action: it shows in the ⌘K menu, and its `shortcut` works directly.
 
     """
 
@@ -78,7 +78,7 @@ public enum PartCatalog {
     | `choice`, with `color=#ff0000` for each colour, `value=#ff0000` | A row of swatches. One `color=` with a `title` is one small swatch at the end of the line. | `<id> <color>` |
     | `choice`, with `option=id:Title` for each choice, `value=id` | A menu. With `look=list`, a list to choose from, which scrolls. | `<id> <option id>` |
     | `field`, with `text=...`, optional `readonly=true`, `placeholder` | A text area, which scrolls. Write a line break as `\\n`. | `<id> <text>` |
-    | `key`, with `shortcut=ctrl+space` and `title` | A key at the end of the line. A click records the next key that the person presses, and Esc cancels. | `<id> <key>`, such as `<id> cmd+k` |
+    | `shortcut`, with `value=ctrl+space` and `title` | A key at the end of the line. A click records the next key that the person presses, and Esc cancels. | `<id> <key>`, such as `<id> cmd+k` |
     | `button`, with `title` | A button that fills its cell. | `<id>` |
     | `button`, with `symbol=arrow.up` or another SF Symbol name | A round button, which shrinks to fit its area, up to 44pt. | `<id>` |
     | `graph`, with `point=3` for each bar | A bar chart in a tile. | |
@@ -89,7 +89,7 @@ public enum PartCatalog {
 
     | Key | Does |
     |---|---|
-    | `key=cmd+return` | Adds a keyboard key to a button. The hint under the sheet shows it. Use cmd, shift and one letter, digit, return or backspace. |
+    | `shortcut=cmd+return` | Adds a keyboard key to a button. The hint under the sheet shows it. Use cmd, shift and one letter, digit, return or backspace. |
     | `close=true` | Closes the panel after a press. |
     | `align=left`, `right` or `center` | Places a component that is smaller than its cell. |
     | `look=tile`, `chip`, `strong`, `bare` or `section` | `tile` is a filled row. `chip` is a small capsule button. `strong` is the one main button, white. `bare` shows a button or a number with no fill. `section` makes a bold title. |
@@ -143,7 +143,7 @@ public enum PartCatalog {
         var faults = isOpen ? [] : block.fields.map(\.key).filter { !keys.contains($0) }.map { "the part \(name) has an unknown key: \($0)" }
         faults += block.values("option").filter { !$0.contains(":") }.map { "the part \(name) needs an option as id:title: \($0)" }
         faults += block.values("color").filter { !isColor($0) }.map { "the part \(name) needs a color as #rrggbb: \($0)" }
-        if let look = block.value("look"), SpotPart.Look(rawValue: look) == nil || look == "key" {
+        if let look = block.value("look"), SpotPart.Look(rawValue: look) == nil || look == "pad" {
             faults.append("the part \(name) has an unknown look: \(look)")
         }
         if let align = block.value("align"), SpotPart.Align(rawValue: align) == nil {
@@ -158,10 +158,11 @@ public enum PartCatalog {
                 faults.append("the part \(name) has a level of \(Int(level)), outside \(Int(low)) to \(Int(high))")
             }
         }
-        if let shortcut = block.value("shortcut"), Shortcut(text: shortcut) == nil {
-            faults.append("the part \(name) needs a shortcut that holds cmd, ctrl or option: \(shortcut)")
-        }
-        if let key = block.value("key"), ActionKey(text: key) == nil {
+        if block.fields.first?.key == "shortcut" {
+            if let shortcut = block.value("value"), Shortcut(text: shortcut) == nil {
+                faults.append("the part \(name) needs a shortcut that holds cmd, ctrl or option: \(shortcut)")
+            }
+        } else if let key = block.value("shortcut"), ActionKey(text: key) == nil {
             faults.append("the part \(name) has an unknown key combination: \(key)")
         }
         return faults
