@@ -626,7 +626,9 @@ public final class SpotRun {
 
     /// Shows the parts a script printed. An answer that a newer change outdated does not show.
     private func takePanel(_ lines: PluginOutput, generation: Int?) {
-        if panel == nil {
+        if lines.parts.isEmpty {
+            panel = nil
+        } else if panel == nil {
             panel = SheetParts(output: lines)
         } else {
             panel?.take(lines, answering: generation ?? panel?.generation ?? 0)

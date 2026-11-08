@@ -134,6 +134,7 @@ final class SamplePluginsTests: SamplePluginsCase {
         try await withPrivateHome { folder in
             let found = ["/Applications/Zed.app", "/System/Applications/Notes.app", "/Applications/Back\\slash.app"]
             try "#!/bin/sh\nprintf '%s\\n' \(found.map { "'\($0)'" }.joined(separator: " "))\n".writeScript(to: folder.appendingPathComponent("tools/find"))
+            try "#!/bin/sh\necho /usr/libexec/logd\n".writeScript(to: folder.appendingPathComponent("tools/ps"))
 
             let lines = try await apps.items(timeout: 10)
 
