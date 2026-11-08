@@ -59,7 +59,7 @@ open -a Calendar
 | `read`                   | The moments when Openspot reads the script.                                                                                                                          |
 | `data`                   | The name of a data folder to share with other spots.                                                                                                                 |
 | `drop`                   | The files that its card takes: extensions such as `mov,mkv`, `folder`, or `*`.                                                                                       |
-| `command`                | `<id>:<title>[:<symbol>]`, a command that the person can give a key. One line for each.                                                                              |
+| `command`                | `<id>:<title>[:<icon>]`, a command that the person can give a key. One line for each.                                                                                  |
 
 With `panel` in its `read`, the head of a frame can change `size`. The person's choice wins (F9). A script with `command`
 lines has no card on the grid, because its commands are what it gives.

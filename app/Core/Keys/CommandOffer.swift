@@ -5,8 +5,8 @@ import Foundation
 public struct CommandOffer: Equatable, Sendable {
     public let id: String
     public let title: String
-    /// The SF Symbol of its row in Settings. Nil shows the symbol of its script.
-    public let symbol: String?
+    /// The `icon` of its row in Settings. Nil shows the icon of its script.
+    public let icon: String?
 
     /// Reads an ID, a title and an icon. Returns nil for any other words, and for the reserved call `read`.
     public init?(text: String) {
@@ -14,6 +14,6 @@ public struct CommandOffer: Equatable, Sendable {
         guard parts.count >= 2, !parts[1].isEmpty, parts[0] != "read", !parts[0].contains(where: \.isWhitespace) else { return nil }
         id = parts[0]
         title = parts[1]
-        symbol = parts.count == 3 && !parts[2].isEmpty ? parts[2] : nil
+        icon = parts.count == 3 && !parts[2].isEmpty ? parts[2] : nil
     }
 }
