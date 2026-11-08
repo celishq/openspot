@@ -203,4 +203,25 @@ final class SearchQueryTests: XCTestCase {
         XCTAssertEqual(SearchQuery(text: "→").matching(items).map(\.title), ["rightwards arrow"])
         XCTAssertEqual(SearchQuery(text: "❤").matching(items).map(\.title), ["red heart"])
     }
+
+    func testACyrillicSpellingFindsALatinTitle() {
+        XCTAssertEqual(titles("сафари", in: ["Notes", "Safari"]), ["Safari"])
+    }
+
+    func testATypedMatchBeatsAConvertedMatchOfTheSameRank() {
+        XCTAssertEqual(titles("сафари", in: ["Safari", "Сафари"]), ["Сафари", "Safari"])
+    }
+
+    func testAConvertedQueryGetsNoLettersInOrderMatch() {
+        XCTAssertEqual(titles("сфр", in: ["Safari"]), [])
+    }
+
+    func testAConvertedMatchMarksTheTitle() {
+        XCTAssertEqual(SearchQuery(text: "саф").marks(in: item("Safari")).title, [0..<3])
+    }
+
+    func testTheFormsAreTheConvertedTexts() {
+        XCTAssertEqual(SearchQuery(text: "сафари").forms, ["safari"])
+        XCTAssertEqual(SearchQuery(text: "safari").forms, [])
+    }
 }

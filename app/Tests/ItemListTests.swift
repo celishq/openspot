@@ -45,6 +45,15 @@ final class ItemListTests: XCTestCase {
         XCTAssertFalse(list.hasFailed)
     }
 
+    func testALongerCyrillicSearchStillFindsALatinTitle() {
+        var list = ItemList(items: items("Safari", "Notes"))
+
+        list.search("са")
+        list.search("саф")
+
+        XCTAssertEqual(list.shown.map(\.title), ["Safari"])
+    }
+
     func testShowsEachItemBeforeASearch() {
         let list = ItemList(items: items("Safari", "Notes"))
 

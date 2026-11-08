@@ -4,16 +4,27 @@ import Foundation
 /// must match, and the worst word sets the rank: a word start, the initials, any part of the title, a keyword start, a word
 /// start of the subtitle, any part of the subtitle, then three or more letters in order in one word of the title. Within a
 /// rank, the item with the most weight of picks comes first, and each pick weighs less as later picks come. Then an earlier
-/// list wins, then the given order.
+/// list wins, then the given order. A form of the text, such as its Latin spelling, matches too, just below the typed text
+/// of the same rank, and never by letters in order.
 public struct SearchQuery: Equatable, Sendable {
     public let text: String
-    private let letters: [UInt64]
-    private let words: [[UInt64]]
+    /// The other texts that the person may have meant, such as the text spelled in Latin letters.
+    public let forms: [String]
+    private let typed: Form
+    private let converted: [Form]
 
     public init(text: String) {
         self.text = text.trimmingCharacters(in: .whitespaces)
-        letters = self.text.map(FoldedText.code)
-        words = self.text.split(whereSeparator: \.isWhitespace).map { $0.map(FoldedText.code) }
+        let typed = Form(self.text)
+        self.typed = typed
+        forms = Self.latin(self.text).filter { Form($0).words != typed.words }
+        converted = forms.map(Form.init)
+    }
+
+    /// The text spelled in Latin letters with no accents, when it holds other letters.
+    private static func latin(_ text: String) -> [String] {
+        guard !text.allSatisfy(\.isASCII) else { return [] }
+        return [text.applyingTransform(.toLatin, reverse: false)?.applyingTransform(.stripDiacritics, reverse: false)].compactMap { $0 }
     }
 
     /// The letters of the item that this text matches. An item that does not match has none.
@@ -40,11 +51,13 @@ public struct SearchQuery: Equatable, Sendable {
     }
 
     /// Whether each item that matches this text also matches the given text, so that a search for it may look only among the
-    /// matches of this one. A letters-in-order match needs three letters, so a last word of fewer may match fewer items.
-    func narrows(to text: String) -> Bool {
-        guard !words.isEmpty, text.hasPrefix(self.text) else { return false }
-        let added = text.dropFirst(self.text.count)
-        return (words.last?.count ?? 0) >= 3 || added.first?.isWhitespace == true
+    /// matches of this one. A letters-in-order match needs three letters, so a last word of fewer may match fewer items, and
+    /// each form of the given text must grow a form of this one.
+    func narrows(to next: SearchQuery) -> Bool {
+        guard !typed.words.isEmpty, next.text.hasPrefix(text) else { return false }
+        let added = next.text.dropFirst(text.count)
+        guard (typed.words.last?.count ?? 0) >= 3 || added.first?.isWhitespace == true else { return false }
+        return next.forms.allSatisfy { form in forms.contains { form.hasPrefix($0) } }
     }
 
     /// The items that match in each list, as one ranking, with the index of the list each came from. Each list after the
@@ -81,16 +94,22 @@ public struct SearchQuery: Equatable, Sendable {
     }
 
     private func match(_ item: FoldedItem) -> (rank: Int, marks: SearchMarks)? {
-        guard !words.isEmpty else { return (0, SearchMarks(title: [], subtitle: [])) }
+        guard !typed.words.isEmpty else { return (0, SearchMarks(title: [], subtitle: [])) }
         if let glyph = item.glyph, glyph == FoldedItem.plain(text) { return (0, SearchMarks(title: [], subtitle: [])) }
+        let typedMatch = Self.match(typed, in: item, loose: true).map { (rank: $0.rank * 2, marks: $0.marks) }
+        let convertedMatches = converted.compactMap { Self.match($0, in: item, loose: false) }.map { (rank: $0.rank * 2 + 1, marks: $0.marks) }
+        return ([typedMatch].compactMap { $0 } + convertedMatches).min { $0.rank < $1.rank }
+    }
+
+    private static func match(_ form: Form, in item: FoldedItem, loose: Bool) -> (rank: Int, marks: SearchMarks)? {
         let title = item.title
-        if title.letters == letters { return (0, SearchMarks(title: [0..<letters.count], subtitle: [])) }
-        if title.letters.starts(with: letters) { return (1, SearchMarks(title: [0..<letters.count], subtitle: [])) }
+        if title.letters == form.letters { return (0, SearchMarks(title: [0..<form.letters.count], subtitle: [])) }
+        if title.letters.starts(with: form.letters) { return (1, SearchMarks(title: [0..<form.letters.count], subtitle: [])) }
         let subtitle = item.subtitle
         var rank = 0
         var marks: (title: [Range<Int>], subtitle: [Range<Int>]) = ([], [])
-        for word in words {
-            guard let found = Self.match(word, title: title, keywords: item.keywords, subtitle: subtitle) else { return nil }
+        for word in form.words {
+            guard let found = match(word, title: title, keywords: item.keywords, subtitle: subtitle, loose: loose) else { return nil }
             rank = max(rank, found.rank)
             marks.title += found.title
             marks.subtitle += found.subtitle
@@ -98,7 +117,7 @@ public struct SearchQuery: Equatable, Sendable {
         return (rank, SearchMarks(title: marks.title, subtitle: marks.subtitle))
     }
 
-    private static func match(_ word: [UInt64], title: FoldedText, keywords: [FoldedText], subtitle: FoldedText?) -> (rank: Int, title: [Range<Int>], subtitle: [Range<Int>])? {
+    private static func match(_ word: [UInt64], title: FoldedText, keywords: [FoldedText], subtitle: FoldedText?, loose: Bool) -> (rank: Int, title: [Range<Int>], subtitle: [Range<Int>])? {
         let span = { (start: Int) in start..<start + word.count }
         let inTitle = title.occurrences(of: word)
         if let start = inTitle.first(where: title.starts.contains) { return (2, [span(start)], []) }
@@ -110,9 +129,20 @@ public struct SearchQuery: Equatable, Sendable {
             if let start = inSubtitle.first(where: subtitle.starts.contains) { return (6, [], [span(start)]) }
             if let start = inSubtitle.first { return (7, [], [span(start)]) }
         }
-        if word.count >= 3, let found = title.inOneWord(word) {
+        if loose, word.count >= 3, let found = title.inOneWord(word) {
             return (8, found.map { $0..<$0 + 1 }, [])
         }
         return nil
+    }
+
+    /// A text as folded letters, whole and split into words.
+    private struct Form: Equatable, Sendable {
+        let letters: [UInt64]
+        let words: [[UInt64]]
+
+        init(_ text: String) {
+            letters = text.map(FoldedText.code)
+            words = text.split(whereSeparator: \.isWhitespace).map { $0.map(FoldedText.code) }
+        }
     }
 }
