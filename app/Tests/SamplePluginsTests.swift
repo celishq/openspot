@@ -145,25 +145,34 @@ final class SamplePluginsTests: SamplePluginsCase {
         }
     }
 
-    func testScreenshotPastesTheNewestCapture() throws {
+    func testScreenshotPastesTheNewestCaptureOfBothFoldersBySpotlightOrNot() throws {
         let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("plugins")
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-capture-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
-        try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
+        let images = folder.appendingPathComponent("images")
+        let videos = folder.appendingPathComponent("videos")
+        for made in [tools, images, videos] {
+            try FileManager.default.createDirectory(at: made, withIntermediateDirectories: true)
+        }
         defer { try? FileManager.default.removeItem(at: folder) }
-        let image = folder.appendingPathComponent("Screenshot.png")
-        let video = folder.appendingPathComponent("Screen Recording.mov")
+        let image = images.appendingPathComponent("Screenshot.png")
+        let video = videos.appendingPathComponent("Screen Recording.mov")
+        let other = images.appendingPathComponent("notes.txt")
         let log = folder.appendingPathComponent("openspot")
-        try "#!/bin/sh\necho '\(folder.path)'\n".writeScript(to: tools.appendingPathComponent("defaults"))
-        try "#!/bin/sh\ncase \"$*\" in *kMDItemScreenCaptureType*) printf '%s\\0%s\\0' '\(image.path)' '\(video.path)' ;; esac\n".writeScript(to: tools.appendingPathComponent("mdfind"))
+        try "#!/bin/sh\ncase \"$*\" in *location-screenrecording*) echo '\(videos.path)' ;; *) echo '\(images.path)' ;; esac\n".writeScript(to: tools.appendingPathComponent("defaults"))
+        try "#!/bin/sh\nexit 0\n".writeScript(to: tools.appendingPathComponent("mdfind"))
         try "#!/bin/sh\necho \"$*\" >> '\(log.path)'\n".writeScript(to: tools.appendingPathComponent("openspot"))
+        for capture in [image, video] {
+            FileManager.default.createFile(atPath: capture.path, contents: Data())
+            XCTAssertEqual(setxattr(capture.path, "com.apple.metadata:kMDItemScreenCaptureType", "selection", 9, 0, 0), 0)
+        }
+        FileManager.default.createFile(atPath: other.path, contents: Data())
 
         for (newest, older) in [(video, image), (image, video)] {
             try? FileManager.default.removeItem(at: log)
-            FileManager.default.createFile(atPath: older.path, contents: Data())
-            FileManager.default.createFile(atPath: newest.path, contents: Data())
-            try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -60)], ofItemAtPath: older.path)
-            try FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: newest.path)
+            try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -120)], ofItemAtPath: older.path)
+            try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -60)], ofItemAtPath: newest.path)
+            try FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: other.path)
             let process = Process()
             process.executableURL = plugins.appendingPathComponent("paste-screenshot.sh")
             process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "HOME": folder.path]
