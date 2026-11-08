@@ -32,7 +32,7 @@ final class PluginHeaderTests: XCTestCase {
     }
 
     func testABlankLineEndsTheHeader() {
-        XCTAssertNil(PluginHeader(text: "#!/bin/sh\n\n# title=Late\n").block.value("name"))
+        XCTAssertNil(PluginHeader(text: "#!/bin/sh\n\n# title=Late\n").block.value("title"))
     }
 
     func testAViewIsASwiftFileBesideTheScript() throws {

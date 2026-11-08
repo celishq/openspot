@@ -65,7 +65,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let mark: MetricValue?
 
     /// The kinds of block that make a part, in the order of the table in spec 02 (U2).
-    public static let kinds = ["text", "number", "gauge", "graph", "picture", "view", "spot", "switch", "slider", "field", "choice", "shortcut", "button", "section"]
+    public static let kinds = ["text", "number", "gauge", "graph", "picture", "view", "spot", "switch", "slider", "field", "choice", "hotkey", "button", "section"]
 
     /// Reads a block whose first key is a kind of part. Its value is the id, and the kind decides the control.
     public init?(block: TextBlock) {
@@ -75,7 +75,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         isSection = kind == "section"
         title = block.value("title")
         detail = block.value("detail")
-        key = kind == "shortcut" ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
+        key = kind == "hotkey" ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
         closes = block.flag("close") ?? false
         align = block.value("align").flatMap(Align.init(rawValue:))
         look = block.value("look").flatMap(Look.init(rawValue:))
@@ -104,7 +104,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
             control = .slider(level: block.number("level") ?? 0, min: block.number("min") ?? 0, max: block.number("max") ?? 100)
         case "field":
             control = .text(block.value("text") ?? "", placeholder: block.value("placeholder"), isReadOnly: block.flag("readonly") ?? false)
-        case "shortcut":
+        case "hotkey":
             control = .shortcut(block.value("value") ?? "")
         case "choice":
             let options = block.values("option").map(Self.option)

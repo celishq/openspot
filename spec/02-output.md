@@ -55,7 +55,7 @@ component cannot take a default id of 01 (C1).
 | `slider`  | A slider. It sends when the person lets go.             | `level`, `min`, `max`                                           | `<id> <number>`        |
 | `field`   | A text field.                                           | `text`, `placeholder`, `type=multiline`, `required`, `readonly` | `<id> <text>`          |
 | `choice`  | A menu of `option` lines, a list when it covers two lines or more, or swatches of `color` lines. | `option=<id>:<title>`, `color`, `value`                         | `<id> <option id>`     |
-| `shortcut` | A key combination that a press records.               | `value`                                                         | `<id> <shortcut>`      |
+| `hotkey`   | A key combination that a press records.               | `value`                                                         | `<id> <shortcut>`      |
 | `button`  | A button, or an action (see below).                     | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`         | `<id>`                 |
 | `section` | A title over the lines that follow it.                  |                                                                 |                        |
 | `repeat`  | The rows of the output (see Repeats).                   | `grid` lines                                                    |                        |
@@ -160,12 +160,12 @@ tone=on
 ```
 
 A row fills a slot by its id. `<slot>=<value>` sets the main key of the slot's kind: `title` on a text and a button,
-`value` on a gauge, `point` on a graph, `on` on a switch, `level` on a slider, `text` on a field, `value` on a choice and a shortcut. `<slot>.<key>=` sets any other key, in the template for each row or in the row for one row. A control
+`value` on a gauge, `point` on a graph, `on` on a switch, `level` on a slider, `text` on a field, `value` on a choice and a hotkey. `<slot>.<key>=` sets any other key, in the template for each row or in the row for one row. A control
 in a row sends `<script> <slot> <row id> [value]` (U9), and a row hides one with `hides=<slot>`.
 
 ## Values and frames
 
-The script holds no state. Each call gets the value of each switch, slider, field, choice and shortcut on stdin as one block,
+The script holds no state. Each call gets the value of each switch, slider, field, choice and hotkey on stdin as one block,
 and it prints the whole output again, or nothing to be read again (B6). The app draws a change at once, and drops the
 answer to a call that a newer change has outdated (U10). The first frame of a read replaces all that the spot shows, and
 each later frame of the same read changes only what it prints (U11).

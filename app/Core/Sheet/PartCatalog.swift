@@ -78,7 +78,7 @@ public enum PartCatalog {
     | `choice`, with `color=#ff0000` for each colour, `value=#ff0000` | A row of swatches. One `color=` with a `title` is one small swatch at the end of the line. | `<id> <color>` |
     | `choice`, with `option=id:Title` for each choice, `value=id` | A menu. Drawn over two lines or more, a list to choose from, which scrolls. | `<id> <option id>` |
     | `field`, with `text=...`, optional `readonly=true`, `placeholder` | A text area, which scrolls. Write a line break as `\\n`. | `<id> <text>` |
-    | `shortcut`, with `value=ctrl+space` and `title` | A key at the end of the line. A click records the next key that the person presses, and Esc cancels. | `<id> <key>`, such as `<id> cmd+k` |
+    | `hotkey`, with `value=ctrl+space` and `title` | A key at the end of the line. A click records the next key that the person presses, and Esc cancels. | `<id> <key>`, such as `<id> cmd+k` |
     | `button`, with `title` | A button that fills its cell. | `<id>` |
     | `button`, with `icon=arrow.up` or another SF Symbol name | A round button, which shrinks to fit its area, up to 44pt. | `<id>` |
     | `graph`, with `point=3` for each bar | A bar chart in a tile. | |
@@ -159,7 +159,7 @@ public enum PartCatalog {
                 faults.append("the part \(name) has a level of \(Int(level)), outside \(Int(low)) to \(Int(high))")
             }
         }
-        if block.fields.first?.key == "shortcut" {
+        if block.fields.first?.key == "hotkey" {
             if let shortcut = block.value("value"), Shortcut(text: shortcut) == nil {
                 faults.append("the part \(name) needs a shortcut that holds cmd, ctrl or option: \(shortcut)")
             }

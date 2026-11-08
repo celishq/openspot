@@ -155,7 +155,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testTheCatalogNamesEachControl() {
-        for word in ["`switch`", "`slider`", "`choice`", "`field`", "`shortcut`", "`button`", "`text`", "`number`", "`graph`", "`picture`", "`gauge`", "`pad=", "`card=", "`repeat=", "`icon="] {
+        for word in ["`switch`", "`slider`", "`choice`", "`field`", "`hotkey`", "`button`", "`text`", "`number`", "`graph`", "`picture`", "`gauge`", "`pad=", "`card=", "`repeat=", "`icon="] {
             XCTAssertTrue(PartCatalog.text.contains(word), word)
         }
     }
@@ -188,7 +188,7 @@ final class SheetPartsTests: XCTestCase {
         grid=wifi
         grid=reload
 
-        shortcut=key
+        hotkey=key
         title=Key
         value=ctrl+space
 
@@ -214,7 +214,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testASheetOpensWithItsFirstPartSelected() throws {
-        let sheet = try panel("text=note\ntitle=Note\n\nshortcut=key\nvalue=ctrl+space\n\nswitch=wifi\non=true\n")
+        let sheet = try panel("text=note\ntitle=Note\n\nhotkey=key\nvalue=ctrl+space\n\nswitch=wifi\non=true\n")
 
         XCTAssertEqual(sheet.selectedPart?.id, "key")
     }
@@ -275,16 +275,16 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testTheArrowsDoNotScrollASheetWithAPartToSelect() throws {
-        let sheet = try panel("text=mac\ntitle=This Mac\n\nshortcut=key\nvalue=ctrl+space\n")
+        let sheet = try panel("text=mac\ntitle=This Mac\n\nhotkey=key\nvalue=ctrl+space\n")
 
         XCTAssertFalse(sheet.scrollsByArrows)
     }
 
     func testTheSelectionSurvivesANewAnswerAndMovesOnWhenThePartEnds() throws {
-        var sheet = try panel("shortcut=key\nvalue=ctrl+space\n")
+        var sheet = try panel("hotkey=key\nvalue=ctrl+space\n")
         sheet.move(by: 1)
 
-        sheet.take(PluginOutput(text: "shortcut=key\nvalue=option+space\n"), answering: sheet.generation)
+        sheet.take(PluginOutput(text: "hotkey=key\nvalue=option+space\n"), answering: sheet.generation)
         XCTAssertEqual(sheet.selectedPart?.id, "key")
 
         sheet.take(PluginOutput(text: "switch=wifi\non=true\n"), answering: sheet.generation)
@@ -292,7 +292,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testAClearedSelectionGoesBackToTheFirstPart() throws {
-        var sheet = try panel("shortcut=key\nvalue=ctrl+space\n\nswitch=wifi\non=true\n")
+        var sheet = try panel("hotkey=key\nvalue=ctrl+space\n\nswitch=wifi\non=true\n")
         sheet.move(by: 1)
 
         sheet.clearSelection()
