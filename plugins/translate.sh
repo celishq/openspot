@@ -1,5 +1,5 @@
 #!/bin/sh
-# symbol=translate
+# icon=translate
 # subtitle=Between languages
 # shortcut=t
 # size=small
@@ -110,7 +110,7 @@ show() {
 
   printf 'field=output\ntext=%s\nplaceholder=Translation\nreadonly=true\n\n' "$output"
 
-  printf 'button=swap\nsymbol=arrow.up.arrow.down\nshortcut=cmd+shift+s\n\n'
+  printf 'button=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\n\n'
 
   if [ "$corner" = settings ]; then
     printf 'button=settings\nalign=right\nlook=chip\ntitle=Open Settings\n'

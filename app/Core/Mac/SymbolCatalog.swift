@@ -35,7 +35,7 @@ public struct SymbolCatalog: Sendable {
                     guard let name = Self.name(of: symbol) else { continue }
                     var fields: [TextBlock.Field] = [.init(key: "row", value: symbol), .init(key: "title", value: name)]
                     if let subtitle { fields.append(.init(key: "detail", value: subtitle)) }
-                    fields += [.init(key: "glyph", value: symbol)]
+                    fields += [.init(key: "icon", value: symbol)]
                     fields += keywords.of(symbol).map { .init(key: "keyword", value: $0) }
                     text += TextBlock(fields: fields).text + "\n"
                 }

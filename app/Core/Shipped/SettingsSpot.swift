@@ -62,15 +62,15 @@ public struct SettingsSpot: Equatable, Sendable {
 
     private var sheet: String {
         let config = file.read()
-        let panel = "row=\(Self.panelKey)\ntitle=Open Openspot\nsymbol=keyboard\nhides=\(Self.clear)\nshortcut=\((config.panelKey ?? .standard).text)\n"
-        let fix = "row=\(Self.fixKey)\ntitle=Open a fix\nsymbol=wrench.and.screwdriver\nhides=\(Self.clear)\nshortcut=\((config.fixKey ?? .fix).text)\n"
+        let panel = "row=\(Self.panelKey)\ntitle=Open Openspot\nicon=keyboard\nhides=\(Self.clear)\nshortcut=\((config.panelKey ?? .standard).text)\n"
+        let fix = "row=\(Self.fixKey)\ntitle=Open a fix\nicon=wrench.and.screwdriver\nhides=\(Self.clear)\nshortcut=\((config.fixKey ?? .fix).text)\n"
         let scripts = ((try? PluginFolder(url: folder, core: core, enabled: config.arrangement.enabled).scan())?.scripts ?? []).filter { only == nil || $0.id == only }
         let rows = scripts.flatMap { script in
             script.offers.map { offer -> String in
                 let key = config.keys.first { $0.spot == script.id && $0.command == offer.id }
                 let hides = key == nil ? "hides=\(Self.clear)\n" : ""
                 let detail = only == nil ? "detail=\(script.name)\n" : ""
-                return "row=\(Self.keyPrefix)\(script.id):\(offer.id)\ntitle=\(offer.title)\n\(detail)symbol=\(offer.symbol ?? script.symbol)\n\(hides)shortcut=\(key?.shortcut.text ?? "Record")\n"
+                return "row=\(Self.keyPrefix)\(script.id):\(offer.id)\ntitle=\(offer.title)\n\(detail)icon=\(offer.symbol ?? script.symbol)\n\(hides)shortcut=\(key?.shortcut.text ?? "Record")\n"
             }
         }
         let login = self.login.map { [$0.row.text] } ?? []

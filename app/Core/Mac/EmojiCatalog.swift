@@ -54,7 +54,7 @@ public struct EmojiCatalog: Sendable {
             let row = TextBlock(fields: [
                 .init(key: "row", value: form),
                 .init(key: "title", value: names[emoji] ?? emoji),
-                .init(key: "glyph", value: form)
+                .init(key: "icon", value: form)
             ] + keywords.of(emoji).map { .init(key: "keyword", value: $0) })
             text += row.text + "\n"
         }

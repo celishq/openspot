@@ -1,6 +1,6 @@
 #!/bin/sh
 # name=Emojis & Symbols
-# symbol=face.smiling
+# icon=face.smiling
 # subtitle=Copy an emoji or a symbol
 # shortcut=e
 # size=small

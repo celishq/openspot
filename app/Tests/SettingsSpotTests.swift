@@ -58,7 +58,7 @@ final class SettingsSpotTests: XCTestCase {
 
     func testTheSheetListsEachCommandOfAScriptAndGivesItAKey() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# name=Move\n# symbol=macwindow\n# command=left:Left side\n# command=right:Right side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# name=Move\n# icon=macwindow\n# command=left:Left side\n# command=right:Right side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
         let runs = SpotRuns()
 
         let before = try await spot.items(timeout: 1).items
@@ -82,7 +82,7 @@ final class SettingsSpotTests: XCTestCase {
 
     func testARowShowsTheIconOfItsCommandOrElseOfItsScript() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# name=Move\n# symbol=macwindow\n# command=left:Left side:rectangle.lefthalf.filled\n# command=right:Right side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# name=Move\n# icon=macwindow\n# command=left:Left side:rectangle.lefthalf.filled\n# command=right:Right side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
 
         let items = try await spot.items(timeout: 1).items
 

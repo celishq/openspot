@@ -26,11 +26,11 @@ final class PluginOutputTests: XCTestCase {
         row=/Applications/Safari.app
         title=Safari
         detail=Browser
-        file=/Applications/Safari.app
+        icon=/Applications/Safari.app
 
         row=off
         title=Off
-        symbol=power
+        icon=power
         """)
 
         XCTAssertEqual(output.summary?.value("title"), "Caffeinate")
@@ -131,7 +131,7 @@ final class PluginOutputTests: XCTestCase {
         }
 
         XCTAssertEqual(try kind("text=m\ntitle=3\n"), .value)
-        XCTAssertEqual(try kind("text=m\ntitle=3\nsymbol=star\ntone=good\n"), .value)
+        XCTAssertEqual(try kind("text=m\ntitle=3\nicon=star\ntone=good\n"), .value)
         XCTAssertEqual(try kind("text=m\ntitle=Up\ntone=good\n"), .status)
         XCTAssertEqual(try kind("gauge=m\ntitle=84%\nvalue=0.84\n"), .gauge)
         XCTAssertEqual(try kind("graph=m\ntitle=2\npoint=1\npoint=2\n"), .trend)

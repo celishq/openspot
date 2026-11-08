@@ -74,7 +74,7 @@ final class TextBlockTests: XCTestCase {
         text=m
         title=6 open
         detail=Today
-        symbol=star
+        icon=star
         tone=warn
         value=0.5
         point=1
@@ -111,8 +111,8 @@ final class TextBlockTests: XCTestCase {
         XCTAssertNil(SpotItem(block: TextBlock.blocks(in: "title=Only")[0]))
         XCTAssertEqual(SpotItem(block: TextBlock.blocks(in: "row=😀")[0])?.title, "😀")
         XCTAssertEqual(
-            SpotItem(block: TextBlock.blocks(in: "row=a\ntitle=A\ndetail=B\nsymbol=s\nfile=/f\nimage=/i\nhides=x\nhides=y")[0]),
-            SpotItem(title: "A", subtitle: "B", run: "a", symbol: "s", file: "/f", image: "/i", hides: ["x", "y"])
+            SpotItem(block: TextBlock.blocks(in: "row=a\ntitle=A\ndetail=B\nicon=/f\nhides=x\nhides=y")[0]),
+            SpotItem(title: "A", subtitle: "B", run: "a", file: "/f", hides: ["x", "y"])
         )
     }
 }

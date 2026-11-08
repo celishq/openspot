@@ -15,7 +15,7 @@ final class CatalogSpotTests: XCTestCase {
         file = ConfigFile(url: root.appendingPathComponent("config.toml"))
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: core, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# subtitle=Open app\n# symbol=star\n".writeScript(to: core.appendingPathComponent("zebra.sh"))
+        try "#!/bin/sh\n# subtitle=Open app\n# icon=star\n".writeScript(to: core.appendingPathComponent("zebra.sh"))
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.sh"))
         try "#!/bin/sh\n# read=5\n".writeScript(to: core.appendingPathComponent("cpu.sh"))
     }

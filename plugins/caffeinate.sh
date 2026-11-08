@@ -1,5 +1,5 @@
 #!/bin/sh
-# symbol=cup.and.saucer.fill
+# icon=cup.and.saucer.fill
 # subtitle=Keep the Mac awake
 # shortcut=c
 # size=small

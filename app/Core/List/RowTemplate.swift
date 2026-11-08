@@ -10,7 +10,6 @@ public struct RowTemplate: Equatable, Sendable {
         "text": "title", "number": "value", "button": "title", "gauge": "value", "graph": "point", "switch": "on", "slider": "level",
         "field": "text", "choice": "value", "shortcut": "value"
     ]
-    private static let pictureKeys = ["symbol", "file", "image", "glyph"]
 
     public let name: String
     /// Each slot, in the order of its kind line.
@@ -73,7 +72,7 @@ public struct RowTemplate: Equatable, Sendable {
         slots.compactMap { slot in
             guard let kind = kinds[slot], item.hides?.contains(slot) != true else { return nil }
             var fields = [TextBlock.Field(key: kind, value: slot)] + (shared[slot] ?? [])
-            if kind == "picture" { fields += Self.pictureKeys.compactMap { key in item.picture(key).map { .init(key: key, value: $0) } } }
+            if kind == "picture", let icon = item.iconText { fields.append(.init(key: "icon", value: icon)) }
             if let main = Self.mainKeys[kind], let value = item.value(of: slot) { fields.append(.init(key: main, value: value)) }
             fields += item.keys(of: slot)
             return SpotPart(block: TextBlock(fields: Self.lastWins(fields)))

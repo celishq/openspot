@@ -44,7 +44,7 @@ refuses that plugin, and the others still load (F6).
 ```sh
 #!/bin/sh
 # name=Morning
-# symbol=sun.max
+# icon=sun.max
 # shortcut=m
 open -a Calendar
 ```
@@ -52,8 +52,7 @@ open -a Calendar
 | Key                      | Meaning                                                                                                                                                              |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `name`                   | The title. The default comes from the file name.                                                                                                                     |
-| `symbol`                 | An SF Symbol name.                                                                                                                                                   |
-| `image`, `file`, `glyph` | A picture in place of the symbol: an image, a file's icon, or a short text such as an emoji. A path that does not start with `/` starts at the folder of the script. |
+| `icon`                   | Its picture, as in 02. A path that does not start with `/` starts at the folder of the script.                                                                       |
 | `subtitle`               | The second line.                                                                                                                                                     |
 | `shortcut`               | One letter. Hold the key that opens the panel, and press this letter to run it.                                                                                      |
 | `size`                   | The size it prefers: `wide` (the default), `small`, `square`, `strip` or `large`. The grid can change it.                                                            |

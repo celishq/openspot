@@ -15,11 +15,11 @@ final class PluginHeaderTests: XCTestCase {
     }
 
     func testReadsTheCommentLinesUnderTheFirstLine() {
-        let header = PluginHeader(text: "#!/bin/sh\n# name=Morning\n#\n# Prose has no key.\n#symbol=sun.max\nsay hello\n# shortcut=m\n")
+        let header = PluginHeader(text: "#!/bin/sh\n# name=Morning\n#\n# Prose has no key.\n#icon=sun.max\nsay hello\n# shortcut=m\n")
 
         XCTAssertEqual(header.block.value("name"), "Morning")
-        XCTAssertEqual(header.block.value("symbol"), "sun.max")
-        XCTAssertNil(header.block.value("key"))
+        XCTAssertEqual(header.block.value("icon"), "sun.max")
+        XCTAssertNil(header.block.value("shortcut"))
     }
 
     func testReadsTheCommentsOfOtherLanguages() {

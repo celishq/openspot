@@ -1,5 +1,5 @@
 #!/bin/sh
-# symbol=text.quote
+# icon=text.quote
 # subtitle=Copy text
 # shortcut=n
 # size=small

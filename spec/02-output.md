@@ -19,12 +19,12 @@ repeat=nets
 
 row=home
 title=Home
-symbol=wifi
+icon=wifi
 tone=on
 
 row=office
 title=Office
-symbol=wifi
+icon=wifi
 
 button=forget
 title=Forget
@@ -48,7 +48,7 @@ component cannot take a default id of 01 (C1).
 | `number`  | A big number, with its `title` under it.                | `value`                                                         |                        |
 | `gauge`   | A ring in a square area, a bar in a wide one.           | `value` from 0 to 1                                             |                        |
 | `graph`   | Bars. The last bar is the newest.                       | `point`, one line for each bar, and `max`                       |                        |
-| `picture` | A picture that fills its area.                          | `symbol`, `file`, `image` or `glyph`                            |                        |
+| `picture` | A picture that fills its area.                          | `icon`                                                          |                        |
 | `view`    | The SwiftUI view that the header names (03).            | any key that the view reads                                     |                        |
 | `spot`    | The value of the spot with this id, as a widget shows it. |                                                               |                        |
 | `switch`  | A switch.                                               | `on`                                                            | `<id> true` or `false` |
@@ -60,7 +60,9 @@ component cannot take a default id of 01 (C1).
 | `section` | A title over the lines that follow it.                  |                                                                 |                        |
 | `repeat`  | The rows of the output (see Repeats).                   | `grid` lines                                                    |                        |
 
-Each kind also takes `title`, `detail`, `tone` and a picture: `symbol`, `file`, `image` or `glyph` (U3). `tone` is `good`,
+Each kind also takes `title`, `detail`, `tone` and `icon` (U3). The value of `icon` says what the picture is: a path
+of a picture file, such as `cups.png`, draws the picture; any other path draws the file's Finder icon; a name of lowercase
+letters, digits and dots, such as `wifi`, is an SF Symbol; and any other text, such as `😀`, is drawn as it is. `tone` is `good`,
 `warn` or `bad` for a colour that means something, and `on` for a plain dot that says that a thing is active. `look` is
 the box of a text, a number or a button: `tile`, `bare`, and on a button also `chip` or `strong`. A key that a kind does not take is skipped.
 
@@ -103,7 +105,7 @@ always flow through a repeat, and with no `repeat` block they flow through a lis
 | `row`                              | Required: the id.                                                              |
 | `title`                            | The first line. Its id, when it has none.                                      |
 | `detail`                           | The second line.                                                               |
-| `symbol`, `file`, `image`, `glyph` | The picture.                                                                   |
+| `icon`                             | The picture.                                                                   |
 | `tone`                             | A dot on the picture.                                                          |
 | `hides`                            | The id of a button that this row does not offer. Repeat the line for each one. |
 | `keyword`                          | A word that finds the row in a search, which the row does not show.            |
@@ -139,7 +141,7 @@ A `template` block draws a row. Each `<kind>=<slot>` line in it gives a slot a k
 place of a bento, and a place with no drawing of its size takes the nearest smaller one (U8). In a list, a row takes one row height for each
 two lines of its drawing. A row picks a template with
 `as=<name>`, and `template=row` draws each row that names none. With no template, a row is drawn by the default template:
-its own keys `title`, `detail`, `symbol`, `file`, `image`, `glyph`, `tone` and `shortcut` are its slots, as a picture, its
+its own keys `title`, `detail`, `icon`, `tone` and `shortcut` are its slots, as a picture, its
 words, a dot and a key. A slot of a template cannot take the name of a key of a row (U14).
 
 ```text
@@ -148,11 +150,11 @@ grid=pic name . quit
 picture=pic
 text=name
 button=quit
-quit.symbol=xmark.circle
+quit.icon=xmark.circle
 
 row=/Applications/Safari.app
 title=Safari
-pic.file=/Applications/Safari.app
+pic.icon=/Applications/Safari.app
 name=Safari
 tone=on
 ```
@@ -195,7 +197,7 @@ widget or the menu bar can show any script with a `read`, by its ID (H1). A scri
 ```sh
 #!/bin/sh
 # name=Cups today
-# symbol=cup.and.saucer.fill
+# icon=cup.and.saucer.fill
 # read=60
 printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'
 ```
@@ -213,6 +215,7 @@ printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'
 | A template draws a row, and a repeat's drawing places rows, so lists, grids and bentos are one rule.        | `repeat=<area> <per line>` in the head.      |
 | A form is the same call twice, so each call has one shape.                                                  | A `form` word.                               |
 | One `value=` names what stands for a spot, so moving a block changes nothing.                              | The first `text`, `gauge` or `switch` of the output, and `grid.tray=`. |
+| One `icon` key, whose value says what the picture is.                                                      | `symbol`, `file`, `image` and `glyph`.       |
 | A look only draws a box, and a kind or a drawing says the rest.                                             | `look=large`, `look=list` and `look=section`. |
 | A complex view is a `view` of the plugin in an area, so the text language stays small.                      | More words for each new look.                |
 

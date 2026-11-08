@@ -1,6 +1,6 @@
 #!/bin/sh
 # name=Paste latest screenshot
-# symbol=doc.on.clipboard.fill
+# icon=doc.on.clipboard.fill
 # subtitle=From the screenshot folder
 # shortcut=v
 # size=small

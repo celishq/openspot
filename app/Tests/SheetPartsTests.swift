@@ -23,7 +23,7 @@ final class SheetPartsTests: XCTestCase {
     slider=brightness
     level=80
     max=100
-    symbol=sun.max
+    icon=sun.max
 
     choice=color
     color=#ff0000
@@ -36,7 +36,7 @@ final class SheetPartsTests: XCTestCase {
 
     button=reload
     title=Reload
-    symbol=arrow.clockwise
+    icon=arrow.clockwise
 
     button=quit
     title=Quit
@@ -129,7 +129,7 @@ final class SheetPartsTests: XCTestCase {
 
     func testTheHintListsTheKeysOfItsParts() throws {
         XCTAssertEqual(try panel(lights).hint, "⌘Q Quit   Esc Close")
-        XCTAssertEqual(try panel("grid=swap\n\nbutton=swap\nsymbol=arrow.up.arrow.down\nshortcut=cmd+shift+s\n").hint, "⌘⇧S Swap   Esc Close")
+        XCTAssertEqual(try panel("grid=swap\n\nbutton=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\n").hint, "⌘⇧S Swap   Esc Close")
     }
 
     func testAnEveryLineIsAnUnknownKeyThatASheetSkips() throws {
@@ -155,7 +155,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testTheCatalogNamesEachControl() {
-        for word in ["`switch`", "`slider`", "`choice`", "`field`", "`shortcut`", "`button`", "`text`", "`number`", "`graph`", "`picture`", "`gauge`", "`pad=", "`card=", "`repeat=", "`glyph="] {
+        for word in ["`switch`", "`slider`", "`choice`", "`field`", "`shortcut`", "`button`", "`text`", "`number`", "`graph`", "`picture`", "`gauge`", "`pad=", "`card=", "`repeat=", "`icon="] {
             XCTAssertTrue(PartCatalog.text.contains(word), word)
         }
     }
@@ -244,9 +244,9 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testALineWithNoIconKeepsTheIconColumnOnlyInAListWhereALineHasOne() throws {
-        let list = try panel("section=cpu\ntitle=CPU\n\ntext=all\ntitle=All\nsymbol=cpu\n\ntext=top\ntitle=launchd\n")
+        let list = try panel("section=cpu\ntitle=CPU\n\ntext=all\ntitle=All\nicon=cpu\n\ntext=top\ntitle=launchd\n")
         let plain = try panel("text=top\ntitle=launchd\n")
-        let drawn = try panel("grid=all top\n\ntext=all\ntitle=All\nsymbol=cpu\n\ntext=top\ntitle=launchd\n")
+        let drawn = try panel("grid=all top\n\ntext=all\ntitle=All\nicon=cpu\n\ntext=top\ntitle=launchd\n")
 
         XCTAssertEqual(list.parts.map(list.keepsIconColumn), [false, false, true])
         XCTAssertEqual(plain.parts.map(plain.keepsIconColumn), [false])

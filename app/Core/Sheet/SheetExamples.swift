@@ -37,7 +37,7 @@ public enum SheetExamples {
         readonly=true
 
         button=swap
-        symbol=arrow.up.arrow.down
+        icon=arrow.up.arrow.down
         shortcut=cmd+shift+s
 
         button=copy
@@ -59,11 +59,11 @@ public enum SheetExamples {
         grid=. previous following .
 
         picture=art
-        image=/System/Library/Desktop Pictures/.thumbnails/Sequoia.heic
+        icon=/System/Library/Desktop Pictures/.thumbnails/Sequoia.heic
 
         button=play
         look=strong
-        symbol=pause.fill
+        icon=pause.fill
 
         text=song
         title=Night drive
@@ -74,11 +74,11 @@ public enum SheetExamples {
 
         button=previous
         look=bare
-        symbol=backward.fill
+        icon=backward.fill
 
         button=following
         look=bare
-        symbol=forward.fill
+        icon=forward.fill
 
         """),
         Example(name: "a long task", text: """
@@ -141,7 +141,7 @@ public enum SheetExamples {
 
         button=ask
         look=strong
-        symbol=arrow.up
+        icon=arrow.up
         shortcut=cmd+return
 
         """),
@@ -171,7 +171,7 @@ public enum SheetExamples {
         point=5
 
         button=refresh
-        symbol=arrow.clockwise
+        icon=arrow.clockwise
 
         number=disk
         value=312 GB
@@ -219,7 +219,7 @@ public enum SheetExamples {
 
         button=save
         look=strong
-        symbol=checkmark
+        icon=checkmark
         shortcut=cmd+return
         close=true
 
@@ -267,7 +267,7 @@ public enum SheetExamples {
         button=reset
         align=right
         look=bare
-        symbol=arrow.counterclockwise
+        icon=arrow.counterclockwise
 
         button=quit
         look=bare

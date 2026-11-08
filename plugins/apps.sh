@@ -1,5 +1,5 @@
 #!/bin/sh
-# symbol=square.grid.2x2
+# icon=square.grid.2x2
 # subtitle=Open app
 # shortcut=a
 # read=panel
@@ -52,7 +52,7 @@ apps() {
   printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\nclose=true\n\n'
   printf 'button=quit\ntitle=Quit\nshortcut=cmd+shift+q\n\n'
   printf 'button=uninstall\ntitle=Delete\nshortcut=cmd+backspace\n\n'
-  printf 'template=row\ngrid=pic name name name name quit\npicture=pic\ntext=name\nbutton=quit\nquit.symbol=xmark.circle\nquit.title=Quit\n\n'
+  printf 'template=row\ngrid=pic name name name name quit\npicture=pic\ntext=name\nbutton=quit\nquit.icon=xmark.circle\nquit.title=Quit\n\n'
   live="$data/running"
   { echo; running; } > "$live"
   {
@@ -63,7 +63,7 @@ apps() {
     | sort -f -u \
     | awk -F'\t' 'NR == FNR { live[$0] = 1; next }
       {
-        printf "row=%s\ntitle=%s\nfile=%s\nname=%s\n", $2, $1, $2, $1
+        printf "row=%s\ntitle=%s\nicon=%s\nname=%s\n", $2, $1, $2, $1
         if ($2 in live) print "tone=on"; else print "hides=quit"
         if ($2 ~ /^\/System\//) print "hides=uninstall"
         print ""
@@ -90,7 +90,7 @@ uninstall_sheet() {
     keep=true
     grep -Fxq "$path" "$kept" 2>/dev/null && keep=false
     where=$(dirname "$path" | sed "s#^$HOME#~#")
-    printf 'row=%s\ntitle=%s\nfile=%s\nname=%s\nname.detail=%s\ntrash=%s\n\n' \
+    printf 'row=%s\ntitle=%s\nicon=%s\nname=%s\nname.detail=%s\ntrash=%s\n\n' \
       "$(esc "$path")" "$(esc "$(basename "$path")")" "$(esc "$path")" "$(esc "$(basename "$path")")" "$(esc "$where")" "$keep"
   done
 }

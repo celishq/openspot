@@ -10,12 +10,12 @@ final class RepeatTemplateTests: XCTestCase {
     picture=pic
     text=name
     button=quit
-    quit.symbol=xmark.circle
+    quit.icon=xmark.circle
     quit.title=Quit
 
     row=/Applications/Safari.app
     title=Safari
-    file=/Applications/Safari.app
+    icon=/Applications/Safari.app
     name=Safari
     tone=on
 

@@ -2,7 +2,7 @@
 # read=30
 line=$(pmset -g batt | grep -E '[0-9]+%')
 if [ -z "$line" ]; then
-  printf 'gauge=battery\ntitle=–\ndetail=No battery\nsymbol=powerplug.fill\nvalue=0\n'
+  printf 'gauge=battery\ntitle=–\ndetail=No battery\nicon=powerplug.fill\nvalue=0\n'
   exit 0
 fi
 percent=$(printf '%s' "$line" | grep -oE '[0-9]+%' | tr -d '%')
@@ -15,4 +15,4 @@ case "$line" in
   *charging*|*charged*) symbol=battery.100.bolt; detail="Charging"; tone=good ;;
 esac
 [ "$percent" = 100 ] && detail="Full"
-printf 'gauge=battery\ntitle=%s%%\ndetail=%s\nsymbol=%s\nvalue=%s\ntone=%s\n' "$percent" "${detail:-On battery}" "$symbol" "$(awk "BEGIN{print $percent/100}")" "$tone"
+printf 'gauge=battery\ntitle=%s%%\ndetail=%s\nicon=%s\nvalue=%s\ntone=%s\n' "$percent" "${detail:-On battery}" "$symbol" "$(awk "BEGIN{print $percent/100}")" "$tone"

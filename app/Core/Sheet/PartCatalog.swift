@@ -3,9 +3,9 @@ import Foundation
 /// Every part that a script can print, and the faults a printed part can have. It is the contract of a sheet.
 public enum PartCatalog {
     private static let keys: Set<String> = Set(SpotPart.kinds).union([
-        "title", "detail", "symbol", "file", "glyph", "on", "level", "min", "max", "color", "value", "option", "text",
+        "title", "detail", "icon", "on", "level", "min", "max", "color", "value", "option", "text",
         "placeholder", "readonly", "required", "type", "close", "confirm", "scope", "form", "align", "look", "point",
-        "image", "shortcut", "tone", "tint"
+        "shortcut", "tone", "tint"
     ])
     /// The kinds whose blocks can hold keys of the plugin's own, which a view reads.
     private static let open: Set<String> = ["view"]
@@ -46,13 +46,13 @@ public enum PartCatalog {
     a drawing in which each word is the place of one row, and the drawing repeats down: `grid=a` is a list, \
     `grid=a b c d e f g` is seven square buttons to a line, and `grid=a a b c` with `grid=a a d e` is one large place and \
     four small ones. A row is a block with `row=<id>`, `title` and a picture, and a row is picked by \
-    `open <value>`. A square button shows `glyph=<text>`, `symbol`, `image` or `file`, and `row` is the word that a search \
+    `open <value>`. A square button shows its `icon`, and `row` is the word that a search \
     finds. The app draws the search field over the sheet. A sheet can repeat one area.
 
     A `template=row` block draws each row: each `<kind>=<slot>` line gives a slot a kind, its `grid=` lines place the slots, \
     and `grid.2x2=` lines draw a row in a place of 2 by 2 cells. A row fills a slot with `<slot>=<value>`, sets any other \
     key of it with `<slot>.<key>=<value>`, picks another template with `as=<name>`, and hides a slot with `hides=<slot>`. A \
-    control in a row calls `<slot> <run> [value]`. `tone=on` puts a dot on a row's picture.
+    control in a row calls `<slot> <row id> [value]`. `tone=on` puts a dot on a row's picture.
 
     Every row has one height: \(Int(SheetPlacement.rowHeight))pt. The gap between cells is \(Int(SheetPlacement.gap))pt. To \
     make something taller, draw more rows. Rows that hold a field, a list, a graph or a picture share the free height, and \
@@ -69,26 +69,27 @@ public enum PartCatalog {
 
     | Kind and keys | Shows | Calls the script with |
     |---|---|---|
-    | `text`, with `title`, `detail`, `symbol` | A line: the title on the left, the detail on the right. | |
+    | `text`, with `title`, `detail`, `icon` | A line: the title on the left, the detail on the right. | |
     | `text` with `value=0.84`, or with `point=3` lines and optional `max` | A small mark before the detail: a bar from \
     `value`, or bars from the points. `tone=good`, `warn` or `bad` colours it. | |
     | `number`, with `value=42%`, optional `title` | A big number in a tile, with its title under it. It needs 2 columns of 4, and 2 rows with a title. | |
     | `switch`, with `on=true` or `on=false` | A switch at the end of the line. | `<id> true` or `false` |
-    | `slider`, with `level=70`, optional `min`, `max`, `title`, `symbol` | A slider, from 0 to 100 unless `min` and `max` say. Give each slider a `title` or a `symbol`. | `<id> <number>` |
+    | `slider`, with `level=70`, optional `min`, `max`, `title`, `icon` | A slider, from 0 to 100 unless `min` and `max` say. Give each slider a `title` or an `icon`. | `<id> <number>` |
     | `choice`, with `color=#ff0000` for each colour, `value=#ff0000` | A row of swatches. One `color=` with a `title` is one small swatch at the end of the line. | `<id> <color>` |
     | `choice`, with `option=id:Title` for each choice, `value=id` | A menu. Drawn over two lines or more, a list to choose from, which scrolls. | `<id> <option id>` |
     | `field`, with `text=...`, optional `readonly=true`, `placeholder` | A text area, which scrolls. Write a line break as `\\n`. | `<id> <text>` |
     | `shortcut`, with `value=ctrl+space` and `title` | A key at the end of the line. A click records the next key that the person presses, and Esc cancels. | `<id> <key>`, such as `<id> cmd+k` |
     | `button`, with `title` | A button that fills its cell. | `<id>` |
-    | `button`, with `symbol=arrow.up` or another SF Symbol name | A round button, which shrinks to fit its area, up to 44pt. | `<id>` |
+    | `button`, with `icon=arrow.up` or another SF Symbol name | A round button, which shrinks to fit its area, up to 44pt. | `<id>` |
     | `graph`, with `point=3` for each bar | A bar chart in a tile. | |
-    | `picture`, with `image=/path/to/file` | A picture from a file. | |
+    | `picture`, with `icon=/path/to/file` | A picture from a file. | |
     | `gauge`, with `value=0.4`, `title`, `detail` | A title line over a bar. It needs 2 rows. | |
 
     These keys change a component:
 
     | Key | Does |
     |---|---|
+    | `icon=wifi` | A picture: an SF Symbol name, a path of a picture file such as `cup.png`, any other path for its Finder icon, or text such as 😀. |
     | `shortcut=cmd+return` | Adds a keyboard key to a button. The hint under the sheet shows it. Use cmd, shift and one letter, digit, return or backspace. |
     | `close=true` | Closes the panel after a press. |
     | `align=left`, `right` or `center` | Places a component that is smaller than its cell. |

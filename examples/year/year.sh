@@ -1,6 +1,6 @@
 #!/bin/sh
 # name=Year
-# symbol=calendar
+# icon=calendar
 # subtitle=The months of this year
 # read=panel
 # view=year.swift

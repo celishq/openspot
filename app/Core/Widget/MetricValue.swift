@@ -76,7 +76,7 @@ public struct MetricValue: Equatable, Sendable {
         self.init(
             title: title,
             detail: isNumber ? block.value("title") : block.value("detail"),
-            symbol: block.value("symbol"),
+            symbol: Icon(text: block.value("icon"))?.symbol,
             tone: block.value("tone").flatMap(Tone.init),
             value: isNumber ? nil : block.number("value"),
             points: points.isEmpty ? nil : points,

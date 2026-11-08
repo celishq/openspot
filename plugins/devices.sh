@@ -1,6 +1,6 @@
 #!/bin/sh
 # name=Devices
-# symbol=airpods
+# icon=airpods
 # read=60
 
 # Prints one line for each battery of each connected device: its name, the part, then the level.
@@ -25,5 +25,5 @@ levels | awk -F'\t' '
   END {
     if (low == "") { printf "gauge=devices\ntitle=–\ndetail=No devices\nvalue=0\n"; exit }
     symbol = name ~ /AirPods/ ? "airpods" : name ~ /Keyboard/ ? "keyboard" : name ~ /Mouse/ ? "magicmouse" : "headphones"
-    printf "gauge=devices\ntitle=%d%%\ndetail=%s\nsymbol=%s\nvalue=%.2f\ntone=%s\n", low, name, symbol, low / 100, (low <= 20 ? "bad" : "")
+    printf "gauge=devices\ntitle=%d%%\ndetail=%s\nicon=%s\nvalue=%.2f\ntone=%s\n", low, name, symbol, low / 100, (low <= 20 ? "bad" : "")
   }'

@@ -1,5 +1,5 @@
 #!/bin/sh
-# symbol=doc.text.magnifyingglass
+# icon=doc.text.magnifyingglass
 # subtitle=Find a file
 # shortcut=f
 # read=sheet
@@ -26,7 +26,7 @@ case "$1" in
             folder = $0
             sub(/\/[^\/]*$/, "", folder)
             if (index(folder, home) == 1) folder = "~" substr(folder, length(home) + 1)
-            printf "row=%s\ntitle=%s\ndetail=%s\nfile=%s\n\n", $0, $NF, folder, $0
+            printf "row=%s\ntitle=%s\ndetail=%s\nicon=%s\n\n", $0, $NF, folder, $0
           }'
     ;;
   reveal)

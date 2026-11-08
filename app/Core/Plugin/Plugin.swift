@@ -28,7 +28,8 @@ public struct Plugin: Equatable, Sendable {
     /// A script with a number in its `read` has a spot, a list, only when it has a key.
     public init(script url: URL, header: TextBlock, id: String) throws {
         let name = header.value("name") ?? Self.name(of: url)
-        let symbol = header.value("symbol")
+        let icon = Icon(text: header.value("icon"))
+        let symbol = icon?.symbol
         var read: SpotRead?
         if let text = header.value("read") {
             guard let parsed = SpotRead(text: text) else {
@@ -83,9 +84,9 @@ public struct Plugin: Equatable, Sendable {
             isOnGrid: offers.isEmpty,
             headerSymbol: symbol,
             offers: offers,
-            file: header.value("file").map { Self.path($0, beside: url) },
-            image: header.value("image").map { Self.path($0, beside: url) },
-            glyph: header.value("glyph"),
+            file: icon?.file.map { Self.path($0, beside: url) },
+            image: icon?.image.map { Self.path($0, beside: url) },
+            glyph: icon?.glyph,
             view: view.map { Self.path($0, beside: url) }
         )
         self.init(id: id, commands: [command])

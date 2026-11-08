@@ -81,7 +81,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testItTakesItsNameDescriptionAndSymbolFromTheHeader() throws {
-        let review = try review("name=Weather now\nsymbol=sun.max\nsubtitle=Today and tomorrow")
+        let review = try review("name=Weather now\nicon=sun.max\nsubtitle=Today and tomorrow")
 
         XCTAssertEqual(review.name, "Weather now")
         XCTAssertEqual(review.symbol, "sun.max")
@@ -107,7 +107,7 @@ final class ReviewSpotTests: XCTestCase {
 
     func testADragOfASpotSaysWhatADropInstalls() throws {
         let file = folder.appendingPathComponent("any name.spot")
-        try spot([("weather.sh", "#!/bin/sh\n# name=Weather\n# symbol=sun.max\n# subtitle=Today\n", true)]).data.write(to: file)
+        try spot([("weather.sh", "#!/bin/sh\n# name=Weather\n# icon=sun.max\n# subtitle=Today\n", true)]).data.write(to: file)
         let target = folder.appendingPathComponent("plugins")
 
         let drop = SpotDrop(paths: [file.path], folder: target)
@@ -214,7 +214,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAddPutsItInTheFolderThatTheNextScanReads() throws {
-        let answer = try review("name=Weather\nsymbol=sun.max").answer(["install"])
+        let answer = try review("name=Weather\nicon=sun.max").answer(["install"])
 
         XCTAssertEqual(PluginOutput(text: answer).summary?.value("toast"), "Weather added")
         let scan = try PluginFolder(url: folder).scan()

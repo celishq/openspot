@@ -47,7 +47,7 @@ final class LinksPluginTests: SamplePluginsCase {
         let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
         try await withPrivateHome { folder in
             try await self.savedLink("https://icons.test/deep/page", in: links)
-            let expected = folder.appendingPathComponent(".config/openspot/data/links/icons/icons.test.icon").path
+            let expected = folder.appendingPathComponent(".config/openspot/data/links/icons/icons.test.png").path
 
             for _ in 0..<50 where !FileManager.default.fileExists(atPath: expected) {
                 try await Task.sleep(nanoseconds: 100_000_000)

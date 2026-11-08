@@ -1,5 +1,5 @@
 #!/bin/sh
-# symbol=eyedropper
+# icon=eyedropper
 # subtitle=Copy a color
 # shortcut=o
 # size=small

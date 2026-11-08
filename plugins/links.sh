@@ -1,5 +1,5 @@
 #!/bin/sh
-# symbol=link
+# icon=link
 # subtitle=Open a link
 # shortcut=l
 # read=panel
@@ -70,8 +70,8 @@ save_icon() {
   kind=$(curl -fsSL -m 5 -A "$agent" -o "$file" -w '%{content_type}' "$1" 2>/dev/null) || kind=""
   case "$kind" in
     image/*)
-      if sips -g pixelWidth "$file" >/dev/null 2>&1; then
-        mv "$file" "$icons/$2.icon"
+      if sips -s format png "$file" --out "$icons/$2.png" >/dev/null 2>&1; then
+        rm -f "$file"
         return 0
       fi
       ;;
@@ -112,7 +112,7 @@ fetch_missing() {
   [ -d "$icons" ] && find "$icons" -name '*.none' -mtime +7 -delete
   load | jq -r '.[].url | capture("^(?<origin>https?://(?<host>[^/?#]+))") | "\(.origin) \(.host)"' | sort -u |
     while read -r origin host; do
-      if [ ! -e "$icons/$host.icon" ] && [ ! -e "$icons/$host.none" ]; then
+      if [ ! -e "$icons/$host.png" ] && [ ! -e "$icons/$host.none" ]; then
         fetch_icon "$origin" "$host"
       fi
     done
@@ -146,11 +146,11 @@ case "$1" in
     found=$(ls "$icons" 2>/dev/null | jq -R . | jq -sc .)
     load | jq -r --arg icons "$icons" --argjson found "$found" --arg home "$HOME" "$esc"'.[]
       | if (.url | test("^[/~]")) then
-          "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.url | esc)\nfile=\(.url | if startswith("~") then $home + .[1:] else . end | esc)\n"
+          "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.url | esc)\nicon=\(.url | if startswith("~") then $home + .[1:] else . end | esc)\n"
         else
           (.url | sub("^[a-zA-Z][a-zA-Z0-9+.-]*:(//)?"; "") | sub("[/?#].*$"; "")) as $host
-          | "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\($host | esc)\nsymbol=link\nhides=reveal\n"
-          + (if ($found | index($host + ".icon")) then "image=\("\($icons)/\($host).icon" | esc)\n" else "" end)
+          | "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\($host | esc)\nhides=reveal\n"
+          + (if ($found | index($host + ".png")) then "icon=\("\($icons)/\($host).png" | esc)\n" else "icon=link\n" end)
         end'
     fetch_missing >/dev/null 2>&1 </dev/null &
     ;;

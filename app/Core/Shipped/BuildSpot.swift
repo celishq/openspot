@@ -57,22 +57,22 @@ public struct BuildSpot: Equatable, Sendable {
     row=prompt
     title=Copy prompt for AI
     detail=Have an AI build a plugin for you
-    symbol=sparkles
+    icon=sparkles
 
     row=sandbox
     title=Try a sheet
     detail=Build a layout and see it at once
-    symbol=square.grid.2x2
+    icon=square.grid.2x2
 
     row=guide
     title=Read the guide
     detail=How plugins and widgets work
-    symbol=book
+    icon=book
 
     row=folder
     title=Open plugins folder
     detail=Add a script here to install a plugin
-    symbol=folder
+    icon=folder
     """
 
     private static let form = """
@@ -113,7 +113,7 @@ public struct BuildSpot: Equatable, Sendable {
         let script = """
         #!/bin/sh
         # name=\(name)
-        # symbol=star
+        # icon=star
         # subtitle=Edit \(slug).sh
         open -R "$0"
 

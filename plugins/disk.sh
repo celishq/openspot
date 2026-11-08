@@ -1,5 +1,5 @@
 #!/bin/sh
-# symbol=internaldrive
+# icon=internaldrive
 # read=300
 df -k /System/Volumes/Data | awk 'NR == 2 {
   used = $3 / ($3 + $4)

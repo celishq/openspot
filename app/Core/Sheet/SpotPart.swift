@@ -79,9 +79,10 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         closes = block.flag("close") ?? false
         align = block.value("align").flatMap(Align.init(rawValue:))
         look = block.value("look").flatMap(Look.init(rawValue:))
-        let symbol = block.value("symbol")
-        file = block.value("file")
-        glyph = block.value("glyph")
+        let icon = Icon(text: block.value("icon"))
+        let symbol = icon?.symbol
+        file = icon?.file
+        glyph = icon?.glyph
         tone = block.value("tone").flatMap(MetricValue.Tone.init)
         if kind == "button" {
             self.symbol = nil
@@ -98,7 +99,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case "graph":
             control = .chart(block.values("point").compactMap(Double.init))
         case "picture":
-            control = block.value("image").map(Control.image) ?? .none
+            control = icon?.image.map(Control.image) ?? .none
         case "slider":
             control = .slider(level: block.number("level") ?? 0, min: block.number("min") ?? 0, max: block.number("max") ?? 100)
         case "field":

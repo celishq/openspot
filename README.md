@@ -47,7 +47,7 @@ Then make an Openspot tool in ~/.config/openspot/plugins that shows the weather 
 ```sh
 #!/bin/sh
 # name=Hello
-# symbol=hand.wave
+# icon=hand.wave
 echo "toast=Hello"
 ```
 

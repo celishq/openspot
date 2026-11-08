@@ -59,7 +59,7 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testAnExecutableIsASpotWithItsHeader() throws {
-        try write("one.sh", header: "name=First\nsize=square\nsymbol=moon\nsubtitle=Off\nshortcut=o")
+        try write("one.sh", header: "name=First\nsize=square\nicon=moon\nsubtitle=Off\nshortcut=o")
 
         XCTAssertEqual(try scan.refused, [])
         let one = try XCTUnwrap(try scan.commands.first)
@@ -73,9 +73,9 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testAHeaderNamesAPictureAsARowDoesAndAPathStartsAtItsFolder() throws {
-        try write("cup.sh", header: "image=icons/cup.png")
-        try write("safari.sh", header: "file=/Applications/Safari.app")
-        try write("tea.sh", header: "glyph=🍵")
+        try write("cup.sh", header: "icon=icons/cup.png")
+        try write("safari.sh", header: "icon=/Applications/Safari.app")
+        try write("tea.sh", header: "icon=🍵")
 
         let commands = try scan.commands
         let cup = try XCTUnwrap(commands.first { $0.id == "cup" })
@@ -191,7 +191,7 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testANumberAsTheReadIsAMetricWithNoSpot() throws {
-        try write("cups.sh", header: "name=Cups\nsymbol=cup.and.saucer\nread=30")
+        try write("cups.sh", header: "name=Cups\nicon=cup.and.saucer\nread=30")
 
         let scan = try scan
         let metric = try XCTUnwrap(scan.metrics.first)

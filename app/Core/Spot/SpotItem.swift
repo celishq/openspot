@@ -25,7 +25,7 @@ public struct SpotItem: Equatable, Sendable {
 
     /// The keys that a row reads itself, which are the slots of the default template (U14).
     public static let ownKeys: Set<String> = [
-        "row", "title", "detail", "symbol", "file", "image", "glyph", "hides", "keyword", "shortcut", "on", "tone", "as"
+        "row", "title", "detail", "icon", "hides", "keyword", "shortcut", "on", "tone", "as"
     ]
 
     public init(title: String, subtitle: String? = nil, run: String, symbol: String? = nil, file: String? = nil, image: String? = nil, glyph: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, isOn: Bool = false, tone: MetricValue.Tone? = nil, template: String? = nil, fields: [TextBlock.Field] = []) {
@@ -50,14 +50,15 @@ public struct SpotItem: Equatable, Sendable {
         guard let run = block.value("row") else { return nil }
         let title = block.value("title") ?? run
         let hides = block.values("hides")
+        let icon = Icon(text: block.value("icon"))
         self.init(
             title: title,
             subtitle: block.value("detail"),
             run: run,
-            symbol: block.value("symbol"),
-            file: block.value("file"),
-            image: block.value("image"),
-            glyph: block.value("glyph"),
+            symbol: icon?.symbol,
+            file: icon?.file,
+            image: icon?.image,
+            glyph: icon?.glyph,
             hides: hides.isEmpty ? nil : hides,
             keywords: block.values("keyword"),
             shortcut: block.value("shortcut"),
@@ -80,15 +81,9 @@ public struct SpotItem: Equatable, Sendable {
         }
     }
 
-    /// One of its own picture keys: `symbol`, `file`, `image` or `glyph`.
-    public func picture(_ key: String) -> String? {
-        switch key {
-        case "symbol": symbol
-        case "file": file
-        case "image": image
-        case "glyph": glyph
-        default: nil
-        }
+    /// The `icon` value of its picture.
+    public var iconText: String? {
+        symbol ?? file ?? image ?? glyph
     }
 
     /// The picture a row draws: its image, or else the icon of its file.

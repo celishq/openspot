@@ -1,6 +1,6 @@
 #!/bin/sh
 # name=System details
-# symbol=gauge.with.dots.needle.50percent
+# icon=gauge.with.dots.needle.50percent
 # read=panel
 here=$(dirname "$0")
 
@@ -9,7 +9,7 @@ reading() {
   "$here/$1" read | sed -En 's/^title=/detail=/p; /^(value|point|max|tone)=./p'
 }
 
-printf 'section=battery\ntitle=Battery\n\ntext=mac\ntitle=This Mac\nsymbol=macbook\n%s\n\n' "$(reading battery.sh)"
+printf 'section=battery\ntitle=Battery\n\ntext=mac\ntitle=This Mac\nicon=macbook\n%s\n\n' "$(reading battery.sh)"
 "$here/devices.sh" levels | awk -F'\t' '
 function symbol(name, part) {
   if (name ~ /AirPods Max/) return "airpodsmax"
@@ -20,18 +20,18 @@ function symbol(name, part) {
   return "headphones"
 }
 {
-  printf "text=device-%d\ntitle=%s%s\nsymbol=%s\ndetail=%s%%\nvalue=%.2f\n", NR, $1, ($2 == "" ? "" : ", " tolower($2)), symbol($1, $2), $3, $3 / 100
+  printf "text=device-%d\ntitle=%s%s\nicon=%s\ndetail=%s%%\nvalue=%.2f\n", NR, $1, ($2 == "" ? "" : ", " tolower($2)), symbol($1, $2), $3, $3 / 100
   if ($3 <= 20) print "tone=bad"
   print ""
 }'
 
-printf 'section=cpu\ntitle=CPU\n\ntext=cpu-all\ntitle=All cores\nsymbol=cpu\n%s\n\n' "$(reading cpu.sh | grep -v '^max=')"
+printf 'section=cpu\ntitle=CPU\n\ntext=cpu-all\ntitle=All cores\nicon=cpu\n%s\n\n' "$(reading cpu.sh | grep -v '^max=')"
 ps -Aco pcpu=,comm= -r | head -3 | awk '{
   cpu = $1; $1 = ""; sub(/^ /, "")
   printf "text=cpu-%d\ntitle=%s\ndetail=%s%%\n\n", NR, $0, cpu
 }'
 
-printf 'section=memory\ntitle=Memory\n\ntext=memory-used\ntitle=Used\nsymbol=memorychip\n%s\n\n' "$(reading memory.sh)"
+printf 'section=memory\ntitle=Memory\n\ntext=memory-used\ntitle=Used\nicon=memorychip\n%s\n\n' "$(reading memory.sh)"
 printf 'text=swap\ntitle=Swap\ndetail=%s\n\n' "$(/usr/sbin/sysctl -n vm.swapusage | awk '{ mb = $6 + 0; print (mb >= 1024 ? sprintf("%.1f GB", mb / 1024) : sprintf("%d MB", mb)) }')"
 ps -Aco rss=,comm= -m | head -3 | awk '{
   kb = $1; $1 = ""; sub(/^ /, "")

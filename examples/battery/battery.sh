@@ -1,6 +1,6 @@
 #!/bin/sh
 # name=Liquid battery
-# symbol=battery.100
+# icon=battery.100
 # subtitle=The battery as a liquid, drawn by a Metal shader
 # read=panel
 # size=strip

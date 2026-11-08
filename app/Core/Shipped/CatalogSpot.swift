@@ -78,8 +78,10 @@ public struct CatalogSpot: Equatable, Sendable {
         ]
         let spots = choices.map { command in
             let id = PluginFolder.coreID(of: command)
-            var fields: [TextBlock.Field] = [.init(key: "row", value: id), .init(key: "title", value: command.name), .init(key: "symbol", value: command.symbol)]
-            fields += [("image", command.image), ("file", command.file), ("glyph", command.glyph)].compactMap { key, value in value.map { .init(key: key, value: $0) } }
+            var fields: [TextBlock.Field] = [
+                .init(key: "row", value: id), .init(key: "title", value: command.name),
+                .init(key: "icon", value: command.image ?? command.file ?? command.glyph ?? command.symbol)
+            ]
             let detail = own.contains(id) ? "In your plugins folder" : command.subtitle
             if let detail { fields.append(.init(key: "detail", value: detail)) }
             fields.append(.init(key: "on", value: String(own.contains(id) || enabled.contains(id))))
@@ -89,7 +91,7 @@ public struct CatalogSpot: Equatable, Sendable {
             .init(key: "row", value: Self.buildRun),
             .init(key: "title", value: "Build your own"),
             .init(key: "detail", value: "Make a spot, or read how they work"),
-            .init(key: "symbol", value: "hammer"),
+            .init(key: "icon", value: "hammer"),
             .init(key: "hides", value: Self.reviewID)
         ])
         let loginRow = login.map { TextBlock(fields: $0.row.fields + [.init(key: "hides", value: Self.reviewID)]) }

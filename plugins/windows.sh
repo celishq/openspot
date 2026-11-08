@@ -1,6 +1,6 @@
 #!/bin/sh
 # name=Windows
-# symbol=macwindow
+# icon=macwindow
 # subtitle=Give each command a key
 # command=full:Full screen:rectangle.inset.filled
 # command=center:Centre:rectangle.center.inset.filled

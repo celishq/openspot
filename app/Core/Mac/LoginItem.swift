@@ -18,7 +18,7 @@ public struct LoginItem: Equatable, Sendable {
         TextBlock(fields: [
             .init(key: "row", value: Self.run),
             .init(key: "title", value: "Open at login"),
-            .init(key: "symbol", value: "power"),
+            .init(key: "icon", value: "power"),
             .init(key: "on", value: String(isOn()))
         ])
     }

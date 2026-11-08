@@ -37,7 +37,7 @@ final class SheetLayoutTests: XCTestCase {
     readonly=true
 
     button=swap
-    symbol=arrow.up.arrow.down
+    icon=arrow.up.arrow.down
 
     button=copy
     look=chip
@@ -103,7 +103,7 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testARoundButtonOnALineShrinksToTheRow() throws {
-        let frame = try XCTUnwrap(try placement("grid=reload\n\nbutton=reload\ntitle=Reload\nsymbol=arrow.clockwise\n").frames["reload"])
+        let frame = try XCTUnwrap(try placement("grid=reload\n\nbutton=reload\ntitle=Reload\nicon=arrow.clockwise\n").frames["reload"])
 
         XCTAssertEqual(frame.rect.height, SheetPlacement.rowHeight)
         XCTAssertEqual(frame.roundSize, SheetPlacement.rowHeight)
@@ -146,7 +146,7 @@ final class SheetLayoutTests: XCTestCase {
         text=Hello
 
         button=save
-        symbol=checkmark
+        icon=checkmark
         """)
         let note = try XCTUnwrap(sheet.frames["note"]), save = try XCTUnwrap(sheet.frames["save"])
 
@@ -234,7 +234,7 @@ final class SheetLayoutTests: XCTestCase {
 
     row=1
     title=one
-    glyph=😀
+    icon=😀
     """
 
     func testARepeatedAreaSharesTheFreeHeightUnderTheField() throws {
@@ -257,7 +257,7 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testRowsAloneNeedNoDrawing() {
-        let lines = output("repeat=a\ngrid=a b c d e f g\n\nrow=1\ntitle=one\nglyph=😀\n")
+        let lines = output("repeat=a\ngrid=a b c d e f g\n\nrow=1\ntitle=one\nicon=😀\n")
 
         XCTAssertEqual(lines.perLine, 7)
         XCTAssertEqual(lines.sheetFaults, [])
@@ -319,7 +319,7 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(faults("grid=a\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), ["the part b is not in the drawing"])
         XCTAssertEqual(faults("grid=a\n\ntext=a\ntitle=A\n\ntext=a\ntitle=B\n"), ["two parts are called a"])
         XCTAssertEqual(faults("grid=a\ncard=a z\n\ntext=a\ntitle=A\n"), ["the card names z, which the drawing does not have"])
-        XCTAssertEqual(faults("grid=a b\n\nbutton=a\nlook=strong\nsymbol=play\n\nbutton=b\nlook=strong\nsymbol=stop\n"), ["only one part can use look=strong"])
+        XCTAssertEqual(faults("grid=a b\n\nbutton=a\nlook=strong\nicon=play\n\nbutton=b\nlook=strong\nicon=stop\n"), ["only one part can use look=strong"])
         XCTAssertEqual(faults("grid=a - b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), ["the divider in row 1 is not whole"])
         XCTAssertEqual(faults("grid=a b\ngrid=b a\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), ["a and b overlap at one size, so neither lies on top"])
         XCTAssertEqual(faults("layout=pair\n\ntext=a\ntitle=A\n"), ["a sheet has no layout key, so draw it with grid= lines"])
