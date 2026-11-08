@@ -3,7 +3,7 @@ import XCTest
 @testable import OpenspotCore
 
 @MainActor
-final class SpotSheetTests: XCTestCase {
+final class SpotRunTests: XCTestCase {
     private var folder: URL!
     private var runs: [SpotRuns] = []
 
@@ -18,12 +18,12 @@ final class SpotSheetTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func make(name: String = "script", _ body: String, stays: Bool = false, read: SpotRead? = nil) throws -> SpotSheet {
+    private func make(name: String = "script", _ body: String, stays: Bool = false, read: SpotRead? = nil) throws -> SpotRun {
         let url = folder.appendingPathComponent("\(name).sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
         let made = SpotRuns()
         runs.append(made)
-        return made.sheet(for: PluginCommand(id: name, name: name, url: url, kind: .list, read: read ?? (stays ? nil : .sheet), stays: stays))
+        return made.sheet(for: Spot(id: name, name: name, url: url, kind: .list, read: read ?? (stays ? nil : .sheet), stays: stays))
     }
 
     private func path(_ name: String) -> String {
@@ -42,12 +42,12 @@ final class SpotSheetTests: XCTestCase {
         XCTFail("waited for \(what)")
     }
 
-    private func holding(_ body: String, pause: TimeInterval) throws -> SpotSheet {
+    private func holding(_ body: String, pause: TimeInterval) throws -> SpotRun {
         let url = folder.appendingPathComponent("held.sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
         let made = SpotRuns(firstAnswerPause: pause)
         runs.append(made)
-        return made.sheet(for: PluginCommand(id: "held", name: "held", url: url, kind: .list, read: .sheet))
+        return made.sheet(for: Spot(id: "held", name: "held", url: url, kind: .list, read: .sheet))
     }
 
     func testASheetThatWaitsOpensWithItsFirstAnswer() async throws {
@@ -81,7 +81,7 @@ final class SpotSheetTests: XCTestCase {
         sheet.scrollPanel(by: 1)
         sheet.scrollPanel(by: -1)
 
-        XCTAssertEqual(sheet.nudge, SpotPanel.Nudge(step: -1, serial: 2))
+        XCTAssertEqual(sheet.nudge, SheetParts.Nudge(step: -1, serial: 2))
         XCTAssertEqual(sheet.panel, parts)
         sheet.close()
     }
@@ -382,7 +382,7 @@ final class SpotSheetTests: XCTestCase {
         let sheet = try holding("printf 'row=A\\nrun=a\\n\\nrow=B\\nrun=b\\n'", pause: 30)
         sheet.read()
         try await wait("the rows") { sheet.list.shown.count == 2 }
-        XCTAssertEqual(sheet.shape, SpotSheet.Shape(rows: 2, perLine: 1))
+        XCTAssertEqual(sheet.shape, SpotRun.Shape(rows: 2, perLine: 1))
         nonisolated(unsafe) var changed = false
         withObservationTracking {
             _ = sheet.shape

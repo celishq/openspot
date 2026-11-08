@@ -7,7 +7,7 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     private func placement(_ text: String) throws -> SheetPlacement {
-        let panel = try XCTUnwrap(SpotPanel(output: output(text)))
+        let panel = try XCTUnwrap(SheetParts(output: output(text)))
         return panel.placement
     }
 
@@ -107,7 +107,7 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testTilesHaveTheOneRowHeightAndGap() throws {
-        let sheet = try XCTUnwrap(SpotPanel(output: PluginOutput(text: "part=a\ntitle=A\nlook=tile\n\npart=b\ntitle=B\nlook=tile\n"))).placement
+        let sheet = try XCTUnwrap(SheetParts(output: PluginOutput(text: "part=a\ntitle=A\nlook=tile\n\npart=b\ntitle=B\nlook=tile\n"))).placement
 
         XCTAssertEqual(try XCTUnwrap(sheet.frames["a"]).rect.height, SheetPlacement.rowHeight)
         XCTAssertEqual(try XCTUnwrap(sheet.frames["b"]).rect.minY, SheetPlacement.rowHeight + SheetPlacement.gap)
@@ -272,7 +272,7 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(lines.items.map(\.glyph), ["😀"])
         XCTAssertEqual(lines.perLine, 7)
         XCTAssertEqual(lines.sheetFaults, [])
-        XCTAssertFalse(try XCTUnwrap(SpotPanel(output: lines)).takesArrows)
+        XCTAssertFalse(try XCTUnwrap(SheetParts(output: lines)).takesArrows)
     }
 
     func testRowsAloneNeedNoDrawing() {

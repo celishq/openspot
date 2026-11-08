@@ -15,7 +15,7 @@ struct SpotSheetLayer: View {
     /// Whether the header has left the fill of its card.
     let hasLeftCard: Bool
     /// The parts of the sheet, once they have landed.
-    let panel: SpotPanel?
+    let panel: SheetParts?
 
     var body: some View {
         SpotSheetView(

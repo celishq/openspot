@@ -4,7 +4,7 @@ import SwiftUI
 /// Scrolls a sheet by one row for each arrow press, and stops at its ends. It alone reads the presses, so that a held key
 /// moves only the scroll and redraws nothing else.
 struct SpotArrowScroll: ViewModifier {
-    let nudge: () -> SpotPanel.Nudge
+    let nudge: () -> SheetParts.Nudge
     @State private var position = ScrollPosition(edge: .top)
     @State private var limit: CGFloat = 0
     @State private var aim: CGFloat = 0

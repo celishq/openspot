@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class GuidePluginTests: XCTestCase {
+final class BuildSpotTests: XCTestCase {
     private var folder: URL!
     private var plugins: URL!
     private var guideText = ""
@@ -30,12 +30,12 @@ final class GuidePluginTests: XCTestCase {
         try FileManager.default.removeItem(at: folder)
     }
 
-    private func newAction(of guide: PluginCommand) async throws -> CommandAction {
+    private func newAction(of guide: Spot) async throws -> CommandAction {
         let actions = try await guide.items(timeout: 5).actions
         return try XCTUnwrap(actions.first { $0.id == "new" })
     }
 
-    private func guide() throws -> PluginCommand {
+    private func guide() throws -> Spot {
         try XCTUnwrap(ShippedSpot.commands(folder: plugins, guide: guideURL, app: "/Apps/Openspot").first { $0.name == "Build" })
     }
 
@@ -50,7 +50,7 @@ final class GuidePluginTests: XCTestCase {
         let scan = try PluginFolder(url: plugins).scan(shipped: shipped)
 
         XCTAssertEqual(scan.commands.first { $0.key?.name == "p" }?.name, "Spots")
-        XCTAssertEqual(scan.refused, [Refusal(file: "mine", reason: "Mine cannot use key p, because another command has it")])
+        XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "mine", reason: "Mine cannot use key p, because another command has it")])
     }
 
     func testTheBuildSpotListsItsRowsAndItsAction() async throws {

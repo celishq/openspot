@@ -1,7 +1,7 @@
 import Foundation
 
 /// The Build spot, which ships with the app. It answers the calls a list script answers, in Swift.
-public struct PluginGuide: Equatable, Sendable {
+public struct BuildSpot: Equatable, Sendable {
     public let folder: URL
     public let guide: URL
     public let app: String

@@ -53,7 +53,7 @@ class SpotRunsCase: XCTestCase {
         return scan
     }
 
-    func sheet(_ id: String = "script") throws -> SpotSheet {
+    func sheet(_ id: String = "script") throws -> SpotRun {
         _ = try scanned()
         return try XCTUnwrap(runs.sheets[id])
     }
@@ -115,7 +115,7 @@ class SpotRunsCase: XCTestCase {
     }
 
     /// The first scanned script's sheet, with each failure that it tells the person, before the script can start.
-    func toldSheet() throws -> (sheet: SpotSheet, told: () -> [String]) {
+    func toldSheet() throws -> (sheet: SpotRun, told: () -> [String]) {
         let sheet = runs.sheet(for: try XCTUnwrap(PluginFolder(url: folder).scan().scripts.first))
         var failures: [String] = []
         sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }

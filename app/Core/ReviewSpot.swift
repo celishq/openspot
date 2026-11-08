@@ -2,7 +2,7 @@ import Foundation
 
 /// What a person sees before they add a shared spot: its whole text and what runs by itself. It learns this from the text
 /// of the files, and runs none of them.
-public struct SpotReview: Equatable, Sendable {
+public struct ReviewSpot: Equatable, Sendable {
     static let textLimit = 256_000
     private static let installPart = "install"
 

@@ -2,17 +2,17 @@ import Foundation
 
 /// A spot that ships with the app, so that it shows whatever the plugins folder holds.
 public enum ShippedSpot: Equatable, Sendable {
-    case spots(SpotCatalog)
-    case build(PluginGuide)
-    case settings(Settings)
+    case spots(CatalogSpot)
+    case build(BuildSpot)
+    case settings(SettingsSpot)
     case updates(UpdateSpot)
-    case review(SpotReview)
+    case review(ReviewSpot)
     case quit(QuitSpot)
 
     /// The commands of the shipped spots, in the order of the grid.
-    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil, core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil, offersLogin: Bool = false, quit: QuitSpot? = nil) -> [PluginCommand] {
+    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil, core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil, offersLogin: Bool = false, quit: QuitSpot? = nil) -> [Spot] {
         var commands = [
-            PluginCommand(
+            Spot(
                 id: spotsID,
                 name: "Spots",
                 url: folder,
@@ -23,9 +23,9 @@ public enum ShippedSpot: Equatable, Sendable {
                 key: CommandKey(name: "p"),
                 read: .sheet,
                 order: 1,
-                shipped: .spots(SpotCatalog(folder: folder, core: core, config: config, login: offersLogin ? login : nil))
+                shipped: .spots(CatalogSpot(folder: folder, core: core, config: config, login: offersLogin ? login : nil))
             ),
-            PluginCommand(
+            Spot(
                 id: Self.settingsID,
                 name: "Settings",
                 url: config.url,
@@ -36,9 +36,9 @@ public enum ShippedSpot: Equatable, Sendable {
                 read: SpotRead(moments: [.panel, .sheet]),
                 rank: settingsRank,
                 order: 2,
-                shipped: .settings(Settings(file: config, folder: folder, core: core, login: login, link: link))
+                shipped: .settings(SettingsSpot(file: config, folder: folder, core: core, login: login, link: link))
             ),
-            PluginCommand(
+            Spot(
                 id: buildID,
                 name: "Build",
                 url: folder,
@@ -48,13 +48,13 @@ public enum ShippedSpot: Equatable, Sendable {
                 subtitle: "Make your own",
                 read: .sheet,
                 order: 3,
-                shipped: .build(PluginGuide(folder: folder, guide: guide, app: app)),
+                shipped: .build(BuildSpot(folder: folder, guide: guide, app: app)),
                 isOnGrid: false
             )
         ]
         if let update {
             commands.insert(
-                PluginCommand(
+                Spot(
                     id: "openspot/updates",
                     name: "Updates",
                     url: folder,
@@ -67,7 +67,7 @@ public enum ShippedSpot: Equatable, Sendable {
             )
         }
         if let quit {
-            commands.append(PluginCommand(id: quitID, name: "Quit", url: folder, symbol: "power", subtitle: "Openspot", shipped: .quit(quit), isOnGrid: false))
+            commands.append(Spot(id: quitID, name: "Quit", url: folder, symbol: "power", subtitle: "Openspot", shipped: .quit(quit), isOnGrid: false))
         }
         return commands
     }
@@ -89,8 +89,8 @@ public enum ShippedSpot: Equatable, Sendable {
     public static let installID = "openspot/install"
 
     /// The sheet that shows a shared spot before a person installs it.
-    public static func command(reviewing review: SpotReview) -> PluginCommand {
-        PluginCommand(
+    public static func command(reviewing review: ReviewSpot) -> Spot {
+        Spot(
             id: installID,
             name: review.name,
             url: review.folder,

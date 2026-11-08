@@ -16,10 +16,10 @@ final class ScriptProcessTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func writePlugin(_ name: String, _ body: String) throws -> PluginCommand {
+    private func writePlugin(_ name: String, _ body: String) throws -> Spot {
         let url = folder.appendingPathComponent(name)
         try body.writeScript(to: url)
-        return PluginCommand(id: name, name: name, url: url)
+        return Spot(id: name, name: name, url: url)
     }
 
     func testReturnsWhatThePluginPrintsForTheArguments() async throws {

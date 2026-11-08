@@ -10,12 +10,12 @@ final class SpotsModel {
         let id: String
         let size: SpotSize
         let item: SpotItem?
-        private let sheet: SpotSheet?
-        private let fixedCommand: PluginCommand
+        private let sheet: SpotRun?
+        private let fixedCommand: Spot
         private let fixedState: SpotState
         private let gridChoice: Bool?
 
-        init(command: PluginCommand, sheet: SpotSheet?, choice: SpotArrangement = SpotArrangement()) {
+        init(command: Spot, sheet: SpotRun?, choice: SpotArrangement = SpotArrangement()) {
             id = command.id
             size = choice.size(of: command.id) ?? command.size
             gridChoice = choice.isOnGrid(of: command.id)
@@ -26,7 +26,7 @@ final class SpotsModel {
         }
 
         /// A wide card for an item that the main search found in a list.
-        init(command: PluginCommand, item: SpotItem) {
+        init(command: Spot, item: SpotItem) {
             id = "\(command.id)\n\(item.run)"
             size = .wide
             gridChoice = nil
@@ -36,7 +36,7 @@ final class SpotsModel {
             fixedState = SpotState(title: item.title, subtitle: item.subtitle ?? command.name)
         }
 
-        @MainActor var command: PluginCommand {
+        @MainActor var command: Spot {
             sheet?.command ?? fixedCommand
         }
 
@@ -132,7 +132,7 @@ final class SpotsModel {
     /// Whether the pointer lies on the panel or the menu bar item.
     var pointerIsOverDrop: () -> Bool = { false }
     /// The shared spot that the open review shows, which exists only as long as that sheet.
-    private var reviewed: SpotReview?
+    private var reviewed: ReviewSpot?
     private var isFirstLaunch = false
     private var spotsChanged = false
     var isShown = false
@@ -142,7 +142,7 @@ final class SpotsModel {
     var isOpenForDrag = false
     var updateSpot: UpdateSpot?
 
-    var chooseFiles: (PluginCommand, @escaping ([String]) -> Void) -> Void = { _, _ in }
+    var chooseFiles: (Spot, @escaping ([String]) -> Void) -> Void = { _, _ in }
     var entryKey = Shortcut.standard
     private var isChainHeld = false
     private var chainWatch: Task<Void, Never>?
@@ -164,7 +164,7 @@ final class SpotsModel {
     /// Whether the grid is in Edit Spots, where it also shows the spots that are off the grid, and a press only selects.
     private(set) var isEditing = false
     private var arrangement = SpotArrangement()
-    private var scanned: [PluginCommand] = []
+    private var scanned: [Spot] = []
     private var lastScan = ScanResult(plugins: [], refused: [])
 
     init() {
@@ -175,7 +175,7 @@ final class SpotsModel {
         runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
     }
 
-    var sheets: [String: SpotSheet] {
+    var sheets: [String: SpotRun] {
         runs.sheets
     }
 
@@ -279,7 +279,7 @@ final class SpotsModel {
         sheets[key.spot]?.pressKey(key.command)
     }
 
-    private func take(_ report: SpotSheet.Report, of id: String) {
+    private func take(_ report: SpotRun.Report, of id: String) {
         switch report {
         case .toast(let text): confirm(text)
         case .failure(let text): notify(text)
@@ -370,7 +370,7 @@ final class SpotsModel {
         closeList()
         endReview()
         do {
-            show(try SpotReview(spot: SharedSpot(contentsOf: url), folder: PluginFolder.standard().url))
+            show(try ReviewSpot(spot: SharedSpot(contentsOf: url), folder: PluginFolder.standard().url))
             if urls.count > 1 { notify("Openspot installs one spot at a time.") }
         } catch {
             notify(Self.reason(error))
@@ -385,13 +385,13 @@ final class SpotsModel {
             let scan = try place.scan()
             guard let command = scan.commands.first(where: { place.isCore($0) && PluginFolder.coreID(of: $0) == item.run }) else { return }
             closeList()
-            show(try SpotReview(spot: SharedSpot(sharing: command, from: scan), folder: folder.url, canAdd: false))
+            show(try ReviewSpot(spot: SharedSpot(sharing: command, from: scan), folder: folder.url, canAdd: false))
         } catch {
             notify(Self.reason(error))
         }
     }
 
-    private func show(_ review: SpotReview) {
+    private func show(_ review: ReviewSpot) {
         let moves = isShown
         reviewed = review
         present()
@@ -792,11 +792,11 @@ final class SpotsModel {
         form == nil && !isEditing && openPanel?.showsRows != false
     }
 
-    var openPanel: SpotPanel? {
+    var openPanel: SheetParts? {
         openSheet?.panel
     }
 
-    private var openSheet: SpotSheet? {
+    private var openSheet: SpotRun? {
         openList.flatMap { sheets[$0] }
     }
 
@@ -966,7 +966,7 @@ final class SpotsModel {
     }
 
     private func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil) {
-        if action == nil, item.run == SpotCatalog.buildRun {
+        if action == nil, item.run == CatalogSpot.buildRun {
             closeList()
             sheetMoves = true
             open(ShippedSpot.buildID)
@@ -1046,7 +1046,7 @@ final class SpotsModel {
     }
 
     /// Takes Esc, the arrows, return and the keys of the parts, and leaves all others to the text areas.
-    private func handlePanelKey(_ key: ActionKey, _ panel: SpotPanel) -> Bool {
+    private func handlePanelKey(_ key: ActionKey, _ panel: SheetParts) -> Bool {
         if key == ActionKey(name: "escape") {
             allowSheetMotion()
             closeList()
@@ -1221,7 +1221,7 @@ final class SpotsModel {
     private func run(_ action: CommandAction, on target: Target) {
         if action == .share {
             share(target.entry)
-        } else if action.id == SpotCatalog.reviewID, let item = target.item {
+        } else if action.id == CatalogSpot.reviewID, let item = target.item {
             reviewCore(item)
         } else if action.id == CommandAction.removeID {
             remove(target.entry)
@@ -1230,7 +1230,7 @@ final class SpotsModel {
         } else if action.isForm {
             openForm(action, on: target)
         } else if action.after == .stay {
-            if action.id == SpotCatalog.selectAllID { spotsChanged = true }
+            if action.id == CatalogSpot.selectAllID { spotsChanged = true }
             sheets[target.entry.id]?.run(action, item: target.item)
         } else if let item = target.item {
             pick(item, of: target.entry, action: action)

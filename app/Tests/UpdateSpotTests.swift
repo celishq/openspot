@@ -17,7 +17,7 @@ final class UpdateSpotTests: XCTestCase {
     private let presses = Presses()
     private let work = Work()
 
-    private func command(_ spot: UpdateSpot) throws -> PluginCommand {
+    private func command(_ spot: UpdateSpot) throws -> Spot {
         let folder = URL(fileURLWithPath: "/tmp")
         return try XCTUnwrap(ShippedSpot.commands(folder: folder, guide: folder, app: "", update: spot).first { $0.name == "Updates" })
     }

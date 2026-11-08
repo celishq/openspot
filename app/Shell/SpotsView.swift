@@ -226,7 +226,7 @@ struct SpotsView: View {
     }
 
     /// The parts of the open sheet. Parts that land after the sheet opened arrive with its new size, on its spring.
-    private var shownPanel: SpotPanel? {
+    private var shownPanel: SheetParts? {
         model.sheets[sheetID ?? ""]?.panel
     }
 

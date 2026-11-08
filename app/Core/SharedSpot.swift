@@ -94,7 +94,7 @@ public struct SharedSpot: Equatable, Sendable {
 
     /// Collects a spot from the plugins folder, with what it needs: the whole folder of a script in a folder, and each
     /// script that a widget places or opens. Hidden files stay behind.
-    public init(sharing command: PluginCommand, from scan: ScanResult) throws {
+    public init(sharing command: Spot, from scan: ScanResult) throws {
         guard command.shipped == nil else { throw PluginError.fault("\(command.name) comes with Openspot, so it cannot be shared.") }
         var total = 0
         var files: [File] = []
@@ -218,7 +218,7 @@ public struct SharedSpot: Equatable, Sendable {
     }
 
     /// The files and folders at the top of the plugins folder that a command needs, with its own first.
-    private static func roots(of command: PluginCommand, in scan: ScanResult) -> [(path: String, url: URL)] {
+    private static func roots(of command: Spot, in scan: ScanResult) -> [(path: String, url: URL)] {
         var roots: [(path: String, url: URL)] = []
         var waiting = [command.id]
         while !waiting.isEmpty {

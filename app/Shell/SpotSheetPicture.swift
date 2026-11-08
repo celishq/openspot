@@ -18,7 +18,7 @@ enum SpotSheetPicture {
     static func run(text: String, path: String) -> Never {
         NSApplication.shared.setActivationPolicy(.prohibited)
         let output = PluginOutput(text: text)
-        guard let panel = SpotPanel(output: output) else {
+        guard let panel = SheetParts(output: output) else {
             FileHandle.standardError.write(Data("The sheet has no parts.\n".utf8))
             exit(1)
         }

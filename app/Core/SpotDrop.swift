@@ -7,7 +7,7 @@ public struct SpotDrop: Equatable, Sendable {
     public let detail: String?
 
     /// Says what the header of a review says, for a review that starts with no drag.
-    public init(reviewing review: SpotReview) {
+    public init(reviewing review: ReviewSpot) {
         symbol = review.symbol
         title = review.name
         detail = review.subtitle
@@ -17,7 +17,7 @@ public struct SpotDrop: Equatable, Sendable {
     public init(paths: [String], folder: URL) {
         let url = URL(fileURLWithPath: paths.first ?? "")
         do {
-            let review = try SpotReview(spot: SharedSpot(contentsOf: url), folder: folder)
+            let review = try ReviewSpot(spot: SharedSpot(contentsOf: url), folder: folder)
             symbol = review.symbol
             title = review.name
             detail = paths.count > 1 ? "Openspot installs one spot at a time" : "Drop to install"

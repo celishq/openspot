@@ -13,7 +13,7 @@ struct SpotSheetView: View {
     let showsFill: Bool
     let rect: CGRect
     /// The parts of the sheet, once they have landed.
-    let panel: SpotPanel?
+    let panel: SheetParts?
     /// How far the close button lies from its place at the card's edge. Nil for a card with no arrow, where the frame cuts it.
     let closeShift: CGFloat?
     /// The width of the card or field that the sheet grows out of and collapses into.
@@ -43,7 +43,7 @@ struct SpotSheetView: View {
             VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
                 if let panel {
                     if panel.showsRows { Color.clear.frame(height: SpotTokens.listRowHeight) }
-                    SpotPanelView(
+                    SheetPartsView(
                         panel: panel,
                         work: { model.work(of: $0) },
                         onSet: { model.setPart($0, to: $1) },
@@ -52,7 +52,7 @@ struct SpotSheetView: View {
                         onRecord: { model.toggleRecording($0) },
                         list: list,
                         onRun: { model.runItem($0) },
-                        nudge: { model.sheets[entry.id]?.nudge ?? SpotPanel.Nudge.rest }
+                        nudge: { model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest }
                     )
                 } else if let form {
                     SpotFormView(draft: form, onValue: { model.setFormValue($0, for: $1) })

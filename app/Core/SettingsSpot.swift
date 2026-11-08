@@ -1,7 +1,7 @@
 import Foundation
 
 /// The Settings spot, which ships with the app. It answers the calls a sheet script answers, in Swift.
-public struct Settings: Equatable, Sendable {
+public struct SettingsSpot: Equatable, Sendable {
     private static let panelKey = "panel_key"
     private static let fixKey = "fix_key"
     private static let keyPrefix = "key:"

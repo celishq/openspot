@@ -4,8 +4,8 @@ import SwiftUI
 
 /// The parts that a script prints, drawn with system controls where `SheetPlacement` puts them. It draws what it gets,
 /// and reports each change.
-struct SpotPanelView: View {
-    let panel: SpotPanel
+struct SheetPartsView: View {
+    let panel: SheetParts
     var work: (SpotPart) -> ScriptCall? = { _ in nil }
     let onSet: (SpotPart, String) -> Void
     let onPress: (SpotPart) -> Void
@@ -13,7 +13,7 @@ struct SpotPanelView: View {
     var onRecord: (SpotPart) -> Void = { _ in }
     var list = ItemList()
     var onRun: (SpotItem) -> Void = { _ in }
-    var nudge: () -> SpotPanel.Nudge = { SpotPanel.Nudge.rest }
+    var nudge: () -> SheetParts.Nudge = { SheetParts.Nudge.rest }
     @FocusState private var focus: String?
     @Environment(\.spotIsShown) private var isShown
 

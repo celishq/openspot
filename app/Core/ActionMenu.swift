@@ -15,7 +15,7 @@ public struct ActionMenu: Equatable, Sendable {
 
     /// Lists what Enter does, the actions that fit, the rows that the app adds, then Edit Spots. Returns nil when there is
     /// nothing to list.
-    public init?(command: PluginCommand, item: SpotItem?, showsPrimary: Bool = true, extras: [CommandAction] = [], showsEdit: Bool = false) {
+    public init?(command: Spot, item: SpotItem?, showsPrimary: Bool = true, extras: [CommandAction] = [], showsEdit: Bool = false) {
         var rows: [Row] = []
         if showsPrimary, let title = command.primaryTitle(hasItem: item != nil) {
             rows.append(Row(title: title, keyLabel: "⏎", action: nil))

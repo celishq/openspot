@@ -1,7 +1,7 @@
 import Foundation
 
 /// The Spots spot, which ships with the app. It lists the core spots, and a pick turns one on or off.
-public struct SpotCatalog: Equatable, Sendable {
+public struct CatalogSpot: Equatable, Sendable {
     /// The row that opens the Build spot, which the panel answers.
     public static let buildRun = "openspot.build"
     /// The action that shows the text of a core spot, which the panel answers.
@@ -58,7 +58,7 @@ public struct SpotCatalog: Equatable, Sendable {
         try config.write(arrangement)
     }
 
-    private var choices: [PluginCommand] {
+    private var choices: [Spot] {
         PluginFolder(url: folder, core: core).coreChoices().sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 

@@ -223,7 +223,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     /// Closes the panel and asks the person for files. Afterwards the app that was in front comes back.
-    private func chooseFiles(for command: PluginCommand, then take: @escaping ([String]) -> Void) {
+    private func chooseFiles(for command: Spot, then take: @escaping ([String]) -> Void) {
         guard fileChooser == nil else { return }
         let previous = model.isShown && !model.isWarming ? previousApp : NSWorkspace.shared.frontmostApplication
         if model.isShown { panel?.hide() }

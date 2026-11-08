@@ -5,7 +5,7 @@ import Observation
 /// running calls. A run of one never stops a run of another, and a stopped run changes nothing.
 @MainActor
 @Observable
-public final class SpotSheet {
+public final class SpotRun {
     /// What the sheet tells its owner.
     public enum Report: Sendable {
         case toast(String)
@@ -40,18 +40,18 @@ public final class SpotSheet {
     private static let heldKey = "held"
     private static let globalKey = "global"
 
-    public private(set) var command: PluginCommand
+    public private(set) var command: Spot
     public var list: ItemList {
         didSet {
             settle()
             onReport(.listChange)
         }
     }
-    public private(set) var panel: SpotPanel? {
+    public private(set) var panel: SheetParts? {
         didSet { settle() }
     }
     /// The last arrow press that asks the parts to scroll. It lives apart from the parts, so that a press redraws only the scroll.
-    public private(set) var nudge = SpotPanel.Nudge.rest
+    public private(set) var nudge = SheetParts.Nudge.rest
     public private(set) var isOpen = false {
         didSet { settle() }
     }
@@ -93,7 +93,7 @@ public final class SpotSheet {
     @ObservationIgnored private var waitingDrops: [[String]] = []
     @ObservationIgnored private var waitingKeys: [String] = []
 
-    init(command: PluginCommand, runs: SpotRuns, recent: [String], prepare: @escaping ([SpotItem]) async -> Void) {
+    init(command: Spot, runs: SpotRuns, recent: [String], prepare: @escaping ([SpotItem]) async -> Void) {
         self.command = command
         self.runs = runs
         self.prepare = prepare
@@ -106,7 +106,7 @@ public final class SpotSheet {
     nonisolated deinit {}
 
     /// Takes the command again after a new look at the plugin folder, with what its script last printed.
-    public func update(_ new: PluginCommand) {
+    public func update(_ new: Spot) {
         let header = command.headerState
         command = lastAnswer.map(new.taking) ?? new
         if reading.label != new.name || reading.headerSymbol != new.headerSymbol {
@@ -190,7 +190,7 @@ public final class SpotSheet {
     }
 
     public func scrollPanel(by step: Int) {
-        nudge = SpotPanel.Nudge(step: step, serial: nudge.serial + 1)
+        nudge = SheetParts.Nudge(step: step, serial: nudge.serial + 1)
     }
 
     /// The panel closed: a sheet of parts closes and drops its values, so the next open reads again. A sheet of rows stays.
@@ -637,7 +637,7 @@ public final class SpotSheet {
     /// Shows the parts a script printed. An answer that a newer change outdated does not show.
     private func takePanel(_ lines: PluginOutput, generation: Int?) {
         if panel == nil {
-            panel = SpotPanel(output: lines)
+            panel = SheetParts(output: lines)
         } else {
             panel?.take(lines, answering: generation ?? panel?.generation ?? 0)
         }
@@ -653,7 +653,7 @@ public final class SpotSheet {
 
     private func openLive(need: ReadNeed, onReady: @escaping () -> Void) {
         if live != nil, !isReadingLive {
-            panel = lastAnswer.flatMap(SpotPanel.init(output:))
+            panel = lastAnswer.flatMap(SheetParts.init(output:))
             onReady()
         } else {
             ready = onReady
@@ -767,7 +767,7 @@ public final class SpotSheet {
         if isFirst, list.search == .script, !list.query.isEmpty { ask() }
         if isOpen {
             if isFirst || ready != nil || panel == nil {
-                panel = SpotPanel(output: lines)
+                panel = SheetParts(output: lines)
             } else {
                 panel?.merge(lines, keeping: editing)
             }

@@ -10,7 +10,7 @@ final class SpotSandboxModel {
     private static let watchPause: Duration = .milliseconds(500)
 
     private(set) var sandbox = SheetSandbox()
-    private let sheet: SpotSheet?
+    private let sheet: SpotRun?
     let file: URL?
     @ObservationIgnored private var written: Date?
 
@@ -23,7 +23,7 @@ final class SpotSandboxModel {
         sheet != nil
     }
 
-    var panel: SpotPanel? {
+    var panel: SheetParts? {
         sheet?.panel ?? sandbox.panel
     }
 
@@ -60,7 +60,7 @@ final class SpotSandboxModel {
         sheet?.press(part)
     }
 
-    private func take(_ report: SpotSheet.Report) {
+    private func take(_ report: SpotRun.Report) {
         switch report {
         case .frame(let text): sandbox.note(frame: text)
         case .failure(let text), .toast(let text), .failureWithFix(let text, _): sandbox.record(text)

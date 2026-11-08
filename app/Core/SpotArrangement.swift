@@ -38,7 +38,7 @@ public struct SpotArrangement: Equatable, Sendable {
 
     /// The commands in the order of the grid: each listed one takes a place that a listed one holds, in the order of the
     /// list, and each other one stays where it is.
-    public func ordered(_ commands: [PluginCommand]) -> [PluginCommand] {
+    public func ordered(_ commands: [Spot]) -> [Spot] {
         let places = Dictionary(choices.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
         var listed = commands.filter { places[$0.id] != nil }.sorted { places[$0.id]! < places[$1.id]! }.makeIterator()
         return commands.map { places[$0.id] != nil ? listed.next()! : $0 }

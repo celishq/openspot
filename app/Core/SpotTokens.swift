@@ -87,7 +87,7 @@ public enum SpotTokens {
     public static let editorInset: CGFloat = 5
 
     /// The frame of a sheet that shows these parts. A tall one stops at the panel, and its parts scroll.
-    public static func panelRect(_ panel: SpotPanel) -> CGRect {
+    public static func panelRect(_ panel: SheetParts) -> CGRect {
         let field = panel.showsRows ? SheetPlacement.fieldRoom : 0
         let height = padding + glyphSize + rowGap + field + panel.placement.height + padding
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))

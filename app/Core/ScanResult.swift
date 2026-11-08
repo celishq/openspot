@@ -1,4 +1,15 @@
 public struct ScanResult: Equatable, Sendable {
+    /// A file that the scan did not load, with the reason.
+    public struct Refusal: Equatable, Sendable {
+        public let file: String
+        public let reason: String
+
+        public init(file: String, reason: String) {
+            self.file = file
+            self.reason = reason
+        }
+    }
+
     public var plugins: [Plugin]
     public var refused: [Refusal]
 
@@ -8,12 +19,12 @@ public struct ScanResult: Equatable, Sendable {
     }
 
     /// The commands with a card, in their grid order: a lower `order` first, and otherwise as the folder sorts them.
-    public var commands: [PluginCommand] {
+    public var commands: [Spot] {
         plugins.flatMap(\.commands).filter(\.hasSpot).sorted { $0.order < $1.order }
     }
 
     /// Each script, with a card or not. A widget is not a script.
-    public var scripts: [PluginCommand] {
+    public var scripts: [Spot] {
         plugins.flatMap(\.commands).filter { $0.kind != .widget }
     }
 

@@ -3,7 +3,7 @@ import SwiftUI
 
 /// A sheet of parts on its own, with the header and size it has in the panel, for a picture or the sandbox.
 struct SpotSheetPreview: View {
-    let panel: SpotPanel
+    let panel: SheetParts
     var title = "Sheet"
     var subtitle = "Preview"
     var symbol = "square.dashed"
@@ -29,7 +29,7 @@ struct SpotSheetPreview: View {
                 SpotRoundButton(symbol: "xmark", label: "Close") {}
             }
             if panel.showsRows { Color.clear.frame(height: SpotTokens.listRowHeight) }
-            SpotPanelView(panel: panel, onSet: onSet, onPress: onPress, list: list)
+            SheetPartsView(panel: panel, onSet: onSet, onPress: onPress, list: list)
         }
         .padding(SpotTokens.padding)
         .frame(width: frame.width, height: frame.height, alignment: .topLeading)

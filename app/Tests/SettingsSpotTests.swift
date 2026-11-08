@@ -2,14 +2,14 @@ import XCTest
 @testable import OpenspotCore
 
 @MainActor
-final class SettingsTests: XCTestCase {
+final class SettingsSpotTests: XCTestCase {
     private var folder: URL!
 
     private var file: ConfigFile {
         ConfigFile(url: folder.appendingPathComponent("config.toml"))
     }
 
-    private var spot: PluginCommand {
+    private var spot: Spot {
         get throws {
             let commands = ShippedSpot.commands(folder: folder, guide: folder, app: "", config: file)
             return try XCTUnwrap(commands.first { $0.name == "Settings" })

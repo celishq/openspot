@@ -4,9 +4,9 @@ import OpenspotCore
 /// The system window that chooses files for a card. It enables only what the `drop` of the card takes.
 @MainActor
 final class SpotFileChooser: NSObject, NSOpenSavePanelDelegate {
-    private let command: PluginCommand
+    private let command: Spot
 
-    init(command: PluginCommand) {
+    init(command: Spot) {
         self.command = command
     }
 

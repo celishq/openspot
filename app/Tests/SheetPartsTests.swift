@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class SpotPanelTests: XCTestCase {
+final class SheetPartsTests: XCTestCase {
     private let lights = """
     section=lights
     title=Lights
@@ -37,13 +37,13 @@ final class SpotPanelTests: XCTestCase {
     close=true
     """
 
-    private func panel(_ text: String) throws -> SpotPanel {
-        try XCTUnwrap(SpotPanel(output: PluginOutput(text: text)))
+    private func panel(_ text: String) throws -> SheetParts {
+        try XCTUnwrap(SheetParts(output: PluginOutput(text: text)))
     }
 
     func testAScriptThatPrintsPartsIsAList() {
         XCTAssertEqual(PluginOutput(text: lights).kind, .list)
-        XCTAssertNil(SpotPanel(output: PluginOutput(text: "row=A\nrun=a\n")))
+        XCTAssertNil(SheetParts(output: PluginOutput(text: "row=A\nrun=a\n")))
     }
 
     func testWhatABlockPrintsDecidesItsControl() throws {

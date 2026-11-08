@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 final class GlobalKeyTests: XCTestCase {
-    private func command(header: String) throws -> PluginCommand {
+    private func command(header: String) throws -> Spot {
         let block = PluginHeader(text: "#!/bin/sh\n\(header)\n").block
         let plugin = try Plugin(script: URL(fileURLWithPath: "/plugins/move.sh"), header: block, id: "move")
         return try XCTUnwrap(plugin.commands.first)

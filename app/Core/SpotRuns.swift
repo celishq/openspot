@@ -6,11 +6,11 @@ import Observation
 @MainActor
 @Observable
 public final class SpotRuns {
-    public private(set) var sheets: [String: SpotSheet] = [:]
+    public private(set) var sheets: [String: SpotRun] = [:]
     public private(set) var isPanelOpen = false
     /// The files of the drag in progress, which each card that takes them all shows for the whole drag.
     public var draggedPaths: [String] = []
-    @ObservationIgnored public var onReport: (String, SpotSheet.Report) -> Void = { _, _ in }
+    @ObservationIgnored public var onReport: (String, SpotRun.Report) -> Void = { _, _ in }
     /// The time a `read` has to its first frame or its end.
     public let readLimit: TimeInterval
     /// How long a sheet with no answer yet holds its motion for the first answer.
@@ -62,13 +62,13 @@ public final class SpotRuns {
     }
 
     /// The sheet of a script, with the command as the folder last gave it.
-    public func sheet(for command: PluginCommand) -> SpotSheet {
+    public func sheet(for command: Spot) -> SpotRun {
         if let sheet = sheets[command.id] {
             sheet.update(command)
             return sheet
         }
         let id = command.id
-        let sheet = SpotSheet(command: command, runs: self, recent: recent(id), prepare: prepare)
+        let sheet = SpotRun(command: command, runs: self, recent: recent(id), prepare: prepare)
         sheet.onReport = { [weak self] in self?.onReport(id, $0) }
         sheets[id] = sheet
         return sheet
@@ -166,7 +166,7 @@ public final class SpotRuns {
 
     /// Runs one call with no sheet, and returns all that it prints. A `read` runs until it gives its first frame, which is what
     /// a sheet takes as its answer.
-    public func answer(of command: PluginCommand, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil) async throws -> String {
+    public func answer(of command: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil) async throws -> String {
         if command.stays, action == .read {
             let (script, frames) = try stay(command, limit: limit)
             defer { script.end() }
@@ -186,14 +186,14 @@ public final class SpotRuns {
     }
 
     /// Whether something other than its sheet in view wants this script.
-    func wants(_ command: PluginCommand) -> Bool {
+    func wants(_ command: Spot) -> Bool {
         guard let read = command.read else { return command.isTray }
         return command.isTray || read.has(.launch) || (isPanelOpen && (read.has(.panel) || placed.contains(command.id)))
     }
 
     /// Starts one call. It gives each frame and then its end, on the main actor.
     func call(
-        _ command: PluginCommand,
+        _ command: Spot,
         _ action: SpotAction,
         key: String,
         input: String?,
@@ -221,14 +221,14 @@ public final class SpotRuns {
     }
 
     /// Starts a script that stays, and returns it with its frames.
-    func stay(_ command: PluginCommand, limit: TimeInterval?) throws -> (ScriptProcess, AsyncThrowingStream<String, Error>) {
+    func stay(_ command: Spot, limit: TimeInterval?) throws -> (ScriptProcess, AsyncThrowingStream<String, Error>) {
         let script = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, mode: .stays, limit: limit, stopPause: stopPause, dataName: command.dataName)
         let frames = try script.start()
         keep(script)
         return (script, frames)
     }
 
-    private func frames(of command: PluginCommand, _ action: SpotAction, input: String?, limit: TimeInterval?) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void) {
+    private func frames(of command: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void) {
         if let shipped = command.shipped {
             let (stream, continuation) = AsyncThrowingStream.makeStream(of: String.self)
             let task = Task {

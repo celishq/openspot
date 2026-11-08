@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class SpotReviewTests: XCTestCase {
+final class ReviewSpotTests: XCTestCase {
     private var folder: URL!
 
     override func setUpWithError() throws {
@@ -17,16 +17,16 @@ final class SpotReviewTests: XCTestCase {
         try SharedSpot(files: files.map { SharedSpot.File(path: $0.path, isExecutable: $0.isExecutable, contents: Data($0.text.utf8)) })
     }
 
-    private func review(_ header: String, path: String = "weather.sh", body: String = "") throws -> SpotReview {
+    private func review(_ header: String, path: String = "weather.sh", body: String = "") throws -> ReviewSpot {
         let text = "#!/bin/sh\n\(header.split(separator: "\n").map { "# \($0)\n" }.joined())\(body)"
-        return try SpotReview(spot: spot([(path, text, true)]), folder: folder)
+        return try ReviewSpot(spot: spot([(path, text, true)]), folder: folder)
     }
 
-    private func sheet(_ review: SpotReview) throws -> PluginOutput {
+    private func sheet(_ review: ReviewSpot) throws -> PluginOutput {
         PluginOutput(text: try review.answer(["read"]))
     }
 
-    private func shown(_ review: SpotReview) throws -> String {
+    private func shown(_ review: ReviewSpot) throws -> String {
         let part = try XCTUnwrap(sheet(review).parts.first { $0.id == "review" })
         guard case .text(let text, _, let isReadOnly) = part.control else { throw PluginError.badForm }
         XCTAssertTrue(isReadOnly)
@@ -34,7 +34,7 @@ final class SpotReviewTests: XCTestCase {
     }
 
     func testItShowsAllOfTheTextOfEachFile() throws {
-        let review = try SpotReview(
+        let review = try ReviewSpot(
             spot: spot([("home/a.sh", "#!/bin/sh\necho one\\two\n", true), ("home/lib.sh", "lib code\n", false)]),
             folder: folder
         )
@@ -51,7 +51,7 @@ final class SpotReviewTests: XCTestCase {
             SharedSpot.File(path: "home/icon.png", isExecutable: false, contents: Data([0xFF, 0x00, 0xFE]))
         ]
 
-        let text = try shown(SpotReview(spot: SharedSpot(files: files), folder: folder))
+        let text = try shown(ReviewSpot(spot: SharedSpot(files: files), folder: folder))
 
         XCTAssertTrue(text.contains("home/icon.png\nNot text, so Openspot cannot show it. 3 bytes."), text)
         XCTAssertFalse(text.contains("Program"), text)
@@ -60,7 +60,7 @@ final class SpotReviewTests: XCTestCase {
     func testAProgramSaysThatItCannotBeShown() throws {
         let files = [SharedSpot.File(path: "tool", isExecutable: true, contents: Data([0xCF, 0xFA, 0xED, 0xFE, 0x00]))]
 
-        let review = try SpotReview(spot: SharedSpot(files: files), folder: folder)
+        let review = try ReviewSpot(spot: SharedSpot(files: files), folder: folder)
 
         XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
         let text = try shown(review)
@@ -68,16 +68,16 @@ final class SpotReviewTests: XCTestCase {
     }
 
     func testVeryLongTextIsNamedAndNotDrawn() throws {
-        let long = String(repeating: "x", count: SpotReview.textLimit + 1)
+        let long = String(repeating: "x", count: ReviewSpot.textLimit + 1)
         let files = [
             SharedSpot.File(path: "a.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8)),
             SharedSpot.File(path: "notes.txt", isExecutable: false, contents: Data(long.utf8))
         ]
 
-        let text = try shown(SpotReview(spot: SharedSpot(files: files), folder: folder))
+        let text = try shown(ReviewSpot(spot: SharedSpot(files: files), folder: folder))
 
         XCTAssertFalse(text.contains(long.prefix(100)))
-        XCTAssertTrue(text.contains("notes.txt\nToo long to show. \(SpotReview.textLimit + 1) bytes."), text)
+        XCTAssertTrue(text.contains("notes.txt\nToo long to show. \(ReviewSpot.textLimit + 1) bytes."), text)
     }
 
     func testItTakesItsNameDescriptionAndSymbolFromTheHeader() throws {
@@ -93,16 +93,16 @@ final class SpotReviewTests: XCTestCase {
 
     func testAWidgetNamesItselfBeforeTheMetricsItPlaces() throws {
         let widget = "[[widgets]]\nname = \"Desk\"\nlayout = \"single\"\nplaces = [\"cpu\"]\n"
-        let review = try SpotReview(spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# name=CPU\n# read=5\n", true)]), folder: folder)
+        let review = try ReviewSpot(spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# name=CPU\n# read=5\n", true)]), folder: folder)
 
         XCTAssertEqual(review.name, "Desk")
     }
 
     func testAProgramWarningComesBeforeTheDescription() throws {
-        let long = "#!/bin/sh\n# subtitle=Nice\n" + String(repeating: "x", count: SpotReview.textLimit)
+        let long = "#!/bin/sh\n# subtitle=Nice\n" + String(repeating: "x", count: ReviewSpot.textLimit)
         let files = [SharedSpot.File(path: "tool", isExecutable: true, contents: Data(long.utf8))]
 
-        XCTAssertEqual(try SpotReview(spot: SharedSpot(files: files), folder: folder).subtitle, "Holds a program that you cannot read")
+        XCTAssertEqual(try ReviewSpot(spot: SharedSpot(files: files), folder: folder).subtitle, "Holds a program that you cannot read")
     }
 
     func testADragOfASpotSaysWhatADropInstalls() throws {
@@ -134,7 +134,7 @@ final class SpotReviewTests: XCTestCase {
         XCTAssertEqual(add.key, ActionKey(name: "return", isCommand: true))
         XCTAssertEqual(add.title, "Add")
         XCTAssertTrue(add.closes)
-        XCTAssertEqual(SpotPanel(output: try sheet(review("")))?.hint, "⌘⏎ Add   Esc Close")
+        XCTAssertEqual(SheetParts(output: try sheet(review("")))?.hint, "⌘⏎ Add   Esc Close")
     }
 
     func testAPlainScriptRunsOnlyWhenItIsUsed() throws {
@@ -163,7 +163,7 @@ final class SpotReviewTests: XCTestCase {
 
     func testAMetricThatAWidgetPlacesRunsWhenThePanelOpens() throws {
         let widget = "[[widgets]]\nname = \"Desk\"\nlayout = \"single\"\nplaces = [\"cpu\"]\n"
-        let review = try SpotReview(
+        let review = try ReviewSpot(
             spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# name=CPU\n# read=sheet\n", true)]),
             folder: folder
         )
@@ -189,13 +189,13 @@ final class SpotReviewTests: XCTestCase {
     }
 
     func testAFileThatGivesNoSpotIsRefused() throws {
-        XCTAssertThrowsError(try SpotReview(spot: spot([("notes.txt", "hello", false)]), folder: folder)) { error in
+        XCTAssertThrowsError(try ReviewSpot(spot: spot([("notes.txt", "hello", false)]), folder: folder)) { error in
             XCTAssertEqual((error as? PluginError)?.reason, "This file holds no spot.")
         }
     }
 
     func testAFaultThatStopsAPartOfItShows() throws {
-        let review = try SpotReview(
+        let review = try ReviewSpot(
             spot: spot([("good.sh", "#!/bin/sh\n", true), ("bad.sh", "#!/bin/sh\n# read=never\n", true)]),
             folder: folder
         )

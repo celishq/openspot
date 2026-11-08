@@ -19,13 +19,13 @@ final class SpotActionTests: XCTestCase {
     func testAClickOnACardWithAReadKeySendsRun() {
         let url = URL(fileURLWithPath: "/x")
 
-        XCTAssertEqual(PluginCommand(id: "a", name: "A", url: url, read: .panel).click.arguments, ["run"])
+        XCTAssertEqual(Spot(id: "a", name: "A", url: url, read: .panel).click.arguments, ["run"])
     }
 
     func testAClickOnAFileWithNoReadSendsNoArgument() {
         let url = URL(fileURLWithPath: "/x")
 
-        XCTAssertEqual(PluginCommand(id: "a", name: "A", url: url).click.arguments, [])
+        XCTAssertEqual(Spot(id: "a", name: "A", url: url).click.arguments, [])
     }
 
     func testAListItemSendsItsRunValue() {

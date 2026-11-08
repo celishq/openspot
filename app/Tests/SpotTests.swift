@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class PluginCommandTests: XCTestCase {
+final class SpotTests: XCTestCase {
     private func dataName(id: String, header: [TextBlock.Field] = []) throws -> String? {
         try Plugin(script: URL(fileURLWithPath: "/p/\(id).sh"), header: TextBlock(fields: header), id: id).commands.first?.dataName
     }
@@ -30,10 +30,10 @@ final class PluginCommandTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func writeCommand(kind: SpotKind, subtitle: String? = nil, read: SpotRead? = nil, _ body: String) throws -> PluginCommand {
+    private func writeCommand(kind: SpotKind, subtitle: String? = nil, read: SpotRead? = nil, _ body: String) throws -> Spot {
         let url = folder.appendingPathComponent("command.sh")
         try "#!/bin/sh\n\(body)\n".writeScript(to: url)
-        return PluginCommand(id: "test/Command", name: "Command", url: url, kind: kind, subtitle: subtitle, read: read)
+        return Spot(id: "test/Command", name: "Command", url: url, kind: kind, subtitle: subtitle, read: read)
     }
 
     private var marker: URL {

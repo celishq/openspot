@@ -3,7 +3,7 @@ import Foundation
 
 /// One call of a script through the owner of all runs, for a test that proves what a script answers.
 @MainActor
-extension PluginCommand {
+extension Spot {
     private func output(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> PluginOutput {
         PluginOutput(text: try await SpotRuns().answer(of: self, action, input: input, limit: timeout))
     }
@@ -13,7 +13,7 @@ extension PluginCommand {
         return try state(of: try await output(.read, timeout: timeout))
     }
 
-    func opened(timeout: TimeInterval) async throws -> (command: PluginCommand, state: SpotState) {
+    func opened(timeout: TimeInterval) async throws -> (command: Spot, state: SpotState) {
         guard readsState else { return (self, headerState) }
         let output = try await output(.read, timeout: timeout)
         return (taking(output), try state(of: output))
@@ -46,7 +46,7 @@ extension PluginCommand {
 
 extension ScanResult {
     /// The scripts with a number in their `read`.
-    var metrics: [PluginCommand] {
+    var metrics: [Spot] {
         scripts.filter { $0.read?.seconds != nil }
     }
 }

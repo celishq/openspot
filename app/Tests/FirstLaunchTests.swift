@@ -80,19 +80,19 @@ final class FirstLaunchTests: XCTestCase {
         final class Fake: @unchecked Sendable { var isOn = false }
         let fake = Fake()
         let item = LoginItem(isOn: { fake.isOn }, set: { fake.isOn = $0 })
-        let catalog = SpotCatalog(folder: plugins, core: nil, config: file, login: item)
+        let catalog = CatalogSpot(folder: plugins, core: nil, config: file, login: item)
 
         let rows = PluginOutput(text: try catalog.answer(["read"])).items
-        XCTAssertEqual(rows.map(\.run), [LoginItem.run, SpotCatalog.buildRun])
-        XCTAssertEqual(rows.first?.hides, [SpotCatalog.reviewID])
+        XCTAssertEqual(rows.map(\.run), [LoginItem.run, CatalogSpot.buildRun])
+        XCTAssertEqual(rows.first?.hides, [CatalogSpot.reviewID])
 
         XCTAssertEqual(try catalog.answer(["open", LoginItem.run]), "")
         XCTAssertTrue(fake.isOn)
     }
 
     func testTheNormalListHasNoLoginRow() throws {
-        let catalog = SpotCatalog(folder: plugins, core: nil, config: file)
+        let catalog = CatalogSpot(folder: plugins, core: nil, config: file)
 
-        XCTAssertEqual(PluginOutput(text: try catalog.answer(["read"])).items.map(\.run), [SpotCatalog.buildRun])
+        XCTAssertEqual(PluginOutput(text: try catalog.answer(["read"])).items.map(\.run), [CatalogSpot.buildRun])
     }
 }

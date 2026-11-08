@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 @MainActor
-final class SpotCatalogTests: XCTestCase {
+final class CatalogSpotTests: XCTestCase {
     private var root: URL!
     private var folder: URL!
     private var core: URL!
@@ -24,7 +24,7 @@ final class SpotCatalogTests: XCTestCase {
         try? FileManager.default.removeItem(at: root)
     }
 
-    private var spot: PluginCommand {
+    private var spot: Spot {
         get throws {
             try XCTUnwrap(ShippedSpot.commands(folder: folder, guide: folder, app: "", config: file, core: core).first { $0.name == "Spots" })
         }
@@ -123,16 +123,16 @@ final class SpotCatalogTests: XCTestCase {
 
     func testSelectAllTurnsEachCoreSpotOnAndSkipsAFolderFile() async throws {
         try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("apps.sh"))
-        let catalog = SpotCatalog(folder: folder, core: core, config: file)
+        let catalog = CatalogSpot(folder: folder, core: core, config: file)
 
-        XCTAssertEqual(try catalog.answer([SpotCatalog.selectAllID]), "")
+        XCTAssertEqual(try catalog.answer([CatalogSpot.selectAllID]), "")
 
         XCTAssertEqual(file.read().arrangement.enabled, ["zebra"])
     }
 
     func testSelectAllIsACommandActionWithAKey() async throws {
         let actions = try await spot.items(timeout: 1).actions
-        let action = try XCTUnwrap(actions.first { $0.id == SpotCatalog.selectAllID })
+        let action = try XCTUnwrap(actions.first { $0.id == CatalogSpot.selectAllID })
 
         XCTAssertEqual(action.title, "Select all")
         XCTAssertEqual(action.scope, .command)
@@ -141,7 +141,7 @@ final class SpotCatalogTests: XCTestCase {
     }
 
     func testAnUnknownSpotIsAFault() async throws {
-        let catalog = SpotCatalog(folder: folder, core: core, config: file)
+        let catalog = CatalogSpot(folder: folder, core: core, config: file)
 
         do {
             _ = try catalog.answer(["open", "gone"])
@@ -152,22 +152,22 @@ final class SpotCatalogTests: XCTestCase {
     func testTheRowForAuthorsHidesTheReview() async throws {
         let items = try await spot.items(timeout: 1).items
 
-        XCTAssertEqual(items.last?.run, SpotCatalog.buildRun)
-        XCTAssertEqual(items.last?.hides, [SpotCatalog.reviewID])
+        XCTAssertEqual(items.last?.run, CatalogSpot.buildRun)
+        XCTAssertEqual(items.last?.hides, [CatalogSpot.reviewID])
         XCTAssertNil(items.first?.hides)
     }
 
     func testItOffersAReviewOfACoreSpot() async throws {
         let actions = try await spot.items(timeout: 1).actions
 
-        XCTAssertTrue(actions.map(\.id).contains(SpotCatalog.reviewID))
+        XCTAssertTrue(actions.map(\.id).contains(CatalogSpot.reviewID))
     }
 
     func testAReviewThatCannotAddShowsTheTextWithNoAddPart() throws {
         let scan = try PluginFolder(url: folder, core: core, enabled: ["apps"]).scan()
         let shared = try SharedSpot(sharing: XCTUnwrap(scan.commands.first), from: scan)
 
-        let review = try SpotReview(spot: shared, folder: folder, canAdd: false)
+        let review = try ReviewSpot(spot: shared, folder: folder, canAdd: false)
         let sheet = try review.answer(["read"])
 
         XCTAssertFalse(sheet.contains("part=install"))

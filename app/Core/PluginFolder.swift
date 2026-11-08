@@ -46,7 +46,7 @@ public struct PluginFolder: Sendable {
     /// Reads each executable and widget file, at the top of the folder or one folder down, after the shipped commands.
     /// Then it reads each core spot that is on, and each core file that a spot needs. When two commands share a key, the
     /// first keeps it. A file in the folder hides a core file with the same ID.
-    public func scan(shipped: [PluginCommand] = []) throws -> ScanResult {
+    public func scan(shipped: [Spot] = []) throws -> ScanResult {
         var result = ScanResult(plugins: shipped.isEmpty ? [] : [Plugin(id: "openspot", commands: shipped)], refused: [])
         var taken = Set(shipped.compactMap(\.key?.name))
         let entries = core == nil ? try Self.sorted(in: url) : (try? Self.sorted(in: url)) ?? []
@@ -71,14 +71,14 @@ public struct PluginFolder: Sendable {
 
     /// The core spots that a person can turn on. A core file with no card, such as a metric that a widget places or a sheet
     /// off the grid that a widget opens, is not one.
-    public func coreChoices() -> [PluginCommand] {
+    public func coreChoices() -> [Spot] {
         let commands = ScanResult(plugins: coreFiles().compactMap { try? Plugin(file: $0.file, id: $0.id) }, refused: []).commands
         let opened = Set(commands.compactMap(\.opens))
         return commands.filter { $0.isOnGrid || !opened.contains($0.id) }
     }
 
     /// The ID that turns a core command on: the name of its file, which a widget shares with the others in that file.
-    public static func coreID(of command: PluginCommand) -> String {
+    public static func coreID(of command: Spot) -> String {
         command.url.deletingPathExtension().lastPathComponent
     }
 
@@ -94,13 +94,13 @@ public struct PluginFolder: Sendable {
     }
 
     /// Whether a command runs from the core folder of the app.
-    public func isCore(_ command: PluginCommand) -> Bool {
+    public func isCore(_ command: Spot) -> Bool {
         guard let core, command.shipped == nil else { return false }
         return command.url.standardizedFileURL.path.hasPrefix(core.standardizedFileURL.path + "/")
     }
 
     /// Takes the file of a spot and its program out of the folder. They go to the Trash, and the other files of its folder stay.
-    public func remove(_ command: PluginCommand, discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws {
+    public func remove(_ command: Spot, discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws {
         guard command.shipped == nil, !isCore(command) else { throw PluginError.fault("\(command.name) comes with Openspot, so it cannot be removed.") }
         try discard(command.url)
         if let program = SwiftProgram.file(beside: command.url) { try discard(program) }
@@ -110,15 +110,15 @@ public struct PluginFolder: Sendable {
     private static func read(_ file: URL, id: String, into result: inout ScanResult, taken: inout Set<String>) {
         do {
             guard let plugin = try Plugin(file: file, id: id) else { return }
-            let commands = plugin.commands.map { command -> PluginCommand in
+            let commands = plugin.commands.map { command -> Spot in
                 guard let key = command.key, !taken.insert(key.name).inserted else { return command }
-                result.refused.append(Refusal(file: id, reason: "\(command.name) cannot use key \(key.name), because another command has it"))
+                result.refused.append(ScanResult.Refusal(file: id, reason: "\(command.name) cannot use key \(key.name), because another command has it"))
                 return command.withoutKey()
             }
             result.plugins.append(Plugin(id: id, commands: commands))
         } catch {
             let reason = (error as? PluginError)?.reason ?? String(describing: error)
-            result.refused.append(Refusal(file: id, reason: reason))
+            result.refused.append(ScanResult.Refusal(file: id, reason: reason))
         }
     }
 
@@ -137,7 +137,7 @@ public struct PluginFolder: Sendable {
         return files.filter { wanted.contains($0.id) }
     }
 
-    private static func commands(of file: (file: URL, id: String)) -> [PluginCommand] {
+    private static func commands(of file: (file: URL, id: String)) -> [Spot] {
         ((try? Plugin(file: file.file, id: file.id)) ?? nil)?.commands ?? []
     }
 

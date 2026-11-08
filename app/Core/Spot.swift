@@ -1,7 +1,7 @@
 import Foundation
 
 /// One executable of a plugin, with the look its spot takes. A widget runs nothing, and places scripts in a layout.
-public struct PluginCommand: Equatable, Sendable {
+public struct Spot: Equatable, Sendable {
     public static let lastRank = Int.max
     private static let folderWord = "folder"
     private static let anyWord = "*"
@@ -53,7 +53,7 @@ public struct PluginCommand: Equatable, Sendable {
         key: CommandKey? = nil,
         read: SpotRead? = nil,
         pick: ItemPick = .close,
-        rank: Int = PluginCommand.lastRank,
+        rank: Int = Spot.lastRank,
         order: Int = 0,
         primary: String? = nil,
         actions: [CommandAction] = [],
@@ -160,7 +160,7 @@ public struct PluginCommand: Equatable, Sendable {
 
     /// This command with the actions, the word for Enter, the pick and the recents that its script printed, and the kind it
     /// makes when the panel asks it how it looks.
-    public func taking(_ output: PluginOutput) -> PluginCommand {
+    public func taking(_ output: PluginOutput) -> Spot {
         var command = self
         command.actions = output.actions
         command.primary = output.primary
@@ -194,7 +194,7 @@ public struct PluginCommand: Equatable, Sendable {
         }
     }
 
-    public func withoutKey() -> PluginCommand {
+    public func withoutKey() -> Spot {
         var command = self
         command.key = nil
         return command

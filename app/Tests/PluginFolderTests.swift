@@ -52,7 +52,7 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testAShippedSpotCannotBeRemoved() throws {
-        let shipped = PluginCommand(id: "openspot/plugins", name: "Plugins", url: folder, shipped: .build(PluginGuide(folder: folder, guide: folder, app: "")))
+        let shipped = Spot(id: "openspot/plugins", name: "Plugins", url: folder, shipped: .build(BuildSpot(folder: folder, guide: folder, app: "")))
 
         XCTAssertThrowsError(try PluginFolder(url: folder).remove(shipped) { _ in XCTFail("It must not be discarded.") })
     }
@@ -221,16 +221,16 @@ final class PluginFolderTests: XCTestCase {
 
         XCTAssertEqual(try scan.plugins, [])
         XCTAssertEqual(try scan.refused, [
-            Refusal(file: "a", reason: "A has an unknown read: sometimes. Use panel, sheet, launch, wake or a number of seconds"),
-            Refusal(file: "b", reason: "B has an unknown size: huge"),
-            Refusal(file: "c", reason: "C has an unknown key: ctrl+d"),
-            Refusal(file: "e", reason: "E needs a number as its rank"),
-            Refusal(file: "f", reason: "F needs panel, launch or a number in its read to join the main search"),
-            Refusal(file: "h", reason: "H needs panel, launch or a number in its read to join the main search"),
-            Refusal(file: "i", reason: "I needs a number as its order"),
-            Refusal(file: "j", reason: "J has an unknown read: open. Use panel, sheet, launch, wake or a number of seconds"),
-            Refusal(file: "k", reason: "K has an unknown read: click. Use panel, sheet, launch, wake or a number of seconds"),
-            Refusal(file: "l", reason: "L has an unknown read: panel,later. Use panel, sheet, launch, wake or a number of seconds")
+            ScanResult.Refusal(file: "a", reason: "A has an unknown read: sometimes. Use panel, sheet, launch, wake or a number of seconds"),
+            ScanResult.Refusal(file: "b", reason: "B has an unknown size: huge"),
+            ScanResult.Refusal(file: "c", reason: "C has an unknown key: ctrl+d"),
+            ScanResult.Refusal(file: "e", reason: "E needs a number as its rank"),
+            ScanResult.Refusal(file: "f", reason: "F needs panel, launch or a number in its read to join the main search"),
+            ScanResult.Refusal(file: "h", reason: "H needs panel, launch or a number in its read to join the main search"),
+            ScanResult.Refusal(file: "i", reason: "I needs a number as its order"),
+            ScanResult.Refusal(file: "j", reason: "J has an unknown read: open. Use panel, sheet, launch, wake or a number of seconds"),
+            ScanResult.Refusal(file: "k", reason: "K has an unknown read: click. Use panel, sheet, launch, wake or a number of seconds"),
+            ScanResult.Refusal(file: "l", reason: "L has an unknown read: panel,later. Use panel, sheet, launch, wake or a number of seconds")
         ])
     }
 
@@ -267,6 +267,6 @@ final class PluginFolderTests: XCTestCase {
         try write("b.sh", header: "name=Two\nkey=D")
 
         XCTAssertEqual(try scan.commands.map(\.key?.name), ["d", nil])
-        XCTAssertEqual(try scan.refused, [Refusal(file: "b", reason: "Two cannot use key d, because another command has it")])
+        XCTAssertEqual(try scan.refused, [ScanResult.Refusal(file: "b", reason: "Two cannot use key d, because another command has it")])
     }
 }

@@ -22,8 +22,8 @@ final class LoginItemTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private var settings: Settings {
-        Settings(file: ConfigFile(url: folder.appendingPathComponent("config.toml")), folder: folder, login: item)
+    private var settings: SettingsSpot {
+        SettingsSpot(file: ConfigFile(url: folder.appendingPathComponent("config.toml")), folder: folder, login: item)
     }
 
     func testSettingsListsTheRowWithItsState() throws {
@@ -49,7 +49,7 @@ final class LoginItemTests: XCTestCase {
     }
 
     func testWithNoLoginItemSettingsShowsNoRow() throws {
-        let plain = Settings(file: ConfigFile(url: folder.appendingPathComponent("config.toml")), folder: folder)
+        let plain = SettingsSpot(file: ConfigFile(url: folder.appendingPathComponent("config.toml")), folder: folder)
 
         XCTAssertEqual(PluginOutput(text: try plain.answer(["read"])).items.map(\.run), ["panel_key", "fix_key"])
     }

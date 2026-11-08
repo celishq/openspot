@@ -2,7 +2,7 @@ import Foundation
 
 /// The parts of a sheet with what the person has set. Each change takes a new generation, and only the answer to the
 /// newest one shows, so that an older answer never replaces a newer state.
-public struct SpotPanel: Equatable, Sendable {
+public struct SheetParts: Equatable, Sendable {
     /// One press of an arrow that asks the sheet to scroll by a row. A new press takes the next serial.
     public struct Nudge: Equatable, Sendable {
         public let step: Int

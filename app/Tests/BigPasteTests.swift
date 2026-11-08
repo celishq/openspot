@@ -31,7 +31,7 @@ final class BigPasteTests: XCTestCase {
     }
 
     /// A sheet that answers a change of `input` with its value in `output`, with this body for the answer.
-    private func sheet(answer: String) throws -> SpotSheet {
+    private func sheet(answer: String) throws -> SpotRun {
         let url = folder.appendingPathComponent("script.sh")
         try """
         #!/bin/sh
@@ -46,7 +46,7 @@ final class BigPasteTests: XCTestCase {
     }
 
     /// The time from the paste to its answer in the sheet, which holds the pause of 300 ms for text (C4).
-    private func answerTime(of sheet: SpotSheet, for text: String) async throws -> TimeInterval {
+    private func answerTime(of sheet: SpotRun, for text: String) async throws -> TimeInterval {
         sheet.open {}
         for _ in 0..<500 where sheet.panel == nil || !sheet.calls.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
         let input = try XCTUnwrap(sheet.panel?.parts.first { $0.id == "input" })
@@ -64,7 +64,7 @@ final class BigPasteTests: XCTestCase {
     }
 
     /// The time of the first run under the limit, or else the best of the runs. A busy machine can slow one run.
-    private func bestTime(of sheet: SpotSheet, for text: String, under limit: TimeInterval) async throws -> TimeInterval {
+    private func bestTime(of sheet: SpotRun, for text: String, under limit: TimeInterval) async throws -> TimeInterval {
         var best = TimeInterval.infinity
         for _ in 0..<Self.runCount where best >= limit {
             best = min(best, try await answerTime(of: sheet, for: text))

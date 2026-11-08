@@ -4,7 +4,7 @@ import Foundation
 /// cannot be drawn leaves the last one in place, so that typing does not make it flicker.
 public struct SheetSandbox: Equatable, Sendable {
     public private(set) var text = ""
-    public private(set) var panel: SpotPanel?
+    public private(set) var panel: SheetParts?
     public private(set) var faults: [String] = []
     public private(set) var log: [String] = []
 
@@ -13,9 +13,9 @@ public struct SheetSandbox: Equatable, Sendable {
     public init() {}
 
     /// The command that the sandbox calls for a file: it reads a file with a `read`, and clicks any other.
-    public static func command(file: URL) -> PluginCommand {
+    public static func command(file: URL) -> Spot {
         let header = PluginHeader(url: file).block
-        return PluginCommand(
+        return Spot(
             id: file.lastPathComponent,
             name: file.lastPathComponent,
             url: file,
@@ -30,7 +30,7 @@ public struct SheetSandbox: Equatable, Sendable {
         self.text = text
         let output = PluginOutput(text: text)
         faults = text.isEmpty ? [] : output.sheetFaults
-        if let panel = SpotPanel(output: output) { self.panel = panel }
+        if let panel = SheetParts(output: output) { self.panel = panel }
     }
 
     /// Takes a value that a person set in the sheet, and returns the generation of the call that reports it.

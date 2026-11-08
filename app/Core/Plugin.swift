@@ -5,9 +5,9 @@ public struct Plugin: Equatable, Sendable {
     public static let widgetExtension = "toml"
 
     public let id: String
-    public let commands: [PluginCommand]
+    public let commands: [Spot]
 
-    public init(id: String, commands: [PluginCommand]) {
+    public init(id: String, commands: [Spot]) {
         self.id = id
         self.commands = commands
     }
@@ -44,7 +44,7 @@ public struct Plugin: Equatable, Sendable {
         }
         let sizeName = header.value("size") ?? "wide"
         guard let size = SpotSize(name: sizeName) else { throw PluginError.fault("\(name) has an unknown size: \(sizeName)") }
-        var rank = PluginCommand.lastRank
+        var rank = Spot.lastRank
         if let text = header.value("rank") {
             guard let number = Int(text) else { throw PluginError.fault("\(name) needs a number as its rank") }
             guard read?.has(.panel) == true || read?.has(.launch) == true || read?.seconds != nil else {
@@ -66,11 +66,11 @@ public struct Plugin: Equatable, Sendable {
             }
             return offer
         }
-        let command = PluginCommand(
+        let command = Spot(
             id: id,
             name: name,
             url: url,
-            kind: stays || rank != PluginCommand.lastRank || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch,
+            kind: stays || rank != Spot.lastRank || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch,
             size: size,
             symbol: symbol ?? "app",
             subtitle: header.value("subtitle"),
@@ -104,7 +104,7 @@ public struct Plugin: Equatable, Sendable {
         return key
     }
 
-    private static func widget(_ table: [String: TomlDocument.Value], id: String, url: URL) throws -> PluginCommand {
+    private static func widget(_ table: [String: TomlDocument.Value], id: String, url: URL) throws -> Spot {
         func text(_ key: String) -> String? {
             if case .string(let value)? = table[key] { return value }
             return nil
@@ -130,7 +130,7 @@ public struct Plugin: Equatable, Sendable {
             }
             size = asked
         }
-        return PluginCommand(
+        return Spot(
             id: "\(id)/\(name)",
             name: name,
             url: url,
@@ -145,7 +145,7 @@ public struct Plugin: Equatable, Sendable {
     }
 
     /// A widget with a drawing of its own, whose `places` names a metric for each letter.
-    private static func drawn(_ drawing: [String], _ table: [String: TomlDocument.Value], name: String, id: String, url: URL) throws -> PluginCommand {
+    private static func drawn(_ drawing: [String], _ table: [String: TomlDocument.Value], name: String, id: String, url: URL) throws -> Spot {
         func text(_ key: String) -> String? {
             if case .string(let value)? = table[key] { return value }
             return nil
@@ -166,7 +166,7 @@ public struct Plugin: Equatable, Sendable {
         if let letter = places.keys.sorted().first(where: { !layout.letters.contains($0) }) {
             throw PluginError.fault("\(name) names the letter \(letter), which its grid does not have")
         }
-        return PluginCommand(
+        return Spot(
             id: "\(id)/\(name)",
             name: name,
             url: url,

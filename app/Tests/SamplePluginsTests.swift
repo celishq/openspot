@@ -291,7 +291,7 @@ final class SamplePluginsTests: SamplePluginsCase {
             let url = folder.appendingPathComponent("frames.sh")
             try "#!/bin/sh\nprintf 'part=a\\n---\\n'\nprintf 'part=b\\n'\n".writeScript(to: url)
 
-            let text = try await SpotRuns().answer(of: PluginCommand(id: "frames", name: "Frames", url: url), .read, limit: 5)
+            let text = try await SpotRuns().answer(of: Spot(id: "frames", name: "Frames", url: url), .read, limit: 5)
 
             XCTAssertEqual(text, "part=a\n")
         }

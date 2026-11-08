@@ -55,7 +55,7 @@ final class SpotRunsWantTests: SpotRunsCase {
 
         let scan = try PluginFolder(url: folder).scan()
 
-        XCTAssertEqual(scan.refused, [Refusal(file: "w", reason: "W names no metric called once")])
+        XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "w", reason: "W names no metric called once")])
     }
 
     func testTheMenuBarShowsWhatTheSheetHolds() async throws {

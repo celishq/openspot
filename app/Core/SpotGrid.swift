@@ -3,12 +3,12 @@ import Foundation
 /// Packs spots into full rows of four columns. Each spot takes the next shelf, a smaller spot moves up to fill
 /// a gap, and spots grow until their shelf has no hole.
 public struct SpotGrid: Sendable {
-    private typealias Spot = (index: Int, size: SpotSize)
+    private typealias Slot = (index: Int, size: SpotSize)
 
     public init() {}
 
     public func place(_ sizes: [SpotSize]) -> [SpotPlacement] {
-        var queue: [Spot] = sizes.enumerated().map { (index: $0.offset, size: $0.element) }
+        var queue: [Slot] = sizes.enumerated().map { (index: $0.offset, size: $0.element) }
         var placements: [SpotPlacement] = []
         var row = 0
         while let first = queue.first {
@@ -88,7 +88,7 @@ public struct SpotGrid: Sendable {
     }
 
     /// Places a square with the spots beside it, and returns the number of rows it used.
-    private func placeSquare(_ square: Spot, in queue: inout [Spot], row: Int, placements: inout [SpotPlacement]) -> Int {
+    private func placeSquare(_ square: Slot, in queue: inout [Slot], row: Int, placements: inout [SpotPlacement]) -> Int {
         if let next = queue.first, next.size == .square {
             queue.removeFirst()
             placements.append(SpotPlacement(index: square.index, row: row, column: 0, size: .square))
@@ -114,7 +114,7 @@ public struct SpotGrid: Sendable {
         return 2
     }
 
-    private func placeRow(_ spots: [Spot], row: Int, placements: inout [SpotPlacement]) {
+    private func placeRow(_ spots: [Slot], row: Int, placements: inout [SpotPlacement]) {
         var column = 0
         for spot in justified(spots) {
             placements.append(SpotPlacement(index: spot.index, row: row, column: column, size: spot.size))
@@ -123,7 +123,7 @@ public struct SpotGrid: Sendable {
     }
 
     /// Takes the next one-row spots from the queue, in order, that fit in the room and are no wider than the limit.
-    private func taking(_ first: Spot?, from queue: inout [Spot], room: Int, widest: Int = 4) -> [Spot] {
+    private func taking(_ first: Slot?, from queue: inout [Slot], room: Int, widest: Int = 4) -> [Slot] {
         var taken = first.map { [$0] } ?? []
         var left = room - (first?.size.columns ?? 0)
         var position = 0
@@ -141,7 +141,7 @@ public struct SpotGrid: Sendable {
     }
 
     /// Grows spots until they fill the room of four cells.
-    private func justified(_ spots: [Spot]) -> [Spot] {
+    private func justified(_ spots: [Slot]) -> [Slot] {
         switch spots.count {
         case 1:
             return [(index: spots[0].index, size: .strip)]
