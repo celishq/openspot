@@ -21,6 +21,51 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(try String(contentsOfFile: path("runs"), encoding: .utf8), "run\n")
     }
 
+    // MARK: M6
+
+    func testEachReadKnowsWhyItRuns() async throws {
+        try script(header: "read=launch,wake,panel,sheet\nkey=r", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'row=A\\nrun=a\\n'")
+        let sheet = try sheet()
+        var expected: [String] = []
+        func step(_ reason: String, _ act: () -> Void) async throws {
+            time += 10
+            act()
+            expected.append(reason)
+            try await wait("the \(reason) read") { self.log("reasons") == expected }
+            try await wait("the end of the \(reason) read") { !self.runs.isReading }
+        }
+
+        try await step("launch") { runs.arrive(.launch) }
+        try await step("wake") { runs.arrive(.wake) }
+        try await step("panel") { runs.panelOpened() }
+        try await step("sheet") { sheet.open(onReady: {}) }
+        try await step("change") { sheet.read(need: .change) }
+    }
+
+    func testAReadOnItsClockSaysSo() async throws {
+        try script(header: "read=60\nkey=r", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'title=1\\n'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open(onReady: {})
+        try await wait("the sheet read") { self.log("reasons") == ["sheet"] && !self.runs.isReading }
+
+        time += 61
+        runs.tick()
+
+        try await wait("the timer read") { self.log("reasons") == ["sheet", "timer"] }
+    }
+
+    func testAReadOfTheSearchSaysSo() async throws {
+        try script(header: "read=sheet\nkey=r", "echo \"$OPENSPOT_REASON $*\" >> '\(path("reasons"))'\nprintf 'search=script\\n\\nrow=A\\nrun=a\\n'")
+        let sheet = try sheet()
+
+        sheet.open(onReady: {})
+        try await wait("the first read") { self.log("reasons") == ["sheet read"] }
+        sheet.search("k")
+
+        try await wait("the search read") { self.log("reasons") == ["sheet read", "search read k"] }
+    }
+
     func testAnOpenAtLaunchRunsNoScriptThatReadsOnlyAtItsSheet() async throws {
         try script(header: "read=sheet", "echo run >> '\(path("runs"))'")
         _ = try sheet()

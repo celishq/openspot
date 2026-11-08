@@ -85,6 +85,9 @@ A read must be safe at each moment that its header lists, so `read` does no work
 `panel` or a `sheet` moment uses an answer that is younger than 5 seconds. A number, `launch` and `wake` always run. After
 a call that prints no state, Openspot reads the script again.
 
+A read gets the reason in `OPENSPOT_REASON`: `panel`, `sheet`, `timer`, `launch`, `wake`, `search` or `change`. So a
+script can do less on a timer than when its sheet opens.
+
 ## The calls
 
 | Call | When | The script does |

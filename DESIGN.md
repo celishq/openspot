@@ -454,7 +454,6 @@ A change to the meaning of a word that exists is a breaking change. Do not make 
 
 | Rules | Module | Today |
 |---|---|---|
-| M6 | `Core/Run/*`, `Core/Script/ScriptProcess.swift` | A read does not know its moment. |
 | Y7 | `Core/Run/SpotRun.swift`, `Core/Script/SpotAction.swift` | A staying call has no id, no end and no stop. |
 | F9 | `Core/Plugin/Plugin.swift`, `Core/Run/SpotRun.swift` | A read sets only `grid`. |
 | R12 | `Core/Script/SheetFrameReader.swift` | Keeps escape codes as text. |

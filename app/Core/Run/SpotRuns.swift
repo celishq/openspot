@@ -101,8 +101,14 @@ public final class SpotRuns {
     /// A moment arrived: reads each script whose `read` lists it, all at the same time. Only `panel` can use a young answer.
     /// A staying script that something wants and that ended starts again.
     public func arrive(_ moment: SpotRead.Moment) {
+        let reason: ReadReason = switch moment {
+        case .launch: .launch
+        case .wake: .wake
+        case .sheet: .sheet
+        case .panel, .every: .panel
+        }
         for sheet in sheets.values where sheet.command.read?.has(moment) == true {
-            sheet.read(need: moment == .panel ? .moment : .clock)
+            sheet.read(need: moment == .panel ? .moment : .clock, reason: reason)
         }
         sheets.values.forEach { $0.settleLive() }
     }
@@ -114,7 +120,7 @@ public final class SpotRuns {
             guard let seconds = sheet.command.read?.seconds else { continue }
             if let last = asked[sheet.command.id], time.timeIntervalSince(last) < seconds { continue }
             asked[sheet.command.id] = time
-            sheet.read(need: .clock)
+            sheet.read(need: .clock, reason: .timer)
         }
     }
 
@@ -198,11 +204,12 @@ public final class SpotRuns {
         key: String,
         input: String?,
         limit: TimeInterval?,
+        variables: [String: String] = [:],
         onFrame: @escaping @MainActor (ScriptCall, String) async -> Void,
         onEnd: @escaping @MainActor (ScriptCall, ScriptCall.End) async -> Void
     ) -> ScriptCall {
         let call = ScriptCall(action: action, key: key, started: now())
-        let (stream, halt) = frames(of: command, action, input: input, limit: limit)
+        let (stream, halt) = frames(of: command, action, input: input, limit: limit, variables: variables)
         call.halt = halt
         Task {
             var end = ScriptCall.End.ended
@@ -228,7 +235,7 @@ public final class SpotRuns {
         return (script, frames)
     }
 
-    private func frames(of command: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void) {
+    private func frames(of command: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String] = [:]) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void) {
         if let shipped = command.shipped {
             let (stream, continuation) = AsyncThrowingStream.makeStream(of: String.self)
             let task = Task {
@@ -246,7 +253,7 @@ public final class SpotRuns {
             })
         }
         let sent = action.sent(input: input)
-        let process = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: command.dataName)
+        let process = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: command.dataName, variables: variables)
         do {
             let stream = try process.start()
             keep(process)

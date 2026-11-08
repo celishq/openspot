@@ -262,8 +262,9 @@ public final class SpotRun {
     /// Asks the script for what it shows. A request joins the read that runs (M1). A `panel` or a `sheet` moment uses an answer
     /// younger than 5 seconds (M2). A file with no `read` gets its click instead. A staying script that something wants gets
     /// a block, and starts if it does not run.
-    public func read(selecting run: String? = nil, need: ReadNeed = .moment) {
+    public func read(selecting run: String? = nil, need: ReadNeed = .moment, reason: ReadReason? = nil) {
         if command.stays { return readLive(need: need) }
+        let reason = reason ?? (need == .change ? .change : isOpen ? .sheet : .panel)
         if let run { selecting = run }
         guard list.search == .local else { return ask() }
         if running(Self.readKey) != nil {
@@ -275,7 +276,7 @@ public final class SpotRun {
             showRunning()
             return
         }
-        startRead(reports: need != .clock)
+        startRead(reports: need != .clock, reason: reason)
     }
 
     /// Takes new text in the search. A newer search stops the older one, and the script hears after a pause.
@@ -490,10 +491,11 @@ public final class SpotRun {
         key: String,
         input: String?,
         limit: TimeInterval?,
+        variables: [String: String] = [:],
         onFrame: @escaping @MainActor (ScriptCall, String) async -> Void,
         onEnd: @escaping @MainActor (ScriptCall.End) async -> Void
     ) {
-        let call = runs.call(command, action, key: key, input: input, limit: limit, onFrame: onFrame) { [weak self] call, end in
+        let call = runs.call(command, action, key: key, input: input, limit: limit, variables: variables, onFrame: onFrame) { [weak self] call, end in
             self?.calls.removeAll { $0 === call }
             await onEnd(end)
             self?.startWaitingDrop()
@@ -508,7 +510,7 @@ public final class SpotRun {
         }
     }
 
-    private func startRead(reports: Bool) {
+    private func startRead(reports: Bool, reason: ReadReason) {
         list.beginLoading()
         let action = command.read == nil ? command.click : SpotAction.read
         let generation = panel?.generation
@@ -518,6 +520,7 @@ public final class SpotRun {
             key: Self.readKey,
             input: isOpen ? panel?.values : nil,
             limit: action == .read ? runs.readLimit : nil,
+            variables: action == .read ? reason.variables : [:],
             onFrame: { [weak self] call, text in
                 guard let self else { return }
                 if isFirst {
@@ -815,6 +818,7 @@ public final class SpotRun {
             key: Self.searchKey,
             input: nil,
             limit: runs.readLimit,
+            variables: ReadReason.search.variables,
             onFrame: { [weak self] call, text in
                 hasAnswer = true
                 let lines = PluginOutput(text: text)

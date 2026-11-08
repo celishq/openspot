@@ -16,6 +16,7 @@ public final class ScriptProcess: @unchecked Sendable {
     private let mode: Mode
     private let limit: TimeInterval?
     private let dataName: String?
+    private let variables: [String: String]
     private let stopPause: TimeInterval
     private let input = Pipe()
     private let writes = DispatchQueue(label: "openspot.script")
@@ -28,9 +29,10 @@ public final class ScriptProcess: @unchecked Sendable {
     private var killsLater = false
 
     /// `limit` is the time the script has to its first frame or its end. With none, it has no limit. `stopPause` is the time
-    /// between each step of a stop.
-    public init(url: URL, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil) {
+    /// between each step of a stop. `variables` add to its environment.
+    public init(url: URL, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:]) {
         self.dataName = dataName
+        self.variables = variables
         process.executableURL = url
         process.arguments = arguments
         self.mode = mode
@@ -77,7 +79,7 @@ public final class ScriptProcess: @unchecked Sendable {
             text = given
             process.standardInput = given == nil ? FileHandle.nullDevice : input
         }
-        process.environment = Self.environment(base: ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", stays: stays, dataName: dataName)
+        process.environment = Self.environment(base: ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", stays: stays, dataName: dataName).merging(variables) { _, new in new }
         let output = Pipe()
         process.standardOutput = output
         let errors = Pipe()
