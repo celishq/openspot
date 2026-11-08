@@ -3,9 +3,10 @@ import SwiftUI
 
 /// A plugin's own view, which fills its whole card and is clipped to the card's shape. It gets the head of the last read
 /// and the card's size, inset, corner and theme, and it draws only: a press goes to the card (V3, V5). While it builds
-/// the card stays empty, and a view that fails shows why, shrunk to fit.
+/// the card shows a placeholder, and a view that fails shows why, shrunk to fit.
 struct SpotCustomView: View {
     let source: String
+    let title: String
     let values: [String: [String]]
     let card: SpotSize
     let views: SpotViews
@@ -47,7 +48,7 @@ struct SpotCustomView: View {
     private var content: some View {
         switch views.phase(of: source) {
         case .building:
-            Color.clear
+            SpotViewPlaceholder(title: title, size: size)
         case .ready(let make):
             make(values, room, { _ in })
         case .failed(let reason):

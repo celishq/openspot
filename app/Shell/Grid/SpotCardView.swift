@@ -50,7 +50,7 @@ struct SpotCardView: View {
     @ViewBuilder
     private var content: some View {
         if let view = ownView {
-            SpotCustomView(source: view, values: entry.state.values, card: size, views: model.views)
+            SpotCustomView(source: view, title: entry.command.name, values: entry.state.values, card: size, views: model.views)
         } else if let layout = entry.command.layout {
             SpotWidgetView(layout: layout, places: entry.command.places, readings: readings, card: size)
         } else if size == .small {
