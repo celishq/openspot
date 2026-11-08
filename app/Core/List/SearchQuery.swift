@@ -8,17 +8,30 @@ import Foundation
 /// of the same rank, and never by letters in order.
 public struct SearchQuery: Equatable, Sendable {
     public let text: String
-    /// The other texts that the person may have meant, such as the text spelled in Latin letters.
+    /// The other texts that the person may have meant: the text typed on the same keys of each other layout, then the text
+    /// spelled in Latin letters.
     public let forms: [String]
     private let typed: Form
     private let converted: [Form]
 
-    public init(text: String) {
+    public init(text: String, layouts: [KeyLayout] = KeyLayout.enabled) {
         self.text = text.trimmingCharacters(in: .whitespaces)
         let typed = Form(self.text)
         self.typed = typed
-        forms = Self.latin(self.text).filter { Form($0).words != typed.words }
+        let candidates = Self.retyped(self.text, layouts: layouts) + Self.latin(self.text)
+        var seen = [typed.words]
+        forms = candidates.filter { candidate in
+            let words = Form(candidate).words
+            guard !seen.contains(words) else { return false }
+            seen.append(words)
+            return true
+        }
         converted = forms.map(Form.init)
+    }
+
+    /// The text typed on the same keys of each other layout.
+    private static func retyped(_ text: String, layouts: [KeyLayout]) -> [String] {
+        layouts.flatMap { from in layouts.filter { $0 != from }.compactMap { from.text(text, in: $0) } }
     }
 
     /// The text spelled in Latin letters with no accents, when it holds other letters.
