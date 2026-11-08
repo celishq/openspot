@@ -15,7 +15,7 @@ final class PluginHeaderTests: XCTestCase {
     }
 
     func testReadsTheCommentLinesUnderTheFirstLine() {
-        let header = PluginHeader(text: "#!/bin/sh\n# name=Morning\n#\n# Prose has no key.\n#symbol=sun.max\nsay hello\n# key=m\n")
+        let header = PluginHeader(text: "#!/bin/sh\n# name=Morning\n#\n# Prose has no key.\n#symbol=sun.max\nsay hello\n# shortcut=m\n")
 
         XCTAssertEqual(header.block.value("name"), "Morning")
         XCTAssertEqual(header.block.value("symbol"), "sun.max")

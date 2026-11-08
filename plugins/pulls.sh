@@ -2,7 +2,7 @@
 # name=Pull requests
 # symbol=arrow.triangle.pull
 # subtitle=On GitHub
-# key=g
+# shortcut=g
 # read=120
 # tray=true
 export LC_ALL=en_US.UTF-8

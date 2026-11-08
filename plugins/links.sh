@@ -1,7 +1,7 @@
 #!/bin/sh
 # symbol=link
 # subtitle=Open a link
-# key=l
+# shortcut=l
 # read=panel
 # global=true
 export LC_ALL=en_US.UTF-8

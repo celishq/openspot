@@ -203,7 +203,7 @@ final class WidgetContractTests: XCTestCase {
         name = "Now"
         grid = ["a a b b"]
         places = { a = "power", b = "power" }
-        key = "w"
+        shortcut = "w"
 
         [[widgets]]
         name = "Then"
@@ -265,8 +265,8 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testALostKeyKeepsTheRestOfTheCommand() throws {
-        try script("one.sh", "#!/bin/sh\n# key=x\n# read=panel\n# global=true\n")
-        try script("two.sh", "#!/bin/sh\n# key=x\n# read=panel\n# global=true\n")
+        try script("one.sh", "#!/bin/sh\n# shortcut=x\n# read=panel\n# global=true\n")
+        try script("two.sh", "#!/bin/sh\n# shortcut=x\n# read=panel\n# global=true\n")
 
         XCTAssertEqual(try scan.commands.map(\.isGlobal), [true, true])
     }

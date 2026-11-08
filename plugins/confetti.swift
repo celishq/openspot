@@ -2,7 +2,7 @@
 // name=Confetti
 // symbol=party.popper
 // subtitle=Celebrate on each screen
-// key=k
+// shortcut=k
 import AppKit
 
 let emission: TimeInterval = 1.5

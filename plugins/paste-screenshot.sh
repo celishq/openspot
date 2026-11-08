@@ -2,7 +2,7 @@
 # name=Paste latest screenshot
 # symbol=doc.on.clipboard.fill
 # subtitle=From the screenshot folder
-# key=v
+# shortcut=v
 # size=small
 folder=$(defaults read com.apple.screencapture location 2>/dev/null || echo "$HOME/Desktop")
 case "$folder" in "~"*) folder="$HOME${folder#\~}" ;; esac

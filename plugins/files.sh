@@ -1,7 +1,7 @@
 #!/bin/sh
 # symbol=doc.text.magnifyingglass
 # subtitle=Find a file
-# key=f
+# shortcut=f
 # read=sheet
 case "$1" in
   read)

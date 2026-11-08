@@ -1,7 +1,7 @@
 #!/bin/sh
 # symbol=text.quote
 # subtitle=Copy text
-# key=n
+# shortcut=n
 # size=small
 # read=panel
 # global=true

@@ -46,7 +46,7 @@ final class BuildSpotTests: XCTestCase {
     }
 
     func testTheSpotsSpotShowsWithAnEmptyFolderAndKeepsItsKey() throws {
-        try "#!/bin/sh\n# key=p\n".writeScript(to: plugins.appendingPathComponent("mine.sh"))
+        try "#!/bin/sh\n# shortcut=p\n".writeScript(to: plugins.appendingPathComponent("mine.sh"))
         let shipped = ShippedSpot.commands(folder: plugins, guide: guideURL, app: "")
 
         let scan = try PluginFolder(url: plugins).scan(shipped: shipped)

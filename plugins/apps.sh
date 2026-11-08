@@ -1,7 +1,7 @@
 #!/bin/sh
 # symbol=square.grid.2x2
 # subtitle=Open app
-# key=a
+# shortcut=a
 # read=panel
 # global=true
 data=${OPENSPOT_DATA:-${TMPDIR:-/tmp}}

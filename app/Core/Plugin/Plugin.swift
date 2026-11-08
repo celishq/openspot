@@ -37,7 +37,7 @@ public struct Plugin: Equatable, Sendable {
             read = parsed
         }
         let isTray = header.flag("tray") ?? false
-        let hasKey = header.value("key") != nil
+        let hasKey = header.value("shortcut") != nil
         if read?.seconds == nil, isTray {
             throw PluginError.fault("\(name) needs a number in its read to show in the menu bar")
         }
@@ -49,7 +49,7 @@ public struct Plugin: Equatable, Sendable {
                 throw PluginError.fault("\(name) needs panel, launch or a number in its read to join the main search")
             }
             guard read?.seconds == nil || hasKey else {
-                throw PluginError.fault("\(name) needs a key to join the main search, because a number in its read and no key gives it no spot")
+                throw PluginError.fault("\(name) needs a shortcut to join the main search, because a number in its read and no shortcut gives it no spot")
             }
         }
         let offers = try header.values("command").map { text in
@@ -73,7 +73,7 @@ public struct Plugin: Equatable, Sendable {
             size: size,
             symbol: symbol ?? "app",
             subtitle: header.value("subtitle"),
-            key: try Self.key(header.value("key"), of: name),
+            key: try Self.key(header.value("shortcut"), of: name),
             read: read,
             isGlobal: isGlobal,
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
@@ -106,7 +106,7 @@ public struct Plugin: Equatable, Sendable {
 
     private static func key(_ text: String?, of name: String) throws -> CommandKey? {
         guard let text else { return nil }
-        guard let key = CommandKey(name: text) else { throw PluginError.fault("\(name) has an unknown key: \(text)") }
+        guard let key = CommandKey(name: text) else { throw PluginError.fault("\(name) has an unknown shortcut: \(text)") }
         return key
     }
 
@@ -151,7 +151,7 @@ public struct Plugin: Equatable, Sendable {
             kind: .widget,
             size: layout.size,
             subtitle: text("subtitle"),
-            key: try key(text("key"), of: name),
+            key: try key(text("shortcut"), of: name),
             layout: layout,
             places: layout.letters.compactMap { places[$0] }.map { tool($0, beside: url, id: id) },
             opens: text("opens").map { tool($0, beside: url, id: id) }

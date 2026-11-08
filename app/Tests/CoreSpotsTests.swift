@@ -67,8 +67,8 @@ final class CoreSpotsTests: XCTestCase {
     }
 
     func testAKeyOfAFolderFileWinsOverACoreSpot() throws {
-        try write("mine.sh", in: folder, header: "key=a")
-        try write("apps.sh", in: core, header: "key=a")
+        try write("mine.sh", in: folder, header: "shortcut=a")
+        try write("apps.sh", in: core, header: "shortcut=a")
 
         let scan = try PluginFolder(url: folder, core: core, enabled: ["apps"]).scan()
 

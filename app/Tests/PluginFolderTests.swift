@@ -59,7 +59,7 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testAnExecutableIsASpotWithItsHeader() throws {
-        try write("one.sh", header: "name=First\nsize=square\nsymbol=moon\nsubtitle=Off\nkey=o")
+        try write("one.sh", header: "name=First\nsize=square\nsymbol=moon\nsubtitle=Off\nshortcut=o")
 
         XCTAssertEqual(try scan.refused, [])
         let one = try XCTUnwrap(try scan.commands.first)
@@ -134,7 +134,7 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testReadIsAListOfMoments() throws {
-        try write("a.sh", header: "read=panel, sheet,launch,wake,30\nkey=a")
+        try write("a.sh", header: "read=panel, sheet,launch,wake,30\nshortcut=a")
 
         let read = try XCTUnwrap(try scan.commands.first?.read)
 
@@ -183,7 +183,7 @@ final class PluginFolderTests: XCTestCase {
     func testTheMainSearchNeedsAMomentOutsideTheSheet() throws {
         try write("a.sh", header: "read=panel\nglobal=true")
         try write("b.sh", header: "read=launch\nglobal=true")
-        try write("c.sh", header: "read=30\nglobal=true\nkey=c")
+        try write("c.sh", header: "read=30\nglobal=true\nshortcut=c")
 
         XCTAssertEqual(try scan.refused, [])
         XCTAssertEqual(try scan.commands.map(\.isGlobal), [true, true, true])
@@ -204,7 +204,7 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testAMetricWithAKeyIsAlsoAList() throws {
-        try write("pulls.sh", header: "read=120\nkey=g")
+        try write("pulls.sh", header: "read=120\nshortcut=g")
 
         let scan = try scan
 
@@ -238,7 +238,7 @@ final class PluginFolderTests: XCTestCase {
     func testRefusesAHeaderWithAFault() throws {
         try write("a.sh", header: "read=sometimes")
         try write("b.sh", header: "size=huge")
-        try write("c.sh", header: "key=ctrl+d")
+        try write("c.sh", header: "shortcut=ctrl+d")
         try write("f.sh", header: "global=true")
         try write("h.sh", header: "read=sheet\nglobal=true")
         try write("j.sh", header: "read=open")
@@ -249,7 +249,7 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(try scan.refused, [
             ScanResult.Refusal(file: "a", reason: "A has an unknown read: sometimes. Use panel, sheet, launch, wake or a number of seconds"),
             ScanResult.Refusal(file: "b", reason: "B has an unknown size: huge"),
-            ScanResult.Refusal(file: "c", reason: "C has an unknown key: ctrl+d"),
+            ScanResult.Refusal(file: "c", reason: "C has an unknown shortcut: ctrl+d"),
             ScanResult.Refusal(file: "f", reason: "F needs panel, launch or a number in its read to join the main search"),
             ScanResult.Refusal(file: "h", reason: "H needs panel, launch or a number in its read to join the main search"),
             ScanResult.Refusal(file: "j", reason: "J has an unknown read: open. Use panel, sheet, launch, wake or a number of seconds"),
@@ -287,8 +287,8 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testTheFirstCommandKeepsATakenKey() throws {
-        try write("a.sh", header: "name=One\nkey=d")
-        try write("b.sh", header: "name=Two\nkey=D")
+        try write("a.sh", header: "name=One\nshortcut=d")
+        try write("b.sh", header: "name=Two\nshortcut=D")
 
         XCTAssertEqual(try scan.commands.map(\.key?.name), ["d", nil])
         XCTAssertEqual(try scan.refused, [ScanResult.Refusal(file: "b", reason: "Two cannot use key d, because another command has it")])
