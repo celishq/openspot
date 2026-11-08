@@ -153,7 +153,7 @@ final class SwiftProgramTests: XCTestCase {
             .init(path: "hello.program", isExecutable: true, contents: Data([0xCF, 0xFA, 0xED, 0xFE, 0x00]))
         ])
 
-        let review = try SpotReview(spot: spot, folder: folder)
+        let review = try ReviewSpot(spot: spot, folder: folder)
 
         XCTAssertEqual(review.name, "Hello")
         XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")

@@ -89,7 +89,7 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testALaterFrameChangesOnlyThePartsItNames() throws {
-        var panel = try XCTUnwrap(SpotPanel(output: PluginOutput(text: "part=a\ntitle=A\n\npart=b\ntitle=B\n")))
+        var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "part=a\ntitle=A\n\npart=b\ntitle=B\n")))
 
         panel.merge(PluginOutput(text: "part=b\ntitle=New\n"))
         XCTAssertEqual(panel.parts.map(\.title), ["A", "New"])
@@ -99,7 +99,7 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAFrameWithALayoutReplacesTheSheet() throws {
-        var panel = try XCTUnwrap(SpotPanel(output: PluginOutput(text: "part=a\ntitle=A\n\npart=b\ntitle=B\n")))
+        var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "part=a\ntitle=A\n\npart=b\ntitle=B\n")))
 
         panel.merge(PluginOutput(text: "grid=c\n\npart=c\ncell=c\ntitle=C\n"))
 
@@ -108,7 +108,7 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAFrameKeepsTheTextThePersonIsTyping() throws {
-        var panel = try XCTUnwrap(SpotPanel(output: PluginOutput(text: "part=a\ntext=typed\n")))
+        var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "part=a\ntext=typed\n")))
 
         panel.merge(PluginOutput(text: "part=a\ntext=old\n"), keeping: "a")
 
@@ -171,7 +171,7 @@ final class SheetStreamTests: XCTestCase {
 
     func testAPlainFirstReadOfAStayingScriptGivesItsFirstFrame() async throws {
         let url = try script("# stay=true\nwhile IFS= read -r line; do [ -n \"$line\" ] || printf 'part=a\\ntitle=A\\n---\\n'; done")
-        let command = PluginCommand(id: "a", name: "A", url: url, kind: .list, stays: true)
+        let command = Spot(id: "a", name: "A", url: url, kind: .list, stays: true)
 
         let output = try await command.items(timeout: 5)
 

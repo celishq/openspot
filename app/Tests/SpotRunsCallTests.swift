@@ -345,7 +345,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testATwoMegabyteRunIsLeftOutOfTheArgumentsAndStdinHoldsItAsValue() async throws {
         let url = try script(body: "printf '%s\\n' \"$#\"\ncat")
 
-        let text = try await runs.answer(of: PluginCommand(id: "script", name: "Script", url: url), .item(SpotItem(title: "A", run: Self.big)))
+        let text = try await runs.answer(of: Spot(id: "script", name: "Script", url: url), .item(SpotItem(title: "A", run: Self.big)))
 
         XCTAssertTrue(text.hasPrefix("1\n"))
         XCTAssertEqual(TextBlock.blocks(in: String(text.dropFirst(2))).first?.value("value"), Self.big)
@@ -355,7 +355,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         let url = try script(body: "printf '%s' \"${#2}\"")
         let value = String(repeating: "x", count: 65_536)
 
-        let text = try await runs.answer(of: PluginCommand(id: "script", name: "Script", url: url), .set("a", to: value), input: "a=\(value)\n")
+        let text = try await runs.answer(of: Spot(id: "script", name: "Script", url: url), .set("a", to: value), input: "a=\(value)\n")
 
         XCTAssertEqual(text, "65536")
     }

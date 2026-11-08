@@ -27,8 +27,8 @@ final class CommandLinkTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func settings(_ link: CommandLink) -> Settings {
-        Settings(file: ConfigFile(url: folder.appendingPathComponent("config.toml")), folder: folder, link: link)
+    private func settings(_ link: CommandLink) -> SettingsSpot {
+        SettingsSpot(file: ConfigFile(url: folder.appendingPathComponent("config.toml")), folder: folder, link: link)
     }
 
     func testSettingsListsTheRowOffUntilALinkPointsAtTheApp() throws {

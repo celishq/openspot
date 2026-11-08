@@ -7,8 +7,8 @@ final class ActionMenuTests: XCTestCase {
     private let new = CommandAction(id: "new", title: "New", scope: .command, isForm: true)
     private let item = SpotItem(title: "One", run: "1")
 
-    private func command(kind: SpotKind = .list, primary: String? = "Copy") -> PluginCommand {
-        PluginCommand(id: "a/A", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: kind, primary: primary, actions: [paste, delete, new])
+    private func command(kind: SpotKind = .list, primary: String? = "Copy") -> Spot {
+        Spot(id: "a/A", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: kind, primary: primary, actions: [paste, delete, new])
     }
 
     func testAGridCardOffersToEditTheSpotsAfterItsActions() throws {
@@ -40,7 +40,7 @@ final class ActionMenuTests: XCTestCase {
     }
 
     func testAMenuWithOnlySharingStillOpens() throws {
-        let slider = PluginCommand(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .slider)
+        let slider = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .slider)
 
         XCTAssertNil(ActionMenu(command: slider, item: nil))
         XCTAssertEqual(ActionMenu(command: slider, item: nil, extras: [.share])?.rows.map(\.title), ["Copy to share"])
@@ -56,7 +56,7 @@ final class ActionMenuTests: XCTestCase {
     }
 
     func testTheRowsOfTheAppStayOutOfTheHint() throws {
-        let plain = PluginCommand(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list)
+        let plain = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list)
 
         XCTAssertEqual(ActionMenu(command: plain, item: nil, extras: [.share, .remove()])?.hint, "⏎ Open   ⌘K Actions")
     }
@@ -88,7 +88,7 @@ final class ActionMenuTests: XCTestCase {
     }
 
     func testTheHintNamesTheFirstKeysAndTheMenu() throws {
-        let keyed = PluginCommand(id: "a/A", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list, primary: "Copy", actions: [paste, delete, new])
+        let keyed = Spot(id: "a/A", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list, primary: "Copy", actions: [paste, delete, new])
 
         XCTAssertEqual(ActionMenu(command: keyed, item: item)?.hint, "⏎ Copy   ⌘⏎ Paste   ⌘K Actions")
         XCTAssertEqual(ActionMenu(command: keyed, item: nil, showsPrimary: false)?.hint, "⌘K Actions")
@@ -131,7 +131,7 @@ final class ActionMenuTests: XCTestCase {
     }
 
     func testARunningRowSaysThatItsPressStopsTheCall() throws {
-        let keyed = PluginCommand(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .launch, actions: [
+        let keyed = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .launch, actions: [
             CommandAction(id: "copy", title: "Copy", key: ActionKey(text: "cmd+c"), scope: .command)
         ])
         let menu = try XCTUnwrap(ActionMenu(command: keyed, item: nil))
@@ -147,7 +147,7 @@ final class ActionMenuTests: XCTestCase {
     }
 
     func testAPressOfARunningRowStopsWithNoQuestion() throws {
-        let asking = PluginCommand(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .launch, actions: [
+        let asking = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .launch, actions: [
             CommandAction(id: "wipe", title: "Wipe", scope: .command, confirm: "Wipe all?")
         ])
         var menu = try XCTUnwrap(ActionMenu(command: asking, item: nil, showsPrimary: false))

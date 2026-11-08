@@ -173,8 +173,8 @@ final class WidgetContractTests: XCTestCase {
         try script("three.sh", "#!/bin/sh\n# stay=true\n# tray=true\n")
 
         XCTAssertEqual(try scan.refused, [
-            Refusal(file: "one", reason: "One needs a number in its read, or stay=true, to show in the menu bar"),
-            Refusal(file: "two", reason: "Two needs a number in its read, or stay=true, to show in the menu bar")
+            ScanResult.Refusal(file: "one", reason: "One needs a number in its read, or stay=true, to show in the menu bar"),
+            ScanResult.Refusal(file: "two", reason: "Two needs a number in its read, or stay=true, to show in the menu bar")
         ])
     }
 
@@ -223,7 +223,7 @@ final class WidgetContractTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.commands, [])
-        XCTAssertEqual(scan.refused, [Refusal(file: "mine", reason: "Now names no metric called power")])
+        XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "mine", reason: "Now names no metric called power")])
     }
 
     func testAWidgetThatOpensAMissingCommandIsLeftOutAndReported() throws {
@@ -233,13 +233,13 @@ final class WidgetContractTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.commands, [])
-        XCTAssertEqual(scan.refused, [Refusal(file: "mine", reason: "Now opens no command called nothing")])
+        XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "mine", reason: "Now opens no command called nothing")])
     }
 
     func testAWidgetOffersEnterOnlyWhenItOpensSomething() {
         let url = URL(fileURLWithPath: "/tmp")
-        let still = PluginCommand(id: "a/b", name: "b", url: url, kind: .widget)
-        let opening = PluginCommand(id: "a/c", name: "c", url: url, kind: .widget, opens: "a/d")
+        let still = Spot(id: "a/b", name: "b", url: url, kind: .widget)
+        let opening = Spot(id: "a/c", name: "c", url: url, kind: .widget, opens: "a/d")
 
         XCTAssertNil(still.primaryTitle(hasItem: false))
         XCTAssertEqual(opening.primaryTitle(hasItem: false), "Open")
@@ -308,7 +308,7 @@ final class WidgetContractTests: XCTestCase {
     func testATomlFaultNamesItsLine() throws {
         try widgets("[[widgets]]\nnot a pair\n")
 
-        XCTAssertEqual(try scan.refused, [Refusal(file: "mine", reason: "line 2: expected a key and a value")])
+        XCTAssertEqual(try scan.refused, [ScanResult.Refusal(file: "mine", reason: "line 2: expected a key and a value")])
     }
 
     func testTheCheckReportsARefusedHeaderAndABadMetric() async throws {

@@ -30,7 +30,7 @@ class SamplePluginsCase: XCTestCase {
         return String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
     }
 
-    func turnCaffeinateOnAndOff(_ caffeinate: PluginCommand) async throws {
+    func turnCaffeinateOnAndOff(_ caffeinate: Spot) async throws {
         let toast = try await caffeinate.perform(.item(SpotItem(title: "1 minute", run: "60")), timeout: 5)
         XCTAssertEqual(toast, "Caffeinate is on for 1 minute")
         var started = try await caffeinate.state(timeout: 5)
@@ -130,7 +130,7 @@ class SamplePluginsCase: XCTestCase {
         """
     }
 
-    func savedLink(_ url: String, in links: PluginCommand) async throws {
+    func savedLink(_ url: String, in links: Spot) async throws {
         let new = try await action("new", of: links)
         var draft = FormDraft(form: try await links.form(new, item: nil, timeout: 5))
         draft.set("Site", for: "title")
@@ -139,7 +139,7 @@ class SamplePluginsCase: XCTestCase {
     }
 
     /// Reads a script to find the action that it prints.
-    func action(_ id: String, of command: PluginCommand) async throws -> CommandAction {
+    func action(_ id: String, of command: Spot) async throws -> CommandAction {
         let actions = try await command.items(timeout: 5).actions
         return try XCTUnwrap(actions.first { $0.id == id })
     }
@@ -156,7 +156,7 @@ class SamplePluginsCase: XCTestCase {
     }
 
     /// Puts a stand-in for the openspot command on the path. It knows two languages and translates to upper case.
-    func fakeTranslate(in folder: URL, status: String? = nil) throws -> PluginCommand {
+    func fakeTranslate(in folder: URL, status: String? = nil) throws -> Spot {
         let reply = status.map { "printf 'status=\($0)\\nfrom=ru\\nto=en\\n'" } ?? #"""
         case "$text" in *[а-я]*) found=ru ;; *) found=en ;; esac
         [ "$from" = auto ] || found=$from
@@ -187,9 +187,9 @@ class SamplePluginsCase: XCTestCase {
     /// Runs a handler through the calls as an open sheet does: one run for each, with the values of the sheet on stdin.
     /// Returns the answer to the last one.
     @MainActor
-    static func drive(_ command: PluginCommand, _ actions: [SpotAction]) async throws -> PluginOutput {
+    static func drive(_ command: Spot, _ actions: [SpotAction]) async throws -> PluginOutput {
         var last = try await command.items(timeout: 10)
-        var panel = try XCTUnwrap(SpotPanel(output: last))
+        var panel = try XCTUnwrap(SheetParts(output: last))
         for action in actions {
             if action.arguments.count == 2 { panel.set(action.arguments[1], of: action.arguments[0]) }
             last = PluginOutput(text: try await SpotRuns().answer(of: command, action, input: panel.values, limit: 30))
@@ -198,7 +198,7 @@ class SamplePluginsCase: XCTestCase {
         return last
     }
 
-    func fakeEmoji(in folder: URL) throws -> PluginCommand {
+    func fakeEmoji(in folder: URL) throws -> Spot {
         let script = """
         #!/bin/sh
         case "$1" in
@@ -214,7 +214,7 @@ class SamplePluginsCase: XCTestCase {
 
     /// Reads a sheet, and returns the options of its target menu with its first parts, and after `release` appears.
     @MainActor
-    static func targetOptions(of command: PluginCommand, release: URL) async throws -> (first: Int, last: Int) {
+    static func targetOptions(of command: Spot, release: URL) async throws -> (first: Int, last: Int) {
         let runs = SpotRuns()
         defer { runs.quit() }
         let sheet = runs.sheet(for: command)

@@ -2,8 +2,8 @@ import XCTest
 @testable import OpenspotCore
 
 final class SpotArrangementTests: XCTestCase {
-    private func commands(_ ids: String...) -> [PluginCommand] {
-        ids.map { PluginCommand(id: $0, name: $0, url: URL(fileURLWithPath: "/bin/true")) }
+    private func commands(_ ids: String...) -> [Spot] {
+        ids.map { Spot(id: $0, name: $0, url: URL(fileURLWithPath: "/bin/true")) }
     }
 
     private func choice(_ id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil) -> SpotArrangement.Choice {
@@ -127,8 +127,8 @@ final class SpotArrangementTests: XCTestCase {
     func testASpotOffersTheSizesItCanTake() {
         let url = URL(fileURLWithPath: "/bin/true")
 
-        XCTAssertEqual(PluginCommand(id: "a", name: "A", url: url).sizes.count, 5)
-        XCTAssertEqual(PluginCommand(id: "w", name: "W", url: url, kind: .widget).sizes, [])
+        XCTAssertEqual(Spot(id: "a", name: "A", url: url).sizes.count, 5)
+        XCTAssertEqual(Spot(id: "w", name: "W", url: url, kind: .widget).sizes, [])
         let updates = ShippedSpot.commands(folder: url, guide: url, app: "", update: UpdateSpot(version: "1", runningWork: { 0 }, check: {}, restart: {}))
         XCTAssertFalse(updates[0].sizes.contains(.small))
     }

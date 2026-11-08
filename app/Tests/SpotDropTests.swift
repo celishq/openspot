@@ -46,7 +46,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     /// Writes a script with these header lines, which logs each call before its body runs, and gives its sheet.
-    private func sheet(header: String = "", _ body: String = "") throws -> SpotSheet {
+    private func sheet(header: String = "", _ body: String = "") throws -> SpotRun {
         let url = folder.appendingPathComponent("script.sh")
         let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
         try "#!/bin/sh\n\(lines)\necho $$ >> '\(path("pids"))'\necho \"$*\" >> '\(path("log"))'\n\(body)\n".writeScript(to: url)
@@ -80,8 +80,8 @@ final class SpotDropTests: XCTestCase {
         try await Task.sleep(for: .seconds(seconds))
     }
 
-    private func command(drop: [String]) -> PluginCommand {
-        PluginCommand(id: "a", name: "A", url: folder, drop: drop)
+    private func command(drop: [String]) -> Spot {
+        Spot(id: "a", name: "A", url: folder, drop: drop)
     }
 
     // MARK: D2
@@ -233,7 +233,7 @@ final class SpotDropTests: XCTestCase {
         let url = folder.appendingPathComponent("plain.sh")
         try "#!/bin/sh\nprintf '%s|' \"$@\"\n".writeScript(to: url)
 
-        let text = try await runs.answer(of: PluginCommand(id: "plain", name: "Plain", url: url), .drop(paths: ["-n", "--", "a b"]))
+        let text = try await runs.answer(of: Spot(id: "plain", name: "Plain", url: url), .drop(paths: ["-n", "--", "a b"]))
 
         XCTAssertEqual(text, "drop|-n|--|a b|")
     }
@@ -252,7 +252,7 @@ final class SpotDropTests: XCTestCase {
     // MARK: D4
 
     /// An open sheet whose running `work` action goes on until the file `release` appears.
-    private func busySheet() async throws -> SpotSheet {
+    private func busySheet() async throws -> SpotRun {
         let sheet = try sheet(header: "read=sheet\ndrop=mov", """
         case "$1" in
           read) printf 'action=work\\ntitle=Work\\nscope=command\\n\\nrow=A\\nrun=a\\n' ;;
@@ -384,7 +384,7 @@ final class SpotDropTests: XCTestCase {
     // MARK: Y1, Y2
 
     /// The sheet of a staying script that takes `mov` files. It logs each line of its stdin, and prints a frame after each block.
-    private func stayingSheet(header: String = "") throws -> SpotSheet {
+    private func stayingSheet(header: String = "") throws -> SpotRun {
         try sheet(header: "stay=true\ndrop=mov\n\(header)", """
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("blocks"))'
@@ -441,7 +441,7 @@ final class SpotDropTests: XCTestCase {
     // MARK: D5
 
     /// Counts how often the sheet asks its owner for a choice of files.
-    private func choiceCount(of sheet: SpotSheet) -> () -> Int {
+    private func choiceCount(of sheet: SpotRun) -> () -> Int {
         var count = 0
         sheet.onReport = { if case .chooseFiles = $0 { count += 1 } }
         return { count }

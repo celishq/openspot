@@ -1,0 +1,127 @@
+import Foundation
+
+/// The sizes and gaps of the panel, and the places they give the field, the grid, the cards and the sheets.
+public enum SpotTokens {
+    public static let radius: CGFloat = 26
+    public static let columnGap: CGFloat = 11
+    public static let rowGap: CGFloat = 12
+    public static let padding: CGFloat = 13
+    public static let gridWidth: CGFloat = 289
+    public static let columns = 4
+    public static let cell: CGFloat = (gridWidth - columnGap * CGFloat(columns - 1)) / CGFloat(columns)
+    public static let rowHeight: CGFloat = 64
+    public static let glyphSize: CGFloat = 36
+    public static let workMark: CGFloat = 16
+    public static let keycap: CGFloat = 20
+    public static let keycapRadius: CGFloat = 6
+    /// How far from each edge the rim of a round corner passes through its diagonal, as a part of the radius.
+    public static let rimPoint: CGFloat = 1 - 0.5.squareRoot()
+    public static let listRowHeight: CGFloat = 40
+    public static let listRowGap: CGFloat = 6
+    public static let listIconSize: CGFloat = 24
+    public static let hintHeight: CGFloat = 14
+    public static let hintPillInset: CGFloat = 4
+    public static let hintKeyHeight: CGFloat = 16
+    /// The gap from a key to the edge of the hint, the same on each side, so that the two curves share one centre.
+    public static let hintKeyInset: CGFloat = hintHeight / 2 + hintPillInset - hintKeyHeight / 2
+    public static let hintKeyPadding: CGFloat = 5
+    public static let hintKeyGap: CGFloat = 4
+    public static let hintGroupGap: CGFloat = 12
+    public static let hintEndPadding: CGFloat = 10
+    public static let hintPillHeight: CGFloat = hintHeight + 2 * hintPillInset
+    /// The room under the cards for the hint: one gap, then the hint's pill.
+    public static let hintBlock: CGFloat = rowGap + hintPillHeight
+    public static let menuRowHeight: CGFloat = 32
+    public static let menuRowGap: CGFloat = 2
+    public static let menuPadding: CGFloat = 8
+    public static let placeGap: CGFloat = 8
+    public static let sideGap: CGFloat = 20
+    public static let controlPadding: CGFloat = 7
+    public static let formLabelHeight: CGFloat = 14
+    public static let formLabelGap: CGFloat = 4
+    public static let formFieldGap: CGFloat = 12
+    public static let formTextHeight: CGFloat = 120
+    public static let halo: CGFloat = 90
+    public static let panelWidth: CGFloat = gridWidth + 2 * halo
+    public static let panelHeight: CGFloat = 2 * halo + 7 * rowHeight + 6 * rowGap + hintBlock
+    public static let sheetMaxHeight: CGFloat = panelHeight - 2 * halo - hintBlock
+
+    /// How far the search field moves down to sit under the title of an open sheet.
+    public static let sheetFieldDrop: CGFloat = padding + glyphSize + rowGap
+
+    public static func width(columns: Int) -> CGFloat {
+        CGFloat(columns) * cell + CGFloat(columns - 1) * columnGap
+    }
+
+    public static func height(rows: Int) -> CGFloat {
+        CGFloat(rows) * rowHeight + CGFloat(rows - 1) * rowGap
+    }
+
+    /// The space between the edge of a card and what it shows. A 1x1 widget keeps more room for its one mark.
+    public static func cardPadding(for size: SpotSize, isWidget: Bool) -> CGFloat {
+        isWidget && size == .small ? controlPadding : padding
+    }
+
+    /// How far a sheet's rows start below its top edge.
+    public static let sheetRowsTop: CGFloat = sheetFieldDrop + listRowHeight + rowGap
+
+    /// The side of a square button when a line holds this many rows.
+    public static func square(perLine: Int) -> CGFloat {
+        (SheetPlacement.width - listRowGap * CGFloat(perLine - 1)) / CGFloat(perLine)
+    }
+
+    /// The frame of a sheet with these rows. An empty sheet keeps room for one row, and a long one stops at the panel.
+    /// More than one row on a line makes square buttons.
+    public static func sheetRect(rows: Int, perLine: Int = 1) -> CGRect {
+        let lines = CGFloat(max((rows + perLine - 1) / perLine, 1))
+        let line = perLine > 1 ? square(perLine: perLine) : listRowHeight
+        let height = sheetRowsTop + lines * line + (lines - 1) * listRowGap + padding
+        return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
+    }
+
+    /// Whether a sheet with these rows shows them all with no scrolling.
+    public static func sheetFits(rows: Int, perLine: Int = 1) -> Bool {
+        sheetRect(rows: rows, perLine: perLine).height < sheetMaxHeight
+    }
+
+    public static let editorInset: CGFloat = 5
+
+    /// The frame of a sheet that shows these parts. A tall one stops at the panel, and its parts scroll.
+    public static func panelRect(_ panel: SheetParts) -> CGRect {
+        let field = panel.showsRows ? SheetPlacement.fieldRoom : 0
+        let height = padding + glyphSize + rowGap + field + panel.placement.height + padding
+        return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
+    }
+
+    /// The frame of a sheet that shows this form.
+    public static func formRect(_ form: ItemForm) -> CGRect {
+        let fields = form.fields.reduce(CGFloat(0)) { sum, field in
+            sum + formLabelHeight + formLabelGap + (field.type == .multiline ? formTextHeight : listRowHeight)
+        }
+        let gaps = CGFloat(max(form.fields.count - 1, 0)) * formFieldGap
+        let height = padding + glyphSize + rowGap + fields + gaps + padding
+        return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
+    }
+
+    public static func menuHeight(rows: Int) -> CGFloat {
+        CGFloat(rows) * menuRowHeight + CGFloat(max(rows - 1, 0)) * menuRowGap + 2 * menuPadding
+    }
+
+    /// The height of the blur around the search field and these card rows. It stops at the height of the panel.
+    public static func backdropHeight(rows: Int) -> CGFloat {
+        let cards = rows > 0 ? rowGap + height(rows: rows) : 0
+        return min(2 * halo + rowHeight + cards + hintBlock, panelHeight)
+    }
+
+    public static func corner(for size: SpotSize) -> CGFloat {
+        size.rows == 1 && size.columns < columns ? rowHeight / 2 : radius
+    }
+
+    /// Where the grid's first row starts: under the field, one gap down.
+    public static let gridTop: CGFloat = halo + rowHeight + rowGap
+
+    /// Where the grid's top left corner lies in the panel, with the grid scrolled this far.
+    public static func gridOrigin(scrollOffset: CGFloat) -> CGPoint {
+        CGPoint(x: halo, y: gridTop - scrollOffset)
+    }
+}
