@@ -16,6 +16,19 @@ final class SpotStateTests: XCTestCase {
         XCTAssertFalse(try state("grid=false").isOnGrid)
     }
 
+    func testAReadSetsTheSizeAndTheOrderOfItsCardAndAChangeKeepsThem() throws {
+        let read = try state("size=large\norder=-3")
+        let block = try XCTUnwrap(TextBlock.blocks(in: "on=true").first)
+
+        XCTAssertNil(header.size)
+        XCTAssertNil(header.order)
+        XCTAssertEqual(read.size, .large)
+        XCTAssertEqual(read.order, -3)
+        XCTAssertEqual(read.taking(block).size, .large)
+        XCTAssertEqual(read.showing(title: "Busy", detail: nil).order, -3)
+        XCTAssertEqual(read.withLevel(2).size, .large)
+    }
+
     func testAFrameWithNoGridKeepsTheHeader() {
         let hidden = SpotState(title: "Name", isOnGrid: false)
 

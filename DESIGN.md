@@ -454,7 +454,6 @@ A change to the meaning of a word that exists is a breaking change. Do not make 
 
 | Rules | Module | Today |
 |---|---|---|
-| F9 | `Core/Plugin/Plugin.swift`, `Core/Run/SpotRun.swift` | A read sets only `grid`. |
 | R12 | `Core/Script/SheetFrameReader.swift` | Keeps escape codes as text. |
 | F10 | `Core/Plugin/*` | No MCP. |
 
