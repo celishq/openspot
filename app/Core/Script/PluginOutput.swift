@@ -1,7 +1,7 @@
 import Foundation
 
-/// What a script prints, sorted by the first key of each block: `row`, a kind of part, or the effects `toast` and `open`.
-/// The first other block says how the spot itself looks. A button that the drawing does not place is an action (U6). Each
+/// What a script prints, sorted by the first key of each block: `row` or a kind of part. The one other block is the head,
+/// which says how the spot itself looks and holds the effects `toast` and `open`. A button that the drawing does not place is an action (U6). Each
 /// `run` value appears once.
 public struct PluginOutput: Equatable, Sendable {
     public private(set) var summary: TextBlock?
@@ -80,8 +80,6 @@ public struct PluginOutput: Equatable, Sendable {
                 partFaults += PartCatalog.faults(in: block)
             } else if summary == nil, block == head {
                 summary = block
-                take(effects: block)
-            } else if kind == "toast" || kind == "open" {
                 take(effects: block)
             } else {
                 errors.append(block.firstLine)

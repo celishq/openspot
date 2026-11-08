@@ -32,7 +32,7 @@ The first key of a block names its kind, and the registry in `README.md` lists t
 first key is the head, which says how the spot itself looks. A later block with another first key is skipped (R10), and
 so is a line with an unknown key (R2). Printing nothing means that there is nothing to show (R4).
 
-`toast` and `open` can be keys of the head or blocks of their own (R11). `toast=Saved` shows at once, also with the panel
+`toast` and `open` are keys of the head, which can come at any place in the output (R11). `toast=Saved` shows at once, also with the panel
 closed (R5).
 
 ## The header

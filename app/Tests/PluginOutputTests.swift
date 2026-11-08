@@ -49,9 +49,10 @@ final class PluginOutputTests: XCTestCase {
         XCTAssertEqual(output.errors, ["detail=Late"])
     }
 
-    func testAnEffectIsAKeyOfTheHeadOrABlockOfItsOwnAtAnyPlace() {
+    func testAnEffectIsAKeyOfTheOneHeadAtAnyPlace() {
         let head = PluginOutput(text: "toast=Saved\nopen=https://example.com\n")
-        let after = PluginOutput(text: "row=a\ntitle=A\n\ntoast=Saved\n\nopen=https://example.com\n")
+        let after = PluginOutput(text: "row=a\ntitle=A\n\ntoast=Saved\nopen=https://example.com\n")
+        let second = PluginOutput(text: "toast=Saved\n\nopen=https://example.com\n")
 
         XCTAssertEqual(head.toast, "Saved")
         XCTAssertEqual(head.open, "https://example.com")
@@ -59,6 +60,8 @@ final class PluginOutputTests: XCTestCase {
         XCTAssertEqual(after.open, "https://example.com")
         XCTAssertEqual(after.items.map(\.run), ["a"])
         XCTAssertEqual(after.errors, [])
+        XCTAssertNil(second.open)
+        XCTAssertEqual(second.errors, ["open=https://example.com"])
     }
 
     func testReadsEachKeyOfAnAction() {

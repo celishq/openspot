@@ -170,8 +170,14 @@ and it prints the whole output again, or nothing to be read again (B6). The app 
 answer to a call that a newer change has outdated (U10). The first frame of a read replaces all that the spot shows, and
 each later frame of the same read changes only what it prints (U11).
 
-The head is the first block with no kind. It holds the drawings, `value`, `title` and `detail` for the spot's card,
-`size`, `search`, `recents`, `toast` and `open`. A head is not drawn.
+The head is the one block with no kind, at any place in the output, and it is not drawn. It holds four groups:
+
+- the drawing: `grid=`, `card=` and `pad=` lines for the sheet, and `grid.<size>=` lines for the card;
+- the spot: `value`, and `title`, `detail` and `size` for its card;
+- the rows: `search` and `recents`;
+- the effects: `toast` and `open`.
+
+A second block with no kind is an error.
 
 ## The value
 
