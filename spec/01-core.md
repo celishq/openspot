@@ -150,7 +150,7 @@ A capability is `openspot <noun> <verb>`, and it works the same from a script an
 lists each one. A capability that cannot answer prints `status=<word>` (K4). One that keeps state keeps it in its own
 helper, which a script never starts or stops (K3). When macOS already has a command, such as `pbcopy` or `open`, use it.
 
-`openspot render <file.png>` draws the sheet that stdin holds, and `openspot render --card <size> <file.png>` draws its card
+`openspot render [--view <file.swift>] <file.png>` draws the sheet that stdin holds, with the plugin's view from a Swift file, and `openspot render --card <size> <file.png>` draws its card
 at a size such as `wide`, so you can see a result before you stop. Run `openspot check <plugins folder>` before you stop. It loads each plugin, reads each one that has a `read`, and prints
 each fault.
 

@@ -26,7 +26,8 @@ final class CommandLineCallTests: XCTestCase {
     }
 
     func testARenderNamesItsFile() {
-        XCTAssertEqual(CommandLineCall(arguments: ["render", "a.png"]), .render("a.png"))
+        XCTAssertEqual(CommandLineCall(arguments: ["render", "a.png"]), .render("a.png", view: nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["render", "--view", "cups.swift", "a.png"]), .render("a.png", view: "cups.swift"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--card", "wide", "a.png"]), .renderCard(.wide, "a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render", "--card", "huge", "a.png"]), .unknown("render --card huge a.png"))
         XCTAssertEqual(CommandLineCall(arguments: ["render"]), .unknown("render"))

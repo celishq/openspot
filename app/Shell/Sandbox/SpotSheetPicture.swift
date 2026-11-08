@@ -14,16 +14,23 @@ enum SpotSheetPicture {
         return list
     }
 
-    /// Reads a sheet, writes its picture as a PNG and exits. A sheet with no parts exits with 1.
-    static func run(text: String, path: String) -> Never {
+    /// Reads a sheet, writes its picture as a PNG and exits. A sheet with no parts exits with 1. A Swift file of a view is
+    /// built first, and the view draws in the area of its `view` component.
+    static func run(text: String, path: String, view source: String? = nil) -> Never {
         NSApplication.shared.setActivationPolicy(.prohibited)
         let output = PluginOutput(text: text)
         guard let panel = SheetParts(output: output) else {
             FileHandle.standardError.write(Data("The sheet has no parts.\n".utf8))
             exit(1)
         }
+        let views = SpotViews()
+        let source = source.map { URL(fileURLWithPath: $0).path }
+        let values = Dictionary(grouping: output.view?.fields ?? [], by: \.key).mapValues { $0.map(\.value) }
         let size = SpotTokens.panelRect(panel).size
-        let view = NSHostingView(rootView: SpotSheetPreview(panel: panel, list: Self.list(of: output))
+        let preview = SpotSheetPreview(panel: panel, list: Self.list(of: output), customView: { room in
+            source.map { SpotCustomView(source: $0, values: values, card: .square, room: room, views: views) }
+        })
+        let view = NSHostingView(rootView: preview
             .padding(margin)
             .background(SpotTheme.window)
             .preferredColorScheme(.dark))
@@ -31,12 +38,15 @@ enum SpotSheetPicture {
         let window = NSWindow(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false)
         window.contentView = view
         window.orderBack(nil)
-        DispatchQueue.main.asyncAfter(deadline: .now() + settle) {
-            MainActor.assumeIsolated {
-                guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { exit(1) }
-                view.cacheDisplay(in: view.bounds, to: bitmap)
-                let data = bitmap.representation(using: .png, properties: [:])
-                exit(FileManager.default.createFile(atPath: path, contents: data) ? 0 : 1)
+        Task { @MainActor in
+            if let source { await views.load(source) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + settle) {
+                MainActor.assumeIsolated {
+                    guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { exit(1) }
+                    view.cacheDisplay(in: view.bounds, to: bitmap)
+                    let data = bitmap.representation(using: .png, properties: [:])
+                    exit(FileManager.default.createFile(atPath: path, contents: data) ? 0 : 1)
+                }
             }
         }
         NSApplication.shared.run()
