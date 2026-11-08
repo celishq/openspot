@@ -89,6 +89,7 @@ final class SettingsSpotTests: XCTestCase {
 
         XCTAssertEqual(items.dropFirst(2).map(\.symbol), ["rectangle.lefthalf.filled", "macwindow"])
         XCTAssertEqual(items.dropFirst(2).map(\.title), ["Left side", "Right side"])
+        XCTAssertEqual(items.dropFirst(2).map(\.subtitle), ["Move", "Move"])
     }
 
     func testAScriptWithCommandsAndNoReadOpensToTheKeysOfItsOwnCommands() async throws {
@@ -102,6 +103,7 @@ final class SettingsSpotTests: XCTestCase {
         XCTAssertEqual(move.kind, .list)
         let items = try await move.items(timeout: 1).items
         XCTAssertEqual(items.map(\.title), ["Left side"])
+        XCTAssertEqual(items.map(\.subtitle), [nil])
         _ = try await runs.answer(of: move, .set("key:move:left", to: "ctrl+option+left"), limit: 1)
         XCTAssertEqual(file.read().keys.map(\.command), ["left"])
         let press = try await runs.answer(of: move, .press("left"), limit: 5)
