@@ -34,7 +34,7 @@ tells the person, and does not start it again until a scan finds its file change
 | ID | Rule |
 |---|---|
 | Y1 | A staying script gets one block on stdin for each call: `name`, `value`, `field.<id>` for each value of the sheet, and `id`. |
-| Y2 | Each call reaches the running script. No call starts a second copy. |
+| Y2 | Each call reaches the running script. No call starts a second copy. A copy that Openspot ends gets no more calls, but it can finish its last calls for up to 4 seconds (Y4) while a new copy starts. So two copies share state only through whole files (R8). |
 | Y3 | A staying script starts when something first wants it (L3). |
 | Y4 | To end it, Openspot closes its stdin, then terminates its group after 2 seconds and kills it 2 seconds later. |
 | Y5 | If it ends and something still wants it, the next call starts it again. After 3 failures in one minute, it waits for a changed file, and the person is told. |

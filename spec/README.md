@@ -72,10 +72,12 @@ These rules come from the way Nostr writes its NIPs.
 In order. An earlier goal wins when two goals conflict.
 
 1. **A small plugin costs almost nothing.** One executable file. No build, no manifest, no account, no SDK.
-2. **A plugin never draws in Openspot.** Openspot draws all that a script prints. A script can open its own Mac window.
+2. **Openspot draws a plugin's data.** A script prints data, and Openspot draws it. A plugin can add its own SwiftUI
+   view to its spot, and a script can open its own Mac window.
 3. **Nothing runs by surprise.** Openspot runs a script only when a person acts or when its header says so.
 4. **A plugin has real power.** It can use any Mac API, hold long-lived state and stream a long process.
-5. **A model can write a plugin.** The contract is small enough that a model writes a good plugin from the guide alone.
+5. **An LLM writes a working plugin.** With `GUIDE.md` alone, an LLM writes a plugin that passes `openspot check` and
+   works on the first try.
 
 ## How to extend
 
@@ -92,10 +94,4 @@ An old script never sees a word that it did not ask for.
 
 ## Open items
 
-1. K2: how much of the speed of a kept translation helper comes from the kept session, and not from macOS.
-2. P5: what macOS does when a compiled program under Openspot calls a protected API. It needs the person.
-3. M3: whether each plugin still fits the time limits when reads run at the same time.
-4. L11: whether 1 second is enough to stop a double press from stopping work.
-5. D1, D2: a real drag over the menu bar item. An off-screen render proves the mark, and a test proves which cards take it.
-6. Y2: a copy that Openspot ended still runs its calls for up to 4 seconds (Y4), so two copies can run for that time.
-7. Y7: the running mark and the stop of a staying call, in the real panel.
+1. P5: what macOS does when a compiled program under Openspot calls a protected API. A person must try it on a Mac.
