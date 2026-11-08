@@ -119,7 +119,7 @@ esac
 ```
 
 The shell helper gives `esc <text>`, which writes text as a value, and `value <id>`, which prints one value from stdin.
-Loading it reads all of stdin.
+Loading it reads all of stdin. In a staying script it gives `next` and `arg <n>` for each call instead (04).
 
 ```sh
 #!/bin/sh

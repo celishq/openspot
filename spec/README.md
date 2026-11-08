@@ -47,7 +47,7 @@ These rules come from the way Nostr writes its NIPs.
 | `global`, `tray`                                                                                         | Header key           | 02   |
 | `stay`                                                                                                   | Header key           | 04   |
 | `end`                                                                                                    | Head key             | 04   |
-| `call`, `arg`, `stop`                                                                                    | Stdin key            | 04   |
+| `call`, `reason`, `arg`, `stop`                                                                          | Stdin key            | 04   |
 | `sheet`, `panel`, a number, `launch`, `wake`                                                             | Moment               | 01   |
 | `toast`, `link`                                                                                          | Head key             | 01   |
 | `text`, `number`, `gauge`, `graph`, `picture`, `spot`, `switch`, `slider`, `field`, `choice`, `hotkey`, `button`, `section`, `repeat`, `template`, `row` | Block kind | 02 |

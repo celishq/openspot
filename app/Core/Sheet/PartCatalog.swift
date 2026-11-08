@@ -119,8 +119,10 @@ public enum PartCatalog {
 
     A script with `# stay=true` in its header is one process that talks both ways, such as a local server: it runs while something \
     wants it, and from launch to quit with `launch` in its `read`. Each call reaches it on stdin as one block and a blank line: \
-    `call=<n>`, one `arg` for each argument of a normal call, and the values of the sheet. It prints frames at any time. \
-    `end=<n>` in the head ends a call, and a second press sends the block `stop=<n>`. It must end when its input ends.
+    `call=<n>`, `reason=<word>` on a read, one `arg` for each argument of a normal call, and the values of the sheet. In the shell \
+    helper, `while next; do case "$(arg 1)" in …` reads them, with `$call`, `$reason`, `$stop` and `value <id>`. It prints \
+    frames at any time, and ends each call with `end=<n>` in a head: the frame that ends a read is its answer. A second press \
+    sends the block `stop=<n>`. It must end, with each process it started, when its input ends.
 
     """
 
