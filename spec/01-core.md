@@ -86,9 +86,8 @@ a widget or the menu bar shows it, or while the open panel reads it at `panel` (
 
 | Call                                   | When                                                               |
 | -------------------------------------- | ------------------------------------------------------------------ |
-| `<script>`                             | A click, with no `read` in its header.                             |
 | `<script> read [text] [form]...`       | A moment, or a search change with `search=script` (02).            |
-| `<script> run`                         | A click on a card with no sheet, with a `read` in its header.      |
+| `<script> run`                         | A click on a card that has no sheet. A script can ignore it.       |
 | `<script> open <row id>`               | A row is picked (02).                                              |
 | `<script> <id> [row id] [value]`       | A component changes or is pressed, with the id of its row (02).    |
 | `<script> drop <path> [path]...`       | Files are dropped on its card, each path as its own argument (D3). |

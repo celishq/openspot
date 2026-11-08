@@ -22,10 +22,10 @@ final class SpotActionTests: XCTestCase {
         XCTAssertEqual(Spot(id: "a", name: "A", url: url, read: .panel).click.arguments, ["run"])
     }
 
-    func testAClickOnAFileWithNoReadSendsNoArgument() {
+    func testAClickOnAFileWithNoReadSendsRun() {
         let url = URL(fileURLWithPath: "/x")
 
-        XCTAssertEqual(Spot(id: "a", name: "A", url: url).click.arguments, [])
+        XCTAssertEqual(Spot(id: "a", name: "A", url: url).click.arguments, ["run"])
     }
 
     func testAListItemSendsItsRunValue() {

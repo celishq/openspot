@@ -102,7 +102,7 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertFalse(command.readsState)
         XCTAssertEqual(command.pick, .close)
         XCTAssertFalse(command.isGlobal)
-        XCTAssertEqual(command.click.arguments, [])
+        XCTAssertEqual(command.click.arguments, ["run"])
     }
 
     func testEachExecutableInAFolderIsASpot() throws {

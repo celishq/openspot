@@ -220,8 +220,8 @@ final class SpotRunsWantTests: SpotRunsCase {
 
         sheet.open {}
 
-        try await wait("the sheet") { sheet.panel?.parts.first?.title == "0" }
-        XCTAssertEqual(log(), [""])
+        try await wait("the sheet") { sheet.panel?.parts.first?.title == "1" }
+        XCTAssertEqual(log(), ["run"])
     }
 
     func testTheSandboxReadsAFileWithARead() async throws {

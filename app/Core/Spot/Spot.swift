@@ -165,9 +165,9 @@ public struct Spot: Equatable, Sendable {
         read?.has(.panel) == true && !isGlobal
     }
 
-    /// The call that a click on its card makes: `run`, or no argument for a file with no `read`.
+    /// The call that a click on its card makes.
     public var click: SpotAction {
-        read == nil ? SpotAction(arguments: []) : .run
+        .run
     }
 
     /// Whether its `drop` takes files that are not folders.

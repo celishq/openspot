@@ -130,12 +130,12 @@ final class SpotTests: XCTestCase {
         XCTAssertEqual(form.title, "Edit")
     }
 
-    func testAClickOnAFileWithNoReadRunsItWithNoArgument() async throws {
-        let command = try writeCommand(kind: .launch, "echo \"$#\" > '\(marker.path)'")
+    func testAClickOnAFileWithNoReadRunsRun() async throws {
+        let command = try writeCommand(kind: .launch, "echo \"$1\" > '\(marker.path)'")
 
         try await command.perform(command.click, timeout: 5)
 
-        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "0\n")
+        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "run\n")
     }
 
     func testAClickOnACardWithAReadRunsRun() async throws {
