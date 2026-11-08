@@ -135,6 +135,8 @@ final class SpotsModel {
     private(set) var sheetHasLeftCard = false
     var closingPick: (item: SpotItem, entry: Entry)?
     let runs: SpotRuns
+    /// The plugins' own views that cards draw.
+    let views = SpotViews()
     var dragWatch: Task<Void, Never>?
     var dragPaths: [String] = []
     var draggedSpot: SpotDrop?

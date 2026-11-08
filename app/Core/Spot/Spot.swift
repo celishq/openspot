@@ -215,11 +215,13 @@ public struct Spot: Equatable, Sendable {
         return command
     }
 
-    /// The state that an output gives. A command with no state to read keeps its header.
+    /// The state that an output gives, with each value of its head for a view. A command with no state to read keeps its
+    /// header.
     public func state(of output: PluginOutput) throws -> SpotState {
         guard readsState else { return headerState }
         guard output.summary != nil || output.errors.isEmpty else { throw PluginError.badState }
-        let state = SpotState(block: output.summary, header: headerState)
+        var state = SpotState(block: output.summary, header: headerState)
+        if view != nil { state = state.holding(output.summary) }
         guard shipped != nil, let isOnGrid = output.summary?.flag("grid") else { return state }
         return state.onGrid(isOnGrid)
     }

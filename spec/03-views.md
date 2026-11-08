@@ -40,8 +40,8 @@ The file declares `struct SpotView: View` with `let spot: SpotInput`, and it has
 | `spot.size`        | The size of the place that the view fills.                        |
 
 The view fills the card inside its edge, in place of the picture and the words (V3). The card's size comes from `size`
-and from the person, and the view cannot change it. The view gets the head of each read, and a read with no head gives no
-values (V4). A new read draws the same view again, so its `@State` stays.
+and from the person, and the view cannot change it. With `panel` in its `read`, the view gets the head of each read, and a
+read with no head gives no values (V4). A new read draws the same view again, so its `@State` stays.
 
 The view only draws. A press on the card works as on any card (V5).
 
