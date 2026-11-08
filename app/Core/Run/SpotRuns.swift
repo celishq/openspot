@@ -11,6 +11,8 @@ public final class SpotRuns {
     /// The files of the drag in progress, which each card that takes them all shows for the whole drag.
     public var draggedPaths: [String] = []
     @ObservationIgnored public var onReport: (String, SpotRun.Report) -> Void = { _, _ in }
+    /// Makes the change that brings a sheet its first parts, so that the shell can move the sheet to its new size.
+    @ObservationIgnored public var partsArrival: (String, () -> Void) -> Void = { _, bring in bring() }
     /// The time a `read` has to its first frame or its end.
     public let readLimit: TimeInterval
     /// How long a sheet with no answer yet holds its motion for the first answer.
@@ -69,6 +71,10 @@ public final class SpotRuns {
         let id = command.id
         let sheet = SpotRun(command: command, runs: self, recent: recent(id), prepare: prepare)
         sheet.onReport = { [weak self] in self?.onReport(id, $0) }
+        sheet.partsArrival = { [weak self] bring in
+            guard let self else { return bring() }
+            partsArrival(id, bring)
+        }
         sheets[id] = sheet
         return sheet
     }

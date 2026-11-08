@@ -185,6 +185,10 @@ final class SpotsModel {
             prepare: { await SpotIconStore.shared.prepare($0) }
         )
         runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
+        runs.partsArrival = { [weak self] id, bring in
+            guard let self else { return bring() }
+            bringParts(of: id, bring)
+        }
     }
 
     var sheets: [String: SpotRun] {
@@ -649,10 +653,16 @@ final class SpotsModel {
     private func animate(isOpen: Bool, _ body: () -> Void) {
         change(SpotMotion.sheet(isOpen: isOpen), body) { [weak self] in
             guard let self else { return }
-            transition.finish(isOpen ? .opening : .closing)
+            change(nil) { self.transition.finish(isOpen ? .opening : .closing) }
             if transition.phase == .closed { endReview() }
         }
         change(SpotMotion.fillFade(isOpen: isOpen)) { sheetHasLeftCard = isOpen }
+    }
+
+    /// Brings a sheet its first parts: on the sheet's spring when the sheet shows, so that it grows to its new size, and at
+    /// once when it does not.
+    private func bringParts(of id: String, _ bring: () -> Void) {
+        change(transition.id == id && transition.isOpen ? SpotMotion.sheet(isOpen: true) : nil, bring)
     }
 
     /// Makes a change on an animation, or with none at all, and calls `completion` when its motion has ended.
