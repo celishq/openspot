@@ -24,8 +24,6 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var face = CardFace.none
     /// The drawing that the rows flow through (U7). With no `repeat` block, the rows are a list.
     public private(set) var drawing = RepeatDrawing.list
-    /// Whether it prints a `repeat` block, which replaces the rows also when it holds none (U11).
-    public private(set) var printsRepeat = false
     /// Each template that draws rows, by its name (U8).
     public private(set) var templates: [String: RowTemplate] = [:]
     public private(set) var toast: String?
@@ -55,7 +53,6 @@ public struct PluginOutput: Equatable, Sendable {
         let repeats = blocks.filter { $0.fields.first?.key == Self.repeatKind }
         let repeated = repeats.first.flatMap { block in block.value(Self.repeatKind).map { (block, $0) } }
         if let (block, _) = repeated { drawing = RepeatDrawing(block: block) }
-        printsRepeat = repeated != nil
         let drawn = head.flatMap { SheetLayout(block: $0) }
         for block in blocks {
             let kind = block.fields.first?.key
@@ -147,12 +144,6 @@ public struct PluginOutput: Equatable, Sendable {
     /// How many rows go on one line, when the script prints a repeat.
     public var perLine: Int? {
         layout?.repeated?.perLine
-    }
-
-    /// Whether a frame changes the rows: it prints rows or a repeat, or it is no sheet of components. A sheet of components
-    /// that prints neither keeps its rows (U11).
-    public var replacesRows: Bool {
-        !rows.isEmpty || printsRepeat || parts.isEmpty
     }
 
     /// The template that draws a row: the one it names, or else `template=row`.

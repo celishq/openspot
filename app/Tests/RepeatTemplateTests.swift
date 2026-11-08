@@ -129,13 +129,6 @@ final class RepeatTemplateTests: XCTestCase {
         XCTAssertEqual(output.sheetFaults, [])
     }
 
-    func testAFrameOfComponentsKeepsTheRowsAndAnEmptyRepeatClearsThem() {
-        XCTAssertFalse(PluginOutput(text: "switch=power\non=true\n\ntext=note\ntitle=Note\n").replacesRows)
-        XCTAssertTrue(PluginOutput(text: "text=note\ntitle=Note\n\nrow=a\ntitle=A\n").replacesRows)
-        XCTAssertTrue(PluginOutput(text: "text=note\ntitle=Note\n\nrepeat=list\n").replacesRows)
-        XCTAssertTrue(PluginOutput(text: "").replacesRows)
-    }
-
     func testASlotCannotTakeTheNameOfAKeyOfARow() {
         let output = PluginOutput(text: "repeat=a\n\ntemplate=row\ngrid=on name\nswitch=on\ntext=name\n\nrow=a\ntitle=A\n")
 

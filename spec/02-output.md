@@ -85,7 +85,8 @@ its `shortcut` works directly, and with no row selected it acts on the whole spo
 `scope=command` keeps an action on the whole spot when a row is selected. `close=true` closes the panel after it runs, and
 `confirm` asks for a second press, such as `Press again to delete`.
 
-`button=open` sets what Enter does on a row: `title` is its word, and `close=false` keeps the panel open after a pick.
+Enter on a row is the action `open`, which each spot has. A `button=open` gives it its word with `title`, and
+`close=false` keeps the panel open after a pick.
 
 A button with `form=true` asks for values first. The call runs once with empty stdin, and it prints a `title` in its head
 and one `field` for each value. Then the same call runs with the values on stdin, and it can print the id of the row to
@@ -163,8 +164,8 @@ in a row sends `<script> <slot> <row id> [value]` (U9), and a row hides one with
 
 The script holds no state. Each call gets the value of each switch, slider, field, choice and shortcut on stdin as one block,
 and it prints the whole output again, or nothing to be read again (B6). The app draws a change at once, and drops the
-answer to a call that a newer change has outdated (U10). A repeat keeps its rows until a frame prints rows again, so a
-frame can change one switch alone (U11).
+answer to a call that a newer change has outdated (U10). The first frame of a read replaces all that the spot shows, and
+each later frame of the same read changes only what it prints (U11).
 
 The head is the first block with no kind. It holds the drawings, `value`, `title` and `detail` for the spot's card,
 `size`, `search`, `recents`, `toast` and `open`. A head is not drawn.
