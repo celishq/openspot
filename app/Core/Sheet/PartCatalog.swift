@@ -40,10 +40,17 @@ public enum PartCatalog {
     - `keys=7 8 9 +` adds a row of key buttons. Use it for any keypad, in place of a button for each key. A word that \
     repeats next to itself spans those cells. Pressing a key calls `<word>`.
 
-    `repeat=a 7` flows the rows of the script through the area `a`, with 7 on each line, and the area scrolls. A row is a block \
-    with `row=<title>`, `run=<value>` and a picture, and a row is picked by `open <value>`. With more than one on a line, each \
-    is a square button with `glyph=<text>`, `symbol`, `image` or `file`, and `row` is the word that a search finds. The app draws \
-    the search field over the sheet. A sheet can repeat one area.
+    A `repeat=a` block flows the rows of the script through the area `a`, and the area scrolls. Its own `grid=` lines are \
+    a drawing in which each word is the place of one row, and the drawing repeats down: `grid=a` is a list, \
+    `grid=a b c d e f g` is seven square buttons to a line, and `grid=a a b c` with `grid=a a d e` is one large place and \
+    four small ones. A row is a block with `row=<title>`, `run=<value>` and a picture, and a row is picked by \
+    `open <value>`. A square button shows `glyph=<text>`, `symbol`, `image` or `file`, and `row` is the word that a search \
+    finds. The app draws the search field over the sheet. A sheet can repeat one area.
+
+    A `template=row` block draws each row: each `<kind>=<slot>` line gives a slot a kind, its `grid=` lines place the slots, \
+    and `grid.2x2=` lines draw a row in a place of 2 by 2 cells. A row fills a slot with `<slot>=<value>`, sets any other \
+    key of it with `<slot>.<key>=<value>`, picks another template with `as=<name>`, and hides a slot with `hides=<slot>`. A \
+    control in a row calls `<slot> <run> [value]`. `tone=on` puts a dot on a row's picture.
 
     Every row has one height: \(Int(SheetPlacement.rowHeight))pt. The gap between cells is \(Int(SheetPlacement.gap))pt. To \
     make something taller, draw more rows. Rows that hold a field, a list, a graph or a picture share the free height, and \

@@ -20,8 +20,10 @@ public struct SheetLayout: Equatable, Sendable {
             && first.repeated?.perLine == second.repeated?.perLine
     }
 
-    /// Reads the layout block of a sheet. Returns nil when the block has no `grid`, `keys` or `repeat`.
-    public init?(block: TextBlock) {
+    /// Reads the layout block of a sheet, with the area of its repeat and how many rows go on its line. Returns nil when
+    /// there is no `grid`, `keys` or repeat.
+    public init?(block: TextBlock?, repeating: (area: String, perLine: Int)? = nil, repeats: Int = 0) {
+        let block = block ?? TextBlock(fields: [])
         var rows: [[String]] = []
         var keys: [SpotPart] = []
         let cards = block.values("card").map(Self.words)
@@ -35,9 +37,8 @@ public struct SheetLayout: Equatable, Sendable {
                 }
             }
         }
-        let repeats = block.values("repeat").map(Self.words)
-        repeated = repeats.first.flatMap { words in words.first.map { (area: $0, perLine: words.count > 1 ? Int(words[1]) ?? 0 : 0) } }
-        repeatCount = repeats.count
+        repeated = repeating
+        repeatCount = repeats
         if rows.isEmpty, let area = repeated?.area { rows = [[area]] }
         guard !rows.isEmpty else { return nil }
         self.rows = rows

@@ -224,7 +224,9 @@ final class SheetLayoutTests: XCTestCase {
     private let picker = """
     grid=tone tone
     grid=a a
-    repeat=a 7
+
+    repeat=a
+    grid=a b c d e f g
 
     choice=tone
     title=Tone
@@ -256,7 +258,7 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testRowsAloneNeedNoDrawing() {
-        let lines = output("repeat=a 7\n\nrow=one\nrun=1\nglyph=😀\n")
+        let lines = output("repeat=a\ngrid=a b c d e f g\n\nrow=one\nrun=1\nglyph=😀\n")
 
         XCTAssertEqual(lines.perLine, 7)
         XCTAssertEqual(lines.sheetFaults, [])
@@ -267,10 +269,9 @@ final class SheetLayoutTests: XCTestCase {
         func faults(_ text: String) -> [String] { output(text).partFaults }
         let part = "\n\ntext=a\ntitle=A\n"
 
-        XCTAssertEqual(faults("grid=a\nrepeat=z 2" + part), ["the repeat names z, which the drawing does not have"])
-        XCTAssertEqual(faults("grid=a\ngrid=b\nrepeat=a 2" + part), ["the part a stands on the repeated area a", "the part a sits in rows that stretch, so use item= for a list"])
-        XCTAssertEqual(faults("grid=a\ngrid=b\nrepeat=b 0" + part), ["the repeat needs a number of rows per line, such as repeat=b 7"])
-        XCTAssertEqual(faults("grid=a\ngrid=b\ngrid=c\nrepeat=b 2\nrepeat=c 2" + part), ["a sheet can repeat only one area"])
+        XCTAssertEqual(faults("grid=a\n\nrepeat=z\ngrid=x y" + part), ["the repeat names z, which the drawing does not have"])
+        XCTAssertEqual(faults("grid=a\ngrid=b\n\nrepeat=a\ngrid=x y" + part), ["the part a stands on the repeated area a", "the part a sits in rows that stretch, so use a choice with look=list for a list"])
+        XCTAssertEqual(faults("grid=a\ngrid=b\ngrid=c\n\nrepeat=b\n\nrepeat=c" + part), ["a sheet can repeat only one area"])
     }
 
     func testASheetWithNoDrawingIsOneColumnOfLines() throws {
@@ -341,7 +342,7 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(faults("grid=a a\n\ntext=a\ntitle=1\nlook=large\ndetail=CPU\n"), ["the part a needs at least 2 rows for its number and title"])
         XCTAssertEqual(faults("grid=p p\n\ngauge=p\nvalue=0.01\n"), ["the part p needs at least 2 rows for its title and bar"])
         XCTAssertEqual(faults("grid=a b c d\n\ntext=a\ntitle=A very long title indeed\n\ntext=b\ntitle=B\n\ntext=c\ntitle=C\n\ntext=d\ntitle=D\n"), ["the title of the part a may not fit its cell"])
-        XCTAssertEqual(faults("grid=a b\ngrid=t b\n\ntext=a\ntitle=Item\n\ntext=t\ntitle=Other\n\nfield=b\ntext=Hi\n"), ["the part a sits in rows that stretch, so use item= for a list", "the part t sits in rows that stretch, so use item= for a list"])
+        XCTAssertEqual(faults("grid=a b\ngrid=t b\n\ntext=a\ntitle=Item\n\ntext=t\ntitle=Other\n\nfield=b\ntext=Hi\n"), ["the part a sits in rows that stretch, so use a choice with look=list for a list", "the part t sits in rows that stretch, so use a choice with look=list for a list"])
         XCTAssertEqual(faults(String(repeating: "grid=a\n", count: 20) + "\nfield=a\ntext=Hi\n"), ["the drawing is too tall: 914pt of 442pt"])
     }
 }

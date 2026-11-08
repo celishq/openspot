@@ -146,7 +146,9 @@ public final class SpotRun {
 
     /// Takes the shape and the wait from the list, the parts and the answer, and stores each only when it changes.
     private func settle() {
-        let next = Shape(rows: list.shown.count, perLine: list.perLine)
+        let next = list.isBento
+            ? Shape(rows: list.drawing.lineCount(rows: list.shown.count) * list.drawing.columns, perLine: list.drawing.columns)
+            : Shape(rows: list.shown.count, perLine: list.perLine)
         if next != shape { shape = next }
         let waits = isOpen && answered == nil && panel == nil && list.search == .local && list.isLoading && !list.holdsItems
         if waits != awaitsFirstAnswer { awaitsFirstAnswer = waits }
@@ -393,6 +395,17 @@ public final class SpotRun {
         press(.set(item.run, to: value))
     }
 
+    /// Takes a value that the person set in a slot of a row, shows it at once, and tells the script (U9, U10).
+    public func set(slot: String, of item: SpotItem, to value: String) {
+        list.set(value, of: slot, in: item.run)
+        press(.slot(slot, run: item.run, value: value))
+    }
+
+    /// Runs a press of a button in a slot of a row (U9). A second press of a running one stops its call.
+    public func press(slot: String, of item: SpotItem) {
+        press(.slot(slot, run: item.run))
+    }
+
     /// Runs an action. A second press of a running action stops its call.
     public func run(_ action: CommandAction, item: SpotItem?) {
         press(.action(action, item: item))
@@ -542,7 +555,7 @@ public final class SpotRun {
         takeState(lines)
         takeValue(lines)
         list.take(search: lines.search)
-        list.take(perLine: lines.perLine ?? 1)
+        list.take(drawing: lines.drawing, templates: lines.templates)
         takePanel(lines, generation: generation)
         list.replace(lines.items)
         selectKept()
@@ -670,7 +683,7 @@ public final class SpotRun {
         lastAnswer = lines
         command = command.taking(lines)
         list.take(search: lines.search)
-        list.take(perLine: lines.perLine ?? 1)
+        list.take(drawing: lines.drawing, templates: lines.templates)
         list.answer(lines.items, to: query)
         answerArrived()
     }

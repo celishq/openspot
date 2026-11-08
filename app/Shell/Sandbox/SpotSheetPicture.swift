@@ -10,7 +10,7 @@ enum SpotSheetPicture {
 
     private static func list(of output: PluginOutput) -> ItemList {
         var list = ItemList(items: output.items)
-        list.take(perLine: output.perLine ?? 1)
+        list.take(drawing: output.drawing, templates: output.templates)
         return list
     }
 

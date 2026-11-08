@@ -16,8 +16,18 @@ public struct SpotItem: Equatable, Sendable {
     public let shortcut: String?
     /// Whether this row shows that its thing is on.
     public let isOn: Bool
+    /// The dot on its picture, such as `on` for a thing that is active.
+    public let tone: MetricValue.Tone?
+    /// The template that draws it, from `as`.
+    public let template: String?
+    /// Each line of its block that is not one of its own keys, from which the slots of a template take their values.
+    public let fields: [TextBlock.Field]
 
-    public init(title: String, subtitle: String? = nil, run: String, symbol: String? = nil, file: String? = nil, image: String? = nil, glyph: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, isOn: Bool = false) {
+    private static let ownKeys: Set<String> = [
+        "row", "run", "detail", "symbol", "file", "image", "glyph", "hides", "keyword", "shortcut", "on", "tone", "as"
+    ]
+
+    public init(title: String, subtitle: String? = nil, run: String, symbol: String? = nil, file: String? = nil, image: String? = nil, glyph: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, isOn: Bool = false, tone: MetricValue.Tone? = nil, template: String? = nil, fields: [TextBlock.Field] = []) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -29,6 +39,9 @@ public struct SpotItem: Equatable, Sendable {
         self.keywords = keywords
         self.shortcut = shortcut
         self.isOn = isOn
+        self.tone = tone
+        self.template = template
+        self.fields = fields
     }
 
     /// Reads the block of one row. It needs a run value.
@@ -46,8 +59,34 @@ public struct SpotItem: Equatable, Sendable {
             hides: hides.isEmpty ? nil : hides,
             keywords: block.values("keyword"),
             shortcut: block.value("shortcut"),
-            isOn: block.flag("on") ?? false
+            isOn: block.flag("on") ?? false,
+            tone: block.value("tone").flatMap(MetricValue.Tone.init),
+            template: block.value("as"),
+            fields: block.fields.filter { !Self.ownKeys.contains($0.key) }
         )
+    }
+
+    /// The value that it gives a slot with `<slot>=<value>`.
+    public func value(of slot: String) -> String? {
+        fields.last { $0.key == slot && !$0.value.isEmpty }?.value
+    }
+
+    /// The other keys that it gives a slot with `<slot>.<key>=<value>`.
+    public func keys(of slot: String) -> [TextBlock.Field] {
+        fields.compactMap { field in
+            field.key.hasPrefix(slot + ".") ? .init(key: String(field.key.dropFirst(slot.count + 1)), value: field.value) : nil
+        }
+    }
+
+    /// One of its own picture keys: `symbol`, `file`, `image` or `glyph`.
+    public func picture(_ key: String) -> String? {
+        switch key {
+        case "symbol": symbol
+        case "file": file
+        case "image": image
+        case "glyph": glyph
+        default: nil
+        }
     }
 
     /// The picture a row draws: its image, or else the icon of its file.

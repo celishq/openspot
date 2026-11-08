@@ -10,6 +10,9 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var shown: [SpotItem] = []
     public private(set) var selected = 0
     public private(set) var perLine = 1
+    /// The drawing that the rows flow through, and the templates that draw them.
+    public private(set) var drawing = RepeatDrawing.list
+    public private(set) var templates: [String: RowTemplate] = [:]
     public private(set) var isWaiting = false
     public private(set) var isLoading = false
     public private(set) var hasFailed = false
@@ -126,6 +129,39 @@ public struct ItemList: Equatable, Sendable {
     /// Takes how many rows go on one line, as the script printed it.
     public mutating func take(perLine: Int) {
         self.perLine = max(perLine, 1)
+    }
+
+    /// Takes the drawing and the templates of the rows, as the script printed them. A bento moves by a whole tile on a
+    /// line move.
+    public mutating func take(drawing: RepeatDrawing, templates: [String: RowTemplate]) {
+        self.drawing = drawing
+        self.templates = templates
+        perLine = drawing.perLine ?? drawing.places.count
+    }
+
+    /// The template that draws a row: the one it names, or else `template=row`.
+    public func template(of item: SpotItem) -> RowTemplate? {
+        templates[item.template ?? RowTemplate.defaultName]
+    }
+
+    /// Whether the rows flow through a drawing of places of more than one size.
+    public var isBento: Bool {
+        drawing.perLine == nil
+    }
+
+    /// Takes a value that the person set in a slot of a row, so that it shows before the script answers (U10).
+    public mutating func set(_ value: String, of slot: String, in run: String) {
+        func changed(_ item: SpotItem) -> SpotItem {
+            guard item.run == run else { return item }
+            return SpotItem(
+                title: item.title, subtitle: item.subtitle, run: item.run, symbol: item.symbol, file: item.file, image: item.image,
+                glyph: item.glyph, hides: item.hides, keywords: item.keywords, shortcut: item.shortcut, isOn: item.isOn, tone: item.tone,
+                template: item.template, fields: item.fields.filter { $0.key != slot } + [.init(key: slot, value: value)]
+            )
+        }
+        all = all.map(changed)
+        folded = all.map(FoldedItem.init)
+        shown = shown.map(changed)
     }
 
     /// Moves to another line and keeps the place in the line. A shorter last line takes its last item, and the first and the

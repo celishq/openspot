@@ -34,6 +34,11 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: [part, value])
     }
 
+    /// A person changed or pressed a slot of a row: `<slot> <run> [value]` (U9).
+    public static func slot(_ slot: String, run: String, value: String? = nil) -> SpotAction {
+        SpotAction(arguments: [slot, run] + (value.map { [$0] } ?? []))
+    }
+
     /// A person pressed a part.
     public static func press(_ part: String) -> SpotAction {
         SpotAction(arguments: [part])

@@ -47,6 +47,11 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let title: String?
     public let detail: String?
     public let symbol: String?
+    /// The file whose icon it shows, and the short text, such as an emoji, that it shows as its picture.
+    public let file: String?
+    public let glyph: String?
+    /// Its colour that means something, or `on` for a dot that says that a thing is active.
+    public let tone: MetricValue.Tone?
     public private(set) var control: Control
     public let press: Press
     public let key: ActionKey?
@@ -73,6 +78,9 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         align = block.value("align").flatMap(Align.init(rawValue:))
         look = block.value("look").flatMap(Look.init(rawValue:))
         let symbol = block.value("symbol")
+        file = block.value("file")
+        glyph = block.value("glyph")
+        tone = block.value("tone").flatMap(MetricValue.Tone.init)
         if kind == "button" {
             self.symbol = nil
             press = symbol.map(Press.symbol) ?? .line

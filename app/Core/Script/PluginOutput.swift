@@ -15,6 +15,10 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var partFaults: [String] = []
     public private(set) var errors: [String] = []
     public private(set) var layout: SheetLayout?
+    /// The drawing that the rows flow through (U7). With no `repeat` block, the rows are a list.
+    public private(set) var drawing = RepeatDrawing.list
+    /// Each template that draws rows, by its name (U8).
+    public private(set) var templates: [String: RowTemplate] = [:]
     public private(set) var toast: String?
     /// The link of an `open` effect, such as the fix of a failure.
     public private(set) var open: String?
@@ -23,20 +27,32 @@ public struct PluginOutput: Equatable, Sendable {
     /// The app's own events. A part cannot take one, and a button can take only `open`, to change the pick.
     private static let defaults = ["run", "open", "drop", "on", "off", "level"]
     private static let button = "button"
+    private static let repeatKind = "repeat"
+    private static let templateKind = "template"
 
     /// Whether a first key names a row or a part, so that the block is not the head.
     private static func isKind(_ key: String) -> Bool {
-        key == "row" || SpotPart.kinds.contains(key)
+        key == "row" || key == repeatKind || key == templateKind || SpotPart.kinds.contains(key)
     }
 
     public init(text: String) {
         var runs = Set<String>()
         let blocks = TextBlock.blocks(in: text)
         let head = blocks.first { block in block.fields.first.map { !Self.isKind($0.key) } ?? false }
-        let layout = head.flatMap(SheetLayout.init(block:))
+        let repeats = blocks.filter { $0.fields.first?.key == Self.repeatKind }
+        let repeated = repeats.first.flatMap { block in block.value(Self.repeatKind).map { (block, $0) } }
+        if let (block, _) = repeated { drawing = RepeatDrawing(block: block) }
+        let layout = SheetLayout(
+            block: head,
+            repeating: repeated.map { (area: $0.1, perLine: drawing.perLine ?? drawing.columns) },
+            repeats: repeats.count
+        )
         for block in blocks {
             let kind = block.fields.first?.key
-            if kind == Self.button, let id = block.value(Self.button), layout?.areas[id] == nil {
+            if kind == Self.repeatKind { continue }
+            if kind == Self.templateKind {
+                if let template = RowTemplate(block: block) { templates[template.name] = template } else { errors.append(block.firstLine) }
+            } else if kind == Self.button, let id = block.value(Self.button), layout?.areas[id] == nil {
                 take(action: id, block)
             } else if kind == "row" {
                 rows.append(block)
@@ -71,9 +87,14 @@ public struct PluginOutput: Equatable, Sendable {
         summary?.value("search") == ItemSearch.script.rawValue ? .script : .local
     }
 
-    /// How many rows go on one line, when the script draws a repeated area.
+    /// How many rows go on one line, when the script prints a repeat.
     public var perLine: Int? {
         layout?.repeated?.perLine
+    }
+
+    /// The template that draws a row: the one it names, or else `template=row`.
+    public func template(of item: SpotItem) -> RowTemplate? {
+        templates[item.template ?? RowTemplate.defaultName]
     }
 
     /// Whether recent picks sort first, unless it prints `recents=false`.

@@ -25,7 +25,7 @@ next_tone() {
 
 case "$1" in
   read)
-    printf 'grid=tone tone tone tone tone tone tone\ngrid=a a a a a a a\nrepeat=a 7\n\n'
+    printf 'grid=tone tone tone tone tone tone tone\ngrid=a a a a a a a\n\nrepeat=a\ngrid=a b c d e f g\n\n'
     printf 'button=open\ntitle=Copy\n\n'
     printf 'button=paste\ntitle=Paste\nkey=cmd+return\nclose=true\n\n'
     printf 'button=next-tone\ntitle=Next skin tone\nkey=cmd+t\nscope=command\n\n'

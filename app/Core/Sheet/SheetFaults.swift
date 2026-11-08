@@ -62,7 +62,6 @@ public enum SheetFaults {
         var faults: [String] = []
         if layout.repeatCount > 1 { faults.append("a sheet can repeat only one area") }
         if layout.areas[repeated.area] == nil { faults.append("the repeat names \(repeated.area), which the drawing does not have") }
-        if repeated.perLine < 1 { faults.append("the repeat needs a number of rows per line, such as repeat=\(repeated.area) 7") }
         for part in parts where layout.letter(of: part) == repeated.area {
             faults.append("the part \(part.id) stands on the repeated area \(repeated.area)")
         }
@@ -100,7 +99,7 @@ public enum SheetFaults {
                 }
             }
             if !frame.isOnTop, !part.fillsHeight, frame.rect.height > SheetPlacement.rowHeight * 2, area.y0 == area.y1 {
-                faults.append("the part \(part.id) sits in rows that stretch, so use item= for a list")
+                faults.append("the part \(part.id) sits in rows that stretch, so use a choice with look=list for a list")
             }
         }
         if sheet.overflows {
