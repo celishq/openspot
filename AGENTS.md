@@ -33,6 +33,22 @@
 - Logic that a window needs goes in `Core/`. Only drawing and window handling go in `Shell/`.
 - Each colour, strength and blur radius of the panel is in `Shell/SpotTheme.swift`, and a new theme is one more value there.
 
+## Motion
+
+A frame has 8.3 ms at 120 Hz. During a motion, the main thread uses no more than 4 ms of each frame, the frame of the press
+too. `make perf` checks it: p99 must stay under 8.3 ms.
+
+- Move a view with FLIP: lay it out at its last place, then animate only `offset`, `scaleEffect` and `opacity` from its
+  first place. Do not animate a frame, a padding, a font or a text width.
+- Grow a surface with an animated shape that clips its content, masks its blur and places its rim. Do not scale a surface
+  that has corners, a rim or words.
+- Change words by a crossfade of two laid-out copies, not by a reflow.
+- Draw blur from one fixed view behind the moving shapes. Do not put an AppKit view in a view that moves or resizes.
+- The model starts a motion, not a view: no `onChange` chain, and no state written from `onGeometryChange` during a motion.
+  A view that is just built lies at its first place for one turn, and its motion starts on the next turn. SwiftUI animates
+  a view by the first change it sees in an update, so the animated change goes first, or alone.
+- Hide a view that comes back with a mask or with opacity 0.001, not with opacity 0, which drops its drawing.
+
 ## Tests
 
 - A test proves behaviour through the public surface: inputs in, outputs out.
@@ -56,9 +72,13 @@
 ```sh
 make verify                # the Core and Tests checks, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
+make perf N=3              # times a sheet that opens and closes 20 times, 3 runs; fails over the dropped-frame budget
 ```
 
 `make verify` runs `xcodegen generate` first, so the project file matches the folders on disk.
+
+Run `make perf` after a change to a view that moves, and compare it with the commit before by interleaved runs: the Mac's
+load moves the numbers more than most changes do.
 
 ## Signing
 

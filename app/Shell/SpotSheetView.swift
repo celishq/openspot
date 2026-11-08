@@ -1,34 +1,36 @@
 import SwiftUI
 import OpenspotCore
 
+/// The content of an open sheet: its header, and its rows, parts or form. It reads the sheet's state from the model itself,
+/// so that a change inside the sheet reruns only this view.
 struct SpotSheetView: View {
+    let model: SpotsModel
     let entry: SpotsModel.Entry
     /// The size that the grid gives its card, which can differ from the size it prefers.
     let cardSize: SpotSize
     let isOpen: Bool
     /// Whether the header lies on the white fill of a card that is turned on.
     let showsFill: Bool
-    let list: ItemList
     let rect: CGRect
-    let form: FormDraft?
+    /// The parts of the sheet, once they have landed.
     let panel: SpotPanel?
-    let work: (SpotPart) -> ScriptCall?
-    let onSet: (SpotPart, String) -> Void
-    let onPress: (SpotPart) -> Void
-    let recording: String?
-    let onRecord: (SpotPart) -> Void
-    let createTitle: String?
-    let onCreate: () -> Void
-    let onFormValue: (String, String) -> Void
-    let onRun: (SpotItem) -> Void
     /// How far the close button lies from its place at the card's edge. Nil for a card with no arrow, where the frame cuts it.
     let closeShift: CGFloat?
-    let onClose: () -> Void
     /// The width of the card or field that the sheet grows out of and collapses into.
     let cardWidth: CGFloat
-    let nudge: () -> SpotPanel.Nudge
-    @State private var wordsHeight: CGFloat = 0
-    @State private var arrowWidth: CGFloat = 0
+
+    private var list: ItemList {
+        model.sheets[entry.id]?.list ?? ItemList()
+    }
+
+    private var form: FormDraft? {
+        model.form?.entry.id == entry.id ? model.form?.draft : nil
+    }
+
+    /// The words of the button that makes a new item from the search, or nil when there is none.
+    private var createTitle: String? {
+        model.createAction.map { "\($0.title): \(model.searchText)" }
+    }
 
     private var row: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
@@ -41,18 +43,28 @@ struct SpotSheetView: View {
             VStack(alignment: .leading, spacing: SpotTokens.rowGap) {
                 if let panel {
                     if panel.showsRows { Color.clear.frame(height: SpotTokens.listRowHeight) }
-                    SpotPanelView(panel: panel, work: work, onSet: onSet, onPress: onPress, recordingPart: recording, onRecord: onRecord, list: list, onRun: onRun, nudge: nudge)
+                    SpotPanelView(
+                        panel: panel,
+                        work: { model.work(of: $0) },
+                        onSet: { model.setPart($0, to: $1) },
+                        onPress: { model.pressPart($0) },
+                        recordingPart: model.recording,
+                        onRecord: { model.toggleRecording($0) },
+                        list: list,
+                        onRun: { model.runItem($0) },
+                        nudge: { model.sheets[entry.id]?.nudge ?? SpotPanel.Nudge.rest }
+                    )
                 } else if let form {
-                    SpotFormView(draft: form, onValue: onFormValue)
+                    SpotFormView(draft: form, onValue: { model.setFormValue($0, for: $1) })
                 } else {
                     Color.clear.frame(height: SpotTokens.listRowHeight)
                     if let createTitle {
-                        Button(action: onCreate) {
+                        Button { model.createFromSearch() } label: {
                             createLabel(createTitle)
                         }
                         .buttonStyle(.plain)
                     } else {
-                        SpotRowsView(list: list, recording: recording, onRun: onRun)
+                        SpotRowsView(list: list, recording: model.recording, onRun: { model.runItem($0) })
                     }
                 }
             }
@@ -65,51 +77,66 @@ struct SpotSheetView: View {
     private var header: some View {
             HStack(spacing: SpotTokens.padding - 5) {
                 glyph
-                VStack(alignment: .leading, spacing: SpotType.lineGap) {
-                    Text(form?.form.title ?? entry.shownState.title)
-                        .font(SpotType.title)
-                        .foregroundStyle(showsFill ? SpotTheme.onSolid : SpotTheme.ink)
-                        .lineLimit(1)
-                    if form == nil, let subtitle = shownSubtitle {
-                        Text(subtitle)
-                            .font(SpotType.detail)
-                            .modifier(SpotSecondaryText(isOnSolid: showsFill))
-                            .lineLimit(1)
-                    }
+                ZStack(alignment: .topLeading) {
+                    words(subtitle: entry.shownState.subtitle)
+                        .frame(width: max(cardWordsWidth, 0), alignment: .leading)
+                        .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(isOpen ? 0 : 1) }
+                    words(subtitle: openSubtitle)
+                        .frame(width: max(sheetWordsWidth, 0), alignment: .leading)
+                        .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: !isOpen)) { $0.opacity(isOpen ? 1 : 0) }
                 }
-                .modifier(SpotWordsWidth(width: wordsWidth))
-                .onGeometryChange(for: CGFloat.self, of: \.size.height) { wordsHeight = $0 }
+                .frame(width: max(sheetWordsWidth, 0), alignment: .leading)
                 .offset(showsTallCard ? tallCardShift : .zero)
                 .opacity(showsSmallCard ? 0 : 1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .overlay(alignment: .trailing) { closeButton }
-            .background {
-                SpotCardArrow(isOnSolid: false)
-                    .hidden()
-                    .onGeometryChange(for: CGFloat.self, of: \.size.width) { arrowWidth = $0 }
+    }
+
+    /// The title and the second line of the header, in one copy of its words.
+    private func words(subtitle: String?) -> some View {
+        VStack(alignment: .leading, spacing: SpotType.lineGap) {
+            Text(form?.form.title ?? entry.shownState.title)
+                .font(SpotType.title)
+                .frame(height: SpotType.titleLine)
+                .foregroundStyle(showsFill ? SpotTheme.onSolid : SpotTheme.ink)
+                .lineLimit(1)
+            if form == nil, let subtitle {
+                Text(subtitle)
+                    .font(SpotType.detail)
+                    .frame(height: SpotType.detailLine)
+                    .modifier(SpotSecondaryText(isOnSolid: showsFill))
+                    .lineLimit(1)
             }
+        }
     }
 
-    /// The width of the header's words: up to the close button in the sheet, and as wide as the card gives them before it opens.
-    private var wordsWidth: CGFloat {
-        let gap = SpotTokens.padding - 5
-        let lead = SpotTokens.padding + SpotTokens.glyphSize + gap
-        if isOpen { return rect.width - lead - gap - SpotTokens.glyphSize - SpotTokens.padding }
+    private static let wordsGap = SpotTokens.padding - 5
+
+    /// The width of the words up to the close button in the open sheet.
+    private var sheetWordsWidth: CGFloat {
+        rect.width - SpotTokens.padding - SpotTokens.glyphSize - 2 * Self.wordsGap - SpotTokens.glyphSize - SpotTokens.padding
+    }
+
+    /// The width that the card gives the words before the sheet opens.
+    private var cardWordsWidth: CGFloat {
         if cardSize.rows > 1 { return cardWidth - 2 * SpotTokens.padding }
-        let arrow = closeShift == nil ? 0 : arrowWidth + gap
-        return max(cardWidth - SpotCardArrow.rowInset - arrow - lead, 0)
+        let arrow = closeShift == nil ? 0 : SpotCardArrow.width + Self.wordsGap
+        return max(cardWidth - SpotCardArrow.rowInset - arrow - SpotTokens.padding - SpotTokens.glyphSize - Self.wordsGap, 0)
     }
 
-    /// The second line of the header: the name of the selected button in a grid, which draws only its picture.
-    private var shownSubtitle: String? {
-        isOpen && list.perLine > 1 ? list.selectedItem?.title ?? entry.shownState.subtitle : entry.shownState.subtitle
+    /// The second line of the open sheet's header: the name of the selected button in a grid, which draws only its picture.
+    private var openSubtitle: String? {
+        list.perLine > 1 ? list.selectedItem?.title ?? entry.shownState.subtitle : entry.shownState.subtitle
     }
 
     /// The close button, which stays at the moving edge of the sheet and takes the place of the card's arrow.
     @ViewBuilder
     private var closeButton: some View {
-        let button = SpotRoundButton(symbol: "xmark", label: "Close", action: onClose)
+        let button = SpotRoundButton(symbol: "xmark", label: "Close") {
+            model.allowSheetMotion()
+            model.closeList()
+        }
         if let closeShift {
             button
                 .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(isOpen ? 1 : 0) }
@@ -152,6 +179,8 @@ struct SpotSheetView: View {
 
     /// How far the words of the header lie from their place at the foot of a tall card.
     private var tallCardShift: CGSize {
+        let hasSubtitle = form == nil && (entry.shownState.subtitle ?? openSubtitle) != nil
+        let wordsHeight = SpotType.titleLine + (hasSubtitle ? SpotType.lineGap + SpotType.detailLine : 0)
         let row = max(SpotTokens.glyphSize, wordsHeight)
         let top = SpotTokens.padding + (row - wordsHeight) / 2
         return CGSize(

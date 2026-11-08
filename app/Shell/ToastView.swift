@@ -1,3 +1,4 @@
+import OpenspotCore
 import SwiftUI
 
 /// A short message from Openspot on the same surface as a spot.
@@ -20,7 +21,6 @@ struct ToastView: View {
         }
         .padding(.horizontal, ToastPanel.margin)
         .padding(.vertical, 10)
-        .frame(minWidth: ToastPanel.minWidth - 2 * ToastPanel.margin, alignment: .leading)
         .modifier(SpotGlass(radius: SpotTokens.rowHeight / 3))
         .contentShape(Rectangle())
         .onTapGesture { toast.open?() }

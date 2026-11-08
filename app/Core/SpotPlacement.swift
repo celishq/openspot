@@ -20,4 +20,14 @@ public struct SpotPlacement: Equatable, Sendable {
         if row >= open.row + open.size.rows { return (0, 1) }
         return (column < open.column ? -1 : 1, 0)
     }
+
+    /// Where the spot lies in the grid.
+    public var rect: CGRect {
+        CGRect(
+            x: CGFloat(column) * (SpotTokens.cell + SpotTokens.columnGap),
+            y: CGFloat(row) * (SpotTokens.rowHeight + SpotTokens.rowGap),
+            width: SpotTokens.width(columns: size.columns),
+            height: SpotTokens.height(rows: size.rows)
+        )
+    }
 }

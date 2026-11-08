@@ -83,8 +83,8 @@ struct SpotTheme {
     /// The shade around the panel, at its full strength.
     static let tint = NSColor.black.withAlphaComponent(0.08)
     /// The radius of the blur behind a surface, and of the blur around the panel.
-    static let blur: CGFloat = 16
-    static let backdropBlur: CGFloat = 2
+    static let blur: CGFloat = 24
+    static let backdropBlur: CGFloat = 3
     /// The thin dark line down the sides of a surface's rim, at its top, its middle and its foot.
     static let rimSides = NSColor.black
     static let rimSideStrengths: [CGFloat] = [0, 0.3, 0.3, 0]

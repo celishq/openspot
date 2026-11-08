@@ -1,3 +1,4 @@
+import OpenspotCore
 import SwiftUI
 
 /// Draws a text with a capsule behind each run marked as a key, as the footer draws its keys.

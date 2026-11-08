@@ -15,8 +15,8 @@ struct SpotCardView: View {
     let showsChain: Bool
     let isHiddenFromGrid: Bool
     var query = ""
-    let onTap: () -> Void
-    let onLevel: (Double) -> Void
+    /// The model that a tap and a slide go to.
+    let model: SpotsModel
     @State private var isHovered = false
     @GestureState private var isPressed = false
     @Environment(\.spotIsShown) private var isShown
@@ -33,14 +33,14 @@ struct SpotCardView: View {
             .padding(SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))
-            .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, strength: showsPress ? SpotMotion.pressedGlass : 1))
+            .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, strength: SpotMotion.pressedGlass, blursBehind: showsPress, rimSize: CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))))
             .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : isHovered ? 0.08 : 0)).allowsHitTesting(false))
             .overlay(Color.clear.modifier(SpotSelectionRing(isSelected: isSelected, shape: shape)).opacity(isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { keycap }
             .overlay(alignment: .topTrailing) { hiddenMark }
             .contentShape(shape)
             .onHover { isHovered = $0 }
-            .onTapGesture(perform: onTap)
+            .onTapGesture { model.tap(entry.id) }
             .simultaneousGesture(DragGesture(minimumDistance: 0).updating($isPressed) { _, pressed, _ in pressed = true })
             .animation(.easeInOut(duration: 0.2), value: isOn)
             .scaleEffect(showsPress ? SpotMotion.pressedScale : 1)
@@ -74,7 +74,12 @@ struct SpotCardView: View {
     }
 
     private var isFilled: Bool {
-        isOn && dropFill == 0
+        Self.isFilled(entry, takesDrag: takesDrag, isDropTarget: isDropTarget)
+    }
+
+    /// Whether a card draws the solid fill of a spot that is on, which no drag or drop tints.
+    static func isFilled(_ entry: SpotsModel.Entry, takesDrag: Bool, isDropTarget: Bool) -> Bool {
+        entry.state.on == true && !takesDrag && !isDropTarget
     }
 
     private var row: some View {
@@ -142,7 +147,7 @@ struct SpotCardView: View {
         let low = entry.state.min ?? 0
         let high = entry.state.max ?? 100
         return Slider(
-            value: Binding(get: { entry.state.level ?? low }, set: { onLevel($0.rounded()) }),
+            value: Binding(get: { entry.state.level ?? low }, set: { model.setLevel(entry.id, to: $0.rounded()) }),
             in: low...high
         )
         .controlSize(.small)

@@ -101,10 +101,28 @@ final class SpotsModel {
             updateVisible()
         }
     }
-    private(set) var visible: [Entry] = []
+    private(set) var visible: [Entry] = [] {
+        didSet {
+            let sizes = visible.map(\.size)
+            if sizes != oldValue.map(\.size) { placements = SpotGrid().place(sizes) }
+        }
+    }
+    /// Where each visible spot lies on the grid, in the order of `visible`.
+    private(set) var placements: [SpotPlacement] = []
     var selected = 0
-    var openList: String?
+    /// The sheet that is open. A change of it starts the sheet's motion in the same transaction.
+    var openList: String? {
+        get { shownList }
+        set {
+            if newValue != shownList { moveSheet(to: newValue) }
+        }
+    }
+    private var shownList: String?
     private(set) var sheetMoves = true
+    /// Where the open sheet is in its motion between its card and its open place.
+    private(set) var transition = SheetTransition()
+    /// Whether the header of the open sheet has left the fill of its card, which changes on a curve of its own.
+    private(set) var sheetHasLeftCard = false
     private var closingPick: (item: SpotItem, entry: Entry)?
     private let runs: SpotRuns
     private var dragWatch: Task<Void, Never>?
@@ -769,10 +787,6 @@ final class SpotsModel {
         return list[selected]
     }
 
-    var placements: [SpotPlacement] {
-        SpotGrid().place(visible.map(\.size))
-    }
-
     /// Whether the panel shows its search field, which a form or a sheet of parts with no rows replaces.
     var showsSearch: Bool {
         form == nil && !isEditing && openPanel?.showsRows != false
@@ -852,6 +866,54 @@ final class SpotsModel {
             openList = nil
         }
         endReview()
+    }
+
+    /// Starts the motion of the sheet to `list`: a grow out of its card, a collapse back into it, or a cut when the sheet does
+    /// not move. A new sheet is built on its card first, and its grow starts on the next turn, so that the grow has a start.
+    private func moveSheet(to list: String?) {
+        let moves = sheetMoves
+        guard moves else {
+            change(nil) {
+                shownList = list
+                sheetHasLeftCard = list != nil
+                if let list { transition.show(list, moves: false) } else { transition.hide(moves: false) }
+            }
+            allowSheetMotion()
+            if list == nil { endReview() }
+            return
+        }
+        guard let list else {
+            animate(isOpen: false) {
+                shownList = nil
+                transition.hide(moves: true)
+            }
+            return
+        }
+        change(nil) {
+            shownList = list
+            transition.show(list, moves: true)
+        }
+        DispatchQueue.main.async { [weak self] in
+            self?.animate(isOpen: true) { self?.transition.start() }
+        }
+    }
+
+    /// Moves the sheet and the fill of its card on their springs, and ends the motion when it is done.
+    private func animate(isOpen: Bool, _ body: () -> Void) {
+        change(SpotMotion.sheet(isOpen: isOpen), body) { [weak self] in
+            guard let self else { return }
+            transition.finish(isOpen ? .opening : .closing)
+            if transition.phase == .closed { endReview() }
+        }
+        change(SpotMotion.fillFade(isOpen: isOpen)) { sheetHasLeftCard = isOpen }
+    }
+
+    /// Makes a change on an animation, or with none at all, and calls `completion` when its motion has ended.
+    private func change(_ animation: Animation?, _ body: () -> Void, completion: @escaping @MainActor () -> Void = {}) {
+        var transaction = Transaction(animation: animation)
+        transaction.disablesAnimations = animation == nil
+        transaction.addAnimationCompletion(criteria: .removed) { MainActor.assumeIsolated { completion() } }
+        withTransaction(transaction, body)
     }
 
     /// Lets the next open or close of a sheet move, as it does when the person asks for it in the open panel.

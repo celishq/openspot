@@ -1,3 +1,4 @@
+import OpenspotCore
 import SwiftUI
 
 /// How strongly each end of the scroll area fades, from 0 to 1.

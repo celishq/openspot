@@ -1,3 +1,4 @@
+import Observation
 import XCTest
 @testable import OpenspotCore
 
@@ -375,5 +376,23 @@ final class SpotSheetTests: XCTestCase {
 
         XCTAssertEqual(sheet.list.query, "no")
         try await wait("the match") { sheet.list.shown.map(\.title) == ["Notes"] }
+    }
+
+    func testAMoveOfTheSelectionLeavesTheShapeAndTheWaitAlone() async throws {
+        let sheet = try holding("printf 'row=A\\nrun=a\\n\\nrow=B\\nrun=b\\n'", pause: 30)
+        sheet.read()
+        try await wait("the rows") { sheet.list.shown.count == 2 }
+        XCTAssertEqual(sheet.shape, SpotSheet.Shape(rows: 2, perLine: 1))
+        nonisolated(unsafe) var changed = false
+        withObservationTracking {
+            _ = sheet.shape
+            _ = sheet.awaitsFirstAnswer
+        } onChange: {
+            changed = true
+        }
+
+        sheet.list.move(by: 1)
+
+        XCTAssertFalse(changed)
     }
 }

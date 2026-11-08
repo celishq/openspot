@@ -2,28 +2,45 @@ import AppKit
 import SwiftUI
 
 /// The edge of a Control Center surface: light added to what lies behind at the top and bottom, with a narrow
-/// glow inside it, and a thin dark line down the sides. Its radius animates with the surrounding animation.
+/// glow inside it, and a thin dark line down the sides. Its radius animates with the surrounding animation. With a `rect`,
+/// it lies at that rect of a view of a fixed size, so that a growing rim moves layers and resizes no view.
 struct SpotRim: View, @preconcurrency Animatable {
     var radius: CGFloat
+    var rect: CGRect?
 
-    var animatableData: CGFloat {
-        get { radius }
-        set { radius = newValue }
+    var animatableData: AnimatablePair<CGFloat, AnimatablePair<AnimatablePair<CGFloat, CGFloat>, AnimatablePair<CGFloat, CGFloat>>> {
+        get {
+            let rect = rect ?? .zero
+            return AnimatablePair(radius, AnimatablePair(AnimatablePair(rect.minX, rect.minY), AnimatablePair(rect.width, rect.height)))
+        }
+        set {
+            radius = newValue.first
+            guard rect != nil else { return }
+            let place = newValue.second
+            rect = CGRect(x: place.first.first, y: place.first.second, width: place.second.first, height: place.second.second)
+        }
     }
 
     var body: some View {
-        Backing(radius: radius)
+        Backing(radius: radius, rect: rect)
     }
 }
 
 /// The layers behind a `SpotRim`. They change in the same commit as the surface, because nothing draws them first.
 private struct Backing: NSViewRepresentable {
     var radius: CGFloat
+    var rect: CGRect?
 
     final class Surface: NSView {
         var radius: CGFloat = 0 {
             didSet {
-                if radius != oldValue { needsLayout = true }
+                if radius != oldValue { place() }
+            }
+        }
+        /// Where the rim lies in the view, or nil for its bounds.
+        var shapeRect: CGRect? {
+            didSet {
+                if shapeRect != oldValue { place() }
             }
         }
 
@@ -92,26 +109,37 @@ private struct Backing: NSViewRepresentable {
             line.opacity = strength
         }
 
+        override var isFlipped: Bool {
+            true
+        }
+
         override func hitTest(_ point: NSPoint) -> NSView? {
             nil
         }
 
         override func layout() {
             super.layout()
+            place()
+        }
+
+        /// Sets the layers to the rim's rect and radius, with no layout of the view.
+        private func place() {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
             defer { CATransaction.commit() }
             applyTheme()
             let scale = window?.backingScaleFactor ?? 2
+            let rect = shapeRect ?? bounds
+            let local = CGRect(origin: .zero, size: rect.size)
             for part in [sides, ends, sideLine, endLines, glowClip, glow, wideLine, thinLine] as [CALayer] {
-                part.frame = bounds
+                part.frame = part === sides || part === ends ? rect : local
                 part.contentsScale = scale
             }
             glowClip.cornerRadius = radius
             for line in [sideLine, wideLine, thinLine, glow] {
                 line.path = RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .inset(by: line.lineWidth / 2)
-                    .path(in: bounds)
+                    .path(in: local)
                     .cgPath
             }
         }
@@ -125,10 +153,12 @@ private struct Backing: NSViewRepresentable {
     func makeNSView(context: Context) -> Surface {
         let surface = Surface()
         surface.radius = radius
+        surface.shapeRect = rect
         return surface
     }
 
     func updateNSView(_ surface: Surface, context: Context) {
         surface.radius = radius
+        surface.shapeRect = rect
     }
 }
