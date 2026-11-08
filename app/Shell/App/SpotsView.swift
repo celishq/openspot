@@ -117,7 +117,6 @@ struct SpotsView: View {
                 hideDrop()
             }
         }
-        .animation(SpotMotion.sheet(isOpen: true), value: shownPanel != nil)
         .onChange(of: model.selected) {
             showSelected()
         }
@@ -225,7 +224,7 @@ struct SpotsView: View {
         return SpotTokens.sheetRect(rows: shape?.rows ?? 0, perLine: shape?.perLine ?? 1)
     }
 
-    /// The parts of the open sheet. Parts that land after the sheet opened arrive with its new size, on its spring.
+    /// The parts of the open sheet.
     private var shownPanel: SheetParts? {
         model.sheets[sheetID ?? ""]?.panel
     }
