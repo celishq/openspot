@@ -4,13 +4,15 @@ import Foundation
 public struct PluginCheck: Sendable {
     public let folder: PluginFolder
     public let timeout: TimeInterval
+    public let views: ViewLibrary
 
-    public init(folder: PluginFolder, timeout: TimeInterval = 10) {
+    public init(folder: PluginFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard()) {
         self.folder = folder
         self.timeout = timeout
+        self.views = views
     }
 
-    /// Returns one line for each fault. No lines means that all plugins load and answer.
+    /// Returns one line for each fault. No lines means that all plugins load and answer, and each view compiles.
     @MainActor
     public func faults() async -> [String] {
         let scan: ScanResult
@@ -28,6 +30,14 @@ public struct PluginCheck: Sendable {
                 if script.read?.seconds != nil, MetricValue(output: output) == nil { throw PluginError.badMetric }
                 if script.hasSpot { faults += output.errors.map { "\(script.id): cannot read the item \($0)" } }
                 faults += output.partFaults.map { "\(script.id): \($0)" }
+            } catch {
+                faults.append("\(script.id): \(Self.reason(error))")
+            }
+        }
+        for script in scan.scripts {
+            guard let view = script.view else { continue }
+            do {
+                _ = try await views.library(of: URL(fileURLWithPath: view))
             } catch {
                 faults.append("\(script.id): \(Self.reason(error))")
             }
