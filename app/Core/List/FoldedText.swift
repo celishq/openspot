@@ -40,6 +40,11 @@ struct FoldedText: Equatable, Sendable {
         return found
     }
 
+    /// One bit for each letter code, by its value modulo 64.
+    static func bits(of letters: [UInt64]) -> UInt64 {
+        letters.reduce(0) { $0 | 1 << ($1 % 64) }
+    }
+
     /// The code of a character with no case and no accents: its scalar when it folds to one, or else a hash of its scalars.
     static func code(_ character: Character) -> UInt64 {
         if let ascii = character.asciiValue { return UInt64(ascii >= 65 && ascii <= 90 ? ascii + 32 : ascii) }
