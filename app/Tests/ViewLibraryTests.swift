@@ -166,4 +166,20 @@ final class ViewLibraryTests: XCTestCase {
 
         XCTAssertEqual(spot.files.map(\.path), ["cups.sh", "cups.swift", "cups.view"])
     }
+
+    func testRemovingASpotAlsoTakesItsViewAndItsLibrary() throws {
+        let plugins = folder.appendingPathComponent("plugins")
+        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
+        try "#!/bin/sh\n# view=cups.swift\n".writeScript(to: plugins.appendingPathComponent("cups.sh"))
+        try "#!/bin/sh\n".writeScript(to: plugins.appendingPathComponent("other.sh"))
+        try Data(view.utf8).write(to: plugins.appendingPathComponent("cups.swift"))
+        try Data("built".utf8).write(to: plugins.appendingPathComponent("cups.view"))
+        let place = PluginFolder(url: plugins)
+        let spot = try XCTUnwrap(try place.scan().commands.first { $0.id == "cups" })
+        var discarded: [String] = []
+
+        try place.remove(spot) { discarded.append($0.lastPathComponent) }
+
+        XCTAssertEqual(discarded, ["cups.sh", "cups.swift", "cups.view"])
+    }
 }

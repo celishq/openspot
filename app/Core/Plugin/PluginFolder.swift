@@ -104,11 +104,16 @@ public struct PluginFolder: Sendable {
         return command.url.standardizedFileURL.path.hasPrefix(core.standardizedFileURL.path + "/")
     }
 
-    /// Takes the file of a spot and its program out of the folder. They go to the Trash, and the other files of its folder stay.
+    /// Takes the file of a spot, its program, and its view with the view's library out of the folder. They go to the Trash,
+    /// and the other files of its folder stay.
     public func remove(_ command: Spot, discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws {
         guard command.shipped == nil, !isCore(command) else { throw PluginError.fault("\(command.name) comes with Openspot, so it cannot be removed.") }
         try discard(command.url)
         if let program = SwiftProgram.file(beside: command.url) { try discard(program) }
+        guard let view = command.view.map(URL.init(fileURLWithPath:)), view.deletingLastPathComponent() == command.url.deletingLastPathComponent() else { return }
+        for file in [view, URL(fileURLWithPath: ViewLibrary.path(beside: view.path))] where FileManager.default.fileExists(atPath: file.path) {
+            try discard(file)
+        }
     }
 
     /// Adds what one file gives, and reports a fault or a key that is taken. A dated file takes its place in the grid by the
