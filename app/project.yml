@@ -70,6 +70,7 @@ targets:
       path: Shell/Openspot.entitlements
       properties:
         com.apple.security.automation.apple-events: true
+        com.apple.security.cs.disable-library-validation: true
     postBuildScripts:
       - name: Link the openspot command
         basedOnDependencyAnalysis: false

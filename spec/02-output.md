@@ -119,7 +119,8 @@ its id and its new value:
 | `keys=7 8 9 +` in the head | `<word>`               |
 
 The script holds no state. Each call gets all values of the sheet on stdin as one block, and it prints the whole sheet
-again, or nothing to be read again. A complex view is a view of the app, which a script names and fills with data (B6).
+again, or nothing to be read again. A sheet draws only the parts of the app, which a script names and fills with data (B6).
+A card can draw a plugin's own view (03).
 
 ## Metrics
 
@@ -155,4 +156,4 @@ nothing removes the item until the next read.
 | ------------------------------------------------------------------------------------------------ | ------------------------------------------ |
 | A form is the same call twice, so each call has one shape.                                       | A `form` word.                             |
 | A sheet is a drawing with one row height, so a model writes one form and each result stays even. | Named layouts, ratios and nested drawings. |
-| A complex view is a view of the app, so the text language stays small.                           | A view in each plugin's text.              |
+| A sheet draws only the app's parts, so the text language stays small. A card can draw a view (03). | A view in each plugin's text.              |

@@ -56,6 +56,7 @@ echo "toast=Hello"
 **Add one you got.** Double-click the `.spot` file, read what it runs and press ⌘⏎.
 
 The [`plugins`](plugins) folder has more tools to copy, such as battery, windows and a color picker.
+The [`examples`](examples) folder has a tool that draws its card with its own SwiftUI view, as [spec 03](spec/03-views.md) describes.
 
 ## Widgets and keys
 
@@ -69,8 +70,9 @@ places = ["agents", "battery", "cpu", "disk"]
 opens = "links"
 ```
 
-`places` names one tool for each cell, by its file name with no extension. The layouts are `single`, `hero`, `pair` and
-`row`. A widget can also draw its own layout, such as `grid = ["a a b b", "a a c c"]` with
+`places` names one tool for each cell, by its ID: its path with no extension, such as `cpu` or `home/coffee`. A widget in a
+folder with its tools names them by file name alone, and the whole folder is shared as one. The layouts are `single`,
+`hero`, `pair` and `row`. A widget can also draw its own layout, such as `grid = ["a a b b", "a a c c"]` with
 `places = { a = "agents", b = "battery", c = "cpu" }`. `opens` names the tool that a click opens, and that tool has no card of its own.
 
 Settings gives a key to each command that a tool lists. It writes the key to `~/.config/openspot/config.toml`, and you can

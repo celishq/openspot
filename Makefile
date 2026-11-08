@@ -1,4 +1,4 @@
-.PHONY: verify test perf plugins dev-state release release-build
+.PHONY: verify test perf plugins dev-state examples release release-build
 
 verify:
 	sh scripts/check-core.sh
@@ -21,6 +21,10 @@ dev-state:
 	rm -rf .temp/openspot
 	mkdir -p .temp/openspot/plugins
 	[ -n "$(EMPTY)" ] || cp -R plugins/. .temp/openspot/plugins/
+
+examples:
+	mkdir -p .temp/openspot/plugins
+	cp -R examples/. .temp/openspot/plugins/
 
 release:
 	sh scripts/release.sh publish "$(V)"

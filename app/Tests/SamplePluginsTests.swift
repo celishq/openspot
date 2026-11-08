@@ -77,14 +77,17 @@ final class SamplePluginsTests: SamplePluginsCase {
         XCTAssertEqual(points?.count, 3)
     }
 
-    func testTheCheckFindsNoFaultInTheFolder() async throws {
+    func testTheCheckFindsNoFaultInThePluginsAndTheExamples() async throws {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         try await withPrivateHome { folder in
             try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
-            let faults = await PluginCheck(folder: PluginFolder(url: root.appendingPathComponent("plugins"))).faults()
+            let views = ViewLibrary(cache: folder.appendingPathComponent("views"))
+            for name in ["plugins", "examples"] {
+                let faults = await PluginCheck(folder: PluginFolder(url: root.appendingPathComponent(name)), views: views).faults()
 
-            XCTAssertEqual(faults, [])
+                XCTAssertEqual(faults, [], name)
+            }
         }
     }
 

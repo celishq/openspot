@@ -26,6 +26,17 @@ final class SpotStateTests: XCTestCase {
         XCTAssertEqual(read.withLevel(2).size, .large)
     }
 
+    func testAReadKeepsEachValueOfItsHeadForAViewAndAChangeKeepsThem() throws {
+        let head = try XCTUnwrap(TextBlock.blocks(in: "title=3\npoint=1\npoint=0\npoint=2").first)
+        let read = SpotState(block: head, header: header).holding(head)
+        let block = try XCTUnwrap(TextBlock.blocks(in: "on=true").first)
+
+        XCTAssertEqual(SpotState(block: head, header: header).values, [:])
+        XCTAssertEqual(read.values, ["title": ["3"], "point": ["1", "0", "2"]])
+        XCTAssertEqual(read.taking(block).values, read.values)
+        XCTAssertEqual(read.showing(title: "Busy", detail: nil).values, read.values)
+    }
+
     func testAFrameWithNoGridKeepsTheHeader() {
         let hidden = SpotState(title: "Name", isOnGrid: false)
 

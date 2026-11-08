@@ -44,6 +44,8 @@ public struct Spot: Equatable, Sendable {
     public let image: String?
     /// The short text, such as an emoji, that its header names as its picture.
     public let glyph: String?
+    /// The Swift file of the view that its card draws, as a full path (V1).
+    public let view: String?
     /// The commands its header lists, which a person can give keys.
     public let offers: [CommandOffer]
     /// The Settings rows of its own commands, which its sheet shows. Nil for a spot that draws its own sheet.
@@ -77,7 +79,8 @@ public struct Spot: Equatable, Sendable {
         offers: [CommandOffer] = [],
         file: String? = nil,
         image: String? = nil,
-        glyph: String? = nil
+        glyph: String? = nil,
+        view: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -107,6 +110,7 @@ public struct Spot: Equatable, Sendable {
         self.file = file
         self.image = image
         self.glyph = glyph
+        self.view = view
     }
 
     /// The picture its header names in place of its symbol: its image, or else the icon of its file.
@@ -211,11 +215,13 @@ public struct Spot: Equatable, Sendable {
         return command
     }
 
-    /// The state that an output gives. A command with no state to read keeps its header.
+    /// The state that an output gives, with each value of its head for a view. A command with no state to read keeps its
+    /// header.
     public func state(of output: PluginOutput) throws -> SpotState {
         guard readsState else { return headerState }
         guard output.summary != nil || output.errors.isEmpty else { throw PluginError.badState }
-        let state = SpotState(block: output.summary, header: headerState)
+        var state = SpotState(block: output.summary, header: headerState)
+        if view != nil { state = state.holding(output.summary) }
         guard shipped != nil, let isOnGrid = output.summary?.flag("grid") else { return state }
         return state.onGrid(isOnGrid)
     }

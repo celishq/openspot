@@ -7,8 +7,9 @@ app, which the Build spot opens and copies for an AI. How the app itself works i
 | --------------------------------------- | ------ | ----- | -------------------------------------------------------------------------------- |
 | [01 Core](01-core.md)                   | final  |       | The file, the format, the header, the moments, the calls and the life of a call. |
 | [02 What a script prints](02-output.md) | final  | 01    | Rows, actions, forms, toggles, sliders, sheets and metrics.                      |
+| [03 Views](03-views.md)                 | draft  | 01 02 | A plugin's own SwiftUI view in its card.                                         |
 
-Specs 00 and 03 to 10 are gone. Their numbers are not used again.
+Specs 00 and 04 to 10 are gone. Their numbers are not used again.
 
 ## Goals
 
@@ -44,6 +45,7 @@ These rules come from the way Nostr writes its NIPs.
 | -------------------------------------------------------------------------------------------------------- | -------------------- | ---- |
 | `name`, `symbol`, `image`, `file`, `glyph`, `subtitle`, `key`, `size`, `read`, `data`, `drop`, `command` | Header key           | 01   |
 | `global`, `tray`                                                                                         | Header key           | 02   |
+| `view`                                                                                                   | Header key           | 03   |
 | `sheet`, `panel`, a number, `launch`, `wake`                                                             | Moment               | 01   |
 | `toast`, `open`                                                                                          | Block kind           | 01   |
 | `row`, `action`, `field`, `part`, `section`                                                              | Block kind           | 02   |
