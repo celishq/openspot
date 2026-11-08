@@ -33,26 +33,12 @@ final class SheetPushTests: XCTestCase {
         XCTAssertEqual(push.fade(of: push.open), 1...1)
     }
 
-    func testACardFadesFromWhenItsLeadingEdgeMeetsTheWindowsEdgeUntilItsCentreDoes() {
-        let fade = push.fade(of: card(row: 0, column: 1))
-        XCTAssertEqual(fade.lowerBound, 100.0 / 152, accuracy: 0.001)
-        XCTAssertEqual(fade.upperBound, 132.0 / 152, accuracy: 0.001)
+    func testACardFadesFromItsFirstPlaceUntilItsCentreMeetsTheWindowsEdge() {
+        XCTAssertEqual(push.fade(of: card(row: 0, column: 1)), 0...(132.0 / 152))
     }
 
-    func testACardThatStaysInTheWindowFadesAfterItLeavesTheSheet() {
+    func testACardThatStaysInTheWindowFadesOverItsWholePush() {
         let wide = SheetPush(open: push.open, sheet: push.sheet, window: CGRect(x: -1000, y: -1000, width: 3000, height: 3000))
-        let fade = wide.fade(of: card(row: 0, column: 1))
-        XCTAssertEqual(fade.lowerBound, 106.0 / 152, accuracy: 0.001)
-        XCTAssertEqual(fade.upperBound, 1)
-    }
-
-    func testACardLiesInTheRingOfCellsBetweenItAndTheOpenCard() {
-        XCTAssertEqual(push.ring(of: card(row: 1, column: 0)), 1)
-        XCTAssertEqual(push.ring(of: card(row: 0, column: 3)), 2)
-        XCTAssertEqual(push.ring(of: card(row: 4, column: 1)), 3)
-    }
-
-    func testAWideCardLiesInTheRingOfItsNearestCell() {
-        XCTAssertEqual(push.ring(of: SpotPlacement(index: 0, row: 2, column: 2, size: .wide)), 1)
+        XCTAssertEqual(wide.fade(of: card(row: 0, column: 1)), 0...1)
     }
 }
