@@ -21,7 +21,7 @@ struct SpotView: View {
             ZStack(alignment: .leading) {
                 if let frame {
                     Image(decorative: frame, scale: Liquid.scale)
-                    words.foregroundStyle(spot.ink)
+                    words.foregroundStyle(spot.ink).mask(outside(frame))
                     words.foregroundStyle(.white).mask(Image(decorative: frame, scale: Liquid.scale))
                 } else {
                     words.foregroundStyle(spot.ink)
@@ -29,6 +29,13 @@ struct SpotView: View {
             }
         }
         .onAppear { start = Date() }
+    }
+
+    /// The part of the card that the liquid leaves uncovered.
+    private func outside(_ frame: CGImage) -> some View {
+        Rectangle()
+            .overlay(Image(decorative: frame, scale: Liquid.scale).blendMode(.destinationOut))
+            .compositingGroup()
     }
 
     private var words: some View {
