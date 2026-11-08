@@ -199,4 +199,10 @@ final class PluginOutputTests: XCTestCase {
         XCTAssertNil(ItemForm(output: PluginOutput(text: "field=a\nlabel=A\n")))
         XCTAssertNil(ItemForm(output: PluginOutput(text: "title=New\n\nfield=a\n")))
     }
+
+    func testARowReadsEachKeyword() {
+        let output = PluginOutput(text: "row=grinning face\nrun=😀\nkeyword=happy\nkeyword=smile\n")
+
+        XCTAssertEqual(output.items.first?.keywords, ["happy", "smile"])
+    }
 }

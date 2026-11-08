@@ -310,4 +310,32 @@ final class SpotRunTests: XCTestCase {
 
         XCTAssertFalse(changed)
     }
+
+    func testAMoveOfTheSelectionTellsOnlyTheReadersOfTheSelection() async throws {
+        let sheet = try holding("printf 'row=A\\nrun=a\\n\\nrow=B\\nrun=b\\n'", pause: 30)
+        sheet.read()
+        try await wait("the rows") { sheet.list.shown.count == 2 }
+        nonisolated(unsafe) var listChanged = false
+        nonisolated(unsafe) var selectionChanged = false
+        withObservationTracking { _ = sheet.list } onChange: { listChanged = true }
+        withObservationTracking { _ = sheet.selection } onChange: { selectionChanged = true }
+
+        sheet.list.move(by: 1)
+
+        XCTAssertFalse(listChanged)
+        XCTAssertTrue(selectionChanged)
+        XCTAssertEqual(sheet.selection, 1)
+    }
+
+    func testASearchTellsTheReadersOfTheList() async throws {
+        let sheet = try holding("printf 'row=A\\nrun=a\\n\\nrow=B\\nrun=b\\n'", pause: 30)
+        sheet.read()
+        try await wait("the rows") { sheet.list.shown.count == 2 }
+        nonisolated(unsafe) var listChanged = false
+        withObservationTracking { _ = sheet.list } onChange: { listChanged = true }
+
+        sheet.search("b")
+
+        XCTAssertTrue(listChanged)
+    }
 }

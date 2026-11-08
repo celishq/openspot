@@ -23,6 +23,11 @@ struct SpotSheetView: View {
         model.sheets[entry.id]?.list ?? ItemList()
     }
 
+    /// Reads the selected row where it is called, so that only the view that shows it hears of a move.
+    private var selection: () -> Int {
+        { [model, id = entry.id] in model.sheets[id]?.selection ?? 0 }
+    }
+
     private var form: FormDraft? {
         model.form?.entry.id == entry.id ? model.form?.draft : nil
     }
@@ -52,6 +57,7 @@ struct SpotSheetView: View {
                         onRecord: { model.toggleRecording($0) },
                         list: list,
                         onRun: { model.runItem($0) },
+                        selection: selection,
                         nudge: { model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest }
                     )
                 } else if let form {
@@ -64,7 +70,7 @@ struct SpotSheetView: View {
                         }
                         .buttonStyle(.plain)
                     } else {
-                        SpotRowsView(list: list, recording: model.recording, onRun: { model.runItem($0) })
+                        SpotRowsView(list: list, recording: model.recording, onRun: { model.runItem($0) }, selection: selection)
                     }
                 }
             }
@@ -81,7 +87,7 @@ struct SpotSheetView: View {
                     words(subtitle: entry.shownState.subtitle)
                         .frame(width: max(cardWordsWidth, 0), alignment: .leading)
                         .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(isOpen ? 0 : 1) }
-                    words(subtitle: openSubtitle)
+                    words(subtitle: list.perLine > 1 ? nil : entry.shownState.subtitle, selectedName: list.perLine > 1)
                         .frame(width: max(sheetWordsWidth, 0), alignment: .leading)
                         .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: !isOpen)) { $0.opacity(isOpen ? 1 : 0) }
                 }
@@ -94,14 +100,16 @@ struct SpotSheetView: View {
     }
 
     /// The title and the second line of the header, in one copy of its words.
-    private func words(subtitle: String?) -> some View {
+    private func words(subtitle: String?, selectedName: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: SpotType.lineGap) {
             Text(form?.form.title ?? entry.shownState.title)
                 .font(SpotType.title)
                 .frame(height: SpotType.titleLine)
                 .foregroundStyle(showsFill ? SpotTheme.onSolid : SpotTheme.ink)
                 .lineLimit(1)
-            if form == nil, let subtitle {
+            if form == nil, selectedName {
+                SelectedName(list: list, selection: selection, fallback: entry.shownState.subtitle, isOnSolid: showsFill)
+            } else if form == nil, let subtitle {
                 Text(subtitle)
                     .font(SpotType.detail)
                     .frame(height: SpotType.detailLine)
@@ -123,11 +131,6 @@ struct SpotSheetView: View {
         if cardSize.rows > 1 { return cardWidth - 2 * SpotTokens.padding }
         let arrow = closeShift == nil ? 0 : SpotCardArrow.width + Self.wordsGap
         return max(cardWidth - SpotCardArrow.rowInset - arrow - SpotTokens.padding - SpotTokens.glyphSize - Self.wordsGap, 0)
-    }
-
-    /// The second line of the open sheet's header: the name of the selected button in a grid, which draws only its picture.
-    private var openSubtitle: String? {
-        list.perLine > 1 ? list.selectedItem?.title ?? entry.shownState.subtitle : entry.shownState.subtitle
     }
 
     /// The close button, which stays at the moving edge of the sheet and takes the place of the card's arrow.
@@ -181,7 +184,7 @@ struct SpotSheetView: View {
 
     /// How far the words of the header lie from their place at the foot of a tall card.
     private var tallCardShift: CGSize {
-        let hasSubtitle = form == nil && (entry.shownState.subtitle ?? openSubtitle) != nil
+        let hasSubtitle = form == nil && (entry.shownState.subtitle != nil || (list.perLine > 1 && !list.shown.isEmpty))
         let wordsHeight = SpotType.titleLine + (hasSubtitle ? SpotType.lineGap + SpotType.detailLine : 0)
         let row = max(SpotTokens.glyphSize, wordsHeight)
         let top = SpotTokens.padding + (row - wordsHeight) / 2
@@ -202,5 +205,25 @@ struct SpotSheetView: View {
             .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
             .modifier(SpotSelectionRing(isSelected: true, shape: row))
             .contentShape(row)
+    }
+}
+
+/// The second line of a grid's header: the name of the selected button, which draws only its picture. It alone reads the
+/// selection, so that a move redraws only this line.
+private struct SelectedName: View {
+    let list: ItemList
+    let selection: () -> Int
+    let fallback: String?
+    let isOnSolid: Bool
+
+    var body: some View {
+        let index = selection()
+        if let name = list.shown.indices.contains(index) ? list.shown[index].title : fallback {
+            Text(name)
+                .font(SpotType.detail)
+                .frame(height: SpotType.detailLine)
+                .modifier(SpotSecondaryText(isOnSolid: isOnSolid))
+                .lineLimit(1)
+        }
     }
 }

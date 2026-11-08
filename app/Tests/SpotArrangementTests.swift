@@ -116,6 +116,10 @@ final class SpotArrangementTests: XCTestCase {
         XCTAssertEqual(SpotGrid().nextSize(of: 0, in: [.large, .large], among: [.strip, .large]), .strip)
     }
 
+    func testASizeStepFindsNoneForASpotWithNoSizes() {
+        XCTAssertNil(SpotGrid().nextSize(of: 0, in: [.large], among: []))
+    }
+
     func testAMoveStepSkipsEachPlaceThatLeavesTheSpotWhereItIs() {
         let sizes: [SpotSize] = [.square, .small, .small, .wide, .small]
 

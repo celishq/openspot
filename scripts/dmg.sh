@@ -22,7 +22,7 @@ ditto "$app" "$stage/disk/$volume.app"
 ln -s /Applications "$stage/disk/Applications"
 hdiutil detach "/Volumes/$volume" -quiet 2>/dev/null || true
 hdiutil create -quiet -srcfolder "$stage/disk" -volname "$volume" -fs HFS+ -format UDRW -ov "$image"
-mount=$(hdiutil attach "$image" -nobrowse -noverify -noautoopen | grep "/Volumes/$volume" | tail -1 | cut -f3-)
+mount=$(diskutil image attach --nobrowse "$image" | grep "/Volumes/$volume" | tail -1 | cut -f3-)
 osascript <<APPLESCRIPT
 tell application "Finder"
   tell disk "$volume"

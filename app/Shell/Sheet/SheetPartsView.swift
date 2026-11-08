@@ -13,6 +13,7 @@ struct SheetPartsView: View {
     var onRecord: (SpotPart) -> Void = { _ in }
     var list = ItemList()
     var onRun: (SpotItem) -> Void = { _ in }
+    var selection: (() -> Int)?
     var nudge: () -> SheetParts.Nudge = { SheetParts.Nudge.rest }
     @FocusState private var focus: String?
     @Environment(\.spotIsShown) private var isShown
@@ -62,7 +63,7 @@ struct SheetPartsView: View {
                     .offset(x: line.minX, y: line.minY)
             }
             if let area = sheet.repeatFrame {
-                SpotRowsView(list: list, onRun: onRun)
+                SpotRowsView(list: list, onRun: onRun, selection: selection)
                     .frame(width: area.width, height: area.height)
                     .offset(x: area.minX, y: area.minY)
             }

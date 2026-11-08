@@ -23,6 +23,7 @@ file=/Applications/Safari.app
 | `detail`                           | The second line.                                                                                            |
 | `symbol`, `file`, `image`, `glyph` | The picture: an SF Symbol, a file's icon, a path to an image, or a short text such as an emoji.             |
 | `hides`                            | The id of an action that this row does not offer. Repeat the line for each one.                             |
+| `keyword`                          | A word that finds the row in a search, which the row does not show. Repeat the line for each one.           |
 | `shortcut`                         | A key, such as `ctrl+space`, shown at the end of the row. A pick records a new key and calls `<run> <key>`. |
 
 Openspot searches the rows itself and sorts recent picks first. The head can change this on each read:
