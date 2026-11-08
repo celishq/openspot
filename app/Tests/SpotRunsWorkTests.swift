@@ -333,7 +333,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAPressOfACardWithinOneSecondOfItsStartDoesNothing() async throws {
-        try script(header: "read=panel", "[ \"$1\" = read ] && { printf 'on=false\\n'; exit 0; }\nsleep 0.3\ntouch '\(path("done"))'\nprintf 'on=true\\n'")
+        try script(header: "read=panel", "[ \"$1\" = read ] && { printf 'switch=power\\non=false\\n'; exit 0; }\nsleep 0.3\ntouch '\(path("done"))'\nprintf 'switch=power\\non=true\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.command.kind == .toggle }
@@ -432,19 +432,19 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAQuitStopsAToggleAndItGoesBack() async throws {
-        try script(header: "read=panel", "[ \"$1\" = read ] && printf 'on=false\\n'\n[ \"$1\" = on ] && sleep 30\nexit 0")
+        try script(header: "read=panel", "[ \"$1\" = read ] && printf 'switch=power\\non=false\\n'\n[ \"$1\" = power ] && sleep 30\nexit 0")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.command.kind == .toggle && sheet.calls.isEmpty }
         sheet.pressCard()
         XCTAssertEqual(sheet.state.on, true)
-        try await wait("the call") { self.log() == ["read", "on"] }
+        try await wait("the call") { self.log() == ["read", "power true"] }
 
         runs.quit()
         try await pause()
 
         XCTAssertEqual(sheet.state.on, false)
-        XCTAssertEqual(log(), ["read", "on"])
+        XCTAssertEqual(log(), ["read", "power true"])
     }
 
     func testAReadThatWaitsToRunAgainDoesNotRunAfterAQuit() async throws {

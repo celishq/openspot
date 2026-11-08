@@ -138,7 +138,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     case "$1" in
       read) printf 'title=Sheet\\ngrid=go\\ngrid=bar\\n\\nbutton=go\\ntitle=Go\\n\\ntext=bar\\ntitle=idle\\n' ;;
       go)
-        printf 'toast=Started\\non=true\\n\\ntext=bar\\ntitle=half\\n---\\n'
+        printf 'toast=Started\\n\\ntext=bar\\ntitle=half\\n---\\n'
         sleep 0.3
         touch '%@'
         printf 'toast=Done\\n\\ntext=bar\\ntitle=done\\n'
@@ -173,13 +173,13 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testAFrameWithNoOpenSheetShowsOnlyItsToastAndItsState() async throws {
         try script(header: "read=panel", """
         case "$1" in
-          read) printf 'on=false\\n\\nrow=A\\nrun=a\\n\\ntext=bar\\ntitle=idle\\n' ;;
-          open) printf 'toast=Saved\\non=true\\ntitle=Other\\n\\ntext=bar\\ntitle=work\\n' ;;
+          read) printf 'detail=Idle\\n\\nrow=A\\nrun=a\\n\\ntext=bar\\ntitle=idle\\n' ;;
+          open) printf 'toast=Saved\\ntone=on\\ntitle=Other\\n\\ntext=bar\\ntitle=work\\n' ;;
         esac
         """)
         let sheet = try sheet()
         runs.panelOpened()
-        try await wait("the state") { sheet.state.on == false }
+        try await wait("the state") { sheet.state.subtitle == "Idle" }
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
 
@@ -306,7 +306,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAStoppedToggleGoesBack() async throws {
-        try script(header: "read=panel", "[ \"$1\" = read ] && { printf 'on=false\\n'; exit 0; }\nsleep 5")
+        try script(header: "read=panel", "[ \"$1\" = read ] && { printf 'switch=power\\non=false\\n'; exit 0; }\nsleep 5")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.command.kind == .toggle }

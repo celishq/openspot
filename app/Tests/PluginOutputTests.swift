@@ -119,9 +119,9 @@ final class PluginOutputTests: XCTestCase {
     func testWhatItPrintsDecidesTheKindOfSpot() {
         XCTAssertEqual(PluginOutput(text: "").kind, .launch)
         XCTAssertEqual(PluginOutput(text: "title=Hi\n").kind, .launch)
-        XCTAssertEqual(PluginOutput(text: "on=true\n").kind, .toggle)
-        XCTAssertEqual(PluginOutput(text: "level=7\n").kind, .slider)
-        XCTAssertEqual(PluginOutput(text: "on=true\n\nrow=A\nrun=a\n").kind, .list)
+        XCTAssertEqual(PluginOutput(text: "switch=power\non=true\n").kind, .toggle)
+        XCTAssertEqual(PluginOutput(text: "slider=volume\nlevel=7\n").kind, .slider)
+        XCTAssertEqual(PluginOutput(text: "switch=power\non=true\n\nrow=A\nrun=a\n").kind, .list)
         XCTAssertEqual(PluginOutput(text: "button=new\ntitle=New\n").kind, .list)
     }
 

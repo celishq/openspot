@@ -278,7 +278,6 @@ final class SheetLayoutTests: XCTestCase {
         let sheet = try placement("""
         section=lights
         title=Lights
-        on=true
 
         switch=left
         title=Left

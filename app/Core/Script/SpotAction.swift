@@ -17,8 +17,9 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: query.isEmpty ? ["read"] : ["read", query] + forms)
     }
 
+    /// A press of a card that is a switch: its id and its new value (U12).
     public static func toggle(_ state: SpotState) -> SpotAction {
-        SpotAction(arguments: [(state.on ?? false) ? "off" : "on"])
+        SpotAction(arguments: [state.control ?? "", (state.on ?? false) ? "false" : "true"])
     }
 
     public static func item(_ item: SpotItem) -> SpotAction {
@@ -59,7 +60,8 @@ public struct SpotAction: Equatable, Sendable {
         return (arguments.prefix(1) + arguments.dropFirst().filter { !long.contains($0) }, (input ?? "") + TextBlock(fields: missing).text)
     }
 
-    public static func level(_ value: Double) -> SpotAction {
-        SpotAction(arguments: ["level", String(Int(value.rounded()))])
+    /// A new level of a card that is a slider: its id and the level (U12).
+    public static func level(_ value: Double, of control: String) -> SpotAction {
+        SpotAction(arguments: [control, String(Int(value.rounded()))])
     }
 }

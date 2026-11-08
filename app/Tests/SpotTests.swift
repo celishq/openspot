@@ -42,12 +42,12 @@ final class SpotTests: XCTestCase {
 
     func testReadsTheStateACommandPrintsForRead() async throws {
         let command = try writeCommand(kind: .toggle, read: .panel, """
-        [ "$1" = read ] && [ -z "$2" ] && printf 'title=Focus\\ndetail=On\\non=true\\n'
+        [ "$1" = read ] && [ -z "$2" ] && printf 'switch=focus\\ntitle=Focus\\ndetail=On\\non=true\\n'
         """)
 
         let state = try await command.state(timeout: 5)
 
-        XCTAssertEqual(state, SpotState(title: "Focus", subtitle: "On", on: true))
+        XCTAssertEqual(state, SpotState(title: "Focus", subtitle: "On", on: true, control: "focus"))
     }
 
     func testOnlyASpotWithAViewKeepsTheValuesOfItsHead() throws {
@@ -60,11 +60,11 @@ final class SpotTests: XCTestCase {
     }
 
     func testAStateKeepsWhatItLeavesOutFromTheHeader() async throws {
-        let command = try writeCommand(kind: .toggle, subtitle: "Header", read: .panel, "echo on=true")
+        let command = try writeCommand(kind: .toggle, subtitle: "Header", read: .panel, "printf 'switch=power\\non=true\\n'")
 
         let state = try await command.state(timeout: 5)
 
-        XCTAssertEqual(state, SpotState(title: "Command", subtitle: "Header", on: true))
+        XCTAssertEqual(state, SpotState(title: "Command", subtitle: "Header", on: true, control: "power"))
     }
 
     func testASpotWithNoReadShowsItsHeaderAndDoesNotRun() async throws {
@@ -78,7 +78,7 @@ final class SpotTests: XCTestCase {
 
     func testOpeningGivesTheKindAndTheActionsThatItPrints() async throws {
         let command = try writeCommand(kind: .launch, read: .panel, """
-        printf 'on=true\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=A\\nrun=a\\n'
+        printf 'tone=on\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=A\\nrun=a\\n'
         """)
 
         let opened = try await command.opened(timeout: 5)
@@ -178,11 +178,11 @@ final class SpotTests: XCTestCase {
     }
 
     func testPerformPassesTheActionArguments() async throws {
-        let command = try writeCommand(kind: .toggle, "echo \"$1\" > '\(marker.path)'")
+        let command = try writeCommand(kind: .toggle, "echo \"$*\" > '\(marker.path)'")
 
-        try await command.perform(.toggle(SpotState(title: "Focus", on: false)), timeout: 5)
+        try await command.perform(.toggle(SpotState(title: "Focus", on: false, control: "focus")), timeout: 5)
 
-        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "on\n")
+        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "focus true\n")
     }
 
     func testAnActionCanPrintAToast() async throws {

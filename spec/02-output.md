@@ -163,8 +163,8 @@ and it prints the whole output again, or nothing to be read again (B6). The app 
 answer to a call that a newer change has outdated (U10). A repeat keeps its rows until a frame prints rows again, so a
 frame can change one switch alone (U11).
 
-The head is the first block with no kind. It holds the drawings, `title` and `detail` for the spot's card, `size`,
-`search`, `recents`, `toast` and `open`. A head is not drawn.
+The head is the first block with no kind. It holds the drawings, `title` and `detail` for the spot's card, `tone=on` for
+a card that shows that its thing is on, `size`, `search`, `recents`, `toast` and `open`. A head is not drawn.
 
 ## The card
 
@@ -209,7 +209,6 @@ chooses what the menu bar shows. Printing nothing removes the item until the nex
 | ---------- | ----------------------------------------------------------------------------------- | ----- |
 | U8, U9     | A row cannot draw a `field` slot; a list row has room for two lines.                | 2     |
 | U11        | A frame replaces the rows.                                                          | 2     |
-| U5, U12    | Cards draw a kind from the head: `on`, `level`, and a metric's `title` and `value`. | 4     |
-| C1         | The calls `on`, `off` and `level <number>` of a toggle or a slider card.            | 4     |
+| U5         | A card has no drawing of its own: it draws its picture, its words and its control.   | 4     |
 | H1         | A metric is the head of its output.                                                 | 4     |
 | `view`     | A view fills the whole card from the header's `view` (03).                          | 5     |

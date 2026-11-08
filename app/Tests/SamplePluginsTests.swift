@@ -112,7 +112,7 @@ final class SamplePluginsTests: SamplePluginsCase {
             let lines = try await caffeinate.items(timeout: 5)
 
             XCTAssertEqual(state.title, "Caffeinate")
-            XCTAssertEqual(state.on, false)
+            XCTAssertNil(state.on)
             XCTAssertEqual(lines.items.map(\.run), ["1800", "3600", "7200", "0"])
             XCTAssertEqual(lines.errors, [])
             XCTAssertEqual(lines.pick, .close)

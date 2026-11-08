@@ -3,17 +3,17 @@ import XCTest
 
 final class SpotActionTests: XCTestCase {
     func testTogglingAnOffSpotSendsOn() {
-        let state = SpotState(title: "Focus", on: false)
-        XCTAssertEqual(SpotAction.toggle(state).arguments, ["on"])
+        let state = SpotState(title: "Focus", on: false, control: "focus")
+        XCTAssertEqual(SpotAction.toggle(state).arguments, ["focus", "true"])
     }
 
     func testTogglingAnOnSpotSendsOff() {
-        let state = SpotState(title: "Wi-Fi", on: true)
-        XCTAssertEqual(SpotAction.toggle(state).arguments, ["off"])
+        let state = SpotState(title: "Wi-Fi", on: true, control: "wifi")
+        XCTAssertEqual(SpotAction.toggle(state).arguments, ["wifi", "false"])
     }
 
     func testASliderLevelIsSentAsARoundedNumber() {
-        XCTAssertEqual(SpotAction.level(69.6).arguments, ["level", "70"])
+        XCTAssertEqual(SpotAction.level(69.6, of: "volume").arguments, ["volume", "70"])
     }
 
     func testAClickOnACardWithAReadKeySendsRun() {

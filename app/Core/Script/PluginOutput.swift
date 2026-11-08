@@ -25,7 +25,7 @@ public struct PluginOutput: Equatable, Sendable {
 
     private static let reserved = "read"
     /// The app's own events. A part cannot take one, and a button can take only `open`, to change the pick.
-    private static let defaults = ["run", "open", "drop", "on", "off", "level"]
+    private static let defaults = ["run", "open", "drop"]
     private static let button = "button"
     private static let repeatKind = "repeat"
     private static let templateKind = "template"
@@ -82,6 +82,12 @@ public struct PluginOutput: Equatable, Sendable {
         if !parts.isEmpty { partFaults += SheetFaults.of(layout: layout, summary: summary, parts: parts) }
     }
 
+    /// The one switch or slider that is all the output, which the card draws and changes (U12).
+    public var control: SpotPart? {
+        guard items.isEmpty, actions.isEmpty, parts.count == 1, let part = parts.first else { return nil }
+        return part.kind == "switch" || part.kind == "slider" ? part : nil
+    }
+
     /// Who searches its rows: the script when it prints `search=script`.
     public var search: ItemSearch {
         summary?.value("search") == ItemSearch.script.rawValue ? .script : .local
@@ -109,9 +115,8 @@ public struct PluginOutput: Equatable, Sendable {
 
     /// The kind of spot that this output makes.
     public var kind: SpotKind {
-        if !items.isEmpty || !actions.isEmpty || !parts.isEmpty { return .list }
-        if summary?.number("level") != nil { return .slider }
-        return summary?.flag("on") != nil ? .toggle : .launch
+        if let control { return control.kind == "switch" ? .toggle : .slider }
+        return items.isEmpty && actions.isEmpty && parts.isEmpty ? .launch : .list
     }
 
     private mutating func take(effects block: TextBlock) {

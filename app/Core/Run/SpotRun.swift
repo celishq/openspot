@@ -343,7 +343,7 @@ public final class SpotRun {
         guard command.kind == .toggle else { return work(command.click, key: Self.cardKey) }
         let before = state
         let action = SpotAction.toggle(state)
-        state = SpotState(title: state.title, subtitle: state.subtitle, on: action.arguments == ["on"], size: state.size, values: state.values)
+        state = state.switched(on: !(state.on ?? false))
         work(action, key: Self.cardKey, undo: before)
     }
 
@@ -381,7 +381,7 @@ public final class SpotRun {
         if let older = running(Self.levelKey) { stop(older) }
         after(Self.sliderPause, key: Self.levelKey) { [weak self] in
             guard let self else { return }
-            work(.level(state.level ?? 0), key: Self.levelKey)
+            work(.level(state.level ?? 0, of: state.control ?? ""), key: Self.levelKey)
         }
     }
 
@@ -726,8 +726,8 @@ public final class SpotRun {
                 let lines = PluginOutput(text: text)
                 lastFrame = text
                 report(toastOf: lines)
-                if let block = lines.summary { state = state.taking(block) }
-                showedState = showedState || !lines.parts.isEmpty || lines.summary?.flag("on") != nil || lines.summary?.number("level") != nil
+                state = state.taking(lines)
+                showedState = showedState || !lines.parts.isEmpty
                 if isOpen { panel?.merge(lines, answering: generation, keeping: keeping ?? editing) }
                 onReport(.frame(text))
             },
