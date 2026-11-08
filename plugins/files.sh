@@ -8,9 +8,15 @@ case "$1" in
     printf 'search=script\n\n'
     printf 'action=reveal\ntitle=Show in Finder\nkey=cmd+return\nclose=true\n\n'
     printf 'action=copy\ntitle=Copy path\nkey=cmd+shift+c\nclose=true\n\n'
-    query=$(printf '%s' "$2" | tr -d '"\\*')
-    [ "${#query}" -lt 2 ] && exit 0
-    mdfind -onlyin "$HOME" "kMDItemFSName == \"*$query*\"cd" 2>/dev/null \
+    shift
+    predicate=''
+    for text in "$@"; do
+      query=$(printf '%s' "$text" | tr -d '"\\*')
+      [ "${#query}" -lt 2 ] && continue
+      predicate="$predicate${predicate:+ || }kMDItemFSName == \"*$query*\"cd"
+    done
+    [ -z "$predicate" ] && exit 0
+    mdfind -onlyin "$HOME" "$predicate" 2>/dev/null \
       | grep -v "^$HOME/Library/" \
       | LC_ALL=C tr -d '\000-\011\013-\037' \
       | sed 's/\\/\\\\/g' \

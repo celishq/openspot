@@ -12,8 +12,9 @@ public struct SpotAction: Equatable, Sendable {
         self.arguments = arguments
     }
 
-    public static func items(query: String) -> SpotAction {
-        SpotAction(arguments: query.isEmpty ? ["read"] : ["read", query])
+    /// A read for the text of a search, followed by each other form of it that the person may have meant.
+    public static func items(query: String, forms: [String] = []) -> SpotAction {
+        SpotAction(arguments: query.isEmpty ? ["read"] : ["read", query] + forms)
     }
 
     public static func toggle(_ state: SpotState) -> SpotAction {

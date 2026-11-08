@@ -36,6 +36,7 @@ final class SpotActionTests: XCTestCase {
         XCTAssertEqual(SpotAction.read.arguments, ["read"])
         XCTAssertEqual(SpotAction.items(query: "").arguments, ["read"])
         XCTAssertEqual(SpotAction.items(query: "rep").arguments, ["read", "rep"])
+        XCTAssertEqual(SpotAction.items(query: "сафари", forms: ["safari"]).arguments, ["read", "сафари", "safari"])
     }
 
     func testAnActionSendsItsIdAndItsItem() {

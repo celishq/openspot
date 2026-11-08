@@ -85,7 +85,7 @@ a widget or the menu bar shows it, or while the open panel reads it at `panel` (
 | Call                                   | When                                                               |
 | -------------------------------------- | ------------------------------------------------------------------ |
 | `<script>`                             | A click, with no `read` in its header.                             |
-| `<script> read [text]`                 | A moment, or a search change with `search=script` (02).            |
+| `<script> read [text] [form]...`       | A moment, or a search change with `search=script` (02).            |
 | `<script> run`                         | A click on a card with no sheet, with a `read` in its header.      |
 | `<script> open <run>`                  | A row is picked (02).                                              |
 | `<script> <action> [run]`              | An action runs (02).                                               |
