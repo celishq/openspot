@@ -172,7 +172,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testAPartCalledCallOrArgIsAFaultBecauseAStayingScriptReadsThoseKeys() {
-        for id in ["call", "arg"] {
+        for id in ["call", "reason", "arg"] {
             XCTAssertEqual(PluginOutput(text: "field=\(id)\ntext=A\n").partFaults, ["a part cannot be called \(id)"])
         }
     }

@@ -103,9 +103,10 @@ public final class ScriptProcess: @unchecked Sendable {
         return stream
     }
 
-    /// Sends one call to the script as a block, with its `id` and the values of its sheet, in the order of the calls.
-    public func send(_ action: SpotAction, values: String? = nil, id: Int) {
-        send(text: action.event(values: values, id: id))
+    /// Sends one call to the script as a block, with its `id`, the `reason` of a read and the values of its sheet, in the
+    /// order of the calls.
+    public func send(_ action: SpotAction, values: String? = nil, id: Int, reason: ReadReason? = nil) {
+        send(text: action.event(values: values, id: id, reason: reason))
     }
 
     /// Sends a block as it is, in the order of the calls.

@@ -110,11 +110,11 @@ class SpotRunsCase: XCTestCase {
         """)
     }
 
-    /// The blocks that a staying script got, one string for each, with no `call` line unless `ids` keeps it.
+    /// The blocks that a staying script got, one string for each, with no `call` or `reason` line unless `ids` keeps them.
     func blocks(ids: Bool = false) -> [String] {
         let text = (try? String(contentsOfFile: path("blocks"), encoding: .utf8)) ?? ""
         return text.components(separatedBy: "\n\n").filter { !$0.isEmpty }.map { block in
-            ids ? block : block.split(separator: "\n").filter { !$0.hasPrefix("call=") }.joined(separator: "\n")
+            ids ? block : block.split(separator: "\n").filter { !$0.hasPrefix("call=") && !$0.hasPrefix("reason=") }.joined(separator: "\n")
         }
     }
 

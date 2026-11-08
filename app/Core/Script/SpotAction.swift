@@ -50,10 +50,11 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: ["drop"] + paths)
     }
 
-    /// This call as one block for a script that stays: `call=<id>`, one `arg` for each argument of a normal call, and each
-    /// value that stdin holds in a normal call.
-    public func event(values: String? = nil, id: Int) -> String {
-        let call = [TextBlock.Field(key: "call", value: String(id))] + arguments.map { TextBlock.Field(key: "arg", value: $0) }
+    /// This call as one block for a script that stays: `call=<id>`, the `reason` of a read, one `arg` for each argument of a
+    /// normal call, and each value that stdin holds in a normal call.
+    public func event(values: String? = nil, id: Int, reason: ReadReason? = nil) -> String {
+        let head = [TextBlock.Field(key: "call", value: String(id))] + (reason.map { [TextBlock.Field(key: "reason", value: $0.rawValue)] } ?? [])
+        let call = head + arguments.map { TextBlock.Field(key: "arg", value: $0) }
         let held = values.flatMap { TextBlock.blocks(in: $0).first }?.fields ?? []
         return TextBlock(fields: call + held).text + "\n"
     }

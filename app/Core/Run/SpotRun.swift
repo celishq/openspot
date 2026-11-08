@@ -292,8 +292,8 @@ public final class SpotRun {
     /// younger than 5 seconds (M2). A file with no `read` gets its click instead. A staying script that something wants gets
     /// a block, and starts if it does not run.
     public func read(selecting run: String? = nil, need: ReadNeed = .moment, reason: ReadReason? = nil) {
-        if command.stays { return readLive(need: need) }
         let reason = reason ?? (need == .change ? .change : isOpen ? .sheet : .panel)
+        if command.stays { return readLive(need: need, reason: reason) }
         if let run { selecting = run }
         guard list.search == .local else { return ask() }
         if running(Self.readKey) != nil {
@@ -713,23 +713,28 @@ public final class SpotRun {
         } else {
             ready = onReady
         }
-        readLive(need: need)
+        readLive(need: need, reason: .sheet)
         if live == nil { dropUnshownSheet() }
     }
 
     /// Asks a staying script that something wants for what it shows, by M1 and M2. A new run gets the read as it starts.
-    private func readLive(need: ReadNeed) {
+    private func readLive(need: ReadNeed, reason: ReadReason) {
         guard isWanted else { return }
-        guard live != nil else { return startLive() }
+        guard live != nil else { return startLive(reason: reason) }
         if need != .change, liveRead != nil { return }
         if need == .moment, let answered, runs.now().timeIntervalSince(answered) < Self.answerAge { return }
         let id = nextLiveId()
         liveRead = id
-        live?.send(.read, values: isOpen ? panel?.values : nil, id: id)
+        live?.send(.read, values: isOpen ? panel?.values : nil, id: id, reason: reason)
+    }
+
+    /// Why a staying script that starts by itself reads first: its open sheet, `launch` in its `read`, or else the panel.
+    private var startReason: ReadReason {
+        isOpen ? .sheet : command.read?.has(.launch) == true ? .launch : .panel
     }
 
     /// Starts a staying script and asks it for what it shows, with no values. A script that failed too often does not start.
-    private func startLive() {
+    private func startLive(reason: ReadReason? = nil) {
         guard !hasGivenUp else { return }
         do {
             let (script, frames) = try runs.stay(command, limit: runs.readLimit)
@@ -737,7 +742,7 @@ public final class SpotRun {
             answered = nil
             let id = nextLiveId()
             liveRead = id
-            script.send(.read, id: id)
+            script.send(.read, id: id, reason: reason ?? startReason)
             Task { await follow(script, frames) }
         } catch {
             liveFailed(error)
@@ -747,14 +752,14 @@ public final class SpotRun {
     /// Sends a call to the running script, and starts it if it does not run, and returns its number. With nothing that wants it,
     /// it ends after the call. A call with a `key` runs until its own `end`, and a stop sends its number (Y7).
     @discardableResult
-    private func sendLive(_ action: SpotAction, values: String?, key: String? = nil) -> Int? {
+    private func sendLive(_ action: SpotAction, values: String?, key: String? = nil, reason: ReadReason? = nil) -> Int? {
         if live == nil { startLive() }
         guard let script = live else {
             settleLive()
             return nil
         }
         let id = nextLiveId()
-        script.send(action, values: values, id: id)
+        script.send(action, values: values, id: id, reason: reason)
         if let key {
             let call = ScriptCall(action: action, key: key, started: runs.now())
             call.halt = { script.send(text: SpotAction.stopEvent(id: id)) }
@@ -910,7 +915,7 @@ public final class SpotRun {
         pauses[Self.searchKey]?.cancel()
         pauses[Self.searchKey] = nil
         if command.stays {
-            liveRead = sendLive(.items(query: query), values: nil)
+            liveRead = sendLive(.items(query: query), values: nil, reason: .search)
             return
         }
         var hasAnswer = false

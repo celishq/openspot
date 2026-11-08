@@ -52,7 +52,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
 
-        try await wait("the call") { self.blocks(ids: true) == ["call=1\narg=read", "call=2\narg=open\narg=a"] }
+        try await wait("the call") { self.blocks(ids: true) == ["call=1\nreason=sheet\narg=read", "call=2\narg=open\narg=a"] }
     }
 
     func testACallRunsUntilItsEndOnceTheScriptPrintsEnds() async throws {
@@ -319,13 +319,13 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         runs.arrive(.launch)
         try await wait("the frame") { sheet.list.shown.count == 1 }
-        XCTAssertEqual(blocks(), ["arg=read"])
+        XCTAssertEqual(blocks(ids: true), ["call=1\nreason=launch\narg=read"])
 
         runs.panelOpened()
         runs.panelClosed()
         runs.arrive(.wake)
 
-        try await wait("the read of the wake") { self.blocks() == ["arg=read", "arg=read"] }
+        try await wait("the read of the wake") { self.blocks(ids: true).last == "call=2\nreason=wake\narg=read" }
         XCTAssertFalse(exists("ended"))
         XCTAssertEqual(log().count, 1)
     }

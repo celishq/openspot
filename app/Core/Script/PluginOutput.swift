@@ -34,7 +34,7 @@ public struct PluginOutput: Equatable, Sendable {
 
     private static let reserved = "read"
     /// The keys of a call block for a staying script, which a value of the sheet would take the place of.
-    private static let callKeys = ["call", "arg"]
+    private static let callKeys = ["call", "reason", "arg"]
     /// The app's own events. A part cannot take one, and a button can take only `open`, to change the pick.
     private static let defaults = ["run", "open", "drop"]
     private static let button = "button"

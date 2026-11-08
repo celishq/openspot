@@ -141,6 +141,7 @@ final class SheetStreamTests: XCTestCase {
 
     func testEventsAreBlocks() {
         XCTAssertEqual(SpotAction.read.event(id: 1), "call=1\narg=read\n\n")
+        XCTAssertEqual(SpotAction.read.event(id: 5, reason: .wake), "call=5\nreason=wake\narg=read\n\n")
         XCTAssertEqual(SpotAction.press("swap").event(id: 2), "call=2\narg=swap\n\n")
         XCTAssertEqual(SpotAction.set("input", to: "one\ntwo").event(id: 3), "call=3\narg=input\narg=one\\ntwo\n\n")
         XCTAssertEqual(SpotAction.drop(paths: ["/a b.mov", "-rf.mov"]).event(id: 4), "call=4\narg=drop\narg=/a b.mov\narg=-rf.mov\n\n")

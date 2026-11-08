@@ -181,7 +181,7 @@ public final class SpotRuns {
         if command.stays, action == .read {
             let (script, frames) = try stay(command, limit: limit)
             defer { script.end() }
-            script.send(.read, id: 1)
+            script.send(.read, id: 1, reason: .panel)
             for try await frame in frames { return frame }
             return ""
         }
