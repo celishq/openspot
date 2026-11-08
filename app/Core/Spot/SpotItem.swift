@@ -9,6 +9,8 @@ public struct SpotItem: Equatable, Sendable {
     public let file: String?
     public let image: String?
     public let glyph: String?
+    /// The small picture of the thing it belongs to, drawn at a corner of its own picture.
+    public let badge: Icon?
     public let hides: [String]?
     /// Words that find this row in a search, though it does not show them.
     public let keywords: [String]
@@ -25,10 +27,10 @@ public struct SpotItem: Equatable, Sendable {
 
     /// The keys that a row reads itself, which are the slots of the default template (U14).
     public static let ownKeys: Set<String> = [
-        "row", "title", "detail", "icon", "hides", "keyword", "shortcut", "on", "tone", "as"
+        "row", "title", "detail", "icon", "badge", "hides", "keyword", "shortcut", "on", "tone", "as"
     ]
 
-    public init(title: String, subtitle: String? = nil, run: String, symbol: String? = nil, file: String? = nil, image: String? = nil, glyph: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, isOn: Bool = false, tone: MetricValue.Tone? = nil, template: String? = nil, fields: [TextBlock.Field] = []) {
+    public init(title: String, subtitle: String? = nil, run: String, symbol: String? = nil, file: String? = nil, image: String? = nil, glyph: String? = nil, badge: Icon? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, isOn: Bool = false, tone: MetricValue.Tone? = nil, template: String? = nil, fields: [TextBlock.Field] = []) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -36,6 +38,7 @@ public struct SpotItem: Equatable, Sendable {
         self.file = file
         self.image = image
         self.glyph = glyph
+        self.badge = badge
         self.hides = hides
         self.keywords = keywords
         self.shortcut = shortcut
@@ -59,6 +62,7 @@ public struct SpotItem: Equatable, Sendable {
             file: icon?.file,
             image: icon?.image,
             glyph: icon?.glyph,
+            badge: Icon(text: block.value("badge")),
             hides: hides.isEmpty ? nil : hides,
             keywords: block.values("keyword"),
             shortcut: block.value("shortcut"),

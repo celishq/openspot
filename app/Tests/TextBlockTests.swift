@@ -115,4 +115,12 @@ final class TextBlockTests: XCTestCase {
             SpotItem(title: "A", subtitle: "B", run: "a", file: "/f", hides: ["x", "y"])
         )
     }
+
+    func testAnItemTakesABadgeInTheFormOfAnIcon() {
+        let item = SpotItem(block: TextBlock.blocks(in: "row=a\nicon=gearshape\nbadge=/Sound.appex")[0])
+
+        XCTAssertEqual(item?.badge, .file("/Sound.appex"))
+        XCTAssertEqual(item?.symbol, "gearshape")
+        XCTAssertEqual(item?.fields, [])
+    }
 }
