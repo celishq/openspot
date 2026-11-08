@@ -3,7 +3,6 @@
 // symbol=party.popper
 // subtitle=Celebrate on each screen
 // key=k
-// grid=false
 import AppKit
 
 let emission: TimeInterval = 1.5

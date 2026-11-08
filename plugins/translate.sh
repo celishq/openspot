@@ -3,7 +3,6 @@
 # subtitle=Between languages
 # key=t
 # size=small
-# order=-1
 # read=sheet
 . "$OPENSPOT_SH"
 export LC_ALL=en_US.UTF-8

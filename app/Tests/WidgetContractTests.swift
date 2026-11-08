@@ -250,7 +250,7 @@ final class WidgetContractTests: XCTestCase {
         try script("one.sh", "#!/bin/sh\n# key=x\n# read=panel\n# rank=1\n")
         try script("two.sh", "#!/bin/sh\n# key=x\n# read=panel\n# rank=2\n")
 
-        XCTAssertEqual(try scan.commands.map(\.rank), [1, 2])
+        XCTAssertEqual(try scan.commands.map(\.rank).sorted(), [1, 2])
     }
 
     func testEveryLayoutFillsItsSizeWithNoOverlap() {

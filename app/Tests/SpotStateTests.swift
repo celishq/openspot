@@ -8,24 +8,21 @@ final class SpotStateTests: XCTestCase {
         SpotState(block: try XCTUnwrap(TextBlock.blocks(in: text).first), header: header)
     }
 
-    func testAFrameSetsWhetherTheSpotIsOnTheGrid() throws {
+    func testAFrameOfAScriptCannotMoveItsCardOnOrOffTheGrid() throws {
         let hidden = SpotState(title: "Name", isOnGrid: false)
 
-        XCTAssertTrue(header.isOnGrid)
-        XCTAssertTrue(SpotState(block: TextBlock.blocks(in: "grid=true").first, header: hidden).isOnGrid)
-        XCTAssertFalse(try state("grid=false").isOnGrid)
+        XCTAssertFalse(SpotState(block: TextBlock.blocks(in: "grid=true").first, header: hidden).isOnGrid)
+        XCTAssertTrue(try state("grid=false").isOnGrid)
     }
 
-    func testAReadSetsTheSizeAndTheOrderOfItsCardAndAChangeKeepsThem() throws {
-        let read = try state("size=large\norder=-3")
+    func testAReadSetsTheSizeOfItsCardAndAChangeKeepsIt() throws {
+        let read = try state("size=large")
         let block = try XCTUnwrap(TextBlock.blocks(in: "on=true").first)
 
         XCTAssertNil(header.size)
-        XCTAssertNil(header.order)
         XCTAssertEqual(read.size, .large)
-        XCTAssertEqual(read.order, -3)
         XCTAssertEqual(read.taking(block).size, .large)
-        XCTAssertEqual(read.showing(title: "Busy", detail: nil).order, -3)
+        XCTAssertEqual(read.showing(title: "Busy", detail: nil).size, .large)
         XCTAssertEqual(read.withLevel(2).size, .large)
     }
 

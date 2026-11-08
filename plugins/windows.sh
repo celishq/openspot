@@ -2,7 +2,6 @@
 # name=Windows
 # symbol=macwindow
 # subtitle=Give each command a key
-# grid=false
 # command=full:Full screen:rectangle.inset.filled
 # command=center:Centre:rectangle.center.inset.filled
 # command=left:Left side:rectangle.lefthalf.inset.filled

@@ -246,10 +246,9 @@ final class SpotsModel {
         entries = ordered().map { Entry(command: $0, sheet: runs.sheets[$0.id], choice: arrangement) }
     }
 
-    /// The scanned spots in the order that their last reads say, and the person's order in the config over it.
+    /// The scanned spots in their grid order, and the person's order in the config over it.
     private func ordered() -> [Spot] {
-        let order = { (spot: Spot) in self.runs.sheets[spot.id]?.state.order ?? spot.order }
-        let sorted = scanned.enumerated().sorted { (order($0.element), $0.offset) < (order($1.element), $1.offset) }.map(\.element)
+        let sorted = scanned.enumerated().sorted { ($0.element.order, $0.offset) < ($1.element.order, $1.offset) }.map(\.element)
         return arrangement.ordered(sorted)
     }
 

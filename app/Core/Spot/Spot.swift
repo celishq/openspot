@@ -17,7 +17,8 @@ public struct Spot: Equatable, Sendable {
     public private(set) var read: SpotRead?
     public private(set) var pick: ItemPick
     public let rank: Int
-    public let order: Int
+    /// Its place in the grid before the person's choice: a lower number first. The person's newest file comes first.
+    public private(set) var order: Int
     public private(set) var keepsRecent = true
     public private(set) var primary: String?
     public private(set) var actions: [CommandAction]
@@ -33,8 +34,8 @@ public struct Spot: Equatable, Sendable {
     public let dataName: String?
     /// Whether it has a card. A script with a number in its `read` and no `key` has none (F7).
     public let hasSpot: Bool
-    /// Whether the grid shows its card until a frame says otherwise (F9).
-    public let isOnGrid: Bool
+    /// Whether the grid shows its card. A script with commands, or one that a widget opens, has no card on the grid.
+    public private(set) var isOnGrid: Bool
     /// The `symbol` its header names, if any.
     public let headerSymbol: String?
     /// The commands its header lists, which a person can give keys.
@@ -113,6 +114,20 @@ public struct Spot: Equatable, Sendable {
         return spot
     }
 
+    /// The same spot, placed in the grid by the date its file was added: the newest first.
+    func added(at date: Date) -> Spot {
+        var spot = self
+        spot.order = -Int(date.timeIntervalSince1970)
+        return spot
+    }
+
+    /// The same spot, off the grid.
+    func offTheGrid() -> Spot {
+        var spot = self
+        spot.isOnGrid = false
+        return spot
+    }
+
     /// Whether its sheet changes the keys in the config file.
     public var setsKeys: Bool {
         if case .settings? = shipped { return true }
@@ -188,7 +203,9 @@ public struct Spot: Equatable, Sendable {
     public func state(of output: PluginOutput) throws -> SpotState {
         guard readsState else { return headerState }
         guard output.summary != nil || output.errors.isEmpty else { throw PluginError.badState }
-        return SpotState(block: output.summary, header: headerState)
+        let state = SpotState(block: output.summary, header: headerState)
+        guard shipped != nil, let isOnGrid = output.summary?.flag("grid") else { return state }
+        return state.onGrid(isOnGrid)
     }
 
     /// The actions that fit: those an item does not hide, and only the command's own with no item.

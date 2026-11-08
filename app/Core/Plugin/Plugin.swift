@@ -54,11 +54,6 @@ public struct Plugin: Equatable, Sendable {
             }
             rank = number
         }
-        var order = 0
-        if let text = header.value("order") {
-            guard let number = Int(text) else { throw PluginError.fault("\(name) needs a number as its order") }
-            order = number
-        }
         let offers = try header.values("command").map { text in
             guard let offer = CommandOffer(text: text) else {
                 throw PluginError.fault("\(name) has an unknown command: \(text). Write an ID and a title, such as left:Left side")
@@ -76,12 +71,11 @@ public struct Plugin: Equatable, Sendable {
             key: try Self.key(header.value("key"), of: name),
             read: read,
             rank: rank,
-            order: order,
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             isTray: isTray,
             dataName: header.value("data") ?? id.split(separator: "/").first.map(String.init),
             hasSpot: read?.seconds == nil || hasKey,
-            isOnGrid: header.flag("grid") ?? true,
+            isOnGrid: offers.isEmpty,
             headerSymbol: symbol,
             offers: offers
         )

@@ -61,7 +61,7 @@ final class UpdateSpotTests: XCTestCase {
         XCTAssertEqual(restarts, 1)
     }
 
-    func testTheSpotComesBeforeEachSpotOfTheSameOrderInTheGrid() throws {
+    func testTheSpotComesFirstInTheGrid() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-order-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }

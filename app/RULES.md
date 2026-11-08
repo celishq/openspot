@@ -12,7 +12,7 @@ Code and tests name a rule by its ID.
 | A4 | Search text stays until the person presses Esc. |
 | A5 | Spots, Build, Settings, Updates and Quit ship with the app and answer the same calls, in Swift. |
 | A6 | One global key opens the panel, and the person chooses it. A script never holds a key (P8). |
-| A7 | The person arranges the grid in `config.toml`: order, `size`, `grid` and `enabled`. It wins over the plugin. A size is a preference, and the grid can change it to fill a row. |
+| A7 | The person arranges the grid in `config.toml`: order, `size`, `grid` and `enabled`. It wins over the plugin. A size is a preference, and the grid can change it to fill a row. With no choice, the person's files come first, the newest first, then the core spots. |
 | A8 | The app opens the panel unseen once as it starts, so that each `panel` read runs. It waits at most 2 seconds, then shows a toast that names the key. |
 | A9 | A sheet with no answer yet holds its motion for at most 150 ms, so that it grows once, to its real size. |
 | A10 | A dragged `.spot` file shows in the search field, and a drop, a paste or a double-click opens the install screen from there. |

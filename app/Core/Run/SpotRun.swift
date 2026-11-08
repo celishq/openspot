@@ -319,7 +319,7 @@ public final class SpotRun {
         guard command.kind == .toggle else { return work(command.click, key: Self.cardKey) }
         let before = state
         let action = SpotAction.toggle(state)
-        state = SpotState(title: state.title, subtitle: state.subtitle, on: action.arguments == ["on"], size: state.size, order: state.order)
+        state = SpotState(title: state.title, subtitle: state.subtitle, on: action.arguments == ["on"], size: state.size)
         work(action, key: Self.cardKey, undo: before)
     }
 

@@ -23,9 +23,8 @@ final class SamplePluginsTests: SamplePluginsCase {
         }
     }
 
-    func testConfettiStaysOffTheGridAndItsSourceTypeChecks() async throws {
+    func testConfettiSourceTypeChecks() async throws {
         let confetti = try XCTUnwrap(try scan.commands.first { $0.id == "confetti" })
-        XCTAssertFalse(confetti.isOnGrid)
         XCTAssertEqual(confetti.symbol, "party.popper")
 
         _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-typecheck", confetti.url.path])
@@ -38,7 +37,10 @@ final class SamplePluginsTests: SamplePluginsCase {
     }
 
     func testTheSpotsFitThePanelWithNoScrolling() throws {
-        let placements = SpotGrid().place(try scan.commands.filter(\.isOnGrid).map(\.size))
+        let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("plugins")
+        let all = Set(try FileManager.default.contentsOfDirectory(atPath: plugins.path).map { ($0 as NSString).deletingPathExtension })
+        let core = try PluginFolder(url: plugins.appendingPathComponent("none"), core: plugins, enabled: all).scan()
+        let placements = SpotGrid().place(core.commands.filter(\.isOnGrid).map(\.size))
         let rows = placements.map { $0.row + $0.size.rows }.max()
 
         XCTAssertLessThanOrEqual(rows ?? 0, 6)

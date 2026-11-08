@@ -52,15 +52,14 @@ open -a Calendar
 | `symbol` | An SF Symbol name. |
 | `subtitle` | The second line. |
 | `key` | One letter. Hold the key that opens the panel, and press this letter to run it. |
-| `size` | `wide` (the default), `small`, `square`, `strip` or `large`. |
-| `order` | Its place in the grid. A lower number comes first. |
-| `grid` | `false` keeps the spot off the grid. |
+| `size` | The size it prefers: `wide` (the default), `small`, `square`, `strip` or `large`. The grid can change it. |
 | `read` | The moments when Openspot reads the script. |
 | `data` | The name of a data folder to share with other spots. |
 | `drop` | The files that its card takes: extensions such as `mov,mkv`, `folder`, or `*`. |
 | `command` | `<id>:<title>[:<symbol>]`, a command that the person can give a key. One line for each. |
 
-With `panel` in its `read`, the head of a frame can change `grid`, `size` and `order`. The person's choice wins (F9).
+With `panel` in its `read`, the head of a frame can change `size`. The person's choice wins (F9). A script with `command`
+lines has no card on the grid, because its commands are what it gives.
 
 ## Moments
 

@@ -60,6 +60,7 @@ public enum ShippedSpot: Equatable, Sendable {
                     url: folder,
                     symbol: "arrow.triangle.2.circlepath",
                     read: .panel,
+                    order: .min,
                     shipped: .updates(update),
                     isOnGrid: false
                 ),
