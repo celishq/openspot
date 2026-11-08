@@ -65,7 +65,7 @@ extension SpotsModel {
     private func stepSelectedSize() {
         guard let entry = selectedEntry else { return }
         let sizes = visible.map(\.size)
-        if let next = SpotGrid().nextSize(of: selected, in: sizes, among: entry.command.sizes) { prefer(next, for: entry.id) }
+        if let next = SpotGrid().nextSize(of: selected, in: sizes, among: self.sizes(of: entry)) { prefer(next, for: entry.id) }
     }
 
     private func toggleSelectedOnGrid() {

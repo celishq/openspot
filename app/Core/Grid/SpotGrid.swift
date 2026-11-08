@@ -59,7 +59,7 @@ public struct SpotGrid: Sendable {
     /// The next size in this list that changes how the grid looks, or nil when none does. The grid can grow a spot to fill
     /// its row, so a step can pass over a size.
     public func nextSize(of index: Int, in sizes: [SpotSize], among choices: [SpotSize]) -> SpotSize? {
-        guard sizes.indices.contains(index) else { return nil }
+        guard sizes.indices.contains(index), !choices.isEmpty else { return nil }
         let now = place(sizes)
         let start = choices.firstIndex(of: sizes[index]) ?? -1
         return (1...choices.count).lazy
