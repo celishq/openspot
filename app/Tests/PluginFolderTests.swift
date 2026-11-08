@@ -59,7 +59,7 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testAnExecutableIsASpotWithItsHeader() throws {
-        try write("one.sh", header: "name=First\nsize=square\nicon=moon\nsubtitle=Off\nshortcut=o")
+        try write("one.sh", header: "title=First\nsize=square\nicon=moon\ndetail=Off\nshortcut=o")
 
         XCTAssertEqual(try scan.refused, [])
         let one = try XCTUnwrap(try scan.commands.first)
@@ -191,7 +191,7 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testANumberAsTheReadIsAMetricWithNoSpot() throws {
-        try write("cups.sh", header: "name=Cups\nicon=cup.and.saucer\nread=30")
+        try write("cups.sh", header: "title=Cups\nicon=cup.and.saucer\nread=30")
 
         let scan = try scan
         let metric = try XCTUnwrap(scan.metrics.first)
@@ -227,7 +227,7 @@ final class PluginFolderTests: XCTestCase {
         try write("details.sh", header: "read=panel")
         try write("other.sh", header: "read=panel")
         try write("cpu.sh", header: "read=60")
-        try "[[widgets]]\nname = \"Box\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\nopens = \"details\"\n".write(to: folder.appendingPathComponent("box.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"Box\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\nopens = \"details\"\n".write(to: folder.appendingPathComponent("box.toml"), atomically: true, encoding: .utf8)
 
         let commands = try scan.commands
 
@@ -287,8 +287,8 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testTheFirstCommandKeepsATakenKey() throws {
-        try write("a.sh", header: "name=One\nshortcut=d")
-        try write("b.sh", header: "name=Two\nshortcut=D")
+        try write("a.sh", header: "title=One\nshortcut=d")
+        try write("b.sh", header: "title=Two\nshortcut=D")
 
         XCTAssertEqual(try scan.commands.map(\.key?.name), ["d", nil])
         XCTAssertEqual(try scan.refused, [ScanResult.Refusal(file: "b", reason: "Two cannot use key d, because another command has it")])

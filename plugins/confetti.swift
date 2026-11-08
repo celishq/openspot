@@ -1,7 +1,7 @@
 #!/usr/bin/env swift
-// name=Confetti
+// title=Confetti
 // icon=party.popper
-// subtitle=Celebrate on each screen
+// detail=Celebrate on each screen
 // shortcut=k
 import AppKit
 

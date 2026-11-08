@@ -43,7 +43,7 @@ refuses that plugin, and the others still load (F6).
 
 ```sh
 #!/bin/sh
-# name=Morning
+# title=Morning
 # icon=sun.max
 # shortcut=m
 open -a Calendar
@@ -51,9 +51,9 @@ open -a Calendar
 
 | Key                      | Meaning                                                                                                                                                              |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`                   | The title. The default comes from the file name.                                                                                                                     |
+| `title`                  | The title. The default comes from the file name.                                                                                                                     |
 | `icon`                   | Its picture, as in 02. A path that does not start with `/` starts at the folder of the script.                                                                       |
-| `subtitle`               | The second line.                                                                                                                                                     |
+| `detail`                 | The second line.                                                                                                                                                     |
 | `shortcut`               | One letter. Hold the key that opens the panel, and press this letter to run it.                                                                                      |
 | `size`                   | The size it prefers: `wide` (the default), `small`, `square`, `strip` or `large`. The grid can change it.                                                            |
 | `read`                   | The moments when Openspot reads the script.                                                                                                                          |
@@ -109,7 +109,7 @@ A script gets:
 
 ```sh
 #!/bin/sh
-# name=Notes
+# title=Notes
 # read=sheet
 case "$1" in
   read) printf 'row=today\ntitle=Today\n' ;;

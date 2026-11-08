@@ -1,6 +1,6 @@
 #!/bin/sh
 # icon=link
-# subtitle=Open a link
+# detail=Open a link
 # shortcut=l
 # read=panel
 # global=true

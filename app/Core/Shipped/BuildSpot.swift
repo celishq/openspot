@@ -112,9 +112,9 @@ public struct BuildSpot: Equatable, Sendable {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let script = """
         #!/bin/sh
-        # name=\(name)
+        # title=\(name)
         # icon=star
-        # subtitle=Edit \(slug).sh
+        # detail=Edit \(slug).sh
         open -R "$0"
 
         """

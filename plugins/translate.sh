@@ -1,6 +1,6 @@
 #!/bin/sh
 # icon=translate
-# subtitle=Between languages
+# detail=Between languages
 # shortcut=t
 # size=small
 # read=sheet

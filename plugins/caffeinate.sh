@@ -1,6 +1,6 @@
 #!/bin/sh
 # icon=cup.and.saucer.fill
-# subtitle=Keep the Mac awake
+# detail=Keep the Mac awake
 # shortcut=c
 # size=small
 # read=panel

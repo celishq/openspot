@@ -118,7 +118,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAFramesWordsShowOnTheSpotOnlyWhileItsCallRuns() async throws {
-        try script(header: "name=Encode\nsubtitle=Videos", "printf 'gauge=progress\\ntitle=42%%\\ndetail=2 min left\\n---\\n'\nwhile [ ! -e '\(path("end"))' ]; do sleep 0.02; done")
+        try script(header: "title=Encode\ndetail=Videos", "printf 'gauge=progress\\ntitle=42%%\\ndetail=2 min left\\n---\\n'\nwhile [ ! -e '\(path("end"))' ]; do sleep 0.02; done")
         let sheet = try sheet()
         sheet.pressCard()
         try await wait("the frame") { sheet.calls.first?.lastFrame != nil }
@@ -137,7 +137,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAFrameWithOnlyATitleKeepsTheDetailOfTheSpot() async throws {
-        try script(header: "name=Encode\nsubtitle=Videos", "printf 'gauge=progress\\ntitle=42%%\\n---\\n'\nsleep 30")
+        try script(header: "title=Encode\ndetail=Videos", "printf 'gauge=progress\\ntitle=42%%\\n---\\n'\nsleep 30")
         let sheet = try sheet()
         sheet.pressCard()
         try await wait("the frame") { sheet.calls.first?.lastFrame != nil }
@@ -148,7 +148,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAStoppedCallLeavesNothingOnTheSpotOrInTheMenuBar() async throws {
-        try script(header: "name=Encode", Self.progress)
+        try script(header: "title=Encode", Self.progress)
         let sheet = try sheet()
         sheet.pressCard()
         try await wait("the frame") { sheet.calls.first?.lastFrame != nil }

@@ -1,7 +1,7 @@
 #!/bin/sh
-# name=Pull requests
+# title=Pull requests
 # icon=arrow.triangle.pull
-# subtitle=On GitHub
+# detail=On GitHub
 # shortcut=g
 # read=120
 # tray=true

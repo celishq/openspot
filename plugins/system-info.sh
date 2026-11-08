@@ -1,5 +1,5 @@
 #!/bin/sh
-# name=System details
+# title=System details
 # icon=gauge.with.dots.needle.50percent
 # read=panel
 here=$(dirname "$0")

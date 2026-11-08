@@ -40,7 +40,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     func testAWidgetCanPlaceAnyScriptWithARead() async throws {
         try script("onpanel", header: "read=panel\nshortcut=p", log: "onpanel", "printf 'text=m\\ntitle=P\\n'")
         try script("onsheet", header: "read=sheet\nshortcut=s", log: "onsheet", "printf 'text=m\\ntitle=S\\n'")
-        try "[[widgets]]\nname = \"W\"\ngrid = [\"a a b b\"]\nplaces = { a = \"onpanel\", b = \"onsheet\" }\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"W\"\ngrid = [\"a a b b\"]\nplaces = { a = \"onpanel\", b = \"onsheet\" }\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
         _ = try scanned()
         XCTAssertEqual(log("onsheet"), [])
 
@@ -64,7 +64,7 @@ final class SpotRunsWantTests: SpotRunsCase {
 
     func testAWidgetCannotPlaceAScriptWithNoRead() throws {
         try script("once")
-        try "[[widgets]]\nname = \"W\"\ngrid = [\"a\"]\nplaces = { a = \"once\" }\nsize = \"square\"\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"W\"\ngrid = [\"a\"]\nplaces = { a = \"once\" }\nsize = \"square\"\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
 
         let scan = try PluginFolder(url: folder).scan()
 
@@ -72,7 +72,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testTheMenuBarShowsWhatTheSheetHolds() async throws {
-        try script("pulls", header: "name=Pull requests\nread=120\nshortcut=g\ntray=true", "printf 'text=m\\ntitle=2\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'")
+        try script("pulls", header: "title=Pull requests\nread=120\nshortcut=g\ntray=true", "printf 'text=m\\ntitle=2\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'")
         let sheet = try sheet("pulls")
 
         try await wait("the mark") { !self.runs.trayMarks.isEmpty }

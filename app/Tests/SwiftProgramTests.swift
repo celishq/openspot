@@ -4,7 +4,7 @@ import XCTest
 @MainActor
 final class SwiftProgramTests: XCTestCase {
     private var folder: URL!
-    private let source = Data("#!/usr/bin/env swift\n// name=Hello\nprint(\"hello\")\n".utf8)
+    private let source = Data("#!/usr/bin/env swift\n// title=Hello\nprint(\"hello\")\n".utf8)
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-swift-\(UUID().uuidString)")
@@ -95,7 +95,7 @@ final class SwiftProgramTests: XCTestCase {
     }
 
     func testSharingTakesTheProgramBesideATopLevelScript() throws {
-        try script("hello.swift", "#!/bin/sh\n# name=Hello\n")
+        try script("hello.swift", "#!/bin/sh\n# title=Hello\n")
         try script("hello.program", "#!/bin/sh\n")
         let place = PluginFolder(url: folder)
         let scan = try place.scan()
@@ -106,7 +106,7 @@ final class SwiftProgramTests: XCTestCase {
     }
 
     func testAProgramIsNotASpotOfItsOwn() throws {
-        try script("hello.swift", "#!/bin/sh\n# name=Hello\n")
+        try script("hello.swift", "#!/bin/sh\n# title=Hello\n")
         try script("hello.program", "#!/bin/sh\n")
 
         let scan = try PluginFolder(url: folder).scan()

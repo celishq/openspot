@@ -46,7 +46,7 @@ Then make an Openspot tool in ~/.config/openspot/plugins that shows the weather 
 
 ```sh
 #!/bin/sh
-# name=Hello
+# title=Hello
 # icon=hand.wave
 echo "toast=Hello"
 ```
@@ -64,7 +64,7 @@ A widget shows the live values of several tools on one card. Write it in a `.tom
 
 ```toml
 [[widgets]]
-name = "Morning"
+title = "Morning"
 grid = ["a a b b", "a a c c", "a a d d"]
 places = { a = "agents", b = "battery", c = "cpu", d = "disk" }
 opens = "links"

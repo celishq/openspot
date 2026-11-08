@@ -1,5 +1,5 @@
 #!/bin/sh
-# name=CPU
+# title=CPU
 # read=5
 history="${TMPDIR:-/tmp}/openspot-cpu"
 cores=$(/usr/sbin/sysctl -n hw.ncpu)

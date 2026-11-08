@@ -1,7 +1,7 @@
 #!/bin/sh
-# name=Emojis & Symbols
+# title=Emojis & Symbols
 # icon=face.smiling
-# subtitle=Copy an emoji or a symbol
+# detail=Copy an emoji or a symbol
 # shortcut=e
 # size=small
 # read=sheet

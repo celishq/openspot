@@ -27,7 +27,7 @@ public struct Plugin: Equatable, Sendable {
 
     /// A script with a number in its `read` has a spot, a list, only when it has a key.
     public init(script url: URL, header: TextBlock, id: String) throws {
-        let name = header.value("name") ?? Self.name(of: url)
+        let name = header.value("title") ?? Self.name(of: url)
         let icon = Icon(text: header.value("icon"))
         let symbol = icon?.symbol
         var read: SpotRead?
@@ -73,7 +73,7 @@ public struct Plugin: Equatable, Sendable {
             kind: isGlobal || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch,
             size: size,
             symbol: symbol ?? "app",
-            subtitle: header.value("subtitle"),
+            subtitle: header.value("detail"),
             key: try Self.key(header.value("shortcut"), of: name),
             read: read,
             isGlobal: isGlobal,
@@ -116,7 +116,7 @@ public struct Plugin: Equatable, Sendable {
             if case .string(let value)? = table[key] { return value }
             return nil
         }
-        guard let name = text("name") else { throw PluginError.fault("a widget needs a name") }
+        guard let name = text("title") else { throw PluginError.fault("a widget needs a title") }
         if case .strings(let drawing)? = table["grid"] {
             return try drawn(drawing, table, name: name, id: id, url: url)
         }
@@ -151,7 +151,7 @@ public struct Plugin: Equatable, Sendable {
             url: url,
             kind: .widget,
             size: layout.size,
-            subtitle: text("subtitle"),
+            subtitle: text("detail"),
             key: try key(text("shortcut"), of: name),
             layout: layout,
             places: layout.letters.compactMap { places[$0] }.map { tool($0, beside: url, id: id) },

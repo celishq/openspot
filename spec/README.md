@@ -43,7 +43,7 @@ These rules come from the way Nostr writes its NIPs.
 
 | Word                                                                                                     | Kind                 | Spec |
 | -------------------------------------------------------------------------------------------------------- | -------------------- | ---- |
-| `name`, `icon`, `subtitle`, `shortcut`, `size`, `read`, `data`, `drop`, `command` | Header key           | 01   |
+| `title`, `icon`, `detail`, `shortcut`, `size`, `read`, `data`, `drop`, `command` | Header key           | 01   |
 | `global`, `tray`                                                                                         | Header key           | 02   |
 | `sheet`, `panel`, a number, `launch`, `wake`                                                             | Moment               | 01   |
 | `toast`, `link`                                                                                          | Head key             | 01   |

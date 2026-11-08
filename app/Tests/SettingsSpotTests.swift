@@ -58,7 +58,7 @@ final class SettingsSpotTests: XCTestCase {
 
     func testTheSheetListsEachCommandOfAScriptAndGivesItAKey() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# name=Move\n# icon=macwindow\n# command=left:Left side\n# command=right:Right side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# command=left:Left side\n# command=right:Right side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
         let runs = SpotRuns()
 
         let before = try await spot.items(timeout: 1).items
@@ -82,7 +82,7 @@ final class SettingsSpotTests: XCTestCase {
 
     func testARowShowsTheIconOfItsCommandOrElseOfItsScript() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# name=Move\n# icon=macwindow\n# command=left:Left side:rectangle.lefthalf.filled\n# command=right:Right side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# command=left:Left side:rectangle.lefthalf.filled\n# command=right:Right side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
 
         let items = try await spot.items(timeout: 1).items
 
@@ -93,8 +93,8 @@ final class SettingsSpotTests: XCTestCase {
 
     func testAScriptWithCommandsAndNoReadOpensToTheKeysOfItsOwnCommands() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# name=Move\n# command=left:Left side\n[ \"$1\" = left ] && printf 'toast=Left\\n'\n".writeScript(to: folder.appendingPathComponent("move.sh"))
-        try "#!/bin/sh\n# name=Other\n# command=up:Up\n".writeScript(to: folder.appendingPathComponent("other.sh"))
+        try "#!/bin/sh\n# title=Move\n# command=left:Left side\n[ \"$1\" = left ] && printf 'toast=Left\\n'\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# title=Other\n# command=up:Up\n".writeScript(to: folder.appendingPathComponent("other.sh"))
         let scan = try PluginFolder(url: folder).scan(shipped: ShippedSpot.commands(folder: folder, guide: folder, app: "", config: file))
         let move = try XCTUnwrap(scan.commands.first { $0.id == "move" })
         let runs = SpotRuns()

@@ -1,5 +1,5 @@
 #!/bin/sh
-# name=Memory
+# title=Memory
 # icon=memorychip
 # read=5
 free=$(/usr/bin/memory_pressure -Q | awk -F': ' '/free percentage/ { sub("%", "", $2); print $2 }')

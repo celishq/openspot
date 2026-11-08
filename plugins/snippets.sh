@@ -1,6 +1,6 @@
 #!/bin/sh
 # icon=text.quote
-# subtitle=Copy text
+# detail=Copy text
 # shortcut=n
 # size=small
 # read=panel

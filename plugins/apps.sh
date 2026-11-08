@@ -1,6 +1,6 @@
 #!/bin/sh
 # icon=square.grid.2x2
-# subtitle=Open app
+# detail=Open app
 # shortcut=a
 # read=panel
 # global=true

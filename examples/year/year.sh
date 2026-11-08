@@ -1,7 +1,7 @@
 #!/bin/sh
-# name=Year
+# title=Year
 # icon=calendar
-# subtitle=The months of this year
+# detail=The months of this year
 # read=panel
 # view=year.swift
 [ "$1" = read ] || exit 0

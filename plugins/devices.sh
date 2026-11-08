@@ -1,5 +1,5 @@
 #!/bin/sh
-# name=Devices
+# title=Devices
 # icon=airpods
 # read=60
 

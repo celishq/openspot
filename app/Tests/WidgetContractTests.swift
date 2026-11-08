@@ -26,7 +26,7 @@ final class WidgetContractTests: XCTestCase {
         let lines = grid.map { "\"\($0)\"" }.joined(separator: ", ")
         let letters = ["a", "b", "c", "d"]
         let table = zip(letters, places).map { "\($0) = \"\($1)\"" }.joined(separator: ", ")
-        try widgets("[[widgets]]\nname = \"\(name)\"\ngrid = [\(lines)]\nplaces = { \(table) }\n\(more)\n")
+        try widgets("[[widgets]]\ntitle = \"\(name)\"\ngrid = [\(lines)]\nplaces = { \(table) }\n\(more)\n")
     }
 
     private func power(_ body: String = "printf 'gauge=power\\ntitle=84%%\\nvalue=0.84\\ntone=good\\n'") throws {
@@ -47,7 +47,7 @@ final class WidgetContractTests: XCTestCase {
         try script("morning/power.sh", "#!/bin/sh\n# read=5\nprintf 'title=1\\n'\n")
         try script("morning/notes.sh", "#!/bin/sh\n# read=sheet\n")
         try power()
-        try "[[widgets]]\nname = \"Now\"\ngrid = [\"a a b b\"]\nplaces = { a = \"power\", b = \"morning/power\" }\nopens = \"notes\"\n"
+        try "[[widgets]]\ntitle = \"Now\"\ngrid = [\"a a b b\"]\nplaces = { a = \"power\", b = \"morning/power\" }\nopens = \"notes\"\n"
             .write(to: folder.appendingPathComponent("morning/widgets.toml"), atomically: true, encoding: .utf8)
 
         let result = try scan
@@ -99,7 +99,7 @@ final class WidgetContractTests: XCTestCase {
         try script("heat.sh", "#!/bin/sh\n# read=5\nprintf 'title=1\\n'\n")
         try widgets("""
         [[widgets]]
-        name = "Mine"
+        title = "Mine"
         grid = ["a a b", "a a c"]
         places = { c = "power", a = "heat", b = "power" }
         """)
@@ -115,7 +115,7 @@ final class WidgetContractTests: XCTestCase {
 
     func testAWidgetDrawingCanAskForASize() throws {
         try power()
-        try widgets("[[widgets]]\nname = \"Mine\"\ngrid = [\"a b\"]\nsize = \"wide\"\nplaces = { a = \"power\", b = \"power\" }\n")
+        try widgets("[[widgets]]\ntitle = \"Mine\"\ngrid = [\"a b\"]\nsize = \"wide\"\nplaces = { a = \"power\", b = \"power\" }\n")
 
         XCTAssertEqual(try scan.commands.first { $0.kind == .widget }?.size, .wide)
     }
@@ -134,7 +134,7 @@ final class WidgetContractTests: XCTestCase {
         ]
         try power()
         for item in cases {
-            try widgets("[[widgets]]\nname = \"Mine\"\ngrid = [\(item.grid)]\nplaces = \(item.places)\n")
+            try widgets("[[widgets]]\ntitle = \"Mine\"\ngrid = [\(item.grid)]\nplaces = \(item.places)\n")
             XCTAssertEqual(try scan.refused.first?.reason, item.reason)
         }
     }
@@ -200,13 +200,13 @@ final class WidgetContractTests: XCTestCase {
         try power()
         try widgets("""
         [[widgets]]
-        name = "Now"
+        title = "Now"
         grid = ["a a b b"]
         places = { a = "power", b = "power" }
         shortcut = "w"
 
         [[widgets]]
-        name = "Then"
+        title = "Then"
         grid = ["a"]
         places = { a = "power" }
         size = "square"
@@ -231,7 +231,7 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testAWidgetWithANamedLayoutIsRefusedAndAskedForAGrid() throws {
-        try widgets("[[widgets]]\nname = \"Now\"\nlayout = \"pair\"\nplaces = [\"power\", \"power\"]\n")
+        try widgets("[[widgets]]\ntitle = \"Now\"\nlayout = \"pair\"\nplaces = [\"power\", \"power\"]\n")
 
         XCTAssertEqual(try scan.refused.first?.reason, "Now needs a grid, such as grid = [\"a a b b\"]")
     }

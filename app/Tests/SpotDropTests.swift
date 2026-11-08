@@ -177,7 +177,7 @@ final class SpotDropTests: XCTestCase {
         try addScript("clips", header: "drop=mov,mkv")
         try addScript("all", header: "drop=*")
         try addScript("folders", header: "drop=folder")
-        try addScript("plain", header: "name=Plain")
+        try addScript("plain", header: "title=Plain")
         XCTAssertEqual(cardsThatTakeTheDrag(), [])
 
         runs.draggedPaths = [file("a.mov")]
