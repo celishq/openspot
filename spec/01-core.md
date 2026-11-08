@@ -32,7 +32,7 @@ The first key of a block names its kind, and the registry in `README.md` lists t
 first key is the head, which says how the spot itself looks. A later block with another first key is skipped (R10), and
 so is a line with an unknown key (R2). Printing nothing means that there is nothing to show (R4).
 
-`toast` and `open` are keys of the head, which can come at any place in the output (R11). `toast=Saved` shows at once, also with the panel
+`toast` and `link` are keys of the head, which can come at any place in the output (R11). `toast=Saved` shows at once, also with the panel
 closed (R5).
 
 ## The header
@@ -137,7 +137,7 @@ with only components changes those components (S2).
   group gets the terminate signal, and then the kill signal (L5). Quitting Openspot stops each call (L9).
 - A call ends when its output closes (L10). A stopped call changes nothing (A3).
 - Exit 0 is success. Any other code is a failure, and the last line on stderr shows to the person (R3). A failure can print
-  `open=<url>`, the place that fixes it (R9).
+  `link=<url>`, the place that fixes it (R9).
 - A stop can come at any time, and two calls can run at once, so a script never leaves a file half written (R8).
 
 A call reports progress with its `gauge` value in a frame (02): its `title`, its `detail` and its `value`, such as `title=42%` and
@@ -170,7 +170,7 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | ----------------------------------------------------------------------------- | ----------------------------------- |
 | The app's events are default ids, and `read` is the only reserved word.       | A verb for each kind of call.       |
 | The first key names the kind of a block.                                      | A kind found from any key.          |
-| Escape codes report and never act.                                            | OSC 8 as `open`.                    |
+| Escape codes report and never act.                                            | OSC 8 as `link`.                    |
 | A person can see and stop each call, so a call has no time limit.             | A `job` key.                        |
 | Each script runs once for each call. State lives in files or in a capability. | A process that stays between calls. |
 | The header is in each file, and a scan runs nothing.                          | A manifest.                         |

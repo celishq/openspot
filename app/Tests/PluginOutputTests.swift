@@ -50,18 +50,18 @@ final class PluginOutputTests: XCTestCase {
     }
 
     func testAnEffectIsAKeyOfTheOneHeadAtAnyPlace() {
-        let head = PluginOutput(text: "toast=Saved\nopen=https://example.com\n")
-        let after = PluginOutput(text: "row=a\ntitle=A\n\ntoast=Saved\nopen=https://example.com\n")
-        let second = PluginOutput(text: "toast=Saved\n\nopen=https://example.com\n")
+        let head = PluginOutput(text: "toast=Saved\nlink=https://example.com\n")
+        let after = PluginOutput(text: "row=a\ntitle=A\n\ntoast=Saved\nlink=https://example.com\n")
+        let second = PluginOutput(text: "toast=Saved\n\nlink=https://example.com\n")
 
         XCTAssertEqual(head.toast, "Saved")
-        XCTAssertEqual(head.open, "https://example.com")
+        XCTAssertEqual(head.link, "https://example.com")
         XCTAssertEqual(after.toast, "Saved")
-        XCTAssertEqual(after.open, "https://example.com")
+        XCTAssertEqual(after.link, "https://example.com")
         XCTAssertEqual(after.items.map(\.run), ["a"])
         XCTAssertEqual(after.errors, [])
-        XCTAssertNil(second.open)
-        XCTAssertEqual(second.errors, ["open=https://example.com"])
+        XCTAssertNil(second.link)
+        XCTAssertEqual(second.errors, ["link=https://example.com"])
     }
 
     func testReadsEachKeyOfAnAction() {

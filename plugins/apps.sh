@@ -120,7 +120,7 @@ case "$1" in
   quit)
     if ! quit_app "$2"; then
       echo "Openspot cannot quit $(basename "$2" .app). Allow Openspot to control it in Privacy & Security, then try again." >&2
-      echo "open=x-apple.systempreferences:com.apple.preference.security?Privacy_Automation"
+      echo "link=x-apple.systempreferences:com.apple.preference.security?Privacy_Automation"
       exit 1
     fi
     ;;

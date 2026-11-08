@@ -175,7 +175,7 @@ The head is the one block with no kind, at any place in the output, and it is no
 - the drawing: `grid=`, `card=` and `pad=` lines for the sheet, and `grid.<size>=` lines for the card;
 - the spot: `main`, and `title`, `detail` and `size` for its card;
 - the rows: `search` and `recents`;
-- the effects: `toast` and `open`.
+- the effects: `toast`, and `link=<url>`, which opens the URL.
 
 A second block with no kind is an error.
 

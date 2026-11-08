@@ -17,7 +17,7 @@ final class LinksPluginTests: SamplePluginsCase {
         let tools = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        let accessibility = "open=x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility\n"
+        let accessibility = "link=x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility\n"
         let refusal = "Openspot cannot move the window. Allow it in Accessibility, then press the key again."
         try "#!/bin/sh\nprintf '\(accessibility)'\necho '\(refusal)' >&2\nexit 1\n".writeScript(to: tools.appendingPathComponent("openspot"))
 

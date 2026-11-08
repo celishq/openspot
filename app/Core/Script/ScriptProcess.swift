@@ -181,7 +181,7 @@ public final class ScriptProcess: @unchecked Sendable {
             guard !isStopped else { return lock.withLock { ended = true } }
             if hasExited, process.terminationStatus != 0 {
                 let line = lastErrors.text.split(separator: "\n").last.map(String.init) ?? ""
-                let fix = reader.finish().flatMap { PluginOutput(text: $0).open }.flatMap(URL.init(string:))
+                let fix = reader.finish().flatMap { PluginOutput(text: $0).link }.flatMap(URL.init(string:))
                 finish(throwing: fix.map { PluginError.failedWithFix(process.terminationStatus, line, $0) } ?? PluginError.failed(process.terminationStatus, line))
                 return
             }

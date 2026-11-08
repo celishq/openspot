@@ -69,7 +69,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAFailedCallThatPrintsALinkTellsThePersonWithItsFix() async throws {
-        try script(body: "printf 'open=x-apple.systempreferences:pane\\n'\necho 'Allow it.' >&2\nexit 1")
+        try script(body: "printf 'link=x-apple.systempreferences:pane\\n'\necho 'Allow it.' >&2\nexit 1")
         let sheet = try sheet()
         var fixes: [String] = []
         sheet.onReport = { if case .failureWithFix(let text, let fix) = $0 { fixes.append("\(text) \(fix.absoluteString)") } }

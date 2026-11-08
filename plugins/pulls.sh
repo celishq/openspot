@@ -36,7 +36,7 @@ pulls() {
 case "$1" in
   read)
     if ! command -v gh >/dev/null; then
-      printf 'open=https://cli.github.com\n'
+      printf 'link=https://cli.github.com\n'
       echo "Pull requests need the gh tool. Install it, then open this again." >&2
       exit 1
     fi

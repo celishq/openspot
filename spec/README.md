@@ -46,7 +46,7 @@ These rules come from the way Nostr writes its NIPs.
 | `name`, `icon`, `subtitle`, `shortcut`, `size`, `read`, `data`, `drop`, `command` | Header key           | 01   |
 | `global`, `tray`                                                                                         | Header key           | 02   |
 | `sheet`, `panel`, a number, `launch`, `wake`                                                             | Moment               | 01   |
-| `toast`, `open`                                                                                          | Block kind           | 01   |
+| `toast`, `link`                                                                                          | Head key             | 01   |
 | `text`, `gauge`, `graph`, `picture`, `switch`, `slider`, `field`, `choice`, `key`, `button`, `section`, `repeat`, `template`, `row` | Block kind | 02 |
 | `view`                                                                                                   | Block kind           | 03   |
 | `grid`, `grid.<place>`, `card`, `keys`                                                                   | Head key             | 02   |

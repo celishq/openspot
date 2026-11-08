@@ -27,7 +27,7 @@ enum SpotClipboard {
     /// Pastes the clipboard, and exits once the key events are posted. With no Accessibility it prints the fix, and exits with 1.
     static func paste() -> Never {
         guard AXIsProcessTrusted() else {
-            print("open=\(accessibility)")
+            print("link=\(accessibility)")
             fail("Openspot cannot paste. Press `⌘V` to paste, or allow Openspot in Accessibility.")
         }
         for isDown in [true, false] {
