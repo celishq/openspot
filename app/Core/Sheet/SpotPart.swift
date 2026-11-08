@@ -33,9 +33,9 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case symbol(String)
     }
 
-    /// A look from the one set that the app owns. A script cannot set a size or a colour of its own.
+    /// The box that the app draws around it, from the one set that the app owns. `pad` is the look of a key of a keypad.
     public enum Look: String, Equatable, Sendable {
-        case tile, chip, strong, bare, section, pad, large, list
+        case tile, chip, strong, bare, pad
     }
 
     public enum Align: String, Equatable, Sendable {
@@ -65,7 +65,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let mark: MetricValue?
 
     /// The kinds of block that make a part, in the order of the table in spec 02 (U2).
-    public static let kinds = ["text", "gauge", "graph", "picture", "view", "spot", "switch", "slider", "field", "choice", "shortcut", "button", "section"]
+    public static let kinds = ["text", "number", "gauge", "graph", "picture", "view", "spot", "switch", "slider", "field", "choice", "shortcut", "button", "section"]
 
     /// Reads a block whose first key is a kind of part. Its value is the id, and the kind decides the control.
     public init?(block: TextBlock) {
@@ -73,9 +73,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         self.id = id
         self.kind = kind
         isSection = kind == "section"
-        let isLarge = kind == "text" && block.value("look") == "large"
-        title = isLarge ? block.value("detail") : block.value("title")
-        detail = isLarge ? nil : block.value("detail")
+        title = block.value("title")
+        detail = block.value("detail")
         key = kind == "shortcut" ? nil : block.value("shortcut").flatMap(ActionKey.init(text:))
         closes = block.flag("close") ?? false
         align = block.value("align").flatMap(Align.init(rawValue:))
@@ -110,13 +109,11 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
             let options = block.values("option").map(Self.option)
             if !block.values("color").isEmpty {
                 control = .swatches(block.values("color"), value: block.value("value"))
-            } else if block.value("look") == "list" {
-                control = .list(options, value: block.value("value"))
             } else {
                 control = .menu(options, value: block.value("value"))
             }
-        case "text" where isLarge:
-            control = .metric(block.value("title") ?? "")
+        case "number":
+            control = .metric(block.value("value") ?? "")
         default:
             control = .none
         }
@@ -151,6 +148,14 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case .text(let text, _, _): text
         case .shortcut(let text): text
         }
+    }
+
+    /// This part as a drawing places it: a choice whose area covers more than one line is a list, and any other is a menu.
+    public func drawn(in layout: SheetLayout?) -> SpotPart {
+        guard case .menu(let options, let value) = control, let area = layout?.areas[id], area.y1 > area.y0 else { return self }
+        var part = self
+        part.control = .list(options, value: value)
+        return part
     }
 
     /// The words in the ring of a level, which takes the place of its detail: the detail with no percent sign.

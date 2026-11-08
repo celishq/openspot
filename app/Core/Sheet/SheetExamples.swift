@@ -154,15 +154,13 @@ public enum SheetExamples {
         grid=disk disk battery battery
         grid=disk disk battery battery
 
-        text=cpu
-        title=42%
-        look=large
-        detail=CPU
+        number=cpu
+        value=42%
+        title=CPU
 
-        text=memory
-        title=61%
-        look=large
-        detail=Memory
+        number=memory
+        value=61%
+        title=Memory
 
         graph=history
         point=2
@@ -175,15 +173,13 @@ public enum SheetExamples {
         button=refresh
         symbol=arrow.clockwise
 
-        text=disk
-        title=312 GB
-        look=large
-        detail=Disk free
+        number=disk
+        value=312 GB
+        title=Disk free
 
-        text=battery
-        title=68%
-        look=large
-        detail=Battery
+        number=battery
+        value=68%
+        title=Battery
 
         """),
         Example(name: "a list and a preview", text: """
@@ -194,7 +190,6 @@ public enum SheetExamples {
 
         choice=items
         option=address:Address
-        look=list
         option=signature:Signature
         option=link:Meeting link
         value=address
@@ -239,7 +234,6 @@ public enum SheetExamples {
         grid=quit quit quit quit
 
         switch=heating
-        look=section
         title=Heating
         on=true
 
@@ -289,9 +283,8 @@ public enum SheetExamples {
         pad=0 0 . +
         pad=C C C =
 
-        text=value
-        title=1,284
-        look=large
+        number=value
+        value=1,284
         look=bare
 
         """)

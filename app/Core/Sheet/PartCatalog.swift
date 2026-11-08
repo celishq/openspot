@@ -72,11 +72,11 @@ public enum PartCatalog {
     | `text`, with `title`, `detail`, `symbol` | A line: the title on the left, the detail on the right. | |
     | `text` with `value=0.84`, or with `point=3` lines and optional `max` | A small mark before the detail: a bar from \
     `value`, or bars from the points. `tone=good`, `warn` or `bad` colours it. | |
-    | `text` with `look=large`, `title=42%`, optional `detail` | A big number in a tile. It needs 2 columns of 4, and 2 rows with a detail. | |
+    | `number`, with `value=42%`, optional `title` | A big number in a tile, with its title under it. It needs 2 columns of 4, and 2 rows with a title. | |
     | `switch`, with `on=true` or `on=false` | A switch at the end of the line. | `<id> true` or `false` |
     | `slider`, with `level=70`, optional `min`, `max`, `title`, `symbol` | A slider, from 0 to 100 unless `min` and `max` say. Give each slider a `title` or a `symbol`. | `<id> <number>` |
     | `choice`, with `color=#ff0000` for each colour, `value=#ff0000` | A row of swatches. One `color=` with a `title` is one small swatch at the end of the line. | `<id> <color>` |
-    | `choice`, with `option=id:Title` for each choice, `value=id` | A menu. With `look=list`, a list to choose from, which scrolls. | `<id> <option id>` |
+    | `choice`, with `option=id:Title` for each choice, `value=id` | A menu. Drawn over two lines or more, a list to choose from, which scrolls. | `<id> <option id>` |
     | `field`, with `text=...`, optional `readonly=true`, `placeholder` | A text area, which scrolls. Write a line break as `\\n`. | `<id> <text>` |
     | `shortcut`, with `value=ctrl+space` and `title` | A key at the end of the line. A click records the next key that the person presses, and Esc cancels. | `<id> <key>`, such as `<id> cmd+k` |
     | `button`, with `title` | A button that fills its cell. | `<id>` |
@@ -92,7 +92,7 @@ public enum PartCatalog {
     | `shortcut=cmd+return` | Adds a keyboard key to a button. The hint under the sheet shows it. Use cmd, shift and one letter, digit, return or backspace. |
     | `close=true` | Closes the panel after a press. |
     | `align=left`, `right` or `center` | Places a component that is smaller than its cell. |
-    | `look=tile`, `chip`, `strong`, `bare` or `section` | `tile` is a filled row. `chip` is a small capsule button. `strong` is the one main button, white. `bare` shows a button or a number with no fill. `section` makes a bold title. |
+    | `look=tile`, `chip`, `strong` or `bare` | The box of a text, a number or a button. `tile` is a filled row. `chip` is a small capsule button. `strong` is the one main button, white. `bare` shows a button or a number with no fill. |
 
     """
 
@@ -127,7 +127,7 @@ public enum PartCatalog {
     - Use at most one `look=strong`.
     - Keep titles short: about 7 letters fit in one column of four, with a control in the same cell.
     - A row of 8 swatches needs the full width.
-    - Do not put plain lines beside a text area in the same rows, because those rows stretch. Use a `choice` with `look=list` for a list.
+    - Do not put plain lines beside a text area in the same rows, because those rows stretch. Draw a `choice` over two lines or more for a list.
     - Run `openspot check --sheet` on a sheet to see its faults, and `openspot render <file.png>` to see its picture.
 
     """

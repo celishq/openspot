@@ -99,7 +99,7 @@ public enum SheetFaults {
                 }
             }
             if !frame.isOnTop, !part.fillsHeight, frame.rect.height > SheetPlacement.rowHeight * 2, area.y0 == area.y1 {
-                faults.append("the part \(part.id) sits in rows that stretch, so use a choice with look=list for a list")
+                faults.append("the part \(part.id) sits in rows that stretch, so draw a choice over two lines for a list")
             }
         }
         if sheet.overflows {

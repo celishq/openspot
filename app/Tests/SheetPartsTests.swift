@@ -155,7 +155,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testTheCatalogNamesEachControl() {
-        for word in ["`switch`", "`slider`", "`choice`", "`field`", "`shortcut`", "`button`", "`text`", "`graph`", "`picture`", "`gauge`", "`look=large`", "`look=list`", "`pad=", "`card=", "`repeat=", "`glyph="] {
+        for word in ["`switch`", "`slider`", "`choice`", "`field`", "`shortcut`", "`button`", "`text`", "`number`", "`graph`", "`picture`", "`gauge`", "`pad=", "`card=", "`repeat=", "`glyph="] {
             XCTAssertTrue(PartCatalog.text.contains(word), word)
         }
     }
@@ -299,4 +299,31 @@ final class SheetPartsTests: XCTestCase {
 
         XCTAssertEqual(sheet.selectedPart?.id, "key")
     }
+
+    func testANumberShowsItsValueLargeWithItsTitleAsTheLabel() throws {
+        let part = try XCTUnwrap(PluginOutput(text: "grid=cpu cpu\ngrid=cpu cpu\n\nnumber=cpu\nvalue=42%\ntitle=CPU\n").parts.first)
+
+        XCTAssertEqual(part.control, .metric("42%"))
+        XCTAssertEqual(part.title, "CPU")
+        XCTAssertEqual(MetricValue(output: PluginOutput(text: "number=cpu\nvalue=42%\ntitle=CPU\n")), MetricValue(title: "42%", detail: "CPU"))
+    }
+
+    func testAChoiceDrawnOverTwoLinesIsAListAndOverOneLineAMenu() throws {
+        let choice = "choice=c\noption=a:A\noption=b:B\nvalue=a\n"
+        let tall = try XCTUnwrap(PluginOutput(text: "grid=c\ngrid=c\n\n" + choice).parts.first)
+        let short = try XCTUnwrap(PluginOutput(text: "grid=c\n\n" + choice).parts.first)
+        var sheet = try XCTUnwrap(SheetParts(output: PluginOutput(text: "grid=c\ngrid=c\n\n" + choice)))
+
+        XCTAssertEqual(tall.control, .list([.init(id: "a", title: "A"), .init(id: "b", title: "B")], value: "a"))
+        XCTAssertEqual(short.control, .menu([.init(id: "a", title: "A"), .init(id: "b", title: "B")], value: "a"))
+        sheet.merge(PluginOutput(text: "choice=c\noption=a:A\nvalue=a\n"))
+        XCTAssertEqual(sheet.parts.first?.control, .list([.init(id: "a", title: "A")], value: "a"))
+    }
+
+    func testALookOnlyDrawsTheBox() {
+        XCTAssertEqual(PluginOutput(text: "text=a\ntitle=A\nlook=large\n").partFaults, ["the part a has an unknown look: large"])
+        XCTAssertEqual(PluginOutput(text: "text=a\ntitle=A\nlook=section\n").partFaults, ["the part a has an unknown look: section"])
+        XCTAssertEqual(PluginOutput(text: "choice=a\noption=x:X\nlook=list\n").partFaults, ["the part a has an unknown look: list"])
+    }
+
 }

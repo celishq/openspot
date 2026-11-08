@@ -44,7 +44,8 @@ component cannot take a default id of 01 (C1).
 
 | Kind      | Shows                                                   | Its own keys                                                    | Sends                  |
 | --------- | ------------------------------------------------------- | --------------------------------------------------------------- | ---------------------- |
-| `text`    | Words, or a number with `look=large`.                   | `look`                                                          |                        |
+| `text`    | Words.                                                  |                                                                 |                        |
+| `number`  | A big number, with its `title` under it.                | `value`                                                         |                        |
 | `gauge`   | A ring in a square area, a bar in a wide one.           | `value` from 0 to 1                                             |                        |
 | `graph`   | Bars. The last bar is the newest.                       | `point`, one line for each bar, and `max`                       |                        |
 | `picture` | A picture that fills its area.                          | `symbol`, `file`, `image` or `glyph`                            |                        |
@@ -53,7 +54,7 @@ component cannot take a default id of 01 (C1).
 | `switch`  | A switch.                                               | `on`                                                            | `<id> true` or `false` |
 | `slider`  | A slider. It sends when the person lets go.             | `level`, `min`, `max`                                           | `<id> <number>`        |
 | `field`   | A text field.                                           | `text`, `placeholder`, `type=multiline`, `required`, `readonly` | `<id> <text>`          |
-| `choice`  | A menu of `option` lines, or swatches of `color` lines. | `option=<id>:<title>`, `color`, `value`                         | `<id> <option id>`     |
+| `choice`  | A menu of `option` lines, a list when it covers two lines or more, or swatches of `color` lines. | `option=<id>:<title>`, `color`, `value`                         | `<id> <option id>`     |
 | `shortcut` | A key combination that a press records.               | `value`                                                         | `<id> <shortcut>`      |
 | `button`  | A button, or an action (see below).                     | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`         | `<id>`                 |
 | `section` | A title over the lines that follow it.                  |                                                                 |                        |
@@ -61,7 +62,7 @@ component cannot take a default id of 01 (C1).
 
 Each kind also takes `title`, `detail`, `tone` and a picture: `symbol`, `file`, `image` or `glyph` (U3). `tone` is `good`,
 `warn` or `bad` for a colour that means something, and `on` for a plain dot that says that a thing is active. `look` is
-`tile`, `chip`, `strong`, `bare` or `pad` on a button, and `large` on a text. A key that a kind does not take is skipped.
+the box of a text, a number or a button: `tile`, `bare`, and on a button also `chip` or `strong`. A key that a kind does not take is skipped.
 
 ## Drawings
 
@@ -212,5 +213,6 @@ printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'
 | A template draws a row, and a repeat's drawing places rows, so lists, grids and bentos are one rule.        | `repeat=<area> <per line>` in the head.      |
 | A form is the same call twice, so each call has one shape.                                                  | A `form` word.                               |
 | One `value=` names what stands for a spot, so moving a block changes nothing.                              | The first `text`, `gauge` or `switch` of the output, and `grid.tray=`. |
+| A look only draws a box, and a kind or a drawing says the rest.                                             | `look=large`, `look=list` and `look=section`. |
 | A complex view is a `view` of the plugin in an area, so the text language stays small.                      | More words for each new look.                |
 

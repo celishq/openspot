@@ -70,14 +70,15 @@ public struct MetricValue: Equatable, Sendable {
             self.init(title: rows.isEmpty ? "–" : String(rows.count), rows: rows.isEmpty ? nil : rows, isHidden: rows.isEmpty)
             return
         }
-        guard let title = block.value("title") ?? (rows.isEmpty ? nil : String(rows.count)) else { return nil }
+        let isNumber = block.fields.first?.key == "number"
+        guard let title = (isNumber ? block.value("value") : block.value("title")) ?? (rows.isEmpty ? nil : String(rows.count)) else { return nil }
         let points = block.values("point").compactMap(Double.init).filter(\.isFinite)
         self.init(
             title: title,
-            detail: block.value("detail"),
+            detail: isNumber ? block.value("title") : block.value("detail"),
             symbol: block.value("symbol"),
             tone: block.value("tone").flatMap(Tone.init),
-            value: block.number("value"),
+            value: isNumber ? nil : block.number("value"),
             points: points.isEmpty ? nil : points,
             max: block.number("max"),
             rows: rows.isEmpty ? nil : rows,

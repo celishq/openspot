@@ -189,7 +189,7 @@ struct SheetPartsView: View {
             }
             if let title = part.title {
                 Text(title)
-                    .font(part.isSection || part.look == .section ? SpotType.title : SpotType.body)
+                    .font(part.isSection ? SpotType.title : SpotType.body)
                     .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
                     .layoutPriority(1)

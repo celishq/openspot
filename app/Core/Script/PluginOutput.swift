@@ -39,7 +39,7 @@ public struct PluginOutput: Equatable, Sendable {
     /// The area of the rows in the default drawing of a sheet with no `repeat` block (U13).
     private static let rowsArea = "rows"
     /// The kinds of component that can stand for the spot.
-    private static let valueKinds: Set<String> = ["text", "gauge", "graph", "switch", "slider"]
+    private static let valueKinds: Set<String> = ["text", "number", "gauge", "graph", "switch", "slider"]
 
     /// Whether a first key names a row or a part, so that the block is not the head.
     private static func isKind(_ key: String) -> Bool {
@@ -92,11 +92,12 @@ public struct PluginOutput: Equatable, Sendable {
         let layout = SheetLayout(block: head, repeating: repeating, repeats: repeats.count)
             ?? repeating.map { SheetLayout(flat: parts, repeating: $0) }
         self.layout = layout
+        parts = parts.map { $0.drawn(in: layout) }
         face = CardFace(head: head, parts: parts)
         let values = blocks.filter { Self.valueKinds.contains($0.fields.first?.key ?? "") }
         if let id = head?.value("value") {
             value = values.first { $0.fields.first?.value == id }
-            if value == nil { partFaults.append("the head names the value \(id), which no text, gauge, graph, switch or slider has") }
+            if value == nil { partFaults.append("the head names the value \(id), which no text, number, gauge, graph, switch or slider has") }
         } else if values.count == 1 {
             value = values.first
         }
@@ -121,9 +122,9 @@ public struct PluginOutput: Equatable, Sendable {
         return part.kind == "switch" || part.kind == "slider" ? part : nil
     }
 
-    /// The value when it is a `text`, `gauge` or `graph`, which a widget and the menu bar show.
+    /// The value when it is a `text`, `number`, `gauge` or `graph`, which a widget and the menu bar show.
     public var metric: TextBlock? {
-        ["text", "gauge", "graph"].contains(value?.fields.first?.key ?? "") ? value : nil
+        ["text", "number", "gauge", "graph"].contains(value?.fields.first?.key ?? "") ? value : nil
     }
 
     /// The value when it is a `gauge`, which is the progress of a call that runs (R12).
