@@ -7,6 +7,8 @@ import ApplicationServices
 enum SpotClipboard {
     static let accessibility = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
     private static let vKey: CGKeyCode = 9
+    /// The time the posted key events need to leave the process. An exit before it drops them.
+    private static let postPause: TimeInterval = 0.1
 
     /// Copies the file. A missing file prints the reason, and exits with 1.
     static func copy(_ path: String) -> Never {
@@ -22,7 +24,7 @@ enum SpotClipboard {
         exit(0)
     }
 
-    /// Pastes the clipboard. With no Accessibility it prints the fix, and exits with 1.
+    /// Pastes the clipboard, and exits once the key events are posted. With no Accessibility it prints the fix, and exits with 1.
     static func paste() -> Never {
         guard AXIsProcessTrusted() else {
             print("open=\(accessibility)")
@@ -33,6 +35,7 @@ enum SpotClipboard {
             event?.flags = .maskCommand
             event?.post(tap: .cghidEventTap)
         }
+        Thread.sleep(forTimeInterval: postPause)
         exit(0)
     }
 
