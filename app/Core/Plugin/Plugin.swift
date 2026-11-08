@@ -43,16 +43,14 @@ public struct Plugin: Equatable, Sendable {
         }
         let sizeName = header.value("size") ?? "wide"
         guard let size = SpotSize(name: sizeName) else { throw PluginError.fault("\(name) has an unknown size: \(sizeName)") }
-        var rank = Spot.lastRank
-        if let text = header.value("rank") {
-            guard let number = Int(text) else { throw PluginError.fault("\(name) needs a number as its rank") }
+        let isGlobal = header.flag("global") ?? false
+        if isGlobal {
             guard read?.has(.panel) == true || read?.has(.launch) == true || read?.seconds != nil else {
                 throw PluginError.fault("\(name) needs panel, launch or a number in its read to join the main search")
             }
             guard read?.seconds == nil || hasKey else {
                 throw PluginError.fault("\(name) needs a key to join the main search, because a number in its read and no key gives it no spot")
             }
-            rank = number
         }
         let offers = try header.values("command").map { text in
             guard let offer = CommandOffer(text: text) else {
@@ -64,13 +62,13 @@ public struct Plugin: Equatable, Sendable {
             id: id,
             name: name,
             url: url,
-            kind: rank != Spot.lastRank || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch,
+            kind: isGlobal || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch,
             size: size,
             symbol: symbol ?? "app",
             subtitle: header.value("subtitle"),
             key: try Self.key(header.value("key"), of: name),
             read: read,
-            rank: rank,
+            isGlobal: isGlobal,
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             isTray: isTray,
             dataName: header.value("data") ?? id.split(separator: "/").first.map(String.init),

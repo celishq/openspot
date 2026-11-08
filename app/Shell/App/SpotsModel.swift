@@ -329,6 +329,9 @@ final class SpotsModel {
         entries.filter { $0.id != ShippedSpot.installID }
     }
 
+    /// The most rows that the main search shows from a list that the person never picked from.
+    private static let unpickedRows = 3
+
     /// Shows the spots that the search finds and the items it finds in the lists that offer them, in one ranking.
     func updateVisible() {
         let text = query.trimmingCharacters(in: .whitespaces)
@@ -338,8 +341,8 @@ final class SpotsModel {
         }
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let spotList = ItemList(items: cards.map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.command.name].compactMap { $0 }.joined(separator: " "), run: $0.id) })
-        let sources = entries.filter(\.command.isGlobal).sorted { $0.command.rank < $1.command.rank }
-        let found = SearchQuery(text: text).matching(in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() })
+        let sources = entries.filter { $0.command.isGlobal && arrangement.isGlobal(of: $0.id) != false }
+        let found = SearchQuery(text: text).matching(in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() }, unpickedLimit: Self.unpickedRows)
         visible = found.prefix(Self.searchLimit).compactMap { match in
             match.list == 0 ? spots[match.item.run] : Entry(command: sources[match.list - 1].command, item: match.item)
         }

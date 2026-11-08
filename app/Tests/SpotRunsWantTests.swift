@@ -2,7 +2,7 @@ import Observation
 import XCTest
 @testable import OpenspotCore
 
-/// Proves what wants a script, each moment, search, rank and the sandbox.
+/// Proves what wants a script, each moment, search, the main search and the sandbox.
 @MainActor
 final class SpotRunsWantTests: SpotRunsCase {
     // MARK: K5
@@ -154,7 +154,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         try await wait("the read from the clock") { self.log().count == 2 }
     }
 
-    // MARK: C4, rank, sandbox
+    // MARK: C4, the main search, sandbox
 
     func testSearchTextReachesTheScriptAfterAPause() async throws {
         try script(header: "read=sheet", "printf 'search=script\\n\\nrow=%s\\nrun=a\\n' \"${2:-none}\"")
@@ -189,10 +189,10 @@ final class SpotRunsWantTests: SpotRunsCase {
         XCTAssertFalse(exists("went-on"))
     }
 
-    func testARankWithANumberNeedsAKey() throws {
-        try script("a", header: "read=30\nrank=1")
-        try script("b", header: "read=panel,30\nrank=2")
-        try script("c", header: "read=30\nrank=3\nkey=c")
+    func testTheMainSearchWithANumberNeedsAKey() throws {
+        try script("a", header: "read=30\nglobal=true")
+        try script("b", header: "read=panel,30\nglobal=true")
+        try script("c", header: "read=30\nglobal=true\nkey=c")
 
         XCTAssertEqual(try PluginFolder(url: folder).scan().refused.map(\.file), ["a", "b"])
         XCTAssertEqual(

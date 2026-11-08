@@ -247,10 +247,10 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testALostKeyKeepsTheRestOfTheCommand() throws {
-        try script("one.sh", "#!/bin/sh\n# key=x\n# read=panel\n# rank=1\n")
-        try script("two.sh", "#!/bin/sh\n# key=x\n# read=panel\n# rank=2\n")
+        try script("one.sh", "#!/bin/sh\n# key=x\n# read=panel\n# global=true\n")
+        try script("two.sh", "#!/bin/sh\n# key=x\n# read=panel\n# global=true\n")
 
-        XCTAssertEqual(try scan.commands.map(\.rank).sorted(), [1, 2])
+        XCTAssertEqual(try scan.commands.map(\.isGlobal), [true, true])
     }
 
     func testEveryLayoutFillsItsSizeWithNoOverlap() {

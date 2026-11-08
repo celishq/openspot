@@ -3,11 +3,12 @@ import XCTest
 
 /// Proves the Links plugin with its real script and fake tools.
 final class LinksPluginTests: SamplePluginsCase {
-    func testLinksComeBeforeAppsInTheMainSearch() throws {
+    func testLinksAndAppsJoinTheMainSearch() throws {
         let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
         let apps = try XCTUnwrap(try scan.commands.first { $0.name == "Apps" })
 
-        XCTAssertLessThan(links.rank, apps.rank)
+        XCTAssertTrue(links.isGlobal)
+        XCTAssertTrue(apps.isGlobal)
     }
 
     func testAFixableFailureLinksItsFix() throws {

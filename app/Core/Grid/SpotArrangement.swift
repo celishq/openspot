@@ -1,6 +1,7 @@
 import Foundation
 
-/// What the person chose for the spots: a preferred size, whether the grid shows a spot, and the order. The grid can still
+/// What the person chose for the spots: a preferred size, whether the grid shows a spot, whether its rows join the main
+/// search, and the order. The grid can still
 /// change a preferred size to fill a row.
 public struct SpotArrangement: Equatable, Sendable {
     public struct Choice: Equatable, Sendable {
@@ -8,12 +9,14 @@ public struct SpotArrangement: Equatable, Sendable {
         public var size: SpotSize?
         public var isOnGrid: Bool?
         public var isEnabled: Bool?
+        public var isGlobal: Bool?
 
-        public init(id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil, isEnabled: Bool? = nil) {
+        public init(id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil, isEnabled: Bool? = nil, isGlobal: Bool? = nil) {
             self.id = id
             self.size = size
             self.isOnGrid = isOnGrid
             self.isEnabled = isEnabled
+            self.isGlobal = isGlobal
         }
     }
 
@@ -29,6 +32,10 @@ public struct SpotArrangement: Equatable, Sendable {
 
     public func isOnGrid(of id: String) -> Bool? {
         choices.first { $0.id == id }?.isOnGrid
+    }
+
+    public func isGlobal(of id: String) -> Bool? {
+        choices.first { $0.id == id }?.isGlobal
     }
 
     /// The IDs of the core spots that the person turned on.
@@ -74,6 +81,7 @@ public struct SpotArrangement: Equatable, Sendable {
             if let name = choice.size?.name { lines.append("size = \"\(name)\"") }
             if let isOnGrid = choice.isOnGrid { lines.append("grid = \(isOnGrid)") }
             if let isEnabled = choice.isEnabled { lines.append("enabled = \(isEnabled)") }
+            if let isGlobal = choice.isGlobal { lines.append("global = \(isGlobal)") }
             return lines.joined(separator: "\n")
         }.joined(separator: "\n\n")
     }

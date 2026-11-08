@@ -2,7 +2,6 @@ import Foundation
 
 /// One executable of a plugin, with the look its spot takes. A widget runs nothing, and places scripts in a layout.
 public struct Spot: Equatable, Sendable {
-    public static let lastRank = Int.max
     private static let folderWord = "folder"
     private static let anyWord = "*"
 
@@ -16,7 +15,8 @@ public struct Spot: Equatable, Sendable {
     public private(set) var key: CommandKey?
     public private(set) var read: SpotRead?
     public private(set) var pick: ItemPick
-    public let rank: Int
+    /// Whether its rows join the main search.
+    public let isGlobal: Bool
     /// Its place in the grid before the person's choice: a lower number first. The person's newest file comes first.
     public private(set) var order: Int
     public private(set) var keepsRecent = true
@@ -60,7 +60,7 @@ public struct Spot: Equatable, Sendable {
         key: CommandKey? = nil,
         read: SpotRead? = nil,
         pick: ItemPick = .close,
-        rank: Int = Spot.lastRank,
+        isGlobal: Bool = false,
         order: Int = 0,
         primary: String? = nil,
         actions: [CommandAction] = [],
@@ -89,7 +89,7 @@ public struct Spot: Equatable, Sendable {
         self.key = key
         self.read = read
         self.pick = pick
-        self.rank = rank
+        self.isGlobal = isGlobal
         self.order = order
         self.primary = primary
         self.actions = actions
@@ -149,11 +149,6 @@ public struct Spot: Equatable, Sendable {
     public var setsKeys: Bool {
         if case .settings? = shipped { return true }
         return keyList != nil
-    }
-
-    /// Whether its rows join the main search.
-    public var isGlobal: Bool {
-        rank != Self.lastRank
     }
 
     /// The state the header gives, shown before the command answers or when it cannot.

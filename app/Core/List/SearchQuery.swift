@@ -2,9 +2,9 @@ import Foundation
 
 /// Text that finds and ranks items. The whole title ranks first, then the title start. Otherwise each word must match,
 /// and the worst word sets the rank: a word start, the initials in order, any part of the title, a word start of the
-/// subtitle, any part of the subtitle, then three or more letters in order in one word of the title. Within a rank,
-/// picked items come first, the most picked before the latest, then the given order. Across lists, a pick beats any
-/// other item of its rank, then an earlier list wins.
+/// subtitle, any part of the subtitle, then three or more letters in order in one word of the title. Within a rank, the
+/// item with the most weight of picks comes first, and each pick weighs less as later picks come. Then an earlier list
+/// wins, then the given order.
 public struct SearchQuery: Equatable, Sendable {
     public let text: String
     private let letters: [String]
@@ -23,37 +23,41 @@ public struct SearchQuery: Equatable, Sendable {
 
     public func matching(_ items: [SpotItem], recent: [String] = []) -> [SpotItem] {
         ranked(items, recent: recent)
-            .sorted { ($0.rank, $0.recency, $0.offset) < ($1.rank, $1.recency, $1.offset) }
+            .sorted { ($0.rank, -$0.weight, $0.offset) < ($1.rank, -$1.weight, $1.offset) }
             .map(\.item)
     }
 
-    /// The items that match in each list, as one ranking, with the index of the list each came from.
-    public func matching(in lists: [ItemList]) -> [(list: Int, item: SpotItem)] {
+    /// The items that match in each list, as one ranking, with the index of the list each came from. Each list after the
+    /// first that has no pick gives at most `unpickedLimit` items.
+    public func matching(in lists: [ItemList], unpickedLimit: Int = .max) -> [(list: Int, item: SpotItem)] {
         lists.enumerated()
             .flatMap { index, list in
-                ranked(list.all, recent: list.recent).map { (list: index, match: $0) }
+                let found = ranked(list.all, recent: list.recent).sorted { ($0.rank, $0.offset) < ($1.rank, $1.offset) }
+                return found.prefix(index > 0 && list.recent.isEmpty ? unpickedLimit : found.count).map { (list: index, match: $0) }
             }
             .sorted { first, second in
                 let one = first.match, two = second.match
-                return (one.rank, one.recency == Int.max ? 1 : 0, first.list, one.recency, one.offset)
-                    < (two.rank, two.recency == Int.max ? 1 : 0, second.list, two.recency, two.offset)
+                return (one.rank, -one.weight, first.list, one.offset) < (two.rank, -two.weight, second.list, two.offset)
             }
             .map { (list: $0.list, item: $0.match.item) }
     }
 
-    private func ranked(_ items: [SpotItem], recent: [String]) -> [(rank: Int, recency: Int, offset: Int, item: SpotItem)] {
-        let recency = Self.order(of: recent)
+    private func ranked(_ items: [SpotItem], recent: [String]) -> [(rank: Int, weight: Double, offset: Int, item: SpotItem)] {
+        let weights = Self.weights(of: recent)
         return items.enumerated().compactMap { offset, item in
-            rank(of: item).map { (rank: $0, recency: recency[item.run] ?? Int.max, offset: offset, item: item) }
+            rank(of: item).map { (rank: $0, weight: weights[item.run] ?? 0, offset: offset, item: item) }
         }
     }
 
-    /// The place of each picked run: the most picks first, then the latest pick.
-    private static func order(of picks: [String]) -> [String: Int] {
-        let counts = Dictionary(picks.map { ($0, 1) }, uniquingKeysWith: +)
-        let latest = Dictionary(picks.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
-        let runs = latest.keys.sorted { (-counts[$0, default: 0], latest[$0, default: 0]) < (-counts[$1, default: 0], latest[$1, default: 0]) }
-        return Dictionary(uniqueKeysWithValues: runs.enumerated().map { ($1, $0) })
+    /// The weight of each picked run, from the latest pick first: each pick weighs 0.9 of the one after it.
+    private static func weights(of picks: [String]) -> [String: Double] {
+        var weights: [String: Double] = [:]
+        var weight = 1.0
+        for run in picks {
+            weights[run, default: 0] += weight
+            weight *= 0.9
+        }
+        return weights
     }
 
     private func rank(of item: SpotItem) -> Int? {
