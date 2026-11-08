@@ -13,6 +13,8 @@ struct SpotRowsView: View {
     @State private var reading = GridScrollReading()
 
     private static let bottomFade = 2 * SpotTokens.padding
+    /// How many cells of a new search draw their pictures ahead: more than a sheet shows.
+    private static let drawnAhead = 120
 
     private var row: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
@@ -89,10 +91,11 @@ struct SpotRowsView: View {
         .onScrollPhaseChange { _, phase, context in
             if phase == .idle { reading.aim = context.geometry.contentOffset.y }
         }
-        .modifier(GridFollow(selection: selected, perLine: list.perLine, bottomFade: Self.bottomFade, position: $position, reading: reading))
-        .onChange(of: list.query) {
+        .modifier(GridFollow(selection: selected, items: list.shown, perLine: list.perLine, bottomFade: Self.bottomFade, position: $position, reading: reading))
+        .onChange(of: list.query, initial: true) {
             reading.aim = 0
             position.scrollTo(y: 0)
+            SpotItemIcon.prepare(list.shown.prefix(Self.drawnAhead), size: SpotTokens.listIconSize)
         }
     }
 
@@ -213,7 +216,10 @@ private struct GridRing: View {
 /// Scrolls the grid until the line of the selected cell lies clear of the fades at its two ends. It alone reads the
 /// selection, so that a move reruns only this modifier.
 private struct GridFollow: ViewModifier {
+    private static let linesAhead = 10
+
     let selection: () -> Int
+    let items: [SpotItem]
     let perLine: Int
     let bottomFade: CGFloat
     @Binding var position: ScrollPosition
@@ -224,6 +230,8 @@ private struct GridFollow: ViewModifier {
     }
 
     private func show(_ index: Int) {
+        let line = index / perLine * perLine
+        SpotItemIcon.prepare(items[min(line, items.count)..<min(line + Self.linesAhead * perLine, items.count)], size: SpotTokens.listIconSize)
         guard reading.viewHeight > 0 else { return }
         let side = SpotTokens.square(perLine: perLine)
         let top = SpotTokens.padding + CGFloat(index / perLine) * (side + SpotTokens.listRowGap)
