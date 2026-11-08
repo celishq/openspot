@@ -141,8 +141,9 @@ with only components changes those components (S2).
   `open=<url>`, the place that fixes it (R9).
 - A stop can come at any time, and two calls can run at once, so a script never leaves a file half written (R8).
 
-A call reports progress with `title` and `value` in the head of a frame, such as `title=42%` and `value=0.42`. Openspot reads the codes
-`ESC ] 9;4;1;<percent>` as `value` and `ESC ] 9;<text>` as a toast, and removes each other escape code (R12).
+A call reports progress with a `gauge` in a frame (02): its `title`, its `detail` and its `value`, such as `title=42%` and
+`value=0.42`. Openspot reads the codes `ESC ] 9;4;1;<percent>` as `value` and `ESC ] 9;<text>` as a toast, and removes each
+other escape code (R12).
 
 ## The openspot command
 
@@ -150,7 +151,8 @@ A capability is `openspot <noun> <verb>`, and it works the same from a script an
 lists each one. A capability that cannot answer prints `status=<word>` (K4). One that keeps state keeps it in its own
 helper, which a script never starts or stops (K3). When macOS already has a command, such as `pbcopy` or `open`, use it.
 
-Run `openspot check <plugins folder>` before you stop. It loads each plugin, reads each one that has a `read`, and prints
+`openspot render <file.png>` draws the sheet that stdin holds, and `openspot render --card <size> <file.png>` draws its card
+at a size such as `wide`, so you can see a result before you stop. Run `openspot check <plugins folder>` before you stop. It loads each plugin, reads each one that has a `read`, and prints
 each fault.
 
 ## Messages

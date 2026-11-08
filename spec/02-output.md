@@ -75,8 +75,9 @@ group areas onto one raised card.
 `tray` for the menu bar (U5). A card's drawing can have more lines than the card has rows: the app divides its room
 evenly. A place with no drawing takes the drawing of the nearest smaller size, and a spot with none keeps its default card.
 
-With no `grid=` line, the sheet is one column of its components other than buttons, in the order that they print, and a
-`section` starts a new group. `keys=7 8 9 +` in the head draws a line of keys, and a press of one sends `<word>`.
+With no `grid=` line, the sheet takes its default drawing: one column of each component that is not a button, in the order
+that they print, then its rows (U13). A `section` starts a new group. A drawing names a button only when the script draws
+one, so a button with no drawing of its own is always an action. `keys=7 8 9 +` in the head draws a line of keys, and a press of one sends `<word>`.
 
 ## Buttons and actions
 
@@ -93,8 +94,8 @@ select (C3).
 
 ## Rows
 
-A `row` block is one item: `row` is its title, and `run` is the value that a pick sends as `<script> open <run>`. With no
-`repeat`, the rows fill the sheet as a list.
+A `row` block is one item: `row` is its title, and `run` is the value that a pick sends as `<script> open <run>`. Rows
+always flow through a repeat, and with no `repeat` block they flow through a list.
 
 | Key                                | Meaning                                                                        |
 | ---------------------------------- | ------------------------------------------------------------------------------ |
@@ -134,8 +135,9 @@ default, is a list.
 A `template` block draws a row. Each `<kind>=<slot>` line in it gives a slot a kind, and its `grid=` lines place the slots.
 `grid.<columns>x<rows>=` lines draw the row in a place of that many cells of the repeat, such as `grid.2x2=` for the large
 place of a bento, and a place with no drawing of its size takes the nearest smaller one (U8). A row picks a template with
-`as=<name>`, and `template=row` draws each row that names none. A row with no template draws its picture, its `row` and
-`detail`, its `tone` and its `shortcut`.
+`as=<name>`, and `template=row` draws each row that names none. With no template, a row is drawn by the default template:
+its own keys `row`, `detail`, `symbol`, `file`, `image`, `glyph`, `tone` and `shortcut` are its slots, as a picture, its
+words, a dot and a key. A slot of a template cannot take the name of a key of a row (U14).
 
 ```text
 template=row
@@ -164,8 +166,8 @@ and it prints the whole output again, or nothing to be read again (B6). The app 
 answer to a call that a newer change has outdated (U10). A repeat keeps its rows until a frame prints rows again, so a
 frame can change one switch alone (U11).
 
-The head is the first block with no kind. It holds the drawings, `title` and `detail` for the spot's card, `tone=on` for
-a card that shows that its thing is on, `size`, `search`, `recents`, `toast` and `open`. A head is not drawn.
+The head is the first block with no kind. It holds the drawings, `title` and `detail` for the spot's card, `size`,
+`search`, `recents`, `toast` and `open`. A head is not drawn.
 
 ## The card
 
@@ -173,7 +175,8 @@ A spot with no `grid.<size>=` draws its default card: its picture, its title, it
 sheet (U12). A spot whose output is one `switch` or one `slider` and nothing else draws that control as its card, with the
 control's `title` and `detail`, and a press of the card changes it.
 
-A press on a card area that is not a control opens the spot's sheet, or calls `<script> run` when it has none.
+A card shows that its thing is on while the first `switch` of the output is on, also when the switch is in its sheet. A
+press on a card area that is not a control opens the spot's sheet, or calls `<script> run` when it has none.
 
 ## Metrics
 
@@ -208,5 +211,9 @@ chooses what the menu bar shows. Printing nothing removes the item until the nex
 
 | Rule       | Today                                                                               | Phase |
 | ---------- | ----------------------------------------------------------------------------------- | ----- |
-| U8, U9     | A row cannot draw a `field` slot; a list row has room for two lines.                | 2     |
+| U8, U9     | A row cannot draw a `field` slot; a list row has room for two lines.                | 3     |
 | U11        | A frame replaces the rows.                                                          | 2     |
+| U13        | A sheet with components and rows and no drawing does not show its rows.              | 2     |
+| U14        | A slot can take the name of a key of a row.                                         | 3     |
+| U12        | `tone=on` in the head shows that a card is on.                                      | 4     |
+| R12        | A call reports progress with `title` and `value` in its head.                       | 4     |
