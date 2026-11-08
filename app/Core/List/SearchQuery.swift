@@ -26,9 +26,25 @@ public struct SearchQuery: Equatable, Sendable {
     }
 
     func matching(_ items: [FoldedItem], recent: [String] = []) -> [SpotItem] {
-        ranked(items, recent: recent)
-            .sorted { ($0.rank, $0.recency, $0.offset) < ($1.rank, $1.recency, $1.offset) }
-            .map(\.item)
+        ranking(items, among: Array(items.indices), recent: recent).map { items[$0].item }
+    }
+
+    /// The indices of the items among the given ones that match, best first.
+    func ranking(_ items: [FoldedItem], among indices: [Int], recent: [String]) -> [Int] {
+        let recency = Self.order(of: recent)
+        return indices.compactMap { index in
+            match(items[index]).map { (rank: $0.rank, recency: recency[items[index].item.run] ?? Int.max, index: index) }
+        }
+        .sorted { ($0.rank, $0.recency, $0.index) < ($1.rank, $1.recency, $1.index) }
+        .map(\.index)
+    }
+
+    /// Whether each item that matches this text also matches the given text, so that a search for it may look only among the
+    /// matches of this one. A letters-in-order match needs three letters, so a last word of fewer may match fewer items.
+    func narrows(to text: String) -> Bool {
+        guard !words.isEmpty, text.hasPrefix(self.text) else { return false }
+        let added = text.dropFirst(self.text.count)
+        return (words.last?.count ?? 0) >= 3 || added.first?.isWhitespace == true
     }
 
     /// The items that match in each list, as one ranking, with the index of the list each came from.

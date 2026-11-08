@@ -15,6 +15,13 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var hasFailed = false
     private(set) var all: [SpotItem]
     private(set) var folded: [FoldedItem]
+    private var narrowing: Narrowing?
+
+    /// The last search and the indices of its matches, in order, among which a longer search looks.
+    private struct Narrowing: Equatable, Sendable {
+        let query: SearchQuery
+        let matches: [Int]
+    }
 
     public init(items: [SpotItem] = [], recent: [String] = [], search: ItemSearch = .local) {
         self.search = search
@@ -95,6 +102,7 @@ public struct ItemList: Equatable, Sendable {
         hasFailed = false
         all = items
         folded = items.map(FoldedItem.init)
+        narrowing = nil
         refresh()
         guard selected > 0 else { return }
         selected = shown.firstIndex { $0.run == run } ?? min(selected, max(shown.count - 1, 0))
@@ -130,6 +138,15 @@ public struct ItemList: Equatable, Sendable {
     }
 
     private mutating func refresh() {
-        shown = search == .script ? all : SearchQuery(text: query).matching(folded, recent: recent)
+        guard search == .local else {
+            narrowing = nil
+            shown = all
+            return
+        }
+        let next = SearchQuery(text: query)
+        let among = narrowing.flatMap { $0.query.narrows(to: next.text) ? $0.matches : nil } ?? Array(folded.indices)
+        let ranked = next.ranking(folded, among: among, recent: recent)
+        narrowing = Narrowing(query: next, matches: ranked.sorted())
+        shown = ranked.map { folded[$0].item }
     }
 }
