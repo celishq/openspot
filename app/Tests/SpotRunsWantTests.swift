@@ -8,7 +8,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     // MARK: K5
 
     func testClosingThePanelClosesASheetOfPartsAndTheNextOpenReads() async throws {
-        try script(header: "read=sheet", "printf 'part=a\\ntext=one\\n'")
+        try script(header: "read=sheet", "printf 'field=a\\ntext=one\\n'")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the part") { sheet.panel != nil }
@@ -24,7 +24,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testClosingThePanelLeavesASheetOfRowsOpen() async throws {
-        try script(header: "read=sheet", "printf 'row=A\\nrun=a\\n'")
+        try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
@@ -38,9 +38,9 @@ final class SpotRunsWantTests: SpotRunsCase {
     // MARK: F7
 
     func testAWidgetCanPlaceAnyScriptWithARead() async throws {
-        try script("onpanel", header: "read=panel\nkey=p", log: "onpanel", "printf 'title=P\\n'")
-        try script("onsheet", header: "read=sheet\nkey=s", log: "onsheet", "printf 'title=S\\n'")
-        try "[[widgets]]\nname = \"W\"\nlayout = \"pair\"\nplaces = [\"onpanel\", \"onsheet\"]\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
+        try script("onpanel", header: "read=panel\nshortcut=p", log: "onpanel", "printf 'text=m\\ntitle=P\\n'")
+        try script("onsheet", header: "read=sheet\nshortcut=s", log: "onsheet", "printf 'text=m\\ntitle=S\\n'")
+        try "[[widgets]]\ntitle = \"W\"\ngrid = [\"a a b b\"]\nplaces = { a = \"onpanel\", b = \"onsheet\" }\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
         _ = try scanned()
         XCTAssertEqual(log("onsheet"), [])
 
@@ -49,9 +49,22 @@ final class SpotRunsWantTests: SpotRunsCase {
         try await wait("the values") { self.runs.readings["onpanel"]?.value?.title == "P" && self.runs.readings["onsheet"]?.value?.title == "S" }
     }
 
+    func testASpotComponentOfACardMakesTheOpenPanelReadThatSpot() async throws {
+        try script("card", header: "read=panel\nshortcut=c", log: "card", "printf 'grid.wide=heat\\n\\nspot=heat\\n'")
+        try script("heat", header: "read=300", log: "heat", "printf 'text=t\\ntitle=41°\\n'")
+        _ = try scanned()
+
+        runs.panelOpened()
+        try await wait("the card") { self.runs.sheets["card"]?.state.face.parts.map(\.id) == ["heat"] }
+        runs.panelClosed()
+        runs.panelOpened()
+
+        try await wait("the placed spot") { self.runs.readings["heat"]?.value?.title == "41°" }
+    }
+
     func testAWidgetCannotPlaceAScriptWithNoRead() throws {
         try script("once")
-        try "[[widgets]]\nname = \"W\"\nlayout = \"single\"\nplaces = [\"once\"]\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"W\"\ngrid = [\"a\"]\nplaces = { a = \"once\" }\nsize = \"square\"\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
 
         let scan = try PluginFolder(url: folder).scan()
 
@@ -59,7 +72,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testTheMenuBarShowsWhatTheSheetHolds() async throws {
-        try script("pulls", header: "name=Pull requests\nread=120\nkey=g\ntray=true", "printf 'title=2\\n\\nrow=A\\nrun=a\\n\\nrow=B\\nrun=b\\n'")
+        try script("pulls", header: "title=Pull requests\nread=120\nshortcut=g\ntray=true", "printf 'text=m\\ntitle=2\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'")
         let sheet = try sheet("pulls")
 
         try await wait("the mark") { !self.runs.trayMarks.isEmpty }
@@ -84,7 +97,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     func testEachMomentReadsOnlyTheScriptsThatListIt() async throws {
         try script("onlaunch", header: "read=launch", log: "onlaunch", "printf 'title=L\\n'")
         try script("onwake", header: "read=wake", log: "onwake", "printf 'title=W\\n'")
-        try script("onpanel", header: "read=panel", log: "onpanel", "printf 'title=P\\n'")
+        try script("onpanel", header: "read=panel", log: "onpanel", "printf 'text=m\\ntitle=P\\n'")
         _ = try scanned()
         try await pause(0.1)
         XCTAssertEqual(log("onlaunch") + log("onwake") + log("onpanel"), [])
@@ -105,7 +118,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testAnOpenSheetOfRowsIsNotReadWithThePanelClosedAndIsReadWhenThePanelOpens() async throws {
-        try script(header: "read=5\nkey=a", "printf 'row=A\\nrun=a\\n'")
+        try script(header: "read=5\nshortcut=a", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -128,7 +141,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testAStreamOfAnOpenSheetOfRowsStopsWhenThePanelClosesAndStartsWhenItOpens() async throws {
-        try script(header: "read=sheet", "printf 'row=A\\nrun=a\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
+        try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -145,7 +158,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testAScriptWithLaunchAndANumberIsReadWithThePanelClosed() async throws {
-        try script(header: "read=launch,1\nkey=a", "printf 'title=1\\n'")
+        try script(header: "read=launch,1\nshortcut=a", "printf 'title=1\\n'")
         _ = try scanned()
         try await wait("the first read") { self.log().count == 1 }
 
@@ -157,7 +170,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     // MARK: C4, the main search, sandbox
 
     func testSearchTextReachesTheScriptAfterAPause() async throws {
-        try script(header: "read=sheet", "printf 'search=script\\n\\nrow=%s\\nrun=a\\n' \"${2:-none}\"")
+        try script(header: "read=sheet", "printf 'search=script\\n\\nrow=a\\ntitle=%s\\n' \"${2:-none}\"")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the first answer") { sheet.list.shown.map(\.title) == ["none"] }
@@ -174,7 +187,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     func testANewKeyStopsTheOlderSearch() async throws {
         try script(header: "read=sheet", """
         [ "$2" = slow ] && { sleep 5; touch '\(path("went-on"))'; }
-        printf 'search=script\\n\\nrow=%s\\nrun=a\\n' "${2:-none}"
+        printf 'search=script\\n\\nrow=a\\ntitle=%s\\n' "${2:-none}"
         """)
         let sheet = try sheet()
         sheet.open {}
@@ -192,27 +205,27 @@ final class SpotRunsWantTests: SpotRunsCase {
     func testTheMainSearchWithANumberNeedsAKey() throws {
         try script("a", header: "read=30\nglobal=true")
         try script("b", header: "read=panel,30\nglobal=true")
-        try script("c", header: "read=30\nglobal=true\nkey=c")
+        try script("c", header: "read=30\nglobal=true\nshortcut=c")
 
         XCTAssertEqual(try PluginFolder(url: folder).scan().refused.map(\.file), ["a", "b"])
         XCTAssertEqual(
             try PluginFolder(url: folder).scan().refused.first?.reason,
-            "A needs a key to join the main search, because a number in its read and no key gives it no spot"
+            "A needs a shortcut to join the main search, because a number in its read and no shortcut gives it no spot"
         )
     }
 
     func testTheSandboxClicksAFileWithNoRead() async throws {
-        let url = try script(body: "printf 'part=a\\ntitle=%s\\n' \"$#\"")
+        let url = try script(body: "printf 'text=a\\ntitle=%s\\n' \"$#\"")
         let sheet = runs.sheet(for: SheetSandbox.command(file: url))
 
         sheet.open {}
 
-        try await wait("the sheet") { sheet.panel?.parts.first?.title == "0" }
-        XCTAssertEqual(log(), [""])
+        try await wait("the sheet") { sheet.panel?.parts.first?.title == "1" }
+        XCTAssertEqual(log(), ["run"])
     }
 
     func testTheSandboxReadsAFileWithARead() async throws {
-        let url = try script(header: "read=panel", "printf 'part=a\\ntitle=%s\\n' \"$1\"")
+        let url = try script(header: "read=panel", "printf 'text=a\\ntitle=%s\\n' \"$1\"")
         let sheet = runs.sheet(for: SheetSandbox.command(file: url))
 
         sheet.open {}

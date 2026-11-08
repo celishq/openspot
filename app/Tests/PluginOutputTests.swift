@@ -3,8 +3,8 @@ import XCTest
 
 final class PluginOutputTests: XCTestCase {
     func testAScriptPrintsWhoSearchesItsRowsAndWhetherRecentPicksMoveUp() {
-        let plain = PluginOutput(text: "row=A\nrun=a\n")
-        let printed = PluginOutput(text: "search=script\nrecents=false\n\nrow=A\nrun=a\n")
+        let plain = PluginOutput(text: "row=a\ntitle=A\n")
+        let printed = PluginOutput(text: "search=script\nrecents=false\n\nrow=a\ntitle=A\n")
 
         XCTAssertEqual(plain.search, .local)
         XCTAssertTrue(plain.keepsRecent)
@@ -18,19 +18,19 @@ final class PluginOutputTests: XCTestCase {
         title=Caffeinate
         on=true
 
-        action=copy
+        button=copy
         title=Copy
-        key=cmd+return
+        shortcut=cmd+return
         close=true
 
-        row=Safari
+        row=/Applications/Safari.app
+        title=Safari
         detail=Browser
-        run=/Applications/Safari.app
-        file=/Applications/Safari.app
+        icon=/Applications/Safari.app
 
-        row=Off
-        run=off
-        symbol=power
+        row=off
+        title=Off
+        icon=power
         """)
 
         XCTAssertEqual(output.summary?.value("title"), "Caffeinate")
@@ -43,33 +43,36 @@ final class PluginOutputTests: XCTestCase {
     }
 
     func testTheFirstKeyOfABlockNamesItsKind() {
-        let output = PluginOutput(text: "title=Places\n\ndetail=Late\nrow=Kyiv\nrun=kyiv\n\nrow=Lviv\nrun=lviv\n")
+        let output = PluginOutput(text: "title=Places\n\ndetail=Late\nrow=kyiv\ntitle=Kyiv\n\nrow=lviv\ntitle=Lviv\n")
 
         XCTAssertEqual(output.items.map(\.run), ["lviv"])
         XCTAssertEqual(output.errors, ["detail=Late"])
     }
 
-    func testAnEffectIsAKeyOfTheHeadOrABlockOfItsOwnAtAnyPlace() {
-        let head = PluginOutput(text: "toast=Saved\nopen=https://example.com\n")
-        let after = PluginOutput(text: "row=A\nrun=a\n\ntoast=Saved\n\nopen=https://example.com\n")
+    func testAnEffectIsAKeyOfTheOneHeadAtAnyPlace() {
+        let head = PluginOutput(text: "toast=Saved\nlink=https://example.com\n")
+        let after = PluginOutput(text: "row=a\ntitle=A\n\ntoast=Saved\nlink=https://example.com\n")
+        let second = PluginOutput(text: "toast=Saved\n\nlink=https://example.com\n")
 
         XCTAssertEqual(head.toast, "Saved")
-        XCTAssertEqual(head.open, "https://example.com")
+        XCTAssertEqual(head.link, "https://example.com")
         XCTAssertEqual(after.toast, "Saved")
-        XCTAssertEqual(after.open, "https://example.com")
+        XCTAssertEqual(after.link, "https://example.com")
         XCTAssertEqual(after.items.map(\.run), ["a"])
         XCTAssertEqual(after.errors, [])
+        XCTAssertNil(second.link)
+        XCTAssertEqual(second.errors, ["link=https://example.com"])
     }
 
     func testReadsEachKeyOfAnAction() {
         let output = PluginOutput(text: """
-        action=new
+        button=new
         title=New
-        key=cmd+n
+        shortcut=cmd+n
         scope=command
         form=true
 
-        action=delete
+        button=delete
         title=Delete
         close=true
         confirm=Delete this?
@@ -82,13 +85,13 @@ final class PluginOutputTests: XCTestCase {
     }
 
     func testAnActionItCannotReadIsReportedByItsFirstLine() {
-        XCTAssertEqual(PluginOutput(text: "action=a\n").errors, ["action=a"])
-        XCTAssertEqual(PluginOutput(text: "action=b\ntitle=B\nkey=ctrl+b\n").errors, ["action=b"])
-        XCTAssertEqual(PluginOutput(text: "action=c\ntitle=C\nscope=world\n").errors, ["action=c"])
+        XCTAssertEqual(PluginOutput(text: "button=a\n").errors, ["button=a"])
+        XCTAssertEqual(PluginOutput(text: "button=b\ntitle=B\nshortcut=ctrl+b\n").errors, ["button=b"])
+        XCTAssertEqual(PluginOutput(text: "button=c\ntitle=C\nscope=world\n").errors, ["button=c"])
     }
 
     func testTheOpenActionSetsTheWordForEnterAndThePick() {
-        let copy = PluginOutput(text: "action=open\ntitle=Copy\nclose=false\n")
+        let copy = PluginOutput(text: "button=open\ntitle=Copy\nclose=false\n")
 
         XCTAssertEqual(copy.actions, [])
         XCTAssertEqual(copy.primary, "Copy")
@@ -96,10 +99,10 @@ final class PluginOutputTests: XCTestCase {
         XCTAssertEqual(PluginOutput(text: "").pick, .close)
     }
 
-    func testReportsARowWithNoRunAndABlockThatSaysNothing() {
-        let output = PluginOutput(text: "row=Lost\ndetail=x\n\nnot an item\n\nrow=Kept\nrun=1\n")
+    func testReportsARowWithNoIdAndABlockThatSaysNothing() {
+        let output = PluginOutput(text: "row=\ndetail=x\n\nnot an item\n\nrow=1\ntitle=Kept\n")
 
-        XCTAssertEqual(output.errors, ["row=Lost", "not an item"])
+        XCTAssertEqual(output.errors, ["row=", "not an item"])
         XCTAssertEqual(output.items.map(\.title), ["Kept"])
     }
 
@@ -108,7 +111,7 @@ final class PluginOutputTests: XCTestCase {
     }
 
     func testKeepsTheFirstItemOfEachRunValue() {
-        XCTAssertEqual(PluginOutput(text: "row=One\nrun=same\n\nrow=Two\nrun=same\n").items.map(\.title), ["One"])
+        XCTAssertEqual(PluginOutput(text: "row=same\ntitle=One\n\nrow=same\ntitle=Two\n").items.map(\.title), ["One"])
     }
 
     func testNoOutputIsNothing() {
@@ -119,10 +122,10 @@ final class PluginOutputTests: XCTestCase {
     func testWhatItPrintsDecidesTheKindOfSpot() {
         XCTAssertEqual(PluginOutput(text: "").kind, .launch)
         XCTAssertEqual(PluginOutput(text: "title=Hi\n").kind, .launch)
-        XCTAssertEqual(PluginOutput(text: "on=true\n").kind, .toggle)
-        XCTAssertEqual(PluginOutput(text: "level=7\n").kind, .slider)
-        XCTAssertEqual(PluginOutput(text: "on=true\n\nrow=A\nrun=a\n").kind, .list)
-        XCTAssertEqual(PluginOutput(text: "action=new\ntitle=New\n").kind, .list)
+        XCTAssertEqual(PluginOutput(text: "switch=power\non=true\n").kind, .toggle)
+        XCTAssertEqual(PluginOutput(text: "slider=volume\nlevel=7\n").kind, .slider)
+        XCTAssertEqual(PluginOutput(text: "switch=power\non=true\n\nrow=a\ntitle=A\n").kind, .list)
+        XCTAssertEqual(PluginOutput(text: "button=new\ntitle=New\n").kind, .list)
     }
 
     func testWhatItPrintsDecidesTheKindOfMetric() throws {
@@ -130,11 +133,11 @@ final class PluginOutputTests: XCTestCase {
             try XCTUnwrap(MetricValue(output: PluginOutput(text: text))).kind
         }
 
-        XCTAssertEqual(try kind("title=3\n"), .value)
-        XCTAssertEqual(try kind("title=3\nsymbol=star\ntone=good\n"), .value)
-        XCTAssertEqual(try kind("title=Up\ntone=good\n"), .status)
-        XCTAssertEqual(try kind("title=84%\nvalue=0.84\n"), .gauge)
-        XCTAssertEqual(try kind("title=2\npoint=1\npoint=2\n"), .trend)
+        XCTAssertEqual(try kind("text=m\ntitle=3\n"), .value)
+        XCTAssertEqual(try kind("text=m\ntitle=3\nicon=star\ntone=good\n"), .value)
+        XCTAssertEqual(try kind("text=m\ntitle=Up\ntone=good\n"), .status)
+        XCTAssertEqual(try kind("gauge=m\ntitle=84%\nvalue=0.84\n"), .gauge)
+        XCTAssertEqual(try kind("graph=m\ntitle=2\npoint=1\npoint=2\n"), .trend)
         XCTAssertEqual(try kind("row=Build\n"), .rows)
     }
 
@@ -142,7 +145,7 @@ final class PluginOutputTests: XCTestCase {
         let rows = "row=One\ndetail=2m\ntone=bad\n\nrow=Two\n"
 
         let counted = try XCTUnwrap(MetricValue(output: PluginOutput(text: rows)))
-        let titled = try XCTUnwrap(MetricValue(output: PluginOutput(text: "title=Many\n\n" + rows)))
+        let titled = try XCTUnwrap(MetricValue(output: PluginOutput(text: "text=m\ntitle=Many\n\n" + rows)))
 
         XCTAssertEqual(counted.title, "2")
         XCTAssertEqual(counted.rows, [.init(title: "One", detail: "2m", tone: .bad), .init(title: "Two")])
@@ -150,13 +153,13 @@ final class PluginOutputTests: XCTestCase {
     }
 
     func testAMetricCanSetATintAndAnUnknownOneIsSkipped() {
-        XCTAssertEqual(MetricValue(output: PluginOutput(text: "title=1\ntint=green\n"))?.tint, .green)
-        XCTAssertNil(MetricValue(output: PluginOutput(text: "title=1\ntint=beige\n"))?.tint)
+        XCTAssertEqual(MetricValue(output: PluginOutput(text: "text=m\ntitle=1\ntint=green\n"))?.tint, .green)
+        XCTAssertNil(MetricValue(output: PluginOutput(text: "text=m\ntitle=1\ntint=beige\n"))?.tint)
     }
 
     func testPrintingNothingHidesAMetric() {
         XCTAssertEqual(MetricValue(output: PluginOutput(text: ""))?.isHidden, true)
-        XCTAssertEqual(MetricValue(output: PluginOutput(text: "action=copy\ntitle=Copy\n"))?.isHidden, true)
+        XCTAssertEqual(MetricValue(output: PluginOutput(text: "button=copy\ntitle=Copy\n"))?.isHidden, true)
     }
 
     func testAReadingOfRowsCountsZeroWhenThereIsNothingToShow() throws {
@@ -179,14 +182,14 @@ final class PluginOutputTests: XCTestCase {
         title=New
 
         field=text
-        label=Text
+        title=Text
         type=multiline
         value=one\\ntwo
         required=true
         placeholder=Say it
 
         field=name
-        label=Name
+        title=Name
         """))
 
         XCTAssertEqual(form, ItemForm(title: "New", fields: [
@@ -196,12 +199,12 @@ final class PluginOutputTests: XCTestCase {
     }
 
     func testAFormNeedsATitleAndALabelForEachField() {
-        XCTAssertNil(ItemForm(output: PluginOutput(text: "field=a\nlabel=A\n")))
+        XCTAssertNil(ItemForm(output: PluginOutput(text: "field=a\ntitle=A\n")))
         XCTAssertNil(ItemForm(output: PluginOutput(text: "title=New\n\nfield=a\n")))
     }
 
     func testARowReadsEachKeyword() {
-        let output = PluginOutput(text: "row=grinning face\nrun=😀\nkeyword=happy\nkeyword=smile\n")
+        let output = PluginOutput(text: "row=😀\ntitle=grinning face\nkeyword=happy\nkeyword=smile\n")
 
         XCTAssertEqual(output.items.first?.keywords, ["happy", "smile"])
     }

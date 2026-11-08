@@ -33,16 +33,16 @@ public struct ItemForm: Equatable, Sendable {
         self.fields = fields
     }
 
-    /// Reads a form from what a script prints. It needs a title, and a label for each field.
+    /// Reads a form from what a script prints. It needs a title, and a title for each field.
     public init?(output: PluginOutput) {
         guard let title = output.summary?.value("title") else { return nil }
         let fields = output.fields.compactMap { block -> Field? in
-            guard let name = block.value("field"), let label = block.value("label") else { return nil }
+            guard let name = block.value("field"), let label = block.value("title") else { return nil }
             return Field(
                 name: name,
                 label: label,
                 type: block.value("type").flatMap(Field.Kind.init) ?? .text,
-                value: block.value("value"),
+                value: block.value("text") ?? block.value("value"),
                 required: block.flag("required"),
                 placeholder: block.value("placeholder")
             )

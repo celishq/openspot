@@ -52,9 +52,9 @@ public struct EmojiCatalog: Sendable {
         for emoji in sorted {
             let form = Self.form(of: emoji, tone: tone, known: place)
             let row = TextBlock(fields: [
-                .init(key: "row", value: names[emoji] ?? emoji),
-                .init(key: "run", value: form),
-                .init(key: "glyph", value: form)
+                .init(key: "row", value: form),
+                .init(key: "title", value: names[emoji] ?? emoji),
+                .init(key: "icon", value: form)
             ] + keywords.of(emoji).map { .init(key: "keyword", value: $0) })
             text += row.text + "\n"
         }

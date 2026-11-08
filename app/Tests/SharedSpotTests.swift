@@ -50,7 +50,7 @@ final class SharedSpotTests: XCTestCase {
     }
 
     func testAScriptKeepsItsBytesAndItsExecutableMarkThroughTheFile() throws {
-        let text = "#!/bin/sh\r\n# name=Weather é\n\tprintf '\\\\n'\n"
+        let text = "#!/bin/sh\r\n# title=Weather é\n\tprintf '\\\\n'\n"
         try script("weather.sh", text)
 
         let read = try SharedSpot(data: sharing("weather").data)
@@ -61,7 +61,7 @@ final class SharedSpotTests: XCTestCase {
     }
 
     func testTheFileIsPlainJSONWithAFormatNumberAndNoFactsOfTheScript() throws {
-        try script("weather.sh", "#!/bin/sh\n# name=Weather\n")
+        try script("weather.sh", "#!/bin/sh\n# title=Weather\n")
 
         let json = try XCTUnwrap(JSONSerialization.jsonObject(with: sharing("weather").data) as? [String: Any])
 
@@ -100,9 +100,9 @@ final class SharedSpotTests: XCTestCase {
         try script("other.sh")
         try plain("board.toml", Data("""
         [[widgets]]
-        name = "Desk"
-        layout = "pair"
-        places = ["cpu", "home/disk"]
+        title = "Desk"
+        grid = ["a a b b"]
+        places = { a = "cpu", b = "home/disk" }
         opens = "links"
 
         """.utf8))
@@ -117,9 +117,10 @@ final class SharedSpotTests: XCTestCase {
         try script("cpu.sh", "#!/bin/sh\n# read=5\n")
         try plain("board.toml", Data("""
         [[widgets]]
-        name = "Desk"
-        layout = "single"
-        places = ["cpu"]
+        title = "Desk"
+        grid = ["a"]
+        places = { a = "cpu" }
+        size = "square"
         opens = "openspot/plugins"
 
         """.utf8))

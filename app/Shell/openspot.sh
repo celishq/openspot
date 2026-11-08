@@ -1,9 +1,13 @@
-# The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc` and `value`. Loading starts `cat` once, and each function
-# starts `sed`, `tr` or `awk` only above 1 KB, where a shell loop is too slow.
+# The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc` and `value`, and `next` and `arg` in a staying script.
+# Loading starts `cat` once, and each function starts `sed`, `tr` or `awk` only above 1 KB, where a shell loop is too slow.
 
-# All of stdin, read once now, because each `$(value id)` runs in a subshell that would lose it.
-_openspot_stdin=$(/bin/cat; printf x)
-_openspot_stdin=${_openspot_stdin%x}
+# All of stdin, read once now, because each `$(value id)` runs in a subshell that would lose it. A staying script keeps
+# its stdin for its calls, so this leaves it alone there, and `next` fills it with the values of each call.
+_openspot_stdin=
+if [ -z "${OPENSPOT_STAY:-}" ]; then
+  _openspot_stdin=$(/bin/cat; printf x)
+  _openspot_stdin=${_openspot_stdin%x}
+fi
 
 # Writes text as a value: a backslash as `\\` and a new line as `\n`.
 esc() {
@@ -72,5 +76,42 @@ value() (
     esac
   done <<EOF_OPENSPOT
 $_openspot_stdin
+EOF_OPENSPOT
+)
+
+# Reads the next call of a staying script from stdin, and fails at the end of stdin. It sets `call` to its number, `reason`
+# to why a read came, and `stop` to the number of a call that a stop block names. `arg <n>` and `value <id>` then give the
+# arguments and the values of that call.
+next() {
+  call= reason= stop= _openspot_args= _openspot_stdin=
+  while IFS= read -r _openspot_line; do
+    case $_openspot_line in
+      '') [ -z "$call$stop" ] || return 0 ;;
+      call=*) [ -n "$call$_openspot_args$_openspot_stdin" ] || call=${_openspot_line#call=} ;;
+      stop=*) [ -n "$call" ] && _openspot_stdin="$_openspot_stdin$_openspot_line
+" || stop=${_openspot_line#stop=} ;;
+      reason=*) [ -n "$_openspot_args" ] && _openspot_stdin="$_openspot_stdin$_openspot_line
+" || reason=${_openspot_line#reason=} ;;
+      arg=*) _openspot_args="$_openspot_args$_openspot_line
+" ;;
+      *) _openspot_stdin="$_openspot_stdin$_openspot_line
+" ;;
+    esac
+  done
+  return 1
+}
+
+# Prints the real text of argument `n` of the call that `next` read, counting from 1, as `value` prints a value.
+arg() (
+  _openspot_count=0
+  while IFS= read -r _openspot_line; do
+    _openspot_count=$((_openspot_count + 1))
+    if [ "$_openspot_count" = "${1-}" ]; then
+      _openspot_stdin=$_openspot_line
+      value arg
+      return
+    fi
+  done <<EOF_OPENSPOT
+$_openspot_args
 EOF_OPENSPOT
 )

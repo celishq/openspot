@@ -91,6 +91,31 @@ final class SamplePluginsTests: SamplePluginsCase {
         }
     }
 
+    func testRelaySendsALineOverItsSocketAndShowsTheLineThatComesBack() async throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let port = Int.random(in: 40000...60000)
+        let relay = ScriptProcess(url: root.appendingPathComponent("examples/relay.sh"), mode: .stays, limit: 10, stopPause: 0.2, variables: ["RELAY_PORT": String(port)])
+        defer { relay.end() }
+        var frames = try relay.start().makeAsyncIterator()
+
+        relay.send(.read, id: 1)
+        let sheet = try await frames.next()
+        XCTAssertTrue(sheet?.contains("title=No message yet") == true, sheet ?? "")
+
+        var call = 2
+        var seen: [String] = []
+        while !seen.contains(where: { $0.contains("title=hello") }), call < 40 {
+            relay.send(SpotAction(arguments: ["send"]), values: "peer=127.0.0.1:\(port)\nmessage=hello\n", id: call)
+            let frame = try await frames.next() ?? ""
+            seen.append(frame)
+            if frame.contains("toast=Sent") { seen.append(try await frames.next() ?? "") }
+            call += 1
+        }
+
+        XCTAssertTrue(seen.contains("toast=Sent\nend=\(call - 1)\n"), "\(seen)")
+        XCTAssertTrue(seen.contains { $0.contains("text=last\ntitle=hello\ndetail=From a peer") }, "\(seen)")
+    }
+
     func testWindowsPlacesEachSlotWithOneMoveOfTemplates() throws {
         XCTAssertEqual(try windowCall("full"), "window\nmove\n0 0 1 1\n")
         XCTAssertEqual(try windowCall("center"), "window\nmove\n0.175 0.175 0.65 0.65\n")
@@ -128,12 +153,33 @@ final class SamplePluginsTests: SamplePluginsCase {
         }
     }
 
+    func testCaffeinateTurnsOnAndOffFromItsSwitch() async throws {
+        let caffeinate = try XCTUnwrap(try scan.commands.first { $0.name == "Caffeinate" })
+
+        try await withPrivateHome { _ in
+            let on = try await caffeinate.perform(.set("awake", to: "true"), timeout: 5)
+            var state = try await caffeinate.state(timeout: 5)
+            for _ in 0..<100 where state.on != true {
+                try await Task.sleep(for: .milliseconds(50))
+                state = try await caffeinate.state(timeout: 5)
+            }
+            let off = try await caffeinate.perform(.set("awake", to: "false"), timeout: 5)
+
+            XCTAssertEqual(on, "Caffeinate is on until you turn it off")
+            XCTAssertEqual(state.on, true)
+            XCTAssertEqual(off, "Caffeinate is off")
+            let after = try await caffeinate.state(timeout: 5)
+            XCTAssertEqual(after.on, false)
+        }
+    }
+
     func testAppsListsEachAppWithItsPathAndNoBadLine() async throws {
         let apps = try XCTUnwrap(try scan.commands.first { $0.name == "Apps" })
 
         try await withPrivateHome { folder in
             let found = ["/Applications/Zed.app", "/System/Applications/Notes.app", "/Applications/Back\\slash.app"]
             try "#!/bin/sh\nprintf '%s\\n' \(found.map { "'\($0)'" }.joined(separator: " "))\n".writeScript(to: folder.appendingPathComponent("tools/find"))
+            try "#!/bin/sh\necho /usr/libexec/logd\n".writeScript(to: folder.appendingPathComponent("tools/ps"))
 
             let lines = try await apps.items(timeout: 10)
 
@@ -303,11 +349,11 @@ final class SamplePluginsTests: SamplePluginsCase {
     func testAReadAnswersWithItsFirstFrame() async throws {
         try await withPrivateHome { folder in
             let url = folder.appendingPathComponent("frames.sh")
-            try "#!/bin/sh\nprintf 'part=a\\n---\\n'\nprintf 'part=b\\n'\n".writeScript(to: url)
+            try "#!/bin/sh\nprintf 'text=a\\n---\\n'\nprintf 'text=b\\n'\n".writeScript(to: url)
 
             let text = try await SpotRuns().answer(of: Spot(id: "frames", name: "Frames", url: url), .read, limit: 5)
 
-            XCTAssertEqual(text, "part=a\n")
+            XCTAssertEqual(text, "text=a\n")
         }
     }
 

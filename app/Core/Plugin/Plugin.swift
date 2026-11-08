@@ -27,8 +27,9 @@ public struct Plugin: Equatable, Sendable {
 
     /// A script with a number in its `read` has a spot, a list, only when it has a key.
     public init(script url: URL, header: TextBlock, id: String) throws {
-        let name = header.value("name") ?? Self.name(of: url)
-        let symbol = header.value("symbol")
+        let name = header.value("title") ?? Self.name(of: url)
+        let icon = Icon(text: header.value("icon"))
+        let symbol = icon?.symbol
         var read: SpotRead?
         if let text = header.value("read") {
             guard let parsed = SpotRead(text: text) else {
@@ -37,9 +38,10 @@ public struct Plugin: Equatable, Sendable {
             read = parsed
         }
         let isTray = header.flag("tray") ?? false
-        let hasKey = header.value("key") != nil
-        if read?.seconds == nil, isTray {
-            throw PluginError.fault("\(name) needs a number in its read to show in the menu bar")
+        let stays = header.flag("stay") ?? false
+        let hasKey = header.value("shortcut") != nil
+        if read?.seconds == nil, isTray, !stays {
+            throw PluginError.fault("\(name) needs a number in its read, or stay=true, to show in the menu bar")
         }
         let sizeName = header.value("size") ?? "wide"
         guard let size = SpotSize(name: sizeName) else { throw PluginError.fault("\(name) has an unknown size: \(sizeName)") }
@@ -49,7 +51,7 @@ public struct Plugin: Equatable, Sendable {
                 throw PluginError.fault("\(name) needs panel, launch or a number in its read to join the main search")
             }
             guard read?.seconds == nil || hasKey else {
-                throw PluginError.fault("\(name) needs a key to join the main search, because a number in its read and no key gives it no spot")
+                throw PluginError.fault("\(name) needs a shortcut to join the main search, because a number in its read and no shortcut gives it no spot")
             }
         }
         let offers = try header.values("command").map { text in
@@ -69,13 +71,14 @@ public struct Plugin: Equatable, Sendable {
             id: id,
             name: name,
             url: url,
-            kind: isGlobal || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch,
+            kind: stays || isGlobal || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch,
             size: size,
             symbol: symbol ?? "app",
-            subtitle: header.value("subtitle"),
-            key: try Self.key(header.value("key"), of: name),
+            subtitle: header.value("detail"),
+            key: try Self.key(header.value("shortcut"), of: name),
             read: read,
             isGlobal: isGlobal,
+            stays: stays,
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             isTray: isTray,
             dataName: header.value("data") ?? id.split(separator: "/").first.map(String.init),
@@ -83,9 +86,9 @@ public struct Plugin: Equatable, Sendable {
             isOnGrid: offers.isEmpty && (hasKey || !isGlobal),
             headerSymbol: symbol,
             offers: offers,
-            file: header.value("file").map { Self.path($0, beside: url) },
-            image: header.value("image").map { Self.path($0, beside: url) },
-            glyph: header.value("glyph"),
+            file: icon?.file.map { Self.path($0, beside: url) },
+            image: icon?.image.map { Self.path($0, beside: url) },
+            glyph: icon?.glyph,
             view: view.map { Self.path($0, beside: url) }
         )
         self.init(id: id, commands: [command])
@@ -106,7 +109,7 @@ public struct Plugin: Equatable, Sendable {
 
     private static func key(_ text: String?, of name: String) throws -> CommandKey? {
         guard let text else { return nil }
-        guard let key = CommandKey(name: text) else { throw PluginError.fault("\(name) has an unknown key: \(text)") }
+        guard let key = CommandKey(name: text) else { throw PluginError.fault("\(name) has an unknown shortcut: \(text)") }
         return key
     }
 
@@ -115,39 +118,11 @@ public struct Plugin: Equatable, Sendable {
             if case .string(let value)? = table[key] { return value }
             return nil
         }
-        guard let name = text("name") else { throw PluginError.fault("a widget needs a name") }
+        guard let name = text("title") else { throw PluginError.fault("a widget needs a title") }
         if case .strings(let drawing)? = table["grid"] {
             return try drawn(drawing, table, name: name, id: id, url: url)
         }
-        guard let layoutName = text("layout") else { throw PluginError.fault("\(name) needs a layout or a grid") }
-        guard let layout = WidgetLayout(name: layoutName) else {
-            throw PluginError.fault("\(name) has an unknown layout: \(layoutName). Use single, hero, pair or row")
-        }
-        guard case .strings(let places)? = table["places"], places.count == layout.slots.count else {
-            throw PluginError.fault("\(name) needs \(layout.slots.count) places for the \(layoutName) layout")
-        }
-        var size = layout.size
-        if let sizeName = text("size") {
-            guard layout == .single else {
-                throw PluginError.fault("\(name) cannot take a size, because the \(layoutName) layout sets its own")
-            }
-            guard let asked = SpotSize(name: sizeName) else {
-                throw PluginError.fault("\(name) has an unknown size: \(sizeName)")
-            }
-            size = asked
-        }
-        return Spot(
-            id: "\(id)/\(name)",
-            name: name,
-            url: url,
-            kind: .widget,
-            size: size,
-            subtitle: text("subtitle"),
-            key: try key(text("key"), of: name),
-            layout: layout,
-            places: places.map { Self.tool($0, beside: url, id: id) },
-            opens: text("opens").map { Self.tool($0, beside: url, id: id) }
-        )
+        throw PluginError.fault("\(name) needs a grid, such as grid = [\"a a b b\"]")
     }
 
     /// A widget with a drawing of its own, whose `places` names a metric for each letter.
@@ -178,7 +153,8 @@ public struct Plugin: Equatable, Sendable {
             url: url,
             kind: .widget,
             size: layout.size,
-            key: try key(text("key"), of: name),
+            subtitle: text("detail"),
+            key: try key(text("shortcut"), of: name),
             layout: layout,
             places: layout.letters.compactMap { places[$0] }.map { tool($0, beside: url, id: id) },
             opens: text("opens").map { tool($0, beside: url, id: id) }

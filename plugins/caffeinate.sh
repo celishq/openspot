@@ -1,7 +1,7 @@
 #!/bin/sh
-# symbol=cup.and.saucer.fill
-# subtitle=Keep the Mac awake
-# key=c
+# icon=cup.and.saucer.fill
+# detail=Keep the Mac awake
+# shortcut=c
 # size=small
 # read=panel
 record="${TMPDIR:-/tmp}/openspot-caffeinate"
@@ -43,15 +43,26 @@ case "$1" in
         fi
       fi
     fi
-    printf 'detail=%s\non=%s\nrecents=false\n\n' "$detail" "$on"
-    printf 'action=open\ntitle=Select\n\n'
+    printf 'detail=%s\nrecents=false\n\n' "$detail"
+    printf 'switch=awake\ntitle=Keep awake\ndetail=%s\non=%s\n\n' "$detail" "$on"
+    printf 'button=open\ntitle=Select\n\n'
     if [ "$running" = 1 ]; then
-      printf 'row=Turn off\nrun=off\n\n'
+      printf 'row=off\ntitle=Turn off\n\n'
     fi
-    printf 'row=30 minutes\nrun=1800\n\n'
-    printf 'row=1 hour\nrun=3600\n\n'
-    printf 'row=2 hours\nrun=7200\n\n'
-    printf 'row=Until turned off\nrun=0\n'
+    printf 'row=1800\ntitle=30 minutes\n\n'
+    printf 'row=3600\ntitle=1 hour\n\n'
+    printf 'row=7200\ntitle=2 hours\n\n'
+    printf 'row=0\ntitle=Until turned off\n'
+    ;;
+  awake)
+    stop
+    if [ "$2" = true ]; then
+      nohup caffeinate -di >/dev/null 2>&1 &
+      remember "$! 0"
+      echo "toast=Caffeinate is on until you turn it off"
+    else
+      echo "toast=Caffeinate is off"
+    fi
     ;;
   open)
     case "$2" in

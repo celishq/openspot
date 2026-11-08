@@ -20,18 +20,18 @@ final class PluginHeaderTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: folder) }
         let searchOnly = folder.appendingPathComponent("search.sh"), keyed = folder.appendingPathComponent("keyed.sh")
         try "#!/bin/sh\n# read=panel\n# global=true\n".writeScript(to: searchOnly)
-        try "#!/bin/sh\n# read=panel\n# global=true\n# key=k\n".writeScript(to: keyed)
+        try "#!/bin/sh\n# read=panel\n# global=true\n# shortcut=k\n".writeScript(to: keyed)
 
         XCTAssertFalse(try XCTUnwrap(try Plugin(file: searchOnly, id: "search")?.commands.first).headerState.isOnGrid)
         XCTAssertTrue(try XCTUnwrap(try Plugin(file: keyed, id: "keyed")?.commands.first).headerState.isOnGrid)
     }
 
     func testReadsTheCommentLinesUnderTheFirstLine() {
-        let header = PluginHeader(text: "#!/bin/sh\n# name=Morning\n#\n# Prose has no key.\n#symbol=sun.max\nsay hello\n# key=m\n")
+        let header = PluginHeader(text: "#!/bin/sh\n# title=Morning\n#\n# Prose has no key.\n#icon=sun.max\nsay hello\n# shortcut=m\n")
 
-        XCTAssertEqual(header.block.value("name"), "Morning")
-        XCTAssertEqual(header.block.value("symbol"), "sun.max")
-        XCTAssertNil(header.block.value("key"))
+        XCTAssertEqual(header.block.value("title"), "Morning")
+        XCTAssertEqual(header.block.value("icon"), "sun.max")
+        XCTAssertNil(header.block.value("shortcut"))
     }
 
     func testReadsTheCommentsOfOtherLanguages() {
@@ -40,11 +40,11 @@ final class PluginHeaderTests: XCTestCase {
     }
 
     func testAProgramHasNoHeader() {
-        XCTAssertEqual(PluginHeader(text: "\u{7F}ELF\u{0}\u{0}\n# name=Lost").block.fields, [])
+        XCTAssertEqual(PluginHeader(text: "\u{7F}ELF\u{0}\u{0}\n# title=Lost").block.fields, [])
     }
 
     func testABlankLineEndsTheHeader() {
-        XCTAssertNil(PluginHeader(text: "#!/bin/sh\n\n# name=Late\n").block.value("name"))
+        XCTAssertNil(PluginHeader(text: "#!/bin/sh\n\n# title=Late\n").block.value("title"))
     }
 
     func testAViewIsASwiftFileBesideTheScript() throws {
@@ -57,7 +57,7 @@ final class PluginHeaderTests: XCTestCase {
     }
 
     func testAViewThatIsNoSwiftFileIsRefused() {
-        let header = PluginHeader(text: "#!/bin/sh\n# name=Cups\n# view=cups.txt\n").block
+        let header = PluginHeader(text: "#!/bin/sh\n# title=Cups\n# view=cups.txt\n").block
 
         XCTAssertThrowsError(try Plugin(script: URL(fileURLWithPath: "/plugins/cups.sh"), header: header, id: "cups")) { error in
             XCTAssertEqual((error as? PluginError)?.reason, "Cups needs a Swift file for its view, such as view=cups.swift")
@@ -65,7 +65,7 @@ final class PluginHeaderTests: XCTestCase {
     }
 
     func testAViewInATopLevelScriptIsRefusedWithTheFolderToMoveTo() {
-        let header = PluginHeader(text: "#!/bin/sh\n# name=Cups\n# view=cups.swift\n").block
+        let header = PluginHeader(text: "#!/bin/sh\n# title=Cups\n# view=cups.swift\n").block
 
         XCTAssertThrowsError(try Plugin(script: URL(fileURLWithPath: "/plugins/cups.sh"), header: header, id: "cups")) { error in
             XCTAssertEqual((error as? PluginError)?.reason, "Cups has a view, so it needs a folder of its own. Move cups.sh and cups.swift into a folder such as cups/")

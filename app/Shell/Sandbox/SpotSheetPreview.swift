@@ -10,6 +10,7 @@ struct SpotSheetPreview: View {
     var onSet: (SpotPart, String) -> Void = { _, _ in }
     var onPress: (SpotPart) -> Void = { _ in }
     var list = ItemList()
+    var customView: (CGSize) -> SpotCustomView? = { _ in nil }
 
     var body: some View {
         let frame = SpotTokens.panelRect(panel)
@@ -29,7 +30,7 @@ struct SpotSheetPreview: View {
                 SpotRoundButton(symbol: "xmark", label: "Close") {}
             }
             if panel.showsRows { Color.clear.frame(height: SpotTokens.listRowHeight) }
-            SheetPartsView(panel: panel, onSet: onSet, onPress: onPress, list: list)
+            SheetPartsView(panel: panel, onSet: onSet, onPress: onPress, list: list, customView: customView)
         }
         .padding(SpotTokens.padding)
         .frame(width: frame.width, height: frame.height, alignment: .topLeading)

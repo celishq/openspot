@@ -1,8 +1,8 @@
 #!/bin/sh
-# name=Emojis & Symbols
-# symbol=face.smiling
-# subtitle=Copy an emoji or a symbol
-# key=e
+# title=Emojis & Symbols
+# icon=face.smiling
+# detail=Copy an emoji or a symbol
+# shortcut=e
 # size=small
 # read=sheet
 export LC_ALL=en_US.UTF-8
@@ -25,11 +25,11 @@ next_tone() {
 
 case "$1" in
   read)
-    printf 'grid=t t t t t t t\ngrid=a a a a a a a\nrepeat=a 7\n\n'
-    printf 'action=open\ntitle=Copy\n\n'
-    printf 'action=paste\ntitle=Paste\nkey=cmd+return\nclose=true\n\n'
-    printf 'action=next-tone\ntitle=Next skin tone\nkey=cmd+t\nscope=command\n\n'
-    printf 'part=tone\ncell=t\ntitle=Skin tone\n'
+    printf 'grid=tone tone tone tone tone tone tone\ngrid=a a a a a a a\n\nrepeat=a\ngrid=a b c d e f g\n\n'
+    printf 'button=open\ntitle=Copy\n\n'
+    printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\nclose=true\n\n'
+    printf 'button=next-tone\ntitle=Next skin tone\nshortcut=cmd+t\nscope=command\n\n'
+    printf 'choice=tone\ntitle=Skin tone\n'
     printf 'option=none:Yellow\noption=light:Light\noption=medium-light:Medium light\noption=medium:Medium\noption=medium-dark:Medium dark\noption=dark:Dark\n'
     printf 'value=%s\n\n' "$tone"
     openspot emoji --tone "$tone"

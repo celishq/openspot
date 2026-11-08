@@ -1,7 +1,7 @@
 #!/bin/sh
-# symbol=link
-# subtitle=Open a link
-# key=l
+# icon=link
+# detail=Open a link
+# shortcut=l
 # read=panel
 # global=true
 export LC_ALL=en_US.UTF-8
@@ -70,8 +70,8 @@ save_icon() {
   kind=$(curl -fsSL -m 5 -A "$agent" -o "$file" -w '%{content_type}' "$1" 2>/dev/null) || kind=""
   case "$kind" in
     image/*)
-      if sips -g pixelWidth "$file" >/dev/null 2>&1; then
-        mv "$file" "$icons/$2.icon"
+      if sips -s format png "$file" --out "$icons/$2.png" >/dev/null 2>&1; then
+        rm -f "$file"
         return 0
       fi
       ;;
@@ -112,7 +112,7 @@ fetch_missing() {
   [ -d "$icons" ] && find "$icons" -name '*.none' -mtime +7 -delete
   load | jq -r '.[].url | capture("^(?<origin>https?://(?<host>[^/?#]+))") | "\(.origin) \(.host)"' | sort -u |
     while read -r origin host; do
-      if [ ! -e "$icons/$host.icon" ] && [ ! -e "$icons/$host.none" ]; then
+      if [ ! -e "$icons/$host.png" ] && [ ! -e "$icons/$host.none" ]; then
         fetch_icon "$origin" "$host"
       fi
     done
@@ -123,13 +123,13 @@ form() {
   jq -nr --arg title "$1" --argjson v "$2" "$esc"'"title=\($title)
 
 field=title
-label=Name
-value=\($v.title | esc)
+title=Name
+text=\($v.title | esc)
 required=true
 
 field=url
-label=Link
-value=\($v.url | esc)
+title=Link
+text=\($v.url | esc)
 required=true
 placeholder=example.com or ~/Downloads"'
 }
@@ -138,19 +138,19 @@ prepare
 
 case "$1" in
   read)
-    printf 'action=copy\ntitle=Copy\nkey=cmd+return\nclose=true\n\n'
-    printf 'action=reveal\ntitle=Show in Finder\nkey=cmd+r\nclose=true\n\n'
-    printf 'action=edit\ntitle=Edit\nkey=cmd+e\nform=true\n\n'
-    printf 'action=delete\ntitle=Delete\nkey=cmd+backspace\nconfirm=Press again to delete\n\n'
-    printf 'action=new\ntitle=New link\nkey=cmd+n\nscope=command\nform=true\n\n'
+    printf 'button=copy\ntitle=Copy\nshortcut=cmd+return\nclose=true\n\n'
+    printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+r\nclose=true\n\n'
+    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\n\n'
+    printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\n\n'
+    printf 'button=new\ntitle=New link\nshortcut=cmd+n\nscope=command\nform=true\n\n'
     found=$(ls "$icons" 2>/dev/null | jq -R . | jq -sc .)
     load | jq -r --arg icons "$icons" --argjson found "$found" --arg home "$HOME" "$esc"'.[]
       | if (.url | test("^[/~]")) then
-          "row=\(.title | esc)\ndetail=\(.url | esc)\nrun=\(.id | esc)\nfile=\(.url | if startswith("~") then $home + .[1:] else . end | esc)\n"
+          "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.url | esc)\nicon=\(.url | if startswith("~") then $home + .[1:] else . end | esc)\n"
         else
           (.url | sub("^[a-zA-Z][a-zA-Z0-9+.-]*:(//)?"; "") | sub("[/?#].*$"; "")) as $host
-          | "row=\(.title | esc)\ndetail=\($host | esc)\nrun=\(.id | esc)\nsymbol=link\nhides=reveal\n"
-          + (if ($found | index($host + ".icon")) then "image=\("\($icons)/\($host).icon" | esc)\n" else "" end)
+          | "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\($host | esc)\nhides=reveal\n"
+          + (if ($found | index($host + ".png")) then "icon=\("\($icons)/\($host).png" | esc)\n" else "icon=link\n" end)
         end'
     fetch_missing >/dev/null 2>&1 </dev/null &
     ;;

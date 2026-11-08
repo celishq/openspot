@@ -1,5 +1,5 @@
 #!/bin/sh
-# symbol=sparkles
+# icon=sparkles
 # read=5
 # tray=true
 export LC_ALL=en_US.UTF-8

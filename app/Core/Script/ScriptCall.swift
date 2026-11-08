@@ -39,19 +39,20 @@ public final class ScriptCall: Identifiable {
         action.arguments.first != SpotAction.read.arguments.first
     }
 
-    /// The part of its ring that is full, from 0 to 1, from the `value` of its last frame. With no value, a spinner shows.
+    /// The part of its ring that is full, from 0 to 1, from the `value` of the gauge of its last frame (R12). With no value,
+    /// a spinner shows.
     public var fill: Double? {
-        output?.summary?.number("value").map { min(max($0, 0), 1) }
+        output?.progress?.number("value").map { min(max($0, 0), 1) }
     }
 
-    /// The `title` of its last frame.
+    /// The `title` of the gauge of its last frame.
     public var title: String? {
-        output?.summary?.value("title")
+        output?.progress?.value("title")
     }
 
-    /// The `detail` of its last frame.
+    /// The `detail` of the gauge of its last frame.
     public var detail: String? {
-        output?.summary?.value("detail")
+        output?.progress?.value("detail")
     }
 
     func take(frame: String) {

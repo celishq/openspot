@@ -24,10 +24,10 @@ public struct CommandLink: Equatable, Sendable {
     /// Its row in a list.
     var row: TextBlock {
         TextBlock(fields: [
-            .init(key: "row", value: "Use openspot in Terminal"),
+            .init(key: "row", value: Self.run),
+            .init(key: "title", value: "Use openspot in Terminal"),
             .init(key: "detail", value: "The command line tool"),
-            .init(key: "run", value: Self.run),
-            .init(key: "symbol", value: "terminal"),
+            .init(key: "icon", value: "terminal"),
             .init(key: "on", value: String(isOn))
         ])
     }

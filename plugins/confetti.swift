@@ -1,8 +1,8 @@
 #!/usr/bin/env swift
-// name=Confetti
-// symbol=party.popper
-// subtitle=Celebrate on each screen
-// key=k
+// title=Confetti
+// icon=party.popper
+// detail=Celebrate on each screen
+// shortcut=k
 import AppKit
 
 let emission: TimeInterval = 1.5

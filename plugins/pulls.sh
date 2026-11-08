@@ -1,8 +1,8 @@
 #!/bin/sh
-# name=Pull requests
-# symbol=arrow.triangle.pull
-# subtitle=On GitHub
-# key=g
+# title=Pull requests
+# icon=arrow.triangle.pull
+# detail=On GitHub
+# shortcut=g
 # read=120
 # tray=true
 export LC_ALL=en_US.UTF-8
@@ -36,13 +36,13 @@ pulls() {
 case "$1" in
   read)
     if ! command -v gh >/dev/null; then
-      printf 'open=https://cli.github.com\n'
+      printf 'link=https://cli.github.com\n'
       echo "Pull requests need the gh tool. Install it, then open this again." >&2
       exit 1
     fi
     list=$(pulls) || exit 1
-    printf 'action=copy\ntitle=Copy link\nkey=cmd+return\nclose=true\n\n'
-    printf '%s' "$list" | jq -r "$defs"'.[] | "row=\(.title | esc)\ndetail=\(about)\nrun=\(.url | esc)\nsymbol=\({good: "checkmark.circle", bad: "xmark.circle", warn: "clock"}[tone // ""] // "arrow.triangle.pull")"
+    printf 'button=copy\ntitle=Copy link\nshortcut=cmd+return\nclose=true\n\n'
+    printf '%s' "$list" | jq -r "$defs"'.[] | "row=\(.url | esc)\ntitle=\(.title | esc)\ndetail=\(about)\nicon=\({good: "checkmark.circle", bad: "xmark.circle", warn: "clock"}[tone // ""] // "arrow.triangle.pull")"
       + (tone | if . then "\ntone=\(.)" else "" end) + "\n"'
     ;;
   copy)

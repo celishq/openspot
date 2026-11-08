@@ -16,9 +16,9 @@ public struct LoginItem: Equatable, Sendable {
     /// Its row in a list.
     var row: TextBlock {
         TextBlock(fields: [
-            .init(key: "row", value: "Open at login"),
-            .init(key: "run", value: Self.run),
-            .init(key: "symbol", value: "power"),
+            .init(key: "row", value: Self.run),
+            .init(key: "title", value: "Open at login"),
+            .init(key: "icon", value: "power"),
             .init(key: "on", value: String(isOn()))
         ])
     }

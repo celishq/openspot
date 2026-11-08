@@ -17,8 +17,9 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: query.isEmpty ? ["read"] : ["read", query] + forms)
     }
 
+    /// A press of a card that is a switch: its id and its new value (U12).
     public static func toggle(_ state: SpotState) -> SpotAction {
-        SpotAction(arguments: [(state.on ?? false) ? "off" : "on"])
+        SpotAction(arguments: [state.control ?? "", (state.on ?? false) ? "false" : "true"])
     }
 
     public static func item(_ item: SpotItem) -> SpotAction {
@@ -34,6 +35,11 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: [part, value])
     }
 
+    /// A person changed or pressed a slot of a row: `<slot> <run> [value]` (U9).
+    public static func slot(_ slot: String, run: String, value: String? = nil) -> SpotAction {
+        SpotAction(arguments: [slot, run] + (value.map { [$0] } ?? []))
+    }
+
     /// A person pressed a part.
     public static func press(_ part: String) -> SpotAction {
         SpotAction(arguments: [part])
@@ -42,6 +48,20 @@ public struct SpotAction: Equatable, Sendable {
     /// A person dropped or chose files on a card. Each path is its own argument.
     public static func drop(paths: [String]) -> SpotAction {
         SpotAction(arguments: ["drop"] + paths)
+    }
+
+    /// This call as one block for a script that stays: `call=<id>`, the `reason` of a read, one `arg` for each argument of a
+    /// normal call, and each value that stdin holds in a normal call.
+    public func event(values: String? = nil, id: Int, reason: ReadReason? = nil) -> String {
+        let head = [TextBlock.Field(key: "call", value: String(id))] + (reason.map { [TextBlock.Field(key: "reason", value: $0.rawValue)] } ?? [])
+        let call = head + arguments.map { TextBlock.Field(key: "arg", value: $0) }
+        let held = values.flatMap { TextBlock.blocks(in: $0).first }?.fields ?? []
+        return TextBlock(fields: call + held).text + "\n"
+    }
+
+    /// The block that asks a staying script to stop the call with this `id`.
+    public static func stopEvent(id: Int) -> String {
+        "stop=\(id)\n\n"
     }
 
     /// What a process gets for this call. A value over 64 KB leaves the arguments, because the system limits them. Stdin
@@ -54,7 +74,8 @@ public struct SpotAction: Equatable, Sendable {
         return (arguments.prefix(1) + arguments.dropFirst().filter { !long.contains($0) }, (input ?? "") + TextBlock(fields: missing).text)
     }
 
-    public static func level(_ value: Double) -> SpotAction {
-        SpotAction(arguments: ["level", String(Int(value.rounded()))])
+    /// A new level of a card that is a slider: its id and the level (U12).
+    public static func level(_ value: Double, of control: String) -> SpotAction {
+        SpotAction(arguments: [control, String(Int(value.rounded()))])
     }
 }

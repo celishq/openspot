@@ -1,7 +1,7 @@
 #!/bin/sh
-# symbol=translate
-# subtitle=Between languages
-# key=t
+# icon=translate
+# detail=Between languages
+# shortcut=t
 # size=small
 # read=sheet
 . "$OPENSPOT_SH"
@@ -79,18 +79,6 @@ show() {
   auto="Automatic"
   [ -n "$detected" ] && auto="Auto ($(name "$detected"))"
 
-  printf 'grid=s s . .\ngrid=i i i i\ngrid=i i i x\ngrid=- - - x\ngrid=t t . x\ngrid=o o o o\ngrid=o o o c\ncard=s i t o\n\n'
-
-  printf 'part=source\ncell=s\noption=auto:%s\n' "$auto"
-  options
-  printf 'value=%s\n\n' "$source"
-
-  printf 'part=input\ncell=i\ntext=%s\nplaceholder=Type or paste text\n\n' "$(esc "$input")"
-
-  printf 'part=target\ncell=t\n'
-  options
-  printf 'value=%s\n\n' "$target"
-
   case "$status" in
     missing) notice="$(name "$(field from "$answer")") to $(name "$target") is not installed" ;;
     unsupported) notice="macOS cannot translate between these languages" ;;
@@ -99,15 +87,35 @@ show() {
     *) notice= ;;
   esac
   [ -z "$notice" ] || output=$(esc "$notice")
-
-  printf 'part=output\ncell=o\ntext=%s\nplaceholder=Translation\nreadonly=true\n\n' "$output"
-
-  printf 'part=swap\ncell=x\npress=arrow.up.arrow.down\nkey=cmd+shift+s\n\n'
-
+  corner=.
   if [ "$status" = missing ]; then
-    printf 'part=settings\ncell=c\nalign=right\nlook=chip\ntitle=Open Settings\npress=true\n'
+    corner=settings
   elif [ -n "$output" ] && [ -z "$notice" ]; then
-    printf 'part=copy\ncell=c\nalign=right\nlook=chip\ntitle=Copy\npress=true\nkey=cmd+return\nclose=true\n'
+    corner=copy
+  fi
+
+  printf 'grid=source source . .\ngrid=input input input input\ngrid=input input input swap\ngrid=- - - swap\n'
+  printf 'grid=target target . swap\ngrid=output output output output\ngrid=output output output %s\n' "$corner"
+  printf 'card=source input target output\n\n'
+
+  printf 'choice=source\noption=auto:%s\n' "$auto"
+  options
+  printf 'value=%s\n\n' "$source"
+
+  printf 'field=input\ntext=%s\nplaceholder=Type or paste text\n\n' "$(esc "$input")"
+
+  printf 'choice=target\n'
+  options
+  printf 'value=%s\n\n' "$target"
+
+  printf 'field=output\ntext=%s\nplaceholder=Translation\nreadonly=true\n\n' "$output"
+
+  printf 'button=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\n\n'
+
+  if [ "$corner" = settings ]; then
+    printf 'button=settings\nalign=right\nlook=chip\ntitle=Open Settings\n'
+  elif [ "$corner" = copy ]; then
+    printf 'button=copy\nalign=right\nlook=chip\ntitle=Copy\nshortcut=cmd+return\nclose=true\n'
   fi
 }
 

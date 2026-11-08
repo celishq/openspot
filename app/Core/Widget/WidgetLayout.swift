@@ -1,8 +1,8 @@
 import CoreGraphics
 import Foundation
 
-/// How the places of a widget lie: a drawing in the letters of a sheet's grid, or one the app knows by name. Each letter is
-/// one place, and each place takes its form from the room its cell has on the card.
+/// How the places of a widget lie: a drawing in the letters of a sheet's grid. Each letter is one place, and each place
+/// takes its form from the room its cell has on the card.
 public struct WidgetLayout: Equatable, Sendable {
     /// How a place shows its metric.
     public enum Form: Equatable, Sendable {
@@ -19,17 +19,6 @@ public struct WidgetLayout: Equatable, Sendable {
     public let rows: Int
     public let letters: [String]
     public let slots: [SheetArea]
-
-    public static let single = WidgetLayout(name: "single", size: .square, drawing: ["a"])
-    public static let hero = WidgetLayout(name: "hero", size: .large, drawing: ["a a b b", "a a c c", "a a d d"])
-    public static let pair = WidgetLayout(name: "pair", size: .strip, drawing: ["a a b b"])
-    public static let row = WidgetLayout(name: "row", size: .strip, drawing: ["a b c d"])
-    public static let all = [single, hero, pair, row]
-
-    public init?(name: String) {
-        guard let layout = Self.all.first(where: { $0.name == name }) else { return nil }
-        self = layout
-    }
 
     /// Reads a drawing. Its size is a strip when it has one line, and else the largest size, unless the file asks for another.
     public init(drawing: [String], size: SpotSize? = nil) {

@@ -16,7 +16,7 @@ public enum SheetFaults {
     public static func of(layout: SheetLayout?, summary: TextBlock?, parts: [SpotPart]) -> [String] {
         var faults: [String] = []
         if summary?.value("layout") != nil { faults.append("a sheet has no layout key, so draw it with grid= lines") }
-        guard let layout else {
+        guard let layout, layout.isDrawn else {
             let flat = SheetPlacement(parts: parts, layout: SheetLayout(flat: parts))
             if flat.overflows, parts.contains(where: \.scrollsItself) {
                 faults.append("the sheet is too tall for a part that scrolls: \(Int(flat.height))pt of \(Int(SheetPlacement.maxHeight))pt")
@@ -48,20 +48,11 @@ public enum SheetFaults {
 
     private static func letterFaults(_ layout: SheetLayout, _ parts: [SpotPart]) -> [String] {
         var faults: [String] = []
-        var taken: [String: String] = [:]
+        var taken = Set<String>()
         for part in parts {
-            guard let letter = layout.letter(of: part) else {
-                faults.append("the part \(part.id) has no cell")
-                continue
-            }
-            if layout.areas[letter] == nil {
-                faults.append("the part \(part.id) names the cell \(letter), which the drawing does not have")
-            }
-            if let other = taken[letter] {
-                faults.append("the parts \(other) and \(part.id) share the cell \(letter)")
-            } else {
-                taken[letter] = part.id
-            }
+            guard let letter = layout.letter(of: part) else { continue }
+            if layout.areas[letter] == nil { faults.append("the part \(part.id) is not in the drawing") }
+            if !taken.insert(part.id).inserted { faults.append("two parts are called \(part.id)") }
         }
         return faults
     }
@@ -71,7 +62,6 @@ public enum SheetFaults {
         var faults: [String] = []
         if layout.repeatCount > 1 { faults.append("a sheet can repeat only one area") }
         if layout.areas[repeated.area] == nil { faults.append("the repeat names \(repeated.area), which the drawing does not have") }
-        if repeated.perLine < 1 { faults.append("the repeat needs a number of rows per line, such as repeat=\(repeated.area) 7") }
         for part in parts where layout.letter(of: part) == repeated.area {
             faults.append("the part \(part.id) stands on the repeated area \(repeated.area)")
         }
@@ -100,7 +90,7 @@ public enum SheetFaults {
             default:
                 break
             }
-            if let title = part.title, part.look != .key, !part.fillsHeight {
+            if let title = part.title, part.look != .pad, !part.fillsHeight {
                 var control = part.control == .none && part.press != .line ? 0 : controlWidth
                 if case .swatches = part.control { control = smallSwatchWidth }
                 let detail = part.detail.map { CGFloat($0.count) * detailLetterWidth + 2 * SheetPlacement.gap } ?? 0
@@ -109,7 +99,7 @@ public enum SheetFaults {
                 }
             }
             if !frame.isOnTop, !part.fillsHeight, frame.rect.height > SheetPlacement.rowHeight * 2, area.y0 == area.y1 {
-                faults.append("the part \(part.id) sits in rows that stretch, so use item= for a list")
+                faults.append("the part \(part.id) sits in rows that stretch, so draw a choice over two lines for a list")
             }
         }
         if sheet.overflows {

@@ -1,13 +1,13 @@
 #!/bin/sh
-# symbol=doc.text.magnifyingglass
-# subtitle=Find a file
-# key=f
+# icon=doc.text.magnifyingglass
+# detail=Find a file
+# shortcut=f
 # read=sheet
 case "$1" in
   read)
     printf 'search=script\n\n'
-    printf 'action=reveal\ntitle=Show in Finder\nkey=cmd+return\nclose=true\n\n'
-    printf 'action=copy\ntitle=Copy path\nkey=cmd+shift+c\nclose=true\n\n'
+    printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\nclose=true\n\n'
+    printf 'button=copy\ntitle=Copy path\nshortcut=cmd+shift+c\nclose=true\n\n'
     shift
     predicate=''
     for text in "$@"; do
@@ -26,7 +26,7 @@ case "$1" in
             folder = $0
             sub(/\/[^\/]*$/, "", folder)
             if (index(folder, home) == 1) folder = "~" substr(folder, length(home) + 1)
-            printf "row=%s\ndetail=%s\nrun=%s\nfile=%s\n\n", $NF, folder, $0, $0
+            printf "row=%s\ntitle=%s\ndetail=%s\nicon=%s\n\n", $0, $NF, folder, $0
           }'
     ;;
   reveal)

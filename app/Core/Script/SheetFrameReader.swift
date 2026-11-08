@@ -73,14 +73,14 @@ public struct SheetFrameReader: Sendable {
         return frame.isEmpty ? nil : frame
     }
 
-    /// The frame of one operating system command: `value` from a progress code that sets a percent, `toast` from a
+    /// The frame of one operating system command: a `gauge` from a progress code that sets a percent, `toast` from a
     /// notification, and none from any other.
     private static func frame(of command: Data) -> [String] {
         let text = String(decoding: command, as: UTF8.self)
         if text.hasPrefix("9;4;") {
             let parts = text.split(separator: ";", omittingEmptySubsequences: false)
             guard parts.count >= 4, ["1", "2", "4"].contains(parts[2]), let percent = Double(parts[3]) else { return [] }
-            return ["value=\(min(max(percent, 0), 100) / 100)\n"]
+            return ["gauge=progress\nvalue=\(min(max(percent, 0), 100) / 100)\n"]
         }
         guard text.hasPrefix("9;"), text.count > 2 else { return [] }
         return [TextBlock(fields: [.init(key: "toast", value: String(text.dropFirst(2)))]).text]

@@ -17,7 +17,7 @@ final class LinksPluginTests: SamplePluginsCase {
         let tools = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        let accessibility = "open=x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility\n"
+        let accessibility = "link=x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility\n"
         let refusal = "Openspot cannot move the window. Allow it in Accessibility, then press the key again."
         try "#!/bin/sh\nprintf '\(accessibility)'\necho '\(refusal)' >&2\nexit 1\n".writeScript(to: tools.appendingPathComponent("openspot"))
 
@@ -47,7 +47,7 @@ final class LinksPluginTests: SamplePluginsCase {
         let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
         try await withPrivateHome { folder in
             try await self.savedLink("https://icons.test/deep/page", in: links)
-            let expected = folder.appendingPathComponent(".config/openspot/data/links/icons/icons.test.icon").path
+            let expected = folder.appendingPathComponent(".config/openspot/data/links/icons/icons.test.png").path
 
             for _ in 0..<50 where !FileManager.default.fileExists(atPath: expected) {
                 try await Task.sleep(nanoseconds: 100_000_000)

@@ -13,8 +13,11 @@ struct SheetPartsView: View {
     var onRecord: (SpotPart) -> Void = { _ in }
     var list = ItemList()
     var onRun: (SpotItem) -> Void = { _ in }
+    var onSlot: (SpotItem, String, String?) -> Void = { _, _, _ in }
     var selection: (() -> Int)?
     var nudge: () -> SheetParts.Nudge = { SheetParts.Nudge.rest }
+    /// The plugin's own view at the size of the area of a `view` component (V1).
+    var customView: (CGSize) -> SpotCustomView? = { _ in nil }
     @FocusState private var focus: String?
     @Environment(\.spotIsShown) private var isShown
 
@@ -63,7 +66,7 @@ struct SheetPartsView: View {
                     .offset(x: line.minX, y: line.minY)
             }
             if let area = sheet.repeatFrame {
-                SpotRowsView(list: list, onRun: onRun, selection: selection)
+                SpotRowsView(list: list, onRun: onRun, selection: selection, onSlot: onSlot)
                     .frame(width: area.width, height: area.height)
                     .offset(x: area.minX, y: area.minY)
             }
@@ -77,7 +80,7 @@ struct SheetPartsView: View {
     }
 
     private func placed(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
-        content(part, frame)
+        drawn(part, frame)
             .frame(
                 maxWidth: frame.horizontal == .fill ? .infinity : nil,
                 maxHeight: frame.vertical == .fill ? .infinity : nil,
@@ -114,6 +117,15 @@ struct SheetPartsView: View {
     private func focusFirstField() {
         guard !panel.showsRows else { return }
         DispatchQueue.main.async { focus = panel.parts.first(where: \.isEditable)?.id }
+    }
+
+    @ViewBuilder
+    private func drawn(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
+        if part.kind == "view" {
+            customView(frame.rect.size)
+        } else {
+            content(part, frame)
+        }
     }
 
     @ViewBuilder
@@ -177,7 +189,7 @@ struct SheetPartsView: View {
             }
             if let title = part.title {
                 Text(title)
-                    .font(part.isSection || part.look == .section ? SpotType.title : SpotType.body)
+                    .font(part.isSection ? SpotType.title : SpotType.body)
                     .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
                     .layoutPriority(1)
@@ -233,7 +245,7 @@ struct SheetPartsView: View {
     private func lineButton(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         Button { onPress(part) } label: {
             switch part.look {
-            case .key:
+            case .pad:
                 Group {
                     if let call = work(part) {
                         SpotWorkMark(call: call, side: SpotTokens.workMark, stops: true)

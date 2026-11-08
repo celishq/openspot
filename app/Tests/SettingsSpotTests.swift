@@ -58,7 +58,7 @@ final class SettingsSpotTests: XCTestCase {
 
     func testTheSheetListsEachCommandOfAScriptAndGivesItAKey() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# name=Move\n# symbol=macwindow\n# command=left:Left side\n# command=right:Right side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# command=left:Left side\n# command=right:Right side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
         let runs = SpotRuns()
 
         let before = try await spot.items(timeout: 1).items
@@ -82,19 +82,20 @@ final class SettingsSpotTests: XCTestCase {
 
     func testARowShowsTheIconOfItsCommandOrElseOfItsScript() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# name=Move\n# symbol=macwindow\n# command=left:Left side:rectangle.lefthalf.filled\n# command=right:Right side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# command=left:Left side:rectangle.lefthalf.filled\n# command=right:Right side\n# command=fun:Fun:🎉\n".writeScript(to: folder.appendingPathComponent("move.sh"))
 
         let items = try await spot.items(timeout: 1).items
 
-        XCTAssertEqual(items.dropFirst(2).map(\.symbol), ["rectangle.lefthalf.filled", "macwindow"])
-        XCTAssertEqual(items.dropFirst(2).map(\.title), ["Left side", "Right side"])
-        XCTAssertEqual(items.dropFirst(2).map(\.subtitle), ["Move", "Move"])
+        XCTAssertEqual(items.dropFirst(2).map(\.symbol), ["rectangle.lefthalf.filled", "macwindow", nil])
+        XCTAssertEqual(items.dropFirst(2).map(\.glyph), [nil, nil, "🎉"])
+        XCTAssertEqual(items.dropFirst(2).map(\.title), ["Left side", "Right side", "Fun"])
+        XCTAssertEqual(items.dropFirst(2).map(\.subtitle), ["Move", "Move", "Move"])
     }
 
     func testAScriptWithCommandsAndNoReadOpensToTheKeysOfItsOwnCommands() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# name=Move\n# command=left:Left side\n[ \"$1\" = left ] && printf 'toast=Left\\n'\n".writeScript(to: folder.appendingPathComponent("move.sh"))
-        try "#!/bin/sh\n# name=Other\n# command=up:Up\n".writeScript(to: folder.appendingPathComponent("other.sh"))
+        try "#!/bin/sh\n# title=Move\n# command=left:Left side\n[ \"$1\" = left ] && printf 'toast=Left\\n'\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# title=Other\n# command=up:Up\n".writeScript(to: folder.appendingPathComponent("other.sh"))
         let scan = try PluginFolder(url: folder).scan(shipped: ShippedSpot.commands(folder: folder, guide: folder, app: "", config: file))
         let move = try XCTUnwrap(scan.commands.first { $0.id == "move" })
         let runs = SpotRuns()
@@ -137,7 +138,7 @@ final class SettingsSpotTests: XCTestCase {
     }
 
     func testARowCarriesItsKey() {
-        let items = PluginOutput(text: "row=Open\nrun=open\nshortcut=ctrl+k\n\nrow=Other\nrun=other\n").items
+        let items = PluginOutput(text: "row=open\ntitle=Open\nshortcut=ctrl+k\n\nrow=other\ntitle=Other\n").items
 
         XCTAssertEqual(items.map(\.shortcut), ["ctrl+k", nil])
     }
@@ -153,7 +154,7 @@ final class SettingsSpotTests: XCTestCase {
 
     func testAPartRecordsAKeyAndReportsItsValue() throws {
         var part = try XCTUnwrap(SpotPart(block: TextBlock(fields: [
-            .init(key: "part", value: "open"), .init(key: "title", value: "Open"), .init(key: "shortcut", value: "ctrl+k")
+            .init(key: "hotkey", value: "open"), .init(key: "title", value: "Open"), .init(key: "value", value: "ctrl+k")
         ])))
 
         XCTAssertEqual(part.value, "ctrl+k")
@@ -162,8 +163,8 @@ final class SettingsSpotTests: XCTestCase {
     }
 
     func testTheCatalogTeachesThePartAndFindsABadKey() {
-        XCTAssertTrue(PartCatalog.text.contains("`shortcut="))
-        XCTAssertEqual(PluginOutput(text: "part=a\nshortcut=k\n").partFaults, ["the part a needs a shortcut that holds cmd, ctrl or option: k"])
-        XCTAssertEqual(PluginOutput(text: "part=a\nshortcut=ctrl+k\n").partFaults, [])
+        XCTAssertTrue(PartCatalog.text.contains("`hotkey`"))
+        XCTAssertEqual(PluginOutput(text: "hotkey=a\nvalue=k\n").partFaults, ["the part a needs a shortcut that holds cmd, ctrl or option: k"])
+        XCTAssertEqual(PluginOutput(text: "hotkey=a\nvalue=ctrl+k\n").partFaults, [])
     }
 }

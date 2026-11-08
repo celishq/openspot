@@ -17,7 +17,7 @@ struct SpotWindow {
         let owner = AXUIElementCreateApplication(app.processIdentifier)
         guard let window = attribute(owner, kAXFocusedWindowAttribute) ?? attribute(owner, kAXMainWindowAttribute) else {
             guard AXIsProcessTrusted() else {
-                print("open=\(SpotClipboard.accessibility)")
+                print("link=\(SpotClipboard.accessibility)")
                 throw PluginError.fault("Openspot cannot move the window. Allow it in Accessibility, then press the key again.")
             }
             throw PluginError.fault("Openspot cannot find a window of \(app.localizedName ?? "the front app").")

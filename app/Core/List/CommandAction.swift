@@ -56,7 +56,7 @@ public struct CommandAction: Equatable, Sendable {
     public init?(id: String, block: TextBlock) {
         guard let title = block.value("title") else { return nil }
         var key: ActionKey?
-        if let name = block.value("key") {
+        if let name = block.value("shortcut") {
             guard let parsed = ActionKey(text: name) else { return nil }
             key = parsed
         }

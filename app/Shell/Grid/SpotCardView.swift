@@ -30,7 +30,7 @@ struct SpotCardView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) { content }
-            .padding(drawnView == nil ? SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget) : 0)
+            .padding(drawnView != nil && !isDrawn ? 0 : SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget || isDrawn))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))
             .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, strength: SpotMotion.pressedGlass, blursBehind: showsPress, rimSize: CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))))
@@ -52,7 +52,11 @@ struct SpotCardView: View {
 
     @ViewBuilder
     private var content: some View {
-        if let view = drawnView {
+        if entry.item == nil, let drawing = entry.state.face.drawing(for: size) {
+            SpotCardDrawing(drawing: drawing, face: entry.state.face, card: size, readings: readings, view: { room in
+                drawnView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, views: model.views) }
+            }) { model.setCardPart(entry.id, $0, to: $1) }
+        } else if let view = drawnView {
             SpotCustomView(source: view, values: entry.state.values, card: size, views: model.views)
         } else if let layout = entry.command.layout {
             SpotWidgetView(layout: layout, places: entry.command.places, readings: readings, card: size)
@@ -67,7 +71,7 @@ struct SpotCardView: View {
 
     /// The source of the plugin's own view, which fills the whole card in place of its glyph and words (V3).
     private var ownView: String? {
-        entry.item == nil ? entry.command.view : nil
+        entry.item == nil && entry.state.face.hasView ? entry.command.view : nil
     }
 
     /// The source of the plugin's own view once it is built or has failed. While it builds, the card is drawn as any card
@@ -76,6 +80,11 @@ struct SpotCardView: View {
         guard let ownView else { return nil }
         if case .building = model.views.phase(of: ownView) { return nil }
         return ownView
+    }
+
+    /// Whether its script draws the card from a drawing for its size (U5).
+    private var isDrawn: Bool {
+        entry.item == nil && entry.state.face.drawing(for: size) != nil
     }
 
     private var isBuildingView: Bool {

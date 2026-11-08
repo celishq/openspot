@@ -72,24 +72,26 @@ public struct CatalogSpot: Equatable, Sendable {
         let own = own
         let head = [
             TextBlock(fields: [.init(key: "recents", value: "false")]),
-            TextBlock(fields: [.init(key: "action", value: "open"), .init(key: "title", value: "Select"), .init(key: "close", value: "false")]),
-            TextBlock(fields: [.init(key: "action", value: Self.selectAllID), .init(key: "title", value: "Select all"), .init(key: "key", value: "cmd+shift+a"), .init(key: "scope", value: "command")]),
-            TextBlock(fields: [.init(key: "action", value: Self.reviewID), .init(key: "title", value: "Review code")])
+            TextBlock(fields: [.init(key: "button", value: "open"), .init(key: "title", value: "Select"), .init(key: "close", value: "false")]),
+            TextBlock(fields: [.init(key: "button", value: Self.selectAllID), .init(key: "title", value: "Select all"), .init(key: "shortcut", value: "cmd+shift+a"), .init(key: "scope", value: "command")]),
+            TextBlock(fields: [.init(key: "button", value: Self.reviewID), .init(key: "title", value: "Review code")])
         ]
         let spots = choices.map { command in
             let id = PluginFolder.coreID(of: command)
-            var fields: [TextBlock.Field] = [.init(key: "row", value: command.name), .init(key: "run", value: id), .init(key: "symbol", value: command.symbol)]
-            fields += [("image", command.image), ("file", command.file), ("glyph", command.glyph)].compactMap { key, value in value.map { .init(key: key, value: $0) } }
+            var fields: [TextBlock.Field] = [
+                .init(key: "row", value: id), .init(key: "title", value: command.name),
+                .init(key: "icon", value: command.image ?? command.file ?? command.glyph ?? command.symbol)
+            ]
             let detail = own.contains(id) ? "In your plugins folder" : command.subtitle
             if let detail { fields.append(.init(key: "detail", value: detail)) }
             fields.append(.init(key: "on", value: String(own.contains(id) || enabled.contains(id))))
             return TextBlock(fields: fields)
         }
         let build = TextBlock(fields: [
-            .init(key: "row", value: "Build your own"),
+            .init(key: "row", value: Self.buildRun),
+            .init(key: "title", value: "Build your own"),
             .init(key: "detail", value: "Make a spot, or read how they work"),
-            .init(key: "run", value: Self.buildRun),
-            .init(key: "symbol", value: "hammer"),
+            .init(key: "icon", value: "hammer"),
             .init(key: "hides", value: Self.reviewID)
         ])
         let loginRow = login.map { TextBlock(fields: $0.row.fields + [.init(key: "hides", value: Self.reviewID)]) }

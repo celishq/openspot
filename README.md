@@ -24,6 +24,7 @@ Openspot gives each tool the same clean look and the power of your Mac. Your too
 - **Fast.** Openspot draws the panel when it starts, so it opens the moment you press your key.
 - **One look.** A tool prints data, and Openspot draws it. So each tool looks like part of your Mac.
 - **Any language.** Write tools in shell, Python, Swift or any language you like. A Swift tool can even open its own window.
+- **Real power.** A tool can stream a long job, or stay running and talk to another process, such as a local server.
 - **Made for agents.** One guide tells your agent all that it needs.
 - **Safe to share.** Send a tool as one file. Your friend sees what it runs before they add it.
 
@@ -46,8 +47,8 @@ Then make an Openspot tool in ~/.config/openspot/plugins that shows the weather 
 
 ```sh
 #!/bin/sh
-# name=Hello
-# symbol=hand.wave
+# title=Hello
+# icon=hand.wave
 echo "toast=Hello"
 ```
 
@@ -56,7 +57,8 @@ echo "toast=Hello"
 **Add one you got.** Double-click the `.spot` file, read what it runs and press ⌘⏎.
 
 The [`plugins`](plugins) folder has more tools to copy, such as battery, windows and a color picker.
-The [`examples`](examples) folder has a tool that draws its card with its own SwiftUI view, as [spec 03](spec/03-views.md) describes.
+The [`examples`](examples) folder has tools that draw their card with their own SwiftUI view, as [spec 03](spec/03-views.md)
+describes, and Relay, which stays running and sends lines to another process, as [spec 05](spec/05-stay.md) describes.
 
 ## Widgets and keys
 
@@ -64,16 +66,16 @@ A widget shows the live values of several tools on one card. Write it in a `.tom
 
 ```toml
 [[widgets]]
-name = "Morning"
-layout = "hero"
-places = ["agents", "battery", "cpu", "disk"]
+title = "Morning"
+grid = ["a a b b", "a a c c", "a a d d"]
+places = { a = "agents", b = "battery", c = "cpu", d = "disk" }
 opens = "links"
 ```
 
-`places` names one tool for each cell, by its ID: its path with no extension, such as `cpu` or `home/coffee`. A widget in a
-folder with its tools names them by file name alone, and the whole folder is shared as one. The layouts are `single`,
-`hero`, `pair` and `row`. A widget can also draw its own layout, such as `grid = ["a a b b", "a a c c"]` with
-`places = { a = "agents", b = "battery", c = "cpu" }`. `opens` names the tool that a click opens, and that tool has no card of its own.
+`grid` draws the card in letters, one line for each row, and each letter is one place. `places` names one tool for each
+letter, by its ID: its path with no extension, such as `cpu` or `home/coffee`. A widget in a folder with its tools names
+them by file name alone, and the whole folder is shared as one. `opens` names the tool that a click opens, and that tool
+has no card of its own.
 
 Settings gives a key to each command that a tool lists. It writes the key to `~/.config/openspot/config.toml`, and you can
 write it there by hand too:

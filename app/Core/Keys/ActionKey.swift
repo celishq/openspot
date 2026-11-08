@@ -1,6 +1,6 @@
 import Foundation
 
-/// A key with its modifiers, as a script names it, such as cmd+return or cmd+shift+n.
+/// A key with its modifiers, as a script names it, such as cmd+return or cmd+shift+n, or `escape` alone.
 public struct ActionKey: Hashable, Sendable {
     public let name: String
     public let isCommand: Bool
@@ -16,9 +16,36 @@ public struct ActionKey: Hashable, Sendable {
         var parts = text.lowercased().split(separator: "+").map(String.init)
         guard let last = parts.popLast() else { return nil }
         guard parts.allSatisfy({ $0 == "cmd" || $0 == "shift" }) else { return nil }
+        if last == "escape" {
+            guard parts.isEmpty else { return nil }
+            self.init(name: last)
+            return
+        }
         let isNamed = last == "return" || last == "backspace"
         guard isNamed || (last.count == 1 && last.first?.isLetter == true) || (last.count == 1 && last.first?.isNumber == true) else { return nil }
         self.init(name: last, isCommand: parts.contains("cmd"), isShift: parts.contains("shift"))
+    }
+
+    /// Reads a key as the footer writes it, such as ⌘⇧N, ⏎ or Esc. A label with only modifiers is no key.
+    public init?(label: String) {
+        if label == "Esc" {
+            self.init(name: "escape")
+            return
+        }
+        var rest = Substring(label)
+        let isCommand = rest.hasPrefix("⌘")
+        if isCommand { rest = rest.dropFirst() }
+        let isShift = rest.hasPrefix("⇧")
+        if isShift { rest = rest.dropFirst() }
+        let name: String
+        switch rest {
+        case "⏎", "↩": name = "return"
+        case "⌫": name = "backspace"
+        default:
+            guard rest.count == 1, let first = rest.first, first.isLetter || first.isNumber else { return nil }
+            name = rest.lowercased()
+        }
+        self.init(name: name, isCommand: isCommand, isShift: isShift)
     }
 
     /// The key as the Mac writes it, such as ⌘⇧N.
@@ -27,6 +54,7 @@ public struct ActionKey: Hashable, Sendable {
         switch name {
         case "return": key = "⏎"
         case "backspace": key = "⌫"
+        case "escape": return "Esc"
         default: key = name.uppercased()
         }
         return (isCommand ? "⌘" : "") + (isShift ? "⇧" : "") + key

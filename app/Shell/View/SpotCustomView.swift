@@ -1,23 +1,25 @@
 import OpenspotCore
 import SwiftUI
 
-/// A plugin's own view, which fills its whole card and is clipped to the card's shape. It gets the head of the last read
-/// and the card's size, inset, corner and theme, and it draws only: a press goes to the card (V3, V5). A card loads
-/// it, and draws itself as any card with running work while it builds. A view that fails shows why, shrunk to fit.
+/// A plugin's own view, which fills its area of a card or a sheet drawing, or else its whole card, and is clipped to that
+/// shape. It gets the block of its `view` component and its size, inset, corner and theme, and it draws only (V1, V3, V4,
+/// V5). A card or a sheet loads it. A view that fails shows why, shrunk to fit.
 /// The view exists only while the panel shows, so a hidden panel runs none of its work.
 struct SpotCustomView: View {
     let source: String
     let values: [String: [String]]
     let card: SpotSize
+    /// The size of its area in a card drawing. Nil fills the whole card.
+    var room: CGSize?
     let views: SpotViews
     @Environment(\.spotIsShown) private var isShown
 
     private var size: CGSize {
-        CGSize(width: SpotTokens.width(columns: card.columns), height: SpotTokens.height(rows: card.rows))
+        room ?? CGSize(width: SpotTokens.width(columns: card.columns), height: SpotTokens.height(rows: card.rows))
     }
 
     private var corner: CGFloat {
-        SpotTokens.corner(for: card)
+        room == nil ? SpotTokens.corner(for: card) : SpotTokens.radius - SpotTokens.padding
     }
 
     var body: some View {
@@ -28,7 +30,7 @@ struct SpotCustomView: View {
     }
 
     /// What the view reads of its card, by the keys of `SpotInput`.
-    private var room: [String: Any] {
+    private var input: [String: Any] {
         [
             "size": size,
             "inset": SpotTokens.padding,
@@ -49,7 +51,7 @@ struct SpotCustomView: View {
         case .building:
             EmptyView()
         case .ready(let make) where isShown:
-            make(values, room, { _ in })
+            make(values, input, { _ in })
         case .ready:
             EmptyView()
         case .failed(let reason):

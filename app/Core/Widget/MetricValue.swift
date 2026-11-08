@@ -7,6 +7,8 @@ public struct MetricValue: Equatable, Sendable {
         case good
         case warn
         case bad
+        /// A plain dot that says that a thing is active.
+        case on
     }
 
     /// One line of a metric of the rows kind.
@@ -57,24 +59,26 @@ public struct MetricValue: Equatable, Sendable {
         self.isHidden = isHidden
     }
 
-    /// Reads what a metric prints. Nothing means nothing to show. Rows count themselves, and all else needs a title.
+    /// Reads what a metric prints: its value when that is a `text`, `gauge` or `graph` (H1), or its rows. Nothing means nothing to show. Rows
+    /// count themselves, and all else needs a title.
     public init?(output: PluginOutput) {
         let rows = output.rows.compactMap { block in
-            block.value("row").map { Row(title: $0, detail: block.value("detail"), tone: block.value("tone").flatMap(Tone.init)) }
+            block.value("row").map { Row(title: block.value("title") ?? $0, detail: block.value("detail"), tone: block.value("tone").flatMap(Tone.init)) }
         }
-        guard let block = output.summary else {
+        guard let block = output.metric else {
             guard output.errors.isEmpty || !rows.isEmpty else { return nil }
             self.init(title: rows.isEmpty ? "–" : String(rows.count), rows: rows.isEmpty ? nil : rows, isHidden: rows.isEmpty)
             return
         }
-        guard let title = block.value("title") ?? (rows.isEmpty ? nil : String(rows.count)) else { return nil }
+        let isNumber = block.fields.first?.key == "number"
+        guard let title = (isNumber ? block.value("value") : block.value("title")) ?? (rows.isEmpty ? nil : String(rows.count)) else { return nil }
         let points = block.values("point").compactMap(Double.init).filter(\.isFinite)
         self.init(
             title: title,
-            detail: block.value("detail"),
-            symbol: block.value("symbol"),
+            detail: isNumber ? block.value("title") : block.value("detail"),
+            symbol: Icon(text: block.value("icon"))?.symbol,
             tone: block.value("tone").flatMap(Tone.init),
-            value: block.number("value"),
+            value: isNumber ? nil : block.number("value"),
             points: points.isEmpty ? nil : points,
             max: block.number("max"),
             rows: rows.isEmpty ? nil : rows,

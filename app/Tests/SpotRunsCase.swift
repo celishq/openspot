@@ -96,6 +96,28 @@ class SpotRunsCase: XCTestCase {
         try await Task.sleep(for: .seconds(seconds))
     }
 
+    /// Writes a staying script. It logs each line of its stdin, and after each block prints the frame with `head` and the
+    /// `end` of that call in its head.
+    @discardableResult
+    func staying(header: String = "stay=true", head: String = "", frame: String = "row=a\\ntitle=A\\n") throws -> URL {
+        try script(header: header, """
+        trap 'touch "\(path("ended"))"' EXIT
+        while IFS= read -r line; do
+          printf '%s\\n' "$line" >> '\(path("blocks"))'
+          case "$line" in call=*) call=${line#call=} ;; esac
+          [ -n "$line" ] || printf 'end=%s\\n\(head)\\n\(frame)---\\n' "$call"
+        done
+        """)
+    }
+
+    /// The blocks that a staying script got, one string for each, with no `call` or `reason` line unless `ids` keeps them.
+    func blocks(ids: Bool = false) -> [String] {
+        let text = (try? String(contentsOfFile: path("blocks"), encoding: .utf8)) ?? ""
+        return text.components(separatedBy: "\n\n").filter { !$0.isEmpty }.map { block in
+            ids ? block : block.split(separator: "\n").filter { !$0.hasPrefix("call=") && !$0.hasPrefix("reason=") }.joined(separator: "\n")
+        }
+    }
+
     /// The first scanned script's sheet, with each failure that it tells the person, before the script can start.
     func toldSheet() throws -> (sheet: SpotRun, told: () -> [String]) {
         let sheet = runs.sheet(for: try XCTUnwrap(PluginFolder(url: folder).scan().scripts.first))

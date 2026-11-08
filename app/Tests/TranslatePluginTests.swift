@@ -26,11 +26,12 @@ final class TranslatePluginTests: SamplePluginsCase {
 
             let output = try await translate.items(timeout: 10)
 
+            XCTAssertFalse(translate.stays)
             XCTAssertEqual(translate.read, .sheet)
             XCTAssertEqual(translate.kind, .list)
             XCTAssertEqual(output.kind, .list)
             XCTAssertEqual(output.sheetFaults, [])
-            XCTAssertEqual(output.layout?.rows.first, ["s", "s", ".", "."])
+            XCTAssertEqual(output.layout?.rows.first, ["source", "source", ".", "."])
             XCTAssertEqual(output.parts.map(\.id), ["source", "input", "target", "output", "swap"])
             XCTAssertEqual(self.text(of: "source", in: output), "auto")
             XCTAssertEqual(self.text(of: "target", in: output), "en")

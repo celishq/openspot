@@ -15,7 +15,7 @@ final class CatalogSpotTests: XCTestCase {
         file = ConfigFile(url: root.appendingPathComponent("config.toml"))
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: core, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# subtitle=Open app\n# symbol=star\n".writeScript(to: core.appendingPathComponent("zebra.sh"))
+        try "#!/bin/sh\n# detail=Open app\n# icon=star\n".writeScript(to: core.appendingPathComponent("zebra.sh"))
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.sh"))
         try "#!/bin/sh\n# read=5\n".writeScript(to: core.appendingPathComponent("cpu.sh"))
     }
@@ -84,7 +84,7 @@ final class CatalogSpotTests: XCTestCase {
     }
 
     func testTurningOnACoreWidgetLoadsItInAScan() async throws {
-        try "[[widgets]]\nname = \"Overview\"\nlayout = \"single\"\nplaces = [\"cpu\"]\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
         let spot = try spot
         let items = try await spot.items(timeout: 1).items
         let row = try XCTUnwrap(items.first { $0.title == "Overview" })
@@ -170,7 +170,7 @@ final class CatalogSpotTests: XCTestCase {
         let review = try ReviewSpot(spot: shared, folder: folder, canAdd: false)
         let sheet = try review.answer(["read"])
 
-        XCTAssertFalse(sheet.contains("part=install"))
+        XCTAssertFalse(sheet.contains("text=install"))
         XCTAssertTrue(sheet.contains("apps.sh"))
     }
 
@@ -185,7 +185,7 @@ final class CatalogSpotTests: XCTestCase {
     }
 
     func testTheRowOfACoreSpotReadsOnFromItsBlock() throws {
-        let block = try XCTUnwrap(TextBlock.blocks(in: "row=Apps\nrun=apps\non=true\n").first)
+        let block = try XCTUnwrap(TextBlock.blocks(in: "row=apps\ntitle=Apps\non=true\n").first)
 
         XCTAssertEqual(SpotItem(block: block)?.isOn, true)
     }

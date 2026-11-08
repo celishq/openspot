@@ -1,7 +1,7 @@
 #!/bin/sh
-# symbol=text.quote
-# subtitle=Copy text
-# key=n
+# icon=text.quote
+# detail=Copy text
+# shortcut=n
 # size=small
 # read=panel
 # global=true
@@ -32,25 +32,25 @@ form() {
   jq -nr --arg title "$1" --argjson v "$2" "$esc"'"title=\($title)
 
 field=title
-label=Name
-value=\($v.title | esc)
+title=Name
+text=\($v.title | esc)
 required=true
 
 field=content
-label=Text
+title=Text
 type=multiline
-value=\($v.content | esc)
+text=\($v.content | esc)
 required=true"'
 }
 
 case "$1" in
   read)
-    printf 'action=open\ntitle=Copy\n\n'
-    printf 'action=paste\ntitle=Paste\nkey=cmd+return\nclose=true\n\n'
-    printf 'action=edit\ntitle=Edit\nkey=cmd+e\nform=true\n\n'
-    printf 'action=delete\ntitle=Delete\nkey=cmd+backspace\nconfirm=Press again to delete\n\n'
-    printf 'action=new\ntitle=New snippet\nkey=cmd+n\nscope=command\nform=true\n\n'
-    load | jq -r "$esc"'.[] | "row=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\nrun=\(.id | esc)\n"'
+    printf 'button=open\ntitle=Copy\n\n'
+    printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\nclose=true\n\n'
+    printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\n\n'
+    printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\n\n'
+    printf 'button=new\ntitle=New snippet\nshortcut=cmd+n\nscope=command\nform=true\n\n'
+    load | jq -r "$esc"'.[] | "row=\(.id | esc)\ntitle=\(.title | esc)\ndetail=\(.content | gsub("\\s+"; " ") | .[0:200] | esc)\n"'
     ;;
   new)
     title=$(value title)

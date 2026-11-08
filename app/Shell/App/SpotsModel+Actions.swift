@@ -35,6 +35,10 @@ extension SpotsModel {
             pressPart(part)
             return true
         }
+        if key == ActionKey(name: "escape"), let target, let action = target.entry.command.actions(for: target.item).first(where: { $0.key == key }) {
+            run(action, on: target)
+            return true
+        }
         if key == ActionKey(name: "escape") {
             allowSheetMotion()
             if !stepBack() { dismiss() }
@@ -57,8 +61,19 @@ extension SpotsModel {
         return true
     }
 
-    /// Takes Esc, the arrows, return and the keys of the parts, and leaves all others to the text areas.
+    /// Does what the key of a footer label does, as if it were pressed: Return runs the selected row.
+    func pressHint(_ label: String) {
+        guard let key = ActionKey(label: label) else { return }
+        if !handleKey(key), key == ActionKey(name: "return") { runSelected() }
+    }
+
+    /// Takes the keys of the parts, Esc, the arrows and return, and leaves all others to the text areas. A part's own Esc wins
+    /// over closing the sheet.
     private func handlePanelKey(_ key: ActionKey, _ panel: SheetParts) -> Bool {
+        if let part = panel.parts.first(where: { $0.key == key }) {
+            pressPart(part)
+            return true
+        }
         if key == ActionKey(name: "escape") {
             allowSheetMotion()
             closeList()
@@ -70,10 +85,6 @@ extension SpotsModel {
         }
         if panel.scrollsByArrows, key == ActionKey(name: "up") || key == ActionKey(name: "down") {
             openSheet?.scrollPanel(by: key.name == "up" ? -1 : 1)
-            return true
-        }
-        if let part = panel.parts.first(where: { $0.key == key }) {
-            pressPart(part)
             return true
         }
         guard key == ActionKey(name: "return"), let part = panel.selectedPart else { return false }
@@ -189,7 +200,7 @@ extension SpotsModel {
         if recording != nil { return "Esc Cancel" }
         if isEditing { return "S Size   H Hide   ⇧ Arrows Move   Esc Done" }
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
-        if let panel = openPanel, !panel.showsRows { return panel.hint { work(of: $0) != nil } }
+        if let panel = openPanel, !panel.showsRows || panel.drawsKeys { return panel.hint { work(of: $0) != nil } }
         let keys = target.flatMap { target in
             actionMenu(on: target)?.hint { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil }
         } ?? "Esc Close"

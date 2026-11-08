@@ -43,7 +43,13 @@ public struct SheetParts: Equatable, Sendable {
     /// The keys of its parts, in words for the footer. The key of a running part says that it stops the call.
     public func hint(stopping isRunning: (SpotPart) -> Bool) -> String {
         let keys = parts.compactMap { part in part.key.map { "\($0.label) \(isRunning(part) ? "Stop" : part.title ?? part.id.capitalized)" } }
-        return (keys + ["Esc Close"]).joined(separator: "   ")
+        let close = parts.contains { $0.key == ActionKey(name: "escape") } ? [] : ["Esc Close"]
+        return (keys + close).joined(separator: "   ")
+    }
+
+    /// Whether its drawing places a button with a key, so that the footer shows the keys of its parts also beside rows.
+    public var drawsKeys: Bool {
+        parts.contains { part in part.key != nil && layout?.areas[part.id] != nil }
     }
 
     /// Whether it draws the rows of the script in one of its areas, so that the search field and the arrows go to them.
@@ -64,7 +70,7 @@ public struct SheetParts: Equatable, Sendable {
     /// Whether a part with no icon keeps an empty icon column, so that its words line up with the lines that have one. Only a
     /// line in a sheet with no drawing does, and only when another line there has an icon.
     public func keepsIconColumn(_ part: SpotPart) -> Bool {
-        layout == nil && !part.isSection && part.look != .section && part.symbol == nil && !part.fillsHeight
+        layout?.isDrawn != true && !part.isSection && part.symbol == nil && !part.fillsHeight
             && parts.contains { !$0.isSection && $0.symbol != nil }
     }
 
@@ -109,7 +115,7 @@ public struct SheetParts: Equatable, Sendable {
         let isNewest = generation == nil || generation == self.generation
         if output.layout != nil, isNewest { return take(output, answering: self.generation, keeping: id) }
         let kept = parts.first { $0.id == id }?.value
-        for part in output.parts where isNewest || (changes[part.id] ?? 0) <= (generation ?? 0) {
+        for part in output.parts.map({ $0.drawn(in: layout) }) where isNewest || (changes[part.id] ?? 0) <= (generation ?? 0) {
             if let index = parts.firstIndex(where: { $0.id == part.id }) {
                 parts[index] = part
             } else {

@@ -4,7 +4,10 @@ import Foundation
 public enum CommandLineCall: Equatable, Sendable {
     case check(String?)
     case checkSheet
-    case render(String)
+    /// Draws the sheet on stdin, with the plugin's view from a Swift file when it names one.
+    case render(String, view: String?)
+    /// Draws the card of the output on stdin at a size, from its drawing for that size.
+    case renderCard(SpotSize, String)
     case sandbox(String?)
     case catalog
     case colorPick
@@ -25,7 +28,8 @@ public enum CommandLineCall: Equatable, Sendable {
     public static let usage = """
     openspot check [folder]                      Reports the faults of a plugins folder.
     openspot check --sheet                       Reports the faults of a sheet on stdin.
-    openspot render <file.png>                   Draws the sheet on stdin to a picture.
+    openspot render [--view file] <file.png>     Draws the sheet on stdin to a picture, with its view from a Swift file.
+    openspot render --card <size> <file.png>     Draws its card at a size, such as wide, to a picture.
     openspot sandbox [file]                      Opens a window to try a sheet from text, a file or a script.
     openspot catalog                             Prints each part that a script can print.
     openspot color pick                          Prints the colour the person picks.
@@ -61,7 +65,11 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("check", _) where rest.count <= 1: self = .check(rest.first)
         case ("catalog", nil): self = .catalog
         case ("sandbox", _) where rest.count <= 1: self = .sandbox(rest.first)
-        case ("render", let path?) where rest.count == 1: self = .render(path)
+        case ("render", "--card") where rest.count == 3:
+            guard let size = SpotSize(name: rest[1]) else { self = .unknown(arguments.joined(separator: " ")); return }
+            self = .renderCard(size, rest[2])
+        case ("render", "--view") where rest.count == 3: self = .render(rest[2], view: rest[1])
+        case ("render", let path?) where rest.count == 1: self = .render(path, view: nil)
         case ("color", "pick") where rest.count == 1: self = .colorPick
         case ("clipboard", "copy") where rest.count <= 2: self = .clipboardCopy(rest.dropFirst().first)
         case ("clipboard", "paste") where rest.count == 1: self = .clipboardPaste

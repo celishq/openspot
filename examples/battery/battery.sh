@@ -1,14 +1,14 @@
 #!/bin/sh
-# name=Liquid battery
-# symbol=battery.100
-# subtitle=The battery as a liquid, drawn by a Metal shader
+# title=Liquid battery
+# icon=battery.100
+# detail=The battery as a liquid, drawn by a Metal shader
 # read=panel
 # size=strip
 # view=battery.swift
 [ "$1" = read ] || exit 0
 line=$(pmset -g batt | grep -E '[0-9]+%')
 if [ -z "$line" ]; then
-  printf 'title=–\ndetail=No battery\n'
+  printf 'view=liquid\ntitle=–\ndetail=No battery\n'
   exit 0
 fi
 percent=$(printf '%s' "$line" | grep -oE '[0-9]+%' | tr -d '%')
@@ -19,4 +19,4 @@ case "$line" in
   *charging*) state=charging; detail=Charging ;;
   *) state=discharging; detail="" ;;
 esac
-printf 'title=%s\nstate=%s\ndetail=%s\n' "$percent" "$state" "${detail:-On battery}"
+printf 'view=liquid\ntitle=%s\nstate=%s\ndetail=%s\n' "$percent" "$state" "${detail:-On battery}"

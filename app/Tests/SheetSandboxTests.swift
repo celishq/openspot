@@ -10,15 +10,15 @@ final class SheetSandboxTests: XCTestCase {
 
     func testTextDrawsASheetAndReportsItsFaults() {
         var sandbox = SheetSandbox()
-        sandbox.take(text: "grid=a\n\npart=a\ncell=b\ntitle=A\n")
+        sandbox.take(text: "grid=b\n\ntext=a\ntitle=A\n")
 
         XCTAssertEqual(sandbox.panel?.parts.map(\.id), ["a"])
-        XCTAssertEqual(sandbox.faults, ["the part a names the cell b, which the drawing does not have"])
+        XCTAssertEqual(sandbox.faults, ["the part a is not in the drawing"])
     }
 
     func testTextThatDrawsNothingLeavesTheLastSheet() {
         var sandbox = SheetSandbox()
-        sandbox.take(text: "part=a\ntitle=A\n")
+        sandbox.take(text: "text=a\ntitle=A\n")
         sandbox.take(text: "gri")
 
         XCTAssertEqual(sandbox.panel?.parts.map(\.id), ["a"])
@@ -28,7 +28,7 @@ final class SheetSandboxTests: XCTestCase {
 
     func testAChangeShowsAtOnceAndIsLogged() {
         var sandbox = SheetSandbox()
-        sandbox.take(text: "part=a\non=false\n")
+        sandbox.take(text: "switch=a\non=false\n")
 
         sandbox.set("true", of: "a")
         sandbox.press("a")
@@ -40,10 +40,10 @@ final class SheetSandboxTests: XCTestCase {
     func testAFrameOfAScriptShowsItsTextAndFaults() {
         var sandbox = SheetSandbox()
 
-        sandbox.note(frame: "grid=a\n\npart=a\ncell=b\ntitle=A\n")
+        sandbox.note(frame: "grid=b\n\ntext=a\ntitle=A\n")
 
-        XCTAssertEqual(sandbox.text, "grid=a\n\npart=a\ncell=b\ntitle=A\n")
-        XCTAssertEqual(sandbox.faults, ["the part a names the cell b, which the drawing does not have"])
+        XCTAssertEqual(sandbox.text, "grid=b\n\ntext=a\ntitle=A\n")
+        XCTAssertEqual(sandbox.faults, ["the part a is not in the drawing"])
         XCTAssertNil(sandbox.panel)
     }
 }

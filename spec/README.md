@@ -6,10 +6,11 @@ app, which the Build spot opens and copies for an AI. How the app itself works i
 | Spec                                    | Status | Needs | What it holds                                                                    |
 | --------------------------------------- | ------ | ----- | -------------------------------------------------------------------------------- |
 | [01 Core](01-core.md)                   | final  |       | The file, the format, the header, the moments, the calls and the life of a call. |
-| [02 What a script prints](02-output.md) | final  | 01    | Rows, actions, forms, toggles, sliders, sheets and metrics.                      |
-| [03 Views](03-views.md)                 | draft  | 01 02 | A plugin's own SwiftUI view in its card.                                         |
+| [02 What a script prints](02-output.md) | draft  | 01    | Components, drawings, rows, repeats, buttons, cards and metrics.                 |
+| [03 Views](03-views.md)                 | draft  | 01 02 | A plugin's own SwiftUI view in an area.                                          |
+| [05 Stay](05-stay.md)                   | draft  | 01 02 | One process that stays and talks both ways over stdio, such as a local server.   |
 
-Specs 00 and 04 to 10 are gone. Their numbers are not used again.
+A number that a spec gave up is not used again.
 
 ## Goals
 
@@ -19,7 +20,7 @@ In order. An earlier goal wins when two goals conflict.
 2. **Openspot draws a plugin's data.** A script prints data, and Openspot draws it. A plugin can add its own SwiftUI
    view to its spot, and a script can open its own Mac window.
 3. **Nothing runs by surprise.** Openspot runs a script only when a person acts or when its header says so.
-4. **A plugin has real power.** It can use any Mac API, keep state in files and stream a long process.
+4. **A plugin has real power.** It can use any Mac API, keep state in files, stream a long process and stay running.
 5. **An LLM writes a working plugin.** With `GUIDE.md` alone, an LLM writes a plugin that passes `openspot check` and
    works on the first try.
 
@@ -32,7 +33,7 @@ These rules come from the way Nostr writes its NIPs.
 3. **Only the contract.** What passes between a script and the host: the header, the arguments, stdin, stdout and the
    environment. Not how the host draws, its keys or its timings, unless a script must be written for a number.
 4. **The example first.** One real example, then the rules.
-5. **Each rule once,** in the prose. A rule keeps an ID, such as `C3`, only when code or a test names it, and an ID is
+5. **Each rule once,** in the prose. A rule keeps an ID, such as `C6`, only when code or a test names it, and an ID is
    never changed or used again.
 6. **A short table of decisions** at the end: each choice that later work must not break, with the one it rejected.
 7. **One way to do one thing,** and each word in one spec, as the registry shows.
@@ -43,19 +44,24 @@ These rules come from the way Nostr writes its NIPs.
 
 | Word                                                                                                     | Kind                 | Spec |
 | -------------------------------------------------------------------------------------------------------- | -------------------- | ---- |
-| `name`, `symbol`, `image`, `file`, `glyph`, `subtitle`, `key`, `size`, `read`, `data`, `drop`, `command` | Header key           | 01   |
-| `global`, `tray`                                                                                         | Header key           | 02   |
+| `title`, `icon`, `detail`, `shortcut`, `size`, `read`, `data`, `drop`, `command`, `global`, `tray`       | Header key           | 01   |
 | `view`                                                                                                   | Header key           | 03   |
+| `stay`                                                                                                   | Header key           | 05   |
 | `sheet`, `panel`, a number, `launch`, `wake`                                                             | Moment               | 01   |
-| `toast`, `open`                                                                                          | Block kind           | 01   |
-| `row`, `action`, `field`, `part`, `section`                                                              | Block kind           | 02   |
-| `read`                                                                                                   | Reserved word        | 01   |
-| `run`, `open`, `drop`, `on`, `off`, `level`                                                              | Default id           | 01   |
+| `read`                                                                                                   | Reserved call        | 01   |
+| `run`, `open`, `drop`                                                                                    | Default id           | 01   |
 | `OPENSPOT_REASON`, `OPENSPOT_DATA`, `OPENSPOT_SH`                                                        | Environment variable | 01   |
+| `OPENSPOT_STAY`                                                                                          | Environment variable | 05   |
 | `openspot <noun> <verb>`                                                                                 | Command              | 01   |
+| `text`, `number`, `gauge`, `graph`, `picture`, `spot`, `switch`, `slider`, `field`, `choice`, `hotkey`, `button`, `section`, `row`, `repeat`, `template` | Block kind | 02 |
+| `view`                                                                                                   | Block kind           | 03   |
+| `grid`, `grid.<size>`, `card`, `pad`, `main`, `title`, `detail`, `size`, `search`, `recents`, `toast`, `link` | Head key        | 02   |
+| `end`                                                                                                    | Head key             | 05   |
+| `call`, `reason`, `arg`, `stop`                                                                          | Stdin key            | 05   |
 
 ## How to extend
 
 An old script never sees a word that it did not ask for. To add a default id, a moment, an environment variable, an
-`openspot` noun, a part or a block kind, add one word to one spec and to the registry. An old app skips a key or a block
-that it does not know (R2, R10), and a new default id reaches only a script that asks for it (C2).
+`openspot` noun, a component or a block kind, add one word to one spec and to the registry. An old app skips a key that
+it does not know, and skips and reports a block that it does not know. A new default id reaches only a script that asks
+for it.

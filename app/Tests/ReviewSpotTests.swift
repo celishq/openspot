@@ -81,7 +81,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testItTakesItsNameDescriptionAndSymbolFromTheHeader() throws {
-        let review = try review("name=Weather now\nsymbol=sun.max\nsubtitle=Today and tomorrow")
+        let review = try review("title=Weather now\nicon=sun.max\ndetail=Today and tomorrow")
 
         XCTAssertEqual(review.name, "Weather now")
         XCTAssertEqual(review.symbol, "sun.max")
@@ -92,14 +92,14 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAWidgetNamesItselfBeforeTheMetricsItPlaces() throws {
-        let widget = "[[widgets]]\nname = \"Desk\"\nlayout = \"single\"\nplaces = [\"cpu\"]\n"
-        let review = try ReviewSpot(spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# name=CPU\n# read=5\n", true)]), folder: folder)
+        let widget = "[[widgets]]\ntitle = \"Desk\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\n"
+        let review = try ReviewSpot(spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# read=5\n", true)]), folder: folder)
 
         XCTAssertEqual(review.name, "Desk")
     }
 
     func testAProgramWarningComesBeforeTheDescription() throws {
-        let long = "#!/bin/sh\n# subtitle=Nice\n" + String(repeating: "x", count: ReviewSpot.textLimit)
+        let long = "#!/bin/sh\n# detail=Nice\n" + String(repeating: "x", count: ReviewSpot.textLimit)
         let files = [SharedSpot.File(path: "tool", isExecutable: true, contents: Data(long.utf8))]
 
         XCTAssertEqual(try ReviewSpot(spot: SharedSpot(files: files), folder: folder).subtitle, "Holds a program that you cannot read")
@@ -107,7 +107,7 @@ final class ReviewSpotTests: XCTestCase {
 
     func testADragOfASpotSaysWhatADropInstalls() throws {
         let file = folder.appendingPathComponent("any name.spot")
-        try spot([("weather.sh", "#!/bin/sh\n# name=Weather\n# symbol=sun.max\n# subtitle=Today\n", true)]).data.write(to: file)
+        try spot([("weather.sh", "#!/bin/sh\n# title=Weather\n# icon=sun.max\n# detail=Today\n", true)]).data.write(to: file)
         let target = folder.appendingPathComponent("plugins")
 
         let drop = SpotDrop(paths: [file.path], folder: target)
@@ -138,7 +138,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAPlainScriptRunsOnlyWhenItIsUsed() throws {
-        let review = try review("name=Weather\nread=sheet")
+        let review = try review("title=Weather\nread=sheet")
 
         XCTAssertEqual(review.subtitle, "Runs only when you use it")
         let text = try shown(review)
@@ -147,17 +147,24 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testItSaysWhatRunsByItself() throws {
-        let review = try review("name=Weather\nread=panel,wake,launch,30")
+        let review = try review("title=Weather\nread=panel,wake,launch,30")
 
         XCTAssertEqual(review.subtitle, "Runs by itself")
         let text = try shown(review)
         XCTAssertTrue(text.hasPrefix("Runs by itself\nWeather: when the panel opens, when the Mac wakes, when Openspot starts, every 30 seconds\n"), text)
     }
 
+    func testAStayingScriptSaysSo() throws {
+        let review = try review("title=Weather\nstay=true\nread=sheet")
+
+        let text = try shown(review)
+        XCTAssertTrue(text.contains("Weather: keeps running while it is in use"), text)
+    }
+
     func testAMetricThatAWidgetPlacesRunsWhenThePanelOpens() throws {
-        let widget = "[[widgets]]\nname = \"Desk\"\nlayout = \"single\"\nplaces = [\"cpu\"]\n"
+        let widget = "[[widgets]]\ntitle = \"Desk\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\n"
         let review = try ReviewSpot(
-            spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# name=CPU\n# read=sheet\n", true)]),
+            spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# read=sheet\n", true)]),
             folder: folder
         )
 
@@ -214,7 +221,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAddPutsItInTheFolderThatTheNextScanReads() throws {
-        let answer = try review("name=Weather\nsymbol=sun.max").answer(["install"])
+        let answer = try review("title=Weather\nicon=sun.max").answer(["install"])
 
         XCTAssertEqual(PluginOutput(text: answer).summary?.value("toast"), "Weather added")
         let scan = try PluginFolder(url: folder).scan()
@@ -223,7 +230,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAShippedSpotOffersTheReviewAsASheet() async throws {
-        let review = try review("name=Weather")
+        let review = try review("title=Weather")
         let command = ShippedSpot.command(reviewing: review)
 
         XCTAssertEqual(command.name, "Weather")

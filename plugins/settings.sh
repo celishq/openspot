@@ -1,7 +1,7 @@
 #!/bin/sh
-# name=System Settings
-# symbol=gearshape
-# subtitle=Open a setting
+# title=System Settings
+# icon=gearshape
+# detail=Open a setting
 # read=panel
 # global=true
 export LC_ALL=en_US.UTF-8
@@ -40,12 +40,12 @@ pane() {
        elif ($info.CFBundleDisplayName // "" | test("^[A-Z][a-z]+([A-Z][a-z]+)+$") | not) then [$info.CFBundleDisplayName]
        else [] end) as $titles
     | select($titles | length > 0)
-    | (if ($info | has("CFBundleIcons") or has("CFBundleIconName")) then "file=\($app)" else "symbol=gearshape" end) as $icon
+    | (if ($info | has("CFBundleIcons") or has("CFBundleIconName")) then "icon=\($app)" else "icon=gearshape" end) as $icon
     | ($link + $info.CFBundleIdentifier) as $pane
-    | ($titles[] | "row=\(esc)\ndetail=System Settings\nrun=\($pane)#\(esc)\n\($icon)\n"),
+    | ($titles[] | "row=\($pane)#\(esc)\ntitle=\(esc)\ndetail=System Settings\n\($icon)\n"),
       ($terms | to_entries[] | .key as $anchor | (.value.localizableStrings // [])[]
         | select(.title != null and (.title | ascii_downcase) != ($titles[0] | ascii_downcase))
-        | "row=\(.title | esc)\ndetail=System Settings › \($titles[0] | esc)\nrun=\($pane)?\($anchor)#\(.title | esc)\n\($icon)\n"
+        | "row=\($pane)?\($anchor)#\(.title | esc)\ntitle=\(.title | esc)\ndetail=System Settings › \($titles[0] | esc)\n\($icon)\n"
           + ((.index // "") | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(. != "")) | map("keyword=\(esc)\n") | join("")))'
 }
 
@@ -53,10 +53,10 @@ case "$1" in
   read)
     full=$(language)
     base=${full%%_*}
-    cache="$OPENSPOT_DATA/rows-$(sw_vers -buildVersion 2>/dev/null)-$full"
+    cache="$OPENSPOT_DATA/rows3-$(sw_vers -buildVersion 2>/dev/null)-$full"
     if [ ! -s "$cache" ]; then
       mkdir -p "$OPENSPOT_DATA"
-      rm -f "$OPENSPOT_DATA"/rows-*
+      rm -f "$OPENSPOT_DATA"/rows*
       grep -l com.apple.Settings.extension.ui "$panes"/*.appex/Contents/Info.plist 2>/dev/null | while read -r info; do
         pane "${info%/Contents/Info.plist}"
       done > "$cache.$$" && mv "$cache.$$" "$cache"

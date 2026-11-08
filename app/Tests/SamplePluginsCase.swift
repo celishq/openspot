@@ -203,8 +203,8 @@ class SamplePluginsCase: XCTestCase {
         #!/bin/sh
         case "$1" in
           clipboard) \(Self.fakeClipboard(in: folder)) ;;
-          emoji) printf 'row=thumbs up, %s\\nrun=👍\\nglyph=👍\\n\\n' "$3" ;;
-          symbols) printf 'row=rightwards arrow\\ndetail=Rightwards Arrows\\nrun=→\\nglyph=→\\n' ;;
+          emoji) printf 'row=👍\\ntitle=thumbs up, %s\\nicon=👍\\n\\n' "$3" ;;
+          symbols) printf 'row=→\\ntitle=rightwards arrow\\ndetail=Rightwards Arrows\\nicon=→\\n' ;;
         esac
 
         """

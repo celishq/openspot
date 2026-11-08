@@ -379,6 +379,11 @@ final class SpotsModel {
         sheets[id]?.setLevel(value)
     }
 
+    /// Sends a change or a press of a component that a card draws (U5).
+    func setCardPart(_ id: String, _ part: String, to value: String?) {
+        sheets[id]?.setCardPart(part, to: value)
+    }
+
     func runSelected() {
         guard !isEditing else { return }
         if openList != nil {
@@ -591,7 +596,7 @@ final class SpotsModel {
         open(ShippedSpot.settingsID)
     }
 
-    /// Opens a sheet and ends what another left running.
+    /// Opens a sheet and ends what another left running. The sheet of a staying script opens with its first frame.
     func open(_ id: String) {
         guard let sheet = sheets[id] else { return }
         sheets.values.filter { $0 !== sheet }.forEach { $0.close() }
@@ -703,6 +708,11 @@ final class SpotsModel {
     func createFromSearch() {
         guard let action = createAction, let entry = openEntry else { return }
         openForm(action, on: (entry, nil), prefill: openItems?.query ?? "")
+    }
+
+    /// Sends a change of a slot of a row, or a press of one when it has no value (U9).
+    func slot(_ slot: String, of item: SpotItem, to value: String?) {
+        if let value { openSheet?.set(slot: slot, of: item, to: value) } else { openSheet?.press(slot: slot, of: item) }
     }
 
     func runItem(_ item: SpotItem) {

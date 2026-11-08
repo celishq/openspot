@@ -8,6 +8,8 @@ struct SpotRowsView: View {
     let onRun: (SpotItem) -> Void
     /// Reads the selected row where it is called. Nil reads it from the list.
     var selection: (() -> Int)?
+    /// Takes a change or a press of a slot of a row: the row, the slot and its new value (U9).
+    var onSlot: (SpotItem, String, String?) -> Void = { _, _, _ in }
     @State private var edges = SpotScrollEdges()
     @State private var position = ScrollPosition(edge: .top)
     @State private var reading = GridScrollReading()
@@ -50,7 +52,7 @@ struct SpotRowsView: View {
 
     private var scroll: some View {
         Group {
-            if isGrid { gridScroll } else { lineScroll }
+            if list.isBento { bentoScroll } else if isGrid { gridScroll } else { lineScroll }
         }
         .modifier(SpotScrollEdgeTracker(edges: $edges))
         .mask(edgeFade)
@@ -58,7 +60,7 @@ struct SpotRowsView: View {
     }
 
     private var bottomInset: CGFloat {
-        SpotTokens.sheetFits(rows: list.shown.count, perLine: list.perLine) ? SpotTokens.padding : Self.bottomFade
+        SpotTokens.sheetFits(rows: list.perLine == 1 ? list.spans : list.shown.count, perLine: list.perLine) ? SpotTokens.padding : Self.bottomFade
     }
 
     private var lineScroll: some View {
@@ -103,12 +105,16 @@ struct SpotRowsView: View {
         let selectedIndex = selected()
         return LazyVStack(spacing: SpotTokens.listRowGap) {
             ForEach(Array(list.shown.enumerated()), id: \.element.run) { index, item in
-                Button {
-                    onRun(item)
-                } label: {
-                    rowLabel(item, isSelected: index == selectedIndex)
+                if let template = list.template(of: item) {
+                    templateRow(item, template: template, isSelected: index == selectedIndex)
+                } else {
+                    Button {
+                        onRun(item)
+                    } label: {
+                        rowLabel(item, isSelected: index == selectedIndex)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
         }
     }
@@ -119,9 +125,16 @@ struct SpotRowsView: View {
         return LazyVGrid(columns: columns, spacing: SpotTokens.listRowGap) {
             ForEach(list.shown.indices, id: \.self) { index in
                 let item = list.shown[index]
-                SpotGridCell(item: item, side: side)
-                    .equatable()
-                    .onTapGesture { onRun(item) }
+                if let template = list.template(of: item) {
+                    SpotTemplateRow(item: item, template: template, size: CGSize(width: side, height: side), place: "1x1") { onSlot(item, $0, $1) }
+                        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
+                        .contentShape(row)
+                        .onTapGesture { onRun(item) }
+                } else {
+                    SpotGridCell(item: item, side: side)
+                        .equatable()
+                        .onTapGesture { onRun(item) }
+                }
             }
         }
         .overlay(alignment: .topLeading) { GridRing(selection: selected, count: list.shown.count, perLine: list.perLine, side: side) }
@@ -137,10 +150,77 @@ struct SpotRowsView: View {
         }
     }
 
+    /// A row that its template draws. A press outside its controls picks it.
+    private func templateRow(_ item: SpotItem, template: RowTemplate, isSelected: Bool) -> some View {
+        let height = SpotTokens.listRowHeight(span: template.span)
+        return SpotTemplateRow(
+            item: item,
+            template: template,
+            size: CGSize(width: SheetPlacement.width - 2 * SpotTokens.padding, height: height - 8)
+        ) { onSlot(item, $0, $1) }
+        .padding(.horizontal, SpotTokens.padding)
+        .frame(height: height)
+        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
+        .modifier(SpotSelectionRing(isSelected: isSelected, shape: row))
+        .contentShape(row)
+        .onTapGesture { onRun(item) }
+    }
+
+    /// The rows of a bento: the drawing of the repeat, tile under tile, with each row drawn at the size of its place.
+    private var bentoScroll: some View {
+        let drawing = list.drawing
+        let side = SpotTokens.square(perLine: drawing.columns)
+        let step = side + SpotTokens.listRowGap
+        let lines = drawing.lineCount(rows: list.shown.count)
+        let selectedIndex = selected()
+        return ScrollViewReader { proxy in
+            ScrollView(showsIndicators: false) {
+                ZStack(alignment: .topLeading) {
+                    ForEach(Array(list.shown.enumerated()), id: \.element.run) { index, item in
+                        let area = drawing.area(of: index)
+                        let size = CGSize(
+                            width: CGFloat(area.x1 - area.x0 + 1) * step - SpotTokens.listRowGap,
+                            height: CGFloat(area.y1 - area.y0 + 1) * step - SpotTokens.listRowGap
+                        )
+                        bentoCell(item, size: size, place: drawing.size(of: index), isSelected: index == selectedIndex)
+                            .id(item.run)
+                            .offset(x: CGFloat(area.x0) * step, y: CGFloat(area.y0) * step)
+                    }
+                }
+                .frame(width: SheetPlacement.width, height: max(CGFloat(lines) * step - SpotTokens.listRowGap, 0), alignment: .topLeading)
+                .padding(.top, SpotTokens.padding)
+                .padding(.bottom, bottomInset)
+            }
+            .onChange(of: selected()) { _, index in
+                if list.shown.indices.contains(index) { withAnimation(SpotMotion.arrowScroll) { proxy.scrollTo(list.shown[index].run) } }
+            }
+        }
+    }
+
+    private func bentoCell(_ item: SpotItem, size: CGSize, place: String, isSelected: Bool) -> some View {
+        Group {
+            if let template = list.template(of: item) {
+                SpotTemplateRow(item: item, template: template, size: size, place: place) { onSlot(item, $0, $1) }
+            } else {
+                SpotItemIcon(item: item, size: min(size.width, size.height) * 0.5)
+                    .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: min(size.width, size.height) * 0.5) }
+                    .frame(width: size.width, height: size.height)
+            }
+        }
+        .frame(width: size.width, height: size.height)
+        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
+        .modifier(SpotSelectionRing(isSelected: isSelected, shape: row))
+        .contentShape(row)
+        .onTapGesture { onRun(item) }
+        .accessibilityLabel(item.title)
+        .accessibilityAddTraits(.isButton)
+    }
+
     private func rowLabel(_ item: SpotItem, isSelected: Bool) -> some View {
         let marks = SearchQuery(text: list.query).marks(in: item)
         return HStack(spacing: SpotTokens.padding - 5) {
             SpotItemIcon(item: item, size: SpotTokens.listIconSize)
+                .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: SpotTokens.listIconSize) }
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 SpotMarkedText(text: item.title, marks: marks.title, font: SpotType.body, ink: SpotTheme.ink)
                 if let subtitle = item.subtitle {
@@ -174,6 +254,7 @@ private struct SpotGridCell: View, Equatable {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
         SpotItemIcon(item: item, size: SpotTokens.listIconSize)
+            .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: SpotTokens.listIconSize) }
             .frame(width: side, height: side)
             .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
             .contentShape(shape)
