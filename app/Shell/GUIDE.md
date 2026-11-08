@@ -59,13 +59,13 @@ open -a Calendar
 | `symbol` | An SF Symbol name. |
 | `subtitle` | The second line. |
 | `key` | One letter. Hold the key that opens the panel, and press this letter to run it. |
-| `size` | `wide` (the default), `small`, `square` or `strip`. |
+| `size` | `wide` (the default), `small`, `square`, `strip` or `large`. |
 | `order` | Its place in the grid. A lower number comes first, and the default is 0. |
 | `grid` | `false` to keep the spot off the grid. Search and its key still find it. With `panel` in its `read`, the first block can print `grid=true` or `grid=false` to change this, and `size` and `order` too. The person's choice in Settings wins. |
 | `read` | When Openspot reads the script. See below. |
 | `rank` | Shows its rows in the main search. A lower number comes first. Needs `panel`, `launch` or a number in its `read`. A number also needs a `key`, or Openspot refuses the plugin. |
 | `tray` | `true` to show a metric in the menu bar. Needs a number in its `read`, or `stay=true`. |
-| `stay` | `true` to keep the script running. See "Sheets of parts". |
+| `stay` | `true` to keep the script running between calls. See "Scripts that stay". |
 | `drop` | A list of file extensions, `folder` or `*`. Its card takes files that a person drops. See "Drops". |
 | `command` | An ID, a title and an optional SF Symbol, such as `command=left:Left side:rectangle.lefthalf.inset.filled`. One line for each command. Without a symbol, its row shows the `symbol` of the script. See "Commands with keys". |
 | `data` | The name of a data folder to share with other spots. See "Rules for scripts". |
@@ -375,6 +375,16 @@ seconds, put a number in its header: `read=5`.
 Openspot shows a change at once, and only the answer to the newest change shows. It waits for a pause in typing and in
 a slider's motion. Text that the person is typing stays as typed until they press something.
 
+Closing the panel closes a sheet of parts and drops its values, and the next open reads again. A sheet of rows stays open.
+
+To read the sheet when the panel opens, so that it opens at its full size, use `read=panel`. Otherwise use `read=sheet`.
+
+To try a sheet, run `openspot sandbox`, or `openspot sandbox <file>` to watch a file or run a script. It shows the real
+sheet and its faults at once. `openspot check --sheet` reports the faults of a sheet on stdin, and `openspot render
+<file.png>` draws it to a picture.
+
+## How long a call runs
+
 A call can keep printing, as `ffmpeg` does. A line `---` ends a frame, and the app draws it at once. A frame with a layout
 replaces the sheet, and a frame with only parts changes those parts.
 
@@ -417,7 +427,7 @@ A tool that already reports progress to a terminal needs no change. Openspot rea
 as `value`, and the notification code `ESC ] 9;<text>` as a toast, each as a frame of its own. It removes each other escape
 code, such as a colour, from the text.
 
-Closing the panel closes a sheet of parts and drops its values, and the next open reads again. A sheet of rows stays open.
+## Scripts that stay
 
 A script with `# stay=true` in its header runs while something wants it, so that a model or a connection stays loaded
 between calls. Something wants it while its sheet is open and the panel is open, while the panel is open and a widget
@@ -435,12 +445,6 @@ each later call shows as running until its `end`, the script keeps running for i
 
 If it ends and something still wants it, the next moment or call starts it again. After 3 failures in one minute, Openspot
 tells the person, and does not start it again until a scan finds its file changed.
-
-To read the sheet when the panel opens, so that it opens at its full size, use `read=panel`. Otherwise use `read=sheet`.
-
-To try a sheet, run `openspot sandbox`, or `openspot sandbox <file>` to watch a file or run a script. It shows the real
-sheet and its faults at once. `openspot check --sheet` reports the faults of a sheet on stdin, and `openspot render
-<file.png>` draws it to a picture.
 
 ## MCP servers
 
