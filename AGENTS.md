@@ -8,6 +8,8 @@
   - `Shell/` — the menu bar app, the panel and the hotkey. Imports AppKit and SwiftUI.
   - `StandIn/` — a small program for tests: a capability that needs no Mac feature. It does not ship.
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
+- `app/Keywords/` holds the CLDR keywords of emoji and symbols, one file per language. `scripts/emoji-keywords.py` writes
+  it from a pinned CLDR version, and the build copies it into the app.
 - `plugins/` holds the source of the core spots. The build copies it into the app, and they run from there.
 - `plans/` holds design plans. It is git-ignored.
 - `.temp/` holds throwaway mock-ups and screenshots. It is git-ignored.

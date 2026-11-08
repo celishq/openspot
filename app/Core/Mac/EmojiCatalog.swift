@@ -32,10 +32,12 @@ public struct EmojiCatalog: Sendable {
 
     private let resources: URL
     private let languages: [String]
+    private let keywords: GlyphKeywords
 
-    public init(resources: URL = standardResources, languages: [String] = Locale.preferredLanguages) {
+    public init(resources: URL = standardResources, languages: [String] = Locale.preferredLanguages, keywords: GlyphKeywords? = nil) {
         self.resources = resources
         self.languages = languages
+        self.keywords = keywords ?? GlyphKeywords(languages: languages)
     }
 
     /// Each emoji as one row, in the order of the Mac. An emoji with no form in this tone stays as it is.
@@ -53,7 +55,7 @@ public struct EmojiCatalog: Sendable {
                 .init(key: "row", value: names[emoji] ?? emoji),
                 .init(key: "run", value: form),
                 .init(key: "glyph", value: form)
-            ])
+            ] + keywords.of(emoji).map { .init(key: "keyword", value: $0) })
             text += row.text + "\n"
         }
         return text

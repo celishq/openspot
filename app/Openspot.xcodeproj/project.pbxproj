@@ -167,6 +167,7 @@
 		A67FB54C403612762B1C5185 /* TrayMarkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8871F0DEA0292B7C5FCC70 /* TrayMarkTests.swift */; };
 		A783AE2CEADD08760629074D /* TomlDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DDF7D377024DA0679F3C8EF /* TomlDocument.swift */; };
 		A95ABD5DF54F4768F87F5C21 /* LinksPluginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CEECBE98988EBFFB54496A0 /* LinksPluginTests.swift */; };
+		A9651902740496FFCED303F1 /* GlyphKeywords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D7B8FC971C5895746897ABA /* GlyphKeywords.swift */; };
 		A9F5582B88F7FEA8BE8F0308 /* SpotWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CFA6717BC498DBE732137A5 /* SpotWindow.swift */; };
 		AB2E84CC3D2D7627555DC134 /* SpotRoundButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB3C463D807C5294C4367A9 /* SpotRoundButton.swift */; };
 		AB86C0A4DC2B9C60D33CCDB9 /* SpotArrowScroll.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FBF38806826AAD61118F1A5 /* SpotArrowScroll.swift */; };
@@ -303,6 +304,7 @@
 		1B7CF0FE4A88F09730375B32 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1BA3B77A16C1E0C4D246D752 /* SpotTrayMarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotTrayMarkView.swift; sourceTree = "<group>"; };
 		1C362E457EDE5671E191C260 /* SpotTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotTheme.swift; sourceTree = "<group>"; };
+		1D7B8FC971C5895746897ABA /* GlyphKeywords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlyphKeywords.swift; sourceTree = "<group>"; };
 		1DDCDFD7FA971F9107B9E74C /* SpotsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotsPanel.swift; sourceTree = "<group>"; };
 		1F44C354042BD7C9FF8E1271 /* QuitSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitSpot.swift; sourceTree = "<group>"; };
 		1F768E1AE84E0DFDD983194E /* ItemListTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemListTests.swift; sourceTree = "<group>"; };
@@ -619,6 +621,7 @@
 			isa = PBXGroup;
 			children = (
 				A5AAA360A49768EF47CBDE0D /* EmojiCatalog.swift */,
+				1D7B8FC971C5895746897ABA /* GlyphKeywords.swift */,
 				880126AA2A6FFF90441687DD /* HexColor.swift */,
 				9C462005019A07CDCB802C03 /* LanguageCodes.swift */,
 				6690DD894311538EAE43555B /* LoginItem.swift */,
@@ -1049,6 +1052,7 @@
 				9377494807D855EA77601A31 /* Frameworks */,
 				FA5BD7132374A84E31CCF0E4 /* Link the openspot command */,
 				9A5AB7CBDD408EEAF102FD46 /* Copy the core spots */,
+				A5068AFF8D453D11CC2A8674 /* Copy the emoji keywords */,
 				0D4FDAB32F3B0E2B15E19EB2 /* Fill the dev state */,
 			);
 			buildRules = (
@@ -1241,6 +1245,25 @@
 			shellPath = /bin/sh;
 			shellScript = "core=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots\"\nrm -rf \"$core\"\nmkdir -p \"$(dirname \"$core\")\"\ncp -RL \"$SRCROOT/../plugins\" \"$core\"\n";
 		};
+		A5068AFF8D453D11CC2A8674 /* Copy the emoji keywords */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy the emoji keywords";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "keywords=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Keywords\"\nrm -rf \"$keywords\"\ncp -R \"$SRCROOT/Keywords\" \"$keywords\"\n";
+		};
 		FA5BD7132374A84E31CCF0E4 /* Link the openspot command */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -1294,6 +1317,7 @@
 				577D71A519F841B9DF675F17 /* FoldedText.swift in Sources */,
 				B512F4DB9EE1FF9D89C7C95E /* FormDraft.swift in Sources */,
 				A1949216347BF77E579B61C1 /* GlobalKey.swift in Sources */,
+				A9651902740496FFCED303F1 /* GlyphKeywords.swift in Sources */,
 				BE61D30092F9EA96A8FDAEEF /* HexColor.swift in Sources */,
 				BCE416C19F5777B28C90D7E3 /* HintWords.swift in Sources */,
 				7AB9332B0D2D4606BDAE45AD /* ItemForm.swift in Sources */,

@@ -12,10 +12,12 @@ public struct SymbolCatalog: Sendable {
 
     private let resources: URL
     private let languages: [String]
+    private let keywords: GlyphKeywords
 
-    public init(resources: URL = standardResources, languages: [String] = Locale.preferredLanguages) {
+    public init(resources: URL = standardResources, languages: [String] = Locale.preferredLanguages, keywords: GlyphKeywords? = nil) {
         self.resources = resources
         self.languages = languages
+        self.keywords = keywords ?? GlyphKeywords(languages: languages)
     }
 
     /// Each symbol as one row, in the order of the Character Viewer. A symbol in two categories shows once, in the first.
@@ -34,6 +36,7 @@ public struct SymbolCatalog: Sendable {
                     var fields: [TextBlock.Field] = [.init(key: "row", value: name)]
                     if let subtitle { fields.append(.init(key: "detail", value: subtitle)) }
                     fields += [.init(key: "run", value: symbol), .init(key: "glyph", value: symbol)]
+                    fields += keywords.of(symbol).map { .init(key: "keyword", value: $0) }
                     text += TextBlock(fields: fields).text + "\n"
                 }
             }

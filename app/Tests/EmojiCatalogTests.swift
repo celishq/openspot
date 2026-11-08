@@ -27,8 +27,15 @@ final class EmojiCatalogTests: XCTestCase {
         try meta.write(to: folder.appendingPathComponent("emojimeta.dat"))
     }
 
+    private func write(keywords: String, language: String = "en") throws {
+        let place = folder.appendingPathComponent("Keywords")
+        try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
+        try keywords.write(to: place.appendingPathComponent("\(language).tsv"), atomically: true, encoding: .utf8)
+    }
+
     private func rows(tone: EmojiCatalog.Tone = .none, languages: [String] = ["en"]) throws -> [SpotItem] {
-        PluginOutput(text: try EmojiCatalog(resources: folder, languages: languages).rows(tone: tone)).items
+        let keywords = GlyphKeywords(folder: folder.appendingPathComponent("Keywords"), languages: languages)
+        return PluginOutput(text: try EmojiCatalog(resources: folder, languages: languages, keywords: keywords).rows(tone: tone)).items
     }
 
     func testRowsFollowTheOrderOfTheMac() throws {
@@ -113,5 +120,35 @@ final class EmojiCatalogTests: XCTestCase {
         XCTAssertTrue(toned.contains { $0.run == "👍🏽" && $0.title == "thumbs up" })
         XCTAssertTrue(toned.contains { $0.run == "🧑🏽‍🤝‍🧑🏽" })
         XCTAssertTrue(toned.contains { $0.run == "👨‍👩‍👧" })
+    }
+
+    func testARowTakesTheKeywordsOfItsEmoji() throws {
+        try write(names: ["❤️": "red heart"], order: ["❤️"])
+        try write(keywords: "❤\tlove\tred\n")
+
+        XCTAssertEqual(try rows().first?.keywords, ["love", "red"])
+    }
+
+    func testATonedEmojiTakesTheKeywordsOfItsBase() throws {
+        try write(names: ["👍": "thumbs up"], order: ["👍", "👍🏽"])
+        try write(keywords: "👍\tgood\n")
+
+        XCTAssertEqual(try rows(tone: .medium).first?.keywords, ["good"])
+    }
+
+    func testKeywordsComeInTheFirstLanguageThatHasThem() throws {
+        try write(names: ["👍": "thumbs up"], order: ["👍"])
+        try write(keywords: "👍\tgood\n")
+        try write(keywords: "👍\tхорошо\n", language: "ru")
+
+        XCTAssertEqual(try rows(languages: ["ru-RU", "en-US"]).first?.keywords, ["хорошо"])
+        XCTAssertEqual(try rows(languages: ["xx-XX"]).first?.keywords, ["good"])
+    }
+
+    func testTheBundledKeywordsFindASmile() {
+        let folder = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Keywords")
+
+        XCTAssertTrue(GlyphKeywords(folder: folder, languages: ["en"]).of("😀").contains("smile"))
+        XCTAssertTrue(GlyphKeywords(folder: folder, languages: ["en"]).of("→").contains("right"))
     }
 }
