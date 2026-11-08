@@ -209,35 +209,6 @@ final class ScriptProcessTests: XCTestCase {
         XCTAssertTrue(runs(child))
     }
 
-    func testAnEndClosesTheInputThenStopsThenKillsTheGroupOfAStayingScript() async throws {
-        let plugin = try writePlugin("stay.sh", "#!/bin/sh\ntrap '' TERM\n\(writesPid("script"))\n\(deafChild())printf 'a=1\\n---\\n'\n\(String.longLoop)\n")
-        let live = ScriptProcess(url: plugin.url, mode: .stays, stopPause: Self.stopPause)
-        var frames = try live.start().makeAsyncIterator()
-        _ = try await frames.next()
-        let script = try await pid("script")
-        let child = try await pid("child")
-        let started = Date()
-
-        live.end()
-        try await wait { !self.runs(script) && !self.runs(child) }
-
-        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), Self.stopPause * 2)
-    }
-
-    func testAnEndReachesAChildAfterAStayingScriptEndedWithItsInput() async throws {
-        let plugin = try writePlugin("stay.sh", "#!/bin/sh\n\(deafChild())printf 'a=1\\n---\\n'\ncat >/dev/null\n")
-        let live = ScriptProcess(url: plugin.url, mode: .stays, stopPause: Self.stopPause)
-        var frames = try live.start().makeAsyncIterator()
-        _ = try await frames.next()
-        let child = try await pid("child")
-        let started = Date()
-
-        live.end()
-        try await wait { !self.runs(child) }
-
-        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(started), Self.stopPause * 2)
-        XCTAssertFalse(live.isRunning)
-    }
 
     func testACallGoesOnWhileAChildHoldsItsOutput() async throws {
         let plugin = try writePlugin("child.sh", "#!/bin/sh\n(sleep 0.3; printf 'late=1\\n') &\nexit 0\n")

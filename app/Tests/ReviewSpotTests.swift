@@ -154,13 +154,6 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertTrue(text.hasPrefix("Runs by itself\nWeather: when the panel opens, when the Mac wakes, when Openspot starts, every 30 seconds\n"), text)
     }
 
-    func testAStayingScriptSaysSo() throws {
-        let review = try review("name=Weather\nstay=true\nread=sheet")
-
-        let text = try shown(review)
-        XCTAssertTrue(text.contains("Weather: keeps running while it is in use"), text)
-    }
-
     func testAMetricThatAWidgetPlacesRunsWhenThePanelOpens() throws {
         let widget = "[[widgets]]\nname = \"Desk\"\nlayout = \"single\"\nplaces = [\"cpu\"]\n"
         let review = try ReviewSpot(

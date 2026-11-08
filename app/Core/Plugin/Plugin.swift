@@ -37,10 +37,9 @@ public struct Plugin: Equatable, Sendable {
             read = parsed
         }
         let isTray = header.flag("tray") ?? false
-        let stays = header.flag("stay") ?? false
         let hasKey = header.value("key") != nil
-        if read?.seconds == nil, isTray, !stays {
-            throw PluginError.fault("\(name) needs a number in its read, or stay=true, to show in the menu bar")
+        if read?.seconds == nil, isTray {
+            throw PluginError.fault("\(name) needs a number in its read to show in the menu bar")
         }
         let sizeName = header.value("size") ?? "wide"
         guard let size = SpotSize(name: sizeName) else { throw PluginError.fault("\(name) has an unknown size: \(sizeName)") }
@@ -70,7 +69,7 @@ public struct Plugin: Equatable, Sendable {
             id: id,
             name: name,
             url: url,
-            kind: stays || rank != Spot.lastRank || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch,
+            kind: rank != Spot.lastRank || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch,
             size: size,
             symbol: symbol ?? "app",
             subtitle: header.value("subtitle"),
@@ -78,7 +77,6 @@ public struct Plugin: Equatable, Sendable {
             read: read,
             rank: rank,
             order: order,
-            stays: stays,
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             isTray: isTray,
             dataName: header.value("data") ?? id.split(separator: "/").first.map(String.init),

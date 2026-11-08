@@ -25,8 +25,6 @@ public struct Spot: Equatable, Sendable {
     public let places: [String]
     public let opens: String?
     public let shipped: ShippedSpot?
-    /// Whether the script stays running and takes calls on its standard input.
-    public let stays: Bool
     /// The file extensions that its card takes, with `folder` and `*`.
     public let drop: [String]
     /// Whether the menu bar shows it.
@@ -63,7 +61,6 @@ public struct Spot: Equatable, Sendable {
         places: [String] = [],
         opens: String? = nil,
         shipped: ShippedSpot? = nil,
-        stays: Bool = false,
         drop: [String] = [],
         isTray: Bool = false,
         dataName: String? = nil,
@@ -90,7 +87,6 @@ public struct Spot: Equatable, Sendable {
         self.places = places
         self.opens = opens
         self.shipped = shipped
-        self.stays = stays
         self.drop = drop
         self.isTray = isTray
         self.dataName = dataName
@@ -135,7 +131,7 @@ public struct Spot: Equatable, Sendable {
 
     /// Whether the panel asks the command how it looks each time it opens.
     public var readsState: Bool {
-        read?.has(.panel) == true && !isGlobal && !stays
+        read?.has(.panel) == true && !isGlobal
     }
 
     /// The call that a click on its card makes: `run`, or no argument for a file with no `read`.
