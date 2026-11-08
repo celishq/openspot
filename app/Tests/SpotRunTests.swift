@@ -233,8 +233,9 @@ final class SpotRunTests: XCTestCase {
     trap 'touch "%@"' EXIT
     while IFS= read -r line; do
       case "$line" in
+        call=*) call=${line#call=} ;;
         arg=a) count=$((count + 1)) ;;
-        '') printf 'grid=a\\n\\nbutton=a\\ntitle=%%s\\n---\\n' "$count" ;;
+        '') printf 'grid=a\\nend=%%s\\n\\nbutton=a\\ntitle=%%s\\n---\\n' "$call" "$count" ;;
       esac
     done
     """
@@ -281,8 +282,9 @@ final class SpotRunTests: XCTestCase {
         let sheet = try make("""
         while IFS= read -r line; do
           case "$line" in
+            call=*) call=${line#call=} ;;
             arg=copy) sleep 0.2; touch '\(path("copied"))' ;;
-            '') printf 'grid=copy\\n\\nbutton=copy\\ntitle=Copy\\n---\\n' ;;
+            '') printf 'grid=copy\\nend=%s\\n\\nbutton=copy\\ntitle=Copy\\n---\\n' "$call" ;;
           esac
         done
         """, stays: true)
@@ -299,8 +301,9 @@ final class SpotRunTests: XCTestCase {
         let sheet = try make("""
         while IFS= read -r line; do
           case "$line" in
+            call=*) call=${line#call=} ;;
             input=*) seen=${line#input=} ;;
-            '') printf 'field=input\\ntext=x\\n\\ntext=seen\\ntitle=%s\\n---\\n' "$seen" ;;
+            '') printf 'end=%s\\n\\nfield=input\\ntext=x\\n\\ntext=seen\\ntitle=%s\\n---\\n' "$call" "$seen" ;;
           esac
         done
         """, stays: true)

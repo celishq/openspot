@@ -96,14 +96,16 @@ class SpotRunsCase: XCTestCase {
         try await Task.sleep(for: .seconds(seconds))
     }
 
-    /// Writes a staying script. It logs each line of its stdin, and prints the frame after each block.
+    /// Writes a staying script. It logs each line of its stdin, and after each block prints the frame with `head` and the
+    /// `end` of that call in its head.
     @discardableResult
-    func staying(header: String = "stay=true", frame: String = "row=a\\ntitle=A\\n") throws -> URL {
+    func staying(header: String = "stay=true", head: String = "", frame: String = "row=a\\ntitle=A\\n") throws -> URL {
         try script(header: header, """
         trap 'touch "\(path("ended"))"' EXIT
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("blocks"))'
-          [ -n "$line" ] || printf '\(frame)---\\n'
+          case "$line" in call=*) call=${line#call=} ;; esac
+          [ -n "$line" ] || printf 'end=%s\\n\(head)\\n\(frame)---\\n' "$call"
         done
         """)
     }

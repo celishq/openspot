@@ -104,11 +104,11 @@ public final class SpotRun {
     @ObservationIgnored private var pauses: [String: Task<Void, Never>] = [:]
     @ObservationIgnored private var isInView = false
     @ObservationIgnored private var live: ScriptProcess?
-    @ObservationIgnored private var isReadingLive = false
+    /// The call number of the read that a staying script has not ended yet.
+    @ObservationIgnored private var liveRead: Int?
     @ObservationIgnored private var liveFailures: [Date] = []
     @ObservationIgnored private var liveCount = 0
     @ObservationIgnored private var liveCalls: [String: ScriptCall] = [:]
-    @ObservationIgnored private var liveSaysEnds = false
     @ObservationIgnored private var hasGivenUp = false
     @ObservationIgnored private var givenUpFile: Date?
     @ObservationIgnored private var formAnswer: CheckedContinuation<String?, Error>?
@@ -707,7 +707,7 @@ public final class SpotRun {
     }
 
     private func openLive(need: ReadNeed, onReady: @escaping () -> Void) {
-        if live != nil, !isReadingLive {
+        if live != nil, liveRead == nil {
             panel = lastAnswer.flatMap(SheetParts.init(output:))
             onReady()
         } else {
@@ -721,10 +721,11 @@ public final class SpotRun {
     private func readLive(need: ReadNeed) {
         guard isWanted else { return }
         guard live != nil else { return startLive() }
-        if need != .change, isReadingLive { return }
+        if need != .change, liveRead != nil { return }
         if need == .moment, let answered, runs.now().timeIntervalSince(answered) < Self.answerAge { return }
-        isReadingLive = true
-        live?.send(.read, values: isOpen ? panel?.values : nil, id: nextLiveId())
+        let id = nextLiveId()
+        liveRead = id
+        live?.send(.read, values: isOpen ? panel?.values : nil, id: id)
     }
 
     /// Starts a staying script and asks it for what it shows, with no values. A script that failed too often does not start.
@@ -733,24 +734,28 @@ public final class SpotRun {
         do {
             let (script, frames) = try runs.stay(command, limit: runs.readLimit)
             live = script
-            isReadingLive = true
             answered = nil
-            liveSaysEnds = false
-            script.send(.read, id: nextLiveId())
+            let id = nextLiveId()
+            liveRead = id
+            script.send(.read, id: id)
             Task { await follow(script, frames) }
         } catch {
             liveFailed(error)
         }
     }
 
-    /// Sends a call to the running script, and starts it if it does not run. With nothing that wants it, it ends after the call.
-    /// Once the script has printed an `end`, a call with a `key` runs until its own `end`, and a stop sends its `id` (Y7).
-    private func sendLive(_ action: SpotAction, values: String?, key: String? = nil) {
+    /// Sends a call to the running script, and starts it if it does not run, and returns its number. With nothing that wants it,
+    /// it ends after the call. A call with a `key` runs until its own `end`, and a stop sends its number (Y7).
+    @discardableResult
+    private func sendLive(_ action: SpotAction, values: String?, key: String? = nil) -> Int? {
         if live == nil { startLive() }
-        guard let script = live else { return settleLive() }
+        guard let script = live else {
+            settleLive()
+            return nil
+        }
         let id = nextLiveId()
         script.send(action, values: values, id: id)
-        if let key, liveSaysEnds {
+        if let key {
             let call = ScriptCall(action: action, key: key, started: runs.now())
             call.halt = { script.send(text: SpotAction.stopEvent(id: id)) }
             liveCalls[String(id)] = call
@@ -761,6 +766,7 @@ public final class SpotRun {
             }
         }
         settleLive()
+        return id
     }
 
     private func nextLiveId() -> Int {
@@ -768,12 +774,15 @@ public final class SpotRun {
         return liveCount
     }
 
-    /// Ends the calls of a staying script that a frame names, or each call when `ids` is nil.
+    /// Ends the calls of a staying script that a frame names, or each call when `ids` is nil, and starts a drop or a key press
+    /// that waited for them.
     private func endLiveCalls(_ ids: [String]?) {
         for id in ids ?? Array(liveCalls.keys) {
             guard let call = liveCalls.removeValue(forKey: id) else { continue }
             calls.removeAll { $0 === call }
         }
+        startWaitingDrop()
+        startWaitingKey()
     }
 
     /// Sends the call of a form, and waits for the frame with its fields. A second ask leaves the first waiting.
@@ -799,7 +808,6 @@ public final class SpotRun {
             for try await text in frames {
                 let lines = PluginOutput(text: text)
                 if live === script, !lines.ends.isEmpty {
-                    liveSaysEnds = true
                     endLiveCalls(lines.ends)
                     settleLive()
                 }
@@ -825,18 +833,18 @@ public final class SpotRun {
         guard live === script else { return }
         live = nil
         endLiveCalls(nil)
-        isReadingLive = false
+        liveRead = nil
         reading.markStale()
         dropUnshownSheet()
         answerForm(with: .success(""))
     }
 
-    /// Takes one frame of a staying script. The answer to a read is all that the spot shows. Any other frame changes what it
-    /// names, and the value of the spot only when it prints the main component. The first frame of a run, or of an open,
-    /// replaces the sheet (S2).
+    /// Takes one frame of a staying script. The frame that ends the read is its answer, which is all that the spot shows and
+    /// opens a waiting sheet. Any other frame changes what it names, and the value of the spot only when it prints the main
+    /// component, so a frame that no read asked for never replaces the sheet.
     private func takeLiveFrame(_ lines: PluginOutput, frame: String, isFirst: Bool) {
-        let isAnswer = isReadingLive
-        isReadingLive = false
+        let isAnswer = liveRead.map { lines.ends.contains(String($0)) } ?? false
+        if isAnswer { liveRead = nil }
         lastFrame = frame
         report(toastOf: lines)
         if isAnswer {
@@ -850,21 +858,23 @@ public final class SpotRun {
         if isAnswer || (mainID != nil && lines.value?.fields.first?.value == mainID), let value = MetricValue(output: lines) {
             reading.take(value)
         }
-        if list.isWaiting {
+        if list.isWaiting, isAnswer {
             list.answer(lines.items, to: list.query)
         } else if isAnswer || !lines.items.isEmpty {
             list.replace(lines.items)
         }
         if isFirst, list.search == .script, !list.query.isEmpty { ask() }
         if isOpen {
-            if isFirst || ready != nil || panel == nil {
+            if isAnswer || panel == nil {
                 panel = SheetParts(output: lines)
             } else {
                 panel?.merge(lines, keeping: editing)
             }
-            let work = ready
-            ready = nil
-            work?()
+            if isAnswer {
+                let work = ready
+                ready = nil
+                work?()
+            }
         }
         onReport(.frame(frame))
     }
@@ -899,7 +909,10 @@ public final class SpotRun {
         if let older = running(Self.searchKey) { stop(older) }
         pauses[Self.searchKey]?.cancel()
         pauses[Self.searchKey] = nil
-        if command.stays { return sendLive(.items(query: query), values: nil) }
+        if command.stays {
+            liveRead = sendLive(.items(query: query), values: nil)
+            return
+        }
         var hasAnswer = false
         start(
             .items(query: query, forms: SearchQuery(text: query).forms),
@@ -966,7 +979,10 @@ public final class SpotRun {
         undo: SpotState? = nil
     ) {
         answered = nil
-        if command.stays { return sendLive(action, values: input, key: key) }
+        if command.stays {
+            sendLive(action, values: input, key: key)
+            return
+        }
         var showedState = false
         start(
             action,

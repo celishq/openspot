@@ -194,7 +194,7 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAPlainFirstReadOfAStayingScriptGivesItsFirstFrame() async throws {
-        let url = try script("# stay=true\nwhile IFS= read -r line; do [ -n \"$line\" ] || printf 'text=a\\ntitle=A\\n---\\n'; done")
+        let url = try script("# stay=true\nwhile IFS= read -r line; do case \"$line\" in call=*) call=${line#call=} ;; esac; [ -n \"$line\" ] || printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' \"$call\"; done")
         let command = Spot(id: "a", name: "A", url: url, kind: .list, stays: true)
 
         let output = try await command.items(timeout: 5)

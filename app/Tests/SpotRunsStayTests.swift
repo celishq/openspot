@@ -10,14 +10,14 @@ final class SpotRunsStayTests: SpotRunsCase {
     while IFS= read -r line; do
       printf '%%s\\n' "$line" >> '%@'
       case "$line" in
-        call=*) name=; filled= ;;
+        call=*) call=${line#call=}; name=; filled= ;;
         arg=*) [ -n "$name" ] || name=${line#arg=} ;;
         ?*) filled=1 ;;
         '')
           if [ "$name" = new ] && [ -z "$filled" ]; then
-            printf 'title=New\\n\\nfield=a\\ntitle=A\\n---\\n'
+            printf 'title=New\\nend=%%s\\n\\nfield=a\\ntitle=A\\n---\\n' "$call"
           else
-            printf 'button=new\\ntitle=New\\nscope=command\\nform=true\\n\\nrow=a\\ntitle=A\\n---\\n'
+            printf 'end=%%s\\n\\nbutton=new\\ntitle=New\\nscope=command\\nform=true\\n\\nrow=a\\ntitle=A\\n---\\n' "$call"
           fi
           ;;
       esac
@@ -84,6 +84,32 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the stop") { self.blocks(ids: true).last == "stop=2" }
     }
 
+    func testOnlyTheFrameThatEndsAReadReplacesWhatTheSpotShows() async throws {
+        try script(header: "stay=true", """
+        while IFS= read -r line; do
+          case "$line" in
+            call=*) call=${line#call=} ;;
+            '')
+              printf 'text=peer\\ntitle=Early\\n---\\n'
+              \(untilRelease)
+              printf 'end=%s\\n\\nrow=a\\ntitle=A\\n---\\n' "$call"
+              printf 'text=peer\\ntitle=Late\\n---\\n' ;;
+          esac
+        done
+        """)
+        let sheet = try sheet()
+        var isReady = false
+        sheet.open { isReady = true }
+        try await wait("the early frame") { sheet.lastFrame?.contains("Early") == true }
+
+        XCTAssertFalse(isReady)
+        openGate()
+
+        try await wait("the late frame") { sheet.lastFrame?.contains("Late") == true }
+        XCTAssertTrue(isReady)
+        XCTAssertEqual(sheet.list.shown.map(\.run), ["a"])
+    }
+
     func testAPickReachesTheRunningStayingScript() async throws {
         try staying()
         let sheet = try sheet()
@@ -136,8 +162,9 @@ final class SpotRunsStayTests: SpotRunsCase {
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("asked"))'
           case "$line" in
+            call=*) call=${line#call=} ;;
             arg=new) \(untilRelease); printf 'title=New\\n\\nfield=a\\ntitle=A\\n---\\n' ;;
-            arg=read) printf 'button=new\\ntitle=New\\nscope=command\\nform=true\\n---\\n' ;;
+            arg=read) printf 'end=%s\\n\\nbutton=new\\ntitle=New\\nscope=command\\nform=true\\n---\\n' "$call" ;;
           esac
         done
         """)
@@ -160,8 +187,9 @@ final class SpotRunsStayTests: SpotRunsCase {
         try script(header: "stay=true", """
         while IFS= read -r line; do
           case "$line" in
+            call=*) call=${line#call=} ;;
             arg=new) exit 0 ;;
-            arg=read) printf 'button=new\\ntitle=New\\nscope=command\\nform=true\\n---\\n' ;;
+            arg=read) printf 'end=%s\\n\\nbutton=new\\ntitle=New\\nscope=command\\nform=true\\n---\\n' "$call" ;;
           esac
         done
         """)
@@ -179,7 +207,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testASearchReachesTheRunningStayingScript() async throws {
-        try staying(frame: "search=script\\n\\nrow=a\\ntitle=A\\n")
+        try staying(head: "search=script\\n", frame: "row=a\\ntitle=A\\n")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
@@ -200,8 +228,8 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.pressCard()
 
         try await wait("the call") { self.blocks().count == 2 }
+        try await wait("the end of the call") { !sheet.isCardRunning }
         XCTAssertEqual(log().count, 1)
-        XCTAssertFalse(sheet.isCardRunning)
     }
 
     func testAStayingTrayScriptRunsWithThePanelClosedAndItsFrameReachesTheMenuBar() async throws {
@@ -239,7 +267,8 @@ final class SpotRunsStayTests: SpotRunsCase {
         try script(header: "stay=true\ntray=true", """
         while IFS= read -r line; do
           case "$line" in
-            arg=read) printf 'text=n\\ntitle=3\\n---\\n' ;;
+            call=*) call=${line#call=} ;;
+            arg=read) printf 'end=%s\\n\\ntext=n\\ntitle=3\\n---\\n' "$call" ;;
             arg=open) printf 'text=a\\ntitle=A\\n---\\n'; touch '\(path("printed"))' ;;
           esac
         done
@@ -256,7 +285,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testASheetOfARunningStayingScriptOpensAtOnceWithItsLastFrame() async throws {
-        try staying(header: "stay=true\ntray=true", frame: "main=n\\n\\ntext=n\\ntitle=3\\n\\ntext=a\\ntitle=A\\n")
+        try staying(header: "stay=true\ntray=true", head: "main=n\\n", frame: "text=n\\ntitle=3\\n\\ntext=a\\ntitle=A\\n")
         let sheet = try sheet()
         try await wait("the mark") { !self.runs.trayMarks.isEmpty }
         XCTAssertNil(sheet.panel)
@@ -326,9 +355,10 @@ final class SpotRunsStayTests: SpotRunsCase {
 
     func testAStayingScriptThatEndedStartsAgainAtTheNextMoment() async throws {
         try script(header: "stay=true\ntray=true", """
-        [ -f '\(path("second"))' ] || { touch '\(path("second"))'; printf 'text=n\\ntitle=1\\n'; exit 0; }
+        [ -f '\(path("second"))' ] || { touch '\(path("second"))'; printf 'end=1\\n\\ntext=n\\ntitle=1\\n'; exit 0; }
         while IFS= read -r line; do
-          [ -n "$line" ] || printf 'text=n\\ntitle=2\\n---\\n'
+          case "$line" in call=*) call=${line#call=} ;; esac
+          [ -n "$line" ] || printf 'end=%s\\n\\ntext=n\\ntitle=2\\n---\\n' "$call"
         done
         """)
         let sheet = try sheet()

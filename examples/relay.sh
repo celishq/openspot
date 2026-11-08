@@ -10,7 +10,7 @@ peer=127.0.0.1:$port
 last="No message yet"
 
 sheet() {
-  printf 'grid=last last last\ngrid=last last last\ngrid=peer peer peer\ngrid=- - -\n'
+  printf 'end=%s\ngrid=last last last\ngrid=last last last\ngrid=peer peer peer\ngrid=- - -\n' "$call"
   printf 'grid=message message message\ngrid=message message message\ngrid=. . send\n\n'
   printf 'text=last\ntitle=%s\ndetail=Listening on 127.0.0.1:%s\n\n' "$(esc "$last")" "$port"
   printf 'field=peer\ntitle=To\ntext=%s\n\n' "$(esc "$peer")"

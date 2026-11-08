@@ -388,7 +388,8 @@ final class SpotDropTests: XCTestCase {
         try sheet(header: "stay=true\ndrop=mov\n\(header)", """
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("blocks"))'
-          [ -n "$line" ] || printf 'row=a\\ntitle=A\\n---\\n'
+          case "$line" in call=*) call=${line#call=} ;; esac
+          [ -n "$line" ] || printf 'end=%s\\n\\nrow=a\\ntitle=A\\n---\\n' "$call"
         done
         """)
     }
@@ -426,7 +427,7 @@ final class SpotDropTests: XCTestCase {
         XCTAssertEqual(log(), [""])
     }
 
-    func testTwoDropsReachOneRunningStayingScriptAndNeitherWaits() async throws {
+    func testTwoDropsReachOneRunningStayingScriptInTurn() async throws {
         let sheet = try stayingSheet()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
