@@ -38,9 +38,16 @@ The file declares `struct SpotView: View` with `let spot: SpotInput`, and it has
 | ------------------ | ----------------------------------------------------------------- |
 | `spot["key"]`      | The last value of a key in the head of the last read, or nil.     |
 | `spot.all("key")`  | Each value of a key, in order, for a key that repeats.            |
-| `spot.size`        | The size of the place that the view fills.                        |
+| `spot.size`        | The size of the whole card.                                       |
+| `spot.inset`       | The space that other cards keep between their edge and words.     |
+| `spot.corner`      | The corner radius of the card.                                    |
+| `spot.ink`         | The colour of words, which follows light and dark.                |
+| `spot.secondary`   | The opacity of a second line, such as a detail.                   |
+| `spot.accent`      | The accent colour.                                                |
+| `spot.font`        | The fonts of the cards: `title`, `detail`, `metric` and `value`.  |
 
-The view fills the card inside its edge, in place of the picture and the words (V3). The card's size comes from `size`
+The view fills the whole card, in place of the picture and the words, and Openspot clips it to the card's shape (V3). Put
+`.padding(spot.inset)` on words so that they line up with other cards. The card's size comes from `size`
 and from the person, and the view cannot change it. With `panel` in its `read`, the view gets the head of each read, and a
 read with no head gives no values (V4). A new read draws the same view again, so its `@State` stays.
 

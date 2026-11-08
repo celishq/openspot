@@ -7,8 +7,8 @@ import SwiftUI
 @MainActor
 @Observable
 final class SpotViews {
-    /// The function of a library that makes its view from the values, the size and a send.
-    typealias Make = ([String: [String]], CGSize, @escaping (String) -> Void) -> AnyView
+    /// The function of a library that makes its view from the values, the card and a send.
+    typealias Make = ([String: [String]], [String: Any], @escaping (String) -> Void) -> AnyView
 
     enum Phase {
         case building

@@ -30,7 +30,7 @@ struct SpotCardView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) { content }
-            .padding(SpotTokens.cardPadding(for: size, isWidget: isFilledByAView))
+            .padding(ownView == nil ? SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget) : 0)
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))
             .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, strength: SpotMotion.pressedGlass, blursBehind: showsPress, rimSize: CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))))
@@ -50,7 +50,7 @@ struct SpotCardView: View {
     @ViewBuilder
     private var content: some View {
         if let view = ownView {
-            SpotCustomView(source: view, values: entry.state.values, size: room, views: model.views)
+            SpotCustomView(source: view, values: entry.state.values, card: size, views: model.views)
         } else if let layout = entry.command.layout {
             SpotWidgetView(layout: layout, places: entry.command.places, readings: readings, card: size)
         } else if size == .small {
@@ -62,20 +62,9 @@ struct SpotCardView: View {
         }
     }
 
-    /// The source of the plugin's own view, which fills the card in place of its glyph and words (V3).
+    /// The source of the plugin's own view, which fills the whole card in place of its glyph and words (V3).
     private var ownView: String? {
         entry.item == nil ? entry.command.view : nil
-    }
-
-    /// Whether the card's room is filled by places or a view, with the inset of a widget.
-    private var isFilledByAView: Bool {
-        entry.kind == .widget || ownView != nil
-    }
-
-    /// The room inside the card's inset.
-    private var room: CGSize {
-        let inset = 2 * SpotTokens.cardPadding(for: size, isWidget: true)
-        return CGSize(width: SpotTokens.width(columns: size.columns) - inset, height: SpotTokens.height(rows: size.rows) - inset)
     }
 
     private var isOn: Bool {

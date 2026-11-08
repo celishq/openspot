@@ -12,7 +12,7 @@ struct SpotView: View {
             HStack(alignment: .firstTextBaseline) {
                 Text(spot["title"] ?? "").font(.headline)
                 Spacer(minLength: 4)
-                Text("\(spot["left"] ?? "–") days left").font(.caption).foregroundStyle(.secondary)
+                Text("\(spot["left"] ?? "–") days left").font(spot.font.detail).opacity(spot.secondary)
             }
             HStack(alignment: .bottom, spacing: 3) {
                 ForEach(1...12, id: \.self) { index in
@@ -21,13 +21,15 @@ struct SpotView: View {
                         .fill(.primary.opacity(0.12))
                         .overlay(alignment: .bottom) {
                             RoundedRectangle(cornerRadius: 2)
-                                .fill(index == month ? Color.orange : .primary.opacity(0.7))
+                                .fill(index == month ? spot.accent : spot.ink.opacity(0.7))
                                 .frame(height: 12 * fill)
                         }
                         .frame(height: 12)
                 }
             }
         }
+        .foregroundStyle(spot.ink)
+        .padding(spot.inset)
         .frame(maxHeight: .infinity)
     }
 }

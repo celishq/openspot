@@ -15,16 +15,16 @@ struct SpotView: View {
             ZStack(alignment: .topLeading) {
                 if let frame = Liquid.shared?.frame(size: spot.size, time: time, level: Float(level), isCharging: isCharging) {
                     Image(decorative: frame, scale: Liquid.scale)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 VStack(alignment: .leading, spacing: 0) {
                     Text(spot["title"].map { "\($0)%" } ?? "–")
                         .font(.system(size: 34, weight: .bold, design: .rounded))
                     Text(spot["detail"] ?? "")
-                        .font(.caption.weight(.medium))
-                        .opacity(0.7)
+                        .font(spot.font.detail)
+                        .opacity(spot.secondary)
                 }
-                .padding(10)
+                .foregroundStyle(spot.ink)
+                .padding(spot.inset)
             }
         }
     }

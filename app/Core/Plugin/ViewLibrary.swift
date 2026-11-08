@@ -4,18 +4,49 @@ import Foundation
 /// The compiled form of a plugin's view: a library with one entry that makes the view (V6, V7). A library is kept in a cache
 /// by the text it was built from, so an unchanged view is built once.
 public struct ViewLibrary: Sendable {
-    /// The C name of the entry, which returns a retained function from the values, the size and a send to a view.
+    /// The C name of the entry, which returns a retained function from the values, the card and a send to a view.
     public static let entry = "openspot_view_v1"
     static let libraryExtension = "view"
     private static let platform = "apple-macos26.0"
     private static let preludeName = "openspot-view.swift"
 
-    /// The code that Openspot builds with each view: `SpotInput` and the entry. The compiler imports SwiftUI into it.
+    /// The code that Openspot builds with each view: `SpotInput` and the entry. The compiler imports SwiftUI into it. The
+    /// card reaches the view as a dictionary, so a new value of the card needs no new entry.
     static let prelude = """
+        public struct SpotFonts {
+            public let title: Font
+            public let detail: Font
+            public let metric: Font
+            public let value: Font
+        }
+
         public struct SpotInput {
             public let size: CGSize
+            public let inset: CGFloat
+            public let corner: CGFloat
+            public let ink: Color
+            public let secondary: Double
+            public let accent: Color
+            public let font: SpotFonts
             let values: [String: [String]]
             let sender: (String) -> Void
+
+            init(values: [String: [String]], card: [String: Any], sender: @escaping (String) -> Void) {
+                self.values = values
+                self.sender = sender
+                size = card["size"] as? CGSize ?? .zero
+                inset = card["inset"] as? CGFloat ?? 13
+                corner = card["corner"] as? CGFloat ?? 20
+                ink = card["ink"] as? Color ?? .primary
+                secondary = card["secondary"] as? Double ?? 0.7
+                accent = card["accent"] as? Color ?? .accentColor
+                font = SpotFonts(
+                    title: card["title"] as? Font ?? .system(size: 13, weight: .medium),
+                    detail: card["detail"] as? Font ?? .system(size: 11),
+                    metric: card["metric"] as? Font ?? .system(size: 30, weight: .semibold, design: .rounded),
+                    value: card["value"] as? Font ?? .system(size: 15, weight: .semibold, design: .rounded)
+                )
+            }
 
             public subscript(key: String) -> String? { values[key]?.last }
 
@@ -26,8 +57,8 @@ public struct ViewLibrary: Sendable {
 
         @_cdecl("\(entry)")
         public func openspotViewEntry() -> UnsafeMutableRawPointer {
-            let make: ([String: [String]], CGSize, @escaping (String) -> Void) -> AnyView = { values, size, send in
-                AnyView(SpotView(spot: SpotInput(size: size, values: values, sender: send)))
+            let make: ([String: [String]], [String: Any], @escaping (String) -> Void) -> AnyView = { values, card, send in
+                AnyView(SpotView(spot: SpotInput(values: values, card: card, sender: send)))
             }
             return Unmanaged.passRetained(make as AnyObject).toOpaque()
         }

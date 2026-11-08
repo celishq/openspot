@@ -3,7 +3,7 @@ import XCTest
 
 final class ViewLibraryTests: XCTestCase {
     private var folder: URL!
-    private let view = "import SwiftUI\n\nstruct SpotView: View {\n    let spot: SpotInput\n    var body: some View { Text(spot[\"title\"] ?? \"–\") }\n}\n"
+    private let view = "import SwiftUI\n\nstruct SpotView: View {\n    let spot: SpotInput\n    var body: some View {\n        Text(spot[\"title\"] ?? \"–\").font(spot.font.title).foregroundStyle(spot.ink.opacity(spot.secondary))\n            .padding(spot.inset).background(spot.accent, in: RoundedRectangle(cornerRadius: spot.corner))\n            .frame(width: spot.size.width)\n    }\n}\n"
 
     override func setUpWithError() throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-views-\(UUID().uuidString)")
