@@ -41,7 +41,7 @@ open -a Calendar
 | `read` | When Openspot reads the script. See below. |
 | `data` | The name of a data folder to share with other spots. See "Rules for scripts" in 00. |
 
-Other specs add keys: `rank` (02), `drop` and `command` (04), `stay` (05), `tray` (06) and `mcp` (09).
+Other specs add keys: `rank` (02), `drop` and `command` (04), `stay` (05), and `tray` (06).
 
 With `panel` in its `read`, the first block that a script prints can change `grid`, `size` and `order`. The person's choice in
 Settings wins.

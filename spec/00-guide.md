@@ -1,7 +1,7 @@
 # Build an Openspot plugin
 
 This guide is for people and for AI agents. It tells you all that you need. Each part after this one is a spec of its own,
-from 01 Core to 09 MCP, and only 01 is needed for every plugin.
+from 01 Core to 08 Sharing, and only 01 is needed for every plugin.
 
 A plugin is one executable file in the plugins folder, in any language. Openspot reads the folder each time the panel
 opens, so a new plugin needs no restart.

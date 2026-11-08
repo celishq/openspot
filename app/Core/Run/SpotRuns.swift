@@ -239,20 +239,6 @@ public final class SpotRuns {
         if let shipped = command.keyList.flatMap({ $0.answers(action.arguments) ? ShippedSpot.settings($0) : nil }) ?? command.shipped {
             return answered { try await shipped.answer(action.arguments, input: input) }
         }
-        if command.isMcp {
-            let process = ScriptProcess(url: command.url, mode: .stays, stopPause: stopPause, dataName: command.dataName, lines: true)
-            do {
-                let lines = try process.start()
-                keep(process)
-                let (stream, halt) = answered { try await McpSpot(process: process, lines: lines).answer(action.arguments, input: input) }
-                return (stream, {
-                    process.stop()
-                    halt()
-                })
-            } catch {
-                return (AsyncThrowingStream { $0.finish(throwing: error) }, {})
-            }
-        }
         let sent = action.sent(input: input)
         let process = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: command.dataName, variables: variables)
         do {

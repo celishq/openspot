@@ -14,16 +14,12 @@ public struct SheetFrameReader: Sendable {
         case commandEnd
     }
 
-    private let lines: Bool
     private var line = Data()
     private var frame = ""
     private var escape = Escape.none
     private var command = Data()
 
-    /// With `lines`, each line is a frame of its own, as a line protocol such as MCP needs.
-    public init(lines: Bool = false) {
-        self.lines = lines
-    }
+    public init() {}
 
     /// Takes the next chunk, and returns each frame it completes.
     public mutating func read(_ data: Data) -> [String] {
@@ -53,9 +49,7 @@ public struct SheetFrameReader: Sendable {
                 } else if byte == UInt8(ascii: "\n") {
                     let text = String(decoding: line, as: UTF8.self)
                     line.removeAll(keepingCapacity: true)
-                    if lines {
-                        frames.append(text)
-                    } else if text == Self.mark {
+                    if text == Self.mark {
                         frames.append(frame)
                         frame = ""
                     } else {

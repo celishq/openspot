@@ -1,7 +1,7 @@
 # Build an Openspot plugin
 
 This guide is for people and for AI agents. It tells you all that you need. Each part after this one is a spec of its own,
-from 01 Core to 09 MCP, and only 01 is needed for every plugin.
+from 01 Core to 08 Sharing, and only 01 is needed for every plugin.
 
 A plugin is one executable file in the plugins folder, in any language. Openspot reads the folder each time the panel
 opens, so a new plugin needs no restart.
@@ -127,7 +127,7 @@ open -a Calendar
 | `read` | When Openspot reads the script. See below. |
 | `data` | The name of a data folder to share with other spots. See "Rules for scripts" in 00. |
 
-Other specs add keys: `rank` (02), `drop` and `command` (04), `stay` (05), `tray` (06) and `mcp` (09).
+Other specs add keys: `rank` (02), `drop` and `command` (04), `stay` (05), and `tray` (06).
 
 With `panel` in its `read`, the first block that a script prints can change `grid`, `size` and `order`. The person's choice in
 Settings wins.
@@ -897,29 +897,3 @@ what it keeps in `$OPENSPOT_DATA` stay. A widget file goes whole, with each widg
 | A spot travels as a `.spot` file of JSON: a format number and its files | A chat takes a file of any size, any editor shows JSON, and the header already holds each fact. | Encoded text, a zip, a link. |
 | A spot travels with what it needs | A widget works only with the metrics it places, and a script in a folder can need its other files. | Only single scripts. |
 | A shared file of the same path replaces the old one, which goes to the Trash | A new name would break the IDs that a widget places. | A new name for each clash. |
-
-# 09 MCP
-
-`draft` · Needs 01 and 02.
-
-An MCP server that talks over stdio can be a spot. Write an executable file that starts it, with `mcp=true` in its
-header. This one needs Node.js:
-
-```text
-#!/bin/sh
-# name=Files
-# symbol=folder
-# mcp=true
-exec npx -y @modelcontextprotocol/server-filesystem "$HOME/Documents"
-```
-
-- Its sheet lists each tool as an action and each resource as a row. A tool with input asks for it in a form.
-- A tool's text answer and a picked resource's text show as a toast.
-- Each call starts the server, and the server ends after its answer. Openspot reads only the header in a scan.
-- A tool called `read` or with a default id does not show.
-
-## Rules
-
-| ID | Rule |
-|---|---|
-| F10 | A script with `mcp=true` is an MCP server on stdio. Its tools are actions, and its resources are rows. A scan never starts it. |

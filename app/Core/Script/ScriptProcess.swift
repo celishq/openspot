@@ -17,7 +17,6 @@ public final class ScriptProcess: @unchecked Sendable {
     private let limit: TimeInterval?
     private let dataName: String?
     private let variables: [String: String]
-    private let lines: Bool
     private let stopPause: TimeInterval
     private let input = Pipe()
     private let writes = DispatchQueue(label: "openspot.script")
@@ -30,11 +29,10 @@ public final class ScriptProcess: @unchecked Sendable {
     private var killsLater = false
 
     /// `limit` is the time the script has to its first frame or its end. With none, it has no limit. `stopPause` is the time
-    /// between each step of a stop. `variables` add to its environment. With `lines`, each line is a frame.
-    public init(url: URL, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], lines: Bool = false) {
+    /// between each step of a stop. `variables` add to its environment.
+    public init(url: URL, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:]) {
         self.dataName = dataName
         self.variables = variables
-        self.lines = lines
         process.executableURL = url
         process.arguments = arguments
         self.mode = mode
@@ -226,7 +224,7 @@ public final class ScriptProcess: @unchecked Sendable {
             errorsRead.signal()
         }
         DispatchQueue.global().async { [self] in
-            var reader = SheetFrameReader(lines: lines)
+            var reader = SheetFrameReader()
             while true {
                 let data = output.fileHandleForReading.availableData
                 if data.isEmpty { break }
