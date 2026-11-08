@@ -20,7 +20,8 @@ final class SettingsPluginTests: SamplePluginsCase {
             let section = try XCTUnwrap(rows.first { $0.title == "Громкость" })
             XCTAssertEqual(section.subtitle, "System Settings › Звук")
             XCTAssertEqual(section.keywords, ["громко", "тихо"])
-            XCTAssertEqual(section.file, pane.file)
+            XCTAssertEqual(section.symbol, "gearshape")
+            XCTAssertEqual(section.badge, .file(panes.appendingPathComponent("Sound.appex").path))
         }
     }
 
