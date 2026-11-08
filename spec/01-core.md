@@ -70,7 +70,7 @@ lines has no card on the grid, because its commands are what it gives.
 
 | Moment   | Openspot reads it                                      |
 | -------- | ------------------------------------------------------ |
-| none     | Never. A click runs `<script>` with no argument.       |
+| none     | Never. A click runs `<script> run`.                    |
 | `sheet`  | When its sheet opens.                                  |
 | `panel`  | Each time the panel opens, and once as the app starts. |
 | a number | Every that many seconds, while something wants it.     |
@@ -87,7 +87,7 @@ a widget or the menu bar shows it, or while the open panel reads it at `panel` (
 | Call                                   | When                                                               |
 | -------------------------------------- | ------------------------------------------------------------------ |
 | `<script> read [text] [form]...`       | A moment, or a search change with `search=script` (02).            |
-| `<script> run`                         | A click on a card that has no sheet. A script can ignore it.       |
+| `<script> run`                         | A click on a card area that is not a control, with no sheet. |
 | `<script> open <row id>`               | A row is picked (02).                                              |
 | `<script> <id> [row id] [value]`       | A component changes or is pressed, with the id of its row (02).    |
 | `<script> drop <path> [path]...`       | Files are dropped on its card, each path as its own argument (D3). |

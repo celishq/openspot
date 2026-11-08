@@ -4,7 +4,7 @@
 
 ```text
 #!/bin/sh
-# name=Cups today
+# title=Cups today
 # read=panel
 # view=cups.swift
 printf 'view=cups\ntitle=3\npoint=1\npoint=0\npoint=2\n'

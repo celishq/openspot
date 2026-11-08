@@ -55,7 +55,7 @@ component cannot take a default id of 01 (C1).
 | `slider`  | A slider. It sends when the person lets go.             | `level`, `min`, `max`                                           | `<id> <number>`        |
 | `field`   | A text field.                                           | `text`, `placeholder`, `type=multiline`, `required`, `readonly` | `<id> <text>`          |
 | `choice`  | A menu of `option` lines, a list when it covers two lines or more, or swatches of `color` lines. | `option=<id>:<title>`, `color`, `value`                         | `<id> <option id>`     |
-| `hotkey`   | A key combination that a press records.               | `value`                                                         | `<id> <shortcut>`      |
+| `hotkey`  | A key combination that a press records.                 | `value`                                                         | `<id> <shortcut>`      |
 | `button`  | A button, or an action (see below).                     | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`         | `<id>`                 |
 | `section` | A title over the lines that follow it.                  |                                                                 |                        |
 | `repeat`  | The rows of the output (see Repeats).                   | `grid` lines                                                    |                        |
@@ -119,7 +119,7 @@ Openspot searches the rows itself and sorts recent picks first. The head can cha
 - `recents=false` does not sort recent picks first (R7).
 
 `global=true` in the header shows the rows in the main search too. It needs `panel`, `launch` or a number in its `read`,
-and a number also needs a `key`. Openspot ranks them by the person's picks, and the script cannot.
+and a number also needs a `shortcut`. Openspot ranks them by the person's picks, and the script cannot.
 
 ## Repeats and templates
 
@@ -198,11 +198,11 @@ A press on a card area that is not a control opens the spot's sheet, or calls `<
 
 A metric is a spot with a number in its `read`, and its main component is a `text`, a `number`, a `gauge` or a `graph`. A
 widget or the menu bar can show any script with a `read`, by its ID (H1). A script with a number in its `read` and no
-`key` has no spot of its own (F7).
+`shortcut` has no spot of its own (F7).
 
 ```sh
 #!/bin/sh
-# name=Cups today
+# title=Cups today
 # icon=cup.and.saucer.fill
 # read=60
 printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'

@@ -47,9 +47,9 @@ These rules come from the way Nostr writes its NIPs.
 | `global`, `tray`                                                                                         | Header key           | 02   |
 | `sheet`, `panel`, a number, `launch`, `wake`                                                             | Moment               | 01   |
 | `toast`, `link`                                                                                          | Head key             | 01   |
-| `text`, `gauge`, `graph`, `picture`, `switch`, `slider`, `field`, `choice`, `key`, `button`, `section`, `repeat`, `template`, `row` | Block kind | 02 |
+| `text`, `number`, `gauge`, `graph`, `picture`, `spot`, `switch`, `slider`, `field`, `choice`, `hotkey`, `button`, `section`, `repeat`, `template`, `row` | Block kind | 02 |
 | `view`                                                                                                   | Block kind           | 03   |
-| `grid`, `grid.<place>`, `card`, `keys`                                                                   | Head key             | 02   |
+| `grid`, `grid.<place>`, `card`, `pad`, `main`                                                           | Head key             | 02   |
 | `read`                                                                                                   | Reserved word        | 01   |
 | `run`, `open`, `drop`                                                                                    | Default id           | 01   |
 | `OPENSPOT_REASON`, `OPENSPOT_DATA`, `OPENSPOT_SH`                                                        | Environment variable | 01   |
