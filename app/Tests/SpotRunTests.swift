@@ -86,6 +86,31 @@ final class SpotRunTests: XCTestCase {
         sheet.close()
     }
 
+    func testACloseWithNoSelectionTellsNoReaderOfTheParts() async throws {
+        let sheet = try holding("printf 'text=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n'", pause: 0.02)
+        sheet.open(waits: true) {}
+        try await wait("the parts") { sheet.panel != nil }
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = sheet.panel } onChange: { changed = true }
+
+        sheet.close()
+
+        XCTAssertFalse(changed)
+    }
+
+    func testACloseClearsTheSelectionOfTheParts() async throws {
+        let sheet = try holding("printf 'hotkey=k\\nvalue=ctrl+space\\n\\nswitch=w\\non=true\\n'", pause: 0.02)
+        sheet.open(waits: true) {}
+        try await wait("the parts") { sheet.panel != nil }
+        let first = sheet.panel?.selectedPart?.id
+        sheet.movePart(by: 1)
+        XCTAssertNotEqual(sheet.panel?.selectedPart?.id, first)
+
+        sheet.close()
+
+        XCTAssertEqual(sheet.panel?.selectedPart?.id, first)
+    }
+
     func testOnlyTheFirstPartsOfASheetArriveThroughTheArrival() async throws {
         let sheet = try holding("printf 'text=a\\ntitle=A\\n---\\n'\nsleep 0.1\nprintf 'text=a\\ntitle=B\\n---\\n'", pause: 0.02)
         var arrivals = 0

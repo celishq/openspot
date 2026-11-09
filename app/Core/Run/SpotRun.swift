@@ -261,7 +261,7 @@ public final class SpotRun {
         if let search = running(Self.searchKey) { stop(search) }
         editing = nil
         held = nil
-        panel?.clearSelection()
+        if panel?.isSelectionMoved == true { panel?.clearSelection() }
         link.settle()
         stopUnwantedRead()
         runs.updateClock()

@@ -93,6 +93,11 @@ public struct SheetParts: Equatable, Sendable {
         selected = ids[min(max(index + step, 0), ids.count - 1)]
     }
 
+    /// Whether the person moved the selection, so that a clear has something to change.
+    public var isSelectionMoved: Bool {
+        selected != nil
+    }
+
     public mutating func clearSelection() {
         selected = nil
     }
