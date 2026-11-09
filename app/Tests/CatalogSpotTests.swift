@@ -30,12 +30,12 @@ final class CatalogSpotTests: XCTestCase {
         }
     }
 
-    func testItListsTheCoreSpotsByNameThenTheRowForAuthors() async throws {
+    func testItListsTheRowForAuthorsThenTheCoreSpotsByName() async throws {
         let items = try await spot.items(timeout: 1).items
 
-        XCTAssertEqual(items.map(\.title), ["Apps", "Zebra", "New spot"])
-        XCTAssertEqual(items[1].subtitle, "Open app")
-        XCTAssertEqual(items[1].symbol, "star")
+        XCTAssertEqual(items.map(\.title), ["New spot", "Apps", "Zebra"])
+        XCTAssertEqual(items[2].subtitle, "Open app")
+        XCTAssertEqual(items[2].symbol, "star")
         XCTAssertEqual(items.map(\.isOn), [false, false, false])
     }
 
@@ -45,7 +45,7 @@ final class CatalogSpotTests: XCTestCase {
         try await spot.perform(.item(SpotItem(title: "Apps", run: "apps")), timeout: 1)
         XCTAssertEqual(file.read().arrangement.enabled, ["apps"])
         let on = try await spot.items(timeout: 1).items
-        XCTAssertEqual(on.first?.isOn, true)
+        XCTAssertEqual(on.first { $0.run == "apps" }?.isOn, true)
 
         try await spot.perform(.item(SpotItem(title: "Apps", run: "apps")), timeout: 1)
         XCTAssertEqual(file.read().arrangement.enabled, [])
@@ -66,8 +66,9 @@ final class CatalogSpotTests: XCTestCase {
 
         sheet.pick(SpotItem(title: "Apps", run: "apps"))
 
-        for _ in 0..<200 where sheet.list.shown.first?.isOn != true { try await Task.sleep(for: .milliseconds(5)) }
-        XCTAssertEqual(sheet.list.shown.first?.isOn, true)
+        let apps = { sheet.list.shown.first { $0.run == "apps" } }
+        for _ in 0..<200 where apps()?.isOn != true { try await Task.sleep(for: .milliseconds(5)) }
+        XCTAssertEqual(apps()?.isOn, true)
         XCTAssertEqual(file.read().arrangement.enabled, ["apps"])
     }
 
@@ -76,8 +77,9 @@ final class CatalogSpotTests: XCTestCase {
         let spot = try spot
 
         let items = try await spot.items(timeout: 1).items
-        XCTAssertEqual(items.first?.isOn, true)
-        XCTAssertEqual(items.first?.subtitle, "In your plugins folder")
+        let apps = try XCTUnwrap(items.first { $0.run == "apps" })
+        XCTAssertEqual(apps.isOn, true)
+        XCTAssertEqual(apps.subtitle, "In your plugins folder")
 
         try await spot.perform(.item(SpotItem(title: "Apps", run: "apps")), timeout: 1)
         XCTAssertEqual(file.read().arrangement.enabled, [])
@@ -152,9 +154,9 @@ final class CatalogSpotTests: XCTestCase {
     func testTheRowForAuthorsHidesTheReview() async throws {
         let items = try await spot.items(timeout: 1).items
 
-        XCTAssertEqual(items.last?.run, CatalogSpot.buildRun)
-        XCTAssertEqual(items.last?.hides, [CatalogSpot.reviewID])
-        XCTAssertNil(items.first?.hides)
+        XCTAssertEqual(items.first?.run, CatalogSpot.buildRun)
+        XCTAssertEqual(items.first?.hides, [CatalogSpot.reviewID])
+        XCTAssertNil(items.last?.hides)
     }
 
     func testItOffersAReviewOfACoreSpot() async throws {
@@ -174,11 +176,12 @@ final class CatalogSpotTests: XCTestCase {
         XCTAssertTrue(sheet.contains("apps.sh"))
     }
 
-    func testNewSpotIsOffTheGridAndOpensASheetOfParts() async throws {
+    func testNewSpotHasASmallCardOnTheGridAfterSettings() async throws {
         let commands = ShippedSpot.commands(folder: folder, guide: folder, app: "", config: file)
         let new = try XCTUnwrap(commands.first { $0.id == ShippedSpot.newID })
 
-        XCTAssertFalse(new.isOnGrid)
+        XCTAssertTrue(new.isOnGrid)
+        XCTAssertEqual(new.size, .small)
         XCTAssertEqual(commands.map(\.name), ["Spots", "Settings", "New spot"])
         let output = try await new.items(timeout: 1)
         XCTAssertFalse(output.parts.isEmpty)

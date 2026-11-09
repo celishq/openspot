@@ -45,12 +45,12 @@ public enum ShippedSpot: Equatable, Sendable {
                 name: "New spot",
                 url: folder,
                 kind: .list,
+                size: .small,
                 symbol: "plus",
                 subtitle: "Make your own",
                 read: .sheet,
                 order: 3,
-                shipped: .new(NewSpot(folder: folder, guide: guide, prompt: AgentPrompt(folder: folder, guide: guide, app: app))),
-                isOnGrid: false
+                shipped: .new(NewSpot(folder: folder, guide: guide, prompt: AgentPrompt(folder: folder, guide: guide, app: app)))
             )
         ]
         if let update {

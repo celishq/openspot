@@ -84,8 +84,8 @@ final class FirstLaunchTests: XCTestCase {
         let catalog = CatalogSpot(folder: plugins, core: nil, config: file, login: item)
 
         let rows = PluginOutput(text: try catalog.answer(["read"])).items
-        XCTAssertEqual(rows.map(\.run), [LoginItem.run, CatalogSpot.buildRun])
-        XCTAssertEqual(rows.first?.hides, [CatalogSpot.reviewID])
+        XCTAssertEqual(rows.map(\.run), [CatalogSpot.buildRun, LoginItem.run])
+        XCTAssertEqual(rows.last?.hides, [CatalogSpot.reviewID])
 
         XCTAssertEqual(try catalog.answer(["open", LoginItem.run]), "")
         XCTAssertTrue(fake.isOn)
