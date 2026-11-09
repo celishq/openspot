@@ -1,5 +1,5 @@
 #!/bin/sh
-# icon=square.grid.2x2
+# icon=/System/Applications/Apps.app
 # detail=Open app
 # shortcut=a
 # read=panel

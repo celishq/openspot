@@ -69,15 +69,24 @@ final class SpotIconStore {
         }
     }
 
+    /// Draws the picture of an image file in its whole square, and a Finder icon with its body at the share of an app icon.
     private nonisolated static func bitmap(of icon: FileIcon) -> CGImage? {
-        let source: NSImage
         switch icon {
-        case .file(let path): source = NSWorkspace.shared.icon(forFile: path)
-        case .type(let suffix): source = NSWorkspace.shared.icon(for: UTType(filenameExtension: suffix) ?? .data)
-        case .image(let path):
-            guard let image = NSImage(contentsOfFile: path) else { return nil }
-            source = image
+        case .file(let path): bodied(NSWorkspace.shared.icon(forFile: path))
+        case .type(let suffix): bodied(NSWorkspace.shared.icon(for: UTType(filenameExtension: suffix) ?? .data))
+        case .image(let path): NSImage(contentsOfFile: path).flatMap { square($0, in: NSRect(x: 0, y: 0, width: pixels, height: pixels))?.makeImage() }
         }
+    }
+
+    private nonisolated static func bodied(_ source: NSImage) -> CGImage? {
+        guard let whole = square(source, in: NSRect(x: 0, y: 0, width: pixels, height: pixels)), let data = whole.data else { return nil }
+        let bytes = data.bindMemory(to: UInt8.self, capacity: whole.bytesPerRow * pixels)
+        let alpha = (0..<pixels * pixels).map { bytes[($0 / pixels) * whole.bytesPerRow + ($0 % pixels) * 4 + 3] }
+        let frame = IconBody(alpha: alpha, side: pixels).frame(in: CGFloat(pixels))
+        return square(source, in: NSRect(x: frame.minX, y: CGFloat(pixels) - frame.maxY, width: frame.width, height: frame.height))?.makeImage()
+    }
+
+    private nonisolated static func square(_ source: NSImage, in rect: NSRect) -> CGContext? {
         guard let context = CGContext(
             data: nil,
             width: pixels,
@@ -89,8 +98,8 @@ final class SpotIconStore {
         ) else { return nil }
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
-        source.draw(in: NSRect(x: 0, y: 0, width: pixels, height: pixels))
+        source.draw(in: rect)
         NSGraphicsContext.restoreGraphicsState()
-        return context.makeImage()
+        return context
     }
 }
