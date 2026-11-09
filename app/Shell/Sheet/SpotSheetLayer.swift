@@ -38,16 +38,14 @@ struct SpotSheetLayer: View {
                     .allowsHitTesting(false)
             }
         }
-        .background {
-            SpotTheme.solid
-                .animation(SpotMotion.fillFade(isOpen: isOpen)) { $0.opacity(entry.state.on == true && !isOpen ? 1 : 0) }
-        }
         .modifier(SpotSheetFrame(
             rect: isOpen ? sheetRect : closedRect,
             radius: isOpen ? SpotTokens.radius : isInstall ? SpotTokens.corner(for: .strip) : SpotTokens.corner(for: card?.placement.size ?? entry.size),
             sheetRect: sheetRect,
             shift: isOpen ? .zero : shift(to: closedRect),
             showsRing: !isOpen && cardIsSelected,
+            showsSolid: entry.state.on == true && !isOpen,
+            solidFade: SpotMotion.fillFade(isOpen: isOpen),
             arrow: showsArrow ? AnyView(arrow) : nil,
             arrowBox: frame?.size ?? .zero
         ))
