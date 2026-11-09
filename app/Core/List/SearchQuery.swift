@@ -13,9 +13,12 @@ public struct SearchQuery: Equatable, Sendable {
     public let forms: [String]
     private let typed: Form
     private let converted: [Form]
+    /// The text as a glyph matches it whole: with no mark that asks for a picture or a text form.
+    private let plain: String
 
     public init(text: String, layouts: [KeyLayout] = KeyLayout.enabled) {
         self.text = text.trimmingCharacters(in: .whitespaces)
+        plain = FoldedItem.plain(self.text)
         let typed = Form(self.text)
         self.typed = typed
         let candidates = Self.retyped(self.text, layouts: layouts) + Self.latin(self.text)
@@ -103,10 +106,12 @@ public struct SearchQuery: Equatable, Sendable {
 
     private func match(_ item: FoldedItem) -> Int? {
         guard !typed.words.isEmpty else { return 0 }
-        if let glyph = item.glyph, glyph == FoldedItem.plain(text) { return 0 }
-        let typedRank = Self.match(typed, in: item, loose: true).map { $0 * 2 }
-        let convertedRanks = converted.compactMap { Self.match($0, in: item, loose: false) }.map { $0 * 2 + 1 }
-        return ([typedRank].compactMap { $0 } + convertedRanks).min()
+        if let glyph = item.glyph, glyph == plain { return 0 }
+        var best = Self.match(typed, in: item, loose: true).map { $0 * 2 }
+        for form in converted {
+            if let rank = Self.match(form, in: item, loose: false).map({ $0 * 2 + 1 }), rank < best ?? .max { best = rank }
+        }
+        return best
     }
 
     private static func match(_ form: Form, in item: FoldedItem, loose: Bool) -> Int? {
@@ -123,17 +128,17 @@ public struct SearchQuery: Equatable, Sendable {
     }
 
     private static func match(_ word: [UInt64], title: FoldedText, keywords: [FoldedText], subtitle: FoldedText?, loose: Bool) -> Int? {
-        let inTitle = title.occurrences(of: word)
-        if inTitle.contains(where: title.starts.contains) { return 2 }
-        if title.inOrder(word, among: title.starts) != nil { return 3 }
-        if !inTitle.isEmpty { return 4 }
+        let inTitle = title.place(of: word)
+        if inTitle == .wordStart { return 2 }
+        if title.spells(word, inOrderAmong: title.starts) { return 3 }
+        if inTitle == .inside { return 4 }
         if keywords.contains(where: { $0.letters.starts(with: word) }) { return 5 }
-        if let subtitle {
-            let inSubtitle = subtitle.occurrences(of: word)
-            if inSubtitle.contains(where: subtitle.starts.contains) { return 6 }
-            if !inSubtitle.isEmpty { return 7 }
+        switch subtitle?.place(of: word) {
+        case .wordStart: return 6
+        case .inside: return 7
+        case nil: break
         }
-        if loose, word.count >= 3, title.inOneWord(word) != nil { return 8 }
+        if loose, word.count >= 3, title.spellsInOneWord(word) { return 8 }
         return nil
     }
 

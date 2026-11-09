@@ -18,26 +18,40 @@ struct FoldedText: Equatable, Sendable {
         }
     }
 
-    func occurrences(of word: [UInt64]) -> [Int] {
-        guard !word.isEmpty, word.count <= letters.count else { return [] }
-        return (0...(letters.count - word.count)).filter { letters[$0..<$0 + word.count].elementsEqual(word) }
+    /// Where a word lies in the text.
+    enum Place {
+        case wordStart
+        case inside
     }
 
-    /// The offsets of the first word whose letters spell the word in order.
-    func inOneWord(_ word: [UInt64]) -> [Int]? {
-        zip(starts, starts.dropFirst() + [letters.count]).lazy.compactMap { inOrder(word, among: Array($0..<$1)) }.first
+    /// Where the word lies: at the start of a word when it does anywhere, else inside a word, else nil.
+    func place(of word: [UInt64]) -> Place? {
+        guard let first = word.first, word.count <= letters.count else { return nil }
+        var place: Place?
+        var start = starts.startIndex
+        for offset in 0...(letters.count - word.count) where letters[offset] == first && letters[offset..<offset + word.count].elementsEqual(word) {
+            while start < starts.endIndex, starts[start] < offset { start += 1 }
+            if start < starts.endIndex, starts[start] == offset { return .wordStart }
+            place = .inside
+        }
+        return place
     }
 
-    /// The first offsets among the given ones whose letters spell the word in order.
-    func inOrder(_ word: [UInt64], among offsets: [Int]) -> [Int]? {
-        var found: [Int] = []
+    /// Whether the letters of one word spell the word in order.
+    func spellsInOneWord(_ word: [UInt64]) -> Bool {
+        starts.indices.contains { index in
+            spells(word, inOrderAmong: starts[index]..<(index + 1 < starts.count ? starts[index + 1] : letters.count))
+        }
+    }
+
+    /// Whether the letters at the given offsets spell the word in order.
+    func spells<Offsets: Collection<Int>>(_ word: [UInt64], inOrderAmong offsets: Offsets) -> Bool {
         var rest = offsets[...]
         for letter in word {
-            guard let index = rest.firstIndex(where: { letters[$0] == letter }) else { return nil }
-            found.append(rest[index])
-            rest = rest[(index + 1)...]
+            guard let index = rest.firstIndex(where: { letters[$0] == letter }) else { return false }
+            rest = rest[rest.index(after: index)...]
         }
-        return found
+        return true
     }
 
     /// One bit for each letter code, by its value modulo 64.
