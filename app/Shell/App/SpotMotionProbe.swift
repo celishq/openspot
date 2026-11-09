@@ -2,8 +2,8 @@ import OpenspotCore
 import AppKit
 import QuartzCore
 
-/// A run that opens and closes the sheet of one spot again and again, or with `OPENSPOT_ACTION` moves down its rows or types
-/// in its search, and writes the time of each frame to a file. `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`.
+/// A run that opens and closes the sheet of one spot again and again, or with `OPENSPOT_ACTION` moves down its rows, types
+/// in its search or picks the row `OPENSPOT_ROW`, and writes the time of each frame to a file. `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`.
 /// The panel stays almost clear, takes no focus and no clicks, unless `OPENSPOT_SEEN` asks for a picture.
 @MainActor
 final class SpotMotionProbe: NSObject {
@@ -16,6 +16,8 @@ final class SpotMotionProbe: NSObject {
     /// Whether the panel shows in full, for a picture of it.
     private let isSeen: Bool
     private let action: String?
+    /// The row that the `pick` action picks.
+    private let row: String?
     private var link: CADisplayLink?
     private var frames: [CFTimeInterval] = []
     private var start: CFTimeInterval = 0
@@ -30,6 +32,7 @@ final class SpotMotionProbe: NSObject {
         pause = Double(environment["OPENSPOT_PAUSE"] ?? "") ?? 0.15
         isSeen = environment["OPENSPOT_SEEN"] != nil
         action = environment["OPENSPOT_ACTION"].flatMap { $0.isEmpty ? nil : $0 }
+        row = environment["OPENSPOT_ROW"]
     }
 
     /// Shows the panel, waits for its reads, then starts the presses.
@@ -55,7 +58,11 @@ final class SpotMotionProbe: NSObject {
         model.press(target.id)
         whenRowsArrive {
             self.start = CACurrentMediaTime()
-            if action == "typing" { self.type(left: self.presses) } else { self.arrow(left: self.presses) }
+            switch action {
+            case "typing": self.type(left: self.presses)
+            case "pick": self.pick()
+            default: self.arrow(left: self.presses)
+            }
         }
     }
 
@@ -81,6 +88,12 @@ final class SpotMotionProbe: NSObject {
         let length = left % (word.count + 1)
         model.searchText = String(word.prefix(length))
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.type(left: left - 1) }
+    }
+
+    /// Picks the row `OPENSPOT_ROW` of the open rows, as a press of Enter on it does.
+    private func pick() {
+        if let item = model.openItems?.shown.first(where: { $0.run == row }) { model.runItem(item) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.end() }
     }
 
     private func end() {
