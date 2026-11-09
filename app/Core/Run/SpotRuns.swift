@@ -124,7 +124,7 @@ public final class SpotRuns {
         sheets.values.contains(where: \.isReading)
     }
 
-    /// The panel closed: a sheet of parts closes and drops its values, and a read that nothing wants now stops.
+    /// The panel closed: a sheet of parts closes, one with a field drops its values, and a read that nothing wants now stops.
     public func panelClosed() {
         isPanelOpen = false
         sheets.values.forEach { $0.panelClosed() }

@@ -276,14 +276,16 @@ public final class SpotRun {
         nudge = SheetParts.Nudge(step: step, serial: nudge.serial + 1)
     }
 
-    /// The panel closed: a sheet of parts, or of a script that holds its own state, closes and drops its values, so the next
-    /// open reads again. A sheet of rows stays.
+    /// The panel closed: a sheet of parts, or of a script that holds its own state, closes. One with a field the person types
+    /// in, or that holds its own state, drops its values, so the next open reads again. A sheet of rows stays.
     func panelClosed() {
         if panel != nil || command.stays {
             let wasOpen = isOpen
             close()
-            panel = nil
-            answered = nil
+            if command.stays || panel?.parts.contains(where: \.isEditable) == true {
+                panel = nil
+                answered = nil
+            }
             if wasOpen { onReport(.closed) }
         }
         stopUnwantedRead()

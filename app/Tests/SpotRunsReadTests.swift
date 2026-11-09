@@ -191,6 +191,58 @@ final class SpotRunsReadTests: SpotRunsCase {
         try await wait("the second read") { self.log().count == 2 }
     }
 
+    func testASheetWithNothingToTypeOpensAfterAPanelCloseWithItsPartsAtOnce() async throws {
+        try script(header: "read=sheet", "printf 'text=bar\\ntitle=Go\\n\\nrow=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the parts") { sheet.panel != nil && !sheet.isReading }
+        runs.panelClosed()
+        runs.panelOpened()
+        var partsAtOpen: String?
+
+        sheet.open(waits: true) { partsAtOpen = sheet.panel?.parts.first?.title }
+
+        XCTAssertEqual(partsAtOpen, "Go")
+        XCTAssertEqual(sheet.list.shown.map(\.run), ["a"])
+        XCTAssertEqual(log(), ["read"])
+    }
+
+    func testASheetWithNothingToTypeReadsAgainAfterFiveSecondsAndKeepsItsPartsMeanwhile() async throws {
+        try script(header: "read=sheet", "sleep 0.2\nprintf 'text=bar\\ntitle=Go\\n\\nrow=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the parts") { sheet.panel != nil && !sheet.isReading }
+        runs.panelClosed()
+        runs.panelOpened()
+        time += 5
+
+        sheet.open {}
+
+        XCTAssertEqual(sheet.panel?.parts.first?.title, "Go")
+        XCTAssertTrue(sheet.isReading)
+        try await wait("the second read") { self.log().count == 2 && !sheet.isReading }
+        XCTAssertEqual(sheet.panel?.parts.first?.title, "Go")
+    }
+
+    func testASheetWithAFieldDropsWhatWasTypedWhenThePanelClosesAndReadsAgain() async throws {
+        try script(header: "read=sheet", "printf 'field=note\\ntext=\\n'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the field") { sheet.panel != nil && !sheet.isReading }
+        sheet.set(try XCTUnwrap(sheet.panel?.parts.first), to: "typed")
+        runs.panelClosed()
+        runs.panelOpened()
+
+        XCTAssertNil(sheet.panel)
+        sheet.open {}
+
+        try await wait("the second read") { self.log().filter { $0 == "read" }.count == 2 && sheet.panel != nil }
+        XCTAssertEqual(sheet.panel?.parts.first?.value, "")
+    }
+
     func testATimerReadAlwaysRuns() async throws {
         try script("fast", header: "read=1\ntray=true", "printf 'title=1\\n'")
         _ = try scanned()

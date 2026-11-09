@@ -168,7 +168,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try await wait("the end of the work") { self.exists("done") && sheet.calls.isEmpty }
         XCTAssertEqual(toasts, ["Started", "Done"])
         XCTAssertEqual(frames.last, "toast=Done\n\ntext=bar\ntitle=done\n")
-        XCTAssertNil(sheet.panel)
+        XCTAssertEqual(sheet.panel?.parts.last?.title, "half")
     }
 
     func testAFrameWithNoOpenSheetShowsOnlyItsToastAndItsState() async throws {
@@ -197,7 +197,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testOpeningASheetAddsTheLastFrameOfEachRunningCall() async throws {
         try script(header: "read=sheet", """
         case "$1" in
-          read) printf 'grid=go\\ngrid=bar\\n\\nbutton=go\\ntitle=Go\\n\\ntext=bar\\ntitle=idle\\n' ;;
+          read) printf 'grid=go\\ngrid=note\\ngrid=bar\\n\\nbutton=go\\ntitle=Go\\n\\nfield=note\\ntext=\\n\\ntext=bar\\ntitle=idle\\n' ;;
           go) printf 'text=bar\\ntitle=half\\n---\\n'; sleep 30 ;;
         esac
         """)
