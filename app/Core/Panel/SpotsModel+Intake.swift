@@ -60,8 +60,7 @@ extension SpotsModel {
         isOpenForDrag = true
         followDrag()
         guard openList != nil else { return }
-        sheetMoves = false
-        closeList()
+        closeList(moving: false)
     }
 
     /// Opens the sheet that shows a `.spot` file before a person installs it. One file shows at a time, and a file it cannot read
@@ -73,7 +72,7 @@ extension SpotsModel {
         finishPick()
         closeMenu()
         form = nil
-        closeList()
+        closeList(moving: isShown)
         endReview()
         do {
             show(try ReviewSpot(spot: SharedSpot(contentsOf: url), folder: files.folder.url))
@@ -90,7 +89,7 @@ extension SpotsModel {
             let place = PluginFolder(url: folder.url, core: folder.core, enabled: folder.enabled.union([item.run]))
             let scan = try place.scan()
             guard let command = scan.commands.first(where: { place.isCore($0) && PluginFolder.coreID(of: $0) == item.run }) else { return }
-            closeList()
+            closeList(moving: isShown)
             show(try ReviewSpot(spot: SharedSpot(sharing: command, from: scan), folder: folder.url, canAdd: false))
         } catch {
             host.notify(Self.reason(error))
@@ -101,8 +100,7 @@ extension SpotsModel {
         let moves = isShown
         reviewed = review
         host.present()
-        sheetMoves = moves
-        open(ShippedSpot.command(reviewing: review).id)
+        open(ShippedSpot.command(reviewing: review).id, moving: moves)
     }
 
     /// What the search field says as the open review grows out of it.
@@ -161,7 +159,7 @@ extension SpotsModel {
 
     /// Moves the file of a spot to the Trash. What it keeps in `$OPENSPOT_DATA` stays.
     public func remove(_ entry: Entry) {
-        closeList()
+        closeList(moving: isShown)
         if isShown { host.dismiss() }
         do {
             try files.folder.remove(entry.command)
@@ -174,7 +172,7 @@ extension SpotsModel {
 
     /// Turns a core spot off. Its data stays, and it can come back from the Spots list.
     public func turnOff(_ entry: Entry) {
-        closeList()
+        closeList(moving: isShown)
         if isShown { host.dismiss() }
         do {
             try files.config.turn(PluginFolder.coreID(of: entry.command), on: false)

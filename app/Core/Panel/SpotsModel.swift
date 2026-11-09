@@ -127,15 +127,12 @@ public final class SpotsModel {
     /// Where each visible spot lies on the grid, in the order of `visible`.
     public private(set) var placements: [SpotPlacement] = []
     public var selected = 0
-    /// The sheet that is open. A change of it starts the sheet's motion in the same transaction.
+    /// The sheet that shows. It follows the open run: a run's first answer shows its sheet, and a close or a hidden panel
+    /// takes it away.
     public var openList: String? {
-        get { shownList }
-        set {
-            if newValue != shownList { moveSheet(to: newValue) }
-        }
+        shownList
     }
     private var shownList: String?
-    public var sheetMoves = true
     /// Where the open sheet is in its motion between its card and its open place.
     public private(set) var transition = SheetTransition()
     public var closingPick: (item: SpotItem, entry: Entry)?
@@ -312,6 +309,8 @@ public final class SpotsModel {
                 holdAssignedKeys(files.config.read())
             }
             if spotsChanged, id == ShippedSpot.spotsID { reloadUnderSheet() }
+        case .closed:
+            if openList == id { showSheet(nil, moving: false) }
         case .chooseFiles:
             if let sheet = sheets[id] { host.chooseFiles(for: sheet.command) { sheet.drop($0) } }
         }
@@ -396,9 +395,9 @@ public final class SpotsModel {
             run(entry)
             return
         }
-        sheetMoves = isShown
+        let moving = isShown
         host.show()
-        open(id)
+        open(id, moving: moving)
     }
 
     /// Notes which modifiers the person holds. The letters show once they have matched the entry key for a moment, so that
@@ -442,8 +441,7 @@ public final class SpotsModel {
     public func run(_ entry: Entry) {
         if let item = entry.item, let list = entries.first(where: { $0.id == entry.command.id }) {
             if item.shortcut != nil, openList != list.id {
-                sheetMoves = true
-                open(list.id)
+                open(list.id, moving: true)
             }
             pick(item, of: list)
             return
@@ -459,11 +457,10 @@ public final class SpotsModel {
             if isShown, sheets[entry.id]?.isCardRunning != true, !entry.command.takesDrops { host.dismiss() }
             sheets[entry.id]?.pressCard()
         case .list:
-            sheetMoves = true
             if openList == entry.id {
-                closeList()
+                closeList(moving: true)
             } else {
-                open(entry.id)
+                open(entry.id, moving: true)
             }
         case .slider:
             break
@@ -491,7 +488,7 @@ public final class SpotsModel {
             host.dismiss()
             return true
         }
-        closeList()
+        closeList(moving: isShown)
         host.show()
         if let spot = spot() { selected = spot }
         return true
@@ -517,7 +514,7 @@ public final class SpotsModel {
         } else if let opens {
             press(opens)
         } else {
-            closeList()
+            closeList(moving: isShown)
             host.show()
             selected = visible.firstIndex { $0.command.places.contains(id) } ?? 0
         }
@@ -576,7 +573,7 @@ public final class SpotsModel {
         if !searchText.isEmpty {
             searchText = ""
         } else if openList != nil {
-            closeList()
+            closeList(moving: isShown)
         } else {
             return false
         }
@@ -584,20 +581,20 @@ public final class SpotsModel {
     }
 
     public func openSettings() {
-        open(ShippedSpot.settingsID)
+        open(ShippedSpot.settingsID, moving: isShown)
     }
 
-    /// Opens a sheet and ends what another left running. The sheet of a staying script opens with its first frame.
-    public func open(_ id: String) {
-        guard let sheet = sheets[id] else { return }
-        sheets.values.filter { $0 !== sheet }.forEach { $0.close() }
-        sheet.open(waits: sheetMoves) { [weak self] in self?.openList = id }
+    /// Opens a sheet, which closes the sheet before, and shows it once it is ready: at once, or with its first answer. A
+    /// sheet that moves grows out of its card, and one that does not shows in place.
+    public func open(_ id: String, moving: Bool) {
+        sheets[id]?.open(waits: moving) { [weak self] in self?.showSheet(id, moving: moving) }
     }
 
-    public func closeList() {
+    /// Closes the open sheet: back into its card when it moves, or at once.
+    public func closeList(moving: Bool) {
         stopRecording()
-        openList = nil
-        sheets.values.forEach { $0.close() }
+        showSheet(nil, moving: moving)
+        runs.closeOpen()
     }
 
     /// Closes each sheet of parts when the panel has faded, and stops the reads that nothing wants now. A sheet of rows stays
@@ -608,18 +605,15 @@ public final class SpotsModel {
             isFirstLaunch = false
             host.confirm(entryKey.openHint)
         }
-        if let openSheet, !openSheet.isOpen {
-            sheetMoves = false
-            openList = nil
-        }
         endReview()
     }
 
     /// Starts the motion of the sheet to `list`: a grow out of its card, a collapse back into it, or a cut when the sheet does
     /// not move or has no place to close into. A new sheet is built on its card first, and its grow starts on the next turn,
     /// so that the grow has a start.
-    private func moveSheet(to list: String?) {
-        guard sheetMoves, list != nil || sheetHasClosedPlace else { return cutSheet(to: list) }
+    private func showSheet(_ list: String?, moving: Bool) {
+        guard list != shownList else { return }
+        guard moving, list != nil || sheetHasClosedPlace else { return cutSheet(to: list) }
         guard let list else {
             animate(isOpen: false) {
                 shownList = nil
@@ -646,7 +640,6 @@ public final class SpotsModel {
             fieldDrop = nil
             showsFieldDrop = false
         }
-        allowSheetMotion()
         if list == nil { endReview() }
     }
 
@@ -715,11 +708,6 @@ public final class SpotsModel {
         host.change(motion, body, completion: completion)
     }
 
-    /// Lets the next open or close of a sheet move, as it does when the person asks for it in the open panel.
-    public func allowSheetMotion() {
-        sheetMoves = true
-    }
-
     public func moveItem(by step: Int) {
         openSheet?.list.move(by: step)
     }
@@ -765,15 +753,13 @@ public final class SpotsModel {
             sheets[pick.entry.id]?.list.remember(pick.item)
             files.remember(sheets[pick.entry.id]?.list.recent ?? [], of: pick.entry.id)
         }
-        sheetMoves = false
-        closeList()
+        closeList(moving: false)
     }
 
     public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil) {
         if action == nil, item.run == CatalogSpot.buildRun {
-            closeList()
-            sheetMoves = true
-            open(ShippedSpot.buildID)
+            closeList(moving: true)
+            open(ShippedSpot.buildID, moving: true)
             return
         }
         if entry.id == ShippedSpot.spotsID, action == nil { spotsChanged = true }

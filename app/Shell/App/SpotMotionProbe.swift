@@ -95,8 +95,7 @@ final class SpotMotionProbe: NSObject {
         if left % 2 == 0 {
             model.press(id)
         } else {
-            model.allowSheetMotion()
-            model.closeList()
+            model.closeList(moving: true)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.press(id, left: left - 1) }
     }

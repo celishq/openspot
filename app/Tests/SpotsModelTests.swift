@@ -102,6 +102,54 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.files.recent(of: "list"), ["b"])
     }
 
+    func testOpeningASheetClosesTheRunOfTheSheetBefore() async throws {
+        try await openList()
+        try script("other", header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
+        model.reload()
+
+        model.open("other", moving: true)
+
+        try await wait("the other sheet") { model.openList == "other" }
+        XCTAssertEqual(model.runs.openID, "other")
+        XCTAssertEqual(model.sheets["list"]?.isOpen, false)
+    }
+
+    func testTheCloseButtonMovesTheSheetAndAFadedPickCutsIt() async throws {
+        try await openList()
+
+        host.motions = []
+        model.closeList(moving: true)
+        XCTAssertEqual(host.motions.compactMap { $0 }, [.sheet(isOpen: false)])
+        model.open("list", moving: true)
+        try await wait("the open list") { model.openList == "list" }
+        model.pick(SpotItem(title: "Apple", run: "a"), of: try XCTUnwrap(model.openEntry))
+        model.isShown = false
+        host.motions = []
+        model.finishPick()
+
+        XCTAssertNil(model.openList)
+        XCTAssertEqual(host.motions.compactMap { $0 }, [])
+        XCTAssertFalse(host.motions.isEmpty)
+    }
+
+    func testAPanelThatHidesCutsASheetOfPartsAndItsRun() async throws {
+        try script("parts", header: "read=sheet", "printf 'text=a\\ntitle=A\\n'")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.open("parts", moving: true)
+        try await wait("the open sheet") { model.openList == "parts" && model.openPanel != nil }
+
+        model.isShown = false
+        host.motions = []
+        model.panelDidHide()
+
+        XCTAssertNil(model.openList)
+        XCTAssertNil(model.runs.openID)
+        XCTAssertEqual(host.motions.compactMap { $0 }, [])
+        XCTAssertFalse(host.motions.isEmpty)
+    }
+
     func testTheGridSearchFindsASpotByItsName() async throws {
         try script("list", header: "read=sheet", "printf 'row=a\\ntitle=Apple\\n'")
         try script("other", header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
@@ -124,6 +172,7 @@ private final class TestHost: SpotsHost {
     var draggedPaths: [String] = []
     var isMouseDown = false
     var pastedPaths: [String] = []
+    var motions: [PanelMotion?] = []
 
     nonisolated deinit {}
 
@@ -166,6 +215,7 @@ private final class TestHost: SpotsHost {
     }
 
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {
+        motions.append(motion)
         body()
         completion()
     }

@@ -8,6 +8,8 @@ import Observation
 public final class SpotRuns {
     public private(set) var sheets: [String: SpotRun] = [:]
     public private(set) var isPanelOpen = false
+    /// The script whose sheet is open: the one record of it. A sheet that opens closes the one before.
+    public private(set) var openID: String?
     /// The files of the drag in progress, which each card that takes them all shows for the whole drag.
     public var draggedPaths: [String] = []
     @ObservationIgnored public var onReport: (String, SpotRun.Report) -> Void = { _, _ in }
@@ -61,6 +63,7 @@ public final class SpotRuns {
         order = scripts.map(\.id)
         for (id, sheet) in sheets where !order.contains(id) {
             sheets[id] = nil
+            if sheet.isOpen { onReport(id, .closed) }
             sheet.close()
             sheet.stopReads()
         }
@@ -83,6 +86,22 @@ public final class SpotRuns {
         }
         sheets[id] = sheet
         return sheet
+    }
+
+    /// Records the sheet that opens, and closes the one before.
+    func willOpen(_ sheet: SpotRun) {
+        let id = sheet.command.id
+        if let open = openID, open != id { sheets[open]?.close() }
+        openID = id
+    }
+
+    func didClose(_ sheet: SpotRun) {
+        if openID == sheet.command.id { openID = nil }
+    }
+
+    /// Closes the open sheet.
+    public func closeOpen() {
+        openID.flatMap { sheets[$0] }?.close()
     }
 
     /// The panel opened: reads each script that this moment lists or that a widget places, and starts the timers.

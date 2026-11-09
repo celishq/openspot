@@ -39,7 +39,6 @@ extension SpotsModel {
             return true
         }
         if key == ActionKey(name: "escape") {
-            allowSheetMotion()
             if !stepBack() { host.dismiss() }
             return true
         }
@@ -74,8 +73,7 @@ extension SpotsModel {
             return true
         }
         if key == ActionKey(name: "escape") {
-            allowSheetMotion()
-            closeList()
+            closeList(moving: true)
             return true
         }
         if panel.takesArrows, key == ActionKey(name: "up") || key == ActionKey(name: "down") {
@@ -268,8 +266,7 @@ extension SpotsModel {
                 guard let form = try await sheets[target.entry.id]?.form(action, item: target.item) else { return }
                 let opensSheet = openList != target.entry.id
                 if opensSheet {
-                    sheetMoves = isShown
-                    open(target.entry.id)
+                    open(target.entry.id, moving: isShown)
                 }
                 self.form = FormSession(
                     draft: FormDraft(form: form, prefill: prefill),
@@ -292,8 +289,7 @@ extension SpotsModel {
         guard let form else { return }
         self.form = nil
         if form.openedSheet {
-            allowSheetMotion()
-            closeList()
+            closeList(moving: true)
         }
     }
 

@@ -18,6 +18,8 @@ public final class SpotRun {
         case listChange
         /// A click on a card that takes files and has no sheet: the owner asks the person for files, and gives them to `drop`.
         case chooseFiles
+        /// The sheet closed by itself, as when the panel closed or its script left the folder.
+        case closed
     }
 
     /// Why a read is asked. A `panel` or a `sheet` moment can use a young answer. The clock always runs and reports no failure
@@ -123,8 +125,9 @@ public final class SpotRun {
     }
     /// The last arrow press that asks the parts to scroll. It lives apart from the parts, so that a press redraws only the scroll.
     public private(set) var nudge = SheetParts.Nudge.rest
-    public private(set) var isOpen = false {
-        didSet { settle() }
+    /// Whether this sheet is the open one, as the runs record it.
+    public var isOpen: Bool {
+        runs.openID == command.id
     }
     /// How many rows the list shows, and how many on a line. It changes only when they do, so a move of the selection leaves
     /// a view that sizes itself by it alone.
@@ -232,7 +235,8 @@ public final class SpotRun {
     /// runs `onReady` with its first answer: with `waits`, or after a short pause when that is late, and always for a script
     /// that holds its own state, which does not open when it cannot start.
     public func open(need: ReadNeed = .moment, waits: Bool = false, onReady: @escaping () -> Void) {
-        isOpen = true
+        runs.willOpen(self)
+        settle()
         isInView = true
         list.selectFirst()
         if panel == nil, answered != nil { panel = lastAnswer.flatMap(SheetParts.init(output:)) }
@@ -250,7 +254,8 @@ public final class SpotRun {
     /// Stops what only an open sheet needs. A read that nothing else wants stops. A call that does work goes on.
     public func close() {
         guard isOpen else { return }
-        isOpen = false
+        runs.didClose(self)
+        settle()
         isInView = false
         for (key, pause) in pauses where key != Self.levelKey {
             pause.cancel()
@@ -278,9 +283,11 @@ public final class SpotRun {
     /// open reads again. A sheet of rows stays.
     func panelClosed() {
         if panel != nil || link.holdsState {
+            let wasOpen = isOpen
             close()
             panel = nil
             answered = nil
+            if wasOpen { onReport(.closed) }
         }
         isInView = false
         stopUnwantedRead()
@@ -788,7 +795,8 @@ public final class SpotRun {
     private func dropUnshownSheet() {
         guard held != nil else { return }
         held = nil
-        isOpen = false
+        runs.didClose(self)
+        settle()
         isInView = false
         runs.updateClock()
     }
