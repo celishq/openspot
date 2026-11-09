@@ -5,6 +5,8 @@ import SwiftUI
 struct SpotFormView: View {
     let draft: FormDraft
     let onValue: (String, String) -> Void
+    /// Takes a click on an option of a form of one choice, which shows its options as rows.
+    var onChoose: (SpotItem) -> Void = { _ in }
     @FocusState private var focus: String?
 
     private var shape: RoundedRectangle {
@@ -12,6 +14,14 @@ struct SpotFormView: View {
     }
 
     var body: some View {
+        if let choices = draft.choices {
+            SpotRowsView(list: choices, onRun: onChoose)
+        } else {
+            fields
+        }
+    }
+
+    private var fields: some View {
         VStack(alignment: .leading, spacing: SpotTokens.formFieldGap) {
             ForEach(draft.form.fields, id: \.name) { field in
                 VStack(alignment: .leading, spacing: SpotTokens.formLabelGap) {

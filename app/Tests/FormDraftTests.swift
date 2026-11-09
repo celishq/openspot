@@ -41,6 +41,29 @@ final class FormDraftTests: XCTestCase {
         XCTAssertEqual(FormDraft(form: form).values, ["editor": "/Applications/Zed.app", "hidden": "true", "depth": "2", "note": ""])
     }
 
+    func testAFormOfOneChoiceListsItsOptionsAsRowsThatTheArrowsChoose() throws {
+        let form = try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=Editor\n\nchoice=editor\ntitle=Editor\nvalue=b\noption=a:A\noption=b:B\noption=c:C\n")))
+        var draft = FormDraft(form: form)
+
+        XCTAssertEqual(draft.choices?.shown.map(\.title), ["A", "B", "C"])
+        XCTAssertEqual(draft.choices?.selectedItem?.run, "b")
+        draft.move(by: 1)
+        XCTAssertEqual(draft.values["editor"], "c")
+        draft.move(by: 3)
+        XCTAssertEqual(draft.values["editor"], "c")
+        draft.choose("a")
+        XCTAssertEqual(draft.values["editor"], "a")
+        XCTAssertEqual(draft.choices?.selectedItem?.run, "a")
+        let longer = try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=Editor\n\nchoice=editor\ntitle=Editor\noption=a\noption=b\noption=c\noption=d\n")))
+        XCTAssertLessThan(SpotTokens.formRect(form).height, SpotTokens.formRect(longer).height)
+    }
+
+    func testAFormWithAChoiceAndAFieldKeepsItsControls() throws {
+        let form = try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=Editor\n\nchoice=editor\ntitle=Editor\noption=a:A\n\nfield=note\ntitle=Note\n")))
+
+        XCTAssertNil(FormDraft(form: form).choices)
+    }
+
     func testAPrefillGoesIntoAnEmptyFirstField() {
         XCTAssertEqual(FormDraft(form: form, prefill: "typed").values["title"], "typed")
     }

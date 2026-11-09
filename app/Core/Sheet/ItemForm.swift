@@ -74,6 +74,11 @@ public struct ItemForm: Equatable, Sendable {
         self.fields = fields
     }
 
+    /// The choice of a form that has nothing else, whose options show as rows.
+    public var soleChoice: Field? {
+        fields.count == 1 && fields[0].type == .choice ? fields[0] : nil
+    }
+
     /// Reads a form from what a script prints. It needs a title, and a title for each field.
     public init?(output: PluginOutput) {
         guard let title = output.summary?.value("title") else { return nil }

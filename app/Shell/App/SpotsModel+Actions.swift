@@ -22,9 +22,13 @@ extension SpotsModel {
             handleEditKey(key)
             return true
         }
-        if form != nil {
+        if let form {
+            let isList = form.draft.choices != nil
             switch key {
             case ActionKey(name: "return", isCommand: true): submitForm()
+            case ActionKey(name: "return") where isList: submitForm()
+            case ActionKey(name: "up") where isList: self.form?.draft.move(by: -1)
+            case ActionKey(name: "down") where isList: self.form?.draft.move(by: 1)
             case ActionKey(name: "escape"): cancelForm()
             default: return false
             }
@@ -309,6 +313,12 @@ extension SpotsModel {
                 notify("\(action.title) failed. \(Self.reason(error))")
             }
         }
+    }
+
+    /// Takes a click on an option of a form of one choice, and saves the form with it.
+    func chooseFormOption(_ item: SpotItem) {
+        form?.draft.choose(item.run)
+        submitForm()
     }
 
     func setFormValue(_ text: String, for name: String) {
