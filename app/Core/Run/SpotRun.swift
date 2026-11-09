@@ -535,20 +535,36 @@ public final class SpotRun {
         return form
     }
 
-    /// Gives a filled form to the script, and reads again with the row it saved selected. Returns false when a person
-    /// pressed it again.
-    public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft) async throws -> Bool {
+    /// Runs an action that can ask with a form first, such as the change of a setting. Returns the form it answers with, or
+    /// done, and nil when a person pressed it again.
+    public func change(_ action: CommandAction) async throws -> FormAnswer? {
+        let call = SpotAction.action(action, item: nil)
+        let key = Self.key(call: call)
+        if let running = running(key) {
+            pressAgain(running)
+            return nil
+        }
+        guard let text = try await link.form(call, key: key) else { return nil }
+        if let form = ItemForm(output: PluginOutput(text: text)), !form.fields.isEmpty { return .form(form) }
+        read(need: .change)
+        return .done
+    }
+
+    /// Gives a filled form to the script, and reads again with the row it saved selected. A script that answers with a form
+    /// asks again. Returns nil when a person pressed it again.
+    public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft) async throws -> FormAnswer? {
         let call = SpotAction.action(action, item: item)
         let key = Self.key(call: call)
         if let running = running(key) {
             pressAgain(running)
-            return false
+            return nil
         }
-        guard let text = try await link.submit(call, key: key, values: draft.text) else { return false }
-        guard !command.stays else { return true }
+        guard let text = try await link.submit(call, key: key, values: draft.text) else { return nil }
+        guard !command.stays else { return .done }
+        if let form = ItemForm(output: PluginOutput(text: text)), !form.fields.isEmpty { return .form(form) }
         let run = text.trimmingCharacters(in: .whitespacesAndNewlines)
         read(selecting: run.isEmpty ? nil : run, need: .change)
-        return true
+        return .done
     }
 
     /// Stops a running call: it gets the terminate signal and 2 seconds, and it changes nothing. A call of a staying script
@@ -615,9 +631,9 @@ public final class SpotRun {
     }
 
     /// Takes the end of a call. A read or a search that ended with no answer changes nothing when it was stopped, and tells
-    /// of its failure. A call of work that ended with nothing to show is followed by a read (M4), and a stopped toggle goes
-    /// back.
-    func ended(_ call: ScriptCall, _ purpose: Purpose, _ end: ScriptCall.End, hadAnswer: Bool, showedParts: Bool) {
+    /// of its failure. A call of work that ended is followed by a read: with the row that a `select` effect named selected
+    /// (D8), or else when it showed nothing (M4). A stopped toggle goes back.
+    func ended(_ call: ScriptCall, _ purpose: Purpose, _ end: ScriptCall.End, hadAnswer: Bool, showedParts: Bool, selected: String?) {
         switch (purpose, end) {
         case (.ask(.read), .stopped):
             list.stopLoading()
@@ -639,7 +655,11 @@ public final class SpotRun {
             if let undo = work.undo { state = undo }
         case (.work(let work), .ended):
             answered = nil
-            if !showedParts, work.readsAfter { readOnce() }
+            if let selected, command.read != nil {
+                read(selecting: selected, need: .change)
+            } else if !showedParts, work.readsAfter {
+                readOnce()
+            }
         case (.work(let work), .failed(let error)):
             answered = nil
             if let undo = work.undo { state = undo }

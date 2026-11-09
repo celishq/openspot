@@ -81,7 +81,7 @@ struct SpotsView: View {
                 Color.clear
                     .contentShape(Rectangle())
                     .onTapGesture { model.closeMenu() }
-                SpotActionMenuView(menu: menu, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) })
+                SpotActionMenuView(menu: menu, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) }, onSearch: { model.searchMenu($0) })
                     .offset(x: SpotTokens.halo, y: menuTop(menu))
             }
         }
@@ -168,12 +168,12 @@ struct SpotsView: View {
     }
 
     private var menuBackdropHeight: CGFloat {
-        model.menu.map { SpotTokens.menuHeight(rows: $0.rows.count) + 2 * SpotTokens.halo } ?? 0
+        model.menu.map { SpotTokens.menuHeight(rows: $0.lines) + 2 * SpotTokens.halo } ?? 0
     }
 
     /// Where the menu starts: its bottom meets the bottom of the content.
     private func menuTop(_ menu: ActionMenu) -> CGFloat {
-        max(SpotTokens.halo, contentHeight - SpotTokens.halo - SpotTokens.hintBlock - SpotTokens.menuHeight(rows: menu.rows.count))
+        max(SpotTokens.halo, contentHeight - SpotTokens.halo - SpotTokens.hintBlock - SpotTokens.menuHeight(rows: menu.lines))
     }
 
     /// Whether the install screen takes the place of the grid and the field.

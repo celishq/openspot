@@ -4,7 +4,7 @@ import Foundation
 /// the spots that ship with it, and the motion of each change. A test gives a host of its own.
 @MainActor
 public protocol SpotsHost: AnyObject {
-    /// Hides the panel, and gives the focus back to the app before it.
+    /// Hides the panel, and gives the focus back to the app that was in front, unless another app took it since.
     func dismiss()
     /// Shows the panel when it is hidden or warming.
     func show()

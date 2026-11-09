@@ -5,6 +5,8 @@ import SwiftUI
 /// and a click on a key and its words does what the key does.
 struct SpotHint: View {
     let text: String
+    /// The key whose layer is open, such as the actions menu, which the accent ring marks.
+    var activeKey: String?
     var onPress: (String) -> Void = { _ in }
 
     var body: some View {
@@ -35,6 +37,7 @@ struct SpotHint: View {
                     .padding(.horizontal, SpotTokens.hintKeyPadding)
                     .frame(height: SpotTokens.hintKeyHeight)
                     .background(SpotTheme.ink.opacity(SpotTheme.track), in: Capsule())
+                    .modifier(SpotSelectionRing(isSelected: key == activeKey, shape: Capsule(), width: SpotSelectionRing<Capsule>.thinWidth))
             }
             if !group.words.isEmpty {
                 Text(group.words)

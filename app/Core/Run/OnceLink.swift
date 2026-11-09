@@ -24,9 +24,11 @@ final class OnceLink: ScriptLink {
         guard let run else { return false }
         var hasAnswer = false
         var showedParts = false
+        var selected: String?
         let made = runs.call(run.command, call.action, key: call.key, input: call.input, limit: call.limit, variables: call.variables) { [weak run] made, text, lines in
             guard let run else { return }
             showedParts = showedParts || !lines.parts.isEmpty
+            selected = lines.select ?? selected
             switch call.purpose {
             case .ask(.read) where hasAnswer:
                 await run.takeUpdate(lines, frame: text, from: .read)
@@ -45,7 +47,7 @@ final class OnceLink: ScriptLink {
                 hasAnswer = true
                 await run.takeAnswer(PluginOutput(text: ""), frame: "", to: ask)
             }
-            run.ended(made, call.purpose, end, hadAnswer: hasAnswer, showedParts: showedParts)
+            run.ended(made, call.purpose, end, hadAnswer: hasAnswer, showedParts: showedParts, selected: selected)
         }
         if case .ask = call.purpose { asking.append(made) }
         run.track(made)

@@ -57,6 +57,36 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["--help"]), .help)
     }
 
+    func testASettingBelongsToTheSpotThatRunsTheCommand() {
+        let spot = ["OPENSPOT_ID": "repos"]
+
+        XCTAssertEqual(CommandLineCall(arguments: ["setting", "get", "folder"], environment: spot), .settingGet(spot: "repos", key: "folder"))
+        XCTAssertEqual(CommandLineCall(arguments: ["setting", "set", "folder", "/a b"], environment: spot), .settingSet(spot: "repos", key: "folder", value: "/a b"))
+        XCTAssertEqual(CommandLineCall(arguments: ["setting", "set", "folder"], environment: spot), .settingSet(spot: "repos", key: "folder", value: nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["setting", "get", "--spot", "home/coffee", "size"], environment: spot), .settingGet(spot: "home/coffee", key: "size"))
+        XCTAssertEqual(CommandLineCall(arguments: ["setting", "get"], environment: spot), .unknown("setting get"))
+        XCTAssertEqual(CommandLineCall(arguments: ["setting", "set", "a", "b", "c"], environment: spot), .unknown("setting set a b c"))
+    }
+
+    func testASettingWithNoSpotIsRefused() {
+        XCTAssertEqual(
+            CommandLineCall(arguments: ["setting", "get", "folder"], environment: [:]),
+            .refused("`openspot setting` needs a spot. Run it from a spot, or name one with `--spot <id>`.")
+        )
+    }
+
+    func testACommandThatWaitsForThePersonIsRefusedInARead() {
+        XCTAssertEqual(CommandLineCall(arguments: ["folder", "pick"], environment: [:]), .folderPick)
+        XCTAssertEqual(
+            CommandLineCall(arguments: ["folder", "pick"], environment: ["OPENSPOT_REASON": "sheet"]),
+            .refused("`openspot folder pick` waits for the person, so it cannot run in a read. Run it from a pick or an action.")
+        )
+        XCTAssertEqual(
+            CommandLineCall(arguments: ["color", "pick"], environment: ["OPENSPOT_REASON": "panel"]),
+            .refused("`openspot color pick` waits for the person, so it cannot run in a read. Run it from a pick or an action.")
+        )
+    }
+
     func testAWindowCallReadsItsFrames() {
         XCTAssertEqual(CommandLineCall(arguments: ["window", "frame"]), .windowFrame)
         XCTAssertEqual(CommandLineCall(arguments: ["window", "move", "-1440", "25", "720", "900"]), .windowMove(WindowMove(words: ["-1440", "25", "720", "900"])!))

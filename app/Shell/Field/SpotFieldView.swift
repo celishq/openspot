@@ -43,6 +43,9 @@ struct SpotFieldView: View {
         .onChange(of: model.showsSearch) { _, shows in
             isFocused = shows
         }
+        .onChange(of: model.menu == nil) { _, isClosed in
+            if isClosed, model.isShown, model.showsSearch { isFocused = true }
+        }
     }
 
     private var searchField: some View {

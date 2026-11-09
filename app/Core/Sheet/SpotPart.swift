@@ -134,7 +134,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         )
     }
 
-    private static func option(_ text: String) -> Option {
+    /// Reads an `option` line, `<id>:<title>`, or an id that is its own title.
+    static func option(_ text: String) -> Option {
         let pair = text.split(separator: ":", maxSplits: 1).map(String.init)
         return Option(id: pair[0], title: pair.count > 1 ? pair[1] : pair[0])
     }

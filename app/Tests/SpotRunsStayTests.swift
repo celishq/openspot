@@ -157,9 +157,9 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(sheet.command.actions.count, 1)
         var draft = FormDraft(form: form, prefill: "")
         draft.set("one", for: "a")
-        let isDone = try await sheet.submit(action, item: nil, draft: draft)
+        let answer = try await sheet.submit(action, item: nil, draft: draft)
 
-        XCTAssertTrue(isDone)
+        XCTAssertEqual(answer, .done)
         try await wait("the blocks") { self.blocks() == ["arg=read", "arg=new", "arg=new\na=one"] }
         XCTAssertEqual(log().count, 1)
     }

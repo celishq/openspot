@@ -90,4 +90,54 @@ final class ConfigFileTests: XCTestCase {
 
         XCTAssertEqual(try String(contentsOf: file.url, encoding: .utf8), "# mine\npanel_key = \"ctrl+j\"\n")
     }
+
+    func testASettingIsKeptForItsSpotAndRemovedWithNoValue() throws {
+        try file.set(setting: "folder", of: "repos", to: "~/Developer")
+        try file.set(setting: "editor", of: "repos", to: "/Applications/Zed.app")
+        try file.set(setting: "folder", of: "notes", to: "~/Notes")
+        try file.set(setting: "folder", of: "repos", to: "~/Code")
+        try file.set(setting: "editor", of: "repos", to: nil)
+
+        let config = file.read()
+        XCTAssertEqual(config.setting("folder", of: "repos"), "~/Code")
+        XCTAssertNil(config.setting("editor", of: "repos"))
+        XCTAssertEqual(config.setting("folder", of: "notes"), "~/Notes")
+        XCTAssertEqual(config.faults, [])
+    }
+
+    func testASettingKeepsQuotesBackslashesAndNewLines() throws {
+        let value = "a \"b\" \\c\nd"
+
+        try file.set(setting: "note", of: "x", to: value)
+
+        XCTAssertEqual(file.read().setting("note", of: "x"), value)
+    }
+
+    func testOtherWritesKeepTheSettings() throws {
+        try file.set(setting: "folder", of: "repos", to: "~/Code")
+
+        try file.set("panel_key", to: "option+space")
+        try file.turn("cpu", on: true)
+        try file.write(keys: [GlobalKey(spot: "move", command: "left", shortcut: try XCTUnwrap(Shortcut(text: "ctrl+left")))])
+
+        XCTAssertEqual(file.read().setting("folder", of: "repos"), "~/Code")
+        XCTAssertEqual(file.read().keys.map(\.command), ["left"])
+    }
+
+    func testWritesAtTheSameTimeLoseNoSetting() throws {
+        let file = file
+
+        DispatchQueue.concurrentPerform(iterations: 20) { index in
+            try? file.set(setting: "key\(index)", of: "spot", to: "\(index)")
+        }
+
+        let config = file.read()
+        XCTAssertEqual((0..<20).compactMap { config.setting("key\($0)", of: "spot") }, (0..<20).map(String.init))
+    }
+
+    func testASettingWithNoKeyIsAFault() throws {
+        try write("[[settings]]\nspot = \"repos\"\nvalue = \"x\"\n")
+
+        XCTAssertEqual(file.read().faults, ["config.toml: a setting needs a spot, a key and a value."])
+    }
 }

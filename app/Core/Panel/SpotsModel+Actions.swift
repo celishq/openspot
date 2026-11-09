@@ -14,16 +14,19 @@ extension SpotsModel {
     /// Takes a key before the focused field does. Returns false when the key is not for an action, a menu or a form.
     public func handleKey(_ key: ActionKey) -> Bool {
         if menu != nil {
-            handleMenuKey(key)
-            return true
+            return handleMenuKey(key)
         }
         if isEditing {
             handleEditKey(key)
             return true
         }
-        if form != nil {
+        if let form {
+            let isList = form.draft.choices != nil
             switch key {
             case ActionKey(name: "return", isCommand: true): submitForm()
+            case ActionKey(name: "return") where isList: submitForm()
+            case ActionKey(name: "up") where isList: self.form?.draft.move(by: -1)
+            case ActionKey(name: "down") where isList: self.form?.draft.move(by: 1)
             case ActionKey(name: "escape"): cancelForm()
             default: return false
             }
@@ -150,18 +153,24 @@ extension SpotsModel {
         }
     }
 
-    private func handleMenuKey(_ key: ActionKey) {
+    /// Takes the keys of the open menu. In a menu that searches, a key with no ⌘ goes to its field, and returns false.
+    private func handleMenuKey(_ key: ActionKey) -> Bool {
+        let types = menu?.isSearchable == true && !key.isCommand
         switch key {
         case ActionKey(name: "k", isCommand: true), ActionKey(name: "escape"): closeMenu()
         case ActionKey(name: "up"): menu?.move(by: -1)
         case ActionKey(name: "down"): menu?.move(by: 1)
         case ActionKey(name: "return"): pressMenu()
         default:
-            if let action = menu?.rows.compactMap(\.action).first(where: { $0.key == key }) {
-                menu?.select(action)
-                pressMenu()
-            }
+            guard !types, let action = menu?.rows.compactMap(\.action).first(where: { $0.key == key }) else { return !types }
+            menu?.select(action)
+            pressMenu()
         }
+        return true
+    }
+
+    public func searchMenu(_ text: String) {
+        menu?.search(text)
     }
 
     private func openMenu(on target: Target) {
@@ -224,8 +233,12 @@ extension SpotsModel {
     }
 
     private func pressMenu() {
-        let isRunning = menu.map { work(of: $0.rows[$0.selected]) != nil } ?? false
+        let isRunning = menu?.selectedRow.map { work(of: $0) != nil } ?? false
         guard let row = menu?.press(isRunning: isRunning), let target = menuTarget else { return }
+        if !isRunning, let action = row.action, action.isForm {
+            openForm(action, on: target)
+            return
+        }
         closeMenu()
         if row.opensEdit {
             beginEditing()
@@ -260,6 +273,8 @@ extension SpotsModel {
         }
     }
 
+    /// Asks the script for the form of an action, and shows it in place of the actions menu once it comes, so that the menu
+    /// stays while the script answers.
     public func openForm(_ action: CommandAction, on target: Target, prefill: String = "") {
         let ask = UUID()
         formAsk = ask
@@ -267,6 +282,7 @@ extension SpotsModel {
             do {
                 guard let form = try await sheets[target.entry.id]?.form(action, item: target.item), formAsk == ask else { return }
                 formAsk = nil
+                closeMenu()
                 let opensSheet = openList != target.entry.id
                 if opensSheet {
                     open(target.entry.id, moving: isShown)
@@ -279,9 +295,43 @@ extension SpotsModel {
                     openedSheet: opensSheet
                 )
             } catch {
+                closeMenu()
                 host.notify("\(action.title) failed. \(Self.reason(error))")
             }
         }
+    }
+
+    /// Runs the action that changes a setting of a spot. A form that it answers with opens on the sheet of that spot, and
+    /// the panel closes when it is done.
+    public func changeSetting(of id: String, with action: CommandAction) {
+        guard let entry = entries.first(where: { $0.id == id }), let sheet = sheets[id] else {
+            host.notify("Openspot cannot find \(id). Turn it on in Spots, then try again.")
+            return
+        }
+        let ask = UUID()
+        formAsk = ask
+        Task {
+            do {
+                switch try await sheet.change(action) {
+                case .form(let form)? where isShown && formAsk == ask:
+                    closeList(moving: true)
+                    open(id, moving: true)
+                    self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
+                case .done?:
+                    if isShown { host.dismiss() }
+                default:
+                    break
+                }
+            } catch {
+                host.notify("\(action.title) failed. \(Self.reason(error))")
+            }
+        }
+    }
+
+    /// Takes a click on an option of a form of one choice, and saves the form with it.
+    public func chooseFormOption(_ item: SpotItem) {
+        form?.draft.choose(item.run)
+        submitForm()
     }
 
     public func setFormValue(_ text: String, for name: String) {
@@ -297,7 +347,9 @@ extension SpotsModel {
         }
     }
 
-    /// Saves the form. It stays open with its text when the command refuses the values.
+    /// Saves the form. It stays open with its text when the command refuses the values, and shows the form that the command
+    /// answers with. An action that closes the panel closes it once the command is done. A call that ends after the person
+    /// moved on to another form changes nothing.
     public func submitForm() {
         guard let form else { return }
         if let missing = form.draft.missing {
@@ -306,8 +358,14 @@ extension SpotsModel {
         }
         Task {
             do {
-                if try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: form.draft) == true, self.form?.id == form.id {
+                switch try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: form.draft) {
+                case .done? where self.form?.id == form.id:
                     self.form = nil
+                    if form.action.after == .close, isShown { host.dismiss() }
+                case .form(let next)? where self.form?.id == form.id:
+                    self.form?.draft = FormDraft(form: next)
+                default:
+                    break
                 }
             } catch {
                 host.notify("\(form.action.title) failed. \(Self.reason(error))")

@@ -34,7 +34,7 @@ struct SpotHintLine: View {
     }
 
     private func hint(_ words: String, isShown: Bool, height: CGFloat) -> some View {
-        SpotHint(text: words, onPress: model.pressHint)
+        SpotHint(text: words, activeKey: model.menu == nil ? nil : ActionMenu.key, onPress: model.pressHint)
             .frame(width: SpotTokens.panelWidth)
             .allowsHitTesting(isShown)
             .offset(y: height - SpotTokens.halo - SpotTokens.hintPillHeight)
@@ -43,7 +43,7 @@ struct SpotHintLine: View {
 
     /// What the hint says while a sheet shows: a form has its own keys.
     private var sheetWords: String {
-        if model.form != nil { return "⌘⏎ Save   Esc Cancel" }
+        if let form = model.form { return form.draft.choices == nil ? "⌘⏎ Save   Esc Cancel" : "⏎ Save   Esc Cancel" }
         return sheetHint
     }
 }

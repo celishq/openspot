@@ -18,6 +18,12 @@ enum SpotKeyLayouts {
         }
     }
 
+    /// The Latin layout that the Mac keeps for ⌘ shortcuts, such as ABC, read when a key needs it (A17).
+    static var latin: KeyLayout? {
+        guard let source = TISCopyCurrentASCIICapableKeyboardLayoutInputSource()?.takeRetainedValue() else { return nil }
+        return layout(source)
+    }
+
     private static func read() -> [KeyLayout] {
         let filter = [kTISPropertyInputSourceType as String: kTISTypeKeyboardLayout as String] as CFDictionary
         guard let list = TISCreateInputSourceList(filter, false)?.takeRetainedValue() as? [TISInputSource] else { return [] }

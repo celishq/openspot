@@ -162,8 +162,11 @@ public final class SpotsModel {
     public var isShown = false
     /// Whether the app is opening the panel unseen as it starts, which a press of the key ends.
     public var isWarming = false
-    /// Whether a drag over the menu bar item opened the panel, so that it is not key and its field takes no focus.
+    /// Whether a drag holds the panel open: one over the menu bar item, or one that a press in another app started (D7). The
+    /// panel is not key then, and its field takes no focus.
     public var isOpenForDrag = false
+    /// Whether a drop just opened a sheet, which holds the focus while the app that the drag came from lets go of it (D8).
+    public var isSettlingDrop = false
     public var updateSpot: UpdateSpot?
 
     public var entryKey = Shortcut.standard
@@ -803,6 +806,14 @@ public final class SpotsModel {
         if entry.id == ShippedSpot.spotsID, action == nil { spotsChanged = true }
         if action == nil, item.shortcut != nil {
             toggleRecording(id: item.run)
+            return
+        }
+        if action == nil, case .settings? = entry.command.shipped, let change = SettingsSpot.change(of: item.run) {
+            changeSetting(of: change.spot, with: change.action)
+            return
+        }
+        if action == nil, let form = entry.command.pickForm {
+            openForm(form, on: (entry, item))
             return
         }
         if action != nil || entry.command.pick == .close {

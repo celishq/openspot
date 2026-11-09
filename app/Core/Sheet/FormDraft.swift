@@ -4,6 +4,8 @@ import Foundation
 public struct FormDraft: Equatable, Sendable {
     public let form: ItemForm
     public private(set) var values: [String: String]
+    /// The options of a form of one choice as rows, with its value selected.
+    public private(set) var choices: ItemList?
 
     /// Starts from the values the form gives. A prefill goes into the first field when that field is empty.
     public init(form: ItemForm, prefill: String = "") {
@@ -12,6 +14,27 @@ public struct FormDraft: Equatable, Sendable {
         for field in form.fields { values[field.name] = field.value ?? "" }
         if let first = form.fields.first, values[first.name]?.isEmpty == true { values[first.name] = prefill }
         self.values = values
+        if let choice = form.soleChoice {
+            choices = ItemList(items: choice.options.map { SpotItem(title: $0.title, run: $0.id) })
+            choices?.select(run: values[choice.name] ?? "")
+        }
+    }
+
+    /// Selects the row of the choice this many rows away, and takes its option as the value.
+    public mutating func move(by step: Int) {
+        choices?.move(by: step)
+        takeChoice()
+    }
+
+    /// Selects the row of this option, and takes it as the value.
+    public mutating func choose(_ id: String) {
+        choices?.select(run: id)
+        takeChoice()
+    }
+
+    private mutating func takeChoice() {
+        guard let choice = form.soleChoice, let id = choices?.selectedItem?.run else { return }
+        values[choice.name] = id
     }
 
     public mutating func set(_ text: String, for name: String) {

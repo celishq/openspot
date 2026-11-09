@@ -169,6 +169,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     func showPanel() {
         guard let panel else { return }
         previousApp = NSWorkspace.shared.frontmostApplication
+        panel.place(over: previousApp)
         NSApp.activate(ignoringOtherApps: true)
         panel.show()
     }
@@ -182,12 +183,14 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     /// Brings the panel to the front with the focus, also when a drag opened it or it already shows.
     func present() {
         if let front = NSWorkspace.shared.frontmostApplication, front != .current { previousApp = front }
+        panel?.place(over: NSWorkspace.shared.frontmostApplication)
         NSApp.activate(ignoringOtherApps: true)
         panel?.show()
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.dropSettle) { [weak self] in
             guard self?.model.holdsFocus == true else { return }
             NSApp.activate(ignoringOtherApps: true)
             self?.panel?.makeKeyAndOrderFront(nil)
+            self?.model.isSettlingDrop = false
         }
     }
 
@@ -195,6 +198,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private func showPanelForDrag() {
         guard !model.isShown || model.isWarming else { return model.followDrag() }
         previousApp = nil
+        panel?.place(over: nil)
         panel?.showForDrag()
     }
 

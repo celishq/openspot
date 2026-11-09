@@ -44,18 +44,18 @@ These rules come from the way Nostr writes its NIPs.
 
 | Word                                                                                                     | Kind                 | Spec |
 | -------------------------------------------------------------------------------------------------------- | -------------------- | ---- |
-| `title`, `icon`, `detail`, `shortcut`, `size`, `read`, `data`, `drop`, `command`, `global`, `tray`       | Header key           | 01   |
+| `title`, `icon`, `detail`, `shortcut`, `size`, `read`, `data`, `drop`, `command`, `settings`, `global`, `tray` | Header key | 01 |
 | `view`                                                                                                   | Header key           | 03   |
 | `stay`                                                                                                   | Header key           | 05   |
 | `sheet`, `panel`, a number, `launch`, `wake`                                                             | Moment               | 01   |
 | `read`                                                                                                   | Reserved call        | 01   |
 | `run`, `open`, `drop`                                                                                    | Default id           | 01   |
-| `OPENSPOT_REASON`, `OPENSPOT_DATA`, `OPENSPOT_SH`                                                        | Environment variable | 01   |
+| `OPENSPOT_ID`, `OPENSPOT_REASON`, `OPENSPOT_DATA`, `OPENSPOT_SH`                                         | Environment variable | 01   |
 | `OPENSPOT_STAY`                                                                                          | Environment variable | 05   |
 | `openspot <noun> <verb>`                                                                                 | Command              | 01   |
 | `text`, `number`, `gauge`, `graph`, `picture`, `spot`, `switch`, `slider`, `field`, `choice`, `hotkey`, `button`, `section`, `row`, `repeat`, `template` | Block kind | 02 |
 | `view`                                                                                                   | Block kind           | 03   |
-| `grid`, `grid.<size>`, `card`, `pad`, `main`, `title`, `detail`, `size`, `search`, `recents`, `toast`, `link` | Head key        | 02   |
+| `grid`, `grid.<size>`, `card`, `pad`, `main`, `title`, `detail`, `size`, `search`, `recents`, `toast`, `link`, `select` | Head key | 02   |
 | `end`                                                                                                    | Head key             | 05   |
 | `call`, `reason`, `arg`, `stop`                                                                          | Stdin key            | 05   |
 

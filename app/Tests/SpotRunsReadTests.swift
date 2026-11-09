@@ -21,6 +21,15 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(try String(contentsOfFile: path("runs"), encoding: .utf8), "run\n")
     }
 
+    func testEachCallKnowsTheIDOfItsSpot() async throws {
+        try script("coffee", header: "read=sheet", "printf 'row=%s\\n' \"$OPENSPOT_ID\"")
+        let command = try XCTUnwrap(try scanned().commands.first { $0.id == "coffee" })
+
+        let items = try await command.items(timeout: 5).items
+
+        XCTAssertEqual(items.map(\.run), ["coffee"])
+    }
+
     // MARK: M6
 
     func testALaterFrameOfAReadKeepsTheValueThatItDoesNotPrint() async throws {

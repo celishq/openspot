@@ -60,6 +60,7 @@ open -a Calendar
 | `view`                   | A SwiftUI file beside the script, such as `view=cups.swift` (03).                                                                                                    |
 | `global`                 | `true` shows its rows in the main search too. It needs `panel`, `launch` or a number in its `read`, and a number also needs a `shortcut`. Openspot ranks the rows by the person's picks. With no `shortcut`, the spot has no card on the grid until the person places one. |
 | `tray`                   | `true` shows its main value in the menu bar. It needs a number in its `read`. Printing nothing removes the item until the next read. |
+| `settings`               | The values that the person chooses for it, each as `<key>[:<title>[:<icon>]]`, such as `folder,editor:Default app`. Settings lists each one, and Enter there runs the action of the same key. |
 | `stay`                   | `true` keeps one process that takes each call on stdin and prints frames at any time (05).                                                                           |
 
 With `panel` in its `read`, the head of a frame can change `size`. The person's choice wins (F9). A script with `command`
@@ -97,16 +98,17 @@ a widget or the menu bar shows it, or while the open panel reads it at `panel` (
 `read` is the only reserved call. `run`, `open` and `drop` are default ids. A component cannot use a default id, and a
 button can use only `open`. `call`, `reason` and `arg` are reserved ids too (05). A new default id reaches only a script that asks for it.
 
-A drop on a card with a running call waits for that call (D4). Presses of the keys of one script run one at a time, in
+A drop on a card with a running call waits for that call (D4). A drop on a card with rows opens its sheet, and the answer to
+the drop can select the row that it added with `select=` (02, D8). Presses of the keys of one script run one at a time, in
 order, and never stop a call. Only the person gives a command its key (P8).
 
 A script gets:
 
 - **Arguments:** the id and its values. A value over 64 KB goes on stdin only (C6).
 - **Stdin:** what the person filled in, as one block. A value that is not a field of the sheet comes as `value=`.
-- **Environment:** `OPENSPOT_DATA`, a folder for its files, shared by one plugin folder or by one `data` name.
-  `OPENSPOT_SH`, the shell helper. `PATH`, with the `openspot` command first. `OPENSPOT_STAY=true` in a staying
-  script (05).
+- **Environment:** `OPENSPOT_ID`, the ID of its spot, such as `home/coffee`. `OPENSPOT_DATA`, a folder for its files,
+  shared by one plugin folder or by one `data` name. `OPENSPOT_SH`, the shell helper. `PATH`, with the `openspot` command
+  first. `OPENSPOT_STAY=true` in a staying script (05).
 
 ```sh
 #!/bin/sh
@@ -149,9 +151,35 @@ A capability is `openspot <noun> <verb>`, and it works the same from a script an
 lists each one. A capability that cannot answer prints `status=<word>`. One that keeps state keeps it in its own
 helper, which a script never starts or stops (K3). When macOS already has a command, such as `pbcopy` or `open`, use it.
 
+A command that waits for the person, such as `openspot color pick` or `openspot folder pick`, fails in a read (K4). Run it
+from a pick or an action.
+
 `openspot render [--view <file.swift>] <file.png>` draws the sheet that stdin holds, with the plugin's view from a Swift file, and `openspot render --card <size> <file.png>` draws its card
 at a size such as `wide`, so you can see a result before you stop. Run `openspot check <plugins folder>` before you stop. It loads each plugin, reads each one that has a `read`, and prints
 each fault.
+
+### Settings
+
+```sh
+# settings=folder
+case "$1" in
+  folder)
+    picked=$(openspot folder pick)
+    [ -n "$picked" ] && openspot setting set folder "$picked"
+    ;;
+esac
+```
+
+`settings` in the header names the values that the person chooses for the spot. The Settings spot lists each one, set or
+not. Enter on it runs the action of the same name with no row, such as `folder`, and closes the panel when the action is
+done. The action can answer with a form (02), and the person can remove a value with `⌘⌫`.
+
+`openspot setting get <key>` prints a value that the person chose for the spot, or nothing when there is none.
+`openspot setting set <key> [value]` keeps a value, and removes it when there is no value. A value lives in the person's
+`config.toml`, under the spot that `OPENSPOT_ID` names, and `--spot <id>` names the spot from a terminal. Keep a choice of
+the person there, such as a folder, and keep what the script makes, such as a cache, in `OPENSPOT_DATA` (K6). The Settings
+spot also lists each value that the header does not name, so the person can remove it. `openspot folder pick` shows the folder window of macOS and
+prints the folder that the person picks, or nothing after Cancel.
 
 ## Messages
 
@@ -174,3 +202,4 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | A script runs once for each call, unless its header says `stay=true` (05).    | A process that stays by default.    |
 | The header is in each file, and a scan runs nothing.                          | A manifest.                         |
 | A plugin runs with the full access of the person.                    | A `uses` key, or a sandbox.         |
+| A script keeps a setting through `openspot setting`, and asks for it when it needs it. | A `setting` header key with a kind, and required settings. |

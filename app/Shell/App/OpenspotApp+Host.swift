@@ -6,7 +6,7 @@ import SwiftUI
 extension OpenspotApp: SpotsHost {
     func dismiss() {
         panel?.hide()
-        previousApp?.activate()
+        if NSApp.isActive { previousApp?.activate() }
     }
 
     func show() {
