@@ -37,8 +37,7 @@ struct SpotScreenTarget {
         case .area(let frame?):
             return .area(frame.target(window: .zero, area: CGDisplayBounds(CGMainDisplayID())))
         case .any, .display(nil), .window(nil), .area(nil):
-            // @todo #1 Let the person pick a source in an overlay.
-            throw PluginError.fault("Openspot cannot pick a source yet. Name one, such as `display` with its id.")
+            return await SpotScreenPick.target(of: source)
         }
     }
 
