@@ -121,7 +121,7 @@ public final class SpotRuns {
         for sheet in sheets.values where sheet.command.read?.has(moment) == true {
             sheet.read(need: moment == .panel ? .moment : .clock, reason: reason)
         }
-        sheets.values.forEach { $0.settleLive() }
+        sheets.values.forEach { $0.settleScript() }
     }
 
     /// Reads each wanted script whose number of seconds has passed.
