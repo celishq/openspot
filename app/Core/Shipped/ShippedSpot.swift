@@ -12,9 +12,7 @@ public enum ShippedSpot: Equatable, Sendable {
     case quit(QuitSpot)
 
     /// The commands of the shipped spots, in the order of the grid.
-    /// `agentPath` gives the folders where the New spot sheet looks for coding agents, and none by default.
-    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil, core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil, offersLogin: Bool = false, quit: QuitSpot? = nil, agentPath: @escaping @Sendable () async -> String = { "" }) -> [Spot] {
-        let handoff = AgentHandoff(prompt: AgentPrompt(folder: folder, guide: guide, app: app), searchPath: agentPath)
+    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil, core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil, offersLogin: Bool = false, quit: QuitSpot? = nil) -> [Spot] {
         var commands = [
             Spot(
                 id: spotsID,
@@ -51,7 +49,7 @@ public enum ShippedSpot: Equatable, Sendable {
                 subtitle: "Make your own",
                 read: .sheet,
                 order: 3,
-                shipped: .new(NewSpot(folder: folder, guide: guide, handoff: handoff, config: config)),
+                shipped: .new(NewSpot(folder: folder, guide: guide, prompt: AgentPrompt(folder: folder, guide: guide, app: app))),
                 isOnGrid: false
             )
         ]

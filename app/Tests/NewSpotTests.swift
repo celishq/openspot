@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the New spot sheet: it hands a description to an agent or makes a working starter, and the guide that it opens
+/// Proves the New spot sheet: it copies a prompt for an agent or makes a working starter, and the guide that it opens
 /// teaches a spot that works.
 final class NewSpotTests: XCTestCase {
     private var folder: URL!
@@ -34,13 +34,10 @@ final class NewSpotTests: XCTestCase {
         try FileManager.default.removeItem(at: folder)
     }
 
-    /// The New spot sheet, which looks for agents in a folder of this test.
-    private func newSpot(agents: [String] = []) throws -> Spot {
-        let place = folder.appendingPathComponent("agents")
-        try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
-        for agent in agents { try "#!/bin/sh\n".writeScript(to: place.appendingPathComponent(agent)) }
+    /// The New spot sheet of this test's plugins folder.
+    private func newSpot() throws -> Spot {
         let config = ConfigFile(url: folder.appendingPathComponent("config.toml"))
-        let spots = ShippedSpot.commands(folder: plugins, guide: guideURL, app: "/Apps/Openspot.app/Contents/MacOS/Openspot", config: config, agentPath: { place.path })
+        let spots = ShippedSpot.commands(folder: plugins, guide: guideURL, app: "/Apps/Openspot.app/Contents/MacOS/Openspot", config: config)
         return try XCTUnwrap(spots.first { $0.id == ShippedSpot.newID })
     }
 
@@ -63,59 +60,28 @@ final class NewSpotTests: XCTestCase {
         XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "mine", reason: "Mine cannot use key p, because another command has it")])
     }
 
-    func testTheSheetAsksWhatTheSpotShouldDoAndOffersEachStarterAndEachAgentFound() async throws {
-        let sheet = try await sheet(of: try newSpot(agents: ["claude"]))
+    func testTheSheetAsksWhatTheSpotShouldDoAndOffersEachStarter() async throws {
+        let sheet = try await sheet(of: try newSpot())
 
         let ids = Set(sheet.parts.map(\.id))
-        XCTAssertTrue(ids.isSuperset(of: ["ask", "build", "agent", "guide", "folder"]))
+        XCTAssertTrue(ids.isSuperset(of: ["ask", "build", "guide", "folder"]))
         XCTAssertTrue(ids.isSuperset(of: SpotStarter.allCases.map(\.rawValue)))
-        guard case .menu(let options, let value)? = sheet.parts.first(where: { $0.id == "agent" })?.control else { return XCTFail("no agent menu") }
-        XCTAssertEqual(options.map(\.id), ["claude", "copy"])
-        XCTAssertEqual(value, "claude")
+        XCTAssertFalse(ids.contains("agent"))
         XCTAssertEqual(sheet.parts.first?.id, "ask")
     }
 
-    func testBuildWithAIMakesAPlaceholderAndStartsTheAgentInTerminalWithThePrompt() async throws {
-        let spot = try newSpot(agents: ["claude"])
+    func testBuildWithAICopiesThePromptAndStartsNothing() async throws {
+        let spot = try newSpot()
 
         let toast = try await spot.perform(SpotAction(arguments: ["build"]), input: "ask=Show the weather here\n", timeout: 5)
 
-        XCTAssertEqual(toast, "Claude Code is building it in Terminal.")
-        let placeholder = try XCTUnwrap(PluginFolder(url: plugins).scan().commands.first)
-        XCTAssertEqual(placeholder.id, "show-the-weather-here")
-        XCTAssertEqual(placeholder.name, "Show the weather here")
-        XCTAssertEqual(placeholder.subtitle, NewSpot.buildingDetail)
-        let opened = try saved("opened").trimmingCharacters(in: .newlines)
-        XCTAssertTrue(opened.hasSuffix(".command"))
-        let command = try String(contentsOfFile: opened, encoding: .utf8)
-        XCTAssertTrue(command.contains("cd '\(plugins.path)'"))
-        XCTAssertTrue(command.contains("/Apps/Openspot.app/Contents/Helpers"))
-        XCTAssertTrue(command.contains("agents/claude' 'Build an Openspot spot that does this: Show the weather here"))
-        XCTAssertTrue(command.contains(plugins.appendingPathComponent("show-the-weather-here.sh").path))
-        XCTAssertTrue(command.contains("guide"))
-        XCTAssertTrue(FileManager.default.isExecutableFile(atPath: opened))
-    }
-
-    func testBuildWithAICopiesThePromptWhenNoAgentIsFound() async throws {
-        let spot = try newSpot()
-
-        let toast = try await spot.perform(SpotAction(arguments: ["build"]), input: "ask=It's a timer\n", timeout: 5)
-
         XCTAssertEqual(toast, "Copied a prompt for your agent. Paste it into Claude Code, Codex or another agent.")
-        XCTAssertTrue(try saved("clipboard").contains("Build an Openspot spot that does this: It's a timer"))
+        let prompt = try saved("clipboard")
+        XCTAssertTrue(prompt.contains("Build an Openspot spot that does this: Show the weather here"))
+        XCTAssertTrue(prompt.contains(plugins.path))
+        XCTAssertTrue(prompt.contains("guide"))
+        XCTAssertEqual(try PluginFolder(url: plugins).scan().commands, [])
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("opened").path))
-    }
-
-    func testTheAgentChoiceIsKeptAndCopyWinsOverAnAgentFound() async throws {
-        let spot = try newSpot(agents: ["claude", "codex"])
-
-        _ = try await spot.perform(SpotAction(arguments: ["agent", "copy"]), timeout: 5)
-        let toast = try await spot.perform(SpotAction(arguments: ["build"]), input: "ask=Timer\n", timeout: 5)
-
-        XCTAssertEqual(toast, "Copied a prompt for your agent. Paste it into Claude Code, Codex or another agent.")
-        let sheet = try await sheet(of: spot)
-        guard case .menu(_, let value)? = sheet.parts.first(where: { $0.id == "agent" })?.control else { return XCTFail("no agent menu") }
-        XCTAssertEqual(value, "copy")
     }
 
     func testBuildWithAINeedsADescription() async throws {

@@ -107,10 +107,12 @@ final class SpotFaultTests: XCTestCase {
         XCTAssertEqual(Set(sheet.parts.map(\.id)).intersection(["fix", "edit"]), ["fix", "edit"])
     }
 
-    func testFixWithAICopiesAPromptThatNamesTheFileTheFaultAndTheCheck() async throws {
+    func testCopyPromptForAICopiesAPromptThatNamesTheFileTheFaultAndTheCheck() async throws {
         let sheet = try await openFault()
+        let fix = try XCTUnwrap(sheet.parts.first { $0.id == "fix" })
+        XCTAssertEqual(fix.title, "Copy prompt for AI")
 
-        model.pressPart(try XCTUnwrap(sheet.parts.first { $0.id == "fix" }))
+        model.pressPart(fix)
         try await wait("the whole prompt") { saved("clipboard")?.contains("what the spot runs on my computer.") == true }
 
         let prompt = try XCTUnwrap(saved("clipboard"))

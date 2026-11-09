@@ -10,15 +10,13 @@ public struct FaultSpot: Equatable, Sendable {
     /// The name of the spot that the file would give.
     public let name: String
     public let faults: [String]
-    let handoff: AgentHandoff
-    let config: ConfigFile
+    let prompt: AgentPrompt
 
-    public init(file: URL, name: String, faults: [String], handoff: AgentHandoff, config: ConfigFile) {
+    public init(file: URL, name: String, faults: [String], prompt: AgentPrompt) {
         self.file = file
         self.name = name
         self.faults = faults
-        self.handoff = handoff
-        self.config = config
+        self.prompt = prompt
     }
 
     /// Answers one call with the text a script would print.
@@ -27,8 +25,7 @@ public struct FaultSpot: Equatable, Sendable {
         case "read":
             return sheet
         case Self.fixPart:
-            let choice = config.read().setting(NewSpot.agentPart, of: ShippedSpot.newID)
-            let toast = try await handoff.hand(handoff.prompt.fixing(file, faults: faults), choice: choice, doing: "fixing it")
+            let toast = try await prompt.copy(prompt.fixing(file, faults: faults))
             return TextBlock(fields: [.init(key: "toast", value: toast)]).text
         case Self.editPart:
             _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["open", "-t", file.path])
@@ -54,7 +51,7 @@ public struct FaultSpot: Equatable, Sendable {
             ]),
             TextBlock(fields: [
                 .init(key: "button", value: Self.fixPart),
-                .init(key: "title", value: "Fix with AI"),
+                .init(key: "title", value: "Copy prompt for AI"),
                 .init(key: "shortcut", value: "cmd+return"),
                 .init(key: "close", value: "true"),
                 .init(key: "look", value: "strong")

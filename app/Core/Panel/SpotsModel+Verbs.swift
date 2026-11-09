@@ -1,7 +1,7 @@
 import Foundation
 
-/// The acts that the app adds to each spot of the person: open its file in the text editor or in Finder, start an agent on
-/// it, copy it under a new name, and delete it so that `⌘Z` puts it back.
+/// The acts that the app adds to each spot of the person: open its file in the text editor or in Finder, copy a prompt for
+/// an agent to change it, copy it under a new name, and delete it so that `⌘Z` puts it back.
 extension SpotsModel {
     /// The files of a spot that Delete moved to the Trash, and where each went.
     struct Removal {
@@ -32,7 +32,7 @@ extension SpotsModel {
     /// Opens the Try window of a spot: a new process of the app with `sandbox` and the file of the spot.
     func tryOut(_ entry: Entry) {
         guard let new = newSpot else { return }
-        let bundle = URL(fileURLWithPath: new.handoff.prompt.app).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let bundle = URL(fileURLWithPath: new.prompt.app).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let path = file(of: entry).path
         Task {
             do {
@@ -48,20 +48,18 @@ extension SpotsModel {
         entries.lazy.compactMap { if case .new(let new)? = $0.command.shipped { new } else { nil } }.first
     }
 
-    /// Starts the agent of the New spot sheet on the file of a spot, with the words of its last failed call.
+    /// Copies a prompt that asks an agent to change the file of a spot, with the words of its last failed call.
     func change(_ entry: Entry) {
         guard let new = newSpot else {
-            host.notify("Openspot cannot start an agent, because New spot is missing. Quit and open Openspot again.")
+            host.notify("Openspot cannot write the prompt, because New spot is missing. Quit and open Openspot again.")
             return
         }
-        let text = new.handoff.prompt.changing(file(of: entry), failure: entry.failure)
-        let choice = new.config.read().setting(NewSpot.agentPart, of: ShippedSpot.newID)
-        if isShown { host.dismiss() }
+        let text = new.prompt.changing(file(of: entry), failure: entry.failure)
         Task {
             do {
-                host.confirm(try await new.handoff.hand(text, choice: choice, doing: "changing it"))
+                host.confirm(try await new.prompt.copy(text))
             } catch {
-                host.notify("\(entry.command.name) did not reach an agent. \(Self.reason(error))")
+                host.notify("The prompt for \(entry.command.name) was not copied. \(Self.reason(error))")
             }
         }
     }

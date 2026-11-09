@@ -14,14 +14,16 @@ public struct AgentPrompt: Equatable, Sendable {
         self.app = app
     }
 
-    /// Asks for a new spot that does what the person described, in the placeholder file that Openspot made for it.
-    public func building(_ description: String, in file: URL) -> String {
-        let id = file.deletingPathExtension().lastPathComponent
-        return """
+    /// The toast of each copy of a prompt.
+    public static let copied = "Copied a prompt for your agent. Paste it into Claude Code, Codex or another agent."
+
+    /// Asks for a new spot in the plugins folder that does what the person described.
+    public func building(_ description: String) -> String {
+        """
         Build an Openspot spot that does this: \(description)
 
-        Openspot made a placeholder for it at \(file.path), with the ID \(id). Write the spot in that file. When a better name fits, rename the file, and the ID changes with it.
-        \(steps(for: id))
+        Write it as one new file in \(folder.path). Its ID is the name of the file with no extension.
+        \(steps(for: "<id>"))
         """
     }
 
@@ -56,8 +58,9 @@ public struct AgentPrompt: Equatable, Sendable {
         """
     }
 
-    /// Puts the words on the clipboard.
-    func copy(_ text: String) async throws {
+    /// Puts the words on the clipboard, and returns the toast that says so.
+    func copy(_ text: String) async throws -> String {
         _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["LC_ALL=en_US.UTF-8", "pbcopy"], input: text)
+        return Self.copied
     }
 }

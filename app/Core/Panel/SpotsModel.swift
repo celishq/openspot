@@ -53,11 +53,6 @@ public final class SpotsModel {
             run?.failure
         }
 
-        /// Whether it is the placeholder of a spot that an agent builds, which its card shows as running work.
-        @MainActor public var isBuilding: Bool {
-            command.shipped == nil && command.subtitle == NewSpot.buildingDetail
-        }
-
         /// Whether the grid shows it: the person's choice, or else what the spot says.
         @MainActor public var isOnGrid: Bool {
             gridChoice ?? state.isOnGrid

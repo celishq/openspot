@@ -219,7 +219,7 @@ struct SpotCardView: View, Equatable {
     private var glyph: some View {
         if let call = entry.work {
             SpotWorkMark(call: call, stops: entry.stopsOnPress, isOnSolid: isFilled)
-        } else if isBuildingView || entry.isBuilding {
+        } else if isBuildingView {
             SpotWorkMark(call: nil, isOnSolid: isFilled)
         } else if let item = entry.item, item.icon != nil {
             SpotItemIcon(item: item, size: SpotTokens.glyphSize)

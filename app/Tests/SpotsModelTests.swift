@@ -365,14 +365,4 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(model.isEditing)
         try await wait("the New spot sheet from Edit Spots") { model.openList == ShippedSpot.newID }
     }
-
-    func testThePlaceholderOfASpotThatAnAgentBuildsShowsAsRunningWork() throws {
-        try script("weather", header: "detail=\(NewSpot.buildingDetail)", "echo")
-        try script("other", header: "detail=Done", "echo")
-
-        model.reload()
-
-        XCTAssertEqual(model.entries.first { $0.id == "weather" }?.isBuilding, true)
-        XCTAssertEqual(model.entries.first { $0.id == "other" }?.isBuilding, false)
-    }
 }
