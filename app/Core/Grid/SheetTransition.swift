@@ -17,6 +17,8 @@ public struct SheetTransition: Equatable, Sendable {
     public private(set) var phase = Phase.closed
     /// The number of the current motion.
     public private(set) var motion = 0
+    /// The sheet that the current one took the place of, until that change has settled.
+    public private(set) var replaced: String?
 
     public init() {}
 
@@ -33,6 +35,7 @@ public struct SheetTransition: Equatable, Sendable {
     /// Shows a sheet: at once when it does not move, and else on its card, ready to grow. A sheet that is open already
     /// stays open with the new one in its place.
     public mutating func show(_ id: String, moves: Bool) {
+        replaced = moves && isOpen && self.id != id ? self.id : nil
         self.id = id
         if !moves {
             motion += 1
@@ -54,12 +57,18 @@ public struct SheetTransition: Equatable, Sendable {
     public mutating func hide(moves: Bool) {
         guard id != nil else { return }
         motion += 1
+        replaced = nil
         if moves {
             phase = .closing
         } else {
             phase = .closed
             id = nil
         }
+    }
+
+    /// Ends the change of place to this sheet, when it is still the current one.
+    public mutating func settle(_ id: String) {
+        if self.id == id { replaced = nil }
     }
 
     /// Ends the motion with this number, when it is still the current one.

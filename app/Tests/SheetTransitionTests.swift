@@ -95,6 +95,19 @@ final class SheetTransitionTests: XCTestCase {
         XCTAssertEqual(transition.id, "a")
     }
 
+    func testASheetThatTakesThePlaceOfAnOpenOneHoldsItUntilTheChangeSettles() {
+        var transition = SheetTransition()
+        transition.show("a", moves: false)
+
+        transition.show("b", moves: true)
+
+        XCTAssertEqual(transition.replaced, "a")
+        transition.settle("a")
+        XCTAssertEqual(transition.replaced, "a")
+        transition.settle("b")
+        XCTAssertNil(transition.replaced)
+    }
+
     func testAStartWithNothingReadyChangesNothing() {
         var transition = SheetTransition()
         transition.start()

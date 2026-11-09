@@ -657,7 +657,9 @@ public final class SpotsModel {
     private func showSheet(_ list: String?, moving: Bool) {
         guard list != openList else { return }
         if let list, openList != nil, transition.isOpen {
-            change(moving ? .sheet(isOpen: true) : nil) { transition.show(list, moves: true) }
+            change(moving ? .sheet(isOpen: true) : nil, { transition.show(list, moves: true) }) { [weak self] in
+                self?.change(nil) { self?.transition.settle(list) }
+            }
             return
         }
         guard moving, hasPlace(list ?? transition.id) else { return cutSheet(to: list) }

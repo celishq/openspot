@@ -99,7 +99,7 @@ struct SpotsView: View {
     private var softBlur: some View {
         ZStack(alignment: .top) {
             blur(height: gridHeight, isShown: !sheetOpen)
-            blur(height: sheetHeight, isShown: sheetOpen)
+            blur(height: max(sheetHeight, replacedHeight), isShown: sheetOpen)
         }
         .frame(maxHeight: .infinity, alignment: .top)
         .opacity(model.isShown ? 1 : 0)
@@ -125,9 +125,21 @@ struct SpotsView: View {
 
     private var sheetRect: CGRect {
         if let form = model.form { return SpotTokens.formRect(form.draft.form) }
-        if let shownPanel { return SpotTokens.panelRect(shownPanel) }
-        let shape = model.sheets[sheetID ?? ""]?.shape
+        return rect(of: sheetID)
+    }
+
+    /// The rect of a sheet from its parts, or else from the shape of its rows.
+    private func rect(of id: String?) -> CGRect {
+        if let panel = model.sheets[id ?? ""]?.panel { return SpotTokens.panelRect(panel) }
+        let shape = model.sheets[id ?? ""]?.shape
         return SpotTokens.sheetRect(rows: shape?.rows ?? 0, perLine: shape?.perLine ?? 1)
+    }
+
+    /// The height of the sheet that the open one took the place of, so that the blur stays under both until the change
+    /// settles.
+    private var replacedHeight: CGFloat {
+        guard let replaced = model.transition.replaced else { return 0 }
+        return rect(of: replaced).height + 2 * SpotTokens.halo + SpotTokens.hintBlock
     }
 
     /// The parts of the open sheet.
