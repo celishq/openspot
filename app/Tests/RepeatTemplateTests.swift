@@ -114,9 +114,9 @@ final class RepeatTemplateTests: XCTestCase {
         let template = try XCTUnwrap(output.template(of: safari))
         let frames = RowPlacement(drawing: template.drawing(), parts: template.parts(of: safari), size: CGSize(width: 260, height: 40)).frames
 
-        XCTAssertEqual(frames["pic"], CGRect(x: 0, y: 0, width: 40, height: 40))
+        XCTAssertEqual(frames["pic"], CGRect(x: 0, y: 0, width: SpotTokens.listIconSize, height: 40))
         XCTAssertEqual(frames["quit"], CGRect(x: 220, y: 0, width: 40, height: 40))
-        XCTAssertEqual(frames["name"], CGRect(x: 48, y: 0, width: 164, height: 40))
+        XCTAssertEqual(frames["name"], CGRect(x: 32, y: 0, width: 180, height: 40))
     }
 
     func testASheetWithNoDrawingShowsItsComponentsThenItsRows() throws {

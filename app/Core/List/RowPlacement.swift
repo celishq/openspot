@@ -2,7 +2,7 @@ import CoreGraphics
 import Foundation
 
 /// Where each slot of a row lies in the place of that row. A column whose slots all keep their own size, such as a
-/// picture, a switch or a round button, is as wide as they are; the other columns share the rest. The lines share the
+/// picture, a switch or a round button, is as wide as they are, and a picture as wide as it draws; the other columns share the rest. The lines share the
 /// height evenly, and the app owns each gap.
 public struct RowPlacement: Equatable, Sendable {
     public static let gap: CGFloat = 8
@@ -62,7 +62,7 @@ public struct RowPlacement: Equatable, Sendable {
         switch part.control {
         case .toggle: return switchWidth
         case .shortcut: return keyWidth
-        case .none where part.kind == "picture": return height
+        case .none where part.kind == "picture": return SpotTokens.pictureSide(in: CGSize(width: height, height: height))
         case .none:
             if case .symbol = part.press { return height }
             return nil
