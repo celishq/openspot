@@ -71,33 +71,55 @@ final class ReposPluginTests: SamplePluginsCase {
         }
     }
 
-    func testEnterAsksForTheEditorOnceAndThenOpensEachRepoInIt() async throws {
+    func testItNamesItsSettings() throws {
+        XCTAssertEqual(try repos.settings, ["folder", "editor"])
+    }
+
+    func testEnterOpensInTheFirstEditorUntilAnotherIsTheDefault() async throws {
         let repos = try repos
         try await withPrivateHome { folder in
             let code = folder.appendingPathComponent("code")
+            let cursor = folder.appendingPathComponent("Applications/Cursor.app")
             let zed = folder.appendingPathComponent("Applications/Zed.app")
             try self.repo(code.appendingPathComponent("app"), head: "ref: refs/heads/main")
+            try FileManager.default.createDirectory(at: cursor, withIntermediateDirectories: true)
             try FileManager.default.createDirectory(at: zed, withIntermediateDirectories: true)
             try code.path.write(to: folder.appendingPathComponent("setting-folder"), atomically: true, encoding: .utf8)
             try "#!/bin/sh\necho \"$*\" > '\(folder.path)/opened'\n".writeScript(to: folder.appendingPathComponent("tools/open"))
+            let item = SpotItem(title: "app", run: code.appendingPathComponent("app").path)
 
             let first = repos.taking(try await repos.items(timeout: 5))
-            let ask = try XCTUnwrap(first.pickForm)
-            let item = SpotItem(title: "app", run: code.appendingPathComponent("app").path)
-            let form = try await repos.form(ask, item: item, timeout: 5)
-            let choice = try XCTUnwrap(form.fields.first)
-            var draft = FormDraft(form: form)
-            draft.set(zed.path, for: "editor")
-            _ = try await repos.submit(ask, item: item, draft: draft, timeout: 5)
+            try await repos.perform(.item(item), timeout: 5)
+            let opened = try self.read("opened", in: folder)
+            let use = try XCTUnwrap(first.actions.first { $0.title == "Use Zed by default" })
+            try await repos.perform(.action(use, item: nil), timeout: 5)
             let then = repos.taking(try await repos.items(timeout: 5))
 
-            XCTAssertEqual(choice.type, .choice)
-            XCTAssertTrue(choice.options.contains(SpotPart.Option(id: zed.path, title: "Zed")))
-            XCTAssertEqual(choice.options.last?.title, "Finder")
+            XCTAssertNil(first.pickForm)
+            XCTAssertEqual(first.primary, "Open in Cursor")
+            XCTAssertEqual(first.actions.map(\.title).filter { $0.hasPrefix("Use ") }, ["Use Zed by default", "Use Finder by default"])
+            XCTAssertEqual(use.scope, .command)
+            XCTAssertEqual(opened, "-a \(cursor.path) \(item.run)\n")
             XCTAssertEqual(try self.read("setting-editor", in: folder), zed.path)
-            XCTAssertEqual(try self.read("opened", in: folder), "-a \(zed.path) \(item.run)\n")
-            XCTAssertNil(then.pickForm)
             XCTAssertEqual(then.primary, "Open in Zed")
+            XCTAssertEqual(then.actions.map(\.title).filter { $0.hasPrefix("Use ") }, ["Use Cursor by default", "Use Finder by default"])
+        }
+    }
+
+    func testTheEditorSettingAsksWithItsOptionsAsOneChoice() async throws {
+        let repos = try repos
+        try await withPrivateHome { folder in
+            let zed = folder.appendingPathComponent("Applications/Zed.app")
+            try FileManager.default.createDirectory(at: zed, withIntermediateDirectories: true)
+            let change = CommandAction(id: "editor", title: "Change editor", scope: .command, after: .close)
+
+            let form = try await repos.form(change, item: nil, timeout: 5)
+            var draft = FormDraft(form: form)
+            draft.choose(zed.path)
+            _ = try await repos.submit(change, item: nil, draft: draft, timeout: 5)
+
+            XCTAssertEqual(form.soleChoice?.options.map(\.title), ["Zed", "Finder"])
+            XCTAssertEqual(try self.read("setting-editor", in: folder), zed.path)
         }
     }
 }

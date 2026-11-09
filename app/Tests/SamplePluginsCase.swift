@@ -73,8 +73,9 @@ class SamplePluginsCase: XCTestCase {
         setenv("HOME", folder.path, 1)
         setenv("TMPDIR", folder.path + "/", 1)
         setenv("PATH", "\(tools.path):/usr/bin:/bin", 1)
+        setenv("APP_FOLDERS", folder.appendingPathComponent("Applications").path, 1)
         defer {
-            for name in ["HOME", "TMPDIR", "PATH"] {
+            for name in ["HOME", "TMPDIR", "PATH", "APP_FOLDERS"] {
                 if let value = before[name] { setenv(name, value, 1) } else { unsetenv(name) }
             }
             try? FileManager.default.removeItem(at: folder)

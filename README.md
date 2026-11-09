@@ -59,7 +59,7 @@ echo "toast=Hello"
 The [`plugins`](plugins) folder has more tools to copy, such as battery, windows and a color picker.
 The [`examples`](examples) folder has tools that draw their card with their own SwiftUI view, as [spec 03](spec/03-views.md)
 describes, Relay, which stays running and sends lines to another process, as [spec 05](spec/05-stay.md) describes, and
-Repos, which keeps a folder and an editor as settings and asks for the editor with a form.
+Repos, which names a folder and an editor as settings that Settings lists and changes.
 
 ## Widgets and keys
 

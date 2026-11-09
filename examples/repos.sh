@@ -4,6 +4,7 @@
 # shortcut=r
 # size=small
 # read=sheet
+# settings=folder,editor
 export LC_ALL=en_US.UTF-8
 . "$OPENSPOT_SH"
 editors='Visual Studio Code
@@ -31,10 +32,11 @@ editor=$(openspot setting get editor)
 [ -d "$folder" ] || folder=""
 [ -d "$editor" ] || editor=""
 
-# Prints the path of each editor on this Mac, one a line, then Finder.
+# Prints the path of each editor on this Mac, one a line, then Finder. APP_FOLDERS names where to look, in order, as PATH does.
 installed() {
   printf '%s\n' "$editors" | while IFS= read -r name; do
-    for place in "$HOME/Applications" /Applications; do
+    IFS=:
+    for place in ${APP_FOLDERS:-$HOME/Applications:/Applications}; do
       if [ -d "$place/$name.app" ]; then
         printf '%s\n' "$place/$name.app"
         break
@@ -70,8 +72,7 @@ branch() {
 
 # Prints the form that asks for the editor, with this title.
 form() {
-  printf 'title=%s\n\nchoice=editor\ntitle=Editor\n' "$1"
-  [ -n "$editor" ] && printf 'value=%s\n' "$(esc "$editor")"
+  printf 'title=%s\n\nchoice=editor\ntitle=Editor\nvalue=%s\n' "$1" "$(esc "$editor")"
   installed | while IFS= read -r app; do
     printf 'option=%s:%s\n' "$(esc "$app")" "$(esc "$(name "$app")")"
   done
@@ -88,6 +89,8 @@ keep_editor() {
   editor=$chosen
 }
 
+[ -n "$editor" ] || editor=$(installed | head -n 1)
+
 # Asks for the folder of the repos, and keeps it. Cancel keeps the folder that was there.
 pick_folder() {
   picked=$(openspot folder pick) || exit 1
@@ -101,11 +104,7 @@ case "$1" in
       printf 'row=choose\ntitle=Choose the folder of your repos\ndetail=Repos lists each git repo inside it\nicon=folder.badge.plus\n'
       exit 0
     fi
-    if [ -n "$editor" ]; then
-      printf 'button=open\ntitle=Open in %s\n\n' "$(esc "$(name "$editor")")"
-    else
-      printf 'button=open\ntitle=Open\nform=true\n\n'
-    fi
+    printf 'button=open\ntitle=Open in %s\n\n' "$(esc "$(name "$editor")")"
     index=0
     installed | while IFS= read -r app; do
       index=$((index + 1))
@@ -114,7 +113,11 @@ case "$1" in
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\nclose=true\n\n'
     printf 'button=terminal\ntitle=Open in Terminal\nshortcut=cmd+t\nclose=true\n\n'
     printf 'button=copy\ntitle=Copy path\nshortcut=cmd+shift+c\nclose=true\n\n'
-    printf 'button=editor\ntitle=Change editor\nscope=command\nform=true\n\n'
+    index=0
+    installed | while IFS= read -r app; do
+      index=$((index + 1))
+      [ "$app" = "$editor" ] || printf 'button=use-%s\ntitle=Use %s by default\nscope=command\nclose=false\n\n' "$index" "$(esc "$(name "$app")")"
+    done
     printf 'button=folder\ntitle=Change folder\nscope=command\nclose=true\n\n'
     found=0
     for repo in "$folder"/*/; do
@@ -136,18 +139,14 @@ case "$1" in
       pick_folder
       exit 0
     fi
-    if [ -z "$editor" ]; then
-      if [ -z "$(value editor)" ]; then
-        form "Choose an editor"
-        exit 0
-      fi
-      keep_editor || exit 0
-    fi
     open -a "$editor" "$2"
     ;;
   in-*)
     app=$(installed | sed -n "${1#in-}p")
     open -a "$app" "$2"
+    ;;
+  use-*)
+    openspot setting set editor "$(installed | sed -n "${1#use-}p")"
     ;;
   editor)
     if [ -z "$(value editor)" ]; then
