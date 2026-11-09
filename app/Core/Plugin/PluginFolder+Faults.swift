@@ -2,8 +2,9 @@ import Foundation
 
 /// The cards of the files that give no spot.
 extension PluginFolder {
-    /// A card for each file of this folder that gives no spot, which opens its faults. A file that loads with a fault, such
-    /// as a key that another spot has, keeps its own card. Each card takes the ID and the place of the spot it stands for.
+    /// A card for each file of this folder that gives no spot, which opens its faults. Its title says what a press does, and
+    /// its detail names the spot, so that both fit a wide card. A file that loads with a fault, such as a key that another
+    /// spot has, keeps its own card. Each card takes the ID and the place of the spot it stands for.
     public func faultSpots(of scan: ScanResult, agent: AgentPrompt) -> [Spot] {
         let loaded = Set(scan.plugins.filter { !$0.commands.isEmpty }.map(\.id))
         let faults = Dictionary(grouping: scan.refused.filter { !loaded.contains($0.file) }, by: \.file)
@@ -13,11 +14,11 @@ extension PluginFolder {
             let reasons = faults[id]?.map(\.reason) ?? []
             let spot = Spot(
                 id: id,
-                name: "Fix \(name)",
+                name: "Fix",
                 url: file,
                 kind: .list,
                 symbol: "exclamationmark.triangle",
-                subtitle: reasons.first,
+                subtitle: name,
                 read: .sheet,
                 shipped: .fault(FaultSpot(file: file, name: name, faults: reasons, agent: agent))
             )

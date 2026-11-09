@@ -30,8 +30,6 @@ struct SpotCardView: View, Equatable {
 
     /// How far a line reaches past the inset at its trailing end, where the round end of the card leaves room.
     private static let lineReach: CGFloat = 6
-    /// The smallest size of the words of a fault, as a part of their own size, at which they still read.
-    private static let faultScale: CGFloat = 0.7
 
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.corner(for: size), style: .continuous)
@@ -162,13 +160,11 @@ struct SpotCardView: View, Equatable {
             .lineLimit(1)
     }
 
-    /// The second line. The fault of a file that does not load shrinks until it fits, so that its cause shows whole.
     private func detail(_ text: String, isOnSolid: Bool) -> some View {
         Text(text)
             .font(SpotType.detail)
             .modifier(SpotSecondaryText(isOnSolid: isOnSolid))
             .lineLimit(1)
-            .minimumScaleFactor(entry.command.fault == nil ? 1 : Self.faultScale)
     }
 
     private var text: some View {

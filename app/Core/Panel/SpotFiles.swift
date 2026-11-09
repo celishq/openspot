@@ -30,6 +30,11 @@ public struct SpotFiles {
         folder(config.read())
     }
 
+    /// The record of the calls of each spot, beside the plugins folder.
+    public var log: CallLog {
+        CallLog(folder: PluginFolder.config(environment: environment, home: home).appendingPathComponent("logs", isDirectory: true))
+    }
+
     /// The rows that a person picked last in a list, the newest first.
     public func recent(of id: String) -> [String] {
         defaults.stringArray(forKey: Self.recentKey(id)) ?? []

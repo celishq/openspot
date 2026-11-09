@@ -337,4 +337,15 @@ final class SpotsModelTests: XCTestCase {
 
         XCTAssertNil(model.flashSymbol)
     }
+
+    func testAShowOfASpotOpensThePanelWithItsCardSelected() throws {
+        try script("one", header: "", "echo")
+        try script("two", header: "", "echo")
+
+        XCTAssertTrue(model.reveal("one"))
+
+        XCTAssertEqual(host.shows, 1)
+        XCTAssertEqual(model.selectedEntry?.id, "one")
+        XCTAssertFalse(model.reveal("three"))
+    }
 }

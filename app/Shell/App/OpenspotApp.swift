@@ -34,6 +34,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var motionProbe: SpotMotionProbe?
     private var update: AppUpdate?
     private var folderWatch: SpotFolderWatch?
+    private var showListener: NSObjectProtocol?
     private var isLaunched = false
     private var openedAtLaunch: [URL] = []
 
@@ -65,6 +66,8 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         model.updateSpot = update?.spot
         model.reload()
         folderWatch = SpotFolderWatch(folder: model.files.folder.url) { [weak self] in self?.model.folderChanged() }
+        try? AgentNote(command: Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/openspot").path).write(in: model.files.folder.url)
+        showListener = SpotShowLink.listen { [weak self] id in self?.model.reveal(id) ?? false }
         model.arrive(.launch)
         let isFirstLaunch = PluginFolder.standard().isFirstLaunch(config: .standard())
         panel?.warm { [weak self] in

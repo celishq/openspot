@@ -208,7 +208,8 @@ public final class SpotsModel {
         self.files = files
         self.runs = runs ?? SpotRuns(
             recent: { files.recent(of: $0) },
-            prepare: { [unowned host] in await host.prepare($0) }
+            prepare: { [unowned host] in await host.prepare($0) },
+            log: files.log
         )
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
         self.runs.partsArrival = { [weak self] id, bring in
@@ -289,6 +290,21 @@ public final class SpotsModel {
             stamps[script.id] = "\(date) \(values[.systemFileNumber] ?? "")"
         }
         return stamps
+    }
+
+    /// Opens the panel with the card of a spot selected, as `openspot spot show` asks. A spot that the grid does not show is
+    /// found by a search for its name. Returns false when no card has that ID.
+    public func reveal(_ id: String) -> Bool {
+        reload()
+        guard let entry = cards.first(where: { $0.id == id }) else { return false }
+        closeMenu()
+        form = nil
+        endEditing(moving: false)
+        if openList != nil { closeList(moving: false) }
+        host.show()
+        query = visible.contains { $0.id == id } || cards.filter(\.isOnGrid).contains { $0.id == id } ? "" : entry.state.title
+        selected = visible.firstIndex { $0.id == id } ?? 0
+        return true
     }
 
     /// Brings the grid up to date while a sheet covers it, so that the sheet closes onto the card's real place. The selected

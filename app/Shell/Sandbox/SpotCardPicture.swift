@@ -41,4 +41,41 @@ enum SpotCardPicture {
         NSApplication.shared.run()
         exit(0)
     }
+
+    /// Draws the real card of an installed spot at a size, after the read that the open panel would make, writes the picture
+    /// as a PNG and exits. A spot that no card shows exits with 1.
+    static func run(spot id: String, size: SpotSize, path: String) -> Never {
+        NSApplication.shared.setActivationPolicy(.prohibited)
+        let host = SpotQuietHost()
+        let model = SpotsModel(host: host, runs: SpotRuns())
+        model.reload()
+        guard let entry = model.entries.first(where: { $0.id == id }), let sheet = model.sheets[id] else {
+            FileHandle.standardError.write(Data("Openspot has no card for \(id). Run `openspot check` to see each file that does not load.\n".utf8))
+            exit(1)
+        }
+        let draw = {
+            let card = CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
+            let shown = model.entries.first { $0.id == id } ?? entry
+            let view = NSHostingView(rootView: SpotCardView(entry: shown, size: size, index: -1, isPressed: false, takesDrag: false, isDropTarget: false, chainLetter: nil, showsChain: false, isHiddenFromGrid: false, model: model)
+                .environment(\.spotIsShown, true)
+                .padding(margin)
+                .background(SpotTheme.window)
+                .preferredColorScheme(.dark))
+            let frame = NSRect(x: -9000, y: -9000, width: card.width + 2 * margin, height: card.height + 2 * margin)
+            let window = NSWindow(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false)
+            window.contentView = view
+            window.orderBack(nil)
+            DispatchQueue.main.asyncAfter(deadline: .now() + settle) {
+                MainActor.assumeIsolated {
+                    guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { exit(1) }
+                    view.cacheDisplay(in: view.bounds, to: bitmap)
+                    let data = bitmap.representation(using: .png, properties: [:])
+                    exit(FileManager.default.createFile(atPath: path, contents: data) ? 0 : 1)
+                }
+            }
+        }
+        if entry.command.readsState { sheet.afterAnswer(draw) } else { draw() }
+        NSApplication.shared.run()
+        exit(0)
+    }
 }

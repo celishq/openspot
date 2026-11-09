@@ -34,6 +34,8 @@ public final class SpotRuns {
     @ObservationIgnored private var asked: [String: Date] = [:]
     @ObservationIgnored private var clock: Task<Void, Never>?
     @ObservationIgnored private var processes: [ScriptProcess] = []
+    /// The record of each call that runs once, or nil to keep none.
+    @ObservationIgnored private let log: CallLog?
 
     public init(
         readLimit: TimeInterval = 10,
@@ -42,8 +44,10 @@ public final class SpotRuns {
         stopPause: TimeInterval = 2,
         tickPause: Duration = .seconds(1),
         recent: @escaping (String) -> [String] = { _ in [] },
-        prepare: @escaping ([SpotItem]) async -> Void = { _ in }
+        prepare: @escaping ([SpotItem]) async -> Void = { _ in },
+        log: CallLog? = nil
     ) {
+        self.log = log
         self.readLimit = readLimit
         self.firstAnswerPause = firstAnswerPause
         self.now = now
@@ -206,7 +210,7 @@ public final class SpotRuns {
             for try await frame in frames { return frame }
             return ""
         }
-        let (stream, halt) = frames(of: command, action, input: input, limit: limit)
+        let (stream, halt, _) = frames(of: command, action, input: input, limit: limit)
         if action == .read {
             defer { halt() }
             for try await frame in stream { return frame }
@@ -235,20 +239,36 @@ public final class SpotRuns {
         onEnd: @escaping @MainActor (ScriptCall, ScriptCall.End) async -> Void
     ) -> ScriptCall {
         let call = ScriptCall(action: action, key: key, started: now())
-        let (stream, halt) = frames(of: command, action, input: input, limit: limit, variables: variables)
+        let (stream, halt, process) = frames(of: command, action, input: input, limit: limit, variables: variables)
         call.halt = halt
-        Task {
+        let begin = Date()
+        Task { [log] in
             var end = ScriptCall.End.ended
+            var printed: [String] = []
             do {
                 for try await frame in stream {
                     guard !call.isStopped else { break }
+                    printed.append(frame)
                     let output = call.take(frame: frame)
                     await onFrame(call, frame, output)
                 }
             } catch {
                 end = .failed(error)
             }
-            await onEnd(call, call.isStopped ? .stopped : end)
+            let ending: ScriptCall.End = call.isStopped ? .stopped : end
+            if let log, let process {
+                log.write(CallLog.Record(
+                    spot: command.id,
+                    arguments: action.arguments,
+                    input: input,
+                    frames: printed + (process.failedFrame.map { [$0] } ?? []),
+                    errors: process.errors,
+                    end: CallLog.End(ending),
+                    started: call.started,
+                    seconds: Date().timeIntervalSince(begin)
+                ))
+            }
+            await onEnd(call, ending)
         }
         return call
     }
@@ -261,18 +281,19 @@ public final class SpotRuns {
         return (script, frames)
     }
 
-    private func frames(of command: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String] = [:]) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void) {
+    private func frames(of command: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String] = [:]) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void, process: ScriptProcess?) {
         if let shipped = command.keyList.flatMap({ $0.answers(action.arguments) ? ShippedSpot.settings($0) : nil }) ?? command.shipped {
-            return answered { try await shipped.answer(action.arguments, input: input) }
+            let (stream, halt) = answered { try await shipped.answer(action.arguments, input: input) }
+            return (stream, halt, nil)
         }
         let sent = action.sent(input: input)
         let process = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: command.dataName, variables: variables.merging(["OPENSPOT_ID": command.id]) { given, _ in given })
         do {
             let stream = try process.start()
             keep(process)
-            return (stream, { process.stop() })
+            return (stream, { process.stop() }, process)
         } catch {
-            return (AsyncThrowingStream { $0.finish(throwing: error) }, {})
+            return (AsyncThrowingStream { $0.finish(throwing: error) }, {}, nil)
         }
     }
 

@@ -82,8 +82,8 @@ final class SpotFaultTests: XCTestCase {
         model.reload()
 
         let card = try XCTUnwrap(entry("weather"))
-        XCTAssertEqual(card.state.title, "Fix Weather")
-        XCTAssertEqual(card.state.subtitle, "Weather has an unknown shortcut: ??")
+        XCTAssertEqual(card.state.title, "Fix")
+        XCTAssertEqual(card.state.subtitle, "Weather")
         XCTAssertEqual(card.size, .wide)
         XCTAssertTrue(card.isOnGrid)
         XCTAssertEqual(host.notes, [])
