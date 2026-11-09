@@ -47,14 +47,11 @@ public struct SettingsSpot: Equatable, Sendable {
             return ""
         case "open" where arguments.dropFirst().first == CommandLink.run:
             return try link?.toggle() ?? ""
-        case "open" where setting(of: arguments.dropFirst().first) != nil:
-            let spot = setting(of: arguments.dropFirst().first)!.spot
-            return TextBlock(fields: [.init(key: "toast", value: "\(spot) keeps this value. Change it in \(spot), or press `⌘⌫` to remove it.")]).text
         case Self.panelKey, Self.fixKey:
             try file.set(arguments[0], to: try shortcut(from: arguments).text)
             return ""
         case Self.clear:
-            if let found = setting(of: arguments.dropFirst().first) {
+            if let found = Self.setting(of: arguments.dropFirst().first) {
                 try file.set(setting: found.key, of: found.spot, to: nil)
             } else if let run = arguments.dropFirst().first, let found = target(of: run) {
                 try assign(nil, to: found)
@@ -81,17 +78,20 @@ public struct SettingsSpot: Equatable, Sendable {
                 return "row=\(Self.keyPrefix)\(script.id):\(offer.id)\ntitle=\(offer.title)\n\(detail)icon=\(offer.icon ?? script.image ?? script.file ?? script.glyph ?? script.symbol)\n\(hides)shortcut=\(key?.shortcut.text ?? "Record")\n"
             }
         }
-        let values = only != nil ? [] : config.settings.map { setting -> String in
-            let script = scripts.first { $0.id == setting.spot }
-            let name = script?.name ?? setting.spot
+        let named = scripts.flatMap { script in script.settings.map { (spot: script.id, key: $0) } }
+        let kept = config.settings.map { (spot: $0.spot, key: $0.key) }.filter { setting in !named.contains { $0 == setting } }
+        let values = only != nil ? [] : (named + kept).map { spot, key -> String in
+            let script = scripts.first { $0.id == spot }
+            let value = config.setting(key, of: spot)
+            let name = script?.name ?? spot
             let icon = script.map { $0.image ?? $0.file ?? $0.glyph ?? $0.symbol } ?? "gearshape"
             return TextBlock(fields: [
-                .init(key: "row", value: "\(Self.settingPrefix)\(setting.spot):\(setting.key)"),
-                .init(key: "title", value: setting.key.prefix(1).uppercased() + setting.key.dropFirst()),
-                .init(key: "detail", value: "\(name) · \(setting.value)"),
+                .init(key: "row", value: "\(Self.settingPrefix)\(spot):\(key)"),
+                .init(key: "title", value: key.prefix(1).uppercased() + key.dropFirst()),
+                .init(key: "detail", value: "\(name) · \(value ?? "Not set")"),
                 .init(key: "parent", value: name),
                 .init(key: "icon", value: icon)
-            ]).text
+            ] + (value == nil ? [.init(key: "hides", value: Self.clear)] : [])).text
         }
         let login = self.login.map { [$0.row.text] } ?? []
         let link = self.link.map { [$0.row.text] } ?? []
@@ -107,8 +107,14 @@ public struct SettingsSpot: Equatable, Sendable {
         return shortcut
     }
 
+    /// The action of a spot that Enter on its setting row runs: the one with the name of the setting, which closes the panel.
+    public static func change(of run: String) -> (spot: String, action: CommandAction)? {
+        guard let (spot, key) = setting(of: run) else { return nil }
+        return (spot, CommandAction(id: key, title: "Change \(key)", scope: .command, after: .close))
+    }
+
     /// The spot and the key of the setting that the run of a row names.
-    private func setting(of run: String?) -> (spot: String, key: String)? {
+    private static func setting(of run: String?) -> (spot: String, key: String)? {
         guard let run, run.hasPrefix(Self.settingPrefix), let split = run.dropFirst(Self.settingPrefix.count).firstIndex(of: ":") else { return nil }
         return (String(run[run.index(run.startIndex, offsetBy: Self.settingPrefix.count)..<split]), String(run[run.index(after: split)...]))
     }

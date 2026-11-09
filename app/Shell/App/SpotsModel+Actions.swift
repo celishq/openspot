@@ -285,6 +285,32 @@ extension SpotsModel {
         }
     }
 
+    /// Runs the action that changes a setting of a spot. A form that it answers with opens on the sheet of that spot, and
+    /// the panel closes when it is done.
+    func changeSetting(of id: String, with action: CommandAction) {
+        guard let entry = entries.first(where: { $0.id == id }), let sheet = sheets[id] else {
+            notify("Openspot cannot find \(id). Turn it on in Spots, then try again.")
+            return
+        }
+        Task {
+            do {
+                switch try await sheet.change(action) {
+                case .form(let form)? where isShown:
+                    closeList()
+                    sheetMoves = true
+                    open(id)
+                    self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
+                case .done?:
+                    if isShown { dismiss() }
+                default:
+                    break
+                }
+            } catch {
+                notify("\(action.title) failed. \(Self.reason(error))")
+            }
+        }
+    }
+
     func setFormValue(_ text: String, for name: String) {
         form?.draft.set(text, for: name)
     }

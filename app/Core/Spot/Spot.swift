@@ -52,6 +52,8 @@ public struct Spot: Equatable, Sendable {
     public let view: String?
     /// The commands its header lists, which a person can give keys.
     public let offers: [CommandOffer]
+    /// The names of the values that it keeps with `openspot setting`, which Settings lists.
+    public let settings: [String]
     /// The Settings rows of its own commands, which its sheet shows. Nil for a spot that draws its own sheet.
     public private(set) var keyList: SettingsSpot?
 
@@ -82,6 +84,7 @@ public struct Spot: Equatable, Sendable {
         isOnGrid: Bool = true,
         headerSymbol: String? = nil,
         offers: [CommandOffer] = [],
+        settings: [String] = [],
         file: String? = nil,
         image: String? = nil,
         glyph: String? = nil,
@@ -113,6 +116,7 @@ public struct Spot: Equatable, Sendable {
         self.isOnGrid = isOnGrid
         self.headerSymbol = headerSymbol
         self.offers = offers
+        self.settings = settings
         self.file = file
         self.image = image
         self.glyph = glyph

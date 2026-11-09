@@ -60,6 +60,7 @@ open -a Calendar
 | `view`                   | A SwiftUI file beside the script, such as `view=cups.swift` (03).                                                                                                    |
 | `global`                 | `true` shows its rows in the main search too. It needs `panel`, `launch` or a number in its `read`, and a number also needs a `shortcut`. Openspot ranks the rows by the person's picks. With no `shortcut`, the spot has no card on the grid until the person places one. |
 | `tray`                   | `true` shows its main value in the menu bar. It needs a number in its `read`. Printing nothing removes the item until the next read. |
+| `settings`               | The names of the values that the person chooses for it, such as `folder,editor`. Settings lists each one, and Enter there runs the action of the same name. |
 | `stay`                   | `true` keeps one process that takes each call on stdin and prints frames at any time (05).                                                                           |
 
 With `panel` in its `read`, the head of a frame can change `size`. The person's choice wins (F9). A script with `command`
@@ -159,19 +160,24 @@ each fault.
 ### Settings
 
 ```sh
+# settings=folder
 case "$1" in
-  choose)
-    folder=$(openspot folder pick)
-    [ -n "$folder" ] && openspot setting set folder "$folder"
+  folder)
+    picked=$(openspot folder pick)
+    [ -n "$picked" ] && openspot setting set folder "$picked"
     ;;
 esac
 ```
+
+`settings` in the header names the values that the person chooses for the spot. The Settings spot lists each one, set or
+not. Enter on it runs the action of the same name with no row, such as `folder`, and closes the panel when the action is
+done. The action can answer with a form (02), and the person can remove a value with `⌘⌫`.
 
 `openspot setting get <key>` prints a value that the person chose for the spot, or nothing when there is none.
 `openspot setting set <key> [value]` keeps a value, and removes it when there is no value. A value lives in the person's
 `config.toml`, under the spot that `OPENSPOT_ID` names, and `--spot <id>` names the spot from a terminal. Keep a choice of
 the person there, such as a folder, and keep what the script makes, such as a cache, in `OPENSPOT_DATA` (K5). The Settings
-spot lists each value, and the person can remove it there. `openspot folder pick` shows the folder window of macOS and
+spot also lists each value that the header does not name, so the person can remove it. `openspot folder pick` shows the folder window of macOS and
 prints the folder that the person picks, or nothing after Cancel.
 
 ## Messages

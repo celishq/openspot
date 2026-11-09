@@ -86,6 +86,7 @@ public struct Plugin: Equatable, Sendable {
             isOnGrid: offers.isEmpty && (hasKey || !isGlobal),
             headerSymbol: symbol,
             offers: offers,
+            settings: header.value("settings")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             file: icon?.file.map { Self.path($0, beside: url) },
             image: icon?.image.map { Self.path($0, beside: url) },
             glyph: icon?.glyph,

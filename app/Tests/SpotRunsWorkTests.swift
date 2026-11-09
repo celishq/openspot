@@ -413,6 +413,25 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertEqual(done, .done)
     }
 
+    func testAChangeAnswersWithTheFormOfItsScriptOrIsDone() async throws {
+        try script(header: "read=sheet", """
+        case "$1" in
+          read) printf 'row=a\\ntitle=A\\n' ;;
+          editor) printf 'title=Editor\\n\\nchoice=editor\\ntitle=Editor\\noption=zed:Zed\\n' ;;
+          folder) touch "\(path("folder"))" ;;
+        esac
+        """)
+        let sheet = try sheet()
+
+        let asked = try await sheet.change(CommandAction(id: "editor", title: "Change editor"))
+        let done = try await sheet.change(CommandAction(id: "folder", title: "Change folder"))
+
+        guard case .form(let form)? = asked else { return XCTFail("no form: \(String(describing: asked))") }
+        XCTAssertEqual(form.fields.map(\.name), ["editor"])
+        XCTAssertEqual(done, .done)
+        XCTAssertTrue(exists("folder"))
+    }
+
     func testQuittingStopsEachCall() async throws {
         try script(header: "read=sheet", """
         trap 'touch "\(path("stopped"))"; exit 0' TERM
