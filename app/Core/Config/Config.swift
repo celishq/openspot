@@ -10,6 +10,8 @@ public struct Config: Equatable, Sendable {
     public private(set) var arrangement = SpotArrangement()
     /// The keys that the person assigned to commands of scripts.
     public private(set) var keys: [GlobalKey] = []
+    /// The values that scripts keep for the person through `openspot setting` (K5).
+    public private(set) var settings: [SpotSetting] = []
 
     public init(text: String) {
         let document: TomlDocument
@@ -20,13 +22,28 @@ public struct Config: Equatable, Sendable {
             faults = ["config.toml: \((error as? PluginError)?.reason ?? String(describing: error))"]
             return
         }
-        for key in (Array(document.values.keys) + Array(document.arrays.keys)).sorted() where !["panel_key", "fix_key", "spots", "keys"].contains(key) {
+        for key in (Array(document.values.keys) + Array(document.arrays.keys)).sorted() where !["panel_key", "fix_key", "spots", "keys", "settings"].contains(key) {
             faults.append("config.toml: \(key) is not a setting.")
         }
         arrangement = SpotArrangement(choices: (document.arrays["spots"] ?? []).compactMap { choice(of: $0) })
         keys = (document.arrays["keys"] ?? []).compactMap { key(of: $0) }
+        settings = (document.arrays["settings"] ?? []).compactMap { setting(of: $0) }
         panelKey = shortcut(document.values["panel_key"], named: "panel_key", or: .standard)
         fixKey = shortcut(document.values["fix_key"], named: "fix_key", or: .fix)
+    }
+
+    /// The value that a script keeps under this key for its spot.
+    public func setting(_ key: String, of spot: String) -> String? {
+        settings.first { $0.spot == spot && $0.key == key }?.value
+    }
+
+    /// Reads one `[[settings]]` table. A table that it cannot use is a fault.
+    private mutating func setting(of table: [String: TomlDocument.Value]) -> SpotSetting? {
+        guard case .string(let spot)? = table["spot"], case .string(let key)? = table["key"], case .string(let value)? = table["value"] else {
+            faults.append("config.toml: a setting needs a spot, a key and a value.")
+            return nil
+        }
+        return SpotSetting(spot: spot, key: key, value: value)
     }
 
     /// Reads one key setting. A value that it cannot use is a fault, and gives no key.

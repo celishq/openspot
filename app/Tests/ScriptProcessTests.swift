@@ -67,6 +67,12 @@ final class ScriptProcessTests: XCTestCase {
         XCTAssertEqual(environment["OPENSPOT_DATA"], folder.appendingPathComponent(".config/openspot/data").path)
     }
 
+    func testARunNamesTheConfigFolderOfTheApp() {
+        let environment = ScriptProcess.environment(base: ["HOME": folder.path], app: "")
+
+        XCTAssertEqual(environment["OPENSPOT_CONFIG"], folder.appendingPathComponent(".config/openspot").path)
+    }
+
     func testASpotHasADataFolderOfItsOwn() {
         let environment = ScriptProcess.environment(base: ["HOME": folder.path], app: "", dataName: "links")
 

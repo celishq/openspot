@@ -104,9 +104,9 @@ A script gets:
 
 - **Arguments:** the id and its values. A value over 64 KB goes on stdin only (C6).
 - **Stdin:** what the person filled in, as one block. A value that is not a field of the sheet comes as `value=`.
-- **Environment:** `OPENSPOT_DATA`, a folder for its files, shared by one plugin folder or by one `data` name.
-  `OPENSPOT_SH`, the shell helper. `PATH`, with the `openspot` command first. `OPENSPOT_STAY=true` in a staying
-  script (05).
+- **Environment:** `OPENSPOT_ID`, the ID of its spot, such as `home/coffee`. `OPENSPOT_DATA`, a folder for its files,
+  shared by one plugin folder or by one `data` name. `OPENSPOT_SH`, the shell helper. `PATH`, with the `openspot` command
+  first. `OPENSPOT_STAY=true` in a staying script (05).
 
 ```sh
 #!/bin/sh
@@ -149,9 +149,30 @@ A capability is `openspot <noun> <verb>`, and it works the same from a script an
 lists each one. A capability that cannot answer prints `status=<word>`. One that keeps state keeps it in its own
 helper, which a script never starts or stops (K3). When macOS already has a command, such as `pbcopy` or `open`, use it.
 
+A command that waits for the person, such as `openspot color pick` or `openspot folder pick`, fails in a read (K4). Run it
+from a pick or an action.
+
 `openspot render [--view <file.swift>] <file.png>` draws the sheet that stdin holds, with the plugin's view from a Swift file, and `openspot render --card <size> <file.png>` draws its card
 at a size such as `wide`, so you can see a result before you stop. Run `openspot check <plugins folder>` before you stop. It loads each plugin, reads each one that has a `read`, and prints
 each fault.
+
+### Settings
+
+```sh
+case "$1" in
+  choose)
+    folder=$(openspot folder pick)
+    [ -n "$folder" ] && openspot setting set folder "$folder"
+    ;;
+esac
+```
+
+`openspot setting get <key>` prints a value that the person chose for the spot, or nothing when there is none.
+`openspot setting set <key> [value]` keeps a value, and removes it when there is no value. A value lives in the person's
+`config.toml`, under the spot that `OPENSPOT_ID` names, and `--spot <id>` names the spot from a terminal. Keep a choice of
+the person there, such as a folder, and keep what the script makes, such as a cache, in `OPENSPOT_DATA` (K5). The Settings
+spot lists each value, and the person can remove it there. `openspot folder pick` shows the folder window of macOS and
+prints the folder that the person picks, or nothing after Cancel.
 
 ## Messages
 
@@ -174,3 +195,4 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | A script runs once for each call, unless its header says `stay=true` (05).    | A process that stays by default.    |
 | The header is in each file, and a scan runs nothing.                          | A manifest.                         |
 | A plugin runs with the full access of the person.                    | A `uses` key, or a sandbox.         |
+| A script keeps a setting through `openspot setting`, and asks for it when it needs it. | A `setting` header key with a kind, and required settings. |

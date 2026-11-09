@@ -11,6 +11,13 @@ public enum CommandLineCall: Equatable, Sendable {
     case sandbox(String?)
     case catalog
     case colorPick
+    case folderPick
+    /// Prints the value of a spot's setting, or nothing when it has none (K5).
+    case settingGet(spot: String, key: String)
+    /// Keeps the value of a spot's setting, or removes it with no value (K5).
+    case settingSet(spot: String, key: String, value: String?)
+    /// A call that cannot run here, with the line that says why and how to fix it.
+    case refused(String)
     /// Copies a file, or the text on stdin with no file.
     case clipboardCopy(String?)
     case clipboardPaste
@@ -33,6 +40,9 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot sandbox [file]                      Opens a window to try a sheet from text, a file or a script.
     openspot catalog                             Prints each part that a script can print.
     openspot color pick                          Prints the colour the person picks.
+    openspot folder pick                         Prints the folder the person picks, or nothing after Cancel.
+    openspot setting get [--spot id] <key>       Prints the value the person chose for the spot, or nothing.
+    openspot setting set [--spot id] <key> [v]   Keeps a value for the spot, or removes it with no value.
     openspot clipboard copy [file]               Copies the file as Finder does, or the text on stdin.
     openspot clipboard paste                     Pastes the clipboard into the front app.
     openspot translate [--from code] [--to code] Translates the text on stdin.
@@ -48,8 +58,11 @@ public enum CommandLineCall: Equatable, Sendable {
 
     """
 
-    /// Returns nil when these arguments start the app, such as none or the flags that the system passes.
-    public init?(arguments: [String]) {
+    private static let spotWord = "--spot"
+
+    /// Returns nil when these arguments start the app, such as none or the flags that the system passes. The environment
+    /// names the spot of a setting and tells a read, in which a command that waits for the person is refused (K4).
+    public init?(arguments: [String], environment: [String: String] = ProcessInfo.processInfo.environment) {
         guard let noun = arguments.first else { return nil }
         if noun == "--help" || noun == "help" {
             self = .help
@@ -70,7 +83,10 @@ public enum CommandLineCall: Equatable, Sendable {
             self = .renderCard(size, rest[2])
         case ("render", "--view") where rest.count == 3: self = .render(rest[2], view: rest[1])
         case ("render", let path?) where rest.count == 1: self = .render(path, view: nil)
-        case ("color", "pick") where rest.count == 1: self = .colorPick
+        case ("color", "pick") where rest.count == 1: self = Self.waiting(.colorPick, "openspot color pick", environment)
+        case ("folder", "pick") where rest.count == 1: self = Self.waiting(.folderPick, "openspot folder pick", environment)
+        case ("setting", "get"), ("setting", "set"):
+            self = Self.setting(Array(rest.dropFirst()), sets: rest.first == "set", environment) ?? .unknown(arguments.joined(separator: " "))
         case ("clipboard", "copy") where rest.count <= 2: self = .clipboardCopy(rest.dropFirst().first)
         case ("clipboard", "paste") where rest.count == 1: self = .clipboardPaste
         case ("translate", "languages") where rest.count == 1: self = .translateLanguages
@@ -98,6 +114,28 @@ public enum CommandLineCall: Equatable, Sendable {
             self = .translate(from: options["--from"].flatMap { $0 == "auto" ? nil : $0 }, to: options["--to"])
         default: self = .unknown(arguments.joined(separator: " "))
         }
+    }
+
+    /// The call of a command that waits for the person, or its refusal in a read (K4).
+    private static func waiting(_ call: CommandLineCall, _ name: String, _ environment: [String: String]) -> CommandLineCall {
+        guard environment["OPENSPOT_REASON"] == nil else {
+            return .refused("`\(name)` waits for the person, so it cannot run in a read. Run it from a pick or an action.")
+        }
+        return call
+    }
+
+    /// Reads `[--spot id] <key>`, and a value after the key of a set. The spot is `OPENSPOT_ID` when no `--spot` names one.
+    private static func setting(_ words: [String], sets: Bool, _ environment: [String: String]) -> CommandLineCall? {
+        var words = words
+        var spot = environment["OPENSPOT_ID"].flatMap { $0.isEmpty ? nil : $0 }
+        if words.first == spotWord {
+            guard words.count > 1 else { return nil }
+            spot = words[1]
+            words.removeFirst(2)
+        }
+        guard let key = words.first, !key.isEmpty, !key.hasPrefix("-"), words.count <= (sets ? 2 : 1) else { return nil }
+        guard let spot else { return .refused("`openspot setting` needs a spot. Run it from a spot, or name one with `--spot <id>`.") }
+        return sets ? .settingSet(spot: spot, key: key, value: words.dropFirst().first) : .settingGet(spot: spot, key: key)
     }
 
     /// Reads `--from` and `--to`, each with a value. Returns nil for anything else.

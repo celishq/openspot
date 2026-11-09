@@ -50,7 +50,7 @@ These rules come from the way Nostr writes its NIPs.
 | `sheet`, `panel`, a number, `launch`, `wake`                                                             | Moment               | 01   |
 | `read`                                                                                                   | Reserved call        | 01   |
 | `run`, `open`, `drop`                                                                                    | Default id           | 01   |
-| `OPENSPOT_REASON`, `OPENSPOT_DATA`, `OPENSPOT_SH`                                                        | Environment variable | 01   |
+| `OPENSPOT_ID`, `OPENSPOT_REASON`, `OPENSPOT_DATA`, `OPENSPOT_SH`                                         | Environment variable | 01   |
 | `OPENSPOT_STAY`                                                                                          | Environment variable | 05   |
 | `openspot <noun> <verb>`                                                                                 | Command              | 01   |
 | `text`, `number`, `gauge`, `graph`, `picture`, `spot`, `switch`, `slider`, `field`, `choice`, `hotkey`, `button`, `section`, `row`, `repeat`, `template` | Block kind | 02 |
