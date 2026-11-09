@@ -15,6 +15,8 @@ public struct Spot: Equatable, Sendable {
     public private(set) var key: CommandKey?
     public private(set) var read: SpotRead?
     public private(set) var pick: ItemPick
+    /// The form that Enter on a row asks with first, from the last output of its script.
+    public private(set) var pickForm: CommandAction?
     /// Whether its rows join the main search.
     public let isGlobal: Bool
     /// Its place in the grid before the person's choice: a lower number first. The person's newest file comes first.
@@ -219,6 +221,7 @@ public struct Spot: Equatable, Sendable {
         command.actions = output.actions
         command.primary = output.primary
         command.pick = output.pick
+        command.pickForm = output.pickForm
         command.keepsRecent = output.keepsRecent
         if readsState { command.kind = output.kind }
         return command

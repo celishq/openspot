@@ -11,6 +11,8 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var actions: [CommandAction] = []
     public private(set) var primary: String?
     public private(set) var pick = ItemPick.close
+    /// The form that Enter on a row asks with first, when `button=open` has `form=true`.
+    public private(set) var pickForm: CommandAction?
     public private(set) var parts: [SpotPart] = []
     public private(set) var partFaults: [String] = []
     public private(set) var errors: [String] = []
@@ -182,6 +184,9 @@ public struct PluginOutput: Equatable, Sendable {
         if id == "open" {
             primary = block.value("title")
             pick = block.flag("close") == false ? .stay : .close
+            if block.flag("form") == true {
+                pickForm = CommandAction(id: id, title: primary ?? "Open", after: pick == .close ? .close : .stay, isForm: true)
+            }
         } else if let action = CommandAction(id: id, block: block) {
             actions.append(action)
         } else {

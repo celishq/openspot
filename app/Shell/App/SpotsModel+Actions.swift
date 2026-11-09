@@ -298,7 +298,8 @@ extension SpotsModel {
         }
     }
 
-    /// Saves the form. It stays open with its text when the command refuses the values.
+    /// Saves the form. It stays open with its text when the command refuses the values, and shows the form that the command
+    /// answers with. An action that closes the panel closes it once the command is done.
     func submitForm() {
         guard let form else { return }
         if let missing = form.draft.missing {
@@ -307,7 +308,15 @@ extension SpotsModel {
         }
         Task {
             do {
-                if try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: form.draft) == true { self.form = nil }
+                switch try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: form.draft) {
+                case .done?:
+                    self.form = nil
+                    if form.action.after == .close, isShown { dismiss() }
+                case .form(let next)?:
+                    self.form?.draft = FormDraft(form: next)
+                case nil:
+                    break
+                }
             } catch {
                 notify("\(form.action.title) failed. \(Self.reason(error))")
             }

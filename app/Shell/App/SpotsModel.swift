@@ -744,6 +744,10 @@ final class SpotsModel {
             toggleRecording(id: item.run)
             return
         }
+        if action == nil, let form = entry.command.pickForm {
+            openForm(form, on: (entry, item))
+            return
+        }
         if action != nil || entry.command.pick == .close {
             closingPick = (item, entry)
             if isShown {

@@ -89,11 +89,12 @@ its `shortcut` works directly, and with no row selected it acts on the whole spo
 place of closing the sheet, such as a Cancel.
 
 Enter on a row is the action `open`, which each spot has. A `button=open` gives it its word with `title`, and
-`close=false` keeps the panel open after a pick.
+`close=false` keeps the panel open after a pick. With `form=true`, Enter asks with a form first. A script prints it only
+while it needs a value, such as an app that it has not been told to use.
 
 A button with `form=true` asks for values first. The call runs once with empty stdin, and it prints a `title` in its head
 and one `field` for each value. Then the same call runs with the values on stdin, and it can print the id of the row to
-select.
+select. It can also print the form again, such as with a `title` that says what is wrong, and the form stays open.
 
 ## Rows
 
