@@ -41,6 +41,10 @@
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>Openspot runs your plugins, and a plugin can ask another app to act, such as to paste.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Openspot records the camera when a plugin records the screen with your camera.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Openspot records the microphone when a plugin records the screen with your voice.</string>
 	<key>OpenspotDevState</key>
 	<string>$(OPENSPOT_DEV_STATE)</string>
 	<key>SUAutomaticallyUpdate</key>

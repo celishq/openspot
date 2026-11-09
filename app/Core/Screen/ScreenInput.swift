@@ -21,6 +21,15 @@ public enum ScreenInput: Equatable, Sendable {
         }
     }
 
+    /// The word of the input, as a script writes it.
+    var word: String {
+        switch self {
+        case .mic(let id): id.map { "mic:\($0)" } ?? "mic"
+        case .system: "system"
+        case .camera(let id): id.map { "camera:\($0)" } ?? "camera"
+        }
+    }
+
     var kind: String {
         switch self {
         case .mic: "mic"

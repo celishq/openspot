@@ -30,6 +30,10 @@ public enum CommandLineCall: Equatable, Sendable {
     case screenSources
     /// Takes a picture of a source, picked by the person when the words fix none (S1).
     case screenShot(ScreenCapture)
+    /// Starts a recording in the helper of the screen, which goes on until a stop (S10).
+    case screenRecordStart(ScreenCapture)
+    case screenRecordStop
+    case screenRecordStatus
     /// Runs as the helper process of a capability. A script never makes this call, so the usage does not list it.
     case helper(String)
     case help
@@ -64,6 +68,12 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  Takes a picture and prints its path. A source is display, window,
                                                  window:front or area:x,y,w,h; with no value the person picks one, and
                                                  with no source any. With no file, it goes where macOS keeps screenshots.
+    openspot screen record start [source] [input]... [--cursor] [--events file] [file]
+                                                 Starts a recording to .mp4 or .mov. An input is mic, system or camera,
+                                                 or mic:<id> or camera:<id>; the camera goes to its own file beside it.
+                                                 --events writes each pointer move, click and key as a JSON line.
+    openspot screen record stop                  Ends the recording and prints each file, the video first.
+    openspot screen record status                Prints state=recording with its files and seconds, or state=idle.
 
     """
 
@@ -99,6 +109,8 @@ public enum CommandLineCall: Equatable, Sendable {
                 return
             }
             self = Self.capturing(.screenShot(capture), "openspot screen shot", environment)
+        case ("screen", "record") where rest.count >= 2:
+            self = Self.recording(Array(rest.dropFirst(2)), verb: rest[1], environment) ?? .unknown(arguments.joined(separator: " "))
         case ("color", "pick") where rest.count == 1: self = Self.waiting(.colorPick, "openspot color pick", environment)
         case ("folder", "pick") where rest.count == 1: self = Self.waiting(.folderPick, "openspot folder pick", environment)
         case ("setting", "get"), ("setting", "set"):
@@ -146,6 +158,16 @@ public enum CommandLineCall: Equatable, Sendable {
             return .refused("`\(name)` captures the screen, so it cannot run in a read. Run it from a pick or an action.")
         }
         return call
+    }
+
+    /// Reads the words of `openspot screen record <verb>`, or returns nil for anything else.
+    private static func recording(_ words: [String], verb: String, _ environment: [String: String]) -> CommandLineCall? {
+        switch verb {
+        case "start": ScreenCapture(words: words, records: true).map { capturing(.screenRecordStart($0), "openspot screen record start", environment) }
+        case "stop" where words.isEmpty: capturing(.screenRecordStop, "openspot screen record stop", environment)
+        case "status" where words.isEmpty: .screenRecordStatus
+        default: nil
+        }
     }
 
     /// Reads `[--spot id] <key>`, and a value after the key of a set. The spot is `OPENSPOT_ID` when no `--spot` names one.

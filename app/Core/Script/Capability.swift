@@ -48,7 +48,12 @@ public struct Capability: Sendable {
 
     /// Runs as the helper: answers one call at a time until the idle time passes with no call and no work, such as a
     /// recording. It exits at once when another helper holds the lock, and with a line on stderr and code 1 when it cannot listen.
-    public func serve(isBusy: @escaping @Sendable () async -> Bool = { false }, _ answer: @escaping @Sendable (Data) async -> Data) -> Never {
+    /// `runMain` keeps the main thread, such as the event loop of an app that a framework needs.
+    public func serve(
+        isBusy: @escaping @Sendable () async -> Bool = { false },
+        runMain: () -> Never = dispatchMain,
+        _ answer: @escaping @Sendable (Data) async -> Data
+    ) -> Never {
         signal(SIGPIPE, SIG_IGN)
         signal(SIGHUP, SIG_IGN)
         let listener = listen()
@@ -68,7 +73,7 @@ public struct Capability: Sendable {
             }
             exit(0)
         }
-        dispatchMain()
+        runMain()
     }
 
     /// A connection to the helper. The helper shows that it runs by taking the connection. A helper that lost the race to

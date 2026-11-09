@@ -120,6 +120,26 @@ final class CommandLineCallTests: XCTestCase {
         )
     }
 
+    func testARecordingCallReadsItsWordsAndOnlyItsStatusRunsInARead() {
+        let read = ["OPENSPOT_REASON": "timer"]
+
+        XCTAssertEqual(CommandLineCall(arguments: ["screen", "record", "start", "display:1", "mic", "talk.mp4"]), .screenRecordStart(ScreenCapture(source: .display(1), inputs: [.mic(nil)], file: "talk.mp4")))
+        XCTAssertEqual(CommandLineCall(arguments: ["screen", "record", "stop"]), .screenRecordStop)
+        XCTAssertEqual(CommandLineCall(arguments: ["screen", "record", "status"], environment: read), .screenRecordStatus)
+        XCTAssertEqual(CommandLineCall(arguments: ["screen", "record", "start", "mic", "mic"]), .unknown("screen record start mic mic"))
+        XCTAssertEqual(CommandLineCall(arguments: ["screen", "record", "stop", "now"]), .unknown("screen record stop now"))
+        XCTAssertEqual(CommandLineCall(arguments: ["screen", "record"]), .unknown("screen record"))
+        XCTAssertEqual(
+            CommandLineCall(arguments: ["screen", "record", "start"], environment: read),
+            .refused("`openspot screen record start` captures the screen, so it cannot run in a read. Run it from a pick or an action.")
+        )
+        XCTAssertEqual(
+            CommandLineCall(arguments: ["screen", "record", "stop"], environment: read),
+            .refused("`openspot screen record stop` captures the screen, so it cannot run in a read. Run it from a pick or an action.")
+        )
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot screen record start"))
+    }
+
     func testAnUnknownCallAsksForHelp() {
         XCTAssertEqual(CommandLineCall(arguments: ["paint"]), .unknown("paint"))
         XCTAssertEqual(CommandLineCall(arguments: ["color", "mix"]), .unknown("color mix"))

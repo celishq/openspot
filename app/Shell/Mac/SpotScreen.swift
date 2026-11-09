@@ -19,6 +19,7 @@ enum SpotScreen {
                 print(try await work(), terminator: "")
                 exit(0)
             } catch {
+                if case PluginError.failedWithFix(_, _, let link) = error { print("link=\(link.absoluteString)") }
                 FileHandle.standardError.write(Data("\((error as? PluginError)?.reason ?? error.localizedDescription)\n".utf8))
                 exit(1)
             }
@@ -61,16 +62,15 @@ enum SpotScreen {
         return file.path + "\n"
     }
 
-    /// Runs a call to ScreenCaptureKit. When macOS does not allow it, this asks macOS for the permission, prints the link
-    /// to its pane and fails with the fix (S11).
+    /// Runs a call to ScreenCaptureKit. When macOS does not allow it, this asks macOS for the permission and fails with the
+    /// fix and the link to its pane (S11).
     static func allowed<Value>(_ work: () async throws -> Value) async throws -> Value {
         do {
             return try await work()
         } catch {
             guard !CGPreflightScreenCaptureAccess() else { throw error }
             CGRequestScreenCaptureAccess()
-            print("link=\(screenRecording)")
-            throw PluginError.fault("Openspot cannot see the screen. Allow Openspot in Screen Recording, then try again.")
+            throw PluginError.failedWithFix(1, "Openspot cannot see the screen. Allow Openspot in Screen Recording, then try again.", URL(string: screenRecording)!)
         }
     }
 
