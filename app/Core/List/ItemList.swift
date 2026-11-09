@@ -16,6 +16,8 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var isWaiting = false
     public private(set) var isLoading = false
     public private(set) var hasFailed = false
+    /// How many list row heights the shown rows take in a list.
+    public private(set) var spans = 0
     private(set) var all: [SpotItem]
     /// The searched texts of the rows, for a list that searches them itself. A list that its script searches keeps none.
     private(set) var searchIndex = SearchIndex()
@@ -47,6 +49,11 @@ public struct ItemList: Equatable, Sendable {
         var same = self
         same.selected = other.selected
         return same == other
+    }
+
+    /// Whether a search finds the same rows in it as in another list: the same rows, picks and searcher.
+    public func findsSameRows(as other: ItemList) -> Bool {
+        all == other.all && recent == other.recent && search == other.search
     }
 
     public var selectedItem: SpotItem? {
@@ -144,6 +151,7 @@ public struct ItemList: Equatable, Sendable {
         self.drawing = drawing
         self.templates = templates
         perLine = drawing.perLine ?? drawing.places.count
+        measure()
     }
 
     /// The template that draws a row: the one it names, or else `template=row`.
@@ -154,11 +162,6 @@ public struct ItemList: Equatable, Sendable {
     /// How many list row heights a row takes in a list.
     public func span(of item: SpotItem) -> Int {
         template(of: item)?.span ?? 1
-    }
-
-    /// How many list row heights the shown rows take in a list.
-    public var spans: Int {
-        shown.reduce(0) { $0 + span(of: $1) }
     }
 
     /// Whether the rows flow through a drawing of places of more than one size.
@@ -203,6 +206,7 @@ public struct ItemList: Equatable, Sendable {
     }
 
     private mutating func refresh() {
+        defer { measure() }
         guard search == .local else {
             narrowings = []
             shown = all
@@ -215,5 +219,10 @@ public struct ItemList: Equatable, Sendable {
             narrowings.append(Narrowing(query: next, matches: next.ranking(searchIndex, items: all, among: among, recent: recent)))
         }
         shown = narrowings.last?.matches.map { all[$0] } ?? []
+    }
+
+    /// Counts the list row heights of the shown rows, each time the rows or their templates change.
+    private mutating func measure() {
+        spans = shown.reduce(0) { $0 + span(of: $1) }
     }
 }

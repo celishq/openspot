@@ -317,10 +317,7 @@ final class SpotsModel {
         case .failure(let text): notify(text)
         case .failureWithFix(let text, let fix): notifyFix(text, fix)
         case .listChange:
-            if ordered().map(\.id) != entries.map(\.id) {
-                rebuildEntries()
-                updateVisible()
-            } else if visible.map(\.size) != placements.map(\.size) || !query.isEmpty || isEditing || cards.first(where: { $0.id == id }).map({ $0.isOnGrid != visible.contains { $0.id == id } }) == true { updateVisible() }
+            if visible.map(\.size) != placements.map(\.size) || !query.isEmpty || isEditing || cards.first(where: { $0.id == id }).map({ $0.isOnGrid != visible.contains { $0.id == id } }) == true { updateVisible() }
         case .frame:
             if sheets[id]?.command.setsKeys == true {
                 applyConfig()

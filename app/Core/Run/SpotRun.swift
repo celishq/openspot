@@ -13,6 +13,7 @@ public final class SpotRun {
         /// A failure with a link that opens its fix (R9).
         case failureWithFix(String, URL)
         case frame(String)
+        /// The rows that a search finds, or the state, changed.
         case listChange
         /// A click on a card that takes files and has no sheet: the owner asks the person for files, and gives them to `drop`.
         case chooseFiles
@@ -43,24 +44,27 @@ public final class SpotRun {
     public private(set) var command: Spot
     @ObservationIgnored private var rows: ItemList
 
-    /// The rows of the sheet. A move of the selection alone tells only the readers of `selection`, so that a held arrow key
-    /// redraws what shows the selection and nothing else.
+    /// The rows of the sheet. A move of the selection alone tells only the readers of `selection` and reports nothing, so
+    /// that a held arrow key redraws what shows the selection and nothing else. The owner hears of a change only when the
+    /// rows that a search finds change.
     public var list: ItemList {
         get {
             access(keyPath: \.list)
             return rows
         }
         set {
-            let moved = newValue.selected != rows.selected
             if newValue.differsOnlyInSelection(from: rows) {
                 withMutation(keyPath: \.selection) { rows = newValue }
-            } else if moved {
+                return
+            }
+            let findsSameRows = newValue.findsSameRows(as: rows)
+            if newValue.selected != rows.selected {
                 withMutation(keyPath: \.selection) { withMutation(keyPath: \.list) { rows = newValue } }
             } else {
                 withMutation(keyPath: \.list) { rows = newValue }
             }
             settle()
-            onReport(.listChange)
+            if !findsSameRows { onReport(.listChange) }
         }
     }
 
@@ -160,11 +164,11 @@ public final class SpotRun {
 
     /// Takes the shape and the wait from the list, the parts and the answer, and stores each only when it changes.
     private func settle() {
-        let next = list.isBento
-            ? Shape(rows: list.drawing.lineCount(rows: list.shown.count) * list.drawing.columns, perLine: list.drawing.columns)
-            : Shape(rows: list.perLine == 1 ? list.spans : list.shown.count, perLine: list.perLine)
+        let next = rows.isBento
+            ? Shape(rows: rows.drawing.lineCount(rows: rows.shown.count) * rows.drawing.columns, perLine: rows.drawing.columns)
+            : Shape(rows: rows.perLine == 1 ? rows.spans : rows.shown.count, perLine: rows.perLine)
         if next != shape { shape = next }
-        let waits = isOpen && answered == nil && panel == nil && list.search == .local && list.isLoading && !list.holdsItems
+        let waits = isOpen && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
         if waits != awaitsFirstAnswer { awaitsFirstAnswer = waits }
     }
 
@@ -619,11 +623,15 @@ public final class SpotRun {
         command = command.taking(lines)
         takeState(lines)
         takeValue(lines)
-        list.take(search: lines.search)
-        list.take(drawing: lines.drawing, templates: lines.templates)
+        let kept = selecting
+        selecting = nil
+        changeList {
+            $0.take(search: lines.search)
+            $0.take(drawing: lines.drawing, templates: lines.templates)
+            $0.replace(lines.items)
+            if let kept { $0.select(run: kept) }
+        }
         takePanel(lines, generation: generation)
-        list.replace(lines.items)
-        selectKept()
         if list.search == .script, !list.query.isEmpty { ask() }
         showRunning()
         answerArrived()
@@ -664,6 +672,13 @@ public final class SpotRun {
 
     private func report(toastOf lines: PluginOutput) {
         if let toast = lines.toast { onReport(.toast(toast)) }
+    }
+
+    /// Makes each change of the rows in one write, so that the readers of the list and the owner hear of them once.
+    private func changeList(_ change: (inout ItemList) -> Void) {
+        var next = rows
+        change(&next)
+        list = next
     }
 
     private func selectKept() {
@@ -858,17 +873,21 @@ public final class SpotRun {
             answered = runs.now()
             lastAnswer = lines
             command = command.taking(lines)
-            list.take(search: lines.search)
-            list.take(perLine: lines.perLine ?? 1)
         }
         let mainID = lastAnswer?.value?.fields.first?.value
         if isAnswer || (mainID != nil && lines.value?.fields.first?.value == mainID), let value = MetricValue(output: lines) {
             reading.take(value)
         }
-        if list.isWaiting, isAnswer {
-            list.answer(lines.items, to: list.query)
-        } else if isAnswer || !lines.items.isEmpty {
-            list.replace(lines.items)
+        changeList {
+            if isAnswer {
+                $0.take(search: lines.search)
+                $0.take(perLine: lines.perLine ?? 1)
+            }
+            if $0.isWaiting, isAnswer {
+                $0.answer(lines.items, to: $0.query)
+            } else if isAnswer || !lines.items.isEmpty {
+                $0.replace(lines.items)
+            }
         }
         if isFirst, list.search == .script, !list.query.isEmpty { ask() }
         if isOpen {
@@ -954,9 +973,11 @@ public final class SpotRun {
         lastFrame = frame
         lastAnswer = lines
         command = command.taking(lines)
-        list.take(search: lines.search)
-        list.take(drawing: lines.drawing, templates: lines.templates)
-        list.answer(lines.items, to: query)
+        changeList {
+            $0.take(search: lines.search)
+            $0.take(drawing: lines.drawing, templates: lines.templates)
+            $0.answer(lines.items, to: query)
+        }
         answerArrived()
     }
 

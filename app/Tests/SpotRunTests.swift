@@ -451,4 +451,29 @@ final class SpotRunTests: XCTestCase {
 
         XCTAssertTrue(listChanged)
     }
+
+    func testAMoveOfTheSelectionAndALoadReportNothing() async throws {
+        let sheet = try holding("printf 'row=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'", pause: 30)
+        sheet.read()
+        try await wait("the rows") { sheet.list.shown.count == 2 }
+        var changes = 0
+        sheet.onReport = { if case .listChange = $0 { changes += 1 } }
+
+        sheet.list.move(by: 1)
+        sheet.list.beginLoading()
+        sheet.list.stopLoading()
+
+        XCTAssertEqual(changes, 0)
+    }
+
+    func testAnAnswerWithNewRowsReportsOneListChange() async throws {
+        let sheet = try holding("printf 'row=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'", pause: 30)
+        var changes = 0
+        sheet.onReport = { if case .listChange = $0 { changes += 1 } }
+
+        sheet.read()
+        try await wait("the rows") { sheet.list.shown.count == 2 }
+
+        XCTAssertEqual(changes, 1)
+    }
 }
