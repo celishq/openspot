@@ -57,6 +57,20 @@ final class SamplePluginsTests: SamplePluginsCase {
         }
     }
 
+    func testALookAtTheCPUShowsItNowAndLeavesItsTrendForTheReads() async throws {
+        let cpu = try XCTUnwrap(try scan.metrics.first { $0.id == "cpu" })
+
+        try await withPrivateHome { _ in
+            let first = try await cpu.read(timeout: 10).points?.count ?? 0
+            let look = MetricValue(output: PluginOutput(text: try await ScriptProcess.output(url: cpu.url, arguments: ["show"], limit: 10)))
+            let second = try await cpu.read(timeout: 10).points?.count ?? 0
+
+            XCTAssertEqual(look?.points?.count, first + 1)
+            XCTAssertNotNil(look?.title)
+            XCTAssertEqual(second, first + 1)
+        }
+    }
+
     func testTheCPUTrendSurvivesABadHistoryAndAShortPath() async throws {
         let cpu = try XCTUnwrap(try scan.metrics.first { $0.id == "cpu" })
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-cpu-\(UUID().uuidString)")
