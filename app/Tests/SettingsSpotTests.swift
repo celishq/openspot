@@ -82,16 +82,16 @@ final class SettingsSpotTests: XCTestCase {
 
     func testTheSheetListsEachSettingThatAScriptNamesOrKeepsAndRemovesIt() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# title=Repos\n# icon=folder\n# shortcut=r\n# settings=folder, editor\n".writeScript(to: folder.appendingPathComponent("repos.sh"))
+        try "#!/bin/sh\n# title=Repos\n# icon=folder\n# shortcut=r\n# settings=folder, editor:Default app:app.badge\n".writeScript(to: folder.appendingPathComponent("repos.sh"))
         try file.set(setting: "folder", of: "repos", to: "~/Code")
         try file.set(setting: "editor", of: "gone", to: "Zed")
 
         let items = try await spot.items(timeout: 1).items.dropFirst(2)
 
-        XCTAssertEqual(items.map(\.title), ["Folder", "Editor", "Editor"])
+        XCTAssertEqual(items.map(\.title), ["Folder", "Default app", "Editor"])
         XCTAssertEqual(items.map(\.subtitle), ["Repos · ~/Code", "Repos · Not set", "gone · Zed"])
         XCTAssertEqual(items.map(\.run), ["setting:repos:folder", "setting:repos:editor", "setting:gone:editor"])
-        XCTAssertEqual(items.map(\.symbol), ["folder", "folder", "gearshape"])
+        XCTAssertEqual(items.map(\.symbol), ["folder", "app.badge", "gearshape"])
         XCTAssertEqual(items.map { $0.hides ?? [] }, [[], ["clear"], []])
 
         _ = try await SpotRuns().answer(of: spot, SpotAction(arguments: ["clear", "setting:repos:folder"]), input: "", limit: 1)

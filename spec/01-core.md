@@ -60,7 +60,7 @@ open -a Calendar
 | `view`                   | A SwiftUI file beside the script, such as `view=cups.swift` (03).                                                                                                    |
 | `global`                 | `true` shows its rows in the main search too. It needs `panel`, `launch` or a number in its `read`, and a number also needs a `shortcut`. Openspot ranks the rows by the person's picks. With no `shortcut`, the spot has no card on the grid until the person places one. |
 | `tray`                   | `true` shows its main value in the menu bar. It needs a number in its `read`. Printing nothing removes the item until the next read. |
-| `settings`               | The names of the values that the person chooses for it, such as `folder,editor`. Settings lists each one, and Enter there runs the action of the same name. |
+| `settings`               | The values that the person chooses for it, each as `<key>[:<title>[:<icon>]]`, such as `folder,editor:Default app`. Settings lists each one, and Enter there runs the action of the same key. |
 | `stay`                   | `true` keeps one process that takes each call on stdin and prints frames at any time (05).                                                                           |
 
 With `panel` in its `read`, the head of a frame can change `size`. The person's choice wins (F9). A script with `command`

@@ -72,7 +72,8 @@ final class ReposPluginTests: SamplePluginsCase {
     }
 
     func testItNamesItsSettings() throws {
-        XCTAssertEqual(try repos.settings, ["folder", "editor"])
+        XCTAssertEqual(try repos.settings.map(\.id), ["folder", "editor"])
+        XCTAssertEqual(try repos.settings.map(\.title), ["Folder", "Default app"])
     }
 
     func testEnterOpensInTheFirstEditorUntilTheDefaultAppChanges() async throws {

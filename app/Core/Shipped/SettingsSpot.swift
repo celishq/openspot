@@ -78,16 +78,17 @@ public struct SettingsSpot: Equatable, Sendable {
                 return "row=\(Self.keyPrefix)\(script.id):\(offer.id)\ntitle=\(offer.title)\n\(detail)icon=\(offer.icon ?? script.image ?? script.file ?? script.glyph ?? script.symbol)\n\(hides)shortcut=\(key?.shortcut.text ?? "Record")\n"
             }
         }
-        let named = scripts.flatMap { script in script.settings.map { (spot: script.id, key: $0) } }
-        let kept = config.settings.map { (spot: $0.spot, key: $0.key) }.filter { setting in !named.contains { $0 == setting } }
-        let values = only != nil ? [] : (named + kept).map { spot, key -> String in
+        let named = scripts.flatMap { script in script.settings.map { (spot: script.id, offer: $0) } }
+        let kept = config.settings.filter { setting in !named.contains { $0.spot == setting.spot && $0.offer.id == setting.key } }
+            .compactMap { setting in CommandOffer(setting: setting.key).map { (spot: setting.spot, offer: $0) } }
+        let values = only != nil ? [] : (named + kept).map { spot, offer -> String in
             let script = scripts.first { $0.id == spot }
-            let value = config.setting(key, of: spot)
+            let value = config.setting(offer.id, of: spot)
             let name = script?.name ?? spot
-            let icon = script.map { $0.image ?? $0.file ?? $0.glyph ?? $0.symbol } ?? "gearshape"
+            let icon = offer.icon ?? script.map { $0.image ?? $0.file ?? $0.glyph ?? $0.symbol } ?? "gearshape"
             return TextBlock(fields: [
-                .init(key: "row", value: "\(Self.settingPrefix)\(spot):\(key)"),
-                .init(key: "title", value: key.prefix(1).uppercased() + key.dropFirst()),
+                .init(key: "row", value: "\(Self.settingPrefix)\(spot):\(offer.id)"),
+                .init(key: "title", value: offer.title),
                 .init(key: "detail", value: "\(name) · \(value ?? "Not set")"),
                 .init(key: "parent", value: name),
                 .init(key: "icon", value: icon)
