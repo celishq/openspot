@@ -27,6 +27,9 @@ public enum CommandLineCall: Equatable, Sendable {
     case symbols
     case windowFrame
     case windowMove(WindowMove)
+    case screenSources
+    /// Takes a picture of a source, picked by the person when the words fix none (S1).
+    case screenShot(ScreenCapture)
     /// Runs as the helper process of a capability. A script never makes this call, so the usage does not list it.
     case helper(String)
     case help
@@ -55,6 +58,12 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot window move frame...                Moves the front window to a frame, x y width height. 50%, 1/2 or a number
                                                  from 0 to 1 is a part of the area, and any other number is points. With
                                                  more frames, it moves to the frame after the one it holds now.
+    openspot screen sources                      Prints each display, window, microphone and camera as a row, with
+                                                 its source as the id: display:<id>, window:<id>, mic:<id>, camera:<id>.
+    openspot screen shot [source] [--cursor] [file]
+                                                 Takes a picture and prints its path. A source is display, window,
+                                                 window:front or area:x,y,w,h; with no value the person picks one, and
+                                                 with no source any. With no file, it goes where macOS keeps screenshots.
 
     """
 
@@ -83,6 +92,13 @@ public enum CommandLineCall: Equatable, Sendable {
             self = .renderCard(size, rest[2])
         case ("render", "--view") where rest.count == 3: self = .render(rest[2], view: rest[1])
         case ("render", let path?) where rest.count == 1: self = .render(path, view: nil)
+        case ("screen", "sources") where rest.count == 1: self = .screenSources
+        case ("screen", "shot"):
+            guard let capture = ScreenCapture(words: Array(rest.dropFirst()), records: false) else {
+                self = .unknown(arguments.joined(separator: " "))
+                return
+            }
+            self = Self.capturing(.screenShot(capture), "openspot screen shot", environment)
         case ("color", "pick") where rest.count == 1: self = Self.waiting(.colorPick, "openspot color pick", environment)
         case ("folder", "pick") where rest.count == 1: self = Self.waiting(.folderPick, "openspot folder pick", environment)
         case ("setting", "get"), ("setting", "set"):
@@ -120,6 +136,14 @@ public enum CommandLineCall: Equatable, Sendable {
     private static func waiting(_ call: CommandLineCall, _ name: String, _ environment: [String: String]) -> CommandLineCall {
         guard environment["OPENSPOT_REASON"] == nil else {
             return .refused("`\(name)` waits for the person, so it cannot run in a read. Run it from a pick or an action.")
+        }
+        return call
+    }
+
+    /// The call of a command that captures the screen, or its refusal in a read, so that nothing captures by surprise (S8).
+    private static func capturing(_ call: CommandLineCall, _ name: String, _ environment: [String: String]) -> CommandLineCall {
+        guard environment["OPENSPOT_REASON"] == nil else {
+            return .refused("`\(name)` captures the screen, so it cannot run in a read. Run it from a pick or an action.")
         }
         return call
     }

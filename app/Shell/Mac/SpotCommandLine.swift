@@ -5,6 +5,7 @@ import OpenspotCore
 @MainActor
 enum SpotCommandLine {
     static func run(_ call: CommandLineCall) -> Never {
+        enterBundle()
         switch call {
         case .help:
             print(CommandLineCall.usage, terminator: "")
@@ -62,7 +63,23 @@ enum SpotCommandLine {
             answer { try SpotWindow.front().frameText }
         case .windowMove(let move):
             answer { try SpotWindow.front().move(move); return "" }
+        case .screenSources:
+            answer { SpotScreen.sources() }
+        case .screenShot(let capture):
+            SpotScreen.run { try await SpotScreen.shot(capture) }
         }
+    }
+
+    /// Starts this command again from the program inside the app when a link started it, such as `Helpers/openspot`, so
+    /// that it finds the guide and the core spots of the app, and the folder of a Debug build.
+    private static func enterBundle() {
+        guard Bundle.main.bundleIdentifier == nil else { return }
+        var size = UInt32(PATH_MAX)
+        var path = [CChar](repeating: 0, count: Int(size))
+        guard _NSGetExecutablePath(&path, &size) == 0, let real = realpath(path, nil) else { return }
+        defer { free(real) }
+        guard strcmp(real, path) != 0 else { return }
+        execv(real, CommandLine.unsafeArgv)
     }
 
     private static var standardInput: String {

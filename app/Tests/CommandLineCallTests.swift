@@ -99,6 +99,27 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertTrue(CommandLineCall.usage.contains("openspot window move frame..."))
     }
 
+    func testAScreenCallReadsItsWords() {
+        XCTAssertEqual(CommandLineCall(arguments: ["screen", "sources"]), .screenSources)
+        XCTAssertEqual(CommandLineCall(arguments: ["screen", "shot"]), .screenShot(ScreenCapture()))
+        XCTAssertEqual(CommandLineCall(arguments: ["screen", "shot", "window:front", "a.png"]), .screenShot(ScreenCapture(source: .window(.front), file: "a.png")))
+        XCTAssertEqual(CommandLineCall(arguments: ["screen", "shot", "mic"]), .unknown("screen shot mic"))
+        XCTAssertEqual(CommandLineCall(arguments: ["screen", "sources", "all"]), .unknown("screen sources all"))
+        XCTAssertEqual(CommandLineCall(arguments: ["screen"]), .unknown("screen"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot screen sources"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot screen shot"))
+    }
+
+    func testAScreenCaptureIsRefusedInAReadAndTheSourcesAreNot() {
+        let read = ["OPENSPOT_REASON": "panel"]
+
+        XCTAssertEqual(CommandLineCall(arguments: ["screen", "sources"], environment: read), .screenSources)
+        XCTAssertEqual(
+            CommandLineCall(arguments: ["screen", "shot", "display"], environment: read),
+            .refused("`openspot screen shot` captures the screen, so it cannot run in a read. Run it from a pick or an action.")
+        )
+    }
+
     func testAnUnknownCallAsksForHelp() {
         XCTAssertEqual(CommandLineCall(arguments: ["paint"]), .unknown("paint"))
         XCTAssertEqual(CommandLineCall(arguments: ["color", "mix"]), .unknown("color mix"))
