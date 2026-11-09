@@ -150,6 +150,22 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(host.motions.isEmpty)
     }
 
+    func testAReadThatChangesTheSizeOfACardLaysOutTheGridAgain() async throws {
+        let large = folder.appendingPathComponent("large").path
+        try script("grow", header: "read=panel", "if [ -f '\(large)' ]; then printf 'size=large\\n'; else printf 'size=small\\n'; fi")
+        model.reload()
+        model.panelWillShow()
+        try await wait("the small card") { model.visible.first?.size == .small }
+        let small = model.placements
+
+        FileManager.default.createFile(atPath: large, contents: Data())
+        model.sheets["grow"]?.read(need: .change)
+
+        try await wait("the large card") { model.visible.first?.size == .large }
+        XCTAssertEqual(model.placements, SpotGrid().place(model.visible.map(\.size)))
+        XCTAssertNotEqual(model.placements, small)
+    }
+
     func testTheGridSearchFindsASpotByItsName() async throws {
         try script("list", header: "read=sheet", "printf 'row=a\\ntitle=Apple\\n'")
         try script("other", header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")

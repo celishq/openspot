@@ -4,22 +4,24 @@ import Observation
 @MainActor
 @Observable
 public final class SpotsModel {
-    /// One card: a script, which reads from its sheet, or a widget, or a row that the main search found.
+    /// One card: a script, a widget, or a row that the main search found. It holds which card it is and the person's
+    /// choices. Its state, its size and its place on the grid come live from its run, so two equal entries can show different
+    /// things, and the model lays out the grid again on each change that a run reports.
     public struct Entry: Identifiable, Equatable {
         public let id: String
         public let item: SpotItem?
         private let sizeChoice: SpotSize?
-        private let sheet: SpotRun?
+        private let run: SpotRun?
         private let fixedCommand: Spot
         private let fixedState: SpotState
         private let gridChoice: Bool?
 
-        public init(command: Spot, sheet: SpotRun?, choice: SpotArrangement = SpotArrangement()) {
+        public init(command: Spot, run: SpotRun?, choice: SpotArrangement = SpotArrangement()) {
             id = command.id
             sizeChoice = choice.size(of: command.id)
             gridChoice = choice.isOnGrid(of: command.id)
             item = nil
-            self.sheet = sheet
+            self.run = run
             fixedCommand = command
             fixedState = command.headerState
         }
@@ -30,13 +32,13 @@ public final class SpotsModel {
             sizeChoice = .strip
             gridChoice = nil
             self.item = item
-            sheet = nil
+            run = nil
             fixedCommand = command
             fixedState = SpotState(title: item.title, subtitle: item.path(in: command))
         }
 
         @MainActor public var command: Spot {
-            sheet?.command ?? fixedCommand
+            run?.command ?? fixedCommand
         }
 
         /// The size of its card: the person's choice, or else what its last read says, or else its header (F9).
@@ -63,28 +65,28 @@ public final class SpotsModel {
         }
 
         @MainActor public var state: SpotState {
-            sheet?.state ?? fixedState
+            run?.state ?? fixedState
         }
 
         /// What the card shows: its own state, with the words of its running work over it.
         @MainActor public var shownState: SpotState {
-            sheet?.shownState ?? fixedState
+            run?.shownState ?? fixedState
         }
 
         /// The running work that its glyph shows.
         @MainActor public var work: ScriptCall? {
-            sheet?.work.first
+            run?.work.first
         }
 
         /// Whether a press of the card stops its running work.
         @MainActor public var stopsOnPress: Bool {
-            sheet?.cardWork != nil
+            run?.cardWork != nil
         }
 
-        /// Whether two entries are one card: the same spot or row, the same choices and the same sheet.
+        /// Whether two entries are one card: the same spot or row, the same choices and the same run.
         public static func == (lhs: Entry, rhs: Entry) -> Bool {
             lhs.id == rhs.id && lhs.item == rhs.item && lhs.sizeChoice == rhs.sizeChoice && lhs.gridChoice == rhs.gridChoice
-                && lhs.sheet === rhs.sheet && lhs.fixedCommand == rhs.fixedCommand && lhs.fixedState == rhs.fixedState
+                && lhs.run === rhs.run && lhs.fixedCommand == rhs.fixedCommand && lhs.fixedState == rhs.fixedState
         }
     }
 
@@ -115,13 +117,11 @@ public final class SpotsModel {
             updateVisible()
         }
     }
-    public private(set) var visible: [Entry] = [] {
-        didSet {
-            let sizes = visible.map(\.size)
-            if sizes != placements.map(\.size) { placements = SpotGrid().place(sizes) }
-            if transition.phase == .closing, !sheetHasClosedPlace { cutSheet(to: nil) }
-        }
-    }
+    /// The cards that show, in their order. Each change of a card or of the search sets it again, and an equal list tells no
+    /// view.
+    public private(set) var visible: [Entry] = []
+    /// The sizes that `placements` were laid out from.
+    @ObservationIgnored private var laidOutSizes: [SpotSize] = []
     /// The cards as the items that the main search finds. It folds them again only when they change.
     @ObservationIgnored private var spotList = ItemList()
     /// Where each visible spot lies on the grid, in the order of `visible`.
@@ -249,7 +249,7 @@ public final class SpotsModel {
     }
 
     public func rebuildEntries() {
-        entries = ordered().map { Entry(command: $0, sheet: runs.sheets[$0.id], choice: arrangement) }
+        entries = ordered().map { Entry(command: $0, run: runs.sheets[$0.id], choice: arrangement) }
     }
 
     /// The scanned spots in their grid order, and the person's order in the config over it.
@@ -302,7 +302,7 @@ public final class SpotsModel {
         case .failure(let text): host.notify(text)
         case .failureWithFix(let text, let fix): host.notify(text, fix: fix)
         case .listChange:
-            if visible.map(\.size) != placements.map(\.size) || !query.isEmpty || isEditing || cards.first(where: { $0.id == id }).map({ $0.isOnGrid != visible.contains { $0.id == id } }) == true { updateVisible() }
+            updateVisible()
         case .frame:
             if sheets[id]?.command.setsKeys == true {
                 host.applyConfig()
@@ -330,16 +330,27 @@ public final class SpotsModel {
 
     /// Shows the spots that the search finds and the items it finds in the lists that offer them, in one ranking.
     public func updateVisible() {
+        let next = found()
+        if next != visible { visible = next }
+        let sizes = visible.map(\.size)
+        if sizes != laidOutSizes {
+            laidOutSizes = sizes
+            placements = SpotGrid().place(sizes)
+        }
+        if transition.phase == .closing, !sheetHasClosedPlace { cutSheet(to: nil) }
+    }
+
+    /// The cards that the search finds, or each card on the grid when there is no search.
+    private func found() -> [Entry] {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
-            visible = cards.filter(\.isOnGrid) + (isEditing ? cards.filter { !$0.isOnGrid } : [])
-            return
+            return cards.filter(\.isOnGrid) + (isEditing ? cards.filter { !$0.isOnGrid } : [])
         }
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         spotList.replace(cards.filter(\.command.isFound).map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.command.name].compactMap { $0 }.joined(separator: " "), run: $0.id) })
         let sources = entries.filter { $0.command.isGlobal && arrangement.isGlobal(of: $0.id) != false }
         let found = SearchQuery(text: text).matching(in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() }, unpickedLimit: Self.unpickedRows, limit: Self.searchLimit)
-        visible = found.compactMap { match in
+        return found.compactMap { match in
             match.list == 0 ? spots[match.item.run] : Entry(command: sources[match.list - 1].command, item: match.item)
         }
     }
