@@ -27,7 +27,7 @@ while IFS= read -r task; do
   mkdir -p "$place/plugins"
   (cd "$place/plugins" && OPENSPOT_CONFIG="$place" PATH="$out/bin:$PATH" claude -p \
     "Run \`openspot guide\` and read all of it. Then build an Openspot spot in this folder that $task." \
-    --permission-mode acceptEdits --allowedTools "Bash Read Write Edit" >"$place/agent.txt" 2>&1) || true
+    --permission-mode acceptEdits --allowedTools "Bash Read Write Edit" </dev/null >"$place/agent.txt" 2>&1) || true
   OPENSPOT_CONFIG="$place" "$real" check --json "$place/plugins" >"$place/check.json" 2>&1 || true
   spots=$(find "$place/plugins" -maxdepth 2 -type f -perm -u+x | wc -l | tr -d ' ')
   if [ "$(cat "$place/check.json")" = "[]" ] && [ "$spots" -gt 0 ]; then
