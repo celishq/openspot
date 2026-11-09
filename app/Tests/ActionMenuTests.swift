@@ -18,6 +18,15 @@ final class ActionMenuTests: XCTestCase {
         return try XCTUnwrap(ActionMenu(command: Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list, primary: "Open", actions: actions), item: item))
     }
 
+    func testALongMenuOpensOnItsFirstRowAndKeepsItsHeightAsItSearches() throws {
+        var menu = try long()
+
+        XCTAssertEqual(menu.selectedRow?.title, "Open")
+        menu.search("zed")
+        XCTAssertEqual(menu.fullLines, 8)
+        XCTAssertEqual(try long().fullLines, 8)
+    }
+
     func testAMenuOfMoreThanFiveRowsFindsRowsByTheirWords() throws {
         var menu = try long()
         menu.move(by: 2)
@@ -50,6 +59,7 @@ final class ActionMenuTests: XCTestCase {
 
         XCTAssertFalse(menu.isSearchable)
         XCTAssertEqual(menu.lines, 4)
+        XCTAssertEqual(menu.fullLines, 4)
     }
 
     func testAGridCardOffersToEditTheSpotsAfterItsActions() throws {

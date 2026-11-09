@@ -16,6 +16,9 @@ struct SpotActionMenuView: View {
 
     var body: some View {
         VStack(spacing: SpotTokens.menuRowGap) {
+            if menu.isSearchable {
+                field
+            }
             ForEach(Array(menu.shown.enumerated()), id: \.offset) { index, row in
                 Button {
                     onPress(index)
@@ -41,16 +44,14 @@ struct SpotActionMenuView: View {
                 }
                 .buttonStyle(.plain)
             }
-            if menu.isSearchable {
-                field
-            }
         }
         .padding(SpotTokens.menuPadding)
         .frame(width: SpotTokens.gridWidth)
         .modifier(SpotGlass(radius: SpotTokens.radius - SpotTokens.padding + SpotTokens.menuPadding))
     }
 
-    /// The field that searches the rows. It sits at the bottom, which stays in place while the rows above it change.
+    /// The field that searches the rows. It sits at the top, which stays in place while the rows under it change, and it takes
+    /// the focus when the menu opens.
     private var field: some View {
         TextField(
             "Search actions",

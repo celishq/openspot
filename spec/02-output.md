@@ -86,7 +86,7 @@ A `button` that a drawing places is drawn. A `button` that no drawing places is 
 its `shortcut` works directly, and with no row selected it acts on the whole spot. An action on a row is `<script> <id> <row id>`.
 `scope=command` keeps an action on the whole spot when a row is selected. `close=true` closes the panel after it runs, and
 `confirm` asks for a second press, such as `Press again to delete`. `shortcut=escape` presses a button, or runs an action, in
-place of closing the sheet, such as a Cancel. A ⌘K menu of more than 5 rows has a field that searches them, so in it
+place of closing the sheet, such as a Cancel. A ⌘K menu of more than 5 rows opens with a field at its top that searches them, so in it
 only a `shortcut` with `cmd` runs an action.
 
 Enter on a row is the action `open`, which each spot has. A `button=open` gives it its word with `title`, and

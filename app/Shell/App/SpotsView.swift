@@ -266,12 +266,13 @@ struct SpotsView: View {
     }
 
     private var menuBackdropHeight: CGFloat {
-        model.menu.map { SpotTokens.menuHeight(rows: $0.lines) + 2 * SpotTokens.halo } ?? 0
+        model.menu.map { SpotTokens.menuHeight(rows: $0.fullLines) + 2 * SpotTokens.halo } ?? 0
     }
 
-    /// Where the menu starts: its bottom meets the bottom of the content.
+    /// Where the menu starts: its bottom meets the bottom of the content with no search, and its top stays as a search
+    /// takes rows away.
     private func menuTop(_ menu: ActionMenu) -> CGFloat {
-        max(SpotTokens.halo, contentHeight - SpotTokens.halo - SpotTokens.hintBlock - SpotTokens.menuHeight(rows: menu.lines))
+        max(SpotTokens.halo, contentHeight - SpotTokens.halo - SpotTokens.hintBlock - SpotTokens.menuHeight(rows: menu.fullLines))
     }
 
     /// The hint under the grid and the hint under the sheet. Each stays at its own place, and one fades out before the other fades in.

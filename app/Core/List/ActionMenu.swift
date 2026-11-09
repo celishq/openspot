@@ -43,6 +43,11 @@ public struct ActionMenu: Equatable, Sendable {
         isSearchable ? shown.count + 1 : rows.count
     }
 
+    /// How many lines it draws with no search, which sets where its top stays.
+    public var fullLines: Int {
+        isSearchable ? rows.count + 1 : rows.count
+    }
+
     public var selectedRow: Row? {
         shown.indices.contains(selected) ? shown[selected] : nil
     }
