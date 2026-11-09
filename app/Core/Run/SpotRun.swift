@@ -139,6 +139,8 @@ public final class SpotRun {
     }
     public private(set) var reading: MetricReading
     public private(set) var lastFrame: String?
+    /// The words of its last failed call, until a call ends well.
+    public private(set) var failure: String?
     /// Each running call, the oldest first, with the last frame of each.
     public private(set) var calls: [ScriptCall] = []
     @ObservationIgnored public var onReport: (Report) -> Void = { _ in }
@@ -634,6 +636,7 @@ public final class SpotRun {
     /// of its failure. A call of work that ended is followed by a read: with the row that a `select` effect named selected
     /// (D8), or else when it showed nothing (M4). A stopped toggle goes back.
     func ended(_ call: ScriptCall, _ purpose: Purpose, _ end: ScriptCall.End, hadAnswer: Bool, showedParts: Bool, selected: String?) {
+        if case .ended = end, failure != nil { failure = nil }
         switch (purpose, end) {
         case (.ask(.read), .stopped):
             list.stopLoading()
@@ -901,6 +904,7 @@ public final class SpotRun {
         case let error?: "\(command.name) failed. \(error.reason)"
         case nil: "\(command.name) failed. \(error.localizedDescription)"
         }
+        failure = text
         if case .failedWithFix(_, _, let fix) = error as? PluginError { return onReport(.failureWithFix(text, fix)) }
         onReport(.failure(text))
     }

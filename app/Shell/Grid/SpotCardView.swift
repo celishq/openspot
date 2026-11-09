@@ -30,6 +30,8 @@ struct SpotCardView: View, Equatable {
 
     /// How far a line reaches past the inset at its trailing end, where the round end of the card leaves room.
     private static let lineReach: CGFloat = 6
+    /// The smallest size of the words of a fault, as a part of their own size, at which they still read.
+    private static let faultScale: CGFloat = 0.7
 
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: SpotTokens.corner(for: size), style: .continuous)
@@ -45,6 +47,7 @@ struct SpotCardView: View, Equatable {
             .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).opacity(isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { keycap }
             .overlay(alignment: .topTrailing) { hiddenMark }
+            .overlay(alignment: .topTrailing) { if !isHiddenFromGrid { FailureMark(entry: entry, size: size) } }
             .contentShape(shape)
             .onHover { isHovered = $0 }
             .onTapGesture { model.tap(entry.id) }
@@ -159,11 +162,13 @@ struct SpotCardView: View, Equatable {
             .lineLimit(1)
     }
 
+    /// The second line. The fault of a file that does not load shrinks until it fits, so that its cause shows whole.
     private func detail(_ text: String, isOnSolid: Bool) -> some View {
         Text(text)
             .font(SpotType.detail)
             .modifier(SpotSecondaryText(isOnSolid: isOnSolid))
             .lineLimit(1)
+            .minimumScaleFactor(entry.command.fault == nil ? 1 : Self.faultScale)
     }
 
     private var text: some View {
@@ -280,5 +285,27 @@ private struct CardRing: ViewModifier {
 
     func body(content: Content) -> some View {
         content.modifier(SpotSelectionRing(isSelected: model.selected == index, shape: shape))
+    }
+}
+
+/// The mark of a spot whose last call failed, on the rim of its top right corner, until a call ends well. It alone reads
+/// the failure, so that a failure reruns the mark and no card.
+private struct FailureMark: View {
+    let entry: SpotsModel.Entry
+    let size: SpotSize
+
+    var body: some View {
+        if entry.failure != nil {
+            let inset = SpotTokens.corner(for: size) * SpotTokens.rimPoint - SpotTokens.keycap / 2
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(SpotTheme.ink)
+                .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
+                .background(SpotTheme.keycap, in: RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
+                .offset(x: -inset, y: inset)
+                .accessibilityLabel("Last run failed")
+                .allowsHitTesting(false)
+        }
     }
 }

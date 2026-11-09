@@ -41,9 +41,16 @@ public final class SpotsModel {
             run?.command ?? fixedCommand
         }
 
-        /// The size of its card: the person's choice, or else what its last read says, or else its header (F9).
+        /// The size of its card: the person's choice, or else what its last read says, or else its header (F9). A card of a
+        /// fault is never small, so that its words show.
         @MainActor public var size: SpotSize {
-            sizeChoice ?? state.size ?? command.size
+            let size = sizeChoice ?? state.size ?? command.size
+            return command.fault != nil && size == .small ? .wide : size
+        }
+
+        /// The words of its last failed call, until a call ends well.
+        @MainActor public var failure: String? {
+            run?.failure
         }
 
         /// Whether the grid shows it: the person's choice, or else what the spot says.
@@ -188,6 +195,8 @@ public final class SpotsModel {
     @ObservationIgnored private var flashWatch: Task<Void, Never>?
     private var scanned: [Spot] = []
     private var lastScan = ScanResult(plugins: [], refused: [])
+    /// The stamp of each script file at the last scan, which says which scripts a change of the folder touched.
+    @ObservationIgnored private var fileStamps: [String: String] = [:]
 
     /// The app around the panel, which shows it, tells the person and moves each change.
     @ObservationIgnored public unowned let host: SpotsHost
@@ -232,17 +241,22 @@ public final class SpotsModel {
     }
 
     /// Reads the config file and the plugin folder again. No script runs for this, and each card shows its header until its
-    /// answer arrives.
+    /// answer arrives. A file that gives no spot shows a card of its faults, and any other fault shows in a toast.
     public func reload() {
         host.applyConfig()
         let config = files.config.read()
         let folder = files.folder(config)
         let shipped = host.shippedSpots(folder: folder, config: files.config, update: updateSpot, offersLogin: isFirstLaunch)
             + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
-        let scan = (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
-        let problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
+        var scan = (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
+        let agent = shipped.lazy.compactMap { if case .build(let build)? = $0.shipped { build.agent } else { nil } }.first
+        let faults = agent.map { folder.faultSpots(of: scan, agent: $0) } ?? []
+        if !faults.isEmpty { scan.plugins.append(Plugin(id: ShippedSpot.faultsID, commands: faults)) }
+        let carded = Set(faults.map(\.id))
+        let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.take(scan)
         lastScan = scan
+        fileStamps = Self.stamps(of: scan)
         holdAssignedKeys(config)
         arrangement = config.arrangement
         scanned = scan.commands
@@ -251,6 +265,30 @@ public final class SpotsModel {
             host.notify(problems.joined(separator: " "))
         }
         self.problems = problems
+    }
+
+    /// Takes a change of the plugins folder, such as an agent that writes a spot: the cards change at once, with no motion,
+    /// the selected card stays selected, and a changed script that the open panel reads at `panel` reads again.
+    public func folderChanged() {
+        let stamps = fileStamps
+        let id = selectedEntry?.id
+        reload()
+        if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
+        guard isShown else { return }
+        for entry in entries where entry.command.read?.has(.panel) == true && fileStamps[entry.id] != stamps[entry.id] {
+            sheets[entry.id]?.read(need: .change)
+        }
+    }
+
+    /// The stamp of each script file of the last scan: its date of change and its file number, which a rewrite changes.
+    private static func stamps(of scan: ScanResult) -> [String: String] {
+        var stamps: [String: String] = [:]
+        for script in scan.scripts where script.shipped == nil {
+            guard let values = try? FileManager.default.attributesOfItem(atPath: script.url.path) else { continue }
+            let date = (values[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
+            stamps[script.id] = "\(date) \(values[.systemFileNumber] ?? "")"
+        }
+        return stamps
     }
 
     /// Brings the grid up to date while a sheet covers it, so that the sheet closes onto the card's real place. The selected

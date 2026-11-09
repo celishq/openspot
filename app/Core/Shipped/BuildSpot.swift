@@ -32,17 +32,12 @@ public struct BuildSpot: Equatable, Sendable {
 
     /// The words that ask an AI to build a plugin.
     public var prompt: String {
-        """
-        Build an Openspot plugin that does this: <describe what you want>
+        agent.building("<describe what you want>")
+    }
 
-        Read the guide first: \(guide.path)
-        Put the plugin in: \(folder.path)
-        To write a sheet of parts, read the language first: "\(app)" catalog
-        To see a sheet, run: "\(app)" check --sheet < sheet.txt, and "\(app)" render sheet.png < sheet.txt
-        When it is ready, run this and fix each fault it reports: "\(app)" check "\(folder.path)"
-        Tell me what the plugin runs on my computer.
-
-        """
+    /// The words for an agent, with the places of this app.
+    public var agent: AgentPrompt {
+        AgentPrompt(folder: folder, guide: guide, app: app)
     }
 
     private static let rows = """

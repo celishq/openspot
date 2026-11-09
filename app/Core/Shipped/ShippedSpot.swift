@@ -7,6 +7,8 @@ public enum ShippedSpot: Equatable, Sendable {
     case settings(SettingsSpot)
     case updates(UpdateSpot)
     case review(ReviewSpot)
+    /// The sheet of a file that does not load.
+    case fault(FaultSpot)
     case quit(QuitSpot)
 
     /// The commands of the shipped spots, in the order of the grid.
@@ -80,6 +82,9 @@ public enum ShippedSpot: Equatable, Sendable {
     /// The ID of the list of tools for authors.
     public static let buildID = "openspot/build"
 
+    /// The ID of the plugin that holds the cards of the files that do not load.
+    public static let faultsID = "openspot/faults"
+
     /// The ID of the command that ends the app.
     public static let quitID = "openspot/quit"
 
@@ -109,6 +114,7 @@ public enum ShippedSpot: Equatable, Sendable {
         case .settings(let settings): try settings.answer(arguments)
         case .updates(let update): try await update.answer(arguments)
         case .review(let review): try review.answer(arguments)
+        case .fault(let fault): try await fault.answer(arguments)
         case .quit(let quit): await quit.answer()
         }
     }

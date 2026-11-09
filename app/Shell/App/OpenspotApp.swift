@@ -33,6 +33,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var fileChooser: SpotFileChooser?
     private var motionProbe: SpotMotionProbe?
     private var update: AppUpdate?
+    private var folderWatch: SpotFolderWatch?
     private var isLaunched = false
     private var openedAtLaunch: [URL] = []
 
@@ -63,6 +64,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         self.update = update
         model.updateSpot = update?.spot
         model.reload()
+        folderWatch = SpotFolderWatch(folder: model.files.folder.url) { [weak self] in self?.model.folderChanged() }
         model.arrive(.launch)
         let isFirstLaunch = PluginFolder.standard().isFirstLaunch(config: .standard())
         panel?.warm { [weak self] in
@@ -146,6 +148,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        folderWatch?.stop()
         model.quit()
     }
 
