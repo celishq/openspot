@@ -11,9 +11,16 @@ final class SpotTrayBar: NSObject {
         override func hitTest(_ point: NSPoint) -> NSView? { nil }
     }
 
-    private struct Shown {
+    private final class Shown {
         let item: NSStatusItem
         let host: Host
+        /// The mark it draws, so that a mark that did not change is not drawn again.
+        var mark: TrayMark?
+
+        init(item: NSStatusItem, host: Host) {
+            self.item = item
+            self.host = host
+        }
     }
 
     private let model: SpotsModel
@@ -83,6 +90,8 @@ final class SpotTrayBar: NSObject {
     }
 
     private func draw(_ mark: TrayMark, in shown: Shown) {
+        guard shown.mark != mark else { return }
+        shown.mark = mark
         shown.host.rootView = SpotTrayMarkView(mark: mark)
         let width = ceil(shown.host.fittingSize.width)
         shown.item.length = width

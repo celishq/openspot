@@ -170,6 +170,15 @@ final class SearchQueryTests: XCTestCase {
         XCTAssertEqual(SearchQuery(text: "s").matching(in: lists, unpickedLimit: 2).map(\.item.title), ["Sf", "Spot", "Star", "Stop", "Sa", "Sb", "Sd", "Se"])
     }
 
+    func testALimitKeepsTheBestMatchesOfAllLists() {
+        let lists = [list(["Spot", "Star", "Stop", "Sun"]), list(["Sa", "Sb", "Sc"], recent: ["Sc", "Sb"]), list(["Sd", "Se", "Sf"], recent: ["Sf"])]
+        let all = SearchQuery(text: "s").matching(in: lists, unpickedLimit: 2).map(\.item.title)
+
+        for limit in [1, 3, 5] {
+            XCTAssertEqual(SearchQuery(text: "s").matching(in: lists, unpickedLimit: 2, limit: limit).map(\.item.title), Array(all.prefix(limit)))
+        }
+    }
+
     func testRecentPicksKeepTheirOrderWithinAList() {
         XCTAssertEqual(found("s", in: [list(["Safari", "Slack"], recent: ["Slack", "Safari"])]), ["Slack", "Safari"])
     }

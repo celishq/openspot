@@ -72,29 +72,47 @@ public struct SearchQuery: Equatable, Sendable {
         return next.forms.allSatisfy { form in forms.contains { form.hasPrefix($0) } }
     }
 
-    /// The items that match in each list, as one ranking, with the index of the list each came from. Each list after the
-    /// first that has no pick gives at most `unpickedLimit` items.
-    public func matching(in lists: [ItemList], unpickedLimit: Int = .max) -> [(list: Int, item: SpotItem)] {
+    /// The best `limit` items that match in all lists, as one ranking, with the index of the list each came from. Each list
+    /// after the first that has no pick gives at most `unpickedLimit` items. Each list keeps only its own best, and only
+    /// the items kept are copied out.
+    public func matching(in lists: [ItemList], unpickedLimit: Int = .max, limit: Int = .max) -> [(list: Int, item: SpotItem)] {
         lists.enumerated()
             .flatMap { index, list in
                 let texts = list.search == .local ? list.searchIndex : SearchIndex(list.all)
-                let found = ranked(texts, items: list.all, recent: list.recent).sorted { ($0.rank, $0.offset) < ($1.rank, $1.offset) }
-                return found.prefix(index > 0 && list.recent.isEmpty ? unpickedLimit : found.count).map { (list: index, match: $0) }
+                let count = min(limit, index > 0 && list.recent.isEmpty ? unpickedLimit : .max)
+                return Self.best(ranked(texts, items: list.all, recent: list.recent), count: count).map { (list: index, match: $0) }
             }
             .sorted { first, second in
                 let one = first.match, two = second.match
                 return (one.rank, -one.weight, first.list, one.offset) < (two.rank, -two.weight, second.list, two.offset)
             }
-            .map { (list: $0.list, item: $0.match.item) }
+            .prefix(limit)
+            .map { (list: $0.list, item: lists[$0.list].all[$0.match.offset]) }
     }
 
-    private func ranked(_ index: SearchIndex, items: [SpotItem], recent: [String]) -> [(rank: Int, weight: Double, offset: Int, item: SpotItem)] {
+    /// One item that matches: its rank, the weight of its picks and its place in its list.
+    private typealias Ranked = (rank: Int, weight: Double, offset: Int)
+
+    private func ranked(_ index: SearchIndex, items: [SpotItem], recent: [String]) -> [Ranked] {
         let weights = Self.weights(of: recent)
         return index.withItems { folded in
             items.indices.compactMap { offset in
-                match(folded[offset]).map { (rank: $0, weight: weights[items[offset].run] ?? 0, offset: offset, item: items[offset]) }
+                match(folded[offset]).map { (rank: $0, weight: weights[items[offset].run] ?? 0, offset: offset) }
             }
         }
+    }
+
+    /// The best `count` matches of one list: by rank, then by the weight of picks, then by place.
+    private static func best(_ matches: [Ranked], count: Int) -> [Ranked] {
+        guard count < matches.count else { return matches }
+        let precedes = { (one: Ranked, two: Ranked) in (one.rank, -one.weight, one.offset) < (two.rank, -two.weight, two.offset) }
+        var kept: [Ranked] = []
+        kept.reserveCapacity(count + 1)
+        for match in matches where kept.count < count || precedes(match, kept[kept.count - 1]) {
+            kept.insert(match, at: kept.firstIndex { precedes(match, $0) } ?? kept.count)
+            if kept.count > count { kept.removeLast() }
+        }
+        return kept
     }
 
     /// The weight of each picked run, from the latest pick first: each pick weighs 0.9 of the one after it.
