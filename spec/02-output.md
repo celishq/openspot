@@ -106,6 +106,7 @@ always flow through a repeat, and with no `repeat` block they flow through a lis
 | `title`                            | The first line. Its id, when it has none.                                      |
 | `detail`                           | The second line.                                                               |
 | `icon`                             | The picture.                                                                   |
+| `parent`                           | The place in its spot that it sits under. The main search shows `<spot> › <parent>`. |
 | `tone`                             | A dot on the picture.                                                          |
 | `hides`                            | The id of a button that this row does not offer. Repeat the line for each one. |
 | `keyword`                          | A word that finds the row in a search, which the row does not show.            |

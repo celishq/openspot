@@ -62,6 +62,12 @@ public enum SpotTokens {
         isWidget && size == .small ? controlPadding : padding
     }
 
+    /// The side of a picture in a slot: a row icon in a room one list row high, else most of its room, and never more than its room.
+    public static func pictureSide(in room: CGSize) -> CGFloat {
+        let fit = min(room.width, room.height)
+        return min(fit, room.height <= listRowHeight ? listIconSize : fit * 0.6)
+    }
+
     /// The height of a list row that takes this many list row heights, with the gaps between them.
     public static func listRowHeight(span: Int) -> CGFloat {
         CGFloat(span) * listRowHeight + CGFloat(span - 1) * listRowGap

@@ -168,7 +168,7 @@ struct SpotCardView: View {
         case .list:
             SpotCardArrow(isOnSolid: isFilled)
         case .launch:
-            if size != .wide, !entry.stopsOnPress {
+            if size != .wide, entry.item == nil, !entry.stopsOnPress {
                 Text("Run")
                     .font(SpotType.action)
                     .foregroundStyle(SpotTheme.ink)

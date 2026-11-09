@@ -115,4 +115,14 @@ final class TextBlockTests: XCTestCase {
             SpotItem(title: "A", subtitle: "B", run: "a", file: "/f", hides: ["x", "y"])
         )
     }
+
+    func testAnItemShowsItsPathAsItsSpotThenItsParent() {
+        let spot = Spot(id: "s", name: "System Settings", url: URL(fileURLWithPath: "/settings.sh"))
+        let volume = SpotItem(block: TextBlock.blocks(in: "row=v\ntitle=Volume\ndetail=Loud\nparent=Sound")[0])
+
+        XCTAssertEqual(volume?.parent, "Sound")
+        XCTAssertEqual(volume?.fields, [])
+        XCTAssertEqual(volume?.path(in: spot), "System Settings › Sound")
+        XCTAssertEqual(SpotItem(title: "Sound", subtitle: "Loud", run: "s").path(in: spot), "System Settings")
+    }
 }

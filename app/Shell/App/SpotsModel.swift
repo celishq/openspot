@@ -25,15 +25,15 @@ final class SpotsModel {
             fixedState = command.headerState
         }
 
-        /// A wide card for an item that the main search found in a list.
+        /// A card of a full row for an item that the main search found in a list.
         init(command: Spot, item: SpotItem) {
             id = "\(command.id)\n\(item.run)"
-            sizeChoice = .wide
+            sizeChoice = .strip
             gridChoice = nil
             self.item = item
             sheet = nil
             fixedCommand = command
-            fixedState = SpotState(title: item.title, subtitle: item.subtitle ?? command.name)
+            fixedState = SpotState(title: item.title, subtitle: item.path(in: command))
         }
 
         @MainActor var command: Spot {
@@ -347,7 +347,7 @@ final class SpotsModel {
             return
         }
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let spotList = ItemList(items: cards.map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.command.name].compactMap { $0 }.joined(separator: " "), run: $0.id) })
+        let spotList = ItemList(items: cards.filter(\.command.isFound).map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.command.name].compactMap { $0 }.joined(separator: " "), run: $0.id) })
         let sources = entries.filter { $0.command.isGlobal && arrangement.isGlobal(of: $0.id) != false }
         let found = SearchQuery(text: text).matching(in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() }, unpickedLimit: Self.unpickedRows)
         visible = found.prefix(Self.searchLimit).compactMap { match in

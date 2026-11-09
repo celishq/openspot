@@ -69,7 +69,7 @@ public struct SettingsSpot: Equatable, Sendable {
             script.offers.map { offer -> String in
                 let key = config.keys.first { $0.spot == script.id && $0.command == offer.id }
                 let hides = key == nil ? "hides=\(Self.clear)\n" : ""
-                let detail = only == nil ? "detail=\(script.name)\n" : ""
+                let detail = only == nil ? "detail=\(script.name)\nparent=\(script.name)\n" : ""
                 return "row=\(Self.keyPrefix)\(script.id):\(offer.id)\ntitle=\(offer.title)\n\(detail)icon=\(offer.icon ?? script.image ?? script.file ?? script.glyph ?? script.symbol)\n\(hides)shortcut=\(key?.shortcut.text ?? "Record")\n"
             }
         }

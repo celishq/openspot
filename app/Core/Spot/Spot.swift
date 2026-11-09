@@ -122,6 +122,11 @@ public struct Spot: Equatable, Sendable {
         image.map(FileIcon.image) ?? file.map(FileIcon.init(path:))
     }
 
+    /// Whether the main search finds the spot itself. A global spot with no card on the grid offers only its rows.
+    public var isFound: Bool {
+        !isGlobal || headerState.isOnGrid
+    }
+
     /// The sizes a person can prefer for its card. A widget has the size of its layout, and Updates needs room for its words.
     public var sizes: [SpotSize] {
         if kind == .widget { return [] }
