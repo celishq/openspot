@@ -26,7 +26,6 @@ struct SpotSheetPreview: View {
                     Text(title).font(SpotType.title).foregroundStyle(SpotTheme.ink)
                     Text(subtitle).font(SpotType.detail).modifier(SpotSecondaryText())
                 }
-                .offset(x: SpotTokens.headerWordsInset)
                 Spacer()
                 SpotRoundButton(symbol: "xmark", label: "Close") {}
             }

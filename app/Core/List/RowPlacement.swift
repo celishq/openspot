@@ -2,8 +2,8 @@ import CoreGraphics
 import Foundation
 
 /// Where each slot of a row lies in the place of that row. A column whose slots all keep their own size, such as a
-/// picture, a switch or a round button, is as wide as they are, and a picture as wide as it draws; the other columns share the rest. The lines share the
-/// height evenly, and the app owns each gap.
+/// picture, a switch or a round button, is as wide as they are, a picture as wide as it draws; the other columns share
+/// the rest. The lines share the height evenly, and the app owns each gap.
 public struct RowPlacement: Equatable, Sendable {
     public static let gap: CGFloat = 8
     private static let switchWidth: CGFloat = 40

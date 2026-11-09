@@ -100,7 +100,6 @@ struct SpotSheetView: View {
                 }
                 .frame(width: max(sheetWordsWidth, 0), alignment: .leading)
                 .offset(showsTallCard ? tallCardShift : .zero)
-                .offset(x: isOpen ? SpotTokens.headerWordsInset : 0)
                 .opacity(showsSmallCard ? 0 : 1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -132,7 +131,6 @@ struct SpotSheetView: View {
     /// The width of the words up to the close button in the open sheet.
     private var sheetWordsWidth: CGFloat {
         rect.width - SpotTokens.padding - SpotTokens.glyphSize - 2 * Self.wordsGap - SpotTokens.glyphSize - SpotTokens.padding
-            - SpotTokens.headerWordsInset
     }
 
     /// The width that the card gives the words before the sheet opens.

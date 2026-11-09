@@ -7,7 +7,6 @@ final class SettingsPluginTests: SamplePluginsCase {
         let settings = try XCTUnwrap(try scan.commands.first { $0.name == "System Settings" })
 
         XCTAssertTrue(settings.isGlobal)
-        XCTAssertEqual(settings.file, "/System/Applications/System Settings.app")
     }
 
     func testAPaneAndItsSectionsAreRowsInTheLanguageOfTheMac() async throws {

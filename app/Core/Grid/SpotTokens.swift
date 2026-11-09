@@ -18,10 +18,6 @@ public enum SpotTokens {
     public static let rimPoint: CGFloat = 1 - 0.5.squareRoot()
     public static let listRowHeight: CGFloat = 40
     public static let listRowGap: CGFloat = 6
-    /// The space above and below the slots of a row that a template draws.
-    public static let listRowInset: CGFloat = 4
-    /// How far a sheet's header words move in, so that they start where the words of the rows start.
-    public static let headerWordsInset = padding + listIconSize - glyphSize
     public static let listIconSize: CGFloat = 24
     public static let hintHeight: CGFloat = 14
     public static let hintPillInset: CGFloat = 4

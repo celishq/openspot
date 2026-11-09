@@ -1,6 +1,6 @@
 #!/bin/sh
 # title=System Settings
-# icon=/System/Applications/System Settings.app
+# icon=gearshape
 # detail=Open a setting
 # read=panel
 # global=true
