@@ -13,8 +13,6 @@ struct SpotsView: View {
     @State private var dropTarget: String?
     @State private var dragged: (id: String, offset: CGSize)?
     @State private var hintIsForEdit = false
-    @State private var showsDrop = false
-    @State private var lastDrop: SpotDrop?
 
     /// The sheet that is built, from its first frame on its card to the end of its close.
     private var sheetID: String? {
@@ -27,7 +25,7 @@ struct SpotsView: View {
     }
 
     static let panelSpace = "panel"
-    private static let gridBottom: CGFloat = SpotTokens.halo + SpotTokens.hintBlock
+    fileprivate static let gridBottom: CGFloat = SpotTokens.halo + SpotTokens.hintBlock
 
     var body: some View {
         let card = SpotSheetCard.of(sheetID, in: model)
@@ -49,6 +47,7 @@ struct SpotsView: View {
                     .padding(.bottom, Self.gridBottom)
             }
             .scrollPosition($scroll)
+            .modifier(GridSelectionFollow(model: model, scroll: $scroll, scrollOffset: $scrollOffset))
             .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in
                 scrollOffset = offset
             })
@@ -77,8 +76,6 @@ struct SpotsView: View {
                 isInstall: sheetID == ShippedSpot.installID,
                 showsField: showsSearchField,
                 surfaceIsOut: surfaceIsOut,
-                showsDrop: showsDrop,
-                lastDrop: lastDrop,
                 sheetWord: sheetWord,
                 focus: $searchFocused
             )
@@ -109,23 +106,12 @@ struct SpotsView: View {
                 if model.isShown, model.showsSearch, !model.isOpenForDrag { searchFocused = true }
             }
         }
-        .onChange(of: model.spotDrop) { _, drop in
-            if let drop {
-                lastDrop = drop
-                withAnimation(SpotMotion.sheet(isOpen: true)) { showsDrop = true }
-            } else if !model.isReviewing {
-                hideDrop()
-            }
-        }
-        .onChange(of: model.selected) {
-            showSelected()
-        }
         .onChange(of: model.showsSearch) { _, shows in
             searchFocused = shows
         }
         .background {
             SpotHintWatch(model: model) { hint in
-                let motion = model.isEditing || hintIsForEdit || lastDrop != nil ? SpotMotion.hintFade : nil
+                let motion = model.isEditing || hintIsForEdit || model.fieldDrop != nil ? SpotMotion.hintFade : nil
                 hintIsForEdit = model.isEditing
                 withAnimation(motion) {
                     if model.openList == nil, model.spotDrop == nil { gridHint = hint } else { sheetHint = hint }
@@ -134,59 +120,7 @@ struct SpotsView: View {
         }
         .onChange(of: model.openList) { _, list in
             if list != nil { sheetHint = model.hint }
-            if model.transition.phase == .ready || model.transition.phase == .closing {
-                holdDropInField()
-            } else {
-                var still = Transaction()
-                still.disablesAnimations = true
-                withTransaction(still) {
-                    showsDrop = false
-                    lastDrop = nil
-                }
-            }
         }
-        .onChange(of: model.transition) { old, new in
-            if new.phase == .open, new.id == ShippedSpot.installID {
-                showsDrop = false
-                lastDrop = nil
-            } else if new.phase == .closed, old.id == ShippedSpot.installID {
-                hideDrop()
-            }
-        }
-    }
-
-    /// Keeps the words of a review in the field, where they lie under the sheet's header as the sheet grows out of the field or
-    /// closes back into it.
-    private func holdDropInField() {
-        guard let drop = model.reviewDrop else { return }
-        lastDrop = drop
-        withAnimation(SpotMotion.sheetFade(isOpen: true, isLate: false)) { showsDrop = true }
-    }
-
-    /// Gives the field back its search.
-    private func hideDrop() {
-        withAnimation(SpotMotion.sheet(isOpen: false), completionCriteria: .removed) {
-            showsDrop = false
-        } completion: {
-            if !showsDrop { lastDrop = nil }
-        }
-    }
-
-    /// Scrolls the grid until the selected spot lies clear of the fades at its two ends.
-    private func showSelected() {
-        let placements = model.placements
-        guard model.openList == nil, let spot = placements.first(where: { $0.index == model.selected }) else { return }
-        let rows = placements.map { $0.row + $0.size.rows }.max() ?? 0
-        let top = SpotTokens.gridTop + spot.rect.minY
-        let window = ScrollWindow(
-            top: SpotTokens.halo + SpotTokens.rowHeight + SpotScrollEdges.fadeLength,
-            bottom: SpotTokens.panelHeight - Self.gridBottom - SpotScrollEdges.fadeLength,
-            viewHeight: SpotTokens.panelHeight,
-            contentHeight: SpotTokens.gridTop + SpotTokens.height(rows: rows) + Self.gridBottom
-        )
-        let offset = window.offset(showing: top...(top + SpotTokens.height(rows: spot.size.rows)), from: scrollOffset)
-        guard offset != scrollOffset else { return }
-        withAnimation(SpotMotion.follow) { scroll.scrollTo(y: offset) }
     }
 
     /// The blur of the grid and the blur of the sheet, each with a fixed size, which crossfade as the sheet moves.
@@ -236,7 +170,7 @@ struct SpotsView: View {
 
     /// Whether a sheet is out or a drop is taken, which sets the time of each fade and which hint shows.
     private var surfaceIsOut: Bool {
-        sheetOpen || (showsDrop && !(model.transition.phase == .closing && sheetID == ShippedSpot.installID))
+        sheetOpen || (model.showsFieldDrop && !(model.transition.phase == .closing && sheetID == ShippedSpot.installID))
     }
 
     /// Whether the field lies in the open sheet. The install screen grows out of the field, which stays where it is.
@@ -320,5 +254,33 @@ struct SpotsView: View {
 
     private var sheetWord: String {
         SearchPrompt.word(for: model.entries.first { $0.id == sheetID }?.state.title ?? "")
+    }
+}
+
+/// Scrolls the grid until the selected spot lies clear of the fades at its two ends. It alone reads the selection, so that an
+/// arrow press on the grid reruns this modifier and not the panel.
+private struct GridSelectionFollow: ViewModifier {
+    let model: SpotsModel
+    @Binding var scroll: ScrollPosition
+    @Binding var scrollOffset: CGFloat
+
+    func body(content: Content) -> some View {
+        content.onChange(of: model.selected) { show() }
+    }
+
+    private func show() {
+        let placements = model.placements
+        guard model.openList == nil, let spot = placements.first(where: { $0.index == model.selected }) else { return }
+        let rows = placements.map { $0.row + $0.size.rows }.max() ?? 0
+        let top = SpotTokens.gridTop + spot.rect.minY
+        let window = ScrollWindow(
+            top: SpotTokens.halo + SpotTokens.rowHeight + SpotScrollEdges.fadeLength,
+            bottom: SpotTokens.panelHeight - SpotsView.gridBottom - SpotScrollEdges.fadeLength,
+            viewHeight: SpotTokens.panelHeight,
+            contentHeight: SpotTokens.gridTop + SpotTokens.height(rows: rows) + SpotsView.gridBottom
+        )
+        let offset = window.offset(showing: top...(top + SpotTokens.height(rows: spot.size.rows)), from: scrollOffset)
+        guard offset != scrollOffset else { return }
+        withAnimation(SpotMotion.follow) { scroll.scrollTo(y: offset) }
     }
 }

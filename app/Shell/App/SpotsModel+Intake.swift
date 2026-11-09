@@ -21,8 +21,8 @@ extension SpotsModel {
         guard paths != dragPaths else { return }
         dragPaths = paths
         runs.draggedPaths = SharedSpot.isFile(paths) ? [] : paths
-        draggedSpot = SharedSpot.isFile(paths) ? SpotDrop(paths: paths, folder: PluginFolder.standard().url) : nil
         isPointerOverDrop = pointerIsOverDrop()
+        draggedSpot = SharedSpot.isFile(paths) ? SpotDrop(paths: paths, folder: PluginFolder.standard().url) : nil
         dragWatch?.cancel()
         dragWatch = Task { [weak self] in
             while NSEvent.pressedMouseButtons != 0 {

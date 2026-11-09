@@ -140,8 +140,17 @@ final class SpotsModel {
     let views = SpotViews()
     var dragWatch: Task<Void, Never>?
     var dragPaths: [String] = []
-    var draggedSpot: SpotDrop?
-    var isPointerOverDrop = false
+    var draggedSpot: SpotDrop? {
+        didSet { followSpotDrop(from: isPointerOverDrop ? oldValue : nil) }
+    }
+    var isPointerOverDrop = false {
+        didSet { followSpotDrop(from: oldValue ? draggedSpot : nil) }
+    }
+    /// The file whose words the field shows in place of its search: a dragged `.spot` file, or the file of a review while its
+    /// sheet grows out of the field or collapses back into it. It stays while its words fade out.
+    var fieldDrop: SpotDrop?
+    /// Whether the field shows the words of `fieldDrop`.
+    var showsFieldDrop = false
     /// Whether the pointer lies on the panel or the menu bar item.
     var pointerIsOverDrop: () -> Bool = { false }
     /// The shared spot that the open review shows, which exists only as long as that sheet.
@@ -634,12 +643,14 @@ final class SpotsModel {
             animate(isOpen: false) {
                 shownList = nil
                 transition.hide(moves: true)
+                holdFieldDrop()
             }
             return
         }
         change(nil) {
             shownList = list
             transition.show(list, moves: true)
+            holdFieldDrop()
         }
         DispatchQueue.main.async { [weak self] in
             self?.animate(isOpen: true) { self?.transition.start() }
@@ -651,6 +662,8 @@ final class SpotsModel {
         change(nil) {
             shownList = list
             if let list { transition.show(list, moves: false) } else { transition.hide(moves: false) }
+            fieldDrop = nil
+            showsFieldDrop = false
         }
         allowSheetMotion()
         if list == nil { endReview() }
@@ -662,12 +675,51 @@ final class SpotsModel {
         return id == ShippedSpot.installID || SpotSheetCard.of(id, in: self) != nil
     }
 
-    /// Moves the sheet on its spring, in one transaction, and ends the motion when it is done.
+    /// Moves the sheet on its spring, in one transaction, and ends the motion when it is done. The words of a review leave
+    /// the field at once when its sheet is open, and fade when it has closed into the field.
     private func animate(isOpen: Bool, _ body: () -> Void) {
         change(SpotMotion.sheet(isOpen: isOpen), body) { [weak self] in
             guard let self else { return }
-            change(nil) { self.transition.finish(isOpen ? .opening : .closing) }
+            let isInstall = transition.id == ShippedSpot.installID
+            change(nil) {
+                self.transition.finish(isOpen ? .opening : .closing)
+                if isInstall, self.transition.phase == .open {
+                    self.fieldDrop = nil
+                    self.showsFieldDrop = false
+                }
+            }
+            if isInstall, transition.phase == .closed { hideFieldDrop() }
             if transition.phase == .closed { endReview() }
+        }
+    }
+
+    /// Keeps the words of a review in the field, where they lie under the sheet's header as the sheet grows out of the field or
+    /// collapses back into it.
+    private func holdFieldDrop() {
+        guard let drop = reviewDrop else { return }
+        fieldDrop = drop
+        showsFieldDrop = true
+    }
+
+    /// Shows the words of a dragged `.spot` file in the field on the sheet's spring, and gives the field back its search when
+    /// the drag leaves, unless a review holds them.
+    private func followSpotDrop(from old: SpotDrop?) {
+        guard spotDrop != old else { return }
+        if let drop = spotDrop {
+            change(SpotMotion.sheet(isOpen: true)) {
+                fieldDrop = drop
+                showsFieldDrop = true
+            }
+        } else if !isReviewing {
+            hideFieldDrop()
+        }
+    }
+
+    /// Gives the field back its search on the sheet's closing spring, and lets the words go when they have faded.
+    private func hideFieldDrop() {
+        change(SpotMotion.sheet(isOpen: false), { showsFieldDrop = false }) { [weak self] in
+            guard let self, !showsFieldDrop else { return }
+            fieldDrop = nil
         }
     }
 

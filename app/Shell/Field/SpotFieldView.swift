@@ -19,8 +19,6 @@ struct SpotFieldView: View {
     let showsField: Bool
     /// Whether a sheet is out or a drop is taken, which sets the time of each fade.
     let surfaceIsOut: Bool
-    let showsDrop: Bool
-    let lastDrop: SpotDrop?
     /// The last word of the prompt in the open sheet.
     let sheetWord: String
     let focus: FocusState<Bool>.Binding
@@ -52,15 +50,15 @@ struct SpotFieldView: View {
                     .offset(x: fieldTextLeft, y: top)
             }
             .modifier(SpotFieldCrossing(isOpen: isOpen, crosses: !isInstall))
-            .opacity(showsDrop ? 0 : 1)
+            .opacity(model.showsFieldDrop ? 0 : 1)
             .opacity(model.isShown ? 1 : 0)
             .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
-            if let lastDrop {
-                SpotDropView(drop: lastDrop)
+            if let drop = model.fieldDrop {
+                SpotDropView(drop: drop)
                     .padding(.horizontal, SpotTokens.padding)
                     .frame(width: Self.rect.width, height: Self.rect.height)
                     .offset(x: Self.rect.minX, y: Self.rect.minY)
-                    .opacity(showsDrop ? 1 : 0)
+                    .opacity(model.showsFieldDrop ? 1 : 0)
             }
         }
         .font(SpotType.input)
@@ -175,7 +173,7 @@ struct SpotFieldView: View {
         .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
         .lineLimit(1)
         .modifier(SpotFieldCrossing(isOpen: isOpen, crosses: !isInstall))
-        .modifier(SpotEmptyField(model: model, isHidden: showsDrop))
+        .modifier(SpotEmptyField(model: model, isHidden: model.showsFieldDrop))
     }
 
     private var fieldRadius: CGFloat {
