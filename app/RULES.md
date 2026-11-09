@@ -28,7 +28,6 @@ Code and tests name a rule by its ID.
 | A20 | The app watches the plugins folder. A change shows on the cards at once, with no motion, and a changed script that the open panel reads at `panel` reads again. |
 | A21 | A spot whose last call failed shows a mark on its card until a call ends well. |
 | A24 | Each spot of the person offers Edit, Copy prompt for AI, Share and Delete. A card of a file that does not load offers Edit and Delete. Delete asks no question and keeps the panel open, and `⌘Z` puts the files back until the next Delete. |
-| A25 | Try opens a window of its own for a spot: its card at each size it takes, read as the open panel reads it, the log of its calls, and its live sheet. Its calls go to the same log as the panel's, and it reads again when the file changes. |
 | A22 | New spot has a small card on the grid after Settings, and the first row of Spots opens it too. `⌘N` on the grid or in Edit Spots opens it, unless an action of the selected card takes the key. |
 | A23 | New spot is a list that the search field fills. Its first row, Copy prompt for AI, copies a prompt that asks an agent to build what the person typed as a new file in the plugins folder, and its toast says so. Openspot starts no agent and writes no file for it. A row for each starter writes a working spot called Untitled and opens its file in the text editor. `⌘K` opens the guide and the plugins folder. |
 | M2 | A `panel` or `sheet` moment takes an answer younger than 5 seconds. A change, a number, `launch` and `wake` always read. |
