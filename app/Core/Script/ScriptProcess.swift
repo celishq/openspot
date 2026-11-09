@@ -222,18 +222,14 @@ public final class ScriptProcess: @unchecked Sendable {
         let errorsRead = DispatchSemaphore(value: 0)
         let lastErrors = LastLine()
         DispatchQueue.global().async {
-            while true {
-                let data = errors.fileHandleForReading.availableData
-                if data.isEmpty { break }
+            while let data = Self.next(errors) {
                 lastErrors.take(data)
             }
             errorsRead.signal()
         }
         DispatchQueue.global().async { [self] in
             var reader = SheetFrameReader()
-            while true {
-                let data = output.fileHandleForReading.availableData
-                if data.isEmpty { break }
+            while let data = Self.next(output) {
                 for frame in reader.read(data) { yield(frame) }
             }
             let hasExited = waitForExit(seconds: Self.exitPause)
@@ -247,6 +243,14 @@ public final class ScriptProcess: @unchecked Sendable {
             }
             if let frame = reader.finish() { yield(frame) }
             finish(throwing: nil)
+        }
+    }
+
+    /// The next bytes of a pipe, or nil at its end. Each read frees its own buffer, so a long read keeps none of the last.
+    private static func next(_ pipe: Pipe) -> Data? {
+        autoreleasepool {
+            let data = pipe.fileHandleForReading.availableData
+            return data.isEmpty ? nil : data
         }
     }
 
