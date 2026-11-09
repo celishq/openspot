@@ -7,7 +7,7 @@ final class SpotGlyphBook: @unchecked Sendable {
     /// The longest wait for a helper to draw a book.
     private static let timeLimit: DispatchTimeInterval = .seconds(60)
     /// How many books the folder keeps, the most recently used first.
-    private static let shelf = 2
+    private static let shelf = 3
 
     let layout: GlyphBook
     private let bytes: NSData
@@ -61,13 +61,19 @@ final class SpotGlyphBook: @unchecked Sendable {
         } catch {
             return nil
         }
-        try? input.fileHandleForWriting.write(contentsOf: Data(layout.glyphs.joined(separator: "\n").utf8))
-        try? input.fileHandleForWriting.close()
+        let text = Data(layout.glyphs.joined(separator: "\n").utf8)
+        let writing = input.fileHandleForWriting
+        DispatchQueue.global(qos: .utility).async {
+            try? writing.write(contentsOf: text)
+            try? writing.close()
+        }
         if ended.wait(timeout: .now() + timeLimit) == .timedOut {
             process.terminate()
             ended.wait()
         }
-        guard process.terminationStatus == 0, (try? FileManager.default.moveItem(at: part, to: file)) != nil else { return nil }
+        guard process.terminationStatus == 0 else { return nil }
+        try? FileManager.default.removeItem(at: file)
+        guard (try? FileManager.default.moveItem(at: part, to: file)) != nil else { return nil }
         prune(folder)
         return open(layout, at: file)
     }

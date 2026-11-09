@@ -12,11 +12,11 @@ public struct GlyphBook: Equatable, Sendable {
     public let fontSize: Double
     private let places: [String: Int]
 
-    /// Keeps each glyph once, in its first place.
+    /// Keeps each glyph once, in its first place, and leaves out a glyph that breaks a line, which a helper reads as two.
     public init(glyphs: [String], side: Double, fontSize: Double) {
         var places: [String: Int] = [:]
         var kept: [String] = []
-        for glyph in glyphs where places[glyph] == nil {
+        for glyph in glyphs where places[glyph] == nil && !glyph.contains(where: \.isNewline) {
             places[glyph] = kept.count
             kept.append(glyph)
         }

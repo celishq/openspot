@@ -29,6 +29,14 @@ enum SpotGlyphPicture {
     private static let binding = DispatchQueue(label: "openspot.glyph-books", qos: .utility)
     /// The book in use for each size, by its side and font size.
     private static let books = Mutex<[String: SpotGlyphBook]>([:])
+    /// The number of the newest bind for each size, so that a bind that a newer one follows does nothing.
+    private static let binds = Mutex<[String: Int]>([:])
+    /// The books that failed in this session, by their file names, so that a list does not run a helper on each read.
+    private static let failures = Mutex<Set<String>>([])
+    /// What the pictures of a book depend on besides its glyphs and sizes: the system and the app that draws them.
+    private static let maker = ProcessInfo.processInfo.operatingSystemVersionString + " "
+        + ((Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "") + " "
+        + ((Bundle.main.infoDictionary?["CFBundleVersion"] as? String) ?? "")
 
     /// The bitmap of a colour emoji in a square of this side, or nil for a glyph drawn as text in the ink colour.
     static func image(_ glyph: String, side: CGFloat, fontSize: CGFloat) -> CGImage? {
@@ -40,13 +48,15 @@ enum SpotGlyphPicture {
         return image
     }
 
-    /// Draws the bitmaps of these glyphs in the background, in order, and skips each that is drawn already or in the book.
+    /// Makes the bitmaps of these glyphs in the background, in order, from the book or by drawing, and skips each that is
+    /// ready, so that a cell reads no page of the book and draws nothing on the main thread.
     static func prepare(_ glyphs: [String], side: CGFloat, fontSize: CGFloat) {
         drawing.async {
             let book = book(side: side, fontSize: fontSize)
-            for glyph in glyphs where isColour(glyph) && book?.layout.offset(of: glyph) == nil {
+            for glyph in glyphs where isColour(glyph) {
                 let key = key(glyph, side: side, fontSize: fontSize)
-                guard bitmaps.object(forKey: key) == nil, let image = draw(glyph, side: side, fontSize: fontSize) else { continue }
+                guard bitmaps.object(forKey: key) == nil,
+                      let image = book?.image(of: glyph) ?? draw(glyph, side: side, fontSize: fontSize) else { continue }
                 keep(image, as: key)
             }
         }
@@ -55,12 +65,22 @@ enum SpotGlyphPicture {
     /// Takes the book of a whole list's colour glyphs at this size: maps it when a helper drew it before, else has a helper
     /// draw it. A list with few colour glyphs gets none.
     static func bind(_ glyphs: [String], side: CGFloat, fontSize: CGFloat) {
+        let size = sizeKey(side: side, fontSize: fontSize)
+        let number = binds.withLock { binds in
+            binds[size, default: 0] += 1
+            return binds[size] ?? 0
+        }
         binding.async {
+            guard binds.withLock({ $0[size] }) == number else { return }
             let layout = GlyphBook(glyphs: glyphs.filter(isColour), side: Double(side), fontSize: Double(fontSize))
-            let size = sizeKey(side: side, fontSize: fontSize)
             guard layout.glyphs.count >= bookFloor, books.withLock({ $0[size]?.layout }) != layout else { return }
-            let file = GlyphBook.folder().appendingPathComponent(layout.name(system: ProcessInfo.processInfo.operatingSystemVersionString))
-            guard let book = SpotGlyphBook.open(layout, at: file) ?? SpotGlyphBook.draw(layout, at: file) else { return }
+            let name = layout.name(system: maker)
+            guard !failures.withLock({ $0.contains(name) }) else { return }
+            let file = GlyphBook.folder().appendingPathComponent(name)
+            guard let book = SpotGlyphBook.open(layout, at: file) ?? SpotGlyphBook.draw(layout, at: file) else {
+                failures.withLock { _ = $0.insert(name) }
+                return
+            }
             books.withLock { $0[size] = book }
         }
     }

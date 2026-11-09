@@ -17,6 +17,10 @@ final class GlyphBookTests: XCTestCase {
         XCTAssertEqual(GlyphBook(glyphs: ["😀", "🐱", "😀"], side: 24, fontSize: 19.2).glyphs, ["😀", "🐱"])
     }
 
+    func testABookLeavesOutAGlyphThatBreaksALine() {
+        XCTAssertEqual(GlyphBook(glyphs: ["😀", "😀\n🐱", "🐶\r", "🐱"], side: 24, fontSize: 19.2).glyphs, ["😀", "🐱"])
+    }
+
     func testABookIsNamedByItsGlyphsItsSizesAndTheSystem() {
         let book = GlyphBook(glyphs: ["😀", "🐱"], side: 24, fontSize: 19.2)
         let name = book.name(system: "26.1")
