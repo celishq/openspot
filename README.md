@@ -56,6 +56,9 @@ Then make an Openspot tool in ~/.config/openspot/plugins that shows the weather 
 echo "toast=Hello"
 ```
 
+**Fix it.** A tool that does not load keeps its card. Press Enter on the card, then `⌘⏎` to have your agent fix it.
+Select any of your tools and press `⌘K` for Try, Edit, Change with AI, Duplicate and Delete, which `⌘Z` undoes.
+
 **Share it.** Select the tool in the panel and press ⌘⇧C. Then paste the `.spot` file into a chat.
 
 **Add one you got.** Double-click the `.spot` file, read what it runs and press ⌘⏎.
