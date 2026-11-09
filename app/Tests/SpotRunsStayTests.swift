@@ -513,6 +513,38 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertFalse(sheet.list.isLoading)
     }
 
+    func testANewerSearchStopsTheOlderOneOfAStayingScriptAndItsLateAnswerChangesNothing() async throws {
+        try script(header: "stay=true", """
+        while IFS= read -r line; do
+          printf '%s\\n' "$line" >> '\(path("blocks"))'
+          case "$line" in
+            call=*) call=${line#call=}; args= ;;
+            arg=*) args="$args ${line#arg=}" ;;
+            stop=*) touch '\(path("stopped"))' ;;
+            '')
+              case "$args" in
+                ' read a') ( \(untilRelease); printf 'search=script\\nend=%s\\n\\nrow=o\\ntitle=Old\\n---\\n' "$call"; printf 'text=d\\ntitle=Done\\n---\\n' ) & ;;
+                ' read ab') printf 'search=script\\nend=%s\\n\\nrow=n\\ntitle=New\\n---\\n' "$call" ;;
+                ' read') printf 'search=script\\nend=%s\\n\\nrow=x\\ntitle=X\\n---\\n' "$call" ;;
+              esac ;;
+          esac
+        done
+        """)
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the first rows") { sheet.list.search == .script && sheet.list.shown.count == 1 }
+        sheet.search("a")
+        try await wait("the older search") { self.blocks().contains("arg=read\narg=a") }
+
+        sheet.search("ab")
+
+        try await wait("the newer answer") { sheet.list.shown.map(\.run) == ["n"] }
+        XCTAssertTrue(exists("stopped"))
+        openGate()
+        try await wait("the frame after the late answer") { sheet.lastFrame?.contains("Done") == true }
+        XCTAssertEqual(sheet.list.shown.map(\.run), ["n"])
+    }
+
     func testTheAnswerOfAStayingScriptTakesTheTemplatesOfItsRows() async throws {
         try staying(frame: "template=row\\ngrid=name\\ntext=name\\n\\nrow=a\\ntitle=A\\n")
         let sheet = try sheet()

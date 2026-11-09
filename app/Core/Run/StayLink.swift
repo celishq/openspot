@@ -11,8 +11,10 @@ final class StayLink: ScriptLink {
     weak var run: SpotRun?
     private let runs: SpotRuns
     private var script: ScriptProcess?
-    /// The call number of the read or the search that the script has not ended yet.
-    private var asking: (id: Int, ask: SpotRun.Ask)?
+    /// Each read and search that the script has not ended yet, by its call number.
+    private var asks: [Int: SpotRun.Ask] = [:]
+    /// The call numbers of searches that a newer search stopped, whose late answers change nothing.
+    private var dropped: Set<Int> = []
     private var count = 0
     private var calls: [String: ScriptCall] = [:]
     private var failures: [Date] = []
@@ -27,7 +29,7 @@ final class StayLink: ScriptLink {
     nonisolated deinit {}
 
     var isAsking: Bool {
-        asking != nil
+        !asks.isEmpty
     }
 
     var holdsScript: Bool {
@@ -49,10 +51,11 @@ final class StayLink: ScriptLink {
                 return self.script != nil
             }
             let id = next()
-            asking = (id, .read(generation: generation, reports: reports))
+            asks[id] = .read(generation: generation, reports: reports)
             script.send(.read, values: call.input, id: id, reason: call.reason)
         case .ask(.search(let query)):
-            asking = send(.items(query: query), values: nil, reason: .search).map { ($0, .search(query)) }
+            stopSearches()
+            if let id = send(.items(query: query), values: nil, reason: .search) { asks[id] = .search(query) }
         case .work:
             send(call.action, values: call.input, key: call.key)
         }
@@ -87,7 +90,7 @@ final class StayLink: ScriptLink {
     func end() {
         script?.end()
         script = nil
-        asking = nil
+        forgetAsks()
         endCalls(nil)
         answerForm(with: .success(nil))
         run?.scriptEnded()
@@ -95,7 +98,7 @@ final class StayLink: ScriptLink {
 
     func leave() {
         script = nil
-        asking = nil
+        forgetAsks()
         calls = [:]
         answerForm(with: .success(nil))
     }
@@ -121,7 +124,7 @@ final class StayLink: ScriptLink {
             let (script, frames) = try runs.stay(run.command, limit: runs.readLimit)
             self.script = script
             let id = next()
-            asking = (id, .read(generation: nil, reports: true))
+            asks = [id: .read(generation: nil, reports: true)]
             script.send(.read, id: id, reason: reason ?? startReason)
             Task { await follow(script, frames) }
         } catch {
@@ -148,6 +151,21 @@ final class StayLink: ScriptLink {
         }
         settle()
         return id
+    }
+
+    /// Stops each search that runs, and drops its answer when it comes (Y7).
+    private func stopSearches() {
+        for (id, ask) in asks {
+            guard case .search = ask else { continue }
+            asks[id] = nil
+            dropped.insert(id)
+            script?.send(text: SpotAction.stopEvent(id: id))
+        }
+    }
+
+    private func forgetAsks() {
+        asks = [:]
+        dropped = []
     }
 
     private func next() -> Int {
@@ -187,9 +205,11 @@ final class StayLink: ScriptLink {
                     settle()
                     continue
                 }
-                if let asked = asking, lines.ends.contains(String(asked.id)) {
-                    asking = nil
-                    await run.takeAnswer(lines, frame: text, to: asked.ask)
+                let ends = lines.ends.compactMap { Int($0) }
+                if let id = ends.first(where: { asks[$0] != nil }), let ask = asks.removeValue(forKey: id) {
+                    await run.takeAnswer(lines, frame: text, to: ask)
+                } else if ends.contains(where: { dropped.remove($0) != nil }) {
+                    continue
                 } else {
                     await run.takeUpdate(lines, frame: text, from: .call(generation: nil, keeping: nil))
                 }
@@ -203,7 +223,7 @@ final class StayLink: ScriptLink {
         guard self.script === script else { return }
         self.script = nil
         endCalls(nil)
-        asking = nil
+        forgetAsks()
         run?.lost()
         answerForm(with: .success(""))
     }

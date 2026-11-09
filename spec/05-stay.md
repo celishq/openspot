@@ -48,7 +48,7 @@ call with `end=<n>` in the head of a frame (Y7). The frame that ends a read is i
 spot shows. Any other frame changes only what it prints, so a frame that no read asked for never replaces the sheet.
 
 A call shows as running until its `end`, and a second press sends the block `stop=<n>`. A call that never ends runs until
-the script ends.
+the script ends. A newer search sends `stop=<n>` for the search before it, whose answer then changes nothing.
 
 ## Its life
 
