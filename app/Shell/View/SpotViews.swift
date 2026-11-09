@@ -20,6 +20,9 @@ final class SpotViews {
     @ObservationIgnored private var loaded: [URL: Make] = [:]
     @ObservationIgnored private let library: ViewLibrary
 
+    /// The one set of plugin views that every card draws from.
+    static let shared = SpotViews()
+
     init(library: ViewLibrary = .standard()) {
         self.library = library
     }

@@ -94,6 +94,7 @@ final class SpotRunTests: XCTestCase {
             bring()
         }
 
+        runs.last?.panelOpened()
         sheet.open(waits: true) {}
 
         try await wait("the later parts") { sheet.panel?.parts.first?.title == "B" }
@@ -208,6 +209,7 @@ final class SpotRunTests: XCTestCase {
     func testAnOpenSheetTakesLaterFrames() async throws {
         let sheet = try make("printf 'text=a\\ntitle=0\\n---\\n'\nsleep 0.1\nprintf 'text=a\\ntitle=1\\n---\\n'")
 
+        runs.last?.panelOpened()
         sheet.open {}
 
         try await wait("the later frame") { sheet.panel?.parts.first?.title == "1" }
@@ -238,6 +240,7 @@ final class SpotRunTests: XCTestCase {
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
 
+        runs.last?.panelOpened()
         sheet.open {}
 
         try await wait("the toast") { toasts == ["Later"] }
@@ -259,6 +262,7 @@ final class SpotRunTests: XCTestCase {
         let sheet = try make("sleep 0.2\n" + String(format: Self.counter, path("ended")), stays: true)
         var isReady = false
 
+        runs.last?.panelOpened()
         sheet.open { isReady = true }
         XCTAssertFalse(isReady)
 
@@ -277,6 +281,7 @@ final class SpotRunTests: XCTestCase {
 
     func testClosingEndsAStayingScriptAndTheNextOpenStartsAfresh() async throws {
         let sheet = try make(String(format: Self.counter, path("ended")), stays: true)
+        runs.last?.panelOpened()
         sheet.open {}
         try await wait("the first frame") { sheet.panel != nil }
         let part = try XCTUnwrap(sheet.panel?.parts.first)
@@ -303,6 +308,7 @@ final class SpotRunTests: XCTestCase {
           esac
         done
         """, stays: true)
+        runs.last?.panelOpened()
         sheet.open {}
         try await wait("the first frame") { sheet.panel != nil }
 
@@ -322,6 +328,7 @@ final class SpotRunTests: XCTestCase {
           esac
         done
         """, stays: true)
+        runs.last?.panelOpened()
         sheet.open {}
         try await wait("the first frame") { sheet.panel != nil }
 
@@ -450,5 +457,68 @@ final class SpotRunTests: XCTestCase {
         sheet.search("b")
 
         XCTAssertTrue(listChanged)
+    }
+
+    func testAMoveOfTheSelectionTellsTheReadersOfTheSelectedRow() async throws {
+        let sheet = try holding("printf 'row=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'", pause: 30)
+        sheet.read()
+        try await wait("the rows") { sheet.list.shown.count == 2 }
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = sheet.selectedItem } onChange: { changed = true }
+
+        sheet.list.move(by: 1)
+
+        XCTAssertTrue(changed)
+        XCTAssertEqual(sheet.selectedItem?.title, "B")
+    }
+
+    func testAnEqualListTellsNoReader() async throws {
+        let sheet = try holding("printf 'row=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'", pause: 30)
+        sheet.read()
+        try await wait("the rows") { sheet.list.shown.count == 2 }
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = sheet.list; _ = sheet.selection } onChange: { changed = true }
+
+        sheet.list.selectFirst()
+
+        XCTAssertFalse(changed)
+    }
+
+    func testAMoveOfTheSelectionAndALoadReportNothing() async throws {
+        let sheet = try holding("printf 'row=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'", pause: 30)
+        sheet.read()
+        try await wait("the rows") { sheet.list.shown.count == 2 }
+        var changes = 0
+        sheet.onReport = { if case .listChange = $0 { changes += 1 } }
+
+        sheet.list.move(by: 1)
+        sheet.list.beginLoading()
+        sheet.list.stopLoading()
+
+        XCTAssertEqual(changes, 0)
+    }
+
+    func testTheSameValueAgainTellsNoReaderOfTheReading() async throws {
+        let sheet = try make("printf 'text=heat\\ntitle=41°\\n'")
+        sheet.read(need: .change)
+        try await wait("the value") { !sheet.isReading && sheet.reading.value?.title == "41°" }
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = sheet.reading } onChange: { changed = true }
+
+        sheet.read(need: .change)
+        try await wait("the second answer") { !sheet.isReading }
+
+        XCTAssertFalse(changed)
+    }
+
+    func testAnAnswerWithNewRowsReportsOneListChange() async throws {
+        let sheet = try holding("printf 'row=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'", pause: 30)
+        var changes = 0
+        sheet.onReport = { if case .listChange = $0 { changes += 1 } }
+
+        sheet.read()
+        try await wait("the rows") { sheet.list.shown.count == 2 }
+
+        XCTAssertEqual(changes, 1)
     }
 }

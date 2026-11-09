@@ -9,7 +9,8 @@ struct SpotSheetView: View {
     /// The size that the grid gives its card, which can differ from the size it prefers.
     let cardSize: SpotSize
     let isOpen: Bool
-    /// Whether the header lies on the white fill of a card that is turned on.
+    /// Whether the header lies on the white fill of a card that is turned on. Its colours change with the fill, on the fill's
+    /// own curve.
     let showsFill: Bool
     let rect: CGRect
     /// The parts of the sheet, once they have landed.
@@ -61,11 +62,11 @@ struct SpotSheetView: View {
                         selection: selection,
                         nudge: { model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest },
                         customView: { room in
-                            entry.command.view.map { SpotCustomView(source: $0, values: entry.state.values, card: entry.state.size ?? .square, room: room, views: model.views) }
+                            entry.command.view.map { SpotCustomView(source: $0, values: entry.state.values, card: entry.state.size ?? .square, room: room, views: SpotViews.shared) }
                         }
                     )
                     .task(id: panel.parts.contains { $0.kind == "view" } ? entry.command.view : nil) {
-                        if let view = entry.command.view, panel.parts.contains(where: { $0.kind == "view" }) { await model.views.load(view) }
+                        if let view = entry.command.view, panel.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
                     }
                 } else if let form {
                     SpotFormView(draft: form, onValue: { model.setFormValue($0, for: $1) }, onChoose: { model.chooseFormOption($0) })
@@ -124,6 +125,7 @@ struct SpotSheetView: View {
                     .lineLimit(1)
             }
         }
+        .animation(fillFade, value: showsFill)
     }
 
     private static let wordsGap = SpotTokens.padding - 5
@@ -144,8 +146,7 @@ struct SpotSheetView: View {
     @ViewBuilder
     private var closeButton: some View {
         let button = SpotRoundButton(symbol: "xmark", label: "Close") {
-            model.allowSheetMotion()
-            model.closeList()
+            model.closeList(moving: true)
         }
         if let closeShift {
             button
@@ -171,7 +172,13 @@ struct SpotSheetView: View {
                     .background(SpotTheme.ink.opacity(showsSmallCard || showsFill ? 0 : SpotTheme.disc), in: Circle())
             }
         }
+        .animation(fillFade, value: showsFill)
         .offset(x: showsSmallCard ? (SpotTokens.cell - SpotTokens.glyphSize) / 2 - SpotTokens.padding : 0)
+    }
+
+    /// The fade of the card's fill, which the colours on it follow.
+    private var fillFade: Animation {
+        SpotMotion.fillFade(isOpen: isOpen)
     }
 
     /// Whether the sheet still lies on a 1x1 card, which shows its glyph alone.

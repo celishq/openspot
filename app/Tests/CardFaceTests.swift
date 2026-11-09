@@ -27,6 +27,9 @@ final class CardFaceTests: XCTestCase {
         XCTAssertEqual(face.drawing(for: .square), [["time", "power"]])
         XCTAssertEqual(face.drawing(for: .strip), [["time", "power"]])
         XCTAssertEqual(face.drawing(for: .large), [["time", "time", "power", "power"], ["date", "date", "date", "date"]])
+        XCTAssertNil(face.layout(for: .small))
+        XCTAssertEqual(face.layout(for: .square), WidgetLayout(drawing: ["time power"], size: .square))
+        XCTAssertEqual(face.layout(for: .large), WidgetLayout(drawing: ["time time power power", "date date date date"], size: .large))
         XCTAssertEqual(face.parts.map(\.id), ["date", "time", "power"])
     }
 

@@ -12,8 +12,6 @@ struct SpotSheetLayer: View {
     let sheetRect: CGRect
     /// Whether the sheet is open or on its way there.
     let isOpen: Bool
-    /// Whether the header has left the fill of its card.
-    let hasLeftCard: Bool
     /// The parts of the sheet, once they have landed.
     let panel: SheetParts?
     /// The mask of the grid's cards, which fades a closed sheet at the ends of the scroll as the grid fades its card.
@@ -25,12 +23,13 @@ struct SpotSheetLayer: View {
             entry: entry,
             cardSize: card?.placement.size ?? entry.size,
             isOpen: isOpen,
-            showsFill: entry.state.on == true && !hasLeftCard,
+            showsFill: entry.state.on == true && !isOpen,
             rect: sheetRect,
             panel: panel,
             closeShift: isInstall ? 0 : showsArrow ? (frame?.width ?? sheetRect.width) - sheetRect.width : nil,
             cardWidth: isInstall ? SpotFieldView.rect.width : frame?.width ?? sheetRect.width
         )
+        .id(entry.id)
         .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(card?.widget == nil || isOpen ? 1 : 0) }
         .overlay(alignment: .topLeading) {
             if let widget = card?.widget, let frame {
@@ -97,7 +96,7 @@ struct SpotSheetLayer: View {
     @ViewBuilder
     private func widgetLook(_ widget: SpotsModel.Entry, size: SpotSize) -> some View {
         if let layout = widget.command.layout {
-            SpotWidgetView(layout: layout, places: widget.command.places, readings: model.readings, card: size)
+            SpotWidgetView(layout: layout, places: widget.command.places, reading: { [model] in model.reading(of: $0) }, card: size)
                 .padding(SpotTokens.cardPadding(for: size, isWidget: true))
         }
     }

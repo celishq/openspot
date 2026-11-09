@@ -46,7 +46,7 @@ final class SpotRunsWantTests: SpotRunsCase {
 
         runs.panelOpened()
 
-        try await wait("the values") { self.runs.readings["onpanel"]?.value?.title == "P" && self.runs.readings["onsheet"]?.value?.title == "S" }
+        try await wait("the values") { self.runs.sheets["onpanel"]?.reading.value?.title == "P" && self.runs.sheets["onsheet"]?.reading.value?.title == "S" }
     }
 
     func testASpotComponentOfACardMakesTheOpenPanelReadThatSpot() async throws {
@@ -59,7 +59,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         runs.panelClosed()
         runs.panelOpened()
 
-        try await wait("the placed spot") { self.runs.readings["heat"]?.value?.title == "41°" }
+        try await wait("the placed spot") { self.runs.sheets["heat"]?.reading.value?.title == "41°" }
     }
 
     func testAWidgetCannotPlaceAScriptWithNoRead() throws {

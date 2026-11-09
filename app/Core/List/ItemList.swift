@@ -16,11 +16,16 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var isWaiting = false
     public private(set) var isLoading = false
     public private(set) var hasFailed = false
+    /// How many list row heights the shown rows take in a list.
+    public private(set) var spans = 0
     private(set) var all: [SpotItem]
-    private(set) var folded: [FoldedItem]
-    private var narrowing: Narrowing?
+    /// The searched texts of the rows, for a list that searches them itself. A list that its script searches keeps none.
+    private(set) var searchIndex = SearchIndex()
+    /// The searches of the text as it grew, each one a prefix of the next. A longer search looks among the matches of the last
+    /// one when it narrows to it, and a shorter one takes its matches back.
+    private var narrowings: [Narrowing] = []
 
-    /// The last search and the indices of its matches, in order, among which a longer search looks.
+    /// A search and the indices of its matches, best first.
     private struct Narrowing: Equatable, Sendable {
         let query: SearchQuery
         let matches: [Int]
@@ -29,8 +34,8 @@ public struct ItemList: Equatable, Sendable {
     public init(items: [SpotItem] = [], recent: [String] = [], search: ItemSearch = .local) {
         self.search = search
         all = items
-        folded = items.map(FoldedItem.init)
         self.recent = recent
+        reindex()
         refresh()
     }
 
@@ -44,6 +49,11 @@ public struct ItemList: Equatable, Sendable {
         var same = self
         same.selected = other.selected
         return same == other
+    }
+
+    /// Whether a search finds the same rows in it as in another list: the same rows, picks and searcher.
+    public func findsSameRows(as other: ItemList) -> Bool {
+        all == other.all && recent == other.recent && search == other.search
     }
 
     public var selectedItem: SpotItem? {
@@ -74,6 +84,7 @@ public struct ItemList: Equatable, Sendable {
     public mutating func take(search: ItemSearch) {
         guard search != self.search else { return }
         self.search = search
+        reindex()
         isWaiting = search == .script && !query.isEmpty
         refresh()
     }
@@ -113,8 +124,8 @@ public struct ItemList: Equatable, Sendable {
         hasFailed = false
         if items != all {
             all = items
-            folded = items.map(FoldedItem.init)
-            narrowing = nil
+            reindex()
+            narrowings = []
             refresh()
         }
         guard selected > 0 else { return }
@@ -140,6 +151,7 @@ public struct ItemList: Equatable, Sendable {
         self.drawing = drawing
         self.templates = templates
         perLine = drawing.perLine ?? drawing.places.count
+        measure()
     }
 
     /// The template that draws a row: the one it names, or else `template=row`.
@@ -150,11 +162,6 @@ public struct ItemList: Equatable, Sendable {
     /// How many list row heights a row takes in a list.
     public func span(of item: SpotItem) -> Int {
         template(of: item)?.span ?? 1
-    }
-
-    /// How many list row heights the shown rows take in a list.
-    public var spans: Int {
-        shown.reduce(0) { $0 + span(of: $1) }
     }
 
     /// Whether the rows flow through a drawing of places of more than one size.
@@ -173,7 +180,6 @@ public struct ItemList: Equatable, Sendable {
             )
         }
         all = all.map(changed)
-        folded = all.map(FoldedItem.init)
         shown = shown.map(changed)
     }
 
@@ -190,19 +196,33 @@ public struct ItemList: Equatable, Sendable {
     /// Adds a pick to the front of the recent picks, which keep each pick so that a count of them shows how often.
     public mutating func remember(_ item: SpotItem) {
         recent = Array(([item.run] + recent).prefix(Self.recentLimit))
+        narrowings = []
         refresh()
     }
 
+    /// Builds the index of the rows when the list searches them itself, and drops it when its script searches them.
+    private mutating func reindex() {
+        searchIndex = search == .local ? SearchIndex(all) : SearchIndex()
+    }
+
     private mutating func refresh() {
+        defer { measure() }
         guard search == .local else {
-            narrowing = nil
+            narrowings = []
             shown = all
             return
         }
         let next = SearchQuery(text: query)
-        let among = narrowing.flatMap { $0.query.narrows(to: next) ? $0.matches : nil } ?? Array(folded.indices)
-        let ranked = next.ranking(folded, among: among, recent: recent)
-        narrowing = Narrowing(query: next, matches: ranked.sorted())
-        shown = ranked.map { folded[$0].item }
+        while let last = narrowings.last, !next.text.hasPrefix(last.query.text) { narrowings.removeLast() }
+        if narrowings.last?.query.text != next.text {
+            let among = narrowings.last.flatMap { $0.query.narrows(to: next) ? $0.matches : nil } ?? Array(all.indices)
+            narrowings.append(Narrowing(query: next, matches: next.ranking(searchIndex, items: all, among: among, recent: recent)))
+        }
+        shown = narrowings.last?.matches.map { all[$0] } ?? []
+    }
+
+    /// Counts the list row heights of the shown rows, each time the rows or their templates change.
+    private mutating func measure() {
+        spans = shown.reduce(0) { $0 + span(of: $1) }
     }
 }

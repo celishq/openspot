@@ -8,6 +8,8 @@ import Observation
 public final class SpotRuns {
     public private(set) var sheets: [String: SpotRun] = [:]
     public private(set) var isPanelOpen = false
+    /// The script whose sheet is open: the one record of it. A sheet that opens closes the one before.
+    public private(set) var openID: String?
     /// The files of the drag in progress, which each card that takes them all shows for the whole drag.
     public var draggedPaths: [String] = []
     @ObservationIgnored public var onReport: (String, SpotRun.Report) -> Void = { _, _ in }
@@ -61,6 +63,7 @@ public final class SpotRuns {
         order = scripts.map(\.id)
         for (id, sheet) in sheets where !order.contains(id) {
             sheets[id] = nil
+            if sheet.isOpen { onReport(id, .closed) }
             sheet.close()
             sheet.stopReads()
         }
@@ -85,10 +88,27 @@ public final class SpotRuns {
         return sheet
     }
 
+    /// Records the sheet that opens, and closes the one before.
+    func willOpen(_ sheet: SpotRun) {
+        let id = sheet.command.id
+        if let open = openID, open != id { sheets[open]?.close() }
+        openID = id
+    }
+
+    func didClose(_ sheet: SpotRun) {
+        if openID == sheet.command.id { openID = nil }
+    }
+
+    /// Closes the open sheet.
+    public func closeOpen() {
+        openID.flatMap { sheets[$0] }?.close()
+    }
+
     /// The panel opened: reads each script that this moment lists or that a widget places, and starts the timers.
     public func panelOpened() {
+        let wasOpen = isPanelOpen
         isPanelOpen = true
-        sheets.values.forEach { $0.panelOpened() }
+        if !wasOpen { sheets.values.forEach { $0.panelOpened() } }
         tick()
         arrive(.panel)
         for id in placed {
@@ -121,7 +141,7 @@ public final class SpotRuns {
         for sheet in sheets.values where sheet.command.read?.has(moment) == true {
             sheet.read(need: moment == .panel ? .moment : .clock, reason: reason)
         }
-        sheets.values.forEach { $0.settleLive() }
+        sheets.values.forEach { $0.settleScript() }
     }
 
     /// Reads each wanted script whose number of seconds has passed.
@@ -176,11 +196,6 @@ public final class SpotRuns {
         sheets[id]?.command.accepts(draggedPaths) == true
     }
 
-    /// What each script last gave a widget to draw, by script.
-    public var readings: [String: MetricReading] {
-        sheets.mapValues(\.reading)
-    }
-
     /// Runs one call with no sheet, and returns all that it prints. A `read` runs until it gives its first frame, which is what
     /// a sheet takes as its answer.
     public func answer(of command: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil) async throws -> String {
@@ -208,7 +223,7 @@ public final class SpotRuns {
         return command.isTray || read.has(.launch) || (isPanelOpen && (read.has(.panel) || placed.contains(command.id)))
     }
 
-    /// Starts one call. It gives each frame and then its end, on the main actor.
+    /// Starts one call. It gives each frame, as text and sorted by what each block is, and then its end, on the main actor.
     func call(
         _ command: Spot,
         _ action: SpotAction,
@@ -216,7 +231,7 @@ public final class SpotRuns {
         input: String?,
         limit: TimeInterval?,
         variables: [String: String] = [:],
-        onFrame: @escaping @MainActor (ScriptCall, String) async -> Void,
+        onFrame: @escaping @MainActor (ScriptCall, String, PluginOutput) async -> Void,
         onEnd: @escaping @MainActor (ScriptCall, ScriptCall.End) async -> Void
     ) -> ScriptCall {
         let call = ScriptCall(action: action, key: key, started: now())
@@ -227,8 +242,8 @@ public final class SpotRuns {
             do {
                 for try await frame in stream {
                     guard !call.isStopped else { break }
-                    call.take(frame: frame)
-                    await onFrame(call, frame)
+                    let output = call.take(frame: frame)
+                    await onFrame(call, frame, output)
                 }
             } catch {
                 end = .failed(error)

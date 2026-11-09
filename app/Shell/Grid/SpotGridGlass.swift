@@ -1,8 +1,9 @@
 import OpenspotCore
 import SwiftUI
 
-/// The blur under every card of the grid: one blur view, seen through the shapes of the cards. A card moves, shrinks and
-/// fades its own shape, so no blur view moves with it.
+/// The blur under every card of the grid: one blur view, seen through the shapes of the cards, and a stronger one seen
+/// through the card that the person presses. A card moves, shrinks and fades its own shape, so no blur view moves with it,
+/// and a press adds no view.
 struct SpotGridGlass: View {
     /// The shape of one card in the mask.
     struct Card: Identifiable {
@@ -12,9 +13,14 @@ struct SpotGridGlass: View {
         let motion: SpotPushedCard
         /// Whether the card draws a solid fill or lies under the open sheet, so no blur shows through it.
         let isCovered: Bool
+        /// Whether the person presses the card, which grows it and shows the stronger blur through it.
+        let isPressed: Bool
     }
 
     let cards: [Card]
+    /// The cards that a press can grow: each card while no sheet is built, and none while one is, so that a sheet's motion
+    /// moves no shape of the stronger blur.
+    let pressable: [Card]
     let size: CGSize
     @Environment(\.spotIsShown) private var isShown
 
@@ -22,28 +28,39 @@ struct SpotGridGlass: View {
     private static let reach = SpotTokens.halo
 
     var body: some View {
+        ZStack(alignment: .topLeading) {
+            glass(radius: SpotTheme.blur, isPress: false)
+            glass(radius: SpotTheme.blur * SpotMotion.pressedGlass, isPress: true)
+                .opacity(pressable.contains(where: \.isPressed) ? 1 : 0)
+        }
+        .padding(-Self.reach)
+        .opacity(isShown ? 1 : 0.001)
+        .animation(SpotMotion.surface(isShown: isShown), value: isShown)
+        .allowsHitTesting(false)
+    }
+
+    /// One blur seen through the shapes of the cards: each card that no fill covers, or with `isPress` only the pressed one.
+    private func glass(radius: CGFloat, isPress: Bool) -> some View {
         let reach = Self.reach
-        SpotBlur(radius: isShown ? SpotTheme.blur : 0)
+        return SpotBlur(radius: isShown ? radius : 0)
             .overlay(SpotTheme.glass)
             .frame(width: size.width + 2 * reach, height: size.height + 2 * reach)
             .mask(alignment: .topLeading) {
                 ZStack(alignment: .topLeading) {
-                    ForEach(cards) { shape(of: $0) }
+                    ForEach(isPress ? pressable : cards) { shape(of: $0, isPress: isPress) }
                 }
                 .offset(x: reach, y: reach)
                 .frame(width: size.width + 2 * reach, height: size.height + 2 * reach, alignment: .topLeading)
             }
-            .padding(-reach)
-            .opacity(isShown ? 1 : 0)
-            .animation(SpotMotion.surface(isShown: isShown), value: isShown)
-            .allowsHitTesting(false)
     }
 
-    private func shape(of card: Card) -> some View {
+    private func shape(of card: Card, isPress: Bool) -> some View {
         RoundedRectangle(cornerRadius: SpotTokens.corner(for: card.size), style: .continuous)
             .frame(width: SpotTokens.width(columns: card.size.columns), height: SpotTokens.height(rows: card.size.rows))
+            .scaleEffect(isPress && card.isPressed ? SpotMotion.pressedScale : 1)
+            .animation(SpotMotion.press, value: isPress && card.isPressed)
             .scaleEffect(isShown ? 1 : SpotMotion.hiddenScale)
             .modifier(card.motion)
-            .opacity(card.isCovered ? 0 : 1)
+            .opacity(card.isCovered || (isPress && !card.isPressed) ? 0 : 1)
     }
 }

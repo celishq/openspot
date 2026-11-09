@@ -13,13 +13,13 @@ enum SpotCardPicture {
     static func run(text: String, size: SpotSize, path: String) -> Never {
         NSApplication.shared.setActivationPolicy(.prohibited)
         let face = PluginOutput(text: text).face
-        guard let drawing = face.drawing(for: size) else {
+        guard let layout = face.layout(for: size) else {
             FileHandle.standardError.write(Data("The card has no drawing for the size \(size.name). Print grid.\(size.name)= lines.\n".utf8))
             exit(1)
         }
         let card = CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
         let shape = RoundedRectangle(cornerRadius: SpotTokens.corner(for: size), style: .continuous)
-        let view = NSHostingView(rootView: SpotCardDrawing(drawing: drawing, face: face, card: size) { _, _ in }
+        let view = NSHostingView(rootView: SpotCardDrawing(layout: layout, face: face, card: size) { _, _ in }
             .padding(SpotTokens.cardPadding(for: size, isWidget: true))
             .frame(width: card.width, height: card.height)
             .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)

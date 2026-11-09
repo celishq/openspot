@@ -1,19 +1,18 @@
-import AppKit
-import OpenspotCore
-import SwiftUI
+import Foundation
+import Observation
 
 /// Edit Spots: the order, the size and the place on the grid of each spot.
 extension SpotsModel {
     /// The sizes that a person can prefer for a spot, in words for its menu.
-    func sizes(of entry: Entry) -> [SpotSize] {
+    public func sizes(of entry: Entry) -> [SpotSize] {
         entry.item == nil ? entry.command.sizes : []
     }
 
     /// Starts Edit Spots on the grid, with the search cleared.
-    func beginEditing() {
+    public func beginEditing() {
         guard openList == nil else { return }
         closeMenu()
-        withAnimation(SpotMotion.edit) {
+        change(.edit) {
             query = ""
             isEditing = true
             updateVisible()
@@ -21,16 +20,16 @@ extension SpotsModel {
     }
 
     /// Ends Edit Spots. A panel that closes passes no motion, so that nothing moves during its fade.
-    func endEditing(motion: Animation? = SpotMotion.edit) {
+    public func endEditing(moving: Bool = true) {
         guard isEditing else { return }
-        withAnimation(motion) {
+        change(moving ? .edit : nil) {
             isEditing = false
             selected = 0
             updateVisible()
         }
     }
 
-    func handleEditKey(_ key: ActionKey) {
+    public func handleEditKey(_ key: ActionKey) {
         let order = visible.map(\.id)
         switch (key.name, key.isShift) {
         case ("escape", _): endEditing()
@@ -53,7 +52,7 @@ extension SpotsModel {
     }
 
     /// Puts a spot at this place in the grid, and keeps it selected.
-    func moveSpot(_ id: String, to place: Int) {
+    public func moveSpot(_ id: String, to place: Int) {
         var order = visible.map(\.id)
         guard let from = order.firstIndex(of: id), order.indices.contains(place), place != from else { return }
         order.remove(at: from)
@@ -74,13 +73,13 @@ extension SpotsModel {
     }
 
     /// Takes a preferred size for a spot. The grid can still change it to fill a row.
-    func prefer(_ size: SpotSize, for id: String) {
+    public func prefer(_ size: SpotSize, for id: String) {
         arrangement.arrange(visible.map(\.id))
         arrangement.set(size: size, of: id)
         saveArrangement(selecting: id)
     }
 
-    func setOnGrid(_ isOn: Bool, for id: String) {
+    public func setOnGrid(_ isOn: Bool, for id: String) {
         arrangement.arrange((cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id))
         arrangement.set(isOnGrid: isOn, of: id)
         saveArrangement(selecting: id)
@@ -88,11 +87,11 @@ extension SpotsModel {
 
     private func saveArrangement(selecting id: String) {
         do {
-            try ConfigFile.standard().write(arrangement)
+            try files.config.write(arrangement)
         } catch {
-            notify("Openspot could not save the spots. \(Self.reason(error))")
+            host.notify("Openspot could not save the spots. \(Self.reason(error))")
         }
-        withAnimation(SpotMotion.edit) {
+        change(.edit) {
             rebuildEntries()
             if let place = visible.firstIndex(where: { $0.id == id }) { selected = place }
         }

@@ -71,12 +71,8 @@ final class SpotsPanel: NSPanel {
     }
 
     private func open(ordering order: () -> Void) {
-        model?.finishPick()
-        model?.selected = 0
-        model?.takeHeld(Self.modifiers(of: NSEvent.modifierFlags))
-        model?.panelWillShow()
+        model?.panelWillShow(holding: Self.modifiers(of: NSEvent.modifierFlags))
         order()
-        DispatchQueue.main.async { self.model?.isShown = true }
     }
 
     /// Whether a point on the screen lies on the part of the panel that takes a drop. The window is taller than that.
@@ -89,18 +85,13 @@ final class SpotsPanel: NSPanel {
 
     /// Starts the close motion, and takes the panel off the screen when it ends. Then it runs the given work.
     func hide(then done: (() -> Void)? = nil) {
-        model?.takeHeld([])
-        model?.stopRecording()
-        model?.closeMenu()
-        model?.endEditing(motion: nil)
-        model?.isShown = false
+        model?.panelWillHide()
         DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeOutDuration) {
             defer { done?() }
             guard self.model?.isShown == false else { return }
             self.orderOut(nil)
             self.alphaValue = 1
             self.ignoresMouseEvents = false
-            self.model?.finishPick()
             self.model?.panelDidHide()
         }
     }

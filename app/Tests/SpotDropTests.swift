@@ -404,6 +404,7 @@ final class SpotDropTests: XCTestCase {
 
     func testADropReachesTheRunningStayingScriptAsOneBlockWithAValueLineForEachPath() async throws {
         let sheet = try stayingSheet()
+        runs.panelOpened()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
         let spaced = file("a b c.mov")
@@ -429,6 +430,7 @@ final class SpotDropTests: XCTestCase {
 
     func testTwoDropsReachOneRunningStayingScriptInTurn() async throws {
         let sheet = try stayingSheet()
+        runs.panelOpened()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
         let first = file("first.mov")
@@ -546,9 +548,10 @@ final class SpotDropTests: XCTestCase {
 
         XCTAssertTrue(sheet.drop([file("a.mov")]))
 
-        try await wait("the frame") { sheet.calls.first?.lastFrame != nil }
+        try await wait("the frame") { sheet.calls.first?.output != nil }
         XCTAssertEqual(sheet.calls.first?.action.arguments.first, "drop")
-        XCTAssertEqual(sheet.calls.first?.lastFrame, "gauge=progress\ntitle=42%\nvalue=0.42\n")
+        XCTAssertEqual(sheet.calls.first?.title, "42%")
+        XCTAssertEqual(sheet.calls.first?.fill, 0.42)
         FileManager.default.createFile(atPath: path("release"), contents: Data())
         try await wait("the toast") { toasts == ["Done"] }
         XCTAssertEqual(sheet.lastFrame, "toast=Done\n")

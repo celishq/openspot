@@ -7,9 +7,7 @@ struct SpotGlass: ViewModifier {
     var radius: CGFloat = SpotTokens.radius
     var isSolid = false
     var isBare = false
-
-    var strength = 1.0
-    /// Whether the surface draws its own blur. A card of the grid draws it only while pressed, over the grid's blur.
+    /// Whether the surface draws its own blur. A card of the grid draws none: the grid's blur lies under it.
     var blursBehind = true
     /// The size of a surface that keeps one size, which draws its rim from a picture.
     var rimSize: CGSize?
@@ -22,7 +20,7 @@ struct SpotGlass: ViewModifier {
             .animation(SpotMotion.surface(isShown: isShown), value: isShown)
             .background {
                 if blursBehind {
-                    SpotBlur(radius: isShown ? SpotTheme.blur * strength : 0)
+                    SpotBlur(radius: isShown ? SpotTheme.blur : 0)
                         .overlay(SpotTheme.glass)
                         .clipShape(shape)
                         .opacity(isShown && !isSolid && !isBare ? 1 : 0)

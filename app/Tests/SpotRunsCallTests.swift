@@ -155,7 +155,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try await wait("the part") { sheet.panel != nil && sheet.calls.isEmpty }
 
         sheet.press(try XCTUnwrap(sheet.panel?.parts.first))
-        try await wait("the first frame") { sheet.calls.first?.lastFrame != nil }
+        try await wait("the first frame") { sheet.calls.first?.output != nil }
         let call = try XCTUnwrap(sheet.calls.first)
         XCTAssertTrue(call.doesWork)
         XCTAssertEqual(call.action.arguments, ["go"])
@@ -180,6 +180,8 @@ final class SpotRunsCallTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the state") { sheet.state.subtitle == "Idle" }
+        sheet.open {}
+        sheet.close()
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
 

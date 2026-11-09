@@ -22,7 +22,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         let sheet = try sheet()
 
         sheet.pressCard()
-        try await wait("the frame") { sheet.calls.first?.lastFrame != nil }
+        try await wait("the frame") { sheet.calls.first?.output != nil }
         time += 0.9
         XCTAssertTrue(sheet.work.isEmpty)
         XCTAssertNil(sheet.cardWork)
@@ -81,6 +81,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testACallToAStayingScriptNeverShowsAsWorkAndItsFrameDoesNotMakeItShow() async throws {
         try staying(frame: "gauge=p\\ntitle=42%%\\nvalue=0.42\\n")
         let sheet = try sheet()
+        runs.panelOpened()
         sheet.open {}
         try await wait("the frame") { self.blocks() == ["arg=read"] && sheet.lastFrame != nil }
         let before = sheet.state
@@ -139,7 +140,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(header: "title=Encode\ndetail=Videos", "printf 'gauge=progress\\ntitle=42%%\\ndetail=2 min left\\n---\\n'\nwhile [ ! -e '\(path("end"))' ]; do sleep 0.02; done")
         let sheet = try sheet()
         sheet.pressCard()
-        try await wait("the frame") { sheet.calls.first?.lastFrame != nil }
+        try await wait("the frame") { sheet.calls.first?.output != nil }
         XCTAssertEqual(sheet.shownState.title, "Encode")
 
         time += 1
@@ -158,7 +159,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(header: "title=Encode\ndetail=Videos", "printf 'gauge=progress\\ntitle=42%%\\n---\\n'\nsleep 30")
         let sheet = try sheet()
         sheet.pressCard()
-        try await wait("the frame") { sheet.calls.first?.lastFrame != nil }
+        try await wait("the frame") { sheet.calls.first?.output != nil }
         time += 1
 
         XCTAssertEqual(sheet.shownState.title, "42%")
@@ -169,7 +170,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(header: "title=Encode", Self.progress)
         let sheet = try sheet()
         sheet.pressCard()
-        try await wait("the frame") { sheet.calls.first?.lastFrame != nil }
+        try await wait("the frame") { sheet.calls.first?.output != nil }
         time += 1
         XCTAssertEqual(sheet.shownState.title, "42%")
 
@@ -192,7 +193,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         let z = try XCTUnwrap(runs.sheets["z"])
 
         z.pressCard()
-        try await wait("the frame") { z.calls.first?.lastFrame != nil }
+        try await wait("the frame") { z.calls.first?.output != nil }
         time += 1
         a.pressCard()
         XCTAssertEqual(runs.workMark?.content, .work(fill: 0.25, count: nil))
@@ -224,7 +225,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         sheet.press(parts[1])
         time += 1
         sheet.press(parts[0])
-        try await wait("both frames") { sheet.calls.count == 2 && sheet.calls.allSatisfy { $0.lastFrame != nil } }
+        try await wait("both frames") { sheet.calls.count == 2 && sheet.calls.allSatisfy { $0.output != nil } }
         time += 1
 
         XCTAssertEqual(sheet.work.count, 2)

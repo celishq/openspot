@@ -74,19 +74,45 @@ private struct Backing: NSViewRepresentable {
             setUp(wideLine, lineWidth: 1, strength: 0.25)
             setUp(thinLine, lineWidth: 0.5, strength: 0.15)
             setUp(glow, lineWidth: 2, strength: 0.3)
+            applyTheme()
         }
 
         /// Takes the rim's colours from the theme of this appearance.
         private func applyTheme() {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            defer { CATransaction.commit() }
             let theme = SpotTheme.palette(for: effectiveAppearance)
             sides.colors = SpotTheme.rimSideStrengths.map { SpotTheme.rimSides.withAlphaComponent($0).cgColor }
             let alpha = theme.rimEnds.alphaComponent
             ends.colors = [alpha, 0, 0, alpha].map { theme.rimEnds.withAlphaComponent($0).cgColor }
         }
 
+        /// Draws the layers at the scale of the window's screen.
+        private func applyScale() {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            defer { CATransaction.commit() }
+            let scale = window?.backingScaleFactor ?? 2
+            for part in [sides, ends, sideLine, endLines, glowClip, glow, wideLine, thinLine] {
+                part.contentsScale = scale
+            }
+        }
+
         override func viewDidChangeEffectiveAppearance() {
             super.viewDidChangeEffectiveAppearance()
-            needsLayout = true
+            applyTheme()
+        }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            applyTheme()
+            applyScale()
+        }
+
+        override func viewDidChangeBackingProperties() {
+            super.viewDidChangeBackingProperties()
+            applyScale()
         }
 
         @available(*, unavailable)
@@ -122,26 +148,27 @@ private struct Backing: NSViewRepresentable {
             place()
         }
 
-        /// Sets the layers to the rim's rect and radius, with no layout of the view.
+        /// Sets the layers to the rim's rect and radius, with no layout of the view: one path for each width of line.
         private func place() {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
             defer { CATransaction.commit() }
-            applyTheme()
-            let scale = window?.backingScaleFactor ?? 2
             let rect = shapeRect ?? bounds
             let local = CGRect(origin: .zero, size: rect.size)
             for part in [sides, ends, sideLine, endLines, glowClip, glow, wideLine, thinLine] as [CALayer] {
                 part.frame = part === sides || part === ends ? rect : local
-                part.contentsScale = scale
             }
             glowClip.cornerRadius = radius
-            for line in [sideLine, wideLine, thinLine, glow] {
-                line.path = RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .inset(by: line.lineWidth / 2)
-                    .path(in: local)
-                    .cgPath
-            }
+            let thin = path(lineWidth: sideLine.lineWidth, in: local)
+            sideLine.path = thin
+            thinLine.path = thin
+            wideLine.path = path(lineWidth: wideLine.lineWidth, in: local)
+            glow.path = path(lineWidth: glow.lineWidth, in: local)
+        }
+
+        /// The path of a line of this width, which lies inside the edge of the rim.
+        private func path(lineWidth: CGFloat, in rect: CGRect) -> CGPath {
+            RoundedRectangle(cornerRadius: radius, style: .continuous).inset(by: lineWidth / 2).path(in: rect).cgPath
         }
     }
 

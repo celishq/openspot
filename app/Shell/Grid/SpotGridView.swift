@@ -12,6 +12,8 @@ struct SpotGridView: View {
     @Binding var scrollOffset: CGFloat
     @Binding var dropTarget: String?
     @Binding var dragged: (id: String, offset: CGSize)?
+    /// The card that the person presses.
+    @GestureState private var pressed: String?
 
     var body: some View {
         let placements = model.placements
@@ -22,32 +24,35 @@ struct SpotGridView: View {
                 id: entry.id,
                 size: placement.size,
                 motion: motion(of: placement, id: entry.id),
-                isCovered: entry.id == openID || SpotCardView.isFilled(entry, takesDrag: model.takesDrag(entry.id), isDropTarget: dropTarget == entry.id)
+                isCovered: entry.id == openID || SpotCardView.isFilled(entry, takesDrag: model.takesDrag(entry.id), isDropTarget: dropTarget == entry.id),
+                isPressed: pressed == entry.id && SpotCardView.showsPress(of: entry)
             )
         }
         return ZStack(alignment: .topLeading) {
-            SpotGridGlass(cards: glass, size: CGSize(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows)))
+            SpotGridGlass(cards: glass, pressable: openID == nil ? glass : [], size: CGSize(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows)))
             ForEach(Array(zip(placements, glass)), id: \.1.id) { placement, card in
                 let entry = model.visible[placement.index]
                 SpotCardView(
                     entry: entry,
                     size: placement.size,
-                    isSelected: placement.index == model.selected,
+                    index: placement.index,
+                    isPressed: pressed == entry.id,
                     takesDrag: model.takesDrag(entry.id),
                     isDropTarget: dropTarget == entry.id,
-                    readings: entry.kind == .widget ? model.readings : [:],
                     chainLetter: model.chainLetter(of: entry),
                     showsChain: model.showsChain,
                     isHiddenFromGrid: model.isEditing && !entry.isOnGrid,
-                    query: model.query,
                     model: model
                 )
+                .equatable()
+                .simultaneousGesture(DragGesture(minimumDistance: 0).updating($pressed) { _, pressed, _ in pressed = entry.id })
                 .onDrop(of: [.fileURL], delegate: SpotCardDrop(id: entry.id, model: model, target: $dropTarget))
                 .modifier(card.motion)
                 .zIndex(dragged?.id == entry.id ? 1 : 0)
                 .highPriorityGesture(moveGesture(of: entry), including: model.isEditing ? .all : .subviews)
                 .contextMenu { spotMenu(of: entry) }
-                .opacity(entry.id == openID ? 0 : 1)
+                .opacity(entry.id == openID ? 0.001 : 1)
+                .allowsHitTesting(entry.id != openID)
             }
         }
         .frame(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows), alignment: .topLeading)

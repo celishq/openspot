@@ -13,6 +13,37 @@ final class ItemListTests: XCTestCase {
         XCTAssertEqual(list.shown.count, 6000)
     }
 
+    func testTypingAndDeletingShowsTheRowsOfAFreshSearch() {
+        let rows = [
+            SpotItem(title: "Smiling Face", run: "1", glyph: "😊", keywords: ["happy", "smile"]),
+            SpotItem(title: "Simple Mail", subtitle: "Send messages", run: "2"),
+            SpotItem(title: "Small Icons", subtitle: "System Settings › Dock", run: "3", keywords: ["size"]),
+            SpotItem(title: "Cat Face", run: "4", glyph: "🐱", keywords: ["pet", "smile"]),
+            SpotItem(title: "Screen Mirroring", run: "5")
+        ]
+        var list = ItemList(items: rows)
+        let texts = ["s", "sm", "smi", "smil", "smile", "smil", "smi", "sm", "s", "", "s", "sm", "sm ", "sm i", "sm", "c", "ca", "cat f", "ca", ""]
+
+        for text in texts {
+            list.search(text)
+            var fresh = ItemList(items: rows)
+            fresh.search(text)
+            XCTAssertEqual(list.shown.map(\.run), fresh.shown.map(\.run), text)
+        }
+    }
+
+    func testAPickRanksAgainForTheSameText() {
+        var list = ItemList(items: items("Safari", "Slack"))
+        list.search("s")
+        list.search("sl")
+        list.search("s")
+        XCTAssertEqual(list.shown.map(\.title), ["Safari", "Slack"])
+
+        list.remember(SpotItem(title: "Slack", run: "Slack"))
+
+        XCTAssertEqual(list.shown.map(\.title), ["Slack", "Safari"])
+    }
+
     func testAListThatLearnsTheScriptSearchesWaitsForAnAnswerToItsText() {
         var list = ItemList(items: [SpotItem(title: "Notes", run: "n"), SpotItem(title: "Mail", run: "m")])
         list.search("no")

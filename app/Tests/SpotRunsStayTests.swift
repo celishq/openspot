@@ -47,6 +47,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     func testEachCallOfAStayingScriptHasItsOwnId() async throws {
         try staying()
         let sheet = try sheet()
+        runs.panelOpened()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
 
@@ -58,6 +59,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     func testACallRunsUntilItsEndOnceTheScriptPrintsEnds() async throws {
         try script(header: "stay=true", String(format: Self.ends, path("blocks"), path("done"), path("done")))
         let sheet = try sheet()
+        runs.panelOpened()
         sheet.open {}
         try await wait("the action") { sheet.command.actions.count == 1 }
 
@@ -71,6 +73,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     func testASecondPressSendsAStopWithTheIdOfTheCall() async throws {
         try script(header: "stay=true", String(format: Self.ends, path("blocks"), path("done"), path("done")))
         let sheet = try sheet()
+        runs.panelOpened()
         sheet.open {}
         try await wait("the action") { sheet.command.actions.count == 1 }
         let action = try XCTUnwrap(sheet.command.actions.first)
@@ -99,6 +102,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         """)
         let sheet = try sheet()
         var isReady = false
+        runs.panelOpened()
         sheet.open { isReady = true }
         try await wait("the early frame") { sheet.lastFrame?.contains("Early") == true }
 
@@ -113,6 +117,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     func testAPickReachesTheRunningStayingScript() async throws {
         try staying()
         let sheet = try sheet()
+        runs.panelOpened()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
 
@@ -126,6 +131,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     func testAnActionReachesTheRunningStayingScript() async throws {
         try staying(frame: "button=go\\ntitle=Go\\n\\nrow=a\\ntitle=A\\n")
         let sheet = try sheet()
+        runs.panelOpened()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
         let action = try XCTUnwrap(sheet.command.actions.first)
@@ -140,6 +146,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     func testAFormOfAStayingScriptGoesAsTwoBlocks() async throws {
         try script(header: "stay=true", String(format: Self.form, path("blocks")))
         let sheet = try sheet()
+        runs.panelOpened()
         sheet.open {}
         try await wait("the action") { sheet.command.actions.count == 1 }
         let action = try XCTUnwrap(sheet.command.actions.first)
@@ -169,6 +176,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         done
         """)
         let sheet = try sheet()
+        runs.panelOpened()
         sheet.open {}
         try await wait("the action") { sheet.command.actions.count == 1 }
         let action = try XCTUnwrap(sheet.command.actions.first)
@@ -194,6 +202,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         done
         """)
         let sheet = try sheet()
+        runs.panelOpened()
         sheet.open {}
         try await wait("the action") { sheet.command.actions.count == 1 }
         let action = try XCTUnwrap(sheet.command.actions.first)
@@ -209,6 +218,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     func testASearchReachesTheRunningStayingScript() async throws {
         try staying(head: "search=script\\n", frame: "row=a\\ntitle=A\\n")
         let sheet = try sheet()
+        runs.panelOpened()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
 
@@ -222,6 +232,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     func testACardCallOfAStayingScriptReachesIt() async throws {
         try staying()
         let sheet = try sheet()
+        runs.panelOpened()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
 
@@ -487,5 +498,90 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the end") { !sheet.isOpen }
 
         XCTAssertFalse(isReady)
+    }
+
+    func testASheetClosedBeforeItsAnswerOpensAgainWithAFreshAnswer() async throws {
+        try script(header: "stay=true", """
+        while IFS= read -r line; do
+          case "$line" in
+            call=*) call=${line#call=} ;;
+            '') \(untilRelease); printf 'end=%s\\n\\nrow=a\\ntitle=A\\n---\\n' "$call" ;;
+          esac
+        done
+        """)
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the first script") { self.log().count == 1 }
+
+        sheet.close()
+        try await allEnded()
+        openGate()
+        var isReady = false
+        sheet.open { isReady = true }
+
+        try await wait("the fresh answer") { isReady }
+        XCTAssertTrue(sheet.isOpen)
+        XCTAssertFalse(sheet.list.isLoading)
+    }
+
+    func testANewerSearchStopsTheOlderOneOfAStayingScriptAndItsLateAnswerChangesNothing() async throws {
+        try script(header: "stay=true", """
+        while IFS= read -r line; do
+          printf '%s\\n' "$line" >> '\(path("blocks"))'
+          case "$line" in
+            call=*) call=${line#call=}; args= ;;
+            arg=*) args="$args ${line#arg=}" ;;
+            stop=*) touch '\(path("stopped"))'; args=stop ;;
+            '')
+              case "$args" in
+                ' read a') ( \(untilRelease); printf 'search=script\\nend=%s\\n\\nrow=o\\ntitle=Old\\n---\\n' "$call"; printf 'text=d\\ntitle=Done\\n---\\n' ) & ;;
+                ' read ab') printf 'search=script\\nend=%s\\n\\nrow=n\\ntitle=New\\n---\\n' "$call" ;;
+                ' read') printf 'search=script\\nend=%s\\n\\nrow=x\\ntitle=X\\n---\\n' "$call" ;;
+              esac ;;
+          esac
+        done
+        """)
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the first rows") { sheet.list.search == .script && sheet.list.shown.count == 1 }
+        sheet.search("a")
+        try await wait("the older search") { self.blocks().contains("arg=read\narg=a") }
+
+        sheet.search("ab")
+
+        try await wait("the newer answer") { sheet.list.shown.map(\.run) == ["n"] }
+        XCTAssertTrue(exists("stopped"))
+        openGate()
+        try await wait("the frame after the late answer") { sheet.lastFrame?.contains("Done") == true }
+        XCTAssertEqual(sheet.list.shown.map(\.run), ["n"])
+    }
+
+    func testTheAnswerOfAStayingScriptTakesTheTemplatesOfItsRows() async throws {
+        try staying(frame: "template=row\\ngrid=name\\ntext=name\\n\\nrow=a\\ntitle=A\\n")
+        let sheet = try sheet()
+
+        runs.panelOpened()
+        sheet.open {}
+
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        XCTAssertNotNil(sheet.list.template(of: try XCTUnwrap(sheet.list.shown.first)))
+    }
+
+    func testTheFirstPartsOfAStayingScriptArriveThroughTheArrival() async throws {
+        try staying(frame: "text=a\\ntitle=A\\n")
+        let sheet = try sheet()
+        var arrivals = 0
+        runs.partsArrival = { _, bring in
+            arrivals += 1
+            bring()
+        }
+
+        runs.panelOpened()
+        sheet.open {}
+
+        try await wait("the parts") { sheet.panel != nil }
+        XCTAssertEqual(arrivals, 1)
     }
 }

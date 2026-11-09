@@ -1,3 +1,4 @@
+import OpenspotCore
 import SwiftUI
 
 extension EnvironmentValues {
@@ -27,6 +28,14 @@ enum SpotMotion {
 
     static func sheet(isOpen: Bool) -> Animation {
         .spring(duration: isOpen ? openDuration : closeDuration, bounce: 0)
+    }
+
+    /// The spring of a motion that the model starts.
+    static func animation(_ motion: PanelMotion) -> Animation {
+        switch motion {
+        case .sheet(let isOpen): sheet(isOpen: isOpen)
+        case .edit: edit
+        }
     }
 
     /// The change of an on card's fill: the first 40% of an open, and the last 55% of a close.

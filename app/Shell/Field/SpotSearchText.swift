@@ -1,3 +1,4 @@
+import OpenspotCore
 import SwiftUI
 
 /// The text field of the search. It reads the search itself, so that a change of the open sheet's rows or query reruns only

@@ -26,6 +26,14 @@ struct SpotRowsView: View {
         selection ?? { [list] in list.selected }
     }
 
+    /// Reads the run of the selected row where it is called, so that a row's ring needs no index.
+    private var selectedRun: () -> String? {
+        { [list, selected] in
+            let index = selected()
+            return list.shown.indices.contains(index) ? list.shown[index].run : nil
+        }
+    }
+
     private var isGrid: Bool {
         list.perLine > 1
     }
@@ -68,9 +76,7 @@ struct SpotRowsView: View {
             ScrollView(showsIndicators: false) { lines }
                 .safeAreaPadding(.top, SpotTokens.padding)
                 .safeAreaPadding(.bottom, bottomInset)
-                .onChange(of: selected()) { _, index in
-                    if list.shown.indices.contains(index) { proxy.scrollTo(list.shown[index].run) }
-                }
+                .modifier(RowsFollow(selection: selected, items: list.shown, proxy: proxy))
                 .onChange(of: list.query) {
                     guard let run = list.shown.first?.run else { return }
                     DispatchQueue.main.async { proxy.scrollTo(run, anchor: .top) }
@@ -102,16 +108,15 @@ struct SpotRowsView: View {
     }
 
     private var lines: some View {
-        let selectedIndex = selected()
-        return LazyVStack(spacing: SpotTokens.listRowGap) {
-            ForEach(Array(list.shown.enumerated()), id: \.element.run) { index, item in
+        LazyVStack(spacing: SpotTokens.listRowGap) {
+            ForEach(list.shown, id: \.run) { item in
                 if let template = list.template(of: item) {
-                    templateRow(item, template: template, isSelected: index == selectedIndex)
+                    templateRow(item, template: template)
                 } else {
                     Button {
                         onRun(item)
                     } label: {
-                        rowLabel(item, isSelected: index == selectedIndex)
+                        rowLabel(item)
                     }
                     .buttonStyle(.plain)
                 }
@@ -151,7 +156,7 @@ struct SpotRowsView: View {
     }
 
     /// A row that its template draws. A press outside its controls picks it.
-    private func templateRow(_ item: SpotItem, template: RowTemplate, isSelected: Bool) -> some View {
+    private func templateRow(_ item: SpotItem, template: RowTemplate) -> some View {
         let height = SpotTokens.listRowHeight(span: template.span)
         return SpotTemplateRow(
             item: item,
@@ -161,7 +166,7 @@ struct SpotRowsView: View {
         .padding(.horizontal, SpotTokens.padding)
         .frame(height: height)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
-        .modifier(SpotSelectionRing(isSelected: isSelected, shape: row))
+        .modifier(RowRing(run: item.run, selectedRun: selectedRun, shape: row))
         .contentShape(row)
         .onTapGesture { onRun(item) }
     }
@@ -172,32 +177,34 @@ struct SpotRowsView: View {
         let side = SpotTokens.square(perLine: drawing.columns)
         let step = side + SpotTokens.listRowGap
         let lines = drawing.lineCount(rows: list.shown.count)
-        let selectedIndex = selected()
         return ScrollViewReader { proxy in
             ScrollView(showsIndicators: false) {
                 ZStack(alignment: .topLeading) {
                     ForEach(Array(list.shown.enumerated()), id: \.element.run) { index, item in
                         let area = drawing.area(of: index)
-                        let size = CGSize(
-                            width: CGFloat(area.x1 - area.x0 + 1) * step - SpotTokens.listRowGap,
-                            height: CGFloat(area.y1 - area.y0 + 1) * step - SpotTokens.listRowGap
-                        )
-                        bentoCell(item, size: size, place: drawing.size(of: index), isSelected: index == selectedIndex)
+                        bentoCell(item, size: Self.size(of: area, step: step), place: drawing.size(of: index))
                             .id(item.run)
                             .offset(x: CGFloat(area.x0) * step, y: CGFloat(area.y0) * step)
                     }
                 }
+                .overlay(alignment: .topLeading) { BentoRing(selection: selected, count: list.shown.count, drawing: drawing, step: step) }
                 .frame(width: SheetPlacement.width, height: max(CGFloat(lines) * step - SpotTokens.listRowGap, 0), alignment: .topLeading)
                 .padding(.top, SpotTokens.padding)
                 .padding(.bottom, bottomInset)
             }
-            .onChange(of: selected()) { _, index in
-                if list.shown.indices.contains(index) { withAnimation(SpotMotion.arrowScroll) { proxy.scrollTo(list.shown[index].run) } }
-            }
+            .modifier(RowsFollow(selection: selected, items: list.shown, proxy: proxy, motion: SpotMotion.arrowScroll))
         }
     }
 
-    private func bentoCell(_ item: SpotItem, size: CGSize, place: String, isSelected: Bool) -> some View {
+    /// The size of a tile that covers an area of the drawing, whose cells lie a step apart.
+    fileprivate static func size(of area: SheetArea, step: CGFloat) -> CGSize {
+        CGSize(
+            width: CGFloat(area.x1 - area.x0 + 1) * step - SpotTokens.listRowGap,
+            height: CGFloat(area.y1 - area.y0 + 1) * step - SpotTokens.listRowGap
+        )
+    }
+
+    private func bentoCell(_ item: SpotItem, size: CGSize, place: String) -> some View {
         Group {
             if let template = list.template(of: item) {
                 SpotTemplateRow(item: item, template: template, size: size, place: place) { onSlot(item, $0, $1) }
@@ -209,22 +216,26 @@ struct SpotRowsView: View {
         }
         .frame(width: size.width, height: size.height)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
-        .modifier(SpotSelectionRing(isSelected: isSelected, shape: row))
         .contentShape(row)
         .onTapGesture { onRun(item) }
         .accessibilityLabel(item.title)
         .accessibilityAddTraits(.isButton)
     }
 
-    private func rowLabel(_ item: SpotItem, isSelected: Bool) -> some View {
-        let marks = SearchQuery(text: list.query).marks(in: item)
-        return HStack(spacing: SpotTokens.padding - 5) {
+    private func rowLabel(_ item: SpotItem) -> some View {
+        HStack(spacing: SpotTokens.padding - 5) {
             SpotItemIcon(item: item, size: SpotTokens.listIconSize)
                 .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: SpotTokens.listIconSize) }
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
-                SpotMarkedText(text: item.title, marks: marks.title, font: SpotType.body, ink: SpotTheme.ink)
+                Text(item.title)
+                    .font(SpotType.body)
+                    .foregroundStyle(SpotTheme.ink)
+                    .lineLimit(1)
                 if let subtitle = item.subtitle {
-                    SpotMarkedText(text: subtitle, marks: marks.subtitle, font: SpotType.detail, ink: SpotTheme.ink, strength: SpotTheme.secondaryLight)
+                    Text(subtitle)
+                        .font(SpotType.detail)
+                        .modifier(SpotSecondaryText())
+                        .lineLimit(1)
                 }
             }
             Spacer(minLength: 0)
@@ -241,8 +252,54 @@ struct SpotRowsView: View {
         .padding(.horizontal, SpotTokens.padding)
         .frame(height: SpotTokens.listRowHeight)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
-        .modifier(SpotSelectionRing(isSelected: isSelected, shape: row))
+        .modifier(RowRing(run: item.run, selectedRun: selectedRun, shape: row))
         .contentShape(row)
+    }
+}
+
+/// The ring of one row. It reads the selection itself, so that a move reruns the rings and no row.
+private struct RowRing: ViewModifier {
+    let run: String
+    let selectedRun: () -> String?
+    let shape: RoundedRectangle
+
+    func body(content: Content) -> some View {
+        content.modifier(SpotSelectionRing(isSelected: selectedRun() == run, shape: shape))
+    }
+}
+
+/// The one ring of a bento, over the tile of the selected row. It alone reads the selection, so that a move redraws no tile.
+private struct BentoRing: View {
+    let selection: () -> Int
+    let count: Int
+    let drawing: RepeatDrawing
+    let step: CGFloat
+
+    var body: some View {
+        let index = selection()
+        if index < count {
+            let area = drawing.area(of: index)
+            let size = SpotRowsView.size(of: area, step: step)
+            Color.clear
+                .frame(width: size.width, height: size.height)
+                .modifier(SpotSelectionRing(isSelected: true, shape: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)))
+                .offset(x: CGFloat(area.x0) * step, y: CGFloat(area.y0) * step)
+        }
+    }
+}
+
+/// Scrolls the rows until the selected row shows. It alone reads the selection, so that a move reruns only this modifier.
+private struct RowsFollow: ViewModifier {
+    let selection: () -> Int
+    let items: [SpotItem]
+    let proxy: ScrollViewProxy
+    var motion: Animation?
+
+    func body(content: Content) -> some View {
+        content.onChange(of: selection()) { _, index in
+            guard items.indices.contains(index) else { return }
+            withAnimation(motion) { proxy.scrollTo(items[index].run) }
+        }
     }
 }
 

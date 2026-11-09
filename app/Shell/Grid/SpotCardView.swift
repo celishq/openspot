@@ -4,22 +4,29 @@ import OpenspotCore
 /// A spot: a glyph, then a title with a detail, then an accessory. A small card shows the glyph alone, and a widget shows
 /// its places. A kind differs only in what fills a slot: a slider has its track as its detail, and running work takes the
 /// place of the glyph.
-struct SpotCardView: View {
+struct SpotCardView: View, Equatable {
     let entry: SpotsModel.Entry
     let size: SpotSize
-    let isSelected: Bool
+    /// The card's place among the visible cards, which its ring compares with the selection.
+    let index: Int
+    /// Whether the person presses the card, which the grid follows so that its blur grows with the card.
+    let isPressed: Bool
     let takesDrag: Bool
     let isDropTarget: Bool
-    let readings: [String: MetricReading]
     let chainLetter: String?
     let showsChain: Bool
     let isHiddenFromGrid: Bool
-    var query = ""
     /// The model that a tap and a slide go to.
     let model: SpotsModel
     @State private var isHovered = false
-    @GestureState private var isPressed = false
     @Environment(\.spotIsShown) private var isShown
+
+    /// Whether two cards show the same values, so that a run of the grid reruns only the cards that changed.
+    nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.entry == rhs.entry && lhs.size == rhs.size && lhs.index == rhs.index && lhs.isPressed == rhs.isPressed
+            && lhs.takesDrag == rhs.takesDrag && lhs.isDropTarget == rhs.isDropTarget && lhs.chainLetter == rhs.chainLetter
+            && lhs.showsChain == rhs.showsChain && lhs.isHiddenFromGrid == rhs.isHiddenFromGrid && lhs.model === rhs.model
+    }
 
     /// How far a line reaches past the inset at its trailing end, where the round end of the card leaves room.
     private static let lineReach: CGFloat = 6
@@ -33,33 +40,32 @@ struct SpotCardView: View {
             .padding(drawnView != nil && !isDrawn ? 0 : SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget || isDrawn))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))
-            .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, strength: SpotMotion.pressedGlass, blursBehind: showsPress, rimSize: CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))))
+            .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, blursBehind: false, rimSize: CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))))
             .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : isHovered ? 0.08 : 0)).allowsHitTesting(false))
-            .overlay(Color.clear.modifier(SpotSelectionRing(isSelected: isSelected, shape: shape)).opacity(isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
+            .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).opacity(isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { keycap }
             .overlay(alignment: .topTrailing) { hiddenMark }
             .contentShape(shape)
             .onHover { isHovered = $0 }
             .onTapGesture { model.tap(entry.id) }
-            .simultaneousGesture(DragGesture(minimumDistance: 0).updating($isPressed) { _, pressed, _ in pressed = true })
             .animation(.easeInOut(duration: 0.2), value: isOn)
             .scaleEffect(showsPress ? SpotMotion.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
             .task(id: ownView.map { "\($0)\n\(isShown)" }) {
-                if let ownView { await model.views.load(ownView) }
+                if let ownView { await SpotViews.shared.load(ownView) }
             }
     }
 
     @ViewBuilder
     private var content: some View {
-        if entry.item == nil, let drawing = entry.state.face.drawing(for: size) {
-            SpotCardDrawing(drawing: drawing, face: entry.state.face, card: size, readings: readings, view: { room in
-                drawnView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, views: model.views) }
+        if entry.item == nil, let layout = entry.state.face.layout(for: size) {
+            SpotCardDrawing(layout: layout, face: entry.state.face, card: size, reading: reading, view: { room in
+                drawnView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, views: SpotViews.shared) }
             }) { model.setCardPart(entry.id, $0, to: $1) }
         } else if let view = drawnView {
-            SpotCustomView(source: view, values: entry.state.values, card: size, views: model.views)
+            SpotCustomView(source: view, values: entry.state.values, card: size, views: SpotViews.shared)
         } else if let layout = entry.command.layout {
-            SpotWidgetView(layout: layout, places: entry.command.places, readings: readings, card: size)
+            SpotWidgetView(layout: layout, places: entry.command.places, reading: reading, card: size)
         } else if size == .small {
             glyph.frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if size.rows > 1 {
@@ -67,6 +73,11 @@ struct SpotCardView: View {
         } else {
             row
         }
+    }
+
+    /// What each script last gave a widget to draw. Only a widget reads it.
+    private var reading: (String) -> MetricReading? {
+        entry.kind == .widget ? { [model] in model.reading(of: $0) } : { _ in nil }
     }
 
     /// The source of the plugin's own view, which fills the whole card in place of its glyph and words (V3).
@@ -78,13 +89,13 @@ struct SpotCardView: View {
     /// with running work.
     private var drawnView: String? {
         guard let ownView else { return nil }
-        if case .building = model.views.phase(of: ownView) { return nil }
+        if case .building = SpotViews.shared.phase(of: ownView) { return nil }
         return ownView
     }
 
     /// Whether its script draws the card from a drawing for its size (U5).
     private var isDrawn: Bool {
-        entry.item == nil && entry.state.face.drawing(for: size) != nil
+        entry.item == nil && entry.state.face.layout(for: size) != nil
     }
 
     private var isBuildingView: Bool {
@@ -96,7 +107,12 @@ struct SpotCardView: View {
     }
 
     private var showsPress: Bool {
-        isPressed && entry.kind != .slider && (entry.kind != .widget || entry.command.opens != nil)
+        isPressed && Self.showsPress(of: entry)
+    }
+
+    /// Whether a press shows on a card: a slider takes its own drags, and a widget that opens nothing has no press.
+    static func showsPress(of entry: SpotsModel.Entry) -> Bool {
+        entry.kind != .slider && (entry.kind != .widget || entry.command.opens != nil)
     }
 
     /// How strong the fill is: part of the way on a card that takes the drag, and full on the card that takes the drop.
@@ -136,12 +152,18 @@ struct SpotCardView: View {
         }
     }
 
-    private var marks: SearchMarks {
-        SearchQuery(text: query).marks(in: SpotItem(title: entry.shownState.title, subtitle: entry.shownState.subtitle, run: entry.id))
+    private var title: some View {
+        Text(entry.shownState.title)
+            .font(SpotType.title)
+            .foregroundStyle(isFilled ? SpotTheme.onSolid : SpotTheme.ink)
+            .lineLimit(1)
     }
 
-    private var title: some View {
-        SpotMarkedText(text: entry.shownState.title, marks: marks.title, font: SpotType.title, ink: isFilled ? SpotTheme.onSolid : SpotTheme.ink)
+    private func detail(_ text: String, isOnSolid: Bool) -> some View {
+        Text(text)
+            .font(SpotType.detail)
+            .modifier(SpotSecondaryText(isOnSolid: isOnSolid))
+            .lineLimit(1)
     }
 
     private var text: some View {
@@ -150,9 +172,9 @@ struct SpotCardView: View {
             if entry.kind == .slider {
                 slider
             } else if isBuildingView {
-                SpotMarkedText(text: "Building its view", marks: [], font: SpotType.detail, ink: SpotTheme.ink, strength: SpotTheme.secondaryLight)
+                detail("Building its view", isOnSolid: false)
             } else if let subtitle = entry.shownState.subtitle {
-                SpotMarkedText(text: subtitle, marks: marks.subtitle, font: SpotType.detail, ink: isFilled ? SpotTheme.onSolid : SpotTheme.ink, strength: SpotTheme.secondaryLight)
+                detail(subtitle, isOnSolid: isFilled)
             }
         }
     }
@@ -247,5 +269,16 @@ struct SpotCardView: View {
             .foregroundStyle(isFilled ? SpotTheme.glyphOnSolid : SpotTheme.ink)
             .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
             .background(glyphDisc, in: Circle())
+    }
+}
+
+/// The ring of a selected card. It alone reads the selection, so that an arrow press reruns the rings and no card.
+private struct CardRing: ViewModifier {
+    let model: SpotsModel
+    let index: Int
+    let shape: RoundedRectangle
+
+    func body(content: Content) -> some View {
+        content.modifier(SpotSelectionRing(isSelected: model.selected == index, shape: shape))
     }
 }

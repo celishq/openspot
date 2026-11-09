@@ -1,3 +1,4 @@
+import OpenspotCore
 import SwiftUI
 
 /// Shows its content only while the search is empty. It reads the search itself, so that typing reruns only this modifier.

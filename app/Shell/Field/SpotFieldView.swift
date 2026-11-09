@@ -2,7 +2,8 @@ import OpenspotCore
 import SwiftUI
 
 /// The search field and the words it shows while empty. It grows from its place at rest into its row in an open sheet: its
-/// glass grows by a shape, and its glyph and its words keep one size and move by offsets alone.
+/// glass grows by a shape, and its glyph and its words keep one size and move by offsets alone. It takes the focus when the
+/// panel shows with a search, and gives it up when the panel hides.
 struct SpotFieldView: View {
     /// Where the field lies at rest. The install screen grows out of it and collapses into it.
     static let rect = CGRect(x: SpotTokens.halo, y: SpotTokens.halo, width: SpotTokens.gridWidth, height: SpotTokens.rowHeight)
@@ -19,11 +20,7 @@ struct SpotFieldView: View {
     let showsField: Bool
     /// Whether a sheet is out or a drop is taken, which sets the time of each fade.
     let surfaceIsOut: Bool
-    let showsDrop: Bool
-    let lastDrop: SpotDrop?
-    /// The last word of the prompt in the open sheet.
-    let sheetWord: String
-    let focus: FocusState<Bool>.Binding
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -33,6 +30,21 @@ struct SpotFieldView: View {
                 .allowsHitTesting(showsField && !model.isEditing)
             promptLayer
                 .opacity(model.isEditing ? 0 : 1)
+        }
+        .onChange(of: model.isShown) { _, isShown in
+            guard isShown else {
+                isFocused = false
+                return
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeInDuration) {
+                if model.isShown, model.showsSearch, !model.isOpenForDrag { isFocused = true }
+            }
+        }
+        .onChange(of: model.showsSearch) { _, shows in
+            isFocused = shows
+        }
+        .onChange(of: model.menu == nil) { _, isClosed in
+            if isClosed, model.isShown, model.showsSearch { isFocused = true }
         }
     }
 
@@ -52,15 +64,15 @@ struct SpotFieldView: View {
                     .offset(x: fieldTextLeft, y: top)
             }
             .modifier(SpotFieldCrossing(isOpen: isOpen, crosses: !isInstall))
-            .opacity(showsDrop ? 0 : 1)
+            .opacity(model.showsFieldDrop ? 0 : 1)
             .opacity(model.isShown ? 1 : 0)
             .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
-            if let lastDrop {
-                SpotDropView(drop: lastDrop)
+            if let drop = model.fieldDrop {
+                SpotDropView(drop: drop)
                     .padding(.horizontal, SpotTokens.padding)
                     .frame(width: Self.rect.width, height: Self.rect.height)
                     .offset(x: Self.rect.minX, y: Self.rect.minY)
-                    .opacity(showsDrop ? 1 : 0)
+                    .opacity(model.showsFieldDrop ? 1 : 0)
             }
         }
         .font(SpotType.input)
@@ -93,7 +105,7 @@ struct SpotFieldView: View {
     private var searchText: some View {
             SpotSearchText(model: model, title: "\(SearchPrompt.verb) \(isOpen ? sheetWord : SearchPrompt.grid)")
                 .textFieldStyle(.plain)
-                .focused(focus)
+                .focused($isFocused)
                 .onSubmit { model.runSelected() }
                 .onKeyPress(.downArrow) {
                     if model.openList != nil {
@@ -175,7 +187,14 @@ struct SpotFieldView: View {
         .foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
         .lineLimit(1)
         .modifier(SpotFieldCrossing(isOpen: isOpen, crosses: !isInstall))
-        .modifier(SpotEmptyField(model: model, isHidden: showsDrop))
+        .modifier(SpotEmptyField(model: model, isHidden: model.showsFieldDrop))
+    }
+
+    /// The last word of the prompt in the open sheet, from its spot's title. It is read here, so that a new title reruns
+    /// the field and not the panel.
+    private var sheetWord: String {
+        let id = model.transition.id
+        return SearchPrompt.word(for: model.entries.first { $0.id == id }?.state.title ?? "")
     }
 
     private var fieldRadius: CGFloat {

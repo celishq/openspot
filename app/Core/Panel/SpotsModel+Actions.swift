@@ -1,19 +1,18 @@
-import AppKit
-import OpenspotCore
-import SwiftUI
+import Foundation
+import Observation
 
 /// The keys of the panel, the actions menu, the forms of actions and the recording of keys.
 extension SpotsModel {
     /// What the actions menu and the action keys work on: the selected row, or else the selected card.
     private var target: Target? {
-        if let entry = openEntry { return (entry, openItems?.selectedItem) }
+        if let entry = openEntry { return (entry, openSheet?.selectedItem) }
         guard let entry = selectedEntry else { return nil }
         if let item = entry.item, let list = entries.first(where: { $0.id == entry.command.id }) { return (list, item) }
         return (entry, nil)
     }
 
     /// Takes a key before the focused field does. Returns false when the key is not for an action, a menu or a form.
-    func handleKey(_ key: ActionKey) -> Bool {
+    public func handleKey(_ key: ActionKey) -> Bool {
         if menu != nil {
             return handleMenuKey(key)
         }
@@ -43,8 +42,7 @@ extension SpotsModel {
             return true
         }
         if key == ActionKey(name: "escape") {
-            allowSheetMotion()
-            if !stepBack() { dismiss() }
+            if !stepBack() { host.dismiss() }
             return true
         }
         guard let target else { return false }
@@ -65,7 +63,7 @@ extension SpotsModel {
     }
 
     /// Does what the key of a footer label does, as if it were pressed: Return runs the selected row.
-    func pressHint(_ label: String) {
+    public func pressHint(_ label: String) {
         guard let key = ActionKey(label: label) else { return }
         if !handleKey(key), key == ActionKey(name: "return") { runSelected() }
     }
@@ -78,8 +76,7 @@ extension SpotsModel {
             return true
         }
         if key == ActionKey(name: "escape") {
-            allowSheetMotion()
-            closeList()
+            closeList(moving: true)
             return true
         }
         if panel.takesArrows, key == ActionKey(name: "up") || key == ActionKey(name: "down") {
@@ -104,41 +101,41 @@ extension SpotsModel {
         }
     }
 
-    func setPart(_ part: SpotPart, to value: String) {
+    public func setPart(_ part: SpotPart, to value: String) {
         openSheet?.set(part, to: value)
     }
 
-    func pressPart(_ part: SpotPart) {
+    public func pressPart(_ part: SpotPart) {
         openSheet?.press(part)
-        if part.closes, isShown { dismiss() }
+        if part.closes, isShown { host.dismiss() }
     }
 
     /// Starts to record the next key for a part, with the entry key off so that it can be recorded too, or stops.
-    func toggleRecording(_ part: SpotPart) {
+    public func toggleRecording(_ part: SpotPart) {
         toggleRecording(id: part.id)
     }
 
     /// Starts to record the next key for a part or a row, or stops.
-    func toggleRecording(id: String) {
+    public func toggleRecording(id: String) {
         if recording == id {
             stopRecording()
         } else {
             recording = id
-            setEntryKeyOn(false)
+            host.setEntryKey(on: false)
         }
     }
 
-    func stopRecording() {
+    public func stopRecording() {
         guard recording != nil else { return }
         recording = nil
-        setEntryKeyOn(true)
+        host.setEntryKey(on: true)
     }
 
     /// Takes the key for the part or the row that records. A key it cannot use leaves it recording, and says why. A row
     /// closes the panel, as a pick of any row does.
-    func record(code: UInt32, modifiers: Shortcut.Modifiers) {
+    public func record(code: UInt32, modifiers: Shortcut.Modifiers) {
         guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
-            notify("Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.")
+            host.notify("Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.")
             return
         }
         let part = openPanel?.parts.first { $0.id == recording }
@@ -149,7 +146,7 @@ extension SpotsModel {
             sheets[entry.id]?.set(item, to: shortcut.text)
             closingPick = (item, entry)
             if isShown {
-                dismiss()
+                host.dismiss()
             } else {
                 finishPick()
             }
@@ -172,7 +169,7 @@ extension SpotsModel {
         return true
     }
 
-    func searchMenu(_ text: String) {
+    public func searchMenu(_ text: String) {
         menu?.search(text)
     }
 
@@ -195,7 +192,7 @@ extension SpotsModel {
     /// The rows that the app adds for a selected card of the grid. A row of a list or an open sheet keeps its own Delete.
     private func extras(on target: Target) -> [CommandAction] {
         guard openList == nil, target.item == nil, target.entry.command.shipped == nil else { return [] }
-        guard !Self.pluginFolder.isCore(target.entry.command) else { return [.share, .turnOff] }
+        guard !files.folder(Config(text: "")).isCore(target.entry.command) else { return [.share, .turnOff] }
         return [.share, .remove(widgets: widgets(sharingFileWith: target.entry))]
     }
 
@@ -205,7 +202,7 @@ extension SpotsModel {
     }
 
     /// The keys that work on the selected row or card, in words for the bottom of the panel.
-    var hint: String {
+    public var hint: String {
         if recording != nil { return "Esc Cancel" }
         if isEditing { return "S Size   H Hide   ⇧ Arrows Move   Esc Done" }
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
@@ -224,12 +221,12 @@ extension SpotsModel {
         return entry.state.title
     }
 
-    func closeMenu() {
+    public func closeMenu() {
         menu = nil
         menuTarget = nil
     }
 
-    func pressMenu(row: Int) {
+    public func pressMenu(row: Int) {
         guard let menu else { return }
         self.menu?.move(by: row - menu.selected)
         pressMenu()
@@ -254,7 +251,7 @@ extension SpotsModel {
         }
     }
 
-    func run(_ action: CommandAction, on target: Target) {
+    public func run(_ action: CommandAction, on target: Target) {
         if action == .share {
             share(target.entry)
         } else if action.id == CatalogSpot.reviewID, let item = target.item {
@@ -271,22 +268,24 @@ extension SpotsModel {
         } else if let item = target.item {
             pick(item, of: target.entry, action: action)
         } else {
-            if isShown { dismiss() }
+            if isShown { host.dismiss() }
             sheets[target.entry.id]?.run(action, item: nil)
         }
     }
 
     /// Asks the script for the form of an action, and shows it in place of the actions menu once it comes, so that the menu
     /// stays while the script answers.
-    func openForm(_ action: CommandAction, on target: Target, prefill: String = "") {
+    public func openForm(_ action: CommandAction, on target: Target, prefill: String = "") {
+        let ask = UUID()
+        formAsk = ask
         Task {
             do {
-                guard let form = try await sheets[target.entry.id]?.form(action, item: target.item) else { return }
+                guard let form = try await sheets[target.entry.id]?.form(action, item: target.item), formAsk == ask else { return }
+                formAsk = nil
                 closeMenu()
                 let opensSheet = openList != target.entry.id
                 if opensSheet {
-                    sheetMoves = isShown
-                    open(target.entry.id)
+                    open(target.entry.id, moving: isShown)
                 }
                 self.form = FormSession(
                     draft: FormDraft(form: form, prefill: prefill),
@@ -297,77 +296,78 @@ extension SpotsModel {
                 )
             } catch {
                 closeMenu()
-                notify("\(action.title) failed. \(Self.reason(error))")
+                host.notify("\(action.title) failed. \(Self.reason(error))")
             }
         }
     }
 
     /// Runs the action that changes a setting of a spot. A form that it answers with opens on the sheet of that spot, and
     /// the panel closes when it is done.
-    func changeSetting(of id: String, with action: CommandAction) {
+    public func changeSetting(of id: String, with action: CommandAction) {
         guard let entry = entries.first(where: { $0.id == id }), let sheet = sheets[id] else {
-            notify("Openspot cannot find \(id). Turn it on in Spots, then try again.")
+            host.notify("Openspot cannot find \(id). Turn it on in Spots, then try again.")
             return
         }
+        let ask = UUID()
+        formAsk = ask
         Task {
             do {
                 switch try await sheet.change(action) {
-                case .form(let form)? where isShown:
-                    closeList()
-                    sheetMoves = true
-                    open(id)
+                case .form(let form)? where isShown && formAsk == ask:
+                    open(id, moving: true)
                     self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
                 case .done?:
-                    if isShown { dismiss() }
+                    if isShown { host.dismiss() }
                 default:
                     break
                 }
             } catch {
-                notify("\(action.title) failed. \(Self.reason(error))")
+                host.notify("\(action.title) failed. \(Self.reason(error))")
             }
         }
     }
 
     /// Takes a click on an option of a form of one choice, and saves the form with it.
-    func chooseFormOption(_ item: SpotItem) {
+    public func chooseFormOption(_ item: SpotItem) {
         form?.draft.choose(item.run)
         submitForm()
     }
 
-    func setFormValue(_ text: String, for name: String) {
+    public func setFormValue(_ text: String, for name: String) {
         form?.draft.set(text, for: name)
     }
 
-    func cancelForm() {
+    public func cancelForm() {
+        formAsk = nil
         guard let form else { return }
         self.form = nil
         if form.openedSheet {
-            allowSheetMotion()
-            closeList()
+            closeList(moving: true)
         }
     }
 
     /// Saves the form. It stays open with its text when the command refuses the values, and shows the form that the command
-    /// answers with. An action that closes the panel closes it once the command is done.
-    func submitForm() {
+    /// answers with. An action that closes the panel closes it once the command is done. A call that ends after the person
+    /// moved on to another form changes nothing.
+    public func submitForm() {
         guard let form else { return }
         if let missing = form.draft.missing {
-            notify("Enter a value for \(missing.label).")
+            host.notify("Enter a value for \(missing.label).")
             return
         }
         Task {
             do {
                 switch try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: form.draft) {
-                case .done?:
+                case .done? where self.form?.id == form.id:
                     self.form = nil
-                    if form.action.after == .close, isShown { dismiss() }
-                case .form(let next)?:
+                    if form.action.after == .close, isShown { host.dismiss() }
+                case .form(let next)? where self.form?.id == form.id:
                     self.form?.draft = FormDraft(form: next)
-                case nil:
+                default:
                     break
                 }
             } catch {
-                notify("\(form.action.title) failed. \(Self.reason(error))")
+                host.notify("\(form.action.title) failed. \(Self.reason(error))")
             }
         }
     }

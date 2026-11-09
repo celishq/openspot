@@ -15,6 +15,8 @@ public struct SheetParts: Equatable, Sendable {
     public private(set) var parts: [SpotPart]
     public private(set) var generation = 0
     public private(set) var layout: SheetLayout?
+    /// Where its parts lie, worked out once for each change of its parts.
+    public private(set) var placement: SheetPlacement
     private var selected: String?
     private var changes: [String: Int] = [:]
 
@@ -23,11 +25,15 @@ public struct SheetParts: Equatable, Sendable {
         guard !output.parts.isEmpty else { return nil }
         parts = output.parts
         layout = output.layout
+        placement = Self.placement(of: output.parts, in: output.layout)
     }
 
-    /// Where its parts lie.
-    public var placement: SheetPlacement {
+    private static func placement(of parts: [SpotPart], in layout: SheetLayout?) -> SheetPlacement {
         SheetPlacement(parts: parts, layout: layout ?? SheetLayout(flat: parts))
+    }
+
+    private mutating func place() {
+        placement = Self.placement(of: parts, in: layout)
     }
 
     /// All values as one block, for the script to read on its standard input.
@@ -95,6 +101,7 @@ public struct SheetParts: Equatable, Sendable {
     @discardableResult
     public mutating func set(_ value: String, of id: String) -> Int {
         parts.firstIndex { $0.id == id }.map { parts[$0].set(value) }
+        place()
         let generation = advance()
         changes[id] = generation
         return generation
@@ -123,6 +130,7 @@ public struct SheetParts: Equatable, Sendable {
             }
         }
         if let id, let kept, let index = parts.firstIndex(where: { $0.id == id }) { parts[index].set(kept) }
+        place()
         return true
     }
 
@@ -135,6 +143,7 @@ public struct SheetParts: Equatable, Sendable {
         parts = output.parts
         layout = output.layout
         if let id, let kept, let index = parts.firstIndex(where: { $0.id == id }) { parts[index].set(kept) }
+        place()
         return true
     }
 }

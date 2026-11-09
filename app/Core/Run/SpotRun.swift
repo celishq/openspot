@@ -2,7 +2,8 @@ import Foundation
 import Observation
 
 /// All that one script shows: its last frame, its state, its value, its rows, its parts, whether its sheet is open and its
-/// running calls. A run of one never stops a run of another, and a stopped run changes nothing.
+/// running calls. It reaches the script through its link, which runs a process for each call or keeps one that stays. A run
+/// of one never stops a run of another, and a stopped run changes nothing.
 @MainActor
 @Observable
 public final class SpotRun {
@@ -13,9 +14,12 @@ public final class SpotRun {
         /// A failure with a link that opens its fix (R9).
         case failureWithFix(String, URL)
         case frame(String)
+        /// The rows that a search finds, or the state, changed.
         case listChange
         /// A click on a card that takes files and has no sheet: the owner asks the person for files, and gives them to `drop`.
         case chooseFiles
+        /// The sheet closed by itself, as when the panel closed or its script left the folder.
+        case closed
     }
 
     /// Why a read is asked. A `panel` or a `sheet` moment can use a young answer. The clock always runs and reports no failure
@@ -26,12 +30,48 @@ public final class SpotRun {
         case change
     }
 
+    /// What a call asks for, which says what its answer replaces.
+    enum Ask {
+        case read(generation: Int?, reports: Bool)
+        case search(String)
+    }
+
+    /// Where a frame that answers nothing comes from: a later frame of a read, or a frame of any other call.
+    enum Source {
+        case read
+        case call(generation: Int?, keeping: String?)
+    }
+
+    /// A call of work: the parts it answers, the part whose text the person owns, whether a read follows it, and the state
+    /// that a stop brings back.
+    struct Work {
+        var generation: Int?
+        var keeping: String?
+        var readsAfter = true
+        var undo: SpotState?
+    }
+
+    /// What a call is for, which says what its frames and its end change.
+    enum Purpose {
+        case ask(Ask)
+        case work(Work)
+    }
+
+    /// One call that a run sends through its link.
+    struct Call {
+        let action: SpotAction
+        let key: String
+        var input: String?
+        var limit: TimeInterval?
+        var reason: ReadReason?
+        var variables: [String: String] = [:]
+        let purpose: Purpose
+    }
+
     private static let answerAge: TimeInterval = 5
     private static let textPause: Duration = .milliseconds(300)
     private static let sliderPause: Duration = .milliseconds(100)
     private static let pressPause: TimeInterval = 1
-    private static let failureLimit = 3
-    private static let failureWindow: TimeInterval = 60
     private static let workPause: TimeInterval = 1
     private static let readKey = "read"
     private static let searchKey = "search"
@@ -43,24 +83,28 @@ public final class SpotRun {
     public private(set) var command: Spot
     @ObservationIgnored private var rows: ItemList
 
-    /// The rows of the sheet. A move of the selection alone tells only the readers of `selection`, so that a held arrow key
-    /// redraws what shows the selection and nothing else.
+    /// The rows of the sheet. A move of the selection alone tells only the readers of `selection` and reports nothing, so
+    /// that a held arrow key redraws what shows the selection and nothing else. The owner hears of a change only when the
+    /// rows that a search finds change.
     public var list: ItemList {
         get {
             access(keyPath: \.list)
             return rows
         }
         set {
-            let moved = newValue.selected != rows.selected
+            guard newValue != rows else { return }
             if newValue.differsOnlyInSelection(from: rows) {
                 withMutation(keyPath: \.selection) { rows = newValue }
-            } else if moved {
+                return
+            }
+            let findsSameRows = newValue.findsSameRows(as: rows)
+            if newValue.selected != rows.selected {
                 withMutation(keyPath: \.selection) { withMutation(keyPath: \.list) { rows = newValue } }
             } else {
                 withMutation(keyPath: \.list) { rows = newValue }
             }
             settle()
-            onReport(.listChange)
+            if !findsSameRows { onReport(.listChange) }
         }
     }
 
@@ -69,13 +113,21 @@ public final class SpotRun {
         access(keyPath: \.selection)
         return rows.selected
     }
+
+    /// The selected row, read so that a move of the selection and a change of the rows both tell its reader.
+    public var selectedItem: SpotItem? {
+        access(keyPath: \.list)
+        access(keyPath: \.selection)
+        return rows.selectedItem
+    }
     public private(set) var panel: SheetParts? {
         didSet { settle() }
     }
     /// The last arrow press that asks the parts to scroll. It lives apart from the parts, so that a press redraws only the scroll.
     public private(set) var nudge = SheetParts.Nudge.rest
-    public private(set) var isOpen = false {
-        didSet { settle() }
+    /// Whether this sheet is the open one, as the runs record it.
+    public var isOpen: Bool {
+        runs.openID == command.id
     }
     /// How many rows the list shows, and how many on a line. It changes only when they do, so a move of the selection leaves
     /// a view that sizes itself by it alone.
@@ -95,28 +147,20 @@ public final class SpotRun {
     private var workPauses = 0
     @ObservationIgnored private let runs: SpotRuns
     @ObservationIgnored private let prepare: ([SpotItem]) async -> Void
+    @ObservationIgnored private var link: ScriptLink
     @ObservationIgnored private var answered: Date? {
         didSet { settle() }
     }
     @ObservationIgnored private var lastAnswer: PluginOutput?
     @ObservationIgnored private var hasAsked = false
+    /// The work that waits for the next answer, such as a press of a card whose kind the answer says.
     @ObservationIgnored private var waiter: (() -> Void)?
+    /// The open that waits for the sheet's first answer.
+    @ObservationIgnored private var held: (() -> Void)?
     @ObservationIgnored private var selecting: String?
     @ObservationIgnored private var readsAgain = false
     @ObservationIgnored private var pauses: [String: Task<Void, Never>] = [:]
-    @ObservationIgnored private var isInView = false
-    @ObservationIgnored private var live: ScriptProcess?
-    /// The call number of the read that a staying script has not ended yet.
-    @ObservationIgnored private var liveRead: Int?
-    @ObservationIgnored private var liveFailures: [Date] = []
-    @ObservationIgnored private var liveCount = 0
-    @ObservationIgnored private var liveCalls: [String: ScriptCall] = [:]
-    @ObservationIgnored private var hasGivenUp = false
-    @ObservationIgnored private var givenUpFile: Date?
-    @ObservationIgnored private var formAnswer: CheckedContinuation<String?, Error>?
     @ObservationIgnored private var editing: String?
-    @ObservationIgnored private var ready: (() -> Void)?
-    @ObservationIgnored private var held: (() -> Void)?
     @ObservationIgnored private var waitingDrops: [[String]] = []
     @ObservationIgnored private var waitingKeys: [String] = []
 
@@ -124,17 +168,30 @@ public final class SpotRun {
         self.command = command
         self.runs = runs
         self.prepare = prepare
+        link = Self.link(for: command, runs: runs)
         rows = ItemList(recent: recent)
         state = command.headerState
         reading = MetricReading(label: command.name, headerSymbol: command.headerSymbol)
         settle()
+        link.run = self
     }
 
     nonisolated deinit {}
 
-    /// Takes the command again after a new look at the plugin folder, with what its script last printed.
+    private static func link(for command: Spot, runs: SpotRuns) -> ScriptLink {
+        command.stays ? StayLink(runs: runs) : OnceLink(runs: runs)
+    }
+
+    /// Takes the command again after a new look at the plugin folder, with what its script last printed. A script that starts
+    /// or stops staying gets a new link.
     public func update(_ new: Spot) {
         let header = command.headerState
+        if new.stays != command.stays {
+            let old = link
+            link = Self.link(for: new, runs: runs)
+            link.run = self
+            old.end()
+        }
         command = lastAnswer.map(new.taking) ?? new
         if reading.label != new.name || reading.headerSymbol != new.headerSymbol {
             reading = MetricReading(label: new.name, headerSymbol: new.headerSymbol)
@@ -160,11 +217,11 @@ public final class SpotRun {
 
     /// Takes the shape and the wait from the list, the parts and the answer, and stores each only when it changes.
     private func settle() {
-        let next = list.isBento
-            ? Shape(rows: list.drawing.lineCount(rows: list.shown.count) * list.drawing.columns, perLine: list.drawing.columns)
-            : Shape(rows: list.perLine == 1 ? list.spans : list.shown.count, perLine: list.perLine)
+        let next = rows.isBento
+            ? Shape(rows: rows.drawing.lineCount(rows: rows.shown.count) * rows.drawing.columns, perLine: rows.drawing.columns)
+            : Shape(rows: rows.perLine == 1 ? rows.spans : rows.shown.count, perLine: rows.perLine)
         if next != shape { shape = next }
-        let waits = isOpen && answered == nil && panel == nil && list.search == .local && list.isLoading && !list.holdsItems
+        let waits = isOpen && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
         if waits != awaitsFirstAnswer { awaitsFirstAnswer = waits }
     }
 
@@ -174,41 +231,39 @@ public final class SpotRun {
         read()
     }
 
-    /// Opens the sheet with its search kept. `onReady` runs now, or for a staying script with its first frame. A staying
-    /// script that already printed opens at once with its last frame, and one that Openspot cannot start does not open. With
-    /// `waits`, a sheet with no answer yet runs `onReady` with its first answer, or after a short pause when that is late.
+    /// Opens the sheet with its search kept. A sheet with a young answer opens at once with its parts. One with no answer
+    /// runs `onReady` with its first answer: with `waits`, or after a short pause when that is late, and always for a script
+    /// that holds its own state, which does not open when it cannot start.
     public func open(need: ReadNeed = .moment, waits: Bool = false, onReady: @escaping () -> Void) {
-        isOpen = true
-        isInView = true
+        runs.willOpen(self)
+        settle()
         list.selectFirst()
-        if command.stays {
-            openLive(need: need, onReady: onReady)
-        } else if waits, answered == nil, list.search == .local {
+        if panel == nil, answered != nil { panel = lastAnswer.flatMap(SheetParts.init(output:)) }
+        if answered == nil, command.stays || (waits && list.search == .local) {
             held = onReady
-            after(.seconds(runs.firstAnswerPause), key: Self.heldKey) { [weak self] in self?.endHold() }
-            read(need: need)
+            if !command.stays { after(.seconds(runs.firstAnswerPause), key: Self.heldKey) { [weak self] in self?.endHold() } }
         } else {
             onReady()
-            read(need: need)
         }
+        read(need: need)
+        if !link.isReachable { dropUnshownSheet() }
         runs.updateClock()
     }
 
     /// Stops what only an open sheet needs. A read that nothing else wants stops. A call that does work goes on.
     public func close() {
         guard isOpen else { return }
-        isOpen = false
-        isInView = false
+        runs.didClose(self)
+        settle()
         for (key, pause) in pauses where key != Self.levelKey {
             pause.cancel()
             pauses[key] = nil
         }
         if let search = running(Self.searchKey) { stop(search) }
         editing = nil
-        ready = nil
         held = nil
         panel?.clearSelection()
-        settleLive()
+        link.settle()
         stopUnwantedRead()
         runs.updateClock()
     }
@@ -222,62 +277,53 @@ public final class SpotRun {
         nudge = SheetParts.Nudge(step: step, serial: nudge.serial + 1)
     }
 
-    /// The panel closed: a sheet of parts closes and drops its values, so the next open reads again. A sheet of rows stays.
+    /// The panel closed: a sheet of parts, or of a script that holds its own state, closes and drops its values, so the next
+    /// open reads again. A sheet of rows stays.
     func panelClosed() {
         if panel != nil || command.stays {
+            let wasOpen = isOpen
             close()
             panel = nil
             answered = nil
+            if wasOpen { onReport(.closed) }
         }
-        isInView = false
         stopUnwantedRead()
-        settleLive()
+        link.settle()
     }
 
     /// The panel opened: an open sheet of rows is in view again and reads, by M1 and M2.
     func panelOpened() {
-        if isOpen, !isInView {
-            isInView = true
-            read()
-        }
-        settleLive()
+        if isOpen { read() }
+        link.settle()
     }
 
     /// A scan looked at the folder: a stopped script that changed can start again (Y5).
     func scanned() {
-        if hasGivenUp, fileDate != givenUpFile {
-            hasGivenUp = false
-            liveFailures = []
-        }
-        settleLive()
+        link.scanned()
     }
 
-    /// Stops each read of this script, whose sheet no longer has a use for it, and ends it when it stays.
+    /// Stops each read of this script, whose sheet no longer has a use for it, and ends the script.
     func stopReads() {
         if let read = running(Self.readKey) { stop(read) }
-        live?.end()
-        live = nil
-        endLiveCalls(nil)
-        answerForm(with: .success(nil))
+        link.end()
+    }
+
+    /// Whether the person sees this sheet: it is the open one, and the panel shows.
+    private var isInView: Bool {
+        isOpen && runs.isPanelOpen
     }
 
     /// Whether something wants this script now (L3), also a call of a staying script that waits for its `end`.
     var isWanted: Bool {
-        isInView || runs.wants(command) || formAnswer != nil || !liveCalls.isEmpty
+        isInView || runs.wants(command) || link.holdsScript
     }
 
-    /// Starts a staying script that something wants and that does not run, and ends one that nothing wants.
-    func settleLive() {
-        let isNeeded = command.stays && isWanted
-        if isNeeded, live == nil { startLive() }
-        if !isNeeded, let script = live {
-            live = nil
-            script.end()
-        }
+    /// Starts a script that stays and that something wants, and ends one that nothing wants.
+    func settleScript() {
+        link.settle()
     }
 
-    /// Stops each call and lets go of a staying script, so that neither changes anything, and drops all that would start a
-    /// new call.
+    /// Stops each call and lets go of the script, so that neither changes anything, and drops all that would start a new call.
     func prepareToQuit() {
         pauses.values.forEach { $0.cancel() }
         pauses = [:]
@@ -285,20 +331,17 @@ public final class SpotRun {
         waitingKeys = []
         readsAgain = false
         calls.forEach(stop)
-        live = nil
-        liveCalls = [:]
-        answerForm(with: .success(nil))
+        link.leave()
     }
 
-    /// Asks the script for what it shows. A request joins the read that runs (M1). A `panel` or a `sheet` moment uses an answer
-    /// younger than 5 seconds (M2). A file with no `read` gets its click instead. A staying script that something wants gets
-    /// a block, and starts if it does not run.
+    /// Asks the script for what it shows. A list that the script searches asks its search. A request joins the read that
+    /// runs, and a change reads again after it (M1). A `panel` or a `sheet` moment uses an answer younger than 5 seconds (M2).
+    /// A file with no `read` gets its click instead.
     public func read(selecting run: String? = nil, need: ReadNeed = .moment, reason: ReadReason? = nil) {
         let reason = reason ?? (need == .change ? .change : isOpen ? .sheet : .panel)
-        if command.stays { return readLive(need: need, reason: reason) }
         if let run { selecting = run }
-        guard list.search == .local else { return ask() }
-        if running(Self.readKey) != nil {
+        guard list.search == .local || command.stays else { return ask() }
+        if link.isAsking {
             if need == .change { readsAgain = true }
             return
         }
@@ -307,7 +350,17 @@ public final class SpotRun {
             showRunning()
             return
         }
-        startRead(reports: need != .clock, reason: reason)
+        let action = command.read == nil ? command.click : SpotAction.read
+        let isSent = link.send(Call(
+            action: action,
+            key: Self.readKey,
+            input: isOpen ? panel?.values : nil,
+            limit: action == .read ? runs.readLimit : nil,
+            reason: reason,
+            variables: action == .read ? reason.variables : [:],
+            purpose: .ask(.read(generation: panel?.generation, reports: need != .clock))
+        ))
+        if isSent { list.beginLoading() }
     }
 
     /// Takes new text in the search. A newer search stops the older one, and the script hears after a pause.
@@ -345,9 +398,9 @@ public final class SpotRun {
         change(.press(part.id), key: key, generation: generation, keeping: nil, closes: part.closes)
     }
 
-    /// Whether a read of this script runs.
+    /// Whether a read or a search of this script waits for its answer.
     var isReading: Bool {
-        running(Self.readKey) != nil
+        link.isAsking
     }
 
     /// Whether a call of the card runs.
@@ -394,7 +447,7 @@ public final class SpotRun {
         let before = state
         let action = SpotAction.toggle(state)
         state = state.switched(on: !(state.on ?? false))
-        work(action, key: Self.cardKey, undo: before)
+        work(action, key: Self.cardKey, as: Work(undo: before))
     }
 
     /// Takes a change or a press of a component that the card draws (U5). The card shows a new value at once, and the call
@@ -472,8 +525,12 @@ public final class SpotRun {
     /// Asks for the form of an action: the call of that action, with empty stdin. Returns nil when a person pressed it again.
     public func form(_ action: CommandAction, item: SpotItem?) async throws -> ItemForm? {
         let call = SpotAction.action(action, item: item)
-        let answer = try await command.stays ? liveForm(call) : text(of: call, input: nil)
-        guard let text = answer else { return nil }
+        let key = Self.key(call: call)
+        if let running = running(key) {
+            pressAgain(running)
+            return nil
+        }
+        guard let text = try await link.form(call, key: key) else { return nil }
         guard let form = ItemForm(output: PluginOutput(text: text)) else { throw PluginError.badForm }
         return form
     }
@@ -482,7 +539,12 @@ public final class SpotRun {
     /// done, and nil when a person pressed it again.
     public func change(_ action: CommandAction) async throws -> FormAnswer? {
         let call = SpotAction.action(action, item: nil)
-        guard let text = try await command.stays ? liveForm(call) : text(of: call, input: nil) else { return nil }
+        let key = Self.key(call: call)
+        if let running = running(key) {
+            pressAgain(running)
+            return nil
+        }
+        guard let text = try await link.form(call, key: key) else { return nil }
         if let form = ItemForm(output: PluginOutput(text: text)), !form.fields.isEmpty { return .form(form) }
         read(need: .change)
         return .done
@@ -492,11 +554,13 @@ public final class SpotRun {
     /// asks again. Returns nil when a person pressed it again.
     public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft) async throws -> FormAnswer? {
         let call = SpotAction.action(action, item: item)
-        if command.stays {
-            sendLive(call, values: draft.text)
-            return .done
+        let key = Self.key(call: call)
+        if let running = running(key) {
+            pressAgain(running)
+            return nil
         }
-        guard let text = try await text(of: call, input: draft.text) else { return nil }
+        guard let text = try await link.submit(call, key: key, values: draft.text) else { return nil }
+        guard !command.stays else { return .done }
         if let form = ItemForm(output: PluginOutput(text: text)), !form.fields.isEmpty { return .form(form) }
         let run = text.trimmingCharacters(in: .whitespacesAndNewlines)
         read(selecting: run.isEmpty ? nil : run, need: .change)
@@ -508,7 +572,7 @@ public final class SpotRun {
     public func stop(_ call: ScriptCall) {
         call.stop()
         calls.removeAll { $0 === call }
-        if let id = liveCalls.first(where: { $0.value === call })?.key { liveCalls[id] = nil }
+        link.stop(call)
     }
 
     /// Takes a press of a running call: it stops the call, unless the call started within the last second (L11).
@@ -549,132 +613,184 @@ public final class SpotRun {
         }
     }
 
-    private func start(
-        _ action: SpotAction,
-        key: String,
-        input: String?,
-        limit: TimeInterval?,
-        variables: [String: String] = [:],
-        onFrame: @escaping @MainActor (ScriptCall, String) async -> Void,
-        onEnd: @escaping @MainActor (ScriptCall.End) async -> Void
-    ) {
-        let call = runs.call(command, action, key: key, input: input, limit: limit, variables: variables, onFrame: onFrame) { [weak self] call, end in
-            self?.calls.removeAll { $0 === call }
-            await onEnd(end)
-            self?.startWaitingDrop()
-            self?.startWaitingKey()
-        }
+    /// Lists a call that the link started, and shows it as running work once its second has passed.
+    func track(_ call: ScriptCall) {
         calls.append(call)
-        if call.doesWork {
-            Task { [weak self] in
-                try? await Task.sleep(for: .seconds(Self.workPause))
-                self?.workPauses += 1
-            }
+        guard call.doesWork else { return }
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Self.workPause))
+            self?.workPauses += 1
         }
     }
 
-    private func startRead(reports: Bool, reason: ReadReason) {
-        list.beginLoading()
-        let action = command.read == nil ? command.click : SpotAction.read
-        let generation = panel?.generation
-        var isFirst = true
-        start(
-            action,
-            key: Self.readKey,
-            input: isOpen ? panel?.values : nil,
-            limit: action == .read ? runs.readLimit : nil,
-            variables: action == .read ? reason.variables : [:],
-            onFrame: { [weak self] call, text in
-                guard let self else { return }
-                if isFirst {
-                    isFirst = false
-                    await takeAnswer(PluginOutput(text: text), frame: text, generation: generation)
-                } else {
-                    takeLaterFrame(PluginOutput(text: text), frame: text)
-                }
-                if !isWanted, !call.isStopped { stop(call) }
-            },
-            onEnd: { [weak self] end in
-                guard let self else { return }
-                switch end {
-                case .stopped:
-                    list.stopLoading()
-                    guard !isFirst else {
-                        waiter = nil
-                        readsAgain = false
-                        return
-                    }
-                case .ended:
-                    if isFirst { await takeAnswer(PluginOutput(text: ""), frame: "", generation: generation) }
-                case .failed(let error):
-                    answered = nil
-                    list.loadFailed()
-                    reading.markStale()
-                    answerArrived()
-                    if reports { fail(error) }
-                }
-                if readsAgain {
-                    readsAgain = false
-                    read(need: .change)
-                }
-            }
-        )
+    /// Lets go of a call that ended, and starts a drop or a key press that waited for it.
+    func callEnded(_ call: ScriptCall) {
+        calls.removeAll { $0 === call }
+        startWaitingDrop()
+        startWaitingKey()
     }
 
-    /// Takes the first frame of a read, or the silence of a read that ended by itself: all that the spot shows.
-    private func takeAnswer(_ lines: PluginOutput, frame: String, generation: Int?) async {
-        answered = runs.now()
+    /// Takes the end of a call. A read or a search that ended with no answer changes nothing when it was stopped, and tells
+    /// of its failure. A call of work that ended is followed by a read: with the row that a `select` effect named selected
+    /// (D8), or else when it showed nothing (M4). A stopped toggle goes back.
+    func ended(_ call: ScriptCall, _ purpose: Purpose, _ end: ScriptCall.End, hadAnswer: Bool, showedParts: Bool, selected: String?) {
+        switch (purpose, end) {
+        case (.ask(.read), .stopped):
+            list.stopLoading()
+            if !hadAnswer {
+                waiter = nil
+                readsAgain = false
+            }
+        case (.ask(.read(_, let reports)), .failed(let error)):
+            answered = nil
+            list.loadFailed()
+            changeReading { $0.markStale() }
+            answerArrived()
+            if reports { fail(error) }
+        case (.ask(.search(let query)), .failed(let error)):
+            list.stopWaiting(for: query)
+            answerArrived()
+            if error as? PluginError != .timedOut { fail(error) }
+        case (.work(let work), .stopped):
+            if let undo = work.undo { state = undo }
+        case (.work(let work), .ended):
+            answered = nil
+            if let selected, command.read != nil {
+                read(selecting: selected, need: .change)
+            } else if !showedParts, work.readsAfter {
+                readOnce()
+            }
+        case (.work(let work), .failed(let error)):
+            answered = nil
+            if let undo = work.undo { state = undo }
+            fail(error)
+            if work.readsAfter { readOnce() }
+        default:
+            break
+        }
+        callEnded(call)
+        readAgainIfAsked()
+    }
+
+    /// The script that held its own state ended by itself: its value dims, its answer is old, and a sheet that waited for it
+    /// closes.
+    func lost() {
+        scriptEnded()
+        changeReading { $0.markStale() }
+        dropUnshownSheet()
+    }
+
+    /// Openspot ended the script that held its own state: its answer is old, so the next open waits for a new one.
+    func scriptEnded() {
+        answered = nil
+        list.stopLoading()
+    }
+
+    /// Takes the answer of a read or of a search: the first frame of a read that runs once, the silence of one that ended by
+    /// itself, or the frame that ends a call of a staying script. A read's answer replaces all that the spot shows, and a
+    /// search's answer replaces its rows (02, Y7).
+    func takeAnswer(_ lines: PluginOutput, frame: String, to ask: Ask) async {
         lastFrame = frame
         lastAnswer = lines
         report(toastOf: lines)
         command = command.taking(lines)
-        takeState(lines)
-        takeValue(lines)
-        list.take(search: lines.search)
-        list.take(drawing: lines.drawing, templates: lines.templates)
-        takePanel(lines, generation: generation)
-        list.replace(lines.items)
-        selectKept()
-        if list.search == .script, !list.query.isEmpty { ask() }
-        showRunning()
+        switch ask {
+        case .read(let generation, _):
+            answered = runs.now()
+            if command.readsState { takeState(lines) }
+            takeValue(lines)
+            let kept = selecting
+            selecting = nil
+            changeList {
+                $0.take(search: lines.search)
+                $0.take(drawing: lines.drawing, templates: lines.templates)
+                $0.replace(lines.items)
+                if let kept { $0.select(run: kept) }
+            }
+            if isOpen || panel != nil { takePanel(lines, generation: generation) }
+            if list.search == .script, !list.query.isEmpty { self.ask() }
+            showRunning()
+        case .search(let query):
+            await prepare(lines.items)
+            guard query == list.query else { return }
+            changeList {
+                $0.take(search: lines.search)
+                $0.take(drawing: lines.drawing, templates: lines.templates)
+                $0.answer(lines.items, to: query)
+            }
+        }
         answerArrived()
+        readAgainIfAsked()
         onReport(.frame(frame))
+        guard case .read = ask else { return }
         await prepare(lines.items)
         if command.hasSpot, !lines.errors.isEmpty {
             onReport(.failure("\(command.name) sent \(lines.errors.count) items Openspot cannot read."))
         }
     }
 
-    /// Takes a later frame of a read that keeps printing.
-    private func takeLaterFrame(_ lines: PluginOutput, frame: String) {
+    /// Takes a frame that answers nothing: a later frame of a read, a frame of another call, or a frame that a staying script
+    /// printed by itself. It changes only what it prints (02, Y7): the value when it prints the main component, the rows, the
+    /// parts, and the control of the card. Only a later frame of a read changes the spot's words.
+    func takeUpdate(_ lines: PluginOutput, frame: String, from source: Source) async {
         lastFrame = frame
         report(toastOf: lines)
-        takeValue(lines)
-        if lines.summary != nil { takeState(lines) }
+        if let main = lastAnswer?.value?.fields.first?.value, lines.value?.fields.first?.value == main, let value = MetricValue(output: lines) {
+            changeReading { $0.take(value) }
+        }
+        if case .read = source, command.readsState, lines.summary != nil {
+            takeState(lines)
+        } else {
+            state = keepingLevel(state.taking(lines))
+        }
         if !lines.items.isEmpty { list.replace(lines.items) }
-        if isOpen { panel?.merge(lines, keeping: editing) }
+        if isOpen {
+            switch source {
+            case .read: panel?.merge(lines, keeping: editing)
+            case .call(let generation, let keeping): panel?.merge(lines, answering: generation, keeping: keeping ?? editing)
+            }
+        }
         onReport(.frame(frame))
+        if !lines.items.isEmpty { await prepare(lines.items) }
     }
 
     private func takeState(_ lines: PluginOutput?) {
-        guard let lines, var next = try? command.state(of: lines) else {
+        guard let lines, let next = try? command.state(of: lines) else {
             if lines == nil { state = command.headerState }
             return
         }
-        if running(Self.levelKey) != nil || pauses[Self.levelKey] != nil, let level = state.level { next = next.withLevel(level) }
-        state = next
+        state = keepingLevel(next)
+    }
+
+    /// The state with the level that the person set, while the call of that level waits or runs.
+    private func keepingLevel(_ next: SpotState) -> SpotState {
+        guard running(Self.levelKey) != nil || pauses[Self.levelKey] != nil, let level = state.level else { return next }
+        return next.withLevel(level)
     }
 
     private func takeValue(_ lines: PluginOutput) {
         if let value = MetricValue(output: lines) {
-            reading.take(value)
+            changeReading { $0.take(value) }
         } else {
-            reading.markStale()
+            changeReading { $0.markStale() }
         }
     }
 
-    private func report(toastOf lines: PluginOutput) {
-        if let toast = lines.toast { onReport(.toast(toast)) }
+    /// Shows the toast of a frame.
+    func report(toastOf lines: PluginOutput) {
+        if let text = lines.toast { onReport(.toast(text)) }
+    }
+
+    private func changeReading(_ change: (inout MetricReading) -> Void) {
+        var next = reading
+        change(&next)
+        reading = next
+    }
+
+    private func changeList(_ change: (inout ItemList) -> Void) {
+        var next = rows
+        change(&next)
+        list = next
     }
 
     private func selectKept() {
@@ -691,6 +807,13 @@ public final class SpotRun {
         endHold()
     }
 
+    /// Reads again when a change came during a read, once no read or search waits.
+    private func readAgainIfAsked() {
+        guard readsAgain, !link.isAsking else { return }
+        readsAgain = false
+        read(need: .change)
+    }
+
     /// Lets a sheet that held its motion move.
     private func endHold() {
         pauses[Self.heldKey]?.cancel()
@@ -700,14 +823,24 @@ public final class SpotRun {
         work?()
     }
 
+    /// Closes a sheet that waits for an answer that will not come.
+    private func dropUnshownSheet() {
+        guard held != nil else { return }
+        held = nil
+        runs.didClose(self)
+        settle()
+        runs.updateClock()
+        onReport(.closed)
+    }
+
     /// Shows the parts a script printed. An answer that a newer change outdated does not show.
     private func takePanel(_ lines: PluginOutput, generation: Int?) {
         if lines.parts.isEmpty {
             panel = nil
-        } else if panel == nil {
-            partsArrival { panel = SheetParts(output: lines) }
+        } else if let current = panel?.generation {
+            panel?.take(lines, answering: generation ?? current)
         } else {
-            panel?.take(lines, answering: generation ?? panel?.generation ?? 0)
+            partsArrival { panel = SheetParts(output: lines) }
         }
     }
 
@@ -719,207 +852,6 @@ public final class SpotRun {
         }
     }
 
-    private func openLive(need: ReadNeed, onReady: @escaping () -> Void) {
-        if live != nil, liveRead == nil {
-            panel = lastAnswer.flatMap(SheetParts.init(output:))
-            onReady()
-        } else {
-            ready = onReady
-        }
-        readLive(need: need, reason: .sheet)
-        if live == nil { dropUnshownSheet() }
-    }
-
-    /// Asks a staying script that something wants for what it shows, by M1 and M2. A new run gets the read as it starts.
-    private func readLive(need: ReadNeed, reason: ReadReason) {
-        guard isWanted else { return }
-        guard live != nil else { return startLive(reason: reason) }
-        if need != .change, liveRead != nil { return }
-        if need == .moment, let answered, runs.now().timeIntervalSince(answered) < Self.answerAge { return }
-        let id = nextLiveId()
-        liveRead = id
-        live?.send(.read, values: isOpen ? panel?.values : nil, id: id, reason: reason)
-    }
-
-    /// Why a staying script that starts by itself reads first: its open sheet, `launch` in its `read`, or else the panel.
-    private var startReason: ReadReason {
-        isOpen ? .sheet : command.read?.has(.launch) == true ? .launch : .panel
-    }
-
-    /// Starts a staying script and asks it for what it shows, with no values. A script that failed too often does not start.
-    private func startLive(reason: ReadReason? = nil) {
-        guard !hasGivenUp else { return }
-        do {
-            let (script, frames) = try runs.stay(command, limit: runs.readLimit)
-            live = script
-            answered = nil
-            let id = nextLiveId()
-            liveRead = id
-            script.send(.read, id: id, reason: reason ?? startReason)
-            Task { await follow(script, frames) }
-        } catch {
-            liveFailed(error)
-        }
-    }
-
-    /// Sends a call to the running script, and starts it if it does not run, and returns its number. With nothing that wants it,
-    /// it ends after the call. A call with a `key` runs until its own `end`, and a stop sends its number (Y7).
-    @discardableResult
-    private func sendLive(_ action: SpotAction, values: String?, key: String? = nil, reason: ReadReason? = nil) -> Int? {
-        if live == nil { startLive() }
-        guard let script = live else {
-            settleLive()
-            return nil
-        }
-        let id = nextLiveId()
-        script.send(action, values: values, id: id, reason: reason)
-        if let key {
-            let call = ScriptCall(action: action, key: key, started: runs.now())
-            call.halt = { script.send(text: SpotAction.stopEvent(id: id)) }
-            liveCalls[String(id)] = call
-            calls.append(call)
-            Task { [weak self] in
-                try? await Task.sleep(for: .seconds(Self.workPause))
-                self?.workPauses += 1
-            }
-        }
-        settleLive()
-        return id
-    }
-
-    private func nextLiveId() -> Int {
-        liveCount += 1
-        return liveCount
-    }
-
-    /// Ends the calls of a staying script that a frame names, or each call when `ids` is nil, and starts a drop or a key press
-    /// that waited for them.
-    private func endLiveCalls(_ ids: [String]?) {
-        for id in ids ?? Array(liveCalls.keys) {
-            guard let call = liveCalls.removeValue(forKey: id) else { continue }
-            calls.removeAll { $0 === call }
-        }
-        startWaitingDrop()
-        startWaitingKey()
-    }
-
-    /// Sends the call of a form, and waits for the frame with its fields. A second ask leaves the first waiting.
-    private func liveForm(_ action: SpotAction) async throws -> String? {
-        guard formAnswer == nil else { return nil }
-        return try await withCheckedThrowingContinuation { continuation in
-            formAnswer = continuation
-            sendLive(action, values: nil)
-            if live == nil { answerForm(with: .success(nil)) }
-        }
-    }
-
-    private func answerForm(with answer: Result<String?, Error>) {
-        let waiting = formAnswer
-        formAnswer = nil
-        waiting?.resume(with: answer)
-    }
-
-    /// Takes each frame of a staying script until it ends. A script that Openspot ended shows only its toast.
-    private func follow(_ script: ScriptProcess, _ frames: AsyncThrowingStream<String, Error>) async {
-        var isFirst = true
-        do {
-            for try await text in frames {
-                let lines = PluginOutput(text: text)
-                if live === script, !lines.ends.isEmpty {
-                    endLiveCalls(lines.ends)
-                    settleLive()
-                }
-                guard live === script else {
-                    report(toastOf: lines)
-                    continue
-                }
-                if !lines.fields.isEmpty, formAnswer != nil {
-                    answerForm(with: .success(text))
-                    settleLive()
-                    continue
-                }
-                takeLiveFrame(lines, frame: text, isFirst: isFirst)
-                isFirst = false
-                await prepare(lines.items)
-            }
-        } catch {
-            if live === script {
-                liveFailed(error)
-                answerForm(with: .failure(error))
-            }
-        }
-        guard live === script else { return }
-        live = nil
-        endLiveCalls(nil)
-        liveRead = nil
-        reading.markStale()
-        dropUnshownSheet()
-        answerForm(with: .success(""))
-    }
-
-    /// Takes one frame of a staying script. The frame that ends the read is its answer, which is all that the spot shows and
-    /// opens a waiting sheet. Any other frame changes what it names, and the value of the spot only when it prints the main
-    /// component, so a frame that no read asked for never replaces the sheet.
-    private func takeLiveFrame(_ lines: PluginOutput, frame: String, isFirst: Bool) {
-        let isAnswer = liveRead.map { lines.ends.contains(String($0)) } ?? false
-        if isAnswer { liveRead = nil }
-        lastFrame = frame
-        report(toastOf: lines)
-        if isAnswer {
-            answered = runs.now()
-            lastAnswer = lines
-            command = command.taking(lines)
-            list.take(search: lines.search)
-            list.take(perLine: lines.perLine ?? 1)
-        }
-        let mainID = lastAnswer?.value?.fields.first?.value
-        if isAnswer || (mainID != nil && lines.value?.fields.first?.value == mainID), let value = MetricValue(output: lines) {
-            reading.take(value)
-        }
-        if list.isWaiting, isAnswer {
-            list.answer(lines.items, to: list.query)
-        } else if isAnswer || !lines.items.isEmpty {
-            list.replace(lines.items)
-        }
-        if isFirst, list.search == .script, !list.query.isEmpty { ask() }
-        if isOpen {
-            if isAnswer || panel == nil {
-                panel = SheetParts(output: lines)
-            } else {
-                panel?.merge(lines, keeping: editing)
-            }
-            if isAnswer {
-                let work = ready
-                ready = nil
-                work?()
-            }
-        }
-        onReport(.frame(frame))
-    }
-
-    /// Counts a failure of a staying script. It tells the person each one, and the third in one minute stops new starts (Y5).
-    private func liveFailed(_ error: Error) {
-        let time = runs.now()
-        liveFailures = liveFailures.filter { time.timeIntervalSince($0) < Self.failureWindow } + [time]
-        guard liveFailures.count >= Self.failureLimit else { return fail(error) }
-        hasGivenUp = true
-        givenUpFile = fileDate
-        onReport(.failure("\(command.name) failed \(Self.failureLimit) times in one minute. Openspot will not start it again until its file changes."))
-    }
-
-    /// Closes a sheet of a staying script that waits for a frame that will not come.
-    private func dropUnshownSheet() {
-        guard ready != nil else { return }
-        ready = nil
-        isOpen = false
-        isInView = false
-        runs.updateClock()
-    }
-
-    private var fileDate: Date? {
-        (try? FileManager.default.attributesOfItem(atPath: command.url.path))?[.modificationDate] as? Date
-    }
-
     /// Asks the script about the current search. A newer search stops the older one. This never waits: `search` holds the
     /// pause.
     private func ask() {
@@ -927,54 +859,20 @@ public final class SpotRun {
         if let older = running(Self.searchKey) { stop(older) }
         pauses[Self.searchKey]?.cancel()
         pauses[Self.searchKey] = nil
-        if command.stays {
-            liveRead = sendLive(.items(query: query), values: nil, reason: .search)
-            return
-        }
-        var hasAnswer = false
-        start(
-            .items(query: query, forms: SearchQuery(text: query).forms),
+        link.send(Call(
+            action: .items(query: query, forms: SearchQuery(text: query).forms),
             key: Self.searchKey,
-            input: nil,
             limit: runs.readLimit,
+            reason: .search,
             variables: ReadReason.search.variables,
-            onFrame: { [weak self] call, text in
-                hasAnswer = true
-                let lines = PluginOutput(text: text)
-                await self?.prepare(lines.items)
-                guard !call.isStopped else { return }
-                self?.takeSearch(lines, frame: text, query: query)
-            },
-            onEnd: { [weak self] end in
-                guard let self else { return }
-                switch end {
-                case .stopped:
-                    break
-                case .ended:
-                    if !hasAnswer { takeSearch(PluginOutput(text: ""), frame: "", query: query) }
-                case .failed(let error):
-                    list.stopWaiting(for: query)
-                    answerArrived()
-                    if error as? PluginError != .timedOut { fail(error) }
-                }
-            }
-        )
-    }
-
-    private func takeSearch(_ lines: PluginOutput, frame: String, query: String) {
-        lastFrame = frame
-        lastAnswer = lines
-        command = command.taking(lines)
-        list.take(search: lines.search)
-        list.take(drawing: lines.drawing, templates: lines.templates)
-        list.answer(lines.items, to: query)
-        answerArrived()
+            purpose: .ask(.search(query))
+        ))
     }
 
     /// Runs one change of a sheet of parts. Only the newest answer replaces the sheet.
     private func change(_ action: SpotAction, key: String, generation: Int, keeping: String?, closes: Bool) {
         guard let values = panel?.values else { return }
-        work(action, key: key, input: values, generation: generation, keeping: keeping, readsAfter: !closes)
+        work(action, key: key, input: values, as: Work(generation: generation, keeping: keeping, readsAfter: !closes))
     }
 
     /// Starts or stops the call of a person's press.
@@ -985,98 +883,18 @@ public final class SpotRun {
     }
 
     /// Runs a call that does work. It has no time limit, and it goes on with the sheet and the panel closed. A stopped call
-    /// changes nothing. After one that ended with no state to show, the script is read once (M4). A staying script takes the
-    /// call as a block.
-    private func work(
-        _ action: SpotAction,
-        key: String,
-        input: String? = nil,
-        generation: Int? = nil,
-        keeping: String? = nil,
-        readsAfter: Bool = true,
-        undo: SpotState? = nil
-    ) {
+    /// changes nothing. After one that ended with no parts to show, a script that runs once is read once (M4).
+    private func work(_ action: SpotAction, key: String, input: String? = nil, as work: Work = Work()) {
         answered = nil
-        if command.stays {
-            sendLive(action, values: input, key: key)
-            return
-        }
-        var showedState = false
-        var selected: String?
-        start(
-            action,
-            key: key,
-            input: input,
-            limit: nil,
-            onFrame: { [weak self] _, text in
-                guard let self else { return }
-                let lines = PluginOutput(text: text)
-                lastFrame = text
-                report(toastOf: lines)
-                state = state.taking(lines)
-                showedState = showedState || !lines.parts.isEmpty
-                selected = lines.select ?? selected
-                if isOpen { panel?.merge(lines, answering: generation, keeping: keeping ?? editing) }
-                onReport(.frame(text))
-            },
-            onEnd: { [weak self] end in
-                guard let self else { return }
-                switch end {
-                case .stopped:
-                    if let undo { state = undo }
-                case .ended:
-                    answered = nil
-                    if let selected, command.read != nil {
-                        read(selecting: selected, need: .change)
-                    } else if !showedState, readsAfter {
-                        readOnce()
-                    }
-                case .failed(let error):
-                    answered = nil
-                    if let undo { state = undo }
-                    fail(error)
-                    if readsAfter { readOnce() }
-                }
-            }
-        )
+        link.send(Call(action: action, key: key, input: input, purpose: .work(work)))
     }
 
     private func readOnce() {
         if command.read != nil { read(need: .change) }
     }
 
-    /// Runs a call to its end, and returns all that it printed, or nil when it was stopped or pressed again. A second press
-    /// stops it.
-    private func text(of action: SpotAction, input: String?) async throws -> String? {
-        let key = Self.key(call: action)
-        if let running = running(key) {
-            pressAgain(running)
-            return nil
-        }
-        return try await withCheckedThrowingContinuation { continuation in
-            var text = ""
-            start(
-                action,
-                key: key,
-                input: input,
-                limit: nil,
-                onFrame: { [weak self] _, frame in
-                    text += frame
-                    self?.report(toastOf: PluginOutput(text: frame))
-                },
-                onEnd: { end in
-                    switch end {
-                    case .stopped: continuation.resume(returning: nil)
-                    case .ended: continuation.resume(returning: text)
-                    case .failed(let error): continuation.resume(throwing: error)
-                    }
-                }
-            )
-        }
-    }
-
     /// Tells the person about a failed call: the script's own message when it gave one, or else what Openspot saw.
-    private func fail(_ error: Error) {
+    func fail(_ error: Error) {
         let text = switch error as? PluginError {
         case .failed(_, let message) where !message.isEmpty, .failedWithFix(_, let message, _) where !message.isEmpty: message
         case .timedOut: "\(command.name) took too long, so Openspot stopped it."

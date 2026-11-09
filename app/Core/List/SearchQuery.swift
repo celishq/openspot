@@ -13,9 +13,12 @@ public struct SearchQuery: Equatable, Sendable {
     public let forms: [String]
     private let typed: Form
     private let converted: [Form]
+    /// The text as a glyph matches it whole: with no mark that asks for a picture or a text form.
+    private let plain: String
 
     public init(text: String, layouts: [KeyLayout] = KeyLayout.enabled) {
         self.text = text.trimmingCharacters(in: .whitespaces)
+        plain = FoldedItem.plain(self.text)
         let typed = Form(self.text)
         self.typed = typed
         let candidates = Self.retyped(self.text, layouts: layouts) + Self.latin(self.text)
@@ -40,59 +43,76 @@ public struct SearchQuery: Equatable, Sendable {
         return [text.applyingTransform(.toLatin, reverse: false)?.applyingTransform(.stripDiacritics, reverse: false)].compactMap { $0 }
     }
 
-    /// The letters of the item that this text matches. An item that does not match has none.
-    public func marks(in item: SpotItem) -> SearchMarks {
-        match(FoldedItem(item))?.marks ?? SearchMarks(title: [], subtitle: [])
-    }
-
     public func matching(_ items: [SpotItem], recent: [String] = []) -> [SpotItem] {
-        matching(items.map(FoldedItem.init), recent: recent)
+        ranking(SearchIndex(items), items: items, among: Array(items.indices), recent: recent).map { items[$0] }
     }
 
-    func matching(_ items: [FoldedItem], recent: [String] = []) -> [SpotItem] {
-        ranking(items, among: Array(items.indices), recent: recent).map { items[$0].item }
-    }
-
-    /// The indices of the items among the given ones that match, best first.
-    func ranking(_ items: [FoldedItem], among indices: [Int], recent: [String]) -> [Int] {
+    /// The indices of the items among the given ones that match, best first. The index holds the texts of the items.
+    func ranking(_ index: SearchIndex, items: [SpotItem], among indices: [Int], recent: [String]) -> [Int] {
         let weights = Self.weights(of: recent)
-        return indices.compactMap { index in
-            match(items[index]).map { (rank: $0.rank, weight: weights[items[index].item.run] ?? 0, index: index) }
+        return index.withItems { folded in
+            indices.compactMap { index in
+                match(folded[index]).map { (rank: $0, weight: weights[items[index].run] ?? 0, index: index) }
+            }
         }
         .sorted { ($0.rank, -$0.weight, $0.index) < ($1.rank, -$1.weight, $1.index) }
         .map(\.index)
     }
 
     /// Whether each item that matches this text also matches the given text, so that a search for it may look only among the
-    /// matches of this one. A letters-in-order match needs three letters, so a last word of fewer may match fewer items, and
-    /// each form of the given text must grow a form of this one.
+    /// matches of this one. A letters-in-order match needs three letters, so a last word that reaches three letters only now
+    /// may match more items; a short text of other characters may be a glyph; and each form of the given text must grow a form
+    /// of this one.
     func narrows(to next: SearchQuery) -> Bool {
-        guard !typed.words.isEmpty, next.text.hasPrefix(text) else { return false }
+        guard let last = typed.words.last, next.text.hasPrefix(text) else { return false }
         let added = next.text.dropFirst(text.count)
-        guard (typed.words.last?.count ?? 0) >= 3 || added.first?.isWhitespace == true else { return false }
+        let staysShort = last.count + added.prefix { !$0.isWhitespace }.count < 3
+            && next.text.allSatisfy { $0.isLetter || $0.isNumber || $0.isWhitespace }
+        guard last.count >= 3 || added.first?.isWhitespace == true || staysShort else { return false }
         return next.forms.allSatisfy { form in forms.contains { form.hasPrefix($0) } }
     }
 
-    /// The items that match in each list, as one ranking, with the index of the list each came from. Each list after the
-    /// first that has no pick gives at most `unpickedLimit` items.
-    public func matching(in lists: [ItemList], unpickedLimit: Int = .max) -> [(list: Int, item: SpotItem)] {
+    /// The best `limit` items that match in all lists, as one ranking, with the index of the list each came from. Each list
+    /// after the first that has no pick gives at most `unpickedLimit` items. Each list keeps only its own best, and only
+    /// the items kept are copied out.
+    public func matching(in lists: [ItemList], unpickedLimit: Int = .max, limit: Int = .max) -> [(list: Int, item: SpotItem)] {
         lists.enumerated()
             .flatMap { index, list in
-                let found = ranked(list.folded, recent: list.recent).sorted { ($0.rank, $0.offset) < ($1.rank, $1.offset) }
-                return found.prefix(index > 0 && list.recent.isEmpty ? unpickedLimit : found.count).map { (list: index, match: $0) }
+                let texts = list.search == .local ? list.searchIndex : SearchIndex(list.all)
+                let count = min(limit, index > 0 && list.recent.isEmpty ? unpickedLimit : .max)
+                return Self.best(ranked(texts, items: list.all, recent: list.recent), count: count).map { (list: index, match: $0) }
             }
             .sorted { first, second in
                 let one = first.match, two = second.match
                 return (one.rank, -one.weight, first.list, one.offset) < (two.rank, -two.weight, second.list, two.offset)
             }
-            .map { (list: $0.list, item: $0.match.item) }
+            .prefix(limit)
+            .map { (list: $0.list, item: lists[$0.list].all[$0.match.offset]) }
     }
 
-    private func ranked(_ items: [FoldedItem], recent: [String]) -> [(rank: Int, weight: Double, offset: Int, item: SpotItem)] {
+    /// One item that matches: its rank, the weight of its picks and its place in its list.
+    private typealias Ranked = (rank: Int, weight: Double, offset: Int)
+
+    private func ranked(_ index: SearchIndex, items: [SpotItem], recent: [String]) -> [Ranked] {
         let weights = Self.weights(of: recent)
-        return items.enumerated().compactMap { offset, folded in
-            match(folded).map { (rank: $0.rank, weight: weights[folded.item.run] ?? 0, offset: offset, item: folded.item) }
+        return index.withItems { folded in
+            items.indices.compactMap { offset in
+                match(folded[offset]).map { (rank: $0, weight: weights[items[offset].run] ?? 0, offset: offset) }
+            }
         }
+    }
+
+    /// The best `count` matches of one list: by rank, then by the weight of picks, then by place.
+    private static func best(_ matches: [Ranked], count: Int) -> [Ranked] {
+        guard count < matches.count else { return matches }
+        let precedes = { (one: Ranked, two: Ranked) in (one.rank, -one.weight, one.offset) < (two.rank, -two.weight, two.offset) }
+        var kept: [Ranked] = []
+        kept.reserveCapacity(count + 1)
+        for match in matches where kept.count < count || precedes(match, kept[kept.count - 1]) {
+            kept.insert(match, at: kept.firstIndex { precedes(match, $0) } ?? kept.count)
+            if kept.count > count { kept.removeLast() }
+        }
+        return kept
     }
 
     /// The weight of each picked run, from the latest pick first: each pick weighs 0.9 of the one after it.
@@ -106,59 +126,54 @@ public struct SearchQuery: Equatable, Sendable {
         return weights
     }
 
-    private func match(_ item: FoldedItem) -> (rank: Int, marks: SearchMarks)? {
-        guard !typed.words.isEmpty else { return (0, SearchMarks(title: [], subtitle: [])) }
-        if let glyph = item.glyph, glyph == FoldedItem.plain(text) { return (0, SearchMarks(title: [], subtitle: [])) }
-        let typedMatch = Self.match(typed, in: item, loose: true).map { (rank: $0.rank * 2, marks: $0.marks) }
-        let convertedMatches = converted.compactMap { Self.match($0, in: item, loose: false) }.map { (rank: $0.rank * 2 + 1, marks: $0.marks) }
-        return ([typedMatch].compactMap { $0 } + convertedMatches).min { $0.rank < $1.rank }
+    private func match(_ item: FoldedItem) -> Int? {
+        guard !typed.words.isEmpty else { return 0 }
+        if let glyph = item.glyph, glyph == plain { return 0 }
+        var best = Self.match(typed, in: item, loose: true).map { $0 * 2 }
+        for form in converted {
+            if let rank = Self.match(form, in: item, loose: false).map({ $0 * 2 + 1 }), rank < best ?? .max { best = rank }
+        }
+        return best
     }
 
-    private static func match(_ form: Form, in item: FoldedItem, loose: Bool) -> (rank: Int, marks: SearchMarks)? {
+    private static func match(_ form: Form, in item: FoldedItem, loose: Bool) -> Int? {
         guard form.letterBits & ~item.letterBits == 0 else { return nil }
         let title = item.title
-        if title.letters == form.letters { return (0, SearchMarks(title: [0..<form.letters.count], subtitle: [])) }
-        if title.letters.starts(with: form.letters) { return (1, SearchMarks(title: [0..<form.letters.count], subtitle: [])) }
-        let subtitle = item.subtitle
+        if title.letters.elementsEqual(form.letters) { return 0 }
+        if title.letters.starts(with: form.letters) { return 1 }
         var rank = 0
-        var marks: (title: [Range<Int>], subtitle: [Range<Int>]) = ([], [])
         for word in form.words {
-            guard let found = match(word, title: title, keywords: item.keywords, subtitle: subtitle, loose: loose) else { return nil }
-            rank = max(rank, found.rank)
-            marks.title += found.title
-            marks.subtitle += found.subtitle
+            guard let found = match(word, title: title, keywords: item.keywords, subtitle: item.subtitle, loose: loose) else { return nil }
+            rank = max(rank, found)
         }
-        return (rank, SearchMarks(title: marks.title, subtitle: marks.subtitle))
+        return rank
     }
 
-    private static func match(_ word: [UInt64], title: FoldedText, keywords: [FoldedText], subtitle: FoldedText?, loose: Bool) -> (rank: Int, title: [Range<Int>], subtitle: [Range<Int>])? {
-        let span = { (start: Int) in start..<start + word.count }
-        let inTitle = title.occurrences(of: word)
-        if let start = inTitle.first(where: title.starts.contains) { return (2, [span(start)], []) }
-        if let found = title.inOrder(word, among: title.starts) { return (3, found.map { $0..<$0 + 1 }, []) }
-        if let start = inTitle.first { return (4, [span(start)], []) }
-        if keywords.contains(where: { $0.letters.starts(with: word) }) { return (5, [], []) }
-        if let subtitle {
-            let inSubtitle = subtitle.occurrences(of: word)
-            if let start = inSubtitle.first(where: subtitle.starts.contains) { return (6, [], [span(start)]) }
-            if let start = inSubtitle.first { return (7, [], [span(start)]) }
+    private static func match(_ word: [UInt32], title: FoldedText, keywords: SearchIndex.Texts, subtitle: FoldedText?, loose: Bool) -> Int? {
+        let inTitle = title.place(of: word)
+        if inTitle == .wordStart { return 2 }
+        if title.spellsAtWordStarts(word) { return 3 }
+        if inTitle == .inside { return 4 }
+        if keywords.contains(where: { $0.letters.starts(with: word) }) { return 5 }
+        switch subtitle?.place(of: word) {
+        case .wordStart: return 6
+        case .inside: return 7
+        case nil: break
         }
-        if loose, word.count >= 3, let found = title.inOneWord(word) {
-            return (8, found.map { $0..<$0 + 1 }, [])
-        }
+        if loose, word.count >= 3, title.spellsInOneWord(word) { return 8 }
         return nil
     }
 
     /// A text as folded letters, whole and split into words.
     private struct Form: Equatable, Sendable {
-        let letters: [UInt64]
-        let words: [[UInt64]]
+        let letters: [UInt32]
+        let words: [[UInt32]]
         let letterBits: UInt64
 
         init(_ text: String) {
             letters = text.map(FoldedText.code)
             words = text.split(whereSeparator: \.isWhitespace).map { $0.map(FoldedText.code) }
-            letterBits = words.reduce(0) { $0 | FoldedText.bits(of: $1) }
+            letterBits = words.joined().reduce(0) { $0 | FoldedText.bit(of: $1) }
         }
     }
 }

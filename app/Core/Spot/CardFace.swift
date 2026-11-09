@@ -8,12 +8,18 @@ public struct CardFace: Equatable, Sendable {
 
     public private(set) var drawings: [String: [[String]]]
     public private(set) var parts: [SpotPart]
+    /// The drawing of a card of each size, read once, by the name of the size.
+    private var layouts: [String: WidgetLayout] = [:]
 
     public static let none = CardFace(drawings: [:], parts: [])
 
     public init(drawings: [String: [[String]]], parts: [SpotPart]) {
         self.drawings = drawings
         self.parts = parts
+        for size in SpotSize.all {
+            guard let drawing = drawing(for: size) else { continue }
+            layouts[size.name] = WidgetLayout(drawing: drawing.map { $0.joined(separator: " ") }, size: size)
+        }
     }
 
     /// Reads the `grid.<place>=` lines of a head.
@@ -31,6 +37,11 @@ public struct CardFace: Equatable, Sendable {
     public func drawing(for size: SpotSize) -> [[String]]? {
         let fitting = SpotSize.all.filter { $0.columns <= size.columns && $0.rows <= size.rows }
         return fitting.reversed().lazy.compactMap { drawings[$0.name] }.first
+    }
+
+    /// The drawing for a card of this size, read into places.
+    public func layout(for size: SpotSize) -> WidgetLayout? {
+        layouts[size.name]
     }
 
     /// Whether a `view` component places the plugin's view, which fills the card when no drawing places it (V3).

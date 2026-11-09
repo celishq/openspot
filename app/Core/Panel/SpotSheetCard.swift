@@ -1,17 +1,16 @@
-import OpenspotCore
-import SwiftUI
+import Foundation
 
 /// The card that an open sheet grows from, on the grid: the sheet's own card, or else a widget that opens it. Its size can
 /// differ from the size it prefers.
-struct SpotSheetCard {
-    let id: String
-    let placement: SpotPlacement
+public struct SpotSheetCard {
+    public let id: String
+    public let placement: SpotPlacement
     /// The widget that opens the sheet, whose look the sheet takes at the size of its card. Nil for the sheet's own card.
-    let widget: SpotsModel.Entry?
+    public let widget: SpotsModel.Entry?
 
     /// The card of a sheet among the model's visible cards, or nil when none shows it.
     @MainActor
-    static func of(_ sheetID: String?, in model: SpotsModel) -> SpotSheetCard? {
+    public static func of(_ sheetID: String?, in model: SpotsModel) -> SpotSheetCard? {
         guard let sheetID else { return nil }
         let visible = model.visible
         let index = visible.firstIndex { $0.id == sheetID }
@@ -22,7 +21,7 @@ struct SpotSheetCard {
     }
 
     /// Where the card lies in the panel, with the grid scrolled this far.
-    func frame(scrollOffset: CGFloat) -> CGRect {
+    public func frame(scrollOffset: CGFloat) -> CGRect {
         let origin = SpotTokens.gridOrigin(scrollOffset: scrollOffset)
         return placement.rect.offsetBy(dx: origin.x, dy: origin.y)
     }

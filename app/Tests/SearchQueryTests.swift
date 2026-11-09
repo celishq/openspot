@@ -99,28 +99,21 @@ final class SearchQueryTests: XCTestCase {
         XCTAssertEqual(titles("note", in: ["Android File Transfer", "Notes"]), ["Notes"])
     }
 
+    func testAOneLetterWordNarrowsToTwoLetters() {
+        XCTAssertTrue(SearchQuery(text: "s", layouts: []).narrows(to: SearchQuery(text: "sm", layouts: [])))
+    }
+
+    func testAWordThatReachesThreeLettersDoesNotNarrow() {
+        XCTAssertFalse(SearchQuery(text: "sm", layouts: []).narrows(to: SearchQuery(text: "smi", layouts: [])))
+        XCTAssertFalse(SearchQuery(text: "s", layouts: []).narrows(to: SearchQuery(text: "smi", layouts: [])))
+    }
+
+    func testAShortTextOfOtherCharactersDoesNotNarrow() {
+        XCTAssertFalse(SearchQuery(text: "°", layouts: []).narrows(to: SearchQuery(text: "°c", layouts: [])))
+    }
+
     func testLettersInOrderNeedThreeLetters() {
         XCTAssertEqual(titles("sf", in: ["Safari"]), [])
-    }
-
-    func testMarksTheMatchedLettersOfEachWord() {
-        let marks = SearchQuery(text: "co vis").marks(in: item("Visual Studio Code"))
-
-        XCTAssertEqual(marks, SearchMarks(title: [0..<3, 14..<16], subtitle: []))
-    }
-
-    func testMarksEachInitial() {
-        XCTAssertEqual(SearchQuery(text: "vsc").marks(in: item("Visual Studio Code")).title, [0..<1, 7..<8, 14..<15])
-    }
-
-    func testMarksAWordInTheSubtitle() {
-        let marks = SearchQuery(text: "chrome work").marks(in: item("Chrome", subtitle: "Work profile"))
-
-        XCTAssertEqual(marks, SearchMarks(title: [0..<6], subtitle: [0..<4]))
-    }
-
-    func testAnEmptySearchMarksNothing() {
-        XCTAssertEqual(SearchQuery(text: "").marks(in: item("Safari")), SearchMarks(title: [], subtitle: []))
     }
 
     func testARecentPickComesFirstWithinItsMatch() {
@@ -177,6 +170,15 @@ final class SearchQueryTests: XCTestCase {
         XCTAssertEqual(SearchQuery(text: "s").matching(in: lists, unpickedLimit: 2).map(\.item.title), ["Sf", "Spot", "Star", "Stop", "Sa", "Sb", "Sd", "Se"])
     }
 
+    func testALimitKeepsTheBestMatchesOfAllLists() {
+        let lists = [list(["Spot", "Star", "Stop", "Sun"]), list(["Sa", "Sb", "Sc"], recent: ["Sc", "Sb"]), list(["Sd", "Se", "Sf"], recent: ["Sf"])]
+        let all = SearchQuery(text: "s").matching(in: lists, unpickedLimit: 2).map(\.item.title)
+
+        for limit in [1, 3, 5] {
+            XCTAssertEqual(SearchQuery(text: "s").matching(in: lists, unpickedLimit: 2, limit: limit).map(\.item.title), Array(all.prefix(limit)))
+        }
+    }
+
     func testRecentPicksKeepTheirOrderWithinAList() {
         XCTAssertEqual(found("s", in: [list(["Safari", "Slack"], recent: ["Slack", "Safari"])]), ["Slack", "Safari"])
     }
@@ -226,10 +228,6 @@ final class SearchQueryTests: XCTestCase {
 
     func testAConvertedQueryGetsNoLettersInOrderMatch() {
         XCTAssertEqual(titles("сфр", in: ["Safari"]), [])
-    }
-
-    func testAConvertedMatchMarksTheTitle() {
-        XCTAssertEqual(SearchQuery(text: "саф").marks(in: item("Safari")).title, [0..<3])
     }
 
     func testTheFormsAreTheConvertedTexts() {

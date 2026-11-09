@@ -5,7 +5,8 @@ import SwiftUI
 struct SpotWidgetView: View {
     let layout: WidgetLayout
     let places: [String]
-    let readings: [String: MetricReading]
+    /// What each script last gave it to draw, read here so that a new reading reruns only this view.
+    let reading: (String) -> MetricReading?
     let card: SpotSize
 
     private var room: CGSize {
@@ -19,7 +20,7 @@ struct SpotWidgetView: View {
                 let rect = layout.rect(of: slot, in: room, gap: SpotTokens.placeGap, sideGap: SpotTokens.sideGap)
                 let form = layout.form(of: slot, on: card)
                 SpotMetricView(
-                    reading: readings[places[index]],
+                    reading: reading(places[index]),
                     form: form,
                     isMirrored: form == .half && slot.x0 > 0,
                     size: rect.size
