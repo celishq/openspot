@@ -280,11 +280,11 @@ public final class ScriptProcess: @unchecked Sendable {
     }
 }
 
-/// The last line that has words of a stream that one queue writes and another reads. It keeps no more than that line, and
-/// no more than the end of a line longer than its limit.
+/// The last line that has words of a stream that one queue writes and another reads. It keeps no more than that line and
+/// one line break after it, and no more than the end of a line longer than its limit, cut between two characters.
 private final class LastLine: @unchecked Sendable {
     private static let limit = 16 * 1024
-    private static let newLine = UInt8(ascii: "\n")
+    private static let breaks: Set<UInt8> = [UInt8(ascii: "\n"), UInt8(ascii: "\r")]
 
     private let lock = NSLock()
     private var bytes = Data()
@@ -292,13 +292,15 @@ private final class LastLine: @unchecked Sendable {
     func take(_ data: Data) {
         lock.withLock {
             bytes.append(data)
-            guard let end = bytes.lastIndex(where: { $0 != Self.newLine }) else { return bytes.removeAll() }
-            let start = bytes[..<end].lastIndex(of: Self.newLine).map { $0 + 1 } ?? bytes.startIndex
-            bytes = Data(bytes[max(start, bytes.endIndex - Self.limit)...])
+            guard let end = bytes.lastIndex(where: { !Self.breaks.contains($0) }) else { return bytes.removeAll() }
+            let start = bytes[..<end].lastIndex(of: UInt8(ascii: "\n")).map { $0 + 1 } ?? bytes.startIndex
+            var cut = max(start, end + 1 - Self.limit)
+            while cut < end, bytes[cut] & 0xC0 == 0x80 { cut += 1 }
+            bytes = Data(bytes[cut..<min(end + 2, bytes.endIndex)])
         }
     }
 
     var text: String {
-        lock.withLock { String(decoding: bytes, as: UTF8.self).split(separator: "\n").last.map(String.init) ?? "" }
+        lock.withLock { String(decoding: bytes, as: UTF8.self).split(whereSeparator: \.isNewline).last.map(String.init) ?? "" }
     }
 }

@@ -275,6 +275,28 @@ final class ScriptProcessTests: XCTestCase {
         }
     }
 
+    func testAFailureNamesItsLastWordsAfterManyBlankLines() async throws {
+        let plugin = try writePlugin("blank.sh", "#!/bin/sh\necho boom >&2\ni=0\nwhile [ $i -lt 20000 ]; do echo >&2; i=$((i+1)); done\nexit 3\n")
+
+        do {
+            _ = try await ScriptProcess.output(url: plugin.url, limit: 10)
+            XCTFail("expected a failure")
+        } catch {
+            XCTAssertEqual(error as? PluginError, .failed(3, "boom"))
+        }
+    }
+
+    func testAFailureNamesTheLastLineOfAStderrWithWindowsLineEnds() async throws {
+        let plugin = try writePlugin("crlf.sh", "#!/bin/sh\nprintf 'first\\r\\nboom\\r\\n\\r\\n' >&2\nexit 3\n")
+
+        do {
+            _ = try await ScriptProcess.output(url: plugin.url, limit: 10)
+            XCTFail("expected a failure")
+        } catch {
+            XCTAssertEqual(error as? PluginError, .failed(3, "boom"))
+        }
+    }
+
     func testAScriptKilledBySomethingElseIsAFailure() async throws {
         let plugin = try writePlugin("killed.sh", "#!/bin/sh\nkill -KILL $$\n")
 

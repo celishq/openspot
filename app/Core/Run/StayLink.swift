@@ -21,6 +21,8 @@ final class StayLink: ScriptLink {
     /// The date of the file when the script failed too often, which keeps it from starting until the file changes.
     private var givenUp: Date??
     private var formAnswer: CheckedContinuation<String?, Error>?
+    /// Whether the link held the script at the last settle, so that the clock hears when that changes.
+    private var heldScript = false
 
     init(runs: SpotRuns) {
         self.runs = runs
@@ -85,6 +87,9 @@ final class StayLink: ScriptLink {
         let isNeeded = run?.isWanted == true
         if isNeeded, script == nil { start() }
         if !isNeeded, script != nil { end() }
+        guard holdsScript != heldScript else { return }
+        heldScript = holdsScript
+        runs.updateClock()
     }
 
     func end() {

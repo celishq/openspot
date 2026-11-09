@@ -308,8 +308,9 @@ public final class SpotRuns {
         processes.append(process)
     }
 
-    /// Keeps the timers going while the panel is open, or while something wants a script with a number in its `read`. The
-    /// clock sleeps until the next read is due, and no less than its pause. A change of what is wanted starts it again.
+    /// Keeps the timers going while the panel is open, or while something wants a script with a number in its `read`. With
+    /// the panel open it looks after each pause, since a card can place a script at any time. With the panel closed it sleeps
+    /// until the next read is due, and no less than its pause. A change of what is wanted starts it again.
     func updateClock() {
         clock?.cancel()
         clock = nil
@@ -317,10 +318,11 @@ public final class SpotRuns {
         guard isPanelOpen || next != nil else { return }
         clock = Task { [weak self, tickPause] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: max(tickPause, .seconds(next ?? 0)))
+                let isPanelOpen = self?.isPanelOpen ?? false
+                try? await Task.sleep(for: isPanelOpen ? tickPause : max(tickPause, .seconds(next ?? 0)))
                 guard !Task.isCancelled, let self else { return }
                 next = tick()
-                guard isPanelOpen || next != nil else { return }
+                guard self.isPanelOpen || next != nil else { return }
             }
         }
     }

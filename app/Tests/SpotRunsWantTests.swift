@@ -198,6 +198,39 @@ final class SpotRunsWantTests: SpotRunsCase {
         try await wait("the read from the clock") { self.log().count == 2 }
     }
 
+    func testASpotThatACardPlacesWhileThePanelIsOpenIsReadAtOnce() async throws {
+        try script("pulls", header: "read=120\ntray=true", log: "pulls", "printf 'text=t\\ntitle=1\\n'")
+        try script("card", header: "read=panel\nshortcut=c", log: "card", "printf 'grid.wide=heat\\n\\nspot=heat\\n'")
+        try script("heat", header: "read=300", log: "heat", "printf 'text=t\\ntitle=41\\n'")
+        _ = try scanned()
+        try await wait("the read of the menu bar spot") { self.log("pulls").count == 1 }
+
+        runs.panelOpened()
+        try await wait("the card") { self.runs.sheets["card"]?.state.face.parts.map(\.id) == ["heat"] }
+
+        try await wait("the placed spot") { self.log("heat").count == 1 }
+    }
+
+    func testAStayingScriptThatACallHoldsIsReadOnItsOwnTimeWhileTheClockWaitsForALaterRead() async throws {
+        try script("pulls", header: "read=120\ntray=true", log: "pulls", "printf 'text=t\\ntitle=1\\n'")
+        try script("stayer", header: "stay=true\nread=1", """
+        while IFS= read -r line; do
+          printf '%s\\n' "$line" >> '\(path("blocks"))'
+          case "$line" in call=*) call=${line#call=}; args= ;; arg=*) args="$args ${line#arg=}" ;; esac
+          [ -n "$line" ] || [ "$args" != ' read' ] || printf 'end=%s\\n\\ntext=t\\ntitle=1\\n---\\n' "$call"
+        done
+        """)
+        _ = try scanned()
+        try await wait("the read of the menu bar spot") { self.log("pulls").count == 1 }
+        let stayer = try XCTUnwrap(runs.sheets["stayer"])
+
+        stayer.pressKey("go")
+        try await wait("the call and the first read") { self.blocks().contains("arg=go") && self.blocks().filter { $0 == "arg=read" }.count == 1 }
+        time += 1
+
+        try await wait("the read from the clock") { self.blocks().filter { $0 == "arg=read" }.count == 2 }
+    }
+
     // MARK: C4, the main search, sandbox
 
     func testSearchTextReachesTheScriptAfterAPause() async throws {
