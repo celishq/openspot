@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// All that one script shows: its last frame, its state, its value, its rows, its parts, whether its sheet is open and its
+/// All that one script shows: its state, its value, its rows, its parts, whether its sheet is open and its
 /// running calls. It reaches the script through its link, which runs a process for each call or keeps one that stays. A run
 /// of one never stops a run of another, and a stopped run changes nothing.
 @MainActor
@@ -138,7 +138,6 @@ public final class SpotRun {
         didSet { if state != oldValue { onReport(.listChange) } }
     }
     public private(set) var reading: MetricReading
-    public private(set) var lastFrame: String?
     /// Each running call, the oldest first, with the last frame of each.
     public private(set) var calls: [ScriptCall] = []
     @ObservationIgnored public var onReport: (Report) -> Void = { _ in }
@@ -690,8 +689,7 @@ public final class SpotRun {
     /// itself, or the frame that ends a call of a staying script. A read's answer replaces all that the spot shows, and a
     /// search's answer replaces its rows (02, Y7).
     func takeAnswer(_ lines: PluginOutput, frame: String, to ask: Ask) async {
-        lastFrame = frame
-        lastAnswer = lines
+        lastAnswer = lines.withoutBlocks()
         report(toastOf: lines)
         command = command.taking(lines)
         switch ask {
@@ -733,7 +731,6 @@ public final class SpotRun {
     /// printed by itself. It changes only what it prints (02, Y7): the value when it prints the main component, the rows, the
     /// parts, and the control of the card. Only a later frame of a read changes the spot's words.
     func takeUpdate(_ lines: PluginOutput, frame: String, from source: Source) async {
-        lastFrame = frame
         report(toastOf: lines)
         if let main = lastAnswer?.value?.fields.first?.value, lines.value?.fields.first?.value == main, let value = MetricValue(output: lines) {
             changeReading { $0.take(value) }

@@ -81,9 +81,10 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testACallToAStayingScriptNeverShowsAsWorkAndItsFrameDoesNotMakeItShow() async throws {
         try staying(frame: "gauge=p\\ntitle=42%%\\nvalue=0.42\\n")
         let sheet = try sheet()
+        let frames = FrameLog(sheet)
         runs.panelOpened()
         sheet.open {}
-        try await wait("the frame") { self.blocks() == ["arg=read"] && sheet.lastFrame != nil }
+        try await wait("the frame") { self.blocks() == ["arg=read"] && frames.last != nil }
         let before = sheet.state
 
         sheet.pick(SpotItem(title: "A", run: "a"))

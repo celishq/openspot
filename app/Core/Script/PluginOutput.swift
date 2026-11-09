@@ -34,7 +34,7 @@ public struct PluginOutput: Equatable, Sendable {
     /// The ids of the calls of a staying script that this frame ends.
     public private(set) var ends: [String] = []
     /// The blocks it was read from, which a check of its parts reads again.
-    private let blocks: [TextBlock]
+    private var blocks: [TextBlock]
     /// Whether this reading checks each part, which only a check asks for, so that a frame on screen costs no check.
     private let checks: Bool
     private var checkedFaults: [String] = []
@@ -121,6 +121,15 @@ public struct PluginOutput: Equatable, Sendable {
         if checks { check(head: head) }
         parts += layout?.keyParts ?? []
         if checks { check(layout: layout) }
+    }
+
+    /// This output without the blocks it was read from, so that an answer that is kept holds its rows once, as its items.
+    /// It has no rows for a metric and no part faults.
+    public func withoutBlocks() -> PluginOutput {
+        var output = self
+        output.blocks = []
+        output.rows = []
+        return output
     }
 
     /// What is wrong with its parts, found by a reading of the same blocks that checks each part.

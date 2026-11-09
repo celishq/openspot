@@ -35,11 +35,12 @@ final class SpotRunsReadTests: SpotRunsCase {
     func testALaterFrameOfAReadKeepsTheValueThatItDoesNotPrint() async throws {
         try script(header: "read=sheet", "printf 'main=m\\n\\ntext=m\\ntitle=3\\n---\\n'\nsleep 0.05\nprintf 'text=b\\ntitle=B\\n---\\n'")
         let sheet = try sheet()
+        let frames = FrameLog(sheet)
 
         runs.panelOpened()
         sheet.open {}
 
-        try await wait("the later frame") { sheet.lastFrame?.contains("B") == true }
+        try await wait("the later frame") { frames.last?.contains("B") == true }
         XCTAssertEqual(sheet.reading.value?.title, "3")
     }
 
@@ -109,14 +110,15 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(Set(scan.commands.map(\.id)), ["tool", "once", "w/W"])
     }
 
-    func testASheetKeepsItsLastFrameRowsPartsAndValue() async throws {
+    func testASheetReportsItsFrameAndKeepsItsRowsPartsAndValue() async throws {
         try script(header: "read=sheet", "printf 'main=m\\n\\ntext=m\\ntitle=3\\ntone=good\\n\\nrow=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n'")
         let sheet = try sheet()
+        let frames = FrameLog(sheet)
 
         sheet.open {}
 
         try await wait("the answer") { sheet.list.shown.count == 1 }
-        XCTAssertEqual(sheet.lastFrame, "main=m\n\ntext=m\ntitle=3\ntone=good\n\nrow=a\ntitle=A\n\ntext=b\ntitle=B\n")
+        XCTAssertEqual(frames.last, "main=m\n\ntext=m\ntitle=3\ntone=good\n\nrow=a\ntitle=A\n\ntext=b\ntitle=B\n")
         XCTAssertEqual(sheet.panel?.parts.map(\.id), ["m", "b"])
         XCTAssertEqual(sheet.reading.value?.title, "3")
         XCTAssertEqual(sheet.reading.value?.tone, .good)

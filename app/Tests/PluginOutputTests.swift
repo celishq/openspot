@@ -2,6 +2,21 @@ import XCTest
 @testable import OpenspotCore
 
 final class PluginOutputTests: XCTestCase {
+    func testAKeptOutputHoldsItsRowsOnlyAsItemsAndKeepsAllElseItShows() {
+        let output = PluginOutput(text: "title=T\ntoast=Hi\n\nrow=a\ntitle=A\n\nrow=b\ntitle=B\n\ntext=m\ntitle=3\n\nbutton=go\ntitle=Go\n")
+
+        let kept = output.withoutBlocks()
+
+        XCTAssertTrue(kept.rows.isEmpty)
+        XCTAssertEqual(kept.items, output.items)
+        XCTAssertEqual(kept.parts, output.parts)
+        XCTAssertEqual(kept.actions, output.actions)
+        XCTAssertEqual(kept.summary, output.summary)
+        XCTAssertEqual(kept.value, output.value)
+        XCTAssertEqual(kept.kind, output.kind)
+        XCTAssertEqual(kept.toast, "Hi")
+    }
+
     func testAScriptPrintsWhoSearchesItsRowsAndWhetherRecentPicksMoveUp() {
         let plain = PluginOutput(text: "row=a\ntitle=A\n")
         let printed = PluginOutput(text: "search=script\nrecents=false\n\nrow=a\ntitle=A\n")

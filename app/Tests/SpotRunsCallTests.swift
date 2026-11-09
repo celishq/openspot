@@ -151,6 +151,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         let sheet = try sheet()
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
+        let frames = FrameLog(sheet)
         sheet.open {}
         try await wait("the part") { sheet.panel != nil && sheet.calls.isEmpty }
 
@@ -166,7 +167,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
         try await wait("the end of the work") { self.exists("done") && sheet.calls.isEmpty }
         XCTAssertEqual(toasts, ["Started", "Done"])
-        XCTAssertEqual(sheet.lastFrame, "toast=Done\n\ntext=bar\ntitle=done\n")
+        XCTAssertEqual(frames.last, "toast=Done\n\ntext=bar\ntitle=done\n")
         XCTAssertNil(sheet.panel)
     }
 
