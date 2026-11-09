@@ -115,6 +115,7 @@ final class SpotsModel {
         didSet {
             let sizes = visible.map(\.size)
             if sizes != placements.map(\.size) { placements = SpotGrid().place(sizes) }
+            if transition.phase == .closing, !sheetHasClosedPlace { cutSheet(to: nil) }
         }
     }
     /// Where each visible spot lies on the grid, in the order of `visible`.
@@ -625,19 +626,10 @@ final class SpotsModel {
     }
 
     /// Starts the motion of the sheet to `list`: a grow out of its card, a collapse back into it, or a cut when the sheet does
-    /// not move. A new sheet is built on its card first, and its grow starts on the next turn, so that the grow has a start.
+    /// not move or has no place to close into. A new sheet is built on its card first, and its grow starts on the next turn,
+    /// so that the grow has a start.
     private func moveSheet(to list: String?) {
-        let moves = sheetMoves
-        guard moves else {
-            change(nil) {
-                shownList = list
-                sheetHasLeftCard = list != nil
-                if let list { transition.show(list, moves: false) } else { transition.hide(moves: false) }
-            }
-            allowSheetMotion()
-            if list == nil { endReview() }
-            return
-        }
+        guard sheetMoves, list != nil || sheetHasClosedPlace else { return cutSheet(to: list) }
         guard let list else {
             animate(isOpen: false) {
                 shownList = nil
@@ -652,6 +644,23 @@ final class SpotsModel {
         DispatchQueue.main.async { [weak self] in
             self?.animate(isOpen: true) { self?.transition.start() }
         }
+    }
+
+    /// Shows or hides the sheet at once, with no motion.
+    private func cutSheet(to list: String?) {
+        change(nil) {
+            shownList = list
+            sheetHasLeftCard = list != nil
+            if let list { transition.show(list, moves: false) } else { transition.hide(moves: false) }
+        }
+        allowSheetMotion()
+        if list == nil { endReview() }
+    }
+
+    /// Whether the built sheet has a place to close into: its card on the grid, or the field for the install screen.
+    private var sheetHasClosedPlace: Bool {
+        guard let id = transition.id else { return false }
+        return id == ShippedSpot.installID || SpotSheetCard.of(id, in: self) != nil
     }
 
     /// Moves the sheet and the fill of its card on their springs, and ends the motion when it is done.
