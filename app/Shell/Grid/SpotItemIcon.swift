@@ -2,22 +2,26 @@ import OpenspotCore
 import SwiftUI
 
 /// The picture of an item or a spot: its image or the icon of its file, or else its glyph, or else its symbol, or else nothing.
+/// With a badge, the badge fills the top-left quarter and the picture the other three, cut back by a thin ring around the badge.
 struct SpotItemIcon: View {
     let icon: FileIcon?
     let glyph: String?
     let symbol: String?
+    let badge: Icon?
     let size: CGFloat
 
     private static let glyphScale = 0.8
+    private static let ring: CGFloat = 1.5
 
     init(item: SpotItem, size: CGFloat) {
-        self.init(icon: item.icon, glyph: item.glyph, symbol: item.symbol, size: size)
+        self.init(icon: item.icon, glyph: item.glyph, symbol: item.symbol, badge: item.badge, size: size)
     }
 
-    init(icon: FileIcon?, glyph: String?, symbol: String?, size: CGFloat) {
+    init(icon: FileIcon?, glyph: String?, symbol: String?, badge: Icon? = nil, size: CGFloat) {
         self.icon = icon
         self.glyph = glyph
         self.symbol = symbol
+        self.badge = badge
         self.size = size
     }
 
@@ -27,7 +31,23 @@ struct SpotItemIcon: View {
     }
 
     var body: some View {
-        if let icon {
+        if let badge {
+            ZStack(alignment: .topLeading) {
+                SpotItemIcon(icon: icon, glyph: glyph, symbol: symbol, size: size * 0.75)
+                    .frame(width: size, height: size, alignment: .bottomTrailing)
+                    .mask {
+                        Rectangle()
+                            .overlay(alignment: .topLeading) {
+                                RoundedRectangle(cornerRadius: size * 0.15, style: .continuous)
+                                    .frame(width: size / 2 + Self.ring, height: size / 2 + Self.ring)
+                                    .blendMode(.destinationOut)
+                            }
+                            .compositingGroup()
+                    }
+                SpotItemIcon(icon: badge.image.map(FileIcon.image) ?? badge.file.map(FileIcon.init(path:)), glyph: badge.glyph, symbol: badge.symbol, size: size / 2)
+            }
+            .frame(width: size, height: size)
+        } else if let icon {
             SpotFileIconView(icon: icon, size: size)
         } else if let glyph, let picture = SpotGlyphPicture.image(glyph, side: size, fontSize: size * Self.glyphScale) {
             Image(decorative: picture, scale: SpotGlyphPicture.scale)

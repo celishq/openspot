@@ -97,7 +97,6 @@
 		577D71A519F841B9DF675F17 /* FoldedText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96BBB062EF397B6F7064CC2D /* FoldedText.swift */; };
 		57F4C983F926CD8DB5DEF569 /* SwiftProgramTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D880CE78C17279A773F315C7 /* SwiftProgramTests.swift */; };
 		588F35D7533A33CE2F8AA40A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 5D46E63C968896AC610529D8 /* Sparkle */; };
-		594E7F2184ADA82A5826598A /* SpotItemBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B9AD6A0F5A17A793CEB2EA5 /* SpotItemBadge.swift */; };
 		5D8A80E9F7685D375860E11D /* Spot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FA8009A9A17D22296C068AE /* Spot.swift */; };
 		6062F924DDE311A052AD82A9 /* RowPlacement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F02800F3618527961398E47 /* RowPlacement.swift */; };
 		632932B0C674B0386A896951 /* RepeatDrawing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8907E98F00C0A89599F148E6 /* RepeatDrawing.swift */; };
@@ -439,7 +438,6 @@
 		8975CD677A24BB55FD2AD7CC /* SpotDropView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotDropView.swift; sourceTree = "<group>"; };
 		8AE7333AFB1BE8B127EE7D7B /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		8B5F882885A479C9009CCF7E /* LoginItemTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemTests.swift; sourceTree = "<group>"; };
-		8B9AD6A0F5A17A793CEB2EA5 /* SpotItemBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotItemBadge.swift; sourceTree = "<group>"; };
 		8C5560019E060B304559DE2B /* OpenspotApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenspotApp.swift; sourceTree = "<group>"; };
 		8D401F5E5AA11F7F32D56733 /* SpotTemplateRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotTemplateRow.swift; sourceTree = "<group>"; };
 		8DB6B7170028836EC4889753 /* SpotsModel+Intake.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Intake.swift"; sourceTree = "<group>"; };
@@ -1036,7 +1034,6 @@
 				EB8B60927B6B65387FC5CCAF /* SpotGlyphPicture.swift */,
 				CB6A2912C0ECD42A493FAFED /* SpotGridGlass.swift */,
 				C2A2E193370E14885C92F0DC /* SpotGridView.swift */,
-				8B9AD6A0F5A17A793CEB2EA5 /* SpotItemBadge.swift */,
 				98A5BD7E71A28853B4699B5D /* SpotItemIcon.swift */,
 				91FD4C89A96E3C2717B08878 /* SpotPushedCard.swift */,
 				E0C64B6E575F3F26834BE0CB /* SpotWorkMark.swift */,
@@ -1532,7 +1529,6 @@
 				E6F6187CC47B3FBA87972B32 /* SpotHint.swift in Sources */,
 				F6DF1166D7546FCF09249B37 /* SpotHintWatch.swift in Sources */,
 				E545EA02D131BEDD3B4697B5 /* SpotIconStore.swift in Sources */,
-				594E7F2184ADA82A5826598A /* SpotItemBadge.swift in Sources */,
 				C5B0DCB0ADEC0978F96695A6 /* SpotItemIcon.swift in Sources */,
 				2AB5B6ED966E845D105D361E /* SpotKeyLabel.swift in Sources */,
 				8D194C4535986E8DFFB8D5C2 /* SpotKeyLayouts.swift in Sources */,

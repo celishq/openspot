@@ -204,7 +204,6 @@ struct SpotRowsView: View {
             } else {
                 SpotItemIcon(item: item, size: min(size.width, size.height) * 0.5)
                     .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: min(size.width, size.height) * 0.5) }
-                    .overlay(alignment: .topLeading) { SpotItemBadge(badge: item.badge, side: min(size.width, size.height) * 0.5) }
                     .frame(width: size.width, height: size.height)
             }
         }
@@ -222,7 +221,6 @@ struct SpotRowsView: View {
         return HStack(spacing: SpotTokens.padding - 5) {
             SpotItemIcon(item: item, size: SpotTokens.listIconSize)
                 .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: SpotTokens.listIconSize) }
-                .overlay(alignment: .topLeading) { SpotItemBadge(badge: item.badge, side: SpotTokens.listIconSize) }
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 SpotMarkedText(text: item.title, marks: marks.title, font: SpotType.body, ink: SpotTheme.ink)
                 if let subtitle = item.subtitle {
@@ -257,7 +255,6 @@ private struct SpotGridCell: View, Equatable {
         let shape = RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
         SpotItemIcon(item: item, size: SpotTokens.listIconSize)
             .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: SpotTokens.listIconSize) }
-            .overlay(alignment: .topLeading) { SpotItemBadge(badge: item.badge, side: SpotTokens.listIconSize) }
             .frame(width: side, height: side)
             .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
             .contentShape(shape)
