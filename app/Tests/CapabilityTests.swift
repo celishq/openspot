@@ -113,6 +113,19 @@ final class CapabilityTests: XCTestCase {
         XCTAssertEqual(try field("count", in: next), 1)
     }
 
+    func testAHelperWithWorkOutlivesItsIdleTimeAndEndsAfterTheWork() async throws {
+        setenv("STANDIN_IDLE", "1", 1)
+        let id = pid_t(try field("pid", in: try await call("hold")))
+
+        try await Task.sleep(for: .seconds(3))
+        XCTAssertTrue(isAlive(id))
+        let freed = try await call("free")
+        XCTAssertEqual(pid_t(try field("pid", in: freed)), id)
+
+        let gone = await wait(seconds: 15) { !self.isAlive(id) }
+        XCTAssertTrue(gone)
+    }
+
     func testACallPutsOffTheIdleExit() async throws {
         setenv("STANDIN_IDLE", "2", 1)
         let id = try field("pid", in: try await call())
