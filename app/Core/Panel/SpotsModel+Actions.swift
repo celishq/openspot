@@ -314,7 +314,6 @@ extension SpotsModel {
             do {
                 switch try await sheet.change(action) {
                 case .form(let form)? where isShown && formAsk == ask:
-                    closeList(moving: true)
                     open(id, moving: true)
                     self.form = FormSession(draft: FormDraft(form: form), entry: entry, action: action, item: nil, openedSheet: true)
                 case .done?:

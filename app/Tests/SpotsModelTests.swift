@@ -249,6 +249,63 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertNil(model.form)
     }
 
+    func testASheetThatOpensWhileAnotherShowsTakesItsPlaceWithNoCollapseAndNoCard() async throws {
+        try await openList()
+        try script("other", header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
+        model.reload()
+        try await wait("the open list") { model.transition.phase == .open }
+        host.motions = []
+        host.phases = []
+
+        model.open("other", moving: true)
+
+        try await wait("the other sheet") { model.openList == "other" }
+        XCTAssertEqual(model.transition.phase, .open)
+        XCTAssertFalse(host.phases.contains(.closing))
+        XCTAssertFalse(host.phases.contains(.ready))
+        XCTAssertFalse(host.motions.contains(.sheet(isOpen: false)))
+    }
+
+    func testAPickOfTheBuildRowOpensBuildInPlaceOfTheListWithNoCollapse() async throws {
+        let build = plugins.appendingPathComponent("build.sh")
+        try "#!/bin/sh\nprintf 'row=g\\ntitle=Guide\\n'\n".writeScript(to: build)
+        host.shipped = [Spot(id: ShippedSpot.buildID, name: "Build", url: build, kind: .list, read: .sheet, isOnGrid: false)]
+        try await openList()
+        try await wait("the open list") { model.transition.phase == .open }
+        let entry = try XCTUnwrap(model.openEntry)
+        host.motions = []
+        host.phases = []
+
+        model.pick(SpotItem(title: "Build your own", run: CatalogSpot.buildRun), of: entry)
+
+        try await wait("the build sheet") { model.openList == ShippedSpot.buildID }
+        XCTAssertEqual(model.transition.phase, .open)
+        XCTAssertFalse(host.phases.contains(.closing))
+        XCTAssertFalse(host.phases.contains(.ready))
+        XCTAssertFalse(host.motions.contains(.sheet(isOpen: false)))
+    }
+
+    func testASheetWithNoCardShowsAndHidesAtOnce() async throws {
+        try script("list", header: "read=sheet", "printf 'row=a\\ntitle=Apple\\n'")
+        try script("other", header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.setOnGrid(false, for: "other")
+        host.motions = []
+        host.phases = []
+
+        model.open("other", moving: true)
+
+        try await wait("the sheet") { model.openList == "other" }
+        XCTAssertEqual(model.transition.phase, .open)
+        XCTAssertFalse(host.phases.contains(.ready))
+        XCTAssertEqual(host.motions.compactMap { $0 }, [])
+        model.closeList(moving: true)
+        XCTAssertNil(model.transition.id)
+        XCTAssertEqual(host.motions.compactMap { $0 }, [])
+    }
+
     func testTheGridSearchFindsASpotByItsName() async throws {
         try script("list", header: "read=sheet", "printf 'row=a\\ntitle=Apple\\n'")
         try script("other", header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
@@ -272,6 +329,10 @@ private final class TestHost: SpotsHost {
     var isMouseDown = false
     var pastedPaths: [String] = []
     var motions: [PanelMotion?] = []
+    /// The phase of the sheet's transition after each change.
+    var phases: [SheetTransition.Phase] = []
+    /// The spots that ship with the app in this test.
+    var shipped: [Spot] = []
     /// The model whose show and hide steps the panel runs, as the app's window does.
     weak var model: SpotsModel?
 
@@ -315,12 +376,13 @@ private final class TestHost: SpotsHost {
     func prepare(_ items: [SpotItem]) async {}
 
     func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?, offersLogin: Bool) -> [Spot] {
-        []
+        shipped
     }
 
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {
         motions.append(motion)
         body()
+        if let phase = model?.transition.phase { phases.append(phase) }
         completion()
     }
 }

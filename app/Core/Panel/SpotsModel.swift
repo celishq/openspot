@@ -364,7 +364,7 @@ public final class SpotsModel {
             laidOutSizes = sizes
             placements = SpotGrid().place(sizes)
         }
-        if transition.phase == .closing, !sheetHasClosedPlace { cutSheet(to: nil) }
+        if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
     }
 
     /// The cards that the search finds, or each card on the grid when there is no search.
@@ -622,9 +622,11 @@ public final class SpotsModel {
         open(ShippedSpot.settingsID, moving: true)
     }
 
-    /// Opens a sheet, which closes the sheet before, and shows it once it is ready: at once, or with its first answer. A
-    /// sheet that moves grows out of its card, and one that does not shows in place.
+    /// Opens a sheet, which closes the run of the sheet before and stops a recording in it, and shows it once it is ready: at
+    /// once, or with its first answer. It takes the place of a sheet that shows, grows out of its card when it moves, and
+    /// shows in place when it does not move or has no card.
     public func open(_ id: String, moving: Bool) {
+        if let shown = openList, shown != id { stopRecording() }
         sheets[id]?.open(waits: moving) { [weak self] in self?.showSheet(id, moving: moving) }
     }
 
@@ -648,12 +650,17 @@ public final class SpotsModel {
         endReview()
     }
 
-    /// Starts the motion of the sheet to `list`: a grow out of its card, a collapse back into it, or a cut when the sheet does
-    /// not move or has no place to close into. A new sheet is built on its card first, and its grow starts on the next turn,
-    /// so that the grow has a start.
+    /// Starts the motion of the sheet to `list`. A sheet that opens while another shows takes its place, on the sheet's
+    /// spring when it moves. Else a sheet grows out of its card and collapses back into it, and one that does not move or has
+    /// no card shows and hides at once. A new sheet is built on its card first, and its grow starts on the next turn, so
+    /// that the grow has a start.
     private func showSheet(_ list: String?, moving: Bool) {
         guard list != openList else { return }
-        guard moving, list != nil || sheetHasClosedPlace else { return cutSheet(to: list) }
+        if let list, openList != nil, transition.isOpen {
+            change(moving ? .sheet(isOpen: true) : nil) { transition.show(list, moves: true) }
+            return
+        }
+        guard moving, hasPlace(list ?? transition.id) else { return cutSheet(to: list) }
         guard let list else {
             animate(isOpen: false) {
                 transition.hide(moves: true)
@@ -681,8 +688,8 @@ public final class SpotsModel {
     }
 
     /// Whether the built sheet has a place to close into: its card on the grid, or the field for the install screen.
-    private var sheetHasClosedPlace: Bool {
-        guard let id = transition.id else { return false }
+    private func hasPlace(_ id: String?) -> Bool {
+        guard let id else { return false }
         return id == ShippedSpot.installID || SpotSheetCard.of(id, in: self) != nil
     }
 
@@ -799,7 +806,6 @@ public final class SpotsModel {
 
     public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil) {
         if action == nil, item.run == CatalogSpot.buildRun {
-            closeList(moving: true)
             open(ShippedSpot.buildID, moving: true)
             return
         }
