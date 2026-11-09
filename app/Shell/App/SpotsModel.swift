@@ -134,8 +134,6 @@ final class SpotsModel {
     var sheetMoves = true
     /// Where the open sheet is in its motion between its card and its open place.
     private(set) var transition = SheetTransition()
-    /// Whether the header of the open sheet has left the fill of its card, which changes on a curve of its own.
-    private(set) var sheetHasLeftCard = false
     var closingPick: (item: SpotItem, entry: Entry)?
     let runs: SpotRuns
     /// The plugins' own views that cards draw.
@@ -652,7 +650,6 @@ final class SpotsModel {
     private func cutSheet(to list: String?) {
         change(nil) {
             shownList = list
-            sheetHasLeftCard = list != nil
             if let list { transition.show(list, moves: false) } else { transition.hide(moves: false) }
         }
         allowSheetMotion()
@@ -665,14 +662,13 @@ final class SpotsModel {
         return id == ShippedSpot.installID || SpotSheetCard.of(id, in: self) != nil
     }
 
-    /// Moves the sheet and the fill of its card on their springs, and ends the motion when it is done.
+    /// Moves the sheet on its spring, in one transaction, and ends the motion when it is done.
     private func animate(isOpen: Bool, _ body: () -> Void) {
         change(SpotMotion.sheet(isOpen: isOpen), body) { [weak self] in
             guard let self else { return }
             change(nil) { self.transition.finish(isOpen ? .opening : .closing) }
             if transition.phase == .closed { endReview() }
         }
-        change(SpotMotion.fillFade(isOpen: isOpen)) { sheetHasLeftCard = isOpen }
     }
 
     /// Brings a sheet its first parts: on the sheet's spring when the sheet shows, so that it grows to its new size, and at

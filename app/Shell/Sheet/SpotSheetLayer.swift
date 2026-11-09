@@ -12,8 +12,6 @@ struct SpotSheetLayer: View {
     let sheetRect: CGRect
     /// Whether the sheet is open or on its way there.
     let isOpen: Bool
-    /// Whether the header has left the fill of its card.
-    let hasLeftCard: Bool
     /// The parts of the sheet, once they have landed.
     let panel: SheetParts?
     /// The mask of the grid's cards, which fades a closed sheet at the ends of the scroll as the grid fades its card.
@@ -25,7 +23,7 @@ struct SpotSheetLayer: View {
             entry: entry,
             cardSize: card?.placement.size ?? entry.size,
             isOpen: isOpen,
-            showsFill: entry.state.on == true && !hasLeftCard,
+            showsFill: entry.state.on == true && !isOpen,
             rect: sheetRect,
             panel: panel,
             closeShift: isInstall ? 0 : showsArrow ? (frame?.width ?? sheetRect.width) - sheetRect.width : nil,

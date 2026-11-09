@@ -66,7 +66,6 @@ struct SpotsView: View {
                     frame: frame,
                     sheetRect: sheetRect,
                     isOpen: sheetOpen,
-                    hasLeftCard: model.sheetHasLeftCard,
                     panel: shownPanel,
                     cardMask: edges.gradient(height: cardHeight)
                 )
