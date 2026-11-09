@@ -15,8 +15,7 @@ struct SpotSheetView: View {
     let rect: CGRect
     /// The parts of the sheet, once they have landed.
     let panel: SheetParts?
-    /// How far the close button lies from its open place while the sheet lies on its card: at the card's arrow. Nil for a card
-    /// with no arrow.
+    /// How far the close button lies from its place at the card's edge. Nil for a card with no arrow, where the frame cuts it.
     let closeShift: CGFloat?
     /// The width of the card or field that the sheet grows out of and collapses into.
     let cardWidth: CGFloat
@@ -143,15 +142,20 @@ struct SpotSheetView: View {
         return max(cardWidth - SpotCardArrow.rowInset - arrow - SpotTokens.padding - SpotTokens.glyphSize - Self.wordsGap, 0)
     }
 
-    /// The close button, which stays at the moving edge of the sheet, takes the place of the card's arrow, and fades with the
-    /// sheet's words.
+    /// The close button, which stays at the moving edge of the sheet and takes the place of the card's arrow.
+    @ViewBuilder
     private var closeButton: some View {
-        SpotRoundButton(symbol: "xmark", label: "Close") {
+        let button = SpotRoundButton(symbol: "xmark", label: "Close") {
             model.allowSheetMotion()
             model.closeList()
         }
-        .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(isOpen ? 1 : 0) }
-        .offset(x: isOpen ? 0 : closeShift ?? 0)
+        if let closeShift {
+            button
+                .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(isOpen ? 1 : 0) }
+                .offset(x: isOpen ? 0 : closeShift)
+        } else {
+            button
+        }
     }
 
     /// The card's glyph, placed as the card places it until the sheet opens.
