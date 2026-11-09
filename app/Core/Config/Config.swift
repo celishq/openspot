@@ -10,7 +10,7 @@ public struct Config: Equatable, Sendable {
     public private(set) var arrangement = SpotArrangement()
     /// The keys that the person assigned to commands of scripts.
     public private(set) var keys: [GlobalKey] = []
-    /// The values that scripts keep for the person through `openspot setting` (K5).
+    /// The values that scripts keep for the person through `openspot setting` (K6).
     public private(set) var settings: [SpotSetting] = []
 
     public init(text: String) {

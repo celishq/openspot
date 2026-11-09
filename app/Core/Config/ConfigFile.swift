@@ -33,7 +33,7 @@ public struct ConfigFile: Equatable, Sendable {
         }
     }
 
-    /// Keeps the value of a script's setting for its spot, or removes it with no value (K5).
+    /// Keeps the value of a script's setting for its spot, or removes it with no value (K6).
     public func set(setting key: String, of spot: String, to value: String?) throws {
         try locked {
             let config = read()

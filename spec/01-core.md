@@ -176,7 +176,7 @@ done. The action can answer with a form (02), and the person can remove a value 
 `openspot setting get <key>` prints a value that the person chose for the spot, or nothing when there is none.
 `openspot setting set <key> [value]` keeps a value, and removes it when there is no value. A value lives in the person's
 `config.toml`, under the spot that `OPENSPOT_ID` names, and `--spot <id>` names the spot from a terminal. Keep a choice of
-the person there, such as a folder, and keep what the script makes, such as a cache, in `OPENSPOT_DATA` (K5). The Settings
+the person there, such as a folder, and keep what the script makes, such as a cache, in `OPENSPOT_DATA` (K6). The Settings
 spot also lists each value that the header does not name, so the person can remove it. `openspot folder pick` shows the folder window of macOS and
 prints the folder that the person picks, or nothing after Cancel.
 

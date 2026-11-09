@@ -12,9 +12,9 @@ public enum CommandLineCall: Equatable, Sendable {
     case catalog
     case colorPick
     case folderPick
-    /// Prints the value of a spot's setting, or nothing when it has none (K5).
+    /// Prints the value of a spot's setting, or nothing when it has none (K6).
     case settingGet(spot: String, key: String)
-    /// Keeps the value of a spot's setting, or removes it with no value (K5).
+    /// Keeps the value of a spot's setting, or removes it with no value (K6).
     case settingSet(spot: String, key: String, value: String?)
     /// A call that cannot run here, with the line that says why and how to fix it.
     case refused(String)
