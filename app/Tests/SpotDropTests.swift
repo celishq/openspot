@@ -404,6 +404,7 @@ final class SpotDropTests: XCTestCase {
 
     func testADropReachesTheRunningStayingScriptAsOneBlockWithAValueLineForEachPath() async throws {
         let sheet = try stayingSheet()
+        runs.panelOpened()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
         let spaced = file("a b c.mov")
@@ -429,6 +430,7 @@ final class SpotDropTests: XCTestCase {
 
     func testTwoDropsReachOneRunningStayingScriptInTurn() async throws {
         let sheet = try stayingSheet()
+        runs.panelOpened()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
         let first = file("first.mov")

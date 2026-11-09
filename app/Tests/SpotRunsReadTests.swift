@@ -27,6 +27,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script(header: "read=sheet", "printf 'main=m\\n\\ntext=m\\ntitle=3\\n---\\n'\nsleep 0.05\nprintf 'text=b\\ntitle=B\\n---\\n'")
         let sheet = try sheet()
 
+        runs.panelOpened()
         sheet.open {}
 
         try await wait("the later frame") { sheet.lastFrame?.contains("B") == true }
@@ -208,6 +209,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try await pause(0.1)
         XCTAssertEqual(log(), [])
 
+        runs.panelOpened()
         sheet.open {}
         try await wait("the first read") { sheet.panel != nil && sheet.calls.isEmpty }
         XCTAssertEqual(log(), ["read"])

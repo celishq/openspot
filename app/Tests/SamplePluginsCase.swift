@@ -224,6 +224,7 @@ class SamplePluginsCase: XCTestCase {
             guard case .menu(let options, _)? = sheet.panel?.parts.first(where: { $0.id == "target" })?.control else { return 0 }
             return options.count
         }
+        runs.panelOpened()
         sheet.open {}
         for _ in 0..<1000 where sheet.panel == nil { try await Task.sleep(for: .milliseconds(10)) }
         let first = options()

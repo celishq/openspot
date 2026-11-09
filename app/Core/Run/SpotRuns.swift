@@ -106,8 +106,9 @@ public final class SpotRuns {
 
     /// The panel opened: reads each script that this moment lists or that a widget places, and starts the timers.
     public func panelOpened() {
+        let wasOpen = isPanelOpen
         isPanelOpen = true
-        sheets.values.forEach { $0.panelOpened() }
+        if !wasOpen { sheets.values.forEach { $0.panelOpened() } }
         tick()
         arrive(.panel)
         for id in placed {

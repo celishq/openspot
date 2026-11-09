@@ -160,7 +160,6 @@ public final class SpotRun {
     @ObservationIgnored private var selecting: String?
     @ObservationIgnored private var readsAgain = false
     @ObservationIgnored private var pauses: [String: Task<Void, Never>] = [:]
-    @ObservationIgnored private var isInView = false
     @ObservationIgnored private var editing: String?
     @ObservationIgnored private var waitingDrops: [[String]] = []
     @ObservationIgnored private var waitingKeys: [String] = []
@@ -238,7 +237,6 @@ public final class SpotRun {
     public func open(need: ReadNeed = .moment, waits: Bool = false, onReady: @escaping () -> Void) {
         runs.willOpen(self)
         settle()
-        isInView = true
         list.selectFirst()
         if panel == nil, answered != nil { panel = lastAnswer.flatMap(SheetParts.init(output:)) }
         if answered == nil, command.stays || (waits && list.search == .local) {
@@ -257,7 +255,6 @@ public final class SpotRun {
         guard isOpen else { return }
         runs.didClose(self)
         settle()
-        isInView = false
         for (key, pause) in pauses where key != Self.levelKey {
             pause.cancel()
             pauses[key] = nil
@@ -290,17 +287,13 @@ public final class SpotRun {
             answered = nil
             if wasOpen { onReport(.closed) }
         }
-        isInView = false
         stopUnwantedRead()
         link.settle()
     }
 
     /// The panel opened: an open sheet of rows is in view again and reads, by M1 and M2.
     func panelOpened() {
-        if isOpen, !isInView {
-            isInView = true
-            read()
-        }
+        if isOpen { read() }
         link.settle()
     }
 
@@ -313,6 +306,11 @@ public final class SpotRun {
     func stopReads() {
         if let read = running(Self.readKey) { stop(read) }
         link.end()
+    }
+
+    /// Whether the person sees this sheet: it is the open one, and the panel shows.
+    private var isInView: Bool {
+        isOpen && runs.isPanelOpen
     }
 
     /// Whether something wants this script now (L3), also a call of a staying script that waits for its `end`.
@@ -811,7 +809,6 @@ public final class SpotRun {
         held = nil
         runs.didClose(self)
         settle()
-        isInView = false
         runs.updateClock()
         onReport(.closed)
     }

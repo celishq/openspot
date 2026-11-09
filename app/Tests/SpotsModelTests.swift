@@ -221,6 +221,34 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the shown panel") { model.isShown }
     }
 
+    func testAFormThatArrivesAfterThePanelHidDoesNotOpen() async throws {
+        let gate = folder.appendingPathComponent("gate").path
+        try script("list", header: "read=sheet", """
+        case "$1" in
+          new)
+            n=0; while [ ! -f '\(gate)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done
+            printf 'title=New\\n\\nfield=a\\ntitle=A\\n' ;;
+          *) printf 'button=new\\ntitle=New\\nscope=command\\nform=true\\n\\nrow=a\\ntitle=Apple\\n' ;;
+        esac
+        """)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("list")
+        try await wait("the open list") { model.openList == "list" && model.openEntry?.command.actions.isEmpty == false }
+        let entry = try XCTUnwrap(model.openEntry)
+        let action = try XCTUnwrap(entry.command.actions.first { $0.id == "new" })
+        model.openForm(action, on: (entry, nil))
+        try await wait("the form call") { model.sheets["list"]?.calls.isEmpty == false }
+
+        host.dismiss()
+        FileManager.default.createFile(atPath: gate, contents: Data())
+
+        try await wait("the end of the form call") { model.sheets["list"]?.calls.isEmpty == true }
+        for _ in 0..<10 { await Task.yield() }
+        XCTAssertNil(model.form)
+    }
+
     func testTheGridSearchFindsASpotByItsName() async throws {
         try script("list", header: "read=sheet", "printf 'row=a\\ntitle=Apple\\n'")
         try script("other", header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")

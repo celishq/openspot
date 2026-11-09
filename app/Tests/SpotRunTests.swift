@@ -94,6 +94,7 @@ final class SpotRunTests: XCTestCase {
             bring()
         }
 
+        runs.last?.panelOpened()
         sheet.open(waits: true) {}
 
         try await wait("the later parts") { sheet.panel?.parts.first?.title == "B" }
@@ -208,6 +209,7 @@ final class SpotRunTests: XCTestCase {
     func testAnOpenSheetTakesLaterFrames() async throws {
         let sheet = try make("printf 'text=a\\ntitle=0\\n---\\n'\nsleep 0.1\nprintf 'text=a\\ntitle=1\\n---\\n'")
 
+        runs.last?.panelOpened()
         sheet.open {}
 
         try await wait("the later frame") { sheet.panel?.parts.first?.title == "1" }
@@ -238,6 +240,7 @@ final class SpotRunTests: XCTestCase {
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
 
+        runs.last?.panelOpened()
         sheet.open {}
 
         try await wait("the toast") { toasts == ["Later"] }
@@ -259,6 +262,7 @@ final class SpotRunTests: XCTestCase {
         let sheet = try make("sleep 0.2\n" + String(format: Self.counter, path("ended")), stays: true)
         var isReady = false
 
+        runs.last?.panelOpened()
         sheet.open { isReady = true }
         XCTAssertFalse(isReady)
 
@@ -277,6 +281,7 @@ final class SpotRunTests: XCTestCase {
 
     func testClosingEndsAStayingScriptAndTheNextOpenStartsAfresh() async throws {
         let sheet = try make(String(format: Self.counter, path("ended")), stays: true)
+        runs.last?.panelOpened()
         sheet.open {}
         try await wait("the first frame") { sheet.panel != nil }
         let part = try XCTUnwrap(sheet.panel?.parts.first)
@@ -303,6 +308,7 @@ final class SpotRunTests: XCTestCase {
           esac
         done
         """, stays: true)
+        runs.last?.panelOpened()
         sheet.open {}
         try await wait("the first frame") { sheet.panel != nil }
 
@@ -322,6 +328,7 @@ final class SpotRunTests: XCTestCase {
           esac
         done
         """, stays: true)
+        runs.last?.panelOpened()
         sheet.open {}
         try await wait("the first frame") { sheet.panel != nil }
 

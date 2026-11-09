@@ -174,7 +174,7 @@ public final class SpotsModel {
     public var menu: ActionMenu?
     public var menuTarget: Target?
     public var form: FormSession?
-    /// The ask for a form that waits for its script. A newer ask, a cancel or a close replaces it.
+    /// The ask for a form that waits for its script. A newer ask, a cancel, a close or a hidden panel replaces it.
     @ObservationIgnored var formAsk: UUID?
     /// Whether the grid is in Edit Spots, where it also shows the spots that are off the grid, and a press only selects.
     public var isEditing = false
@@ -277,8 +277,10 @@ public final class SpotsModel {
         DispatchQueue.main.async { [weak self] in self?.isShown = true }
     }
 
-    /// The panel starts to hide: no key stays held or recorded, the menu and Edit Spots close, and nothing moves in its fade.
+    /// The panel starts to hide: no key stays held or recorded, the menu and Edit Spots close, a form that has not come yet
+    /// will not open, and nothing moves in its fade.
     public func panelWillHide() {
+        formAsk = nil
         takeHeld([])
         stopRecording()
         closeMenu()
