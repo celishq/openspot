@@ -75,7 +75,7 @@ final class ReposPluginTests: SamplePluginsCase {
         XCTAssertEqual(try repos.settings, ["folder", "editor"])
     }
 
-    func testEnterOpensInTheFirstEditorUntilAnotherIsTheDefault() async throws {
+    func testEnterOpensInTheFirstEditorUntilTheDefaultAppChanges() async throws {
         let repos = try repos
         try await withPrivateHome { folder in
             let code = folder.appendingPathComponent("code")
@@ -91,18 +91,22 @@ final class ReposPluginTests: SamplePluginsCase {
             let first = repos.taking(try await repos.items(timeout: 5))
             try await repos.perform(.item(item), timeout: 5)
             let opened = try self.read("opened", in: folder)
-            let use = try XCTUnwrap(first.actions.first { $0.title == "Use Zed by default" })
-            try await repos.perform(.action(use, item: nil), timeout: 5)
+            let change = try XCTUnwrap(first.actions.first { $0.title == "Change default app" })
+            let form = try await repos.form(change, item: nil, timeout: 5)
+            var draft = FormDraft(form: form)
+            draft.choose(zed.path)
+            _ = try await repos.submit(change, item: nil, draft: draft, timeout: 5)
             let then = repos.taking(try await repos.items(timeout: 5))
 
             XCTAssertNil(first.pickForm)
             XCTAssertEqual(first.primary, "Open in Cursor")
-            XCTAssertEqual(first.actions.map(\.title).filter { $0.hasPrefix("Use ") }, ["Use Zed by default", "Use Finder by default"])
-            XCTAssertEqual(use.scope, .command)
             XCTAssertEqual(opened, "-a \(cursor.path) \(item.run)\n")
+            XCTAssertFalse(first.actions.contains { $0.title.hasPrefix("Use ") })
+            XCTAssertEqual(change.scope, .command)
+            XCTAssertTrue(change.isForm)
+            XCTAssertEqual(form.soleChoice?.options.map(\.title), ["Cursor", "Zed", "Finder"])
             XCTAssertEqual(try self.read("setting-editor", in: folder), zed.path)
             XCTAssertEqual(then.primary, "Open in Zed")
-            XCTAssertEqual(then.actions.map(\.title).filter { $0.hasPrefix("Use ") }, ["Use Cursor by default", "Use Finder by default"])
         }
     }
 

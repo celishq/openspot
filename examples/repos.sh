@@ -72,7 +72,7 @@ branch() {
 
 # Prints the form that asks for the editor, with this title.
 form() {
-  printf 'title=%s\n\nchoice=editor\ntitle=Editor\nvalue=%s\n' "$1" "$(esc "$editor")"
+  printf 'title=%s\n\nchoice=editor\ntitle=Default app\nvalue=%s\n' "$1" "$(esc "$editor")"
   installed | while IFS= read -r app; do
     printf 'option=%s:%s\n' "$(esc "$app")" "$(esc "$(name "$app")")"
   done
@@ -82,7 +82,7 @@ form() {
 keep_editor() {
   chosen=$(value editor)
   if [ ! -d "$chosen" ]; then
-    form "Openspot cannot find that app. Choose another editor."
+    form "Openspot cannot find that app. Choose another one."
     return 1
   fi
   openspot setting set editor "$chosen" || exit 1
@@ -113,11 +113,7 @@ case "$1" in
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\nclose=true\n\n'
     printf 'button=terminal\ntitle=Open in Terminal\nshortcut=cmd+t\nclose=true\n\n'
     printf 'button=copy\ntitle=Copy path\nshortcut=cmd+shift+c\nclose=true\n\n'
-    index=0
-    installed | while IFS= read -r app; do
-      index=$((index + 1))
-      [ "$app" = "$editor" ] || printf 'button=use-%s\ntitle=Use %s by default\nscope=command\nclose=false\n\n' "$index" "$(esc "$(name "$app")")"
-    done
+    printf 'button=editor\ntitle=Change default app\nscope=command\nform=true\n\n'
     printf 'button=folder\ntitle=Change folder\nscope=command\nclose=true\n\n'
     found=0
     for repo in "$folder"/*/; do
@@ -145,12 +141,9 @@ case "$1" in
     app=$(installed | sed -n "${1#in-}p")
     open -a "$app" "$2"
     ;;
-  use-*)
-    openspot setting set editor "$(installed | sed -n "${1#use-}p")"
-    ;;
   editor)
     if [ -z "$(value editor)" ]; then
-      form "Choose an editor"
+      form "Choose the default app"
       exit 0
     fi
     keep_editor
