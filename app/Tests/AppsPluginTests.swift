@@ -32,6 +32,10 @@ final class AppsPluginTests: SamplePluginsCase {
         return url
     }
 
+    func testTheSpotShowsTheIconOfTheAppsApp() throws {
+        XCTAssertEqual(try apps().file, "/System/Applications/Apps.app")
+    }
+
     func testARunningAppShowsADotAndOffersQuitAndASystemAppCannotBeDeleted() async throws {
         let apps = try apps()
         try await withPrivateHome { folder in

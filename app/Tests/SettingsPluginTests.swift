@@ -7,6 +7,7 @@ final class SettingsPluginTests: SamplePluginsCase {
         let settings = try XCTUnwrap(try scan.commands.first { $0.name == "System Settings" })
 
         XCTAssertTrue(settings.isGlobal)
+        XCTAssertEqual(settings.file, "/System/Applications/System Settings.app")
     }
 
     func testAPaneAndItsSectionsAreRowsInTheLanguageOfTheMac() async throws {
@@ -21,8 +22,7 @@ final class SettingsPluginTests: SamplePluginsCase {
             XCTAssertEqual(section.subtitle, "System Settings › Звук")
             XCTAssertEqual(section.keywords, ["громко", "тихо"])
             XCTAssertEqual(section.file, pane.file)
-            XCTAssertEqual(pane.badge, .file("/System/Applications/System Settings.app"))
-            XCTAssertEqual(section.badge, pane.badge)
+            XCTAssertNil(section.badge)
         }
     }
 
