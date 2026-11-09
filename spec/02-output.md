@@ -173,7 +173,7 @@ each later frame of the same read changes only what it prints.
 The head is the one block with no kind, at any place in the output, and it is not drawn. It holds four groups:
 
 - the drawing: `grid=`, `card=` and `pad=` lines for the sheet, and `grid.<size>=` lines for the card;
-- the spot: `main`, and `title`, `detail` and `size` for its card;
+- the spot: `main`, and `title`, `detail`, `size` and `on` for its card. `on=true` shows the card as on, and it comes before a main `switch`;
 - the rows: `search` and `recents`;
 - the effects: `toast`, `link=<url>`, which opens the URL, and `end=<call>`, which ends a call of a staying script (05).
 
