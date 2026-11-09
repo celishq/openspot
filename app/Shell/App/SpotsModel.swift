@@ -152,6 +152,8 @@ final class SpotsModel {
     var isWarming = false
     /// Whether a drag over the menu bar item opened the panel, so that it is not key and its field takes no focus.
     var isOpenForDrag = false
+    /// Whether a drop just opened a sheet, which holds the focus while the app that the drag came from lets go of it (D8).
+    var isSettlingDrop = false
     var updateSpot: UpdateSpot?
 
     var chooseFiles: (Spot, @escaping ([String]) -> Void) -> Void = { _, _ in }

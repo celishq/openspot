@@ -213,6 +213,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             guard self?.model.holdsFocus == true else { return }
             NSApp.activate(ignoringOtherApps: true)
             self?.panel?.makeKeyAndOrderFront(nil)
+            self?.model.isSettlingDrop = false
         }
     }
 

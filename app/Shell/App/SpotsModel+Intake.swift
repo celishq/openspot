@@ -48,11 +48,20 @@ extension SpotsModel {
         runs.draggedPaths = []
     }
 
-    /// Takes a drop on a card and closes the panel. Returns false when the card does not take these files.
+    /// Takes a drop on a card. A card with rows opens its sheet with the focus, so the person can act on what the drop added,
+    /// and any other card closes the panel (D8). Returns false when the card does not take these files.
     func drop(_ paths: [String], on id: String) -> Bool {
         guard openList == nil, sheets[id]?.drop(paths) == true else { return false }
         endDrag()
-        if isShown { dismiss() }
+        guard entries.first(where: { $0.id == id })?.kind == .list else {
+            if isShown { dismiss() }
+            return true
+        }
+        let moves = isShown
+        isSettlingDrop = true
+        present()
+        sheetMoves = moves
+        open(id)
         return true
     }
 
@@ -111,10 +120,10 @@ extension SpotsModel {
         reviewed.map(SpotDrop.init(reviewing:))
     }
 
-    /// Whether the panel stays open when it loses the focus: for a review, and for a first launch, because the Mac can keep
-    /// another app in front of an app that just started.
+    /// Whether the panel stays open when it loses the focus: for a review, for a first launch, because the Mac can keep
+    /// another app in front of an app that just started, and for a sheet that a drop just opened (D8).
     var holdsFocus: Bool {
-        isReviewing || isFirstLaunch
+        isReviewing || isFirstLaunch || isSettlingDrop
     }
 
     /// Whether a review shows, which stays open when the panel loses the focus.
