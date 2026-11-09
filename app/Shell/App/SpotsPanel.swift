@@ -37,6 +37,25 @@ final class SpotsPanel: NSPanel {
         ignoresMouseEvents = false
     }
 
+    /// Moves the panel onto the screen of the app's front window, or with none, of the pointer (A18). An open panel stays.
+    func place(over app: NSRunningApplication?) {
+        guard model?.isShown != true || model?.isWarming == true else { return }
+        let screens = NSScreen.screens.map { PanelPlace.Screen(frame: $0.frame, area: $0.visibleFrame) }
+        let mainHeight = NSScreen.screens.first?.frame.maxY ?? 0
+        let window = app.flatMap(Self.frontWindow).map { PanelPlace.frame(ofBounds: $0, mainHeight: mainHeight) }
+        guard let origin = PanelPlace(screens: screens).origin(of: frame.size, window: window, pointer: NSEvent.mouseLocation) else { return }
+        setFrameOrigin(origin)
+    }
+
+    /// The bounds of the app's front window, as Core Graphics gives them, or nil when it shows none. They need no permission.
+    private static func frontWindow(of app: NSRunningApplication) -> CGRect? {
+        let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
+        let front = windows.first {
+            ($0[kCGWindowOwnerPID as String] as? pid_t) == app.processIdentifier && ($0[kCGWindowLayer as String] as? Int) == 0
+        }
+        return (front?[kCGWindowBounds as String] as? NSDictionary).flatMap { CGRect(dictionaryRepresentation: $0) }
+    }
+
     /// Brings the panel to the front and starts its open motion.
     func show() {
         endWarming()

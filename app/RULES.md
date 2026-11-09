@@ -23,6 +23,7 @@ Code and tests name a rule by its ID.
 | A15 | A toast takes no input, except a failure with a fix (R9). One fix key, which the person chooses, opens it, and only while the toast shows. |
 | A16 | The main search ranks the best match first. Then the most weight of picks, where each pick weighs 0.9 of the one after it, then the spots, then each list in the order of the grid. A list that the person never picked from shows at most 3 rows. |
 | A17 | A ⌘ shortcut on a layout whose letters are not Latin, such as Ukrainian, goes by the letter that the same key types in the Latin layout that the Mac keeps for shortcuts, as its menus do. A key with no ⌘ types its own letter. |
+| A18 | The panel opens on the screen that holds most of the front window, or with no window in front, on the screen of the pointer. A drag over the menu bar item opens it on the screen of the pointer. It sits as a centred window sits, and an open panel does not move. |
 | M2 | A `panel` or `sheet` moment takes an answer younger than 5 seconds. A change, a number, `launch` and `wake` always read. |
 | M3 | Reads run at the same time. The panel never waits for one script. A spot shows its header until its answer arrives. |
 | C4 | Openspot waits for a pause before it sends a change of text or of a slider. Text that the person types stays as typed until they press something. |
