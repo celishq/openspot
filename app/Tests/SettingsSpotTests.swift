@@ -80,6 +80,33 @@ final class SettingsSpotTests: XCTestCase {
         XCTAssertEqual(file.read().keys.map(\.command), ["right"])
     }
 
+    func testTheSheetListsEachSettingThatAScriptKeepsAndRemovesIt() async throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try "#!/bin/sh\n# title=Repos\n# icon=folder\n# shortcut=r\n".writeScript(to: folder.appendingPathComponent("repos.sh"))
+        try file.set(setting: "folder", of: "repos", to: "~/Code")
+        try file.set(setting: "editor", of: "gone", to: "Zed")
+
+        let items = try await spot.items(timeout: 1).items.dropFirst(2)
+
+        XCTAssertEqual(items.map(\.title), ["Folder", "Editor"])
+        XCTAssertEqual(items.map(\.subtitle), ["Repos · ~/Code", "gone · Zed"])
+        XCTAssertEqual(items.map(\.run), ["setting:repos:folder", "setting:gone:editor"])
+        XCTAssertEqual(items.map(\.symbol), ["folder", "gearshape"])
+
+        _ = try await SpotRuns().answer(of: spot, SpotAction(arguments: ["clear", "setting:repos:folder"]), input: "", limit: 1)
+
+        XCTAssertNil(file.read().setting("folder", of: "repos"))
+        XCTAssertEqual(file.read().setting("editor", of: "gone"), "Zed")
+    }
+
+    func testEnterOnASettingSaysWhereToChangeIt() async throws {
+        try file.set(setting: "folder", of: "repos", to: "~/Code")
+
+        let toast = try await spot.perform(.item(SpotItem(title: "Folder", run: "setting:repos:folder")), timeout: 1)
+
+        XCTAssertEqual(toast, "repos keeps this value. Change it in repos, or press `⌘⌫` to remove it.")
+    }
+
     func testARowShowsTheIconOfItsCommandOrElseOfItsScript() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# command=left:Left side:rectangle.lefthalf.filled\n# command=right:Right side\n# command=fun:Fun:🎉\n".writeScript(to: folder.appendingPathComponent("move.sh"))
