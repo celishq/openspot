@@ -721,7 +721,7 @@ public final class SpotRun {
         readAgainIfAsked()
         onReport(.frame(frame))
         guard case .read = ask else { return }
-        await prepare(firstScreen(of: lines.items))
+        await prepare(firstScreen(of: list.shown))
         if command.hasSpot, !lines.errors.isEmpty {
             onReport(.failure("\(command.name) sent \(lines.errors.count) items Openspot cannot read."))
         }
@@ -748,10 +748,10 @@ public final class SpotRun {
             }
         }
         onReport(.frame(frame))
-        if !lines.items.isEmpty { await prepare(firstScreen(of: lines.items)) }
+        if !lines.items.isEmpty { await prepare(firstScreen(of: list.shown)) }
     }
 
-    /// The rows of these items that the sheet shows before it scrolls. A later row draws its picture when it shows.
+    /// The first of these rows, as many as the sheet shows before it scrolls. A later row draws its picture when it shows.
     private func firstScreen(of items: [SpotItem]) -> [SpotItem] {
         Array(items.prefix(SpotTokens.firstScreen(perLine: list.perLine)))
     }

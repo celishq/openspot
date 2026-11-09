@@ -29,13 +29,12 @@ struct SpotCardDrop: DropDelegate {
         _ = dropUpdated(info: info)
     }
 
-    /// Marks the card under the drag when it takes the files, and lets the drop through only over a card that takes them.
+    /// Marks the card under the drag when it takes the files. It lets a `.spot` file through anywhere, and other files only over
+    /// a card that takes them.
     func dropUpdated(info: DropInfo) -> DropProposal? {
-        let id = model.card(at: info.location)
-        let taker = id.flatMap { model.takesDrag($0) ? $0 : nil }
+        let taker = model.card(at: info.location).flatMap { model.takesDrag($0) ? $0 : nil }
         if target != taker { target = taker }
-        let isSpot = id != nil && SharedSpot.isFile(model.dragPaths)
-        return DropProposal(operation: taker != nil || isSpot ? .copy : .forbidden)
+        return DropProposal(operation: taker != nil || SharedSpot.isFile(model.dragPaths) ? .copy : .forbidden)
     }
 
     func dropExited(info: DropInfo) {
@@ -44,11 +43,12 @@ struct SpotCardDrop: DropDelegate {
 
     func performDrop(info: DropInfo) -> Bool {
         target = nil
-        guard let id = model.card(at: info.location) else { return false }
-        if SharedSpot.isFile(Self.paths) {
-            model.review(Self.paths.map { URL(fileURLWithPath: $0) })
+        let paths = Self.paths
+        if SharedSpot.isFile(paths) {
+            model.review(paths.map { URL(fileURLWithPath: $0) })
             return true
         }
-        return model.drop(Self.paths, on: id)
+        guard let id = model.card(at: info.location) else { return false }
+        return model.drop(paths, on: id)
     }
 }

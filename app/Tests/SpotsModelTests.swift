@@ -117,6 +117,22 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(Set(host.prepared.map(\.run)), Set((1...first).map { "a\($0)" }))
     }
 
+    func testAListDrawsAheadTheRowsItShowsFirstWithARecentPickOnTop() async throws {
+        try script("apps", header: "read=sheet", "for i in $(seq 1 100); do printf 'row=a%s\\ntitle=App %s\\nicon=/Applications/A%s.app\\n\\n' $i $i $i; done")
+        let host = TestHost()
+        let ranked = SpotsModel(host: host, files: model.files, runs: SpotRuns(stopPause: 0.2, recent: { _ in ["a50"] }, prepare: { await host.prepare($0) }))
+        host.model = ranked
+        defer { ranked.quit() }
+        ranked.reload()
+        ranked.isShown = true
+        ranked.panelWillShow(holding: [])
+        ranked.press("apps")
+        try await wait("the rows and their pictures") { ranked.openItems?.shown.count == 100 && !host.prepared.isEmpty }
+
+        XCTAssertEqual(ranked.openItems?.shown.first?.run, "a50")
+        XCTAssertTrue(host.prepared.contains { $0.run == "a50" })
+    }
+
     func testAStepBackClearsTheSearchBeforeItClosesTheList() async throws {
         try await openList()
         model.searchText = "ban"
