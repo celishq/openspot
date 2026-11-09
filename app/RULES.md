@@ -35,6 +35,7 @@ Code and tests name a rule by its ID.
 | D2 | During a drag, only a card whose `drop` takes every dragged file shows it and takes the drop. |
 | D6 | A `drop` call runs as any other call does. |
 | D5 | A click on a card with `drop` and no sheet opens a file chooser, and the choice runs the same call. A drag over the menu bar item opens the panel with no change of focus, and a drop closes it. |
+| D7 | When a press in another app takes the focus, the panel closes as the press ends. A drag of files that the press starts keeps it open, as a drag over the menu bar item does (D5): the other app keeps the focus, and the panel closes when the drag ends. |
 | K2 | A capability's helper starts at its first call, and exits after 30 seconds with no call. The app does not track it. |
 
 ## Sharing
