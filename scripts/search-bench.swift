@@ -79,8 +79,9 @@ let mainWords = keystrokes(["system settings", "appearance", "safari", "bluetoot
 scene("main search", mainWords) { text in
     _ = SearchQuery(text: text).matching(in: [foldedSpots] + sources, unpickedLimit: 3)
 }
-scene("spot list fold", mainWords) { _ in
-    _ = ItemList(items: spotItems)
+var keptSpots = ItemList()
+scene("spot list", mainWords) { _ in
+    keptSpots.replace(spots.map { SpotItem(title: $0.title, subtitle: $0.subtitle, run: $0.run) })
 }
 var settingsList = ItemList(items: settings)
 scene("settings sheet", keystrokes(["appearance", "bluetooth", "keyboard", "display", "дисплей"])) { text in
