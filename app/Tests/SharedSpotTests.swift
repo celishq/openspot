@@ -125,7 +125,7 @@ final class SharedSpotTests: XCTestCase {
 
         """.utf8))
         let folder = PluginFolder(url: plugins)
-        let shipped = Spot(id: "openspot/plugins", name: "Plugins", url: plugins, kind: .list, shipped: .build(BuildSpot(folder: plugins, guide: plugins, app: "")))
+        let shipped = Spot(id: "openspot/plugins", name: "Plugins", url: plugins, kind: .list, shipped: .quit(QuitSpot {}))
         let scan = try folder.scan(shipped: [shipped])
         let widget = try XCTUnwrap(scan.commands.first { $0.id == "board/Desk" })
 
@@ -147,7 +147,7 @@ final class SharedSpotTests: XCTestCase {
     }
 
     func testAShippedSpotDoesNotTravel() throws {
-        let shipped = Spot(id: "openspot/plugins", name: "Plugins", url: plugins, shipped: .build(BuildSpot(folder: plugins, guide: plugins, app: "")))
+        let shipped = Spot(id: "openspot/plugins", name: "Plugins", url: plugins, shipped: .quit(QuitSpot {}))
 
         XCTAssertThrowsError(try SharedSpot(sharing: shipped, from: ScanResult(plugins: [], refused: [])))
     }

@@ -101,7 +101,7 @@ public struct Plugin: Equatable, Sendable {
     }
 
     /// The name a file gives when it has no `name` line: its words with a capital first letter.
-    private static func name(of url: URL) -> String {
+    static func name(of url: URL) -> String {
         let words = url.deletingPathExtension().lastPathComponent
             .replacingOccurrences(of: "-", with: " ")
             .replacingOccurrences(of: "_", with: " ")

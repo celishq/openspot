@@ -8,7 +8,7 @@ public struct SymbolCatalog: Sendable {
     private static let codeMark = "0x"
     private static let textMark: Unicode.Scalar = "\u{FE0E}"
     private static let pictureMark: Unicode.Scalar = "\u{FE0F}"
-    private static let missing = "This Mac has no symbol lists. Update macOS, or tell the plugin's author."
+    private static let missing = "This Mac has no symbol lists. Update macOS, or tell the spot's author."
 
     private let resources: URL
     private let languages: [String]

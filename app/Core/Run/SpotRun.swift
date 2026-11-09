@@ -139,6 +139,8 @@ public final class SpotRun {
     }
     public private(set) var reading: MetricReading
     public private(set) var lastFrame: String?
+    /// The words of its last failed call, until a call ends well.
+    public private(set) var failure: String?
     /// Each running call, the oldest first, with the last frame of each.
     public private(set) var calls: [ScriptCall] = []
     @ObservationIgnored public var onReport: (Report) -> Void = { _ in }
@@ -496,9 +498,11 @@ public final class SpotRun {
         }
     }
 
-    /// Runs a pick of a row. A second pick of a running row stops its call.
+    /// Runs a pick of a row. A second pick of a running row stops its call. In a list that the script searches, stdin holds
+    /// the text of the search, so that a pick that comes before the read of the last text still gets it.
     public func pick(_ item: SpotItem) {
-        press(.item(item))
+        guard list.search == .script, !list.query.isEmpty else { return press(.item(item)) }
+        press(.item(item), input: TextBlock(fields: [.init(key: "search", value: list.query)]).text)
     }
 
     /// Takes a key that the person recorded on a row, and tells the script.
@@ -634,6 +638,7 @@ public final class SpotRun {
     /// of its failure. A call of work that ended is followed by a read: with the row that a `select` effect named selected
     /// (D8), or else when it showed nothing (M4). A stopped toggle goes back.
     func ended(_ call: ScriptCall, _ purpose: Purpose, _ end: ScriptCall.End, hadAnswer: Bool, showedParts: Bool, selected: String?) {
+        if case .ended = end, failure != nil { failure = nil }
         switch (purpose, end) {
         case (.ask(.read), .stopped):
             list.stopLoading()
@@ -876,10 +881,10 @@ public final class SpotRun {
     }
 
     /// Starts or stops the call of a person's press.
-    private func press(_ action: SpotAction) {
+    private func press(_ action: SpotAction, input: String? = nil) {
         let key = Self.key(call: action)
         if let running = running(key) { return pressAgain(running) }
-        work(action, key: key)
+        work(action, key: key, input: input)
     }
 
     /// Runs a call that does work. It has no time limit, and it goes on with the sheet and the panel closed. A stopped call
@@ -901,6 +906,7 @@ public final class SpotRun {
         case let error?: "\(command.name) failed. \(error.reason)"
         case nil: "\(command.name) failed. \(error.localizedDescription)"
         }
+        failure = text
         if case .failedWithFix(_, _, let fix) = error as? PluginError { return onReport(.failureWithFix(text, fix)) }
         onReport(.failure(text))
     }

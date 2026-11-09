@@ -105,7 +105,7 @@ final class EmojiCatalogTests: XCTestCase {
 
     func testMissingFilesSayTheCause() {
         XCTAssertThrowsError(try EmojiCatalog(resources: folder, languages: ["en"]).rows(tone: .none)) { error in
-            XCTAssertEqual((error as? PluginError)?.reason, "This Mac has no emoji names. Update macOS, or tell the plugin's author.")
+            XCTAssertEqual((error as? PluginError)?.reason, "This Mac has no emoji names. Update macOS, or tell the spot's author.")
         }
     }
 

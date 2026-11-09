@@ -5,11 +5,21 @@ public struct SpotFiles {
     public let environment: [String: String]
     public let home: URL
     public let defaults: UserDefaults
+    /// Moves a file to the Trash, and returns where it went.
+    public let trash: (URL) throws -> URL
 
-    public init(environment: [String: String], home: URL, defaults: UserDefaults) {
+    public init(environment: [String: String], home: URL, defaults: UserDefaults, trash: @escaping (URL) throws -> URL = SpotFiles.systemTrash) {
         self.environment = environment
         self.home = home
         self.defaults = defaults
+        self.trash = trash
+    }
+
+    /// Moves a file to the Trash of the Mac.
+    public static func systemTrash(_ url: URL) throws -> URL {
+        var place: NSURL?
+        try FileManager.default.trashItem(at: url, resultingItemURL: &place)
+        return (place as URL?) ?? url
     }
 
     public static var standard: SpotFiles {
@@ -28,6 +38,11 @@ public struct SpotFiles {
     /// The plugin folder, with the core spots that the config file turns on now.
     public var folder: PluginFolder {
         folder(config.read())
+    }
+
+    /// The record of the calls of each spot, beside the plugins folder.
+    public var log: CallLog {
+        CallLog(folder: PluginFolder.config(environment: environment, home: home).appendingPathComponent("logs", isDirectory: true))
     }
 
     /// The rows that a person picked last in a list, the newest first.

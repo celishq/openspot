@@ -3,6 +3,19 @@ import Foundation
 /// What the `openspot` command was asked to do: `openspot <noun> <verb>`. No arguments start the app.
 public enum CommandLineCall: Equatable, Sendable {
     case check(String?)
+    /// Reports the faults of a plugins folder as JSON, for an agent.
+    case checkJSON(String?)
+    case guide
+    /// Writes a working spot from a starter, with a name.
+    case spotNew(name: String, starter: SpotStarter)
+    /// Makes one call of a spot as the app makes it.
+    case spotRun(id: String, arguments: [String])
+    /// Asks the running app to show the panel with the spot selected.
+    case spotShow(String)
+    /// Prints the record of the last calls of a spot.
+    case spotLog(String)
+    /// Draws the sheet of an installed spot, or its card at a size.
+    case renderSpot(id: String, size: SpotSize?, path: String)
     case checkSheet
     /// Draws the sheet on stdin, with the plugin's view from a Swift file when it names one.
     case render(String, view: String?)
@@ -33,10 +46,17 @@ public enum CommandLineCall: Equatable, Sendable {
     case unknown(String)
 
     public static let usage = """
-    openspot check [folder]                      Reports the faults of a plugins folder.
+    openspot guide                               Prints the guide to building a spot. Read it before you write one.
+    openspot spot new <name> [--from kind]       Writes a working spot to change. A kind is button, list, number or form.
+    openspot spot run <id> [call] [value]...     Makes one call of a spot as the app does, and prints all that it prints.
+    openspot spot log <id>                       Prints the last calls that the app made to a spot.
+    openspot spot show <id>                      Opens the panel with the spot selected.
+    openspot check [--json] [folder]             Reports the faults of a plugins folder.
     openspot check --sheet                       Reports the faults of a sheet on stdin.
     openspot render [--view file] <file.png>     Draws the sheet on stdin to a picture, with its view from a Swift file.
     openspot render --card <size> <file.png>     Draws its card at a size, such as wide, to a picture.
+    openspot render --spot <id> [--card <size>] <file.png>
+                                                 Draws the sheet of an installed spot, or its card at a size.
     openspot sandbox [file]                      Opens a window to try a sheet from text, a file or a script.
     openspot catalog                             Prints each part that a script can print.
     openspot color pick                          Prints the colour the person picks.
@@ -75,7 +95,20 @@ public enum CommandLineCall: Equatable, Sendable {
         }
         let rest = Array(arguments.dropFirst())
         switch (noun, rest.first) {
+        case ("guide", nil): self = .guide
+        case ("check", "--json") where rest.count <= 2: self = .checkJSON(rest.dropFirst().first)
         case ("check", _) where rest.count <= 1: self = .check(rest.first)
+        case ("spot", "new") where rest.count == 2: self = .spotNew(name: rest[1], starter: .button)
+        case ("spot", "new") where rest.count == 4 && rest[2] == "--from":
+            guard let starter = SpotStarter(rawValue: rest[3]) else { self = .unknown(arguments.joined(separator: " ")); return }
+            self = .spotNew(name: rest[1], starter: starter)
+        case ("spot", "run") where rest.count >= 2: self = .spotRun(id: rest[1], arguments: Array(rest.dropFirst(2)))
+        case ("spot", "show") where rest.count == 2: self = .spotShow(rest[1])
+        case ("spot", "log") where rest.count == 2: self = .spotLog(rest[1])
+        case ("render", "--spot") where rest.count == 3: self = .renderSpot(id: rest[1], size: nil, path: rest[2])
+        case ("render", "--spot") where rest.count == 5 && rest[2] == "--card":
+            guard let size = SpotSize(name: rest[3]) else { self = .unknown(arguments.joined(separator: " ")); return }
+            self = .renderSpot(id: rest[1], size: size, path: rest[4])
         case ("catalog", nil): self = .catalog
         case ("sandbox", _) where rest.count <= 1: self = .sandbox(rest.first)
         case ("render", "--card") where rest.count == 3:

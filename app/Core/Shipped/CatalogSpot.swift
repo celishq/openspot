@@ -1,8 +1,9 @@
 import Foundation
 
-/// The Spots spot, which ships with the app. It lists the core spots, and a pick turns one on or off.
+/// The Spots spot, which ships with the app. It links to New spot first, then lists the core spots, and a pick turns one on
+/// or off.
 public struct CatalogSpot: Equatable, Sendable {
-    /// The row that opens the Build spot, which the panel answers.
+    /// The row that opens the New spot sheet, which the panel answers.
     public static let buildRun = "openspot.build"
     /// The action that shows the text of a core spot, which the panel answers.
     public static let reviewID = "openspot.review"
@@ -89,12 +90,12 @@ public struct CatalogSpot: Equatable, Sendable {
         }
         let build = TextBlock(fields: [
             .init(key: "row", value: Self.buildRun),
-            .init(key: "title", value: "Build your own"),
-            .init(key: "detail", value: "Make a spot, or read how they work"),
-            .init(key: "icon", value: "hammer"),
+            .init(key: "title", value: "New spot"),
+            .init(key: "detail", value: "Make your own with AI or a starter"),
+            .init(key: "icon", value: "plus"),
             .init(key: "hides", value: Self.reviewID)
         ])
         let loginRow = login.map { TextBlock(fields: $0.row.fields + [.init(key: "hides", value: Self.reviewID)]) }
-        return (head + spots + (loginRow.map { [$0] } ?? []) + [build]).map(\.text).joined(separator: "\n")
+        return (head + [build] + spots + (loginRow.map { [$0] } ?? [])).map(\.text).joined(separator: "\n")
     }
 }
