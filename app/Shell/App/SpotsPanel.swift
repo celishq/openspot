@@ -6,6 +6,7 @@ import SwiftUI
 
 final class SpotsPanel: NSPanel {
     private var model: SpotsModel?
+    private var pressWatch: Task<Void, Never>?
 
     override var canBecomeKey: Bool { true }
 
@@ -113,7 +114,9 @@ final class SpotsPanel: NSPanel {
     }
 
     private static func actionKey(of event: NSEvent) -> ActionKey? {
-        let name: String?
+        let isCommand = event.modifierFlags.contains(.command)
+        let isShift = event.modifierFlags.contains(.shift)
+        let name: String
         switch Int(event.keyCode) {
         case kVK_Return, kVK_ANSI_KeypadEnter: name = "return"
         case kVK_Delete: name = "backspace"
@@ -122,16 +125,49 @@ final class SpotsPanel: NSPanel {
         case kVK_DownArrow: name = "down"
         case kVK_LeftArrow: name = "left"
         case kVK_RightArrow: name = "right"
-        default: name = event.charactersIgnoringModifiers?.lowercased()
+        default:
+            guard let typed = event.charactersIgnoringModifiers else { return nil }
+            return ActionKey(typed: typed, code: event.keyCode, isCommand: isCommand, isShift: isShift, latin: SpotKeyLayouts.latin)
         }
-        return name.map {
-            ActionKey(name: $0, isCommand: event.modifierFlags.contains(.command), isShift: event.modifierFlags.contains(.shift))
+        return ActionKey(name: name, isCommand: isCommand, isShift: isShift)
+    }
+
+    override func becomeKey() {
+        super.becomeKey()
+        pressWatch?.cancel()
+    }
+
+    /// Closes the panel when another app takes the focus. A press that took it can start a drag of files toward a card, so
+    /// the panel waits for the press to end, and a new drag of files keeps it open for the drag (D7).
+    override func resignKey() {
+        super.resignKey()
+        pressWatch?.cancel()
+        guard model?.isShown == true, model?.holdsFocus != true else { return }
+        let loss = FocusLoss(dragCount: NSPasteboard(name: .drag).changeCount)
+        guard !take(step(of: loss)) else { return }
+        pressWatch = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: SpotsModel.dragWatchPause)
+                guard !Task.isCancelled, let self, self.model?.isShown == true else { return }
+                if self.take(self.step(of: loss)) { return }
+            }
         }
     }
 
-    override func resignKey() {
-        super.resignKey()
-        if model?.isShown == true, model?.holdsFocus != true { hide() }
+    /// One look at the press and the drag pasteboard after a loss of the focus.
+    private func step(of loss: FocusLoss) -> FocusLoss.Step {
+        let drag = NSPasteboard(name: .drag)
+        return loss.step(isPressed: NSEvent.pressedMouseButtons != 0, dragCount: drag.changeCount, holdsFiles: !SpotCardDrop.paths(on: drag).isEmpty)
+    }
+
+    /// Closes the panel, or keeps it open for a drag. Returns false while the panel still waits.
+    private func take(_ step: FocusLoss.Step) -> Bool {
+        switch step {
+        case .wait: return false
+        case .close: hide()
+        case .followDrag: model?.prepareForDrag()
+        }
+        return true
     }
 
     /// Takes ⌘V for a copied `.spot` file while the panel shows. The Edit menu takes the key before the panel sees it, so this

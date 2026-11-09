@@ -150,7 +150,8 @@ final class SpotsModel {
     var isShown = false
     /// Whether the app is opening the panel unseen as it starts, which a press of the key ends.
     var isWarming = false
-    /// Whether a drag over the menu bar item opened the panel, so that it is not key and its field takes no focus.
+    /// Whether a drag holds the panel open: one over the menu bar item, or one that a press in another app started (D7). The
+    /// panel is not key then, and its field takes no focus.
     var isOpenForDrag = false
     /// Whether a drop just opened a sheet, which holds the focus while the app that the drag came from lets go of it (D8).
     var isSettlingDrop = false
@@ -163,6 +164,7 @@ final class SpotsModel {
     var recording: String?
     var setEntryKeyOn: (Bool) -> Void = { _ in }
     var holdKeys: ([GlobalKey]) -> Void = { _ in }
+    /// Closes the panel, and gives the focus back to the app that was in front, unless another app took it since.
     var dismiss: () -> Void = {}
     var show: () -> Void = {}
     var present: () -> Void = {}
