@@ -684,11 +684,15 @@ public final class SpotsModel {
     /// Moves the sheet on its spring, in one transaction, and ends the motion when it is done. The words of a review leave
     /// the field at once when its sheet is open, and fade when it has closed into the field.
     private func animate(isOpen: Bool, _ body: () -> Void) {
-        change(.sheet(isOpen: isOpen), body) { [weak self] in
+        var motion = 0
+        change(.sheet(isOpen: isOpen), {
+            body()
+            motion = transition.motion
+        }) { [weak self] in
             guard let self else { return }
             let isInstall = transition.id == ShippedSpot.installID
             change(nil) {
-                self.transition.finish(isOpen ? .opening : .closing)
+                self.transition.finish(motion)
                 if isInstall, self.transition.phase == .open {
                     self.fieldDrop = nil
                     self.showsFieldDrop = false

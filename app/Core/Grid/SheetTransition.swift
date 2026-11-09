@@ -1,7 +1,7 @@
 import Foundation
 
 /// Where a sheet is in its motion between its card and its open place. A moving open first lies on its card, so that the
-/// grow has a start; the end of a motion counts only while the motion it ends is still the current one.
+/// grow has a start. Each change starts a new motion with its own number, and the end of a motion counts only by that number.
 public struct SheetTransition: Equatable, Sendable {
     public enum Phase: Equatable, Sendable {
         case closed
@@ -15,6 +15,8 @@ public struct SheetTransition: Equatable, Sendable {
     /// The sheet that is built, from its first frame on its card to the end of its close.
     public private(set) var id: String?
     public private(set) var phase = Phase.closed
+    /// The number of the current motion.
+    public private(set) var motion = 0
 
     public init() {}
 
@@ -28,20 +30,25 @@ public struct SheetTransition: Equatable, Sendable {
     public mutating func show(_ id: String, moves: Bool) {
         self.id = id
         if !moves {
+            motion += 1
             phase = .open
         } else if !isOpen {
+            motion += 1
             phase = .ready
         }
     }
 
     /// Starts the grow of a ready sheet.
     public mutating func start() {
-        if phase == .ready { phase = .opening }
+        guard phase == .ready else { return }
+        motion += 1
+        phase = .opening
     }
 
     /// Closes the sheet: at once when it does not move, and else back into its card.
     public mutating func hide(moves: Bool) {
         guard id != nil else { return }
+        motion += 1
         if moves {
             phase = .closing
         } else {
@@ -50,9 +57,9 @@ public struct SheetTransition: Equatable, Sendable {
         }
     }
 
-    /// Ends the motion that began in `phase`, when it is still the current one.
-    public mutating func finish(_ phase: Phase) {
-        guard phase == self.phase else { return }
+    /// Ends the motion with this number, when it is still the current one.
+    public mutating func finish(_ motion: Int) {
+        guard motion == self.motion else { return }
         switch phase {
         case .opening:
             self.phase = .open
