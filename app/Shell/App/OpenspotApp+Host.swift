@@ -61,6 +61,10 @@ extension OpenspotApp: SpotsHost {
         await SpotIconStore.shared.prepare(items)
     }
 
+    func prepare(glyphs: [String]) {
+        SpotItemIcon.bind(glyphs: glyphs)
+    }
+
     func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?, offersLogin: Bool) -> [Spot] {
         ShippedSpot.commands(
             folder: folder.url,

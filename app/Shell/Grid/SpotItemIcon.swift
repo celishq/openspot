@@ -26,6 +26,11 @@ struct SpotItemIcon: View {
         SpotGlyphPicture.prepare(items.compactMap(\.glyph), side: size, fontSize: size * glyphScale)
     }
 
+    /// Takes the picture book of a whole list's colour emoji at the size of a row, so that its rows draw none of them.
+    static func bind(glyphs: [String]) {
+        SpotGlyphPicture.bind(glyphs, side: SpotTokens.listIconSize, fontSize: SpotTokens.listIconSize * glyphScale)
+    }
+
     var body: some View {
         if let icon {
             SpotFileIconView(icon: icon, size: size)

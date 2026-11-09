@@ -200,6 +200,7 @@ public final class SpotsModel {
             prepare: { [unowned host] in await host.prepare($0) }
         )
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
+        self.runs.glyphsArrival = { [unowned host] in host.prepare(glyphs: $0) }
         self.runs.partsArrival = { [weak self] id, bring in
             guard let self else { return bring() }
             bringParts(of: id, bring)

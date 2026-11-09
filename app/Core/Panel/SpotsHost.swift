@@ -29,6 +29,8 @@ public protocol SpotsHost: AnyObject {
     func copy(_ file: URL)
     /// Draws the icons of these rows ahead of their first frame.
     func prepare(_ items: [SpotItem]) async
+    /// Draws the colour glyphs of a whole list once, so that its rows find their pictures with no drawing in the app.
+    func prepare(glyphs: [String])
     /// The spots that ship with the app, as its bundle gives them.
     func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?, offersLogin: Bool) -> [Spot]
     /// Makes a change on a motion, or with none at all, and calls `completion` when its motion has ended.

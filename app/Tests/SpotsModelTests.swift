@@ -133,6 +133,17 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertTrue(host.prepared.contains { $0.run == "a50" })
     }
 
+    func testAListAsksForThePicturesOfAllItsGlyphsOnce() async throws {
+        try script("faces", header: "read=sheet", "for i in $(seq 1 100); do printf 'row=f%s\\ntitle=Face %s\\nicon=😀\\n\\n' $i $i; done")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("faces")
+        try await wait("the glyphs") { !host.glyphLists.isEmpty }
+
+        XCTAssertEqual(host.glyphLists, [Array(repeating: "😀", count: 100)])
+    }
+
     func testAStepBackClearsTheSearchBeforeItClosesTheList() async throws {
         try await openList()
         model.searchText = "ban"
@@ -391,6 +402,8 @@ private final class TestHost: SpotsHost {
     var shipped: [Spot] = []
     /// The rows whose pictures the model asked to draw ahead.
     var prepared: [SpotItem] = []
+    /// The glyphs of each whole list whose pictures the model asked for.
+    var glyphLists: [[String]] = []
     /// The model whose show and hide steps the panel runs, as the app's window does.
     weak var model: SpotsModel?
 
@@ -433,6 +446,10 @@ private final class TestHost: SpotsHost {
 
     func prepare(_ items: [SpotItem]) async {
         prepared += items
+    }
+
+    func prepare(glyphs: [String]) {
+        glyphLists.append(glyphs)
     }
 
     func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?, offersLogin: Bool) -> [Spot] {

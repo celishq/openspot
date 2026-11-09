@@ -15,6 +15,8 @@ public final class SpotRuns {
     @ObservationIgnored public var onReport: (String, SpotRun.Report) -> Void = { _, _ in }
     /// Makes the change that brings a sheet its first parts, so that the shell can move the sheet to its new size.
     @ObservationIgnored public var partsArrival: (String, () -> Void) -> Void = { _, bring in bring() }
+    /// Asks for the pictures of the colour glyphs of a whole list, once for each answer that holds its rows.
+    @ObservationIgnored public var glyphsArrival: ([String]) -> Void = { _ in }
     /// The time a `read` has to its first frame or its end.
     public let readLimit: TimeInterval
     /// How long a sheet with no answer yet holds its motion for the first answer.

@@ -721,6 +721,7 @@ public final class SpotRun {
         readAgainIfAsked()
         onReport(.frame(frame))
         guard case .read = ask else { return }
+        runs.glyphsArrival(list.all.compactMap(\.glyph))
         await prepare(firstScreen(of: list.shown))
         if command.hasSpot, !lines.errors.isEmpty {
             onReport(.failure("\(command.name) sent \(lines.errors.count) items Openspot cannot read."))
@@ -748,7 +749,9 @@ public final class SpotRun {
             }
         }
         onReport(.frame(frame))
-        if !lines.items.isEmpty { await prepare(firstScreen(of: list.shown)) }
+        guard !lines.items.isEmpty else { return }
+        runs.glyphsArrival(list.all.compactMap(\.glyph))
+        await prepare(firstScreen(of: list.shown))
     }
 
     /// The first of these rows, as many as the sheet shows before it scrolls. A later row draws its picture when it shows.
