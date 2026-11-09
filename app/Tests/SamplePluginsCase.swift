@@ -63,7 +63,7 @@ class SamplePluginsCase: XCTestCase {
             ("curl", Self.fakeCurl(log: folder.appendingPathComponent("fetched").path)),
             ("gh", Self.fakeGh(answer: folder.appendingPathComponent("gh-answer").path)),
             ("osascript", "cp '\(folder.path)/clipboard' '\(folder.path)/pasted'"),
-            ("openspot", Self.fakeClipboard(in: folder)),
+            ("openspot", Self.fakeOpenspot(in: folder)),
             ("caffeinate", "exec /bin/bash -c 'exec -a caffeinate /bin/sleep 30'")
         ] {
             let tool = tools.appendingPathComponent(name)
@@ -82,9 +82,18 @@ class SamplePluginsCase: XCTestCase {
         try await body(folder)
     }
 
-    /// The clipboard calls of the openspot command: a copy writes the file `clipboard`, and a paste copies it to `pasted`.
-    static func fakeClipboard(in folder: URL) -> String {
-        "case \"$1 $2\" in 'clipboard copy') cat > '\(folder.path)/clipboard' ;; 'clipboard paste') cp '\(folder.path)/clipboard' '\(folder.path)/pasted' ;; esac"
+    /// The openspot command: a copy writes the file `clipboard`, and a paste copies it to `pasted`. A setting is the file
+    /// `setting-<key>`, and a folder pick prints the file `picked`.
+    static func fakeOpenspot(in folder: URL) -> String {
+        """
+        case "$1 $2" in
+          'clipboard copy') cat > '\(folder.path)/clipboard' ;;
+          'clipboard paste') cp '\(folder.path)/clipboard' '\(folder.path)/pasted' ;;
+          'setting get') cat "\(folder.path)/setting-$3" 2>/dev/null ;;
+          'setting set') if [ $# -ge 4 ]; then printf '%s' "$4" > "\(folder.path)/setting-$3"; else rm -f "\(folder.path)/setting-$3"; fi ;;
+          'folder pick') cat '\(folder.path)/picked' 2>/dev/null ;;
+        esac
+        """
     }
 
     /// Answers a query with the saved answer, or else with one pull request in each state.
@@ -204,7 +213,7 @@ class SamplePluginsCase: XCTestCase {
         let script = """
         #!/bin/sh
         case "$1" in
-          clipboard) \(Self.fakeClipboard(in: folder)) ;;
+          clipboard) \(Self.fakeOpenspot(in: folder)) ;;
           emoji) printf 'row=👍\\ntitle=thumbs up, %s\\nicon=👍\\n\\n' "$3" ;;
           symbols) printf 'row=→\\ntitle=rightwards arrow\\ndetail=Rightwards Arrows\\nicon=→\\n' ;;
         esac
