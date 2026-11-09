@@ -16,7 +16,7 @@ enum SpotGlyphPicture {
 
     nonisolated(unsafe) private static let bitmaps: NSCache<NSString, Bitmap> = {
         let cache = NSCache<NSString, Bitmap>()
-        cache.countLimit = 3000
+        cache.totalCostLimit = 4 << 20
         return cache
     }()
 
@@ -28,7 +28,7 @@ enum SpotGlyphPicture {
         let key = key(glyph, side: side, fontSize: fontSize)
         if let bitmap = bitmaps.object(forKey: key) { return bitmap.image }
         guard let image = draw(glyph, side: side, fontSize: fontSize) else { return nil }
-        bitmaps.setObject(Bitmap(image), forKey: key)
+        keep(image, as: key)
         return image
     }
 
@@ -38,9 +38,14 @@ enum SpotGlyphPicture {
             for glyph in glyphs where isColour(glyph) {
                 let key = key(glyph, side: side, fontSize: fontSize)
                 guard bitmaps.object(forKey: key) == nil, let image = draw(glyph, side: side, fontSize: fontSize) else { continue }
-                bitmaps.setObject(Bitmap(image), forKey: key)
+                keep(image, as: key)
             }
         }
+    }
+
+    /// Keeps a bitmap at the cost of its bytes, so that the cache holds a few screens of pictures and lets the oldest go.
+    private static func keep(_ image: CGImage, as key: NSString) {
+        bitmaps.setObject(Bitmap(image), forKey: key, cost: image.bytesPerRow * image.height)
     }
 
     private static func isColour(_ glyph: String) -> Bool {
