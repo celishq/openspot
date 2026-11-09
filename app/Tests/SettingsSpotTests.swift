@@ -90,6 +90,7 @@ final class SettingsSpotTests: XCTestCase {
         XCTAssertEqual(items.dropFirst(2).map(\.glyph), [nil, nil, "🎉"])
         XCTAssertEqual(items.dropFirst(2).map(\.title), ["Left side", "Right side", "Fun"])
         XCTAssertEqual(items.dropFirst(2).map(\.subtitle), ["Move", "Move", "Move"])
+        XCTAssertEqual(items.dropFirst(2).map(\.parent), ["Move", "Move", "Move"])
     }
 
     func testAScriptWithCommandsAndNoReadOpensToTheKeysOfItsOwnCommands() async throws {

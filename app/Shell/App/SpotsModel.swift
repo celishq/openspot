@@ -33,7 +33,7 @@ final class SpotsModel {
             self.item = item
             sheet = nil
             fixedCommand = command
-            fixedState = SpotState(title: item.title, subtitle: item.subtitle ?? command.name)
+            fixedState = SpotState(title: item.title, subtitle: item.path(in: command))
         }
 
         @MainActor var command: Spot {
