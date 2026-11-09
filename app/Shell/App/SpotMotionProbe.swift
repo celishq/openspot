@@ -1,3 +1,4 @@
+import OpenspotCore
 import AppKit
 import QuartzCore
 

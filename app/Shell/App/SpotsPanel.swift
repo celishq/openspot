@@ -72,7 +72,7 @@ final class SpotsPanel: NSPanel {
         model?.takeHeld([])
         model?.stopRecording()
         model?.closeMenu()
-        model?.endEditing(motion: nil)
+        model?.endEditing(moving: false)
         model?.isShown = false
         DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeOutDuration) {
             defer { done?() }

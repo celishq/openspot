@@ -19,11 +19,13 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private static let dropSettle = 0.2
 
     private var statusItem: NSStatusItem?
-    private let model = SpotsModel()
-    private var panel: SpotsPanel?
-    private var previousApp: NSRunningApplication?
+    private(set) lazy var model = SpotsModel(host: self)
+    private(set) var panel: SpotsPanel?
+    private(set) var toast: ToastPanel?
+    private(set) weak var statusItemRef: NSStatusItem?
+    var previousApp: NSRunningApplication?
     private var hotKey: HotKey.Registration?
-    private var wantedKeys: [GlobalKey] = []
+    var wantedKeys: [GlobalKey] = []
     private var heldKeys: [GlobalKey: HotKey.Registration] = [:]
     private var keyFaults: [String] = []
     private var trayBar: SpotTrayBar?
@@ -49,26 +51,11 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         menuBarDrag = item.button.map { button in
             SpotMenuBarDrag(button: button, onEnter: { [weak self] in self?.showPanelForDrag() }, onDrop: { [weak self] in self?.model.review($0) })
         }
-        model.chooseFiles = { [weak self] in self?.chooseFiles(for: $0, then: $1) }
         EditMenu.install()
         SpotKeyLayouts.start()
         panel = SpotsPanel.make(model: model)
-        model.dismiss = { [weak self] in
-            self?.panel?.hide()
-            self?.previousApp?.activate()
-        }
-        model.show = { [weak self] in
-            if self?.model.isShown == false || self?.model.isWarming == true { self?.showPanel() }
-        }
-        let toast = ToastPanel.make()
-        model.notify = { toast.show($0, symbol: ToastPanel.failureSymbol) }
-        model.notifyFix = { text, fix in
-            toast.show(text, symbol: ToastPanel.failureSymbol, fix: { NSWorkspace.shared.open(fix) }, key: ConfigFile.standard().read().fixKey)
-        }
-        model.notifyKeyFault = { [weak self] text in
-            toast.show(text, symbol: ToastPanel.failureSymbol, fix: { self?.openSettings() }, key: ConfigFile.standard().read().fixKey)
-        }
-        model.confirm = { toast.show($0, symbol: ToastPanel.confirmSymbol) }
+        toast = ToastPanel.make()
+        statusItemRef = item
         trayBar = SpotTrayBar(model: model, openspotItem: item)
         if let panel, let probe = SpotMotionProbe(model: model, panel: panel) {
             motionProbe = probe
@@ -77,25 +64,15 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         let update = AppUpdate(runningWork: { [model] in model.workCount }, onReady: { [model] in model.updateIsReady() })
         self.update = update
         model.updateSpot = update?.spot
-        model.applyConfig = { [weak self] in self?.applyConfig() }
-        model.setEntryKeyOn = { [weak self] in self?.setEntryKey(on: $0) }
-        model.holdKeys = { [weak self] in
-            self?.wantedKeys = $0
-            self?.holdWantedKeys()
-        }
-        model.present = { [weak self] in self?.presentPanel() }
-        model.pointerIsOverDrop = { [weak self, weak item] in
-            let point = NSEvent.mouseLocation
-            return self?.panel?.showsDrop(at: point) == true || item?.button?.window?.frame.contains(point) == true
-        }
         model.reload()
         model.arrive(.launch)
         let isFirstLaunch = PluginFolder.standard().isFirstLaunch(config: .standard())
-        panel?.warm { [model] in
+        panel?.warm { [weak self] in
+            guard let self else { return }
             if isFirstLaunch {
                 model.beginFirstLaunch()
             } else {
-                model.confirm(model.entryKey.openHint)
+                confirm(model.entryKey.openHint)
             }
         }
         isLaunched = true
@@ -104,7 +81,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     /// Takes what the config file asks for. A key that macOS refuses leaves the current one in use, and the person sees why.
-    private func applyConfig() {
+    func applyConfig() {
         let config = ConfigFile.standard().read()
         var faults = config.faults
         let key = config.panelKey ?? model.entryKey
@@ -117,11 +94,11 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
                 faults.append("Openspot cannot use `\(key.label)` to open, because another app uses it. Choose another key.")
             }
         }
-        if faults != configFaults, !faults.isEmpty { model.notifyKeyFault(faults.joined(separator: " ")) }
+        if faults != configFaults, !faults.isEmpty { notifyKeyFault(faults.joined(separator: " ")) }
         configFaults = faults
     }
 
-    private func setEntryKey(on isOn: Bool) {
+    func setEntryKey(on isOn: Bool) {
         hotKey.map(HotKey.unregister)
         hotKey = isOn ? register(model.entryKey) : nil
         if isOn {
@@ -134,7 +111,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     /// Holds the keys that the person assigned and lets go of the rest, unless a key is being recorded. A refused key is tried again at
     /// the next scan, and the person sees why once.
-    private func holdWantedKeys() {
+    func holdWantedKeys() {
         guard model.recording == nil else { return }
         for (key, registration) in heldKeys where !wantedKeys.contains(key) {
             HotKey.unregister(registration)
@@ -151,7 +128,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
                 faults.append("\(key.spot) cannot use `\(key.shortcut.label)`, because another app uses it. Choose another key.")
             }
         }
-        if faults != keyFaults, !faults.isEmpty { model.notifyKeyFault(faults.joined(separator: " ")) }
+        if faults != keyFaults, !faults.isEmpty { notifyKeyFault(faults.joined(separator: " ")) }
         keyFaults = faults
     }
 
@@ -191,7 +168,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func showPanel() {
+    func showPanel() {
         guard let panel else { return }
         previousApp = NSWorkspace.shared.frontmostApplication
         NSApp.activate(ignoringOtherApps: true)
@@ -199,13 +176,13 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     /// Shows the panel on the Settings sheet.
-    private func openSettings() {
+    func openSettings() {
         if !model.isShown || model.isWarming { showPanel() }
         model.openSettings()
     }
 
     /// Brings the panel to the front with the focus, also when a drag opened it or it already shows.
-    private func presentPanel() {
+    func presentPanel() {
         if let front = NSWorkspace.shared.frontmostApplication, front != .current { previousApp = front }
         NSApp.activate(ignoringOtherApps: true)
         panel?.show()
@@ -224,7 +201,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     /// Closes the panel and asks the person for files. Afterwards the app that was in front comes back.
-    private func chooseFiles(for command: Spot, then take: @escaping ([String]) -> Void) {
+    func chooseFiles(for command: Spot, then take: @escaping ([String]) -> Void) {
         guard fileChooser == nil else { return }
         let previous = model.isShown && !model.isWarming ? previousApp : NSWorkspace.shared.frontmostApplication
         if model.isShown { panel?.hide() }

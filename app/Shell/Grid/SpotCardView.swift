@@ -52,7 +52,7 @@ struct SpotCardView: View, Equatable {
             .scaleEffect(showsPress ? SpotMotion.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
             .task(id: ownView.map { "\($0)\n\(isShown)" }) {
-                if let ownView { await model.views.load(ownView) }
+                if let ownView { await SpotViews.shared.load(ownView) }
             }
     }
 
@@ -60,10 +60,10 @@ struct SpotCardView: View, Equatable {
     private var content: some View {
         if entry.item == nil, let layout = entry.state.face.layout(for: size) {
             SpotCardDrawing(layout: layout, face: entry.state.face, card: size, reading: reading, view: { room in
-                drawnView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, views: model.views) }
+                drawnView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, views: SpotViews.shared) }
             }) { model.setCardPart(entry.id, $0, to: $1) }
         } else if let view = drawnView {
-            SpotCustomView(source: view, values: entry.state.values, card: size, views: model.views)
+            SpotCustomView(source: view, values: entry.state.values, card: size, views: SpotViews.shared)
         } else if let layout = entry.command.layout {
             SpotWidgetView(layout: layout, places: entry.command.places, reading: reading, card: size)
         } else if size == .small {
@@ -89,7 +89,7 @@ struct SpotCardView: View, Equatable {
     /// with running work.
     private var drawnView: String? {
         guard let ownView else { return nil }
-        if case .building = model.views.phase(of: ownView) { return nil }
+        if case .building = SpotViews.shared.phase(of: ownView) { return nil }
         return ownView
     }
 

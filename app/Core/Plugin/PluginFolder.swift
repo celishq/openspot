@@ -19,10 +19,11 @@ public struct PluginFolder: Sendable {
 
     public static func standard(
         environment: [String: String] = ProcessInfo.processInfo.environment,
-        home: URL = FileManager.default.homeDirectoryForCurrentUser
+        home: URL = FileManager.default.homeDirectoryForCurrentUser,
+        enabled: Set<String>? = nil
     ) -> PluginFolder {
         let core = Bundle.main.resourceURL?.appendingPathComponent(coreName, isDirectory: true)
-        let enabled = ConfigFile.standard(environment: environment, home: home).read().arrangement.enabled
+        let enabled = enabled ?? ConfigFile.standard(environment: environment, home: home).read().arrangement.enabled
         if let path = environment["OPENSPOT_PLUGINS"], !path.isEmpty {
             return PluginFolder(url: URL(fileURLWithPath: path, isDirectory: true), core: core, enabled: enabled)
         }

@@ -1,3 +1,4 @@
+import OpenspotCore
 import SwiftUI
 
 /// Watches the model's hint on its own, so that a change of what the hint reads, such as the selected row, reruns only this

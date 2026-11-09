@@ -1,21 +1,20 @@
-import AppKit
-import OpenspotCore
-import SwiftUI
+import Foundation
+import Observation
 
 @MainActor
 @Observable
-final class SpotsModel {
+public final class SpotsModel {
     /// One card: a script, which reads from its sheet, or a widget, or a row that the main search found.
-    struct Entry: Identifiable, Equatable {
-        let id: String
-        let item: SpotItem?
+    public struct Entry: Identifiable, Equatable {
+        public let id: String
+        public let item: SpotItem?
         private let sizeChoice: SpotSize?
         private let sheet: SpotRun?
         private let fixedCommand: Spot
         private let fixedState: SpotState
         private let gridChoice: Bool?
 
-        init(command: Spot, sheet: SpotRun?, choice: SpotArrangement = SpotArrangement()) {
+        public init(command: Spot, sheet: SpotRun?, choice: SpotArrangement = SpotArrangement()) {
             id = command.id
             sizeChoice = choice.size(of: command.id)
             gridChoice = choice.isOnGrid(of: command.id)
@@ -26,7 +25,7 @@ final class SpotsModel {
         }
 
         /// A card of a full row for an item that the main search found in a list.
-        init(command: Spot, item: SpotItem) {
+        public init(command: Spot, item: SpotItem) {
             id = "\(command.id)\n\(item.run)"
             sizeChoice = .strip
             gridChoice = nil
@@ -36,88 +35,87 @@ final class SpotsModel {
             fixedState = SpotState(title: item.title, subtitle: item.path(in: command))
         }
 
-        @MainActor var command: Spot {
+        @MainActor public var command: Spot {
             sheet?.command ?? fixedCommand
         }
 
         /// The size of its card: the person's choice, or else what its last read says, or else its header (F9).
-        @MainActor var size: SpotSize {
+        @MainActor public var size: SpotSize {
             sizeChoice ?? state.size ?? command.size
         }
 
         /// Whether the grid shows it: the person's choice, or else what the spot says.
-        @MainActor var isOnGrid: Bool {
+        @MainActor public var isOnGrid: Bool {
             gridChoice ?? state.isOnGrid
         }
 
-        @MainActor var kind: SpotKind {
+        @MainActor public var kind: SpotKind {
             item == nil ? command.kind : .launch
         }
 
-        @MainActor var symbol: String {
+        @MainActor public var symbol: String {
             item?.symbol ?? command.symbol
         }
 
         /// Whether the card draws the image, the file icon or the glyph that its header names, in place of a symbol.
-        @MainActor var showsHeaderPicture: Bool {
+        @MainActor public var showsHeaderPicture: Bool {
             item?.symbol == nil && (command.icon != nil || command.glyph != nil)
         }
 
-        @MainActor var state: SpotState {
+        @MainActor public var state: SpotState {
             sheet?.state ?? fixedState
         }
 
         /// What the card shows: its own state, with the words of its running work over it.
-        @MainActor var shownState: SpotState {
+        @MainActor public var shownState: SpotState {
             sheet?.shownState ?? fixedState
         }
 
         /// The running work that its glyph shows.
-        @MainActor var work: ScriptCall? {
+        @MainActor public var work: ScriptCall? {
             sheet?.work.first
         }
 
         /// Whether a press of the card stops its running work.
-        @MainActor var stopsOnPress: Bool {
+        @MainActor public var stopsOnPress: Bool {
             sheet?.cardWork != nil
         }
 
         /// Whether two entries are one card: the same spot or row, the same choices and the same sheet.
-        static func == (lhs: Entry, rhs: Entry) -> Bool {
+        public static func == (lhs: Entry, rhs: Entry) -> Bool {
             lhs.id == rhs.id && lhs.item == rhs.item && lhs.sizeChoice == rhs.sizeChoice && lhs.gridChoice == rhs.gridChoice
                 && lhs.sheet === rhs.sheet && lhs.fixedCommand == rhs.fixedCommand && lhs.fixedState == rhs.fixedState
         }
     }
 
     /// A form open in a sheet, with the action that asked for it. Its text stays when the panel closes.
-    struct FormSession {
-        var draft: FormDraft
-        let entry: Entry
-        let action: CommandAction
-        let item: SpotItem?
-        let openedSheet: Bool
+    public struct FormSession {
+        public var draft: FormDraft
+        public let entry: Entry
+        public let action: CommandAction
+        public let item: SpotItem?
+        public let openedSheet: Bool
     }
 
-    typealias Target = (entry: Entry, item: SpotItem?)
+    public typealias Target = (entry: Entry, item: SpotItem?)
 
     private static let searchLimit = 8
-    static let pluginFolder = PluginFolder.standard()
-    static let dragWatchPause: Duration = .milliseconds(16)
+    public static let dragWatchPause: Duration = .milliseconds(16)
     private static let chainPause: Duration = .milliseconds(200)
     private static let loadLimit: Duration = .seconds(2)
     private static let loadPause: Duration = .milliseconds(20)
-    static let dropPause: Duration = .milliseconds(300)
+    public static let dropPause: Duration = .milliseconds(300)
 
-    var entries: [Entry] = [] {
+    public var entries: [Entry] = [] {
         didSet { updateVisible() }
     }
-    var query = "" {
+    public var query = "" {
         didSet {
             if query != oldValue { selected = 0 }
             updateVisible()
         }
     }
-    private(set) var visible: [Entry] = [] {
+    public private(set) var visible: [Entry] = [] {
         didSet {
             let sizes = visible.map(\.size)
             if sizes != placements.map(\.size) { placements = SpotGrid().place(sizes) }
@@ -127,135 +125,119 @@ final class SpotsModel {
     /// The cards as the items that the main search finds. It folds them again only when they change.
     @ObservationIgnored private var spotList = ItemList()
     /// Where each visible spot lies on the grid, in the order of `visible`.
-    private(set) var placements: [SpotPlacement] = []
-    var selected = 0
+    public private(set) var placements: [SpotPlacement] = []
+    public var selected = 0
     /// The sheet that is open. A change of it starts the sheet's motion in the same transaction.
-    var openList: String? {
+    public var openList: String? {
         get { shownList }
         set {
             if newValue != shownList { moveSheet(to: newValue) }
         }
     }
     private var shownList: String?
-    var sheetMoves = true
+    public var sheetMoves = true
     /// Where the open sheet is in its motion between its card and its open place.
-    private(set) var transition = SheetTransition()
-    var closingPick: (item: SpotItem, entry: Entry)?
-    let runs: SpotRuns
-    /// The plugins' own views that cards draw.
-    let views = SpotViews()
-    var dragWatch: Task<Void, Never>?
-    var dragPaths: [String] = []
-    var draggedSpot: SpotDrop? {
+    public private(set) var transition = SheetTransition()
+    public var closingPick: (item: SpotItem, entry: Entry)?
+    public let runs: SpotRuns
+    public var dragWatch: Task<Void, Never>?
+    public var dragPaths: [String] = []
+    public var draggedSpot: SpotDrop? {
         didSet { followSpotDrop(from: isPointerOverDrop ? oldValue : nil) }
     }
-    var isPointerOverDrop = false {
+    public var isPointerOverDrop = false {
         didSet { followSpotDrop(from: oldValue ? draggedSpot : nil) }
     }
     /// The file whose words the field shows in place of its search: a dragged `.spot` file, or the file of a review while its
     /// sheet grows out of the field or collapses back into it. It stays while its words fade out.
-    var fieldDrop: SpotDrop?
+    public var fieldDrop: SpotDrop?
     /// Whether the field shows the words of `fieldDrop`.
-    var showsFieldDrop = false
-    /// Whether the pointer lies on the panel or the menu bar item.
-    var pointerIsOverDrop: () -> Bool = { false }
+    public var showsFieldDrop = false
     /// The shared spot that the open review shows, which exists only as long as that sheet.
-    var reviewed: ReviewSpot?
-    var isFirstLaunch = false
-    var spotsChanged = false
-    var isShown = false
+    public var reviewed: ReviewSpot?
+    public var isFirstLaunch = false
+    public var spotsChanged = false
+    public var isShown = false
     /// Whether the app is opening the panel unseen as it starts, which a press of the key ends.
-    var isWarming = false
+    public var isWarming = false
     /// Whether a drag over the menu bar item opened the panel, so that it is not key and its field takes no focus.
-    var isOpenForDrag = false
-    var updateSpot: UpdateSpot?
+    public var isOpenForDrag = false
+    public var updateSpot: UpdateSpot?
 
-    var chooseFiles: (Spot, @escaping ([String]) -> Void) -> Void = { _, _ in }
-    var entryKey = Shortcut.standard
+    public var entryKey = Shortcut.standard
     private var isChainHeld = false
     private var chainWatch: Task<Void, Never>?
-    var recording: String?
-    var setEntryKeyOn: (Bool) -> Void = { _ in }
-    var holdKeys: ([GlobalKey]) -> Void = { _ in }
-    var dismiss: () -> Void = {}
-    var show: () -> Void = {}
-    var present: () -> Void = {}
-    var notify: (String) -> Void = { _ in }
-    var notifyFix: (String, URL) -> Void = { _, _ in }
-    var notifyKeyFault: (String) -> Void = { _ in }
-    var applyConfig: () -> Void = {}
-    var confirm: (String) -> Void = { _ in }
+    public var recording: String?
     private var problems: [String] = []
-    var menu: ActionMenu?
-    var menuTarget: Target?
-    var form: FormSession?
+    public var menu: ActionMenu?
+    public var menuTarget: Target?
+    public var form: FormSession?
     /// Whether the grid is in Edit Spots, where it also shows the spots that are off the grid, and a press only selects.
-    var isEditing = false
-    var arrangement = SpotArrangement()
+    public var isEditing = false
+    public var arrangement = SpotArrangement()
     private var scanned: [Spot] = []
     private var lastScan = ScanResult(plugins: [], refused: [])
 
-    init() {
-        runs = SpotRuns(
-            recent: { UserDefaults.standard.stringArray(forKey: Self.recentKey($0)) ?? [] },
-            prepare: { await SpotIconStore.shared.prepare($0) }
+    /// The app around the panel, which shows it, tells the person and moves each change.
+    @ObservationIgnored public unowned let host: SpotsHost
+    /// Where the plugins, the config and the recent rows live.
+    @ObservationIgnored public let files: SpotFiles
+
+    public init(host: SpotsHost, files: SpotFiles = .standard, runs: SpotRuns? = nil) {
+        self.host = host
+        self.files = files
+        self.runs = runs ?? SpotRuns(
+            recent: { files.recent(of: $0) },
+            prepare: { [unowned host] in await host.prepare($0) }
         )
-        runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
-        runs.partsArrival = { [weak self] id, bring in
+        self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
+        self.runs.partsArrival = { [weak self] id, bring in
             guard let self else { return bring() }
             bringParts(of: id, bring)
         }
     }
 
-    var sheets: [String: SpotRun] {
+    public var sheets: [String: SpotRun] {
         runs.sheets
     }
 
     /// What a script last gave a widget to draw. A view that calls it hears only of that script's reading.
-    func reading(of id: String) -> MetricReading? {
+    public func reading(of id: String) -> MetricReading? {
         runs.sheets[id]?.reading
     }
 
     /// The number of calls that a restart would stop.
-    var workCount: Int {
+    public var workCount: Int {
         runs.work.count
     }
 
     /// Opens the panel on the grid, once, for a person who has no spots yet. The toast with the key waits for the panel to
     /// close.
-    func beginFirstLaunch() {
+    public func beginFirstLaunch() {
         isFirstLaunch = true
-        try? ConfigFile.standard().begin(enabling: Self.pluginFolder.startingSpots())
+        try? files.config.begin(enabling: files.folder.startingSpots())
         reload()
-        present()
+        host.present()
     }
 
     /// Reads the config file and the plugin folder again. No script runs for this, and each card shows its header until its
     /// answer arrives.
-    func reload() {
-        applyConfig()
-        let folder = PluginFolder.standard()
-        let shipped = ShippedSpot.commands(
-            folder: folder.url,
-            guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder.url,
-            app: Bundle.main.executablePath ?? "",
-            update: updateSpot,
-            core: folder.core,
-            login: AppLogin.item,
-            link: AppCommandLink.item,
-            offersLogin: isFirstLaunch,
-            quit: QuitSpot { await NSApp.terminate(nil) }
-        ) + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
+    public func reload() {
+        host.applyConfig()
+        let config = files.config.read()
+        let folder = files.folder(config)
+        let shipped = host.shippedSpots(folder: folder, config: files.config, update: updateSpot, offersLogin: isFirstLaunch)
+            + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
         let scan = (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
         let problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.take(scan)
         lastScan = scan
-        holdAssignedKeys()
-        arrangement = ConfigFile.standard().read().arrangement
+        holdAssignedKeys(config)
+        arrangement = config.arrangement
         scanned = scan.commands
         rebuildEntries()
         if problems != self.problems, !problems.isEmpty {
-            notify(problems.joined(separator: " "))
+            host.notify(problems.joined(separator: " "))
         }
         self.problems = problems
     }
@@ -269,7 +251,7 @@ final class SpotsModel {
         if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
     }
 
-    func rebuildEntries() {
+    public func rebuildEntries() {
         entries = ordered().map { Entry(command: $0, sheet: runs.sheets[$0.id], choice: arrangement) }
     }
 
@@ -280,13 +262,13 @@ final class SpotsModel {
     }
 
     /// Looks at the plugin folder and asks each script that the panel shows, at the same time.
-    func panelWillShow() {
+    public func panelWillShow() {
         reload()
         runs.panelOpened()
     }
 
     /// Waits for the reads of the open panel, up to the limit of a load at launch.
-    func waitForReads() async {
+    public func waitForReads() async {
         let end = ContinuousClock.now + Self.loadLimit
         while runs.isReading, ContinuousClock.now < end {
             try? await Task.sleep(for: Self.loadPause)
@@ -294,57 +276,53 @@ final class SpotsModel {
     }
 
     /// A moment of the Mac arrived, such as a wake.
-    func arrive(_ moment: SpotRead.Moment) {
+    public func arrive(_ moment: SpotRead.Moment) {
         runs.arrive(moment)
     }
 
     /// A downloaded update waits, so the Updates spot reads now and is on the grid before the panel next opens.
-    func updateIsReady() {
+    public func updateIsReady() {
         sheets.values.first { if case .updates? = $0.command.shipped { true } else { false } }?.read(need: .change)
     }
 
     /// Stops each call as the app quits.
-    func quit() {
+    public func quit() {
         runs.quit()
     }
 
-    private func holdAssignedKeys() {
-        holdKeys(lastScan.offered(ConfigFile.standard().read().keys))
+    private func holdAssignedKeys(_ config: Config) {
+        host.hold(lastScan.offered(config.keys))
     }
 
     /// A person pressed a key that they assigned to a command.
-    func press(_ key: GlobalKey) {
+    public func press(_ key: GlobalKey) {
         sheets[key.spot]?.pressKey(key.command)
     }
 
     private func take(_ report: SpotRun.Report, of id: String) {
         switch report {
-        case .toast(let text): confirm(text)
-        case .failure(let text): notify(text)
-        case .failureWithFix(let text, let fix): notifyFix(text, fix)
+        case .toast(let text): host.confirm(text)
+        case .failure(let text): host.notify(text)
+        case .failureWithFix(let text, let fix): host.notify(text, fix: fix)
         case .listChange:
             if visible.map(\.size) != placements.map(\.size) || !query.isEmpty || isEditing || cards.first(where: { $0.id == id }).map({ $0.isOnGrid != visible.contains { $0.id == id } }) == true { updateVisible() }
         case .frame:
             if sheets[id]?.command.setsKeys == true {
-                applyConfig()
-                holdAssignedKeys()
+                host.applyConfig()
+                holdAssignedKeys(files.config.read())
             }
             if spotsChanged, id == ShippedSpot.spotsID { reloadUnderSheet() }
         case .chooseFiles:
-            if let sheet = sheets[id] { chooseFiles(sheet.command) { sheet.drop($0) } }
+            if let sheet = sheets[id] { host.chooseFiles(for: sheet.command) { sheet.drop($0) } }
         }
     }
 
-    private static func recentKey(_ id: String) -> String {
-        "recent.\(id)"
-    }
-
-    static func reason(_ error: Error) -> String {
+    public static func reason(_ error: Error) -> String {
         (error as? PluginError)?.reason ?? error.localizedDescription
     }
 
     /// The entries that have a card. The install screen has none.
-    var cards: [Entry] {
+    public var cards: [Entry] {
         entries.filter { $0.id != ShippedSpot.installID }
     }
 
@@ -352,7 +330,7 @@ final class SpotsModel {
     private static let unpickedRows = 3
 
     /// Shows the spots that the search finds and the items it finds in the lists that offer them, in one ranking.
-    func updateVisible() {
+    public func updateVisible() {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
             visible = cards.filter(\.isOnGrid) + (isEditing ? cards.filter { !$0.isOnGrid } : [])
@@ -367,37 +345,37 @@ final class SpotsModel {
         }
     }
 
-    func moveSelection(dx: Int, dy: Int) {
+    public func moveSelection(dx: Int, dy: Int) {
         if let next = SpotGrid().neighbour(of: selected, in: placements, dx: dx, dy: dy) {
             selected = next
         }
     }
 
-    var selectedIsSlider: Bool {
+    public var selectedIsSlider: Bool {
         selectedEntry?.kind == .slider
     }
 
-    func adjustSelected(by delta: Double) {
+    public func adjustSelected(by delta: Double) {
         guard let entry = selectedEntry, entry.kind == .slider else { return }
         sheets[entry.id]?.setLevel((entry.state.level ?? 0) + delta)
     }
 
-    func tap(_ id: String) {
+    public func tap(_ id: String) {
         guard let position = visible.firstIndex(where: { $0.id == id }) else { return }
         selected = position
         runSelected()
     }
 
-    func setLevel(_ id: String, to value: Double) {
+    public func setLevel(_ id: String, to value: Double) {
         sheets[id]?.setLevel(value)
     }
 
     /// Sends a change or a press of a component that a card draws (U5).
-    func setCardPart(_ id: String, _ part: String, to value: String?) {
+    public func setCardPart(_ id: String, _ part: String, to value: String?) {
         sheets[id]?.setCardPart(part, to: value)
     }
 
-    func runSelected() {
+    public func runSelected() {
         guard !isEditing else { return }
         if openList != nil {
             runSelectedItem()
@@ -408,7 +386,7 @@ final class SpotsModel {
     }
 
     /// Runs a command by its key, with the panel open only when its spot needs it.
-    func press(_ id: String) {
+    public func press(_ id: String) {
         guard let entry = entries.first(where: { $0.id == id }) else { return }
         if let sheet = sheets[id], sheet.awaitsAnswer {
             sheet.afterAnswer { [weak self] in self?.press(id) }
@@ -419,13 +397,13 @@ final class SpotsModel {
             return
         }
         sheetMoves = isShown
-        show()
+        host.show()
         open(id)
     }
 
     /// Notes which modifiers the person holds. The letters show once they have matched the entry key for a moment, so that
     /// a quick press shows nothing.
-    func takeHeld(_ modifiers: Shortcut.Modifiers) {
+    public func takeHeld(_ modifiers: Shortcut.Modifiers) {
         chainWatch?.cancel()
         guard modifiers == entryKey.modifiers else {
             isChainHeld = false
@@ -438,12 +416,12 @@ final class SpotsModel {
     }
 
     /// Whether the spots show their letters.
-    var showsChain: Bool {
+    public var showsChain: Bool {
         isChainHeld && isOnGrid
     }
 
     /// The letter of a spot that has a key.
-    func chainLetter(of entry: Entry) -> String? {
+    public func chainLetter(of entry: Entry) -> String? {
         entry.item == nil ? entry.command.key?.name.uppercased() : nil
     }
 
@@ -452,16 +430,16 @@ final class SpotsModel {
     }
 
     /// Runs the spot whose letter this press holds, whatever the search shows. A spot with no sheet closes the panel.
-    func handleChain(code: UInt32, modifiers: Shortcut.Modifiers) -> Bool {
+    public func handleChain(code: UInt32, modifiers: Shortcut.Modifiers) -> Bool {
         guard isOnGrid, let entry = entries.first(where: { entry in
             entry.command.key.map { entryKey.chains(to: $0, code: code, modifiers: modifiers) } ?? false
         }) else { return false }
         press(entry.id)
-        if entry.kind == .toggle { dismiss() }
+        if entry.kind == .toggle { host.dismiss() }
         return true
     }
 
-    func run(_ entry: Entry) {
+    public func run(_ entry: Entry) {
         if let item = entry.item, let list = entries.first(where: { $0.id == entry.command.id }) {
             if item.shortcut != nil, openList != list.id {
                 sheetMoves = true
@@ -478,7 +456,7 @@ final class SpotsModel {
         case .toggle:
             sheets[entry.id]?.pressCard()
         case .launch:
-            if isShown, sheets[entry.id]?.isCardRunning != true, !entry.command.takesDrops { dismiss() }
+            if isShown, sheets[entry.id]?.isCardRunning != true, !entry.command.takesDrops { host.dismiss() }
             sheets[entry.id]?.pressCard()
         case .list:
             sheetMoves = true
@@ -495,90 +473,90 @@ final class SpotsModel {
     }
 
     /// The marks of the scripts that show in the menu bar, by script.
-    var trayMarks: [(id: String, mark: TrayMark)] {
+    public var trayMarks: [(id: String, mark: TrayMark)] {
         runs.trayMarks
     }
 
     /// What the Openspot item shows for running work.
-    var workMark: TrayMark? {
+    public var workMark: TrayMark? {
         runs.workMark
     }
 
     /// Opens the panel with the spot of the oldest running work selected, or closes it when it already shows that. A search
     /// stays, so a spot that it hides is not selected. Returns false when no work shows.
-    func openWork() -> Bool {
+    public func openWork() -> Bool {
         guard let id = runs.workSpot else { return false }
         let spot = { self.visible.firstIndex { $0.id == id || $0.command.places.contains(id) } }
         if isShown, openList == nil, spot() == selected {
-            dismiss()
+            host.dismiss()
             return true
         }
         closeList()
-        show()
+        host.show()
         if let spot = spot() { selected = spot }
         return true
     }
 
     /// The running call of a part of the open sheet.
-    func work(of part: SpotPart) -> ScriptCall? {
+    public func work(of part: SpotPart) -> ScriptCall? {
         openSheet?.work(of: part)
     }
 
     /// The running call that a press of this row of the open menu stops.
-    func work(of row: ActionMenu.Row) -> ScriptCall? {
+    public func work(of row: ActionMenu.Row) -> ScriptCall? {
         if row.opensEdit { return nil }
         return menuTarget.flatMap { sheets[$0.entry.id]?.work(of: row, item: $0.item) }
     }
 
     /// Opens the list of a metric that is also a list, or else selects the widget that places it. Closes the panel
     /// when it already shows that.
-    func openFromTray(_ id: String) {
+    public func openFromTray(_ id: String) {
         let opens = entries.first { $0.id == id && $0.kind.opensSheet }?.id
         if isShown, opens == nil || openList == opens {
-            dismiss()
+            host.dismiss()
         } else if let opens {
             press(opens)
         } else {
             closeList()
-            show()
+            host.show()
             selected = visible.firstIndex { $0.command.places.contains(id) } ?? 0
         }
     }
 
-    func openBigView() {
+    public func openBigView() {
         guard let entry = selectedEntry else { return }
-        notify("\(entry.state.title) has no big view yet.")
+        host.notify("\(entry.state.title) has no big view yet.")
     }
 
-    var selectedEntry: Entry? {
+    public var selectedEntry: Entry? {
         let list = visible
         guard list.indices.contains(selected) else { return nil }
         return list[selected]
     }
 
     /// Whether the panel shows its search field, which a form or a sheet of parts with no rows replaces.
-    var showsSearch: Bool {
+    public var showsSearch: Bool {
         form == nil && !isEditing && openPanel?.showsRows != false
     }
 
-    var openPanel: SheetParts? {
+    public var openPanel: SheetParts? {
         openSheet?.panel
     }
 
-    var openSheet: SpotRun? {
+    public var openSheet: SpotRun? {
         openList.flatMap { sheets[$0] }
     }
 
-    var openEntry: Entry? {
+    public var openEntry: Entry? {
         entries.first { $0.id == openList }
     }
 
-    var openItems: ItemList? {
+    public var openItems: ItemList? {
         openSheet?.list
     }
 
     /// The text of the field: the search of the open list, or else the search of the spots.
-    var searchText: String {
+    public var searchText: String {
         get { openItems?.query ?? query }
         set {
             if let file = SharedSpot.file(in: newValue) {
@@ -594,7 +572,7 @@ final class SpotsModel {
     }
 
     /// Clears the search, or else closes the open list. Returns false when there is nothing to step back from.
-    func stepBack() -> Bool {
+    public func stepBack() -> Bool {
         if !searchText.isEmpty {
             searchText = ""
         } else if openList != nil {
@@ -605,18 +583,18 @@ final class SpotsModel {
         return true
     }
 
-    func openSettings() {
+    public func openSettings() {
         open(ShippedSpot.settingsID)
     }
 
     /// Opens a sheet and ends what another left running. The sheet of a staying script opens with its first frame.
-    func open(_ id: String) {
+    public func open(_ id: String) {
         guard let sheet = sheets[id] else { return }
         sheets.values.filter { $0 !== sheet }.forEach { $0.close() }
         sheet.open(waits: sheetMoves) { [weak self] in self?.openList = id }
     }
 
-    func closeList() {
+    public func closeList() {
         stopRecording()
         openList = nil
         sheets.values.forEach { $0.close() }
@@ -624,11 +602,11 @@ final class SpotsModel {
 
     /// Closes each sheet of parts when the panel has faded, and stops the reads that nothing wants now. A sheet of rows stays
     /// open.
-    func panelDidHide() {
+    public func panelDidHide() {
         runs.panelClosed()
         if isFirstLaunch, !isWarming {
             isFirstLaunch = false
-            confirm(entryKey.openHint)
+            host.confirm(entryKey.openHint)
         }
         if let openSheet, !openSheet.isOpen {
             sheetMoves = false
@@ -681,7 +659,7 @@ final class SpotsModel {
     /// Moves the sheet on its spring, in one transaction, and ends the motion when it is done. The words of a review leave
     /// the field at once when its sheet is open, and fade when it has closed into the field.
     private func animate(isOpen: Bool, _ body: () -> Void) {
-        change(SpotMotion.sheet(isOpen: isOpen), body) { [weak self] in
+        change(.sheet(isOpen: isOpen), body) { [weak self] in
             guard let self else { return }
             let isInstall = transition.id == ShippedSpot.installID
             change(nil) {
@@ -709,7 +687,7 @@ final class SpotsModel {
     private func followSpotDrop(from old: SpotDrop?) {
         guard spotDrop != old else { return }
         if let drop = spotDrop {
-            change(SpotMotion.sheet(isOpen: true)) {
+            change(.sheet(isOpen: true)) {
                 fieldDrop = drop
                 showsFieldDrop = true
             }
@@ -720,7 +698,7 @@ final class SpotsModel {
 
     /// Gives the field back its search on the sheet's closing spring, and lets the words go when they have faded.
     private func hideFieldDrop() {
-        change(SpotMotion.sheet(isOpen: false), { showsFieldDrop = false }) { [weak self] in
+        change(.sheet(isOpen: false), { showsFieldDrop = false }) { [weak self] in
             guard let self, !showsFieldDrop else { return }
             fieldDrop = nil
         }
@@ -729,31 +707,28 @@ final class SpotsModel {
     /// Brings a sheet its first parts: on the sheet's spring when the sheet shows, so that it grows to its new size, and at
     /// once when it does not.
     private func bringParts(of id: String, _ bring: () -> Void) {
-        change(transition.id == id && transition.isOpen ? SpotMotion.sheet(isOpen: true) : nil, bring)
+        change(transition.id == id && transition.isOpen ? PanelMotion.sheet(isOpen: true) : nil, bring)
     }
 
     /// Makes a change on an animation, or with none at all, and calls `completion` when its motion has ended.
-    private func change(_ animation: Animation?, _ body: () -> Void, completion: @escaping @MainActor () -> Void = {}) {
-        var transaction = Transaction(animation: animation)
-        transaction.disablesAnimations = animation == nil
-        transaction.addAnimationCompletion(criteria: .removed) { MainActor.assumeIsolated { completion() } }
-        withTransaction(transaction, body)
+    public func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void = {}) {
+        host.change(motion, body, completion: completion)
     }
 
     /// Lets the next open or close of a sheet move, as it does when the person asks for it in the open panel.
-    func allowSheetMotion() {
+    public func allowSheetMotion() {
         sheetMoves = true
     }
 
-    func moveItem(by step: Int) {
+    public func moveItem(by step: Int) {
         openSheet?.list.move(by: step)
     }
 
-    func moveItemLine(by lines: Int) {
+    public func moveItemLine(by lines: Int) {
         openSheet?.list.moveLine(by: lines)
     }
 
-    func runSelectedItem() {
+    public func runSelectedItem() {
         guard let item = openItems?.selectedItem else {
             createFromSearch()
             return
@@ -762,39 +737,39 @@ final class SpotsModel {
     }
 
     /// The action that makes a new item from what the search did not find.
-    var createAction: CommandAction? {
+    public var createAction: CommandAction? {
         guard let list = openItems, !list.query.isEmpty, list.shown.isEmpty, list.search == .local else { return nil }
         return openEntry?.command.actions.first { $0.scope == .command && $0.isForm }
     }
 
-    func createFromSearch() {
+    public func createFromSearch() {
         guard let action = createAction, let entry = openEntry else { return }
         openForm(action, on: (entry, nil), prefill: openItems?.query ?? "")
     }
 
     /// Sends a change of a slot of a row, or a press of one when it has no value (U9).
-    func slot(_ slot: String, of item: SpotItem, to value: String?) {
+    public func slot(_ slot: String, of item: SpotItem, to value: String?) {
         if let value { openSheet?.set(slot: slot, of: item, to: value) } else { openSheet?.press(slot: slot, of: item) }
     }
 
-    func runItem(_ item: SpotItem) {
+    public func runItem(_ item: SpotItem) {
         guard let entry = openEntry else { return }
         pick(item, of: entry)
     }
 
     /// Records a pick and clears what it left open, once the panel has faded, so nothing moves during the fade.
-    func finishPick() {
+    public func finishPick() {
         guard let pick = closingPick else { return }
         closingPick = nil
         if pick.entry.command.keepsRecent {
             sheets[pick.entry.id]?.list.remember(pick.item)
-            UserDefaults.standard.set(sheets[pick.entry.id]?.list.recent, forKey: Self.recentKey(pick.entry.id))
+            files.remember(sheets[pick.entry.id]?.list.recent ?? [], of: pick.entry.id)
         }
         sheetMoves = false
         closeList()
     }
 
-    func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil) {
+    public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil) {
         if action == nil, item.run == CatalogSpot.buildRun {
             closeList()
             sheetMoves = true
@@ -809,7 +784,7 @@ final class SpotsModel {
         if action != nil || entry.command.pick == .close {
             closingPick = (item, entry)
             if isShown {
-                dismiss()
+                host.dismiss()
             } else {
                 finishPick()
             }
