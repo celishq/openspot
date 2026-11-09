@@ -15,13 +15,14 @@ final class SpotsModelTests: XCTestCase {
         try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
         suite = "openspot-panel-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        host = TestHost()
+        let host = TestHost()
+        self.host = host
         let files = SpotFiles(
             environment: ["OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
             home: folder,
             defaults: defaults
         )
-        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
+        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2, prepare: { await host.prepare($0) }))
         host.model = model
     }
 
@@ -87,6 +88,19 @@ final class SpotsModelTests: XCTestCase {
 
         XCTAssertEqual(model.openItems?.shown.map(\.run), ["b"])
         XCTAssertEqual(model.query, "")
+    }
+
+    func testAListDrawsAheadOnlyThePicturesOfTheRowsOnItsFirstScreen() async throws {
+        try script("apps", header: "read=sheet", "for i in $(seq 1 100); do printf 'row=a%s\\ntitle=App %s\\nicon=/Applications/A%s.app\\n\\n' $i $i $i; done")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("apps")
+        try await wait("the rows and their pictures") { model.openItems?.shown.count == 100 && !host.prepared.isEmpty }
+
+        let first = SpotTokens.firstScreen(perLine: 1)
+        XCTAssertLessThan(first, 20)
+        XCTAssertEqual(Set(host.prepared.map(\.run)), Set((1...first).map { "a\($0)" }))
     }
 
     func testAStepBackClearsTheSearchBeforeItClosesTheList() async throws {
@@ -345,6 +359,8 @@ private final class TestHost: SpotsHost {
     var phases: [SheetTransition.Phase] = []
     /// The spots that ship with the app in this test.
     var shipped: [Spot] = []
+    /// The rows whose pictures the model asked to draw ahead.
+    var prepared: [SpotItem] = []
     /// The model whose show and hide steps the panel runs, as the app's window does.
     weak var model: SpotsModel?
 
@@ -385,7 +401,9 @@ private final class TestHost: SpotsHost {
 
     func copy(_ file: URL) {}
 
-    func prepare(_ items: [SpotItem]) async {}
+    func prepare(_ items: [SpotItem]) async {
+        prepared += items
+    }
 
     func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?, offersLogin: Bool) -> [Spot] {
         shipped

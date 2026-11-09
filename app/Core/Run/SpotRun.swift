@@ -709,7 +709,7 @@ public final class SpotRun {
             if list.search == .script, !list.query.isEmpty { self.ask() }
             showRunning()
         case .search(let query):
-            await prepare(lines.items)
+            await prepare(firstScreen(of: lines.items))
             guard query == list.query else { return }
             changeList {
                 $0.take(search: lines.search)
@@ -721,7 +721,7 @@ public final class SpotRun {
         readAgainIfAsked()
         onReport(.frame(frame))
         guard case .read = ask else { return }
-        await prepare(lines.items)
+        await prepare(firstScreen(of: lines.items))
         if command.hasSpot, !lines.errors.isEmpty {
             onReport(.failure("\(command.name) sent \(lines.errors.count) items Openspot cannot read."))
         }
@@ -748,7 +748,12 @@ public final class SpotRun {
             }
         }
         onReport(.frame(frame))
-        if !lines.items.isEmpty { await prepare(lines.items) }
+        if !lines.items.isEmpty { await prepare(firstScreen(of: lines.items)) }
+    }
+
+    /// The rows of these items that the sheet shows before it scrolls. A later row draws its picture when it shows.
+    private func firstScreen(of items: [SpotItem]) -> [SpotItem] {
+        Array(items.prefix(SpotTokens.firstScreen(perLine: list.perLine)))
     }
 
     private func takeState(_ lines: PluginOutput?) {

@@ -90,6 +90,13 @@ public enum SpotTokens {
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 
+    /// How many rows the tallest sheet shows before it scrolls, a row cut at its edge included.
+    public static func firstScreen(perLine: Int) -> Int {
+        let line = perLine > 1 ? square(perLine: perLine) : listRowHeight
+        let lines = ((sheetMaxHeight - sheetRowsTop - padding) / (line + listRowGap)).rounded(.up)
+        return Int(lines) * max(perLine, 1)
+    }
+
     /// Whether a sheet with these rows shows them all with no scrolling.
     public static func sheetFits(rows: Int, perLine: Int = 1) -> Bool {
         sheetRect(rows: rows, perLine: perLine).height < sheetMaxHeight
