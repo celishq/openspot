@@ -263,6 +263,18 @@ final class ScriptProcessTests: XCTestCase {
         XCTAssertLessThan(Date().timeIntervalSince(started), 2)
     }
 
+    func testAFailureNamesTheLastLineOfALongStderr() async throws {
+        let body = "i=0\nwhile [ $i -lt 5000 ]; do echo \"line $i of the log\" >&2; i=$((i+1)); done\nprintf 'the last\\n\\n' >&2\nprintf 'cut' >&2\nprintf ' short\\n' >&2\nexit 3\n"
+        let plugin = try writePlugin("noisy.sh", "#!/bin/sh\n\(body)")
+
+        do {
+            _ = try await ScriptProcess.output(url: plugin.url, limit: 5)
+            XCTFail("expected a failure")
+        } catch {
+            XCTAssertEqual(error as? PluginError, .failed(3, "cut short"))
+        }
+    }
+
     func testAScriptKilledBySomethingElseIsAFailure() async throws {
         let plugin = try writePlugin("killed.sh", "#!/bin/sh\nkill -KILL $$\n")
 

@@ -220,9 +220,13 @@ public final class ScriptProcess: @unchecked Sendable {
 
     private func follow(output: Pipe, errors: Pipe) {
         let errorsRead = DispatchSemaphore(value: 0)
-        let lastErrors = ScriptText()
+        let lastErrors = LastLine()
         DispatchQueue.global().async {
-            lastErrors.text = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+            while true {
+                let data = errors.fileHandleForReading.availableData
+                if data.isEmpty { break }
+                lastErrors.take(data)
+            }
             errorsRead.signal()
         }
         DispatchQueue.global().async { [self] in
@@ -236,7 +240,7 @@ public final class ScriptProcess: @unchecked Sendable {
             _ = errorsRead.wait(timeout: .now() + Self.errorsPause)
             guard !isStopped else { return lock.withLock { ended = true } }
             if hasExited, process.terminationStatus != 0 {
-                let line = lastErrors.text.split(separator: "\n").last.map(String.init) ?? ""
+                let line = lastErrors.text
                 let fix = reader.finish().flatMap { PluginOutput(text: $0).link }.flatMap(URL.init(string:))
                 finish(throwing: fix.map { PluginError.failedWithFix(process.terminationStatus, line, $0) } ?? PluginError.failed(process.terminationStatus, line))
                 return
@@ -272,13 +276,25 @@ public final class ScriptProcess: @unchecked Sendable {
     }
 }
 
-/// Text that one queue writes and another reads.
-private final class ScriptText: @unchecked Sendable {
+/// The last line that has words of a stream that one queue writes and another reads. It keeps no more than that line, and
+/// no more than the end of a line longer than its limit.
+private final class LastLine: @unchecked Sendable {
+    private static let limit = 16 * 1024
+    private static let newLine = UInt8(ascii: "\n")
+
     private let lock = NSLock()
-    private var value = ""
+    private var bytes = Data()
+
+    func take(_ data: Data) {
+        lock.withLock {
+            bytes.append(data)
+            guard let end = bytes.lastIndex(where: { $0 != Self.newLine }) else { return bytes.removeAll() }
+            let start = bytes[..<end].lastIndex(of: Self.newLine).map { $0 + 1 } ?? bytes.startIndex
+            bytes = Data(bytes[max(start, bytes.endIndex - Self.limit)...])
+        }
+    }
 
     var text: String {
-        get { lock.withLock { value } }
-        set { lock.withLock { value = newValue } }
+        lock.withLock { String(decoding: bytes, as: UTF8.self).split(separator: "\n").last.map(String.init) ?? "" }
     }
 }
