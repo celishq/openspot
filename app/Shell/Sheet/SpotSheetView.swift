@@ -100,10 +100,11 @@ struct SpotSheetView: View {
                 }
                 .frame(width: max(sheetWordsWidth, 0), alignment: .leading)
                 .offset(showsTallCard ? tallCardShift : .zero)
+                .offset(x: isOpen ? SpotTokens.headerWordsInset : 0)
                 .opacity(showsSmallCard ? 0 : 1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .overlay(alignment: .trailing) { closeButton }
+            .overlay(alignment: .trailing) { closeButton.offset(x: isOpen ? -SpotTokens.headerButtonInset : 0) }
     }
 
     /// The title and the second line of the header, in one copy of its words.
@@ -131,6 +132,7 @@ struct SpotSheetView: View {
     /// The width of the words up to the close button in the open sheet.
     private var sheetWordsWidth: CGFloat {
         rect.width - SpotTokens.padding - SpotTokens.glyphSize - 2 * Self.wordsGap - SpotTokens.glyphSize - SpotTokens.padding
+            - SpotTokens.headerWordsInset - SpotTokens.headerButtonInset
     }
 
     /// The width that the card gives the words before the sheet opens.
@@ -171,7 +173,7 @@ struct SpotSheetView: View {
                     .background(SpotTheme.ink.opacity(showsSmallCard || showsFill ? 0 : SpotTheme.disc), in: Circle())
             }
         }
-        .offset(x: showsSmallCard ? (SpotTokens.cell - SpotTokens.glyphSize) / 2 - SpotTokens.padding : 0)
+        .offset(x: showsSmallCard ? (SpotTokens.cell - SpotTokens.glyphSize) / 2 - SpotTokens.padding : isOpen ? SpotTokens.headerGlyphInset : 0)
     }
 
     /// Whether the sheet still lies on a 1x1 card, which shows its glyph alone.

@@ -156,7 +156,7 @@ struct SpotRowsView: View {
         return SpotTemplateRow(
             item: item,
             template: template,
-            size: CGSize(width: SheetPlacement.width - 2 * SpotTokens.padding, height: height - 8)
+            size: CGSize(width: SheetPlacement.width - 2 * SpotTokens.padding, height: height - 2 * SpotTokens.listRowInset)
         ) { onSlot(item, $0, $1) }
         .padding(.horizontal, SpotTokens.padding)
         .frame(height: height)
