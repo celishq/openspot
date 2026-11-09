@@ -283,7 +283,7 @@ struct SpotsView: View {
     }
 
     private func hint(_ words: String, isShown: Bool, height: CGFloat) -> some View {
-        SpotHint(text: words, onPress: model.pressHint)
+        SpotHint(text: words, activeKey: model.menu == nil ? nil : ActionMenu.key, onPress: model.pressHint)
             .frame(width: SpotTokens.panelWidth)
             .allowsHitTesting(isShown)
             .offset(y: height - SpotTokens.halo - SpotTokens.hintPillHeight)

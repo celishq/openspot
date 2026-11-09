@@ -9,6 +9,9 @@ public struct ActionMenu: Equatable, Sendable {
         var isQuiet = false
     }
 
+    /// The key that opens and closes the menu, as the footer shows it.
+    public static let key = "⌘K"
+
     /// How many rows a person takes in at a glance. A menu with more shows a field to search them.
     private static let glance = 5
 
@@ -69,7 +72,7 @@ public struct ActionMenu: Equatable, Sendable {
         let isEscape = { (row: Row) in row.action?.key == ActionKey(name: "escape") }
         let shown = Array(keyed.filter { !isEscape($0) }.prefix(2)) + keyed.filter(isEscape)
         let keys = shown.map { "\($0.keyLabel) \(isRunning($0) ? Self.stopTitle(of: $0) : $0.title)" }
-        return (keys + ["⌘K Actions"]).joined(separator: "   ")
+        return (keys + ["\(Self.key) Actions"]).joined(separator: "   ")
     }
 
     public mutating func move(by step: Int) {
