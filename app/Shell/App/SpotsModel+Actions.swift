@@ -238,6 +238,10 @@ extension SpotsModel {
     private func pressMenu() {
         let isRunning = menu?.selectedRow.map { work(of: $0) != nil } ?? false
         guard let row = menu?.press(isRunning: isRunning), let target = menuTarget else { return }
+        if !isRunning, let action = row.action, action.isForm {
+            openForm(action, on: target)
+            return
+        }
         closeMenu()
         if row.opensEdit {
             beginEditing()
@@ -272,10 +276,13 @@ extension SpotsModel {
         }
     }
 
+    /// Asks the script for the form of an action, and shows it in place of the actions menu once it comes, so that the menu
+    /// stays while the script answers.
     func openForm(_ action: CommandAction, on target: Target, prefill: String = "") {
         Task {
             do {
                 guard let form = try await sheets[target.entry.id]?.form(action, item: target.item) else { return }
+                closeMenu()
                 let opensSheet = openList != target.entry.id
                 if opensSheet {
                     sheetMoves = isShown
@@ -289,6 +296,7 @@ extension SpotsModel {
                     openedSheet: opensSheet
                 )
             } catch {
+                closeMenu()
                 notify("\(action.title) failed. \(Self.reason(error))")
             }
         }
