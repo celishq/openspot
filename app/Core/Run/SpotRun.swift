@@ -188,9 +188,10 @@ public final class SpotRun {
     public func update(_ new: Spot) {
         let header = command.headerState
         if new.stays != command.stays {
-            link.end()
+            let old = link
             link = Self.link(for: new, runs: runs)
             link.run = self
+            old.end()
         }
         command = lastAnswer.map(new.taking) ?? new
         if reading.label != new.name || reading.headerSymbol != new.headerSymbol {
@@ -341,7 +342,7 @@ public final class SpotRun {
     public func read(selecting run: String? = nil, need: ReadNeed = .moment, reason: ReadReason? = nil) {
         let reason = reason ?? (need == .change ? .change : isOpen ? .sheet : .panel)
         if let run { selecting = run }
-        guard list.search == .local else { return ask() }
+        guard list.search == .local || link.holdsState else { return ask() }
         if link.isAsking {
             if need == .change { readsAgain = true }
             return
@@ -351,9 +352,8 @@ public final class SpotRun {
             showRunning()
             return
         }
-        list.beginLoading()
         let action = command.read == nil ? command.click : SpotAction.read
-        link.send(Call(
+        let isSent = link.send(Call(
             action: action,
             key: Self.readKey,
             input: isOpen ? panel?.values : nil,
@@ -362,6 +362,7 @@ public final class SpotRun {
             variables: action == .read ? reason.variables : [:],
             purpose: .ask(.read(generation: panel?.generation, reports: need != .clock))
         ))
+        if isSent { list.beginLoading() }
     }
 
     /// Takes new text in the search. A newer search stops the older one, and the script hears after a pause.
@@ -653,11 +654,18 @@ public final class SpotRun {
         readAgainIfAsked()
     }
 
-    /// The script that held its own state ended: its value dims, its answer is old, and a sheet that waited for it closes.
+    /// The script that held its own state ended by itself: its value dims, its answer is old, and a sheet that waited for it
+    /// closes.
     func lost() {
-        answered = nil
+        scriptEnded()
         changeReading { $0.markStale() }
         dropUnshownSheet()
+    }
+
+    /// Openspot ended the script that held its own state: its answer is old, so the next open waits for a new one.
+    func scriptEnded() {
+        answered = nil
+        list.stopLoading()
     }
 
     /// Takes the answer of a read or of a search: the first frame of a read that runs once, the silence of one that ended by
@@ -686,6 +694,7 @@ public final class SpotRun {
             showRunning()
         case .search(let query):
             await prepare(lines.items)
+            guard query == list.query else { return }
             changeList {
                 $0.take(search: lines.search)
                 $0.take(drawing: lines.drawing, templates: lines.templates)
@@ -714,7 +723,7 @@ public final class SpotRun {
         if case .read = source, command.readsState, lines.summary != nil {
             takeState(lines)
         } else {
-            state = state.taking(lines)
+            state = keepingLevel(state.taking(lines))
         }
         if !lines.items.isEmpty { list.replace(lines.items) }
         if isOpen {
@@ -728,12 +737,17 @@ public final class SpotRun {
     }
 
     private func takeState(_ lines: PluginOutput?) {
-        guard let lines, var next = try? command.state(of: lines) else {
+        guard let lines, let next = try? command.state(of: lines) else {
             if lines == nil { state = command.headerState }
             return
         }
-        if running(Self.levelKey) != nil || pauses[Self.levelKey] != nil, let level = state.level { next = next.withLevel(level) }
-        state = next
+        state = keepingLevel(next)
+    }
+
+    /// The state with the level that the person set, while the call of that level waits or runs.
+    private func keepingLevel(_ next: SpotState) -> SpotState {
+        guard running(Self.levelKey) != nil || pauses[Self.levelKey] != nil, let level = state.level else { return next }
+        return next.withLevel(level)
     }
 
     private func takeValue(_ lines: PluginOutput) {
@@ -799,6 +813,7 @@ public final class SpotRun {
         settle()
         isInView = false
         runs.updateClock()
+        onReport(.closed)
     }
 
     /// Shows the parts a script printed. An answer that a newer change outdated does not show.

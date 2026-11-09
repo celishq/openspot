@@ -489,6 +489,30 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertFalse(isReady)
     }
 
+    func testASheetClosedBeforeItsAnswerOpensAgainWithAFreshAnswer() async throws {
+        try script(header: "stay=true", """
+        while IFS= read -r line; do
+          case "$line" in
+            call=*) call=${line#call=} ;;
+            '') \(untilRelease); printf 'end=%s\\n\\nrow=a\\ntitle=A\\n---\\n' "$call" ;;
+          esac
+        done
+        """)
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the first script") { self.log().count == 1 }
+
+        sheet.close()
+        try await allEnded()
+        openGate()
+        var isReady = false
+        sheet.open { isReady = true }
+
+        try await wait("the fresh answer") { isReady }
+        XCTAssertTrue(sheet.isOpen)
+        XCTAssertFalse(sheet.list.isLoading)
+    }
+
     func testTheAnswerOfAStayingScriptTakesTheTemplatesOfItsRows() async throws {
         try staying(frame: "template=row\\ngrid=name\\ntext=name\\n\\nrow=a\\ntitle=A\\n")
         let sheet = try sheet()

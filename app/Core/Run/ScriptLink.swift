@@ -7,7 +7,7 @@ import Foundation
 protocol ScriptLink: AnyObject {
     var run: SpotRun? { get set }
     /// Whether the script holds its own state, so that what it shows lives only while it runs: an open waits for its answer,
-    /// its sheet closes with the panel, and no read follows a call.
+    /// its sheet closes with the panel, no read follows a call, and a read asks it for its state also when it searches.
     var holdsState: Bool { get }
     /// Whether a read or a search waits for its answer.
     var isAsking: Bool { get }
@@ -15,7 +15,9 @@ protocol ScriptLink: AnyObject {
     var holdsScript: Bool { get }
     /// Whether the script can answer now.
     var isReachable: Bool { get }
-    func send(_ call: SpotRun.Call)
+    /// Sends a call, and returns whether the script got it.
+    @discardableResult
+    func send(_ call: SpotRun.Call) -> Bool
     /// Asks for the form of an action, and returns the frame with its fields, or nil when there is none to wait for.
     func form(_ action: SpotAction, key: String) async throws -> String?
     /// Gives a filled form to the script, and returns all that it printed, or nil when a person stopped it.

@@ -21,12 +21,12 @@ final class OnceLink: ScriptLink {
         asking.contains { !$0.isStopped }
     }
 
-    func send(_ call: SpotRun.Call) {
-        guard let run else { return }
+    func send(_ call: SpotRun.Call) -> Bool {
+        guard let run else { return false }
         var hasAnswer = false
         var showedParts = false
-        let made = runs.call(run.command, call.action, key: call.key, input: call.input, limit: call.limit, variables: call.variables) { [weak self] made, text, lines in
-            guard let run = self?.run else { return }
+        let made = runs.call(run.command, call.action, key: call.key, input: call.input, limit: call.limit, variables: call.variables) { [weak run] made, text, lines in
+            guard let run else { return }
             showedParts = showedParts || !lines.parts.isEmpty
             switch call.purpose {
             case .ask(.read) where hasAnswer:
@@ -39,9 +39,9 @@ final class OnceLink: ScriptLink {
                 await run.takeUpdate(lines, frame: text, from: .call(generation: work.generation, keeping: work.keeping))
             }
             if case .ask(.read) = call.purpose, !run.isWanted, !made.isStopped { run.stop(made) }
-        } onEnd: { [weak self] made, end in
+        } onEnd: { [weak self, weak run] made, end in
             self?.asking.removeAll { $0 === made }
-            guard let run = self?.run else { return }
+            guard let run else { return }
             if case .ended = end, !hasAnswer, case .ask(let ask) = call.purpose {
                 hasAnswer = true
                 await run.takeAnswer(PluginOutput(text: ""), frame: "", to: ask)
@@ -50,6 +50,7 @@ final class OnceLink: ScriptLink {
         }
         if case .ask = call.purpose { asking.append(made) }
         run.track(made)
+        return true
     }
 
     func form(_ action: SpotAction, key: String) async throws -> String? {
@@ -65,11 +66,11 @@ final class OnceLink: ScriptLink {
         guard let run else { return nil }
         return try await withCheckedThrowingContinuation { continuation in
             var text = ""
-            let made = runs.call(run.command, action, key: key, input: input, limit: nil) { [weak self] _, frame, lines in
+            let made = runs.call(run.command, action, key: key, input: input, limit: nil) { [weak run] _, frame, lines in
                 text += frame
-                self?.run?.report(toastOf: lines)
-            } onEnd: { [weak self] made, end in
-                self?.run?.callEnded(made)
+                run?.report(toastOf: lines)
+            } onEnd: { [weak run] made, end in
+                run?.callEnded(made)
                 switch end {
                 case .stopped: continuation.resume(returning: nil)
                 case .ended: continuation.resume(returning: text)

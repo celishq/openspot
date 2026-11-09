@@ -310,7 +310,7 @@ public final class SpotsModel {
             }
             if spotsChanged, id == ShippedSpot.spotsID { reloadUnderSheet() }
         case .closed:
-            if openList == id { showSheet(nil, moving: false) }
+            if let shown = openList, runs.sheets[shown]?.isOpen != true { showSheet(nil, moving: false) }
         case .chooseFiles:
             if let sheet = sheets[id] { host.chooseFiles(for: sheet.command) { sheet.drop($0) } }
         }
@@ -592,7 +592,7 @@ public final class SpotsModel {
     }
 
     public func openSettings() {
-        open(ShippedSpot.settingsID, moving: isShown)
+        open(ShippedSpot.settingsID, moving: true)
     }
 
     /// Opens a sheet, which closes the sheet before, and shows it once it is ready: at once, or with its first answer. A

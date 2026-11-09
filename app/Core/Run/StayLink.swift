@@ -41,11 +41,14 @@ final class StayLink: ScriptLink {
 
     /// Sends a read or a search as a block, and a call of work as a block that runs until its `end` (Y7). A read that nothing
     /// wants does not start the script, and a script that does not run gets the read as it starts.
-    func send(_ call: SpotRun.Call) {
+    func send(_ call: SpotRun.Call) -> Bool {
         switch call.purpose {
         case .ask(.read(let generation, let reports)):
-            guard run?.isWanted == true else { return }
-            guard let script else { return start(reason: call.reason) }
+            guard run?.isWanted == true else { return false }
+            guard let script else {
+                start(reason: call.reason)
+                return self.script != nil
+            }
             let id = next()
             asking = (id, .read(generation: generation, reports: reports))
             script.send(.read, values: call.input, id: id, reason: call.reason)
@@ -54,6 +57,7 @@ final class StayLink: ScriptLink {
         case .work:
             send(call.action, values: call.input, key: call.key)
         }
+        return script != nil
     }
 
     /// Sends the call of a form, and waits for the frame with its fields. A second ask leaves the first waiting.
@@ -80,19 +84,24 @@ final class StayLink: ScriptLink {
         if isNeeded, script == nil { start() }
         if !isNeeded, let script {
             self.script = nil
+            asking = nil
             script.end()
+            run?.scriptEnded()
         }
     }
 
     func end() {
         script?.end()
         script = nil
+        asking = nil
         endCalls(nil)
         answerForm(with: .success(nil))
+        run?.scriptEnded()
     }
 
     func leave() {
         script = nil
+        asking = nil
         calls = [:]
         answerForm(with: .success(nil))
     }
