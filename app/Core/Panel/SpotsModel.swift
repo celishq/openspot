@@ -182,6 +182,10 @@ public final class SpotsModel {
     /// Whether the grid is in Edit Spots, where it also shows the spots that are off the grid, and a press only selects.
     public var isEditing = false
     public var arrangement = SpotArrangement()
+    /// The symbol of the command whose key a person pressed last, which the Openspot item shows for `flashPause`.
+    public private(set) var flashSymbol: String?
+    @ObservationIgnored public var flashPause: Duration = .milliseconds(1500)
+    @ObservationIgnored private var flashWatch: Task<Void, Never>?
     private var scanned: [Spot] = []
     private var lastScan = ScanResult(plugins: [], refused: [])
 
@@ -320,7 +324,14 @@ public final class SpotsModel {
 
     /// A person pressed a key that they assigned to a command.
     public func press(_ key: GlobalKey) {
-        sheets[key.spot]?.pressKey(key.command)
+        guard let sheet = sheets[key.spot] else { return }
+        sheet.pressKey(key.command)
+        flashSymbol = sheet.command.symbol(of: key.command)
+        flashWatch?.cancel()
+        flashWatch = Task { [weak self, flashPause] in
+            try? await Task.sleep(for: flashPause)
+            if !Task.isCancelled { self?.flashSymbol = nil }
+        }
     }
 
     private func take(_ report: SpotRun.Report, of id: String) {

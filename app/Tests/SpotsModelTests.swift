@@ -315,6 +315,28 @@ final class SpotsModelTests: XCTestCase {
 
         XCTAssertEqual(model.visible.map(\.id), ["other"])
     }
+
+    func testAKeyShowsTheSymbolOfItsCommandOrElseOfItsScriptForAMoment() async throws {
+        try script("move", header: "icon=macwindow\ncommand=left:Left side:rectangle.lefthalf.inset.filled\ncommand=plain:Plain", "true")
+        model.reload()
+        model.flashPause = .milliseconds(50)
+        let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+left"))
+
+        model.press(GlobalKey(spot: "move", command: "left", shortcut: shortcut))
+        XCTAssertEqual(model.flashSymbol, "rectangle.lefthalf.inset.filled")
+        model.press(GlobalKey(spot: "move", command: "plain", shortcut: shortcut))
+        XCTAssertEqual(model.flashSymbol, "macwindow")
+
+        try await wait("the end of the flash") { model.flashSymbol == nil }
+    }
+
+    func testAKeyOfAScriptThatIsGoneShowsNothing() throws {
+        model.reload()
+
+        model.press(GlobalKey(spot: "gone", command: "left", shortcut: try XCTUnwrap(Shortcut(text: "ctrl+left"))))
+
+        XCTAssertNil(model.flashSymbol)
+    }
 }
 
 /// A host that records what the model asks of the app, and makes each change at once.
