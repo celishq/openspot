@@ -35,6 +35,16 @@ public struct AgentPrompt: Equatable, Sendable {
         """
     }
 
+    /// Asks to change a spot, after the agent asks the person what to change, with the words of its last failed call.
+    public func changing(_ file: URL, failure: String?) -> String {
+        let failed = failure.map { "Its last call failed, and said: \($0)\n" } ?? ""
+        return """
+        Change the Openspot spot in \(file.path). Ask me what to change before you change it.
+        \(failed)
+        \(steps(for: file.deletingPathExtension().lastPathComponent))
+        """
+    }
+
     /// The steps of each build: the guide, a try, a look, the check and a show.
     private func steps(for id: String) -> String {
         """

@@ -15,11 +15,23 @@ public struct CommandAction: Equatable, Sendable {
     /// The row that the app adds to the menu of a spot, which no script prints or answers.
     public static let share = CommandAction(id: "openspot.share", title: "Copy to share", key: ActionKey(text: "cmd+shift+c"), scope: .command, after: .close)
 
-    /// The row that takes a spot out of the plugins folder. A widget file takes each widget that it holds.
+    /// The row that takes a spot out of the plugins folder, which `⌘Z` puts back. A widget file takes each widget that it
+    /// holds.
     public static func remove(widgets count: Int = 1) -> CommandAction {
-        let what = count > 1 ? " \(count) widgets" : ""
-        return CommandAction(id: removeID, title: "Delete", key: ActionKey(text: "cmd+backspace"), scope: .command, after: .close, confirm: "Press again to delete\(what)")
+        CommandAction(id: removeID, title: count > 1 ? "Delete \(count) widgets" : "Delete", key: ActionKey(text: "cmd+backspace"), scope: .command, after: .stay)
     }
+
+    /// The row that opens the file of a spot in the text editor.
+    public static let edit = CommandAction(id: "openspot.edit", title: "Edit", key: ActionKey(text: "cmd+e"), scope: .command, after: .close)
+
+    /// The row that starts a coding agent on the file of a spot.
+    public static let changeWithAI = CommandAction(id: "openspot.change", title: "Change with AI", scope: .command, after: .close)
+
+    /// The row that copies the file of a spot under a new name.
+    public static let duplicate = CommandAction(id: "openspot.duplicate", title: "Duplicate", key: ActionKey(text: "cmd+d"), scope: .command, after: .stay)
+
+    /// The row that shows the file of a spot in Finder.
+    public static let showInFinder = CommandAction(id: "openspot.show-in-finder", title: "Show in Finder", key: ActionKey(text: "cmd+r"), scope: .command, after: .close)
 
     public static let removeID = "openspot.remove"
 

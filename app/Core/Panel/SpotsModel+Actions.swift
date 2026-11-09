@@ -32,6 +32,7 @@ extension SpotsModel {
             }
             return true
         }
+        if key == Self.undoKey, openList == nil, searchText.isEmpty, undoRemoval() { return true }
         if let panel = openPanel, !panel.showsRows { return handlePanelKey(key, panel) }
         if let part = openPanel?.parts.first(where: { $0.key == key }) {
             pressPart(part)
@@ -200,11 +201,17 @@ extension SpotsModel {
         )
     }
 
-    /// The rows that the app adds for a selected card of the grid. A row of a list or an open sheet keeps its own Delete.
+    /// The rows that the app adds for a selected card of the grid: the acts on the file of a spot of the person, and on a
+    /// card of a file that does not load. A core spot can be shared and turned off. A row of a list or an open sheet keeps its
+    /// own Delete.
     private func extras(on target: Target) -> [CommandAction] {
-        guard openList == nil, target.item == nil, target.entry.command.shipped == nil else { return [] }
-        guard !files.folder(Config(text: "")).isCore(target.entry.command) else { return [.share, .turnOff] }
-        return [.share, .remove(widgets: widgets(sharingFileWith: target.entry))]
+        guard openList == nil, target.item == nil else { return [] }
+        let command = target.entry.command
+        if command.fault != nil { return [.edit, .showInFinder, .remove()] }
+        guard command.shipped == nil else { return [] }
+        guard !files.folder(Config(text: "")).isCore(command) else { return [.share, .turnOff] }
+        let copies = !command.id.contains("/") && command.kind != .widget
+        return [.edit, .changeWithAI] + (copies ? [.duplicate] : []) + [.showInFinder, .share, .remove(widgets: widgets(sharingFileWith: target.entry))]
     }
 
     /// How many widgets the file of a widget holds, which go together when it is removed.
@@ -269,6 +276,13 @@ extension SpotsModel {
             reviewCore(item)
         } else if action.id == CommandAction.removeID {
             remove(target.entry)
+        } else if action == .edit || action == .showInFinder {
+            if isShown { host.dismiss() }
+            open(target.entry, revealing: action == .showInFinder)
+        } else if action == .changeWithAI {
+            change(target.entry)
+        } else if action == .duplicate {
+            duplicate(target.entry)
         } else if action == .turnOff {
             turnOff(target.entry)
         } else if action.isForm {

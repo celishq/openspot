@@ -200,6 +200,8 @@ public final class SpotsModel {
     @ObservationIgnored private var flashWatch: Task<Void, Never>?
     private var scanned: [Spot] = []
     private var lastScan = ScanResult(plugins: [], refused: [])
+    /// The files of the last spot that Delete moved to the Trash, which `⌘Z` puts back.
+    @ObservationIgnored var removal: Removal?
     /// The stamp of each script file at the last scan, which says which scripts a change of the folder touched.
     @ObservationIgnored private var fileStamps: [String: String] = [:]
 

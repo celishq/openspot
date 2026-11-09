@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// The drag of files over the panel, the review of a `.spot` file, and the share, removal and turn-off of a spot.
+/// The drag of files over the panel, the review of a `.spot` file, and the share and turn-off of a spot.
 extension SpotsModel {
     /// Whether a card takes these dragged files. A card under an open sheet takes none.
     public func acceptsDrop(_ paths: [String], on id: String) -> Bool {
@@ -162,19 +162,6 @@ extension SpotsModel {
             } catch {
                 host.notify("\(entry.command.name) was not copied. \(Self.reason(error))")
             }
-        }
-    }
-
-    /// Moves the file of a spot to the Trash. What it keeps in `$OPENSPOT_DATA` stays.
-    public func remove(_ entry: Entry) {
-        closeList(moving: isShown)
-        if isShown { host.dismiss() }
-        do {
-            try files.folder.remove(entry.command)
-            host.confirm("\(entry.command.name) moved to the Trash")
-            reload()
-        } catch {
-            host.notify("\(entry.command.name) was not removed. \(Self.reason(error))")
         }
     }
 

@@ -28,7 +28,7 @@ public struct EmojiCatalog: Sendable {
     private static let regionMark = "@"
     private static let handshake: Unicode.Scalar = "\u{1F91D}"
     private static let pictureMark: Unicode.Scalar = "\u{FE0F}"
-    private static let missing = "This Mac has no emoji names. Update macOS, or tell the plugin's author."
+    private static let missing = "This Mac has no emoji names. Update macOS, or tell the spot's author."
 
     private let resources: URL
     private let languages: [String]
