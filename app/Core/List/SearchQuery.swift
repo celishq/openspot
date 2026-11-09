@@ -44,18 +44,16 @@ public struct SearchQuery: Equatable, Sendable {
     }
 
     public func matching(_ items: [SpotItem], recent: [String] = []) -> [SpotItem] {
-        matching(items.map(FoldedItem.init), recent: recent)
+        ranking(SearchIndex(items), items: items, among: Array(items.indices), recent: recent).map { items[$0] }
     }
 
-    func matching(_ items: [FoldedItem], recent: [String] = []) -> [SpotItem] {
-        ranking(items, among: Array(items.indices), recent: recent).map { items[$0].item }
-    }
-
-    /// The indices of the items among the given ones that match, best first.
-    func ranking(_ items: [FoldedItem], among indices: [Int], recent: [String]) -> [Int] {
+    /// The indices of the items among the given ones that match, best first. The index holds the texts of the items.
+    func ranking(_ index: SearchIndex, items: [SpotItem], among indices: [Int], recent: [String]) -> [Int] {
         let weights = Self.weights(of: recent)
-        return indices.compactMap { index in
-            match(items[index]).map { (rank: $0, weight: weights[items[index].item.run] ?? 0, index: index) }
+        return index.withItems { folded in
+            indices.compactMap { index in
+                match(folded[index]).map { (rank: $0, weight: weights[items[index].run] ?? 0, index: index) }
+            }
         }
         .sorted { ($0.rank, -$0.weight, $0.index) < ($1.rank, -$1.weight, $1.index) }
         .map(\.index)
@@ -79,7 +77,8 @@ public struct SearchQuery: Equatable, Sendable {
     public func matching(in lists: [ItemList], unpickedLimit: Int = .max) -> [(list: Int, item: SpotItem)] {
         lists.enumerated()
             .flatMap { index, list in
-                let found = ranked(list.folded, recent: list.recent).sorted { ($0.rank, $0.offset) < ($1.rank, $1.offset) }
+                let texts = list.search == .local ? list.searchIndex : SearchIndex(list.all)
+                let found = ranked(texts, items: list.all, recent: list.recent).sorted { ($0.rank, $0.offset) < ($1.rank, $1.offset) }
                 return found.prefix(index > 0 && list.recent.isEmpty ? unpickedLimit : found.count).map { (list: index, match: $0) }
             }
             .sorted { first, second in
@@ -89,10 +88,12 @@ public struct SearchQuery: Equatable, Sendable {
             .map { (list: $0.list, item: $0.match.item) }
     }
 
-    private func ranked(_ items: [FoldedItem], recent: [String]) -> [(rank: Int, weight: Double, offset: Int, item: SpotItem)] {
+    private func ranked(_ index: SearchIndex, items: [SpotItem], recent: [String]) -> [(rank: Int, weight: Double, offset: Int, item: SpotItem)] {
         let weights = Self.weights(of: recent)
-        return items.enumerated().compactMap { offset, folded in
-            match(folded).map { (rank: $0, weight: weights[folded.item.run] ?? 0, offset: offset, item: folded.item) }
+        return index.withItems { folded in
+            items.indices.compactMap { offset in
+                match(folded[offset]).map { (rank: $0, weight: weights[items[offset].run] ?? 0, offset: offset, item: items[offset]) }
+            }
         }
     }
 
@@ -120,7 +121,7 @@ public struct SearchQuery: Equatable, Sendable {
     private static func match(_ form: Form, in item: FoldedItem, loose: Bool) -> Int? {
         guard form.letterBits & ~item.letterBits == 0 else { return nil }
         let title = item.title
-        if title.letters == form.letters { return 0 }
+        if title.letters.elementsEqual(form.letters) { return 0 }
         if title.letters.starts(with: form.letters) { return 1 }
         var rank = 0
         for word in form.words {
@@ -130,10 +131,10 @@ public struct SearchQuery: Equatable, Sendable {
         return rank
     }
 
-    private static func match(_ word: [UInt64], title: FoldedText, keywords: [FoldedText], subtitle: FoldedText?, loose: Bool) -> Int? {
+    private static func match(_ word: [UInt32], title: FoldedText, keywords: SearchIndex.Texts, subtitle: FoldedText?, loose: Bool) -> Int? {
         let inTitle = title.place(of: word)
         if inTitle == .wordStart { return 2 }
-        if title.spells(word, inOrderAmong: title.starts) { return 3 }
+        if title.spellsAtWordStarts(word) { return 3 }
         if inTitle == .inside { return 4 }
         if keywords.contains(where: { $0.letters.starts(with: word) }) { return 5 }
         switch subtitle?.place(of: word) {
@@ -147,14 +148,14 @@ public struct SearchQuery: Equatable, Sendable {
 
     /// A text as folded letters, whole and split into words.
     private struct Form: Equatable, Sendable {
-        let letters: [UInt64]
-        let words: [[UInt64]]
+        let letters: [UInt32]
+        let words: [[UInt32]]
         let letterBits: UInt64
 
         init(_ text: String) {
             letters = text.map(FoldedText.code)
             words = text.split(whereSeparator: \.isWhitespace).map { $0.map(FoldedText.code) }
-            letterBits = words.reduce(0) { $0 | FoldedText.bits(of: $1) }
+            letterBits = words.joined().reduce(0) { $0 | FoldedText.bit(of: $1) }
         }
     }
 }

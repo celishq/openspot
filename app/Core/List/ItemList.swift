@@ -17,7 +17,8 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var isLoading = false
     public private(set) var hasFailed = false
     private(set) var all: [SpotItem]
-    private(set) var folded: [FoldedItem]
+    /// The searched texts of the rows, for a list that searches them itself. A list that its script searches keeps none.
+    private(set) var searchIndex = SearchIndex()
     /// The searches of the text as it grew, each one a prefix of the next. A longer search looks among the matches of the last
     /// one when it narrows to it, and a shorter one takes its matches back.
     private var narrowings: [Narrowing] = []
@@ -31,8 +32,8 @@ public struct ItemList: Equatable, Sendable {
     public init(items: [SpotItem] = [], recent: [String] = [], search: ItemSearch = .local) {
         self.search = search
         all = items
-        folded = items.map(FoldedItem.init)
         self.recent = recent
+        reindex()
         refresh()
     }
 
@@ -76,6 +77,7 @@ public struct ItemList: Equatable, Sendable {
     public mutating func take(search: ItemSearch) {
         guard search != self.search else { return }
         self.search = search
+        reindex()
         isWaiting = search == .script && !query.isEmpty
         refresh()
     }
@@ -115,7 +117,7 @@ public struct ItemList: Equatable, Sendable {
         hasFailed = false
         if items != all {
             all = items
-            folded = items.map(FoldedItem.init)
+            reindex()
             narrowings = []
             refresh()
         }
@@ -175,7 +177,6 @@ public struct ItemList: Equatable, Sendable {
             )
         }
         all = all.map(changed)
-        folded = all.map(FoldedItem.init)
         shown = shown.map(changed)
     }
 
@@ -196,6 +197,11 @@ public struct ItemList: Equatable, Sendable {
         refresh()
     }
 
+    /// Builds the index of the rows when the list searches them itself, and drops it when its script searches them.
+    private mutating func reindex() {
+        searchIndex = search == .local ? SearchIndex(all) : SearchIndex()
+    }
+
     private mutating func refresh() {
         guard search == .local else {
             narrowings = []
@@ -205,9 +211,9 @@ public struct ItemList: Equatable, Sendable {
         let next = SearchQuery(text: query)
         while let last = narrowings.last, !next.text.hasPrefix(last.query.text) { narrowings.removeLast() }
         if narrowings.last?.query.text != next.text {
-            let among = narrowings.last.flatMap { $0.query.narrows(to: next) ? $0.matches : nil } ?? Array(folded.indices)
-            narrowings.append(Narrowing(query: next, matches: next.ranking(folded, among: among, recent: recent)))
+            let among = narrowings.last.flatMap { $0.query.narrows(to: next) ? $0.matches : nil } ?? Array(all.indices)
+            narrowings.append(Narrowing(query: next, matches: next.ranking(searchIndex, items: all, among: among, recent: recent)))
         }
-        shown = narrowings.last?.matches.map { folded[$0].item } ?? []
+        shown = narrowings.last?.matches.map { all[$0] } ?? []
     }
 }

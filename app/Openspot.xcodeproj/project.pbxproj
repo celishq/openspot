@@ -262,6 +262,7 @@
 		EB691AAB2C3FE8A794D7E5B4 /* SheetSandbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 482CD66D5226EEDF8FFD75EA /* SheetSandbox.swift */; };
 		EBC6F7F7A9303E3E3D95E542 /* EditMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = E726A4D788CE727C98EE6161 /* EditMenu.swift */; };
 		ECF95179630EB7A471072BC6 /* SpotRowsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B59197E1402EADACBB12B789 /* SpotRowsView.swift */; };
+		EDB973809E23BE75233DBD4D /* SearchIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC083DA5BD24D21A2377BAE2 /* SearchIndex.swift */; };
 		EE028419E9629C6AEF4E1986 /* SpotPlacementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 318EF34C019A7228CFC97E67 /* SpotPlacementTests.swift */; };
 		EE3D1EC910670C2F2294F419 /* SharedSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA00FCD0964900924989734 /* SharedSpotTests.swift */; };
 		EF393DA11A14F1D9138F4A71 /* ScrollWindowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDB7CA4DF0E0220924943676 /* ScrollWindowTests.swift */; };
@@ -481,6 +482,7 @@
 		AA48912BB9570727D62BD2E2 /* SheetExamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetExamples.swift; sourceTree = "<group>"; };
 		AA6BA1715B4E37B748884868 /* SpotMenuBarDrag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotMenuBarDrag.swift; sourceTree = "<group>"; };
 		AB4C876B74746CC1FF5730EC /* SpotEmptyField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotEmptyField.swift; sourceTree = "<group>"; };
+		AC083DA5BD24D21A2377BAE2 /* SearchIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchIndex.swift; sourceTree = "<group>"; };
 		AC9756A9831F7CC7547E1A21 /* HintWordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HintWordsTests.swift; sourceTree = "<group>"; };
 		AD27F815A8C03D17279C794F /* TranslatePluginTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslatePluginTests.swift; sourceTree = "<group>"; };
 		AEE6E5B4502E62959A3B47EE /* Openspot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Openspot.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1068,6 +1070,7 @@
 				8907E98F00C0A89599F148E6 /* RepeatDrawing.swift */,
 				8F02800F3618527961398E47 /* RowPlacement.swift */,
 				6A5C19ED2A9E9C112AF05601 /* RowTemplate.swift */,
+				AC083DA5BD24D21A2377BAE2 /* SearchIndex.swift */,
 				B7484DFD73153CAE638A8708 /* SearchPrompt.swift */,
 				385F2DE8E51252AF29605552 /* SearchQuery.swift */,
 			);
@@ -1450,6 +1453,7 @@
 				66255A8D8D61C67E712D877A /* ScriptCall.swift in Sources */,
 				2D6F6E09E97F7B1A842E73A6 /* ScriptProcess.swift in Sources */,
 				1616312F8EC663985BB98057 /* ScrollWindow.swift in Sources */,
+				EDB973809E23BE75233DBD4D /* SearchIndex.swift in Sources */,
 				D04A9BA21746409C6C5ACDED /* SearchPrompt.swift in Sources */,
 				AB8A2C67138918199AD3D2BE /* SearchQuery.swift in Sources */,
 				FF4C8E8514CF9F271D960B26 /* SettingsSpot.swift in Sources */,
