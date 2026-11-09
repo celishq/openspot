@@ -25,12 +25,12 @@ final class SpotsModel {
             fixedState = command.headerState
         }
 
-        /// A wide card for an item that the main search found in a list.
+        /// A card of a full row for an item that the main search found in a list, with its spot's picture as its badge.
         init(command: Spot, item: SpotItem) {
             id = "\(command.id)\n\(item.run)"
-            sizeChoice = .wide
+            sizeChoice = .strip
             gridChoice = nil
-            self.item = item
+            self.item = item.badged(by: command)
             sheet = nil
             fixedCommand = command
             fixedState = SpotState(title: item.title, subtitle: item.subtitle ?? command.name)

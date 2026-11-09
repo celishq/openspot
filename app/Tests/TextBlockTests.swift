@@ -116,6 +116,15 @@ final class TextBlockTests: XCTestCase {
         )
     }
 
+    func testAnItemTakesThePictureOfItsSpotAsBadgeUnlessItHasOne() {
+        let url = URL(fileURLWithPath: "/apps.sh")
+        let safari = SpotItem(title: "Safari", run: "s", file: "/Safari.app")
+
+        XCTAssertEqual(safari.badged(by: Spot(id: "a", name: "Apps", url: url, file: "/Apps.app")).badge, .file("/Apps.app"))
+        XCTAssertEqual(safari.badged(by: Spot(id: "a", name: "Apps", url: url, symbol: "app")).badge, .symbol("app"))
+        XCTAssertEqual(SpotItem(title: "A", run: "a", badge: .glyph("⭐")).badged(by: Spot(id: "a", name: "A", url: url)).badge, .glyph("⭐"))
+    }
+
     func testAnItemTakesABadgeInTheFormOfAnIcon() {
         let item = SpotItem(block: TextBlock.blocks(in: "row=a\nicon=gearshape\nbadge=/Sound.appex")[0])
 

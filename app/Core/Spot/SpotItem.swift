@@ -90,6 +90,12 @@ public struct SpotItem: Equatable, Sendable {
         symbol ?? file ?? image ?? glyph
     }
 
+    /// The same item, with the picture of the spot it came from as its badge when it has none of its own.
+    public func badged(by spot: Spot) -> SpotItem {
+        SpotItem(title: title, subtitle: subtitle, run: run, symbol: symbol, file: file, image: image, glyph: glyph, badge: badge ?? spot.picture,
+                 hides: hides, keywords: keywords, shortcut: shortcut, isOn: isOn, tone: tone, template: template, fields: fields)
+    }
+
     /// The picture a row draws: its image, or else the icon of its file.
     public var icon: FileIcon? {
         image.map(FileIcon.image) ?? file.map(FileIcon.init(path:))
