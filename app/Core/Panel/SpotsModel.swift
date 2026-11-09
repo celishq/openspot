@@ -184,6 +184,8 @@ public final class SpotsModel {
     public var arrangement = SpotArrangement()
     private var scanned: [Spot] = []
     private var lastScan = ScanResult(plugins: [], refused: [])
+    /// The stamp of the folder that `lastScan` came from.
+    @ObservationIgnored private var lastStamp: PluginFolder.Stamp?
 
     /// The app around the panel, which shows it, tells the person and moves each change.
     @ObservationIgnored public unowned let host: SpotsHost
@@ -227,15 +229,18 @@ public final class SpotsModel {
         host.present()
     }
 
-    /// Reads the config file and the plugin folder again. No script runs for this, and each card shows its header until its
-    /// answer arrives.
+    /// Reads the config file again, and the plugin folder when a file that its scan reads has changed. No script runs for
+    /// this, and each card shows its header until its answer arrives.
     public func reload() {
         host.applyConfig()
         let config = files.config.read()
         let folder = files.folder(config)
         let shipped = host.shippedSpots(folder: folder, config: files.config, update: updateSpot, offersLogin: isFirstLaunch)
             + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
-        let scan = (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
+        let stamp = folder.stamp(shipped: shipped)
+        let scan = stamp == lastStamp ? lastScan
+            : (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
+        lastStamp = stamp
         let problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.take(scan)
         lastScan = scan
@@ -269,8 +274,8 @@ public final class SpotsModel {
     }
 
     /// The panel starts to show: a pick that its fade left finishes, the first card is selected, the held keys count, the
-    /// plugin folder is read again and each script that the panel shows reads. The panel says it shows on the next turn, so
-    /// that its fade starts from hidden.
+    /// plugin folder is read again if it changed, and each script that the panel shows reads. The panel says it shows on the
+    /// next turn, so that its fade starts from hidden.
     public func panelWillShow(holding modifiers: Shortcut.Modifiers) {
         finishPick()
         selected = 0

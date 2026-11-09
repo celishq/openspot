@@ -58,6 +58,18 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the open list") { model.openList == "list" && model.openItems?.shown.count == 2 }
     }
 
+    func testAnOpenFindsAScriptMadeExecutableSinceTheOpenBefore() throws {
+        let late = plugins.appendingPathComponent("late.sh")
+        try "#!/bin/sh\n# title=Late\n".write(to: late, atomically: false, encoding: .utf8)
+        model.panelWillShow(holding: [])
+        XCTAssertFalse(model.entries.contains { $0.id == "late" })
+
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: late.path)
+        model.panelWillShow(holding: [])
+
+        XCTAssertTrue(model.entries.contains { $0.id == "late" })
+    }
+
     func testAPressOfAListOpensItsSheetAndAStepBackClosesIt() async throws {
         try await openList()
 

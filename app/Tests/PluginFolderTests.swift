@@ -28,6 +28,40 @@ final class PluginFolderTests: XCTestCase {
         get throws { try PluginFolder(url: folder).scan() }
     }
 
+    func testTheStampStaysWhileNothingThatAScanReadsChanges() throws {
+        try write("a.sh", header: "title=A")
+        try write("home/b.sh", header: "title=B")
+        let plugins = PluginFolder(url: folder)
+
+        XCTAssertEqual(plugins.stamp(), plugins.stamp())
+    }
+
+    func testTheStampChangesWithEachChangeThatAScanReads() throws {
+        let outside = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-linked-\(UUID().uuidString).sh")
+        try "#!/bin/sh\n# title=L\n".writeScript(to: outside)
+        defer { try? FileManager.default.removeItem(at: outside) }
+        let a = try write("a.sh", header: "title=A")
+        try write("home/b.sh", header: "title=B")
+        try FileManager.default.createSymbolicLink(at: folder.appendingPathComponent("linked.sh"), withDestinationURL: outside)
+        let plugins = PluginFolder(url: folder)
+        let changes: [(String, () throws -> Void)] = [
+            ("an edit of the same size", { try "#!/bin/sh\n# title=Z\n\n".write(to: a, atomically: false, encoding: .utf8) }),
+            ("a mode", { try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: a.path) }),
+            ("a new file in a subfolder", { try self.write("home/c.sh", header: "title=C") }),
+            ("a rename", { try FileManager.default.moveItem(at: a, to: self.folder.appendingPathComponent("d.sh")) }),
+            ("a removed file", { try FileManager.default.removeItem(at: self.folder.appendingPathComponent("home/b.sh")) }),
+            ("an edit of a linked file", { try "#!/bin/sh\n# title=M\n".write(to: outside, atomically: false, encoding: .utf8) })
+        ]
+
+        for (change, make) in changes {
+            let before = plugins.stamp()
+            try make()
+            XCTAssertNotEqual(plugins.stamp(), before, change)
+        }
+        XCTAssertNotEqual(PluginFolder(url: folder, core: folder, enabled: ["a"]).stamp(), PluginFolder(url: folder, core: folder).stamp())
+        XCTAssertNotEqual(plugins.stamp(shipped: [Spot(id: "x", name: "X", url: folder)]), plugins.stamp())
+    }
+
     func testADebugBuildKeepsItsStateInItsOwnFolder() {
         let home = URL(fileURLWithPath: "/Users/a")
 
