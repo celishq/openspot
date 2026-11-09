@@ -452,6 +452,31 @@ final class SpotRunTests: XCTestCase {
         XCTAssertTrue(listChanged)
     }
 
+    func testAMoveOfTheSelectionTellsTheReadersOfTheSelectedRow() async throws {
+        let sheet = try holding("printf 'row=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'", pause: 30)
+        sheet.read()
+        try await wait("the rows") { sheet.list.shown.count == 2 }
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = sheet.selectedItem } onChange: { changed = true }
+
+        sheet.list.move(by: 1)
+
+        XCTAssertTrue(changed)
+        XCTAssertEqual(sheet.selectedItem?.title, "B")
+    }
+
+    func testAnEqualListTellsNoReader() async throws {
+        let sheet = try holding("printf 'row=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'", pause: 30)
+        sheet.read()
+        try await wait("the rows") { sheet.list.shown.count == 2 }
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = sheet.list; _ = sheet.selection } onChange: { changed = true }
+
+        sheet.list.selectFirst()
+
+        XCTAssertFalse(changed)
+    }
+
     func testAMoveOfTheSelectionAndALoadReportNothing() async throws {
         let sheet = try holding("printf 'row=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'", pause: 30)
         sheet.read()

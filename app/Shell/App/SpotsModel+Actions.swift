@@ -6,7 +6,7 @@ import SwiftUI
 extension SpotsModel {
     /// What the actions menu and the action keys work on: the selected row, or else the selected card.
     private var target: Target? {
-        if let entry = openEntry { return (entry, openItems?.selectedItem) }
+        if let entry = openEntry { return (entry, openSheet?.selectedItem) }
         guard let entry = selectedEntry else { return nil }
         if let item = entry.item, let list = entries.first(where: { $0.id == entry.command.id }) { return (list, item) }
         return (entry, nil)

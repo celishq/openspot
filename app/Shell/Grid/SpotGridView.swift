@@ -29,22 +29,22 @@ struct SpotGridView: View {
             )
         }
         return ZStack(alignment: .topLeading) {
-            SpotGridGlass(cards: glass, size: CGSize(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows)))
+            SpotGridGlass(cards: glass, pressable: openID == nil ? glass : [], size: CGSize(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows)))
             ForEach(Array(zip(placements, glass)), id: \.1.id) { placement, card in
                 let entry = model.visible[placement.index]
                 SpotCardView(
                     entry: entry,
                     size: placement.size,
-                    isSelected: { [model, index = placement.index] in model.selected == index },
+                    index: placement.index,
                     isPressed: pressed == entry.id,
                     takesDrag: model.takesDrag(entry.id),
                     isDropTarget: dropTarget == entry.id,
-                    reading: entry.kind == .widget ? { [model] in model.reading(of: $0) } : { _ in nil },
                     chainLetter: model.chainLetter(of: entry),
                     showsChain: model.showsChain,
                     isHiddenFromGrid: model.isEditing && !entry.isOnGrid,
                     model: model
                 )
+                .equatable()
                 .simultaneousGesture(DragGesture(minimumDistance: 0).updating($pressed) { _, pressed, _ in pressed = entry.id })
                 .onDrop(of: [.fileURL], delegate: SpotCardDrop(id: entry.id, model: model, target: $dropTarget))
                 .modifier(card.motion)

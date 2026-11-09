@@ -53,6 +53,7 @@ public final class SpotRun {
             return rows
         }
         set {
+            guard newValue != rows else { return }
             if newValue.differsOnlyInSelection(from: rows) {
                 withMutation(keyPath: \.selection) { rows = newValue }
                 return
@@ -72,6 +73,13 @@ public final class SpotRun {
     public var selection: Int {
         access(keyPath: \.selection)
         return rows.selected
+    }
+
+    /// The selected row, read so that a move of the selection and a change of the rows both tell its reader.
+    public var selectedItem: SpotItem? {
+        access(keyPath: \.list)
+        access(keyPath: \.selection)
+        return rows.selectedItem
     }
     public private(set) var panel: SheetParts? {
         didSet { settle() }

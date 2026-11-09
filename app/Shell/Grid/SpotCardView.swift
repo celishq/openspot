@@ -4,17 +4,15 @@ import OpenspotCore
 /// A spot: a glyph, then a title with a detail, then an accessory. A small card shows the glyph alone, and a widget shows
 /// its places. A kind differs only in what fills a slot: a slider has its track as its detail, and running work takes the
 /// place of the glyph.
-struct SpotCardView: View {
+struct SpotCardView: View, Equatable {
     let entry: SpotsModel.Entry
     let size: SpotSize
-    /// Whether the card is selected, read only by its ring so that a move of the selection reruns no card.
-    let isSelected: () -> Bool
+    /// The card's place among the visible cards, which its ring compares with the selection.
+    let index: Int
     /// Whether the person presses the card, which the grid follows so that its blur grows with the card.
     let isPressed: Bool
     let takesDrag: Bool
     let isDropTarget: Bool
-    /// What each script last gave a widget to draw.
-    let reading: (String) -> MetricReading?
     let chainLetter: String?
     let showsChain: Bool
     let isHiddenFromGrid: Bool
@@ -22,6 +20,13 @@ struct SpotCardView: View {
     let model: SpotsModel
     @State private var isHovered = false
     @Environment(\.spotIsShown) private var isShown
+
+    /// Whether two cards show the same values, so that a run of the grid reruns only the cards that changed.
+    nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.entry == rhs.entry && lhs.size == rhs.size && lhs.index == rhs.index && lhs.isPressed == rhs.isPressed
+            && lhs.takesDrag == rhs.takesDrag && lhs.isDropTarget == rhs.isDropTarget && lhs.chainLetter == rhs.chainLetter
+            && lhs.showsChain == rhs.showsChain && lhs.isHiddenFromGrid == rhs.isHiddenFromGrid && lhs.model === rhs.model
+    }
 
     /// How far a line reaches past the inset at its trailing end, where the round end of the card leaves room.
     private static let lineReach: CGFloat = 6
@@ -37,7 +42,7 @@ struct SpotCardView: View {
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))
             .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, blursBehind: false, rimSize: CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))))
             .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : isHovered ? 0.08 : 0)).allowsHitTesting(false))
-            .overlay(Color.clear.modifier(CardRing(isSelected: isSelected, shape: shape)).opacity(isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
+            .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).opacity(isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { keycap }
             .overlay(alignment: .topTrailing) { hiddenMark }
             .contentShape(shape)
@@ -68,6 +73,11 @@ struct SpotCardView: View {
         } else {
             row
         }
+    }
+
+    /// What each script last gave a widget to draw. Only a widget reads it.
+    private var reading: (String) -> MetricReading? {
+        entry.kind == .widget ? { [model] in model.reading(of: $0) } : { _ in nil }
     }
 
     /// The source of the plugin's own view, which fills the whole card in place of its glyph and words (V3).
@@ -264,10 +274,11 @@ struct SpotCardView: View {
 
 /// The ring of a selected card. It alone reads the selection, so that an arrow press reruns the rings and no card.
 private struct CardRing: ViewModifier {
-    let isSelected: () -> Bool
+    let model: SpotsModel
+    let index: Int
     let shape: RoundedRectangle
 
     func body(content: Content) -> some View {
-        content.modifier(SpotSelectionRing(isSelected: isSelected(), shape: shape))
+        content.modifier(SpotSelectionRing(isSelected: model.selected == index, shape: shape))
     }
 }

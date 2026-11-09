@@ -18,6 +18,9 @@ struct SpotGridGlass: View {
     }
 
     let cards: [Card]
+    /// The cards that a press can grow: each card while no sheet is built, and none while one is, so that a sheet's motion
+    /// moves no shape of the stronger blur.
+    let pressable: [Card]
     let size: CGSize
     @Environment(\.spotIsShown) private var isShown
 
@@ -28,7 +31,7 @@ struct SpotGridGlass: View {
         ZStack(alignment: .topLeading) {
             glass(radius: SpotTheme.blur, isPress: false)
             glass(radius: SpotTheme.blur * SpotMotion.pressedGlass, isPress: true)
-                .opacity(cards.contains(where: \.isPressed) ? 1 : 0)
+                .opacity(pressable.contains(where: \.isPressed) ? 1 : 0)
         }
         .padding(-Self.reach)
         .opacity(isShown ? 1 : 0.001)
@@ -44,7 +47,7 @@ struct SpotGridGlass: View {
             .frame(width: size.width + 2 * reach, height: size.height + 2 * reach)
             .mask(alignment: .topLeading) {
                 ZStack(alignment: .topLeading) {
-                    ForEach(cards) { shape(of: $0, isPress: isPress) }
+                    ForEach(isPress ? pressable : cards) { shape(of: $0, isPress: isPress) }
                 }
                 .offset(x: reach, y: reach)
                 .frame(width: size.width + 2 * reach, height: size.height + 2 * reach, alignment: .topLeading)
