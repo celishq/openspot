@@ -20,12 +20,8 @@ public enum SpotTokens {
     public static let listRowGap: CGFloat = 6
     /// The space above and below the slots of a row that a template draws.
     public static let listRowInset: CGFloat = 4
-    /// How far a sheet's header icon moves in, so that its centre lies over the icons of the rows.
-    public static let headerGlyphInset = padding + listIconSize / 2 - glyphSize / 2
     /// How far a sheet's header words move in, so that they start where the words of the rows start.
     public static let headerWordsInset = padding + listIconSize - glyphSize
-    /// How far a sheet's close button moves in, so that its centre lies over the buttons at the end of the rows.
-    public static let headerButtonInset = padding + (listRowHeight - 2 * listRowInset) / 2 - glyphSize / 2
     public static let listIconSize: CGFloat = 24
     public static let hintHeight: CGFloat = 14
     public static let hintPillInset: CGFloat = 4

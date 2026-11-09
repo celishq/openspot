@@ -22,7 +22,6 @@ struct SpotSheetPreview: View {
                     .foregroundStyle(SpotTheme.ink)
                     .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
                     .background(SpotTheme.ink.opacity(SpotTheme.disc), in: Circle())
-                    .offset(x: SpotTokens.headerGlyphInset)
                 VStack(alignment: .leading, spacing: SpotType.lineGap) {
                     Text(title).font(SpotType.title).foregroundStyle(SpotTheme.ink)
                     Text(subtitle).font(SpotType.detail).modifier(SpotSecondaryText())
@@ -30,7 +29,6 @@ struct SpotSheetPreview: View {
                 .offset(x: SpotTokens.headerWordsInset)
                 Spacer()
                 SpotRoundButton(symbol: "xmark", label: "Close") {}
-                    .offset(x: -SpotTokens.headerButtonInset)
             }
             if panel.showsRows { Color.clear.frame(height: SpotTokens.listRowHeight) }
             SheetPartsView(panel: panel, onSet: onSet, onPress: onPress, list: list, customView: customView)
