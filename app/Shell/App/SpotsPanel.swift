@@ -114,7 +114,9 @@ final class SpotsPanel: NSPanel {
     }
 
     private static func actionKey(of event: NSEvent) -> ActionKey? {
-        let name: String?
+        let isCommand = event.modifierFlags.contains(.command)
+        let isShift = event.modifierFlags.contains(.shift)
+        let name: String
         switch Int(event.keyCode) {
         case kVK_Return, kVK_ANSI_KeypadEnter: name = "return"
         case kVK_Delete: name = "backspace"
@@ -123,11 +125,11 @@ final class SpotsPanel: NSPanel {
         case kVK_DownArrow: name = "down"
         case kVK_LeftArrow: name = "left"
         case kVK_RightArrow: name = "right"
-        default: name = event.charactersIgnoringModifiers?.lowercased()
+        default:
+            guard let typed = event.charactersIgnoringModifiers else { return nil }
+            return ActionKey(typed: typed, code: event.keyCode, isCommand: isCommand, isShift: isShift, latin: SpotKeyLayouts.latin)
         }
-        return name.map {
-            ActionKey(name: $0, isCommand: event.modifierFlags.contains(.command), isShift: event.modifierFlags.contains(.shift))
-        }
+        return ActionKey(name: name, isCommand: isCommand, isShift: isShift)
     }
 
     override func becomeKey() {
