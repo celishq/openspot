@@ -39,7 +39,8 @@ enum SpotClipboard {
         exit(0)
     }
 
-    /// Puts the file on the pasteboard as one item: its URL, and the picture when it is an image.
+    /// Puts the file on the pasteboard as one item: its URL, and the picture when it is an image. The pasteboard takes a file
+    /// URL after the write returns, and a process that exits at once loses it, so this reads the URL back before it answers.
     static func copy(_ url: URL, to pasteboard: NSPasteboard) -> Bool {
         let item = NSPasteboardItem()
         item.setString(url.absoluteString, forType: .fileURL)
@@ -48,7 +49,7 @@ enum SpotClipboard {
             if url.pathExtension.lowercased() == "png", let data = try? Data(contentsOf: url) { item.setData(data, forType: .png) }
         }
         pasteboard.clearContents()
-        return pasteboard.writeObjects([item])
+        return pasteboard.writeObjects([item]) && pasteboard.string(forType: .fileURL) == url.absoluteString
     }
 
     private static func fail(_ message: String) -> Never {

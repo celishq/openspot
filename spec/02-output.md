@@ -175,7 +175,8 @@ The head is the one block with no kind, at any place in the output, and it is no
 - the drawing: `grid=`, `card=` and `pad=` lines for the sheet, and `grid.<size>=` lines for the card;
 - the spot: `main`, and `title`, `detail`, `size` and `on` for its card. `on=true` shows the card as on, and it comes before a main `switch`;
 - the rows: `search` and `recents`;
-- the effects: `toast`, `link=<url>`, which opens the URL, and `end=<call>`, which ends a call of a staying script (05).
+- the effects: `toast`, `link=<url>`, which opens the URL, `end=<call>`, which ends a call of a staying script (05), and
+  `select=<row id>`, which reads again with that row selected when the call ends, such as the row that a drop added.
 
 A second block with no kind is skipped, and Openspot reports it.
 

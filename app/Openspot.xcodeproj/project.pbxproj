@@ -59,6 +59,7 @@
 		2DA0ED84843B556BFECCAA29 /* ToastKeyFill.swift in Sources */ = {isa = PBXBuildFile; fileRef = D14A96CD1B177F8A53D7B7DE /* ToastKeyFill.swift */; };
 		30B15963F9513FE78062736C /* SpotRunsReadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F06E95F6AF356EBFD00D06E1 /* SpotRunsReadTests.swift */; };
 		311F6C099DD31BC21A891BE1 /* BuildSpot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77E99FF749A4BBCB978DE81A /* BuildSpot.swift */; };
+		337A23F259AA3FAFF7693FAE /* FocusLossTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7B886397C19798D6A36AB5E /* FocusLossTests.swift */; };
 		33D394185FD545EE59A149DC /* SpotSheetCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD9A190B38CA594EFF716C0A /* SpotSheetCard.swift */; };
 		34098263A3898B42FA2C7411 /* SheetArea.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC9DB55A3E5991608C7EEDC4 /* SheetArea.swift */; };
 		34BD1DD1CC03BC49C529EAF3 /* SpotAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6AD21E62E3935AAA7245C95 /* SpotAction.swift */; };
@@ -162,6 +163,7 @@
 		95DA3CE2F7CF54EAB8C9C294 /* PluginOutputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBD05CBBD0E23D0F98B74AB7 /* PluginOutputTests.swift */; };
 		9638AFF34B3EF9A6DF3B2D40 /* GlobalKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A19AD00D49BBCD936BA0EF5A /* GlobalKeyTests.swift */; };
 		9655FD959FFE192D04F94EBC /* SpotDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991DA94B480AAA41005B0191 /* SpotDrop.swift */; };
+		9699AABB10DD82336C7AD4BA /* FocusLoss.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFD8983A5D718934384188E9 /* FocusLoss.swift */; };
 		969C4AAB8DA20D2375A8C639 /* ItemPick.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D42A800C4CAF73DD0F643D7 /* ItemPick.swift */; };
 		9718F14C073BFC8B14270277 /* SearchPromptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D85AD5EC56456D478327C3F4 /* SearchPromptTests.swift */; };
 		97B0B1823C4B78F0C3E32D50 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98423F0E430034DA2CB5998A /* main.swift */; };
@@ -563,6 +565,7 @@
 		E6574796DA8EE0FC71F50F15 /* SpotSearchText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSearchText.swift; sourceTree = "<group>"; };
 		E6AD21E62E3935AAA7245C95 /* SpotAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotAction.swift; sourceTree = "<group>"; };
 		E726A4D788CE727C98EE6161 /* EditMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditMenu.swift; sourceTree = "<group>"; };
+		E7B886397C19798D6A36AB5E /* FocusLossTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusLossTests.swift; sourceTree = "<group>"; };
 		EA09C84349C2BE5E07A3084B /* QuitSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitSpotTests.swift; sourceTree = "<group>"; };
 		EAC3D4BE09B34914C178CEBB /* SpotArrangement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotArrangement.swift; sourceTree = "<group>"; };
 		EB8B60927B6B65387FC5CCAF /* SpotGlyphPicture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotGlyphPicture.swift; sourceTree = "<group>"; };
@@ -583,6 +586,7 @@
 		FAA755C8339AB71444925D63 /* SpotKeyLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotKeyLabel.swift; sourceTree = "<group>"; };
 		FABB501FC911592C38310E2F /* SymbolCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolCatalog.swift; sourceTree = "<group>"; };
 		FB56CAAADCC15D5DC54C5776 /* SpotsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotsView.swift; sourceTree = "<group>"; };
+		FFD8983A5D718934384188E9 /* FocusLoss.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusLoss.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -789,6 +793,7 @@
 				4CF096BD2E9025B33FF465C8 /* EmojiCatalogTests.swift */,
 				D34F4DF9EE6D7D1505F40662 /* FileIconTests.swift */,
 				D979AA33BA3AF2AA448F7AA6 /* FirstLaunchTests.swift */,
+				E7B886397C19798D6A36AB5E /* FocusLossTests.swift */,
 				81708547DDCAC262759EB258 /* FormDraftTests.swift */,
 				A19AD00D49BBCD936BA0EF5A /* GlobalKeyTests.swift */,
 				43383EF80D00B3D49DDC9916 /* HexColorTests.swift */,
@@ -975,6 +980,7 @@
 			isa = PBXGroup;
 			children = (
 				0D50478A53DB8348510EBFE6 /* CardPush.swift */,
+				FFD8983A5D718934384188E9 /* FocusLoss.swift */,
 				814ECF718B17193CD5DBBCE8 /* IconBody.swift */,
 				B7CED5C13B41C8FC2AC16409 /* PanelPlace.swift */,
 				2B23CFBEA8B591C3422CA1B7 /* SheetPush.swift */,
@@ -1425,6 +1431,7 @@
 				2D767FD965D15EAF5F644AF0 /* ConfigFile.swift in Sources */,
 				7D86F992985623D023E143C4 /* EmojiCatalog.swift in Sources */,
 				E1DE5AAA779EC513130D6191 /* FileIcon.swift in Sources */,
+				9699AABB10DD82336C7AD4BA /* FocusLoss.swift in Sources */,
 				517CCF4BA1DB4F34EFEA4E0B /* FoldedItem.swift in Sources */,
 				577D71A519F841B9DF675F17 /* FoldedText.swift in Sources */,
 				B512F4DB9EE1FF9D89C7C95E /* FormDraft.swift in Sources */,
@@ -1623,6 +1630,7 @@
 				C624547B076FE8A68F13BF37 /* EmojiCatalogTests.swift in Sources */,
 				3B8FBB08AF6DE22373101644 /* FileIconTests.swift in Sources */,
 				E94B1411FEA2A19E5715556C /* FirstLaunchTests.swift in Sources */,
+				337A23F259AA3FAFF7693FAE /* FocusLossTests.swift in Sources */,
 				0D925E836160D970705BB7A4 /* FormDraftTests.swift in Sources */,
 				9638AFF34B3EF9A6DF3B2D40 /* GlobalKeyTests.swift in Sources */,
 				0CC19E6A91D7D13EECFEC77A /* HexColorTests.swift in Sources */,

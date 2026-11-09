@@ -12,6 +12,16 @@ public struct ActionKey: Hashable, Sendable {
         self.isShift = isShift
     }
 
+    /// The key of a press, named by the letter that it types. With ⌘ on a layout whose letters are not Latin, it takes the
+    /// letter that the same key types in the Latin layout, so that ⌘E works on a Ukrainian layout as on ABC (A17).
+    public init(typed: String, code: UInt16, isCommand: Bool, isShift: Bool, latin: @autoclosure () -> KeyLayout?) {
+        var name = typed.lowercased()
+        if isCommand, !name.allSatisfy(\.isASCII), let letter = latin()?.keys[code], letter.isASCII {
+            name = String(letter).lowercased()
+        }
+        self.init(name: name, isCommand: isCommand, isShift: isShift)
+    }
+
     public init?(text: String) {
         var parts = text.lowercased().split(separator: "+").map(String.init)
         guard let last = parts.popLast() else { return nil }
