@@ -140,6 +140,11 @@ public struct Spot: Equatable, Sendable {
         return SpotSize.all
     }
 
+    /// The SF Symbol of one of its commands: the command's own icon when that is a symbol, or else its own symbol.
+    public func symbol(of command: String) -> String {
+        Icon(text: offers.first { $0.id == command }?.icon)?.symbol ?? symbol
+    }
+
     /// The same spot, which opens to the keys of its commands when it lists commands and has no read of its own.
     func listingKeys(with settings: SettingsSpot) -> Spot {
         guard !offers.isEmpty, read == nil, shipped == nil else { return self }
