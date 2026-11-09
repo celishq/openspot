@@ -14,7 +14,7 @@ final class PluginHeaderTests: XCTestCase {
         XCTAssertTrue(command.hasSpot)
     }
 
-    func testAGlobalScriptWithNoKeyHasNoCardOnTheGrid() throws {
+    func testAGlobalScriptWithNoKeyHasNoCardOnTheGridAndOnlyItsRowsAreFound() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-grid-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -24,6 +24,8 @@ final class PluginHeaderTests: XCTestCase {
 
         XCTAssertFalse(try XCTUnwrap(try Plugin(file: searchOnly, id: "search")?.commands.first).headerState.isOnGrid)
         XCTAssertTrue(try XCTUnwrap(try Plugin(file: keyed, id: "keyed")?.commands.first).headerState.isOnGrid)
+        XCTAssertFalse(try XCTUnwrap(try Plugin(file: searchOnly, id: "search")?.commands.first).isFound)
+        XCTAssertTrue(try XCTUnwrap(try Plugin(file: keyed, id: "keyed")?.commands.first).isFound)
     }
 
     func testReadsTheCommentLinesUnderTheFirstLine() {

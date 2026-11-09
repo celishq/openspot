@@ -122,6 +122,11 @@ public struct Spot: Equatable, Sendable {
         image.map(FileIcon.image) ?? file.map(FileIcon.init(path:))
     }
 
+    /// Whether the main search finds the spot itself. A global spot with no card on the grid offers only its rows.
+    public var isFound: Bool {
+        !isGlobal || headerState.isOnGrid
+    }
+
     /// Its picture as one icon: its image, or else its file, or else its glyph, or else its symbol.
     public var picture: Icon {
         image.map(Icon.image) ?? file.map(Icon.file) ?? glyph.map(Icon.glyph) ?? .symbol(symbol)
