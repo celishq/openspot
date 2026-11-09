@@ -2,7 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 /// The picture of an item or a spot: its image or the icon of its file, or else its glyph, or else its symbol, or else nothing.
-/// With a badge, the badge fills the top-left quarter and the picture the other three, cut back by a thin ring around the badge.
+/// With a badge, the picture fills the bottom-right three quarters, over the badge in the top-left quarter, which a thin ring cuts back.
 struct SpotItemIcon: View {
     let icon: FileIcon?
     let glyph: String?
@@ -32,19 +32,19 @@ struct SpotItemIcon: View {
 
     var body: some View {
         if let badge {
-            ZStack(alignment: .topLeading) {
-                SpotItemIcon(icon: icon, glyph: glyph, symbol: symbol, size: size * 0.75)
-                    .frame(width: size, height: size, alignment: .bottomTrailing)
+            ZStack(alignment: .bottomTrailing) {
+                SpotItemIcon(icon: badge.image.map(FileIcon.image) ?? badge.file.map(FileIcon.init(path:)), glyph: badge.glyph, symbol: badge.symbol, size: size / 2)
+                    .frame(width: size, height: size, alignment: .topLeading)
                     .mask {
                         Rectangle()
-                            .overlay(alignment: .topLeading) {
-                                RoundedRectangle(cornerRadius: size * 0.15, style: .continuous)
-                                    .frame(width: size / 2 + Self.ring, height: size / 2 + Self.ring)
+                            .overlay(alignment: .bottomTrailing) {
+                                RoundedRectangle(cornerRadius: size * 0.2, style: .continuous)
+                                    .frame(width: size * 0.75 + Self.ring, height: size * 0.75 + Self.ring)
                                     .blendMode(.destinationOut)
                             }
                             .compositingGroup()
                     }
-                SpotItemIcon(icon: badge.image.map(FileIcon.image) ?? badge.file.map(FileIcon.init(path:)), glyph: badge.glyph, symbol: badge.symbol, size: size / 2)
+                SpotItemIcon(icon: icon, glyph: glyph, symbol: symbol, size: size * 0.75)
             }
             .frame(width: size, height: size)
         } else if let icon {
