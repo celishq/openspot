@@ -20,6 +20,11 @@ public struct SheetTransition: Equatable, Sendable {
 
     public init() {}
 
+    /// The sheet that shows: from its first frame on its card until its close starts.
+    public var shown: String? {
+        phase == .closing || phase == .closed ? nil : id
+    }
+
     /// Whether the sheet is open or on its way there.
     public var isOpen: Bool {
         phase == .opening || phase == .open

@@ -129,14 +129,17 @@ public final class SpotsModel {
     /// Where each visible spot lies on the grid, in the order of `visible`.
     public private(set) var placements: [SpotPlacement] = []
     public var selected = 0
-    /// The sheet that shows. It follows the open run: a run's first answer shows its sheet, and a close or a hidden panel
-    /// takes it away.
-    public var openList: String? {
-        shownList
-    }
-    private var shownList: String?
+    /// The sheet that shows: the transition's sheet, from its first frame on its card until its close starts. It follows the
+    /// open run: a run's first answer shows its sheet, and a close or a hidden panel takes it away. It changes only with the
+    /// sheet, not with each phase of its motion.
+    public private(set) var openList: String?
     /// Where the open sheet is in its motion between its card and its open place.
-    public private(set) var transition = SheetTransition()
+    public private(set) var transition = SheetTransition() {
+        didSet {
+            let shown = transition.shown
+            if shown != openList { openList = shown }
+        }
+    }
     public var closingPick: (item: SpotItem, entry: Entry)?
     public let runs: SpotRuns
     public var dragWatch: Task<Void, Never>?
@@ -644,18 +647,16 @@ public final class SpotsModel {
     /// not move or has no place to close into. A new sheet is built on its card first, and its grow starts on the next turn,
     /// so that the grow has a start.
     private func showSheet(_ list: String?, moving: Bool) {
-        guard list != shownList else { return }
+        guard list != openList else { return }
         guard moving, list != nil || sheetHasClosedPlace else { return cutSheet(to: list) }
         guard let list else {
             animate(isOpen: false) {
-                shownList = nil
                 transition.hide(moves: true)
                 holdFieldDrop()
             }
             return
         }
         change(nil) {
-            shownList = list
             transition.show(list, moves: true)
             holdFieldDrop()
         }
@@ -667,7 +668,6 @@ public final class SpotsModel {
     /// Shows or hides the sheet at once, with no motion.
     private func cutSheet(to list: String?) {
         change(nil) {
-            shownList = list
             if let list { transition.show(list, moves: false) } else { transition.hide(moves: false) }
             fieldDrop = nil
             showsFieldDrop = false

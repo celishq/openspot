@@ -85,6 +85,16 @@ final class SheetTransitionTests: XCTestCase {
         XCTAssertEqual(transition.id, "b")
     }
 
+    func testTheShownSheetGoesWhenItsCloseStarts() {
+        var transition = SheetTransition()
+        transition.show("a", moves: true)
+        XCTAssertEqual(transition.shown, "a")
+        transition.start()
+        transition.hide(moves: true)
+        XCTAssertNil(transition.shown)
+        XCTAssertEqual(transition.id, "a")
+    }
+
     func testAStartWithNothingReadyChangesNothing() {
         var transition = SheetTransition()
         transition.start()
