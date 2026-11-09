@@ -126,4 +126,39 @@ final class ReposPluginTests: SamplePluginsCase {
             XCTAssertEqual(try self.read("setting-editor", in: folder), zed.path)
         }
     }
+
+    func testARepoWithAWebRemoteOffersToOpenItsPageOnItsHost() async throws {
+        let repos = try repos
+        try await withPrivateHome { folder in
+            let code = folder.appendingPathComponent("code")
+            let common = folder.appendingPathComponent("gits/common")
+            try self.repo(code.appendingPathComponent("app"), head: "ref: refs/heads/main")
+            try self.repo(code.appendingPathComponent("lab"), head: "ref: refs/heads/main")
+            try self.repo(code.appendingPathComponent("local"), head: "ref: refs/heads/main")
+            try self.repo(code.appendingPathComponent("own"), head: "ref: refs/heads/main", worktree: folder.appendingPathComponent("gits/common/worktrees/own"))
+            try "[core]\n\tbare = false\n[remote \"upstream\"]\n\turl = https://example.com/fork.git\n[remote \"origin\"]\n\turl = git@github.com:me/app.git\n"
+                .write(to: code.appendingPathComponent("app/.git/config"), atomically: true, encoding: .utf8)
+            try "[remote \"origin\"]\n\turl=https://gitlab.com/team/lab.git\n".write(to: code.appendingPathComponent("lab/.git/config"), atomically: true, encoding: .utf8)
+            try "[remote \"origin\"]\n\turl = /Users/me/backup.git\n".write(to: code.appendingPathComponent("local/.git/config"), atomically: true, encoding: .utf8)
+            try "../..\n".write(to: common.appendingPathComponent("worktrees/own/commondir"), atomically: true, encoding: .utf8)
+            try "[remote \"origin\"]\n\turl = ssh://git@git.example.com:2222/team/own.git\n".write(to: common.appendingPathComponent("config"), atomically: true, encoding: .utf8)
+            try code.path.write(to: folder.appendingPathComponent("setting-folder"), atomically: true, encoding: .utf8)
+
+            let output = try await repos.items(timeout: 5)
+            let pages = repos.taking(output).actions.filter { $0.title.hasPrefix("Open on ") }
+            let app = try XCTUnwrap(output.items.first { $0.title == "app" })
+            let github = try XCTUnwrap(pages.first { $0.title == "Open on GitHub" })
+            try await repos.perform(.action(github, item: app), timeout: 5)
+
+            XCTAssertEqual(pages.map(\.title), ["Open on git.example.com", "Open on GitHub", "Open on GitLab"])
+            XCTAssertEqual(output.items.map(\.title), ["app", "lab", "local", "own"])
+            XCTAssertEqual(output.items.map { Set($0.hides ?? []) }, [
+                Set(pages.map(\.id)).subtracting([github.id]),
+                Set(pages.map(\.id)).subtracting([pages[2].id]),
+                Set(pages.map(\.id)),
+                Set(pages.map(\.id)).subtracting([pages[0].id])
+            ])
+            XCTAssertEqual(try self.read("opened", in: folder), "https://github.com/me/app\n")
+        }
+    }
 }

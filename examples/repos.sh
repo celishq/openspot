@@ -52,8 +52,8 @@ name() {
   printf '%s' "${app%.app}"
 }
 
-# Prints the branch that a repo has out, or the start of its commit when it has none.
-branch() {
+# Prints the folder of a repo's git data. The .git of a worktree or a submodule is a file that names it.
+git_dir() {
   git=$1/.git
   if [ -f "$git" ]; then
     read -r line < "$git"
@@ -63,7 +63,12 @@ branch() {
       *) git=$1/$git ;;
     esac
   fi
-  read -r head < "$git/HEAD" 2>/dev/null || return 0
+  printf '%s' "$git"
+}
+
+# Prints the branch that a repo has out, or the start of its commit when it has none.
+branch() {
+  read -r head < "$(git_dir "$1")/HEAD" 2>/dev/null || return 0
   case "$head" in
     "ref: refs/heads/"*) printf '%s' "${head#ref: refs/heads/}" ;;
     *) printf '%.7s' "$head" ;;
@@ -97,6 +102,58 @@ pick_folder() {
   [ -z "$picked" ] || openspot setting set folder "$picked"
 }
 
+# Prints the web page of a repo's remote origin, or else of its first remote. Prints nothing for a remote with no page.
+page() {
+  git=$(git_dir "$1")
+  if [ -f "$git/commondir" ]; then
+    read -r common < "$git/commondir"
+    case "$common" in
+      /*) git=$common ;;
+      *) git=$git/$common ;;
+    esac
+  fi
+  url=$(awk '
+    /^[[:space:]]*\[/ { remote = /^[[:space:]]*\[remote "/; origin = /"origin"/; next }
+    remote && /^[[:space:]]*url[[:space:]]*=/ {
+      sub(/^[^=]*=[[:space:]]*/, "")
+      if (origin) { print; done = 1; exit }
+      if (first == "") first = $0
+    }
+    END { if (!done && first != "") print first }
+  ' "$git/config" 2>/dev/null)
+  case "$url" in
+    http://* | https://*) rest=${url#*://} keep=port ;;
+    ssh://* | git://*) rest=${url#*://} keep="" ;;
+    *@*:*) rest=${url#*@} keep="" && rest=${rest%%:*}/${rest#*:} ;;
+    *) return 0 ;;
+  esac
+  host=${rest%%/*}
+  path=${rest#"$host"}
+  host=${host#*@}
+  [ -n "$keep" ] || host=${host%%:*}
+  path=${path%/}
+  path=${path%.git}
+  [ -n "$host" ] && [ -n "${path#/}" ] && printf 'https://%s%s' "$host" "$path"
+}
+
+# Prints the name of a web host, such as GitHub for github.com.
+site() {
+  case "$1" in
+    github.com) printf 'GitHub' ;;
+    gitlab.com) printf 'GitLab' ;;
+    bitbucket.org) printf 'Bitbucket' ;;
+    *) printf '%s' "$1" ;;
+  esac
+}
+
+# Prints the host of a web page.
+host() {
+  rest=${1#https://}
+  printf '%s' "${rest%%/*}"
+}
+
+tab=$(printf '\t')
+
 case "$1" in
   read)
     if [ -z "$folder" ]; then
@@ -104,25 +161,43 @@ case "$1" in
       printf 'row=choose\ntitle=Choose the folder of your repos\ndetail=Repos lists each git repo inside it\nicon=folder.badge.plus\n'
       exit 0
     fi
+    repos=""
+    for repo in "$folder"/*/; do
+      repo=${repo%/}
+      [ -e "$repo/.git" ] || continue
+      repos="$repos$repo$tab$(page "$repo")
+"
+    done
+    hosts=$(printf '%s' "$repos" | while IFS="$tab" read -r repo url; do [ -z "$url" ] || host "$url"; echo; done | sed '/^$/d' | sort -u)
     printf 'button=open\ntitle=Open in %s\n\n' "$(esc "$(name "$editor")")"
     index=0
     installed | while IFS= read -r app; do
       index=$((index + 1))
       [ "$app" = "$editor" ] || [ "$app" = "$finder" ] || printf 'button=in-%s\ntitle=Open in %s\nclose=true\n\n' "$index" "$(esc "$(name "$app")")"
     done
+    index=0
+    printf '%s\n' "$hosts" | while IFS= read -r each; do
+      [ -n "$each" ] || continue
+      index=$((index + 1))
+      printf 'button=page-%s\ntitle=Open on %s\nclose=true\n\n' "$index" "$(esc "$(site "$each")")"
+    done
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\nclose=true\n\n'
     printf 'button=terminal\ntitle=Open in Terminal\nshortcut=cmd+t\nclose=true\n\n'
     printf 'button=copy\ntitle=Copy path\nshortcut=cmd+shift+c\nclose=true\n\n'
     printf 'button=editor\ntitle=Change default app\nscope=command\nform=true\n\n'
     printf 'button=folder\ntitle=Change folder\nscope=command\nclose=true\n\n'
-    found=0
-    for repo in "$folder"/*/; do
-      repo=${repo%/}
-      [ -e "$repo/.git" ] || continue
-      found=1
-      printf 'row=%s\ntitle=%s\ndetail=%s\nicon=%s\n\n' "$(esc "$repo")" "$(esc "${repo##*/}")" "$(esc "$(branch "$repo")")" "$(esc "$repo")"
+    printf '%s' "$repos" | while IFS="$tab" read -r repo url; do
+      printf 'row=%s\ntitle=%s\ndetail=%s\nicon=%s\n' "$(esc "$repo")" "$(esc "${repo##*/}")" "$(esc "$(branch "$repo")")" "$(esc "$repo")"
+      own=$( [ -z "$url" ] || host "$url")
+      index=0
+      printf '%s\n' "$hosts" | while IFS= read -r each; do
+        [ -n "$each" ] || continue
+        index=$((index + 1))
+        [ "$each" = "$own" ] || printf 'hides=page-%s\n' "$index"
+      done
+      printf '\n'
     done
-    if [ "$found" = 0 ]; then
+    if [ -z "$repos" ]; then
       shown=$folder
       case "$shown" in
         "$HOME"/*) shown="~${shown#"$HOME"}" ;;
@@ -136,6 +211,9 @@ case "$1" in
       exit 0
     fi
     open -a "$editor" "$2"
+    ;;
+  page-*)
+    open "$(page "$2")"
     ;;
   in-*)
     app=$(installed | sed -n "${1#in-}p")
