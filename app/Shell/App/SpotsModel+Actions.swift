@@ -15,8 +15,7 @@ extension SpotsModel {
     /// Takes a key before the focused field does. Returns false when the key is not for an action, a menu or a form.
     func handleKey(_ key: ActionKey) -> Bool {
         if menu != nil {
-            handleMenuKey(key)
-            return true
+            return handleMenuKey(key)
         }
         if isEditing {
             handleEditKey(key)
@@ -157,18 +156,24 @@ extension SpotsModel {
         }
     }
 
-    private func handleMenuKey(_ key: ActionKey) {
+    /// Takes the keys of the open menu. In a menu that searches, a key with no ⌘ goes to its field, and returns false.
+    private func handleMenuKey(_ key: ActionKey) -> Bool {
+        let types = menu?.isSearchable == true && !key.isCommand
         switch key {
         case ActionKey(name: "k", isCommand: true), ActionKey(name: "escape"): closeMenu()
         case ActionKey(name: "up"): menu?.move(by: -1)
         case ActionKey(name: "down"): menu?.move(by: 1)
         case ActionKey(name: "return"): pressMenu()
         default:
-            if let action = menu?.rows.compactMap(\.action).first(where: { $0.key == key }) {
-                menu?.select(action)
-                pressMenu()
-            }
+            guard !types, let action = menu?.rows.compactMap(\.action).first(where: { $0.key == key }) else { return !types }
+            menu?.select(action)
+            pressMenu()
         }
+        return true
+    }
+
+    func searchMenu(_ text: String) {
+        menu?.search(text)
     }
 
     private func openMenu(on target: Target) {
@@ -231,7 +236,7 @@ extension SpotsModel {
     }
 
     private func pressMenu() {
-        let isRunning = menu.map { work(of: $0.rows[$0.selected]) != nil } ?? false
+        let isRunning = menu?.selectedRow.map { work(of: $0) != nil } ?? false
         guard let row = menu?.press(isRunning: isRunning), let target = menuTarget else { return }
         closeMenu()
         if row.opensEdit {

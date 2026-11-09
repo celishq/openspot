@@ -9,7 +9,13 @@ public struct ActionMenu: Equatable, Sendable {
         var isQuiet = false
     }
 
+    /// How many rows a person takes in at a glance. A menu with more shows a field to search them.
+    private static let glance = 5
+
     public let rows: [Row]
+    /// The rows that the search finds, best first. With no search, each row.
+    public private(set) var shown: [Row]
+    public private(set) var query = ""
     public private(set) var selected = 0
     public private(set) var confirming: String?
 
@@ -25,6 +31,30 @@ public struct ActionMenu: Equatable, Sendable {
         if showsEdit { rows.append(Row(title: "Edit Spots", keyLabel: "", action: nil, opensEdit: true)) }
         guard !rows.isEmpty else { return nil }
         self.rows = rows
+        shown = rows
+    }
+
+    public var isSearchable: Bool {
+        rows.count > Self.glance
+    }
+
+    /// How many lines it draws: one for each row that it shows, and one for the field of a menu that searches.
+    public var lines: Int {
+        isSearchable ? shown.count + 1 : rows.count
+    }
+
+    public var selectedRow: Row? {
+        shown.indices.contains(selected) ? shown[selected] : nil
+    }
+
+    /// Shows the rows whose words match the text, as the lists match them, and selects the first.
+    public mutating func search(_ text: String) {
+        guard text != query else { return }
+        query = text
+        let items = rows.indices.map { SpotItem(title: rows[$0].title, run: String($0)) }
+        shown = text.isEmpty ? rows : SearchQuery(text: text).matching(items).compactMap { Int($0.run).map { rows[$0] } }
+        selected = 0
+        confirming = nil
     }
 
     /// The first keys and the key of this menu, in words for a footer.
@@ -44,18 +74,20 @@ public struct ActionMenu: Equatable, Sendable {
 
     public mutating func move(by step: Int) {
         guard step != 0 else { return }
-        selected = min(max(selected + step, 0), rows.count - 1)
+        selected = min(max(selected + step, 0), max(shown.count - 1, 0))
         confirming = nil
     }
 
+    /// Selects the row of this action. A search that hides it ends first.
     public mutating func select(_ action: CommandAction) {
-        selected = rows.firstIndex { $0.action == action } ?? selected
+        if !shown.contains(where: { $0.action == action }) { search("") }
+        selected = shown.firstIndex { $0.action == action } ?? selected
     }
 
     /// Takes a press of the selected row. A row that asks to confirm needs a second press, and returns nil on the first. A
     /// running row stops its call, which needs no question.
     public mutating func press(isRunning: Bool = false) -> Row? {
-        let row = rows[selected]
+        guard let row = selectedRow else { return nil }
         guard !isRunning, let action = row.action, action.confirm != nil, confirming != action.id else { return row }
         confirming = action.id
         return nil

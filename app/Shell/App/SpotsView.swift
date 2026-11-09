@@ -91,7 +91,7 @@ struct SpotsView: View {
                 Color.clear
                     .contentShape(Rectangle())
                     .onTapGesture { model.closeMenu() }
-                SpotActionMenuView(menu: menu, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) })
+                SpotActionMenuView(menu: menu, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) }, onSearch: { model.searchMenu($0) })
                     .offset(x: SpotTokens.halo, y: menuTop(menu))
             }
         }
@@ -123,6 +123,9 @@ struct SpotsView: View {
         }
         .onChange(of: model.showsSearch) { _, shows in
             searchFocused = shows
+        }
+        .onChange(of: model.menu == nil) { _, isClosed in
+            if isClosed, model.isShown, model.showsSearch { searchFocused = true }
         }
         .background {
             SpotHintWatch(model: model) { hint in
@@ -263,12 +266,12 @@ struct SpotsView: View {
     }
 
     private var menuBackdropHeight: CGFloat {
-        model.menu.map { SpotTokens.menuHeight(rows: $0.rows.count) + 2 * SpotTokens.halo } ?? 0
+        model.menu.map { SpotTokens.menuHeight(rows: $0.lines) + 2 * SpotTokens.halo } ?? 0
     }
 
     /// Where the menu starts: its bottom meets the bottom of the content.
     private func menuTop(_ menu: ActionMenu) -> CGFloat {
-        max(SpotTokens.halo, contentHeight - SpotTokens.halo - SpotTokens.hintBlock - SpotTokens.menuHeight(rows: menu.rows.count))
+        max(SpotTokens.halo, contentHeight - SpotTokens.halo - SpotTokens.hintBlock - SpotTokens.menuHeight(rows: menu.lines))
     }
 
     /// The hint under the grid and the hint under the sheet. Each stays at its own place, and one fades out before the other fades in.
