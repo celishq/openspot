@@ -58,8 +58,9 @@ echo "toast=Hello"
 
 The [`plugins`](plugins) folder has more tools to copy, such as battery, windows and a color picker.
 The [`examples`](examples) folder has tools that draw their card with their own SwiftUI view, as [spec 03](spec/03-views.md)
-describes, Relay, which stays running and sends lines to another process, as [spec 05](spec/05-stay.md) describes, and
-Repos, which names a folder and an editor as settings that Settings lists and changes.
+describes, Relay, which stays running and sends lines to another process, as [spec 05](spec/05-stay.md) describes,
+Repos, which names a folder and an editor as settings that Settings lists and changes, and Agents and Pull requests, which
+show in the menu bar.
 
 ## Widgets and keys
 
@@ -69,7 +70,7 @@ A widget shows the live values of several tools on one card. Write it in a `.tom
 [[widgets]]
 title = "Morning"
 grid = ["a a b b", "a a c c", "a a d d"]
-places = { a = "agents", b = "battery", c = "cpu", d = "disk" }
+places = { a = "memory", b = "battery", c = "cpu", d = "disk" }
 opens = "links"
 ```
 

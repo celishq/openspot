@@ -13,6 +13,15 @@ class SamplePluginsCase: XCTestCase {
         }
     }
 
+    /// The scan of the repo examples, which the app does not ship.
+    var examples: ScanResult {
+        get throws {
+            let root = URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            return try PluginFolder(url: root.appendingPathComponent("examples")).scan()
+        }
+    }
+
     /// The arguments that Windows passes to `openspot` for a slot, one per line.
     func windowCall(_ slot: String) throws -> String {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-windows-\(UUID().uuidString)")
