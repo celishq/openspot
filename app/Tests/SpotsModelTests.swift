@@ -166,6 +166,48 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertNotEqual(model.placements, small)
     }
 
+    func testASubmitThatEndsAfterThePersonOpenedANewFormLeavesTheNewForm() async throws {
+        let gate = folder.appendingPathComponent("gate").path
+        let reads = folder.appendingPathComponent("reads").path
+        try script("list", header: "read=sheet", """
+        case "$1" in
+          new)
+            input=$(cat)
+            if [ -z "$input" ]; then printf 'title=New\\n\\nfield=a\\ntitle=A\\n'; exit 0; fi
+            touch '\(folder.appendingPathComponent("saving").path)'
+            n=0; while [ ! -f '\(gate)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done
+            printf 'b\\n' ;;
+          edit) printf 'title=Edit\\n\\nfield=e\\ntitle=E\\n' ;;
+          *)
+            echo read >> '\(reads)'
+            printf 'button=new\\ntitle=New\\nscope=command\\nform=true\\n\\nbutton=edit\\ntitle=Edit\\nscope=command\\nform=true\\n\\nrow=a\\ntitle=Apple\\n' ;;
+        esac
+        """)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow()
+        model.press("list")
+        try await wait("the open list") { model.openList == "list" && model.openEntry?.command.actions.contains(where: \.isForm) == true }
+        let entry = try XCTUnwrap(model.openEntry)
+        let action = try XCTUnwrap(entry.command.actions.first { $0.id == "new" })
+        let edit = try XCTUnwrap(entry.command.actions.first { $0.id == "edit" })
+        model.openForm(action, on: (entry, nil))
+        try await wait("the form") { model.form != nil }
+        model.setFormValue("x", for: "a")
+        model.submitForm()
+        try await wait("the save") { FileManager.default.fileExists(atPath: self.folder.appendingPathComponent("saving").path) }
+
+        model.cancelForm()
+        model.openForm(edit, on: (entry, nil))
+        try await wait("the new form") { model.form?.action.id == "edit" }
+        FileManager.default.createFile(atPath: gate, contents: Data())
+
+        try await wait("the read after the save") {
+            ((try? String(contentsOfFile: reads, encoding: .utf8)) ?? "").split(separator: "\n").count == 2 && model.openItems?.isLoading == false
+        }
+        XCTAssertEqual(model.form?.action.id, "edit")
+    }
+
     func testTheGridSearchFindsASpotByItsName() async throws {
         try script("list", header: "read=sheet", "printf 'row=a\\ntitle=Apple\\n'")
         try script("other", header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")

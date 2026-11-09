@@ -520,7 +520,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$line" in
             call=*) call=${line#call=}; args= ;;
             arg=*) args="$args ${line#arg=}" ;;
-            stop=*) touch '\(path("stopped"))' ;;
+            stop=*) touch '\(path("stopped"))'; args=stop ;;
             '')
               case "$args" in
                 ' read a') ( \(untilRelease); printf 'search=script\\nend=%s\\n\\nrow=o\\ntitle=Old\\n---\\n' "$call"; printf 'text=d\\ntitle=Done\\n---\\n' ) & ;;

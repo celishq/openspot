@@ -261,9 +261,12 @@ extension SpotsModel {
     }
 
     public func openForm(_ action: CommandAction, on target: Target, prefill: String = "") {
+        let ask = UUID()
+        formAsk = ask
         Task {
             do {
-                guard let form = try await sheets[target.entry.id]?.form(action, item: target.item) else { return }
+                guard let form = try await sheets[target.entry.id]?.form(action, item: target.item), formAsk == ask else { return }
+                formAsk = nil
                 let opensSheet = openList != target.entry.id
                 if opensSheet {
                     open(target.entry.id, moving: isShown)
@@ -286,6 +289,7 @@ extension SpotsModel {
     }
 
     public func cancelForm() {
+        formAsk = nil
         guard let form else { return }
         self.form = nil
         if form.openedSheet {
@@ -302,7 +306,9 @@ extension SpotsModel {
         }
         Task {
             do {
-                if try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: form.draft) == true { self.form = nil }
+                if try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: form.draft) == true, self.form?.id == form.id {
+                    self.form = nil
+                }
             } catch {
                 host.notify("\(form.action.title) failed. \(Self.reason(error))")
             }

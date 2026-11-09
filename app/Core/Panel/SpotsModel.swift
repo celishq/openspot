@@ -92,6 +92,8 @@ public final class SpotsModel {
 
     /// A form open in a sheet, with the action that asked for it. Its text stays when the panel closes.
     public struct FormSession {
+        /// Which form this is, so that a call that ends after the person moved on changes only its own form.
+        public let id = UUID()
         public var draft: FormDraft
         public let entry: Entry
         public let action: CommandAction
@@ -169,6 +171,8 @@ public final class SpotsModel {
     public var menu: ActionMenu?
     public var menuTarget: Target?
     public var form: FormSession?
+    /// The ask for a form that waits for its script. A newer ask, a cancel or a close replaces it.
+    @ObservationIgnored var formAsk: UUID?
     /// Whether the grid is in Edit Spots, where it also shows the spots that are off the grid, and a press only selects.
     public var isEditing = false
     public var arrangement = SpotArrangement()
@@ -603,6 +607,7 @@ public final class SpotsModel {
 
     /// Closes the open sheet: back into its card when it moves, or at once.
     public func closeList(moving: Bool) {
+        formAsk = nil
         stopRecording()
         showSheet(nil, moving: moving)
         runs.closeOpen()
