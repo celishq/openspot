@@ -5,7 +5,6 @@ import Foundation
 @MainActor
 final class OnceLink: ScriptLink {
     weak var run: SpotRun?
-    let holdsState = false
     let holdsScript = false
     let isReachable = true
     private let runs: SpotRuns

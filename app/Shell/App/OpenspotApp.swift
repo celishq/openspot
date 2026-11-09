@@ -18,11 +18,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     /// The seconds after a drop until the app that the drag came from has let go of the focus.
     private static let dropSettle = 0.2
 
-    private var statusItem: NSStatusItem?
+    private(set) var statusItem: NSStatusItem?
     private(set) lazy var model = SpotsModel(host: self)
     private(set) var panel: SpotsPanel?
     private(set) var toast: ToastPanel?
-    private(set) weak var statusItemRef: NSStatusItem?
     var previousApp: NSRunningApplication?
     private var hotKey: HotKey.Registration?
     var wantedKeys: [GlobalKey] = []
@@ -55,7 +54,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         SpotKeyLayouts.start()
         panel = SpotsPanel.make(model: model)
         toast = ToastPanel.make()
-        statusItemRef = item
         trayBar = SpotTrayBar(model: model, openspotItem: item)
         if let panel, let probe = SpotMotionProbe(model: model, panel: panel) {
             motionProbe = probe
@@ -177,12 +175,12 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     /// Shows the panel on the Settings sheet.
     func openSettings() {
-        if !model.isShown || model.isWarming { showPanel() }
+        show()
         model.openSettings()
     }
 
     /// Brings the panel to the front with the focus, also when a drag opened it or it already shows.
-    func presentPanel() {
+    func present() {
         if let front = NSWorkspace.shared.frontmostApplication, front != .current { previousApp = front }
         NSApp.activate(ignoringOtherApps: true)
         panel?.show()

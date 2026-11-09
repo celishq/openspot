@@ -13,10 +13,6 @@ extension OpenspotApp: SpotsHost {
         if !model.isShown || model.isWarming { showPanel() }
     }
 
-    func present() {
-        presentPanel()
-    }
-
     func notify(_ text: String) {
         toast?.show(text, symbol: ToastPanel.failureSymbol)
     }
@@ -41,7 +37,7 @@ extension OpenspotApp: SpotsHost {
 
     var isPointerOverDrop: Bool {
         let point = NSEvent.mouseLocation
-        return panel?.showsDrop(at: point) == true || statusItemRef?.button?.window?.frame.contains(point) == true
+        return panel?.showsDrop(at: point) == true || statusItem?.button?.window?.frame.contains(point) == true
     }
 
     var draggedPaths: [String] {

@@ -9,7 +9,6 @@ final class StayLink: ScriptLink {
     private static let failureWindow: TimeInterval = 60
 
     weak var run: SpotRun?
-    let holdsState = true
     private let runs: SpotRuns
     private var script: ScriptProcess?
     /// The call number of the read or the search that the script has not ended yet.
@@ -82,12 +81,7 @@ final class StayLink: ScriptLink {
     func settle() {
         let isNeeded = run?.isWanted == true
         if isNeeded, script == nil { start() }
-        if !isNeeded, let script {
-            self.script = nil
-            asking = nil
-            script.end()
-            run?.scriptEnded()
-        }
+        if !isNeeded, script != nil { end() }
     }
 
     func end() {

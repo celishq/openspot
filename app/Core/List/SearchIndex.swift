@@ -33,10 +33,6 @@ struct SearchIndex: Equatable, Sendable {
         }
     }
 
-    var count: Int {
-        records.count
-    }
-
     /// Folds a text onto the buffers, and returns one bit for each of its letters. A word begins after a character that is
     /// not a letter or a digit, or at a capital after a small letter. Plain ASCII text takes a path that reads its bytes.
     private mutating func append(_ text: String) -> UInt64 {

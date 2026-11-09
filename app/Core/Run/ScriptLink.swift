@@ -6,9 +6,6 @@ import Foundation
 @MainActor
 protocol ScriptLink: AnyObject {
     var run: SpotRun? { get set }
-    /// Whether the script holds its own state, so that what it shows lives only while it runs: an open waits for its answer,
-    /// its sheet closes with the panel, no read follows a call, and a read asks it for its state also when it searches.
-    var holdsState: Bool { get }
     /// Whether a read or a search waits for its answer.
     var isAsking: Bool { get }
     /// Whether the link holds the script for a call of its own, such as a form or a call that waits for its `end`.

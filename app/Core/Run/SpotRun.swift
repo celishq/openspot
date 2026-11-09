@@ -241,9 +241,9 @@ public final class SpotRun {
         isInView = true
         list.selectFirst()
         if panel == nil, answered != nil { panel = lastAnswer.flatMap(SheetParts.init(output:)) }
-        if answered == nil, link.holdsState || (waits && list.search == .local) {
+        if answered == nil, command.stays || (waits && list.search == .local) {
             held = onReady
-            if !link.holdsState { after(.seconds(runs.firstAnswerPause), key: Self.heldKey) { [weak self] in self?.endHold() } }
+            if !command.stays { after(.seconds(runs.firstAnswerPause), key: Self.heldKey) { [weak self] in self?.endHold() } }
         } else {
             onReady()
         }
@@ -283,7 +283,7 @@ public final class SpotRun {
     /// The panel closed: a sheet of parts, or of a script that holds its own state, closes and drops its values, so the next
     /// open reads again. A sheet of rows stays.
     func panelClosed() {
-        if panel != nil || link.holdsState {
+        if panel != nil || command.stays {
             let wasOpen = isOpen
             close()
             panel = nil
@@ -342,7 +342,7 @@ public final class SpotRun {
     public func read(selecting run: String? = nil, need: ReadNeed = .moment, reason: ReadReason? = nil) {
         let reason = reason ?? (need == .change ? .change : isOpen ? .sheet : .panel)
         if let run { selecting = run }
-        guard list.search == .local || link.holdsState else { return ask() }
+        guard list.search == .local || command.stays else { return ask() }
         if link.isAsking {
             if need == .change { readsAgain = true }
             return
@@ -547,7 +547,7 @@ public final class SpotRun {
             return false
         }
         guard let text = try await link.submit(call, key: key, values: draft.text) else { return false }
-        guard !link.holdsState else { return true }
+        guard !command.stays else { return true }
         let run = text.trimmingCharacters(in: .whitespacesAndNewlines)
         read(selecting: run.isEmpty ? nil : run, need: .change)
         return true
@@ -866,11 +866,9 @@ public final class SpotRun {
     }
 
     /// Runs a call that does work. It has no time limit, and it goes on with the sheet and the panel closed. A stopped call
-    /// changes nothing. After one that ended with no parts to show, a script that holds no state of its own is read once (M4).
+    /// changes nothing. After one that ended with no parts to show, a script that runs once is read once (M4).
     private func work(_ action: SpotAction, key: String, input: String? = nil, as work: Work = Work()) {
         answered = nil
-        var work = work
-        if link.holdsState { work.readsAfter = false }
         link.send(Call(action: action, key: key, input: input, purpose: .work(work)))
     }
 

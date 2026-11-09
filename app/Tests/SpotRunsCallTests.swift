@@ -155,7 +155,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try await wait("the part") { sheet.panel != nil && sheet.calls.isEmpty }
 
         sheet.press(try XCTUnwrap(sheet.panel?.parts.first))
-        try await wait("the first frame") { sheet.calls.first?.lastFrame != nil }
+        try await wait("the first frame") { sheet.calls.first?.output != nil }
         let call = try XCTUnwrap(sheet.calls.first)
         XCTAssertTrue(call.doesWork)
         XCTAssertEqual(call.action.arguments, ["go"])

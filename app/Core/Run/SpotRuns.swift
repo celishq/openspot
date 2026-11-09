@@ -195,11 +195,6 @@ public final class SpotRuns {
         sheets[id]?.command.accepts(draggedPaths) == true
     }
 
-    /// What each script last gave a widget to draw, by script.
-    public var readings: [String: MetricReading] {
-        sheets.mapValues(\.reading)
-    }
-
     /// Runs one call with no sheet, and returns all that it prints. A `read` runs until it gives its first frame, which is what
     /// a sheet takes as its answer.
     public func answer(of command: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil) async throws -> String {
