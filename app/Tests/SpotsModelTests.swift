@@ -22,6 +22,7 @@ final class SpotsModelTests: XCTestCase {
             defaults: defaults
         )
         model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
+        host.model = model
     }
 
     override func tearDown() async throws {
@@ -52,7 +53,7 @@ final class SpotsModelTests: XCTestCase {
         try script("list", header: "read=sheet", "printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n'")
         model.reload()
         model.isShown = true
-        model.panelWillShow()
+        model.panelWillShow(holding: [])
         model.press("list")
         try await wait("the open list") { model.openList == "list" && model.openItems?.shown.count == 2 }
     }
@@ -96,8 +97,6 @@ final class SpotsModelTests: XCTestCase {
         model.pick(SpotItem(title: "Banana", run: "b"), of: entry)
 
         XCTAssertEqual(host.dismissals, 1)
-        model.isShown = false
-        model.finishPick()
         XCTAssertNil(model.openList)
         XCTAssertEqual(model.files.recent(of: "list"), ["b"])
     }
@@ -122,10 +121,8 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(host.motions.compactMap { $0 }, [.sheet(isOpen: false)])
         model.open("list", moving: true)
         try await wait("the open list") { model.openList == "list" }
-        model.pick(SpotItem(title: "Apple", run: "a"), of: try XCTUnwrap(model.openEntry))
-        model.isShown = false
         host.motions = []
-        model.finishPick()
+        model.pick(SpotItem(title: "Apple", run: "a"), of: try XCTUnwrap(model.openEntry))
 
         XCTAssertNil(model.openList)
         XCTAssertEqual(host.motions.compactMap { $0 }, [])
@@ -136,12 +133,12 @@ final class SpotsModelTests: XCTestCase {
         try script("parts", header: "read=sheet", "printf 'text=a\\ntitle=A\\n'")
         model.reload()
         model.isShown = true
-        model.panelWillShow()
+        model.panelWillShow(holding: [])
         model.open("parts", moving: true)
         try await wait("the open sheet") { model.openList == "parts" && model.openPanel != nil }
 
-        model.isShown = false
         host.motions = []
+        model.panelWillHide()
         model.panelDidHide()
 
         XCTAssertNil(model.openList)
@@ -154,7 +151,7 @@ final class SpotsModelTests: XCTestCase {
         let large = folder.appendingPathComponent("large").path
         try script("grow", header: "read=panel", "if [ -f '\(large)' ]; then printf 'size=large\\n'; else printf 'size=small\\n'; fi")
         model.reload()
-        model.panelWillShow()
+        model.panelWillShow(holding: [])
         try await wait("the small card") { model.visible.first?.size == .small }
         let small = model.placements
 
@@ -185,7 +182,7 @@ final class SpotsModelTests: XCTestCase {
         """)
         model.reload()
         model.isShown = true
-        model.panelWillShow()
+        model.panelWillShow(holding: [])
         model.press("list")
         try await wait("the open list") { model.openList == "list" && model.openEntry?.command.actions.contains(where: \.isForm) == true }
         let entry = try XCTUnwrap(model.openEntry)
@@ -206,6 +203,22 @@ final class SpotsModelTests: XCTestCase {
             ((try? String(contentsOfFile: reads, encoding: .utf8)) ?? "").split(separator: "\n").count == 2 && model.openItems?.isLoading == false
         }
         XCTAssertEqual(model.form?.action.id, "edit")
+    }
+
+    func testThePanelsShowAndHideStepsSelectTheFirstCardAndLeaveEditSpots() async throws {
+        try script("list", header: "read=sheet", "printf 'row=a\\ntitle=Apple\\n'")
+        try script("other", header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
+        model.reload()
+        model.selected = 1
+        model.beginEditing()
+
+        model.panelWillHide()
+
+        XCTAssertFalse(model.isEditing)
+        XCTAssertFalse(model.isShown)
+        model.panelWillShow(holding: [])
+        XCTAssertEqual(model.selected, 0)
+        try await wait("the shown panel") { model.isShown }
     }
 
     func testTheGridSearchFindsASpotByItsName() async throws {
@@ -231,15 +244,20 @@ private final class TestHost: SpotsHost {
     var isMouseDown = false
     var pastedPaths: [String] = []
     var motions: [PanelMotion?] = []
+    /// The model whose show and hide steps the panel runs, as the app's window does.
+    weak var model: SpotsModel?
 
     nonisolated deinit {}
 
     func dismiss() {
         dismissals += 1
+        model?.panelWillHide()
+        model?.panelDidHide()
     }
 
     func show() {
         shows += 1
+        model?.panelWillShow(holding: [])
     }
 
     func present() {}

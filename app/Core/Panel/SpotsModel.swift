@@ -262,10 +262,25 @@ public final class SpotsModel {
         return arrangement.ordered(sorted)
     }
 
-    /// Looks at the plugin folder and asks each script that the panel shows, at the same time.
-    public func panelWillShow() {
+    /// The panel starts to show: a pick that its fade left finishes, the first card is selected, the held keys count, the
+    /// plugin folder is read again and each script that the panel shows reads. The panel says it shows on the next turn, so
+    /// that its fade starts from hidden.
+    public func panelWillShow(holding modifiers: Shortcut.Modifiers) {
+        finishPick()
+        selected = 0
+        takeHeld(modifiers)
         reload()
         runs.panelOpened()
+        DispatchQueue.main.async { [weak self] in self?.isShown = true }
+    }
+
+    /// The panel starts to hide: no key stays held or recorded, the menu and Edit Spots close, and nothing moves in its fade.
+    public func panelWillHide() {
+        takeHeld([])
+        stopRecording()
+        closeMenu()
+        endEditing(moving: false)
+        isShown = false
     }
 
     /// Waits for the reads of the open panel, up to the limit of a load at launch.
@@ -616,6 +631,7 @@ public final class SpotsModel {
     /// Closes each sheet of parts when the panel has faded, and stops the reads that nothing wants now. A sheet of rows stays
     /// open.
     public func panelDidHide() {
+        finishPick()
         runs.panelClosed()
         if isFirstLaunch, !isWarming {
             isFirstLaunch = false
