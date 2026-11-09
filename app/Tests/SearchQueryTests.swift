@@ -99,6 +99,19 @@ final class SearchQueryTests: XCTestCase {
         XCTAssertEqual(titles("note", in: ["Android File Transfer", "Notes"]), ["Notes"])
     }
 
+    func testAOneLetterWordNarrowsToTwoLetters() {
+        XCTAssertTrue(SearchQuery(text: "s", layouts: []).narrows(to: SearchQuery(text: "sm", layouts: [])))
+    }
+
+    func testAWordThatReachesThreeLettersDoesNotNarrow() {
+        XCTAssertFalse(SearchQuery(text: "sm", layouts: []).narrows(to: SearchQuery(text: "smi", layouts: [])))
+        XCTAssertFalse(SearchQuery(text: "s", layouts: []).narrows(to: SearchQuery(text: "smi", layouts: [])))
+    }
+
+    func testAShortTextOfOtherCharactersDoesNotNarrow() {
+        XCTAssertFalse(SearchQuery(text: "°", layouts: []).narrows(to: SearchQuery(text: "°c", layouts: [])))
+    }
+
     func testLettersInOrderNeedThreeLetters() {
         XCTAssertEqual(titles("sf", in: ["Safari"]), [])
     }

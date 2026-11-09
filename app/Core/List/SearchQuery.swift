@@ -62,12 +62,15 @@ public struct SearchQuery: Equatable, Sendable {
     }
 
     /// Whether each item that matches this text also matches the given text, so that a search for it may look only among the
-    /// matches of this one. A letters-in-order match needs three letters, so a last word of fewer may match fewer items, and
-    /// each form of the given text must grow a form of this one.
+    /// matches of this one. A letters-in-order match needs three letters, so a last word that reaches three letters only now
+    /// may match more items; a short text of other characters may be a glyph; and each form of the given text must grow a form
+    /// of this one.
     func narrows(to next: SearchQuery) -> Bool {
-        guard !typed.words.isEmpty, next.text.hasPrefix(text) else { return false }
+        guard let last = typed.words.last, next.text.hasPrefix(text) else { return false }
         let added = next.text.dropFirst(text.count)
-        guard (typed.words.last?.count ?? 0) >= 3 || added.first?.isWhitespace == true else { return false }
+        let staysShort = last.count + added.prefix { !$0.isWhitespace }.count < 3
+            && next.text.allSatisfy { $0.isLetter || $0.isNumber || $0.isWhitespace }
+        guard last.count >= 3 || added.first?.isWhitespace == true || staysShort else { return false }
         return next.forms.allSatisfy { form in forms.contains { form.hasPrefix($0) } }
     }
 

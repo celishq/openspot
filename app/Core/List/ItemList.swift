@@ -18,9 +18,11 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var hasFailed = false
     private(set) var all: [SpotItem]
     private(set) var folded: [FoldedItem]
-    private var narrowing: Narrowing?
+    /// The searches of the text as it grew, each one a prefix of the next. A longer search looks among the matches of the last
+    /// one when it narrows to it, and a shorter one takes its matches back.
+    private var narrowings: [Narrowing] = []
 
-    /// The last search and the indices of its matches, in order, among which a longer search looks.
+    /// A search and the indices of its matches, best first.
     private struct Narrowing: Equatable, Sendable {
         let query: SearchQuery
         let matches: [Int]
@@ -114,7 +116,7 @@ public struct ItemList: Equatable, Sendable {
         if items != all {
             all = items
             folded = items.map(FoldedItem.init)
-            narrowing = nil
+            narrowings = []
             refresh()
         }
         guard selected > 0 else { return }
@@ -190,19 +192,22 @@ public struct ItemList: Equatable, Sendable {
     /// Adds a pick to the front of the recent picks, which keep each pick so that a count of them shows how often.
     public mutating func remember(_ item: SpotItem) {
         recent = Array(([item.run] + recent).prefix(Self.recentLimit))
+        narrowings = []
         refresh()
     }
 
     private mutating func refresh() {
         guard search == .local else {
-            narrowing = nil
+            narrowings = []
             shown = all
             return
         }
         let next = SearchQuery(text: query)
-        let among = narrowing.flatMap { $0.query.narrows(to: next) ? $0.matches : nil } ?? Array(folded.indices)
-        let ranked = next.ranking(folded, among: among, recent: recent)
-        narrowing = Narrowing(query: next, matches: ranked.sorted())
-        shown = ranked.map { folded[$0].item }
+        while let last = narrowings.last, !next.text.hasPrefix(last.query.text) { narrowings.removeLast() }
+        if narrowings.last?.query.text != next.text {
+            let among = narrowings.last.flatMap { $0.query.narrows(to: next) ? $0.matches : nil } ?? Array(folded.indices)
+            narrowings.append(Narrowing(query: next, matches: next.ranking(folded, among: among, recent: recent)))
+        }
+        shown = narrowings.last?.matches.map { folded[$0].item } ?? []
     }
 }
