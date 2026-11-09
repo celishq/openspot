@@ -103,26 +103,6 @@ final class SearchQueryTests: XCTestCase {
         XCTAssertEqual(titles("sf", in: ["Safari"]), [])
     }
 
-    func testMarksTheMatchedLettersOfEachWord() {
-        let marks = SearchQuery(text: "co vis").marks(in: item("Visual Studio Code"))
-
-        XCTAssertEqual(marks, SearchMarks(title: [0..<3, 14..<16], subtitle: []))
-    }
-
-    func testMarksEachInitial() {
-        XCTAssertEqual(SearchQuery(text: "vsc").marks(in: item("Visual Studio Code")).title, [0..<1, 7..<8, 14..<15])
-    }
-
-    func testMarksAWordInTheSubtitle() {
-        let marks = SearchQuery(text: "chrome work").marks(in: item("Chrome", subtitle: "Work profile"))
-
-        XCTAssertEqual(marks, SearchMarks(title: [0..<6], subtitle: [0..<4]))
-    }
-
-    func testAnEmptySearchMarksNothing() {
-        XCTAssertEqual(SearchQuery(text: "").marks(in: item("Safari")), SearchMarks(title: [], subtitle: []))
-    }
-
     func testARecentPickComesFirstWithinItsMatch() {
         XCTAssertEqual(titles("s", in: ["Safari", "Slack", "Mess"], recent: ["Slack"]), ["Slack", "Safari", "Mess"])
     }
@@ -226,10 +206,6 @@ final class SearchQueryTests: XCTestCase {
 
     func testAConvertedQueryGetsNoLettersInOrderMatch() {
         XCTAssertEqual(titles("сфр", in: ["Safari"]), [])
-    }
-
-    func testAConvertedMatchMarksTheTitle() {
-        XCTAssertEqual(SearchQuery(text: "саф").marks(in: item("Safari")).title, [0..<3])
     }
 
     func testTheFormsAreTheConvertedTexts() {

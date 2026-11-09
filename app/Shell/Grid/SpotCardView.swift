@@ -14,7 +14,6 @@ struct SpotCardView: View {
     let chainLetter: String?
     let showsChain: Bool
     let isHiddenFromGrid: Bool
-    var query = ""
     /// The model that a tap and a slide go to.
     let model: SpotsModel
     @State private var isHovered = false
@@ -136,12 +135,18 @@ struct SpotCardView: View {
         }
     }
 
-    private var marks: SearchMarks {
-        SearchQuery(text: query).marks(in: SpotItem(title: entry.shownState.title, subtitle: entry.shownState.subtitle, run: entry.id))
+    private var title: some View {
+        Text(entry.shownState.title)
+            .font(SpotType.title)
+            .foregroundStyle(isFilled ? SpotTheme.onSolid : SpotTheme.ink)
+            .lineLimit(1)
     }
 
-    private var title: some View {
-        SpotMarkedText(text: entry.shownState.title, marks: marks.title, font: SpotType.title, ink: isFilled ? SpotTheme.onSolid : SpotTheme.ink)
+    private func detail(_ text: String, isOnSolid: Bool) -> some View {
+        Text(text)
+            .font(SpotType.detail)
+            .modifier(SpotSecondaryText(isOnSolid: isOnSolid))
+            .lineLimit(1)
     }
 
     private var text: some View {
@@ -150,9 +155,9 @@ struct SpotCardView: View {
             if entry.kind == .slider {
                 slider
             } else if isBuildingView {
-                SpotMarkedText(text: "Building its view", marks: [], font: SpotType.detail, ink: SpotTheme.ink, strength: SpotTheme.secondaryLight)
+                detail("Building its view", isOnSolid: false)
             } else if let subtitle = entry.shownState.subtitle {
-                SpotMarkedText(text: subtitle, marks: marks.subtitle, font: SpotType.detail, ink: isFilled ? SpotTheme.onSolid : SpotTheme.ink, strength: SpotTheme.secondaryLight)
+                detail(subtitle, isOnSolid: isFilled)
             }
         }
     }

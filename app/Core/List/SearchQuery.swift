@@ -40,11 +40,6 @@ public struct SearchQuery: Equatable, Sendable {
         return [text.applyingTransform(.toLatin, reverse: false)?.applyingTransform(.stripDiacritics, reverse: false)].compactMap { $0 }
     }
 
-    /// The letters of the item that this text matches. An item that does not match has none.
-    public func marks(in item: SpotItem) -> SearchMarks {
-        match(FoldedItem(item))?.marks ?? SearchMarks(title: [], subtitle: [])
-    }
-
     public func matching(_ items: [SpotItem], recent: [String] = []) -> [SpotItem] {
         matching(items.map(FoldedItem.init), recent: recent)
     }
@@ -57,7 +52,7 @@ public struct SearchQuery: Equatable, Sendable {
     func ranking(_ items: [FoldedItem], among indices: [Int], recent: [String]) -> [Int] {
         let weights = Self.weights(of: recent)
         return indices.compactMap { index in
-            match(items[index]).map { (rank: $0.rank, weight: weights[items[index].item.run] ?? 0, index: index) }
+            match(items[index]).map { (rank: $0, weight: weights[items[index].item.run] ?? 0, index: index) }
         }
         .sorted { ($0.rank, -$0.weight, $0.index) < ($1.rank, -$1.weight, $1.index) }
         .map(\.index)
@@ -91,7 +86,7 @@ public struct SearchQuery: Equatable, Sendable {
     private func ranked(_ items: [FoldedItem], recent: [String]) -> [(rank: Int, weight: Double, offset: Int, item: SpotItem)] {
         let weights = Self.weights(of: recent)
         return items.enumerated().compactMap { offset, folded in
-            match(folded).map { (rank: $0.rank, weight: weights[folded.item.run] ?? 0, offset: offset, item: folded.item) }
+            match(folded).map { (rank: $0, weight: weights[folded.item.run] ?? 0, offset: offset, item: folded.item) }
         }
     }
 
@@ -106,46 +101,39 @@ public struct SearchQuery: Equatable, Sendable {
         return weights
     }
 
-    private func match(_ item: FoldedItem) -> (rank: Int, marks: SearchMarks)? {
-        guard !typed.words.isEmpty else { return (0, SearchMarks(title: [], subtitle: [])) }
-        if let glyph = item.glyph, glyph == FoldedItem.plain(text) { return (0, SearchMarks(title: [], subtitle: [])) }
-        let typedMatch = Self.match(typed, in: item, loose: true).map { (rank: $0.rank * 2, marks: $0.marks) }
-        let convertedMatches = converted.compactMap { Self.match($0, in: item, loose: false) }.map { (rank: $0.rank * 2 + 1, marks: $0.marks) }
-        return ([typedMatch].compactMap { $0 } + convertedMatches).min { $0.rank < $1.rank }
+    private func match(_ item: FoldedItem) -> Int? {
+        guard !typed.words.isEmpty else { return 0 }
+        if let glyph = item.glyph, glyph == FoldedItem.plain(text) { return 0 }
+        let typedRank = Self.match(typed, in: item, loose: true).map { $0 * 2 }
+        let convertedRanks = converted.compactMap { Self.match($0, in: item, loose: false) }.map { $0 * 2 + 1 }
+        return ([typedRank].compactMap { $0 } + convertedRanks).min()
     }
 
-    private static func match(_ form: Form, in item: FoldedItem, loose: Bool) -> (rank: Int, marks: SearchMarks)? {
+    private static func match(_ form: Form, in item: FoldedItem, loose: Bool) -> Int? {
         guard form.letterBits & ~item.letterBits == 0 else { return nil }
         let title = item.title
-        if title.letters == form.letters { return (0, SearchMarks(title: [0..<form.letters.count], subtitle: [])) }
-        if title.letters.starts(with: form.letters) { return (1, SearchMarks(title: [0..<form.letters.count], subtitle: [])) }
-        let subtitle = item.subtitle
+        if title.letters == form.letters { return 0 }
+        if title.letters.starts(with: form.letters) { return 1 }
         var rank = 0
-        var marks: (title: [Range<Int>], subtitle: [Range<Int>]) = ([], [])
         for word in form.words {
-            guard let found = match(word, title: title, keywords: item.keywords, subtitle: subtitle, loose: loose) else { return nil }
-            rank = max(rank, found.rank)
-            marks.title += found.title
-            marks.subtitle += found.subtitle
+            guard let found = match(word, title: title, keywords: item.keywords, subtitle: item.subtitle, loose: loose) else { return nil }
+            rank = max(rank, found)
         }
-        return (rank, SearchMarks(title: marks.title, subtitle: marks.subtitle))
+        return rank
     }
 
-    private static func match(_ word: [UInt64], title: FoldedText, keywords: [FoldedText], subtitle: FoldedText?, loose: Bool) -> (rank: Int, title: [Range<Int>], subtitle: [Range<Int>])? {
-        let span = { (start: Int) in start..<start + word.count }
+    private static func match(_ word: [UInt64], title: FoldedText, keywords: [FoldedText], subtitle: FoldedText?, loose: Bool) -> Int? {
         let inTitle = title.occurrences(of: word)
-        if let start = inTitle.first(where: title.starts.contains) { return (2, [span(start)], []) }
-        if let found = title.inOrder(word, among: title.starts) { return (3, found.map { $0..<$0 + 1 }, []) }
-        if let start = inTitle.first { return (4, [span(start)], []) }
-        if keywords.contains(where: { $0.letters.starts(with: word) }) { return (5, [], []) }
+        if inTitle.contains(where: title.starts.contains) { return 2 }
+        if title.inOrder(word, among: title.starts) != nil { return 3 }
+        if !inTitle.isEmpty { return 4 }
+        if keywords.contains(where: { $0.letters.starts(with: word) }) { return 5 }
         if let subtitle {
             let inSubtitle = subtitle.occurrences(of: word)
-            if let start = inSubtitle.first(where: subtitle.starts.contains) { return (6, [], [span(start)]) }
-            if let start = inSubtitle.first { return (7, [], [span(start)]) }
+            if inSubtitle.contains(where: subtitle.starts.contains) { return 6 }
+            if !inSubtitle.isEmpty { return 7 }
         }
-        if loose, word.count >= 3, let found = title.inOneWord(word) {
-            return (8, found.map { $0..<$0 + 1 }, [])
-        }
+        if loose, word.count >= 3, title.inOneWord(word) != nil { return 8 }
         return nil
     }
 

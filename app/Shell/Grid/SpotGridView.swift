@@ -39,7 +39,6 @@ struct SpotGridView: View {
                     chainLetter: model.chainLetter(of: entry),
                     showsChain: model.showsChain,
                     isHiddenFromGrid: model.isEditing && !entry.isOnGrid,
-                    query: model.query,
                     model: model
                 )
                 .onDrop(of: [.fileURL], delegate: SpotCardDrop(id: entry.id, model: model, target: $dropTarget))

@@ -217,14 +217,19 @@ struct SpotRowsView: View {
     }
 
     private func rowLabel(_ item: SpotItem, isSelected: Bool) -> some View {
-        let marks = SearchQuery(text: list.query).marks(in: item)
-        return HStack(spacing: SpotTokens.padding - 5) {
+        HStack(spacing: SpotTokens.padding - 5) {
             SpotItemIcon(item: item, size: SpotTokens.listIconSize)
                 .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: SpotTokens.listIconSize) }
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
-                SpotMarkedText(text: item.title, marks: marks.title, font: SpotType.body, ink: SpotTheme.ink)
+                Text(item.title)
+                    .font(SpotType.body)
+                    .foregroundStyle(SpotTheme.ink)
+                    .lineLimit(1)
                 if let subtitle = item.subtitle {
-                    SpotMarkedText(text: subtitle, marks: marks.subtitle, font: SpotType.detail, ink: SpotTheme.ink, strength: SpotTheme.secondaryLight)
+                    Text(subtitle)
+                        .font(SpotType.detail)
+                        .modifier(SpotSecondaryText())
+                        .lineLimit(1)
                 }
             }
             Spacer(minLength: 0)
