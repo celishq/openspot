@@ -108,8 +108,7 @@ struct SpotSlotView: View {
 
     private func picture(icon: FileIcon?) -> some View {
         GeometryReader { room in
-            let fit = min(room.size.width, room.size.height)
-            let side = min(fit, max(fit * 0.6, SpotTokens.listIconSize))
+            let side = SpotTokens.pictureSide(in: room.size)
             SpotItemIcon(icon: icon, glyph: part.glyph, symbol: part.symbol, size: side)
                 .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: tone, side: side) }
                 .frame(width: room.size.width, height: room.size.height)
