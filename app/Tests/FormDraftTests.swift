@@ -11,6 +11,36 @@ final class FormDraftTests: XCTestCase {
         XCTAssertEqual(FormDraft(form: form).values, ["title": "", "content": "old"])
     }
 
+    func testAFormTakesAChoiceASwitchAndASliderWithTheirValues() throws {
+        let form = try XCTUnwrap(ItemForm(output: PluginOutput(text: """
+        title=Repos
+
+        choice=editor
+        title=Editor
+        option=/Applications/Zed.app:Zed
+        option=/System/Library/CoreServices/Finder.app:Finder
+
+        switch=hidden
+        title=Show hidden folders
+        on=true
+
+        slider=depth
+        title=Depth
+        level=2
+        min=1
+        max=4
+
+        field=note
+        title=Note
+        type=choice
+        """)))
+
+        XCTAssertEqual(form.fields.map(\.type), [.choice, .switch, .slider, .text])
+        XCTAssertEqual(form.fields[0].options.map(\.title), ["Zed", "Finder"])
+        XCTAssertEqual(form.fields[2].range, 1...4)
+        XCTAssertEqual(FormDraft(form: form).values, ["editor": "/Applications/Zed.app", "hidden": "true", "depth": "2", "note": ""])
+    }
+
     func testAPrefillGoesIntoAnEmptyFirstField() {
         XCTAssertEqual(FormDraft(form: form, prefill: "typed").values["title"], "typed")
     }

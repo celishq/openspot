@@ -93,7 +93,7 @@ Enter on a row is the action `open`, which each spot has. A `button=open` gives 
 while it needs a value, such as an app that it has not been told to use.
 
 A button with `form=true` asks for values first. The call runs once with empty stdin, and it prints a `title` in its head
-and one `field` for each value. Then the same call runs with the values on stdin, and it can print the id of the row to
+and one `field`, `choice`, `switch` or `slider` for each value. A choice starts on its first option. Then the same call runs with the values on stdin, and it can print the id of the row to
 select. It can also print the form again, such as with a `title` that says what is wrong, and the form stays open.
 
 ## Rows

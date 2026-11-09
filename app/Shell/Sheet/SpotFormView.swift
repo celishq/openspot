@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-/// The fields of a form that a command asked for, drawn with system text controls.
+/// The fields of a form that a command asked for, drawn with system controls.
 struct SpotFormView: View {
     let draft: FormDraft
     let onValue: (String, String) -> Void
@@ -65,6 +65,36 @@ struct SpotFormView: View {
                 .padding(.vertical, SpotTokens.padding - 5)
                 .frame(height: SpotTokens.formTextHeight)
                 .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
+        case .choice:
+            Picker(field.label, selection: value(of: field)) {
+                ForEach(field.options, id: \.id) { Text($0.title).tag($0.id) }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .fixedSize()
+            .frame(height: SpotTokens.listRowHeight)
+        case .switch:
+            Toggle(field.label, isOn: Binding(get: { draft.values[field.name] == "true" }, set: { onValue($0 ? "true" : "false", field.name) }))
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .labelsHidden()
+                .frame(height: SpotTokens.listRowHeight)
+        case .slider:
+            let range = field.range ?? 0...100
+            HStack(spacing: SpotTokens.padding) {
+                Slider(
+                    value: Binding(get: { Double(draft.values[field.name] ?? "") ?? range.lowerBound }, set: { onValue(String(Int($0.rounded())), field.name) }),
+                    in: range
+                )
+                .controlSize(.small)
+                .tint(SpotTheme.ink)
+                .labelsHidden()
+                Text(draft.values[field.name] ?? "")
+                    .font(SpotType.detail)
+                    .monospacedDigit()
+                    .modifier(SpotSecondaryText())
+            }
+            .frame(height: SpotTokens.listRowHeight)
         }
     }
 
