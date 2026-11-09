@@ -127,11 +127,6 @@ public struct Spot: Equatable, Sendable {
         !isGlobal || headerState.isOnGrid
     }
 
-    /// Its picture as one icon: its image, or else its file, or else its glyph, or else its symbol.
-    public var picture: Icon {
-        image.map(Icon.image) ?? file.map(Icon.file) ?? glyph.map(Icon.glyph) ?? .symbol(symbol)
-    }
-
     /// The sizes a person can prefer for its card. A widget has the size of its layout, and Updates needs room for its words.
     public var sizes: [SpotSize] {
         if kind == .widget { return [] }

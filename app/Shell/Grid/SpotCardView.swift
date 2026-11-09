@@ -198,12 +198,10 @@ struct SpotCardView: View {
             SpotWorkMark(call: call, stops: entry.stopsOnPress, isOnSolid: isFilled)
         } else if isBuildingView {
             SpotWorkMark(call: nil, isOnSolid: isFilled)
-        } else if let item = entry.item, item.icon != nil || item.badge != nil {
-            SpotItemIcon(item: item, size: SpotTokens.pictureSize)
-                .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+        } else if let item = entry.item, item.icon != nil {
+            SpotItemIcon(item: item, size: SpotTokens.glyphSize)
         } else if entry.showsHeaderPicture {
-            SpotItemIcon(icon: entry.command.icon, glyph: entry.command.glyph, symbol: nil, size: SpotTokens.pictureSize)
-                .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
+            SpotItemIcon(icon: entry.command.icon, glyph: entry.command.glyph, symbol: nil, size: SpotTokens.glyphSize)
         } else {
             symbolGlyph
         }

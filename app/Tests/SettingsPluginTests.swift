@@ -22,7 +22,6 @@ final class SettingsPluginTests: SamplePluginsCase {
             XCTAssertEqual(section.subtitle, "System Settings › Звук")
             XCTAssertEqual(section.keywords, ["громко", "тихо"])
             XCTAssertEqual(section.file, pane.file)
-            XCTAssertNil(section.badge)
         }
     }
 
