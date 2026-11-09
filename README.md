@@ -36,7 +36,7 @@ Openspot gives each tool the same clean look and the power of your Mac. Your too
 
 ## Make your own tool
 
-**Ask your agent from Openspot.** Press `⌘N` in the panel, say what the tool should do, and press `⌘⏎`. Openspot copies a
+**Ask your agent from Openspot.** Press `⌘N` in the panel, type what the tool should do, and press Enter. Openspot copies a
 prompt with all that your agent needs. Paste it into Claude Code, Codex or another agent, and the tool shows when the agent
 saves it.
 

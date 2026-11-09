@@ -498,9 +498,11 @@ public final class SpotRun {
         }
     }
 
-    /// Runs a pick of a row. A second pick of a running row stops its call.
+    /// Runs a pick of a row. A second pick of a running row stops its call. In a list that the script searches, stdin holds
+    /// the text of the search, so that a pick that comes before the read of the last text still gets it.
     public func pick(_ item: SpotItem) {
-        press(.item(item))
+        guard list.search == .script, !list.query.isEmpty else { return press(.item(item)) }
+        press(.item(item), input: TextBlock(fields: [.init(key: "search", value: list.query)]).text)
     }
 
     /// Takes a key that the person recorded on a row, and tells the script.
@@ -879,10 +881,10 @@ public final class SpotRun {
     }
 
     /// Starts or stops the call of a person's press.
-    private func press(_ action: SpotAction) {
+    private func press(_ action: SpotAction, input: String? = nil) {
         let key = Self.key(call: action)
         if let running = running(key) { return pressAgain(running) }
-        work(action, key: key)
+        work(action, key: key, input: input)
     }
 
     /// Runs a call that does work. It has no time limit, and it goes on with the sheet and the panel closed. A stopped call

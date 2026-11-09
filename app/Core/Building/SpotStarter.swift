@@ -18,6 +18,16 @@ public enum SpotStarter: String, CaseIterable, Sendable {
         }
     }
 
+    /// What a spot made from it does, in a line under its title.
+    public var detail: String {
+        switch self {
+        case .button: "Runs a command when you press it"
+        case .list: "Shows rows to pick from"
+        case .number: "Shows a value that updates"
+        case .form: "Asks for words and saves them"
+        }
+    }
+
     public var symbol: String {
         switch self {
         case .button: "hand.tap"

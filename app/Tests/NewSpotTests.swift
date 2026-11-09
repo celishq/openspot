@@ -60,20 +60,26 @@ final class NewSpotTests: XCTestCase {
         XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "mine", reason: "Mine cannot use key p, because another command has it")])
     }
 
-    func testTheSheetAsksWhatTheSpotShouldDoAndOffersEachStarter() async throws {
-        let sheet = try await sheet(of: try newSpot())
+    func testTheSheetIsAListThatSearchesByScriptWithCopyPromptForAIFirstThenEachStarter() async throws {
+        let output = try await newSpot().items(timeout: 5)
 
-        let ids = Set(sheet.parts.map(\.id))
-        XCTAssertTrue(ids.isSuperset(of: ["ask", "build", "guide", "folder"]))
-        XCTAssertTrue(ids.isSuperset(of: SpotStarter.allCases.map(\.rawValue)))
-        XCTAssertFalse(ids.contains("agent"))
-        XCTAssertEqual(sheet.parts.first?.id, "ask")
+        XCTAssertEqual(output.search, .script)
+        XCTAssertEqual(output.items.map(\.title), ["Copy prompt for AI"] + SpotStarter.allCases.map(\.title))
+        XCTAssertEqual(output.items.first?.subtitle, "Type what the spot should do")
+        XCTAssertTrue(Set(output.actions.map(\.id)).isSuperset(of: ["guide", "folder"]))
     }
 
-    func testBuildWithAICopiesThePromptAndStartsNothing() async throws {
+    func testTheFirstRowShowsTheTextOfTheSearch() async throws {
+        let output = try await newSpot().items(query: "Show the weather here", timeout: 5)
+
+        XCTAssertEqual(output.items.first?.subtitle, "Show the weather here")
+        XCTAssertEqual(output.items.count, 1 + SpotStarter.allCases.count)
+    }
+
+    func testCopyPromptForAICopiesThePromptWithTheSearchAndStartsNothing() async throws {
         let spot = try newSpot()
 
-        let toast = try await spot.perform(SpotAction(arguments: ["build"]), input: "ask=Show the weather here\n", timeout: 5)
+        let toast = try await spot.perform(.item(SpotItem(title: "Copy prompt for AI", run: "ask")), input: "search=Show the weather here\n", timeout: 5)
 
         XCTAssertEqual(toast, "Copied a prompt for your agent. Paste it into Claude Code, Codex or another agent.")
         let prompt = try saved("clipboard")
@@ -84,27 +90,44 @@ final class NewSpotTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("opened").path))
     }
 
-    func testBuildWithAINeedsADescription() async throws {
+    func testCopyPromptForAINeedsADescription() async throws {
         do {
-            _ = try await newSpot().perform(SpotAction(arguments: ["build"]), input: "ask=\n", timeout: 5)
+            _ = try await newSpot().perform(.item(SpotItem(title: "Copy prompt for AI", run: "ask")), timeout: 5)
             XCTFail("expected a fault")
         } catch {
-            XCTAssertEqual((error as? PluginError)?.reason, "Write what the spot should do, then press `⌘⏎`.")
+            XCTAssertEqual((error as? PluginError)?.reason, "Type what the spot should do, then press `⏎`.")
         }
+    }
+
+    @MainActor
+    func testWordsTypedJustBeforeEnterReachThePrompt() async throws {
+        let runs = SpotRuns()
+        defer { runs.quit() }
+        let sheet = runs.sheet(for: try newSpot())
+        sheet.open {}
+        for _ in 0..<500 where sheet.list.shown.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
+
+        sheet.search("Show the weather here")
+        sheet.pick(try XCTUnwrap(sheet.list.shown.first))
+
+        for _ in 0..<500 where (try? saved("clipboard"))?.contains("what the spot runs on my computer.") != true {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTAssertTrue(try saved("clipboard").contains("Build an Openspot spot that does this: Show the weather here"))
     }
 
     func testAStarterMakesAWorkingSpotCalledUntitledAndOpensItsFile() async throws {
         let spot = try newSpot()
 
-        _ = try await spot.perform(SpotAction(arguments: ["list"]), timeout: 5)
-        _ = try await spot.perform(SpotAction(arguments: ["button"]), timeout: 5)
+        _ = try await spot.perform(.item(SpotItem(title: "List", run: "list")), timeout: 5)
+        _ = try await spot.perform(.item(SpotItem(title: "Button", run: "button")), timeout: 5)
 
         let names = try PluginFolder(url: plugins).scan().commands.map(\.id).sorted()
         XCTAssertEqual(names, ["untitled", "untitled-2"])
         XCTAssertEqual(try saved("opened"), "-t \(plugins.appendingPathComponent("untitled-2.sh").path)\n")
     }
 
-    func testTheButtonsOpenTheGuideAndTheFolder() async throws {
+    func testTheActionsOpenTheGuideAndTheFolder() async throws {
         let spot = try newSpot()
 
         _ = try await spot.perform(SpotAction(arguments: ["guide"]), timeout: 5)

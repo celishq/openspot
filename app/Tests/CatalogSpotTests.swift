@@ -184,7 +184,7 @@ final class CatalogSpotTests: XCTestCase {
         XCTAssertEqual(new.size, .small)
         XCTAssertEqual(commands.map(\.name), ["Spots", "Settings", "New spot"])
         let output = try await new.items(timeout: 1)
-        XCTAssertFalse(output.parts.isEmpty)
+        XCTAssertFalse(output.items.isEmpty)
     }
 
     func testTheRowOfACoreSpotReadsOnFromItsBlock() throws {
