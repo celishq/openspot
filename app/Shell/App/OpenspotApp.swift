@@ -55,7 +55,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         panel = SpotsPanel.make(model: model)
         model.dismiss = { [weak self] in
             self?.panel?.hide()
-            self?.previousApp?.activate()
+            if NSApp.isActive { self?.previousApp?.activate() }
         }
         model.show = { [weak self] in
             if self?.model.isShown == false || self?.model.isWarming == true { self?.showPanel() }
