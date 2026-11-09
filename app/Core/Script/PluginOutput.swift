@@ -7,10 +7,13 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var summary: TextBlock?
     public private(set) var rows: [TextBlock] = []
     public private(set) var items: [SpotItem] = []
+    /// The blocks that a form takes: each `field`, `choice`, `switch` and `slider`.
     public private(set) var fields: [TextBlock] = []
     public private(set) var actions: [CommandAction] = []
     public private(set) var primary: String?
     public private(set) var pick = ItemPick.close
+    /// The form that Enter on a row asks with first, when `button=open` has `form=true`.
+    public private(set) var pickForm: CommandAction?
     public private(set) var parts: [SpotPart] = []
     public private(set) var partFaults: [String] = []
     public private(set) var errors: [String] = []
@@ -44,6 +47,7 @@ public struct PluginOutput: Equatable, Sendable {
     private static let templateKind = "template"
     /// The area of the rows in the default drawing of a sheet with no `repeat` block (U13).
     private static let rowsArea = "rows"
+    private static let formKinds: Set<String> = ["field", "choice", "switch", "slider"]
     /// The kinds of component that can stand for the spot.
     private static let valueKinds: Set<String> = ["text", "number", "gauge", "graph", "switch", "slider"]
 
@@ -80,7 +84,7 @@ public struct PluginOutput: Equatable, Sendable {
                     errors.append(block.firstLine)
                 }
             } else if let kind, SpotPart.kinds.contains(kind), let part = SpotPart(block: block) {
-                if kind == "field" { fields.append(block) }
+                if Self.formKinds.contains(kind) { fields.append(block) }
                 if view == nil, kind == "view" { view = block }
                 parts.append(part)
                 partFaults += PartCatalog.faults(in: block)
@@ -185,6 +189,9 @@ public struct PluginOutput: Equatable, Sendable {
         if id == "open" {
             primary = block.value("title")
             pick = block.flag("close") == false ? .stay : .close
+            if block.flag("form") == true {
+                pickForm = CommandAction(id: id, title: primary ?? "Open", after: pick == .close ? .close : .stay, isForm: true)
+            }
         } else if let action = CommandAction(id: id, block: block) {
             actions.append(action)
         } else {

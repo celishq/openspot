@@ -748,6 +748,14 @@ final class SpotsModel {
             toggleRecording(id: item.run)
             return
         }
+        if action == nil, case .settings? = entry.command.shipped, let change = SettingsSpot.change(of: item.run) {
+            changeSetting(of: change.spot, with: change.action)
+            return
+        }
+        if action == nil, let form = entry.command.pickForm {
+            openForm(form, on: (entry, item))
+            return
+        }
         if action != nil || entry.command.pick == .close {
             closingPick = (item, entry)
             if isShown {

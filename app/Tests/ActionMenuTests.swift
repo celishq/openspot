@@ -11,6 +11,51 @@ final class ActionMenuTests: XCTestCase {
         Spot(id: "a/A", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: kind, primary: primary, actions: [paste, delete, new])
     }
 
+    private func long() throws -> ActionMenu {
+        let actions = ["Open in Zed", "Open in Cursor", "Use Zed by default", "Use Cursor by default", "Show in Finder"].enumerated().map {
+            CommandAction(id: "a\($0.offset)", title: $0.element)
+        } + [CommandAction(id: "copy", title: "Copy path", key: ActionKey(text: "cmd+shift+c"))]
+        return try XCTUnwrap(ActionMenu(command: Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .list, primary: "Open", actions: actions), item: item))
+    }
+
+    func testALongMenuOpensOnItsFirstRow() throws {
+        XCTAssertEqual(try long().selectedRow?.title, "Open")
+    }
+
+    func testAMenuOfMoreThanFiveRowsFindsRowsByTheirWords() throws {
+        var menu = try long()
+        menu.move(by: 2)
+
+        menu.search("zed")
+
+        XCTAssertTrue(menu.isSearchable)
+        XCTAssertEqual(menu.shown.map(\.title), ["Open in Zed", "Use Zed by default"])
+        XCTAssertEqual(menu.lines, 3)
+        XCTAssertEqual(menu.selectedRow?.title, "Open in Zed")
+        menu.move(by: 1)
+        XCTAssertEqual(menu.press()?.title, "Use Zed by default")
+        menu.search("nothing")
+        XCTAssertNil(menu.press())
+        XCTAssertEqual(menu.lines, 1)
+    }
+
+    func testTheKeyOfAnActionThatTheSearchHidesStillSelectsIt() throws {
+        var menu = try long()
+        menu.search("zed")
+
+        menu.select(try XCTUnwrap(menu.rows.last?.action))
+
+        XCTAssertEqual(menu.query, "")
+        XCTAssertEqual(menu.selectedRow?.title, "Copy path")
+    }
+
+    func testAMenuOfFiveRowsHasNoSearch() throws {
+        let menu = try XCTUnwrap(ActionMenu(command: command(), item: item))
+
+        XCTAssertFalse(menu.isSearchable)
+        XCTAssertEqual(menu.lines, 4)
+    }
+
     func testAGridCardOffersToEditTheSpotsAfterItsActions() throws {
         let menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, showsEdit: true))
 

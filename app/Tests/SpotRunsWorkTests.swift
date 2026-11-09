@@ -387,6 +387,51 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertEqual(form?.fields.map(\.name), ["a"])
     }
 
+    func testAPickAsksWithAFormAndASubmitCanAnswerWithTheFormAgain() async throws {
+        try script(header: "read=sheet", """
+        case "$1" in
+          read) printf 'button=open\\ntitle=Open\\nform=true\\n\\nrow=a\\ntitle=A\\n' ;;
+          open) case "$(cat)" in *name=x*) ;; *) printf 'title=Name\\n\\nfield=name\\ntitle=Name\\n' ;; esac ;;
+        esac
+        """)
+        let sheet = try sheet()
+        sheet.open {}
+        try await wait("the read") { sheet.command.pickForm != nil }
+        let action = try XCTUnwrap(sheet.command.pickForm)
+        let item = SpotItem(title: "A", run: "a")
+
+        let asked = try await sheet.form(action, item: item)
+        let form = try XCTUnwrap(asked)
+        var draft = FormDraft(form: form)
+        draft.set("y", for: "name")
+        let again = try await sheet.submit(action, item: item, draft: draft)
+        draft.set("x", for: "name")
+        let done = try await sheet.submit(action, item: item, draft: draft)
+
+        XCTAssertEqual(form.fields.map(\.name), ["name"])
+        XCTAssertEqual(again, .form(form))
+        XCTAssertEqual(done, .done)
+    }
+
+    func testAChangeAnswersWithTheFormOfItsScriptOrIsDone() async throws {
+        try script(header: "read=sheet", """
+        case "$1" in
+          read) printf 'row=a\\ntitle=A\\n' ;;
+          editor) printf 'title=Editor\\n\\nchoice=editor\\ntitle=Editor\\noption=zed:Zed\\n' ;;
+          folder) touch "\(path("folder"))" ;;
+        esac
+        """)
+        let sheet = try sheet()
+
+        let asked = try await sheet.change(CommandAction(id: "editor", title: "Change editor"))
+        let done = try await sheet.change(CommandAction(id: "folder", title: "Change folder"))
+
+        guard case .form(let form)? = asked else { return XCTFail("no form: \(String(describing: asked))") }
+        XCTAssertEqual(form.fields.map(\.name), ["editor"])
+        XCTAssertEqual(done, .done)
+        XCTAssertTrue(exists("folder"))
+    }
+
     func testQuittingStopsEachCall() async throws {
         try script(header: "read=sheet", """
         trap 'touch "\(path("stopped"))"; exit 0' TERM

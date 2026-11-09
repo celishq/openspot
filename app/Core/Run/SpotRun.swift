@@ -478,18 +478,29 @@ public final class SpotRun {
         return form
     }
 
-    /// Gives a filled form to the script, and reads again with the row it saved selected. Returns false when a person
-    /// pressed it again.
-    public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft) async throws -> Bool {
+    /// Runs an action that can ask with a form first, such as the change of a setting. Returns the form it answers with, or
+    /// done, and nil when a person pressed it again.
+    public func change(_ action: CommandAction) async throws -> FormAnswer? {
+        let call = SpotAction.action(action, item: nil)
+        guard let text = try await command.stays ? liveForm(call) : text(of: call, input: nil) else { return nil }
+        if let form = ItemForm(output: PluginOutput(text: text)), !form.fields.isEmpty { return .form(form) }
+        read(need: .change)
+        return .done
+    }
+
+    /// Gives a filled form to the script, and reads again with the row it saved selected. A script that answers with a form
+    /// asks again. Returns nil when a person pressed it again.
+    public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft) async throws -> FormAnswer? {
         let call = SpotAction.action(action, item: item)
         if command.stays {
             sendLive(call, values: draft.text)
-            return true
+            return .done
         }
-        guard let text = try await text(of: call, input: draft.text) else { return false }
+        guard let text = try await text(of: call, input: draft.text) else { return nil }
+        if let form = ItemForm(output: PluginOutput(text: text)), !form.fields.isEmpty { return .form(form) }
         let run = text.trimmingCharacters(in: .whitespacesAndNewlines)
         read(selecting: run.isEmpty ? nil : run, need: .change)
-        return true
+        return .done
     }
 
     /// Stops a running call: it gets the terminate signal and 2 seconds, and it changes nothing. A call of a staying script

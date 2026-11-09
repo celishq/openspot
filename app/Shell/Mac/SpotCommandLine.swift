@@ -17,6 +17,18 @@ enum SpotCommandLine {
             exit(0)
         case .colorPick:
             SpotColorPick.run()
+        case .folderPick:
+            SpotFolderPick.run()
+        case .settingGet(let spot, let key):
+            answer { ConfigFile.standard().read().setting(key, of: spot).map { $0 + "\n" } ?? "" }
+        case .settingSet(let spot, let key, let value):
+            answer {
+                try ConfigFile.standard().set(setting: key, of: spot, to: value)
+                return ""
+            }
+        case .refused(let line):
+            FileHandle.standardError.write(Data("\(line)\n".utf8))
+            exit(1)
         case .clipboardCopy(let path?):
             SpotClipboard.copy(path)
         case .clipboardCopy(nil):

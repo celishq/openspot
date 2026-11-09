@@ -99,6 +99,18 @@ final class PluginOutputTests: XCTestCase {
         XCTAssertEqual(PluginOutput(text: "").pick, .close)
     }
 
+    func testAFormOnTheOpenActionAsksBeforeEachPick() {
+        XCTAssertEqual(
+            PluginOutput(text: "button=open\ntitle=Open in Zed\nform=true\n").pickForm,
+            CommandAction(id: "open", title: "Open in Zed", after: .close, isForm: true)
+        )
+        XCTAssertEqual(
+            PluginOutput(text: "button=open\nform=true\nclose=false\n").pickForm,
+            CommandAction(id: "open", title: "Open", after: .stay, isForm: true)
+        )
+        XCTAssertNil(PluginOutput(text: "button=open\ntitle=Copy\n").pickForm)
+    }
+
     func testReportsARowWithNoIdAndABlockThatSaysNothing() {
         let output = PluginOutput(text: "row=\ndetail=x\n\nnot an item\n\nrow=1\ntitle=Kept\n")
 

@@ -240,7 +240,7 @@ public final class SpotRuns {
 
     /// Starts a script that stays, and returns it with its frames.
     func stay(_ command: Spot, limit: TimeInterval?) throws -> (ScriptProcess, AsyncThrowingStream<String, Error>) {
-        let script = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, mode: .stays, limit: limit, stopPause: stopPause, dataName: command.dataName)
+        let script = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, mode: .stays, limit: limit, stopPause: stopPause, dataName: command.dataName, variables: ["OPENSPOT_ID": command.id])
         let frames = try script.start()
         keep(script)
         return (script, frames)
@@ -251,7 +251,7 @@ public final class SpotRuns {
             return answered { try await shipped.answer(action.arguments, input: input) }
         }
         let sent = action.sent(input: input)
-        let process = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: command.dataName, variables: variables)
+        let process = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: command.dataName, variables: variables.merging(["OPENSPOT_ID": command.id]) { given, _ in given })
         do {
             let stream = try process.start()
             keep(process)
