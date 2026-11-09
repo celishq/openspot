@@ -53,7 +53,7 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testAShippedSpotCannotBeRemoved() throws {
-        let shipped = Spot(id: "openspot/plugins", name: "Plugins", url: folder, shipped: .build(BuildSpot(folder: folder, guide: folder, app: "")))
+        let shipped = Spot(id: "openspot/plugins", name: "Plugins", url: folder, shipped: .quit(QuitSpot {}))
 
         XCTAssertThrowsError(try PluginFolder(url: folder).remove(shipped) { _ in XCTFail("It must not be discarded.") })
     }

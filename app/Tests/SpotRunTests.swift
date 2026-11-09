@@ -385,6 +385,23 @@ final class SpotRunTests: XCTestCase {
         XCTAssertEqual(sheet.list.shown.map(\.title), ["rep"])
     }
 
+    func testAPickInAScriptThatSearchesGetsTheTextOnStdinBeforeTheTextIsRead() async throws {
+        let sheet = try make("""
+        case "$1" in
+          read) printf 'search=script\\n\\nrow=a\\ntitle=A\\n' ;;
+          open) cat > '\(path("stdin"))' ;;
+        esac
+        """)
+        sheet.open {}
+        try await wait("the row") { sheet.list.shown.count == 1 }
+
+        sheet.search("weather in Tokyo")
+        sheet.pick(SpotItem(title: "A", run: "a"))
+
+        try await wait("the pick") { (try? String(contentsOfFile: path("stdin"), encoding: .utf8))?.hasSuffix("\n") == true }
+        XCTAssertEqual(try String(contentsOfFile: path("stdin"), encoding: .utf8), "search=weather in Tokyo\n")
+    }
+
     func testAStoppedSearchChangesNothing() async throws {
         let sheet = try make("""
         [ "$2" = slow ] && sleep 0.2 && exit 0

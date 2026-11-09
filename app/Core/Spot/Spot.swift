@@ -123,6 +123,11 @@ public struct Spot: Equatable, Sendable {
         self.view = view
     }
 
+    /// The sheet of the file that does not load, which this card stands for.
+    public var fault: FaultSpot? {
+        if case .fault(let fault)? = shipped { fault } else { nil }
+    }
+
     /// The picture its header names in place of its symbol: its image, or else the icon of its file.
     public var icon: FileIcon? {
         image.map(FileIcon.image) ?? file.map(FileIcon.init(path:))

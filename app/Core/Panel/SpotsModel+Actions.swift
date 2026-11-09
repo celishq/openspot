@@ -32,6 +32,7 @@ extension SpotsModel {
             }
             return true
         }
+        if key == Self.undoKey, openList == nil, searchText.isEmpty, undoRemoval() { return true }
         if let panel = openPanel, !panel.showsRows { return handlePanelKey(key, panel) }
         if let part = openPanel?.parts.first(where: { $0.key == key }) {
             pressPart(part)
@@ -45,13 +46,13 @@ extension SpotsModel {
             if !stepBack() { host.dismiss() }
             return true
         }
-        guard let target else { return false }
+        guard let target else { return openNewSpot(on: key) }
         if key == ActionKey(name: "k", isCommand: true) {
             openMenu(on: target)
             return menu != nil
         }
         let quiet = searchText.isEmpty ? extras(on: target) : []
-        guard let action = (target.entry.command.actions(for: target.item) + quiet).first(where: { $0.key == key }) else { return false }
+        guard let action = (target.entry.command.actions(for: target.item) + quiet).first(where: { $0.key == key }) else { return openNewSpot(on: key) }
         if action.confirm != nil {
             openMenu(on: target)
             menu?.select(action)
@@ -61,6 +62,17 @@ extension SpotsModel {
         }
         return true
     }
+
+    /// Opens the New spot sheet for `⌘N` on the grid, when no action of the selected card takes the key. Returns false for
+    /// any other key.
+    func openNewSpot(on key: ActionKey) -> Bool {
+        guard key == Self.newSpotKey, openList == nil, entries.contains(where: { $0.id == ShippedSpot.newID }) else { return false }
+        endEditing(moving: false)
+        open(ShippedSpot.newID, moving: true)
+        return true
+    }
+
+    static let newSpotKey = ActionKey(name: "n", isCommand: true)
 
     /// Does what the key of a footer label does, as if it were pressed: Return runs the selected row.
     public func pressHint(_ label: String) {
@@ -189,11 +201,16 @@ extension SpotsModel {
         )
     }
 
-    /// The rows that the app adds for a selected card of the grid. A row of a list or an open sheet keeps its own Delete.
+    /// The rows that the app adds for a selected card of the grid: the acts on the file of a spot of the person, and on a
+    /// card of a file that does not load. A core spot can be shared and turned off. A row of a list or an open sheet keeps its
+    /// own Delete.
     private func extras(on target: Target) -> [CommandAction] {
-        guard openList == nil, target.item == nil, target.entry.command.shipped == nil else { return [] }
-        guard !files.folder(Config(text: "")).isCore(target.entry.command) else { return [.share, .turnOff] }
-        return [.share, .remove(widgets: widgets(sharingFileWith: target.entry))]
+        guard openList == nil, target.item == nil else { return [] }
+        let command = target.entry.command
+        if command.fault != nil { return [.edit, .remove()] }
+        guard command.shipped == nil else { return [] }
+        guard !files.folder(Config(text: "")).isCore(command) else { return [.share, .turnOff] }
+        return [.edit, .copyPrompt, .share, .remove(widgets: widgets(sharingFileWith: target.entry))]
     }
 
     /// How many widgets the file of a widget holds, which go together when it is removed.
@@ -258,6 +275,11 @@ extension SpotsModel {
             reviewCore(item)
         } else if action.id == CommandAction.removeID {
             remove(target.entry)
+        } else if action == .edit {
+            if isShown { host.dismiss() }
+            edit(target.entry)
+        } else if action == .copyPrompt {
+            copyPrompt(changing: target.entry)
         } else if action == .turnOff {
             turnOff(target.entry)
         } else if action.isForm {

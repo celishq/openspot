@@ -154,9 +154,17 @@ helper, which a script never starts or stops (K3). When macOS already has a comm
 A command that waits for the person, such as `openspot color pick` or `openspot folder pick`, fails in a read (K4). Run it
 from a pick or an action.
 
+`openspot guide` prints this guide. `openspot spot new <name> --from <kind>` writes a working spot to change, where a kind
+is `button`, `list`, `number` or `form`. `openspot spot run <id> [call] [value]...` makes one call as Openspot makes it,
+with the same environment, and prints each frame, then stderr, and exits with the code of the script. With no call, it
+reads a spot that has a `read`, and runs one that has none. `openspot spot log <id>` prints the last calls that Openspot
+made to a spot, each with its stdin, stdout, stderr and exit code.
+
 `openspot render [--view <file.swift>] <file.png>` draws the sheet that stdin holds, with the plugin's view from a Swift file, and `openspot render --card <size> <file.png>` draws its card
-at a size such as `wide`, so you can see a result before you stop. Run `openspot check <plugins folder>` before you stop. It loads each plugin, reads each one that has a `read`, and prints
-each fault.
+at a size such as `wide`, so you can see a result before you stop. `openspot render --spot <id> [--card <size>] <file.png>`
+draws the sheet or the card of an installed spot. Run `openspot check [--json] <plugins folder>` before you stop. It loads each plugin, reads each one that has a `read`, and prints
+each fault, or with `--json` a list of `spot`, `file` and `fault`. `openspot spot show <id>` opens the panel with the spot
+selected.
 
 ### Settings
 

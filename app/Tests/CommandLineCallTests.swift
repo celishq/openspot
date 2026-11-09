@@ -33,6 +33,27 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["render"]), .unknown("render"))
     }
 
+    func testTheSpotNounMakesRunsShowsAndLogsOneSpot() {
+        XCTAssertEqual(CommandLineCall(arguments: ["guide"]), .guide)
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "new", "Weather"]), .spotNew(name: "Weather", starter: .button))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "new", "Weather", "--from", "list"]), .spotNew(name: "Weather", starter: .list))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "new", "Weather", "--from", "tree"]), .unknown("spot new Weather --from tree"))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "run", "weather"]), .spotRun(id: "weather", arguments: []))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "run", "weather", "open", "today"]), .spotRun(id: "weather", arguments: ["open", "today"]))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "show", "weather"]), .spotShow("weather"))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "log", "weather"]), .spotLog("weather"))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "show"]), .unknown("spot show"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot spot run"))
+    }
+
+    func testACheckCanPrintJSONAndARenderCanNameAnInstalledSpot() {
+        XCTAssertEqual(CommandLineCall(arguments: ["check", "--json"]), .checkJSON(nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["check", "--json", "plugins"]), .checkJSON("plugins"))
+        XCTAssertEqual(CommandLineCall(arguments: ["render", "--spot", "weather", "a.png"]), .renderSpot(id: "weather", size: nil, path: "a.png"))
+        XCTAssertEqual(CommandLineCall(arguments: ["render", "--spot", "weather", "--card", "wide", "a.png"]), .renderSpot(id: "weather", size: .wide, path: "a.png"))
+        XCTAssertEqual(CommandLineCall(arguments: ["render", "--spot", "weather", "--card", "huge", "a.png"]), .unknown("render --spot weather --card huge a.png"))
+    }
+
     func testASheetCheckReadsStandardInput() {
         XCTAssertEqual(CommandLineCall(arguments: ["check", "--sheet"]), .checkSheet)
     }

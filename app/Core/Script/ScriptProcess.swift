@@ -27,6 +27,8 @@ public final class ScriptProcess: @unchecked Sendable {
     private var stopped = false
     private var ended = false
     private var killsLater = false
+    private let errorText = ScriptText()
+    private var unended: String?
 
     /// `limit` is the time the script has to its first frame or its end. With none, it has no limit. `stopPause` is the time
     /// between each step of a stop. `variables` add to its environment.
@@ -135,6 +137,16 @@ public final class ScriptProcess: @unchecked Sendable {
         stop(because: nil)
     }
 
+    /// All that the process printed on stderr, once its output has closed.
+    public var errors: String {
+        errorText.text
+    }
+
+    /// The last frame of a call that failed, which had no `---` after it. The app does not draw it.
+    public var failedFrame: String? {
+        lock.withLock { unended }
+    }
+
     /// Whether `stop` or the time limit ended this process. Its silence then says nothing.
     public var isStopped: Bool {
         lock.withLock { stopped }
@@ -220,7 +232,7 @@ public final class ScriptProcess: @unchecked Sendable {
 
     private func follow(output: Pipe, errors: Pipe) {
         let errorsRead = DispatchSemaphore(value: 0)
-        let lastErrors = ScriptText()
+        let lastErrors = errorText
         DispatchQueue.global().async {
             lastErrors.text = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
             errorsRead.signal()
@@ -237,7 +249,9 @@ public final class ScriptProcess: @unchecked Sendable {
             guard !isStopped else { return lock.withLock { ended = true } }
             if hasExited, process.terminationStatus != 0 {
                 let line = lastErrors.text.split(separator: "\n").last.map(String.init) ?? ""
-                let fix = reader.finish().flatMap { PluginOutput(text: $0).link }.flatMap(URL.init(string:))
+                let last = reader.finish()
+                lock.withLock { unended = last }
+                let fix = last.flatMap { PluginOutput(text: $0).link }.flatMap(URL.init(string:))
                 finish(throwing: fix.map { PluginError.failedWithFix(process.terminationStatus, line, $0) } ?? PluginError.failed(process.terminationStatus, line))
                 return
             }

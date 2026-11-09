@@ -1,7 +1,7 @@
 # Openspot specs
 
 These specs are the contract between a plugin and Openspot. The build joins them in order into one `GUIDE.md` inside the
-app, which the Build spot opens and copies for an AI. How the app itself works is in its code and in `app/RULES.md`.
+app, which the New spot sheet opens and `openspot guide` prints for an AI. How the app itself works is in its code and in `app/RULES.md`.
 
 | Spec                                    | Status | Needs | What it holds                                                                    |
 | --------------------------------------- | ------ | ----- | -------------------------------------------------------------------------------- |
@@ -22,8 +22,9 @@ In order. An earlier goal wins when two goals conflict.
    view to its spot, and a script can open its own Mac window.
 3. **Nothing runs by surprise.** Openspot runs a script only when a person acts or when its header says so.
 4. **A plugin has real power.** It can use any Mac API, keep state in files, stream a long process and stay running.
-5. **An LLM writes a working plugin.** With `GUIDE.md` alone, an LLM writes a plugin that passes `openspot check` and
-   works on the first try.
+5. **A coding agent writes a working plugin.** Given only `openspot guide` and one sentence, a coding agent writes a plugin
+   that passes `openspot check --json` with `[]`, so that it shows on the grid, on its first try. `make eval-agent`
+   measures it.
 
 ## How a spec is written
 

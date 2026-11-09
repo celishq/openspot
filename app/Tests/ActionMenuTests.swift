@@ -80,7 +80,7 @@ final class ActionMenuTests: XCTestCase {
     func testAMenuThatOffersSharingEndsWithIt() throws {
         let menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, extras: [.share, .remove()]))
 
-        XCTAssertEqual(menu.rows.map(\.title), ["Open", "New", "Copy to share", "Delete"])
+        XCTAssertEqual(menu.rows.map(\.title), ["Open", "New", "Share", "Delete"])
         XCTAssertEqual(menu.rows[2].action, .share)
     }
 
@@ -88,16 +88,24 @@ final class ActionMenuTests: XCTestCase {
         let slider = Spot(id: "a", name: "A", url: URL(fileURLWithPath: "/bin/true"), kind: .slider)
 
         XCTAssertNil(ActionMenu(command: slider, item: nil))
-        XCTAssertEqual(ActionMenu(command: slider, item: nil, extras: [.share])?.rows.map(\.title), ["Copy to share"])
+        XCTAssertEqual(ActionMenu(command: slider, item: nil, extras: [.share])?.rows.map(\.title), ["Share"])
     }
 
-    func testRemoveAsksForASecondPress() throws {
-        var menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, extras: [.remove()]))
-        menu.select(.remove())
+    /// An action of a script that asks for a second press, such as a forget of a network.
+    private let forget = CommandAction(id: "forget", title: "Forget", scope: .command, confirm: "Press again to forget")
+
+    func testAnActionWithAConfirmAsksForASecondPress() throws {
+        var menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, extras: [forget]))
+        menu.select(forget)
 
         XCTAssertNil(menu.press())
-        XCTAssertEqual(menu.title(of: menu.rows[menu.selected]), "Press again to delete")
-        XCTAssertEqual(menu.press()?.action, .remove())
+        XCTAssertEqual(menu.title(of: menu.rows[menu.selected]), "Press again to forget")
+        XCTAssertEqual(menu.press()?.action, forget)
+    }
+
+    func testDeleteAsksForNoSecondPressBecauseUndoTakesItBack() {
+        XCTAssertNil(CommandAction.remove().confirm)
+        XCTAssertNil(CommandAction.remove(widgets: 3).confirm)
     }
 
     func testTheRowsOfTheAppStayOutOfTheHint() throws {
@@ -106,18 +114,14 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(ActionMenu(command: plain, item: nil, extras: [.share, .remove()])?.hint, "⏎ Open   ⌘K Actions")
     }
 
-    func testRemoveNamesEachWidgetThatItTakesWithIt() {
-        XCTAssertEqual(CommandAction.remove(widgets: 3).confirm, "Press again to delete 3 widgets")
-    }
-
     func testAMoveToTheSameRowKeepsItsQuestion() throws {
-        var menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, extras: [.remove()]))
-        menu.select(.remove())
+        var menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, extras: [forget]))
+        menu.select(forget)
         XCTAssertNil(menu.press())
 
         menu.move(by: 0)
 
-        XCTAssertEqual(menu.press()?.action, .remove())
+        XCTAssertEqual(menu.press()?.action, forget)
     }
 
     func testWithNoItemOnlyTheCommandsActionsShow() throws {

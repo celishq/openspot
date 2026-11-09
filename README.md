@@ -36,14 +36,19 @@ Openspot gives each tool the same clean look and the power of your Mac. Your too
 
 ## Make your own tool
 
-**Ask your agent.** Paste this into your coding agent, and change the last line:
+**Ask your agent from Openspot.** Press `⌘N` in the panel, type what the tool should do, and press Enter. Openspot copies a
+prompt with all that your agent needs. Paste it into Claude Code, Codex or another agent, and the tool shows when the agent
+saves it.
+
+**Ask your agent anywhere.** Paste this into your coding agent, and change the last line:
 
 ```text
 Read https://raw.githubusercontent.com/celishq/openspot/main/spec/README.md and each spec it links.
 Then make an Openspot tool in ~/.config/openspot/plugins that shows the weather here.
 ```
 
-**Make one yourself.** Save this as `~/.config/openspot/plugins/hello.sh` and run `chmod +x` on it. It shows the next time you open the panel.
+**Make one yourself.** Press `⌘N` and pick a starter, or save this as `~/.config/openspot/plugins/hello.sh` and run
+`chmod +x` on it. It shows at once.
 
 ```sh
 #!/bin/sh
@@ -51,6 +56,9 @@ Then make an Openspot tool in ~/.config/openspot/plugins that shows the weather 
 # icon=hand.wave
 echo "toast=Hello"
 ```
+
+**Fix it.** A tool that does not load keeps its card. Press Enter on the card, then `⌘⏎` to copy a prompt that has your agent fix it.
+Select any of your tools and press `⌘K` for Edit, Copy prompt for AI, Share and Delete, which `⌘Z` undoes.
 
 **Share it.** Select the tool in the panel and press ⌘⇧C. Then paste the `.spot` file into a chat.
 
