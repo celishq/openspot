@@ -488,4 +488,29 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         XCTAssertFalse(isReady)
     }
+
+    func testTheAnswerOfAStayingScriptTakesTheTemplatesOfItsRows() async throws {
+        try staying(frame: "template=row\\ngrid=name\\ntext=name\\n\\nrow=a\\ntitle=A\\n")
+        let sheet = try sheet()
+
+        sheet.open {}
+
+        try await wait("the row") { sheet.list.shown.count == 1 }
+        XCTAssertNotNil(sheet.list.template(of: try XCTUnwrap(sheet.list.shown.first)))
+    }
+
+    func testTheFirstPartsOfAStayingScriptArriveThroughTheArrival() async throws {
+        try staying(frame: "text=a\\ntitle=A\\n")
+        let sheet = try sheet()
+        var arrivals = 0
+        runs.partsArrival = { _, bring in
+            arrivals += 1
+            bring()
+        }
+
+        sheet.open {}
+
+        try await wait("the parts") { sheet.panel != nil }
+        XCTAssertEqual(arrivals, 1)
+    }
 }

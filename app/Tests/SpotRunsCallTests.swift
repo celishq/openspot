@@ -180,6 +180,8 @@ final class SpotRunsCallTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the state") { sheet.state.subtitle == "Idle" }
+        sheet.open {}
+        sheet.close()
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
 

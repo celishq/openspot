@@ -23,6 +23,16 @@ final class SpotRunsReadTests: SpotRunsCase {
 
     // MARK: M6
 
+    func testALaterFrameOfAReadKeepsTheValueThatItDoesNotPrint() async throws {
+        try script(header: "read=sheet", "printf 'main=m\\n\\ntext=m\\ntitle=3\\n---\\n'\nsleep 0.05\nprintf 'text=b\\ntitle=B\\n---\\n'")
+        let sheet = try sheet()
+
+        sheet.open {}
+
+        try await wait("the later frame") { sheet.lastFrame?.contains("B") == true }
+        XCTAssertEqual(sheet.reading.value?.title, "3")
+    }
+
     func testEachReadKnowsWhyItRuns() async throws {
         try script(header: "read=launch,wake,panel,sheet\nshortcut=r", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
