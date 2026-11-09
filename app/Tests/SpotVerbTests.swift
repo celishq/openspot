@@ -1,8 +1,8 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the acts that the app adds to each spot of the person: they open its file, hand it to an agent, copy it, show it
-/// in Finder, and delete it so that `⌘Z` puts it back.
+/// Proves the acts that the app adds to each spot of the person: they open its file, copy a prompt for an agent, and delete
+/// it so that `⌘Z` puts it back.
 @MainActor
 final class SpotVerbTests: XCTestCase {
     private var folder: URL!
@@ -88,43 +88,28 @@ final class SpotVerbTests: XCTestCase {
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
 
-        let rows = try XCTUnwrap(model.menu?.rows).filter { $0.action != nil }
-        XCTAssertEqual(rows.map(\.title), ["Try", "Edit", "Change with AI", "Duplicate", "Show in Finder", "Copy to share", "Delete"])
-        XCTAssertEqual(rows.map(\.keyLabel), ["⌘T", "⌘E", "", "⌘D", "⌘R", "⌘⇧C", "⌘⌫"])
+        let menu = try XCTUnwrap(model.menu)
+        XCTAssertEqual(menu.rows.count, 6)
+        let rows = menu.rows.filter { $0.action != nil }
+        XCTAssertEqual(rows.map(\.title), ["Edit", "Copy prompt for AI", "Share", "Delete"])
+        XCTAssertEqual(rows.map(\.keyLabel), ["⌘E", "", "⌘⇧C", "⌘⌫"])
     }
 
-    func testEditOpensTheFileInTheTextEditorAndRevealShowsItInFinder() async throws {
+    func testEditOpensTheFileInTheTextEditor() async throws {
         try script("weather")
         _ = try select("weather")
         XCTAssertTrue(model.handleKey(ActionKey(name: "e", isCommand: true)))
         try await wait("the editor") { saved("opened")?.hasPrefix("-t /") == true && saved("opened")?.hasSuffix("/plugins/weather.sh\n") == true }
-
-        model.isShown = true
-        XCTAssertTrue(model.handleKey(ActionKey(name: "r", isCommand: true)))
-        try await wait("Finder") { saved("opened")?.hasPrefix("-R /") == true && saved("opened")?.hasSuffix("/plugins/weather.sh\n") == true }
     }
 
-    func testDuplicateMakesACopyWithItsOwnNameAndSelectsIt() throws {
-        try script("weather", header: "title=Weather\nshortcut=w")
-        _ = try select("weather")
-
-        XCTAssertTrue(model.handleKey(ActionKey(name: "d", isCommand: true)))
-
-        let copy = try XCTUnwrap(model.entries.first { $0.id == "weather-copy" })
-        XCTAssertEqual(copy.command.name, "Weather copy")
-        XCTAssertNil(copy.command.key)
-        XCTAssertEqual(model.selectedEntry?.id, "weather-copy")
-        XCTAssertEqual(try PluginFolder(url: plugins).scan().refused, [])
-    }
-
-    func testChangeWithAIHandsTheFileAndTheLastFailureToTheAgent() async throws {
+    func testCopyPromptForAICopiesTheFileAndTheLastFailure() async throws {
         try script("ping", "echo 'Openspot cannot reach the server.' >&2; exit 1")
         let target = try select("ping")
         model.tap("ping")
         try await wait("the failure") { model.entries.first { $0.id == "ping" }?.failure != nil }
 
-        model.run(CommandAction.changeWithAI, on: target)
-        try await wait("the prompt") { saved("clipboard") != nil }
+        model.run(CommandAction.copyPrompt, on: target)
+        try await wait("the toast") { host.confirms.last == AgentPrompt.copied }
 
         let prompt = try XCTUnwrap(saved("clipboard"))
         XCTAssertTrue(prompt.contains(plugins.appendingPathComponent("ping.sh").path))
@@ -153,19 +138,13 @@ final class SpotVerbTests: XCTestCase {
     func testACardOfAFileThatDoesNotLoadCanBeEditedAndDeleted() throws {
         try script("broken", header: "shortcut=??")
         _ = try select("broken")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        XCTAssertEqual(model.menu?.rows.filter { $0.action != nil }.map(\.title), ["Edit", "Delete"])
+        model.closeMenu()
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "backspace", isCommand: true)))
 
         XCTAssertFalse(model.entries.contains { $0.id == "broken" })
         XCTAssertTrue(FileManager.default.fileExists(atPath: trash.appendingPathComponent("broken.sh").path))
-    }
-
-    func testTryOpensTheSpotInANewWindowOfTheApp() async throws {
-        try script("weather")
-        _ = try select("weather")
-
-        XCTAssertTrue(model.handleKey(ActionKey(name: "t", isCommand: true)))
-
-        try await wait("the Try window") { saved("opened")?.hasPrefix("-n /Apps/Openspot.app --args sandbox /") == true && saved("opened")?.hasSuffix("/plugins/weather.sh\n") == true }
     }
 }

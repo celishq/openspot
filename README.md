@@ -58,7 +58,7 @@ echo "toast=Hello"
 ```
 
 **Fix it.** A tool that does not load keeps its card. Press Enter on the card, then `⌘⏎` to copy a prompt that has your agent fix it.
-Select any of your tools and press `⌘K` for Try, Edit, Change with AI, Duplicate and Delete, which `⌘Z` undoes.
+Select any of your tools and press `⌘K` for Edit, Copy prompt for AI, Share and Delete, which `⌘Z` undoes.
 
 **Share it.** Select the tool in the panel and press ⌘⇧C. Then paste the `.spot` file into a chat.
 

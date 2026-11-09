@@ -1,7 +1,7 @@
 import Foundation
 
-/// The acts that the app adds to each spot of the person: open its file in the text editor or in Finder, copy a prompt for
-/// an agent to change it, copy it under a new name, and delete it so that `⌘Z` puts it back.
+/// The acts that the app adds to each spot of the person: open its file in the text editor, copy a prompt for an agent to
+/// change it, and delete it so that `⌘Z` puts it back.
 extension SpotsModel {
     /// The files of a spot that Delete moved to the Trash, and where each went.
     struct Removal {
@@ -17,39 +17,25 @@ extension SpotsModel {
         entry.command.fault?.file ?? entry.command.url
     }
 
-    /// Opens the file of a spot in the text editor, or shows it in Finder.
-    func open(_ entry: Entry, revealing: Bool) {
+    /// Opens the file of a spot in the text editor.
+    func edit(_ entry: Entry) {
         let path = file(of: entry).path
         Task {
             do {
-                _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["open", revealing ? "-R" : "-t", path])
+                _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["open", "-t", path])
             } catch {
                 host.notify("Openspot cannot open \(path). \(Self.reason(error))")
             }
         }
     }
 
-    /// Opens the Try window of a spot: a new process of the app with `sandbox` and the file of the spot.
-    func tryOut(_ entry: Entry) {
-        guard let new = newSpot else { return }
-        let bundle = URL(fileURLWithPath: new.prompt.app).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let path = file(of: entry).path
-        Task {
-            do {
-                _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["open", "-n", bundle.path, "--args", "sandbox", path])
-            } catch {
-                host.notify("Openspot cannot open Try for \(entry.command.name). \(Self.reason(error))")
-            }
-        }
-    }
-
-    /// The New spot sheet, which holds the app's place and its agent.
+    /// The New spot sheet, which holds the words of each prompt.
     private var newSpot: NewSpot? {
         entries.lazy.compactMap { if case .new(let new)? = $0.command.shipped { new } else { nil } }.first
     }
 
     /// Copies a prompt that asks an agent to change the file of a spot, with the words of its last failed call.
-    func change(_ entry: Entry) {
+    func copyPrompt(changing entry: Entry) {
         guard let new = newSpot else {
             host.notify("Openspot cannot write the prompt, because New spot is missing. Quit and open Openspot again.")
             return
@@ -62,45 +48,6 @@ extension SpotsModel {
                 host.notify("The prompt for \(entry.command.name) was not copied. \(Self.reason(error))")
             }
         }
-    }
-
-    /// Copies the file of a spot under the first free name `<name> copy`, with that title and with no key, and selects the
-    /// copy.
-    func duplicate(_ entry: Entry) {
-        let source = entry.command.url
-        let folder = source.deletingLastPathComponent()
-        let name = SpotStarter.freeName("\(entry.command.name) copy", in: folder)
-        let file = folder.appendingPathComponent(SpotStarter.slug(of: name)).appendingPathExtension(source.pathExtension)
-        do {
-            let text = try String(contentsOf: source, encoding: .utf8)
-            try Self.renamed(text, to: name).write(to: file, atomically: true, encoding: .utf8)
-            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: file.path)
-            reload()
-            let id = file.deletingPathExtension().lastPathComponent
-            if let place = visible.firstIndex(where: { $0.id == id }) { selected = place }
-            host.confirm("Made \(name).")
-        } catch {
-            host.notify("\(entry.command.name) was not copied. \(Self.reason(error))")
-        }
-    }
-
-    /// The text of a script with this title in its header and no `shortcut`, which only the first spot keeps.
-    private static func renamed(_ text: String, to title: String) -> String {
-        var lines = text.components(separatedBy: "\n")
-        let marks = ["#", "//", "--"]
-        let header = Array(lines.indices.dropFirst().prefix { index in marks.contains { lines[index].hasPrefix($0) } })
-        let mark = header.first.flatMap { index in marks.first { lines[index].hasPrefix($0) } } ?? "#"
-        func key(of line: String) -> String {
-            let words = marks.first { line.hasPrefix($0) }.map { String(line.dropFirst($0.count)) } ?? line
-            return words.trimmingCharacters(in: .whitespaces).split(separator: "=", maxSplits: 1).first.map(String.init) ?? ""
-        }
-        let titled = "\(mark) title=\(title)"
-        let keys = Set(header.filter { key(of: lines[$0]) == "shortcut" })
-        let named = header.first { key(of: lines[$0]) == "title" }
-        if let named { lines[named] = titled }
-        lines = lines.enumerated().filter { !keys.contains($0.offset) }.map(\.element)
-        if named == nil { lines.insert(titled, at: min(1, lines.count)) }
-        return lines.joined(separator: "\n")
     }
 
     /// Moves the files of a spot to the Trash with no question, keeps the panel open, and says that `⌘Z` puts them back. A

@@ -207,12 +207,10 @@ extension SpotsModel {
     private func extras(on target: Target) -> [CommandAction] {
         guard openList == nil, target.item == nil else { return [] }
         let command = target.entry.command
-        if command.fault != nil { return [.edit, .showInFinder, .remove()] }
+        if command.fault != nil { return [.edit, .remove()] }
         guard command.shipped == nil else { return [] }
         guard !files.folder(Config(text: "")).isCore(command) else { return [.share, .turnOff] }
-        let copies = !command.id.contains("/") && command.kind != .widget
-        let tries = command.kind != .widget ? [CommandAction.tryIt] : []
-        return tries + [.edit, .changeWithAI] + (copies ? [.duplicate] : []) + [.showInFinder, .share, .remove(widgets: widgets(sharingFileWith: target.entry))]
+        return [.edit, .copyPrompt, .share, .remove(widgets: widgets(sharingFileWith: target.entry))]
     }
 
     /// How many widgets the file of a widget holds, which go together when it is removed.
@@ -277,16 +275,11 @@ extension SpotsModel {
             reviewCore(item)
         } else if action.id == CommandAction.removeID {
             remove(target.entry)
-        } else if action == .edit || action == .showInFinder {
+        } else if action == .edit {
             if isShown { host.dismiss() }
-            open(target.entry, revealing: action == .showInFinder)
-        } else if action == .tryIt {
-            if isShown { host.dismiss() }
-            tryOut(target.entry)
-        } else if action == .changeWithAI {
-            change(target.entry)
-        } else if action == .duplicate {
-            duplicate(target.entry)
+            edit(target.entry)
+        } else if action == .copyPrompt {
+            copyPrompt(changing: target.entry)
         } else if action == .turnOff {
             turnOff(target.entry)
         } else if action.isForm {
