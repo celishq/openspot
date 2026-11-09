@@ -12,7 +12,6 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var primary: String?
     public private(set) var pick = ItemPick.close
     public private(set) var parts: [SpotPart] = []
-    public private(set) var partFaults: [String] = []
     public private(set) var errors: [String] = []
     public private(set) var layout: SheetLayout?
     /// The block of the component that stands for the spot (H1): the one that `main=<id>` in the head names, or else the
@@ -31,6 +30,11 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var link: String?
     /// The ids of the calls of a staying script that this frame ends.
     public private(set) var ends: [String] = []
+    /// The blocks it was read from, which a check of its parts reads again.
+    private let blocks: [TextBlock]
+    /// Whether this reading checks each part, which only a check asks for, so that a frame on screen costs no check.
+    private let checks: Bool
+    private var checkedFaults: [String] = []
 
     private static let reserved = "read"
     /// The keys of a call block for a staying script, which a value of the sheet would take the place of.
@@ -51,8 +55,13 @@ public struct PluginOutput: Equatable, Sendable {
     }
 
     public init(text: String) {
+        self.init(blocks: TextBlock.blocks(in: text), checks: false)
+    }
+
+    private init(blocks: [TextBlock], checks: Bool) {
+        self.blocks = blocks
+        self.checks = checks
         var runs = Set<String>()
-        let blocks = TextBlock.blocks(in: text)
         let head = blocks.first { block in block.fields.first.map { !Self.isKind($0.key) } ?? false }
         let repeats = blocks.filter { $0.fields.first?.key == Self.repeatKind }
         let repeated = repeats.first.flatMap { block in block.value(Self.repeatKind).map { (block, $0) } }
@@ -64,7 +73,7 @@ public struct PluginOutput: Equatable, Sendable {
             if kind == Self.templateKind {
                 if let template = RowTemplate(block: block) {
                     templates[template.name] = template
-                    partFaults += template.faults
+                    if checks { checkedFaults += template.faults }
                 } else {
                     errors.append(block.firstLine)
                 }
@@ -81,7 +90,7 @@ public struct PluginOutput: Equatable, Sendable {
                 if kind == "field" { fields.append(block) }
                 if view == nil, kind == "view" { view = block }
                 parts.append(part)
-                partFaults += PartCatalog.faults(in: block)
+                if checks { checkedFaults += PartCatalog.faults(in: block) }
             } else if summary == nil, block == head {
                 summary = block
                 take(effects: block)
@@ -99,23 +108,38 @@ public struct PluginOutput: Equatable, Sendable {
         let values = blocks.filter { Self.valueKinds.contains($0.fields.first?.key ?? "") }
         if let id = head?.value("main") {
             value = values.first { $0.fields.first?.value == id }
-            if value == nil { partFaults.append("the head names \(id) as main, which no text, number, gauge, graph, switch or slider has") }
+            if value == nil, checks { checkedFaults.append("the head names \(id) as main, which no text, number, gauge, graph, switch or slider has") }
         } else if values.count == 1 {
             value = values.first
         }
+        if checks { check(head: head) }
+        parts += layout?.keyParts ?? []
+        if checks { check(layout: layout) }
+    }
+
+    /// What is wrong with its parts, found by a reading of the same blocks that checks each part.
+    public var partFaults: [String] {
+        checks ? checkedFaults : PluginOutput(blocks: blocks, checks: true).checkedFaults
+    }
+
+    /// Finds what is wrong with the places of the head and the card drawings.
+    private mutating func check(head: TextBlock?) {
         for field in head?.fields ?? [] where field.key.hasPrefix("grid.") && !CardFace.places.contains(String(field.key.dropFirst(5))) {
-            partFaults.append("the head draws \(field.key), which is not a place")
+            checkedFaults.append("the head draws \(field.key), which is not a place")
         }
         for drawing in face.drawings.values {
             for id in Set(drawing.joined()) where id != SheetLayout.empty && !parts.contains(where: { $0.id == id }) {
-                partFaults.append("the card drawing names \(id), which no component has")
+                checkedFaults.append("the card drawing names \(id), which no component has")
             }
         }
-        parts += layout?.keyParts ?? []
+    }
+
+    /// Finds what is wrong with the names of the parts and the sheet they make.
+    private mutating func check(layout: SheetLayout?) {
         for id in [Self.reserved] + Self.callKeys + Self.defaults where parts.contains(where: { $0.id == id }) {
-            partFaults.append("a part cannot be called \(id)")
+            checkedFaults.append("a part cannot be called \(id)")
         }
-        if !parts.isEmpty { partFaults += SheetFaults.of(layout: layout, summary: summary, parts: parts) }
+        if !parts.isEmpty { checkedFaults += SheetFaults.of(layout: layout, summary: summary, parts: parts) }
     }
 
     /// The one switch or slider that is all the output, which the card draws and changes (U12).
@@ -178,7 +202,7 @@ public struct PluginOutput: Equatable, Sendable {
 
     /// Keeps an action. The `open` action sets the word for Enter, and whether a pick stays in the panel.
     private mutating func take(action id: String, _ block: TextBlock) {
-        if id == Self.reserved || (Self.defaults.contains(id) && id != "open") { partFaults.append("an action cannot be called \(id)") }
+        if checks, id == Self.reserved || (Self.defaults.contains(id) && id != "open") { checkedFaults.append("an action cannot be called \(id)") }
         if id == "open" {
             primary = block.value("title")
             pick = block.flag("close") == false ? .stay : .close

@@ -75,10 +75,16 @@ struct SpotTheme {
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
     }
 
-    /// The theme of the app's appearance now.
+    /// The theme of the app's appearance now, chosen once for each appearance.
     @MainActor private static var current: SpotTheme {
-        palette(for: NSApp?.effectiveAppearance ?? NSAppearance.currentDrawing())
+        let appearance = NSApp?.effectiveAppearance ?? NSAppearance.currentDrawing()
+        if let chosen, chosen.appearance === appearance { return chosen.theme }
+        let theme = palette(for: appearance)
+        chosen = (appearance, theme)
+        return theme
     }
+
+    @MainActor private static var chosen: (appearance: NSAppearance, theme: SpotTheme)?
 
     /// The shade around the panel, at its full strength.
     static let tint = NSColor.black.withAlphaComponent(0.08)

@@ -17,6 +17,9 @@ public final class ScriptCall: Identifiable {
     public let action: SpotAction
     public let started: Date
     public private(set) var lastFrame: String?
+    /// The last frame, sorted by what each block is, read once as it arrives. A frame of progress holds the values that a
+    /// metric prints.
+    public private(set) var output: PluginOutput?
     public private(set) var isStopped = false
     @ObservationIgnored let key: String
     @ObservationIgnored var halt: () -> Void = {}
@@ -28,11 +31,6 @@ public final class ScriptCall: Identifiable {
     }
 
     nonisolated deinit {}
-
-    /// The last frame, sorted by what each block is. A frame of progress holds the values that a metric prints.
-    public var output: PluginOutput? {
-        lastFrame.map(PluginOutput.init(text:))
-    }
 
     /// Whether this call does work: any name but `read`.
     public var doesWork: Bool {
@@ -55,8 +53,12 @@ public final class ScriptCall: Identifiable {
         output?.progress?.value("detail")
     }
 
-    func take(frame: String) {
+    /// Takes a frame, and returns it sorted by what each block is.
+    func take(frame: String) -> PluginOutput {
+        let output = PluginOutput(text: frame)
         lastFrame = frame
+        self.output = output
+        return output
     }
 
     func stop() {

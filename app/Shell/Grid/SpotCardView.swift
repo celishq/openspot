@@ -53,8 +53,8 @@ struct SpotCardView: View {
 
     @ViewBuilder
     private var content: some View {
-        if entry.item == nil, let drawing = entry.state.face.drawing(for: size) {
-            SpotCardDrawing(drawing: drawing, face: entry.state.face, card: size, reading: reading, view: { room in
+        if entry.item == nil, let layout = entry.state.face.layout(for: size) {
+            SpotCardDrawing(layout: layout, face: entry.state.face, card: size, reading: reading, view: { room in
                 drawnView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, views: model.views) }
             }) { model.setCardPart(entry.id, $0, to: $1) }
         } else if let view = drawnView {
@@ -85,7 +85,7 @@ struct SpotCardView: View {
 
     /// Whether its script draws the card from a drawing for its size (U5).
     private var isDrawn: Bool {
-        entry.item == nil && entry.state.face.drawing(for: size) != nil
+        entry.item == nil && entry.state.face.layout(for: size) != nil
     }
 
     private var isBuildingView: Bool {

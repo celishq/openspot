@@ -548,7 +548,7 @@ public final class SpotRun {
         input: String?,
         limit: TimeInterval?,
         variables: [String: String] = [:],
-        onFrame: @escaping @MainActor (ScriptCall, String) async -> Void,
+        onFrame: @escaping @MainActor (ScriptCall, String, PluginOutput) async -> Void,
         onEnd: @escaping @MainActor (ScriptCall.End) async -> Void
     ) {
         let call = runs.call(command, action, key: key, input: input, limit: limit, variables: variables, onFrame: onFrame) { [weak self] call, end in
@@ -577,13 +577,13 @@ public final class SpotRun {
             input: isOpen ? panel?.values : nil,
             limit: action == .read ? runs.readLimit : nil,
             variables: action == .read ? reason.variables : [:],
-            onFrame: { [weak self] call, text in
+            onFrame: { [weak self] call, text, lines in
                 guard let self else { return }
                 if isFirst {
                     isFirst = false
-                    await takeAnswer(PluginOutput(text: text), frame: text, generation: generation)
+                    await takeAnswer(lines, frame: text, generation: generation)
                 } else {
-                    takeLaterFrame(PluginOutput(text: text), frame: text)
+                    takeLaterFrame(lines, frame: text)
                 }
                 if !isWanted, !call.isStopped { stop(call) }
             },
@@ -953,9 +953,8 @@ public final class SpotRun {
             input: nil,
             limit: runs.readLimit,
             variables: ReadReason.search.variables,
-            onFrame: { [weak self] call, text in
+            onFrame: { [weak self] call, text, lines in
                 hasAnswer = true
-                let lines = PluginOutput(text: text)
                 await self?.prepare(lines.items)
                 guard !call.isStopped else { return }
                 self?.takeSearch(lines, frame: text, query: query)
@@ -1024,9 +1023,8 @@ public final class SpotRun {
             key: key,
             input: input,
             limit: nil,
-            onFrame: { [weak self] _, text in
+            onFrame: { [weak self] _, text, lines in
                 guard let self else { return }
-                let lines = PluginOutput(text: text)
                 lastFrame = text
                 report(toastOf: lines)
                 state = state.taking(lines)
@@ -1071,9 +1069,9 @@ public final class SpotRun {
                 key: key,
                 input: input,
                 limit: nil,
-                onFrame: { [weak self] _, frame in
+                onFrame: { [weak self] _, frame, lines in
                     text += frame
-                    self?.report(toastOf: PluginOutput(text: frame))
+                    self?.report(toastOf: lines)
                 },
                 onEnd: { end in
                     switch end {

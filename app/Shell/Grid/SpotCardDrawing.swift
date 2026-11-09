@@ -4,7 +4,8 @@ import SwiftUI
 /// A card that its script draws: each component in the area that the card's drawing gives it (U5). A control acts at once,
 /// and a press anywhere else works as on any card.
 struct SpotCardDrawing: View {
-    let drawing: [[String]]
+    /// The card's drawing, read into places.
+    let layout: WidgetLayout
     let face: CardFace
     let card: SpotSize
     /// The last value of each script, which a `spot` component draws.
@@ -19,7 +20,6 @@ struct SpotCardDrawing: View {
     }
 
     var body: some View {
-        let layout = WidgetLayout(drawing: drawing.map { $0.joined(separator: " ") }, size: card)
         ZStack(alignment: .topLeading) {
             ForEach(Array(zip(layout.letters, layout.slots)), id: \.0) { id, slot in
                 if let part = face.parts.first(where: { $0.id == id }) {
