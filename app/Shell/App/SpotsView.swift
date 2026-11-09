@@ -4,15 +4,11 @@ import UniformTypeIdentifiers
 
 struct SpotsView: View {
     let model: SpotsModel
-    @FocusState private var searchFocused: Bool
     @State private var edges = SpotScrollEdges()
     @State private var scroll = ScrollPosition()
     @State private var scrollOffset: CGFloat = 0
-    @State private var gridHint = ""
-    @State private var sheetHint = ""
     @State private var dropTarget: String?
     @State private var dragged: (id: String, offset: CGSize)?
-    @State private var hintIsForEdit = false
 
     /// The sheet that is built, from its first frame on its card to the end of its close.
     private var sheetID: String? {
@@ -54,7 +50,7 @@ struct SpotsView: View {
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask(edges.gradient(height: cardHeight))
             .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: !coversGrid)) { $0.opacity(coversGrid ? 0 : 1) }
-            hintLine
+            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: gridHeight, sheetHeight: sheetID == nil ? gridHeight : sheetHeight)
                 .opacity(model.isShown ? 1 : 0)
                 .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
@@ -76,8 +72,7 @@ struct SpotsView: View {
                 isInstall: sheetID == ShippedSpot.installID,
                 showsField: showsSearchField,
                 surfaceIsOut: surfaceIsOut,
-                sheetWord: sheetWord,
-                focus: $searchFocused
+                sheetWord: sheetWord
             )
             if model.isEditing {
                 editHeader
@@ -97,29 +92,7 @@ struct SpotsView: View {
         .background(softBlur)
         .environment(\.spotIsShown, model.isShown)
         .onChange(of: model.isShown) { _, isShown in
-            guard isShown else {
-                searchFocused = false
-                dropTarget = nil
-                return
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeInDuration) {
-                if model.isShown, model.showsSearch, !model.isOpenForDrag { searchFocused = true }
-            }
-        }
-        .onChange(of: model.showsSearch) { _, shows in
-            searchFocused = shows
-        }
-        .background {
-            SpotHintWatch(model: model) { hint in
-                let motion = model.isEditing || hintIsForEdit || model.fieldDrop != nil ? SpotMotion.hintFade : nil
-                hintIsForEdit = model.isEditing
-                withAnimation(motion) {
-                    if model.openList == nil, model.spotDrop == nil { gridHint = hint } else { sheetHint = hint }
-                }
-            }
-        }
-        .onChange(of: model.openList) { _, list in
-            if list != nil { sheetHint = model.hint }
+            if !isShown { dropTarget = nil }
         }
     }
 
@@ -202,28 +175,6 @@ struct SpotsView: View {
     /// Where the menu starts: its bottom meets the bottom of the content.
     private func menuTop(_ menu: ActionMenu) -> CGFloat {
         max(SpotTokens.halo, contentHeight - SpotTokens.halo - SpotTokens.hintBlock - SpotTokens.menuHeight(rows: menu.rows.count))
-    }
-
-    /// The hint under the grid and the hint under the sheet. Each stays at its own place, and one fades out before the other fades in.
-    private var hintLine: some View {
-        ZStack(alignment: .top) {
-            hint(gridHint, isShown: !surfaceIsOut, height: gridHeight)
-            hint(sheetWords, isShown: surfaceIsOut, height: sheetID == nil ? gridHeight : sheetHeight)
-        }
-    }
-
-    private func hint(_ words: String, isShown: Bool, height: CGFloat) -> some View {
-        SpotHint(text: words, onPress: model.pressHint)
-            .frame(width: SpotTokens.panelWidth)
-            .allowsHitTesting(isShown)
-            .offset(y: height - SpotTokens.halo - SpotTokens.hintPillHeight)
-            .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: isShown)) { $0.opacity(isShown ? 1 : 0) }
-    }
-
-    /// What the hint says while a sheet shows: a form has its own keys.
-    private var sheetWords: String {
-        if model.form != nil { return "⌘⏎ Save   Esc Cancel" }
-        return sheetHint
     }
 
     /// Whether the install screen takes the place of the grid and the field.

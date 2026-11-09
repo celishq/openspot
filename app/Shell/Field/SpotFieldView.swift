@@ -2,7 +2,8 @@ import OpenspotCore
 import SwiftUI
 
 /// The search field and the words it shows while empty. It grows from its place at rest into its row in an open sheet: its
-/// glass grows by a shape, and its glyph and its words keep one size and move by offsets alone.
+/// glass grows by a shape, and its glyph and its words keep one size and move by offsets alone. It takes the focus when the
+/// panel shows with a search, and gives it up when the panel hides.
 struct SpotFieldView: View {
     /// Where the field lies at rest. The install screen grows out of it and collapses into it.
     static let rect = CGRect(x: SpotTokens.halo, y: SpotTokens.halo, width: SpotTokens.gridWidth, height: SpotTokens.rowHeight)
@@ -21,7 +22,7 @@ struct SpotFieldView: View {
     let surfaceIsOut: Bool
     /// The last word of the prompt in the open sheet.
     let sheetWord: String
-    let focus: FocusState<Bool>.Binding
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -31,6 +32,18 @@ struct SpotFieldView: View {
                 .allowsHitTesting(showsField && !model.isEditing)
             promptLayer
                 .opacity(model.isEditing ? 0 : 1)
+        }
+        .onChange(of: model.isShown) { _, isShown in
+            guard isShown else {
+                isFocused = false
+                return
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeInDuration) {
+                if model.isShown, model.showsSearch, !model.isOpenForDrag { isFocused = true }
+            }
+        }
+        .onChange(of: model.showsSearch) { _, shows in
+            isFocused = shows
         }
     }
 
@@ -91,7 +104,7 @@ struct SpotFieldView: View {
     private var searchText: some View {
             SpotSearchText(model: model, title: "\(SearchPrompt.verb) \(isOpen ? sheetWord : SearchPrompt.grid)")
                 .textFieldStyle(.plain)
-                .focused(focus)
+                .focused($isFocused)
                 .onSubmit { model.runSelected() }
                 .onKeyPress(.downArrow) {
                     if model.openList != nil {
