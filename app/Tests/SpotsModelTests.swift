@@ -266,19 +266,19 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(host.motions.contains(.sheet(isOpen: false)))
     }
 
-    func testAPickOfTheBuildRowOpensBuildInPlaceOfTheListWithNoCollapse() async throws {
+    func testAPickOfTheNewSpotRowOpensNewSpotInPlaceOfTheListWithNoCollapse() async throws {
         let build = plugins.appendingPathComponent("build.sh")
         try "#!/bin/sh\nprintf 'row=g\\ntitle=Guide\\n'\n".writeScript(to: build)
-        host.shipped = [Spot(id: ShippedSpot.buildID, name: "Build", url: build, kind: .list, read: .sheet, isOnGrid: false)]
+        host.shipped = [Spot(id: ShippedSpot.newID, name: "New spot", url: build, kind: .list, read: .sheet, isOnGrid: false)]
         try await openList()
         try await wait("the open list") { model.transition.phase == .open }
         let entry = try XCTUnwrap(model.openEntry)
         host.motions = []
         host.phases = []
 
-        model.pick(SpotItem(title: "Build your own", run: CatalogSpot.buildRun), of: entry)
+        model.pick(SpotItem(title: "New spot", run: CatalogSpot.buildRun), of: entry)
 
-        try await wait("the build sheet") { model.openList == ShippedSpot.buildID }
+        try await wait("the New spot sheet") { model.openList == ShippedSpot.newID }
         XCTAssertEqual(model.transition.phase, .open)
         XCTAssertFalse(host.phases.contains(.closing))
         XCTAssertFalse(host.phases.contains(.ready))
@@ -347,5 +347,32 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(host.shows, 1)
         XCTAssertEqual(model.selectedEntry?.id, "one")
         XCTAssertFalse(model.reveal("three"))
+    }
+
+    func testCommandNOpensTheNewSpotSheetFromTheGridAndFromEditSpots() async throws {
+        let new = plugins.appendingPathComponent("new.sh")
+        try "#!/bin/sh\nprintf 'row=g\\ntitle=Guide\\n'\n".writeScript(to: new)
+        host.shipped = [Spot(id: ShippedSpot.newID, name: "New spot", url: new, kind: .list, read: .sheet, isOnGrid: false)]
+        model.reload()
+        model.isShown = true
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "n", isCommand: true)))
+        try await wait("the New spot sheet") { model.openList == ShippedSpot.newID }
+
+        model.closeList(moving: false)
+        model.beginEditing()
+        XCTAssertTrue(model.handleKey(ActionKey(name: "n", isCommand: true)))
+        XCTAssertFalse(model.isEditing)
+        try await wait("the New spot sheet from Edit Spots") { model.openList == ShippedSpot.newID }
+    }
+
+    func testThePlaceholderOfASpotThatAnAgentBuildsShowsAsRunningWork() throws {
+        try script("weather", header: "detail=\(NewSpot.buildingDetail)", "echo")
+        try script("other", header: "detail=Done", "echo")
+
+        model.reload()
+
+        XCTAssertEqual(model.entries.first { $0.id == "weather" }?.isBuilding, true)
+        XCTAssertEqual(model.entries.first { $0.id == "other" }?.isBuilding, false)
     }
 }

@@ -46,8 +46,7 @@ enum SpotCardPicture {
     /// as a PNG and exits. A spot that no card shows exits with 1.
     static func run(spot id: String, size: SpotSize, path: String) -> Never {
         NSApplication.shared.setActivationPolicy(.prohibited)
-        let host = SpotQuietHost()
-        let model = SpotsModel(host: host, runs: SpotRuns())
+        let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
         model.reload()
         guard let entry = model.entries.first(where: { $0.id == id }), let sheet = model.sheets[id] else {
             FileHandle.standardError.write(Data("Openspot has no card for \(id). Run `openspot check` to see each file that does not load.\n".utf8))

@@ -33,7 +33,7 @@ final class CatalogSpotTests: XCTestCase {
     func testItListsTheCoreSpotsByNameThenTheRowForAuthors() async throws {
         let items = try await spot.items(timeout: 1).items
 
-        XCTAssertEqual(items.map(\.title), ["Apps", "Zebra", "Build your own"])
+        XCTAssertEqual(items.map(\.title), ["Apps", "Zebra", "New spot"])
         XCTAssertEqual(items[1].subtitle, "Open app")
         XCTAssertEqual(items[1].symbol, "star")
         XCTAssertEqual(items.map(\.isOn), [false, false, false])
@@ -174,14 +174,14 @@ final class CatalogSpotTests: XCTestCase {
         XCTAssertTrue(sheet.contains("apps.sh"))
     }
 
-    func testBuildIsOffTheGridAndHoldsTheToolsForAuthors() async throws {
+    func testNewSpotIsOffTheGridAndOpensASheetOfParts() async throws {
         let commands = ShippedSpot.commands(folder: folder, guide: folder, app: "", config: file)
-        let build = try XCTUnwrap(commands.first { $0.name == "Build" })
+        let new = try XCTUnwrap(commands.first { $0.id == ShippedSpot.newID })
 
-        XCTAssertFalse(build.isOnGrid)
-        XCTAssertEqual(commands.map(\.name), ["Spots", "Settings", "Build"])
-        let items = try await build.items(timeout: 1).items
-        XCTAssertEqual(items.map(\.run), ["prompt", "sandbox", "guide", "folder"])
+        XCTAssertFalse(new.isOnGrid)
+        XCTAssertEqual(commands.map(\.name), ["Spots", "Settings", "New spot"])
+        let output = try await new.items(timeout: 1)
+        XCTAssertFalse(output.parts.isEmpty)
     }
 
     func testTheRowOfACoreSpotReadsOnFromItsBlock() throws {

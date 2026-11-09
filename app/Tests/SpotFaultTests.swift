@@ -111,7 +111,7 @@ final class SpotFaultTests: XCTestCase {
         let sheet = try await openFault()
 
         model.pressPart(try XCTUnwrap(sheet.parts.first { $0.id == "fix" }))
-        try await wait("the whole prompt") { saved("clipboard")?.hasSuffix("Tell me what you changed.\n") == true }
+        try await wait("the whole prompt") { saved("clipboard")?.contains("what the spot runs on my computer.") == true }
 
         let prompt = try XCTUnwrap(saved("clipboard"))
         XCTAssertTrue(prompt.contains(plugins.appendingPathComponent("weather.sh").path))

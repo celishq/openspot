@@ -3,7 +3,7 @@ import Foundation
 /// A spot that ships with the app, so that it shows whatever the plugins folder holds.
 public enum ShippedSpot: Equatable, Sendable {
     case spots(CatalogSpot)
-    case build(BuildSpot)
+    case new(NewSpot)
     case settings(SettingsSpot)
     case updates(UpdateSpot)
     case review(ReviewSpot)
@@ -12,7 +12,9 @@ public enum ShippedSpot: Equatable, Sendable {
     case quit(QuitSpot)
 
     /// The commands of the shipped spots, in the order of the grid.
-    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil, core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil, offersLogin: Bool = false, quit: QuitSpot? = nil) -> [Spot] {
+    /// `agentPath` gives the folders where the New spot sheet looks for coding agents, and none by default.
+    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil, core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil, offersLogin: Bool = false, quit: QuitSpot? = nil, agentPath: @escaping @Sendable () async -> String = { "" }) -> [Spot] {
+        let handoff = AgentHandoff(prompt: AgentPrompt(folder: folder, guide: guide, app: app), searchPath: agentPath)
         var commands = [
             Spot(
                 id: spotsID,
@@ -41,16 +43,15 @@ public enum ShippedSpot: Equatable, Sendable {
                 shipped: .settings(SettingsSpot(file: config, folder: folder, core: core, login: login, link: link))
             ),
             Spot(
-                id: buildID,
-                name: "Build",
+                id: newID,
+                name: "New spot",
                 url: folder,
                 kind: .list,
-                size: .small,
-                symbol: "hammer",
+                symbol: "plus",
                 subtitle: "Make your own",
                 read: .sheet,
                 order: 3,
-                shipped: .build(BuildSpot(folder: folder, guide: guide, app: app)),
+                shipped: .new(NewSpot(folder: folder, guide: guide, handoff: handoff, config: config)),
                 isOnGrid: false
             )
         ]
@@ -79,8 +80,8 @@ public enum ShippedSpot: Equatable, Sendable {
     public static let spotsID = "openspot/spots"
     public static let settingsID = "openspot/settings"
 
-    /// The ID of the list of tools for authors.
-    public static let buildID = "openspot/build"
+    /// The ID of the sheet that makes a new spot, which ⌘N opens.
+    public static let newID = "openspot/new"
 
     /// The ID of the plugin that holds the cards of the files that do not load.
     public static let faultsID = "openspot/faults"
@@ -110,7 +111,7 @@ public enum ShippedSpot: Equatable, Sendable {
     func answer(_ arguments: [String], input: String?) async throws -> String {
         switch self {
         case .spots(let catalog): try catalog.answer(arguments)
-        case .build(let guide): try await guide.answer(arguments, input: input)
+        case .new(let new): try await new.answer(arguments, input: input)
         case .settings(let settings): try settings.answer(arguments)
         case .updates(let update): try await update.answer(arguments)
         case .review(let review): try review.answer(arguments)

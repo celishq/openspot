@@ -10,13 +10,15 @@ public struct FaultSpot: Equatable, Sendable {
     /// The name of the spot that the file would give.
     public let name: String
     public let faults: [String]
-    let agent: AgentPrompt
+    let handoff: AgentHandoff
+    let config: ConfigFile
 
-    public init(file: URL, name: String, faults: [String], agent: AgentPrompt) {
+    public init(file: URL, name: String, faults: [String], handoff: AgentHandoff, config: ConfigFile) {
         self.file = file
         self.name = name
         self.faults = faults
-        self.agent = agent
+        self.handoff = handoff
+        self.config = config
     }
 
     /// Answers one call with the text a script would print.
@@ -25,8 +27,9 @@ public struct FaultSpot: Equatable, Sendable {
         case "read":
             return sheet
         case Self.fixPart:
-            try await agent.copy(agent.fixing(file, faults: faults))
-            return TextBlock(fields: [.init(key: "toast", value: "Copied a prompt that fixes \(name). Paste it into your agent.")]).text
+            let choice = config.read().setting(NewSpot.agentPart, of: ShippedSpot.newID)
+            let toast = try await handoff.hand(handoff.prompt.fixing(file, faults: faults), choice: choice, doing: "fixing it")
+            return TextBlock(fields: [.init(key: "toast", value: toast)]).text
         case Self.editPart:
             _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["open", "-t", file.path])
             return ""

@@ -36,14 +36,18 @@ Openspot gives each tool the same clean look and the power of your Mac. Your too
 
 ## Make your own tool
 
-**Ask your agent.** Paste this into your coding agent, and change the last line:
+**Ask your agent from Openspot.** Press `⌘N` in the panel, say what the tool should do, and press `⌘⏎`. Openspot starts
+Claude Code or Codex in Terminal with all that it needs, and the tool's card shows on the grid while the agent works.
+
+**Ask your agent anywhere.** Paste this into your coding agent, and change the last line:
 
 ```text
 Read https://raw.githubusercontent.com/celishq/openspot/main/spec/README.md and each spec it links.
 Then make an Openspot tool in ~/.config/openspot/plugins that shows the weather here.
 ```
 
-**Make one yourself.** Save this as `~/.config/openspot/plugins/hello.sh` and run `chmod +x` on it. It shows the next time you open the panel.
+**Make one yourself.** Press `⌘N` and pick a starter, or save this as `~/.config/openspot/plugins/hello.sh` and run
+`chmod +x` on it. It shows at once.
 
 ```sh
 #!/bin/sh

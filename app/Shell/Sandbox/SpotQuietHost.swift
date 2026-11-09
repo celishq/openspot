@@ -5,6 +5,9 @@ import OpenspotCore
 /// and gives the spots that ship with the app.
 @MainActor
 final class SpotQuietHost: SpotsHost {
+    /// The one quiet host, which lives as long as the process, because a model holds its host unowned.
+    static let shared = SpotQuietHost()
+
     nonisolated deinit {}
 
     func dismiss() {}

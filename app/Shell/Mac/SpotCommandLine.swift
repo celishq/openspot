@@ -155,22 +155,23 @@ enum SpotCommandLine {
         dispatchMain()
     }
 
-    /// Draws the sheet of an installed spot from its read, with its view. It waits for the read on the main thread, which
-    /// the window of the picture needs.
+    /// Draws the sheet of a spot that the panel shows, such as an installed spot or one that ships with the app, from its
+    /// read, with its view. It waits for the read on the main thread, which the window of the picture needs.
     private static func renderSheet(of id: String, to path: String) -> Never {
-        let spot: Spot
-        do {
-            spot = try self.spot(id)
-        } catch {
-            FileHandle.standardError.write(Data("\(SpotsModel.reason(error))\n".utf8))
+        let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
+        model.reload()
+        guard let spot = model.entries.first(where: { $0.id == id })?.command else {
+            FileHandle.standardError.write(Data("Openspot has no spot \(id). Run `openspot check` to see each file that does not load.\n".utf8))
             exit(1)
         }
-        var frames: [String] = []
-        var end: TerminalRun.End?
-        Task { end = await TerminalRun(spot: spot, arguments: ["read"], input: nil).start { frames.append($0) } }
-        while end == nil { RunLoop.main.run(mode: .default, before: .distantFuture) }
-        guard end?.code == 0, let text = frames.first else {
-            FileHandle.standardError.write(Data((end?.errors.isEmpty != false ? "\(spot.name) printed no sheet.\n" : end?.errors ?? "").utf8))
+        var answer: Result<String, Error>?
+        Task {
+            do { answer = .success(try await SpotRuns().answer(of: spot, .read, limit: 10)) } catch { answer = .failure(error) }
+        }
+        while answer == nil { RunLoop.main.run(mode: .default, before: .distantFuture) }
+        guard case .success(let text)? = answer, !text.isEmpty else {
+            let reason = if case .failure(let error)? = answer { SpotsModel.reason(error) } else { "\(spot.name) printed no sheet." }
+            FileHandle.standardError.write(Data("\(reason)\n".utf8))
             exit(1)
         }
         guard !PluginOutput(text: text).parts.isEmpty else {

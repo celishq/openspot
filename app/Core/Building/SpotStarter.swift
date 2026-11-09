@@ -18,16 +18,6 @@ public enum SpotStarter: String, CaseIterable, Sendable {
         }
     }
 
-    /// What the starter makes, in words for a person.
-    public var detail: String {
-        switch self {
-        case .button: "Runs a command when you press it"
-        case .list: "Shows rows that you search and pick"
-        case .number: "Shows a value each time the panel opens"
-        case .form: "Asks for text and saves it"
-        }
-    }
-
     public var symbol: String {
         switch self {
         case .button: "hand.tap"
@@ -40,16 +30,30 @@ public enum SpotStarter: String, CaseIterable, Sendable {
     /// Writes this starter as a new script in the folder, and returns its file. The file takes the words of the name in
     /// lowercase with dashes, and the spot takes the name as its title. A name that another spot has is refused.
     public func write(name: String, in folder: URL) throws -> URL {
-        let slug = Self.slug(of: name)
+        try Self.write(name: name, in: folder, text: text(title:))
+    }
+
+    /// Writes a new script with the text that its title gives, under the name's words in lowercase with dashes.
+    static func write(name: String, in folder: URL, text: (String) -> String) throws -> URL {
+        let slug = slug(of: name)
         guard !slug.isEmpty else { throw PluginError.fault("Use letters or digits in the name.") }
-        let taken = PluginFolder(url: folder).file(of: slug) != nil || FileManager.default.fileExists(atPath: folder.appendingPathComponent(slug).path)
-        guard !taken else { throw PluginError.fault("A spot called \(slug) already exists. Choose another name.") }
+        guard !isTaken(slug, in: folder) else { throw PluginError.fault("A spot called \(slug) already exists. Choose another name.") }
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let file = folder.appendingPathComponent("\(slug).sh")
         let title = name.components(separatedBy: .newlines).joined(separator: " ").trimmingCharacters(in: .whitespaces)
-        try text(title: title).write(to: file, atomically: true, encoding: .utf8)
+        try text(title).write(to: file, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: file.path)
         return file
+    }
+
+    /// The name, or the name with the first number from 2 that no spot of the folder has.
+    static func freeName(_ name: String, in folder: URL) -> String {
+        guard isTaken(slug(of: name), in: folder) else { return name }
+        return (2...).lazy.map { "\(name) \($0)" }.first { !isTaken(slug(of: $0), in: folder) } ?? name
+    }
+
+    private static func isTaken(_ slug: String, in folder: URL) -> Bool {
+        PluginFolder(url: folder).file(of: slug) != nil || FileManager.default.fileExists(atPath: folder.appendingPathComponent(slug).path)
     }
 
     /// The words of a name in lowercase, joined by dashes, with only Latin letters and digits.

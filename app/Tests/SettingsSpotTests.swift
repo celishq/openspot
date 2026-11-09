@@ -27,7 +27,7 @@ final class SettingsSpotTests: XCTestCase {
     func testTwoSpotsShipAndSettingsHasNoLetter() throws {
         let commands = ShippedSpot.commands(folder: folder, guide: folder, app: "", config: file)
 
-        XCTAssertEqual(commands.map(\.name), ["Spots", "Settings", "Build"])
+        XCTAssertEqual(commands.map(\.name), ["Spots", "Settings", "New spot"])
         XCTAssertEqual(commands.map(\.key?.name), ["p", nil, nil])
     }
 

@@ -30,6 +30,7 @@ extension SpotsModel {
     }
 
     public func handleEditKey(_ key: ActionKey) {
+        if openNewSpot(on: key) { return }
         let order = visible.map(\.id)
         switch (key.name, key.isShift) {
         case ("escape", _): endEditing()

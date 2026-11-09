@@ -1,7 +1,7 @@
 # Openspot specs
 
 These specs are the contract between a plugin and Openspot. The build joins them in order into one `GUIDE.md` inside the
-app, which the Build spot opens and copies for an AI. How the app itself works is in its code and in `app/RULES.md`.
+app, which the New spot sheet opens and `openspot guide` prints for an AI. How the app itself works is in its code and in `app/RULES.md`.
 
 | Spec                                    | Status | Needs | What it holds                                                                    |
 | --------------------------------------- | ------ | ----- | -------------------------------------------------------------------------------- |

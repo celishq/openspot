@@ -10,7 +10,7 @@ Code and tests name a rule by its ID.
 | A1 | One owner in Core starts each run of a script. A capability's helper and a shipped spot's tools are not scripts. |
 | A2 | Each script has one sheet model in Core. It holds the last frame, the rows, the parts and the running calls, and each place that shows the script reads from it. A run of one script never stops a run of another. |
 | A4 | Search text stays until the person presses Esc. |
-| A5 | Spots, Build, Settings, Updates and Quit ship with the app and answer the same calls, in Swift. |
+| A5 | Spots, New spot, Settings, Updates and Quit ship with the app and answer the same calls, in Swift. |
 | A6 | One global key opens the panel, and the person chooses it. A script never holds a key (P8). |
 | A7 | The person arranges the grid in `config.toml`: order, `size`, `grid`, `enabled` and `global`, which takes a list out of the main search. It wins over the plugin. A size is a preference, and the grid can change it to fill a row. With no choice, the person's files come first, the newest first, then the core spots. |
 | A8 | The app opens the panel unseen once as it starts, so that each `panel` read runs. It waits at most 2 seconds, then shows a toast that names the key. |
@@ -27,6 +27,8 @@ Code and tests name a rule by its ID.
 | A19 | A file in the plugins folder that gives no spot keeps a card of its faults, with the ID and the place of the spot it stands for, and never a small one. Its sheet shows the file and each fault, with Edit and Fix with AI. Any other fault of a scan shows in a toast. |
 | A20 | The app watches the plugins folder. A change shows on the cards at once, with no motion, and a changed script that the open panel reads at `panel` reads again. |
 | A21 | A spot whose last call failed shows a mark on its card until a call ends well. |
+| A22 | `⌘N` on the grid or in Edit Spots opens New spot, unless an action of the selected card takes the key. Edit Spots shows New spot as a hidden card, and `H` puts it on the grid. |
+| A23 | Build with AI writes a placeholder spot named after the first words of the description, whose card shows as running work, and gives the agent the description and the placeholder. It starts the agent that the person chose, or else the first one on the PATH of the person's shell, in a new Terminal window in the plugins folder. With `Copy the prompt`, or with no agent, it copies the prompt. A starter writes a working spot called Untitled and opens its file in the text editor. |
 | M2 | A `panel` or `sheet` moment takes an answer younger than 5 seconds. A change, a number, `launch` and `wake` always read. |
 | M3 | Reads run at the same time. The panel never waits for one script. A spot shows its header until its answer arrives. |
 | C4 | Openspot waits for a pause before it sends a change of text or of a slider. Text that the person types stays as typed until they press something. |

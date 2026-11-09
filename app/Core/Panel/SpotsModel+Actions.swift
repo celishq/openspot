@@ -45,13 +45,13 @@ extension SpotsModel {
             if !stepBack() { host.dismiss() }
             return true
         }
-        guard let target else { return false }
+        guard let target else { return openNewSpot(on: key) }
         if key == ActionKey(name: "k", isCommand: true) {
             openMenu(on: target)
             return menu != nil
         }
         let quiet = searchText.isEmpty ? extras(on: target) : []
-        guard let action = (target.entry.command.actions(for: target.item) + quiet).first(where: { $0.key == key }) else { return false }
+        guard let action = (target.entry.command.actions(for: target.item) + quiet).first(where: { $0.key == key }) else { return openNewSpot(on: key) }
         if action.confirm != nil {
             openMenu(on: target)
             menu?.select(action)
@@ -61,6 +61,17 @@ extension SpotsModel {
         }
         return true
     }
+
+    /// Opens the New spot sheet for `⌘N` on the grid, when no action of the selected card takes the key. Returns false for
+    /// any other key.
+    func openNewSpot(on key: ActionKey) -> Bool {
+        guard key == Self.newSpotKey, openList == nil, entries.contains(where: { $0.id == ShippedSpot.newID }) else { return false }
+        endEditing(moving: false)
+        open(ShippedSpot.newID, moving: true)
+        return true
+    }
+
+    static let newSpotKey = ActionKey(name: "n", isCommand: true)
 
     /// Does what the key of a footer label does, as if it were pressed: Return runs the selected row.
     public func pressHint(_ label: String) {

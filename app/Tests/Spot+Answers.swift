@@ -34,8 +34,8 @@ extension Spot {
     }
 
     @discardableResult
-    func perform(_ action: SpotAction, timeout: TimeInterval) async throws -> String? {
-        try await output(action, timeout: timeout).summary?.value("toast")
+    func perform(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> String? {
+        try await output(action, input: input, timeout: timeout).summary?.value("toast")
     }
 
     func read(timeout: TimeInterval) async throws -> MetricValue {

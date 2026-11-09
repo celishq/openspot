@@ -53,6 +53,11 @@ public final class SpotsModel {
             run?.failure
         }
 
+        /// Whether it is the placeholder of a spot that an agent builds, which its card shows as running work.
+        @MainActor public var isBuilding: Bool {
+            command.shipped == nil && command.subtitle == NewSpot.buildingDetail
+        }
+
         /// Whether the grid shows it: the person's choice, or else what the spot says.
         @MainActor public var isOnGrid: Bool {
             gridChoice ?? state.isOnGrid
@@ -250,8 +255,8 @@ public final class SpotsModel {
         let shipped = host.shippedSpots(folder: folder, config: files.config, update: updateSpot, offersLogin: isFirstLaunch)
             + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
         var scan = (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
-        let agent = shipped.lazy.compactMap { if case .build(let build)? = $0.shipped { build.agent } else { nil } }.first
-        let faults = agent.map { folder.faultSpots(of: scan, agent: $0) } ?? []
+        let new = shipped.lazy.compactMap { if case .new(let new)? = $0.shipped { new } else { nil } }.first
+        let faults = new.map { folder.faultSpots(of: scan, new: $0) } ?? []
         if !faults.isEmpty { scan.plugins.append(Plugin(id: ShippedSpot.faultsID, commands: faults)) }
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
@@ -873,7 +878,7 @@ public final class SpotsModel {
 
     public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil) {
         if action == nil, item.run == CatalogSpot.buildRun {
-            open(ShippedSpot.buildID, moving: true)
+            open(ShippedSpot.newID, moving: true)
             return
         }
         if entry.id == ShippedSpot.spotsID, action == nil { spotsChanged = true }

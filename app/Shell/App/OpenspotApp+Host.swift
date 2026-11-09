@@ -72,7 +72,8 @@ extension OpenspotApp: SpotsHost {
             login: AppLogin.item,
             link: AppCommandLink.item,
             offersLogin: offersLogin,
-            quit: QuitSpot { await NSApp.terminate(nil) }
+            quit: QuitSpot { await NSApp.terminate(nil) },
+            agentPath: SpotAgentPath.lookup
         )
     }
 

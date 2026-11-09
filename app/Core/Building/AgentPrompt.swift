@@ -1,10 +1,11 @@
 import Foundation
 
-/// The words that ask a coding agent to build or fix a spot, with the places that it needs: the plugins folder, the guide
-/// and the `openspot` command of this app.
+/// The words that ask a coding agent to build or fix a spot, with the places that it needs: the plugins folder and the
+/// `openspot` command of this app.
 public struct AgentPrompt: Equatable, Sendable {
     public let folder: URL
     public let guide: URL
+    /// The program of this app, which is the `openspot` command.
     public let app: String
 
     public init(folder: URL, guide: URL, app: String) {
@@ -13,30 +14,34 @@ public struct AgentPrompt: Equatable, Sendable {
         self.app = app
     }
 
-    /// Asks for a new spot that does what the person described.
-    public func building(_ description: String) -> String {
-        """
-        Build an Openspot plugin that does this: \(description)
+    /// Asks for a new spot that does what the person described, in the placeholder file that Openspot made for it.
+    public func building(_ description: String, in file: URL) -> String {
+        let id = file.deletingPathExtension().lastPathComponent
+        return """
+        Build an Openspot spot that does this: \(description)
 
-        Read the guide first: \(guide.path)
-        Put the plugin in: \(folder.path)
-        To write a sheet of parts, read the language first: "\(app)" catalog
-        To see a sheet, run: "\(app)" check --sheet < sheet.txt, and "\(app)" render sheet.png < sheet.txt
-        When it is ready, run this and fix each fault it reports: "\(app)" check "\(folder.path)"
-        Tell me what the plugin runs on my computer.
-
+        Openspot made a placeholder for it at \(file.path), with the ID \(id). Write the spot in that file. When a better name fits, rename the file, and the ID changes with it.
+        \(steps(for: id))
         """
     }
 
     /// Asks to fix the file of a spot that does not load, with each fault that Openspot found.
     public func fixing(_ file: URL, faults: [String]) -> String {
         """
-        Fix the Openspot plugin in \(file.path). Openspot does not load it, and says:
+        Fix the Openspot spot in \(file.path). Openspot does not load it, and says:
         \(faults.joined(separator: "\n"))
 
-        Read the guide first: \(guide.path)
-        When it is fixed, run this and fix each fault it reports: "\(app)" check "\(folder.path)"
-        Tell me what you changed.
+        \(steps(for: file.deletingPathExtension().lastPathComponent))
+        """
+    }
+
+    /// The steps of each build: the guide, a try, a look, the check and a show.
+    private func steps(for id: String) -> String {
+        """
+        First run "\(app)" guide, and read all of it.
+        Try each call with "\(app)" spot run \(id) [call] [value]..., and look at its card with "\(app)" render --spot \(id) --card wide card.png.
+        When it is ready, run "\(app)" check --json "\(folder.path)" and fix each fault until it prints [].
+        At the end of your answer, run "\(app)" spot show \(id), and tell me what the spot runs on my computer.
 
         """
     }
