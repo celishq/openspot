@@ -59,6 +59,20 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the open list") { model.openList == "list" && model.openItems?.shown.count == 2 }
     }
 
+    func testAPointOfTheGridFindsTheCardWhosePlaceHoldsIt() throws {
+        try script("one", header: "title=One", "")
+        try script("two", header: "title=Two", "")
+        model.reload()
+        let first = try XCTUnwrap(model.placements.first)
+        let second = try XCTUnwrap(model.placements.dropFirst().first)
+        let gap = CGPoint(x: first.rect.maxX + SpotTokens.columnGap / 2, y: first.rect.midY)
+
+        XCTAssertEqual(model.card(at: CGPoint(x: first.rect.midX, y: first.rect.midY)), model.visible[first.index].id)
+        XCTAssertEqual(model.card(at: CGPoint(x: second.rect.midX, y: second.rect.midY)), model.visible[second.index].id)
+        XCTAssertNil(model.card(at: gap))
+        XCTAssertNil(model.card(at: CGPoint(x: -1, y: -1)))
+    }
+
     func testAnOpenFindsAScriptMadeExecutableSinceTheOpenBefore() throws {
         let late = plugins.appendingPathComponent("late.sh")
         try "#!/bin/sh\n# title=Late\n".write(to: late, atomically: false, encoding: .utf8)

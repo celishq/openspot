@@ -2,10 +2,9 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// The drop target of one card. It reads the dragged files, and says which card is under a drag that it takes. A `.spot` file
-/// goes to the review on any card.
+/// The one drop target of the grid. It finds the card under a drag, reads the dragged files, and says which card takes them.
+/// A `.spot` file goes to the review on any card.
 struct SpotCardDrop: DropDelegate {
-    let id: String
     let model: SpotsModel
     @Binding var target: String?
 
@@ -22,19 +21,30 @@ struct SpotCardDrop: DropDelegate {
 
     func validateDrop(info: DropInfo) -> Bool {
         model.followDrag()
-        return SharedSpot.isFile(Self.paths) || model.acceptsDrop(Self.paths, on: id)
+        let paths = Self.paths
+        return SharedSpot.isFile(paths) || model.visible.contains { model.acceptsDrop(paths, on: $0.id) }
     }
 
     func dropEntered(info: DropInfo) {
-        if model.acceptsDrop(Self.paths, on: id) { target = id }
+        _ = dropUpdated(info: info)
+    }
+
+    /// Marks the card under the drag when it takes the files, and lets the drop through only over a card that takes them.
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        let id = model.card(at: info.location)
+        let taker = id.flatMap { model.takesDrag($0) ? $0 : nil }
+        if target != taker { target = taker }
+        let isSpot = id != nil && SharedSpot.isFile(model.dragPaths)
+        return DropProposal(operation: taker != nil || isSpot ? .copy : .forbidden)
     }
 
     func dropExited(info: DropInfo) {
-        if target == id { target = nil }
+        target = nil
     }
 
     func performDrop(info: DropInfo) -> Bool {
         target = nil
+        guard let id = model.card(at: info.location) else { return false }
         if SharedSpot.isFile(Self.paths) {
             model.review(Self.paths.map { URL(fileURLWithPath: $0) })
             return true
