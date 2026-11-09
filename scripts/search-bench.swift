@@ -47,7 +47,7 @@ func now() -> UInt64 {
 func report(_ name: String, _ times: [UInt64]) {
     let sorted = times.sorted().map { Double($0) / 1_000_000 }
     let at = { (share: Double) in sorted[min(Int(Double(sorted.count) * share), sorted.count - 1)] }
-    print(String(format: "%-16@ keys %5d  p50 %6.3f  p90 %6.3f  p99 %6.3f  max %6.3f ms", name as NSString, sorted.count, at(0.5), at(0.9), at(0.99), sorted.last ?? 0))
+    print(String(format: "%-16@ n %5d  p50 %6.3f  p90 %6.3f  p99 %6.3f  max %6.3f ms", name as NSString, sorted.count, at(0.5), at(0.9), at(0.99), sorted.last ?? 0))
 }
 
 /// Runs `step` for each keystroke, once to warm up and then `rounds` times, and reports the time of each keystroke.
@@ -70,6 +70,20 @@ let apps = items("apps")
 let settings = items("settings")
 let glyphs = glyphItems()
 print("items: spots \(spots.count), apps \(apps.count), settings \(settings.count), emoji and symbols \(glyphs.count)")
+
+/// Builds a list of these items `rounds` times, as when its rows arrive, and reports the time of one build.
+func load(_ name: String, _ items: [SpotItem]) {
+    var times: [UInt64] = []
+    for _ in 0..<rounds {
+        let start = now()
+        _ = ItemList(items: items)
+        times.append(now() - start)
+    }
+    report(name, times)
+}
+
+load("load emoji", glyphs)
+load("load settings", settings)
 
 let spotItems = spots.map { SpotItem(title: $0.title, subtitle: $0.subtitle, run: $0.run) }
 let sources = [ItemList(items: apps), ItemList(items: settings)]
