@@ -95,7 +95,7 @@ struct SpotSheetLayer: View {
     @ViewBuilder
     private func widgetLook(_ widget: SpotsModel.Entry, size: SpotSize) -> some View {
         if let layout = widget.command.layout {
-            SpotWidgetView(layout: layout, places: widget.command.places, readings: model.readings, card: size)
+            SpotWidgetView(layout: layout, places: widget.command.places, reading: { [model] in model.reading(of: $0) }, card: size)
                 .padding(SpotTokens.cardPadding(for: size, isWidget: true))
         }
     }

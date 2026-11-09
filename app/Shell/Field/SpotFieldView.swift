@@ -20,8 +20,6 @@ struct SpotFieldView: View {
     let showsField: Bool
     /// Whether a sheet is out or a drop is taken, which sets the time of each fade.
     let surfaceIsOut: Bool
-    /// The last word of the prompt in the open sheet.
-    let sheetWord: String
     @FocusState private var isFocused: Bool
 
     var body: some View {
@@ -187,6 +185,13 @@ struct SpotFieldView: View {
         .lineLimit(1)
         .modifier(SpotFieldCrossing(isOpen: isOpen, crosses: !isInstall))
         .modifier(SpotEmptyField(model: model, isHidden: model.showsFieldDrop))
+    }
+
+    /// The last word of the prompt in the open sheet, from its spot's title. It is read here, so that a new title reruns
+    /// the field and not the panel.
+    private var sheetWord: String {
+        let id = model.transition.id
+        return SearchPrompt.word(for: model.entries.first { $0.id == id }?.state.title ?? "")
     }
 
     private var fieldRadius: CGFloat {

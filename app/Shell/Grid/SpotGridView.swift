@@ -32,10 +32,10 @@ struct SpotGridView: View {
                 SpotCardView(
                     entry: entry,
                     size: placement.size,
-                    isSelected: placement.index == model.selected,
+                    isSelected: { [model, index = placement.index] in model.selected == index },
                     takesDrag: model.takesDrag(entry.id),
                     isDropTarget: dropTarget == entry.id,
-                    readings: entry.kind == .widget ? model.readings : [:],
+                    reading: entry.kind == .widget ? { [model] in model.reading(of: $0) } : { _ in nil },
                     chainLetter: model.chainLetter(of: entry),
                     showsChain: model.showsChain,
                     isHiddenFromGrid: model.isEditing && !entry.isOnGrid,

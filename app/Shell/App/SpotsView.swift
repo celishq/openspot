@@ -71,8 +71,7 @@ struct SpotsView: View {
                 isInSheet: fieldIsInSheet,
                 isInstall: sheetID == ShippedSpot.installID,
                 showsField: showsSearchField,
-                surfaceIsOut: surfaceIsOut,
-                sheetWord: sheetWord
+                surfaceIsOut: surfaceIsOut
             )
             if model.isEditing {
                 editHeader
@@ -201,10 +200,6 @@ struct SpotsView: View {
         .padding(.horizontal, SpotTokens.padding)
         .frame(width: SpotTokens.gridWidth, height: SpotTokens.rowHeight)
         .offset(x: SpotTokens.halo, y: SpotTokens.halo)
-    }
-
-    private var sheetWord: String {
-        SearchPrompt.word(for: model.entries.first { $0.id == sheetID }?.state.title ?? "")
     }
 }
 

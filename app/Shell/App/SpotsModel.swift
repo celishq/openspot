@@ -6,7 +6,7 @@ import SwiftUI
 @Observable
 final class SpotsModel {
     /// One card: a script, which reads from its sheet, or a widget, or a row that the main search found.
-    struct Entry: Identifiable {
+    struct Entry: Identifiable, Equatable {
         let id: String
         let item: SpotItem?
         private let sizeChoice: SpotSize?
@@ -80,6 +80,12 @@ final class SpotsModel {
         /// Whether a press of the card stops its running work.
         @MainActor var stopsOnPress: Bool {
             sheet?.cardWork != nil
+        }
+
+        /// Whether two entries are one card: the same spot or row, the same choices and the same sheet.
+        static func == (lhs: Entry, rhs: Entry) -> Bool {
+            lhs.id == rhs.id && lhs.item == rhs.item && lhs.sizeChoice == rhs.sizeChoice && lhs.gridChoice == rhs.gridChoice
+                && lhs.sheet === rhs.sheet && lhs.fixedCommand == rhs.fixedCommand && lhs.fixedState == rhs.fixedState
         }
     }
 
@@ -205,9 +211,9 @@ final class SpotsModel {
         runs.sheets
     }
 
-    /// What each script last gave a widget to draw.
-    var readings: [String: MetricReading] {
-        runs.readings
+    /// What a script last gave a widget to draw. A view that calls it hears only of that script's reading.
+    func reading(of id: String) -> MetricReading? {
+        runs.sheets[id]?.reading
     }
 
     /// The number of calls that a restart would stop.

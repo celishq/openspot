@@ -466,6 +466,19 @@ final class SpotRunTests: XCTestCase {
         XCTAssertEqual(changes, 0)
     }
 
+    func testTheSameValueAgainTellsNoReaderOfTheReading() async throws {
+        let sheet = try make("printf 'text=heat\\ntitle=41°\\n'")
+        sheet.read(need: .change)
+        try await wait("the value") { !sheet.isReading && sheet.reading.value?.title == "41°" }
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = sheet.reading } onChange: { changed = true }
+
+        sheet.read(need: .change)
+        try await wait("the second answer") { !sheet.isReading }
+
+        XCTAssertFalse(changed)
+    }
+
     func testAnAnswerWithNewRowsReportsOneListChange() async throws {
         let sheet = try holding("printf 'row=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'", pause: 30)
         var changes = 0

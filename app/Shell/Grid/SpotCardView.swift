@@ -7,10 +7,12 @@ import OpenspotCore
 struct SpotCardView: View {
     let entry: SpotsModel.Entry
     let size: SpotSize
-    let isSelected: Bool
+    /// Whether the card is selected, read only by its ring so that a move of the selection reruns no card.
+    let isSelected: () -> Bool
     let takesDrag: Bool
     let isDropTarget: Bool
-    let readings: [String: MetricReading]
+    /// What each script last gave a widget to draw.
+    let reading: (String) -> MetricReading?
     let chainLetter: String?
     let showsChain: Bool
     let isHiddenFromGrid: Bool
@@ -34,7 +36,7 @@ struct SpotCardView: View {
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))
             .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, strength: SpotMotion.pressedGlass, blursBehind: showsPress, rimSize: CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))))
             .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : isHovered ? 0.08 : 0)).allowsHitTesting(false))
-            .overlay(Color.clear.modifier(SpotSelectionRing(isSelected: isSelected, shape: shape)).opacity(isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
+            .overlay(Color.clear.modifier(CardRing(isSelected: isSelected, shape: shape)).opacity(isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { keycap }
             .overlay(alignment: .topTrailing) { hiddenMark }
             .contentShape(shape)
@@ -52,13 +54,13 @@ struct SpotCardView: View {
     @ViewBuilder
     private var content: some View {
         if entry.item == nil, let drawing = entry.state.face.drawing(for: size) {
-            SpotCardDrawing(drawing: drawing, face: entry.state.face, card: size, readings: readings, view: { room in
+            SpotCardDrawing(drawing: drawing, face: entry.state.face, card: size, reading: reading, view: { room in
                 drawnView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, views: model.views) }
             }) { model.setCardPart(entry.id, $0, to: $1) }
         } else if let view = drawnView {
             SpotCustomView(source: view, values: entry.state.values, card: size, views: model.views)
         } else if let layout = entry.command.layout {
-            SpotWidgetView(layout: layout, places: entry.command.places, readings: readings, card: size)
+            SpotWidgetView(layout: layout, places: entry.command.places, reading: reading, card: size)
         } else if size == .small {
             glyph.frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if size.rows > 1 {
@@ -252,5 +254,15 @@ struct SpotCardView: View {
             .foregroundStyle(isFilled ? SpotTheme.glyphOnSolid : SpotTheme.ink)
             .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
             .background(glyphDisc, in: Circle())
+    }
+}
+
+/// The ring of a selected card. It alone reads the selection, so that an arrow press reruns the rings and no card.
+private struct CardRing: ViewModifier {
+    let isSelected: () -> Bool
+    let shape: RoundedRectangle
+
+    func body(content: Content) -> some View {
+        content.modifier(SpotSelectionRing(isSelected: isSelected(), shape: shape))
     }
 }

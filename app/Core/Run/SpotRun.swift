@@ -602,7 +602,7 @@ public final class SpotRun {
                 case .failed(let error):
                     answered = nil
                     list.loadFailed()
-                    reading.markStale()
+                    changeReading { $0.markStale() }
                     answerArrived()
                     if reports { fail(error) }
                 }
@@ -664,14 +664,21 @@ public final class SpotRun {
 
     private func takeValue(_ lines: PluginOutput) {
         if let value = MetricValue(output: lines) {
-            reading.take(value)
+            changeReading { $0.take(value) }
         } else {
-            reading.markStale()
+            changeReading { $0.markStale() }
         }
     }
 
     private func report(toastOf lines: PluginOutput) {
         if let toast = lines.toast { onReport(.toast(toast)) }
+    }
+
+    /// Makes a change of the reading in one write, which tells the readers of the reading only when it differs.
+    private func changeReading(_ change: (inout MetricReading) -> Void) {
+        var next = reading
+        change(&next)
+        reading = next
     }
 
     /// Makes each change of the rows in one write, so that the readers of the list and the owner hear of them once.
@@ -856,7 +863,7 @@ public final class SpotRun {
         live = nil
         endLiveCalls(nil)
         liveRead = nil
-        reading.markStale()
+        changeReading { $0.markStale() }
         dropUnshownSheet()
         answerForm(with: .success(""))
     }
@@ -876,7 +883,7 @@ public final class SpotRun {
         }
         let mainID = lastAnswer?.value?.fields.first?.value
         if isAnswer || (mainID != nil && lines.value?.fields.first?.value == mainID), let value = MetricValue(output: lines) {
-            reading.take(value)
+            changeReading { $0.take(value) }
         }
         changeList {
             if isAnswer {
