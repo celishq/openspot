@@ -21,6 +21,9 @@ public struct CommandAction: Equatable, Sendable {
         CommandAction(id: removeID, title: count > 1 ? "Delete \(count) widgets" : "Delete", key: ActionKey(text: "cmd+backspace"), scope: .command, after: .stay)
     }
 
+    /// The row that opens the Try window of a spot.
+    public static let tryIt = CommandAction(id: "openspot.try", title: "Try", key: ActionKey(text: "cmd+t"), scope: .command, after: .close)
+
     /// The row that opens the file of a spot in the text editor.
     public static let edit = CommandAction(id: "openspot.edit", title: "Edit", key: ActionKey(text: "cmd+e"), scope: .command, after: .close)
 

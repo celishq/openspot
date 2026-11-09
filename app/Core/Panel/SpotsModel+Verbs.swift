@@ -29,9 +29,28 @@ extension SpotsModel {
         }
     }
 
+    /// Opens the Try window of a spot: a new process of the app with `sandbox` and the file of the spot.
+    func tryOut(_ entry: Entry) {
+        guard let new = newSpot else { return }
+        let bundle = URL(fileURLWithPath: new.handoff.prompt.app).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let path = file(of: entry).path
+        Task {
+            do {
+                _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["open", "-n", bundle.path, "--args", "sandbox", path])
+            } catch {
+                host.notify("Openspot cannot open Try for \(entry.command.name). \(Self.reason(error))")
+            }
+        }
+    }
+
+    /// The New spot sheet, which holds the app's place and its agent.
+    private var newSpot: NewSpot? {
+        entries.lazy.compactMap { if case .new(let new)? = $0.command.shipped { new } else { nil } }.first
+    }
+
     /// Starts the agent of the New spot sheet on the file of a spot, with the words of its last failed call.
     func change(_ entry: Entry) {
-        guard let new = entries.lazy.compactMap({ if case .new(let new)? = $0.command.shipped { new } else { nil } }).first else {
+        guard let new = newSpot else {
             host.notify("Openspot cannot start an agent, because New spot is missing. Quit and open Openspot again.")
             return
         }

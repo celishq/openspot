@@ -211,7 +211,8 @@ extension SpotsModel {
         guard command.shipped == nil else { return [] }
         guard !files.folder(Config(text: "")).isCore(command) else { return [.share, .turnOff] }
         let copies = !command.id.contains("/") && command.kind != .widget
-        return [.edit, .changeWithAI] + (copies ? [.duplicate] : []) + [.showInFinder, .share, .remove(widgets: widgets(sharingFileWith: target.entry))]
+        let tries = command.kind != .widget ? [CommandAction.tryIt] : []
+        return tries + [.edit, .changeWithAI] + (copies ? [.duplicate] : []) + [.showInFinder, .share, .remove(widgets: widgets(sharingFileWith: target.entry))]
     }
 
     /// How many widgets the file of a widget holds, which go together when it is removed.
@@ -279,6 +280,9 @@ extension SpotsModel {
         } else if action == .edit || action == .showInFinder {
             if isShown { host.dismiss() }
             open(target.entry, revealing: action == .showInFinder)
+        } else if action == .tryIt {
+            if isShown { host.dismiss() }
+            tryOut(target.entry)
         } else if action == .changeWithAI {
             change(target.entry)
         } else if action == .duplicate {

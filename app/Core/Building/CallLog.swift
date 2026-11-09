@@ -36,7 +36,7 @@ public final class CallLog: Sendable {
         func text(within limit: Int) -> String {
             let ending = switch end {
             case .exited(let code): "exit \(code)"
-            case .stopped: "stopped"
+            case .stopped: frames.isEmpty ? "stopped" : "stopped after its answer"
             case .failed(let reason): reason
             }
             let head = "\(CallLog.mark)\(started.formatted(.iso8601)) · \(arguments.joined(separator: " ")) · \(ending) · \(String(format: "%.2f", seconds)) s\n"

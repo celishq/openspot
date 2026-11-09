@@ -24,7 +24,7 @@ struct SpotSheetPreview: View {
                     .background(SpotTheme.ink.opacity(SpotTheme.disc), in: Circle())
                 VStack(alignment: .leading, spacing: SpotType.lineGap) {
                     Text(title).font(SpotType.title).foregroundStyle(SpotTheme.ink)
-                    Text(subtitle).font(SpotType.detail).modifier(SpotSecondaryText())
+                    if !subtitle.isEmpty { Text(subtitle).font(SpotType.detail).modifier(SpotSecondaryText()) }
                 }
                 Spacer()
                 SpotRoundButton(symbol: "xmark", label: "Close") {}

@@ -89,8 +89,8 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
 
         let rows = try XCTUnwrap(model.menu?.rows).filter { $0.action != nil }
-        XCTAssertEqual(rows.map(\.title), ["Edit", "Change with AI", "Duplicate", "Show in Finder", "Copy to share", "Delete"])
-        XCTAssertEqual(rows.map(\.keyLabel), ["⌘E", "", "⌘D", "⌘R", "⌘⇧C", "⌘⌫"])
+        XCTAssertEqual(rows.map(\.title), ["Try", "Edit", "Change with AI", "Duplicate", "Show in Finder", "Copy to share", "Delete"])
+        XCTAssertEqual(rows.map(\.keyLabel), ["⌘T", "⌘E", "", "⌘D", "⌘R", "⌘⇧C", "⌘⌫"])
     }
 
     func testEditOpensTheFileInTheTextEditorAndRevealShowsItInFinder() async throws {
@@ -158,5 +158,14 @@ final class SpotVerbTests: XCTestCase {
 
         XCTAssertFalse(model.entries.contains { $0.id == "broken" })
         XCTAssertTrue(FileManager.default.fileExists(atPath: trash.appendingPathComponent("broken.sh").path))
+    }
+
+    func testTryOpensTheSpotInANewWindowOfTheApp() async throws {
+        try script("weather")
+        _ = try select("weather")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "t", isCommand: true)))
+
+        try await wait("the Try window") { saved("opened")?.hasPrefix("-n /Apps/Openspot.app --args sandbox /") == true && saved("opened")?.hasSuffix("/plugins/weather.sh\n") == true }
     }
 }
