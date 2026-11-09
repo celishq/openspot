@@ -991,6 +991,7 @@ public final class SpotRun {
             return
         }
         var showedState = false
+        var selected: String?
         start(
             action,
             key: key,
@@ -1003,6 +1004,7 @@ public final class SpotRun {
                 report(toastOf: lines)
                 state = state.taking(lines)
                 showedState = showedState || !lines.parts.isEmpty
+                selected = lines.select ?? selected
                 if isOpen { panel?.merge(lines, answering: generation, keeping: keeping ?? editing) }
                 onReport(.frame(text))
             },
@@ -1013,7 +1015,11 @@ public final class SpotRun {
                     if let undo { state = undo }
                 case .ended:
                     answered = nil
-                    if !showedState, readsAfter { readOnce() }
+                    if let selected, command.read != nil {
+                        read(selecting: selected, need: .change)
+                    } else if !showedState, readsAfter {
+                        readOnce()
+                    }
                 case .failed(let error):
                     answered = nil
                     if let undo { state = undo }

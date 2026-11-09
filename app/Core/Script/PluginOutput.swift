@@ -31,6 +31,8 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var link: String?
     /// The ids of the calls of a staying script that this frame ends.
     public private(set) var ends: [String] = []
+    /// The row that a `select` effect selects when the call ends, such as the row that a drop added (D8).
+    public private(set) var select: String?
 
     private static let reserved = "read"
     /// The keys of a call block for a staying script, which a value of the sheet would take the place of.
@@ -173,6 +175,7 @@ public struct PluginOutput: Equatable, Sendable {
     private mutating func take(effects block: TextBlock) {
         toast = block.value("toast") ?? toast
         link = block.value("link") ?? link
+        select = block.value("select") ?? select
         if let end = block.value("end") { ends.append(end) }
     }
 

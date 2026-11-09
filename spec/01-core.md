@@ -97,7 +97,8 @@ a widget or the menu bar shows it, or while the open panel reads it at `panel` (
 `read` is the only reserved call. `run`, `open` and `drop` are default ids. A component cannot use a default id, and a
 button can use only `open`. `call`, `reason` and `arg` are reserved ids too (05). A new default id reaches only a script that asks for it.
 
-A drop on a card with a running call waits for that call (D4). Presses of the keys of one script run one at a time, in
+A drop on a card with a running call waits for that call (D4). A drop on a card with rows opens its sheet, and the answer to
+the drop can select the row that it added with `select=` (02, D8). Presses of the keys of one script run one at a time, in
 order, and never stop a call. Only the person gives a command its key (P8).
 
 A script gets:

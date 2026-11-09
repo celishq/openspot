@@ -592,4 +592,19 @@ final class SpotDropTests: XCTestCase {
 
         try await wait("the read after the call") { self.log() == ["drop \(file)", "read"] }
     }
+
+    // MARK: D8
+
+    func testADropThatSelectsARowReadsAgainWithThatRowSelected() async throws {
+        let rows = "printf 'row=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'"
+        let sheet = try sheet(header: "read=sheet\ndrop=mov", "case \"$1\" in\n  read) \(rows) ;;\n  drop) printf 'toast=Added\\nselect=b\\n' ;;\nesac")
+        sheet.open {}
+        try await wait("the rows") { sheet.list.shown.count == 2 }
+        XCTAssertEqual(sheet.list.selectedItem?.run, "a")
+        let file = file("b.mov")
+
+        XCTAssertTrue(sheet.drop([file]))
+
+        try await wait("the read with b selected") { self.log() == ["read", "drop \(file)", "read"] && sheet.list.selectedItem?.run == "b" }
+    }
 }
