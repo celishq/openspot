@@ -76,6 +76,8 @@ enum SpotCommandLine {
             finish { try SpotTranslation.call(text: text, from: from, to: to) }
         case .helper(SpotTranslation.capability.name):
             SpotTranslation.serve()
+        case .helper(SpotRecording.capability.name):
+            SpotRecording.serve()
         case .helper(let name):
             run(.unknown("helper \(name)"))
         case .translateLanguages:
@@ -88,6 +90,16 @@ enum SpotCommandLine {
             answer { try SpotWindow.front().frameText }
         case .windowMove(let move):
             answer { try SpotWindow.front().move(move); return "" }
+        case .screenSources:
+            answer { SpotScreen.sources() }
+        case .screenShot(let capture):
+            SpotScreen.run { try await SpotScreen.shot(capture) }
+        case .screenRecordStart(let capture):
+            SpotScreen.run { try await SpotRecording.start(capture) }
+        case .screenRecordStop:
+            SpotScreen.run { try SpotRecording.stop() }
+        case .screenRecordStatus:
+            SpotScreen.run { try SpotRecording.status() }
         }
     }
 

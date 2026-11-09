@@ -46,17 +46,26 @@ public struct Capability: Sendable {
         return answer
     }
 
-    /// Runs as the helper: answers one call at a time until the idle time passes with no call. It exits at once when
-    /// another helper holds the lock, and with a line on stderr and code 1 when it cannot listen.
-    public func serve(_ answer: @escaping @Sendable (Data) async -> Data) -> Never {
+    /// Runs as the helper: answers one call at a time until the idle time passes with no call and no work, such as a
+    /// recording. It exits at once when another helper holds the lock, and with a line on stderr and code 1 when it cannot listen.
+    /// `runMain` keeps the main thread, such as the event loop of an app that a framework needs.
+    public func serve(
+        isBusy: @escaping @Sendable () async -> Bool = { false },
+        runMain: () -> Never = dispatchMain,
+        _ answer: @escaping @Sendable (Data) async -> Data
+    ) -> Never {
         signal(SIGPIPE, SIG_IGN)
         signal(SIGHUP, SIG_IGN)
         let listener = listen()
         let empty = open("/dev/null", O_WRONLY)
         if empty >= 0 { dup2(empty, STDERR_FILENO) }
         Task.detached {
-            while Self.isReady(listener, seconds: idle) {
-                await Self.answerNext(on: listener, with: answer)
+            while true {
+                if Self.isReady(listener, seconds: idle) {
+                    await Self.answerNext(on: listener, with: answer)
+                } else if await !isBusy() {
+                    break
+                }
             }
             unlink(socketPath)
             while Self.isReady(listener, seconds: 0) {
@@ -64,7 +73,7 @@ public struct Capability: Sendable {
             }
             exit(0)
         }
-        dispatchMain()
+        runMain()
     }
 
     /// A connection to the helper. The helper shows that it runs by taking the connection. A helper that lost the race to
