@@ -2,7 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 /// The picture of an item or a spot: its image or the icon of its file, or else its glyph, or else its symbol, or else nothing.
-/// With a badge, the picture fills the bottom-right three quarters, over the badge in the top-left quarter.
+/// With a badge, the picture keeps its whole size, and the badge, half as big, peeks out from behind its top-left corner.
 struct SpotItemIcon: View {
     let icon: FileIcon?
     let glyph: String?
@@ -31,12 +31,11 @@ struct SpotItemIcon: View {
 
     var body: some View {
         if let badge {
-            ZStack(alignment: .bottomTrailing) {
-                SpotItemIcon(icon: badge.image.map(FileIcon.image) ?? badge.file.map(FileIcon.init(path:)), glyph: badge.glyph, symbol: badge.symbol, size: size / 2)
-                    .frame(width: size, height: size, alignment: .topLeading)
-                SpotItemIcon(icon: icon, glyph: glyph, symbol: symbol, size: size * 0.75)
-            }
-            .frame(width: size, height: size)
+            SpotItemIcon(icon: icon, glyph: glyph, symbol: symbol, size: size)
+                .background(alignment: .topLeading) {
+                    SpotItemIcon(icon: badge.image.map(FileIcon.image) ?? badge.file.map(FileIcon.init(path:)), glyph: badge.glyph, symbol: badge.symbol, size: size / 2)
+                        .offset(x: -size / 4, y: -size / 4)
+                }
         } else if let icon {
             SpotFileIconView(icon: icon, size: size)
         } else if let glyph, let picture = SpotGlyphPicture.image(glyph, side: size, fontSize: size * Self.glyphScale) {

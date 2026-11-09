@@ -11,6 +11,8 @@ public enum SpotTokens {
     public static let cell: CGFloat = (gridWidth - columnGap * CGFloat(columns - 1)) / CGFloat(columns)
     public static let rowHeight: CGFloat = 64
     public static let glyphSize: CGFloat = 36
+    /// The box of a Mac icon whose drawn body fills a glyph's disc, since such an icon leaves a clear margin around its body.
+    public static let pictureSize: CGFloat = glyphSize * 512 / 412
     public static let workMark: CGFloat = 16
     public static let keycap: CGFloat = 20
     public static let keycapRadius: CGFloat = 6
