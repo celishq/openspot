@@ -21,6 +21,8 @@ private struct Backing: NSViewRepresentable {
 
     final class Surface: NSVisualEffectView {
         var radius: CGFloat = 0
+        /// The layer that blurs, found when AppKit lays the view out, so that a new radius in a motion touches only it.
+        private weak var backdrop: CALayer?
 
         override func layout() {
             super.layout()
@@ -42,6 +44,7 @@ private struct Backing: NSViewRepresentable {
             DispatchQueue.main.async { self.applyBlur() }
         }
 
+        /// Hides each layer but the one that blurs, takes the saturation out of its filters, and sets its radius.
         func applyBlur() {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
@@ -52,7 +55,17 @@ private struct Backing: NSViewRepresentable {
                 let kept = part.filters?.filter { ($0 as? NSObject)?.value(forKey: "name") as? String != "colorSaturate" }
                 if kept?.count != part.filters?.count { part.filters = kept }
                 part.setValue(radius, forKeyPath: "filters.gaussianBlur.inputRadius")
+                backdrop = part
             }
+        }
+
+        /// Sets a new radius on the layer that blurs, and finds that layer again when AppKit has made it anew.
+        func applyRadius() {
+            guard let backdrop, backdrop.superlayer != nil else { return applyBlur() }
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            defer { CATransaction.commit() }
+            backdrop.setValue(radius, forKeyPath: "filters.gaussianBlur.inputRadius")
         }
     }
 
@@ -73,6 +86,6 @@ private struct Backing: NSViewRepresentable {
     func updateNSView(_ surface: Surface, context: Context) {
         guard surface.radius != radius else { return }
         surface.radius = radius
-        surface.applyBlur()
+        surface.applyRadius()
     }
 }

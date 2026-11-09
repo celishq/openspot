@@ -9,6 +9,8 @@ struct SpotCardView: View {
     let size: SpotSize
     /// Whether the card is selected, read only by its ring so that a move of the selection reruns no card.
     let isSelected: () -> Bool
+    /// Whether the person presses the card, which the grid follows so that its blur grows with the card.
+    let isPressed: Bool
     let takesDrag: Bool
     let isDropTarget: Bool
     /// What each script last gave a widget to draw.
@@ -19,7 +21,6 @@ struct SpotCardView: View {
     /// The model that a tap and a slide go to.
     let model: SpotsModel
     @State private var isHovered = false
-    @GestureState private var isPressed = false
     @Environment(\.spotIsShown) private var isShown
 
     /// How far a line reaches past the inset at its trailing end, where the round end of the card leaves room.
@@ -34,7 +35,7 @@ struct SpotCardView: View {
             .padding(drawnView != nil && !isDrawn ? 0 : SpotTokens.cardPadding(for: size, isWidget: entry.kind == .widget || isDrawn))
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))
-            .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, strength: SpotMotion.pressedGlass, blursBehind: showsPress, rimSize: CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))))
+            .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, blursBehind: false, rimSize: CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))))
             .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : isHovered ? 0.08 : 0)).allowsHitTesting(false))
             .overlay(Color.clear.modifier(CardRing(isSelected: isSelected, shape: shape)).opacity(isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { keycap }
@@ -42,7 +43,6 @@ struct SpotCardView: View {
             .contentShape(shape)
             .onHover { isHovered = $0 }
             .onTapGesture { model.tap(entry.id) }
-            .simultaneousGesture(DragGesture(minimumDistance: 0).updating($isPressed) { _, pressed, _ in pressed = true })
             .animation(.easeInOut(duration: 0.2), value: isOn)
             .scaleEffect(showsPress ? SpotMotion.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
@@ -97,7 +97,12 @@ struct SpotCardView: View {
     }
 
     private var showsPress: Bool {
-        isPressed && entry.kind != .slider && (entry.kind != .widget || entry.command.opens != nil)
+        isPressed && Self.showsPress(of: entry)
+    }
+
+    /// Whether a press shows on a card: a slider takes its own drags, and a widget that opens nothing has no press.
+    static func showsPress(of entry: SpotsModel.Entry) -> Bool {
+        entry.kind != .slider && (entry.kind != .widget || entry.command.opens != nil)
     }
 
     /// How strong the fill is: part of the way on a card that takes the drag, and full on the card that takes the drop.
