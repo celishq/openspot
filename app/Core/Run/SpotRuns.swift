@@ -144,15 +144,24 @@ public final class SpotRuns {
         sheets.values.forEach { $0.settleScript() }
     }
 
-    /// Reads each wanted script whose number of seconds has passed.
-    public func tick() {
+    /// Reads each wanted script whose number of seconds has passed. Returns the seconds until the next read is due, or nil
+    /// when no wanted script has a number.
+    @discardableResult
+    public func tick() -> TimeInterval? {
         let time = now()
+        var next: TimeInterval?
         for sheet in sheets.values where sheet.isWanted {
             guard let seconds = sheet.command.read?.seconds else { continue }
-            if let last = asked[sheet.command.id], time.timeIntervalSince(last) < seconds { continue }
-            asked[sheet.command.id] = time
-            sheet.read(need: .clock, reason: .timer)
+            var left = seconds
+            if let last = asked[sheet.command.id], time.timeIntervalSince(last) < seconds {
+                left = seconds - time.timeIntervalSince(last)
+            } else {
+                asked[sheet.command.id] = time
+                sheet.read(need: .clock, reason: .timer)
+            }
+            next = min(next ?? left, left)
         }
+        return next
     }
 
     /// Stops each call, which changes nothing, and waits for the processes to end, for at most 2 seconds.
@@ -299,19 +308,19 @@ public final class SpotRuns {
         processes.append(process)
     }
 
-    /// Keeps the timers going while the panel is open, or while something wants a script with a number in its `read`.
+    /// Keeps the timers going while the panel is open, or while something wants a script with a number in its `read`. The
+    /// clock sleeps until the next read is due, and no less than its pause. A change of what is wanted starts it again.
     func updateClock() {
-        guard isPanelOpen || sheets.values.contains(where: { $0.command.read?.seconds != nil && $0.isWanted }) else {
-            clock?.cancel()
-            clock = nil
-            return
-        }
-        tick()
-        guard clock == nil else { return }
+        clock?.cancel()
+        clock = nil
+        var next = tick()
+        guard isPanelOpen || next != nil else { return }
         clock = Task { [weak self, tickPause] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: tickPause)
-                self?.tick()
+                try? await Task.sleep(for: max(tickPause, .seconds(next ?? 0)))
+                guard !Task.isCancelled, let self else { return }
+                next = tick()
+                guard isPanelOpen || next != nil else { return }
             }
         }
     }

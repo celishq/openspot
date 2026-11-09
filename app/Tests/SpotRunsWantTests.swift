@@ -167,6 +167,37 @@ final class SpotRunsWantTests: SpotRunsCase {
         try await wait("the read from the clock") { self.log().count == 2 }
     }
 
+    func testTheClockLooksAtTheTimeOnlyWhenAReadIsDue() async throws {
+        var looks = 0
+        runs = SpotRuns(now: { [unowned self] in
+            looks += 1
+            return self.time
+        }, stopPause: 0.2, tickPause: .milliseconds(50))
+        try script(header: "read=5\ntray=true", "printf 'text=t\\ntitle=1\\n'")
+        _ = try scanned()
+        try await wait("the first read") { self.log().count == 1 && self.runs.sheets["script"]?.calls.isEmpty == true }
+        let before = looks
+
+        try await pause(0.5)
+
+        XCTAssertLessThanOrEqual(looks - before, 1)
+        XCTAssertEqual(log().count, 1)
+    }
+
+    func testAScriptWantedWhileTheClockWaitsForALaterReadIsReadOnItsOwnTime() async throws {
+        try script("pulls", header: "read=120\ntray=true", log: "pulls", "printf 'text=t\\ntitle=1\\n'")
+        try script(header: "read=1\nshortcut=a", "printf 'row=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+        try await wait("the read of the menu bar spot") { self.log("pulls").count == 1 }
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the first read of the sheet") { self.log().count == 1 && sheet.calls.isEmpty }
+
+        time += 1
+
+        try await wait("the read from the clock") { self.log().count == 2 }
+    }
+
     // MARK: C4, the main search, sandbox
 
     func testSearchTextReachesTheScriptAfterAPause() async throws {
