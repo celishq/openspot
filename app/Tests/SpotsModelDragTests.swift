@@ -89,6 +89,30 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(savedOrder(), ["a", "b", "d", "c"])
     }
 
+    func testADroppedCardLandsUntilItsMotionEnds() {
+        host.heldEnds = []
+        let translation = move("d", to: leftHalf(of: "c"))
+        model.dragSpot("d", by: translation)
+
+        model.dropSpot(by: translation)
+
+        XCTAssertNil(model.drag)
+        XCTAssertEqual(model.landing, "d")
+        host.heldEnds?.forEach { $0() }
+        XCTAssertNil(model.landing)
+    }
+
+    func testACardPutBackByEscapeLandsUntilItsMotionEnds() {
+        host.heldEnds = []
+        model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
+
+        model.handleEditKey(ActionKey(name: "escape"))
+
+        XCTAssertEqual(model.landing, "d")
+        host.heldEnds?.forEach { $0() }
+        XCTAssertNil(model.landing)
+    }
+
     func testTheCardsWaitForThePointerToRestButAReleaseLandsAtOnce() {
         model.dragRest = .seconds(30)
         let translation = move("d", to: leftHalf(of: "c"))

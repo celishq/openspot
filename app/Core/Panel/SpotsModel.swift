@@ -193,6 +193,8 @@ public final class SpotsModel {
     /// The card that the person drags in Edit Spots, and where a release puts it.
     public internal(set) var drag: SpotDrag?
     public let lift = SpotLift()
+    /// The card that a release or a cancel of a drag puts in place, until its motion ends.
+    public internal(set) var landing: String?
     /// The card that the person resizes by its corner in Edit Spots, and the size that a release keeps.
     public internal(set) var resize: SpotResize?
     /// How long the pointer stays near a new place before the other cards make room there.

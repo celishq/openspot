@@ -24,6 +24,7 @@ enum SpotMotion {
     static let keycap = Animation.easeOut(duration: 0.12)
     static let edit = Animation.spring(duration: 0.3, bounce: 0)
     static let hintFade = Animation.easeOut(duration: 0.15)
+    static let liftFade = Animation.easeOut(duration: 0.15)
     /// How strong a card stays under an open sheet: too faint to see, but drawn, so its return redraws nothing.
     static let coveredCardOpacity = 0.001
 

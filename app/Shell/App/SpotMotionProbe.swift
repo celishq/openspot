@@ -216,22 +216,26 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { run(steps[...]) }
     }
 
-    /// Saves a picture of Edit Spots, of the card lifted near the first place once the cards made room, of the grid after
-    /// the drop there, and of the card pulled a row taller by its corner and kept, from a panel off every screen.
+    /// Saves a picture of Edit Spots, of the card 30 ms into its lift and once the cards made room near the first place,
+    /// 60 ms into its drop there and after it, and of the card pulled a row taller by its corner and kept, from a panel off
+    /// every screen.
     private func shoot(_ id: String, stops: [CGSize], into folder: String) {
         panel.setFrameOrigin(NSPoint(x: -9000, y: -9000))
         panel.alphaValue = 1
-        let states: [(name: String, act: () -> Void)] = [
-            ("edit", {}),
-            ("lifted", { self.model.dragSpot(id, by: CGSize(width: stops[1].width + SpotTokens.cell / 3, height: stops[1].height + SpotTokens.rowHeight / 3)) }),
-            ("dropped", { self.model.dropSpot(by: stops[1]) }),
-            ("resized", { self.model.resizeSpot(id, by: CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap)) }),
-            ("kept", { self.model.dropResize() })
+        let near = CGSize(width: stops[1].width + SpotTokens.cell / 3, height: stops[1].height + SpotTokens.rowHeight / 3)
+        let states: [(name: String, wait: Double, act: () -> Void)] = [
+            ("edit", 1, {}),
+            ("lifting", 0.03, { self.model.dragSpot(id, by: CGSize(width: 1, height: 1)) }),
+            ("lifted", 1, { self.model.dragSpot(id, by: near) }),
+            ("dropping", 0.06, { self.model.dropSpot(by: near) }),
+            ("dropped", 1, {}),
+            ("resized", 1, { self.model.resizeSpot(id, by: CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap)) }),
+            ("kept", 1, { self.model.dropResize() })
         ]
-        func next(_ left: ArraySlice<(name: String, act: () -> Void)>) {
+        func next(_ left: ArraySlice<(name: String, wait: Double, act: () -> Void)>) {
             guard let state = left.first else { return finish(with: "shots\n") }
             state.act()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + state.wait) {
                 self.save(to: "\(folder)/\(state.name).png")
                 next(left.dropFirst())
             }

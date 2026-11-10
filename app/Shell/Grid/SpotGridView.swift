@@ -64,10 +64,10 @@ struct SpotGridView: View {
                             .gesture(resizeGesture(of: entry))
                     }
                 }
-                .modifier(SpotLiftedCard(isLifted: card.isLifted, size: card.size))
+                .modifier(SpotLiftedCard(isLifted: card.isLifted, isSolid: card.isLifted || model.landing == entry.id, size: card.size))
                 .modifier(card.motion)
                 .modifier(SpotLiftOffset(lift: card.isLifted ? model.lift : nil))
-                .zIndex(card.isLifted ? 1 : 0)
+                .zIndex(card.isLifted || model.landing == entry.id ? 1 : 0)
                 .contextMenu { spotMenu(of: entry) }
                 .opacity(entry.id == openID ? 0.001 : 1)
                 .allowsHitTesting(entry.id != openID)

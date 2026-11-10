@@ -26,6 +26,7 @@ extension SpotsModel {
         change(moving ? .edit : nil) {
             isEditing = false
             drag = nil
+            landing = nil
             resize = nil
             if lift.offset != .zero { lift.offset = .zero }
             selected = 0
@@ -100,22 +101,28 @@ extension SpotsModel {
         order.removeAll { $0 == drag.id }
         order.insert(drag.id, at: place)
         arrangement.arrange(order)
-        saveArrangement(selecting: drag.id) {
+        saveArrangement(selecting: drag.id, ending: {
             self.drag = nil
+            landing = drag.id
             if lift.offset != .zero { lift.offset = .zero }
-        }
+        }, landed: { self.endLanding(of: drag.id) })
     }
 
     /// Puts the dragged card and the cards that made room back where they were.
     public func cancelDrag() {
         guard let drag else { return }
         stopDragWait()
-        change(.edit) {
+        change(.edit, {
             self.drag = nil
+            landing = drag.id
             if lift.offset != .zero { lift.offset = .zero }
             updateVisible()
             selected = drag.start
-        }
+        }, completion: { self.endLanding(of: drag.id) })
+    }
+
+    private func endLanding(of id: String) {
+        if landing == id { landing = nil }
     }
 
     /// Resizes a card by its corner: it takes the size whose corner lies nearest the pointer, and the other cards make room.
@@ -218,16 +225,17 @@ extension SpotsModel {
     }
 
     /// Writes the arrangement, and lays out the cards from it on the edit motion, after `ending` runs in that motion.
-    private func saveArrangement(selecting id: String, ending: () -> Void = {}) {
+    /// `landed` runs when the motion ends.
+    private func saveArrangement(selecting id: String, ending: () -> Void = {}, landed: @escaping @MainActor () -> Void = {}) {
         do {
             try files.config.write(arrangement)
         } catch {
             host.notify("Openspot could not save the spots. \(Self.reason(error))")
         }
-        change(.edit) {
+        change(.edit, {
             ending()
             rebuildEntries()
             if let place = visible.firstIndex(where: { $0.id == id }) { selected = place }
-        }
+        }, completion: landed)
     }
 }
