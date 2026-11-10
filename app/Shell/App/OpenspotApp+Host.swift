@@ -21,6 +21,10 @@ extension OpenspotApp: SpotsHost {
         toast?.show(text, symbol: ToastPanel.failureSymbol, fix: { NSWorkspace.shared.open(fix) }, key: model.files.config.read().fixKey)
     }
 
+    func notify(_ text: String, fix: @escaping @MainActor () -> Void) {
+        toast?.show(text, symbol: ToastPanel.failureSymbol, fix: { MainActor.assumeIsolated { fix() } }, key: model.files.config.read().fixKey)
+    }
+
     /// Tells the person of a key that macOS refused, with Settings as the fix.
     func notifyKeyFault(_ text: String) {
         toast?.show(text, symbol: ToastPanel.failureSymbol, fix: { [weak self] in self?.openSettings() }, key: model.files.config.read().fixKey)

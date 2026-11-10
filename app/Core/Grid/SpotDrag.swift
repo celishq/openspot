@@ -13,15 +13,20 @@ public struct SpotDrag: Equatable, Sendable {
     private let width: CGFloat
 
     /// Lays out the grid once for each place in `places`, with the card moved there from `start` among cards of these sizes.
-    public init(id: String, start: Int, sizes: [SpotSize], places: ClosedRange<Int>, grid: SpotGrid = SpotGrid()) {
+    /// With `rows`, it leaves out each place, but the start, where the first `counted` cards reach past that many rows.
+    public init(id: String, start: Int, sizes: [SpotSize], places: ClosedRange<Int>, grid: SpotGrid = SpotGrid(), rows: Int? = nil, counted: Int? = nil) {
         self.id = id
         self.start = start
         place = start
         width = SpotTokens.width(columns: grid.columns)
-        layouts = Dictionary(uniqueKeysWithValues: places.map { place in
+        let counted = counted ?? sizes.count
+        layouts = Dictionary(uniqueKeysWithValues: places.compactMap { place in
             var moved = sizes
             moved.insert(moved.remove(at: start), at: place)
-            return (place, grid.place(moved))
+            let layout = grid.place(moved)
+            let reach = layout.filter { $0.index < counted }.map { $0.row + $0.size.rows }.max() ?? 0
+            guard place == start || rows.map({ reach <= $0 }) ?? true else { return nil }
+            return (place, layout)
         })
     }
 

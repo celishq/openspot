@@ -329,6 +329,43 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.panelSize, PanelSize(columns: 8, rows: 7))
     }
 
+    func testAPlusOnAHiddenCardOfAFullGridSaysWhyAndLeavesItHidden() {
+        model.setOnGrid(false, for: "c")
+        model.setOnGrid(false, for: "d")
+        model.setPanelSize(PanelSize(columns: 4, rows: 1))
+
+        model.setOnGrid(true, for: "c")
+
+        XCTAssertEqual(model.visible.filter(\.isOnGrid).map(\.id), ["a", "b"])
+        XCTAssertEqual(host.notes.last, "Openspot cannot show C on the grid, because the grid is full. Drag the corner of the panel to add rows, or hide a spot.")
+    }
+
+    func testANewSpotOnAFullGridGoesOffTheGridWithAToastThatOpensEditSpots() throws {
+        model.setPanelSize(PanelSize(columns: 4, rows: 2))
+        model.endEditing()
+        let file = plugins.appendingPathComponent("e.sh")
+        try "#!/bin/sh\n# size=wide\n".writeScript(to: file)
+
+        model.reload()
+
+        XCTAssertEqual(model.visible.map(\.id), ["a", "b", "c", "d"])
+        XCTAssertEqual(files.config.read().arrangement.isOnGrid(of: "e"), false)
+        XCTAssertEqual(host.notes.last, "E is off the grid, because the grid is full. It still shows in search.")
+        host.fixes.last?()
+        XCTAssertTrue(model.isEditing)
+    }
+
+    func testANewSpotThatFitsTakesItsPlaceOnTheGrid() throws {
+        model.setPanelSize(PanelSize(columns: 4, rows: 3))
+        model.endEditing()
+        try "#!/bin/sh\n# size=wide\n".writeScript(to: plugins.appendingPathComponent("e.sh"))
+
+        model.reload()
+
+        XCTAssertTrue(model.visible.contains { $0.id == "e" })
+        XCTAssertNil(files.config.read().arrangement.isOnGrid(of: "e"))
+    }
+
     func testNoCardLiftsOutsideEditSpots() {
         model.endEditing()
 

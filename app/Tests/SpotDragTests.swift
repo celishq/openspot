@@ -54,6 +54,13 @@ final class SpotDragTests: XCTestCase {
         XCTAssertEqual(drag.rect(at: place), right)
     }
 
+    func testACardLandsOnlyWhereTheGridKeepsWithinItsRows() {
+        let drag = SpotDrag(id: "l", start: 0, sizes: [.large, .strip, .strip], places: 0...2, grid: SpotGrid(columns: 8), rows: 2)
+
+        XCTAssertNotEqual(drag.nearest(to: CGPoint(x: 0, y: 1000)), 2)
+        XCTAssertNil(drag.placement(at: 2))
+    }
+
     func testTheLiftedCardsCentreFollowsThePointer() {
         let drag = SpotDrag(id: "d", start: 3, sizes: sizes, places: 0...3)
         let start = centre(of: drag.rect(at: 3))

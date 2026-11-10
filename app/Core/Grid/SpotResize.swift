@@ -13,8 +13,9 @@ public struct SpotResize: Sendable {
     private let layouts: [(size: SpotSize, places: [SpotPlacement])]
 
     /// Lays out the grid once for each size in `choices`, and leaves out each size that gives the grid the layout of a size
-    /// kept before it. The card's own size is always kept.
-    public init(id: String, index: Int, sizes: [SpotSize], choices: [SpotSize], grid: SpotGrid = SpotGrid()) {
+    /// kept before it, and with `rows`, each size where the first `counted` cards reach past that many rows. The card's own
+    /// size is always kept.
+    public init(id: String, index: Int, sizes: [SpotSize], choices: [SpotSize], grid: SpotGrid = SpotGrid(), rows: Int? = nil, counted: Int? = nil) {
         self.id = id
         self.index = index
         start = sizes[index]
@@ -25,7 +26,8 @@ public struct SpotResize: Sendable {
             var changed = sizes
             changed[index] = choice
             let places = choice == start ? own : grid.place(changed)
-            if choice != start, places == own || layouts.contains(where: { $0.places == places }) { continue }
+            let reach = places.filter { $0.index < (counted ?? sizes.count) }.map { $0.row + $0.size.rows }.max() ?? 0
+            if choice != start, places == own || layouts.contains(where: { $0.places == places }) || rows.map({ reach > $0 }) == true { continue }
             layouts.append((choice, places))
         }
         self.layouts = layouts

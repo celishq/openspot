@@ -8,6 +8,49 @@ extension SpotsModel {
         SpotGrid(columns: panelSize.columns)
     }
 
+    /// The most rows that the cards on the grid may take: the rows the panel shows, or more when the cards already take more.
+    var rowLimit: Int {
+        max(panelSize.rows, rows(of: cards.filter(\.isOnGrid)))
+    }
+
+    /// Whether these cards, as the grid, take no more rows than it may.
+    func fits(_ cards: [Entry]) -> Bool {
+        rows(of: cards) <= rowLimit
+    }
+
+    func rows(of cards: [Entry]) -> Int {
+        grid.place(cards.map(\.size)).map { $0.row + $0.size.rows }.max() ?? 0
+    }
+
+    /// Takes new spots off a grid that has no room for them, the last first, and tells the person, with a fix that opens
+    /// Edit Spots. A new spot is one that the scan found and the person has made no choice for.
+    func makeRoom(for new: [String]) {
+        let arriving = new.filter { id in arrangement.isOnGrid(of: id) == nil && cards.contains { $0.id == id && $0.isOnGrid } }
+        guard !arriving.isEmpty else { return }
+        let limit = max(panelSize.rows, rows(of: cards.filter { $0.isOnGrid && !arriving.contains($0.id) }))
+        var hidden: [String] = []
+        for id in arriving.reversed() {
+            guard rows(of: cards.filter { $0.isOnGrid && !hidden.contains($0.id) }) > limit else { break }
+            hidden.append(id)
+        }
+        guard !hidden.isEmpty else { return }
+        hidden.forEach { arrangement.set(isOnGrid: false, of: $0) }
+        do {
+            try files.config.write(arrangement)
+        } catch {
+            host.notify("Openspot could not save the spots. \(Self.reason(error))")
+        }
+        rebuildEntries()
+        let names = hidden.reversed().compactMap { id in cards.first { $0.id == id }?.command.name }
+        let text = names.count == 1
+            ? "\(names[0]) is off the grid, because the grid is full. It still shows in search."
+            : "\(names[0]) and \(names.count - 1) other spots are off the grid, because the grid is full. They still show in search."
+        host.notify(text) { [weak self] in
+            self?.host.present()
+            self?.beginEditing()
+        }
+    }
+
     /// Sets the size of the panel's grid, saves it, and lays out the cards at its columns.
     public func setPanelSize(_ size: PanelSize) {
         guard size != panelSize else { return }
@@ -124,11 +167,12 @@ extension SpotsModel {
         if drag?.id != id {
             guard let start = visible.firstIndex(where: { $0.id == id }) else { return }
             let onGrid = visible.filter(\.isOnGrid).count
-            let places = visible[start].isOnGrid ? 0...(onGrid - 1) : onGrid...(visible.count - 1)
+            let isOnGrid = visible[start].isOnGrid
+            let places = isOnGrid ? 0...(onGrid - 1) : onGrid...(visible.count - 1)
             stopDragWait()
             scrollAtPress = gridScroll
             change(.edit) {
-                drag = SpotDrag(id: id, start: start, sizes: visible.map(\.size), places: places, grid: grid)
+                drag = SpotDrag(id: id, start: start, sizes: visible.map(\.size), places: places, grid: grid, rows: isOnGrid ? rowLimit : nil, counted: onGrid)
                 selected = start
             }
         }
@@ -194,7 +238,8 @@ extension SpotsModel {
         guard isEditing, query.isEmpty, drag == nil else { return }
         if resize?.id != id {
             guard let index = visible.firstIndex(where: { $0.id == id }) else { return }
-            resize = SpotResize(id: id, index: index, sizes: visible.map(\.size), choices: sizes(of: visible[index]), grid: grid)
+            let onGrid = visible.filter(\.isOnGrid).count
+            resize = SpotResize(id: id, index: index, sizes: visible.map(\.size), choices: sizes(of: visible[index]), grid: grid, rows: visible[index].isOnGrid ? rowLimit : nil, counted: onGrid)
             scrollAtPress = gridScroll
             selected = index
         }
@@ -304,7 +349,12 @@ extension SpotsModel {
         saveArrangement(selecting: id)
     }
 
+    /// Shows a spot on the grid or hides it. A grid with no room for it says why and leaves it hidden.
     public func setOnGrid(_ isOn: Bool, for id: String) {
+        if isOn, let entry = cards.first(where: { $0.id == id }), !fits(cards.filter { $0.isOnGrid || $0.id == id }) {
+            host.notify("Openspot cannot show \(entry.command.name) on the grid, because the grid is full. Drag the corner of the panel to add rows, or hide a spot.")
+            return
+        }
         arrangement.arrange((cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id))
         arrangement.set(isOnGrid: isOn, of: id)
         saveArrangement(selecting: id)

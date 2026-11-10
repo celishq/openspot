@@ -292,8 +292,11 @@ public final class SpotsModel {
         arrangement = config.arrangement
         let size = config.panelSize ?? .standard
         if size != panelSize { panelSize = size }
+        let known = Set(scanned.map(\.id))
+        let wasLoaded = !scanned.isEmpty
         scanned = scan.commands
         rebuildEntries()
+        if wasLoaded { makeRoom(for: scanned.map(\.id).filter { !known.contains($0) }) }
         if problems != self.problems, !problems.isEmpty {
             host.notify(problems.joined(separator: " "))
         }
