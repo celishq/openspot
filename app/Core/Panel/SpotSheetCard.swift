@@ -5,8 +5,6 @@ import Foundation
 public struct SpotSheetCard {
     public let id: String
     public let placement: SpotPlacement
-    /// The widget that opens the sheet, whose look the sheet takes at the size of its card. Nil for the sheet's own card.
-    public let widget: SpotsModel.Entry?
     /// The card whose own look the sheet takes at the size of its card: a widget that opens it, or the sheet's own card when
     /// its script draws it. Nil for a card of the stock glyph and words.
     public let look: SpotsModel.Entry?
@@ -22,8 +20,7 @@ public struct SpotSheetCard {
         let entry = visible[index]
         let face = entry.state.face
         let isDrawn = entry.item == nil && (face.layout(for: placement.size) != nil || face.hasView && entry.command.view != nil)
-        let widget = entry.id == sheetID ? nil : entry
-        return SpotSheetCard(id: entry.id, placement: placement, widget: widget, look: widget != nil || isDrawn ? entry : nil)
+        return SpotSheetCard(id: entry.id, placement: placement, look: entry.id != sheetID || isDrawn ? entry : nil)
     }
 
     /// Where the card lies in the panel, with the grid scrolled this far.
