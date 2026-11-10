@@ -93,7 +93,8 @@ card() {
       title="$title · tomorrow"
     fi
   fi
-  printf 'number=next\nvalue=%s\ntitle=%s\n\nnumber=at\nvalue=%s\ntitle=%s\n\n' "$value" "$title" "$time" "$title"
+  color=$(field color "$next")
+  printf 'number=next\nvalue=%s\ntitle=%s\ncolor=%s\n\nnumber=at\nvalue=%s\ntitle=%s\n\n' "$value" "$title" "$color" "$time" "$title"
   printf '%s\n' "$reminders" | awk 'BEGIN { RS = ""; FS = "\n" }
     /^row=reminder:/ && /\ndone=false/ && shown < 2 {
       shown++

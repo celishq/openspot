@@ -55,6 +55,7 @@ final class AgendaExampleTests: SamplePluginsCase {
             title=Standup
             detail=Soon · Work
             icon=video
+            color=#1BADF8
             start=\(iso(750))
             end=\(iso(1650))
             meeting=https://meet.google.com/abc-defg-hij
@@ -127,6 +128,7 @@ final class AgendaExampleTests: SamplePluginsCase {
             let next = try XCTUnwrap(output.parts.first { $0.id == "next" })
             XCTAssertEqual(next.control, .metric("in 12 min"))
             XCTAssertEqual(next.title, "Standup")
+            XCTAssertEqual(next.color, "#1BADF8")
             let ticks = output.parts.filter { $0.look == .tick }
             XCTAssertEqual(ticks.map(\.id), ["R1", "R3"])
             XCTAssertEqual(ticks.map(\.control), [.toggle(false), .toggle(false)])

@@ -48,6 +48,12 @@ final class SheetPartsTests: XCTestCase {
         try XCTUnwrap(SheetParts(output: PluginOutput(text: text)))
     }
 
+    func testATextOrANumberTakesAColourForItsBarAndOtherPartsDoNot() {
+        let output = PluginOutput(text: "number=next\nvalue=09:30\ncolor=#1BADF8\n\ntext=work\ncolor=#ff9500\n\nnumber=odd\nvalue=1\ncolor=blue\n\ngauge=disk\nvalue=0.5\ncolor=#1BADF8\n")
+
+        XCTAssertEqual(output.parts.map(\.color), ["#1BADF8", "#ff9500", nil, nil])
+    }
+
     func testATextsToneColoursItsWordsAndAGaugeKeepsItsOwn() {
         let output = PluginOutput(text: "text=due\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\ngauge=disk\nvalue=0.9\ntone=bad\n")
 

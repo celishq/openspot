@@ -63,7 +63,8 @@ Each kind also takes `title`, `detail`, `tone` and `icon`. The value of `icon` s
 of a picture file, such as `cups.png`, draws the picture; any other path draws the file's Finder icon; a name of lowercase
 letters, digits and dots, such as `wifi`, is an SF Symbol; and any other text, such as `😀`, is drawn as it is. `tone` is `good`,
 `warn` or `bad` for a colour that means something, and `on` for a plain dot that says that a thing is active. On a text,
-`good`, `warn` and `bad` colour its detail, or its title when it has no detail, such as a `Late` in red. `look` is
+`good`, `warn` and `bad` colour its detail, or its title when it has no detail, such as a `Late` in red. On a text or a
+number, `color=#RRGGBB` draws a thin bar of that colour at its leading edge, such as the colour of a calendar. `look` is
 the box of a text, a number or a button: `tile`, `bare`, and on a button also `chip` or `strong`. On a switch, `look=tick`
 draws a round tick before its words, for a thing to do. A key that a kind does not take is skipped.
 

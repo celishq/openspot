@@ -216,6 +216,7 @@ struct SheetPartsView: View {
             }
             control(part, frame)
         }
+        .modifier(SpotColorBar(color: part.color))
     }
 
     /// Whether a part shows its running work on its round button.
@@ -394,7 +395,7 @@ struct SheetPartsView: View {
     private func swatch(_ part: SpotPart, color: String, isChosen: Bool, size: CGFloat) -> some View {
         Button { onSet(part, color) } label: {
             Circle()
-                .fill(Self.color(color))
+                .fill(SpotColorBar.color(color))
                 .frame(width: size, height: size)
                 .overlay {
                     if isChosen { Circle().strokeBorder(SpotTheme.ink, lineWidth: 2) }
@@ -403,15 +404,6 @@ struct SheetPartsView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(color)
-    }
-
-    private static func color(_ text: String) -> Color {
-        let value = Int(text.dropFirst(), radix: 16) ?? 0
-        return Color(
-            red: Double((value >> 16) & 0xFF) / 255,
-            green: Double((value >> 8) & 0xFF) / 255,
-            blue: Double(value & 0xFF) / 255
-        )
     }
 
     /// Rows to choose from, one under the other, which scroll when they do not fit.
@@ -450,6 +442,7 @@ struct SheetPartsView: View {
                     .lineLimit(1)
             }
         }
+        .modifier(SpotColorBar(color: part.color))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: part.look == .bare ? .trailing : .leading)
         .padding(.horizontal, part.look == .bare ? 0 : SpotTokens.padding)
         .background(SpotTheme.ink.opacity(part.look == .bare ? 0 : SpotTheme.fill), in: shape)

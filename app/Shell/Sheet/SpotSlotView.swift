@@ -62,6 +62,7 @@ struct SpotSlotView: View {
                     Text(label).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
                 }
             }
+            .modifier(SpotColorBar(color: part.color))
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         case .image(let path):
             picture(icon: .image(path))
@@ -106,6 +107,7 @@ struct SpotSlotView: View {
                 SpotToneWords(text: detail, tone: part.textTone)
             }
         }
+        .modifier(SpotColorBar(color: part.color))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 

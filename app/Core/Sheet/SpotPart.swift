@@ -58,6 +58,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let glyph: String?
     /// Its colour that means something, or `on` for a dot that says that a thing is active.
     public let tone: MetricValue.Tone?
+    /// The colour, as `#RRGGBB`, of the bar that a text or a number draws at its leading edge, such as a calendar's.
+    public let color: String?
     public private(set) var control: Control
     public let press: Press
     public let key: ActionKey?
@@ -88,6 +90,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         file = icon?.file
         glyph = icon?.glyph
         tone = block.value("tone").flatMap(MetricValue.Tone.init)
+        color = ["text", "number"].contains(kind) ? block.value("color").flatMap(Self.hex) : nil
         if kind == "button" {
             self.symbol = nil
             press = symbol.map(Press.symbol) ?? .line
@@ -123,6 +126,10 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
             control = .none
         }
         mark = control == .none && kind == "text" ? Self.mark(block) : nil
+    }
+
+    private static func hex(_ text: String) -> String? {
+        text.count == 7 && text.first == "#" && text.dropFirst().allSatisfy(\.isHexDigit) ? text : nil
     }
 
     private static func mark(_ block: TextBlock) -> MetricValue? {
