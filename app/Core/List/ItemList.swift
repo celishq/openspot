@@ -197,8 +197,7 @@ public struct ItemList: Equatable, Sendable {
         func changed(_ item: SpotItem) -> SpotItem {
             guard item.run == run else { return item }
             return SpotItem(
-                title: item.title, subtitle: item.subtitle, run: item.run, symbol: item.symbol, iconFile: item.iconFile, image: item.image,
-                glyph: item.glyph, parent: item.parent, hides: item.hides, keywords: item.keywords, shortcut: item.shortcut, isOn: item.isOn, tone: item.tone,
+                title: item.title, subtitle: item.subtitle, run: item.run, picture: item.picture, parent: item.parent, hides: item.hides, keywords: item.keywords, shortcut: item.shortcut, isOn: item.isOn, tone: item.tone,
                 template: item.template, fields: item.fields.filter { $0.key != slot } + [.init(key: slot, value: value)],
                 file: item.file
             )

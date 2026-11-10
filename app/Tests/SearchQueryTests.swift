@@ -212,7 +212,7 @@ final class SearchQueryTests: XCTestCase {
     }
 
     func testTheGlyphFindsItsItemFirst() {
-        let items = [item("arrow"), SpotItem(title: "rightwards arrow", run: "→", glyph: "→"), SpotItem(title: "red heart", run: "❤️", glyph: "❤️")]
+        let items = [item("arrow"), SpotItem(title: "rightwards arrow", run: "→", picture: .glyph("→")), SpotItem(title: "red heart", run: "❤️", picture: .glyph("❤️"))]
 
         XCTAssertEqual(SearchQuery(text: "→").matching(items).map(\.title), ["rightwards arrow"])
         XCTAssertEqual(SearchQuery(text: "❤").matching(items).map(\.title), ["red heart"])

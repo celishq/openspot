@@ -8,7 +8,7 @@ import SwiftUI
 @MainActor
 enum SpotSheetWarmth {
     private static let life: TimeInterval = 0.5
-    private static let rows = ["star", "folder", "doc", "gear", "clock"].map { SpotItem(title: $0.capitalized, subtitle: "Row", run: $0, symbol: $0) }
+    private static let rows = ["star", "folder", "doc", "gear", "clock"].map { SpotItem(title: $0.capitalized, subtitle: "Row", run: $0, picture: .symbol($0)) }
 
     /// Draws each sheet once, and lets go of the window after a short life.
     static func draw() {

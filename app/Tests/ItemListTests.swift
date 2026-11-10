@@ -48,10 +48,10 @@ final class ItemListTests: XCTestCase {
 
     func testTypingAndDeletingShowsTheRowsOfAFreshSearch() {
         let rows = [
-            SpotItem(title: "Smiling Face", run: "1", glyph: "😊", keywords: ["happy", "smile"]),
+            SpotItem(title: "Smiling Face", run: "1", picture: .glyph("😊"), keywords: ["happy", "smile"]),
             SpotItem(title: "Simple Mail", subtitle: "Send messages", run: "2"),
             SpotItem(title: "Small Icons", subtitle: "System Settings › Dock", run: "3", keywords: ["size"]),
-            SpotItem(title: "Cat Face", run: "4", glyph: "🐱", keywords: ["pet", "smile"]),
+            SpotItem(title: "Cat Face", run: "4", picture: .glyph("🐱"), keywords: ["pet", "smile"]),
             SpotItem(title: "Screen Mirroring", run: "5")
         ]
         var list = ItemList(items: rows)
