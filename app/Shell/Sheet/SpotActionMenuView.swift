@@ -52,22 +52,10 @@ struct SpotActionMenuView: View {
 
     /// The field that searches the rows. It sits at the bottom, which stays in place while the rows above it change.
     private var field: some View {
-        TextField(
-            "Search actions",
-            text: Binding(get: { menu.query }, set: onSearch),
-            prompt: Text("Search actions").foregroundStyle(SpotTheme.ink.opacity(SpotTheme.secondaryLight))
-        )
-        .labelsHidden()
-        .textFieldStyle(.plain)
-        .font(SpotType.body)
-        .foregroundStyle(SpotTheme.ink)
-        .focused($isSearching)
-        .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
-        .frame(height: SpotTokens.menuRowHeight)
-        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
-        .onAppear {
-            DispatchQueue.main.async { isSearching = true }
-        }
+        SpotSearchField(prompt: "Search actions", text: menu.query, onSearch: onSearch, isFocused: $isSearching)
+            .onAppear {
+                DispatchQueue.main.async { isSearching = true }
+            }
     }
 
     private func isConfirming(_ row: ActionMenu.Row) -> Bool {

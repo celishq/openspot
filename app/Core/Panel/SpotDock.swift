@@ -23,8 +23,10 @@ public struct SpotDock: Equatable, Sendable {
         self.items = items.sorted { $0.command.name.localizedCaseInsensitiveCompare($1.command.name) == .orderedAscending }
     }
 
-    /// The spots whose name holds the search, by name.
+    /// The spots whose name, or the words under it, hold the search, by name.
     public var shown: [Item] {
-        query.isEmpty ? items : items.filter { $0.command.name.localizedStandardContains(query) }
+        query.isEmpty ? items : items.filter { item in
+            [item.command.name, item.command.subtitle ?? ""].contains { $0.localizedStandardContains(query) }
+        }
     }
 }

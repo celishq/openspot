@@ -20,4 +20,11 @@ final class SpotDockTests: XCTestCase {
 
         XCTAssertEqual(dock.shown.map(\.command.name), ["Timer"])
     }
+
+    func testTheSearchFindsTheWordsUnderASpotsName() {
+        var dock = SpotDock(items: [SpotDock.Item(command: Spot(id: "system", name: "System", url: URL(fileURLWithPath: "/system.toml"), subtitle: "Battery, CPU"))])
+        dock.query = "cpu"
+
+        XCTAssertEqual(dock.shown.map(\.id), ["system"])
+    }
 }

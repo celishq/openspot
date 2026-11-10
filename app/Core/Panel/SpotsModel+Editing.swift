@@ -59,7 +59,6 @@ extension SpotsModel {
             if lift.offset != .zero { lift.offset = .zero }
             selected = 0
             isSearchingDock = false
-            dock.query = ""
             updateVisible()
         }
     }

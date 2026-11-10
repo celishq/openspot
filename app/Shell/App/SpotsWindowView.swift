@@ -12,6 +12,7 @@ struct SpotsWindowView: View {
                 .offset(x: place.panel.x, y: place.panel.y)
             if let dock = place.dock {
                 SpotDockView(model: model, size: dock.size)
+                    .environment(\.spotIsShown, model.isShown)
                     .offset(x: dock.minX, y: dock.minY)
                     .transition(.opacity)
             }
