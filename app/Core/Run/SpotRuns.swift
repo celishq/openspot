@@ -73,8 +73,8 @@ public final class SpotRuns {
             sheet.close()
             sheet.stopReads()
         }
-        scripts.forEach { sheet(for: $0).scanned() }
         updatePlaced()
+        scripts.forEach { sheet(for: $0).scanned() }
         updateClock()
     }
 
