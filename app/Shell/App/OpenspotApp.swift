@@ -121,8 +121,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private func watchShake() {
         let wanted = wantedKeys.contains { $0.trigger == .shake } || model.recording != nil
         if wanted, shakeWatch == nil {
-            let watch = SpotShakeWatch { [weak self] in self?.takeShake() }
-            if watch.listen() { shakeWatch = watch }
+            shakeWatch = SpotShakeWatch { [weak self] in self?.takeShake() }
         } else if !wanted {
             shakeWatch?.stop()
             shakeWatch = nil
