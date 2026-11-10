@@ -542,21 +542,23 @@ private struct TileLook: ViewModifier {
     }
 }
 
-/// The picture at a file path, which shows an empty tile until it is read, and stays empty for a file it cannot read.
+/// The picture at a file path, which fills its area and is cut at its edges. It shows an empty tile until it is read, and
+/// stays empty for a file it cannot read.
 private struct SheetPicture: View {
     let key: SpotPictureStore.Key
     @State private var loaded: (key: SpotPictureStore.Key, image: CGImage)?
 
     var body: some View {
-        Group {
-            if let image = SpotPictureStore.shared.cached(key) ?? (loaded?.key == key ? loaded?.image : nil) {
-                Image(decorative: image, scale: SpotPictureStore.scale).resizable().scaledToFill()
-            } else {
-                SpotTheme.ink.opacity(SpotTheme.fill)
+        Color.clear
+            .overlay {
+                if let image = SpotPictureStore.shared.cached(key) ?? (loaded?.key == key ? loaded?.image : nil) {
+                    Image(decorative: image, scale: SpotPictureStore.scale).resizable().scaledToFill()
+                } else {
+                    SpotTheme.ink.opacity(SpotTheme.fill)
+                }
             }
-        }
-        .task(id: key) {
-            if let image = await SpotPictureStore.shared.image(key) { loaded = (key, image) }
-        }
+            .task(id: key) {
+                if let image = await SpotPictureStore.shared.image(key) { loaded = (key, image) }
+            }
     }
 }
