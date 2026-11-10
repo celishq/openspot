@@ -272,8 +272,8 @@ final class SamplePluginsTests: SamplePluginsCase {
         }
     }
 
-    func testAgentsAndPullRequestsShowInTheMenuBar() throws {
-        XCTAssertEqual(try exampleScan.metrics.filter(\.isTray).map(\.id), ["agents", "pulls"])
+    func testAgentsPullRequestsAndTheClockShowInTheMenuBar() throws {
+        XCTAssertEqual(try exampleScan.scripts.filter(\.isTray).map(\.id), ["agents", "clock", "pulls"])
     }
 
     func testNoShippedSpotReadsOnATimerInTheMenuBar() throws {
