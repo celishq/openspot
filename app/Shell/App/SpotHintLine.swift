@@ -43,7 +43,10 @@ struct SpotHintLine: View {
 
     /// What the hint says while a sheet shows: a form has its own keys.
     private var sheetWords: String {
-        if let form = model.form { return form.draft.choices == nil ? "⌘⏎ Save   Esc Cancel" : "⏎ Save   Esc Cancel" }
+        if let form = model.form {
+            if form.draft.isMultiple { return "⏎ Select   ⌘⇧A Select all   Esc Done" }
+            return form.draft.choices == nil ? "⌘⏎ Save   Esc Cancel" : "⏎ Save   Esc Cancel"
+        }
         return sheetHint
     }
 }

@@ -15,9 +15,37 @@ public struct FormDraft: Equatable, Sendable {
         if let first = form.fields.first, values[first.name]?.isEmpty == true { values[first.name] = prefill }
         self.values = values
         if let choice = form.soleChoice {
-            choices = ItemList(items: choice.options.map { SpotItem(title: $0.title, run: $0.id) })
+            choices = ItemList(items: choice.options.map { option in
+                let icon = Icon(text: option.icon)
+                return SpotItem(
+                    title: option.title, run: option.id, symbol: icon?.symbol, file: icon?.file, image: icon?.image, glyph: icon?.glyph,
+                    isOn: choice.picks?.contains(option.id) ?? false
+                )
+            })
             choices?.select(run: values[choice.name] ?? "")
         }
+    }
+
+    /// Starts from the form that a script answered with, on the row that the last draft had selected while the form has it.
+    public init(form: ItemForm, after draft: FormDraft) {
+        self.init(form: form)
+        if let run = draft.choices?.selectedItem?.run, choices?.shown.contains(where: { $0.run == run }) == true { choose(run) }
+    }
+
+    /// Whether its one choice picks several options, each of which a press turns on or off.
+    public var isMultiple: Bool {
+        form.soleChoice?.picks != nil
+    }
+
+    /// The draft that Select all sends: each option that is not picked, one per line. Nil when each one is picked, or when
+    /// the choice picks one.
+    public func selectingAll() -> FormDraft? {
+        guard let choice = form.soleChoice, let picks = choice.picks else { return nil }
+        let rest = choice.options.map(\.id).filter { !picks.contains($0) }
+        guard !rest.isEmpty else { return nil }
+        var draft = self
+        draft.values[choice.name] = rest.joined(separator: "\n")
+        return draft
     }
 
     /// Selects the row of the choice this many rows away, and takes its option as the value.

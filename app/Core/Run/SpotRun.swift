@@ -555,7 +555,8 @@ public final class SpotRun {
     }
 
     /// Gives a filled form to the script, and reads again with the row it saved selected. A script that answers with a form
-    /// asks again. Returns nil when a person pressed it again.
+    /// asks again, and after a pick in a choice of several, which the script keeps, the spot reads again too. Returns nil
+    /// when a person pressed it again.
     public func submit(_ action: CommandAction, item: SpotItem?, draft: FormDraft) async throws -> FormAnswer? {
         let call = SpotAction.action(action, item: item)
         let key = Self.key(call: call)
@@ -565,7 +566,10 @@ public final class SpotRun {
         }
         guard let text = try await link.submit(call, key: key, values: draft.text) else { return nil }
         guard !command.stays else { return .done }
-        if let form = ItemForm(output: PluginOutput(text: text)), !form.fields.isEmpty { return .form(form) }
+        if let form = ItemForm(output: PluginOutput(text: text)), !form.fields.isEmpty {
+            if draft.isMultiple { read(need: .change) }
+            return .form(form)
+        }
         let run = text.trimmingCharacters(in: .whitespacesAndNewlines)
         read(selecting: run.isEmpty ? nil : run, need: .change)
         return .done

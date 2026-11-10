@@ -5,10 +5,13 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public struct Option: Equatable, Sendable {
         public let id: String
         public let title: String
+        /// The picture of its row in a form whose one choice shows as rows.
+        public let icon: String?
 
-        public init(id: String, title: String) {
+        public init(id: String, title: String, icon: String? = nil) {
             self.id = id
             self.title = title
+            self.icon = icon
         }
     }
 
@@ -135,10 +138,10 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         )
     }
 
-    /// Reads an `option` line, `<id>:<title>`, or an id that is its own title.
+    /// Reads an `option` line, `<id>:<title>[:<icon>]`, or an id that is its own title.
     static func option(_ text: String) -> Option {
-        let pair = text.split(separator: ":", maxSplits: 1).map(String.init)
-        return Option(id: pair[0], title: pair.count > 1 ? pair[1] : pair[0])
+        let parts = text.split(separator: ":", maxSplits: 2).map(String.init)
+        return Option(id: parts[0], title: parts.count > 1 ? parts[1] : parts[0], icon: parts.count > 2 ? parts[2] : nil)
     }
 
     /// The value of its control, as the script reads it. A line with no control has none.
