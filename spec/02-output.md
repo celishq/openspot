@@ -74,7 +74,8 @@ columns, so there is no width to set. A component fills the rectangle of cells t
 a rectangle (U4). A smaller component that lies in a larger one sits on top of it, at the edge it touches. `card=` lines
 group areas onto one raised card.
 
-`grid.<size>=` lines draw the spot's card at a size: `small`, `wide`, `square`, `strip` or `large` (U5). A card's drawing can have more lines than the card has rows: the app divides its room
+`grid.<size>=` lines draw the spot's card at a size: `small`, `wide`, `square`, `strip` or `large` (U5). A component that
+a card drawing places and the sheet's drawing does not is drawn only on the card. A card's drawing can have more lines than the card has rows: the app divides its room
 evenly. A place with no drawing takes the drawing of the nearest smaller size, and a spot with none keeps its default card.
 
 With no `grid=` line, the sheet takes its default drawing: one column of each component that is not a button, in the order

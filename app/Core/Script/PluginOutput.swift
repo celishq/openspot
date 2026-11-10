@@ -140,12 +140,15 @@ public struct PluginOutput: Equatable, Sendable {
         }
     }
 
-    /// Finds what is wrong with the names of the parts and the sheet they make.
+    /// Finds what is wrong with the names of the parts and the sheet they make. A part that only a card drawing places is
+    /// drawn only on the card, so the sheet's drawing need not place it.
     private mutating func check(layout: SheetLayout?) {
         for id in [Self.reserved] + Self.callKeys + Self.defaults where parts.contains(where: { $0.id == id }) {
             checkedFaults.append("a part cannot be called \(id)")
         }
-        if !parts.isEmpty { checkedFaults += SheetFaults.of(layout: layout, summary: summary, parts: parts) }
+        let carded = Set(face.drawings.values.flatMap { $0.joined() })
+        let sheet = parts.filter { !carded.contains($0.id) || layout?.areas[$0.id] != nil }
+        if !sheet.isEmpty { checkedFaults += SheetFaults.of(layout: layout, summary: summary, parts: sheet) }
     }
 
     /// The one switch or slider that is all the output, which the card draws and changes (U12).
