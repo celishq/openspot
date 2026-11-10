@@ -3,12 +3,13 @@ import OpenspotCore
 import SwiftUI
 
 /// The square on a card's corner that takes the drag of its resize handle: the card snaps to the nearest size, and the
-/// other cards make room. The pointer over it, and through its drag, is a double arrow at the angle `handleAngle` gives.
-/// A release off the handle gives back the arrow.
+/// other cards make room. The pointer over it, and through its drag, is the system's resize arrow at the angle
+/// `handleAngle` gives, with a head on each side the card can still go. A release off the handle gives back the arrow.
 struct SpotHandleArea: View {
     let model: SpotsModel
     let id: String
     let size: SpotSize
+    let sizes: [SpotSize]
     @State private var angle = 45
     /// Where the pointer lies in the square, which is where a press grips the handle.
     @State private var grip = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)
@@ -22,7 +23,7 @@ struct SpotHandleArea: View {
                 grip = point
                 if let next = SpotTokens.handleAngle(of: size, at: point), next != angle { angle = next }
             }
-            .pointerStyle(.image(Self.pointer(at: angle).image, hotSpot: .center))
+            .pointerStyle(.image(Self.pointer(at: angle, reach: size.reach(among: sizes)).image, hotSpot: .center))
             .gesture(resize)
     }
 
@@ -31,7 +32,7 @@ struct SpotHandleArea: View {
             .onChanged {
                 model.resizeSpot(id, by: $0.translation, grip: grip)
                 guard let point = model.resizePointer, let resize = model.resize, let angle = SpotTokens.handleAngle(of: resize.size, at: point) else { return }
-                Self.pointer(at: angle).cursor.set()
+                Self.pointer(at: angle, reach: resize.size.reach(among: sizes)).cursor.set()
             }
             .onEnded { _ in
                 let square = CGRect(x: 0, y: 0, width: SpotTokens.resizeHandle, height: SpotTokens.resizeHandle)
@@ -41,30 +42,25 @@ struct SpotHandleArea: View {
             }
     }
 
-    /// A black double arrow with a white rim, as the system's resize arrows are, at this angle. It is drawn once for each
-    /// angle.
-    private static func pointer(at angle: Int) -> (image: Image, cursor: NSCursor) {
-        if let pointer = pointers[angle] { return pointer }
-        let side: CGFloat = 24
-        let radians = CGFloat(angle) * .pi / 180
-        let outline: [(CGFloat, CGFloat)] = [(-10, 0), (-4.5, -4.5), (-4.5, -1.2), (4.5, -1.2), (4.5, -4.5), (10, 0), (4.5, 4.5), (4.5, 1.2), (-4.5, 1.2), (-4.5, 4.5)]
+    /// The system's left and right resize arrow turned to this angle, with grey heads on the sides that the card cannot go.
+    /// It is drawn once for each angle and reach.
+    private static func pointer(at angle: Int, reach: (grows: Bool, shrinks: Bool)) -> (image: Image, cursor: NSCursor) {
+        let directions: NSCursor.FrameResizeDirection.Set = reach.grows == reach.shrinks ? .all : reach.grows ? .outward : .inward
+        let key = angle * 4 + (reach.grows == reach.shrinks ? 0 : reach.grows ? 1 : 2)
+        if let pointer = pointers[key] { return pointer }
+        let arrow = NSCursor.frameResize(position: .right, directions: directions).image
+        let side = (hypot(arrow.size.width, arrow.size.height)).rounded(.up)
         let image = NSImage(size: NSSize(width: side, height: side), flipped: true) { _ in
-            let path = NSBezierPath()
-            for (index, (x, y)) in outline.enumerated() {
-                let point = NSPoint(x: side / 2 + x * cos(radians) - y * sin(radians), y: side / 2 + x * sin(radians) + y * cos(radians))
-                if index == 0 { path.move(to: point) } else { path.line(to: point) }
-            }
-            path.close()
-            path.lineJoinStyle = .round
-            path.lineWidth = 2.5
-            NSColor.white.setStroke()
-            path.stroke()
-            NSColor.black.setFill()
-            path.fill()
+            let turn = NSAffineTransform()
+            turn.translateX(by: side / 2, yBy: side / 2)
+            turn.rotate(byDegrees: CGFloat(angle))
+            turn.concat()
+            let rect = NSRect(x: -arrow.size.width / 2, y: -arrow.size.height / 2, width: arrow.size.width, height: arrow.size.height)
+            arrow.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
             return true
         }
         let pointer = (image: Image(nsImage: image), cursor: NSCursor(image: image, hotSpot: NSPoint(x: side / 2, y: side / 2)))
-        pointers[angle] = pointer
+        pointers[key] = pointer
         return pointer
     }
 }

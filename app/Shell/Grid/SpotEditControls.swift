@@ -11,7 +11,8 @@ struct SpotEditControls: ViewModifier {
     let turnsOff: Bool
     let showsEye: Bool
     let isHidden: Bool
-    let isResizable: Bool
+    /// The sizes that the handle offers. With fewer than two the card shows no handle.
+    let sizes: [SpotSize]
     let isResizing: Bool
     /// Whether another card is dragged over the grid, which hides every handle.
     let isDragging: Bool
@@ -36,11 +37,11 @@ struct SpotEditControls: ViewModifier {
                 }
             }
             .overlay(alignment: .bottomTrailing) {
-                if isResizable {
+                if sizes.count > 1 {
                     SpotResizeHandle(size: size)
                         .opacity(showsHandle ? 1 : 0.001)
                         .animation(SpotMotion.handleFade, value: showsHandle)
-                        .background(SpotHandleArea(model: model, id: id, size: size))
+                        .background(SpotHandleArea(model: model, id: id, size: size, sizes: sizes))
                 }
             }
             .onHover { hovering in
