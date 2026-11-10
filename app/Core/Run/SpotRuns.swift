@@ -21,7 +21,7 @@ public final class SpotRuns {
     public let readLimit: TimeInterval
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored private let stopPause: TimeInterval
-    @ObservationIgnored private let tickPause: Duration
+    @ObservationIgnored let tickPause: Duration
     @ObservationIgnored private let recent: (String) -> [String]
     @ObservationIgnored private let prepare: ([SpotItem], [String]) async -> Void
     private var order: [String] = []
@@ -31,8 +31,9 @@ public final class SpotRuns {
     private var placed: Set<String> {
         placedByFiles.union(sheets.values.flatMap { $0.state.face.parts.filter { $0.kind == "spot" }.map(\.id) })
     }
-    @ObservationIgnored private var asked: [String: Date] = [:]
-    @ObservationIgnored private var clock: Task<Void, Never>?
+    /// When the clock last read each script with a number in its `read`.
+    @ObservationIgnored var asked: [String: Date] = [:]
+    @ObservationIgnored var clock: Task<Void, Never>?
     @ObservationIgnored private var processes: [ScriptProcess] = []
 
     public init(
@@ -142,26 +143,6 @@ public final class SpotRuns {
             sheet.read(need: moment == .panel ? .moment : .clock, reason: reason)
         }
         sheets.values.forEach { $0.settleScript() }
-    }
-
-    /// Reads each wanted script whose number of seconds has passed. Returns the seconds until the next read is due, or nil
-    /// when no wanted script has a number.
-    @discardableResult
-    public func tick() -> TimeInterval? {
-        let time = now()
-        var next: TimeInterval?
-        for sheet in sheets.values where sheet.isWanted {
-            guard let seconds = sheet.command.read?.seconds else { continue }
-            var left = seconds
-            if let last = asked[sheet.command.id], time.timeIntervalSince(last) < seconds {
-                left = seconds - time.timeIntervalSince(last)
-            } else {
-                asked[sheet.command.id] = time
-                sheet.read(need: .clock, reason: .timer)
-            }
-            next = min(next ?? left, left)
-        }
-        return next
     }
 
     /// Stops each call, which changes nothing, and waits for the processes to end, for at most 2 seconds.
@@ -320,24 +301,5 @@ public final class SpotRuns {
     private func keep(_ process: ScriptProcess) {
         processes.removeAll { !$0.needsFinish }
         processes.append(process)
-    }
-
-    /// Keeps the timers going while the panel is open, or while something wants a script with a number in its `read`. With
-    /// the panel open it looks after each pause, since a card can place a script at any time. With the panel closed it sleeps
-    /// until the next read is due, and no less than its pause. A change of what is wanted starts it again.
-    func updateClock() {
-        clock?.cancel()
-        clock = nil
-        var next = tick()
-        guard isPanelOpen || next != nil else { return }
-        clock = Task { [weak self, tickPause] in
-            while !Task.isCancelled {
-                let isPanelOpen = self?.isPanelOpen ?? false
-                try? await Task.sleep(for: isPanelOpen ? tickPause : max(tickPause, .seconds(next ?? 0)))
-                guard !Task.isCancelled, let self else { return }
-                next = tick()
-                guard self.isPanelOpen || next != nil else { return }
-            }
-        }
     }
 }
