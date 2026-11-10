@@ -169,8 +169,10 @@ public final class SpotRun {
     public private(set) var reading: MetricReading
     /// The words of its last failed call, until a call ends well.
     public private(set) var failure: String?
-    /// Each running call, the oldest first, with the last frame of each.
-    public private(set) var calls: [ScriptCall] = []
+    /// Each running call, the oldest first, with the last frame of each. A read starts and ends a call, so no view hears of it.
+    @ObservationIgnored public private(set) var calls: [ScriptCall] = []
+    /// The calls that do work, the oldest first, which `work` shows. Only a call of work changes it.
+    private var workCalls: [ScriptCall] = []
     @ObservationIgnored public var onReport: (Report) -> Void = { _ in }
     /// Makes the change that brings the sheet its first parts.
     @ObservationIgnored public var partsArrival: (() -> Void) -> Void = { $0() }
@@ -478,7 +480,7 @@ public final class SpotRun {
     public var work: [ScriptCall] {
         _ = workPauses
         let time = runs.now()
-        return calls.filter { $0.doesWork && time.timeIntervalSince($0.started) >= Self.workPause }
+        return workCalls.filter { time.timeIntervalSince($0.started) >= Self.workPause }
     }
 
     /// The call of the card, once it shows, which a press of the card stops.
@@ -649,7 +651,7 @@ public final class SpotRun {
     /// gets a `stop` block instead.
     public func stop(_ call: ScriptCall) {
         call.stop()
-        calls.removeAll { $0 === call }
+        forget(call)
         link.stop(call)
     }
 
@@ -695,6 +697,7 @@ public final class SpotRun {
     func track(_ call: ScriptCall) {
         calls.append(call)
         guard call.doesWork else { return }
+        workCalls.append(call)
         Task { [weak self] in
             try? await Task.sleep(for: .seconds(Self.workPause))
             self?.workPauses += 1
@@ -703,9 +706,15 @@ public final class SpotRun {
 
     /// Lets go of a call that ended, and starts a drop or a key press that waited for it.
     func callEnded(_ call: ScriptCall) {
-        calls.removeAll { $0 === call }
+        forget(call)
         startWaitingFiles()
         startWaitingKey()
+    }
+
+    /// Drops a call from the running calls. A call that is already gone tells no reader of the work.
+    private func forget(_ call: ScriptCall) {
+        calls.removeAll { $0 === call }
+        if let index = workCalls.firstIndex(where: { $0 === call }) { workCalls.remove(at: index) }
     }
 
     /// Takes the end of a call. A read or a search that ended with no answer changes nothing when it was stopped, and tells
