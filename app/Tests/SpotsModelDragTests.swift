@@ -21,7 +21,9 @@ final class SpotsModelDragTests: XCTestCase {
         model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2, prepare: { await host.prepare($0, glyphs: $1) }))
         host.model = model
         for (name, size) in [("a", "wide"), ("b", "wide"), ("c", "wide"), ("d", "small")] {
-            try "#!/bin/sh\n# size=\(size)\n".writeScript(to: plugins.appendingPathComponent("\(name).sh"))
+            let file = plugins.appendingPathComponent("\(name).sh")
+            try "#!/bin/sh\n# size=\(size)\n".writeScript(to: file)
+            try FileManager.default.setAttributes([.creationDate: Date(timeIntervalSince1970: 1_700_000_000)], ofItemAtPath: file.path)
         }
         model.reload()
         model.dragRest = .zero
@@ -265,6 +267,30 @@ final class SpotsModelDragTests: XCTestCase {
         model.panelWillHide()
 
         XCTAssertNil(model.resize)
+    }
+
+    func testThePanelSizeLaysOutTheGridAtItsColumnsAndIsSaved() {
+        model.setPanelSize(PanelSize(columns: 8, rows: 3))
+
+        XCTAssertEqual(model.panelSize, PanelSize(columns: 8, rows: 3))
+        XCTAssertEqual(model.placements.map(\.column), [0, 2, 4, 6])
+        XCTAssertEqual(model.placements.map(\.row), [0, 0, 0, 0])
+        let other = SpotsModel(host: host, files: files)
+        other.reload()
+        XCTAssertEqual(other.panelSize, PanelSize(columns: 8, rows: 3))
+        other.quit()
+    }
+
+    func testADragAtEightColumnsLandsBesideTheFirstShelf() {
+        model.setPanelSize(PanelSize(columns: 8, rows: 3))
+        let c = model.placements[2].rect
+        let translation = move("a", to: CGPoint(x: c.minX + c.width / 4, y: c.midY))
+
+        model.dragSpot("a", by: translation)
+        model.dropSpot(by: translation)
+
+        XCTAssertEqual(order, ["b", "c", "a", "d"])
+        XCTAssertEqual(model.placements[2].column, 4)
     }
 
     func testNoCardLiftsOutsideEditSpots() {

@@ -9,13 +9,15 @@ public struct SpotDrag: Equatable, Sendable {
     /// The card's place in the order where a release puts it.
     public var place: Int
     private let layouts: [Int: [SpotPlacement]]
+    /// The width of the grid.
+    private let width: CGFloat
 
     /// Lays out the grid once for each place in `places`, with the card moved there from `start` among cards of these sizes.
-    public init(id: String, start: Int, sizes: [SpotSize], places: ClosedRange<Int>) {
+    public init(id: String, start: Int, sizes: [SpotSize], places: ClosedRange<Int>, grid: SpotGrid = SpotGrid()) {
         self.id = id
         self.start = start
         place = start
-        let grid = SpotGrid()
+        width = SpotTokens.width(columns: grid.columns)
         layouts = Dictionary(uniqueKeysWithValues: places.map { place in
             var moved = sizes
             moved.insert(moved.remove(at: start), at: place)
@@ -53,7 +55,7 @@ public struct SpotDrag: Equatable, Sendable {
     /// Whether a release at this point lands on the grid: on its cards, or less than half a row past them.
     public func holds(_ point: CGPoint) -> Bool {
         let rows = layout(at: start).map { $0.row + $0.size.rows }.max() ?? 0
-        let grid = CGRect(x: 0, y: 0, width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows))
+        let grid = CGRect(x: 0, y: 0, width: width, height: SpotTokens.height(rows: rows))
         return grid.insetBy(dx: -SpotTokens.rowHeight / 2, dy: -SpotTokens.rowHeight / 2).contains(point)
     }
 

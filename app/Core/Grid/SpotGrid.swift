@@ -14,6 +14,10 @@ public struct SpotGrid: Sendable {
         shelves = max(columns / SpotTokens.columns, 1)
     }
 
+    public var columns: Int {
+        shelves * SpotTokens.columns
+    }
+
     public func place(_ sizes: [SpotSize]) -> [SpotPlacement] {
         var queue: [Slot] = sizes.enumerated().map { (index: $0.offset, size: $0.element) }
         var placements: [SpotPlacement] = []

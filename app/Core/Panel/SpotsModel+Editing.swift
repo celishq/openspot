@@ -3,6 +3,25 @@ import Observation
 
 /// Edit Spots: the order, the size and the place on the grid of each spot.
 extension SpotsModel {
+    /// The packing rule at the panel's columns.
+    public var grid: SpotGrid {
+        SpotGrid(columns: panelSize.columns)
+    }
+
+    /// Sets the size of the panel's grid, saves it, and lays out the cards at its columns.
+    public func setPanelSize(_ size: PanelSize) {
+        guard size != panelSize else { return }
+        do {
+            try files.config.set("panel_size", to: size.text)
+        } catch {
+            host.notify("Openspot could not save the size of the panel. \(Self.reason(error))")
+        }
+        change(.edit) {
+            panelSize = size
+            updateVisible()
+        }
+    }
+
     /// The sizes that a person can prefer for a spot, in words for its menu.
     public func sizes(of entry: Entry) -> [SpotSize] {
         entry.item == nil ? entry.command.sizes : []
@@ -71,7 +90,7 @@ extension SpotsModel {
             stopDragWait()
             scrollAtPress = gridScroll
             change(.edit) {
-                drag = SpotDrag(id: id, start: start, sizes: visible.map(\.size), places: places)
+                drag = SpotDrag(id: id, start: start, sizes: visible.map(\.size), places: places, grid: grid)
                 selected = start
             }
         }
@@ -137,7 +156,7 @@ extension SpotsModel {
         guard isEditing, query.isEmpty, drag == nil else { return }
         if resize?.id != id {
             guard let index = visible.firstIndex(where: { $0.id == id }) else { return }
-            resize = SpotResize(id: id, index: index, sizes: visible.map(\.size), choices: sizes(of: visible[index]))
+            resize = SpotResize(id: id, index: index, sizes: visible.map(\.size), choices: sizes(of: visible[index]), grid: grid)
             scrollAtPress = gridScroll
             selected = index
         }
@@ -215,7 +234,7 @@ extension SpotsModel {
 
     private func moveSelectedSpot(by step: Int, in order: [String]) {
         guard order.indices.contains(selected),
-              let place = SpotGrid().nextPlace(of: selected, in: visible.map(\.size), step: step) else { return }
+              let place = grid.nextPlace(of: selected, in: visible.map(\.size), step: step) else { return }
         moveSpot(order[selected], to: place)
     }
 
@@ -232,7 +251,7 @@ extension SpotsModel {
     private func stepSelectedSize() {
         guard let entry = selectedEntry else { return }
         let sizes = visible.map(\.size)
-        if let next = SpotGrid().nextSize(of: selected, in: sizes, among: self.sizes(of: entry)) { prefer(next, for: entry.id) }
+        if let next = grid.nextSize(of: selected, in: sizes, among: self.sizes(of: entry)) { prefer(next, for: entry.id) }
     }
 
     private func toggleSelectedOnGrid() {
