@@ -3,7 +3,7 @@ import Foundation
 public struct PluginFolder: Sendable {
     private static let coreName = "spots"
     /// The core spots that start on: each reads only local data, and only at a person's act or when the panel opens.
-    private static let startingIDs: Set<String> = ["apps", "caffeinate", "color-picker", "emoji", "files", "links", "paste-screenshot", "settings", "shortcuts", "snippets", "translate"]
+    private static let startingIDs: Set<String> = ["apps", "caffeinate", "color-picker", "emoji", "files", "links", "paste-screenshot", "settings", "snippets", "translate"]
 
     public let url: URL
     /// The folder of the core spots in the app. A scan skips it when it does not exist.
