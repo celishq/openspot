@@ -6,6 +6,9 @@ import SwiftUI
 
 final class SpotsPanel: NSPanel {
     private var model: SpotsModel?
+    private let place = SpotsWindowPlace()
+    /// The frame that the window had before Edit Spots grew it.
+    private var restFrame: NSRect?
     private var pressWatch: Task<Void, Never>?
 
     override var canBecomeKey: Bool { true }
@@ -81,6 +84,29 @@ final class SpotsPanel: NSPanel {
         let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
         let height = SpotTokens.backdropHeight(rows: rows)
         return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
+    }
+
+    /// Grows the window in Edit Spots to hold the dock along the bottom of the screen, with the panel at its place on the
+    /// screen, and gives the window back its frame when Edit Spots ends.
+    private func followEditing() {
+        guard let model else { return }
+        let isEditing = withObservationTracking { model.isEditing } onChange: { [weak self] in
+            Task { @MainActor in self?.followEditing() }
+        }
+        if isEditing, restFrame == nil, let area = screen?.visibleFrame {
+            let panel = frame
+            let dock = ScreenPlace.dock(under: panel, in: area)
+            let whole = panel.union(dock)
+            restFrame = panel
+            place.panel = CGPoint(x: panel.minX - whole.minX, y: whole.maxY - panel.maxY)
+            place.dock = CGRect(x: dock.minX - whole.minX, y: whole.maxY - dock.maxY, width: dock.width, height: dock.height)
+            setFrame(whole, display: true)
+        } else if !isEditing, let rest = restFrame {
+            restFrame = nil
+            place.dock = nil
+            place.panel = .zero
+            setFrame(rest, display: true)
+        }
     }
 
     /// Starts the close motion, and takes the panel off the screen when it ends. Then it runs the given work.
@@ -223,9 +249,12 @@ final class SpotsPanel: NSPanel {
         panel.level = .floating
         panel.isReleasedWhenClosed = false
         panel.isMovableByWindowBackground = false
-        panel.contentView = NSHostingView(rootView: SpotsView(model: model))
+        let hosting = NSHostingView(rootView: SpotsWindowView(model: model, place: panel.place))
+        hosting.sizingOptions = []
+        panel.contentView = hosting
         panel.watchPaste(model: model)
         panel.center()
+        panel.followEditing()
         return panel
     }
 }

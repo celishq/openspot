@@ -48,4 +48,17 @@ final class ScreenPlaceTests: XCTestCase {
 
         XCTAssertEqual(ScreenPlace.frame(ofBounds: bounds, mainHeight: 967), CGRect(x: -2000, y: 267, width: 800, height: 600))
     }
+
+    func testTheDockLiesAlongTheBottomUnderThePanelAndCentredOnIt() {
+        let area = CGRect(x: 0, y: 0, width: 1440, height: 875)
+        let panel = CGRect(x: 485, y: 104, width: 469, height: 736)
+
+        XCTAssertEqual(ScreenPlace.dock(under: panel, in: area), CGRect(x: 109, y: 20, width: 1220, height: 176))
+    }
+
+    func testTheDockStaysWholeOnItsScreen() {
+        let panel = CGRect(x: 600, y: 300, width: 469, height: 736)
+
+        XCTAssertEqual(ScreenPlace.dock(under: panel, in: CGRect(x: 0, y: 0, width: 1000, height: 800)), CGRect(x: 20, y: 20, width: 960, height: 176))
+    }
 }

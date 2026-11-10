@@ -4,8 +4,16 @@ import Foundation
 /// the search that pick the spots that the dock shows.
 public struct SpotDock: Equatable, Sendable {
     /// Where a spot that is not on the grid shows.
-    public enum Place: Int, Comparable, Sendable {
+    public enum Place: Int, Comparable, CaseIterable, Sendable {
         case search, off, fix
+
+        public var title: String {
+            switch self {
+            case .search: "In search only"
+            case .off: "Off"
+            case .fix: "Needs a fix"
+            }
+        }
 
         public static func < (lhs: Place, rhs: Place) -> Bool {
             lhs.rawValue < rhs.rawValue
@@ -19,9 +27,9 @@ public struct SpotDock: Equatable, Sendable {
         public var title: String {
             switch self {
             case .all: "All"
-            case .search: "In search only"
-            case .off: "Off"
-            case .fix: "Needs a fix"
+            case .search: Place.search.title
+            case .off: Place.off.title
+            case .fix: Place.fix.title
             }
         }
 

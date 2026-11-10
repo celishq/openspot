@@ -21,6 +21,21 @@ extension SpotsModel {
         }
     }
 
+    /// Shows the spots of this tab in the dock.
+    public func showDockTab(_ tab: SpotDock.Tab) {
+        dock.tab = tab
+    }
+
+    /// Shows the spots of the dock whose name holds this text.
+    public func searchDock(_ text: String) {
+        dock.query = text
+    }
+
+    /// Takes whether the person types in the dock's search.
+    public func searchesDock(_ isOn: Bool) {
+        if isSearchingDock != isOn { isSearchingDock = isOn }
+    }
+
     /// Makes the dock from the cards that are not on the grid and the core spots that are off, and keeps its tab and search.
     func refreshDock() {
         let hidden = cards.filter { !$0.isOnGrid }.map { entry in
@@ -54,11 +69,18 @@ extension SpotsModel {
             pointerMove = nil
             if lift.offset != .zero { lift.offset = .zero }
             selected = 0
+            isSearchingDock = false
+            dock.query = ""
             updateVisible()
         }
     }
 
     public func handleEditKey(_ key: ActionKey) {
+        if isSearchingDock {
+            searchDock("")
+            isSearchingDock = false
+            return
+        }
         if drag != nil || resize != nil {
             if key.name == "escape" {
                 cancelDrag()

@@ -209,6 +209,8 @@ public final class SpotsModel {
     @ObservationIgnored var pointerMove: CGSize?
     /// The spots of Edit Spots' dock.
     public internal(set) var dock = SpotDock(items: [])
+    /// Whether the person types in the dock's search, which then takes each key but Esc.
+    public internal(set) var isSearchingDock = false
     /// The core spots that are off, which the dock shows, found when Edit Spots starts.
     @ObservationIgnored var offSpots: [SpotDock.Item] = []
     /// Where the person pressed a card's resize handle, in the handle's square.

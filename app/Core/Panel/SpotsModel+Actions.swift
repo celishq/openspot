@@ -17,6 +17,7 @@ extension SpotsModel {
             return handleMenuKey(key)
         }
         if isEditing {
+            if isSearchingDock, key.name != "escape" { return false }
             handleEditKey(key)
             return true
         }

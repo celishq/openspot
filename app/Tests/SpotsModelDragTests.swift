@@ -330,6 +330,29 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.dock.shown, [])
     }
 
+    func testTheDockTakesATabAndASearch() {
+        model.setOnGrid(false, for: "c")
+        model.setOnGrid(false, for: "d")
+
+        model.showDockTab(.off)
+        XCTAssertEqual(model.dock.shown, [])
+
+        model.showDockTab(.all)
+        model.searchDock("c")
+        XCTAssertEqual(model.dock.shown.map(\.id), ["c"])
+    }
+
+    func testTypingInTheDockSearchTakesNoEditKeyAndEscapeEndsTheSearch() {
+        model.searchDock("c")
+        model.searchesDock(true)
+
+        XCTAssertFalse(model.handleKey(ActionKey(name: "s")))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
+        XCTAssertFalse(model.isSearchingDock)
+        XCTAssertEqual(model.dock.query, "")
+        XCTAssertTrue(model.isEditing)
+    }
+
     func testNoCardLiftsOutsideEditSpots() {
         model.endEditing()
 

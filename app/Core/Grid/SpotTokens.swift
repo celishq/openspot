@@ -17,6 +17,11 @@ public enum SpotTokens {
     /// The side of the square that takes a drag of a card's resize handle, and the width of its line on the rim.
     public static let resizeHandle: CGFloat = 28
     public static let resizeHandleLine: CGFloat = 5
+    /// The widest the dock of Edit Spots grows, its height, which holds one row of spots with their names, and its gap to the
+    /// edges of the screen.
+    public static let dockWidth: CGFloat = 1220
+    public static let dockHeight: CGFloat = 176
+    public static let dockMargin: CGFloat = 20
     /// The step, in degrees, in which the pointer over a resize handle turns.
     public static let handleAngleStep = 5
     /// How far from each edge the rim of a round corner passes through its diagonal, as a part of the radius.
