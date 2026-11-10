@@ -185,9 +185,7 @@ public final class SpotsModel {
     public var isEditing = false
     public var arrangement = SpotArrangement()
     private var scanned: [Spot] = []
-    private var lastScan = ScanResult(plugins: [], refused: [])
-    /// The stamp of the folder that `lastScan` came from.
-    @ObservationIgnored private var lastStamp: PluginFolder.Stamp?
+    private var pluginScan = PluginScan()
 
     /// The app around the panel, which shows it, tells the person and moves each change.
     @ObservationIgnored public unowned let host: SpotsHost
@@ -239,13 +237,9 @@ public final class SpotsModel {
         let folder = files.folder(config)
         let shipped = host.shippedSpots(folder: folder, config: files.config, update: updateSpot, offersLogin: isFirstLaunch)
             + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
-        let stamp = folder.stamp(shipped: shipped)
-        let scan = stamp == lastStamp ? lastScan
-            : (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
-        lastStamp = stamp
+        let scan = pluginScan.look(at: folder, shipped: shipped)
         let problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.take(scan)
-        lastScan = scan
         holdAssignedKeys(config)
         arrangement = config.arrangement
         scanned = scan.commands
@@ -322,7 +316,7 @@ public final class SpotsModel {
     }
 
     private func holdAssignedKeys(_ config: Config) {
-        host.hold(lastScan.offered(config.keys))
+        host.hold(pluginScan.result.offered(config.keys))
     }
 
     /// A person pressed a key that they assigned to a command.

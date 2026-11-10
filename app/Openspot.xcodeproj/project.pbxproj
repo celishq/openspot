@@ -25,6 +25,7 @@
 		0CC19E6A91D7D13EECFEC77A /* HexColorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43383EF80D00B3D49DDC9916 /* HexColorTests.swift */; };
 		0CCE18E2EDEB9BBFCE16CE08 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33791879EC21CC93C2E7487E /* Config.swift */; };
 		0D342E9009880BDDBBB53ADD /* ViewLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1461FBC2EE10935E83FEA397 /* ViewLibrary.swift */; };
+		0D476273B5A8F3EA8DA3B8C6 /* PluginScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 440CFBC58F7A86139F60A02C /* PluginScan.swift */; };
 		0D925E836160D970705BB7A4 /* FormDraftTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81708547DDCAC262759EB258 /* FormDraftTests.swift */; };
 		0E2781CA4A1FFE0C49CFE3E4 /* CommandLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93364F1D8B0024749079178D /* CommandLink.swift */; };
 		0E91DD35DE3A9239DF2B4860 /* CatalogSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF254D771EC7ED00E1D037FE /* CatalogSpotTests.swift */; };
@@ -398,6 +399,7 @@
 		3EC527B539564A89DFC014CA /* FormDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormDraft.swift; sourceTree = "<group>"; };
 		3F442C00EB92417701FEE471 /* SpotClipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotClipboard.swift; sourceTree = "<group>"; };
 		43383EF80D00B3D49DDC9916 /* HexColorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HexColorTests.swift; sourceTree = "<group>"; };
+		440CFBC58F7A86139F60A02C /* PluginScan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScan.swift; sourceTree = "<group>"; };
 		4445E9C9CAE642C6C65B5BAB /* ShippedSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShippedSpot.swift; sourceTree = "<group>"; };
 		458EC05F801F997F96F3BC73 /* ScriptLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptLink.swift; sourceTree = "<group>"; };
 		4684CFCCFEE5A86E21A2323A /* SheetLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetLayout.swift; sourceTree = "<group>"; };
@@ -941,6 +943,7 @@
 				926839CCB23719E71A129C6C /* PluginError.swift */,
 				8EB1FA38E3DA1ECAA3A2E47D /* PluginFolder.swift */,
 				B5EC71B076EF3EB009423760 /* PluginHeader.swift */,
+				440CFBC58F7A86139F60A02C /* PluginScan.swift */,
 				CCC85E9DD5BE72E7BDD0BF16 /* ScanResult.swift */,
 				29A937EBA1EFFF51B1D15700 /* SwiftProgram.swift */,
 				4DDF7D377024DA0679F3C8EF /* TomlDocument.swift */,
@@ -1536,6 +1539,7 @@
 				16DADADEBB92CA0ABC23ED86 /* PluginFolder.swift in Sources */,
 				CD98F86F165C43AF01BEEFCB /* PluginHeader.swift in Sources */,
 				8F40A3896808C0D3A47B86FE /* PluginOutput.swift in Sources */,
+				0D476273B5A8F3EA8DA3B8C6 /* PluginScan.swift in Sources */,
 				DAFA4F6FCFFF02410D7EA892 /* QuitSpot.swift in Sources */,
 				CBDCC9384502B5AC177A4E6C /* ReadReason.swift in Sources */,
 				632932B0C674B0386A896951 /* RepeatDrawing.swift in Sources */,
