@@ -15,7 +15,7 @@ public struct AgendaList: Equatable, Sendable {
         self.color = color
     }
 
-    /// Its row, whose id `--calendar` and `--list` take (E1).
+    /// Its row, whose id `--hide` takes (E1).
     var row: TextBlock {
         TextBlock(fields: [.init(key: "row", value: id), .init(key: "title", value: title), .init(key: "detail", value: account)]
             + (color.map { [.init(key: "color", value: $0)] } ?? []))

@@ -15,10 +15,10 @@ public struct Agenda {
         self.isRead = isRead
     }
 
-    /// Each event that has not ended, through the end of a day, in the order of its start.
-    public func events(days: Int, calendars: [String]) async throws -> String {
+    /// Each event that has not ended, through the end of a day, in each calendar but the hidden ones, in the order of its start.
+    public func events(days: Int, hiding hidden: [String]) async throws -> String {
         guard try await isAllowed(.event) else { return Self.unasked }
-        let events = store.events(from: clock.now, to: clock.end(ofDay: days), in: calendars)
+        let events = store.events(from: clock.now, to: clock.end(ofDay: days), hiding: hidden)
             .filter { $0.end > clock.now }
             .sorted { first, second in
                 if first.start != second.start { return first.start < second.start }
@@ -33,12 +33,12 @@ public struct Agenda {
         return Self.text(store.lists(of: .event).map(\.row))
     }
 
-    /// Each open reminder that is late or due through the end of a day, and each one of those days done today, in the order
-    /// of its due time, so that a reminder keeps its place when it is ticked (E3).
-    public func due(days: Int, lists: [String]) async throws -> String {
+    /// Each open reminder that is late or due through the end of a day, and each one of those days done today, in each list
+    /// but the hidden ones, in the order of its due time, so that a reminder keeps its place when it is ticked (E3).
+    public func due(days: Int, hiding hidden: [String]) async throws -> String {
         guard try await isAllowed(.reminder) else { return Self.unasked }
         let end = clock.end(ofDay: days)
-        let reminders = await store.reminders(dueBefore: end, doneSince: clock.startOfToday, in: lists)
+        let reminders = await store.reminders(dueBefore: end, doneSince: clock.startOfToday, hiding: hidden)
             .filter { reminder in reminder.due.map { $0 < end } ?? false }
             .sorted { first, second in
                 if first.due != second.due { return (first.due ?? end) < (second.due ?? end) }

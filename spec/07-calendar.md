@@ -19,17 +19,18 @@ reminders. Each list prints rows (02), and the id of each row goes to each other
 
 | Command                                                  | Does                                                                                    |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `openspot calendar events [--days n] [--calendar id]...` | Prints each event that has not ended, through the end of day `n`. Day 1 is today, and it is the default. |
+| `openspot calendar events [--days n] [--hide id]...`     | Prints each event that has not ended, through the end of day `n`. Day 1 is today, and it is the default. |
 | `openspot calendar calendars`                            | Prints each calendar as a row.                                                          |
 | `openspot calendar add [--dry-run] <words>...`           | Adds an event from the words to the default calendar, and prints its row.              |
 | `openspot calendar show <id>`                            | Opens Calendar on the day of an event.                                                  |
-| `openspot reminders due [--days n] [--list id]...`       | Prints each open reminder that is late or due through the end of day `n`, and each of those done today. |
+| `openspot reminders due [--days n] [--hide id]...`       | Prints each open reminder that is late or due through the end of day `n`, and each of those done today. |
 | `openspot reminders lists`                               | Prints each list of reminders as a row.                                                 |
 | `openspot reminders add [--dry-run] <words>...`          | Adds a reminder from the words to the default list, and prints its row.                |
 | `openspot reminders done <id> [true\|false]`             | Ticks a reminder, or with `false` opens it again. It prints nothing.                   |
 | `openspot reminders show <id>`                           | Opens Reminders on a reminder.                                                          |
 
-`--calendar` and `--list` take the id of a row of `calendars` and `lists`, and each one more narrows the list to one more.
+`--hide` takes the id of a row of `calendars` or `lists`, and leaves out its events or reminders. Repeat it for each one.
+An id of the other kind is left alone, so a script can pass one set of hidden ids to both.
 
 ## Rows
 

@@ -26,10 +26,10 @@ final class SpotAgendaStore: AgendaStore {
         return granted ? .allowed : .denied
     }
 
-    func events(from start: Date, to end: Date, in calendars: [String]) -> [AgendaEvent] {
-        let chosen = calendars.compactMap(store.calendar(withIdentifier:))
-        guard calendars.isEmpty || !chosen.isEmpty else { return [] }
-        let predicate = store.predicateForEvents(withStart: start, end: end, calendars: calendars.isEmpty ? nil : chosen)
+    func events(from start: Date, to end: Date, hiding hidden: [String]) -> [AgendaEvent] {
+        let shown = shown(.event, hiding: hidden)
+        guard !shown.isEmpty else { return [] }
+        let predicate = store.predicateForEvents(withStart: start, end: end, calendars: shown)
         return store.events(matching: predicate).filter { !Self.isDeclined($0) }.map { event in
             AgendaEvent(
                 id: event.eventIdentifier ?? event.calendarItemIdentifier,
@@ -45,12 +45,11 @@ final class SpotAgendaStore: AgendaStore {
         }
     }
 
-    func reminders(dueBefore end: Date, doneSince start: Date, in lists: [String]) async -> [AgendaReminder] {
-        let chosen = lists.compactMap(store.calendar(withIdentifier:))
-        guard lists.isEmpty || !chosen.isEmpty else { return [] }
-        let calendars = lists.isEmpty ? nil : chosen
-        let open = store.predicateForIncompleteReminders(withDueDateStarting: nil, ending: end, calendars: calendars)
-        let done = store.predicateForCompletedReminders(withCompletionDateStarting: start, ending: nil, calendars: calendars)
+    func reminders(dueBefore end: Date, doneSince start: Date, hiding hidden: [String]) async -> [AgendaReminder] {
+        let shown = shown(.reminder, hiding: hidden)
+        guard !shown.isEmpty else { return [] }
+        let open = store.predicateForIncompleteReminders(withDueDateStarting: nil, ending: end, calendars: shown)
+        let done = store.predicateForCompletedReminders(withCompletionDateStarting: start, ending: nil, calendars: shown)
         return await fetch(open) + fetch(done)
     }
 
@@ -98,6 +97,11 @@ final class SpotAgendaStore: AgendaStore {
         }
         try store.save(new, commit: true)
         return AgendaReminder(id: new.calendarItemIdentifier, title: reminder.title, due: reminder.due, isAllDay: reminder.isAllDay, list: Self.list(new.calendar), doneAt: nil)
+    }
+
+    /// Each calendar of events or list of reminders whose id is not hidden.
+    private func shown(_ kind: AgendaKind, hiding hidden: [String]) -> [EKCalendar] {
+        store.calendars(for: Self.entity(of: kind)).filter { !hidden.contains($0.calendarIdentifier) }
     }
 
     /// The reminders that a predicate matches, read into values in the callback, where EventKit hands them over.

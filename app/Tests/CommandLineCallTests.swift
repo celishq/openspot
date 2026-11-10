@@ -161,17 +161,18 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertTrue(CommandLineCall.usage.contains("openspot screen record start"))
     }
 
-    func testACalendarCallReadsItsDaysAndCalendarsAndRunsInARead() {
+    func testACalendarCallReadsItsDaysAndHiddenCalendarsAndRunsInARead() {
         let read = ["OPENSPOT_REASON": "panel"]
-        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "events"], environment: read), .calendarEvents(days: 1, calendars: []))
+        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "events"], environment: read), .calendarEvents(days: 1, hidden: []))
         XCTAssertEqual(
-            CommandLineCall(arguments: ["calendar", "events", "--days", "2", "--calendar", "A8E2", "--calendar", "B1"]),
-            .calendarEvents(days: 2, calendars: ["A8E2", "B1"])
+            CommandLineCall(arguments: ["calendar", "events", "--days", "2", "--hide", "A8E2", "--hide", "B1"]),
+            .calendarEvents(days: 2, hidden: ["A8E2", "B1"])
         )
         XCTAssertEqual(CommandLineCall(arguments: ["calendar", "calendars"], environment: read), .calendarCalendars)
         XCTAssertEqual(CommandLineCall(arguments: ["calendar", "events", "--days", "0"]), .unknown("calendar events --days 0"))
         XCTAssertEqual(CommandLineCall(arguments: ["calendar", "events", "--days"]), .unknown("calendar events --days"))
         XCTAssertEqual(CommandLineCall(arguments: ["calendar", "events", "today"]), .unknown("calendar events today"))
+        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "events", "--calendar", "A8E2"]), .unknown("calendar events --calendar A8E2"))
         XCTAssertEqual(CommandLineCall(arguments: ["calendar", "calendars", "all"]), .unknown("calendar calendars all"))
         XCTAssertEqual(CommandLineCall(arguments: ["calendar"]), .unknown("calendar"))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot calendar events"))
@@ -180,14 +181,14 @@ final class CommandLineCallTests: XCTestCase {
 
     func testARemindersCallReadsItsWordsAndDoneIsRefusedInARead() {
         let read = ["OPENSPOT_REASON": "panel"]
-        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "due"], environment: read), .remindersDue(days: 1, lists: []))
-        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "due", "--days", "2", "--list", "7D10"]), .remindersDue(days: 2, lists: ["7D10"]))
+        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "due"], environment: read), .remindersDue(days: 1, hidden: []))
+        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "due", "--days", "2", "--hide", "7D10"]), .remindersDue(days: 2, hidden: ["7D10"]))
         XCTAssertEqual(CommandLineCall(arguments: ["reminders", "lists"], environment: read), .remindersLists)
         XCTAssertEqual(CommandLineCall(arguments: ["reminders", "done", "reminder:9C41"]), .remindersDone(id: "reminder:9C41", isDone: true))
         XCTAssertEqual(CommandLineCall(arguments: ["reminders", "done", "reminder:9C41", "false"]), .remindersDone(id: "reminder:9C41", isDone: false))
         XCTAssertEqual(CommandLineCall(arguments: ["reminders", "done", "reminder:9C41", "maybe"]), .unknown("reminders done reminder:9C41 maybe"))
         XCTAssertEqual(CommandLineCall(arguments: ["reminders", "done"]), .unknown("reminders done"))
-        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "due", "--calendar", "A8E2"]), .unknown("reminders due --calendar A8E2"))
+        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "due", "--list", "7D10"]), .unknown("reminders due --list 7D10"))
         XCTAssertEqual(
             CommandLineCall(arguments: ["reminders", "done", "reminder:9C41"], environment: read),
             .refused("`openspot reminders done` changes your reminders, so it cannot run in a read. Run it from a pick or an action.")

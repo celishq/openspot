@@ -289,16 +289,17 @@ final class AgendaExampleTests: SamplePluginsCase {
         }
     }
 
-    func testAgendaKeepsTheCalendarsThatCalendarsForAgendaDoesNotHide() async throws {
+    func testAgendaHidesTheCalendarsAndListsThatCalendarsForAgendaHides() async throws {
         let agenda = try example("Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
-            try "A8E2".write(to: folder.appendingPathComponent("setting-hidden"), atomically: true, encoding: .utf8)
+            try "A8E2 7D10".write(to: folder.appendingPathComponent("setting-hidden"), atomically: true, encoding: .utf8)
 
             _ = try await agenda.items(timeout: 5)
 
-            XCTAssertTrue(try self.calls(in: folder).contains { $0.hasSuffix("|calendar events --days 2 --calendar B1|") })
-            XCTAssertTrue(try self.calls(in: folder).contains { $0.hasSuffix("|reminders due --days 2 --list 7D10|") })
+            XCTAssertEqual(try self.calls(in: folder).map { $0.split(separator: "|", omittingEmptySubsequences: false)[1] }, [
+                "setting get --spot agenda/calendars hidden", "calendar events --days 2 --hide A8E2 --hide 7D10", "reminders due --days 2 --hide A8E2 --hide 7D10"
+            ])
         }
     }
 

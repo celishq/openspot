@@ -47,15 +47,16 @@ public enum CommandLineCall: Equatable, Sendable {
     case screenRecordStart(ScreenCapture)
     case screenRecordStop
     case screenRecordStatus
-    /// Prints the events that have not ended through the end of a day, in the calendars with these ids or in all (E1).
-    case calendarEvents(days: Int, calendars: [String])
+    /// Prints the events that have not ended through the end of a day, in each calendar but the hidden ones (E1).
+    case calendarEvents(days: Int, hidden: [String])
     case calendarCalendars
     /// Adds an event from the words, or with a dry run prints the row that it would add (E4, E5).
     case calendarAdd(words: String, isDry: Bool)
     /// Opens Calendar on the day of the event whose row has this id (E1).
     case calendarShow(id: String)
-    /// Prints the open reminders that are late or due through the end of a day, and those done today, in some lists or all.
-    case remindersDue(days: Int, lists: [String])
+    /// Prints the open reminders that are late or due through the end of a day, and those done today, in each list but the
+    /// hidden ones.
+    case remindersDue(days: Int, hidden: [String])
     case remindersLists
     /// Adds a reminder from the words, or with a dry run prints the row that it would add (E4, E5).
     case remindersAdd(words: String, isDry: Bool)
@@ -110,16 +111,16 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  --events writes each pointer move, click and key as a JSON line.
     openspot screen record stop                  Ends the recording and prints each file, the video first.
     openspot screen record status                Prints state=recording with its files and seconds, or state=idle.
-    openspot calendar events [--days n] [--calendar id]...
+    openspot calendar events [--days n] [--hide id]...
                                                  Prints each event that has not ended through the end of day n as a
-                                                 row. Day 1, the default, is today. --calendar takes a calendar's id.
+                                                 row. Day 1, the default, is today. --hide leaves out a calendar.
     openspot calendar calendars                  Prints each calendar as a row.
     openspot calendar add [--dry-run] <words>... Adds an event from words such as Lunch tomorrow 13:00, and prints its
                                                  row. --dry-run prints the row and adds nothing.
     openspot calendar show <id>                  Opens Calendar on the day of the event of a row.
-    openspot reminders due [--days n] [--list id]...
+    openspot reminders due [--days n] [--hide id]...
                                                  Prints each open reminder that is late or due through the end of day n,
-                                                 and each one done today, as a row. --list takes a list's id.
+                                                 and each one done today, as a row. --hide leaves out a list.
     openspot reminders lists                     Prints each list of reminders as a row.
     openspot reminders add [--dry-run] <words>...
                                                  Adds a reminder from words such as Call mom tomorrow 9am, and prints its
@@ -200,7 +201,7 @@ public enum CommandLineCall: Equatable, Sendable {
             }
             self = .windowMove(move)
         case ("calendar", "events"):
-            self = Self.listing(Array(rest.dropFirst()), filter: "--calendar").map { .calendarEvents(days: $0.days, calendars: $0.ids) }
+            self = Self.listing(Array(rest.dropFirst())).map { .calendarEvents(days: $0.days, hidden: $0.hidden) }
                 ?? .unknown(arguments.joined(separator: " "))
         case ("calendar", "calendars") where rest.count == 1: self = .calendarCalendars
         case ("calendar", "add"):
@@ -209,7 +210,7 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("calendar", "show") where rest.count == 2:
             self = Self.changing(.calendarShow(id: rest[1]), "openspot calendar show", "opens Calendar", environment)
         case ("reminders", "due"):
-            self = Self.listing(Array(rest.dropFirst()), filter: "--list").map { .remindersDue(days: $0.days, lists: $0.ids) }
+            self = Self.listing(Array(rest.dropFirst())).map { .remindersDue(days: $0.days, hidden: $0.hidden) }
                 ?? .unknown(arguments.joined(separator: " "))
         case ("reminders", "lists") where rest.count == 1: self = .remindersLists
         case ("reminders", "add"):
@@ -288,10 +289,10 @@ public enum CommandLineCall: Equatable, Sendable {
         return sets ? .settingSet(spot: spot, key: key, value: words.dropFirst().first) : .settingGet(spot: spot, key: key)
     }
 
-    /// Reads `[--days n]` and a filter flag with an id, which can repeat, or returns nil for anything else. Day 1 is today.
-    private static func listing(_ words: [String], filter: String) -> (days: Int, ids: [String])? {
+    /// Reads `[--days n]` and `--hide <id>`, which can repeat, or returns nil for anything else. Day 1 is today.
+    private static func listing(_ words: [String]) -> (days: Int, hidden: [String])? {
         var days = 1
-        var ids: [String] = []
+        var hidden: [String] = []
         var index = 0
         while index < words.count {
             guard index + 1 < words.count else { return nil }
@@ -300,12 +301,12 @@ public enum CommandLineCall: Equatable, Sendable {
             case "--days":
                 guard let number = Int(value), number > 0 else { return nil }
                 days = number
-            case filter: ids.append(value)
+            case "--hide": hidden.append(value)
             default: return nil
             }
             index += 2
         }
-        return (days, ids)
+        return (days, hidden)
     }
 
     /// Reads `--from` and `--to`, each with a value. Returns nil for anything else.

@@ -100,12 +100,12 @@ enum SpotCommandLine {
             SpotScreen.run { try SpotRecording.stop() }
         case .screenRecordStatus:
             SpotScreen.run { try SpotRecording.status() }
-        case .calendarEvents(let days, let calendars):
-            finish { try await SpotAgendaStore.agenda().events(days: days, calendars: calendars) }
+        case .calendarEvents(let days, let hidden):
+            finish { try await SpotAgendaStore.agenda().events(days: days, hiding: hidden) }
         case .calendarCalendars:
             finish { try await SpotAgendaStore.agenda().calendars() }
-        case .remindersDue(let days, let lists):
-            finish { try await SpotAgendaStore.agenda().due(days: days, lists: lists) }
+        case .remindersDue(let days, let hidden):
+            finish { try await SpotAgendaStore.agenda().due(days: days, hiding: hidden) }
         case .remindersLists:
             finish { try await SpotAgendaStore.agenda().lists() }
         case .calendarAdd(let words, let isDry):

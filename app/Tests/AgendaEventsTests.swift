@@ -37,7 +37,7 @@ final class AgendaEventsTests: XCTestCase {
             event("tomorrow", "Review", at(10, day: 11), at(11, day: 11))
         ])
 
-        let rows = rows(try await agenda(store).events(days: 1, calendars: []))
+        let rows = rows(try await agenda(store).events(days: 1, hiding: []))
 
         XCTAssertEqual(rows.map { $0.value("title") }, ["Standup", "Lunch"])
         XCTAssertEqual(rows[0].value("detail"), "09:30–09:45 · Work")
@@ -56,7 +56,7 @@ final class AgendaEventsTests: XCTestCase {
             event("later", "Trip", at(10, day: 12), at(11, day: 12))
         ])
 
-        let rows = rows(try await agenda(store).events(days: 2, calendars: []))
+        let rows = rows(try await agenda(store).events(days: 2, hiding: []))
 
         XCTAssertEqual(rows.map { $0.value("title") }, ["Review"])
         XCTAssertEqual(rows[0].value("detail"), "Tomorrow 10:00–11:00 · Work")
@@ -66,7 +66,7 @@ final class AgendaEventsTests: XCTestCase {
     func testAnEventOfWholeDaysSaysSo() async throws {
         let store = FakeAgendaStore(events: [event("holiday", "Holiday", at(0), at(0, day: 11), allDay: true)])
 
-        let text = try await agenda(store).events(days: 1, calendars: [])
+        let text = try await agenda(store).events(days: 1, hiding: [])
         let row = try XCTUnwrap(rows(text).first)
 
         XCTAssertEqual(row.value("detail"), "All day · Work")
@@ -80,7 +80,7 @@ final class AgendaEventsTests: XCTestCase {
             event("doc", "Read the doc", at(12), at(13), url: "https://example.com/doc")
         ])
 
-        let rows = rows(try await agenda(store).events(days: 1, calendars: []))
+        let rows = rows(try await agenda(store).events(days: 1, hiding: []))
 
         XCTAssertEqual(rows[0].value("meeting"), "https://us02web.zoom.us/j/123?pwd=x")
         XCTAssertEqual(rows[0].value("icon"), "video")
@@ -90,7 +90,7 @@ final class AgendaEventsTests: XCTestCase {
     func testATitleWithALineBreakStaysOneValue() async throws {
         let store = FakeAgendaStore(events: [event("plan", "Plan\nreview", at(10), at(11))])
 
-        let text = try await agenda(store).events(days: 1, calendars: [])
+        let text = try await agenda(store).events(days: 1, hiding: [])
 
         XCTAssertTrue(text.contains("title=Plan\\nreview\n"), text)
         XCTAssertEqual(rows(text).count, 1)
@@ -102,26 +102,26 @@ final class AgendaEventsTests: XCTestCase {
             event("daily", "Standup", at(10, day: 11), at(10, 15, day: 11))
         ])
 
-        let ids = rows(try await agenda(store).events(days: 2, calendars: [])).compactMap { $0.value("row") }
+        let ids = rows(try await agenda(store).events(days: 2, hiding: [])).compactMap { $0.value("row") }
 
         XCTAssertEqual(ids.count, 2)
         XCTAssertEqual(Set(ids).count, 2)
         XCTAssertTrue(ids.allSatisfy { $0.hasPrefix("event:daily") }, "\(ids)")
     }
 
-    func testTheCalendarsNarrowTheEvents() async throws {
+    func testTheHiddenCalendarsGoToTheStore() async throws {
         let store = FakeAgendaStore(events: [])
 
-        _ = try await agenda(store).events(days: 1, calendars: ["A8E2", "B1"])
+        _ = try await agenda(store).events(days: 1, hiding: ["A8E2", "B1"])
 
-        XCTAssertEqual(store.ranges.last?.calendars, ["A8E2", "B1"])
+        XCTAssertEqual(store.ranges.last?.hidden, ["A8E2", "B1"])
         XCTAssertEqual(store.ranges.last?.start, at(9, 40))
     }
 
     func testAReadThatHasNotAskedSaysUnaskedAndDoesNotAsk() async throws {
         let store = FakeAgendaStore(events: [event("standup", "Standup", at(10), at(11))], access: .unasked)
 
-        let text = try await agenda(store, isRead: true).events(days: 1, calendars: [])
+        let text = try await agenda(store, isRead: true).events(days: 1, hiding: [])
 
         XCTAssertEqual(text, "status=unasked\n")
         XCTAssertEqual(store.asked, [])
@@ -130,7 +130,7 @@ final class AgendaEventsTests: XCTestCase {
     func testACallOutsideAReadAsksFirstAndThenAnswers() async throws {
         let store = FakeAgendaStore(events: [event("standup", "Standup", at(10), at(11))], access: .unasked, answer: .allowed)
 
-        let rows = rows(try await agenda(store, isRead: false).events(days: 1, calendars: []))
+        let rows = rows(try await agenda(store, isRead: false).events(days: 1, hiding: []))
 
         XCTAssertEqual(store.asked, [.event])
         XCTAssertEqual(rows.map { $0.value("title") }, ["Standup"])
@@ -141,7 +141,7 @@ final class AgendaEventsTests: XCTestCase {
             let store = FakeAgendaStore(events: [event("standup", "Standup", at(10), at(11))], access: access, answer: answer)
 
             do {
-                _ = try await agenda(store, isRead: false).events(days: 1, calendars: [])
+                _ = try await agenda(store, isRead: false).events(days: 1, hiding: [])
                 XCTFail("a refusal printed a list")
             } catch PluginError.failedWithFix(1, let message, let link) {
                 XCTAssertEqual(message, "Openspot has no access to your calendars. Allow Openspot in Privacy & Security › Calendars, then try again.")

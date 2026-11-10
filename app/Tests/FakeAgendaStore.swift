@@ -7,7 +7,7 @@ final class FakeAgendaStore: AgendaStore {
     struct Range: Equatable {
         let start: Date
         let end: Date
-        let calendars: [String]
+        let hidden: [String]
     }
 
     struct Mark: Equatable {
@@ -50,13 +50,13 @@ final class FakeAgendaStore: AgendaStore {
         return answer
     }
 
-    func events(from start: Date, to end: Date, in calendars: [String]) -> [AgendaEvent] {
-        ranges.append(Range(start: start, end: end, calendars: calendars))
+    func events(from start: Date, to end: Date, hiding hidden: [String]) -> [AgendaEvent] {
+        ranges.append(Range(start: start, end: end, hidden: hidden))
         return allEvents.filter { $0.start < end && $0.end > start }
     }
 
-    func reminders(dueBefore end: Date, doneSince start: Date, in lists: [String]) async -> [AgendaReminder] {
-        ranges.append(Range(start: start, end: end, calendars: lists))
+    func reminders(dueBefore end: Date, doneSince start: Date, hiding hidden: [String]) async -> [AgendaReminder] {
+        ranges.append(Range(start: start, end: end, hidden: hidden))
         return allReminders.filter { reminder in
             guard let done = reminder.doneAt else { return reminder.due.map { $0 < end } ?? false }
             return done >= start

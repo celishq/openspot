@@ -18,7 +18,7 @@ final class AgendaShowTests: XCTestCase {
     func testAnEventOpensOnTheDayOfItsTime() async throws {
         let start = now.addingTimeInterval(86_400)
         let store = FakeAgendaStore(events: [AgendaEvent(id: "daily", title: "Standup", start: start, end: start.addingTimeInterval(900), isAllDay: false, calendar: work, location: nil, url: nil, notes: nil)])
-        let id = try id(try await agenda(store).events(days: 3, calendars: []))
+        let id = try id(try await agenda(store).events(days: 3, hiding: []))
 
         let day = try await agenda(store).day(of: id)
 
@@ -27,7 +27,7 @@ final class AgendaShowTests: XCTestCase {
 
     func testAReminderSaysToShowItInReminders() async throws {
         let store = FakeAgendaStore(reminders: [AgendaReminder(id: "late", title: "Call mom", due: now, isAllDay: false, list: family, doneAt: nil)])
-        let id = try id(try await agenda(store).due(days: 1, lists: []))
+        let id = try id(try await agenda(store).due(days: 1, hiding: []))
 
         do {
             _ = try await agenda(store).day(of: id)
@@ -39,7 +39,7 @@ final class AgendaShowTests: XCTestCase {
 
     func testAReminderOpensInRemindersByItsOwnId() async throws {
         let store = FakeAgendaStore(reminders: [AgendaReminder(id: "9C41-B2", title: "Call mom", due: now, isAllDay: false, list: family, doneAt: nil)])
-        let id = try id(try await agenda(store).due(days: 1, lists: []))
+        let id = try id(try await agenda(store).due(days: 1, hiding: []))
 
         let link = try await agenda(store).link(of: id)
 

@@ -9,16 +9,11 @@
 
 hidden=$(openspot setting get --spot "${OPENSPOT_ID%/*}/calendars" hidden </dev/null)
 
-# Prints the flags that keep the calendars or lists that Calendars for Agenda does not hide, or one that keeps none.
-shown() {
-  [ -n "$hidden" ] || return 0
-  kept=$(openspot "$1" "$2" </dev/null | awk -v hidden=" $hidden " -v flag="$3" '
-    /^row=/ { id = substr($0, 5); if (!index(hidden, " " id " ")) printf "%s %s ", flag, id }')
-  printf '%s\n' "${kept:-$3 none}"
-}
+# Prints a --hide flag for each calendar and list that Calendars for Agenda hides.
+hides() { for id in $hidden; do printf -- '--hide %s ' "$id"; done; }
 
-events() { openspot calendar events --days 2 $(shown calendar calendars --calendar) </dev/null; }
-reminders() { openspot reminders due --days 2 $(shown reminders lists --list) </dev/null; }
+events() { openspot calendar events --days 2 $(hides) </dev/null; }
+reminders() { openspot reminders due --days 2 $(hides) </dev/null; }
 
 # Prints one key of the first block of the text.
 field() { printf '%s\n' "$2" | sed -n "s/^$1=//p" | head -n 1; }

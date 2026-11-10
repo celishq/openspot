@@ -38,7 +38,7 @@ final class AgendaRemindersTests: XCTestCase {
             reminder("someday", "Read a book", due: nil)
         ])
 
-        let rows = rows(try await agenda(store).due(days: 1, lists: []))
+        let rows = rows(try await agenda(store).due(days: 1, hiding: []))
 
         XCTAssertEqual(rows.map { $0.value("title") }, ["Call mom", "Buy stamps", "Take pills", "Water the plants"])
         XCTAssertEqual(rows.map { $0.value("detail") }, ["Late · Yesterday 18:00 · Family", "Today · Family", "Done · Family", "18:00 · Family"])
@@ -50,7 +50,7 @@ final class AgendaRemindersTests: XCTestCase {
         XCTAssertEqual(rows[1].value("allday"), "true")
         XCTAssertEqual(rows[0].value("list"), "7D10")
         XCTAssertEqual(rows[0].value("color"), "#FF9500")
-        XCTAssertEqual(store.ranges.last, FakeAgendaStore.Range(start: at(0), end: at(0, day: 11), calendars: []))
+        XCTAssertEqual(store.ranges.last, FakeAgendaStore.Range(start: at(0), end: at(0, day: 11), hidden: []))
     }
 
     func testTwoDaysAddTomorrowAndAReminderDoneTodayForALaterDayStaysOut() async throws {
@@ -59,16 +59,16 @@ final class AgendaRemindersTests: XCTestCase {
             reminder("later", "Renew passport", due: at(9, day: 13), doneAt: at(9))
         ])
 
-        let rows = rows(try await agenda(store).due(days: 2, lists: ["7D10"]))
+        let rows = rows(try await agenda(store).due(days: 2, hiding: ["7D10"]))
 
         XCTAssertEqual(rows.map { $0.value("detail") }, ["Tomorrow 09:00 · Family"])
-        XCTAssertEqual(store.ranges.last?.calendars, ["7D10"])
+        XCTAssertEqual(store.ranges.last?.hidden, ["7D10"])
     }
 
     func testALateReminderOfAWholeDaySaysItsDay() async throws {
         let store = FakeAgendaStore(reminders: [reminder("late", "Buy stamps", due: at(0, day: 9), allDay: true)])
 
-        let text = try await agenda(store).due(days: 1, lists: [])
+        let text = try await agenda(store).due(days: 1, hiding: [])
         let row = try XCTUnwrap(rows(text).first)
 
         XCTAssertEqual(row.value("detail"), "Late · Yesterday · Family")
@@ -77,7 +77,7 @@ final class AgendaRemindersTests: XCTestCase {
 
     func testDoneTicksAndOpensAgainTheReminderWhoseIdTheListPrinted() async throws {
         let store = FakeAgendaStore(reminders: [reminder("late", "Call mom", due: at(18, day: 9))])
-        let text = try await agenda(store).due(days: 1, lists: [])
+        let text = try await agenda(store).due(days: 1, hiding: [])
         let id = try XCTUnwrap(rows(text).first?.value("row"))
 
         let ticked = try await agenda(store, isRead: false).done(id, true)
@@ -104,13 +104,13 @@ final class AgendaRemindersTests: XCTestCase {
 
     func testRemindersAskForTheirOwnLeaveAndARefusalLinksToItsPane() async throws {
         let unasked = FakeAgendaStore(reminders: [], access: .unasked)
-        let read = try await agenda(unasked).due(days: 1, lists: [])
+        let read = try await agenda(unasked).due(days: 1, hiding: [])
         XCTAssertEqual(read, "status=unasked\n")
         XCTAssertEqual(unasked.asked, [])
 
         let refused = FakeAgendaStore(reminders: [], access: .unasked, answer: .denied)
         do {
-            _ = try await agenda(refused, isRead: false).due(days: 1, lists: [])
+            _ = try await agenda(refused, isRead: false).due(days: 1, hiding: [])
             XCTFail("a refusal printed a list")
         } catch PluginError.failedWithFix(1, let message, let link) {
             XCTAssertEqual(refused.asked, [.reminder])
