@@ -301,6 +301,29 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertNil(model.form)
     }
 
+    func testTheFormOfASettingMovesWithTheArrowsAndSearchesItsRows() async throws {
+        try script("list", header: "read=sheet\nsettings=pick", """
+        case "$1" in
+          pick) printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\noption=a:Apple\noption=b:Banana\noption=c:Cherry\nvalue=a\n' ;;
+          *) printf 'row=a\ntitle=Apple\n' ;;
+        esac
+        """)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        let change = try XCTUnwrap(SettingsSpot.change(of: "setting:list:pick"))
+
+        model.changeSetting(of: change.spot, with: change.action)
+        try await wait("the form") { model.form != nil }
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+
+        XCTAssertEqual(model.form?.draft.choices?.selectedItem?.run, "c")
+        XCTAssertTrue(model.showsSearch)
+        model.searchText = "ban"
+        XCTAssertEqual(model.form?.draft.choices?.shown.map(\.run), ["b"])
+    }
+
     func testAFormThatArrivesAfterThePanelHidDoesNotOpen() async throws {
         let gate = folder.appendingPathComponent("gate").path
         try script("list", header: "read=sheet", """
