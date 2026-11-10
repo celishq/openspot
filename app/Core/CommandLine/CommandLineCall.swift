@@ -52,6 +52,8 @@ public enum CommandLineCall: Equatable, Sendable {
     case calendarCalendars
     /// Adds an event from the words, or with a dry run prints the row that it would add (E4, E5).
     case calendarAdd(words: String, isDry: Bool)
+    /// Opens Calendar on the day of the event or the reminder whose row has this id (E1).
+    case calendarShow(id: String)
     /// Prints the open reminders that are late or due through the end of a day, and those done today, in some lists or all.
     case remindersDue(days: Int, lists: [String])
     case remindersLists
@@ -112,6 +114,7 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot calendar calendars                  Prints each calendar as a row.
     openspot calendar add [--dry-run] <words>... Adds an event from words such as Lunch tomorrow 13:00, and prints its
                                                  row. --dry-run prints the row and adds nothing.
+    openspot calendar show <id>                  Opens Calendar on the day of the event or the reminder of a row.
     openspot reminders due [--days n] [--list id]...
                                                  Prints each open reminder that is late or due through the end of day n,
                                                  and each one done today, as a row. --list takes a list's id.
@@ -199,16 +202,18 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("calendar", "calendars") where rest.count == 1: self = .calendarCalendars
         case ("calendar", "add"):
             self = Self.adding(Array(rest.dropFirst()), environment) { .calendarAdd(words: $0, isDry: $1) }
-                .map { Self.changing($0, "openspot calendar add", "your calendars", environment) } ?? .unknown(arguments.joined(separator: " "))
+                .map { Self.changing($0, "openspot calendar add", "changes your calendars", environment) } ?? .unknown(arguments.joined(separator: " "))
+        case ("calendar", "show") where rest.count == 2:
+            self = Self.changing(.calendarShow(id: rest[1]), "openspot calendar show", "opens Calendar", environment)
         case ("reminders", "due"):
             self = Self.listing(Array(rest.dropFirst()), filter: "--list").map { .remindersDue(days: $0.days, lists: $0.ids) }
                 ?? .unknown(arguments.joined(separator: " "))
         case ("reminders", "lists") where rest.count == 1: self = .remindersLists
         case ("reminders", "add"):
             self = Self.adding(Array(rest.dropFirst()), environment) { .remindersAdd(words: $0, isDry: $1) }
-                .map { Self.changing($0, "openspot reminders add", "your reminders", environment) } ?? .unknown(arguments.joined(separator: " "))
+                .map { Self.changing($0, "openspot reminders add", "changes your reminders", environment) } ?? .unknown(arguments.joined(separator: " "))
         case ("reminders", "done") where rest.count == 2 || (rest.count == 3 && ["true", "false"].contains(rest[2])):
-            self = Self.changing(.remindersDone(id: rest[1], isDone: rest.count == 2 || rest[2] == "true"), "openspot reminders done", "your reminders", environment)
+            self = Self.changing(.remindersDone(id: rest[1], isDone: rest.count == 2 || rest[2] == "true"), "openspot reminders done", "changes your reminders", environment)
         case ("translate", _):
             guard let options = Self.options(rest) else {
                 self = .unknown(arguments.joined(separator: " "))
@@ -243,13 +248,13 @@ public enum CommandLineCall: Equatable, Sendable {
         return call(rest.joined(separator: " "), isDry)
     }
 
-    /// The call of a command that changes the person's data, or its refusal in a read, so that nothing changes by surprise.
-    /// A dry run changes nothing, so it runs in a read (E9).
-    private static func changing(_ call: CommandLineCall, _ name: String, _ what: String, _ environment: [String: String]) -> CommandLineCall {
+    /// The call of a command that changes the person's data or opens an app, or its refusal in a read, so that nothing changes
+    /// or opens by surprise. A dry run changes nothing, so it runs in a read (E9).
+    private static func changing(_ call: CommandLineCall, _ name: String, _ act: String, _ environment: [String: String]) -> CommandLineCall {
         if case .calendarAdd(_, true) = call { return call }
         if case .remindersAdd(_, true) = call { return call }
         guard environment["OPENSPOT_REASON"] == nil else {
-            return .refused("`\(name)` changes \(what), so it cannot run in a read. Run it from a pick or an action.")
+            return .refused("`\(name)` \(act), so it cannot run in a read. Run it from a pick or an action.")
         }
         return call
     }

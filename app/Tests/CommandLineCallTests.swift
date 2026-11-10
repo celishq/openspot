@@ -217,6 +217,17 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertTrue(CommandLineCall.usage.contains("openspot reminders add"))
     }
 
+    func testAShowTakesOneIdAndIsRefusedInARead() {
+        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "show", "event:3F2A/1794300000"]), .calendarShow(id: "event:3F2A/1794300000"))
+        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "show"]), .unknown("calendar show"))
+        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "show", "a", "b"]), .unknown("calendar show a b"))
+        XCTAssertEqual(
+            CommandLineCall(arguments: ["calendar", "show", "reminder:9C41"], environment: ["OPENSPOT_REASON": "panel"]),
+            .refused("`openspot calendar show` opens Calendar, so it cannot run in a read. Run it from a pick or an action.")
+        )
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot calendar show"))
+    }
+
     func testAnUnknownCallAsksForHelp() {
         XCTAssertEqual(CommandLineCall(arguments: ["paint"]), .unknown("paint"))
         XCTAssertEqual(CommandLineCall(arguments: ["color", "mix"]), .unknown("color mix"))

@@ -54,6 +54,10 @@ final class SpotAgendaStore: AgendaStore {
         return await fetch(open) + fetch(done)
     }
 
+    func reminder(_ id: String) -> AgendaReminder? {
+        (store.calendarItem(withIdentifier: id) as? EKReminder).map(Self.reminder)
+    }
+
     func mark(reminder id: String, done: Bool) throws -> Bool {
         guard let reminder = store.calendarItem(withIdentifier: id) as? EKReminder else { return false }
         reminder.isCompleted = done

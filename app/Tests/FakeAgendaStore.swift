@@ -63,6 +63,10 @@ final class FakeAgendaStore: AgendaStore {
         }
     }
 
+    func reminder(_ id: String) -> AgendaReminder? {
+        allReminders.first { $0.id == id }
+    }
+
     func mark(reminder id: String, done: Bool) throws -> Bool {
         guard allReminders.contains(where: { $0.id == id }) else { return false }
         marks.append(Mark(id: id, isDone: done))
