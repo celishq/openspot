@@ -4,7 +4,7 @@ import SwiftUI
 
 /// The one drop target of the grid. It finds the card under a drag, reads the dragged files, and says which card takes them.
 /// A `.spot` file goes to the review on any card.
-struct SpotCardDrop: DropDelegate {
+struct SpotGridDrop: DropDelegate {
     let model: SpotsModel
     @Binding var target: String?
 

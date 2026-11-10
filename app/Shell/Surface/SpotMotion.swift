@@ -8,7 +8,7 @@ extension EnvironmentValues {
 /// The timing of the panel and its sheet: on close fill, text and backdrop fade first, and the rims last.
 /// Open fades everything in together.
 enum SpotMotion {
-    static let openDuration = 0.15
+    static let openDuration = SheetOpening.springDuration
     static let fadeInDuration = 0.1
     static let fadeOutDuration = 0.12
     static let closeDuration = 0.2

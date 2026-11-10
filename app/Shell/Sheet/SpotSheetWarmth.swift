@@ -8,34 +8,11 @@ import SwiftUI
 @MainActor
 enum SpotSheetWarmth {
     private static let life: TimeInterval = 0.5
-    private static let emoji = "😀😂🥲😍🤔😴🥳😎👍👋🙏💪👀🧠🐶🐱🦊🐼🌸🌈🔥⭐🍎🍕☕🎉🎁⚽🚀🏠💡📌✅❌❤️💙"
-
-    private static var tiles: String {
-        """
-        grid=tone tone tone tone tone tone tone
-        grid=a a a a a a a
-
-        repeat=a
-        grid=a b c d e f g
-
-        button=open
-        title=Copy
-
-        choice=tone
-        title=Skin tone
-        option=none:Yellow
-        option=light:Light
-        value=none
-
-
-        """ + emoji.map { "row=\($0)\ntitle=\($0)\nicon=\($0)\n" }.joined(separator: "\n")
-    }
-
     private static let rows = ["star", "folder", "doc", "gear", "clock"].map { SpotItem(title: $0.capitalized, subtitle: "Row", run: $0, symbol: $0) }
 
     /// Draws each sheet once, and lets go of the window after a short life.
     static func draw() {
-        let sheets = [SheetExamples.all[0].text, tiles].map(PluginOutput.init(text:))
+        let sheets = [SheetExamples.all[0], SheetExamples.tiles].map { PluginOutput(text: $0.text) }
         let view = VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(sheets.enumerated()), id: \.offset) { _, output in
                 if let panel = SheetParts(output: output) {

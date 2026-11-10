@@ -75,12 +75,8 @@ public struct ViewLibrary: Sendable {
     }
 
     /// The libraries in the cache folder of the app.
-    public static func standard(
-        environment: [String: String] = ProcessInfo.processInfo.environment,
-        home: URL = FileManager.default.homeDirectoryForCurrentUser,
-        devState: String? = Bundle.main.object(forInfoDictionaryKey: "OpenspotDevState") as? String
-    ) -> ViewLibrary {
-        ViewLibrary(cache: AppCache.folder(environment: environment, home: home, devState: devState).appendingPathComponent("views", isDirectory: true))
+    public static func standard(cache: URL = AppCache.folder()) -> ViewLibrary {
+        ViewLibrary(cache: cache.appendingPathComponent("views", isDirectory: true))
     }
 
     /// The path of the library that travels beside a view's source, relative when the source path is.

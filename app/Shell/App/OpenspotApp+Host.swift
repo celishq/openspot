@@ -41,7 +41,7 @@ extension OpenspotApp: SpotsHost {
     }
 
     var draggedPaths: [String] {
-        SpotCardDrop.paths
+        SpotGridDrop.paths
     }
 
     var isMouseDown: Bool {
@@ -49,7 +49,7 @@ extension OpenspotApp: SpotsHost {
     }
 
     var pastedPaths: [String] {
-        SpotCardDrop.paths(on: .general)
+        SpotGridDrop.paths(on: .general)
     }
 
     func copy(_ file: URL) {

@@ -52,11 +52,8 @@ public struct GlyphBook: Equatable, Sendable {
         return String(format: "%016llx", hash) + Self.fileExtension
     }
 
-    public static func folder(
-        environment: [String: String] = ProcessInfo.processInfo.environment,
-        home: URL = FileManager.default.homeDirectoryForCurrentUser,
-        devState: String? = Bundle.main.object(forInfoDictionaryKey: "OpenspotDevState") as? String
-    ) -> URL {
-        AppCache.folder(environment: environment, home: home, devState: devState).appendingPathComponent("glyphs", isDirectory: true)
+    /// The folder of the books in the cache folder of the app.
+    public static func folder(in cache: URL = AppCache.folder()) -> URL {
+        cache.appendingPathComponent("glyphs", isDirectory: true)
     }
 }

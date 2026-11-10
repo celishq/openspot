@@ -36,7 +36,7 @@ final class GlyphBookTests: XCTestCase {
     func testBooksLiveInTheCacheOfTheApp() {
         let home = URL(fileURLWithPath: "/home")
 
-        XCTAssertEqual(GlyphBook.folder(environment: ["OPENSPOT_CONFIG": "/tmp/debug"], home: home, devState: nil).path, "/tmp/debug/glyphs")
-        XCTAssertEqual(GlyphBook.folder(environment: [:], home: home, devState: nil).path, "/home/Library/Caches/openspot/glyphs")
+        XCTAssertEqual(GlyphBook.folder(in: AppCache.folder(environment: ["OPENSPOT_CONFIG": "/tmp/debug"], home: home, devState: nil)).path, "/tmp/debug/glyphs")
+        XCTAssertEqual(GlyphBook.folder(in: AppCache.folder(environment: [:], home: home, devState: nil)).path, "/home/Library/Caches/openspot/glyphs")
     }
 }

@@ -5,9 +5,11 @@ import Foundation
 /// settles later.
 @MainActor
 public final class SheetOpening {
+    /// How long the open spring of a sheet takes.
+    public nonisolated static let springDuration = 0.15
     /// How long a sheet with no answer yet holds its motion for the first answer.
     public let answerPause: TimeInterval
-    /// How long the motion moves, until its spring lies within a point of its end.
+    /// How long the motion moves, until its spring of `springDuration` lies within a point of its end.
     public let motionLength: TimeInterval
     /// The sheet whose open motion runs. The model sets it when the motion starts and when it ends.
     public var moving: String? {

@@ -56,7 +56,7 @@ struct SpotGridView: View {
         }
         .frame(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows), alignment: .topLeading)
         .contentShape(Rectangle())
-        .onDrop(of: [.fileURL], delegate: SpotCardDrop(model: model, target: $dropTarget))
+        .onDrop(of: [.fileURL], delegate: SpotGridDrop(model: model, target: $dropTarget))
     }
 
     /// Where a card lies in the grid, from its place, the drag of Edit Spots and the push of an open sheet, and how it
