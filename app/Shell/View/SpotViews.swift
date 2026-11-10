@@ -18,6 +18,8 @@ final class SpotViews {
 
     private(set) var phases: [String: Phase] = [:]
     @ObservationIgnored private var loaded: [URL: Make] = [:]
+    /// The library that each ready source was made from.
+    @ObservationIgnored private var made: [String: URL] = [:]
     @ObservationIgnored private let library: ViewLibrary
 
     /// The one set of plugin views that every card draws from.
@@ -31,23 +33,30 @@ final class SpotViews {
         phases[source] ?? .building
     }
 
-    /// Builds the view of a source when it changed, and loads its library. A view that is ready stays while its next build runs.
+    /// Builds the view of a source when it changed, and loads its library. A view that is ready stays while its next build
+    /// runs, and a view that is ready from the same library tells no card.
     func load(_ source: String) async {
         let library = library
         do {
             let url = try await Task.detached { try await library.library(of: URL(fileURLWithPath: source)) }.value
             if let make = loaded[url] {
-                phases[source] = .ready(make)
+                if made[source] != url { ready(source, make, from: url) }
                 return
             }
             let entry = try await Task.detached { try Self.entry(of: url) }.value
-            let made = Unmanaged<AnyObject>.fromOpaque(entry()).takeRetainedValue()
-            guard let make = made as? Make else { throw PluginError.fault("This view has an entry that Openspot cannot read. Build it again.") }
+            let object = Unmanaged<AnyObject>.fromOpaque(entry()).takeRetainedValue()
+            guard let make = object as? Make else { throw PluginError.fault("This view has an entry that Openspot cannot read. Build it again.") }
             loaded[url] = make
-            phases[source] = .ready(make)
+            ready(source, make, from: url)
         } catch {
+            made[source] = nil
             phases[source] = .failed((error as? PluginError)?.reason ?? error.localizedDescription)
         }
+    }
+
+    private func ready(_ source: String, _ make: @escaping Make, from url: URL) {
+        made[source] = url
+        phases[source] = .ready(make)
     }
 
     /// Opens a library and finds its entry.
