@@ -12,12 +12,12 @@ extension SpotsModel {
     public func beginEditing() {
         guard openList == nil else { return }
         closeMenu()
-        offSpots = Self.offSpots(in: files.folder, enabled: arrangement.enabled)
+        let folder = files.folder
         change(.edit) {
             query = ""
             isEditing = true
             updateVisible()
-            refreshDock()
+            refreshDock(in: folder)
         }
     }
 
@@ -31,19 +31,56 @@ extension SpotsModel {
         if isSearchingDock != isOn { isSearchingDock = isOn }
     }
 
-    /// Makes the dock from the core spots that are off, and keeps its search.
-    func refreshDock() {
-        var next = SpotDock(items: offSpots)
+    /// Makes the dock from the spots of this folder that are off, and keeps its search.
+    func refreshDock(in folder: PluginFolder) {
+        var next = SpotDock(items: Self.offSpots(in: folder))
         next.query = dock.query
         if next != dock { dock = next }
     }
 
-    /// The core spots of this folder that the config does not turn on. A file in the plugins folder is always on.
-    private static func offSpots(in folder: PluginFolder, enabled: Set<String>) -> [SpotDock.Item] {
-        let own = Set(((try? PluginFolder(url: folder.url).scan())?.plugins ?? []).map(\.id))
-        return folder.coreChoices()
-            .filter { !enabled.contains(PluginFolder.coreID(of: $0)) && !own.contains(PluginFolder.coreID(of: $0)) }
-            .map { SpotDock.Item(command: $0) }
+    /// The core spots of this folder that are not on, and the spots of its files that the person turned off. A sheet that
+    /// another spot opens is not one.
+    private static func offSpots(in folder: PluginFolder) -> [SpotDock.Item] {
+        let own = (try? PluginFolder(url: folder.url).scan())?.plugins ?? []
+        let ownIDs = Set(own.map(\.id))
+        let core = folder.coreChoices()
+            .filter { !folder.enabled.contains(PluginFolder.coreID(of: $0)) && !ownIDs.contains(PluginFolder.coreID(of: $0)) }
+        let turnedOff = own.filter { folder.disabled.contains($0.id) }.flatMap(\.commands)
+        let opened = Set(turnedOff.compactMap(\.opens))
+        return core.map { SpotDock.Item(command: $0) } + turnedOff.filter { !opened.contains($0.id) }.map { SpotDock.Item(command: $0, isOwn: true) }
+    }
+
+    /// Whether the minus of Edit Spots can turn this spot off. A built-in and a card of faults stay on.
+    public func turnsOff(_ entry: Entry) -> Bool {
+        entry.item == nil && entry.command.shipped == nil && entry.command.fault == nil
+    }
+
+    /// Turns a spot off from Edit Spots: its card leaves the panel, and the dock shows it.
+    public func turnOff(_ id: String) {
+        guard let entry = visible.first(where: { $0.id == id }), turnsOff(entry) else { return }
+        turn(entry.command, on: false)
+    }
+
+    /// Turns a spot of the dock on: its card takes a place in the panel.
+    public func turnOn(_ id: String) {
+        guard let item = dock.items.first(where: { $0.id == id }) else { return }
+        turn(item.command, on: true)
+    }
+
+    /// Moves the file of a spot of the dock to the Trash, as Delete does in the action menu, so `⌘Z` puts it back.
+    public func delete(_ id: String) {
+        guard let item = dock.items.first(where: { $0.id == id }), item.isOwn else { return }
+        remove(Entry(command: item.command, run: nil))
+    }
+
+    private func turn(_ command: Spot, on isOn: Bool) {
+        do {
+            try files.config.turn(files.folder.fileID(of: command), on: isOn)
+        } catch {
+            host.notify("\(command.name) was not turned \(isOn ? "on" : "off"). \(Self.reason(error))")
+            return
+        }
+        change(.edit) { reload() }
     }
 
     /// Ends Edit Spots. A panel that closes passes no motion, so that nothing moves during its fade.

@@ -111,7 +111,7 @@ extension SpotsModel {
     public func reviewCore(_ item: SpotItem) {
         let folder = files.folder
         do {
-            let place = PluginFolder(url: folder.url, core: folder.core, enabled: folder.enabled.union([item.run]))
+            let place = PluginFolder(url: folder.url, core: folder.core, enabled: folder.enabled.union([item.run]), disabled: folder.disabled)
             let scan = try place.scan()
             guard let command = scan.commands.first(where: { place.isCore($0) && PluginFolder.coreID(of: $0) == item.run }) else { return }
             closeList(moving: isShown)

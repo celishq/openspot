@@ -45,11 +45,22 @@ final class SpotsModelDragTests: XCTestCase {
         folder.appendingPathComponent("core", isDirectory: true)
     }
 
+    private var trash: URL {
+        folder.appendingPathComponent("trash", isDirectory: true)
+    }
+
     private var files: SpotFiles {
-        SpotFiles(
+        let trash = trash
+        return SpotFiles(
             environment: ["OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path, "OPENSPOT_CORE": core.path],
             home: folder,
-            defaults: defaults
+            defaults: defaults,
+            trash: { url in
+                try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
+                let place = trash.appendingPathComponent(url.lastPathComponent)
+                try FileManager.default.moveItem(at: url, to: place)
+                return place
+            }
         )
     }
 
@@ -344,6 +355,53 @@ final class SpotsModelDragTests: XCTestCase {
 
         model.searchDock("ti")
         XCTAssertEqual(model.dock.shown.map(\.id), ["timer"])
+    }
+
+    func testTheMinusTurnsASpotOfThePluginsFolderOffIntoTheDockAndItStaysOff() {
+        model.turnOff("a")
+
+        XCTAssertEqual(order, ["b", "c", "d"])
+        XCTAssertEqual(model.dock.items.map(\.id), ["a"])
+        XCTAssertEqual(model.dock.items.map(\.isOwn), [true])
+        XCTAssertEqual(savedOrder(), ["b", "c", "d"])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: plugins.appendingPathComponent("a.sh").path))
+    }
+
+    func testASpotTurnedOnFromTheDockComesBackToThePanel() {
+        model.turnOff("a")
+
+        model.turnOn("a")
+
+        XCTAssertTrue(order.contains("a"))
+        XCTAssertEqual(model.dock.items.map(\.id), [])
+    }
+
+    func testACoreSpotTurnsOnFromTheDockAndOffIntoIt() throws {
+        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        model.reload()
+        XCTAssertEqual(model.dock.items.map(\.id), ["timer"])
+
+        model.turnOn("timer")
+        XCTAssertTrue(order.contains("timer"))
+        XCTAssertEqual(model.dock.items.map(\.id), [])
+
+        model.turnOff("timer")
+        XCTAssertFalse(order.contains("timer"))
+        XCTAssertEqual(model.dock.items.map(\.isOwn), [false])
+    }
+
+    func testTheDockDeletesOnlyASpotOfThePluginsFolderAndUndoPutsItBack() throws {
+        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        model.turnOff("a")
+
+        model.delete("timer")
+        model.delete("a")
+
+        XCTAssertEqual(model.dock.items.map(\.id), ["timer"])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: trash.appendingPathComponent("a.sh").path))
+        XCTAssertTrue(model.undoRemoval())
+        XCTAssertEqual(model.dock.items.map(\.id), ["a", "timer"])
+        XCTAssertFalse(order.contains("a"))
     }
 
     func testTypingInTheDockSearchTakesNoEditKeyAndEscapeEndsTheSearch() {

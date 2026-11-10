@@ -27,7 +27,7 @@ struct SpotDockView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: SpotTokens.columnGap) {
                     ForEach(dock.shown) { item in
-                        SpotDockTile(entry: SpotsModel.Entry(command: item.command, run: nil), model: model)
+                        SpotDockTile(item: item, model: model)
                     }
                 }
             }
