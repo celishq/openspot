@@ -3,13 +3,18 @@ import SwiftUI
 
 /// A row drawn by its template: each slot at the frame that its drawing gives it in the place of the row (U8). A control in a
 /// slot reports its slot and its value, and the row sends them with its `run` (U9).
-struct SpotTemplateRow: View {
+struct SpotTemplateRow: View, Equatable {
     let item: SpotItem
     let template: RowTemplate
     let size: CGSize
     /// The size of the place, such as `2x2`, which picks the template's drawing.
     var place = ""
     let onSlot: (String, String?) -> Void
+
+    /// Whether two rows draw the same, so that a run of the rows reruns only the rows that changed.
+    nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.item == rhs.item && lhs.template == rhs.template && lhs.size == rhs.size && lhs.place == rhs.place
+    }
 
     var body: some View {
         let parts = template.parts(of: item)
