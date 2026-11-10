@@ -765,9 +765,9 @@ public final class SpotRun {
         list.stopLoading()
     }
 
-    /// Takes the answer of a read or of a search: the first frame of a read that runs once, the silence of one that ended by
-    /// itself, or the frame that ends a call of a staying script. A read's answer replaces all that the spot shows, and a
-    /// search's answer replaces its rows (02, Y7).
+    /// Takes the answer of a read or of a search: the first frame of a read that runs once or a later one with a head, the
+    /// silence of one that ended by itself, or the frame that ends a call of a staying script. A read's answer replaces all
+    /// that the spot shows, and a search's answer replaces its rows (02, Y7).
     func takeAnswer(_ lines: PluginOutput, frame: String, to ask: Ask) async {
         let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: lines.search) } else { nil }
         lastAnswer = lines.withoutBlocks()
@@ -808,20 +808,16 @@ public final class SpotRun {
         }
     }
 
-    /// Takes a frame that answers nothing: a later frame of a read, a frame of another call, or a frame that a staying script
-    /// printed by itself. It changes only what it prints (02, Y7): the value when it prints the main component, the rows, the
-    /// parts, and the control of the card. Only a later frame of a read changes the spot's words.
+    /// Takes a frame that answers nothing: a later frame of a read with no head, a frame of another call, or a frame that a
+    /// staying script printed by itself. It changes only what it prints (02, Y7): the value when it prints the main
+    /// component, the rows, the parts, and the control of the card.
     func takeUpdate(_ lines: PluginOutput, frame: String, from source: Source) async {
         let next = lines.items.isEmpty ? nil : await newRows(lines.items, search: rows.search)
         report(toastOf: lines)
         if let main = lastAnswer?.value?.fields.first?.value, lines.value?.fields.first?.value == main, let value = MetricValue(output: lines) {
             changeReading { $0.take(value) }
         }
-        if case .read = source, command.readsState, lines.summary != nil {
-            takeState(lines)
-        } else {
-            state = keepingLevel(state.taking(lines))
-        }
+        state = keepingLevel(state.taking(lines))
         if let next { list.replace(next) }
         if showsSheet {
             switch source {
