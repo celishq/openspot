@@ -30,9 +30,10 @@ public final class SpotRun {
         case change
     }
 
-    /// What a call asks for, which says what its answer replaces.
+    /// What a call asks for, which says what its answer replaces. A read of a list that the script searches carries the text
+    /// it was sent with.
     enum Ask {
-        case read(generation: Int?, reports: Bool)
+        case read(generation: Int?, reports: Bool, query: String = "")
         case search(String)
     }
 
@@ -336,13 +337,13 @@ public final class SpotRun {
         link.leave()
     }
 
-    /// Asks the script for what it shows. A list that the script searches asks its search while text is typed. A request joins
-    /// the read that runs, and a change reads again after it (M1). A `panel` or a `sheet` moment uses an answer younger than 5
-    /// seconds (M2). A file with no `read` gets its click instead.
+    /// Asks the script for what it shows. A list that the script searches sends the text that is typed, so that the answer
+    /// gives the spot's new value and the rows of that text. A request joins the read that runs, and a change reads again
+    /// after it (M1). A `panel` or a `sheet` moment uses an answer younger than 5 seconds (M2). A file with no `read` gets
+    /// its click instead.
     public func read(selecting run: String? = nil, need: ReadNeed = .moment, reason: ReadReason? = nil) {
         let reason = reason ?? (need == .change ? .change : isOpen ? .sheet : .panel)
         if let run { selecting = run }
-        guard list.search == .local || list.query.isEmpty || command.stays else { return ask() }
         if link.isAsking {
             if need == .change { readsAgain = true }
             return
@@ -352,15 +353,17 @@ public final class SpotRun {
             showRunning()
             return
         }
-        let action = command.read == nil ? command.click : SpotAction.read
+        let query = list.search == .script && !command.stays ? list.query : ""
+        let read = query.isEmpty ? SpotAction.read : .items(query: query, forms: SearchQuery(text: query).forms)
+        let action = command.read == nil ? command.click : read
         let isSent = link.send(Call(
             action: action,
             key: Self.readKey,
             input: isOpen ? panel?.values : nil,
-            limit: action == .read ? runs.readLimit : nil,
+            limit: action == read ? runs.readLimit : nil,
             reason: reason,
-            variables: action == .read ? reason.variables : [:],
-            purpose: .ask(.read(generation: panel?.generation, reports: need != .clock))
+            variables: action == read ? reason.variables : [:],
+            purpose: .ask(.read(generation: panel?.generation, reports: need != .clock, query: query))
         ))
         if isSent { list.beginLoading() }
     }
@@ -650,7 +653,7 @@ public final class SpotRun {
                 waiter = nil
                 readsAgain = false
             }
-        case (.ask(.read(_, let reports)), .failed(let error)):
+        case (.ask(.read(_, let reports, _)), .failed(let error)):
             answered = nil
             list.loadFailed()
             changeReading { $0.markStale() }
@@ -704,7 +707,7 @@ public final class SpotRun {
         report(toastOf: lines)
         command = command.taking(lines)
         switch ask {
-        case .read(let generation, _):
+        case .read(let generation, _, let query):
             answered = runs.now()
             if command.readsState { takeState(lines) }
             takeValue(lines)
@@ -717,7 +720,7 @@ public final class SpotRun {
                 if let kept { $0.select(run: kept) }
             }
             if isOpen || panel != nil { takePanel(lines, generation: generation) }
-            if list.search == .script, !list.query.isEmpty { self.ask() }
+            if list.search == .script, !list.query.isEmpty, list.query != query { self.ask() }
             showRunning()
         case .search(let query):
             await prepare(lines.items)
