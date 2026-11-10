@@ -79,6 +79,8 @@ struct SpotsView: View {
             if model.isEditing {
                 editHeader
                     .transition(.opacity)
+                panelHandle
+                    .transition(.opacity)
             }
             if let menu = model.menu {
                 Color.clear
@@ -184,8 +186,10 @@ struct SpotsView: View {
         sheetRect.height + 2 * SpotTokens.halo + SpotTokens.hintBlock
     }
 
+    /// The height of the grid's part of the panel: as tall as its cards, or in Edit Spots as tall as the size the person set.
     private var gridHeight: CGFloat {
-        SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0, shown: model.panelSize.rows)
+        let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
+        return SpotTokens.backdropHeight(rows: model.isEditing ? max(rows, model.panelSize.rows) : rows, shown: model.panelSize.rows)
     }
 
     /// The height of the shape that ends the cards. It follows only the grid, so that a sheet's motion swaps no image.
@@ -214,6 +218,24 @@ struct SpotsView: View {
         if let form = model.form { return form.draft.choices != nil }
         guard sheetOpen else { return true }
         return model.sheets[sheetID ?? ""]?.kind.showsField != false
+    }
+
+    /// The handle just past the bottom right corner of the grid in Edit Spots, which the person drags to set the panel's
+    /// columns and rows.
+    private var panelHandle: some View {
+        let side = SpotTokens.resizeHandle
+        let corner = CGPoint(
+            x: SpotTokens.halo + SpotTokens.width(columns: model.panelSize.columns) + SpotTokens.panelHandleGap,
+            y: SpotTokens.gridTop + SpotTokens.height(rows: model.panelSize.rows) + SpotTokens.panelHandleGap
+        )
+        return SpotResizeHandle(size: .large)
+            .background(Color.clear.contentShape(Rectangle()).gesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .named(Self.panelSpace))
+                    .onChanged { model.resizePanel(by: $0.translation) }
+                    .onEnded { _ in model.dropPanelResize() }
+            ))
+            .help("Drag to change the columns and the rows")
+            .offset(x: corner.x - side, y: corner.y - side)
     }
 
     /// The top of the grid in Edit Spots, in the place of the search field.

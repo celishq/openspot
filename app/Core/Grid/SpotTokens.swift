@@ -17,6 +17,8 @@ public enum SpotTokens {
     /// The side of the square that takes a drag of a card's resize handle, and the width of its line on the rim.
     public static let resizeHandle: CGFloat = 28
     public static let resizeHandleLine: CGFloat = 5
+    /// How far past the grid's bottom right corner the panel's resize handle lies, clear of the last card's handle.
+    public static let panelHandleGap: CGFloat = 10
     /// How far from each edge the rim of a round corner passes through its diagonal, as a part of the radius.
     public static let rimPoint: CGFloat = 1 - 0.5.squareRoot()
     public static let listRowHeight: CGFloat = 40

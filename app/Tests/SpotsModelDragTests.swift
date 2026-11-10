@@ -293,6 +293,42 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.placements[2].column, 4)
     }
 
+    private var eightColumns: CGSize {
+        CGSize(width: SpotTokens.width(columns: 8) - SpotTokens.width(columns: 4), height: 0)
+    }
+
+    func testThePanelCornerPulledRightGivesEightColumnsAndAReleaseSavesThem() {
+        model.resizePanel(by: eightColumns)
+
+        XCTAssertEqual(model.panelSize, PanelSize(columns: 8, rows: 6))
+        XCTAssertEqual(model.placements.map(\.column), [0, 2, 4, 6])
+        XCTAssertNil(files.config.read().panelSize)
+
+        model.dropPanelResize()
+
+        XCTAssertNil(model.panelResize)
+        XCTAssertEqual(files.config.read().panelSize, PanelSize(columns: 8, rows: 6))
+    }
+
+    func testEscapePutsThePanelSizeBack() {
+        model.resizePanel(by: eightColumns)
+
+        model.handleEditKey(ActionKey(name: "escape"))
+        model.dropPanelResize()
+
+        XCTAssertTrue(model.isEditing)
+        XCTAssertEqual(model.panelSize, .standard)
+        XCTAssertNil(files.config.read().panelSize)
+    }
+
+    func testThePanelGrowsNoLargerThanItsLimit() {
+        model.panelLimit = PanelSize(columns: 8, rows: 7)
+
+        model.resizePanel(by: CGSize(width: 5000, height: 5000))
+
+        XCTAssertEqual(model.panelSize, PanelSize(columns: 8, rows: 7))
+    }
+
     func testNoCardLiftsOutsideEditSpots() {
         model.endEditing()
 

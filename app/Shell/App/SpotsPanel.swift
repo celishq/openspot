@@ -73,6 +73,15 @@ final class SpotsPanel: NSPanel {
     private func open(ordering order: () -> Void) {
         model?.panelWillShow(holding: Self.modifiers(of: NSEvent.modifierFlags))
         order()
+        takeLimit()
+    }
+
+    /// Takes the largest panel that fits its screen to the right of its left edge and below its top edge.
+    private func takeLimit() {
+        guard let area = screen?.visibleFrame else { return }
+        let columns = PanelSize.columnSteps.last { SpotTokens.panelWidth(columns: $0) <= area.maxX - frame.minX } ?? SpotTokens.columns
+        let rows = (1...40).last { SpotTokens.gridPanelHeight(rows: $0) <= frame.maxY - area.minY } ?? 1
+        model?.panelLimit = PanelSize(columns: columns, rows: rows)
     }
 
     /// Whether a point on the screen lies on the part of the panel that takes a drop. The window is taller than that.

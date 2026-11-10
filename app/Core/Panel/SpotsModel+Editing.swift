@@ -11,14 +11,49 @@ extension SpotsModel {
     /// Sets the size of the panel's grid, saves it, and lays out the cards at its columns.
     public func setPanelSize(_ size: PanelSize) {
         guard size != panelSize else { return }
+        save(size)
+        change(.edit) {
+            panelSize = size
+            updateVisible()
+        }
+    }
+
+    /// Resizes the panel by its corner: it takes the size whose corner lies nearest the pointer, with no fewer rows than its
+    /// cards need and no larger than `panelLimit`, and the cards make room.
+    public func resizePanel(by translation: CGSize) {
+        guard isEditing, drag == nil, resize == nil else { return }
+        let resize = panelResize ?? PanelResize(start: panelSize, sizes: visible.filter(\.isOnGrid).map(\.size), limit: panelLimit)
+        panelResize = resize
+        let target = resize.nearest(to: resize.corner(movedBy: translation))
+        guard target != panelSize else { return }
+        change(.edit) {
+            panelSize = target
+            updateVisible()
+        }
+    }
+
+    /// Ends the resize of the panel, and saves its size when it changed.
+    public func dropPanelResize() {
+        guard let resize = panelResize else { return }
+        panelResize = nil
+        if panelSize != resize.start { save(panelSize) }
+    }
+
+    /// Puts the panel back at the size it had when the resize started.
+    public func cancelPanelResize() {
+        guard let resize = panelResize else { return }
+        panelResize = nil
+        change(.edit) {
+            panelSize = resize.start
+            updateVisible()
+        }
+    }
+
+    private func save(_ size: PanelSize) {
         do {
             try files.config.set("panel_size", to: size.text)
         } catch {
             host.notify("Openspot could not save the size of the panel. \(Self.reason(error))")
-        }
-        change(.edit) {
-            panelSize = size
-            updateVisible()
         }
     }
 
@@ -43,6 +78,8 @@ extension SpotsModel {
         guard isEditing else { return }
         stopDragWait()
         change(moving ? .edit : nil) {
+            if let resize = panelResize { panelSize = resize.start }
+            panelResize = nil
             isEditing = false
             drag = nil
             landing = nil
@@ -55,10 +92,11 @@ extension SpotsModel {
     }
 
     public func handleEditKey(_ key: ActionKey) {
-        if drag != nil || resize != nil {
+        if drag != nil || resize != nil || panelResize != nil {
             if key.name == "escape" {
                 cancelDrag()
                 cancelResize()
+                cancelPanelResize()
             }
             return
         }

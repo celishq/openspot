@@ -5,7 +5,7 @@ import QuartzCore
 /// A run that opens and closes the sheet of one spot again and again, or with `OPENSPOT_ACTION` moves down its rows, types
 /// in its search, picks the row `OPENSPOT_ROW` or drags a card in Edit Spots, and writes the time of each frame to a file.
 /// `OPENSPOT_ACTION=mouse` drags a card with mouse events instead, or with `OPENSPOT_ROW` holds it at the bottom `edge`,
-/// pulls its `corner` handle or presses its `minus`, and writes whether it lifted or resized, the order, its size and
+/// pulls its `corner` handle, presses its `minus` or pulls the `panel` handle four columns wider, and writes whether it lifted or resized, the order, its size and
 /// whether it is on the grid after.
 /// `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`. The panel stays almost clear, takes no focus and no clicks,
 /// unless `OPENSPOT_SEEN` asks for a picture. With `OPENSPOT_SHOTS`, a drag saves a picture of each state to that folder
@@ -176,7 +176,8 @@ final class SpotMotionProbe: NSObject {
     }
 
     /// Presses the card at this place, moves the mouse this far in steps and lets go, through events put in the app's queue
-    /// for a panel off every screen, as a person's mouse sends them. The press starts at the card's centre, its corner
+    /// for a panel off every screen, at points that keep their place on the screen as the window resizes, as a person's
+    /// mouse sends them. The press starts at the card's centre, its corner
     /// handle, which it pulls down a row, or its minus, which it only clicks. At the edge it rests 1.5 s before it lets go.
     /// The panel stays open when another app takes the focus. It logs the drag after each step, and each 10 ms after the last.
     private func press(_ id: String, at rect: CGRect, by move: CGSize) {
@@ -188,9 +189,14 @@ final class SpotMotionProbe: NSObject {
         model.isSettlingDrop = true
         let height = panel.contentView?.bounds.height ?? 0
         let inset = SpotTokens.keycap / 2
-        let point = row == "corner" ? CGPoint(x: rect.maxX - inset, y: rect.maxY - inset) : row == "minus" ? CGPoint(x: rect.minX + inset, y: rect.minY + inset) : CGPoint(x: rect.midX, y: rect.midY)
+        let gridCorner = CGPoint(
+            x: SpotTokens.width(columns: model.panelSize.columns) + SpotTokens.panelHandleGap - inset,
+            y: SpotTokens.height(rows: model.panelSize.rows) + SpotTokens.panelHandleGap - inset
+        )
+        let point = row == "corner" ? CGPoint(x: rect.maxX - inset, y: rect.maxY - inset) : row == "minus" ? CGPoint(x: rect.minX + inset, y: rect.minY + inset) : row == "panel" ? gridCorner : CGPoint(x: rect.midX, y: rect.midY)
         let edgeMove = CGSize(width: 0, height: SpotTokens.gridPanelHeight(rows: model.panelSize.rows) - SpotTokens.halo - SpotTokens.hintBlock - 10 - (SpotTokens.gridTop + rect.midY))
-        let translation = row == "corner" ? CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap) : row == "minus" ? .zero : row == "edge" ? edgeMove : move
+        let wider = CGSize(width: SpotTokens.width(columns: 8) - SpotTokens.width(columns: 4), height: 0)
+        let translation = row == "corner" ? CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap) : row == "minus" ? .zero : row == "edge" ? edgeMove : row == "panel" ? wider : move
         let start = NSPoint(x: SpotTokens.halo + point.x, y: height - (SpotTokens.gridTop + point.y))
         let size = { self.model.visible.firstIndex { $0.id == id }.map { self.model.placements[$0].size.name } ?? "none" }
         let sizeBefore = size()
@@ -203,8 +209,10 @@ final class SpotMotionProbe: NSObject {
             if let scroll = view as? NSScrollView { return scroll.contentView.bounds.minY }
             return view.subviews.lazy.compactMap(scrolled).first
         }
+        let screenStart = panel.convertPoint(toScreen: start)
         func post(_ type: NSEvent.EventType, _ share: CGFloat) {
-            let point = NSPoint(x: start.x + translation.width * share, y: start.y - translation.height * share)
+            let onScreen = NSPoint(x: screenStart.x + translation.width * share, y: screenStart.y - translation.height * share)
+            let point = panel.convertPoint(fromScreen: onScreen)
             guard let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: panel.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1) else { return }
             NSApp.postEvent(event, atStart: false)
         }
@@ -212,14 +220,14 @@ final class SpotMotionProbe: NSObject {
         let steps = [{ post(.leftMouseDown, 0) }] + (1...20).map { step in { post(.leftMouseDragged, CGFloat(step) / 20) } } + rest + [{ post(.leftMouseUp, 1) }]
         var log: [String] = []
         func note() {
-            log.append("drag \(model.drag.map { "\($0.id) at \($0.place)" } ?? "none") landing \(model.landing ?? "none") lift \(model.lift.offset)")
+            log.append("drag \(model.drag.map { "\($0.id) at \($0.place)" } ?? "none") landing \(model.landing ?? "none") lift \(model.lift.offset) panel \(model.panelSize.text) limit \(model.panelLimit.text)")
         }
         func run(_ left: ArraySlice<() -> Void>) {
             guard let next = left.first else {
                 (1...20).forEach { tick in DispatchQueue.main.asyncAfter(deadline: .now() + Double(tick) * 0.01, execute: note) }
                 return DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                     let entry = self.model.visible.first { $0.id == id }
-                    self.finish(with: "lifted \(lifted)\nresizing \(resizing)\nmost scroll \(maxScroll)\nbefore \(before)\nafter \(self.model.visible.map(\.id))\nsize \(sizeBefore) to \(size())\non grid \(entry?.isOnGrid ?? false)\n" + log.joined(separator: "\n") + "\n")
+                    self.finish(with: "lifted \(lifted)\nresizing \(resizing)\nmost scroll \(maxScroll)\nbefore \(before)\nafter \(self.model.visible.map(\.id))\nsize \(sizeBefore) to \(size())\non grid \(entry?.isOnGrid ?? false)\npanel \(self.model.panelSize.text)\n" + log.joined(separator: "\n") + "\n")
                 }
             }
             next()

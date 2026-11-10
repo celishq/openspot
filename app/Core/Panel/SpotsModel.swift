@@ -211,6 +211,10 @@ public final class SpotsModel {
     public var arrangement = SpotArrangement()
     /// The size of the grid that the person set, whose columns the grid packs to.
     public internal(set) var panelSize = PanelSize.standard
+    /// The largest panel that fits the screen that the panel shows on.
+    public var panelLimit = PanelSize(columns: 16, rows: 12)
+    /// The resize of the panel by its corner in Edit Spots, while the pointer holds it.
+    public internal(set) var panelResize: PanelResize?
     /// The symbol of the command whose key a person pressed last, which the Openspot item shows for `flashPause`.
     public private(set) var flashSymbol: String?
     @ObservationIgnored public var flashPause: Duration = .milliseconds(1500)
