@@ -254,7 +254,85 @@ final class SpotsModelDragTests: XCTestCase {
         model.panelWillHide()
 
         XCTAssertNil(model.drag)
+        XCTAssertNil(model.carry)
         XCTAssertEqual(model.lift.offset, .zero)
+    }
+
+    /// The dock under the panel, in the panel's space, as the window sets it in Edit Spots.
+    private let dock = CGRect(x: -400, y: SpotTokens.panelHeight, width: 1220, height: SpotTokens.dockHeight(rows: 3))
+
+    /// The pointer's move, since the drag started, that takes the centre of the lifted card to this point of the grid.
+    private func dragMove(to point: CGPoint) -> CGSize {
+        let rect = model.drag.map { $0.rect(at: $0.start) } ?? .zero
+        return CGSize(width: point.x - rect.midX, height: point.y - rect.midY)
+    }
+
+    /// A point of the panel's space as a point of the grid, which has not scrolled.
+    private func inGrid(_ point: CGPoint) -> CGPoint {
+        let origin = SpotTokens.gridOrigin(scrollOffset: 0)
+        return CGPoint(x: point.x - origin.x, y: point.y - origin.y)
+    }
+
+    func testACardReleasedOnTheDockTurnsOffAndTheDockShowsIt() {
+        model.dockFrame = dock
+        let translation = move("a", to: inGrid(CGPoint(x: dock.midX, y: dock.midY)))
+
+        model.dragSpot("a", by: translation)
+        XCTAssertEqual(model.carry?.isOverDock, true)
+        XCTAssertEqual(order, ["a", "b", "c", "d"])
+
+        model.dropSpot(by: translation)
+        XCTAssertNil(model.drag)
+        XCTAssertNil(model.carry)
+        XCTAssertEqual(order, ["b", "c", "d"])
+        XCTAssertEqual(model.dock.items.map(\.id), ["a"])
+    }
+
+    func testOffTheGridTheCardsGoBackToTheirPlacesBeforeTheRelease() {
+        model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
+        XCTAssertEqual(order, ["a", "b", "d", "c"])
+
+        let start = model.drag.map { $0.rect(at: $0.start) } ?? .zero
+        model.dragSpot("d", by: dragMove(to: CGPoint(x: SpotTokens.gridWidth + SpotTokens.rowHeight, y: start.midY)))
+
+        XCTAssertEqual(order, ["a", "b", "c", "d"])
+    }
+
+    func testInEditSpotsADraggedCardReachesTheDockAndStaysAPaddingInsideTheWindow() {
+        model.dockFrame = dock
+        let rect = model.placements[0].rect
+
+        model.dragSpot("a", by: CGSize(width: 0, height: 5000))
+
+        XCTAssertEqual(model.lift.offset.height, dock.maxY - SpotTokens.padding - SpotTokens.gridTop - rect.maxY)
+        XCTAssertEqual(model.lift.origin, CGPoint(x: SpotTokens.halo + rect.minX, y: dock.maxY - SpotTokens.padding - rect.height))
+    }
+
+    func testTheCarriedCardGlidesToItsPlaceAndGoesWhenItLands() {
+        host.heldEnds = []
+        let translation = move("d", to: leftHalf(of: "c"))
+        model.dragSpot("d", by: translation)
+        XCTAssertEqual(model.carry?.entry.id, "d")
+
+        model.dropSpot(by: translation)
+
+        let place = model.placements[model.visible.firstIndex { $0.id == "d" } ?? 0].rect
+        XCTAssertEqual(model.lift.origin, CGPoint(x: SpotTokens.halo + place.minX, y: SpotTokens.gridTop + place.minY))
+        XCTAssertEqual(model.carry?.entry.id, "d")
+        host.heldEnds?.forEach { $0() }
+        XCTAssertNil(model.carry)
+    }
+
+    func testACardPutBackGlidesToWhereItStarted() {
+        host.heldEnds = []
+        let start = model.placements[3].rect
+        model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
+
+        model.handleEditKey(ActionKey(name: "escape"))
+
+        XCTAssertEqual(model.lift.origin, CGPoint(x: SpotTokens.halo + start.minX, y: SpotTokens.gridTop + start.minY))
+        host.heldEnds?.forEach { $0() }
+        XCTAssertNil(model.carry)
     }
 
     private var down: CGSize {

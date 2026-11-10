@@ -71,6 +71,7 @@ struct SpotGridView: View {
                 .zIndex(card.isHeld ? 1 : 0)
                 .contextMenu { spotMenu(of: entry) }
                 .opacity(entry.id == openID ? 0.001 : 1)
+                .animation(nil) { $0.opacity(model.carry?.entry.id == entry.id ? 0.001 : 1) }
                 .allowsHitTesting(entry.id != openID)
             }
         }

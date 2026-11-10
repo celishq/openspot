@@ -195,6 +195,10 @@ public final class SpotsModel {
     public let lift = SpotLift()
     /// The card that a release or a cancel of a drag puts in place, until its motion ends.
     public internal(set) var landing: String?
+    /// The card that the window draws over the panel and the dock while the person carries it, until it lands.
+    public internal(set) var carry: SpotCarry?
+    /// Where the dock lies in the panel's space while Edit Spots shows it.
+    @ObservationIgnored public var dockFrame: CGRect?
     /// The card that the person resizes by its corner in Edit Spots, and the size that a release keeps.
     public internal(set) var resize: SpotResize?
     /// How long the pointer stays near a new place before the other cards make room there.
@@ -211,7 +215,6 @@ public final class SpotsModel {
     public internal(set) var dock = SpotDock(items: [])
     /// Whether the person types in the dock's search, which then takes each key but Esc.
     public internal(set) var isSearchingDock = false
-    /// The core spots that are off, which the dock shows, found when Edit Spots starts.
     /// Where the person pressed a card's resize handle, in the handle's square.
     @ObservationIgnored var resizeGrip = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)
     public var arrangement = SpotArrangement()

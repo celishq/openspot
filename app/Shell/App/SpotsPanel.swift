@@ -104,6 +104,7 @@ final class SpotsPanel: NSPanel {
             place.panel = CGPoint(x: panel.minX - whole.minX, y: whole.maxY - panel.maxY)
             place.dock = CGRect(x: dock.minX - whole.minX, y: whole.maxY - dock.maxY, width: dock.width, height: dock.height)
             place.isOut = false
+            model.dockFrame = place.dock?.offsetBy(dx: -place.panel.x, dy: -place.panel.y)
             setFrame(whole, display: true)
             DispatchQueue.main.async { [weak self] in
                 guard let self, self.model?.isEditing == true else { return }
@@ -125,6 +126,7 @@ final class SpotsPanel: NSPanel {
         place.isOut = false
         place.dock = nil
         place.panel = .zero
+        model?.dockFrame = nil
         setFrame(rest, display: true)
     }
 

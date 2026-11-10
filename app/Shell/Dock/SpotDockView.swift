@@ -51,8 +51,22 @@ struct SpotDockView: View {
             }
         }
         .frame(width: size.width, height: size.height, alignment: .topLeading)
+        .background { DropMark(model: model) }
         .modifier(SpotGlass(rimSize: size))
         .onChange(of: isSearching) { _, isOn in model.searchesDock(isOn) }
         .onChange(of: model.isSearchingDock) { _, isOn in if !isOn { isSearching = false } }
+    }
+}
+
+/// The fill of the dock while a card that a release there turns off lies over it.
+private struct DropMark: View {
+    let model: SpotsModel
+
+    var body: some View {
+        let isOn = model.carry.map { $0.turnsOff && $0.isOverDock } ?? false
+        RoundedRectangle(cornerRadius: SpotTokens.radius, style: .continuous)
+            .fill(SpotTheme.ink.opacity(SpotTheme.fill))
+            .opacity(isOn ? 1 : 0)
+            .animation(SpotMotion.liftFade, value: isOn)
     }
 }

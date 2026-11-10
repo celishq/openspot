@@ -10,8 +10,8 @@ import QuartzCore
 /// whether it is on the grid after.
 /// `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`. The panel stays almost clear, takes no focus and no clicks,
 /// unless `OPENSPOT_SEEN` asks for a picture. With `OPENSPOT_SHOTS`, a drag saves a picture of each state to that folder
-/// from a panel off every screen, `edit` saves one of Edit Spots with its dock from the panel at its place, and neither
-/// times anything.
+/// from a panel off every screen, `edit` saves Edit Spots with its dock from the panel at its place, and a card carried to
+/// the dock, and neither times anything.
 @MainActor
 final class SpotMotionProbe: NSObject {
     private let model: SpotsModel
@@ -97,13 +97,29 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.edit(left: left - 1) }
     }
 
-    /// Saves a picture of Edit Spots with its dock, a second after it starts.
+    /// Saves a picture of Edit Spots with its dock a second after it starts and, with `OPENSPOT_SPOT`, of that card carried
+    /// over the dock and a second after its release there.
     private func shootEdit(into folder: String) {
         model.beginEditing()
+        try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
             self.save(to: "\(folder)/dock.png")
-            self.finish(with: "shots\n")
+            guard let id = self.spot, let index = self.model.visible.firstIndex(where: { $0.id == id }), let dock = self.model.dockFrame else {
+                return self.finish(with: "shots\n")
+            }
+            let rect = self.model.placements[index].rect
+            let origin = SpotTokens.gridOrigin(scrollOffset: self.model.gridScroll)
+            let move = CGSize(width: dock.midX - origin.x - rect.midX, height: dock.midY - origin.y - rect.midY)
+            self.model.dragSpot(id, by: CGSize(width: 1, height: 1))
+            self.model.dragSpot(id, by: move)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.save(to: "\(folder)/carried.png")
+                self.model.dropSpot(by: move)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    self.save(to: "\(folder)/dropped.png")
+                    self.finish(with: "shots\n")
+                }
+            }
         }
     }
 
