@@ -2,7 +2,8 @@ import OpenspotCore
 import SwiftUI
 
 /// The controls of a card in Edit Spots: the minus, or the plus of a hidden card, on its top left corner, and the handle on
-/// its bottom right corner that resizes it. The handle shows while the pointer is over the card, and while it resizes.
+/// its bottom right corner that resizes it. The handle shows while the pointer is over the card, and while it resizes, and
+/// the pointer over it is a resize arrow.
 struct SpotEditControls: ViewModifier {
     let model: SpotsModel
     let id: String
@@ -29,6 +30,7 @@ struct SpotEditControls: ViewModifier {
                         .opacity(showsHandle ? 1 : 0.001)
                         .animation(SpotMotion.handleFade, value: showsHandle)
                         .background(Color.clear.contentShape(Rectangle()).gesture(resizeGesture))
+                        .pointerStyle(.frameResize(position: .bottomTrailing))
                 }
             }
             .onHover { hovering in
