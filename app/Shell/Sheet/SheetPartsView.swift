@@ -88,7 +88,7 @@ struct SheetPartsView: View {
             )
             .frame(width: frame.rect.width, height: frame.rect.height, alignment: Self.alignment(frame))
             .background {
-                if part.look != .tile {
+                if part.look != .tile, part.isSelectable {
                     Color.clear.modifier(PartRing(id: part.id, selectedID: selectedID, shape: shape)).padding(-SpotTokens.controlPadding)
                 }
             }
