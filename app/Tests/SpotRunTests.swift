@@ -132,9 +132,9 @@ final class SpotRunTests: XCTestCase {
 
         sheet.open(waits: true) {}
 
-        XCTAssertTrue(sheet.awaitsFirstAnswer)
+        XCTAssertEqual(sheet.kind, .waiting)
         try await wait("the parts") { sheet.panel != nil }
-        XCTAssertFalse(sheet.awaitsFirstAnswer)
+        XCTAssertNotEqual(sheet.kind, .waiting)
     }
 
     func testASheetWithAnAnswerOpensAtOnceThoughItMayWait() async throws {
@@ -446,7 +446,7 @@ final class SpotRunTests: XCTestCase {
         nonisolated(unsafe) var changed = false
         withObservationTracking {
             _ = sheet.shape
-            _ = sheet.awaitsFirstAnswer
+            _ = sheet.kind
         } onChange: {
             changed = true
         }

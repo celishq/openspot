@@ -577,9 +577,9 @@ public final class SpotsModel {
         return list[selected]
     }
 
-    /// Whether the panel shows its search field, which a form or a sheet of parts with no rows replaces.
+    /// Whether the search field keeps the keys: no form, no Edit Spots and no sheet of parts with no rows takes them.
     public var showsSearch: Bool {
-        form == nil && !isEditing && openPanel?.showsRows != false
+        form == nil && !isEditing && openSheet?.kind.takesKeys != false
     }
 
     public var openPanel: SheetParts? {

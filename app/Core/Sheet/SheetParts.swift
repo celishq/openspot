@@ -63,6 +63,10 @@ public struct SheetParts: Equatable, Sendable {
         layout?.repeated != nil
     }
 
+    public var kind: SheetKind {
+        SheetKind(parts: parts, layout: layout)
+    }
+
     /// Whether the up and down keys select its parts. A sheet with a text area or with rows leaves them to those.
     public var takesArrows: Bool {
         !showsRows && !parts.contains(where: \.isEditable) && parts.contains(where: \.isSelectable)

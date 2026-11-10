@@ -96,7 +96,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try await wait("the rows") { sheet.list.shown.count == 1 }
     }
 
-    func testASheetOfRowsShowsItsFieldWhileItsFirstAnswerWaitsForTheOpenMotion() async throws {
+    func testASheetOfRowsSaysItsKindWhileItsFirstAnswerWaitsForTheOpenMotion() async throws {
         runs.quit()
         runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
         try script(header: "read=sheet", "printf 'repeat=a\\n\\ntemplate=row\\ngrid=name\\ntext=name\\n\\nrow=a\\ntitle=A\\n'")
@@ -104,15 +104,15 @@ final class SpotRunsCallTests: SpotRunsCase {
         runs.panelOpened()
         runs.opening.moving = "script"
         sheet.open {}
-        XCTAssertFalse(sheet.showsField)
+        XCTAssertEqual(sheet.kind, .waiting)
 
-        try await wait("the field") { sheet.showsField }
+        try await wait("the kind") { sheet.kind == .rows }
         XCTAssertNil(sheet.panel)
         XCTAssertEqual(sheet.list.shown.count, 0)
         runs.opening.moving = nil
     }
 
-    func testASheetOfPartsWithNoRowsKeepsItsFieldHiddenWhileItsFirstAnswerWaitsForTheOpenMotion() async throws {
+    func testASheetOfPartsWithNoRowsSaysItsKindWhileItsFirstAnswerWaitsForTheOpenMotion() async throws {
         runs.quit()
         runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
         try script(header: "read=sheet", "printf 'text=a\\ntitle=A\\n'")
@@ -124,10 +124,10 @@ final class SpotRunsCallTests: SpotRunsCase {
         try await pause(0.2)
 
         XCTAssertNil(sheet.panel)
-        XCTAssertFalse(sheet.showsField)
+        XCTAssertEqual(sheet.kind, .parts)
         runs.opening.moving = nil
         try await wait("the parts") { sheet.panel != nil }
-        XCTAssertFalse(sheet.showsField)
+        XCTAssertEqual(sheet.kind, .parts)
     }
 
     func testWhatASheetPrintsShowsAfterTheLengthOfItsOpenMotionThoughItsSpringSettlesLater() async throws {

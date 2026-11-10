@@ -131,10 +131,13 @@ public final class SpotRun {
     /// How many rows the list shows, and how many on a line. It changes only when they do, so a move of the selection leaves
     /// a view that sizes itself by it alone.
     public private(set) var shape = Shape(rows: 0, perLine: 1)
-    /// Whether an open sheet still waits for the first answer, so that it cannot yet say what kind of sheet it is.
-    public private(set) var awaitsFirstAnswer = false
-    /// Whether the first answer, while it waits for the open motion, shows the search field. Nil when no such answer waits.
-    private var heardField: Bool?
+    /// What kind of sheet it is, from its parts, or from a first answer that waits for the open motion. An open sheet that
+    /// still waits for its first answer cannot say yet.
+    public private(set) var kind = SheetKind.rows
+    /// The kind of the first answer while it waits for the open motion, or nil when no such answer waits.
+    @ObservationIgnored private var heardKind: SheetKind? {
+        didSet { settle() }
+    }
     public private(set) var state: SpotState {
         didSet { if state != oldValue { onReport(.listChange) } }
     }
@@ -220,20 +223,14 @@ public final class SpotRun {
             : Shape(rows: rows.perLine == 1 ? rows.spans : rows.shown.count, perLine: rows.perLine)
         if next != shape { shape = next }
         let waits = isOpen && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
-        if waits != awaitsFirstAnswer { awaitsFirstAnswer = waits }
+        let nextKind = heardKind ?? (waits ? .waiting : panel?.kind ?? .rows)
+        if nextKind != kind { kind = nextKind }
     }
 
-    /// Whether the sheet shows the search field: its parts draw rows or it has none, once its first answer is there. A first
-    /// answer that waits for the open motion says it before its parts show.
-    public var showsField: Bool {
-        heardField ?? (panel?.showsRows != false && !awaitsFirstAnswer)
-    }
-
-    /// Hears a frame that waits for the open motion. A sheet that waits for its first answer takes from it whether it shows
-    /// the search field.
+    /// Hears a frame that waits for the open motion. A sheet that waits for its first answer takes its kind from it.
     func hear(_ lines: PluginOutput) {
-        guard awaitsFirstAnswer else { return }
-        heardField = SheetParts(output: lines)?.showsRows != false
+        guard kind == .waiting else { return }
+        heardKind = SheetKind(parts: lines.parts, layout: lines.layout)
     }
 
     /// Asks for the first answer, and runs the given work when it arrives.
@@ -272,7 +269,7 @@ public final class SpotRun {
         if let search = running(Self.searchKey) { stop(search) }
         editing = nil
         runs.opening.dropMotion(of: command.id)
-        heardField = nil
+        heardKind = nil
         if panel?.isSelectionMoved == true { panel?.clearSelection() }
         link.settle()
         stopUnwantedRead()
@@ -703,7 +700,7 @@ public final class SpotRun {
     /// itself, or the frame that ends a call of a staying script. A read's answer replaces all that the spot shows, and a
     /// search's answer replaces its rows (02, Y7).
     func takeAnswer(_ lines: PluginOutput, frame: String, to ask: Ask) async {
-        heardField = nil
+        heardKind = nil
         lastAnswer = lines.withoutBlocks()
         report(toastOf: lines)
         command = command.taking(lines)
@@ -747,7 +744,7 @@ public final class SpotRun {
     /// printed by itself. It changes only what it prints (02, Y7): the value when it prints the main component, the rows, the
     /// parts, and the control of the card. Only a later frame of a read changes the spot's words.
     func takeUpdate(_ lines: PluginOutput, frame: String, from source: Source) async {
-        heardField = nil
+        heardKind = nil
         report(toastOf: lines)
         if let main = lastAnswer?.value?.fields.first?.value, lines.value?.fields.first?.value == main, let value = MetricValue(output: lines) {
             changeReading { $0.take(value) }
