@@ -115,5 +115,5 @@ trap 'exit 143' TERM
 [ -x "$engine" ] && [ ! "$layer" -nt "$engine" ] || build_engine
 [ -f "$game" ] || get_game
 cd "$data" || exit 1
-[ -d screens ] || "$engine" -iwad "$game" -screen > /dev/null 2>&1
+[ -d screens ] || "$engine" -iwad "$game" -title > /dev/null 2>&1
 play

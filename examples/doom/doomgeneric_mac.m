@@ -18,12 +18,12 @@ static BOOL held[256];
 /// The time in milliseconds between two pictures of the screen during play.
 #define SCREEN_PAUSE 5000
 
-/// The time in milliseconds after the start when `-screen` takes the title screen.
+/// The time in milliseconds after the start when `-title` takes the title screen.
 #define TITLE_TIME 1500
 
 static NSWindow *window;
-static NSView *screen;
-static BOOL screenOnly;
+static NSView *display;
+static BOOL titleOnly;
 static uint32_t started;
 static uint32_t lastScreen;
 
@@ -149,7 +149,7 @@ static NSMenu *MainMenu(void) {
 }
 
 void DG_Init(void) {
-    if (screenOnly) return;
+    if (titleOnly) return;
     window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 640, 480)
                                          styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable
                                            backing:NSBackingStoreBuffered
@@ -160,15 +160,15 @@ void DG_Init(void) {
     window.releasedWhenClosed = NO;
     watch = [[DoomWindowWatch alloc] init];
     window.delegate = watch;
-    screen = [[DoomView alloc] initWithFrame:NSMakeRect(0, 0, 640, 480)];
-    screen.wantsLayer = YES;
-    screen.layer.contentsGravity = kCAGravityResize;
-    screen.layer.magnificationFilter = kCAFilterNearest;
-    screen.layer.backgroundColor = NSColor.blackColor.CGColor;
-    window.contentView = screen;
+    display = [[DoomView alloc] initWithFrame:NSMakeRect(0, 0, 640, 480)];
+    display.wantsLayer = YES;
+    display.layer.contentsGravity = kCAGravityResize;
+    display.layer.magnificationFilter = kCAFilterNearest;
+    display.layer.backgroundColor = NSColor.blackColor.CGColor;
+    window.contentView = display;
     [window center];
     [window makeKeyAndOrderFront:nil];
-    [window makeFirstResponder:screen];
+    [window makeFirstResponder:display];
     [NSApp activate];
 }
 
@@ -225,7 +225,7 @@ static void HandleEvents(void) {
 
 void DG_DrawFrame(void) {
     uint32_t now = DG_GetTicksMs();
-    if (screenOnly) {
+    if (titleOnly) {
         if (now - started < TITLE_TIME) return;
         SaveScreen();
         exit(0);
@@ -237,7 +237,7 @@ void DG_DrawFrame(void) {
     CGImageRef image = ScreenImage();
     [CATransaction begin];
     [CATransaction setDisableActions:YES];
-    screen.layer.contents = (__bridge id)image;
+    display.layer.contents = (__bridge id)image;
     [CATransaction commit];
     CGImageRelease(image);
     HandleEvents();
@@ -266,15 +266,15 @@ void DG_SetWindowTitle(const char *title) {
     window.title = [NSString stringWithUTF8String:title];
 }
 
-/// Starts the app with a Dock icon and a menu, then runs the game until it quits. With `-screen`, it opens no window,
+/// Starts the app with a Dock icon and a menu, then runs the game until it quits. With `-title`, it opens no window,
 /// writes the title screen to `screens/` and ends.
 int main(int argc, char **argv) {
     started = DG_GetTicksMs();
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-screen") == 0) screenOnly = YES;
+        if (strcmp(argv[i], "-title") == 0) titleOnly = YES;
     }
     @autoreleasepool {
-        if (!screenOnly) {
+        if (!titleOnly) {
             [NSApplication sharedApplication];
             [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
             NSApp.mainMenu = MainMenu();
