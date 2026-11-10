@@ -168,12 +168,67 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.lift.offset, .zero)
     }
 
+    private var down: CGSize {
+        CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap)
+    }
+
+    private var savedSize: SpotSize? {
+        files.config.read().arrangement.size(of: "c")
+    }
+
+    func testACornerPulledDownARowMakesTheCardSquareAndAReleaseSavesIt() {
+        model.resizeSpot("c", by: down)
+
+        XCTAssertEqual(model.placements[2].size, .square)
+        XCTAssertEqual(model.placements[3].size, .square)
+        XCTAssertNil(savedSize)
+
+        model.dropResize()
+
+        XCTAssertNil(model.resize)
+        XCTAssertEqual(model.placements[2].size, .square)
+        XCTAssertEqual(savedSize, .square)
+        XCTAssertEqual(model.selected, 2)
+    }
+
+    func testEscapePutsTheSizeBackAndSavesNothing() {
+        model.resizeSpot("c", by: down)
+
+        model.handleEditKey(ActionKey(name: "escape"))
+        model.dropResize()
+
+        XCTAssertTrue(model.isEditing)
+        XCTAssertNil(model.resize)
+        XCTAssertEqual(model.placements[2].size, .wide)
+        XCTAssertNil(savedSize)
+    }
+
+    func testAReleaseAtTheSameSizeSavesNothing() {
+        model.resizeSpot("c", by: CGSize(width: 5, height: 5))
+
+        model.dropResize()
+
+        XCTAssertNil(model.resize)
+        XCTAssertNil(savedSize)
+    }
+
+    func testAPanelThatHidesEndsTheResize() {
+        model.resizeSpot("c", by: down)
+
+        model.panelWillHide()
+
+        XCTAssertNil(model.resize)
+    }
+
     func testNoCardLiftsOutsideEditSpots() {
         model.endEditing()
 
         model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
+        model.resizeSpot("c", by: down)
 
         XCTAssertNil(model.drag)
+        XCTAssertNil(model.resize)
         XCTAssertEqual(order, ["a", "b", "c", "d"])
+        XCTAssertEqual(model.placements[2].size, .wide)
     }
 }

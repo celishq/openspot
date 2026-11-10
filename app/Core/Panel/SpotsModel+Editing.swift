@@ -26,6 +26,7 @@ extension SpotsModel {
         change(moving ? .edit : nil) {
             isEditing = false
             drag = nil
+            resize = nil
             if lift.offset != .zero { lift.offset = .zero }
             selected = 0
             updateVisible()
@@ -33,8 +34,11 @@ extension SpotsModel {
     }
 
     public func handleEditKey(_ key: ActionKey) {
-        if drag != nil {
-            if key.name == "escape" { cancelDrag() }
+        if drag != nil || resize != nil {
+            if key.name == "escape" {
+                cancelDrag()
+                cancelResize()
+            }
             return
         }
         if openNewSpot(on: key) { return }
@@ -57,7 +61,7 @@ extension SpotsModel {
     /// would put it once the pointer has rested there for `dragRest`. A card on the grid lands among the cards on the grid,
     /// and a hidden card among the hidden cards.
     public func dragSpot(_ id: String, by translation: CGSize) {
-        guard isEditing, query.isEmpty else { return }
+        guard isEditing, query.isEmpty, resize == nil else { return }
         if drag?.id != id {
             guard let start = visible.firstIndex(where: { $0.id == id }) else { return }
             let onGrid = visible.filter(\.isOnGrid).count
@@ -111,6 +115,41 @@ extension SpotsModel {
             if lift.offset != .zero { lift.offset = .zero }
             updateVisible()
             selected = drag.start
+        }
+    }
+
+    /// Resizes a card by its corner: it takes the size whose corner lies nearest the pointer, and the other cards make room.
+    public func resizeSpot(_ id: String, by translation: CGSize) {
+        guard isEditing, query.isEmpty, drag == nil else { return }
+        if resize?.id != id {
+            guard let index = visible.firstIndex(where: { $0.id == id }) else { return }
+            resize = SpotResize(id: id, index: index, sizes: visible.map(\.size), choices: sizes(of: visible[index]))
+            selected = index
+        }
+        guard let resize else { return }
+        let target = resize.nearest(to: resize.corner(movedBy: translation))
+        guard target != resize.size else { return }
+        change(.edit) {
+            self.resize?.size = target
+            updateVisible()
+        }
+    }
+
+    /// Ends the resize, and saves the size as the card's preferred size when it changed.
+    public func dropResize() {
+        guard let resize else { return }
+        guard resize.size != resize.start else { return cancelResize() }
+        arrangement.arrange(visible.map(\.id))
+        arrangement.set(size: resize.size, of: resize.id)
+        saveArrangement(selecting: resize.id) { self.resize = nil }
+    }
+
+    /// Puts the resized card and the cards that made room back as they were.
+    public func cancelResize() {
+        guard resize != nil else { return }
+        change(.edit) {
+            resize = nil
+            updateVisible()
         }
     }
 

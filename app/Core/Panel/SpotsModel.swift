@@ -193,6 +193,8 @@ public final class SpotsModel {
     /// The card that the person drags in Edit Spots, and where a release puts it.
     public internal(set) var drag: SpotDrag?
     public let lift = SpotLift()
+    /// The card that the person resizes by its corner in Edit Spots, and the size that a release keeps.
+    public internal(set) var resize: SpotResize?
     /// How long the pointer stays near a new place before the other cards make room there.
     @ObservationIgnored public var dragRest: Duration = .milliseconds(100)
     /// The place that the cards make room at when the pointer has rested near it for `dragRest`.
@@ -441,7 +443,7 @@ public final class SpotsModel {
     public func updateVisible() {
         let next = found()
         if next != visible { visible = next }
-        let sizes = visible.map(\.size)
+        let sizes = visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size }
         if sizes != laidOutSizes {
             laidOutSizes = sizes
             placements = SpotGrid().place(sizes)
