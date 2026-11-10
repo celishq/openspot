@@ -250,7 +250,7 @@ extension SpotsModel {
     /// The keys that work on the selected row or card, in words for the bottom of the panel.
     public var hint: String {
         if recording != nil { return "Esc Cancel" }
-        if isEditing { return "S Size   H Hide   ⇧ Arrows Move   Esc Done" }
+        if isEditing { return "S Size   H \(selectedEntry?.isOnGrid == false ? "Show" : "Hide")   ⇧ Arrows Move   Esc Done" }
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
         if let panel = openPanel, !panel.showsRows || panel.drawsKeys { return panel.hint { work(of: $0) != nil } }
         let keys = target.flatMap { target in
