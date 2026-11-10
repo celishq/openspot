@@ -78,6 +78,8 @@ enum SpotCommandLine {
             SpotTranslation.serve()
         case .helper(SpotRecording.capability.name):
             SpotRecording.serve()
+        case .helper(CalcRateCache.capability.name):
+            CalcRateCache.serve()
         case .helper(let name):
             run(.unknown("helper \(name)"))
         case .glyphBook(let side, let fontSize, let path):
@@ -86,7 +88,7 @@ enum SpotCommandLine {
         case .translateLanguages:
             finish { await SpotTranslation.languages() }
         case .calcSolve(let words):
-            answer { CalcAnswer(text: words)?.text ?? "" }
+            answer { CalcAnswer(text: words, rates: CalcRateCache.ask)?.text ?? "" }
         case .emoji(let tone):
             finish { try EmojiCatalog().rows(tone: tone) }
         case .symbols:

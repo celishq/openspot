@@ -5,8 +5,25 @@ final class CalcAnswerTests: XCTestCase {
     private let english = Locale(identifier: "en_US")
     private let ukrainian = Locale(identifier: "uk_UA")
 
-    private func answer(_ text: String, in locale: Locale? = nil) -> CalcAnswer? {
-        CalcAnswer(text: text, locale: locale ?? english)
+    private let berlin: Calendar = {
+        var clock = Calendar(identifier: .gregorian)
+        clock.timeZone = TimeZone(identifier: "Europe/Berlin")!
+        return clock
+    }()
+    /// Wednesday 11 November 2026 at 14:05 in Berlin.
+    private let now = Date(timeIntervalSince1970: 1_794_402_300)
+
+    private func answer(_ text: String, in locale: Locale? = nil, rates: CalcRates? = nil) -> CalcAnswer? {
+        CalcAnswer(text: text, locale: locale ?? english, clock: berlin, now: now, rates: { rates })
+    }
+
+    /// The text with the narrow and the no-break spaces that macOS writes in times and amounts as plain spaces.
+    private func spaced(_ text: String?) -> String? {
+        text?.replacingOccurrences(of: "\u{202F}", with: " ").replacingOccurrences(of: "\u{00A0}", with: " ")
+    }
+
+    private func rates(at time: Date? = nil) -> CalcRates? {
+        CalcRates(coinbase: CalcRatesTests.coinbase, time: time ?? now)
     }
 
     func testASumPrintsOneRowWithItsPlainValueItsAnswerAndHowItWasRead() {
@@ -67,5 +84,50 @@ final class CalcAnswerTests: XCTestCase {
 
     func testUnitsOfTwoKindsOrUnknownWordsHaveNoAnswer() {
         for text in ["5 km in kg", "5 apples in pears", "5 km in", "in mi", "5 km"] { XCTAssertNil(answer(text), text) }
+    }
+
+    func testACurrencyConvertsWithTheRatesAndNamesThemAndTheirTime() {
+        XCTAssertEqual(spaced(answer("15 usd in eur", rates: rates())?.text), "row=13.46\ntitle=€13.46\ndetail=15 USD in EUR · Coinbase, 2:05 PM\n")
+        XCTAssertEqual(spaced(answer("15 usd in eur", in: ukrainian, rates: rates())?.title), "13,46 EUR")
+        XCTAssertEqual(spaced(answer("15 usd in eur", rates: rates(at: now - 2 * 86_400))?.detail), "15 USD in EUR · Coinbase, Nov 9, 2026 at 2:05 PM")
+        let cases: [(String, String)] = [
+            ("$15 in eur", "13.46"), ("15$ to €", "13.46"), ("15 dollars in euros", "13.46"), ("100 eur in uah", "5068.23"),
+            ("1 btc in usd", "73640.44"), ("100 usd in btc", "0.00135795"), ("1000 jpy in usd", "6.53"), ("(10+5) usd in eur", "13.46"),
+        ]
+        for (text, value) in cases { XCTAssertEqual(answer(text, rates: rates())?.value, value, text) }
+        XCTAssertEqual(answer("1 btc in usd", rates: rates())?.title, "$73,640.44")
+        XCTAssertEqual(spaced(answer("100 usd in btc", rates: rates())?.title), "BTC 0.00135795")
+    }
+
+    func testAnAmountInACurrencyAloneConvertsToTheCurrencyOfTheMac() {
+        XCTAssertEqual(answer("15 eur", in: ukrainian, rates: rates())?.value, "760.23")
+        XCTAssertEqual(spaced(answer("$15", in: ukrainian, rates: rates())?.title), "682,16 ₴")
+        XCTAssertNil(answer("15 usd", rates: rates()))
+    }
+
+    func testUnitsWinOverCurrenciesAndUnknownCodesHaveNoAnswer() {
+        XCTAssertEqual(answer("5 pounds in kg", rates: rates())?.title, "2.26796 kg")
+        XCTAssertEqual(answer("5 pounds in usd", rates: rates())?.value, "6.58")
+        XCTAssertNil(answer("15 abc in eur", rates: rates()))
+        XCTAssertNil(answer("3 apples", rates: rates()))
+    }
+
+    func testWithNoRatesAKnownCurrencySaysItIsOfflineAndAnUnknownOneSaysNothing() {
+        XCTAssertEqual(answer("15 usd in eur")?.text, "status=offline\n")
+        XCTAssertNil(answer("1 xyz in abc"))
+    }
+
+    func testRatesAreAskedOnlyForACurrency() {
+        var asks = 0
+        let count: () -> CalcRates? = {
+            asks += 1
+            return nil
+        }
+        _ = CalcAnswer(text: "2*(3+4)", locale: english, clock: berlin, now: now, rates: count)
+        _ = CalcAnswer(text: "5 km in mi", locale: english, clock: berlin, now: now, rates: count)
+        _ = CalcAnswer(text: "safari", locale: english, clock: berlin, now: now, rates: count)
+        XCTAssertEqual(asks, 0)
+        _ = CalcAnswer(text: "15 usd in eur", locale: english, clock: berlin, now: now, rates: count)
+        XCTAssertEqual(asks, 1)
     }
 }

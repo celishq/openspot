@@ -96,8 +96,9 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot translate [--from code] [--to code] Translates the text on stdin.
     openspot translate languages                 Prints the languages it knows.
     openspot calc solve <words>...               Prints the answer of a sum, such as 2*(3+4) or 15% of 80, or of a
-                                                 conversion, such as 5 km in mi, as a row. It prints nothing for words
-                                                 that are not one. The row's id is the plain value.
+                                                 conversion, such as 5 km in mi or 15 usd in eur, as a row. It prints
+                                                 nothing for words that are not one, and status=offline for a currency
+                                                 with no rates. The row's id is the plain value. Rates come from Coinbase.
     openspot emoji [--tone name]                 Prints each emoji as a row, with its name in the language of the Mac.
                                                  A tone is none, light, medium-light, medium, medium-dark or dark.
     openspot symbols                             Prints each symbol of the Character Viewer as a row, with its name and section.

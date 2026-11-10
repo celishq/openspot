@@ -1,16 +1,31 @@
 import Foundation
 
 /// The answer to a typed sum or conversion, as one row: its id is the plain value to copy, its title the answer written the
-/// way of the Mac, and its detail how the text was read. Text that is not a sum has no answer.
+/// way of the Mac, and its detail how the text was read. Text that is not a sum has no answer, and a currency with no rates
+/// to convert it has the answer `status=offline`.
 public struct CalcAnswer: Equatable, Sendable {
     /// The value with a dot and no grouping, such as `3.75`.
     public let value: String
     public let title: String
     public let detail: String
+    /// Why there is no value, such as `offline`.
+    public let status: String?
 
-    public init?(text: String, locale: Locale = .autoupdatingCurrent) {
+    /// Reads the text. `rates` gives the exchange rates, and is asked only for a currency.
+    public init?(
+        text: String,
+        locale: Locale = .autoupdatingCurrent,
+        clock: Calendar = .autoupdatingCurrent,
+        now: Date = Date(),
+        rates: @escaping () -> CalcRates? = { nil }
+    ) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let answer = Self.conversion(of: text, locale: locale) {
+        var asked: CalcRates??
+        let kept = {
+            if asked == nil { asked = .some(rates()) }
+            return asked ?? nil
+        }
+        if let answer = Self.conversion(of: text, locale: locale, clock: clock, now: now, rates: kept) {
             self = answer
         } else if let expression = CalcExpression(text: text, locale: locale), !expression.isPlain {
             self.init(value: Self.plain(expression.value, digits: 15), title: Self.written(expression.value, locale: locale), detail: expression.detail)
@@ -19,32 +34,74 @@ public struct CalcAnswer: Equatable, Sendable {
         }
     }
 
-    private init(value: String, title: String, detail: String) {
+    private init(value: String, title: String, detail: String, status: String? = nil) {
         self.value = value
         self.title = title
         self.detail = detail
+        self.status = status
     }
 
-    /// The row that `openspot calc solve` prints.
+    /// The row that `openspot calc solve` prints, or its status.
     public var text: String {
-        TextBlock(fields: [.init(key: "row", value: value), .init(key: "title", value: title), .init(key: "detail", value: detail)]).text
+        if let status { return TextBlock(fields: [.init(key: "status", value: status)]).text }
+        return TextBlock(fields: [.init(key: "row", value: value), .init(key: "title", value: title), .init(key: "detail", value: detail)]).text
     }
 
-    /// The first split of the text whose two names are units of one kind.
-    private static func conversion(of text: String, locale: Locale) -> CalcAnswer? {
+    /// The first split of the text whose names are two units of one kind, or two currencies that the rates know.
+    private static func conversion(of text: String, locale: Locale, clock: Calendar, now: Date, rates: () -> CalcRates?) -> CalcAnswer? {
         for split in CalcConversion.splits(of: text, locale: locale) {
-            guard let from = CalcUnit.named(split.from), let to = CalcUnit.named(split.to), CalcUnit.areAlike(from, to) else { continue }
-            let value = Measurement(value: split.amount.value, unit: from).converted(to: to).value
-            guard value.isFinite else { continue }
-            let formatter = MeasurementFormatter()
+            if let to = split.to, let answer = units(split.amount, from: split.from, to: to, locale: locale) { return answer }
+            guard let from = CalcCurrency.code(split.from), let to = split.to.map(CalcCurrency.code) ?? locale.currency?.identifier, from != to else { continue }
+            guard let rates = rates() else {
+                if CalcCurrency.isFiat(from), CalcCurrency.isFiat(to) { return CalcAnswer(value: "", title: "", detail: "", status: "offline") }
+                continue
+            }
+            guard let rate = rates.rate(from: from, to: to) else { continue }
+            let value = split.amount.value * rate
+            let formatter = NumberFormatter()
             formatter.locale = locale
-            formatter.unitOptions = .providedUnit
-            formatter.unitStyle = .medium
-            formatter.numberFormatter = significant(6, locale: locale)
-            let title = formatter.string(from: Measurement(value: value, unit: to))
-            return CalcAnswer(value: plain(value, digits: 6), title: title, detail: "\(split.amount.detail) \(split.from) in \(split.to)")
+            formatter.numberStyle = .currency
+            formatter.currencyCode = to
+            if !CalcCurrency.isFiat(to) {
+                formatter.minimumFractionDigits = 0
+                formatter.maximumFractionDigits = 8
+            }
+            let plain = NumberFormatter()
+            plain.locale = Locale(identifier: "en_US_POSIX")
+            plain.usesGroupingSeparator = false
+            plain.maximumFractionDigits = formatter.maximumFractionDigits
+            let detail = "\(split.amount.detail) \(from) in \(to) · Coinbase, \(time(of: rates, clock: clock, now: now, locale: locale))"
+            return CalcAnswer(
+                value: plain.string(from: NSNumber(value: value)) ?? Self.plain(value, digits: 15),
+                title: formatter.string(from: NSNumber(value: value)) ?? "",
+                detail: detail
+            )
         }
         return nil
+    }
+
+    private static func units(_ amount: CalcExpression, from: String, to: String, locale: Locale) -> CalcAnswer? {
+        guard let fromUnit = CalcUnit.named(from), let toUnit = CalcUnit.named(to), CalcUnit.areAlike(fromUnit, toUnit) else { return nil }
+        let value = Measurement(value: amount.value, unit: fromUnit).converted(to: toUnit).value
+        guard value.isFinite else { return nil }
+        let formatter = MeasurementFormatter()
+        formatter.locale = locale
+        formatter.unitOptions = .providedUnit
+        formatter.unitStyle = .medium
+        formatter.numberFormatter = significant(6, locale: locale)
+        let title = formatter.string(from: Measurement(value: value, unit: toUnit))
+        return CalcAnswer(value: plain(value, digits: 6), title: title, detail: "\(amount.detail) \(from) in \(to)")
+    }
+
+    /// When the rates were taken: the time alone today, and the day with it before.
+    private static func time(of rates: CalcRates, clock: Calendar, now: Date, locale: Locale) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.calendar = clock
+        formatter.timeZone = clock.timeZone
+        formatter.timeStyle = .short
+        formatter.dateStyle = clock.isDate(rates.time, inSameDayAs: now) ? .none : .medium
+        return formatter.string(from: rates.time)
     }
 
     private static func plain(_ value: Double, digits: Int) -> String {
