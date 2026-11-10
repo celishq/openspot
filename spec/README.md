@@ -11,6 +11,7 @@ app, which the New spot sheet opens and `openspot guide` prints for an AI. How t
 | [05 Stay](05-stay.md)                   | draft  | 01 02 | One process that stays and talks both ways over stdio, such as a local server.   |
 | [06 Screen](06-screen.md)               | draft  | 01 02 | Pictures and recordings of the screen, with the mic, the sound and the camera.   |
 | [07 Files out](07-files-out.md)         | draft  | 01 02 | Rows that a person drags out of a sheet as files.                                |
+| [08 Float](08-float.md)                 | draft  | 01 02 | A spot that a key or a shake shows in a window of its own at the pointer.        |
 
 A number that a spec gave up is not used again.
 
@@ -50,6 +51,7 @@ These rules come from the way Nostr writes its NIPs.
 | `title`, `icon`, `detail`, `shortcut`, `size`, `read`, `data`, `drop`, `command`, `settings`, `global`, `tray` | Header key | 01 |
 | `view`                                                                                                   | Header key           | 03   |
 | `stay`                                                                                                   | Header key           | 05   |
+| `float`                                                                                                  | Header key           | 08   |
 | `sheet`, `panel`, a number, `launch`, `wake`                                                             | Moment               | 01   |
 | `read`                                                                                                   | Reserved call        | 01   |
 | `run`, `open`, `drop`                                                                                    | Default id           | 01   |
