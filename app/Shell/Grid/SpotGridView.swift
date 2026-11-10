@@ -16,8 +16,7 @@ struct SpotGridView: View {
     var body: some View {
         let placements = model.placements
         let drag = model.drag
-        let rows = max(placements.map { $0.row + $0.size.rows }.max() ?? 0, model.isEditing ? model.panelSize.rows : 0)
-        let width = SpotTokens.width(columns: model.panelSize.columns)
+        let rows = placements.map { $0.row + $0.size.rows }.max() ?? 0
         let glass = placements.map { placement in
             let entry = model.visible[placement.index]
             let isLifted = drag?.id == entry.id
@@ -34,12 +33,10 @@ struct SpotGridView: View {
             )
         }
         return ZStack(alignment: .topLeading) {
-            SpotGridGlass(cards: glass, pressable: openID == nil ? glass : [], size: CGSize(width: width, height: SpotTokens.height(rows: rows)), lift: model.lift)
+            SpotGridGlass(cards: glass, pressable: openID == nil ? glass : [], size: CGSize(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows)), lift: model.lift)
             if model.isEditing {
-                SpotEmptyPlaces(placements: placements, columns: model.panelSize.columns, rows: rows)
-                    .transition(.opacity)
                 landing(of: drag, in: placements)
-                    .frame(width: width, height: SpotTokens.height(rows: rows))
+                    .frame(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows))
             }
             ForEach(Array(zip(placements, glass)), id: \.1.id) { placement, card in
                 let entry = model.visible[placement.index]
@@ -77,7 +74,7 @@ struct SpotGridView: View {
                 .allowsHitTesting(entry.id != openID)
             }
         }
-        .frame(width: width, height: SpotTokens.height(rows: rows), alignment: .topLeading)
+        .frame(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows), alignment: .topLeading)
         .contentShape(Rectangle())
         .onDrop(of: [.fileURL], delegate: SpotGridDrop(model: model, target: $dropTarget))
     }

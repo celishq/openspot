@@ -8,15 +8,15 @@ struct SpotScrollEdges: Equatable {
 
     static let fadeLength = 56.0
 
-    /// A mask for cards that scroll in a surface of this height, over a view of the `whole` height.
-    func gradient(height: CGFloat, whole: CGFloat = SpotTokens.panelHeight) -> LinearGradient {
-        LinearGradient(stops: stops(height: height, whole: whole), startPoint: .top, endPoint: .bottom)
+    /// A mask for cards that scroll in a surface of this height.
+    func gradient(height: CGFloat) -> LinearGradient {
+        LinearGradient(stops: stops(height: height), startPoint: .top, endPoint: .bottom)
     }
 
-    private func stops(height: CGFloat, whole: CGFloat) -> [Gradient.Stop] {
-        let start = (SpotTokens.halo + SpotTokens.rowHeight) / whole
-        let end = (height - SpotTokens.halo - SpotTokens.hintBlock) / whole
-        let length = Self.fadeLength / whole
+    private func stops(height: CGFloat) -> [Gradient.Stop] {
+        let start = (SpotTokens.halo + SpotTokens.rowHeight) / SpotTokens.panelHeight
+        let end = (height - SpotTokens.halo - SpotTokens.hintBlock) / SpotTokens.panelHeight
+        let length = Self.fadeLength / SpotTokens.panelHeight
         return [
             .init(color: .black.opacity(1 - top), location: start),
             .init(color: .black.opacity(1 - 0.6 * top), location: start + length / 3),

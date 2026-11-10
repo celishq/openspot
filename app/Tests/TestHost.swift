@@ -54,14 +54,6 @@ final class TestHost: SpotsHost {
         notes.append(text)
     }
 
-    /// The fixes of the last toasts that carried one, which a test can run.
-    var fixes: [@MainActor () -> Void] = []
-
-    func notify(_ text: String, fix: @escaping @MainActor () -> Void) {
-        notes.append(text)
-        fixes.append(fix)
-    }
-
     func confirm(_ text: String) {
         confirms.append(text)
     }

@@ -9,24 +9,17 @@ public struct SpotDrag: Equatable, Sendable {
     /// The card's place in the order where a release puts it.
     public var place: Int
     private let layouts: [Int: [SpotPlacement]]
-    /// The width of the grid.
-    private let width: CGFloat
 
     /// Lays out the grid once for each place in `places`, with the card moved there from `start` among cards of these sizes.
-    /// With `rows`, it leaves out each place, but the start, where the first `counted` cards reach past that many rows.
-    public init(id: String, start: Int, sizes: [SpotSize], places: ClosedRange<Int>, grid: SpotGrid = SpotGrid(), rows: Int? = nil, counted: Int? = nil) {
+    public init(id: String, start: Int, sizes: [SpotSize], places: ClosedRange<Int>) {
         self.id = id
         self.start = start
         place = start
-        width = SpotTokens.width(columns: grid.columns)
-        let counted = counted ?? sizes.count
-        layouts = Dictionary(uniqueKeysWithValues: places.compactMap { place in
+        let grid = SpotGrid()
+        layouts = Dictionary(uniqueKeysWithValues: places.map { place in
             var moved = sizes
             moved.insert(moved.remove(at: start), at: place)
-            let layout = grid.place(moved)
-            let reach = layout.filter { $0.index < counted }.map { $0.row + $0.size.rows }.max() ?? 0
-            guard place == start || rows.map({ reach <= $0 }) ?? true else { return nil }
-            return (place, layout)
+            return (place, grid.place(moved))
         })
     }
 
@@ -60,7 +53,7 @@ public struct SpotDrag: Equatable, Sendable {
     /// Whether a release at this point lands on the grid: on its cards, or less than half a row past them.
     public func holds(_ point: CGPoint) -> Bool {
         let rows = layout(at: start).map { $0.row + $0.size.rows }.max() ?? 0
-        let grid = CGRect(x: 0, y: 0, width: width, height: SpotTokens.height(rows: rows))
+        let grid = CGRect(x: 0, y: 0, width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows))
         return grid.insetBy(dx: -SpotTokens.rowHeight / 2, dy: -SpotTokens.rowHeight / 2).contains(point)
     }
 

@@ -3,103 +3,6 @@ import Observation
 
 /// Edit Spots: the order, the size and the place on the grid of each spot.
 extension SpotsModel {
-    /// The packing rule at the panel's columns.
-    public var grid: SpotGrid {
-        SpotGrid(columns: panelSize.columns)
-    }
-
-    /// The most rows that the cards on the grid may take: the rows the panel shows, or more when the cards already take more.
-    var rowLimit: Int {
-        max(panelSize.rows, rows(of: cards.filter(\.isOnGrid)))
-    }
-
-    /// Whether these cards, as the grid, take no more rows than it may.
-    func fits(_ cards: [Entry]) -> Bool {
-        rows(of: cards) <= rowLimit
-    }
-
-    func rows(of cards: [Entry]) -> Int {
-        grid.place(cards.map(\.size)).map { $0.row + $0.size.rows }.max() ?? 0
-    }
-
-    /// Takes new spots off a grid that has no room for them, the last first, and tells the person, with a fix that opens
-    /// Edit Spots. A new spot is one that the scan found and the person has made no choice for.
-    func makeRoom(for new: [String]) {
-        let arriving = new.filter { id in arrangement.isOnGrid(of: id) == nil && cards.contains { $0.id == id && $0.isOnGrid } }
-        guard !arriving.isEmpty else { return }
-        let limit = max(panelSize.rows, rows(of: cards.filter { $0.isOnGrid && !arriving.contains($0.id) }))
-        var hidden: [String] = []
-        for id in arriving.reversed() {
-            guard rows(of: cards.filter { $0.isOnGrid && !hidden.contains($0.id) }) > limit else { break }
-            hidden.append(id)
-        }
-        guard !hidden.isEmpty else { return }
-        hidden.forEach { arrangement.set(isOnGrid: false, of: $0) }
-        do {
-            try files.config.write(arrangement)
-        } catch {
-            host.notify("Openspot could not save the spots. \(Self.reason(error))")
-        }
-        rebuildEntries()
-        let names = hidden.reversed().compactMap { id in cards.first { $0.id == id }?.command.name }
-        let text = names.count == 1
-            ? "\(names[0]) is off the grid, because the grid is full. It still shows in search."
-            : "\(names[0]) and \(names.count - 1) other spots are off the grid, because the grid is full. They still show in search."
-        host.notify(text) { [weak self] in
-            self?.host.present()
-            self?.beginEditing()
-        }
-    }
-
-    /// Sets the size of the panel's grid, saves it, and lays out the cards at its columns.
-    public func setPanelSize(_ size: PanelSize) {
-        guard size != panelSize else { return }
-        save(size)
-        change(.edit) {
-            panelSize = size
-            updateVisible()
-        }
-    }
-
-    /// Resizes the panel by its corner: it takes the size whose corner lies nearest the pointer, with no fewer rows than its
-    /// cards need and no larger than `panelLimit`, and the cards make room.
-    public func resizePanel(by translation: CGSize) {
-        guard isEditing, drag == nil, resize == nil else { return }
-        let resize = panelResize ?? PanelResize(start: panelSize, sizes: visible.filter(\.isOnGrid).map(\.size), limit: panelLimit)
-        panelResize = resize
-        let target = resize.nearest(to: resize.corner(movedBy: translation))
-        guard target != panelSize else { return }
-        change(.edit) {
-            panelSize = target
-            updateVisible()
-        }
-    }
-
-    /// Ends the resize of the panel, and saves its size when it changed.
-    public func dropPanelResize() {
-        guard let resize = panelResize else { return }
-        panelResize = nil
-        if panelSize != resize.start { save(panelSize) }
-    }
-
-    /// Puts the panel back at the size it had when the resize started.
-    public func cancelPanelResize() {
-        guard let resize = panelResize else { return }
-        panelResize = nil
-        change(.edit) {
-            panelSize = resize.start
-            updateVisible()
-        }
-    }
-
-    private func save(_ size: PanelSize) {
-        do {
-            try files.config.set("panel_size", to: size.text)
-        } catch {
-            host.notify("Openspot could not save the size of the panel. \(Self.reason(error))")
-        }
-    }
-
     /// The sizes that a person can prefer for a spot, in words for its menu.
     public func sizes(of entry: Entry) -> [SpotSize] {
         entry.item == nil ? entry.command.sizes : []
@@ -121,8 +24,6 @@ extension SpotsModel {
         guard isEditing else { return }
         stopDragWait()
         change(moving ? .edit : nil) {
-            if let resize = panelResize { panelSize = resize.start }
-            panelResize = nil
             isEditing = false
             drag = nil
             landing = nil
@@ -135,11 +36,10 @@ extension SpotsModel {
     }
 
     public func handleEditKey(_ key: ActionKey) {
-        if drag != nil || resize != nil || panelResize != nil {
+        if drag != nil || resize != nil {
             if key.name == "escape" {
                 cancelDrag()
                 cancelResize()
-                cancelPanelResize()
             }
             return
         }
@@ -167,12 +67,11 @@ extension SpotsModel {
         if drag?.id != id {
             guard let start = visible.firstIndex(where: { $0.id == id }) else { return }
             let onGrid = visible.filter(\.isOnGrid).count
-            let isOnGrid = visible[start].isOnGrid
-            let places = isOnGrid ? 0...(onGrid - 1) : onGrid...(visible.count - 1)
+            let places = visible[start].isOnGrid ? 0...(onGrid - 1) : onGrid...(visible.count - 1)
             stopDragWait()
             scrollAtPress = gridScroll
             change(.edit) {
-                drag = SpotDrag(id: id, start: start, sizes: visible.map(\.size), places: places, grid: grid, rows: isOnGrid ? rowLimit : nil, counted: onGrid)
+                drag = SpotDrag(id: id, start: start, sizes: visible.map(\.size), places: places)
                 selected = start
             }
         }
@@ -238,8 +137,7 @@ extension SpotsModel {
         guard isEditing, query.isEmpty, drag == nil else { return }
         if resize?.id != id {
             guard let index = visible.firstIndex(where: { $0.id == id }) else { return }
-            let onGrid = visible.filter(\.isOnGrid).count
-            resize = SpotResize(id: id, index: index, sizes: visible.map(\.size), choices: sizes(of: visible[index]), grid: grid, rows: visible[index].isOnGrid ? rowLimit : nil, counted: onGrid)
+            resize = SpotResize(id: id, index: index, sizes: visible.map(\.size), choices: sizes(of: visible[index]))
             scrollAtPress = gridScroll
             selected = index
         }
@@ -317,7 +215,7 @@ extension SpotsModel {
 
     private func moveSelectedSpot(by step: Int, in order: [String]) {
         guard order.indices.contains(selected),
-              let place = grid.nextPlace(of: selected, in: visible.map(\.size), step: step) else { return }
+              let place = SpotGrid().nextPlace(of: selected, in: visible.map(\.size), step: step) else { return }
         moveSpot(order[selected], to: place)
     }
 
@@ -334,7 +232,7 @@ extension SpotsModel {
     private func stepSelectedSize() {
         guard let entry = selectedEntry else { return }
         let sizes = visible.map(\.size)
-        if let next = grid.nextSize(of: selected, in: sizes, among: self.sizes(of: entry)) { prefer(next, for: entry.id) }
+        if let next = SpotGrid().nextSize(of: selected, in: sizes, among: self.sizes(of: entry)) { prefer(next, for: entry.id) }
     }
 
     private func toggleSelectedOnGrid() {
@@ -349,12 +247,7 @@ extension SpotsModel {
         saveArrangement(selecting: id)
     }
 
-    /// Shows a spot on the grid or hides it. A grid with no room for it says why and leaves it hidden.
     public func setOnGrid(_ isOn: Bool, for id: String) {
-        if isOn, let entry = cards.first(where: { $0.id == id }), !fits(cards.filter { $0.isOnGrid || $0.id == id }) {
-            host.notify("Openspot cannot show \(entry.command.name) on the grid, because the grid is full. Drag the corner of the panel to add rows, or hide a spot.")
-            return
-        }
         arrangement.arrange((cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id))
         arrangement.set(isOnGrid: isOn, of: id)
         saveArrangement(selecting: id)

@@ -11,7 +11,6 @@ struct SpotSurface: View {
     /// How strong the fill of a row is, from 0 to 1.
     var fill = 0.0
     @Environment(\.spotIsShown) private var isShown
-    @Environment(\.spotPanelSize) private var panel
 
     var body: some View {
         let shape = SpotSurfaceShape(rect: rect, radius: radius)
@@ -26,7 +25,7 @@ struct SpotSurface: View {
                 .opacity(isShown ? glass : 0)
                 .animation(SpotMotion.rim(isShown: isShown), value: isShown)
         }
-        .frame(width: panel.width, height: panel.height, alignment: .topLeading)
+        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
         .allowsHitTesting(false)
     }
 }

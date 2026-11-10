@@ -129,9 +129,8 @@ public final class SpotsModel {
     /// The cards that show, in their order. Each change of a card or of the search sets it again, and an equal list tells no
     /// view.
     public private(set) var visible: [Entry] = []
-    /// The sizes and the columns that `placements` were laid out from.
+    /// The sizes that `placements` were laid out from.
     @ObservationIgnored private var laidOutSizes: [SpotSize] = []
-    @ObservationIgnored private var laidOutColumns = PanelSize.standard.columns
     /// The cards as the items that the main search finds. It folds them again only when they change.
     @ObservationIgnored private var spotList = ItemList()
     /// Where each visible spot lies on the grid, in the order of `visible`.
@@ -209,12 +208,6 @@ public final class SpotsModel {
     @ObservationIgnored var scrollAtPress: CGFloat = 0
     @ObservationIgnored var pointerMove: CGSize?
     public var arrangement = SpotArrangement()
-    /// The size of the grid that the person set, whose columns the grid packs to.
-    public internal(set) var panelSize = PanelSize.standard
-    /// The largest panel that fits the screen that the panel shows on.
-    public var panelLimit = PanelSize(columns: 16, rows: 12)
-    /// The resize of the panel by its corner in Edit Spots, while the pointer holds it.
-    public internal(set) var panelResize: PanelResize?
     /// The symbol of the command whose key a person pressed last, which the Openspot item shows for `flashPause`.
     public private(set) var flashSymbol: String?
     @ObservationIgnored public var flashPause: Duration = .milliseconds(1500)
@@ -290,13 +283,8 @@ public final class SpotsModel {
         fileStamps = Self.stamps(of: scan)
         holdAssignedKeys(config)
         arrangement = config.arrangement
-        let size = config.panelSize ?? .standard
-        if size != panelSize { panelSize = size }
-        let known = Set(scanned.map(\.id))
-        let wasLoaded = !scanned.isEmpty
         scanned = scan.commands
         rebuildEntries()
-        if wasLoaded { makeRoom(for: scanned.map(\.id).filter { !known.contains($0) }) }
         if problems != self.problems, !problems.isEmpty {
             host.notify(problems.joined(separator: " "))
         }
@@ -463,10 +451,9 @@ public final class SpotsModel {
         let next = found()
         if next != visible { visible = next }
         let sizes = visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size }
-        if sizes != laidOutSizes || panelSize.columns != laidOutColumns {
+        if sizes != laidOutSizes {
             laidOutSizes = sizes
-            laidOutColumns = panelSize.columns
-            placements = grid.place(sizes)
+            placements = SpotGrid().place(sizes)
         }
         if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
     }
@@ -487,7 +474,7 @@ public final class SpotsModel {
     }
 
     public func moveSelection(dx: Int, dy: Int) {
-        if let next = grid.neighbour(of: selected, in: placements, dx: dx, dy: dy) {
+        if let next = SpotGrid().neighbour(of: selected, in: placements, dx: dx, dy: dy) {
             selected = next
         }
     }

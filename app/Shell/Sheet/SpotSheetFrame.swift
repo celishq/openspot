@@ -18,7 +18,6 @@ struct SpotSheetFrame: ViewModifier {
     /// The size of the card, in whose top trailing corner the arrow lies.
     var arrowBox: CGSize = .zero
     @Environment(\.spotIsShown) private var isShown
-    @Environment(\.spotPanelSize) private var panel
 
     func body(content: Content) -> some View {
         let shape = SpotSurfaceShape(rect: rect, radius: radius)
@@ -35,10 +34,10 @@ struct SpotSheetFrame: ViewModifier {
                     .offset(x: rect.maxX - arrowBox.width, y: rect.minY)
             }
         }
-        .frame(width: panel.width, height: panel.height, alignment: .topLeading)
+        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
         .clipShape(shape)
         .modifier(SpotSelectionRing(isSelected: showsRing, shape: shape, motion: SpotMotion.sheetFade(isOpen: !showsRing, isLate: showsRing)))
-        .scaleEffect(isShown ? 1 : SpotMotion.hiddenScale, anchor: UnitPoint(x: rect.midX / panel.width, y: rect.midY / panel.height))
+        .scaleEffect(isShown ? 1 : SpotMotion.hiddenScale, anchor: UnitPoint(x: rect.midX / SpotTokens.panelWidth, y: rect.midY / SpotTokens.panelHeight))
         .animation(SpotMotion.surface(isShown: isShown), value: isShown)
     }
 }

@@ -16,7 +16,6 @@ struct SpotSoftBlur: NSViewRepresentable {
         let tint: CGImage?
     }
 
-    var width = SpotTokens.panelWidth
     let height: CGFloat
 
     final class Surface: NSVisualEffectView {
@@ -108,34 +107,33 @@ struct SpotSoftBlur: NSViewRepresentable {
         surface.blendingMode = .behindWindow
         surface.state = .active
         surface.appearance = NSAppearance(named: .darkAqua)
-        surface.masks = Self.masks(width: width, height: height)
+        surface.masks = Self.masks(height: height)
         return surface
     }
 
     func updateNSView(_ surface: Surface, context: Context) {
-        surface.masks = Self.masks(width: width, height: height)
+        surface.masks = Self.masks(height: height)
     }
 
-    private static var kept: [String: Masks] = [:]
+    private static var kept: [CGFloat: Masks] = [:]
 
-    /// The masks of this size, kept for each size.
-    private static func masks(width: CGFloat, height: CGFloat) -> Masks {
-        let key = "\(width)x\(height)"
-        if let masks = kept[key] { return masks }
+    /// The masks of this height, kept for each height.
+    private static func masks(height: CGFloat) -> Masks {
+        if let masks = kept[height] { return masks }
         let masks = Masks(
-            blur: mask(width: width, height: height, inset: blurInset, softness: blurSoftness),
-            tint: mask(width: width, height: height, inset: tintInset, softness: tintSoftness)
+            blur: mask(height: height, inset: blurInset, softness: blurSoftness),
+            tint: mask(height: height, inset: tintInset, softness: tintSoftness)
         )
-        kept[key] = masks
+        kept[height] = masks
         return masks
     }
 
     /// Draws a soft rounded shape and keeps only its alpha, a quarter of the bytes of the drawing.
-    private static func mask(width: CGFloat, height: CGFloat, inset: CGFloat, softness: CGFloat) -> CGImage? {
+    private static func mask(height: CGFloat, inset: CGFloat, softness: CGFloat) -> CGImage? {
         let shape = RoundedRectangle(cornerRadius: SpotTokens.radius + SpotTokens.halo - inset, style: .continuous)
             .fill(Color.black)
             .padding(inset)
-            .frame(width: width, height: height)
+            .frame(width: SpotTokens.panelWidth, height: height)
             .blur(radius: softness)
         guard let drawn = ImageRenderer(content: shape).cgImage,
               let alpha = CGContext(data: nil, width: drawn.width, height: drawn.height, bitsPerComponent: 8, bytesPerRow: 0,

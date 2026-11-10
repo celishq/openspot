@@ -41,12 +41,6 @@ final class SpotResizeTests: XCTestCase {
         XCTAssertEqual(resize.nearest(to: CGPoint(x: SpotTokens.gridWidth, y: start.y + SpotTokens.rowHeight)), .large)
     }
 
-    func testASizeThatNeedsMoreRowsThanTheGridShowsIsLeftOut() {
-        let resize = SpotResize(id: "c", index: 2, sizes: sizes, choices: SpotSize.all, rows: 2)
-
-        XCTAssertEqual(resize.choices, [.wide])
-    }
-
     func testACardThatOffersOneSizeHasNothingToChoose() {
         let resize = SpotResize(id: "c", index: 2, sizes: sizes, choices: [])
 

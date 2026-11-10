@@ -7,8 +7,6 @@ public struct Config: Equatable, Sendable {
     /// The key that opens the link of a failure toast. Nil when the file asks for one that it cannot use.
     public private(set) var fixKey: Shortcut? = .fix
     public private(set) var faults: [String] = []
-    /// The size of the panel's grid, or nil when the file names none or one that it cannot use.
-    public private(set) var panelSize: PanelSize?
     public private(set) var arrangement = SpotArrangement()
     /// The keys that the person assigned to commands of scripts, or to spots that they float.
     public private(set) var keys: [GlobalKey] = []
@@ -24,7 +22,7 @@ public struct Config: Equatable, Sendable {
             faults = ["config.toml: \((error as? PluginError)?.reason ?? String(describing: error))"]
             return
         }
-        for key in (Array(document.values.keys) + Array(document.arrays.keys)).sorted() where !["panel_key", "fix_key", "panel_size", "spots", "keys", "settings"].contains(key) {
+        for key in (Array(document.values.keys) + Array(document.arrays.keys)).sorted() where !["panel_key", "fix_key", "spots", "keys", "settings"].contains(key) {
             faults.append("config.toml: \(key) is not a setting.")
         }
         arrangement = SpotArrangement(choices: (document.arrays["spots"] ?? []).compactMap { choice(of: $0) })
@@ -32,12 +30,6 @@ public struct Config: Equatable, Sendable {
         settings = (document.arrays["settings"] ?? []).compactMap { setting(of: $0) }
         panelKey = shortcut(document.values["panel_key"], named: "panel_key", or: .standard)
         fixKey = shortcut(document.values["fix_key"], named: "fix_key", or: .fix)
-        if case .string(let text)? = document.values["panel_size"] {
-            panelSize = PanelSize(text: text)
-            if panelSize == nil {
-                faults.append("config.toml: panel_size cannot use \(text). Write the columns and the rows, such as 8x6, with 4, 8, 12 or 16 columns.")
-            }
-        }
     }
 
     /// The value that a script keeps under this key for its spot.

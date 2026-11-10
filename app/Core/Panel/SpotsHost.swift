@@ -12,8 +12,6 @@ public protocol SpotsHost: AnyObject {
     func present()
     func notify(_ text: String)
     func notify(_ text: String, fix: URL)
-    /// Tells the person something, with a fix that a click on the toast or its fix key runs.
-    func notify(_ text: String, fix: @escaping @MainActor () -> Void)
     func confirm(_ text: String)
     /// Takes what the config file asks for, such as the key that opens the panel.
     func applyConfig()

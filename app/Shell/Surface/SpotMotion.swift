@@ -3,8 +3,6 @@ import SwiftUI
 
 extension EnvironmentValues {
     @Entry var spotIsShown = true
-    /// The size of the panel's window, which a layer that fills the panel takes.
-    @Entry var spotPanelSize = CGSize(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
 }
 
 /// The timing of the panel and its sheet: on close fill, text and backdrop fade first, and the rims last.

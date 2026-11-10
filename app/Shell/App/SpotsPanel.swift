@@ -73,37 +73,14 @@ final class SpotsPanel: NSPanel {
     private func open(ordering order: () -> Void) {
         model?.panelWillShow(holding: Self.modifiers(of: NSEvent.modifierFlags))
         order()
-        takeLimit()
-    }
-
-    /// Takes the largest panel that fits its screen to the right of its left edge and below its top edge.
-    private func takeLimit() {
-        guard let area = screen?.visibleFrame else { return }
-        let columns = PanelSize.columnSteps.last { SpotTokens.panelWidth(columns: $0) <= area.maxX - frame.minX } ?? SpotTokens.columns
-        let rows = (1...40).last { SpotTokens.gridPanelHeight(rows: $0) <= frame.maxY - area.minY } ?? 1
-        model?.panelLimit = PanelSize(columns: columns, rows: rows)
     }
 
     /// Whether a point on the screen lies on the part of the panel that takes a drop. The window is taller than that.
     func showsDrop(at point: NSPoint) -> Bool {
         guard let model, model.isShown else { return false }
         let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
-        let height = SpotTokens.backdropHeight(rows: rows, shown: model.panelSize.rows)
+        let height = SpotTokens.backdropHeight(rows: rows)
         return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
-    }
-
-    /// Keeps the window as large as the panel size that the person set, with its top left corner in place.
-    private func followSize() {
-        guard let model else { return }
-        let size = withObservationTracking {
-            model.panelSize
-        } onChange: { [weak self] in
-            Task { @MainActor in self?.followSize() }
-        }
-        let width = SpotTokens.panelWidth(columns: size.columns)
-        let height = SpotTokens.windowHeight(rows: size.rows)
-        guard frame.size != CGSize(width: width, height: height) else { return }
-        setFrame(NSRect(x: frame.minX, y: frame.maxY - height, width: width, height: height), display: true)
     }
 
     /// Starts the close motion, and takes the panel off the screen when it ends. Then it runs the given work.
@@ -249,7 +226,6 @@ final class SpotsPanel: NSPanel {
         panel.contentView = NSHostingView(rootView: SpotsView(model: model))
         panel.watchPaste(model: model)
         panel.center()
-        panel.followSize()
         return panel
     }
 }

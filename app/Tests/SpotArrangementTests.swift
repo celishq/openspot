@@ -65,21 +65,6 @@ final class SpotArrangementTests: XCTestCase {
         XCTAssertEqual(config.arrangement.isGlobal(of: "files"), false)
     }
 
-    func testTheConfigReadsThePanelSize() {
-        XCTAssertEqual(Config(text: "panel_size = \"8x5\"\n").panelSize, PanelSize(columns: 8, rows: 5))
-        XCTAssertNil(Config(text: "").panelSize)
-    }
-
-    func testThePanelSizeTakesFourToSixteenColumnsInStepsOfFour() {
-        let config = Config(text: "panel_size = \"6x5\"\n")
-
-        XCTAssertNil(config.panelSize)
-        XCTAssertEqual(config.faults, ["config.toml: panel_size cannot use 6x5. Write the columns and the rows, such as 8x6, with 4, 8, 12 or 16 columns."])
-        XCTAssertNil(PanelSize(text: "20x5"))
-        XCTAssertNil(PanelSize(text: "8x0"))
-        XCTAssertEqual(PanelSize(columns: 12, rows: 4).text, "12x4")
-    }
-
     func testTheConfigReportsWhatItCannotUseAndKeepsTheRest() {
         let config = Config(text: """
         [[spots]]

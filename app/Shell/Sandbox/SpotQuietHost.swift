@@ -15,7 +15,6 @@ final class SpotQuietHost: SpotsHost {
     func present() {}
     func notify(_ text: String) {}
     func notify(_ text: String, fix: URL) {}
-    func notify(_ text: String, fix: @escaping @MainActor () -> Void) {}
     func confirm(_ text: String) {}
     func applyConfig() {}
     func setEntryKey(on isOn: Bool) {}
