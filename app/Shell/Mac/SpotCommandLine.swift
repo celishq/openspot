@@ -116,6 +116,12 @@ enum SpotCommandLine {
             finish { try SpotCalendarApp.show(try await SpotAgendaStore.agenda().day(of: id)) }
         case .remindersDone(let id, let isDone):
             finish { try await SpotAgendaStore.agenda().done(id, isDone) }
+        case .remindersShow(let id):
+            finish {
+                let link = try await SpotAgendaStore.agenda().link(of: id)
+                guard NSWorkspace.shared.open(link) else { throw PluginError.failed(1, "Openspot cannot open Reminders, so it cannot show \(id).") }
+                return ""
+            }
         }
     }
 

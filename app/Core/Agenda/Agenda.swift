@@ -62,6 +62,17 @@ public struct Agenda {
         return ""
     }
 
+    /// The link that opens Reminders on the reminder whose row has this id.
+    public func link(of id: String) async throws -> URL {
+        _ = try await isAllowed(.reminder)
+        let prefix = "reminder:"
+        guard id.hasPrefix(prefix), let reminder = store.reminder(String(id.dropFirst(prefix.count))),
+              let link = URL(string: "x-apple-reminderkit://REMCDReminder/\(reminder.id)") else {
+            throw PluginError.failed(1, "Openspot cannot find the reminder \(id). Read the list again, and use the id of one of its rows.")
+        }
+        return link
+    }
+
     /// The day that Calendar opens on for the id of a row: the time of an event, or the due time of a reminder, or now for a
     /// reminder with no due date.
     public func day(of id: String) async throws -> Date {

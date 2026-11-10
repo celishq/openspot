@@ -61,6 +61,8 @@ public enum CommandLineCall: Equatable, Sendable {
     case remindersAdd(words: String, isDry: Bool)
     /// Ticks a reminder, or opens it again (E3).
     case remindersDone(id: String, isDone: Bool)
+    /// Opens Reminders on the reminder whose row has this id (E1).
+    case remindersShow(id: String)
     /// Runs as the helper process of a capability. A script never makes this call, so the usage does not list it.
     case helper(String)
     case help
@@ -123,6 +125,7 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  Adds a reminder from words such as Call mom tomorrow 9am, and prints its
                                                  row. --dry-run prints the row and adds nothing.
     openspot reminders done <id> [true|false]    Ticks a reminder, or with false opens it again.
+    openspot reminders show <id>                 Opens Reminders on the reminder of a row.
 
     """
 
@@ -214,6 +217,8 @@ public enum CommandLineCall: Equatable, Sendable {
                 .map { Self.changing($0, "openspot reminders add", "changes your reminders", environment) } ?? .unknown(arguments.joined(separator: " "))
         case ("reminders", "done") where rest.count == 2 || (rest.count == 3 && ["true", "false"].contains(rest[2])):
             self = Self.changing(.remindersDone(id: rest[1], isDone: rest.count == 2 || rest[2] == "true"), "openspot reminders done", "changes your reminders", environment)
+        case ("reminders", "show") where rest.count == 2:
+            self = Self.changing(.remindersShow(id: rest[1]), "openspot reminders show", "opens Reminders", environment)
         case ("translate", _):
             guard let options = Self.options(rest) else {
                 self = .unknown(arguments.joined(separator: " "))

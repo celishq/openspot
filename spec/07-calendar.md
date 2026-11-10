@@ -27,6 +27,7 @@ reminders. Each list prints rows (02), and the id of each row goes to each other
 | `openspot reminders lists`                               | Prints each list of reminders as a row.                                                 |
 | `openspot reminders add [--dry-run] <words>...`          | Adds a reminder from the words to the default list, and prints its row.                |
 | `openspot reminders done <id> [true\|false]`             | Ticks a reminder, or with `false` opens it again. It prints nothing.                   |
+| `openspot reminders show <id>`                           | Opens Reminders on a reminder.                                                          |
 
 `--calendar` and `--list` take the id of a row of `calendars` and `lists`, and each one more narrows the list to one more.
 
@@ -109,5 +110,5 @@ A verb never prints an empty list in place of a list that it cannot read.
 | Two nouns, which are the names of the two apps of macOS.                                       | One `agenda` noun.                                       |
 | `add` finds the date in the words, as Calendar's quick event does.                             | A flag for each part of a date.                          |
 | A read never asks for leave, and prints `status=unasked`.                                      | A prompt at the first read, or at the start of the app.  |
-| `show` opens Calendar, so a script never builds an address of Calendar.                        | `open` with an `ical://` address.                        |
+| `show` opens the app, so a script never builds an address of Calendar or Reminders.           | `open` with an `ical://` or `x-apple-reminderkit://` address. |
 | A reminder ticked today stays in `due`, so a second press opens it again.                      | A reminder that leaves the list at its tick, and a confirm. |
