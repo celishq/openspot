@@ -4,7 +4,8 @@ import QuartzCore
 
 /// A run that opens and closes the sheet of one spot again and again, or with `OPENSPOT_ACTION` moves down its rows, types
 /// in its search, picks the row `OPENSPOT_ROW` or drags a card in Edit Spots, and writes the time of each frame to a file.
-/// `OPENSPOT_ACTION=mouse` drags a card with mouse events instead, and writes whether it lifted and the order after.
+/// `OPENSPOT_ACTION=mouse` drags a card with mouse events instead, or with `OPENSPOT_ROW` pulls its `corner` handle or
+/// presses its `minus`, and writes whether it lifted or resized, the order, its size and whether it is on the grid after.
 /// `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`. The panel stays almost clear, takes no focus and no clicks,
 /// unless `OPENSPOT_SEEN` asks for a picture. With `OPENSPOT_SHOTS`, a drag saves a picture of each state to that folder
 /// from a panel off every screen, and times nothing.
@@ -142,7 +143,7 @@ final class SpotMotionProbe: NSObject {
             CGPoint(x: rect.midX, y: rect.midY)
         ].map { CGSize(width: $0.x - rect.midX, height: $0.y - rect.midY) }
         if let shots { return shoot(id, stops: stops, into: shots) }
-        if action == "mouse" { return press(at: rect, by: stops[1]) }
+        if action == "mouse" { return press(id, at: rect, by: stops[1]) }
         let link = view.displayLink(target: self, selector: #selector(tick))
         link.add(to: .main, forMode: .common)
         self.link = link
@@ -174,17 +175,24 @@ final class SpotMotionProbe: NSObject {
     }
 
     /// Presses the card at this place, moves the mouse this far in steps and lets go, through events put in the app's queue
-    /// for a panel off every screen, as a person's mouse sends them.
-    private func press(at rect: CGRect, by translation: CGSize) {
+    /// for a panel off every screen, as a person's mouse sends them. The press starts at the card's centre, its corner
+    /// handle, which it pulls down a row, or its minus, which it only clicks.
+    private func press(_ id: String, at rect: CGRect, by move: CGSize) {
         panel.setFrameOrigin(NSPoint(x: -9000, y: -9000))
         panel.alphaValue = 1
         panel.ignoresMouseEvents = false
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKey()
         let height = panel.contentView?.bounds.height ?? 0
-        let start = NSPoint(x: SpotTokens.halo + rect.midX, y: height - (SpotTokens.gridTop + rect.midY))
+        let inset = SpotTokens.keycap / 2
+        let point = row == "corner" ? CGPoint(x: rect.maxX - inset, y: rect.maxY - inset) : row == "minus" ? CGPoint(x: rect.minX + inset, y: rect.minY + inset) : CGPoint(x: rect.midX, y: rect.midY)
+        let translation = row == "corner" ? CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap) : row == "minus" ? .zero : move
+        let start = NSPoint(x: SpotTokens.halo + point.x, y: height - (SpotTokens.gridTop + point.y))
+        let size = { self.model.visible.firstIndex { $0.id == id }.map { self.model.placements[$0].size.name } ?? "none" }
+        let sizeBefore = size()
         let before = model.visible.map(\.id)
         var lifted = false
+        var resizing = false
         func post(_ type: NSEvent.EventType, _ share: CGFloat) {
             let point = NSPoint(x: start.x + translation.width * share, y: start.y - translation.height * share)
             guard let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: panel.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1) else { return }
@@ -194,27 +202,31 @@ final class SpotMotionProbe: NSObject {
         func run(_ left: ArraySlice<() -> Void>) {
             guard let next = left.first else {
                 return DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                    self.finish(with: "lifted \(lifted)\nbefore \(before)\nafter \(self.model.visible.map(\.id))\n")
+                    let entry = self.model.visible.first { $0.id == id }
+                    self.finish(with: "lifted \(lifted)\nresizing \(resizing)\nbefore \(before)\nafter \(self.model.visible.map(\.id))\nsize \(sizeBefore) to \(size())\non grid \(entry?.isOnGrid ?? false)\n")
                 }
             }
             next()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
                 lifted = lifted || self.model.drag != nil
+                resizing = resizing || self.model.resize != nil
                 run(left.dropFirst())
             }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { run(steps[...]) }
     }
 
-    /// Saves a picture of Edit Spots, of the card lifted near the first place once the cards made room, and of the grid
-    /// after the drop there, from a panel off every screen.
+    /// Saves a picture of Edit Spots, of the card lifted near the first place once the cards made room, of the grid after
+    /// the drop there, and of the card pulled a row taller by its corner and kept, from a panel off every screen.
     private func shoot(_ id: String, stops: [CGSize], into folder: String) {
         panel.setFrameOrigin(NSPoint(x: -9000, y: -9000))
         panel.alphaValue = 1
         let states: [(name: String, act: () -> Void)] = [
             ("edit", {}),
             ("lifted", { self.model.dragSpot(id, by: CGSize(width: stops[1].width + SpotTokens.cell / 3, height: stops[1].height + SpotTokens.rowHeight / 3)) }),
-            ("dropped", { self.model.dropSpot(by: stops[1]) })
+            ("dropped", { self.model.dropSpot(by: stops[1]) }),
+            ("resized", { self.model.resizeSpot(id, by: CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap)) }),
+            ("kept", { self.model.dropResize() })
         ]
         func next(_ left: ArraySlice<(name: String, act: () -> Void)>) {
             guard let state = left.first else { return finish(with: "shots\n") }
