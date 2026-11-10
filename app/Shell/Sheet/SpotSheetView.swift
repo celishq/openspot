@@ -19,6 +19,8 @@ struct SpotSheetView: View {
     let closeShift: CGFloat?
     /// The width of the card or field that the sheet grows out of and collapses into.
     let cardWidth: CGFloat
+    /// Whether the card draws its own look over the closed sheet, so that the header keeps its open place and only fades.
+    var hasCardLook = false
 
     private var list: ItemList {
         model.sheets[entry.id]?.list ?? ItemList()
@@ -101,10 +103,10 @@ struct SpotSheetView: View {
                 ZStack(alignment: .topLeading) {
                     words(subtitle: entry.shownState.subtitle)
                         .frame(width: max(cardWordsWidth, 0), alignment: .leading)
-                        .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(isOpen ? 0 : 1) }
+                        .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(liesOnCard ? 1 : 0) }
                     words(subtitle: list.perLine > 1 ? nil : entry.shownState.subtitle, selectedName: list.perLine > 1)
                         .frame(width: max(sheetWordsWidth, 0), alignment: .leading)
-                        .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: !isOpen)) { $0.opacity(isOpen ? 1 : 0) }
+                        .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: !isOpen)) { $0.opacity(liesOnCard ? 0 : 1) }
                 }
                 .frame(width: max(sheetWordsWidth, 0), alignment: .leading)
                 .offset(showsTallCard ? tallCardShift : .zero)
@@ -177,19 +179,24 @@ struct SpotSheetView: View {
         SpotMotion.fillFade(isOpen: isOpen)
     }
 
+    /// Whether the sheet still lies on a card that shows the stock glyph and words in place of a look of its own.
+    private var liesOnCard: Bool {
+        !isOpen && !hasCardLook
+    }
+
     /// Whether the sheet still lies on a 1x1 card, which shows its glyph alone.
     private var showsSmallCard: Bool {
-        !isOpen && cardSize == .small
+        liesOnCard && cardSize == .small
     }
 
     /// Whether the sheet still lies on a card one row high, which centres its glyph in that row.
     private var showsRowCard: Bool {
-        !isOpen && cardSize.rows == 1
+        liesOnCard && cardSize.rows == 1
     }
 
     /// Whether the sheet still lies on a card with room under its header, which shows only its glyph and its words.
     private var showsTallCard: Bool {
-        !isOpen && cardSize.rows > 1
+        liesOnCard && cardSize.rows > 1
     }
 
     /// How far the words of the header lie from their place at the foot of a tall card.

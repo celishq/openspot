@@ -27,7 +27,8 @@ struct SpotSheetLayer: View {
             rect: sheetRect,
             panel: panel,
             closeShift: isInstall ? 0 : showsArrow ? (frame?.width ?? sheetRect.width) - sheetRect.width : nil,
-            cardWidth: isInstall ? SpotFieldView.rect.width : frame?.width ?? sheetRect.width
+            cardWidth: isInstall ? SpotFieldView.rect.width : frame?.width ?? sheetRect.width,
+            hasCardLook: card?.look != nil
         )
         .id(entry.id)
         .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(card?.look == nil || isOpen ? 1 : 0) }
