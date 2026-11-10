@@ -127,18 +127,36 @@ struct SpotsView: View {
         return rect(of: sheetID)
     }
 
-    /// The rect of a sheet from its parts, or else from the shape of its rows.
     private func rect(of id: String?) -> CGRect {
+        Self.rect(of: id, in: model)
+    }
+
+    /// The rect of a sheet from its parts, or else from the shape of its rows.
+    private static func rect(of id: String?, in model: SpotsModel) -> CGRect {
         if let rect = model.sheets[id ?? ""]?.partsRect { return rect }
         let shape = model.sheets[id ?? ""]?.shape
         return SpotTokens.sheetRect(rows: shape?.rows ?? 0, perLine: shape?.perLine ?? 1)
+    }
+
+    /// The heights of blur that the grid, each sheet as it is now and the tallest sheet ask for.
+    static func blurHeights(of model: SpotsModel) -> [CGFloat] {
+        let sheets = model.sheets.keys.map { blurHeight(of: rect(of: $0, in: model)) }
+        return [gridHeight(of: model), blurHeight(of: SpotTokens.sheetRect(rows: 0)), SpotTokens.panelHeight] + sheets
+    }
+
+    private static func blurHeight(of sheet: CGRect) -> CGFloat {
+        sheet.height + 2 * SpotTokens.halo + SpotTokens.hintBlock
+    }
+
+    private static func gridHeight(of model: SpotsModel) -> CGFloat {
+        SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0)
     }
 
     /// The height of the sheet that the open one took the place of, so that the blur stays under both until the change
     /// settles.
     private var replacedHeight: CGFloat {
         guard let replaced = model.transition.replaced else { return 0 }
-        return rect(of: replaced).height + 2 * SpotTokens.halo + SpotTokens.hintBlock
+        return Self.blurHeight(of: rect(of: replaced))
     }
 
     /// How far the install screen pushes the grid: as far as its lower edge moves.
@@ -161,11 +179,11 @@ struct SpotsView: View {
     }
 
     private var sheetHeight: CGFloat {
-        sheetRect.height + 2 * SpotTokens.halo + SpotTokens.hintBlock
+        Self.blurHeight(of: sheetRect)
     }
 
     private var gridHeight: CGFloat {
-        SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0)
+        Self.gridHeight(of: model)
     }
 
     /// The height of the shape that ends the cards. It follows only the grid, so that a sheet's motion swaps no image.
