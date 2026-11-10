@@ -46,6 +46,11 @@ public struct PluginOutput: Equatable, Sendable {
     private static let callKeys = ["call", "reason", "arg"]
     /// The app's own events. A part cannot take one, and a button can take only `open`, to change the pick.
     private static let defaults = ["run", "open", "drop"]
+
+    /// The newer events that this output asks for: `drag` when a row names a file (O2).
+    private var takenDefaults: [String] {
+        blocks.contains { $0.fields.first?.key == "row" && $0.value("file") != nil } ? ["drag"] : []
+    }
     private static let button = "button"
     private static let repeatKind = "repeat"
     private static let templateKind = "template"
@@ -161,8 +166,13 @@ public struct PluginOutput: Equatable, Sendable {
 
     /// Finds what is wrong with the names of the parts and the sheet they make.
     private mutating func check(layout: SheetLayout?) {
-        for id in [Self.reserved] + Self.callKeys + Self.defaults where parts.contains(where: { $0.id == id }) {
+        for id in [Self.reserved] + Self.callKeys + Self.defaults + takenDefaults where parts.contains(where: { $0.id == id }) {
             checkedFaults.append("a part cannot be called \(id)")
+        }
+        for row in rows {
+            if let file = row.value("file"), !file.hasPrefix("/") {
+                checkedFaults.append("the row \(row.value("row") ?? "") names the file \(file), which does not start with /")
+            }
         }
         if !parts.isEmpty { checkedFaults += SheetFaults.of(layout: layout, summary: summary, parts: parts) }
     }
@@ -228,7 +238,7 @@ public struct PluginOutput: Equatable, Sendable {
 
     /// Keeps an action. The `open` action sets the word for Enter, and whether a pick stays in the panel.
     private mutating func take(action id: String, _ block: TextBlock) {
-        if checks, id == Self.reserved || (Self.defaults.contains(id) && id != "open") { checkedFaults.append("an action cannot be called \(id)") }
+        if checks, id == Self.reserved || ((Self.defaults + takenDefaults).contains(id) && id != "open") { checkedFaults.append("an action cannot be called \(id)") }
         if id == "open" {
             primary = block.value("title")
             pick = block.flag("close") == false ? .stay : .close

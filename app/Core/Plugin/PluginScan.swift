@@ -3,7 +3,7 @@ import Foundation
 /// The last scan of the plugin folder, with the stamp of all that it read, so that a look at a folder that did not change
 /// reads no file.
 public struct PluginScan {
-    public private(set) var result = ScanResult(plugins: [], refused: [])
+    private var result = ScanResult(plugins: [], refused: [])
     private var stamp: PluginFolder.Stamp?
 
     public init() {}

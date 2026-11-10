@@ -3,6 +3,19 @@ import Foundation
 /// What the `openspot` command was asked to do: `openspot <noun> <verb>`. No arguments start the app.
 public enum CommandLineCall: Equatable, Sendable {
     case check(String?)
+    /// Reports the faults of a plugins folder as JSON, for an agent.
+    case checkJSON(String?)
+    case guide
+    /// Writes a working spot from a starter, with a name.
+    case spotNew(name: String, starter: SpotStarter)
+    /// Makes one call of a spot as the app makes it.
+    case spotRun(id: String, arguments: [String])
+    /// Asks the running app to show the panel with the spot selected.
+    case spotShow(String)
+    /// Prints the record of the last calls of a spot.
+    case spotLog(String)
+    /// Draws the sheet of an installed spot, or its card at a size.
+    case renderSpot(id: String, size: SpotSize?, path: String)
     case checkSheet
     /// Draws the sheet on stdin, with the plugin's view from a Swift file when it names one.
     case render(String, view: String?)
@@ -27,6 +40,13 @@ public enum CommandLineCall: Equatable, Sendable {
     case symbols
     case windowFrame
     case windowMove(WindowMove)
+    case screenSources
+    /// Takes a picture of a source, picked by the person when the words fix none (S1).
+    case screenShot(ScreenCapture)
+    /// Starts a recording in the helper of the screen, which goes on until a stop (S10).
+    case screenRecordStart(ScreenCapture)
+    case screenRecordStop
+    case screenRecordStatus
     /// Runs as the helper process of a capability. A script never makes this call, so the usage does not list it.
     case helper(String)
     /// Draws the colour glyphs on stdin, one on each line, into a picture book at a path. Only the app makes this call.
@@ -35,10 +55,17 @@ public enum CommandLineCall: Equatable, Sendable {
     case unknown(String)
 
     public static let usage = """
-    openspot check [folder]                      Reports the faults of a plugins folder.
+    openspot guide                               Prints the guide to building a spot. Read it before you write one.
+    openspot spot new <name> [--from kind]       Writes a working spot to change. A kind is button, list, number or form.
+    openspot spot run <id> [call] [value]...     Makes one call of a spot as the app does, and prints all that it prints.
+    openspot spot log <id>                       Prints the last calls that the app made to a spot.
+    openspot spot show <id>                      Opens the panel with the spot selected.
+    openspot check [--json] [folder]             Reports the faults of a plugins folder.
     openspot check --sheet                       Reports the faults of a sheet on stdin.
     openspot render [--view file] <file.png>     Draws the sheet on stdin to a picture, with its view from a Swift file.
     openspot render --card <size> <file.png>     Draws its card at a size, such as wide, to a picture.
+    openspot render --spot <id> [--card <size>] <file.png>
+                                                 Draws the sheet of an installed spot, or its card at a size.
     openspot sandbox [file]                      Opens a window to try a sheet from text, a file or a script.
     openspot catalog                             Prints each part that a script can print.
     openspot color pick                          Prints the colour the person picks.
@@ -57,6 +84,18 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot window move frame...                Moves the front window to a frame, x y width height. 50%, 1/2 or a number
                                                  from 0 to 1 is a part of the area, and any other number is points. With
                                                  more frames, it moves to the frame after the one it holds now.
+    openspot screen sources                      Prints each display, window, microphone and camera as a row, with
+                                                 its source as the id: display:<id>, window:<id>, mic:<id>, camera:<id>.
+    openspot screen shot [source] [--cursor] [file]
+                                                 Takes a picture and prints its path. A source is display, window,
+                                                 window:front or area:x,y,w,h; with no value the person picks one, and
+                                                 with no source any. With no file, it goes where macOS keeps screenshots.
+    openspot screen record start [source] [input]... [--cursor] [--events file] [file]
+                                                 Starts a recording to .mp4 or .mov. An input is mic, system or camera,
+                                                 or mic:<id> or camera:<id>; the camera goes to its own file beside it.
+                                                 --events writes each pointer move, click and key as a JSON line.
+    openspot screen record stop                  Ends the recording and prints each file, the video first.
+    openspot screen record status                Prints state=recording with its files and seconds, or state=idle.
 
     """
 
@@ -77,7 +116,20 @@ public enum CommandLineCall: Equatable, Sendable {
         }
         let rest = Array(arguments.dropFirst())
         switch (noun, rest.first) {
+        case ("guide", nil): self = .guide
+        case ("check", "--json") where rest.count <= 2: self = .checkJSON(rest.dropFirst().first)
         case ("check", _) where rest.count <= 1: self = .check(rest.first)
+        case ("spot", "new") where rest.count == 2: self = .spotNew(name: rest[1], starter: .button)
+        case ("spot", "new") where rest.count == 4 && rest[2] == "--from":
+            guard let starter = SpotStarter(rawValue: rest[3]) else { self = .unknown(arguments.joined(separator: " ")); return }
+            self = .spotNew(name: rest[1], starter: starter)
+        case ("spot", "run") where rest.count >= 2: self = .spotRun(id: rest[1], arguments: Array(rest.dropFirst(2)))
+        case ("spot", "show") where rest.count == 2: self = .spotShow(rest[1])
+        case ("spot", "log") where rest.count == 2: self = .spotLog(rest[1])
+        case ("render", "--spot") where rest.count == 3: self = .renderSpot(id: rest[1], size: nil, path: rest[2])
+        case ("render", "--spot") where rest.count == 5 && rest[2] == "--card":
+            guard let size = SpotSize(name: rest[3]) else { self = .unknown(arguments.joined(separator: " ")); return }
+            self = .renderSpot(id: rest[1], size: size, path: rest[4])
         case ("catalog", nil): self = .catalog
         case ("sandbox", _) where rest.count <= 1: self = .sandbox(rest.first)
         case ("render", "--card") where rest.count == 3:
@@ -85,6 +137,15 @@ public enum CommandLineCall: Equatable, Sendable {
             self = .renderCard(size, rest[2])
         case ("render", "--view") where rest.count == 3: self = .render(rest[2], view: rest[1])
         case ("render", let path?) where rest.count == 1: self = .render(path, view: nil)
+        case ("screen", "sources") where rest.count == 1: self = .screenSources
+        case ("screen", "shot"):
+            guard let capture = ScreenCapture(words: Array(rest.dropFirst()), records: false) else {
+                self = .unknown(arguments.joined(separator: " "))
+                return
+            }
+            self = Self.capturing(.screenShot(capture), "openspot screen shot", environment)
+        case ("screen", "record") where rest.count >= 2:
+            self = Self.recording(Array(rest.dropFirst(2)), verb: rest[1], environment) ?? .unknown(arguments.joined(separator: " "))
         case ("color", "pick") where rest.count == 1: self = Self.waiting(.colorPick, "openspot color pick", environment)
         case ("folder", "pick") where rest.count == 1: self = Self.waiting(.folderPick, "openspot folder pick", environment)
         case ("setting", "get"), ("setting", "set"):
@@ -130,6 +191,24 @@ public enum CommandLineCall: Equatable, Sendable {
             return .refused("`\(name)` waits for the person, so it cannot run in a read. Run it from a pick or an action.")
         }
         return call
+    }
+
+    /// The call of a command that captures the screen, or its refusal in a read, so that nothing captures by surprise (S8).
+    private static func capturing(_ call: CommandLineCall, _ name: String, _ environment: [String: String]) -> CommandLineCall {
+        guard environment["OPENSPOT_REASON"] == nil else {
+            return .refused("`\(name)` captures the screen, so it cannot run in a read. Run it from a pick or an action.")
+        }
+        return call
+    }
+
+    /// Reads the words of `openspot screen record <verb>`, or returns nil for anything else.
+    private static func recording(_ words: [String], verb: String, _ environment: [String: String]) -> CommandLineCall? {
+        switch verb {
+        case "start": ScreenCapture(words: words, records: true).map { capturing(.screenRecordStart($0), "openspot screen record start", environment) }
+        case "stop" where words.isEmpty: capturing(.screenRecordStop, "openspot screen record stop", environment)
+        case "status" where words.isEmpty: .screenRecordStatus
+        default: nil
+        }
     }
 
     /// Reads `[--spot id] <key>`, and a value after the key of a set. The spot is `OPENSPOT_ID` when no `--spot` names one.

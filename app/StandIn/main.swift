@@ -4,6 +4,11 @@ import OpenspotCore
 /// The memory of the stand-in helper.
 actor Tally {
     private var count = 0
+    private(set) var isHeld = false
+
+    func hold(_ held: Bool) {
+        isHeld = held
+    }
 
     func next() -> Int {
         count += 1
@@ -12,13 +17,15 @@ actor Tally {
 }
 
 /// Answers a request: `die` ends the helper with no answer, `slow` waits, `empty` is an empty answer, `echo <text>` gives the
-/// text back, and anything else gives the process and how many calls it has answered.
+/// text back, `hold` and `free` start and end work that keeps the helper past its idle time, and anything else gives the
+/// process and how many calls it has answered.
 @Sendable func answer(_ request: Data, tally: Tally) async -> Data {
     let text = String(decoding: request, as: UTF8.self)
     if text == "die" { exit(3) }
     if text == "empty" { return Data() }
     if text.hasPrefix("echo ") { return Data(text.dropFirst(5).utf8) }
     if text == "slow" { try? await Task.sleep(for: .seconds(2)) }
+    if text == "hold" || text == "free" { await tally.hold(text == "hold") }
     return Data("pid=\(getpid())\ncount=\(await tally.next())\n".utf8)
 }
 
@@ -35,7 +42,7 @@ func run() -> Never {
     )
     if arguments[1] == "helper" {
         let tally = Tally()
-        capability.serve { await answer($0, tally: tally) }
+        capability.serve(isBusy: { await tally.isHeld }) { await answer($0, tally: tally) }
     }
     do {
         let result = try capability.call(FileHandle.standardInput.readDataToEndOfFile())

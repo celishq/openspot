@@ -121,7 +121,7 @@ final class UpdateSpotTests: XCTestCase {
         let folder = URL(fileURLWithPath: "/tmp")
         let commands = ShippedSpot.commands(folder: folder, guide: folder, app: "", update: spot())
 
-        XCTAssertEqual(commands.map(\.name), ["Updates", "Spots", "Settings", "Build"])
+        XCTAssertEqual(commands.map(\.name), ["Updates", "Spots", "Settings", "New spot"])
         XCTAssertEqual(commands.first?.size, .wide)
     }
 }

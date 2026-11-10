@@ -98,6 +98,19 @@ public enum SpotTokens {
         return (Int(lines) + 1) * max(perLine, 1)
     }
 
+    /// The size of a float's sheet: its header, then its parts or its rows, with no search field. A tall one stops at the
+    /// height of the panel's sheet, and its rows scroll.
+    public static func floatSize(rows: Int, perLine: Int = 1, parts: SheetParts? = nil) -> CGSize {
+        let content: CGFloat
+        if let parts {
+            content = parts.placement.height
+        } else {
+            let lines = CGFloat(max((rows + perLine - 1) / perLine, 1))
+            content = lines * (perLine > 1 ? square(perLine: perLine) : listRowHeight) + (lines - 1) * listRowGap
+        }
+        return CGSize(width: gridWidth, height: min(padding + glyphSize + rowGap + content + padding, sheetMaxHeight))
+    }
+
     /// Whether a sheet with these rows shows them all with no scrolling.
     public static func sheetFits(rows: Int, perLine: Int = 1) -> Bool {
         sheetRect(rows: rows, perLine: perLine).height < sheetMaxHeight

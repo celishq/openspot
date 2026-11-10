@@ -14,7 +14,7 @@ class SamplePluginsCase: XCTestCase {
     }
 
     /// The scan of the repo examples, which the app does not ship.
-    var examples: ScanResult {
+    var exampleScan: ScanResult {
         get throws {
             let root = URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()

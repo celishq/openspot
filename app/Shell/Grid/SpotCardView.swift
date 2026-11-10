@@ -18,6 +18,8 @@ struct SpotCardView: View, Equatable {
     let isHiddenFromGrid: Bool
     /// The model that a tap and a slide go to.
     let model: SpotsModel
+    /// What a tap does in place of a press on the grid, such as on a float.
+    var onTap: (() -> Void)?
     @State private var isHovered = false
     @Environment(\.spotIsShown) private var isShown
 
@@ -45,9 +47,10 @@ struct SpotCardView: View, Equatable {
             .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).opacity(isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { keycap }
             .overlay(alignment: .topTrailing) { hiddenMark }
+            .overlay(alignment: .topTrailing) { if !isHiddenFromGrid { FailureMark(entry: entry, size: size) } }
             .contentShape(shape)
             .onHover { isHovered = $0 }
-            .onTapGesture { model.tap(entry.id) }
+            .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id) } }
             .animation(.easeInOut(duration: 0.2), value: isOn)
             .scaleEffect(showsPress ? SpotMotion.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
@@ -280,5 +283,27 @@ private struct CardRing: ViewModifier {
 
     func body(content: Content) -> some View {
         content.modifier(SpotSelectionRing(isSelected: model.selected == index, shape: shape))
+    }
+}
+
+/// The mark of a spot whose last call failed, on the rim of its top right corner, until a call ends well. It alone reads
+/// the failure, so that a failure reruns the mark and no card.
+private struct FailureMark: View {
+    let entry: SpotsModel.Entry
+    let size: SpotSize
+
+    var body: some View {
+        if entry.failure != nil {
+            let inset = SpotTokens.corner(for: size) * SpotTokens.rimPoint - SpotTokens.keycap / 2
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(SpotTheme.ink)
+                .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
+                .background(SpotTheme.keycap, in: RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
+                .offset(x: -inset, y: inset)
+                .accessibilityLabel("Last run failed")
+                .allowsHitTesting(false)
+        }
     }
 }

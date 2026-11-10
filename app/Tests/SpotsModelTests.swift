@@ -340,19 +340,19 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(host.motions.contains(.sheet(isOpen: false)))
     }
 
-    func testAPickOfTheBuildRowOpensBuildInPlaceOfTheListWithNoCollapse() async throws {
+    func testAPickOfTheNewSpotRowOpensNewSpotInPlaceOfTheListWithNoCollapse() async throws {
         let build = plugins.appendingPathComponent("build.sh")
         try "#!/bin/sh\nprintf 'row=g\\ntitle=Guide\\n'\n".writeScript(to: build)
-        host.shipped = [Spot(id: ShippedSpot.buildID, name: "Build", url: build, kind: .list, read: .sheet, isOnGrid: false)]
+        host.shipped = [Spot(id: ShippedSpot.newID, name: "New spot", url: build, kind: .list, read: .sheet, isOnGrid: false)]
         try await openList()
         try await wait("the open list") { model.transition.phase == .open }
         let entry = try XCTUnwrap(model.openEntry)
         host.motions = []
         host.phases = []
 
-        model.pick(SpotItem(title: "Build your own", run: CatalogSpot.buildRun), of: entry)
+        model.pick(SpotItem(title: "New spot", run: CatalogSpot.buildRun), of: entry)
 
-        try await wait("the build sheet") { model.openList == ShippedSpot.buildID }
+        try await wait("the New spot sheet") { model.openList == ShippedSpot.newID }
         XCTAssertEqual(model.transition.phase, .open)
         XCTAssertFalse(host.phases.contains(.closing))
         XCTAssertFalse(host.phases.contains(.ready))
@@ -389,84 +389,54 @@ final class SpotsModelTests: XCTestCase {
 
         XCTAssertEqual(model.visible.map(\.id), ["other"])
     }
-}
 
-/// A host that records what the model asks of the app, and makes each change at once.
-@MainActor
-private final class TestHost: SpotsHost {
-    var dismissals = 0
-    var shows = 0
-    var notes: [String] = []
-    var confirms: [String] = []
-    var isPointerOverDrop = false
-    var draggedPaths: [String] = []
-    var isMouseDown = false
-    var pastedPaths: [String] = []
-    var motions: [PanelMotion?] = []
-    /// The phase of the sheet's transition after each change.
-    var phases: [SheetTransition.Phase] = []
-    /// The sheet whose open motion runs, after each change.
-    var openings: [String?] = []
-    /// The spots that ship with the app in this test.
-    var shipped: [Spot] = []
-    /// The rows whose pictures the model asked to draw ahead.
-    var prepared: [SpotItem] = []
-    /// The glyphs of each whole list whose pictures the model asked for.
-    var glyphLists: [[String]] = []
-    /// The model whose show and hide steps the panel runs, as the app's window does.
-    weak var model: SpotsModel?
+    func testAKeyShowsTheSymbolOfItsCommandOrElseOfItsScriptForAMoment() async throws {
+        try script("move", header: "icon=macwindow\ncommand=left:Left side:rectangle.lefthalf.inset.filled\ncommand=plain:Plain", "true")
+        model.reload()
+        model.flashPause = .milliseconds(50)
+        let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+left"))
 
-    nonisolated deinit {}
+        model.press(GlobalKey(spot: "move", command: "left", shortcut: shortcut))
+        XCTAssertEqual(model.flashSymbol, "rectangle.lefthalf.inset.filled")
+        model.press(GlobalKey(spot: "move", command: "plain", shortcut: shortcut))
+        XCTAssertEqual(model.flashSymbol, "macwindow")
 
-    func dismiss() {
-        dismissals += 1
-        model?.panelWillHide()
-        model?.panelDidHide()
+        try await wait("the end of the flash") { model.flashSymbol == nil }
     }
 
-    func show() {
-        shows += 1
-        model?.panelWillShow(holding: [])
+    func testAKeyOfAScriptThatIsGoneShowsNothing() throws {
+        model.reload()
+
+        model.press(GlobalKey(spot: "gone", command: "left", shortcut: try XCTUnwrap(Shortcut(text: "ctrl+left"))))
+
+        XCTAssertNil(model.flashSymbol)
     }
 
-    func present() {}
+    func testAShowOfASpotOpensThePanelWithItsCardSelected() throws {
+        try script("one", header: "", "echo")
+        try script("two", header: "", "echo")
 
-    func notify(_ text: String) {
-        notes.append(text)
+        XCTAssertTrue(model.reveal("one"))
+
+        XCTAssertEqual(host.shows, 1)
+        XCTAssertEqual(model.selectedEntry?.id, "one")
+        XCTAssertFalse(model.reveal("three"))
     }
 
-    func notify(_ text: String, fix: URL) {
-        notes.append(text)
-    }
+    func testCommandNOpensTheNewSpotSheetFromTheGridAndFromEditSpots() async throws {
+        let new = plugins.appendingPathComponent("new.sh")
+        try "#!/bin/sh\nprintf 'row=g\\ntitle=Guide\\n'\n".writeScript(to: new)
+        host.shipped = [Spot(id: ShippedSpot.newID, name: "New spot", url: new, kind: .list, read: .sheet, isOnGrid: false)]
+        model.reload()
+        model.isShown = true
 
-    func confirm(_ text: String) {
-        confirms.append(text)
-    }
+        XCTAssertTrue(model.handleKey(ActionKey(name: "n", isCommand: true)))
+        try await wait("the New spot sheet") { model.openList == ShippedSpot.newID }
 
-    func applyConfig() {}
-
-    func setEntryKey(on isOn: Bool) {}
-
-    func hold(_ keys: [GlobalKey]) {}
-
-    func chooseFiles(for command: Spot, then take: @escaping ([String]) -> Void) {}
-
-    func copy(_ file: URL) {}
-
-    func prepare(_ items: [SpotItem], glyphs: [String]) async {
-        prepared += items
-        if !glyphs.isEmpty { glyphLists.append(glyphs) }
-    }
-
-    func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?, offersLogin: Bool) -> [Spot] {
-        shipped
-    }
-
-    func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {
-        motions.append(motion)
-        body()
-        if let phase = model?.transition.phase { phases.append(phase) }
-        openings.append(model?.runs.opening.moving)
-        completion()
+        model.closeList(moving: false)
+        model.beginEditing()
+        XCTAssertTrue(model.handleKey(ActionKey(name: "n", isCommand: true)))
+        XCTAssertFalse(model.isEditing)
+        try await wait("the New spot sheet from Edit Spots") { model.openList == ShippedSpot.newID }
     }
 }

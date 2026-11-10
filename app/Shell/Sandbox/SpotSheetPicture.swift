@@ -15,8 +15,8 @@ enum SpotSheetPicture {
     }
 
     /// Reads a sheet, writes its picture as a PNG and exits. A sheet with no parts exits with 1. A Swift file of a view is
-    /// built first, and the view draws in the area of its `view` component.
-    static func run(text: String, path: String, view source: String? = nil) -> Never {
+    /// built first, and the view draws in the area of its `view` component. A spot gives the header its name and symbol.
+    static func run(text: String, path: String, view source: String? = nil, spot: Spot? = nil) -> Never {
         NSApplication.shared.setActivationPolicy(.prohibited)
         let output = PluginOutput(text: text)
         guard let panel = SheetParts(output: output) else {
@@ -27,7 +27,7 @@ enum SpotSheetPicture {
         let source = source.map { URL(fileURLWithPath: $0).path }
         let values = Dictionary(grouping: output.view?.fields ?? [], by: \.key).mapValues { $0.map(\.value) }
         let size = SpotTokens.panelRect(panel).size
-        let preview = SpotSheetPreview(panel: panel, list: Self.list(of: output), customView: { room in
+        let preview = SpotSheetPreview(panel: panel, title: spot?.name ?? "Sheet", subtitle: spot?.subtitle ?? (spot == nil ? "Preview" : ""), symbol: spot?.symbol ?? "square.dashed", list: Self.list(of: output), customView: { room in
             source.map { SpotCustomView(source: $0, values: values, card: .square, room: room, views: views) }
         })
         let view = NSHostingView(rootView: preview

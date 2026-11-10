@@ -1,11 +1,12 @@
 import Foundation
 import Observation
 
-/// The drag of files over the panel, the review of a `.spot` file, and the share, removal and turn-off of a spot.
+/// The drag of files over the panel, the review of a `.spot` file, and the share and turn-off of a spot.
 extension SpotsModel {
-    /// Whether a card takes these dragged files. A card under an open sheet takes none.
-    public func acceptsDrop(_ paths: [String], on id: String) -> Bool {
-        openList == nil && !SharedSpot.isFile(paths) && sheets[id]?.command.accepts(paths) == true
+    /// Whether a card, or a float, takes these dragged files. A card under an open sheet takes none (D2, W9).
+    public func acceptsDrop(_ paths: [String], on id: String, in place: SheetPlace = .panel) -> Bool {
+        let isOpenToDrops = place == .panel ? openList == nil : runs.floating.contains(id)
+        return isOpenToDrops && !SharedSpot.isFile(paths) && sheets[id]?.command.accepts(paths) == true
     }
 
     /// The card whose place on the grid holds this point of the grid. A point in a gap has none.
@@ -52,10 +53,12 @@ extension SpotsModel {
         runs.draggedPaths = []
     }
 
-    /// Takes a drop on a card. A card with rows opens its sheet with the focus, so the person can act on what the drop added,
-    /// and any other card closes the panel (D8). Returns false when the card does not take these files.
-    public func drop(_ paths: [String], on id: String) -> Bool {
-        guard openList == nil, sheets[id]?.drop(paths) == true else { return false }
+    /// Takes a drop on a card or a float. On a card, a spot with rows opens its sheet with the focus, so the person can act
+    /// on what the drop added, and any other card closes the panel (D8). A float stays as it is (W9). Returns false when the
+    /// spot does not take these files.
+    public func drop(_ paths: [String], on id: String, in place: SheetPlace = .panel) -> Bool {
+        guard acceptsDrop(paths, on: id, in: place), sheets[id]?.drop(paths) == true else { return false }
+        guard place == .panel else { return true }
         endDrag()
         guard entries.first(where: { $0.id == id })?.kind == .list else {
             if isShown { host.dismiss() }
@@ -66,6 +69,15 @@ extension SpotsModel {
         host.present()
         open(id, moving: moves)
         return true
+    }
+
+    /// Tells the script of the rows that a drag took out of its sheet to another app (O2). A drag of every row with a file
+    /// out of a float closes it (W6).
+    public func dragOut(_ items: [SpotItem], of id: String) {
+        guard let sheet = sheets[id] else { return }
+        sheet.dragged(items)
+        let files = Set(sheet.list.shown.filter { $0.file != nil }.map(\.run))
+        if runs.floating.contains(id), !files.isEmpty, files.isSubset(of: items.map(\.run)) { land(id) }
     }
 
     /// Shows the grid and not a sheet, so that a drag can reach the cards.
@@ -167,19 +179,6 @@ extension SpotsModel {
             } catch {
                 host.notify("\(entry.command.name) was not copied. \(Self.reason(error))")
             }
-        }
-    }
-
-    /// Moves the file of a spot to the Trash. What it keeps in `$OPENSPOT_DATA` stays.
-    public func remove(_ entry: Entry) {
-        closeList(moving: isShown)
-        if isShown { host.dismiss() }
-        do {
-            try files.folder.remove(entry.command)
-            host.confirm("\(entry.command.name) moved to the Trash")
-            reload()
-        } catch {
-            host.notify("\(entry.command.name) was not removed. \(Self.reason(error))")
         }
     }
 

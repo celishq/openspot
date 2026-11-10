@@ -41,9 +41,16 @@ public final class SpotsModel {
             run?.command ?? fixedCommand
         }
 
-        /// The size of its card: the person's choice, or else what its last read says, or else its header (F9).
+        /// The size of its card: the person's choice, or else what its last read says, or else its header (F9). A card of a
+        /// fault is never small, so that its words show.
         @MainActor public var size: SpotSize {
-            sizeChoice ?? state.size ?? command.size
+            let size = sizeChoice ?? state.size ?? command.size
+            return command.fault != nil && size == .small ? .wide : size
+        }
+
+        /// The words of its last failed call, until a call ends well.
+        @MainActor public var failure: String? {
+            run?.failure
         }
 
         /// Whether the grid shows it: the person's choice, or else what the spot says.
@@ -184,8 +191,17 @@ public final class SpotsModel {
     /// Whether the grid is in Edit Spots, where it also shows the spots that are off the grid, and a press only selects.
     public var isEditing = false
     public var arrangement = SpotArrangement()
+    /// The symbol of the command whose key a person pressed last, which the Openspot item shows for `flashPause`.
+    public private(set) var flashSymbol: String?
+    @ObservationIgnored public var flashPause: Duration = .milliseconds(1500)
+    @ObservationIgnored private var flashWatch: Task<Void, Never>?
     private var scanned: [Spot] = []
     private var pluginScan = PluginScan()
+    private var lastScan = ScanResult(plugins: [], refused: [])
+    /// The files of the last spot that Delete moved to the Trash, which `⌘Z` puts back.
+    @ObservationIgnored var removal: Removal?
+    /// The stamp of each script file at the last scan, which says which scripts a change of the folder touched.
+    @ObservationIgnored private var fileStamps: [String: String] = [:]
 
     /// The app around the panel, which shows it, tells the person and moves each change.
     @ObservationIgnored public unowned let host: SpotsHost
@@ -197,7 +213,8 @@ public final class SpotsModel {
         self.files = files
         self.runs = runs ?? SpotRuns(
             recent: { files.recent(of: $0) },
-            prepare: { [unowned host] in await host.prepare($0, glyphs: $1) }
+            prepare: { [unowned host] in await host.prepare($0, glyphs: $1) },
+            log: files.log
         )
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
         self.runs.partsArrival = { [weak self] id, bring in
@@ -230,16 +247,23 @@ public final class SpotsModel {
     }
 
     /// Reads the config file again, and the plugin folder when a file that its scan reads has changed. No script runs for
-    /// this, and each card shows its header until its answer arrives.
+    /// this, and each card shows its header until its answer arrives. A file that gives no spot shows a card of its faults,
+    /// and any other fault shows in a toast.
     public func reload() {
         host.applyConfig()
         let config = files.config.read()
         let folder = files.folder(config)
         let shipped = host.shippedSpots(folder: folder, config: files.config, update: updateSpot, offersLogin: isFirstLaunch)
             + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
-        let scan = pluginScan.look(at: folder, shipped: shipped)
-        let problems = scan.refused.map { "\($0.file) was not loaded: \($0.reason)" }
+        var scan = pluginScan.look(at: folder, shipped: shipped)
+        let new = shipped.lazy.compactMap { if case .new(let new)? = $0.shipped { new } else { nil } }.first
+        let faults = new.map { folder.faultSpots(of: scan, new: $0) } ?? []
+        if !faults.isEmpty { scan.plugins.append(Plugin(id: ShippedSpot.faultsID, commands: faults)) }
+        let carded = Set(faults.map(\.id))
+        let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.take(scan)
+        lastScan = scan
+        fileStamps = Self.stamps(of: scan)
         holdAssignedKeys(config)
         arrangement = config.arrangement
         scanned = scan.commands
@@ -248,6 +272,45 @@ public final class SpotsModel {
             host.notify(problems.joined(separator: " "))
         }
         self.problems = problems
+    }
+
+    /// Takes a change of the plugins folder, such as an agent that writes a spot: the cards change at once, with no motion,
+    /// the selected card stays selected, and a changed script that the open panel reads at `panel` reads again.
+    public func folderChanged() {
+        let stamps = fileStamps
+        let id = selectedEntry?.id
+        reload()
+        if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
+        guard isShown else { return }
+        for entry in entries where entry.command.read?.has(.panel) == true && fileStamps[entry.id] != stamps[entry.id] {
+            sheets[entry.id]?.read(need: .change)
+        }
+    }
+
+    /// The stamp of each script file of the last scan: its date of change and its file number, which a rewrite changes.
+    private static func stamps(of scan: ScanResult) -> [String: String] {
+        var stamps: [String: String] = [:]
+        for script in scan.scripts where script.shipped == nil {
+            guard let values = try? FileManager.default.attributesOfItem(atPath: script.url.path) else { continue }
+            let date = (values[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
+            stamps[script.id] = "\(date) \(values[.systemFileNumber] ?? "")"
+        }
+        return stamps
+    }
+
+    /// Opens the panel with the card of a spot selected, as `openspot spot show` asks. A spot that the grid does not show is
+    /// found by a search for its name. Returns false when no card has that ID.
+    public func reveal(_ id: String) -> Bool {
+        reload()
+        guard let entry = cards.first(where: { $0.id == id }) else { return false }
+        closeMenu()
+        form = nil
+        endEditing(moving: false)
+        if openList != nil { closeList(moving: false) }
+        host.show()
+        query = visible.contains { $0.id == id } || cards.filter(\.isOnGrid).contains { $0.id == id } ? "" : entry.state.title
+        selected = visible.firstIndex { $0.id == id } ?? 0
+        return true
     }
 
     /// Brings the grid up to date while a sheet covers it, so that the sheet closes onto the card's real place. The selected
@@ -316,12 +379,20 @@ public final class SpotsModel {
     }
 
     private func holdAssignedKeys(_ config: Config) {
-        host.hold(pluginScan.result.offered(config.keys))
+        host.hold(lastScan.offered(config.keys))
     }
 
     /// A person pressed a key that they assigned to a command.
     public func press(_ key: GlobalKey) {
-        sheets[key.spot]?.pressKey(key.command)
+        guard case .command(let command) = key.act else { return float(key.spot) }
+        guard let sheet = sheets[key.spot] else { return }
+        sheet.pressKey(command)
+        flashSymbol = sheet.command.symbol(of: command)
+        flashWatch?.cancel()
+        flashWatch = Task { [weak self, flashPause] in
+            try? await Task.sleep(for: flashPause)
+            if !Task.isCancelled { self?.flashSymbol = nil }
+        }
     }
 
     private func take(_ report: SpotRun.Report, of id: String) {
@@ -337,6 +408,8 @@ public final class SpotsModel {
                 holdAssignedKeys(files.config.read())
             }
             if spotsChanged, id == ShippedSpot.spotsID { reloadUnderSheet() }
+        case .landed:
+            host.land(id)
         case .closed:
             if let shown = openList, runs.sheets[shown]?.isOpen != true { showSheet(nil, moving: false) }
         case .chooseFiles:
@@ -787,9 +860,9 @@ public final class SpotsModel {
         openForm(action, on: (entry, nil), prefill: openItems?.query ?? "")
     }
 
-    /// Sends a change of a slot of a row, or a press of one when it has no value (U9).
-    public func slot(_ slot: String, of item: SpotItem, to value: String?) {
-        if let value { openSheet?.set(slot: slot, of: item, to: value) } else { openSheet?.press(slot: slot, of: item) }
+    /// Sends a change of a slot of a row of a spot, or a press of one when it has no value (U9).
+    public func slot(_ slot: String, of item: SpotItem, in id: String, to value: String?) {
+        if let value { sheets[id]?.set(slot: slot, of: item, to: value) } else { sheets[id]?.press(slot: slot, of: item) }
     }
 
     public func runItem(_ item: SpotItem) {
@@ -801,37 +874,49 @@ public final class SpotsModel {
     public func finishPick() {
         guard let pick = closingPick else { return }
         closingPick = nil
-        if pick.entry.command.keepsRecent {
-            sheets[pick.entry.id]?.list.remember(pick.item)
-            files.remember(sheets[pick.entry.id]?.list.recent ?? [], of: pick.entry.id)
-        }
+        remember(pick.item, of: pick.entry)
         closeList(moving: false)
     }
 
-    public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil) {
-        if action == nil, item.run == CatalogSpot.buildRun {
-            open(ShippedSpot.buildID, moving: true)
-            return
-        }
-        if entry.id == ShippedSpot.spotsID, action == nil { spotsChanged = true }
-        if action == nil, item.shortcut != nil {
-            toggleRecording(id: item.run)
-            return
-        }
-        if action == nil, case .settings? = entry.command.shipped, let change = SettingsSpot.change(of: item.run) {
-            changeSetting(of: change.spot, with: change.action)
-            return
-        }
-        if action == nil, let form = entry.command.pickForm {
-            openForm(form, on: (entry, item))
-            return
-        }
-        if action != nil || entry.command.pick == .close {
-            closingPick = (item, entry)
-            if isShown {
-                host.dismiss()
-            } else {
-                finishPick()
+    /// Records a pick as recent, for a spot that keeps its recent picks.
+    private func remember(_ item: SpotItem, of entry: Entry) {
+        guard entry.command.keepsRecent, let sheet = sheets[entry.id] else { return }
+        sheet.list.remember(item)
+        files.remember(sheet.list.recent, of: entry.id)
+    }
+
+    /// Runs a pick of a row, or an action on it. In the panel, a pick that closes it closes the panel. A float stays open
+    /// with the picked row selected, and a pick that asks with a form or records a key opens the spot in the panel (W8).
+    public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil, in place: SheetPlace = .panel) {
+        if place == .float {
+            if action == nil, entry.command.pickForm != nil || item.shortcut != nil { return press(entry.id) }
+            remember(item, of: entry)
+            sheets[entry.id]?.list.select(run: item.run)
+        } else {
+            if action == nil, item.run == CatalogSpot.buildRun {
+                open(ShippedSpot.newID, moving: true)
+                return
+            }
+            if entry.id == ShippedSpot.spotsID, action == nil { spotsChanged = true }
+            if action == nil, item.shortcut != nil {
+                toggleRecording(id: item.run)
+                return
+            }
+            if action == nil, case .settings? = entry.command.shipped, let change = SettingsSpot.change(of: item.run) {
+                changeSetting(of: change.spot, with: change.action)
+                return
+            }
+            if action == nil, let form = entry.command.pickForm {
+                openForm(form, on: (entry, item))
+                return
+            }
+            if action != nil || entry.command.pick == .close {
+                closingPick = (item, entry)
+                if isShown {
+                    host.dismiss()
+                } else {
+                    finishPick()
+                }
             }
         }
         if let action {

@@ -1,0 +1,62 @@
+import XCTest
+@testable import OpenspotCore
+
+/// Proves that `openspot spot run` makes a call as the app makes it, and gives back all that the script printed.
+@MainActor
+final class TerminalRunTests: XCTestCase {
+    private var folder: URL!
+
+    override func setUp() async throws {
+        folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-terminal-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    }
+
+    override func tearDown() async throws {
+        try? FileManager.default.removeItem(at: folder)
+    }
+
+    private func spot(_ name: String, header: String = "", _ body: String) throws -> Spot {
+        let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
+        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: folder.appendingPathComponent("\(name).sh"))
+        return try XCTUnwrap(PluginFolder(url: folder).scan().scripts.first { $0.id == name })
+    }
+
+    func testARunGivesTheArgumentsTheInputAndTheIDAndReturnsEachFrameAndTheExit() async throws {
+        let spot = try spot("echo", "printf 'args=%s\\nid=%s\\n---\\n' \"$*\" \"$OPENSPOT_ID\"; cat; echo 'Nothing to send.' >&2; exit 2")
+        var frames: [String] = []
+
+        let end = await TerminalRun(spot: spot, arguments: ["open", "home"], input: "note=hi\n").start { frames.append($0) }
+
+        XCTAssertEqual(frames.first, "args=open home\nid=echo\n")
+        XCTAssertEqual(frames.last, "note=hi\n")
+        XCTAssertEqual(end.code, 2)
+        XCTAssertEqual(end.errors, "Nothing to send.\n")
+    }
+
+    func testARunWithNoCallReadsASpotThatReadsAndRunsOneThatDoesNot() async throws {
+        let reads = try spot("reads", header: "read=sheet", "echo \"$1 $OPENSPOT_REASON\"")
+        let runs = try spot("runs", "echo \"$1\"")
+        var said: [String] = []
+
+        _ = await TerminalRun(spot: reads, arguments: [], input: nil).start { said.append($0) }
+        _ = await TerminalRun(spot: runs, arguments: [], input: nil).start { said.append($0) }
+
+        XCTAssertEqual(said, ["read sheet\n", "run\n"])
+    }
+
+    func testARunOfAStayingScriptEndsWithTheFrameThatEndsItsCall() async throws {
+        let spot = try spot("relay", header: "stay=true", """
+        . "$OPENSPOT_SH"
+        while next; do
+          printf 'text=peer\\ntitle=%s\\n---\\n' "$(arg 1)"
+          printf 'end=%s\\n---\\n' "$call"
+        done
+        """)
+        var frames: [String] = []
+
+        let end = await TerminalRun(spot: spot, arguments: ["ping"], input: nil).start { frames.append($0) }
+
+        XCTAssertEqual(frames.first, "text=peer\ntitle=ping\n")
+        XCTAssertEqual(end.code, 0)
+    }
+}

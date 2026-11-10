@@ -1,7 +1,7 @@
 # Openspot specs
 
 These specs are the contract between a plugin and Openspot. The build joins them in order into one `GUIDE.md` inside the
-app, which the Build spot opens and copies for an AI. How the app itself works is in its code and in `app/RULES.md`.
+app, which the New spot sheet opens and `openspot guide` prints for an AI. How the app itself works is in its code and in `app/RULES.md`.
 
 | Spec                                    | Status | Needs | What it holds                                                                    |
 | --------------------------------------- | ------ | ----- | -------------------------------------------------------------------------------- |
@@ -9,6 +9,9 @@ app, which the Build spot opens and copies for an AI. How the app itself works i
 | [02 What a script prints](02-output.md) | draft  | 01    | Components, drawings, rows, repeats, buttons, cards and metrics.                 |
 | [03 Views](03-views.md)                 | draft  | 01 02 | A plugin's own SwiftUI view in an area.                                          |
 | [05 Stay](05-stay.md)                   | draft  | 01 02 | One process that stays and talks both ways over stdio, such as a local server.   |
+| [06 Screen](06-screen.md)               | draft  | 01 02 | Pictures and recordings of the screen, with the mic, the sound and the camera.   |
+| [07 Files out](07-files-out.md)         | draft  | 01 02 | Rows that a person drags out of a sheet as files.                                |
+| [08 Float](08-float.md)                 | draft  | 01 02 | A spot that a key or a shake shows in a window of its own at the pointer.        |
 
 A number that a spec gave up is not used again.
 
@@ -21,8 +24,9 @@ In order. An earlier goal wins when two goals conflict.
    view to its spot, and a script can open its own Mac window.
 3. **Nothing runs by surprise.** Openspot runs a script only when a person acts or when its header says so.
 4. **A plugin has real power.** It can use any Mac API, keep state in files, stream a long process and stay running.
-5. **An LLM writes a working plugin.** With `GUIDE.md` alone, an LLM writes a plugin that passes `openspot check` and
-   works on the first try.
+5. **A coding agent writes a working plugin.** Given only `openspot guide` and one sentence, a coding agent writes a plugin
+   that passes `openspot check --json` with `[]`, so that it shows on the grid, on its first try. `make eval-agent`
+   measures it.
 
 ## How a spec is written
 
@@ -47,12 +51,16 @@ These rules come from the way Nostr writes its NIPs.
 | `title`, `icon`, `detail`, `shortcut`, `size`, `read`, `data`, `drop`, `command`, `settings`, `global`, `tray` | Header key | 01 |
 | `view`                                                                                                   | Header key           | 03   |
 | `stay`                                                                                                   | Header key           | 05   |
+| `float`                                                                                                  | Header key           | 08   |
 | `sheet`, `panel`, a number, `launch`, `wake`                                                             | Moment               | 01   |
 | `read`                                                                                                   | Reserved call        | 01   |
 | `run`, `open`, `drop`                                                                                    | Default id           | 01   |
+| `drag`                                                                                                   | Default id           | 07   |
+| `file`                                                                                                   | Row key              | 07   |
 | `OPENSPOT_ID`, `OPENSPOT_REASON`, `OPENSPOT_DATA`, `OPENSPOT_SH`                                         | Environment variable | 01   |
 | `OPENSPOT_STAY`                                                                                          | Environment variable | 05   |
 | `openspot <noun> <verb>`                                                                                 | Command              | 01   |
+| `openspot screen`                                                                                        | Command              | 06   |
 | `text`, `number`, `gauge`, `graph`, `picture`, `spot`, `switch`, `slider`, `field`, `choice`, `hotkey`, `button`, `section`, `row`, `repeat`, `template` | Block kind | 02 |
 | `view`                                                                                                   | Block kind           | 03   |
 | `grid`, `grid.<size>`, `card`, `pad`, `main`, `title`, `detail`, `size`, `search`, `recents`, `toast`, `link`, `select` | Head key | 02   |

@@ -10,6 +10,8 @@ public final class SpotRuns {
     public private(set) var isPanelOpen = false
     /// The script whose sheet is open: the one record of it. A sheet that opens closes the one before.
     public private(set) var openID: String?
+    /// The scripts that float in windows of their own. Each one is in view while it floats (W7).
+    public private(set) var floating: Set<String> = []
     /// The files of the drag in progress, which each card that takes them all shows for the whole drag.
     public var draggedPaths: [String] = []
     @ObservationIgnored public var onReport: (String, SpotRun.Report) -> Void = { _, _ in }
@@ -35,6 +37,8 @@ public final class SpotRuns {
     @ObservationIgnored var asked: [String: Date] = [:]
     @ObservationIgnored var clock: Task<Void, Never>?
     @ObservationIgnored private var processes: [ScriptProcess] = []
+    /// The record of each call that runs once, or nil to keep none.
+    @ObservationIgnored private let log: CallLog?
 
     public init(
         readLimit: TimeInterval = 10,
@@ -43,8 +47,10 @@ public final class SpotRuns {
         stopPause: TimeInterval = 2,
         tickPause: Duration = .seconds(1),
         recent: @escaping (String) -> [String] = { _ in [] },
-        prepare: @escaping ([SpotItem], [String]) async -> Void = { _, _ in }
+        prepare: @escaping ([SpotItem], [String]) async -> Void = { _, _ in },
+        log: CallLog? = nil
     ) {
+        self.log = log
         self.readLimit = readLimit
         self.opening = opening
         self.now = now
@@ -65,6 +71,7 @@ public final class SpotRuns {
         for (id, sheet) in sheets where !order.contains(id) {
             sheets[id] = nil
             if sheet.isOpen { onReport(id, .closed) }
+            if floating.remove(id) != nil { onReport(id, .landed) }
             sheet.close()
             sheet.stopReads()
         }
@@ -100,6 +107,19 @@ public final class SpotRuns {
         if openID == sheet.command.id { openID = nil }
     }
 
+    /// Shows a script in a float, where its sheet reads as an open sheet does (W7).
+    public func float(_ id: String) {
+        guard let sheet = sheets[id], floating.insert(id).inserted else { return }
+        sheet.floated()
+    }
+
+    /// Ends the float of a script. A sheet of parts drops its values, as the panel's close does (K5).
+    public func land(_ id: String) {
+        guard floating.remove(id) != nil else { return }
+        sheets[id]?.leftPlace()
+        updateClock()
+    }
+
     /// Closes the open sheet.
     public func closeOpen() {
         openID.flatMap { sheets[$0] }?.close()
@@ -126,7 +146,7 @@ public final class SpotRuns {
     /// The panel closed: a sheet of parts closes, one with a field drops its values, and a read that nothing wants now stops.
     public func panelClosed() {
         isPanelOpen = false
-        sheets.values.forEach { $0.panelClosed() }
+        sheets.values.forEach { $0.leftPlace() }
         updateClock()
     }
 
@@ -197,7 +217,7 @@ public final class SpotRuns {
             for try await frame in frames { return frame }
             return ""
         }
-        let (stream, halt) = frames(of: command, action, input: input, limit: limit)
+        let (stream, halt, _) = frames(of: command, action, input: input, limit: limit)
         if action == .read {
             defer { halt() }
             for try await frame in stream { return frame }
@@ -238,14 +258,17 @@ public final class SpotRuns {
         onEnd: @escaping @MainActor (ScriptCall, ScriptCall.End) async -> Void
     ) -> ScriptCall {
         let call = ScriptCall(action: action, key: key, started: now())
-        let (stream, halt) = frames(of: command, action, input: input, limit: limit, variables: variables)
+        let (stream, halt, process) = frames(of: command, action, input: input, limit: limit, variables: variables)
         call.halt = halt
         let id = command.id
-        Task { [weak self] in
+        let begin = Date()
+        Task { [weak self, log] in
             var end = ScriptCall.End.ended
+            var printed: [String] = []
             do {
                 for try await frame in stream {
                     guard !call.isStopped else { break }
+                    printed.append(frame)
                     guard let output = await self?.intake(frame, of: id), !call.isStopped else { break }
                     call.take(output)
                     await onFrame(call, frame, output)
@@ -253,7 +276,20 @@ public final class SpotRuns {
             } catch {
                 end = .failed(error)
             }
-            await onEnd(call, call.isStopped ? .stopped : end)
+            let ending: ScriptCall.End = call.isStopped ? .stopped : end
+            if let log, let process {
+                log.write(CallLog.Record(
+                    spot: command.id,
+                    arguments: action.arguments,
+                    input: input,
+                    frames: printed + (process.failedFrame.map { [$0] } ?? []),
+                    errors: process.errors,
+                    end: CallLog.End(ending),
+                    started: call.started,
+                    seconds: Date().timeIntervalSince(begin)
+                ))
+            }
+            await onEnd(call, ending)
         }
         return call
     }
@@ -266,18 +302,19 @@ public final class SpotRuns {
         return (script, frames)
     }
 
-    private func frames(of command: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String] = [:]) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void) {
+    private func frames(of command: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String] = [:]) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void, process: ScriptProcess?) {
         if let shipped = command.keyList.flatMap({ $0.answers(action.arguments) ? ShippedSpot.settings($0) : nil }) ?? command.shipped {
-            return answered { try await shipped.answer(action.arguments, input: input) }
+            let (stream, halt) = answered { try await shipped.answer(action.arguments, input: input) }
+            return (stream, halt, nil)
         }
         let sent = action.sent(input: input)
         let process = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: command.dataName, variables: variables.merging(["OPENSPOT_ID": command.id]) { given, _ in given })
         do {
             let stream = try process.start()
             keep(process)
-            return (stream, { process.stop() })
+            return (stream, { process.stop() }, process)
         } catch {
-            return (AsyncThrowingStream { $0.finish(throwing: error) }, {})
+            return (AsyncThrowingStream { $0.finish(throwing: error) }, {}, nil)
         }
     }
 

@@ -34,6 +34,9 @@ public struct Spot: Equatable, Sendable {
     public let drop: [String]
     /// Whether the menu bar shows it.
     public let isTray: Bool
+    /// Whether its header offers it as a float, which the person can give a key or a shake (T1). A spot with no card offers
+    /// none, because a float shows its sheet or its card.
+    public let offersFloat: Bool
     /// The folder of its files inside the data of the app. A shipped spot and a widget have none.
     public let dataName: String?
     /// Whether it has a card. A script with a number in its `read` and no `key` has none (F7).
@@ -79,6 +82,7 @@ public struct Spot: Equatable, Sendable {
         stays: Bool = false,
         drop: [String] = [],
         isTray: Bool = false,
+        offersFloat: Bool = false,
         dataName: String? = nil,
         hasSpot: Bool = true,
         isOnGrid: Bool = true,
@@ -111,6 +115,7 @@ public struct Spot: Equatable, Sendable {
         self.stays = stays
         self.drop = drop
         self.isTray = isTray
+        self.offersFloat = offersFloat
         self.dataName = dataName
         self.hasSpot = hasSpot
         self.isOnGrid = isOnGrid
@@ -121,6 +126,11 @@ public struct Spot: Equatable, Sendable {
         self.image = image
         self.glyph = glyph
         self.view = view
+    }
+
+    /// The sheet of the file that does not load, which this card stands for.
+    public var fault: FaultSpot? {
+        if case .fault(let fault)? = shipped { fault } else { nil }
     }
 
     /// The picture its header names in place of its symbol: its image, or else the icon of its file.
@@ -138,6 +148,11 @@ public struct Spot: Equatable, Sendable {
         if kind == .widget { return [] }
         if case .updates? = shipped { return SpotSize.all.filter { $0.columns > 1 } }
         return SpotSize.all
+    }
+
+    /// The SF Symbol of one of its commands: the command's own icon when that is a symbol, or else its own symbol.
+    public func symbol(of command: String) -> String {
+        Icon(text: offers.first { $0.id == command }?.icon)?.symbol ?? symbol
     }
 
     /// The same spot, which opens to the keys of its commands when it lists commands and has no read of its own.

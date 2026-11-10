@@ -183,7 +183,7 @@ final class SamplePluginsTests: SamplePluginsCase {
             XCTAssertEqual(lines.errors, [])
             XCTAssertEqual(lines.items.map(\.title), ["Back\\slash", "Finder", "Notes", "Zed"])
             XCTAssertEqual(lines.items.map(\.run), ["/Applications/Back\\slash.app", "/System/Library/CoreServices/Finder.app", "/System/Applications/Notes.app", "/Applications/Zed.app"])
-            XCTAssertEqual(lines.items.map(\.file), lines.items.map(\.run))
+            XCTAssertEqual(lines.items.map(\.iconFile), lines.items.map(\.run))
             XCTAssertTrue(apps.isGlobal)
         }
     }
@@ -237,7 +237,7 @@ final class SamplePluginsTests: SamplePluginsCase {
     }
 
     func testPullRequestsCountEachStateAndOfferEachOne() async throws {
-        let scan = try examples
+        let scan = try exampleScan
         let metric = try XCTUnwrap(scan.metrics.first { $0.id == "pulls" })
         let list = try XCTUnwrap(scan.commands.first { $0.id == "pulls" })
         try await withPrivateHome { folder in
@@ -262,7 +262,7 @@ final class SamplePluginsTests: SamplePluginsCase {
     }
 
     func testPullRequestsHideWhenThereAreNone() async throws {
-        let metric = try XCTUnwrap(try examples.metrics.first { $0.id == "pulls" })
+        let metric = try XCTUnwrap(try exampleScan.metrics.first { $0.id == "pulls" })
         try await withPrivateHome { folder in
             try #"{"data":{"mine":{"nodes":[]},"asked":{"nodes":[]}}}"#.write(to: folder.appendingPathComponent("gh-answer"), atomically: true, encoding: .utf8)
 
@@ -273,7 +273,7 @@ final class SamplePluginsTests: SamplePluginsCase {
     }
 
     func testAgentsAndPullRequestsShowInTheMenuBar() throws {
-        XCTAssertEqual(try examples.metrics.filter(\.isTray).map(\.id), ["agents", "pulls"])
+        XCTAssertEqual(try exampleScan.metrics.filter(\.isTray).map(\.id), ["agents", "pulls"])
     }
 
     func testNoShippedSpotReadsOnATimerInTheMenuBar() throws {

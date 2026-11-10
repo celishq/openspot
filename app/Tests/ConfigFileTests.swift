@@ -121,7 +121,7 @@ final class ConfigFileTests: XCTestCase {
         try file.write(keys: [GlobalKey(spot: "move", command: "left", shortcut: try XCTUnwrap(Shortcut(text: "ctrl+left")))])
 
         XCTAssertEqual(file.read().setting("folder", of: "repos"), "~/Code")
-        XCTAssertEqual(file.read().keys.map(\.command), ["left"])
+        XCTAssertEqual(file.read().keys.map(\.act), [.command("left")])
     }
 
     func testWritesAtTheSameTimeLoseNoSetting() throws {

@@ -36,14 +36,19 @@ Openspot gives each tool the same clean look and the power of your Mac. Your too
 
 ## Make your own tool
 
-**Ask your agent.** Paste this into your coding agent, and change the last line:
+**Ask your agent from Openspot.** Press `⌘N` in the panel, type what the tool should do, and press Enter. Openspot copies a
+prompt with all that your agent needs. Paste it into Claude Code, Codex or another agent, and the tool shows when the agent
+saves it.
+
+**Ask your agent anywhere.** Paste this into your coding agent, and change the last line:
 
 ```text
 Read https://raw.githubusercontent.com/celishq/openspot/main/spec/README.md and each spec it links.
 Then make an Openspot tool in ~/.config/openspot/plugins that shows the weather here.
 ```
 
-**Make one yourself.** Save this as `~/.config/openspot/plugins/hello.sh` and run `chmod +x` on it. It shows the next time you open the panel.
+**Make one yourself.** Press `⌘N` and pick a starter, or save this as `~/.config/openspot/plugins/hello.sh` and run
+`chmod +x` on it. It shows at once.
 
 ```sh
 #!/bin/sh
@@ -52,6 +57,9 @@ Then make an Openspot tool in ~/.config/openspot/plugins that shows the weather 
 echo "toast=Hello"
 ```
 
+**Fix it.** A tool that does not load keeps its card. Press Enter on the card, then `⌘⏎` to copy a prompt that has your agent fix it.
+Select any of your tools and press `⌘K` for Edit, Copy prompt for AI, Share and Delete, which `⌘Z` undoes.
+
 **Share it.** Select the tool in the panel and press ⌘⇧C. Then paste the `.spot` file into a chat.
 
 **Add one you got.** Double-click the `.spot` file, read what it runs and press ⌘⏎.
@@ -59,8 +67,9 @@ echo "toast=Hello"
 The [`plugins`](plugins) folder has more tools to copy, such as battery, windows and a color picker.
 The [`examples`](examples) folder has tools that draw their card with their own SwiftUI view, as [spec 03](spec/03-views.md)
 describes, Relay, which stays running and sends lines to another process, as [spec 05](spec/05-stay.md) describes,
-Repos, which names a folder and an editor as settings that Settings lists and changes, and Agents and Pull requests, which
-show in the menu bar.
+Repos, which names a folder and an editor as settings that Settings lists and changes, Agents and Pull requests, which
+show in the menu bar, and Shelf, which keeps the files that you drop on it until you drag them out again, as
+[spec 07](spec/07-files-out.md) describes.
 
 ## Widgets and keys
 
@@ -87,6 +96,17 @@ write it there by hand too:
 spot = "music"
 command = "pause"
 key = "ctrl+option+p"
+```
+
+A tool whose header says `float=true` can float: Settings lists a Float row for it, and a key with no `command` shows
+its sheet, or its card, in a small window at the pointer that stays while you work in other apps, until the same key
+closes it. `key = "shake"` takes a quick shake of the pointer in place of a key, so that a shake while you drag files
+opens Shelf under them:
+
+```text
+[[keys]]
+spot = "shelf/shelf"
+key = "shake"
 ```
 
 ## License

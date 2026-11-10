@@ -27,6 +27,8 @@ public final class ScriptProcess: @unchecked Sendable {
     private var stopped = false
     private var ended = false
     private var killsLater = false
+    private let errorText = ErrorTail()
+    private var unended: String?
 
     /// `limit` is the time the script has to its first frame or its end. With none, it has no limit. `stopPause` is the time
     /// between each step of a stop. `variables` add to its environment.
@@ -135,6 +137,16 @@ public final class ScriptProcess: @unchecked Sendable {
         stop(because: nil)
     }
 
+    /// The end of what the process printed on stderr, its last 64 KB at most, once its output has closed.
+    public var errors: String {
+        errorText.text
+    }
+
+    /// The last frame of a call that failed, which had no `---` after it. The app does not draw it.
+    public var failedFrame: String? {
+        lock.withLock { unended }
+    }
+
     /// Whether `stop` or the time limit ended this process. Its silence then says nothing.
     public var isStopped: Bool {
         lock.withLock { stopped }
@@ -220,7 +232,7 @@ public final class ScriptProcess: @unchecked Sendable {
 
     private func follow(output: Pipe, errors: Pipe) {
         let errorsRead = DispatchSemaphore(value: 0)
-        let lastErrors = LastLine()
+        let lastErrors = errorText
         DispatchQueue.global().async {
             while let data = Self.next(errors) {
                 lastErrors.take(data)
@@ -236,8 +248,10 @@ public final class ScriptProcess: @unchecked Sendable {
             _ = errorsRead.wait(timeout: .now() + Self.errorsPause)
             guard !isStopped else { return lock.withLock { ended = true } }
             if hasExited, process.terminationStatus != 0 {
-                let line = lastErrors.text
-                let fix = reader.finish().flatMap { PluginOutput(text: $0).link }.flatMap(URL.init(string:))
+                let line = lastErrors.lastLine
+                let last = reader.finish()
+                lock.withLock { unended = last }
+                let fix = last.flatMap { PluginOutput(text: $0).link }.flatMap(URL.init(string:))
                 finish(throwing: fix.map { PluginError.failedWithFix(process.terminationStatus, line, $0) } ?? PluginError.failed(process.terminationStatus, line))
                 return
             }
@@ -280,11 +294,10 @@ public final class ScriptProcess: @unchecked Sendable {
     }
 }
 
-/// The last line that has words of a stream that one queue writes and another reads. It keeps no more than that line and
-/// one line break after it, and no more than the end of a line longer than its limit, cut between two characters.
-private final class LastLine: @unchecked Sendable {
-    private static let limit = 16 * 1024
-    private static let breaks: Set<UInt8> = [UInt8(ascii: "\n"), UInt8(ascii: "\r")]
+/// The end of a stream that one queue writes and another reads: its last bytes up to a limit, cut between two characters,
+/// so that a script that writes to stderr all day holds no more than that.
+private final class ErrorTail: @unchecked Sendable {
+    private static let limit = 64 * 1024
 
     private let lock = NSLock()
     private var bytes = Data()
@@ -292,15 +305,19 @@ private final class LastLine: @unchecked Sendable {
     func take(_ data: Data) {
         lock.withLock {
             bytes.append(data)
-            guard let end = bytes.lastIndex(where: { !Self.breaks.contains($0) }) else { return bytes.removeAll() }
-            let start = bytes[..<end].lastIndex(of: UInt8(ascii: "\n")).map { $0 + 1 } ?? bytes.startIndex
-            var cut = max(start, end + 1 - Self.limit)
-            while cut < end, bytes[cut] & 0xC0 == 0x80 { cut += 1 }
-            bytes = Data(bytes[cut..<min(end + 2, bytes.endIndex)])
+            guard bytes.count > Self.limit else { return }
+            var cut = bytes.endIndex - Self.limit
+            while cut < bytes.endIndex, bytes[cut] & 0xC0 == 0x80 { cut += 1 }
+            bytes = Data(bytes[cut...])
         }
     }
 
     var text: String {
-        lock.withLock { String(decoding: bytes, as: UTF8.self).split(whereSeparator: \.isNewline).last.map(String.init) ?? "" }
+        lock.withLock { String(decoding: bytes, as: UTF8.self) }
+    }
+
+    /// The last line that has words.
+    var lastLine: String {
+        text.split(whereSeparator: \.isNewline).last.map(String.init) ?? ""
     }
 }

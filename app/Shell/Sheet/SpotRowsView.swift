@@ -5,11 +5,15 @@ import SwiftUI
 struct SpotRowsView: View {
     let list: ItemList
     var recording: String?
+    /// The words of the key that records.
+    var recordingWords = "Press keys"
     let onRun: (SpotItem) -> Void
     /// Reads the selected row where it is called. Nil reads it from the list.
     var selection: (() -> Int)?
     /// Takes a change or a press of a slot of a row: the row, the slot and its new value (U9).
     var onSlot: (SpotItem, String, String?) -> Void = { _, _, _ in }
+    /// Takes the rows whose files a drag took out to another app (O2).
+    var onDragOut: ([SpotItem]) -> Void = { _ in }
     @State private var edges = SpotScrollEdges()
     @State private var position = ScrollPosition(edge: .top)
     @State private var reading = GridScrollReading()
@@ -119,6 +123,7 @@ struct SpotRowsView: View {
                         rowLabel(item)
                     }
                     .buttonStyle(.plain)
+                    .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
                 }
             }
         }
@@ -135,10 +140,12 @@ struct SpotRowsView: View {
                         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
                         .contentShape(row)
                         .onTapGesture { onRun(item) }
+                        .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
                 } else {
                     SpotGridCell(item: item, side: side)
                         .equatable()
                         .onTapGesture { onRun(item) }
+                        .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
                 }
             }
         }
@@ -169,6 +176,7 @@ struct SpotRowsView: View {
         .modifier(RowRing(run: item.run, selectedRun: selectedRun, shape: row))
         .contentShape(row)
         .onTapGesture { onRun(item) }
+        .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
     }
 
     /// The rows of a bento: the drawing of the repeat, tile under tile, with each row drawn at the size of its place.
@@ -218,6 +226,7 @@ struct SpotRowsView: View {
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .contentShape(row)
         .onTapGesture { onRun(item) }
+        .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
         .accessibilityLabel(item.title)
         .accessibilityAddTraits(.isButton)
     }
@@ -240,7 +249,7 @@ struct SpotRowsView: View {
             }
             Spacer(minLength: 0)
             if let shortcut = item.shortcut {
-                SpotKeyLabel(text: shortcut, isRecording: recording == item.run)
+                SpotKeyLabel(text: shortcut, isRecording: recording == item.run, recordingWords: recordingWords)
             }
             if item.isOn {
                 Image(systemName: "checkmark")
