@@ -2,7 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 /// The field that searches the rows or the spots of a surface: its words on the fill of a row, and its prompt in the
-/// secondary strength of ink.
+/// secondary strength of ink. A click anywhere on the fill puts the text cursor in it.
 struct SpotSearchField: View {
     let prompt: String
     let text: String
@@ -18,6 +18,13 @@ struct SpotSearchField: View {
             .focused(isFocused)
             .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
             .frame(height: SpotTokens.menuRowHeight)
-            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous))
+            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
+            .contentShape(shape)
+            .pointerStyle(.horizontalText)
+            .simultaneousGesture(TapGesture().onEnded { isFocused.wrappedValue = true })
+    }
+
+    private var shape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)
     }
 }
