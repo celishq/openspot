@@ -19,6 +19,8 @@ public struct ItemForm: Equatable, Sendable {
         public let placeholder: String?
         /// The options of a choice.
         public let options: [SpotPart.Option]
+        /// The options that a choice of several has picked, or nil for a choice of one.
+        public let picks: Set<String>?
         /// The lowest and the highest level of a slider.
         public let range: ClosedRange<Double>?
 
@@ -30,6 +32,7 @@ public struct ItemForm: Equatable, Sendable {
             required: Bool? = nil,
             placeholder: String? = nil,
             options: [SpotPart.Option] = [],
+            picks: Set<String>? = nil,
             range: ClosedRange<Double>? = nil
         ) {
             self.name = name
@@ -39,17 +42,21 @@ public struct ItemForm: Equatable, Sendable {
             self.required = required
             self.placeholder = placeholder
             self.options = options
+            self.picks = picks
             self.range = range
         }
 
         /// Reads a `field`, `choice`, `switch` or `slider` block. A choice starts on its first option, and a slider on its
-        /// lowest level, so that each one sends a value.
+        /// lowest level, so that each one sends a value. A choice with `type=multiple` picks each option of a `value` line.
         init?(block: TextBlock) {
             guard let kind = block.fields.first?.key, let name = block.value(kind), let label = block.value("title") else { return nil }
             switch kind {
             case "field":
                 let type = block.value("type").flatMap(Kind.init).flatMap { [.text, .multiline].contains($0) ? $0 : nil } ?? .text
                 self.init(name: name, label: label, type: type, value: block.value("text") ?? block.value("value"), required: block.flag("required"), placeholder: block.value("placeholder"))
+            case "choice" where block.value("type") == "multiple":
+                let options = block.values("option").map(SpotPart.option)
+                self.init(name: name, label: label, type: .choice, value: options.first?.id, options: options, picks: Set(block.values("value")))
             case "choice":
                 let options = block.values("option").map(SpotPart.option)
                 self.init(name: name, label: label, type: .choice, value: block.value("value") ?? options.first?.id, options: options)
