@@ -55,6 +55,7 @@ targets:
         NSMicrophoneUsageDescription: Openspot records the microphone when a plugin records the screen with your voice.
         NSCameraUsageDescription: Openspot records the camera when a plugin records the screen with your camera.
         NSCalendarsFullAccessUsageDescription: Openspot shows and adds your events when a spot that you use asks for them.
+        NSRemindersFullAccessUsageDescription: Openspot shows, adds and ticks your reminders when a spot that you use asks for them.
         CFBundleDocumentTypes:
           - CFBundleTypeName: Openspot spot
             CFBundleTypeRole: Viewer

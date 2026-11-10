@@ -47,6 +47,8 @@
 	<string>Openspot records the camera when a plugin records the screen with your camera.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Openspot records the microphone when a plugin records the screen with your voice.</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>Openspot shows, adds and ticks your reminders when a spot that you use asks for them.</string>
 	<key>OpenspotDevState</key>
 	<string>$(OPENSPOT_DEV_STATE)</string>
 	<key>SUAutomaticallyUpdate</key>

@@ -50,6 +50,11 @@ public enum CommandLineCall: Equatable, Sendable {
     /// Prints the events that have not ended through the end of a day, in the calendars with these ids or in all (E1).
     case calendarEvents(days: Int, calendars: [String])
     case calendarCalendars
+    /// Prints the open reminders that are late or due through the end of a day, and those done today, in some lists or all.
+    case remindersDue(days: Int, lists: [String])
+    case remindersLists
+    /// Ticks a reminder, or opens it again (E3).
+    case remindersDone(id: String, isDone: Bool)
     /// Runs as the helper process of a capability. A script never makes this call, so the usage does not list it.
     case helper(String)
     case help
@@ -101,6 +106,11 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  Prints each event that has not ended through the end of day n as a
                                                  row. Day 1, the default, is today. --calendar takes a calendar's id.
     openspot calendar calendars                  Prints each calendar as a row.
+    openspot reminders due [--days n] [--list id]...
+                                                 Prints each open reminder that is late or due through the end of day n,
+                                                 and each one done today, as a row. --list takes a list's id.
+    openspot reminders lists                     Prints each list of reminders as a row.
+    openspot reminders done <id> [true|false]    Ticks a reminder, or with false opens it again.
 
     """
 
@@ -178,6 +188,12 @@ public enum CommandLineCall: Equatable, Sendable {
             self = Self.listing(Array(rest.dropFirst()), filter: "--calendar").map { .calendarEvents(days: $0.days, calendars: $0.ids) }
                 ?? .unknown(arguments.joined(separator: " "))
         case ("calendar", "calendars") where rest.count == 1: self = .calendarCalendars
+        case ("reminders", "due"):
+            self = Self.listing(Array(rest.dropFirst()), filter: "--list").map { .remindersDue(days: $0.days, lists: $0.ids) }
+                ?? .unknown(arguments.joined(separator: " "))
+        case ("reminders", "lists") where rest.count == 1: self = .remindersLists
+        case ("reminders", "done") where rest.count == 2 || (rest.count == 3 && ["true", "false"].contains(rest[2])):
+            self = Self.changing(.remindersDone(id: rest[1], isDone: rest.count == 2 || rest[2] == "true"), "openspot reminders done", "your reminders", environment)
         case ("translate", _):
             guard let options = Self.options(rest) else {
                 self = .unknown(arguments.joined(separator: " "))
@@ -200,6 +216,15 @@ public enum CommandLineCall: Equatable, Sendable {
     private static func capturing(_ call: CommandLineCall, _ name: String, _ environment: [String: String]) -> CommandLineCall {
         guard environment["OPENSPOT_REASON"] == nil else {
             return .refused("`\(name)` captures the screen, so it cannot run in a read. Run it from a pick or an action.")
+        }
+        return call
+    }
+
+    /// The call of a command that changes the person's data, or its refusal in a read, so that nothing changes by surprise
+    /// (E9).
+    private static func changing(_ call: CommandLineCall, _ name: String, _ what: String, _ environment: [String: String]) -> CommandLineCall {
+        guard environment["OPENSPOT_REASON"] == nil else {
+            return .refused("`\(name)` changes \(what), so it cannot run in a read. Run it from a pick or an action.")
         }
         return call
     }

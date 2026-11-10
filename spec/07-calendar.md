@@ -23,7 +23,7 @@ reminders. Each list prints rows (02), and the id of each row goes to each other
 | `openspot calendar calendars`                            | Prints each calendar as a row.                                                          |
 | `openspot calendar add [--dry-run] <words>...`           | Adds an event from the words to the default calendar, and prints its row.              |
 | `openspot calendar show <id>`                            | Opens Calendar on the day of an event or a reminder.                                   |
-| `openspot reminders due [--days n] [--list id]...`       | Prints each open reminder that is late or due through the end of day `n`, then each one done today. |
+| `openspot reminders due [--days n] [--list id]...`       | Prints each open reminder that is late or due through the end of day `n`, and each of those done today. |
 | `openspot reminders lists`                               | Prints each list of reminders as a row.                                                 |
 | `openspot reminders add [--dry-run] <words>...`          | Adds a reminder from the words to the default list, and prints its row.                |
 | `openspot reminders done <id> [true\|false]`             | Ticks a reminder, or with `false` opens it again. It prints nothing.                   |
@@ -98,7 +98,8 @@ A verb never prints an empty list in place of a list that it cannot read.
 
 - `add`, `done` and `show` fail in a read, so that nothing changes or opens by surprise (K4). The lists and `add --dry-run`
   work in a read (E9).
-- A list is in the order of time: an event by its start, and a reminder by its due date, late ones first.
+- A list is in the order of time: an event by its start, and a reminder by its due time, so that a ticked one keeps its
+  place.
 
 ## Decisions
 

@@ -178,6 +178,25 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertTrue(CommandLineCall.usage.contains("openspot calendar calendars"))
     }
 
+    func testARemindersCallReadsItsWordsAndDoneIsRefusedInARead() {
+        let read = ["OPENSPOT_REASON": "panel"]
+        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "due"], environment: read), .remindersDue(days: 1, lists: []))
+        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "due", "--days", "2", "--list", "7D10"]), .remindersDue(days: 2, lists: ["7D10"]))
+        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "lists"], environment: read), .remindersLists)
+        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "done", "reminder:9C41"]), .remindersDone(id: "reminder:9C41", isDone: true))
+        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "done", "reminder:9C41", "false"]), .remindersDone(id: "reminder:9C41", isDone: false))
+        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "done", "reminder:9C41", "maybe"]), .unknown("reminders done reminder:9C41 maybe"))
+        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "done"]), .unknown("reminders done"))
+        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "due", "--calendar", "A8E2"]), .unknown("reminders due --calendar A8E2"))
+        XCTAssertEqual(
+            CommandLineCall(arguments: ["reminders", "done", "reminder:9C41"], environment: read),
+            .refused("`openspot reminders done` changes your reminders, so it cannot run in a read. Run it from a pick or an action.")
+        )
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot reminders due"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot reminders lists"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot reminders done"))
+    }
+
     func testAnUnknownCallAsksForHelp() {
         XCTAssertEqual(CommandLineCall(arguments: ["paint"]), .unknown("paint"))
         XCTAssertEqual(CommandLineCall(arguments: ["color", "mix"]), .unknown("color mix"))
