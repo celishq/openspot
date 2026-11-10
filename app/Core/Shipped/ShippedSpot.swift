@@ -38,7 +38,8 @@ public enum ShippedSpot: Equatable, Sendable {
                 read: SpotRead(moments: [.panel, .sheet]),
                 isGlobal: true,
                 order: 2,
-                shipped: .settings(SettingsSpot(file: config, folder: folder, core: core, login: login, link: link))
+                shipped: .settings(SettingsSpot(file: config, folder: folder, core: core, login: login, link: link)),
+                setsKeys: true
             ),
             Spot(
                 id: newID,
@@ -63,7 +64,9 @@ public enum ShippedSpot: Equatable, Sendable {
                     read: .panel,
                     order: .min,
                     shipped: .updates(update),
-                    isOnGrid: false
+                    isOnGrid: false,
+                    sizes: SpotSize.all.filter { $0.columns > 1 },
+                    readsOnUpdate: true
                 ),
                 at: 0
             )
@@ -103,6 +106,12 @@ public enum ShippedSpot: Equatable, Sendable {
             order: .max,
             shipped: .review(review)
         )
+    }
+
+    /// Whether the row of this run records a key that a shake can be too: a row of Settings that gives a key to a command or
+    /// a float (W2).
+    public func takesShake(_ run: String) -> Bool {
+        if case .settings = self { SettingsSpot.takesShake(run) } else { false }
     }
 
     /// Answers one call with the text a script would print.

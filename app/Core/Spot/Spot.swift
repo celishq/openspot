@@ -61,6 +61,12 @@ public struct Spot: Equatable, Sendable {
     public let settings: [CommandOffer]
     /// The Settings rows of its own commands, which its sheet shows. Nil for a spot that draws its own sheet.
     public private(set) var keyList: SettingsSpot?
+    /// The sizes that a person can prefer for its card, when it offers fewer than all.
+    private let sizeChoices: [SpotSize]?
+    /// Whether its own sheet changes the keys in the config file.
+    private let changesKeys: Bool
+    /// Whether it reads again when an update of the app is ready.
+    public let readsOnUpdate: Bool
 
     public init(
         id: String,
@@ -95,8 +101,14 @@ public struct Spot: Equatable, Sendable {
         file: String? = nil,
         image: String? = nil,
         glyph: String? = nil,
-        view: String? = nil
+        view: String? = nil,
+        sizes: [SpotSize]? = nil,
+        setsKeys: Bool = false,
+        readsOnUpdate: Bool = false
     ) {
+        sizeChoices = sizes
+        changesKeys = setsKeys
+        self.readsOnUpdate = readsOnUpdate
         self.id = id
         self.name = name
         self.url = url
@@ -142,11 +154,9 @@ public struct Spot: Equatable, Sendable {
         image.map(FileIcon.image) ?? file.map(FileIcon.init(path:))
     }
 
-    /// The sizes a person can prefer for its card. A widget has the size of its layout, and Updates needs room for its words.
+    /// The sizes a person can prefer for its card. A widget has the size of its layout.
     public var sizes: [SpotSize] {
-        if kind == .widget { return [] }
-        if case .updates? = shipped { return SpotSize.all.filter { $0.columns > 1 } }
-        return SpotSize.all
+        kind == .widget ? [] : sizeChoices ?? SpotSize.all
     }
 
     /// The SF Symbol of one of its commands: the command's own icon when that is a symbol, or else its own symbol.
@@ -180,8 +190,7 @@ public struct Spot: Equatable, Sendable {
 
     /// Whether its sheet changes the keys in the config file.
     public var setsKeys: Bool {
-        if case .settings? = shipped { return true }
-        return keyList != nil
+        changesKeys || keyList != nil
     }
 
     /// The state the header gives, shown before the command answers or when it cannot.

@@ -393,9 +393,10 @@ public final class SpotsModel {
         runs.arrive(moment)
     }
 
-    /// A downloaded update waits, so the Updates spot reads now and is on the grid before the panel next opens.
+    /// A downloaded update waits, so the spot that reads on an update reads now and is on the grid before the panel next
+    /// opens.
     public func updateIsReady() {
-        sheets.values.first { if case .updates? = $0.command.shipped { true } else { false } }?.read(need: .change)
+        sheets.values.first { $0.command.readsOnUpdate }?.read(need: .change)
     }
 
     /// Stops each call as the app quits.

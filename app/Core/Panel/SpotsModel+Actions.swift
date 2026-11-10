@@ -171,8 +171,8 @@ extension SpotsModel {
 
     /// Whether the row that records takes a shake too: a row of Settings that gives a key to a command or a float (W3).
     public var takesShake: Bool {
-        guard let recording, case .settings? = openEntry?.command.shipped else { return false }
-        return SettingsSpot.takesShake(recording)
+        guard let recording else { return false }
+        return openEntry?.command.shipped?.takesShake(recording) ?? false
     }
 
     /// The words of the key that records.

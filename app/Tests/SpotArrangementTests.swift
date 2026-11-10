@@ -141,4 +141,17 @@ final class SpotArrangementTests: XCTestCase {
         let updates = ShippedSpot.commands(folder: url, guide: url, app: "", update: UpdateSpot(version: "1", runningWork: { 0 }, check: {}, restart: {}))
         XCTAssertFalse(updates[0].sizes.contains(.small))
     }
+
+    func testOnlyTheBuiltInsThatSayItChangeKeysReadOnAnUpdateOrTakeAShake() {
+        let url = URL(fileURLWithPath: "/bin/true")
+        let commands = ShippedSpot.commands(folder: url, guide: url, app: "", update: UpdateSpot(version: "1", runningWork: { 0 }, check: {}, restart: {}))
+        let settings = commands.first { $0.id == ShippedSpot.settingsID }
+        let updates = commands.first { $0.id == "openspot/updates" }
+
+        XCTAssertEqual(commands.filter(\.setsKeys).map(\.id), [ShippedSpot.settingsID])
+        XCTAssertEqual(commands.filter(\.readsOnUpdate).map(\.id), ["openspot/updates"])
+        XCTAssertEqual(settings?.shipped?.takesShake("key:apps:open"), true)
+        XCTAssertEqual(settings?.shipped?.takesShake("setting:apps:size"), false)
+        XCTAssertEqual(updates?.shipped?.takesShake("key:apps:open"), false)
+    }
 }
