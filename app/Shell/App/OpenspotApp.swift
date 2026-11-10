@@ -67,6 +67,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         let isFirstLaunch = PluginFolder.standard().isFirstLaunch(config: .standard())
         panel?.warm { [weak self] in
             guard let self else { return }
+            SpotSheetWarmth.draw()
             if isFirstLaunch {
                 model.beginFirstLaunch()
             } else {
