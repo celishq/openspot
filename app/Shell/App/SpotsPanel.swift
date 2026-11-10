@@ -40,10 +40,10 @@ final class SpotsPanel: NSPanel {
     /// Moves the panel onto the screen of the app's front window, or with none, of the pointer (A18). An open panel stays.
     func place(over app: NSRunningApplication?) {
         guard model?.isShown != true || model?.isWarming == true else { return }
-        let screens = NSScreen.screens.map { PanelPlace.Screen(frame: $0.frame, area: $0.visibleFrame) }
+        let screens = NSScreen.screens.map { ScreenPlace.Screen(frame: $0.frame, area: $0.visibleFrame) }
         let mainHeight = NSScreen.screens.first?.frame.maxY ?? 0
-        let window = app.flatMap(Self.frontWindow).map { PanelPlace.frame(ofBounds: $0, mainHeight: mainHeight) }
-        guard let origin = PanelPlace(screens: screens).origin(of: frame.size, window: window, pointer: NSEvent.mouseLocation) else { return }
+        let window = app.flatMap(Self.frontWindow).map { ScreenPlace.frame(ofBounds: $0, mainHeight: mainHeight) }
+        guard let origin = ScreenPlace(screens: screens).origin(of: frame.size, window: window, pointer: NSEvent.mouseLocation) else { return }
         setFrameOrigin(origin)
     }
 
@@ -123,7 +123,7 @@ final class SpotsPanel: NSPanel {
         return modifiers
     }
 
-    private static func actionKey(of event: NSEvent) -> ActionKey? {
+    static func actionKey(of event: NSEvent) -> ActionKey? {
         let isCommand = event.modifierFlags.contains(.command)
         let isShift = event.modifierFlags.contains(.shift)
         let name: String
@@ -167,7 +167,7 @@ final class SpotsPanel: NSPanel {
     /// One look at the press and the drag pasteboard after a loss of the focus.
     private func step(of loss: FocusLoss) -> FocusLoss.Step {
         let drag = NSPasteboard(name: .drag)
-        return loss.step(isPressed: NSEvent.pressedMouseButtons != 0, dragCount: drag.changeCount, holdsFiles: !SpotCardDrop.paths(on: drag).isEmpty)
+        return loss.step(isPressed: NSEvent.pressedMouseButtons != 0, dragCount: drag.changeCount, holdsFiles: !SpotGridDrop.paths(on: drag).isEmpty)
     }
 
     /// Closes the panel, or keeps it open for a drag. Returns false while the panel still waits.

@@ -34,6 +34,9 @@ public struct Spot: Equatable, Sendable {
     public let drop: [String]
     /// Whether the menu bar shows it.
     public let isTray: Bool
+    /// Whether its header offers it as a float, which the person can give a key or a shake (T1). A spot with no card offers
+    /// none, because a float shows its sheet or its card.
+    public let offersFloat: Bool
     /// The folder of its files inside the data of the app. A shipped spot and a widget have none.
     public let dataName: String?
     /// Whether it has a card. A script with a number in its `read` and no `key` has none (F7).
@@ -79,6 +82,7 @@ public struct Spot: Equatable, Sendable {
         stays: Bool = false,
         drop: [String] = [],
         isTray: Bool = false,
+        offersFloat: Bool = false,
         dataName: String? = nil,
         hasSpot: Bool = true,
         isOnGrid: Bool = true,
@@ -111,6 +115,7 @@ public struct Spot: Equatable, Sendable {
         self.stays = stays
         self.drop = drop
         self.isTray = isTray
+        self.offersFloat = offersFloat
         self.dataName = dataName
         self.hasSpot = hasSpot
         self.isOnGrid = isOnGrid

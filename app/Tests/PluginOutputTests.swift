@@ -2,6 +2,21 @@ import XCTest
 @testable import OpenspotCore
 
 final class PluginOutputTests: XCTestCase {
+    func testAKeptOutputHoldsItsRowsOnlyAsItemsAndKeepsAllElseItShows() {
+        let output = PluginOutput(text: "title=T\ntoast=Hi\n\nrow=a\ntitle=A\n\nrow=b\ntitle=B\n\ntext=m\ntitle=3\n\nbutton=go\ntitle=Go\n")
+
+        let kept = output.withoutBlocks()
+
+        XCTAssertTrue(kept.rows.isEmpty)
+        XCTAssertEqual(kept.items, output.items)
+        XCTAssertEqual(kept.parts, output.parts)
+        XCTAssertEqual(kept.actions, output.actions)
+        XCTAssertEqual(kept.summary, output.summary)
+        XCTAssertEqual(kept.value, output.value)
+        XCTAssertEqual(kept.kind, output.kind)
+        XCTAssertEqual(kept.toast, "Hi")
+    }
+
     func testAScriptPrintsWhoSearchesItsRowsAndWhetherRecentPicksMoveUp() {
         let plain = PluginOutput(text: "row=a\ntitle=A\n")
         let printed = PluginOutput(text: "search=script\nrecents=false\n\nrow=a\ntitle=A\n")
@@ -35,7 +50,7 @@ final class PluginOutputTests: XCTestCase {
 
         XCTAssertEqual(output.summary?.value("title"), "Caffeinate")
         XCTAssertEqual(output.items, [
-            SpotItem(title: "Safari", subtitle: "Browser", run: "/Applications/Safari.app", file: "/Applications/Safari.app"),
+            SpotItem(title: "Safari", subtitle: "Browser", run: "/Applications/Safari.app", iconFile: "/Applications/Safari.app"),
             SpotItem(title: "Off", run: "off", symbol: "power")
         ])
         XCTAssertEqual(output.actions, [CommandAction(id: "copy", title: "Copy", key: ActionKey(text: "cmd+return"), after: .close)])

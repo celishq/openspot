@@ -108,6 +108,15 @@ final class RepeatTemplateTests: XCTestCase {
         XCTAssertEqual(list.template(of: item)?.parts(of: item).last?.control, .toggle(true))
     }
 
+    func testAValueSetInARowKeepsItsParent() throws {
+        let output = PluginOutput(text: "row=airpods\ntitle=AirPods\nparent=Audio\npower=false\n")
+        var list = ItemList(items: output.items)
+
+        list.set("true", of: "power", in: "airpods")
+
+        XCTAssertEqual(list.shown.first?.parent, "Audio")
+    }
+
     func testARowGivesSlotsOfTheirOwnSizeTheirWidthAndTheRestToWords() throws {
         let output = PluginOutput(text: apps)
         let safari = try XCTUnwrap(output.items.first)

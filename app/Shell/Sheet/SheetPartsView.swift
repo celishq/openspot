@@ -14,6 +14,7 @@ struct SheetPartsView: View {
     var list = ItemList()
     var onRun: (SpotItem) -> Void = { _ in }
     var onSlot: (SpotItem, String, String?) -> Void = { _, _, _ in }
+    var onDragOut: ([SpotItem]) -> Void = { _ in }
     var selection: (() -> Int)?
     var nudge: () -> SheetParts.Nudge = { SheetParts.Nudge.rest }
     /// The plugin's own view at the size of the area of a `view` component (V1).
@@ -66,7 +67,7 @@ struct SheetPartsView: View {
                     .offset(x: line.minX, y: line.minY)
             }
             if let area = sheet.repeatFrame {
-                SpotRowsView(list: list, onRun: onRun, selection: selection, onSlot: onSlot)
+                SpotRowsView(list: list, onRun: onRun, selection: selection, onSlot: onSlot, onDragOut: onDragOut)
                     .frame(width: area.width, height: area.height)
                     .offset(x: area.minX, y: area.minY)
             }

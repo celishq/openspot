@@ -287,6 +287,82 @@ public enum SheetExamples {
         value=1,284
         look=bare
 
-        """)
+        """),
+        tiles
     ]
+
+    /// A grid of emoji under a choice, whose rows fill a repeated area of the drawing.
+    public static let tiles = Example(name: "a grid of emoji", text: """
+    grid=tone tone tone tone tone tone tone
+    grid=a a a a a a a
+
+    repeat=a
+    grid=a b c d e f g
+
+    button=open
+    title=Copy
+
+    choice=tone
+    title=Skin tone
+    option=none:Yellow
+    option=light:Light
+    value=none
+
+    row=grin
+    title=Grinning face
+    icon=😀
+
+    row=joy
+    title=Tears of joy
+    icon=😂
+
+    row=love
+    title=Heart eyes
+    icon=😍
+
+    row=think
+    title=Thinking face
+    icon=🤔
+
+    row=party
+    title=Party face
+    icon=🥳
+
+    row=cool
+    title=Sunglasses
+    icon=😎
+
+    row=wave
+    title=Waving hand
+    icon=👋
+
+    row=dog
+    title=Dog face
+    icon=🐶
+
+    row=fox
+    title=Fox
+    icon=🦊
+
+    row=flower
+    title=Cherry blossom
+    icon=🌸
+
+    row=fire
+    title=Fire
+    icon=🔥
+
+    row=pizza
+    title=Pizza
+    icon=🍕
+
+    row=rocket
+    title=Rocket
+    icon=🚀
+
+    row=heart
+    title=Red heart
+    icon=❤️
+
+    """)
 }

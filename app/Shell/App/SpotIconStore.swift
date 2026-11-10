@@ -9,6 +9,7 @@ final class SpotIconStore {
     static let scale: CGFloat = 2
 
     nonisolated private static let pixels = 72
+    private static let byteLimit = 4 << 20
 
     private final class Bitmap {
         let image: CGImage
@@ -23,7 +24,7 @@ final class SpotIconStore {
     private let drawing = OperationQueue()
 
     private init() {
-        bitmaps.countLimit = 2000
+        bitmaps.totalCostLimit = Self.byteLimit
         drawing.maxConcurrentOperationCount = 4
         drawing.qualityOfService = .userInteractive
     }
@@ -39,7 +40,7 @@ final class SpotIconStore {
         loads[icon] = load
         let image = await load.value
         loads[icon] = nil
-        if let image { bitmaps.setObject(Bitmap(image), forKey: Self.name(of: icon)) }
+        if let image { bitmaps.setObject(Bitmap(image), forKey: Self.name(of: icon), cost: image.bytesPerRow * image.height) }
         return image
     }
 

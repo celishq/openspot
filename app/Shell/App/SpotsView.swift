@@ -199,7 +199,7 @@ struct SpotsView: View {
         guard !coversGrid else { return false }
         if let form = model.form { return form.draft.choices != nil }
         guard sheetOpen else { return true }
-        return shownPanel?.showsRows != false && model.sheets[sheetID ?? ""]?.awaitsFirstAnswer != true
+        return model.sheets[sheetID ?? ""]?.kind.showsField != false
     }
 
     /// The top of the grid in Edit Spots, in the place of the search field.

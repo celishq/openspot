@@ -20,12 +20,14 @@ final class SpotQuietHost: SpotsHost {
     func setEntryKey(on isOn: Bool) {}
     func hold(_ keys: [GlobalKey]) {}
     func chooseFiles(for command: Spot, then take: @escaping ([String]) -> Void) {}
+    func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {}
+    func land(_ id: String) {}
     var isPointerOverDrop: Bool { false }
     var draggedPaths: [String] { [] }
     var isMouseDown: Bool { false }
     var pastedPaths: [String] { [] }
     func copy(_ file: URL) {}
-    func prepare(_ items: [SpotItem]) async {}
+    func prepare(_ items: [SpotItem], glyphs: [String]) async {}
 
     func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?, offersLogin: Bool) -> [Spot] {
         ShippedSpot.commands(

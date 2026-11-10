@@ -5,9 +5,10 @@ import SwiftUI
 struct SpotKeyLabel: View {
     let text: String
     let isRecording: Bool
+    var recordingWords = "Press keys"
 
     var body: some View {
-        Text(isRecording ? "Press keys" : Shortcut(text: text)?.label ?? text)
+        Text(isRecording ? recordingWords : Trigger(text: text)?.label ?? text)
             .font(SpotType.action)
             .foregroundStyle(SpotTheme.ink)
             .padding(.horizontal, SpotTokens.padding)

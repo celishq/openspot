@@ -52,11 +52,9 @@ public final class ScriptCall: Identifiable {
         output?.progress?.value("detail")
     }
 
-    /// Takes a frame, and returns it sorted by what each block is.
-    func take(frame: String) -> PluginOutput {
-        let output = PluginOutput(text: frame)
+    /// Takes a frame, sorted by what each block is.
+    func take(_ output: PluginOutput) {
         self.output = output
-        return output
     }
 
     func stop() {

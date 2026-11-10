@@ -118,7 +118,7 @@ public enum PartCatalog {
     After 1 second, a call that does work shows on its part, its action, its spot and the Openspot item in the menu bar. Its \
     last frame reports progress: `value` from 0 to 1 draws a ring, no `value` draws a spinner, and `title` and `detail` show on \
     the spot only while the call runs. To outlive the app, start the work with `nohup` and then exit. A stopped call changes nothing. Closing the panel \
-    closes a sheet of parts and drops its values.
+    closes a sheet of parts, and one with a field drops its values.
 
     A script with `# stay=true` in its header is one process that talks both ways, such as a local server: it runs while something \
     wants it, and from launch to quit with `launch` in its `read`. Each call reaches it on stdin as one block and a blank line: \

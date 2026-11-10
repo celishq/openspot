@@ -167,6 +167,70 @@ final class SpotRunsWantTests: SpotRunsCase {
         try await wait("the read from the clock") { self.log().count == 2 }
     }
 
+    func testTheClockLooksAtTheTimeOnlyWhenAReadIsDue() async throws {
+        var looks = 0
+        runs = SpotRuns(now: { [unowned self] in
+            looks += 1
+            return self.time
+        }, stopPause: 0.2, tickPause: .milliseconds(50))
+        try script(header: "read=5\ntray=true", "printf 'text=t\\ntitle=1\\n'")
+        _ = try scanned()
+        try await wait("the first read") { self.log().count == 1 && self.runs.sheets["script"]?.calls.isEmpty == true }
+        let before = looks
+
+        try await pause(0.5)
+
+        XCTAssertLessThanOrEqual(looks - before, 1)
+        XCTAssertEqual(log().count, 1)
+    }
+
+    func testAScriptWantedWhileTheClockWaitsForALaterReadIsReadOnItsOwnTime() async throws {
+        try script("pulls", header: "read=120\ntray=true", log: "pulls", "printf 'text=t\\ntitle=1\\n'")
+        try script(header: "read=1\nshortcut=a", "printf 'row=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+        try await wait("the read of the menu bar spot") { self.log("pulls").count == 1 }
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the first read of the sheet") { self.log().count == 1 && sheet.calls.isEmpty }
+
+        time += 1
+
+        try await wait("the read from the clock") { self.log().count == 2 }
+    }
+
+    func testASpotThatACardPlacesWhileThePanelIsOpenIsReadAtOnce() async throws {
+        try script("pulls", header: "read=120\ntray=true", log: "pulls", "printf 'text=t\\ntitle=1\\n'")
+        try script("card", header: "read=panel\nshortcut=c", log: "card", "printf 'grid.wide=heat\\n\\nspot=heat\\n'")
+        try script("heat", header: "read=300", log: "heat", "printf 'text=t\\ntitle=41\\n'")
+        _ = try scanned()
+        try await wait("the read of the menu bar spot") { self.log("pulls").count == 1 }
+
+        runs.panelOpened()
+        try await wait("the card") { self.runs.sheets["card"]?.state.face.parts.map(\.id) == ["heat"] }
+
+        try await wait("the placed spot") { self.log("heat").count == 1 }
+    }
+
+    func testAStayingScriptThatACallHoldsIsReadOnItsOwnTimeWhileTheClockWaitsForALaterRead() async throws {
+        try script("pulls", header: "read=120\ntray=true", log: "pulls", "printf 'text=t\\ntitle=1\\n'")
+        try script("stayer", header: "stay=true\nread=1", """
+        while IFS= read -r line; do
+          printf '%s\\n' "$line" >> '\(path("blocks"))'
+          case "$line" in call=*) call=${line#call=}; args= ;; arg=*) args="$args ${line#arg=}" ;; esac
+          [ -n "$line" ] || [ "$args" != ' read' ] || printf 'end=%s\\n\\ntext=t\\ntitle=1\\n---\\n' "$call"
+        done
+        """)
+        _ = try scanned()
+        try await wait("the read of the menu bar spot") { self.log("pulls").count == 1 }
+        let stayer = try XCTUnwrap(runs.sheets["stayer"])
+
+        stayer.pressKey("go")
+        try await wait("the call and the first read") { self.blocks().contains("arg=go") && self.blocks().filter { $0 == "arg=read" }.count == 1 }
+        time += 1
+
+        try await wait("the read from the clock") { self.blocks().filter { $0 == "arg=read" }.count == 2 }
+    }
+
     // MARK: C4, the main search, sandbox
 
     func testSearchTextReachesTheScriptAfterAPause() async throws {

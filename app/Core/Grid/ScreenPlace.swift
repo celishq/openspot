@@ -1,9 +1,9 @@
 import Foundation
 
-/// Where the panel opens (A18): on the screen that holds most of the front window, or with no window in front, on the
-/// screen of the pointer. It sits as a centred window sits: in the middle across, and three quarters of the free height
-/// up. Frames are in AppKit's points, which count from the bottom left of the main screen.
-public struct PanelPlace: Sendable {
+/// Where a window of Openspot opens on the screens. The panel opens on the screen that holds most of the front window, or
+/// with no window in front, on the screen of the pointer, and sits as a centred window sits (A18). A float opens at the
+/// pointer (W4). Frames are in AppKit's points, which count from the bottom left of the main screen.
+public struct ScreenPlace: Sendable {
     /// A screen: its whole frame, and the area that the menu bar and the Dock leave free.
     public struct Screen: Sendable {
         public let frame: CGRect
@@ -26,6 +26,15 @@ public struct PanelPlace: Sendable {
     public func origin(of size: CGSize, window: CGRect?, pointer: CGPoint) -> CGPoint? {
         guard let area = screen(window: window, pointer: pointer)?.area else { return nil }
         return CGPoint(x: (area.midX - size.width / 2).rounded(.down), y: (area.minY + (area.height - size.height) * 0.75).rounded(.down))
+    }
+
+    /// The origin of a float of this size: centred on the pointer, and moved in so that it lies whole in the free area of the
+    /// pointer's screen (W4). Nil with no screen.
+    public func origin(of size: CGSize, under pointer: CGPoint) -> CGPoint? {
+        guard let area = screen(window: nil, pointer: pointer)?.area else { return nil }
+        let x = min(max(pointer.x - size.width / 2, area.minX), area.maxX - size.width)
+        let y = min(max(pointer.y - size.height / 2, area.minY), area.maxY - size.height)
+        return CGPoint(x: x.rounded(.down), y: y.rounded(.down))
     }
 
     private func screen(window: CGRect?, pointer: CGPoint) -> Screen? {

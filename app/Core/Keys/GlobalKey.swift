@@ -1,19 +1,30 @@
 import Foundation
 
-/// A key that a person assigned, which runs one command of a script from any app.
+/// A key or a shake that a person assigned, which floats its spot or runs one command of its script, from any app (W1, W2).
 public struct GlobalKey: Hashable, Sendable {
-    public let spot: String
-    public let command: String
-    public let shortcut: Shortcut
-
-    public init(spot: String, command: String, shortcut: Shortcut) {
-        self.spot = spot
-        self.command = command
-        self.shortcut = shortcut
+    /// What the key does: float its spot, or run one command of its script.
+    public enum Act: Hashable, Sendable {
+        case float
+        case command(String)
     }
 
-    /// The lines of this key in the config file.
+    public let spot: String
+    public let act: Act
+    public let trigger: Trigger
+
+    public init(spot: String, act: Act, trigger: Trigger) {
+        self.spot = spot
+        self.act = act
+        self.trigger = trigger
+    }
+
+    public init(spot: String, command: String, shortcut: Shortcut) {
+        self.init(spot: spot, act: .command(command), trigger: .key(shortcut))
+    }
+
+    /// The lines of this key in the config file. A key with no command line floats its spot.
     var text: String {
-        "[[keys]]\nspot = \"\(spot)\"\ncommand = \"\(command)\"\nkey = \"\(shortcut.text)\""
+        let command = if case .command(let id) = act { "command = \"\(id)\"\n" } else { "" }
+        return "[[keys]]\nspot = \"\(spot)\"\n\(command)key = \"\(trigger.text)\""
     }
 }

@@ -34,7 +34,7 @@ public struct PluginOutput: Equatable, Sendable {
     /// The ids of the calls of a staying script that this frame ends.
     public private(set) var ends: [String] = []
     /// The blocks it was read from, which a check of its parts reads again.
-    private let blocks: [TextBlock]
+    private var blocks: [TextBlock]
     /// Whether this reading checks each part, which only a check asks for, so that a frame on screen costs no check.
     private let checks: Bool
     private var checkedFaults: [String] = []
@@ -46,6 +46,11 @@ public struct PluginOutput: Equatable, Sendable {
     private static let callKeys = ["call", "reason", "arg"]
     /// The app's own events. A part cannot take one, and a button can take only `open`, to change the pick.
     private static let defaults = ["run", "open", "drop"]
+
+    /// The newer events that this output asks for: `drag` when a row names a file (O2).
+    private var takenDefaults: [String] {
+        blocks.contains { $0.fields.first?.key == "row" && $0.value("file") != nil } ? ["drag"] : []
+    }
     private static let button = "button"
     private static let repeatKind = "repeat"
     private static let templateKind = "template"
@@ -62,6 +67,16 @@ public struct PluginOutput: Equatable, Sendable {
 
     public init(text: String) {
         self.init(blocks: TextBlock.blocks(in: text), checks: false)
+    }
+
+    /// The size from which a frame is read on another thread.
+    private static let bigFrame = 64 << 10
+
+    /// Reads a frame on the main thread, or a big one on another thread, so that a sheet in motion keeps its frames.
+    @MainActor
+    static func reading(_ text: String) async -> PluginOutput {
+        guard text.utf8.count >= bigFrame else { return PluginOutput(text: text) }
+        return await Task.detached(priority: .userInitiated) { PluginOutput(text: text) }.value
     }
 
     private init(blocks: [TextBlock], checks: Bool) {
@@ -124,6 +139,15 @@ public struct PluginOutput: Equatable, Sendable {
         if checks { check(layout: layout) }
     }
 
+    /// This output without the blocks it was read from, so that an answer that is kept holds its rows once, as its items.
+    /// It has no rows for a metric and no part faults.
+    public func withoutBlocks() -> PluginOutput {
+        var output = self
+        output.blocks = []
+        output.rows = []
+        return output
+    }
+
     /// What is wrong with its parts, found by a reading of the same blocks that checks each part.
     public var partFaults: [String] {
         checks ? checkedFaults : PluginOutput(blocks: blocks, checks: true).checkedFaults
@@ -144,8 +168,13 @@ public struct PluginOutput: Equatable, Sendable {
     /// Finds what is wrong with the names of the parts and the sheet they make. A part that only a card drawing places is
     /// drawn only on the card, so the sheet's drawing need not place it.
     private mutating func check(layout: SheetLayout?) {
-        for id in [Self.reserved] + Self.callKeys + Self.defaults where parts.contains(where: { $0.id == id }) {
+        for id in [Self.reserved] + Self.callKeys + Self.defaults + takenDefaults where parts.contains(where: { $0.id == id }) {
             checkedFaults.append("a part cannot be called \(id)")
+        }
+        for row in rows {
+            if let file = row.value("file"), !file.hasPrefix("/") {
+                checkedFaults.append("the row \(row.value("row") ?? "") names the file \(file), which does not start with /")
+            }
         }
         let carded = Set(face.drawings.values.flatMap { $0.joined() })
         let sheet = parts.filter { !carded.contains($0.id) || layout?.areas[$0.id] != nil }
@@ -213,7 +242,7 @@ public struct PluginOutput: Equatable, Sendable {
 
     /// Keeps an action. The `open` action sets the word for Enter, and whether a pick stays in the panel.
     private mutating func take(action id: String, _ block: TextBlock) {
-        if checks, id == Self.reserved || (Self.defaults.contains(id) && id != "open") { checkedFaults.append("an action cannot be called \(id)") }
+        if checks, id == Self.reserved || ((Self.defaults + takenDefaults).contains(id) && id != "open") { checkedFaults.append("an action cannot be called \(id)") }
         if id == "open" {
             primary = block.value("title")
             pick = block.flag("close") == false ? .stay : .close

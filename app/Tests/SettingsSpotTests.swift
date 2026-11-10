@@ -70,14 +70,63 @@ final class SettingsSpotTests: XCTestCase {
         _ = try await runs.answer(of: spot, .set("key:move:left", to: "ctrl+option+up"), input: "", limit: 1)
         _ = try await runs.answer(of: spot, .set("key:move:right", to: "ctrl+option+right"), input: "", limit: 1)
 
-        XCTAssertEqual(file.read().keys.map(\.command), ["left", "right"])
-        XCTAssertEqual(file.read().keys.map(\.shortcut.text), ["ctrl+option+up", "ctrl+option+right"])
+        XCTAssertEqual(file.read().keys.map(\.act), [.command("left"), .command("right")])
+        XCTAssertEqual(file.read().keys.map(\.trigger.text), ["ctrl+option+up", "ctrl+option+right"])
         let after = try await spot.items(timeout: 1).items
         XCTAssertEqual(after.map(\.shortcut).dropFirst(2), ["ctrl+option+up", "ctrl+option+right"])
 
         _ = try await runs.answer(of: spot, SpotAction(arguments: ["clear", "key:move:left"]), input: "", limit: 1)
 
-        XCTAssertEqual(file.read().keys.map(\.command), ["right"])
+        XCTAssertEqual(file.read().keys.map(\.act), [.command("right")])
+    }
+
+    func testTheSheetListsAFloatRowForEachSpotThatOffersOneAndGivesItAKey() async throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try "#!/bin/sh\n# title=Shelf\n# icon=tray.full\n# shortcut=s\n# float=true\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
+        try "#!/bin/sh\n# title=Notes\n# shortcut=n\n".writeScript(to: folder.appendingPathComponent("notes.sh"))
+        try "#!/bin/sh\n# title=Move\n# command=left:Left side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        let runs = SpotRuns()
+
+        let before = try await spot.items(timeout: 1).items
+        let floats = before.filter { $0.title == "Float" }
+        XCTAssertEqual(floats.map(\.run), ["float:shelf"])
+        XCTAssertEqual(before.last?.run, "key:move:left")
+        let shelf = try XCTUnwrap(floats.first)
+        XCTAssertEqual(shelf.subtitle, "Shelf")
+        XCTAssertEqual(shelf.symbol, "tray.full")
+        XCTAssertEqual(shelf.shortcut, "Record")
+
+        _ = try await runs.answer(of: spot, .set("float:shelf", to: "ctrl+option+s"), input: "", limit: 1)
+
+        XCTAssertEqual(file.read().keys, [GlobalKey(spot: "shelf", act: .float, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+s"))))])
+        let after = try await spot.items(timeout: 1).items
+        XCTAssertEqual(after.first { $0.run == "float:shelf" }?.shortcut, "ctrl+option+s")
+
+        _ = try await runs.answer(of: spot, SpotAction(arguments: ["clear", "float:shelf"]), input: "", limit: 1)
+
+        XCTAssertEqual(file.read().keys, [])
+    }
+
+    func testAShakeOnARowTakesTheShakeFromTheRowThatHadIt() async throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try "#!/bin/sh\n# title=Shelf\n# shortcut=s\n# float=true\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
+        try "#!/bin/sh\n# title=Notes\n# shortcut=n\n# float=true\n".writeScript(to: folder.appendingPathComponent("notes.sh"))
+        let runs = SpotRuns()
+
+        _ = try await runs.answer(of: spot, .set("float:shelf", to: "shake"), input: "", limit: 1)
+        XCTAssertEqual(file.read().keys, [GlobalKey(spot: "shelf", act: .float, trigger: .shake)])
+
+        _ = try await runs.answer(of: spot, .set("float:notes", to: "shake"), input: "", limit: 1)
+        XCTAssertEqual(file.read().keys, [GlobalKey(spot: "notes", act: .float, trigger: .shake)])
+        let items = try await spot.items(timeout: 1).items
+        XCTAssertEqual(items.first { $0.run == "float:notes" }?.shortcut, "shake")
+
+        do {
+            _ = try await runs.answer(of: spot, .set("panel_key", to: "shake"), input: "", limit: 1)
+            XCTFail("took a shake to open the panel")
+        } catch {
+            XCTAssertEqual(file.read().panelKey, .standard)
+        }
     }
 
     func testTheSheetListsEachSettingThatAScriptNamesOrKeepsAndRemovesIt() async throws {
@@ -123,7 +172,7 @@ final class SettingsSpotTests: XCTestCase {
 
     func testAScriptWithCommandsAndNoReadOpensToTheKeysOfItsOwnCommands() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# title=Move\n# command=left:Left side\n[ \"$1\" = left ] && printf 'toast=Left\\n'\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# title=Move\n# float=true\n# command=left:Left side\n[ \"$1\" = left ] && printf 'toast=Left\\n'\n".writeScript(to: folder.appendingPathComponent("move.sh"))
         try "#!/bin/sh\n# title=Other\n# command=up:Up\n".writeScript(to: folder.appendingPathComponent("other.sh"))
         let scan = try PluginFolder(url: folder).scan(shipped: ShippedSpot.commands(folder: folder, guide: folder, app: "", config: file))
         let move = try XCTUnwrap(scan.commands.first { $0.id == "move" })
@@ -134,7 +183,7 @@ final class SettingsSpotTests: XCTestCase {
         XCTAssertEqual(items.map(\.title), ["Left side"])
         XCTAssertEqual(items.map(\.subtitle), [nil])
         _ = try await runs.answer(of: move, .set("key:move:left", to: "ctrl+option+left"), limit: 1)
-        XCTAssertEqual(file.read().keys.map(\.command), ["left"])
+        XCTAssertEqual(file.read().keys.map(\.act), [.command("left")])
         let press = try await runs.answer(of: move, .press("left"), limit: 5)
         XCTAssertEqual(press, "toast=Left\n")
     }

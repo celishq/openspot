@@ -107,11 +107,11 @@ final class CatalogSpotTests: XCTestCase {
 
         var waited = false
         for _ in 0..<200 where sheet.list.shown.first?.isOn != true {
-            waited = waited || sheet.awaitsFirstAnswer
+            waited = waited || sheet.kind == .waiting
             await Task.yield()
             try await Task.sleep(for: .milliseconds(1))
         }
-        XCTAssertFalse(waited || sheet.awaitsFirstAnswer)
+        XCTAssertFalse(waited || sheet.kind == .waiting)
     }
 
     func testAListWithRowsNeverWaitsForAFirstAnswerOnASlowRead() {
