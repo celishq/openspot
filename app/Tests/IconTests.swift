@@ -19,7 +19,7 @@ final class IconTests: XCTestCase {
     func testARowAndAComponentTakeTheirPictureFromIcon() throws {
         let output = PluginOutput(text: "grid=p\ngrid=rows\n\npicture=p\nicon=/tmp/a.png\n\nrow=a\nicon=/Applications/Safari.app\n\nrow=b\nicon=😀\n")
 
-        XCTAssertEqual(output.items.map(\.file), ["/Applications/Safari.app", nil])
+        XCTAssertEqual(output.items.map(\.iconFile), ["/Applications/Safari.app", nil])
         XCTAssertEqual(output.items.map(\.glyph), [nil, "😀"])
         XCTAssertEqual(output.parts.first?.control, .image("/tmp/a.png"))
         XCTAssertEqual(output.partFaults, [])

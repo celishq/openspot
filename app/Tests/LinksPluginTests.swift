@@ -125,7 +125,7 @@ final class LinksPluginTests: SamplePluginsCase {
 
             XCTAssertEqual(items.map(\.title), ["Downloads", "Screenshots"])
             XCTAssertEqual(items.first?.subtitle, "~/Downloads")
-            XCTAssertEqual(items.first?.file, folder.path + "/Downloads")
+            XCTAssertEqual(items.first?.iconFile, folder.path + "/Downloads")
             XCTAssertNil(items.first?.hides)
         }
     }
@@ -174,7 +174,7 @@ final class LinksPluginTests: SamplePluginsCase {
 
             try await links.perform(.item(item), timeout: 5)
 
-            XCTAssertEqual(item.file, place.path)
+            XCTAssertEqual(item.iconFile, place.path)
             XCTAssertEqual(try self.read("opened", in: folder), place.path + "\n")
         }
     }

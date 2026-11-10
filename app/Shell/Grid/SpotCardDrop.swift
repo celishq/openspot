@@ -2,12 +2,13 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// The drop target of one card. It reads the dragged files, and says which card is under a drag that it takes. A `.spot` file
-/// goes to the review on any card.
+/// The drop target of one card or one float. It reads the dragged files, and says which spot is under a drag that it takes.
+/// A `.spot` file goes to the review on any card.
 struct SpotCardDrop: DropDelegate {
     let id: String
     let model: SpotsModel
     @Binding var target: String?
+    var place = SheetPlace.panel
 
     /// The files of the drag in progress.
     static var paths: [String] {
@@ -21,12 +22,13 @@ struct SpotCardDrop: DropDelegate {
     }
 
     func validateDrop(info: DropInfo) -> Bool {
+        guard place == .panel else { return model.acceptsDrop(Self.paths, on: id, in: place) }
         model.followDrag()
         return SharedSpot.isFile(Self.paths) || model.acceptsDrop(Self.paths, on: id)
     }
 
     func dropEntered(info: DropInfo) {
-        if model.acceptsDrop(Self.paths, on: id) { target = id }
+        if model.acceptsDrop(Self.paths, on: id, in: place) { target = id }
     }
 
     func dropExited(info: DropInfo) {
@@ -35,10 +37,10 @@ struct SpotCardDrop: DropDelegate {
 
     func performDrop(info: DropInfo) -> Bool {
         target = nil
-        if SharedSpot.isFile(Self.paths) {
+        if place == .panel, SharedSpot.isFile(Self.paths) {
             model.review(Self.paths.map { URL(fileURLWithPath: $0) })
             return true
         }
-        return model.drop(Self.paths, on: id)
+        return model.drop(Self.paths, on: id, in: place)
     }
 }

@@ -6,7 +6,8 @@ public struct SpotItem: Equatable, Sendable {
     public let subtitle: String?
     public let run: String
     public let symbol: String?
-    public let file: String?
+    /// The file whose Finder icon the row draws.
+    public let iconFile: String?
     public let image: String?
     public let glyph: String?
     /// The name of the place inside its spot that it sits under, such as the pane of a section.
@@ -24,18 +25,20 @@ public struct SpotItem: Equatable, Sendable {
     public let template: String?
     /// Each line of its block that is not one of its own keys, from which the slots of a template take their values.
     public let fields: [TextBlock.Field]
+    /// The file that the row stands for, which a drag takes out of the sheet (O1).
+    public let file: String?
 
     /// The keys that a row reads itself, which are the slots of the default template (U14).
     public static let ownKeys: Set<String> = [
-        "row", "title", "detail", "icon", "parent", "hides", "keyword", "shortcut", "on", "tone", "as"
+        "row", "title", "detail", "icon", "parent", "hides", "keyword", "shortcut", "on", "tone", "as", "file"
     ]
 
-    public init(title: String, subtitle: String? = nil, run: String, symbol: String? = nil, file: String? = nil, image: String? = nil, glyph: String? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, isOn: Bool = false, tone: MetricValue.Tone? = nil, template: String? = nil, fields: [TextBlock.Field] = []) {
+    public init(title: String, subtitle: String? = nil, run: String, symbol: String? = nil, iconFile: String? = nil, image: String? = nil, glyph: String? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, isOn: Bool = false, tone: MetricValue.Tone? = nil, template: String? = nil, fields: [TextBlock.Field] = [], file: String? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
         self.symbol = symbol
-        self.file = file
+        self.iconFile = iconFile
         self.image = image
         self.glyph = glyph
         self.parent = parent
@@ -46,6 +49,7 @@ public struct SpotItem: Equatable, Sendable {
         self.tone = tone
         self.template = template
         self.fields = fields
+        self.file = file
     }
 
     /// Reads the block of one row: `row=<id>`, which a pick sends, and `title`, which is the id when it has none.
@@ -59,7 +63,7 @@ public struct SpotItem: Equatable, Sendable {
             subtitle: block.value("detail"),
             run: run,
             symbol: icon?.symbol,
-            file: icon?.file,
+            iconFile: icon?.file,
             image: icon?.image,
             glyph: icon?.glyph,
             parent: block.value("parent"),
@@ -69,7 +73,8 @@ public struct SpotItem: Equatable, Sendable {
             isOn: block.flag("on") ?? false,
             tone: block.value("tone").flatMap(MetricValue.Tone.init),
             template: block.value("as"),
-            fields: block.fields.filter { !Self.ownKeys.contains($0.key) }
+            fields: block.fields.filter { !Self.ownKeys.contains($0.key) },
+            file: block.value("file").flatMap { $0.hasPrefix("/") ? $0 : nil }
         )
     }
 
@@ -87,7 +92,7 @@ public struct SpotItem: Equatable, Sendable {
 
     /// The `icon` value of its picture.
     public var iconText: String? {
-        symbol ?? file ?? image ?? glyph
+        symbol ?? iconFile ?? image ?? glyph
     }
 
     /// Where it lives: the name of its spot, then its parent.
@@ -97,6 +102,6 @@ public struct SpotItem: Equatable, Sendable {
 
     /// The picture a row draws: its image, or else the icon of its file.
     public var icon: FileIcon? {
-        image.map(FileIcon.image) ?? file.map(FileIcon.init(path:))
+        image.map(FileIcon.image) ?? iconFile.map(FileIcon.init(path:))
     }
 }

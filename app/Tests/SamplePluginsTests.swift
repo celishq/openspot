@@ -168,7 +168,7 @@ final class SamplePluginsTests: SamplePluginsCase {
             XCTAssertEqual(lines.errors, [])
             XCTAssertEqual(lines.items.map(\.title), ["Back\\slash", "Finder", "Notes", "Zed"])
             XCTAssertEqual(lines.items.map(\.run), ["/Applications/Back\\slash.app", "/System/Library/CoreServices/Finder.app", "/System/Applications/Notes.app", "/Applications/Zed.app"])
-            XCTAssertEqual(lines.items.map(\.file), lines.items.map(\.run))
+            XCTAssertEqual(lines.items.map(\.iconFile), lines.items.map(\.run))
             XCTAssertTrue(apps.isGlobal)
         }
     }

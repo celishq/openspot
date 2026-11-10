@@ -114,7 +114,7 @@ final class StayLink: ScriptLink {
     /// Why a script that starts by itself reads first: its open sheet, `launch` in its `read`, or else the panel.
     private var startReason: ReadReason {
         guard let run else { return .panel }
-        return run.isOpen ? .sheet : run.command.read?.has(.launch) == true ? .launch : .panel
+        return !run.places.isEmpty ? .sheet : run.command.read?.has(.launch) == true ? .launch : .panel
     }
 
     /// Starts the script and asks it for what it shows, with no values. A script that failed too often does not start.

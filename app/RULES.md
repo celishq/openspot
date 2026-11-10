@@ -61,10 +61,27 @@ Trash.
 | P7 | A `.spot` file has no signature. Openspot warns the sender about secrets, and does not look for them. |
 | P9 | A core spot needs no review, because it is signed with the app. |
 
+## Floats
+
+A float is one spot in a window of its own, at the pointer, outside the panel.
+
+| ID | Rule |
+|---|---|
+| W1 | A `[[keys]]` entry with no `command` floats its spot, when its header says `float=true` (T1): its sheet, or its card when it has no sheet. An entry with a `command` runs that command. A widget does not float. |
+| W2 | `key = "shake"` takes a shake of the pointer in place of a key press: quick turns left and right, with or without a drag. One entry at most holds it, and the app watches the pointer only while one does. The shake needs no permission, because the app reads the pointer and not the keys. |
+| W3 | Settings lists a Float row for each spot whose header says `float=true`, beside its commands. Its key records a key press or a shake. |
+| W4 | A float opens at the pointer, whole on the pointer's screen. It has no card to grow from, so it shows whole once its first answer comes, or after 150 ms (A9). |
+| W5 | A float that opens during a drag does not take the focus, and it stays open through the drop (D7). One that opens with no drag takes the focus, so that its keys work. |
+| W6 | A float stays open across apps until Esc, its close button, or a drag of all its files out (O3). The same key or shake again closes it, and while a drag holds the mouse button, brings it to the pointer, where the drag needs it. A drag of its background moves it. |
+| W7 | Each spot has one float at most. Floats of other spots and the panel show at the same time. A float wants its script as an open sheet does (L3), and the panel's close does not close it. A float's close drops the values of a sheet of parts, as the panel's close does (K5). |
+| W8 | A float takes Up, Down, Return, Esc and the shortcuts of its spot's actions. It has no search field, no `⌘K` menu and no form: an action or a pick that asks with a form, a key or a second press opens the spot in the panel. A pick leaves the float open. |
+| W9 | A drop on a float works as a drop on its card (D2, D6). The float shows that it takes a drag only while the pointer lies over it. |
+
 ## Decisions
 
 | Decision | Why | Rejected |
 |---|---|---|
+| A spot offers a float with `float=true`, and the person sends it out of the panel by a key or a shake | Settings lists only the spots that offer one, so it stays short, and the script still never learns where it is drawn. | A Float row for every spot, and `command=shake`, which lets a script claim an input. |
 | One sheet model for each script | A metric and a sheet both hold what a script last printed, and a widget can place any script. | A separate table and type for metrics. |
 | Core spots run in place from the app, from `plugins/*.sh` | A first run needs no network, an update updates them, and a diff shows the changed line. | A download, a copy at first launch, `.spot` files in the repo. |
 | One progressive backdrop blur close to the cards, and a light dark tint that fades across a 90 pt margin, sampled at full scale, with no constant redraw | One layer gives a soft edge with no line and no second pass, and the long fade of the tint shows no shape, as Control Center does. | Three masked blur steps, which show a line at the window edge. A system material and Liquid Glass. |

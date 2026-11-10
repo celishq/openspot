@@ -18,6 +18,8 @@ struct SpotCardView: View, Equatable {
     let isHiddenFromGrid: Bool
     /// The model that a tap and a slide go to.
     let model: SpotsModel
+    /// What a tap does in place of a press on the grid, such as on a float.
+    var onTap: (() -> Void)?
     @State private var isHovered = false
     @Environment(\.spotIsShown) private var isShown
 
@@ -48,7 +50,7 @@ struct SpotCardView: View, Equatable {
             .overlay(alignment: .topTrailing) { if !isHiddenFromGrid { FailureMark(entry: entry, size: size) } }
             .contentShape(shape)
             .onHover { isHovered = $0 }
-            .onTapGesture { model.tap(entry.id) }
+            .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id) } }
             .animation(.easeInOut(duration: 0.2), value: isOn)
             .scaleEffect(showsPress ? SpotMotion.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)

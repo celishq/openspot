@@ -13,6 +13,9 @@ final class TestHost: SpotsHost {
     var isMouseDown = false
     var pastedPaths: [String] = []
     var motions: [PanelMotion?] = []
+    /// The spots that the model floated, and the ones whose float it closed, in order.
+    var floats: [String] = []
+    var landings: [String] = []
     /// The phase of the sheet's transition after each change.
     var phases: [SheetTransition.Phase] = []
     /// The spots that ship with the app in this test.
@@ -54,6 +57,14 @@ final class TestHost: SpotsHost {
     func hold(_ keys: [GlobalKey]) {}
 
     func chooseFiles(for command: Spot, then take: @escaping ([String]) -> Void) {}
+
+    func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {
+        floats.append(entry.id)
+    }
+
+    func land(_ id: String) {
+        landings.append(id)
+    }
 
     func copy(_ file: URL) {}
 

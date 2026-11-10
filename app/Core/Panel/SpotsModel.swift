@@ -380,9 +380,10 @@ public final class SpotsModel {
 
     /// A person pressed a key that they assigned to a command.
     public func press(_ key: GlobalKey) {
+        guard case .command(let command) = key.act else { return float(key.spot) }
         guard let sheet = sheets[key.spot] else { return }
-        sheet.pressKey(key.command)
-        flashSymbol = sheet.command.symbol(of: key.command)
+        sheet.pressKey(command)
+        flashSymbol = sheet.command.symbol(of: command)
         flashWatch?.cancel()
         flashWatch = Task { [weak self, flashPause] in
             try? await Task.sleep(for: flashPause)
@@ -403,6 +404,8 @@ public final class SpotsModel {
                 holdAssignedKeys(files.config.read())
             }
             if spotsChanged, id == ShippedSpot.spotsID { reloadUnderSheet() }
+        case .landed:
+            host.land(id)
         case .closed:
             if let shown = openList, runs.sheets[shown]?.isOpen != true { showSheet(nil, moving: false) }
         case .chooseFiles:
@@ -852,9 +855,9 @@ public final class SpotsModel {
         openForm(action, on: (entry, nil), prefill: openItems?.query ?? "")
     }
 
-    /// Sends a change of a slot of a row, or a press of one when it has no value (U9).
-    public func slot(_ slot: String, of item: SpotItem, to value: String?) {
-        if let value { openSheet?.set(slot: slot, of: item, to: value) } else { openSheet?.press(slot: slot, of: item) }
+    /// Sends a change of a slot of a row of a spot, or a press of one when it has no value (U9).
+    public func slot(_ slot: String, of item: SpotItem, in id: String, to value: String?) {
+        if let value { sheets[id]?.set(slot: slot, of: item, to: value) } else { sheets[id]?.press(slot: slot, of: item) }
     }
 
     public func runItem(_ item: SpotItem) {
@@ -866,37 +869,49 @@ public final class SpotsModel {
     public func finishPick() {
         guard let pick = closingPick else { return }
         closingPick = nil
-        if pick.entry.command.keepsRecent {
-            sheets[pick.entry.id]?.list.remember(pick.item)
-            files.remember(sheets[pick.entry.id]?.list.recent ?? [], of: pick.entry.id)
-        }
+        remember(pick.item, of: pick.entry)
         closeList(moving: false)
     }
 
-    public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil) {
-        if action == nil, item.run == CatalogSpot.buildRun {
-            open(ShippedSpot.newID, moving: true)
-            return
-        }
-        if entry.id == ShippedSpot.spotsID, action == nil { spotsChanged = true }
-        if action == nil, item.shortcut != nil {
-            toggleRecording(id: item.run)
-            return
-        }
-        if action == nil, case .settings? = entry.command.shipped, let change = SettingsSpot.change(of: item.run) {
-            changeSetting(of: change.spot, with: change.action)
-            return
-        }
-        if action == nil, let form = entry.command.pickForm {
-            openForm(form, on: (entry, item))
-            return
-        }
-        if action != nil || entry.command.pick == .close {
-            closingPick = (item, entry)
-            if isShown {
-                host.dismiss()
-            } else {
-                finishPick()
+    /// Records a pick as recent, for a spot that keeps its recent picks.
+    private func remember(_ item: SpotItem, of entry: Entry) {
+        guard entry.command.keepsRecent, let sheet = sheets[entry.id] else { return }
+        sheet.list.remember(item)
+        files.remember(sheet.list.recent, of: entry.id)
+    }
+
+    /// Runs a pick of a row, or an action on it. In the panel, a pick that closes it closes the panel. A float stays open
+    /// with the picked row selected, and a pick that asks with a form or records a key opens the spot in the panel (W8).
+    public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil, in place: SheetPlace = .panel) {
+        if place == .float {
+            if action == nil, entry.command.pickForm != nil || item.shortcut != nil { return press(entry.id) }
+            remember(item, of: entry)
+            sheets[entry.id]?.list.select(run: item.run)
+        } else {
+            if action == nil, item.run == CatalogSpot.buildRun {
+                open(ShippedSpot.newID, moving: true)
+                return
+            }
+            if entry.id == ShippedSpot.spotsID, action == nil { spotsChanged = true }
+            if action == nil, item.shortcut != nil {
+                toggleRecording(id: item.run)
+                return
+            }
+            if action == nil, case .settings? = entry.command.shipped, let change = SettingsSpot.change(of: item.run) {
+                changeSetting(of: change.spot, with: change.action)
+                return
+            }
+            if action == nil, let form = entry.command.pickForm {
+                openForm(form, on: (entry, item))
+                return
+            }
+            if action != nil || entry.command.pick == .close {
+                closingPick = (item, entry)
+                if isShown {
+                    host.dismiss()
+                } else {
+                    finishPick()
+                }
             }
         }
         if let action {

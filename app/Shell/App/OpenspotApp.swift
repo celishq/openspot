@@ -37,6 +37,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var showListener: NSObjectProtocol?
     private var isLaunched = false
     private var openedAtLaunch: [URL] = []
+    /// The window of each float, by the ID of its spot.
+    var floats: [String: SpotFloatPanel] = [:]
+    /// The watch of the pointer, while a key holds the shake or a row of Settings records one.
+    private var shakeWatch: SpotShakeWatch?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -110,11 +114,33 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             heldKeys.values.forEach(HotKey.unregister)
             heldKeys = [:]
         }
+        watchShake()
+    }
+
+    /// Watches the pointer while a key holds the shake or a row of Settings records, and stops otherwise (W2).
+    private func watchShake() {
+        let wanted = wantedKeys.contains { $0.trigger == .shake } || model.recording != nil
+        if wanted, shakeWatch == nil {
+            shakeWatch = SpotShakeWatch { [weak self] in self?.takeShake() }
+        } else if !wanted {
+            shakeWatch?.stop()
+            shakeWatch = nil
+        }
+    }
+
+    /// Gives a shake to the row of Settings that records, or else to the key that holds it.
+    private func takeShake() {
+        if model.recording != nil {
+            model.recordShake()
+        } else if let key = wantedKeys.first(where: { $0.trigger == .shake }) {
+            model.press(key)
+        }
     }
 
     /// Holds the keys that the person assigned and lets go of the rest, unless a key is being recorded. A refused key is tried again at
     /// the next scan, and the person sees why once.
     func holdWantedKeys() {
+        watchShake()
         guard model.recording == nil else { return }
         for (key, registration) in heldKeys where !wantedKeys.contains(key) {
             HotKey.unregister(registration)
@@ -122,13 +148,14 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         var faults: [String] = []
         for key in wantedKeys where heldKeys[key] == nil {
-            let registration = HotKey.register(key.shortcut) { [weak self] in
+            guard case .key(let shortcut) = key.trigger else { continue }
+            let registration = HotKey.register(shortcut) { [weak self] in
                 Task { @MainActor in self?.model.press(key) }
             }
             if let registration {
                 heldKeys[key] = registration
             } else {
-                faults.append("\(key.spot) cannot use `\(key.shortcut.label)`, because another app uses it. Choose another key.")
+                faults.append("\(key.spot) cannot use `\(shortcut.label)`, because another app uses it. Choose another key.")
             }
         }
         if faults != keyFaults, !faults.isEmpty { notifyKeyFault(faults.joined(separator: " ")) }

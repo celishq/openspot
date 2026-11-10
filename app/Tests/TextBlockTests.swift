@@ -112,7 +112,7 @@ final class TextBlockTests: XCTestCase {
         XCTAssertEqual(SpotItem(block: TextBlock.blocks(in: "row=😀")[0])?.title, "😀")
         XCTAssertEqual(
             SpotItem(block: TextBlock.blocks(in: "row=a\ntitle=A\ndetail=B\nicon=/f\nhides=x\nhides=y")[0]),
-            SpotItem(title: "A", subtitle: "B", run: "a", file: "/f", hides: ["x", "y"])
+            SpotItem(title: "A", subtitle: "B", run: "a", iconFile: "/f", hides: ["x", "y"])
         )
     }
 

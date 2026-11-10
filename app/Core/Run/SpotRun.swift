@@ -18,6 +18,8 @@ public final class SpotRun {
         case listChange
         /// A click on a card that takes files and has no sheet: the owner asks the person for files, and gives them to `drop`.
         case chooseFiles
+        /// The float of the script closed by itself, as when its script left the folder.
+        case landed
         /// The sheet closed by itself, as when the panel closed or its script left the folder.
         case closed
     }
@@ -129,6 +131,18 @@ public final class SpotRun {
     public var isOpen: Bool {
         runs.openID == command.id
     }
+    /// Whether the script shows in a float of its own (W7).
+    public var isFloating: Bool {
+        runs.floating.contains(command.id)
+    }
+    /// The places where its sheet shows, as the runs record them.
+    public var places: Set<SheetPlace> {
+        Set([isOpen ? SheetPlace.panel : nil, isFloating ? .float : nil].compactMap { $0 })
+    }
+    /// Whether its sheet shows in any place.
+    private var showsSheet: Bool {
+        !places.isEmpty
+    }
     /// How many rows the list shows, and how many on a line. It changes only when they do, so a move of the selection leaves
     /// a view that sizes itself by it alone.
     public private(set) var shape = Shape(rows: 0, perLine: 1)
@@ -163,7 +177,8 @@ public final class SpotRun {
     @ObservationIgnored private var readsAgain = false
     @ObservationIgnored private var pauses: [String: Task<Void, Never>] = [:]
     @ObservationIgnored private var editing: String?
-    @ObservationIgnored private var waitingDrops: [[String]] = []
+    /// The drops and the drags of files that wait for the running work, each in turn (D4, O2).
+    @ObservationIgnored private var waitingFiles: [SpotAction] = []
     @ObservationIgnored private var waitingKeys: [String] = []
 
     init(command: Spot, runs: SpotRuns, recent: [String], prepare: @escaping ([SpotItem]) async -> Void) {
@@ -223,7 +238,7 @@ public final class SpotRun {
             ? Shape(rows: rows.drawing.lineCount(rows: rows.shown.count) * rows.drawing.columns, perLine: rows.drawing.columns)
             : Shape(rows: rows.perLine == 1 ? rows.spans : rows.shown.count, perLine: rows.perLine)
         if next != shape { shape = next }
-        let waits = isOpen && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
+        let waits = showsSheet && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
         if waits != awaitsFirstAnswer { awaitsFirstAnswer = waits }
     }
 
@@ -279,10 +294,24 @@ public final class SpotRun {
         nudge = SheetParts.Nudge(step: step, serial: nudge.serial + 1)
     }
 
-    /// The panel closed: a sheet of parts, or of a script that holds its own state, closes and drops its values, so the next
-    /// open reads again. A sheet of rows stays.
-    func panelClosed() {
-        if panel != nil || command.stays {
+    /// The script began to float: its sheet selects its first row and reads. A card reads only when its header lists
+    /// `panel`, so that a float runs nothing that the panel would not.
+    func floated() {
+        settle()
+        list.selectFirst()
+        if panel == nil, answered != nil { panel = lastAnswer.flatMap(SheetParts.init(output:)) }
+        if let read = command.read, command.kind.opensSheet || read.has(.panel) {
+            self.read(reason: command.kind.opensSheet ? .sheet : .panel)
+        }
+        link.settle()
+        runs.updateClock()
+    }
+
+    /// The sheet left a place, as when the panel or a float closed. Unless it still shows in a place in view, a sheet of
+    /// parts, or of a script that holds its own state, closes and drops its values, so that its next show reads again (K5,
+    /// W7). A sheet of rows stays.
+    func leftPlace() {
+        if !isInView, panel != nil || command.stays {
             let wasOpen = isOpen
             close()
             panel = nil
@@ -312,7 +341,7 @@ public final class SpotRun {
 
     /// Whether the person sees this sheet: it is the open one, and the panel shows.
     private var isInView: Bool {
-        isOpen && runs.isPanelOpen
+        isOpen && runs.isPanelOpen || isFloating
     }
 
     /// Whether something wants this script now (L3), also a call of a staying script that waits for its `end`.
@@ -329,7 +358,7 @@ public final class SpotRun {
     func prepareToQuit() {
         pauses.values.forEach { $0.cancel() }
         pauses = [:]
-        waitingDrops = []
+        waitingFiles = []
         waitingKeys = []
         readsAgain = false
         calls.forEach(stop)
@@ -340,7 +369,7 @@ public final class SpotRun {
     /// runs, and a change reads again after it (M1). A `panel` or a `sheet` moment uses an answer younger than 5 seconds (M2).
     /// A file with no `read` gets its click instead.
     public func read(selecting run: String? = nil, need: ReadNeed = .moment, reason: ReadReason? = nil) {
-        let reason = reason ?? (need == .change ? .change : isOpen ? .sheet : .panel)
+        let reason = reason ?? (need == .change ? .change : showsSheet ? .sheet : .panel)
         if let run { selecting = run }
         guard list.search == .local || command.stays else { return ask() }
         if link.isAsking {
@@ -356,7 +385,7 @@ public final class SpotRun {
         let isSent = link.send(Call(
             action: action,
             key: Self.readKey,
-            input: isOpen ? panel?.values : nil,
+            input: showsSheet ? panel?.values : nil,
             limit: action == .read ? runs.readLimit : nil,
             reason: reason,
             variables: action == .read ? reason.variables : [:],
@@ -465,14 +494,21 @@ public final class SpotRun {
     @discardableResult
     public func drop(_ paths: [String]) -> Bool {
         guard command.accepts(paths) else { return false }
-        waitingDrops.append(paths)
-        startWaitingDrop()
+        waitingFiles.append(.drop(paths: paths))
+        startWaitingFiles()
         return true
     }
 
-    private func startWaitingDrop() {
-        guard !waitingDrops.isEmpty, !calls.contains(where: \.doesWork) else { return }
-        work(.drop(paths: waitingDrops.removeFirst()), key: Self.cardKey)
+    /// Tells the script of the rows that a drag took out to another app (O2).
+    public func dragged(_ items: [SpotItem]) {
+        guard !items.isEmpty else { return }
+        waitingFiles.append(.drag(runs: items.map(\.run)))
+        startWaitingFiles()
+    }
+
+    private func startWaitingFiles() {
+        guard !waitingFiles.isEmpty, !calls.contains(where: \.doesWork) else { return }
+        work(waitingFiles.removeFirst(), key: Self.cardKey)
     }
 
     /// Takes a press of a key that a person assigned to a command. Presses run one at a time and in order, and none stops a call.
@@ -630,7 +666,7 @@ public final class SpotRun {
     /// Lets go of a call that ended, and starts a drop or a key press that waited for it.
     func callEnded(_ call: ScriptCall) {
         calls.removeAll { $0 === call }
-        startWaitingDrop()
+        startWaitingFiles()
         startWaitingKey()
     }
 
@@ -712,7 +748,7 @@ public final class SpotRun {
                 $0.replace(lines.items)
                 if let kept { $0.select(run: kept) }
             }
-            if isOpen || panel != nil { takePanel(lines, generation: generation) }
+            if showsSheet || panel != nil { takePanel(lines, generation: generation) }
             if list.search == .script, !list.query.isEmpty { self.ask() }
             showRunning()
         case .search(let query):
@@ -749,7 +785,7 @@ public final class SpotRun {
             state = keepingLevel(state.taking(lines))
         }
         if !lines.items.isEmpty { list.replace(lines.items) }
-        if isOpen {
+        if showsSheet {
             switch source {
             case .read: panel?.merge(lines, keeping: editing)
             case .call(let generation, let keeping): panel?.merge(lines, answering: generation, keeping: keeping ?? editing)
@@ -851,7 +887,7 @@ public final class SpotRun {
 
     /// Adds the last frame of each running call to an open sheet (L7).
     private func showRunning() {
-        guard isOpen else { return }
+        guard showsSheet else { return }
         for call in calls where call.doesWork {
             if let lines = call.output { panel?.merge(lines, keeping: editing) }
         }

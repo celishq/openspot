@@ -30,14 +30,49 @@ extension OpenspotApp: SpotsHost {
         toast?.show(text, symbol: ToastPanel.confirmSymbol)
     }
 
+    /// Shows the float of a spot at the pointer once its first answer comes, or after the pause of a sheet (W4), or moves
+    /// its float there.
+    func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {
+        let pointer = NSEvent.mouseLocation
+        if let shown = floats[entry.id] {
+            shown.show(at: pointer, isDragging: followsDrag)
+            return
+        }
+        let window = SpotFloatPanel.make(model: model, id: entry.id)
+        floats[entry.id] = window
+        Task { @MainActor [model] in
+            let end = ContinuousClock.now + .seconds(model.runs.firstAnswerPause)
+            while model.sheets[entry.id]?.awaitsFirstAnswer == true, ContinuousClock.now < end {
+                try? await Task.sleep(for: .milliseconds(10))
+            }
+            guard floats[entry.id] === window else { return }
+            window.contentView?.layoutSubtreeIfNeeded()
+            window.show(at: pointer, isDragging: followsDrag)
+        }
+    }
+
+    func land(_ id: String) {
+        floats.removeValue(forKey: id)?.orderOut(nil)
+    }
+
     func hold(_ keys: [GlobalKey]) {
         wantedKeys = keys
         holdWantedKeys()
     }
 
+    /// Whether a point on the screen lies on a part of Openspot that takes a drop: the cards of the panel, the menu bar
+    /// item or a float.
+    func takesDrop(at point: NSPoint) -> Bool {
+        liesOnPanelDrop(point) || floats.values.contains { $0.isVisible && $0.frame.contains(point) }
+    }
+
     var isPointerOverDrop: Bool {
-        let point = NSEvent.mouseLocation
-        return panel?.showsDrop(at: point) == true || statusItem?.button?.window?.frame.contains(point) == true
+        liesOnPanelDrop(NSEvent.mouseLocation)
+    }
+
+    /// Whether a point on the screen lies on the cards of the panel or on the menu bar item.
+    private func liesOnPanelDrop(_ point: NSPoint) -> Bool {
+        panel?.showsDrop(at: point) == true || statusItem?.button?.window?.frame.contains(point) == true
     }
 
     var draggedPaths: [String] {
@@ -45,7 +80,7 @@ extension OpenspotApp: SpotsHost {
     }
 
     var isMouseDown: Bool {
-        NSEvent.pressedMouseButtons != 0
+        NSEvent.pressedMouseButtons & 1 != 0
     }
 
     var pastedPaths: [String] {
