@@ -303,7 +303,7 @@ final class AgendaExampleTests: SamplePluginsCase {
         }
     }
 
-    func testCalendarsForAgendaListsBothKindsWithACheckboxAndAPickHidesOrShowsOne() async throws {
+    func testCalendarsForAgendaListsBothKindsWithACheckmarkOnEachShownOneAndAPickHidesOrShowsOne() async throws {
         let calendars = try example("Calendars for Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
@@ -312,13 +312,30 @@ final class AgendaExampleTests: SamplePluginsCase {
             let output = try await calendars.items(timeout: 5)
             XCTAssertEqual(output.items.map(\.run), ["A8E2", "B1", "7D10"])
             XCTAssertEqual(output.items.map(\.subtitle), ["Calendar · iCloud", "Calendar · On My Mac", "Reminders · iCloud"])
-            XCTAssertEqual(output.items.map(\.iconText), ["checkmark.square.fill", "square", "checkmark.square.fill"])
+            XCTAssertEqual(output.items.map(\.iconText), ["calendar", "calendar", "list.bullet"])
+            XCTAssertEqual(output.items.map(\.isOn), [true, false, true])
+            XCTAssertEqual(output.primary, "Select")
 
             try await calendars.perform(.item(SpotItem(title: "Family", run: "7D10")), timeout: 5)
             XCTAssertEqual(try self.read("setting-hidden", in: folder), "B1 7D10")
             try await calendars.perform(.item(SpotItem(title: "Home", run: "B1")), timeout: 5)
             XCTAssertEqual(try self.read("setting-hidden", in: folder), "7D10")
             try await calendars.perform(.item(SpotItem(title: "Family", run: "7D10")), timeout: 5)
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("setting-hidden").path))
+        }
+    }
+
+    func testSelectAllShowsEachCalendarAndList() async throws {
+        let calendars = try example("Calendars for Agenda")
+        try await withPrivateHome { folder in
+            try self.fakeOpenspot(in: folder)
+            try "B1 7D10".write(to: folder.appendingPathComponent("setting-hidden"), atomically: true, encoding: .utf8)
+            let actions = try await calendars.items(timeout: 5).actions
+            let all = try XCTUnwrap(actions.first { $0.id == "all" })
+
+            try await calendars.perform(.action(all, item: nil), timeout: 5)
+
+            XCTAssertEqual(all.title, "Select all")
             XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("setting-hidden").path))
         }
     }

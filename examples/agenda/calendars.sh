@@ -5,27 +5,27 @@
 # read=sheet
 hidden=$(openspot setting get hidden </dev/null)
 
-# Prints the rows of a list of calendars or of lists, with the kind before the account, and a checkbox that is ticked on
-# each that Agenda shows.
+# Prints the rows of a list of calendars or of lists, with the kind before the account, and a checkmark on each that Agenda
+# shows, as Spots marks the spots that are on.
 rows() {
-  printf '%s\n' "$2" | awk -v hidden=" $hidden " -v kind="$1" 'BEGIN { RS = ""; FS = "\n" }
+  printf '%s\n' "$2" | awk -v hidden=" $hidden " -v kind="$1" -v icon="$3" 'BEGIN { RS = ""; FS = "\n" }
     /^row=./ {
       for (i = 1; i <= NF; i++) print ($i ~ /^detail=/ ? "detail=" kind " · " substr($i, 8) : $i)
-      print (index(hidden, " " substr($1, 5) " ") ? "icon=square" : "icon=checkmark.square.fill")
-      print ""
+      printf "icon=%s\non=%s\n\n", icon, index(hidden, " " substr($1, 5) " ") ? "false" : "true"
     }'
 }
 
 case "$1" in
   read)
-    printf 'button=open\ntitle=Show or hide\nclose=false\n\n'
+    printf 'recents=false\n\nbutton=open\ntitle=Select\nclose=false\n\nbutton=all\ntitle=Select all\nshortcut=cmd+shift+a\nscope=command\n\n'
     calendars=$(openspot calendar calendars </dev/null) || { printf '%s\n' "$calendars"; exit 1; }
     lists=$(openspot reminders lists </dev/null) || { printf '%s\n' "$lists"; exit 1; }
     [ "$calendars" != status=unasked ] || printf 'row=allow-calendar\ntitle=Allow Calendar\ndetail=List your calendars here\nicon=calendar\n\n'
     [ "$lists" != status=unasked ] || printf 'row=allow-reminders\ntitle=Allow Reminders\ndetail=List your reminders here\nicon=checklist\n\n'
-    rows Calendar "$calendars"
-    rows Reminders "$lists"
+    rows Calendar "$calendars" calendar
+    rows Reminders "$lists" list.bullet
     ;;
+  all) openspot setting set hidden </dev/null ;;
   open)
     case "$2" in
       allow-calendar) out=$(openspot calendar calendars </dev/null) || { printf '%s\n' "$out" | grep '^link='; exit 1; }; exit 0 ;;

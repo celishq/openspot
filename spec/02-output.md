@@ -113,6 +113,7 @@ always flow through a repeat, and with no `repeat` block they flow through a lis
 | `icon`                             | The picture.                                                                   |
 | `parent`                           | The place in its spot that it sits under. The main search shows `<spot> › <parent>`. |
 | `tone`                             | A dot on the picture.                                                          |
+| `on`                               | `true` draws a checkmark at the end, for an item that is picked.               |
 | `hides`                            | The id of a button that this row does not offer. Repeat the line for each one. |
 | `keyword`                          | A word that finds the row in a search, which the row does not show.            |
 | `shortcut`                         | A key at the end of the row. A pick records a new key and calls `<id> <shortcut>`. |
