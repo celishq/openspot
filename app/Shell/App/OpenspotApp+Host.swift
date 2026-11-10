@@ -61,6 +61,13 @@ extension OpenspotApp: SpotsHost {
         holdWantedKeys()
     }
 
+    /// Whether a point on the screen lies on a part of Openspot that takes a drop: the cards of the panel, the menu bar
+    /// item or a float.
+    func takesDrop(at point: NSPoint) -> Bool {
+        panel?.showsDrop(at: point) == true || statusItem?.button?.window?.frame.contains(point) == true
+            || floats.values.contains { $0.isVisible && $0.frame.contains(point) }
+    }
+
     var isPointerOverDrop: Bool {
         let point = NSEvent.mouseLocation
         return panel?.showsDrop(at: point) == true || statusItem?.button?.window?.frame.contains(point) == true
