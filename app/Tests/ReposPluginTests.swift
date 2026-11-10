@@ -5,8 +5,7 @@ import XCTest
 final class ReposPluginTests: SamplePluginsCase {
     private var repos: Spot {
         get throws {
-            let examples = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("examples")
-            return try XCTUnwrap(try PluginFolder(url: examples).scan().commands.first { $0.name == "Repos" })
+            try example("Repos")
         }
     }
 

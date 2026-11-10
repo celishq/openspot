@@ -69,7 +69,8 @@ The [`examples`](examples) folder has tools that draw their card with their own 
 describes, Relay, which stays running and sends lines to another process, as [spec 05](spec/05-stay.md) describes,
 Repos, which names a folder and an editor as settings that Settings lists and changes, Agents and Pull requests, which
 show in the menu bar, and Shelf, which keeps the files that you drop on it until you drag them out again, as
-[spec 07](spec/07-files-out.md) describes.
+[spec 07](spec/07-files-out.md) describes. Doom is a tool that downloads and builds the first episode of Doom on its first
+run, then plays it in a window of its own.
 
 ## Widgets and keys
 
