@@ -22,14 +22,21 @@ extension SpotsModel {
     /// Ends Edit Spots. A panel that closes passes no motion, so that nothing moves during its fade.
     public func endEditing(moving: Bool = true) {
         guard isEditing else { return }
+        stopDragWait()
         change(moving ? .edit : nil) {
             isEditing = false
+            drag = nil
+            if lift.offset != .zero { lift.offset = .zero }
             selected = 0
             updateVisible()
         }
     }
 
     public func handleEditKey(_ key: ActionKey) {
+        if drag != nil {
+            if key.name == "escape" { cancelDrag() }
+            return
+        }
         if openNewSpot(on: key) { return }
         let order = visible.map(\.id)
         switch (key.name, key.isShift) {
@@ -44,6 +51,91 @@ extension SpotsModel {
         case ("h", _): toggleSelectedOnGrid()
         default: break
         }
+    }
+
+    /// Moves the card that the person drags, and lifts it when the drag starts. The other cards make room where a release
+    /// would put it once the pointer has rested there for `dragRest`. A card on the grid lands among the cards on the grid,
+    /// and a hidden card among the hidden cards.
+    public func dragSpot(_ id: String, by translation: CGSize) {
+        guard isEditing, query.isEmpty else { return }
+        if drag?.id != id {
+            guard let start = visible.firstIndex(where: { $0.id == id }) else { return }
+            let onGrid = visible.filter(\.isOnGrid).count
+            let places = visible[start].isOnGrid ? 0...(onGrid - 1) : onGrid...(visible.count - 1)
+            stopDragWait()
+            change(.edit) {
+                drag = SpotDrag(id: id, start: start, sizes: visible.map(\.size), places: places)
+                selected = start
+            }
+        }
+        if lift.offset != translation { lift.offset = translation }
+        guard let drag else { return }
+        let target = drag.nearest(to: drag.centre(movedBy: translation))
+        guard target != drag.place else { return stopDragWait() }
+        guard target != dragTarget else { return }
+        stopDragWait()
+        dragTarget = target
+        guard dragRest > .zero else { return land(at: target) }
+        let rest = dragRest
+        dragWait = Task { [weak self] in
+            try? await Task.sleep(for: rest)
+            guard !Task.isCancelled, let self, self.dragTarget == target else { return }
+            self.land(at: target)
+        }
+    }
+
+    /// Ends the drag: the card lands at the place nearest the pointer, and the order is saved. A release off the grid, or
+    /// where the card started, puts every card back.
+    public func dropSpot(by translation: CGSize) {
+        guard let drag else { return }
+        let centre = drag.centre(movedBy: translation)
+        let place = drag.nearest(to: centre)
+        guard drag.holds(centre), place != drag.start else { return cancelDrag() }
+        stopDragWait()
+        var order = dragged(cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id)
+        order.removeAll { $0 == drag.id }
+        order.insert(drag.id, at: place)
+        arrangement.arrange(order)
+        saveArrangement(selecting: drag.id) {
+            self.drag = nil
+            if lift.offset != .zero { lift.offset = .zero }
+        }
+    }
+
+    /// Puts the dragged card and the cards that made room back where they were.
+    public func cancelDrag() {
+        guard let drag else { return }
+        stopDragWait()
+        change(.edit) {
+            self.drag = nil
+            if lift.offset != .zero { lift.offset = .zero }
+            updateVisible()
+            selected = drag.start
+        }
+    }
+
+    /// These cards with the dragged card moved to its place.
+    func dragged(_ list: [Entry]) -> [Entry] {
+        guard let drag, let from = list.firstIndex(where: { $0.id == drag.id }) else { return list }
+        var list = list
+        let entry = list.remove(at: from)
+        list.insert(entry, at: min(drag.place, list.count))
+        return list
+    }
+
+    private func land(at place: Int) {
+        dragTarget = nil
+        change(.edit) {
+            drag?.place = place
+            updateVisible()
+            selected = place
+        }
+    }
+
+    private func stopDragWait() {
+        dragWait?.cancel()
+        dragWait = nil
+        dragTarget = nil
     }
 
     private func moveSelectedSpot(by step: Int, in order: [String]) {
@@ -86,13 +178,15 @@ extension SpotsModel {
         saveArrangement(selecting: id)
     }
 
-    private func saveArrangement(selecting id: String) {
+    /// Writes the arrangement, and lays out the cards from it on the edit motion, after `ending` runs in that motion.
+    private func saveArrangement(selecting id: String, ending: () -> Void = {}) {
         do {
             try files.config.write(arrangement)
         } catch {
             host.notify("Openspot could not save the spots. \(Self.reason(error))")
         }
         change(.edit) {
+            ending()
             rebuildEntries()
             if let place = visible.firstIndex(where: { $0.id == id }) { selected = place }
         }

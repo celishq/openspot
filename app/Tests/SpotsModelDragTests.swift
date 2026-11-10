@@ -1,0 +1,179 @@
+import XCTest
+@testable import OpenspotCore
+
+/// Proves the drag of a card in Edit Spots through the panel's model: where the cards go, what a release saves, and what
+/// puts the cards back.
+@MainActor
+final class SpotsModelDragTests: XCTestCase {
+    private var folder: URL!
+    private var defaults: UserDefaults!
+    private var suite = ""
+    private var host: TestHost!
+    private var model: SpotsModel!
+
+    override func setUp() async throws {
+        folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-drag-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
+        suite = "openspot-drag-\(UUID().uuidString)"
+        defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        let host = TestHost()
+        self.host = host
+        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2, prepare: { await host.prepare($0, glyphs: $1) }))
+        host.model = model
+        for (name, size) in [("a", "wide"), ("b", "wide"), ("c", "wide"), ("d", "small")] {
+            try "#!/bin/sh\n# size=\(size)\n".writeScript(to: plugins.appendingPathComponent("\(name).sh"))
+        }
+        model.reload()
+        model.dragRest = .zero
+        model.beginEditing()
+    }
+
+    override func tearDown() async throws {
+        model.quit()
+        defaults.removePersistentDomain(forName: suite)
+        try? FileManager.default.removeItem(at: folder)
+    }
+
+    private var plugins: URL {
+        folder.appendingPathComponent("plugins", isDirectory: true)
+    }
+
+    private var files: SpotFiles {
+        SpotFiles(
+            environment: ["OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
+            home: folder,
+            defaults: defaults
+        )
+    }
+
+    private var order: [String] {
+        model.visible.map(\.id)
+    }
+
+    /// The pointer's move that takes the centre of a card to this point of the grid.
+    private func move(_ id: String, to point: CGPoint) -> CGSize {
+        let index = model.visible.firstIndex { $0.id == id } ?? 0
+        let rect = model.placements[index].rect
+        return CGSize(width: point.x - rect.midX, height: point.y - rect.midY)
+    }
+
+    /// The left half of a card, where a card dropped goes before it.
+    private func leftHalf(of id: String) -> CGPoint {
+        let rect = model.placements[model.visible.firstIndex { $0.id == id } ?? 0].rect
+        return CGPoint(x: rect.minX + rect.width / 4, y: rect.midY)
+    }
+
+    private func savedOrder() -> [String] {
+        let host = TestHost()
+        let other = SpotsModel(host: host, files: files)
+        other.reload()
+        defer { other.quit() }
+        return withExtendedLifetime(host) { other.visible.map(\.id) }
+    }
+
+    func testACardDraggedLeftOfAnotherMakesRoomThereAndAReleaseSavesIt() {
+        XCTAssertEqual(order, ["a", "b", "c", "d"])
+        let translation = move("d", to: leftHalf(of: "c"))
+
+        model.dragSpot("d", by: translation)
+
+        XCTAssertEqual(order, ["a", "b", "d", "c"])
+        XCTAssertEqual(model.placements.map(\.size), [.wide, .wide, .wide, .wide])
+        XCTAssertEqual(model.selected, 2)
+        XCTAssertEqual(savedOrder(), ["a", "b", "c", "d"])
+
+        model.dropSpot(by: translation)
+
+        XCTAssertNil(model.drag)
+        XCTAssertEqual(order, ["a", "b", "d", "c"])
+        XCTAssertEqual(savedOrder(), ["a", "b", "d", "c"])
+    }
+
+    func testTheCardsWaitForThePointerToRestButAReleaseLandsAtOnce() {
+        model.dragRest = .seconds(30)
+        let translation = move("d", to: leftHalf(of: "c"))
+
+        model.dragSpot("d", by: translation)
+
+        XCTAssertEqual(order, ["a", "b", "c", "d"])
+        model.dropSpot(by: translation)
+        XCTAssertEqual(order, ["a", "b", "d", "c"])
+    }
+
+    func testTheCardsMakeRoomAfterARealRest() async throws {
+        model.dragRest = .milliseconds(100)
+
+        model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
+
+        for _ in 0..<500 where order != ["a", "b", "d", "c"] {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTAssertEqual(order, ["a", "b", "d", "c"])
+    }
+
+    func testTheLiftFollowsThePointerAndComesBackAtTheEnd() {
+        model.dragSpot("a", by: CGSize(width: 5, height: 7))
+
+        XCTAssertEqual(model.drag?.id, "a")
+        XCTAssertEqual(model.lift.offset, CGSize(width: 5, height: 7))
+
+        model.dropSpot(by: CGSize(width: 5, height: 7))
+
+        XCTAssertNil(model.drag)
+        XCTAssertEqual(model.lift.offset, .zero)
+    }
+
+    func testEscapePutsTheCardsBackAndKeepsEditSpots() {
+        let translation = move("d", to: leftHalf(of: "c"))
+        model.dragSpot("d", by: translation)
+
+        model.handleEditKey(ActionKey(name: "escape"))
+        model.dropSpot(by: translation)
+
+        XCTAssertTrue(model.isEditing)
+        XCTAssertNil(model.drag)
+        XCTAssertEqual(order, ["a", "b", "c", "d"])
+        XCTAssertEqual(model.selected, 3)
+        XCTAssertEqual(savedOrder(), ["a", "b", "c", "d"])
+    }
+
+    func testAReleaseOffTheGridPutsTheCardsBack() {
+        model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
+
+        model.dropSpot(by: move("d", to: CGPoint(x: -SpotTokens.gridWidth, y: 0)))
+
+        XCTAssertNil(model.drag)
+        XCTAssertEqual(order, ["a", "b", "c", "d"])
+        XCTAssertEqual(savedOrder(), ["a", "b", "c", "d"])
+    }
+
+    func testAHiddenCardMovesOnlyAmongTheHiddenCards() {
+        model.setOnGrid(false, for: "b")
+        model.setOnGrid(false, for: "a")
+        XCTAssertEqual(order, ["c", "d", "a", "b"])
+
+        let translation = move("b", to: CGPoint(x: 1, y: 1))
+        model.dragSpot("b", by: translation)
+        model.dropSpot(by: translation)
+
+        XCTAssertEqual(order, ["c", "d", "b", "a"])
+    }
+
+    func testAPanelThatHidesEndsTheDrag() {
+        model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
+
+        model.panelWillHide()
+
+        XCTAssertNil(model.drag)
+        XCTAssertEqual(model.lift.offset, .zero)
+    }
+
+    func testNoCardLiftsOutsideEditSpots() {
+        model.endEditing()
+
+        model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
+
+        XCTAssertNil(model.drag)
+        XCTAssertEqual(order, ["a", "b", "c", "d"])
+    }
+}

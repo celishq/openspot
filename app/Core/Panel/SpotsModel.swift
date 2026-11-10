@@ -190,6 +190,14 @@ public final class SpotsModel {
     @ObservationIgnored var formAsk: UUID?
     /// Whether the grid is in Edit Spots, where it also shows the spots that are off the grid, and a press only selects.
     public var isEditing = false
+    /// The card that the person drags in Edit Spots, and where a release puts it.
+    public internal(set) var drag: SpotDrag?
+    public let lift = SpotLift()
+    /// How long the pointer stays near a new place before the other cards make room there.
+    @ObservationIgnored public var dragRest: Duration = .milliseconds(100)
+    /// The place that the cards make room at when the pointer has rested near it for `dragRest`.
+    @ObservationIgnored var dragTarget: Int?
+    @ObservationIgnored var dragWait: Task<Void, Never>?
     public var arrangement = SpotArrangement()
     /// The symbol of the command whose key a person pressed last, which the Openspot item shows for `flashPause`.
     public private(set) var flashSymbol: String?
@@ -445,7 +453,7 @@ public final class SpotsModel {
     private func found() -> [Entry] {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
-            return cards.filter(\.isOnGrid) + (isEditing ? cards.filter { !$0.isOnGrid } : [])
+            return dragged(cards.filter(\.isOnGrid) + (isEditing ? cards.filter { !$0.isOnGrid } : []))
         }
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         spotList.replace(cards.filter(\.command.isFound).map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.command.name].compactMap { $0 }.joined(separator: " "), run: $0.id) })
