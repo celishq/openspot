@@ -18,7 +18,7 @@ final class ClockExampleTests: SamplePluginsCase {
         let clock = try example("World clock")
         let process = ScriptProcess(url: clock.url, mode: .stays, limit: 10, stopPause: 0.2, variables: ["PATH": "\(folder.path):/usr/bin:/bin"])
         defer { process.end() }
-        var frames = try process.start().makeAsyncIterator()
+        var frames = process.start().makeAsyncIterator()
 
         process.send(.read, id: 1)
         var answer: String?

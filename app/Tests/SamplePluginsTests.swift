@@ -111,7 +111,7 @@ final class SamplePluginsTests: SamplePluginsCase {
         let port = Int.random(in: 40000...60000)
         let relay = ScriptProcess(url: root.appendingPathComponent("examples/relay.sh"), mode: .stays, limit: 10, stopPause: 0.2, variables: ["RELAY_PORT": String(port)])
         defer { relay.end() }
-        var frames = try relay.start().makeAsyncIterator()
+        var frames = relay.start().makeAsyncIterator()
 
         relay.send(.read, id: 1)
         let sheet = try await frames.next()

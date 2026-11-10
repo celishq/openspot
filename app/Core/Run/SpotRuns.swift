@@ -211,7 +211,7 @@ public final class SpotRuns {
     /// a sheet takes as its answer.
     public func answer(of command: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil) async throws -> String {
         if command.stays, action == .read {
-            let (script, frames) = try stay(command, limit: limit)
+            let (script, frames) = stay(command, limit: limit)
             defer { script.end() }
             script.send(.read, id: 1, reason: .panel)
             for try await frame in frames { return frame }
@@ -295,9 +295,9 @@ public final class SpotRuns {
     }
 
     /// Starts a script that stays, and returns it with its frames.
-    func stay(_ command: Spot, limit: TimeInterval?) throws -> (ScriptProcess, AsyncThrowingStream<String, Error>) {
+    func stay(_ command: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>) {
         let script = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, mode: .stays, limit: limit, stopPause: stopPause, dataName: command.dataName, variables: ["OPENSPOT_ID": command.id])
-        let frames = try script.start()
+        let frames = script.start()
         keep(script)
         return (script, frames)
     }
@@ -309,13 +309,9 @@ public final class SpotRuns {
         }
         let sent = action.sent(input: input)
         let process = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: command.dataName, variables: variables.merging(["OPENSPOT_ID": command.id]) { given, _ in given })
-        do {
-            let stream = try process.start()
-            keep(process)
-            return (stream, { process.stop() }, process)
-        } catch {
-            return (AsyncThrowingStream { $0.finish(throwing: error) }, {}, nil)
-        }
+        let stream = process.start()
+        keep(process)
+        return (stream, { process.stop() }, process)
     }
 
     /// The frames of an answer that Swift gives in the app: one frame with all its text.

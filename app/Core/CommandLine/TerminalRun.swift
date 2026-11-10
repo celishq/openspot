@@ -43,7 +43,7 @@ public struct TerminalRun {
         }
         var code: Int32 = 0
         do {
-            let frames = try process.start()
+            let frames = process.start()
             if spot.stays { process.send(action, values: input, id: Self.callID, reason: isRead ? .sheet : nil) }
             for try await text in frames {
                 frame(text)

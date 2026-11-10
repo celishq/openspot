@@ -95,7 +95,7 @@ final class DoomExampleTests: SamplePluginsCase {
     private func press(_ spot: Spot, _ call: String = "run") async -> (frames: [String], failure: String?) {
         var frames: [String] = []
         do {
-            for try await frame in try ScriptProcess(url: spot.url, arguments: [call], limit: 30, dataName: spot.dataName).start() {
+            for try await frame in ScriptProcess(url: spot.url, arguments: [call], limit: 30, dataName: spot.dataName).start() {
                 frames.append(frame)
             }
         } catch PluginError.failed(_, let line) {
