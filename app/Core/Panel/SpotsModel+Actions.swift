@@ -25,8 +25,11 @@ extension SpotsModel {
             switch key {
             case ActionKey(name: "return", isCommand: true): submitForm()
             case ActionKey(name: "return") where isList: submitForm()
+            case ActionKey(name: "a", isCommand: true, isShift: true) where form.draft.isMultiple:
+                if let all = form.draft.selectingAll() { send(form, all) }
             case ActionKey(name: "up") where isList: self.form?.draft.move(by: -1)
             case ActionKey(name: "down") where isList: self.form?.draft.move(by: 1)
+            case ActionKey(name: "escape") where form.draft.choices?.query.isEmpty == false: self.form?.draft.search("")
             case ActionKey(name: "escape"): cancelForm()
             default: return false
             }
@@ -410,14 +413,20 @@ extension SpotsModel {
             host.notify("Enter a value for \(missing.label).")
             return
         }
+        send(form, form.draft)
+    }
+
+    /// Gives a draft of the form to its command. A form that it answers with keeps the selected row.
+    private func send(_ form: FormSession, _ draft: FormDraft) {
         Task {
             do {
-                switch try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: form.draft) {
+                switch try await sheets[form.entry.id]?.submit(form.action, item: form.item, draft: draft) {
                 case .done? where self.form?.id == form.id:
                     self.form = nil
                     if form.action.after == .close, isShown { host.dismiss() }
                 case .form(let next)? where self.form?.id == form.id:
-                    self.form?.draft = FormDraft(form: next)
+                    let kept = FormDraft(form: next, after: self.form?.draft ?? draft)
+                    self.form?.draft = kept
                 default:
                     break
                 }

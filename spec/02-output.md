@@ -62,8 +62,11 @@ component cannot take a default id of 01.
 Each kind also takes `title`, `detail`, `tone` and `icon`. The value of `icon` says what the picture is: a path
 of a picture file, such as `cups.png`, draws the picture; any other path draws the file's Finder icon; a name of lowercase
 letters, digits and dots, such as `wifi`, is an SF Symbol; and any other text, such as `😀`, is drawn as it is. `tone` is `good`,
-`warn` or `bad` for a colour that means something, and `on` for a plain dot that says that a thing is active. `look` is
-the box of a text, a number or a button: `tile`, `bare`, and on a button also `chip` or `strong`. A key that a kind does not take is skipped.
+`warn` or `bad` for a colour that means something, and `on` for a plain dot that says that a thing is active. On a text,
+`good`, `warn` and `bad` colour its detail, or its title when it has no detail, such as a `Late` in red. On a text or a
+number, `color=#RRGGBB` draws a thin bar of that colour at its leading edge, such as the colour of a calendar. `look` is
+the box of a text, a number or a button: `tile`, `bare`, and on a button also `chip` or `strong`. On a switch, `look=tick`
+draws a round tick before its words, for a thing to do. A key that a kind does not take is skipped.
 
 ## Drawings
 
@@ -73,7 +76,8 @@ columns, so there is no width to set. A component fills the rectangle of cells t
 a rectangle (U4). A smaller component that lies in a larger one sits on top of it, at the edge it touches. `card=` lines
 group areas onto one raised card.
 
-`grid.<size>=` lines draw the spot's card at a size: `small`, `wide`, `square`, `strip` or `large` (U5). A card's drawing can have more lines than the card has rows: the app divides its room
+`grid.<size>=` lines draw the spot's card at a size: `small`, `wide`, `square`, `strip` or `large` (U5). A component that
+a card drawing places and the sheet's drawing does not is drawn only on the card. A card's drawing can have more lines than the card has rows: the app divides its room
 evenly. A place with no drawing takes the drawing of the nearest smaller size, and a spot with none keeps its default card.
 
 With no `grid=` line, the sheet takes its default drawing: one column of each component that is not a button, in the order
@@ -95,7 +99,10 @@ while it needs a value, such as an app that it has not been told to use.
 
 A button with `form=true` asks for values first. The call runs once with empty stdin, and it prints a `title` in its head
 and one `field`, `choice`, `switch` or `slider` for each value. A choice starts on its first option. A form with one
-`choice` and nothing else shows its options as rows, and Enter or a click on one sends it. Then the same call runs with the values on stdin, and it can print the id of the row to
+`choice` and nothing else shows its options as rows under the search field, which narrows them, each with the picture of
+`option=<id>:<title>:<icon>`, and Enter or a click on one sends it. Esc clears the search first. With `type=multiple`, that choice picks several: a checkmark marks each option of a `value` line,
+Enter sends the option of its row, and `⌘⇧A` sends each option with no checkmark, one per line. The script keeps the picks
+and prints the form again with its new `value` lines, so the form stays open, and the spot reads again. Then the same call runs with the values on stdin, and it can print the id of the row to
 select. It can also print the form again, such as with a `title` that says what is wrong, and the form stays open.
 
 ## Rows
@@ -111,6 +118,7 @@ always flow through a repeat, and with no `repeat` block they flow through a lis
 | `icon`                             | The picture.                                                                   |
 | `parent`                           | The place in its spot that it sits under. The main search shows `<spot> › <parent>`. |
 | `tone`                             | A dot on the picture.                                                          |
+| `on`                               | `true` draws a checkmark at the end, for an item that is picked.               |
 | `hides`                            | The id of a button that this row does not offer. Repeat the line for each one. |
 | `keyword`                          | A word that finds the row in a search, which the row does not show.            |
 | `shortcut`                         | A key at the end of the row. A pick records a new key and calls `<id> <shortcut>`. |
@@ -122,7 +130,8 @@ Openspot searches the rows itself and sorts recent picks first. The head can cha
 - `search=script` sends each search change as `<script> read <text> [form]...`, and the script prints the rows that match
   any of them. A form is another text that the person may have meant, such as the text typed in another keyboard layout
   or spelled in Latin letters. A pick gets the text on stdin as `search=<text>`, also when it comes before the read of
-  that text.
+  that text. A read at a moment or after a change sends the typed text too, so that its answer gives the spot's new value
+  with the rows of that text.
 - `recents=false` does not sort recent picks first.
 
 ## Repeats and templates

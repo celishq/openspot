@@ -7,6 +7,8 @@ struct SpotFormView: View {
     let onValue: (String, String) -> Void
     /// Takes a click on an option of a form of one choice, which shows its options as rows.
     var onChoose: (SpotItem) -> Void = { _ in }
+    /// Reads the selected row of those options where it is called, so that a move redraws only the ring.
+    var selection: (() -> Int)?
     @FocusState private var focus: String?
 
     private var shape: RoundedRectangle {
@@ -15,7 +17,7 @@ struct SpotFormView: View {
 
     var body: some View {
         if let choices = draft.choices {
-            SpotRowsView(list: choices, onRun: onChoose)
+            SpotRowsView(list: choices, onRun: onChoose, selection: selection)
         } else {
             fields
         }

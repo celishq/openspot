@@ -9,6 +9,8 @@ struct SpotSlotView: View {
 
     var body: some View {
         switch part.control {
+        case .toggle(let on) where part.look == .tick:
+            SpotTick(isOn: on, words: words) { onSlot(part.id, $0 ? "true" : "false") }
         case .toggle(let on):
             let toggle = Toggle("", isOn: Binding(get: { on }, set: { onSlot(part.id, $0 ? "true" : "false") }))
                 .toggleStyle(.switch)
@@ -60,6 +62,7 @@ struct SpotSlotView: View {
                     Text(label).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
                 }
             }
+            .modifier(SpotColorBar(color: part.color))
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         case .image(let path):
             picture(icon: .image(path))
@@ -94,15 +97,17 @@ struct SpotSlotView: View {
         }
     }
 
+    /// The title over the detail. On a text, a good, warn or bad tone colours the detail, or the title when there is none.
     private var words: some View {
         VStack(alignment: .leading, spacing: SpotType.lineGap) {
             if let title = part.title {
-                Text(title).font(SpotType.body).foregroundStyle(SpotTheme.ink).lineLimit(1)
+                Text(title).font(SpotType.body).foregroundStyle(part.detail == nil ? SpotToneWords.colour(of: part.textTone) ?? SpotTheme.ink : SpotTheme.ink).lineLimit(1)
             }
             if let detail = part.detail {
-                Text(detail).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
+                SpotToneWords(text: detail, tone: part.textTone)
             }
         }
+        .modifier(SpotColorBar(color: part.color))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 

@@ -5,10 +5,13 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public struct Option: Equatable, Sendable {
         public let id: String
         public let title: String
+        /// The picture of its row in a form whose one choice shows as rows.
+        public let icon: String?
 
-        public init(id: String, title: String) {
+        public init(id: String, title: String, icon: String? = nil) {
             self.id = id
             self.title = title
+            self.icon = icon
         }
     }
 
@@ -33,9 +36,10 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case symbol(String)
     }
 
-    /// The box that the app draws around it, from the one set that the app owns. `pad` is the look of a key of a keypad.
+    /// The box that the app draws around it, from the one set that the app owns. `pad` is the look of a key of a keypad, and
+    /// `tick` draws a switch as a round tick, for a thing to do.
     public enum Look: String, Equatable, Sendable {
-        case tile, chip, strong, bare, pad
+        case tile, chip, strong, bare, pad, tick
     }
 
     public enum Align: String, Equatable, Sendable {
@@ -54,6 +58,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let glyph: String?
     /// Its colour that means something, or `on` for a dot that says that a thing is active.
     public let tone: MetricValue.Tone?
+    /// The colour, as `#RRGGBB`, of the bar that a text or a number draws at its leading edge, such as a calendar's.
+    public let color: String?
     public private(set) var control: Control
     public let press: Press
     public let key: ActionKey?
@@ -84,6 +90,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         file = icon?.file
         glyph = icon?.glyph
         tone = block.value("tone").flatMap(MetricValue.Tone.init)
+        color = ["text", "number"].contains(kind) ? block.value("color").flatMap(Self.hex) : nil
         if kind == "button" {
             self.symbol = nil
             press = symbol.map(Press.symbol) ?? .line
@@ -121,6 +128,10 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         mark = control == .none && kind == "text" ? Self.mark(block) : nil
     }
 
+    private static func hex(_ text: String) -> String? {
+        text.count == 7 && text.first == "#" && text.dropFirst().allSatisfy(\.isHexDigit) ? text : nil
+    }
+
     private static func mark(_ block: TextBlock) -> MetricValue? {
         let points = block.values("point").compactMap(Double.init).filter(\.isFinite)
         let value = block.number("value")
@@ -134,10 +145,18 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         )
     }
 
-    /// Reads an `option` line, `<id>:<title>`, or an id that is its own title.
+    /// The good, warn or bad tone of a text, which colours its words. Another part shows its tone in its own way.
+    public var textTone: MetricValue.Tone? {
+        kind == "text" && tone != .on ? tone : nil
+    }
+
+    /// Reads an `option` line, `<id>:<title>[:<icon>]`, or an id that is its own title. The icon follows the last colon, so
+    /// a title with an icon keeps each colon of its own.
     static func option(_ text: String) -> Option {
-        let pair = text.split(separator: ":", maxSplits: 1).map(String.init)
-        return Option(id: pair[0], title: pair.count > 1 ? pair[1] : pair[0])
+        guard let first = text.firstIndex(of: ":") else { return Option(id: text, title: text) }
+        let rest = text[text.index(after: first)...]
+        guard let last = rest.lastIndex(of: ":") else { return Option(id: String(text[..<first]), title: String(rest)) }
+        return Option(id: String(text[..<first]), title: String(rest[..<last]), icon: String(rest[rest.index(after: last)...]))
     }
 
     /// The value of its control, as the script reads it. A line with no control has none.

@@ -125,11 +125,11 @@ public enum SpotTokens {
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 
-    /// The frame of a sheet that shows this form. A form of one choice shows a row for each option.
+    /// The frame of a sheet that shows this form. A form of one choice shows the search field over a row for each option.
     public static func formRect(_ form: ItemForm) -> CGRect {
         if let choice = form.soleChoice {
             let rows = CGFloat(max(choice.options.count, 1))
-            let height = padding + glyphSize + rowGap + rows * listRowHeight + (rows - 1) * listRowGap + padding
+            let height = padding + glyphSize + rowGap + listRowHeight + rowGap + rows * listRowHeight + (rows - 1) * listRowGap + padding
             return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
         }
         let fields = form.fields.reduce(CGFloat(0)) { sum, field in

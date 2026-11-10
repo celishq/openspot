@@ -144,7 +144,7 @@ struct SpotsView: View {
 
     /// The parts of the open sheet.
     private var shownPanel: SheetParts? {
-        model.sheets[sheetID ?? ""]?.panel
+        model.shownParts(of: sheetID)
     }
 
     /// How far the install screen pushes the grid: as far as its lower edge moves.
@@ -193,9 +193,11 @@ struct SpotsView: View {
         sheetOpen && sheetID == ShippedSpot.installID
     }
 
-    /// Whether the search field is drawn. A form, a sheet of parts and the install screen replace it.
+    /// Whether the search field is drawn. A form, a sheet of parts and the install screen replace it, but a form of one choice
+    /// keeps it to search its rows.
     private var showsSearchField: Bool {
-        guard model.form == nil, !coversGrid else { return false }
+        guard !coversGrid else { return false }
+        if let form = model.form { return form.draft.choices != nil }
         guard sheetOpen else { return true }
         return model.sheets[sheetID ?? ""]?.kind.showsField != false
     }

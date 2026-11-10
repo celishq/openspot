@@ -48,6 +48,27 @@ final class SheetPartsTests: XCTestCase {
         try XCTUnwrap(SheetParts(output: PluginOutput(text: text)))
     }
 
+    func testAButtonThatOnlyACardDrawingPlacesIsAPartOfTheCardAndNoAction() {
+        let output = PluginOutput(text: "grid.strip=next next next join-now\n\nnumber=next\nvalue=09:30\n\nbutton=join-now\ntitle=Join\n\nbutton=tick\ntitle=Mark as done\n")
+
+        XCTAssertEqual(output.parts.map(\.id), ["next", "join-now"])
+        XCTAssertEqual(output.actions.map(\.id), ["tick"])
+        XCTAssertEqual(output.face.drawing(for: .strip), [["next", "next", "next", "join-now"]])
+        XCTAssertEqual(output.partFaults, [])
+    }
+
+    func testATextOrANumberTakesAColourForItsBarAndOtherPartsDoNot() {
+        let output = PluginOutput(text: "number=next\nvalue=09:30\ncolor=#1BADF8\n\ntext=work\ncolor=#ff9500\n\nnumber=odd\nvalue=1\ncolor=blue\n\ngauge=disk\nvalue=0.5\ncolor=#1BADF8\n")
+
+        XCTAssertEqual(output.parts.map(\.color), ["#1BADF8", "#ff9500", nil, nil])
+    }
+
+    func testATextsToneColoursItsWordsAndAGaugeKeepsItsOwn() {
+        let output = PluginOutput(text: "text=due\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\ngauge=disk\nvalue=0.9\ntone=bad\n")
+
+        XCTAssertEqual(output.parts.map(\.textTone), [.bad, nil, nil])
+    }
+
     func testAScriptThatPrintsPartsIsAList() {
         XCTAssertEqual(PluginOutput(text: lights).kind, .list)
         XCTAssertNil(SheetParts(output: PluginOutput(text: "row=a\ntitle=A\n")))
@@ -347,6 +368,23 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(PluginOutput(text: "text=a\ntitle=A\nlook=large\n").partFaults, ["the part a has an unknown look: large"])
         XCTAssertEqual(PluginOutput(text: "text=a\ntitle=A\nlook=section\n").partFaults, ["the part a has an unknown look: section"])
         XCTAssertEqual(PluginOutput(text: "choice=a\noption=x:X\nlook=list\n").partFaults, ["the part a has an unknown look: list"])
+    }
+
+    func testASwitchWithATickLookKeepsItsValueAndATemplateSlotTakesIt() throws {
+        let part = try XCTUnwrap(PluginOutput(text: "switch=done\ntitle=Call mom\non=true\nlook=tick\n").parts.first)
+        let template = try XCTUnwrap(RowTemplate(block: TextBlock(fields: [.init(key: "template", value: "reminder"), .init(key: "switch", value: "done"), .init(key: "done.look", value: "tick")])))
+        let item = try XCTUnwrap(SpotItem(block: try XCTUnwrap(TextBlock.blocks(in: "row=reminder:1\ntitle=Buy milk\ndone=false\ndone.title=Buy milk\n").first)))
+        let slot = try XCTUnwrap(template.parts(of: item).first)
+
+        XCTAssertEqual(part.look, .tick)
+        XCTAssertEqual(part.control, .toggle(true))
+        XCTAssertEqual(PluginOutput(text: "switch=done\non=true\nlook=tick\n").partFaults, [])
+        XCTAssertEqual(slot.look, .tick)
+        XCTAssertEqual(slot.control, .toggle(false))
+        XCTAssertEqual(slot.title, "Buy milk")
+        XCTAssertTrue(PartCatalog.text.contains("`look=tick`"))
+        XCTAssertTrue(PartCatalog.text.contains("`color=#1BADF8`"))
+        XCTAssertTrue(PartCatalog.text.contains("`tone=good`, `warn` or `bad` on a text"))
     }
 
 }
