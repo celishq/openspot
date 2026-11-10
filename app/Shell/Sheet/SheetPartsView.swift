@@ -22,7 +22,6 @@ struct SheetPartsView: View {
     /// The plugin's own view at the size of the area of a `view` component (V1).
     var customView: (CGSize) -> SpotCustomView? = { _ in nil }
     @FocusState private var focus: String?
-    @Environment(\.spotIsShown) private var isShown
 
     private static let swatchSize: CGFloat = 22
     private static let smallSwatch: CGFloat = 16
@@ -50,9 +49,7 @@ struct SheetPartsView: View {
             }
         }
         .onAppear(perform: focusFirstField)
-        .onChange(of: isShown) { _, isShown in
-            if isShown { DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeInDuration, execute: focusFirstField) }
-        }
+        .modifier(FocusOnShow(focus: focusFirstField))
     }
 
     private func canvas(_ sheet: SheetPlacement) -> some View {
@@ -523,6 +520,18 @@ struct SheetPartsView: View {
         .font(SpotType.body)
         .foregroundStyle(SpotTheme.ink)
         .background(SpotTheme.ink.opacity(frame.isInCard ? 0 : SpotTheme.fill), in: shape)
+    }
+}
+
+/// Gives the focus back once the panel has faded in. It alone reads whether the panel shows, so that a show reruns no part.
+private struct FocusOnShow: ViewModifier {
+    let focus: () -> Void
+    @Environment(\.spotIsShown) private var isShown
+
+    func body(content: Content) -> some View {
+        content.onChange(of: isShown) { _, isShown in
+            if isShown { DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeInDuration, execute: focus) }
+        }
     }
 }
 
