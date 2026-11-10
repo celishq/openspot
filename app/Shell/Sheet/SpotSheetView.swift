@@ -160,22 +160,10 @@ struct SpotSheetView: View {
 
     /// The card's glyph, placed as the card places it until the sheet opens.
     private var glyph: some View {
-        Group {
-            if let call = entry.work {
-                SpotWorkMark(call: call, isOnSolid: showsFill)
-            } else if entry.showsHeaderPicture {
-                SpotItemIcon(icon: entry.command.icon, glyph: entry.command.glyph, symbol: nil, size: SpotTokens.glyphSize)
-            } else {
-                Image(systemName: entry.symbol)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(showsFill ? SpotTheme.glyphOnSolid : SpotTheme.ink)
-                    .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
-                    .background(SpotTheme.ink.opacity(showsSmallCard || showsFill ? 0 : SpotTheme.disc), in: Circle())
-            }
-        }
-        .animation(fillFade, value: showsFill)
-        .offset(x: showsSmallCard ? (SpotTokens.cell - SpotTokens.glyphSize) / 2 - SpotTokens.padding : 0)
-        .modifier(SpotFileDragSource(items: isOpen ? list.shown : [], onDrop: { model.dragOut($0, of: entry.id) }))
+        SpotGlyph(entry: entry, isOnSolid: showsFill, showsDisc: !(showsSmallCard || showsFill))
+            .animation(fillFade, value: showsFill)
+            .offset(x: showsSmallCard ? (SpotTokens.cell - SpotTokens.glyphSize) / 2 - SpotTokens.padding : 0)
+            .modifier(SpotFileDragSource(items: isOpen ? list.shown : [], onDrop: { model.dragOut($0, of: entry.id) }))
     }
 
     /// The fade of the card's fill, which the colours on it follow.

@@ -80,7 +80,7 @@ struct SpotFloatView: View {
 
     private func header(_ entry: SpotsModel.Entry) -> some View {
         HStack(spacing: SpotTokens.padding - 5) {
-            glyph(entry)
+            SpotGlyph(entry: entry)
                 .modifier(SpotFileDragSource(items: model.sheets[id]?.list.shown ?? [], onDrop: { model.dragOut($0, of: id) }))
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 Text(entry.shownState.title)
@@ -98,21 +98,6 @@ struct SpotFloatView: View {
             }
             Spacer(minLength: 0)
             SpotRoundButton(symbol: "xmark", label: "Close") { model.land(id) }
-        }
-    }
-
-    @ViewBuilder
-    private func glyph(_ entry: SpotsModel.Entry) -> some View {
-        if let call = entry.work {
-            SpotWorkMark(call: call, isOnSolid: false)
-        } else if entry.showsHeaderPicture {
-            SpotItemIcon(icon: entry.command.icon, glyph: entry.command.glyph, symbol: nil, size: SpotTokens.glyphSize)
-        } else {
-            Image(systemName: entry.symbol)
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(SpotTheme.ink)
-                .frame(width: SpotTokens.glyphSize, height: SpotTokens.glyphSize)
-                .background(SpotTheme.ink.opacity(SpotTheme.disc), in: Circle())
         }
     }
 
