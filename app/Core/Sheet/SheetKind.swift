@@ -17,7 +17,7 @@ public enum SheetKind: Equatable, Sendable {
         self == .rows
     }
 
-    /// Whether the search field keeps the keys. A sheet that waits keeps them there, so that what the person types lands.
+    /// Whether the search field keeps the keys: on each kind but a sheet of parts with no rows.
     public var takesKeys: Bool {
         self != .parts
     }

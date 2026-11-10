@@ -570,9 +570,10 @@ public final class SpotsModel {
         return list[selected]
     }
 
-    /// Whether the search field keeps the keys: no form, no Edit Spots and no sheet of parts with no rows takes them.
+    /// Whether the search field keeps the keys: no form, no Edit Spots and no shown sheet of parts with no rows takes them.
+    /// It follows the parts that show, so that the focus stays put while a sheet moves.
     public var showsSearch: Bool {
-        form == nil && !isEditing && openSheet?.kind.takesKeys != false
+        form == nil && !isEditing && openPanel?.kind.takesKeys != false
     }
 
     public var openPanel: SheetParts? {

@@ -228,8 +228,13 @@ public final class SpotRun {
         if nextKind != kind { kind = nextKind }
     }
 
-    /// Hears a frame that waits for the open motion. A sheet that waits for its first answer takes its kind from it.
-    func hear(_ lines: PluginOutput) {
+    /// Hears a frame that waits for the open motion, or nil when the wait ends. A sheet that waits for its first answer
+    /// takes its kind from that frame while it waits.
+    func hear(_ lines: PluginOutput?) {
+        guard let lines else {
+            heardKind = nil
+            return
+        }
         guard kind == .waiting else { return }
         heardKind = SheetKind(parts: lines.parts, layout: lines.layout)
     }
@@ -701,7 +706,6 @@ public final class SpotRun {
     /// itself, or the frame that ends a call of a staying script. A read's answer replaces all that the spot shows, and a
     /// search's answer replaces its rows (02, Y7).
     func takeAnswer(_ lines: PluginOutput, frame: String, to ask: Ask) async {
-        heardKind = nil
         lastAnswer = lines.withoutBlocks()
         report(toastOf: lines)
         command = command.taking(lines)
@@ -744,7 +748,6 @@ public final class SpotRun {
     /// printed by itself. It changes only what it prints (02, Y7): the value when it prints the main component, the rows, the
     /// parts, and the control of the card. Only a later frame of a read changes the spot's words.
     func takeUpdate(_ lines: PluginOutput, frame: String, from source: Source) async {
-        heardKind = nil
         report(toastOf: lines)
         if let main = lastAnswer?.value?.fields.first?.value, lines.value?.fields.first?.value == main, let value = MetricValue(output: lines) {
             changeReading { $0.take(value) }

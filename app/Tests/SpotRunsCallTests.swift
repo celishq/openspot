@@ -130,6 +130,25 @@ final class SpotRunsCallTests: SpotRunsCase {
         XCTAssertEqual(sheet.kind, .parts)
     }
 
+    func testASheetForgetsTheKindOfAHeldAnswerThatItsStoppedReadDrops() async throws {
+        runs.quit()
+        runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
+        try script(header: "read=sheet", "printf 'text=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        runs.opening.moving = "script"
+        sheet.open {}
+        try await wait("the kind") { sheet.kind == .parts }
+
+        runs.panelClosed()
+        runs.opening.moving = nil
+        try await allEnded()
+        try await pause(0.2)
+
+        XCTAssertNil(sheet.panel)
+        XCTAssertEqual(sheet.kind, .rows)
+    }
+
     func testWhatASheetPrintsShowsAfterTheLengthOfItsOpenMotionThoughItsSpringSettlesLater() async throws {
         try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()

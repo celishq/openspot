@@ -215,12 +215,13 @@ public final class SpotRuns {
     }
 
     /// Reads a frame of a script, on another thread when it is big, and waits while the open motion of its sheet runs. The
-    /// sheet hears a frame that waits, so that it can say its kind before the frame shows.
+    /// sheet hears the frame while it waits, so that it can say its kind before the frame shows or its call drops it.
     func intake(_ frame: String, of id: String?) async -> PluginOutput {
         let lines = await PluginOutput.reading(frame)
         guard let id, opening.moving == id else { return lines }
         sheets[id]?.hear(lines)
         await opening.waitForMotion(of: id)
+        sheets[id]?.hear(nil)
         return lines
     }
 
