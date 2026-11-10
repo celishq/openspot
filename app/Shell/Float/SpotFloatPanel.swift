@@ -19,7 +19,7 @@ final class SpotFloatPanel: NSPanel {
     /// Shows the float centred on the pointer, or moves it there. During a drag it does not take the focus, so that the drag
     /// goes on and the app that it came from keeps the focus (W5).
     func show(at pointer: NSPoint, isDragging: Bool) {
-        let place = PanelPlace(screens: NSScreen.screens.map { PanelPlace.Screen(frame: $0.frame, area: $0.visibleFrame) })
+        let place = ScreenPlace(screens: NSScreen.screens.map { ScreenPlace.Screen(frame: $0.frame, area: $0.visibleFrame) })
         if let origin = place.origin(of: frame.size, under: pointer) { setFrameOrigin(origin) }
         if isDragging {
             orderFrontRegardless()

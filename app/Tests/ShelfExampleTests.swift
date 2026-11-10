@@ -22,7 +22,7 @@ final class ShelfExampleTests: SamplePluginsCase {
             let kept = try await shelf.items(timeout: 5).items
 
             XCTAssertEqual(kept.map(\.title), ["a.txt", "b\\c.txt"])
-            XCTAssertEqual(kept.map(\.carriedFile), files)
+            XCTAssertEqual(kept.map(\.file), files)
             XCTAssertEqual(kept.map(\.subtitle), ["~", "~"])
 
             _ = try await shelf.perform(.drag(runs: [files[0]]), timeout: 5)

@@ -46,7 +46,7 @@ final class FilesOutTests: XCTestCase {
     func testARowCarriesTheFileThatItNamesFromTheRoot() {
         let output = PluginOutput(text: "row=a\nfile=/Users/me/a.png\n\nrow=b\nfile=b.png\n\nrow=c\n")
 
-        XCTAssertEqual(output.items.map(\.carriedFile), ["/Users/me/a.png", nil, nil])
+        XCTAssertEqual(output.items.map(\.file), ["/Users/me/a.png", nil, nil])
         XCTAssertEqual(output.items.first?.fields, [])
         XCTAssertTrue(output.partFaults.contains("the row b names the file b.png, which does not start with /"))
     }

@@ -51,7 +51,7 @@ final class ShortcutsPluginTests: SamplePluginsCase {
             XCTAssertEqual(lines.errors, [])
             XCTAssertEqual(lines.items.map(\.title), ["Say \\ \"hi\" (now)", "Take a break", "Video to audio"])
             XCTAssertEqual(lines.items.map(\.parent), [nil, nil, "Media"])
-            XCTAssertEqual(Set(lines.items.map(\.file)), ["/System/Applications/Shortcuts.app"])
+            XCTAssertEqual(Set(lines.items.map(\.iconFile)), ["/System/Applications/Shortcuts.app"])
         }
     }
 

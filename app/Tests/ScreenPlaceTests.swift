@@ -1,14 +1,14 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves where the panel opens (A18), with the screens of a Mac whose second screen lies to the left of the main one.
-final class PanelPlaceTests: XCTestCase {
-    private let main = PanelPlace.Screen(frame: CGRect(x: 0, y: 0, width: 1496, height: 967), area: CGRect(x: 0, y: 86, width: 1496, height: 852))
-    private let left = PanelPlace.Screen(frame: CGRect(x: -2560, y: -288, width: 2560, height: 1440), area: CGRect(x: -2560, y: -288, width: 2560, height: 1410))
+/// Proves where the panel and a float open (A18, W4), with the screens of a Mac whose second screen lies to the left of the main one.
+final class ScreenPlaceTests: XCTestCase {
+    private let main = ScreenPlace.Screen(frame: CGRect(x: 0, y: 0, width: 1496, height: 967), area: CGRect(x: 0, y: 86, width: 1496, height: 852))
+    private let left = ScreenPlace.Screen(frame: CGRect(x: -2560, y: -288, width: 2560, height: 1440), area: CGRect(x: -2560, y: -288, width: 2560, height: 1410))
     private let size = CGSize(width: 640, height: 720)
 
-    private var place: PanelPlace {
-        PanelPlace(screens: [main, left])
+    private var place: ScreenPlace {
+        ScreenPlace(screens: [main, left])
     }
 
     func testAFloatCentresOnThePointerAndStaysWholeOnItsScreen() {
@@ -20,7 +20,7 @@ final class PanelPlaceTests: XCTestCase {
     }
 
     func testThePanelSitsAsACentredWindowSits() {
-        XCTAssertEqual(PanelPlace(screens: [main]).origin(of: size, window: nil, pointer: CGPoint(x: 10, y: 10)), CGPoint(x: 428, y: 185))
+        XCTAssertEqual(ScreenPlace(screens: [main]).origin(of: size, window: nil, pointer: CGPoint(x: 10, y: 10)), CGPoint(x: 428, y: 185))
     }
 
     func testThePanelOpensOnTheScreenOfTheFrontWindow() {
@@ -46,6 +46,6 @@ final class PanelPlaceTests: XCTestCase {
     func testAWindowFrameCountsFromTheBottomLeftOfTheMainScreen() {
         let bounds = CGRect(x: -2000, y: 100, width: 800, height: 600)
 
-        XCTAssertEqual(PanelPlace.frame(ofBounds: bounds, mainHeight: 967), CGRect(x: -2000, y: 267, width: 800, height: 600))
+        XCTAssertEqual(ScreenPlace.frame(ofBounds: bounds, mainHeight: 967), CGRect(x: -2000, y: 267, width: 800, height: 600))
     }
 }

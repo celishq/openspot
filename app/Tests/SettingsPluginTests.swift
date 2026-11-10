@@ -16,13 +16,13 @@ final class SettingsPluginTests: SamplePluginsCase {
 
             let pane = try XCTUnwrap(rows.first { $0.title == "Звук" })
             XCTAssertEqual(pane.subtitle, "System Settings")
-            XCTAssertEqual(pane.file, panes.appendingPathComponent("Sound.appex").path)
+            XCTAssertEqual(pane.iconFile, panes.appendingPathComponent("Sound.appex").path)
             let section = try XCTUnwrap(rows.first { $0.title == "Громкость" })
             XCTAssertEqual(section.subtitle, "System Settings › Звук")
             XCTAssertEqual(section.keywords, ["громко", "тихо"])
             XCTAssertEqual(section.parent, "Звук")
             XCTAssertNil(pane.parent)
-            XCTAssertEqual(section.file, pane.file)
+            XCTAssertEqual(section.iconFile, pane.iconFile)
         }
     }
 
@@ -32,7 +32,7 @@ final class SettingsPluginTests: SamplePluginsCase {
 
             XCTAssertEqual(rows.filter { $0.subtitle == "System Settings" }.map(\.title).sorted(), ["Аккумулятор", "Звук", "Энергия"])
             let battery = try XCTUnwrap(rows.first { $0.title == "Аккумулятор" })
-            XCTAssertNil(battery.file)
+            XCTAssertNil(battery.iconFile)
             XCTAssertEqual(battery.symbol, "gearshape")
         }
     }

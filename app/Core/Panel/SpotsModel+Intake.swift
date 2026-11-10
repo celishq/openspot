@@ -71,7 +71,7 @@ extension SpotsModel {
     public func dragOut(_ items: [SpotItem], of id: String) {
         guard let sheet = sheets[id] else { return }
         sheet.dragged(items)
-        let files = Set(sheet.list.shown.filter { $0.carriedFile != nil }.map(\.run))
+        let files = Set(sheet.list.shown.filter { $0.file != nil }.map(\.run))
         if runs.floating.contains(id), !files.isEmpty, files.isSubset(of: items.map(\.run)) { land(id) }
     }
 
