@@ -113,7 +113,7 @@ public final class SpotRuns {
         sheet.floated()
     }
 
-    /// Ends the float of a script. A sheet of parts drops its values, as the panel's close does (K5).
+    /// Ends the float of a script. A sheet of parts with a field drops its values, as the panel's close does (K5).
     public func land(_ id: String) {
         guard floating.remove(id) != nil else { return }
         sheets[id]?.leftPlace()

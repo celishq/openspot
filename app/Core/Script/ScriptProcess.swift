@@ -27,12 +27,14 @@ public final class ScriptProcess: @unchecked Sendable {
     private var stopped = false
     private var ended = false
     private var killsLater = false
-    private let errorText = ErrorTail()
+    private let errorText: ErrorTail
     private var unended: String?
 
     /// `limit` is the time the script has to its first frame or its end. With none, it has no limit. `stopPause` is the time
-    /// between each step of a stop. `variables` add to its environment.
-    public init(url: URL, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:]) {
+    /// between each step of a stop. `variables` add to its environment. `errorLimit` is how many of the last bytes of stderr
+    /// it keeps, and nil keeps all.
+    public init(url: URL, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024) {
+        errorText = ErrorTail(limit: errorLimit)
         self.dataName = dataName
         self.variables = variables
         process.executableURL = url
@@ -137,7 +139,7 @@ public final class ScriptProcess: @unchecked Sendable {
         stop(because: nil)
     }
 
-    /// The end of what the process printed on stderr, its last 64 KB at most, once its output has closed.
+    /// What the process printed on stderr, all of it or its last bytes up to `errorLimit`, once its output has closed.
     public var errors: String {
         errorText.text
     }
@@ -232,10 +234,12 @@ public final class ScriptProcess: @unchecked Sendable {
 
     private func follow(output: Pipe, errors: Pipe) {
         let errorsRead = DispatchSemaphore(value: 0)
-        let lastErrors = errorText
+        let lastErrors = LastLine()
+        let errorText = errorText
         DispatchQueue.global().async {
             while let data = Self.next(errors) {
                 lastErrors.take(data)
+                errorText.take(data)
             }
             errorsRead.signal()
         }
@@ -248,7 +252,7 @@ public final class ScriptProcess: @unchecked Sendable {
             _ = errorsRead.wait(timeout: .now() + Self.errorsPause)
             guard !isStopped else { return lock.withLock { ended = true } }
             if hasExited, process.terminationStatus != 0 {
-                let line = lastErrors.lastLine
+                let line = lastErrors.text
                 let last = reader.finish()
                 lock.withLock { unended = last }
                 let fix = last.flatMap { PluginOutput(text: $0).link }.flatMap(URL.init(string:))
@@ -294,10 +298,11 @@ public final class ScriptProcess: @unchecked Sendable {
     }
 }
 
-/// The end of a stream that one queue writes and another reads: its last bytes up to a limit, cut between two characters,
-/// so that a script that writes to stderr all day holds no more than that.
-private final class ErrorTail: @unchecked Sendable {
-    private static let limit = 64 * 1024
+/// The last line that has words of a stream that one queue writes and another reads. It keeps no more than that line and
+/// one line break after it, and no more than the end of a line longer than its limit, cut between two characters.
+private final class LastLine: @unchecked Sendable {
+    private static let limit = 16 * 1024
+    private static let breaks: Set<UInt8> = [UInt8(ascii: "\n"), UInt8(ascii: "\r")]
 
     private let lock = NSLock()
     private var bytes = Data()
@@ -305,8 +310,35 @@ private final class ErrorTail: @unchecked Sendable {
     func take(_ data: Data) {
         lock.withLock {
             bytes.append(data)
-            guard bytes.count > Self.limit else { return }
-            var cut = bytes.endIndex - Self.limit
+            guard let end = bytes.lastIndex(where: { !Self.breaks.contains($0) }) else { return bytes.removeAll() }
+            let start = bytes[..<end].lastIndex(of: UInt8(ascii: "\n")).map { $0 + 1 } ?? bytes.startIndex
+            var cut = max(start, end + 1 - Self.limit)
+            while cut < end, bytes[cut] & 0xC0 == 0x80 { cut += 1 }
+            bytes = Data(bytes[cut..<min(end + 2, bytes.endIndex)])
+        }
+    }
+
+    var text: String {
+        lock.withLock { String(decoding: bytes, as: UTF8.self).split(whereSeparator: \.isNewline).last.map(String.init) ?? "" }
+    }
+}
+
+/// The end of a stream that one queue writes and another reads: all of it, or its last bytes up to a limit, cut between two
+/// characters, so that a script that writes to stderr all day holds no more than twice that.
+private final class ErrorTail: @unchecked Sendable {
+    private let limit: Int?
+    private let lock = NSLock()
+    private var bytes = Data()
+
+    init(limit: Int?) {
+        self.limit = limit
+    }
+
+    func take(_ data: Data) {
+        lock.withLock {
+            bytes.append(data)
+            guard let limit, bytes.count > 2 * limit else { return }
+            var cut = bytes.endIndex - limit
             while cut < bytes.endIndex, bytes[cut] & 0xC0 == 0x80 { cut += 1 }
             bytes = Data(bytes[cut...])
         }
@@ -314,10 +346,5 @@ private final class ErrorTail: @unchecked Sendable {
 
     var text: String {
         lock.withLock { String(decoding: bytes, as: UTF8.self) }
-    }
-
-    /// The last line that has words.
-    var lastLine: String {
-        text.split(whereSeparator: \.isNewline).last.map(String.init) ?? ""
     }
 }
