@@ -72,7 +72,7 @@ final class FilesOutTests: XCTestCase {
         """
         try "#!/bin/sh\n# read=sheet\n\(body)\n".writeScript(to: plugins.appendingPathComponent("shelf.sh"))
         model.reload()
-        model.press(GlobalKey(spot: "shelf", command: nil, trigger: .shake))
+        model.press(GlobalKey(spot: "shelf", act: .float, trigger: .shake))
         try await wait("the rows") { model.sheets["shelf"]?.list.shown.count == 3 }
         let rows = try XCTUnwrap(model.sheets["shelf"]?.list.shown)
 

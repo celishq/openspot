@@ -49,7 +49,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     private func key(_ spot: String) throws -> GlobalKey {
-        GlobalKey(spot: spot, command: nil, shortcut: try XCTUnwrap(Shortcut(text: "ctrl+option+s")))
+        GlobalKey(spot: spot, act: .float, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+s"))))
     }
 
     /// Floats a list of two rows whose pick and action each toast what they got.
@@ -170,25 +170,25 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAShakeWhileAFloatRowOfSettingsRecordsGivesItTheShake() async throws {
-        try script("shelf", header: "title=Shelf\nshortcut=s", "true")
+        try script("shelf", header: "title=Shelf\nshortcut=s\nfloat=true", "true")
         host.shipped = ShippedSpot.commands(folder: plugins, guide: folder.appendingPathComponent("GUIDE.md"), app: "", config: model.files.config)
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         model.openSettings()
-        try await wait("the rows of Settings") { model.openItems?.shown.contains { $0.run == "key:shelf:" } == true }
+        try await wait("the rows of Settings") { model.openItems?.shown.contains { $0.run == "float:shelf" } == true }
 
         model.toggleRecording(id: "panel_key")
         XCTAssertEqual(model.recordingWords, "Press keys")
         model.recordShake()
         XCTAssertEqual(model.recording, "panel_key")
 
-        model.toggleRecording(id: "key:shelf:")
+        model.toggleRecording(id: "float:shelf")
         XCTAssertEqual(model.recordingWords, "Press keys or shake")
         model.recordShake()
 
         XCTAssertNil(model.recording)
-        try await wait("the shake in the file") { model.files.config.read().keys == [GlobalKey(spot: "shelf", command: nil, trigger: .shake)] }
+        try await wait("the shake in the file") { model.files.config.read().keys == [GlobalKey(spot: "shelf", act: .float, trigger: .shake)] }
     }
 
     func testAFloatOfACardWithNoReadRunsNothingUntilItsCardIsPressed() async throws {

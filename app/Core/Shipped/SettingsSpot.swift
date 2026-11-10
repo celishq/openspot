@@ -5,6 +5,7 @@ public struct SettingsSpot: Equatable, Sendable {
     private static let panelKey = "panel_key"
     private static let fixKey = "fix_key"
     private static let keyPrefix = "key:"
+    private static let floatPrefix = "float:"
     private static let settingPrefix = "setting:"
     private static let clear = "clear"
 
@@ -34,7 +35,7 @@ public struct SettingsSpot: Equatable, Sendable {
     /// Whether it answers this call: a read, or a change of a key. Any other call goes to the script.
     public func answers(_ arguments: [String]) -> Bool {
         guard let first = arguments.first else { return false }
-        return first == "read" || first == Self.clear || first.hasPrefix(Self.keyPrefix)
+        return first == "read" || first == Self.clear || Self.takesShake(first)
     }
 
     /// Answers one call with the text a script would print. A change prints nothing, which asks for a new read.
@@ -74,17 +75,12 @@ public struct SettingsSpot: Equatable, Sendable {
         let fix = "row=\(Self.fixKey)\ntitle=Open a fix\nicon=wrench.and.screwdriver\nhides=\(Self.clear)\nshortcut=\((config.fixKey ?? .fix).text)\n"
         let scan = try? PluginFolder(url: folder, core: core, enabled: config.arrangement.enabled).scan()
         let scripts = (scan?.scripts ?? []).filter { only == nil || $0.id == only }
-        let floats = only != nil ? [] : (scan?.commands ?? []).filter { $0.kind != .widget }.map { spot -> String in
-            let key = config.keys.first { $0.spot == spot.id && $0.command == nil }
-            let hides = key == nil ? "hides=\(Self.clear)\n" : ""
-            return "row=\(Self.keyPrefix)\(spot.id):\ntitle=Float\ndetail=\(spot.name)\nparent=\(spot.name)\nicon=\(spot.image ?? spot.file ?? spot.glyph ?? spot.symbol)\n\(hides)shortcut=\(key?.trigger.text ?? "Record")\n"
+        let floats = scripts.filter(\.offersFloat).map { script in
+            keyRow(of: script, act: .float, title: "Float", icon: Self.picture(of: script), keys: config.keys)
         }
         let rows = floats + scripts.flatMap { script in
-            script.offers.map { offer -> String in
-                let key = config.keys.first { $0.spot == script.id && $0.command == offer.id }
-                let hides = key == nil ? "hides=\(Self.clear)\n" : ""
-                let detail = only == nil ? "detail=\(script.name)\nparent=\(script.name)\n" : ""
-                return "row=\(Self.keyPrefix)\(script.id):\(offer.id)\ntitle=\(offer.title)\n\(detail)icon=\(offer.icon ?? script.image ?? script.file ?? script.glyph ?? script.symbol)\n\(hides)shortcut=\(key?.trigger.text ?? "Record")\n"
+            script.offers.map { offer in
+                keyRow(of: script, act: .command(offer.id), title: offer.title, icon: offer.icon ?? Self.picture(of: script), keys: config.keys)
             }
         }
         let named = scripts.flatMap { script in script.settings.map { (spot: script.id, offer: $0) } }
@@ -94,7 +90,7 @@ public struct SettingsSpot: Equatable, Sendable {
             let script = scripts.first { $0.id == spot }
             let value = config.setting(offer.id, of: spot)
             let name = script?.name ?? spot
-            let icon = offer.icon ?? script.map { $0.image ?? $0.file ?? $0.glyph ?? $0.symbol } ?? "gearshape"
+            let icon = offer.icon ?? script.map(Self.picture(of:)) ?? "gearshape"
             return TextBlock(fields: [
                 .init(key: "row", value: "\(Self.settingPrefix)\(spot):\(offer.id)"),
                 .init(key: "title", value: offer.title),
@@ -117,6 +113,24 @@ public struct SettingsSpot: Equatable, Sendable {
         return shortcut
     }
 
+    /// The row that gives a command, or the float of a spot, its key, with Record until it has one. The full list names the
+    /// spot of each row.
+    private func keyRow(of script: Spot, act: GlobalKey.Act, title: String, icon: String, keys: [GlobalKey]) -> String {
+        let key = keys.first { $0.spot == script.id && $0.act == act }
+        let run = switch act {
+        case .float: "\(Self.floatPrefix)\(script.id)"
+        case .command(let command): "\(Self.keyPrefix)\(script.id):\(command)"
+        }
+        let hides = key == nil ? "hides=\(Self.clear)\n" : ""
+        let detail = only == nil ? "detail=\(script.name)\nparent=\(script.name)\n" : ""
+        return "row=\(run)\ntitle=\(title)\n\(detail)icon=\(icon)\n\(hides)shortcut=\(key?.trigger.text ?? "Record")\n"
+    }
+
+    /// The picture that its header names, or else its symbol.
+    private static func picture(of script: Spot) -> String {
+        script.image ?? script.file ?? script.glyph ?? script.symbol
+    }
+
     /// The action of a spot that Enter on its setting row runs: the one with the name of the setting, which closes the panel.
     public static func change(of run: String) -> (spot: String, action: CommandAction)? {
         guard let (spot, key) = setting(of: run) else { return nil }
@@ -131,23 +145,23 @@ public struct SettingsSpot: Equatable, Sendable {
 
     /// Whether the row of this run gives a key to a command or a float, which a shake can be (W2).
     public static func takesShake(_ run: String) -> Bool {
-        run.hasPrefix(keyPrefix)
+        run.hasPrefix(keyPrefix) || run.hasPrefix(floatPrefix)
     }
 
-    /// The spot and the command that the run of a row names. A row with no command floats its spot.
-    private func target(of run: String) -> (spot: String, command: String?)? {
+    /// The spot and the act that the run of a row gives a key to.
+    private func target(of run: String) -> (spot: String, act: GlobalKey.Act)? {
+        if run.hasPrefix(Self.floatPrefix) { return (String(run.dropFirst(Self.floatPrefix.count)), .float) }
         guard run.hasPrefix(Self.keyPrefix), let split = run.lastIndex(of: ":") else { return nil }
-        let command = String(run[run.index(after: split)...])
-        return (String(run[run.index(run.startIndex, offsetBy: Self.keyPrefix.count)..<split]), command.isEmpty ? nil : command)
+        return (String(run[run.index(run.startIndex, offsetBy: Self.keyPrefix.count)..<split]), .command(String(run[run.index(after: split)...])))
     }
 
     /// Gives a command, or the float of a spot, this key or the shake in the file, or takes its key away, and keeps the place
     /// of each other key. One key at most holds the shake, so a new shake takes it from the one before (W2).
-    private func assign(_ trigger: Trigger?, to target: (spot: String, command: String?)) throws {
+    private func assign(_ trigger: Trigger?, to target: (spot: String, act: GlobalKey.Act)) throws {
         var keys = file.read().keys
-        if trigger == .shake { keys.removeAll { $0.trigger == .shake && ($0.spot != target.spot || $0.command != target.command) } }
-        let place = keys.firstIndex { $0.spot == target.spot && $0.command == target.command }
-        let key = trigger.map { GlobalKey(spot: target.spot, command: target.command, trigger: $0) }
+        if trigger == .shake { keys.removeAll { $0.trigger == .shake && ($0.spot != target.spot || $0.act != target.act) } }
+        let place = keys.firstIndex { $0.spot == target.spot && $0.act == target.act }
+        let key = trigger.map { GlobalKey(spot: target.spot, act: target.act, trigger: $0) }
         switch (place, key) {
         case (let place?, let key?): keys[place] = key
         case (let place?, nil): keys.remove(at: place)

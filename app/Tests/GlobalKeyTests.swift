@@ -52,7 +52,7 @@ final class GlobalKeyTests: XCTestCase {
         spot = "windows"
         """)
 
-        XCTAssertEqual(config.keys.map(\.command), ["left"])
+        XCTAssertEqual(config.keys.map(\.act), [.command("left")])
         XCTAssertEqual(config.keys.first?.trigger.text, "ctrl+option+left")
         XCTAssertEqual(config.faults, ["config.toml: windows right cannot use k.", "config.toml: a key needs a spot and a key."])
     }
@@ -63,7 +63,7 @@ final class GlobalKeyTests: XCTestCase {
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
         let config = Config(text: "[[keys]]\nspot = \"shelf\"\nkey = \"ctrl+option+s\"\n\n[[keys]]\ncommand = \"left\"\nkey = \"ctrl+option+left\"\n")
 
-        XCTAssertEqual(config.keys, [GlobalKey(spot: "shelf", command: nil, shortcut: try XCTUnwrap(Shortcut(text: "ctrl+option+s")))])
+        XCTAssertEqual(config.keys, [GlobalKey(spot: "shelf", act: .float, trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+s"))))])
         XCTAssertEqual(config.faults, ["config.toml: a key needs a spot and a key."])
 
         try file.write(keys: config.keys)
@@ -78,7 +78,7 @@ final class GlobalKeyTests: XCTestCase {
         let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
         let config = Config(text: "[[keys]]\nspot = \"shelf\"\nkey = \"shake\"\n")
 
-        XCTAssertEqual(config.keys, [GlobalKey(spot: "shelf", command: nil, trigger: .shake)])
+        XCTAssertEqual(config.keys, [GlobalKey(spot: "shelf", act: .float, trigger: .shake)])
         XCTAssertEqual(config.faults, [])
 
         try file.write(keys: config.keys)
@@ -89,18 +89,20 @@ final class GlobalKeyTests: XCTestCase {
         XCTAssertEqual(Trigger(text: "ctrl+space")?.label, "⌃Space")
     }
 
-    func testAKeyWithNoCommandStaysOnlyForASpotWithACard() throws {
+    func testAKeyWithNoCommandStaysOnlyForASpotThatOffersAFloat() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keys-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        try "#!/bin/sh\n# shortcut=s\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
+        try "#!/bin/sh\n# shortcut=s\n# float=true\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
+        try "#!/bin/sh\n# shortcut=n\n".writeScript(to: folder.appendingPathComponent("notes.sh"))
         try "#!/bin/sh\n# read=60\necho text=cups\n".writeScript(to: folder.appendingPathComponent("cups.sh"))
         let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+up"))
-        let shelf = GlobalKey(spot: "shelf", command: nil, shortcut: shortcut)
-        let cups = GlobalKey(spot: "cups", command: nil, shortcut: shortcut)
-        let gone = GlobalKey(spot: "gone", command: nil, shortcut: shortcut)
+        let shelf = GlobalKey(spot: "shelf", act: .float, trigger: .key(shortcut))
+        let cups = GlobalKey(spot: "cups", act: .float, trigger: .key(shortcut))
+        let notes = GlobalKey(spot: "notes", act: .float, trigger: .key(shortcut))
+        let gone = GlobalKey(spot: "gone", act: .float, trigger: .key(shortcut))
 
-        XCTAssertEqual(try PluginFolder(url: folder).scan().offered([shelf, cups, gone]), [shelf])
+        XCTAssertEqual(try PluginFolder(url: folder).scan().offered([shelf, cups, notes, gone]), [shelf])
     }
 
     func testSavingTheGridKeepsTheKeys() throws {

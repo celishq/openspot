@@ -380,7 +380,7 @@ public final class SpotsModel {
 
     /// A person pressed a key that they assigned to a command.
     public func press(_ key: GlobalKey) {
-        guard let command = key.command else { return float(key.spot) }
+        guard case .command(let command) = key.act else { return float(key.spot) }
         guard let sheet = sheets[key.spot] else { return }
         sheet.pressKey(command)
         flashSymbol = sheet.command.symbol(of: command)

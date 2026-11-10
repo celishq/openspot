@@ -29,11 +29,13 @@ public struct ScanResult: Equatable, Sendable {
         plugins.flatMap(\.commands).filter { $0.kind != .widget }
     }
 
-    /// The assigned keys whose script still lists their command, and the keys with no command whose spot has a card (W1).
+    /// The assigned keys whose script still lists their command, or still offers a float (W1, T1).
     public func offered(_ keys: [GlobalKey]) -> [GlobalKey] {
         keys.filter { key in
-            guard let command = key.command else { return commands.contains { $0.id == key.spot && $0.kind != .widget } }
-            return scripts.contains { $0.id == key.spot && $0.offers.contains { $0.id == command } }
+            switch key.act {
+            case .float: scripts.contains { $0.id == key.spot && $0.offersFloat }
+            case .command(let command): scripts.contains { $0.id == key.spot && $0.offers.contains { $0.id == command } }
+            }
         }
     }
 
