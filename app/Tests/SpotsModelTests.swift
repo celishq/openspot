@@ -112,6 +112,18 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.map(\.id), ["one"])
     }
 
+    func testAnOpenPanelReadsAgainAScriptWhoseBodyAloneChanged() async throws {
+        try script("cups", header: "read=panel", "printf 'title=One cup\\n'")
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        try await wait("the first read") { model.entries.first { $0.id == "cups" }?.state.title == "One cup" }
+
+        try "#!/bin/sh\n# read=panel\nprintf 'title=Two cups\\n'\n".write(to: plugins.appendingPathComponent("cups.sh"), atomically: false, encoding: .utf8)
+        model.folderChanged()
+
+        try await wait("the read of the changed body") { model.entries.first { $0.id == "cups" }?.state.title == "Two cups" }
+    }
+
     func testAPressOfAListOpensItsSheetAndAStepBackClosesIt() async throws {
         try await openList()
 

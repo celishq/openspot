@@ -198,7 +198,8 @@ public final class SpotsModel {
     private var scanned: [Spot] = []
     private var pluginScan = PluginScan()
     private var lastScan = ScanResult(plugins: [], refused: [])
-    /// The config that the last scan was taken with.
+    /// The stamp of the folder and the config that the cards were last built from.
+    @ObservationIgnored private var loadedStamp: PluginFolder.Stamp?
     @ObservationIgnored private var loadedConfig: Config?
     /// The files of the last spot that Delete moved to the Trash, which `⌘Z` puts back.
     @ObservationIgnored var removal: Removal?
@@ -250,7 +251,8 @@ public final class SpotsModel {
 
     /// Reads the config file again, and the plugin folder when a file that its scan reads has changed. No script runs for
     /// this, and each card shows its header until its answer arrives. A file that gives no spot shows a card of its faults,
-    /// and any other fault shows in a toast. With the same scan and config as the last time, it only holds the keys again.
+    /// and any other fault shows in a toast. With no file changed and the same config as the last time, it only holds the
+    /// keys again.
     public func reload() {
         host.applyConfig()
         let config = files.config.read()
@@ -261,11 +263,12 @@ public final class SpotsModel {
         let new = shipped.lazy.compactMap { if case .new(let new)? = $0.shipped { new } else { nil } }.first
         let faults = new.map { folder.faultSpots(of: scan, new: $0) } ?? []
         if !faults.isEmpty { scan.plugins.append(Plugin(id: ShippedSpot.faultsID, commands: faults)) }
-        guard scan != lastScan || config != loadedConfig else { return holdAssignedKeys(config) }
+        guard pluginScan.stamp != loadedStamp || config != loadedConfig else { return holdAssignedKeys(config) }
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.take(scan)
         lastScan = scan
+        loadedStamp = pluginScan.stamp
         loadedConfig = config
         fileStamps = Self.stamps(of: scan)
         holdAssignedKeys(config)
