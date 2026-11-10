@@ -122,8 +122,29 @@ public final class SpotRun {
         access(keyPath: \.selection)
         return rows.selectedItem
     }
+    @ObservationIgnored private var parts: SheetParts?
+    /// The parts of the sheet. A move of the selection alone tells only the readers of `selectedPart`, so that an arrow press
+    /// redraws what shows the selection and not the sheet.
     public private(set) var panel: SheetParts? {
-        didSet { settle() }
+        get {
+            access(keyPath: \.panel)
+            return parts
+        }
+        set {
+            guard newValue != parts else { return }
+            if let newValue, let parts, newValue.differsOnlyInSelection(from: parts) {
+                withMutation(keyPath: \.selectedPart) { self.parts = newValue }
+                return
+            }
+            withMutation(keyPath: \.panel) { parts = newValue }
+            settle()
+        }
+    }
+    /// The part that return uses, read so that a move of the selection and a change of the parts both tell its reader.
+    public var selectedPart: SpotPart? {
+        access(keyPath: \.panel)
+        access(keyPath: \.selectedPart)
+        return parts?.selectedPart
     }
     /// The last arrow press that asks the parts to scroll. It lives apart from the parts, so that a press redraws only the scroll.
     public private(set) var nudge = SheetParts.Nudge.rest
@@ -149,18 +170,31 @@ public final class SpotRun {
     /// What kind of sheet it is, from its parts, or from a first answer that waits for the open motion. An open sheet that
     /// still waits for its first answer cannot say yet.
     public private(set) var kind = SheetKind.rows
+    /// The rect of its sheet of parts, and the kind of those parts. They change only when they do, so that a new value of a
+    /// part reaches no view that reads only these.
+    public private(set) var partsRect: CGRect?
+    public private(set) var partsKind: SheetKind?
     /// The kind of the first answer while it waits for the open motion, or nil when no such answer waits.
     @ObservationIgnored private var heardKind: SheetKind? {
         didSet { settle() }
     }
     public private(set) var state: SpotState {
-        didSet { if state != oldValue { onReport(.listChange) } }
+        didSet {
+            guard state != oldValue else { return }
+            if (state.on == true) != isOn { isOn = state.on == true }
+            if state.face != oldValue.face { runs.updatePlaced() }
+            onReport(.listChange)
+        }
     }
+    /// Whether its card is on. It changes only when that does, so that a view that shows only this hears of no other change.
+    public private(set) var isOn = false
     public private(set) var reading: MetricReading
     /// The words of its last failed call, until a call ends well.
     public private(set) var failure: String?
-    /// Each running call, the oldest first, with the last frame of each.
-    public private(set) var calls: [ScriptCall] = []
+    /// Each running call, the oldest first, with the last frame of each. A read starts and ends a call, so no view hears of it.
+    @ObservationIgnored public private(set) var calls: [ScriptCall] = []
+    /// The calls that do work, the oldest first, which `work` shows. Only a call of work changes it.
+    private var workCalls: [ScriptCall] = []
     @ObservationIgnored public var onReport: (Report) -> Void = { _ in }
     /// Makes the change that brings the sheet its first parts.
     @ObservationIgnored public var partsArrival: (() -> Void) -> Void = { $0() }
@@ -192,6 +226,7 @@ public final class SpotRun {
         rows = ItemList(recent: recent)
         state = command.headerState
         reading = MetricReading(label: command.name, headerSymbol: command.headerSymbol)
+        isOn = command.headerState.on == true
         settle()
         link.run = self
     }
@@ -244,6 +279,10 @@ public final class SpotRun {
         let waits = showsSheet && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
         let nextKind = heardKind ?? (waits ? .waiting : panel?.kind ?? .rows)
         if nextKind != kind { kind = nextKind }
+        let rect = panel.map(SpotTokens.panelRect)
+        if rect != partsRect { partsRect = rect }
+        let parts = panel?.kind
+        if parts != partsKind { partsKind = parts }
     }
 
     /// Hears a frame that waits for the open motion, or nil when the wait ends. A sheet that waits for its first answer
@@ -463,7 +502,7 @@ public final class SpotRun {
     public var work: [ScriptCall] {
         _ = workPauses
         let time = runs.now()
-        return calls.filter { $0.doesWork && time.timeIntervalSince($0.started) >= Self.workPause }
+        return workCalls.filter { time.timeIntervalSince($0.started) >= Self.workPause }
     }
 
     /// The call of the card, once it shows, which a press of the card stops.
@@ -634,7 +673,7 @@ public final class SpotRun {
     /// gets a `stop` block instead.
     public func stop(_ call: ScriptCall) {
         call.stop()
-        calls.removeAll { $0 === call }
+        forget(call)
         link.stop(call)
     }
 
@@ -680,6 +719,7 @@ public final class SpotRun {
     func track(_ call: ScriptCall) {
         calls.append(call)
         guard call.doesWork else { return }
+        workCalls.append(call)
         Task { [weak self] in
             try? await Task.sleep(for: .seconds(Self.workPause))
             self?.workPauses += 1
@@ -688,9 +728,15 @@ public final class SpotRun {
 
     /// Lets go of a call that ended, and starts a drop or a key press that waited for it.
     func callEnded(_ call: ScriptCall) {
-        calls.removeAll { $0 === call }
+        forget(call)
         startWaitingFiles()
         startWaitingKey()
+    }
+
+    /// Drops a call from the running calls. A call that is already gone tells no reader of the work.
+    private func forget(_ call: ScriptCall) {
+        calls.removeAll { $0 === call }
+        if let index = workCalls.firstIndex(where: { $0 === call }) { workCalls.remove(at: index) }
     }
 
     /// Takes the end of a call. A read or a search that ended with no answer changes nothing when it was stopped, and tells
@@ -750,10 +796,11 @@ public final class SpotRun {
         list.stopLoading()
     }
 
-    /// Takes the answer of a read or of a search: the first frame of a read that runs once, the silence of one that ended by
-    /// itself, or the frame that ends a call of a staying script. A read's answer replaces all that the spot shows, and a
-    /// search's answer replaces its rows (02, Y7).
+    /// Takes the answer of a read or of a search: the first frame of a read that runs once or a later one with a head, the
+    /// silence of one that ended by itself, or the frame that ends a call of a staying script. A read's answer replaces all
+    /// that the spot shows, and a search's answer replaces its rows (02, Y7).
     func takeAnswer(_ lines: PluginOutput, frame: String, to ask: Ask) async {
+        let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: lines.search) } else { nil }
         lastAnswer = lines.withoutBlocks()
         report(toastOf: lines)
         command = command.taking(lines)
@@ -767,7 +814,7 @@ public final class SpotRun {
             changeList {
                 $0.take(search: lines.search)
                 $0.take(drawing: lines.drawing, templates: lines.templates)
-                $0.replace(lines.items)
+                if let next { $0.replace(next) }
                 if let kept { $0.select(run: kept) }
             }
             if showsSheet || panel != nil { takePanel(lines, generation: generation) }
@@ -792,20 +839,17 @@ public final class SpotRun {
         }
     }
 
-    /// Takes a frame that answers nothing: a later frame of a read, a frame of another call, or a frame that a staying script
-    /// printed by itself. It changes only what it prints (02, Y7): the value when it prints the main component, the rows, the
-    /// parts, and the control of the card. Only a later frame of a read changes the spot's words.
+    /// Takes a frame that answers nothing: a later frame of a read with no head, a frame of another call, or a frame that a
+    /// staying script printed by itself. It changes only what it prints (02, Y7): the value when it prints the main
+    /// component, the rows, the parts, and the control of the card.
     func takeUpdate(_ lines: PluginOutput, frame: String, from source: Source) async {
+        let next = lines.items.isEmpty ? nil : await newRows(lines.items, search: rows.search)
         report(toastOf: lines)
         if let main = lastAnswer?.value?.fields.first?.value, lines.value?.fields.first?.value == main, let value = MetricValue(output: lines) {
             changeReading { $0.take(value) }
         }
-        if case .read = source, command.readsState, lines.summary != nil {
-            takeState(lines)
-        } else {
-            state = keepingLevel(state.taking(lines))
-        }
-        if !lines.items.isEmpty { list.replace(lines.items) }
+        state = keepingLevel(state.taking(lines))
+        if let next { list.replace(next) }
         if showsSheet {
             switch source {
             case .read: panel?.merge(lines, keeping: editing)
@@ -815,6 +859,13 @@ public final class SpotRun {
         onReport(.frame(frame))
         guard !lines.items.isEmpty else { return }
         await preparePictures()
+    }
+
+    /// Fresh rows compared with the rows of the list and indexed off the main thread, so that the main thread takes them in
+    /// one write.
+    private func newRows(_ items: [SpotItem], search: ItemSearch) async -> ItemList.Rows {
+        let list = rows
+        return await Task.detached(priority: .userInitiated) { list.ready(items, search: search) }.value
     }
 
     /// Makes the pictures of the list ready: the first screen of its rows, and the colour glyphs of all of them.

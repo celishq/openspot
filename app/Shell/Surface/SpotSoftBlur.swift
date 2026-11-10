@@ -117,6 +117,14 @@ struct SpotSoftBlur: NSViewRepresentable {
 
     private static var kept: [CGFloat: Masks] = [:]
 
+    /// Draws the masks of these heights ahead, one in each turn of the main queue, so that an open of a sheet finds them.
+    static func warm(_ heights: [CGFloat]) {
+        var left = Set(heights).subtracting(kept.keys)
+        guard let height = left.popFirst() else { return }
+        _ = masks(height: height)
+        DispatchQueue.main.async { warm(Array(left)) }
+    }
+
     /// The masks of this height, kept for each height.
     private static func masks(height: CGFloat) -> Masks {
         if let masks = kept[height] { return masks }

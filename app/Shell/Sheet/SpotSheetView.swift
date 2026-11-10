@@ -13,14 +13,17 @@ struct SpotSheetView: View {
     /// own curve.
     let showsFill: Bool
     let rect: CGRect
-    /// The parts of the sheet, once they have landed.
-    let panel: SheetParts?
     /// How far the close button lies from its place at the card's edge. Nil for a card with no arrow, where the frame cuts it.
     let closeShift: CGFloat?
     /// The width of the card or field that the sheet grows out of and collapses into.
     let cardWidth: CGFloat
     /// Whether the card draws its own look over the closed sheet, so that the header keeps its open place and only fades.
     var hasCardLook = false
+
+    /// The parts of the sheet, once they have landed.
+    private var panel: SheetParts? {
+        model.shownParts(of: entry.id)
+    }
 
     private var list: ItemList {
         model.sheets[entry.id]?.list ?? ItemList()
@@ -63,6 +66,7 @@ struct SpotSheetView: View {
                         onSlot: { model.slot($1, of: $0, in: entry.id, to: $2) },
                         onDragOut: { model.dragOut($0, of: entry.id) },
                         selection: selection,
+                        selectedPart: { [model, id = entry.id] in model.sheets[id]?.selectedPart?.id },
                         nudge: { model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest },
                         customView: { room in
                             entry.command.view.map { SpotCustomView(source: $0, values: entry.state.values, card: entry.state.size ?? .square, room: room, views: SpotViews.shared) }

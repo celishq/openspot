@@ -50,8 +50,8 @@ final class PluginOutputTests: XCTestCase {
 
         XCTAssertEqual(output.summary?.value("title"), "Caffeinate")
         XCTAssertEqual(output.items, [
-            SpotItem(title: "Safari", subtitle: "Browser", run: "/Applications/Safari.app", iconFile: "/Applications/Safari.app"),
-            SpotItem(title: "Off", run: "off", symbol: "power")
+            SpotItem(title: "Safari", subtitle: "Browser", run: "/Applications/Safari.app", picture: .file("/Applications/Safari.app")),
+            SpotItem(title: "Off", run: "off", picture: .symbol("power"))
         ])
         XCTAssertEqual(output.actions, [CommandAction(id: "copy", title: "Copy", key: ActionKey(text: "cmd+return"), after: .close)])
         XCTAssertEqual(output.errors, [])

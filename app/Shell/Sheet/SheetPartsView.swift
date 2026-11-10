@@ -16,11 +16,12 @@ struct SheetPartsView: View {
     var onSlot: (SpotItem, String, String?) -> Void = { _, _, _ in }
     var onDragOut: ([SpotItem]) -> Void = { _ in }
     var selection: (() -> Int)?
+    /// Reads the id of the selected part where it is called. Nil reads it from the parts.
+    var selectedPart: (() -> String?)?
     var nudge: () -> SheetParts.Nudge = { SheetParts.Nudge.rest }
     /// The plugin's own view at the size of the area of a `view` component (V1).
     var customView: (CGSize) -> SpotCustomView? = { _ in nil }
     @FocusState private var focus: String?
-    @Environment(\.spotIsShown) private var isShown
 
     private static let swatchSize: CGFloat = 22
     private static let smallSwatch: CGFloat = 16
@@ -48,9 +49,7 @@ struct SheetPartsView: View {
             }
         }
         .onAppear(perform: focusFirstField)
-        .onChange(of: isShown) { _, isShown in
-            if isShown { DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeInDuration, execute: focusFirstField) }
-        }
+        .modifier(FocusOnShow(focus: focusFirstField))
     }
 
     private func canvas(_ sheet: SheetPlacement) -> some View {
@@ -89,16 +88,16 @@ struct SheetPartsView: View {
             )
             .frame(width: frame.rect.width, height: frame.rect.height, alignment: Self.alignment(frame))
             .background {
-                if isSelected(part), part.look != .tile {
-                    Color.clear.modifier(SpotSelectionRing(isSelected: true, shape: shape)).padding(-SpotTokens.controlPadding)
+                if part.look != .tile, part.isSelectable {
+                    Color.clear.modifier(PartRing(id: part.id, selectedID: selectedID, shape: shape)).padding(-SpotTokens.controlPadding)
                 }
             }
             .offset(x: frame.rect.minX, y: frame.rect.minY)
             .zIndex(frame.isOnTop ? 1 : 0)
     }
 
-    private func isSelected(_ part: SpotPart) -> Bool {
-        panel.selectedPart?.id == part.id
+    private var selectedID: () -> String? {
+        selectedPart ?? { [panel] in panel.selectedPart?.id }
     }
 
     private static func alignment(_ frame: SheetPlacement.Frame) -> Alignment {
@@ -157,7 +156,7 @@ struct SheetPartsView: View {
             if part.press == .line {
                 lineButton(part, frame)
             } else {
-                labelled(part, frame).modifier(TileLook(isOn: part.look == .tile, isSelected: isSelected(part)))
+                labelled(part, frame).modifier(TileLook(isOn: part.look == .tile, id: part.id, selectedID: selectedID))
             }
         }
     }
@@ -285,7 +284,7 @@ struct SheetPartsView: View {
                 centeredLine(part, text: SpotTheme.onSolid, fill: SpotTheme.solid)
             case .tile:
                 labelled(part, frame)
-                    .modifier(TileLook(isOn: true, isSelected: isSelected(part)))
+                    .modifier(TileLook(isOn: true, id: part.id, selectedID: selectedID))
                     .contentShape(shape)
             default:
                 centeredLine(part, text: SpotTheme.ink, fill: SpotTheme.ink.opacity(SpotTheme.selectedFill))
@@ -465,17 +464,10 @@ struct SheetPartsView: View {
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
     }
 
-    /// The picture at a file path. A file it cannot read shows an empty tile.
     private func image(_ path: String) -> some View {
-        Group {
-            if let picture = NSImage(contentsOfFile: path) {
-                Image(nsImage: picture).resizable().scaledToFill()
-            } else {
-                SpotTheme.ink.opacity(SpotTheme.fill)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipShape(shape)
+        SheetPicture(key: SpotPictureStore.Key(path: path))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipShape(shape)
     }
 
     private func progress(_ part: SpotPart, level: Double) -> some View {
@@ -531,10 +523,35 @@ struct SheetPartsView: View {
     }
 }
 
+/// Gives the focus back once the panel has faded in. It alone reads whether the panel shows, so that a show reruns no part.
+private struct FocusOnShow: ViewModifier {
+    let focus: () -> Void
+    @Environment(\.spotIsShown) private var isShown
+
+    func body(content: Content) -> some View {
+        content.onChange(of: isShown) { _, isShown in
+            if isShown { DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeInDuration, execute: focus) }
+        }
+    }
+}
+
+/// The ring of a selected part that is not a tile. It alone reads the selection, so that an arrow press reruns the rings and
+/// not the sheet.
+private struct PartRing: ViewModifier {
+    let id: String
+    let selectedID: () -> String?
+    let shape: RoundedRectangle
+
+    func body(content: Content) -> some View {
+        content.modifier(SpotSelectionRing(isSelected: selectedID() == id, shape: shape))
+    }
+}
+
 /// The filled row of `look=tile`.
 private struct TileLook: ViewModifier {
     let isOn: Bool
-    let isSelected: Bool
+    let id: String
+    let selectedID: () -> String?
 
     func body(content: Content) -> some View {
         if isOn {
@@ -542,9 +559,30 @@ private struct TileLook: ViewModifier {
                 .padding(.horizontal, SpotTokens.padding)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(SpotTheme.ink.opacity(SpotTheme.fill), in: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous))
-                .modifier(SpotSelectionRing(isSelected: isSelected, shape: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)))
+                .modifier(SpotSelectionRing(isSelected: selectedID() == id, shape: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)))
         } else {
             content
         }
+    }
+}
+
+/// The picture at a file path, which fills its area and is cut at its edges. It shows an empty tile until it is read, and
+/// stays empty for a file it cannot read.
+private struct SheetPicture: View {
+    let key: SpotPictureStore.Key
+    @State private var loaded: (key: SpotPictureStore.Key, image: CGImage)?
+
+    var body: some View {
+        Color.clear
+            .overlay {
+                if let image = SpotPictureStore.shared.cached(key) ?? (loaded?.key == key ? loaded?.image : nil) {
+                    Image(decorative: image, scale: SpotPictureStore.scale).resizable().scaledToFill()
+                } else {
+                    SpotTheme.ink.opacity(SpotTheme.fill)
+                }
+            }
+            .task(id: key) {
+                if let image = await SpotPictureStore.shared.image(key) { loaded = (key, image) }
+            }
     }
 }

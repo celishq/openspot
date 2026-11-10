@@ -7,11 +7,31 @@
 data=${OPENSPOT_DATA:-${TMPDIR:-/tmp}}
 pending="$data/uninstall"
 kept="$data/uninstall-kept"
+found="$data/apps"
 lib="$HOME/Library"
 
 # Prints the bundle of each running app, one a line.
 running() {
   ps -axo comm= | awk '{ p = index($0, ".app/"); if (p) print substr($0, 1, p + 3) }' | sort -u
+}
+
+# Runs find with these tests over the folders that hold apps.
+in_app_folders() {
+  find /Applications /System/Applications "$HOME/Applications" "$@" 2>/dev/null
+}
+
+# Keeps each app in the file of found apps as its name, a tab and its path, sorted by name. It looks for the apps again
+# only when a folder that holds them changed since the last look started.
+find_apps() {
+  if [ ! -s "$found" ] || [ ! -f "$found.looked" ] || [ -n "$(in_app_folders -maxdepth 2 -name '*.app' -prune -o -type d -newer "$found.looked" -print -quit)" ]; then
+    : >"$found.looked.$$"
+    {
+      in_app_folders -maxdepth 3 -name '*.app' -prune
+      echo /System/Library/CoreServices/Finder.app
+    } | sed 's/\\/\\\\/g' \
+      | awk -F/ '{ name = $NF; sub(/\.app$/, "", name); print name "\t" $0 }' \
+      | sort -f -u > "$found.$$" && mv "$found.$$" "$found" && mv "$found.looked.$$" "$found.looked"
+  fi
 }
 
 # Writes text as a value. A path holds no new line, so only a backslash needs care.
@@ -55,19 +75,14 @@ apps() {
   printf 'template=row\ngrid=pic name name name name quit\npicture=pic\ntext=name\nbutton=quit\nquit.icon=xmark.circle\nquit.title=Quit\n\n'
   live="$data/running"
   { echo; running; } > "$live"
-  {
-    find /Applications /System/Applications "$HOME/Applications" -maxdepth 3 -name '*.app' -prune 2>/dev/null
-    echo /System/Library/CoreServices/Finder.app
-  } | sed 's/\\/\\\\/g' \
-    | awk -F/ '{ name = $NF; sub(/\.app$/, "", name); print name "\t" $0 }' \
-    | sort -f -u \
-    | awk -F'\t' 'NR == FNR { live[$0] = 1; next }
+  find_apps
+  awk -F'\t' 'NR == FNR { live[$0] = 1; next }
       {
         printf "row=%s\ntitle=%s\nicon=%s\nname=%s\n", $2, $1, $2, $1
         if ($2 in live) print "tone=on"; else print "hides=quit"
         if ($2 ~ /^\/System\//) print "hides=uninstall"
         print ""
-      }' "$live" -
+      }' "$live" "$found"
 }
 
 # Prints the sheet that asks which files of an app go to the Trash.

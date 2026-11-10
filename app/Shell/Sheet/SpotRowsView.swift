@@ -14,7 +14,6 @@ struct SpotRowsView: View {
     var onSlot: (SpotItem, String, String?) -> Void = { _, _, _ in }
     /// Takes the rows whose files a drag took out to another app (O2).
     var onDragOut: ([SpotItem]) -> Void = { _ in }
-    @State private var edges = SpotScrollEdges()
     @State private var position = ScrollPosition(edge: .top)
     @State private var reading = GridScrollReading()
 
@@ -66,8 +65,7 @@ struct SpotRowsView: View {
         Group {
             if list.isBento { bentoScroll } else if isGrid { gridScroll } else { lineScroll }
         }
-        .modifier(SpotScrollEdgeTracker(edges: $edges))
-        .mask(edgeFade)
+        .modifier(RowsFade(bottom: Self.bottomFade))
         .padding(.vertical, -SpotTokens.padding)
     }
 
@@ -137,6 +135,7 @@ struct SpotRowsView: View {
                 let item = list.shown[index]
                 if let template = list.template(of: item) {
                     SpotTemplateRow(item: item, template: template, size: CGSize(width: side, height: side), place: "1x1") { onSlot(item, $0, $1) }
+                        .equatable()
                         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
                         .contentShape(row)
                         .onTapGesture { onRun(item) }
@@ -152,16 +151,6 @@ struct SpotRowsView: View {
         .overlay(alignment: .topLeading) { GridRing(selection: selected, count: list.shown.count, perLine: list.perLine, side: side) }
     }
 
-    private var edgeFade: some View {
-        VStack(spacing: 0) {
-            LinearGradient(colors: [.black.opacity(1 - edges.top), .black], startPoint: .top, endPoint: .bottom)
-                .frame(height: SpotTokens.padding)
-            Color.black
-            LinearGradient(colors: [.black, .black.opacity(1 - edges.bottom)], startPoint: .top, endPoint: .bottom)
-                .frame(height: Self.bottomFade)
-        }
-    }
-
     /// A row that its template draws. A press outside its controls picks it.
     private func templateRow(_ item: SpotItem, template: RowTemplate) -> some View {
         let height = SpotTokens.listRowHeight(span: template.span)
@@ -170,6 +159,7 @@ struct SpotRowsView: View {
             template: template,
             size: CGSize(width: SheetPlacement.width - 2 * SpotTokens.padding, height: height - 8)
         ) { onSlot(item, $0, $1) }
+        .equatable()
         .padding(.horizontal, SpotTokens.padding)
         .frame(height: height)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
@@ -216,6 +206,7 @@ struct SpotRowsView: View {
         Group {
             if let template = list.template(of: item) {
                 SpotTemplateRow(item: item, template: template, size: size, place: place) { onSlot(item, $0, $1) }
+                    .equatable()
             } else {
                 SpotItemIcon(item: item, size: min(size.width, size.height) * 0.5)
                     .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: min(size.width, size.height) * 0.5) }
@@ -263,6 +254,27 @@ struct SpotRowsView: View {
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .modifier(RowRing(run: item.run, selectedRun: selectedRun, shape: row))
         .contentShape(row)
+    }
+}
+
+/// The fade at each end of the rows as they scroll. It alone holds how far each end fades, so that a scroll near an end
+/// reruns no row.
+private struct RowsFade: ViewModifier {
+    let bottom: CGFloat
+    @State private var edges = SpotScrollEdges()
+
+    func body(content: Content) -> some View {
+        content
+            .modifier(SpotScrollEdgeTracker(edges: $edges))
+            .mask {
+                VStack(spacing: 0) {
+                    LinearGradient(colors: [.black.opacity(1 - edges.top), .black], startPoint: .top, endPoint: .bottom)
+                        .frame(height: SpotTokens.padding)
+                    Color.black
+                    LinearGradient(colors: [.black, .black.opacity(1 - edges.bottom)], startPoint: .top, endPoint: .bottom)
+                        .frame(height: bottom)
+                }
+            }
     }
 }
 

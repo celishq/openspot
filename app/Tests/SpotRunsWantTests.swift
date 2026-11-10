@@ -49,6 +49,19 @@ final class SpotRunsWantTests: SpotRunsCase {
         try await wait("the values") { self.runs.sheets["onpanel"]?.reading.value?.title == "P" && self.runs.sheets["onsheet"]?.reading.value?.title == "S" }
     }
 
+    func testAWidgetThatAScanAddsWhileThePanelIsOpenStartsTheStayingScriptItPlaces() async throws {
+        try script("stayer", header: "stay=true\nread=sheet", "while IFS= read -r line; do :; done")
+        _ = try scanned()
+        runs.panelOpened()
+        try await pause(0.2)
+        XCTAssertFalse(exists("pids"))
+
+        try "[[widgets]]\ntitle = \"W\"\ngrid = [\"a a a a\"]\nplaces = { a = \"stayer\" }\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
+        _ = try scanned()
+
+        try await wait("the start of the placed script") { self.exists("pids") }
+    }
+
     func testASpotComponentOfACardMakesTheOpenPanelReadThatSpot() async throws {
         try script("card", header: "read=panel\nshortcut=c", log: "card", "printf 'grid.wide=heat\\n\\nspot=heat\\n'")
         try script("heat", header: "read=300", log: "heat", "printf 'text=t\\ntitle=41°\\n'")

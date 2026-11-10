@@ -65,7 +65,7 @@ final class SheetStreamTests: XCTestCase {
         let url = try script("printf 'text=a\\ntitle=A\\n'")
         var frames: [String] = []
 
-        for try await frame in try ScriptProcess(url: url, limit: 5).start() { frames.append(frame) }
+        for try await frame in ScriptProcess(url: url, limit: 5).start() { frames.append(frame) }
 
         XCTAssertEqual(frames, ["text=a\ntitle=A\n"])
     }
@@ -74,7 +74,7 @@ final class SheetStreamTests: XCTestCase {
         let url = try script("printf 'text=a\\n---\\n'\nsleep 30")
         let started = Date()
 
-        for try await frame in try ScriptProcess(url: url, limit: 5).start() {
+        for try await frame in ScriptProcess(url: url, limit: 5).start() {
             XCTAssertEqual(frame, "text=a\n")
             break
         }
@@ -86,7 +86,7 @@ final class SheetStreamTests: XCTestCase {
         let marker = folder.appendingPathComponent("alive")
         let url = try script("printf 'text=a\\n---\\n'\nsleep 0.3\ntouch '\(marker.path)'")
 
-        for try await _ in try ScriptProcess(url: url, limit: 5).start() { break }
+        for try await _ in ScriptProcess(url: url, limit: 5).start() { break }
         try await Task.sleep(for: .seconds(0.5))
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))
@@ -97,11 +97,11 @@ final class SheetStreamTests: XCTestCase {
         let gate = "n=0; while [ ! -f '\(release)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done"
         let silent = try script("sleep 30", name: "silent")
         let slow = try script("printf 'text=a\\n---\\n'\n\(gate)\nprintf 'text=b\\n---\\n'", name: "slow")
-        var frames = try ScriptProcess(url: slow, limit: 1.5).start().makeAsyncIterator()
+        var frames = ScriptProcess(url: slow, limit: 1.5).start().makeAsyncIterator()
         let first = try await frames.next()
 
         do {
-            for try await _ in try ScriptProcess(url: silent, limit: 1.5).start() {}
+            for try await _ in ScriptProcess(url: silent, limit: 1.5).start() {}
             XCTFail("It should time out.")
         } catch {
             XCTAssertEqual(error as? PluginError, .timedOut)
@@ -164,7 +164,7 @@ final class SheetStreamTests: XCTestCase {
         done
         """)
         let live = ScriptProcess(url: url, mode: .stays, limit: 5)
-        var frames = try live.start().makeAsyncIterator()
+        var frames = live.start().makeAsyncIterator()
 
         live.send(.read, id: 1)
         let first = try await frames.next()
@@ -179,7 +179,7 @@ final class SheetStreamTests: XCTestCase {
     func testAScriptThatIgnoresTheEndOfItsInputIsStopped() async throws {
         let url = try script("trap '' HUP\n\(String.longLoop)")
         let live = ScriptProcess(url: url, mode: .stays, limit: 5, stopPause: 0.2)
-        _ = try live.start()
+        _ = live.start()
 
         live.end()
         try await wait(until: { !live.isRunning })
