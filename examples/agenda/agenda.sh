@@ -5,12 +5,50 @@
 # shortcut=d
 # size=large
 # read=panel,60,wake
+# settings=calendars:Calendars:calendar
 . "$OPENSPOT_SH"
 
-hidden=$(openspot setting get --spot "${OPENSPOT_ID%/*}/calendars" hidden </dev/null)
+hidden=$(openspot setting get calendars </dev/null)
 
-# Prints a --hide flag for each calendar and list that Calendars for Agenda hides.
+# Prints a --hide flag for each calendar and list that the person hides in the calendars setting.
 hides() { for id in $hidden; do printf -- '--hide %s ' "$id"; done; }
+
+# Turns each calendar or list of the ids on or off, and keeps the ids of the hidden ones in the calendars setting.
+toggle() {
+  for id in "$@"; do
+    next=""
+    found=""
+    for each in $hidden; do
+      if [ "$each" = "$id" ]; then found=1; else next="$next $each"; fi
+    done
+    [ -n "$found" ] || next="$next $id"
+    hidden=${next# }
+  done
+  if [ -n "$hidden" ]; then
+    openspot setting set calendars "$hidden" </dev/null
+  else
+    openspot setting set calendars </dev/null
+  fi
+}
+
+# Prints the form that picks the calendars and lists that Agenda shows, with a checkmark on each shown one.
+calendars_form() {
+  calendars=$(openspot calendar calendars </dev/null) || { printf '%s\n' "$calendars"; exit 1; }
+  lists=$(openspot reminders lists </dev/null) || { printf '%s\n' "$lists"; exit 1; }
+  printf 'title=Calendars\n\nchoice=calendars\ntitle=Calendars\ntype=multiple\n'
+  { printf '%s\n' "$calendars" | sed 's/^row=/row=calendar /'; printf '\n'; printf '%s\n' "$lists" | sed 's/^row=/row=list.bullet /'; } |
+    awk -v hidden=" $hidden " 'BEGIN { RS = ""; FS = "\n" }
+      /^row=/ {
+        split(substr($1, 5), head, " ")
+        title = ""; account = ""
+        for (i = 2; i <= NF; i++) {
+          if ($i ~ /^title=/) title = substr($i, 7)
+          if ($i ~ /^detail=/) account = substr($i, 8)
+        }
+        printf "option=%s:%s · %s:%s\n", head[2], title, account, head[1]
+        if (!index(hidden, " " head[2] " ")) printf "value=%s\n", head[2]
+      }'
+}
 
 events() { openspot calendar events --days 2 $(hides) </dev/null; }
 reminders() { openspot reminders due --days 2 $(hides) </dev/null; }
@@ -116,7 +154,7 @@ case "$1" in
     card
     printf 'repeat=items\n\ntemplate=reminder\ngrid=done\nswitch=done\ndone.look=tick\n\n'
     printf 'button=open\ntitle=Open\n\nbutton=join\ntitle=Join call\nshortcut=cmd+j\nclose=true\n\n'
-    printf 'button=tick\ntitle=Mark as done\nshortcut=cmd+shift+c\n\n'
+    printf 'button=tick\ntitle=Mark as done\nshortcut=cmd+shift+c\n\nbutton=calendars\ntitle=Choose calendars\nform=true\nscope=command\n\n'
     if [ -n "$2" ]; then
       adding reminders "$2" reminder 'Add reminder'
       adding calendar "$2" event 'Add event'
@@ -141,6 +179,11 @@ case "$1" in
     esac
     ;;
   done) openspot reminders done "$2" "$3" </dev/null ;;
+  calendars)
+    picked=$(value calendars)
+    [ -z "$picked" ] || toggle $picked
+    calendars_form
+    ;;
   tick)
     state=$(reminders | awk -v id="$2" 'BEGIN { RS = ""; FS = "\n" } $1 == "row=" id { for (i = 2; i <= NF; i++) if ($i ~ /^done=/) print substr($i, 6) }')
     to=true

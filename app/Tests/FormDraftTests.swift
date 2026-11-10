@@ -92,6 +92,12 @@ final class FormDraftTests: XCTestCase {
         XCTAssertNil(FormDraft(form: try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=A\n\nchoice=one\ntitle=A\noption=a\noption=b\n")))).selectingAll())
     }
 
+    func testAnOptionKeepsEachColonOfItsTitleBeforeItsIcon() throws {
+        let form = try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=A\n\nchoice=c\ntitle=A\noption=a:Team: Design:calendar\noption=b:B\noption=c\n")))
+
+        XCTAssertEqual(form.fields[0].options, [.init(id: "a", title: "Team: Design", icon: "calendar"), .init(id: "b", title: "B"), .init(id: "c", title: "c")])
+    }
+
     func testAFormWithAChoiceAndAFieldKeepsItsControls() throws {
         let form = try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=Editor\n\nchoice=editor\ntitle=Editor\noption=a:A\n\nfield=note\ntitle=Note\n")))
 

@@ -1,8 +1,8 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Agenda and Calendars for Agenda examples with their real scripts and a stand-in for the openspot command, which
-/// logs each call with its reason and its stdin.
+/// Proves the Agenda example with its real script and a stand-in for the openspot command, which logs each call with its
+/// reason and its stdin.
 final class AgendaExampleTests: SamplePluginsCase {
     private var examples: URL {
         URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("examples")
@@ -144,7 +144,7 @@ final class AgendaExampleTests: SamplePluginsCase {
             XCTAssertEqual(output.errors, [])
             let calls = try self.calls(in: folder)
             XCTAssertEqual(calls.map { $0.split(separator: "|", omittingEmptySubsequences: false)[1] }, [
-                "setting get --spot agenda/calendars hidden", "calendar events --days 2", "reminders due --days 2"
+                "setting get calendars", "calendar events --days 2", "reminders due --days 2"
             ])
             XCTAssertTrue(calls.allSatisfy { $0.hasSuffix("|") }, "a call took stdin: \(calls)")
         }
@@ -167,7 +167,7 @@ final class AgendaExampleTests: SamplePluginsCase {
             XCTAssertEqual(tick.look, .tick)
             XCTAssertEqual(tick.control, .toggle(true))
             XCTAssertEqual(tick.title, "Take pills")
-            XCTAssertEqual(output.actions.map(\.id), ["join", "tick"])
+            XCTAssertEqual(output.actions.map(\.id), ["join", "tick", "calendars"])
             XCTAssertEqual(output.primary, "Open")
         }
     }
@@ -289,54 +289,62 @@ final class AgendaExampleTests: SamplePluginsCase {
         }
     }
 
-    func testAgendaHidesTheCalendarsAndListsThatCalendarsForAgendaHides() async throws {
+    func testAgendaHidesTheCalendarsAndListsOfItsCalendarsSetting() async throws {
         let agenda = try example("Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
-            try "A8E2 7D10".write(to: folder.appendingPathComponent("setting-hidden"), atomically: true, encoding: .utf8)
+            try "A8E2 7D10".write(to: folder.appendingPathComponent("setting-calendars"), atomically: true, encoding: .utf8)
 
             _ = try await agenda.items(timeout: 5)
 
             XCTAssertEqual(try self.calls(in: folder).map { $0.split(separator: "|", omittingEmptySubsequences: false)[1] }, [
-                "setting get --spot agenda/calendars hidden", "calendar events --days 2 --hide A8E2 --hide 7D10", "reminders due --days 2 --hide A8E2 --hide 7D10"
+                "setting get calendars", "calendar events --days 2 --hide A8E2 --hide 7D10", "reminders due --days 2 --hide A8E2 --hide 7D10"
             ])
         }
     }
 
-    func testCalendarsForAgendaListsBothKindsWithACheckmarkOnEachShownOneAndAPickHidesOrShowsOne() async throws {
-        let calendars = try example("Calendars for Agenda")
+    func testTheCalendarsSettingPicksEachShownCalendarAndListAndAPickHidesOrShowsOne() async throws {
+        let agenda = try example("Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
-            try "B1".write(to: folder.appendingPathComponent("setting-hidden"), atomically: true, encoding: .utf8)
+            try "B1".write(to: folder.appendingPathComponent("setting-calendars"), atomically: true, encoding: .utf8)
+            let calendars = SpotAction.action(CommandAction(id: "calendars", title: "Choose calendars"), item: nil)
 
-            let output = try await calendars.items(timeout: 5)
-            XCTAssertEqual(output.items.map(\.run), ["A8E2", "B1", "7D10"])
-            XCTAssertEqual(output.items.map(\.subtitle), ["Calendar · iCloud", "Calendar · On My Mac", "Reminders · iCloud"])
-            XCTAssertEqual(output.items.map(\.iconText), ["calendar", "calendar", "list.bullet"])
-            XCTAssertEqual(output.items.map(\.isOn), [true, false, true])
-            XCTAssertEqual(output.primary, "Select")
+            let first = try await SpotRuns().answer(of: agenda, calendars, limit: 5)
+            let form = try XCTUnwrap(ItemForm(output: PluginOutput(text: first)))
+            let choice = try XCTUnwrap(form.soleChoice)
+            XCTAssertEqual(agenda.settings.map(\.id), ["calendars"])
+            XCTAssertEqual(agenda.settings.first?.icon, "calendar")
+            XCTAssertEqual(choice.options.map(\.id), ["A8E2", "B1", "7D10"])
+            XCTAssertEqual(choice.options.map(\.title), ["Work · iCloud", "Home · On My Mac", "Family · iCloud"])
+            XCTAssertEqual(choice.options.map(\.icon), ["calendar", "calendar", "list.bullet"])
+            XCTAssertEqual(choice.picks, ["A8E2", "7D10"])
 
-            try await calendars.perform(.item(SpotItem(title: "Family", run: "7D10")), timeout: 5)
-            XCTAssertEqual(try self.read("setting-hidden", in: folder), "B1 7D10")
-            try await calendars.perform(.item(SpotItem(title: "Home", run: "B1")), timeout: 5)
-            XCTAssertEqual(try self.read("setting-hidden", in: folder), "7D10")
-            try await calendars.perform(.item(SpotItem(title: "Family", run: "7D10")), timeout: 5)
-            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("setting-hidden").path))
+            let after = try await SpotRuns().answer(of: agenda, calendars, input: "calendars=7D10\n", limit: 5)
+            XCTAssertEqual(try self.read("setting-calendars", in: folder), "B1 7D10")
+            XCTAssertEqual(ItemForm(output: PluginOutput(text: after))?.soleChoice?.picks, ["A8E2"])
+            _ = try await SpotRuns().answer(of: agenda, calendars, input: "calendars=B1\n", limit: 5)
+            XCTAssertEqual(try self.read("setting-calendars", in: folder), "7D10")
+            _ = try await SpotRuns().answer(of: agenda, calendars, input: "calendars=7D10\n", limit: 5)
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("setting-calendars").path))
         }
     }
 
-    func testSelectAllShowsEachCalendarAndList() async throws {
-        let calendars = try example("Calendars for Agenda")
+    func testSelectAllInTheCalendarsSettingShowsEachCalendarAndList() async throws {
+        let agenda = try example("Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
-            try "B1 7D10".write(to: folder.appendingPathComponent("setting-hidden"), atomically: true, encoding: .utf8)
-            let actions = try await calendars.items(timeout: 5).actions
-            let all = try XCTUnwrap(actions.first { $0.id == "all" })
+            try "B1 7D10".write(to: folder.appendingPathComponent("setting-calendars"), atomically: true, encoding: .utf8)
+            let calendars = SpotAction.action(CommandAction(id: "calendars", title: "Choose calendars"), item: nil)
+            let first = try await SpotRuns().answer(of: agenda, calendars, limit: 5)
+            let form = try XCTUnwrap(ItemForm(output: PluginOutput(text: first)))
+            let all = try XCTUnwrap(FormDraft(form: form).selectingAll())
 
-            try await calendars.perform(.action(all, item: nil), timeout: 5)
+            let after = try await SpotRuns().answer(of: agenda, calendars, input: all.text, limit: 5)
 
-            XCTAssertEqual(all.title, "Select all")
-            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("setting-hidden").path))
+            XCTAssertEqual(all.values["calendars"], "B1\n7D10")
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("setting-calendars").path))
+            XCTAssertEqual(ItemForm(output: PluginOutput(text: after))?.soleChoice?.picks, ["A8E2", "B1", "7D10"])
         }
     }
 }

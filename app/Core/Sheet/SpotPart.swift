@@ -138,10 +138,13 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         )
     }
 
-    /// Reads an `option` line, `<id>:<title>[:<icon>]`, or an id that is its own title.
+    /// Reads an `option` line, `<id>:<title>[:<icon>]`, or an id that is its own title. The icon follows the last colon, so
+    /// a title with an icon keeps each colon of its own.
     static func option(_ text: String) -> Option {
-        let parts = text.split(separator: ":", maxSplits: 2).map(String.init)
-        return Option(id: parts[0], title: parts.count > 1 ? parts[1] : parts[0], icon: parts.count > 2 ? parts[2] : nil)
+        guard let first = text.firstIndex(of: ":") else { return Option(id: text, title: text) }
+        let rest = text[text.index(after: first)...]
+        guard let last = rest.lastIndex(of: ":") else { return Option(id: String(text[..<first]), title: String(rest)) }
+        return Option(id: String(text[..<first]), title: String(rest[..<last]), icon: String(rest[rest.index(after: last)...]))
     }
 
     /// The value of its control, as the script reads it. A line with no control has none.
