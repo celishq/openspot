@@ -98,7 +98,7 @@ key = "ctrl+option+p"
 ```
 
 A key with no `command` floats its tool: its sheet, or its card, opens in a small window at the pointer and stays there
-while you work in other apps. Settings lists a Float row for each tool. `key = "shake"` takes a quick shake of the pointer
+while you work in other apps, until the same key closes it. Settings lists a Float row for each tool. `key = "shake"` takes a quick shake of the pointer
 in place of a key, so that a shake while you drag files opens Shelf under them:
 
 ```text

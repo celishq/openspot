@@ -76,13 +76,20 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertEqual(model.sheets["list"]?.list.shown.first?.title, "sheet")
     }
 
-    func testTheSameKeyAgainBringsTheOneFloatToThePointer() async throws {
+    func testTheSameKeyAgainClosesTheFloatAndDuringADragBringsItToThePointer() async throws {
         try await floatList()
 
+        host.isMouseDown = true
         model.press(try key("list"))
 
         XCTAssertEqual(host.floats, ["list", "list"])
         XCTAssertEqual(model.runs.floating, ["list"])
+
+        host.isMouseDown = false
+        model.press(try key("list"))
+
+        XCTAssertEqual(host.landings, ["list"])
+        XCTAssertEqual(model.runs.floating, [])
     }
 
     func testTheKeysOfAFloatMoveThePickAndCloseIt() async throws {

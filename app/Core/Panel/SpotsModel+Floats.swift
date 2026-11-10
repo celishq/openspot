@@ -2,10 +2,15 @@ import Foundation
 
 /// The floats: spots that show in windows of their own at the pointer, apart from the panel (W1–W9).
 extension SpotsModel {
-    /// Floats a spot, or brings its float to the pointer when it floats (W6). A spot whose kind comes from its first answer
-    /// floats once that answer arrives.
+    /// Floats a spot, or closes its float when it floats. While a drag holds the mouse button, it brings the float to the
+    /// pointer instead, where the drag needs it (W6). A spot whose kind comes from its first answer floats once that answer
+    /// arrives.
     public func float(_ id: String) {
         guard let entry = cards.first(where: { $0.id == id && $0.kind != .widget }) else { return }
+        if runs.floating.contains(id), !host.isMouseDown {
+            land(id)
+            return
+        }
         if let sheet = sheets[id], sheet.awaitsAnswer, !runs.floating.contains(id) {
             sheet.afterAnswer { [weak self] in self?.float(id) }
             return
