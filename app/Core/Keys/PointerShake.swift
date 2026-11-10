@@ -4,7 +4,7 @@ import Foundation
 /// One shake fires once, and a shake that goes on fires again only after a rest.
 public struct PointerShake: Sendable {
     /// The turns that make a shake.
-    static let turns = 4
+    static let turns = 5
     /// The least way in points between two turns.
     static let leg: CGFloat = 40
     /// The most seconds that the turns of one shake take.
