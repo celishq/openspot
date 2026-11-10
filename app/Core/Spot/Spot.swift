@@ -19,6 +19,8 @@ public struct Spot: Equatable, Sendable {
     public private(set) var pickForm: CommandAction?
     /// Whether its rows join the main search.
     public let isGlobal: Bool
+    /// Whether the main search finds the spot itself. A header with `global=rows` offers only its rows.
+    public let isFound: Bool
     /// Its place in the grid before the person's choice: a lower number first. The person's newest file comes first.
     public private(set) var order: Int
     public private(set) var keepsRecent = true
@@ -72,6 +74,7 @@ public struct Spot: Equatable, Sendable {
         read: SpotRead? = nil,
         pick: ItemPick = .close,
         isGlobal: Bool = false,
+        isFound: Bool = true,
         order: Int = 0,
         primary: String? = nil,
         actions: [CommandAction] = [],
@@ -105,6 +108,7 @@ public struct Spot: Equatable, Sendable {
         self.read = read
         self.pick = pick
         self.isGlobal = isGlobal
+        self.isFound = isFound
         self.order = order
         self.primary = primary
         self.actions = actions
@@ -136,11 +140,6 @@ public struct Spot: Equatable, Sendable {
     /// The picture its header names in place of its symbol: its image, or else the icon of its file.
     public var icon: FileIcon? {
         image.map(FileIcon.image) ?? file.map(FileIcon.init(path:))
-    }
-
-    /// Whether the main search finds the spot itself. A global spot with no card on the grid offers only its rows.
-    public var isFound: Bool {
-        !isGlobal || headerState.isOnGrid
     }
 
     /// The sizes a person can prefer for its card. A widget has the size of its layout, and Updates needs room for its words.

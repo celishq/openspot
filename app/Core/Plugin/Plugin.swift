@@ -45,7 +45,7 @@ public struct Plugin: Equatable, Sendable {
         }
         let sizeName = header.value("size") ?? "wide"
         guard let size = SpotSize(name: sizeName) else { throw PluginError.fault("\(name) has an unknown size: \(sizeName)") }
-        let isGlobal = header.flag("global") ?? false
+        let isGlobal = header.value("global") == "rows" || header.flag("global") == true
         if isGlobal {
             guard read?.has(.panel) == true || read?.has(.launch) == true || read?.seconds != nil else {
                 throw PluginError.fault("\(name) needs panel, launch or a number in its read to join the main search")
@@ -78,6 +78,7 @@ public struct Plugin: Equatable, Sendable {
             key: try Self.key(header.value("shortcut"), of: name),
             read: read,
             isGlobal: isGlobal,
+            isFound: header.value("global") != "rows",
             stays: stays,
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             isTray: isTray,

@@ -14,18 +14,23 @@ final class PluginHeaderTests: XCTestCase {
         XCTAssertTrue(command.hasSpot)
     }
 
-    func testAGlobalScriptWithNoKeyHasNoCardOnTheGridAndOnlyItsRowsAreFound() throws {
+    func testAGlobalScriptWithNoKeyHasNoCardOnTheGridAndGlobalRowsKeepsItOutOfTheMainSearch() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-grid-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         let searchOnly = folder.appendingPathComponent("search.sh"), keyed = folder.appendingPathComponent("keyed.sh")
+        let rowsOnly = folder.appendingPathComponent("rows.sh")
         try "#!/bin/sh\n# read=panel\n# global=true\n".writeScript(to: searchOnly)
         try "#!/bin/sh\n# read=panel\n# global=true\n# shortcut=k\n".writeScript(to: keyed)
+        try "#!/bin/sh\n# read=panel\n# global=rows\n".writeScript(to: rowsOnly)
 
-        XCTAssertFalse(try XCTUnwrap(try Plugin(file: searchOnly, id: "search")?.commands.first).headerState.isOnGrid)
+        let search = try XCTUnwrap(try Plugin(file: searchOnly, id: "search")?.commands.first)
+        let rows = try XCTUnwrap(try Plugin(file: rowsOnly, id: "rows")?.commands.first)
+        XCTAssertFalse(search.headerState.isOnGrid)
         XCTAssertTrue(try XCTUnwrap(try Plugin(file: keyed, id: "keyed")?.commands.first).headerState.isOnGrid)
-        XCTAssertFalse(try XCTUnwrap(try Plugin(file: searchOnly, id: "search")?.commands.first).isFound)
-        XCTAssertTrue(try XCTUnwrap(try Plugin(file: keyed, id: "keyed")?.commands.first).isFound)
+        XCTAssertTrue(search.isFound)
+        XCTAssertTrue(rows.isGlobal)
+        XCTAssertFalse(rows.isFound)
     }
 
     func testReadsTheCommentLinesUnderTheFirstLine() {

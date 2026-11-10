@@ -516,6 +516,31 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.map(\.id), ["other"])
     }
 
+    func testTheGridSearchFindsAGlobalSpotWithNoKeyBesideARowOfTheSameName() async throws {
+        try script("apps", header: "title=Apps\nread=panel\nglobal=true\nshortcut=a", "printf 'row=shortcuts\\ntitle=Shortcuts\\n'")
+        try script("shortcuts", header: "title=Shortcuts\nread=panel\nglobal=true", "printf 'row=daily\\ntitle=Daily\\n'")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+
+        model.searchText = "shortcuts"
+
+        try await wait("the row of the app") { model.visible.contains { $0.id == "apps\nshortcuts" } }
+        XCTAssertEqual(model.visible.map(\.id), ["shortcuts", "apps\nshortcuts"])
+    }
+
+    func testTheGridSearchFindsOnlyTheRowsOfASpotWhoseHeaderSaysGlobalRows() async throws {
+        try script("settings", header: "title=System Settings\nread=panel\nglobal=rows", "printf 'row=sound\\ntitle=Sound Settings\\n'")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+
+        model.searchText = "settings"
+
+        try await wait("the row") { model.visible.contains { $0.id == "settings\nsound" } }
+        XCTAssertEqual(model.visible.map(\.id), ["settings\nsound"])
+    }
+
     func testAKeyShowsTheSymbolOfItsCommandOrElseOfItsScriptForAMoment() async throws {
         try script("move", header: "icon=macwindow\ncommand=left:Left side:rectangle.lefthalf.inset.filled\ncommand=plain:Plain", "true")
         model.reload()
