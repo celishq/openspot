@@ -769,6 +769,7 @@ public final class SpotRun {
     /// itself, or the frame that ends a call of a staying script. A read's answer replaces all that the spot shows, and a
     /// search's answer replaces its rows (02, Y7).
     func takeAnswer(_ lines: PluginOutput, frame: String, to ask: Ask) async {
+        let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: lines.search) } else { nil }
         lastAnswer = lines.withoutBlocks()
         report(toastOf: lines)
         command = command.taking(lines)
@@ -782,7 +783,7 @@ public final class SpotRun {
             changeList {
                 $0.take(search: lines.search)
                 $0.take(drawing: lines.drawing, templates: lines.templates)
-                $0.replace(lines.items)
+                if let next { $0.replace(next) }
                 if let kept { $0.select(run: kept) }
             }
             if showsSheet || panel != nil { takePanel(lines, generation: generation) }
@@ -811,6 +812,7 @@ public final class SpotRun {
     /// printed by itself. It changes only what it prints (02, Y7): the value when it prints the main component, the rows, the
     /// parts, and the control of the card. Only a later frame of a read changes the spot's words.
     func takeUpdate(_ lines: PluginOutput, frame: String, from source: Source) async {
+        let next = lines.items.isEmpty ? nil : await newRows(lines.items, search: rows.search)
         report(toastOf: lines)
         if let main = lastAnswer?.value?.fields.first?.value, lines.value?.fields.first?.value == main, let value = MetricValue(output: lines) {
             changeReading { $0.take(value) }
@@ -820,7 +822,7 @@ public final class SpotRun {
         } else {
             state = keepingLevel(state.taking(lines))
         }
-        if !lines.items.isEmpty { list.replace(lines.items) }
+        if let next { list.replace(next) }
         if showsSheet {
             switch source {
             case .read: panel?.merge(lines, keeping: editing)
@@ -830,6 +832,13 @@ public final class SpotRun {
         onReport(.frame(frame))
         guard !lines.items.isEmpty else { return }
         await preparePictures()
+    }
+
+    /// Fresh rows compared with the rows of the list and indexed off the main thread, so that the main thread takes them in
+    /// one write.
+    private func newRows(_ items: [SpotItem], search: ItemSearch) async -> ItemList.Rows {
+        let list = rows
+        return await Task.detached(priority: .userInitiated) { list.ready(items, search: search) }.value
     }
 
     /// Makes the pictures of the list ready: the first screen of its rows, and the colour glyphs of all of them.

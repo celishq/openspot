@@ -13,6 +13,39 @@ final class ItemListTests: XCTestCase {
         XCTAssertEqual(list.shown.count, 6000)
     }
 
+    func testRowsReadiedFromTheRowsOfAListReplaceThemAsAnAnswerDoes() {
+        var list = ItemList(items: items("Safari", "Slack"))
+        list.search("s")
+        var answered = list
+
+        list.replace(list.ready(items("Signal", "Notes", "Safari"), search: .local))
+        answered.replace(items("Signal", "Notes", "Safari"))
+
+        XCTAssertEqual(list, answered)
+        XCTAssertEqual(Set(list.shown.map(\.title)), ["Signal", "Notes", "Safari"])
+    }
+
+    func testRowsReadiedFromRowsThatTheListNoLongerHoldsAreComparedAgain() {
+        var list = ItemList(items: items("Safari"))
+        let readied = list.ready(items("Slack"), search: .local)
+
+        list.replace(items("Notes"))
+        list.replace(readied)
+
+        XCTAssertEqual(list.shown.map(\.title), ["Slack"])
+        XCTAssertEqual(list, ItemList(items: items("Slack")))
+    }
+
+    func testTheSameRowsReadiedLeaveTheListAsItWas() {
+        var list = ItemList(items: items("Safari", "Slack"))
+        list.move(by: 1)
+        let before = list
+
+        list.replace(list.ready(items("Safari", "Slack"), search: .local))
+
+        XCTAssertEqual(list, before)
+    }
+
     func testTypingAndDeletingShowsTheRowsOfAFreshSearch() {
         let rows = [
             SpotItem(title: "Smiling Face", run: "1", glyph: "😊", keywords: ["happy", "smile"]),

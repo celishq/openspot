@@ -116,15 +116,38 @@ public struct ItemList: Equatable, Sendable {
         hasFailed = true
     }
 
+    /// Fresh items made ready for a list: the rows they were compared with, and the index of their searched texts when they
+    /// differ from those rows.
+    public struct Rows: Sendable {
+        fileprivate let items: [SpotItem]
+        fileprivate let base: [SpotItem]
+        fileprivate let search: ItemSearch
+        fileprivate let index: SearchIndex?
+    }
+
+    /// Compares fresh items with its rows, and indexes them for this search when they differ. It changes nothing, so that it
+    /// can run on any thread while the list goes on.
+    public func ready(_ items: [SpotItem], search: ItemSearch) -> Rows {
+        guard items != all else { return Rows(items: all, base: all, search: search, index: nil) }
+        return Rows(items: items, base: all, search: search, index: search == .local ? SearchIndex(items) : SearchIndex())
+    }
+
     /// Takes fresh items, and folds them only when they differ. A selection at the top stays at the top, and any other stays
     /// on its item when it is still there.
     public mutating func replace(_ items: [SpotItem]) {
+        replace(ready(items, search: search))
+    }
+
+    /// Takes rows made ready from its own rows, as `replace` takes items. Rows made ready from rows or a search that it no
+    /// longer holds are compared again.
+    public mutating func replace(_ rows: Rows) {
+        guard rows.base == all, rows.search == search else { return replace(ready(rows.items, search: search)) }
         let run = selectedItem?.run
         isLoading = false
         hasFailed = false
-        if items != all {
-            all = items
-            reindex()
+        if let index = rows.index {
+            all = rows.items
+            searchIndex = index
             narrowings = []
             refresh()
         }
