@@ -96,6 +96,7 @@
 		433CF6740190BC31E3E431E6 /* SpotRunsCallTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72638E1D79E36A1B4B4F9038 /* SpotRunsCallTests.swift */; };
 		44310F4DD46AC0D504A7FA8A /* SpotPart.swift in Sources */ = {isa = PBXBuildFile; fileRef = B41E3A3622B1C878BA66526E /* SpotPart.swift */; };
 		46337BB202C17DEA659CDCF1 /* SnippetsPluginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7D64D0B28ACF006D121C8B4 /* SnippetsPluginTests.swift */; };
+		4755F6B467F9E2F5BA9FDFDE /* AgendaID.swift in Sources */ = {isa = PBXBuildFile; fileRef = D933901CF934E23A2E0B19C2 /* AgendaID.swift */; };
 		47DA4466694B28C3F3ACD4FA /* ScreenInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = E67E13CFE4B49E14BA385775 /* ScreenInput.swift */; };
 		47EBA99BEED435232B58DC04 /* SpotSandboxModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDBE21A8D855CE6229E4AC1C /* SpotSandboxModel.swift */; };
 		49544FDDF533503D88DF6010 /* Toast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B8A23A7BADF6488184FC557 /* Toast.swift */; };
@@ -680,6 +681,7 @@
 		D8537B2D6978D8BD23935625 /* AppUpdate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdate.swift; sourceTree = "<group>"; };
 		D85AD5EC56456D478327C3F4 /* SearchPromptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPromptTests.swift; sourceTree = "<group>"; };
 		D880CE78C17279A773F315C7 /* SwiftProgramTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftProgramTests.swift; sourceTree = "<group>"; };
+		D933901CF934E23A2E0B19C2 /* AgendaID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgendaID.swift; sourceTree = "<group>"; };
 		D979AA33BA3AF2AA448F7AA6 /* FirstLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstLaunchTests.swift; sourceTree = "<group>"; };
 		DA8F981AACA0636A82B3B23F /* SpotSelectionRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSelectionRing.swift; sourceTree = "<group>"; };
 		DAB3C463D807C5294C4367A9 /* SpotRoundButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRoundButton.swift; sourceTree = "<group>"; };
@@ -1065,6 +1067,7 @@
 				48DFB7B1C1FA135A101D27D5 /* AgendaClock.swift */,
 				71A3860C757B0C250CAB7093 /* AgendaEntry.swift */,
 				535E0F2E5FC65A9E4EF62E87 /* AgendaEvent.swift */,
+				D933901CF934E23A2E0B19C2 /* AgendaID.swift */,
 				2B060241541CDFD071EDF05B /* AgendaKind.swift */,
 				E86836C0A6B04FEDB50A245F /* AgendaList.swift */,
 				42E88CD6ED74E37CB2D1E779 /* AgendaReminder.swift */,
@@ -1664,6 +1667,7 @@
 				0A8FDE4282E98BA2113CEC2C /* AgendaClock.swift in Sources */,
 				B702F0BF261CBF229987BF8C /* AgendaEntry.swift in Sources */,
 				E2C0449A8B2D3CECFCCE0993 /* AgendaEvent.swift in Sources */,
+				4755F6B467F9E2F5BA9FDFDE /* AgendaID.swift in Sources */,
 				8828AD62B0EA9601EC577612 /* AgendaKind.swift in Sources */,
 				9B3C56785876EFAB905C6187 /* AgendaList.swift in Sources */,
 				7E78FA15CBEB9D678C7513D2 /* AgendaReminder.swift in Sources */,

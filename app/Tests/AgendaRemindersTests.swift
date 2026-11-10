@@ -96,7 +96,7 @@ final class AgendaRemindersTests: XCTestCase {
                 _ = try await agenda(store, isRead: false).done(id, true)
                 XCTFail("\(id) was ticked")
             } catch PluginError.failed(1, let message) {
-                XCTAssertEqual(message, "Openspot cannot find the reminder \(id). Read the list again, and use the id of one of its rows.")
+                XCTAssertEqual(message, "Openspot cannot find \(id). Read the list again, and use the id of one of its rows.")
             }
         }
         XCTAssertEqual(store.marks, [])

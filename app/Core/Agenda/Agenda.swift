@@ -55,33 +55,25 @@ public struct Agenda {
     /// Ticks the reminder with the id of its row, or opens it again, and prints nothing.
     public func done(_ id: String, _ isDone: Bool) async throws -> String {
         _ = try await isAllowed(.reminder)
-        let prefix = "reminder:"
-        guard id.hasPrefix(prefix), try store.mark(reminder: String(id.dropFirst(prefix.count)), done: isDone) else {
-            throw PluginError.failed(1, "Openspot cannot find the reminder \(id). Read the list again, and use the id of one of its rows.")
-        }
+        guard case .reminder(let reminder)? = AgendaID(id), try store.mark(reminder: reminder, done: isDone) else { throw Self.missing(id) }
         return ""
     }
 
     /// The link that opens Reminders on the reminder whose row has this id.
     public func link(of id: String) async throws -> URL {
         _ = try await isAllowed(.reminder)
-        let prefix = "reminder:"
-        guard id.hasPrefix(prefix), let reminder = store.reminder(String(id.dropFirst(prefix.count))),
-              let link = URL(string: "x-apple-reminderkit://REMCDReminder/\(reminder.id)") else {
-            throw PluginError.failed(1, "Openspot cannot find the reminder \(id). Read the list again, and use the id of one of its rows.")
-        }
+        guard case .reminder(let key)? = AgendaID(id), let reminder = store.reminder(key),
+              let link = URL(string: "x-apple-reminderkit://REMCDReminder/\(reminder.id)") else { throw Self.missing(id) }
         return link
     }
 
     /// The time of the event whose row has this id, on whose day Calendar opens.
     public func day(of id: String) async throws -> Date {
-        if id.hasPrefix("reminder:") {
-            throw PluginError.failed(1, "\(id) is a reminder. Run `openspot reminders show \(id)` to open it in Reminders.")
+        switch AgendaID(id) {
+        case .event(_, let start)?: return start
+        case .reminder?: throw PluginError.failed(1, "\(id) is a reminder. Run `openspot reminders show \(id)` to open it in Reminders.")
+        case nil: throw Self.missing(id)
         }
-        guard id.hasPrefix("event:"), id.contains("/"), let seconds = id.split(separator: "/").last.flatMap({ Double($0) }) else {
-            throw PluginError.failed(1, "Openspot cannot find \(id). Read the list again, and use the id of one of its rows.")
-        }
-        return Date(timeIntervalSince1970: seconds)
     }
 
     /// Adds an event from the words, and prints its row. A dry run prints the row it would add, with the id `event:new` (E5).
@@ -123,6 +115,10 @@ public struct Agenda {
             throw PluginError.failed(1, "Openspot found only a date in `\(trimmed(words))`. Add a title, such as `Lunch tomorrow 13:00`.")
         }
         return entry
+    }
+
+    private static func missing(_ id: String) -> PluginError {
+        PluginError.failed(1, "Openspot cannot find \(id). Read the list again, and use the id of one of its rows.")
     }
 
     private static func trimmed(_ words: String) -> String {

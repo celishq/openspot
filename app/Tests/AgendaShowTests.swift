@@ -54,7 +54,7 @@ final class AgendaShowTests: XCTestCase {
                 _ = try await agenda(store).link(of: id)
                 XCTFail("\(id) gave a link")
             } catch PluginError.failed(1, let message) {
-                XCTAssertEqual(message, "Openspot cannot find the reminder \(id). Read the list again, and use the id of one of its rows.")
+                XCTAssertEqual(message, "Openspot cannot find \(id). Read the list again, and use the id of one of its rows.")
             }
         }
     }
