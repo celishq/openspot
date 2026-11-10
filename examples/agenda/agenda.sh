@@ -77,9 +77,11 @@ card() {
     }'
 }
 
-# Prints the rows of the sheet: the events, and the reminders with a tick, each with the actions that fit it.
+# Prints the rows of the sheet: the events, and the reminders with a tick, each with the actions that fit it. With texts,
+# such as the typed text and each other form of it, it keeps the rows whose title or detail holds any of them.
 rows() {
-  printf '%s\n\n%s\n' "$events" "$reminders" | awk -v text="$1" 'BEGIN { RS = ""; FS = "\n"; text = tolower(text) }
+  printf '%s\n\n%s\n' "$events" "$reminders" | TEXTS=$(printf '%s\n' "$@") awk '
+    BEGIN { RS = ""; FS = "\n"; count = split(tolower(ENVIRON["TEXTS"]), texts, "\n") }
     /^row=(event|reminder):/ {
       title = ""; detail = ""; meeting = 0
       for (i = 1; i <= NF; i++) {
@@ -87,7 +89,10 @@ rows() {
         if ($i ~ /^detail=/) detail = substr($i, 8)
         if ($i ~ /^meeting=/) meeting = 1
       }
-      if (text != "" && !index(tolower(title), text)) next
+      shown = tolower(title " " detail)
+      found = count == 0
+      for (t = 1; t <= count; t++) if (texts[t] != "" && index(shown, texts[t])) found = 1
+      if (!found) next
       print
       if ($1 ~ /^row=reminder:/) printf "as=reminder\ndone.title=%s\ndone.detail=%s\nhides=join\n", title, detail
       else { print "hides=tick"; if (!meeting) print "hides=join" }
@@ -123,7 +128,8 @@ case "$1" in
     fi
     [ "$events" != status=unasked ] || printf 'row=allow-calendar\ntitle=Allow Calendar\ndetail=Show your events here\nicon=calendar\nhides=join\nhides=tick\n\n'
     [ "$reminders" != status=unasked ] || printf 'row=allow-reminders\ntitle=Allow Reminders\ndetail=Show and tick your reminders here\nicon=checklist\nhides=join\nhides=tick\n\n'
-    rows "$2"
+    shift
+    rows "$@"
     ;;
   open)
     case "$2" in

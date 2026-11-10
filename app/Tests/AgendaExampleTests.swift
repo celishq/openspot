@@ -191,6 +191,19 @@ final class AgendaExampleTests: SamplePluginsCase {
         }
     }
 
+    func testATypedTextFindsEachRowThatShowsItAndAnyFormOfIt() async throws {
+        let agenda = try example("Agenda")
+        try await withPrivateHome { folder in
+            try self.fakeOpenspot(in: folder)
+
+            let work = try await SpotRuns().answer(of: agenda, .items(query: "WORK"), limit: 5)
+            let family = try await SpotRuns().answer(of: agenda, .items(query: "ауфьшдн", forms: ["family"]), limit: 5)
+
+            XCTAssertEqual(PluginOutput(text: work).items.map(\.run), ["add-reminder", "event:B/2", "event:C/3"])
+            XCTAssertEqual(PluginOutput(text: family).items.map(\.run), ["add-reminder", "reminder:R1", "reminder:R2", "reminder:R3", "reminder:R4"])
+        }
+    }
+
     func testTextTypedInTheOpenSheetShowsTheRowsThatMatch() async throws {
         let agenda = try example("Agenda")
         try await withPrivateHome { folder in
