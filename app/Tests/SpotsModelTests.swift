@@ -466,12 +466,20 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(host.motions.contains(.sheet(isOpen: false)))
     }
 
-    func testAPickOfTheNewSpotRowOpensNewSpotInPlaceOfTheListWithNoCollapse() async throws {
+    func testAPickOfARowThatOpensASpotOpensItInPlaceOfTheListWithNoCollapse() async throws {
         let build = plugins.appendingPathComponent("build.sh")
         try "#!/bin/sh\nprintf 'row=g\\ntitle=Guide\\n'\n".writeScript(to: build)
-        host.shipped = [Spot(id: ShippedSpot.newID, name: "New spot", url: build, kind: .list, read: .sheet, isOnGrid: false)]
-        try await openList()
-        try await wait("the open list") { model.transition.phase == .open }
+        let rows = plugins.appendingPathComponent("rows.sh")
+        try "#!/bin/sh\nprintf 'row=\(CatalogSpot.buildRun)\\ntitle=New spot\\n'\n".writeScript(to: rows)
+        host.shipped = [
+            Spot(id: ShippedSpot.newID, name: "New spot", url: build, kind: .list, read: .sheet, isOnGrid: false),
+            Spot(id: "picker", name: "Picker", url: rows, kind: .list, read: .sheet, rowOpens: [CatalogSpot.buildRun: ShippedSpot.newID])
+        ]
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("picker")
+        try await wait("the open list") { model.openList == "picker" && model.transition.phase == .open }
         let entry = try XCTUnwrap(model.openEntry)
         host.motions = []
         host.phases = []
@@ -577,7 +585,7 @@ final class SpotsModelTests: XCTestCase {
     func testCommandNOpensTheNewSpotSheetFromTheGridAndFromEditSpots() async throws {
         let new = plugins.appendingPathComponent("new.sh")
         try "#!/bin/sh\nprintf 'row=g\\ntitle=Guide\\n'\n".writeScript(to: new)
-        host.shipped = [Spot(id: ShippedSpot.newID, name: "New spot", url: new, kind: .list, read: .sheet, isOnGrid: false)]
+        host.shipped = [Spot(id: ShippedSpot.newID, name: "New spot", url: new, kind: .list, read: .sheet, isOnGrid: false, opensWithNewKey: true)]
         model.reload()
         model.isShown = true
 

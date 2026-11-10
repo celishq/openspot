@@ -281,8 +281,8 @@ public final class SpotsModel {
         let shipped = host.shippedSpots(folder: folder, config: files.config, update: updateSpot, offersLogin: isFirstLaunch)
             + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
         var scan = pluginScan.look(at: folder, shipped: shipped)
-        let new = shipped.lazy.compactMap { if case .new(let new)? = $0.shipped { new } else { nil } }.first
-        let faults = new.map { folder.faultSpots(of: scan, new: $0) } ?? []
+        let prompt = shipped.lazy.compactMap(\.agentPrompt).first
+        let faults = prompt.map { folder.faultSpots(of: scan, prompt: $0) } ?? []
         if !faults.isEmpty { scan.plugins.append(Plugin(id: ShippedSpot.faultsID, commands: faults)) }
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
@@ -433,7 +433,7 @@ public final class SpotsModel {
                 host.applyConfig()
                 holdAssignedKeys(files.config.read())
             }
-            if spotsChanged, id == ShippedSpot.spotsID { reloadUnderSheet() }
+            if spotsChanged, sheets[id]?.command.changesSpots == true { reloadUnderSheet() }
         case .landed:
             host.land(id)
         case .closed:
@@ -729,8 +729,10 @@ public final class SpotsModel {
         return true
     }
 
+    /// Opens the sheet that the settings key of the Mac opens.
     public func openSettings() {
-        open(ShippedSpot.settingsID, moving: true)
+        guard let id = entries.first(where: { $0.command.opensWithSettingsKey })?.id else { return }
+        open(id, moving: true)
     }
 
     /// Opens a sheet, which closes the run of the sheet before and stops a recording in it, and shows it once it is ready: at
@@ -929,16 +931,16 @@ public final class SpotsModel {
             remember(item, of: entry)
             sheets[entry.id]?.list.select(run: item.run)
         } else {
-            if action == nil, item.run == CatalogSpot.buildRun {
-                open(ShippedSpot.newID, moving: true)
+            if action == nil, let id = entry.command.rowOpens[item.run] {
+                open(id, moving: true)
                 return
             }
-            if entry.id == ShippedSpot.spotsID, action == nil { spotsChanged = true }
+            if entry.command.changesSpots, action == nil { spotsChanged = true }
             if action == nil, item.shortcut != nil {
                 toggleRecording(id: item.run)
                 return
             }
-            if action == nil, case .settings? = entry.command.shipped, let change = SettingsSpot.change(of: item.run) {
+            if action == nil, let change = entry.command.shipped?.settingChange(of: item.run) {
                 changeSetting(of: change.spot, with: change.action)
                 return
             }

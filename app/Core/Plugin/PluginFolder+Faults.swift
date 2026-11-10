@@ -5,7 +5,7 @@ extension PluginFolder {
     /// A card for each file of this folder that gives no spot, which opens its faults. Its title says what a press does, and
     /// its detail names the spot, so that both fit a wide card. A file that loads with a fault, such as a key that another
     /// spot has, keeps its own card. Each card takes the ID and the place of the spot it stands for.
-    public func faultSpots(of scan: ScanResult, new: NewSpot) -> [Spot] {
+    public func faultSpots(of scan: ScanResult, prompt: AgentPrompt) -> [Spot] {
         let loaded = Set(scan.plugins.filter { !$0.commands.isEmpty }.map(\.id))
         let faults = Dictionary(grouping: scan.refused.filter { !loaded.contains($0.file) }, by: \.file)
         return faults.keys.sorted().compactMap { id in
@@ -20,7 +20,7 @@ extension PluginFolder {
                 symbol: "exclamationmark.triangle",
                 subtitle: name,
                 read: .sheet,
-                shipped: .fault(FaultSpot(file: file, name: name, faults: reasons, prompt: new.prompt))
+                shipped: .fault(FaultSpot(file: file, name: name, faults: reasons, prompt: prompt))
             )
             let added = try? file.resourceValues(forKeys: [.creationDateKey]).creationDate
             return added.map(spot.added(at:)) ?? spot

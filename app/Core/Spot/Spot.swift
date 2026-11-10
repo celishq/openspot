@@ -67,6 +67,18 @@ public struct Spot: Equatable, Sendable {
     private let changesKeys: Bool
     /// Whether it reads again when an update of the app is ready.
     public let readsOnUpdate: Bool
+    /// The spot whose sheet a pick of each of these rows opens, by the row's ID.
+    public let rowOpens: [String: String]
+    /// The action that shows the code of the core spot that a row names.
+    public let reviewAction: String?
+    /// Whether its sheet turns spots on or off, so that the grid loads again under it.
+    public let changesSpots: Bool
+    /// The prompt that asks an agent to write or fix a spot, which a card that does not load and Copy prompt use.
+    public let agentPrompt: AgentPrompt?
+    /// Whether the settings key of the Mac opens its sheet.
+    public let opensWithSettingsKey: Bool
+    /// Whether ⌘N on the grid opens its sheet.
+    public let opensWithNewKey: Bool
 
     public init(
         id: String,
@@ -104,8 +116,20 @@ public struct Spot: Equatable, Sendable {
         view: String? = nil,
         sizes: [SpotSize]? = nil,
         setsKeys: Bool = false,
-        readsOnUpdate: Bool = false
+        readsOnUpdate: Bool = false,
+        rowOpens: [String: String] = [:],
+        reviewAction: String? = nil,
+        changesSpots: Bool = false,
+        agentPrompt: AgentPrompt? = nil,
+        opensWithSettingsKey: Bool = false,
+        opensWithNewKey: Bool = false
     ) {
+        self.opensWithNewKey = opensWithNewKey
+        self.agentPrompt = agentPrompt
+        self.opensWithSettingsKey = opensWithSettingsKey
+        self.rowOpens = rowOpens
+        self.reviewAction = reviewAction
+        self.changesSpots = changesSpots
         sizeChoices = sizes
         changesKeys = setsKeys
         self.readsOnUpdate = readsOnUpdate

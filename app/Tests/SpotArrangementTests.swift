@@ -154,4 +154,26 @@ final class SpotArrangementTests: XCTestCase {
         XCTAssertEqual(settings?.shipped?.takesShake("setting:apps:size"), false)
         XCTAssertEqual(updates?.shipped?.takesShake("key:apps:open"), false)
     }
+
+    func testSpotsOpensNewSpotFromARowReviewsCodeAndChangesSpotsWhileSettingsChangesASetting() {
+        let url = URL(fileURLWithPath: "/bin/true")
+        let commands = ShippedSpot.commands(folder: url, guide: url, app: "")
+        let spots = commands.first { $0.id == ShippedSpot.spotsID }
+        let settings = commands.first { $0.id == ShippedSpot.settingsID }
+
+        XCTAssertEqual(spots?.rowOpens, [CatalogSpot.buildRun: ShippedSpot.newID])
+        XCTAssertEqual(spots?.reviewAction, CatalogSpot.reviewID)
+        XCTAssertEqual(commands.filter(\.changesSpots).map(\.id), [ShippedSpot.spotsID])
+        XCTAssertEqual(settings?.shipped?.settingChange(of: "setting:apps:size")?.spot, "apps")
+        XCTAssertNil(spots?.shipped?.settingChange(of: "setting:apps:size"))
+    }
+
+    func testNewSpotGivesTheAgentPromptAndSettingsOpensWithTheSettingsKey() {
+        let url = URL(fileURLWithPath: "/bin/true")
+        let commands = ShippedSpot.commands(folder: url, guide: url, app: "")
+
+        XCTAssertEqual(commands.filter { $0.agentPrompt != nil }.map(\.id), [ShippedSpot.newID])
+        XCTAssertEqual(commands.filter(\.opensWithSettingsKey).map(\.id), [ShippedSpot.settingsID])
+        XCTAssertEqual(commands.filter(\.opensWithNewKey).map(\.id), [ShippedSpot.newID])
+    }
 }

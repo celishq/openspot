@@ -67,12 +67,12 @@ extension SpotsModel {
         return true
     }
 
-    /// Opens the New spot sheet for `⌘N` on the grid, when no action of the selected card takes the key. Returns false for
-    /// any other key.
+    /// Opens the sheet that `⌘N` opens, when no action of the selected card takes the key. Returns false for any other
+    /// key.
     func openNewSpot(on key: ActionKey) -> Bool {
-        guard key == Self.newSpotKey, openList == nil, entries.contains(where: { $0.id == ShippedSpot.newID }) else { return false }
+        guard key == Self.newSpotKey, openList == nil, let id = entries.first(where: { $0.command.opensWithNewKey })?.id else { return false }
         endEditing(moving: false)
-        open(ShippedSpot.newID, moving: true)
+        open(id, moving: true)
         return true
     }
 
@@ -308,7 +308,7 @@ extension SpotsModel {
             }
         } else if action == .share {
             share(target.entry)
-        } else if action.id == CatalogSpot.reviewID, let item = target.item {
+        } else if action.id == target.entry.command.reviewAction, let item = target.item {
             reviewCore(item)
         } else if action.id == CommandAction.removeID {
             remove(target.entry)
@@ -322,7 +322,7 @@ extension SpotsModel {
         } else if action.isForm {
             openForm(action, on: target)
         } else if action.after == .stay {
-            if action.id == CatalogSpot.selectAllID { spotsChanged = true }
+            if target.entry.command.changesSpots { spotsChanged = true }
             sheets[target.entry.id]?.run(action, item: target.item)
         } else if let item = target.item {
             pick(item, of: target.entry, action: action)

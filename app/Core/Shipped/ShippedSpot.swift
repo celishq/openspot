@@ -13,6 +13,7 @@ public enum ShippedSpot: Equatable, Sendable {
 
     /// The commands of the shipped spots, in the order of the grid.
     public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil, core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil, offersLogin: Bool = false, quit: QuitSpot? = nil) -> [Spot] {
+        let prompt = AgentPrompt(folder: folder, guide: guide, app: app)
         var commands = [
             Spot(
                 id: spotsID,
@@ -25,7 +26,10 @@ public enum ShippedSpot: Equatable, Sendable {
                 key: CommandKey(name: "p"),
                 read: .sheet,
                 order: 1,
-                shipped: .spots(CatalogSpot(folder: folder, core: core, config: config, login: offersLogin ? login : nil))
+                shipped: .spots(CatalogSpot(folder: folder, core: core, config: config, login: offersLogin ? login : nil)),
+                rowOpens: [CatalogSpot.buildRun: newID],
+                reviewAction: CatalogSpot.reviewID,
+                changesSpots: true
             ),
             Spot(
                 id: Self.settingsID,
@@ -39,7 +43,8 @@ public enum ShippedSpot: Equatable, Sendable {
                 isGlobal: true,
                 order: 2,
                 shipped: .settings(SettingsSpot(file: config, folder: folder, core: core, login: login, link: link)),
-                setsKeys: true
+                setsKeys: true,
+                opensWithSettingsKey: true
             ),
             Spot(
                 id: newID,
@@ -51,7 +56,9 @@ public enum ShippedSpot: Equatable, Sendable {
                 subtitle: "Make your own",
                 read: .sheet,
                 order: 3,
-                shipped: .new(NewSpot(folder: folder, guide: guide, prompt: AgentPrompt(folder: folder, guide: guide, app: app)))
+                shipped: .new(NewSpot(folder: folder, guide: guide, prompt: prompt)),
+                agentPrompt: prompt,
+                opensWithNewKey: true
             )
         ]
         if let update {
@@ -112,6 +119,11 @@ public enum ShippedSpot: Equatable, Sendable {
     /// a float (W2).
     public func takesShake(_ run: String) -> Bool {
         if case .settings = self { SettingsSpot.takesShake(run) } else { false }
+    }
+
+    /// The action of another spot that Enter on a row of Settings runs to change one of its settings.
+    public func settingChange(of run: String) -> (spot: String, action: CommandAction)? {
+        if case .settings = self { SettingsSpot.change(of: run) } else { nil }
     }
 
     /// Answers one call with the text a script would print.
