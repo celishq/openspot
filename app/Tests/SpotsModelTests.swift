@@ -59,6 +59,22 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the open list") { model.openList == "list" && model.openItems?.shown.count == 2 }
     }
 
+    func testASheetTakesTheLookOfItsCardOnlyWhenItsScriptDrawsTheCard() async throws {
+        try script("agenda", header: "read=panel", "printf 'grid.small=next\\n\\nnumber=next\\nvalue=09:30\\n\\nrow=e\\ntitle=Standup\\n'")
+        try FileManager.default.createDirectory(at: plugins.appendingPathComponent("year"), withIntermediateDirectories: true)
+        try script("year/year", header: "read=panel\nview=year.swift", "printf 'view=year\\ntitle=2026\\n\\nrow=e\\ntitle=Standup\\n'")
+        try script("list", header: "read=panel", "printf 'row=a\\ntitle=Apple\\n'")
+        model.reload()
+        model.panelWillShow(holding: [])
+
+        try await wait("the drawn cards") {
+            SpotSheetCard.of("agenda", in: model)?.look?.id == "agenda" && SpotSheetCard.of("year/year", in: model)?.look?.id == "year/year"
+        }
+        try await wait("the list") { model.sheets["list"]?.list.shown.count == 1 }
+        XCTAssertNotNil(SpotSheetCard.of("list", in: model))
+        XCTAssertNil(SpotSheetCard.of("list", in: model)?.look)
+    }
+
     func testAPointOfTheGridFindsTheCardWhosePlaceHoldsIt() throws {
         try script("one", header: "title=One", "")
         try script("two", header: "title=Two", "")

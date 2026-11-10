@@ -27,13 +27,14 @@ struct SpotSheetLayer: View {
             rect: sheetRect,
             panel: panel,
             closeShift: isInstall ? 0 : showsArrow ? (frame?.width ?? sheetRect.width) - sheetRect.width : nil,
-            cardWidth: isInstall ? SpotFieldView.rect.width : frame?.width ?? sheetRect.width
+            cardWidth: isInstall ? SpotFieldView.rect.width : frame?.width ?? sheetRect.width,
+            hasCardLook: card?.look != nil
         )
         .id(entry.id)
-        .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(card?.widget == nil || isOpen ? 1 : 0) }
+        .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: isOpen)) { $0.opacity(card?.look == nil || isOpen ? 1 : 0) }
         .overlay(alignment: .topLeading) {
-            if let widget = card?.widget, let frame {
-                widgetLook(widget, size: card?.placement.size ?? widget.size)
+            if let look = card?.look, let frame {
+                cardLook(look, size: card?.placement.size ?? look.size)
                     .frame(width: frame.width, height: frame.height)
                     .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: !isOpen)) { $0.opacity(isOpen ? 0 : 1) }
                     .allowsHitTesting(false)
@@ -70,9 +71,9 @@ struct SpotSheetLayer: View {
         CGSize(width: closed.minX - sheetRect.minX, height: closed.minY - sheetRect.minY)
     }
 
-    /// Whether the card draws an arrow. A 1x1 card shows its glyph alone, and a widget draws none.
+    /// Whether the card draws an arrow. A 1x1 card shows its glyph alone, and a card with its own look draws none.
     private var showsArrow: Bool {
-        entry.kind == .list && card?.widget == nil && (frame?.width ?? 0) > SpotTokens.cell
+        entry.kind == .list && card?.look == nil && (frame?.width ?? 0) > SpotTokens.cell
     }
 
     /// The arrow of the card while its sheet moves. It stays in view until the close button takes its place at the edge.
@@ -88,15 +89,24 @@ struct SpotSheetLayer: View {
     }
 
     private var cardIsSelected: Bool {
-        let id = card?.widget?.id ?? entry.id
+        let id = card?.look?.id ?? entry.id
         return model.placements.first { model.visible[$0.index].id == id }?.index == model.selected
     }
 
-    /// The places of the widget without its glass, since the sheet draws the glass under them.
+    /// The card's own look without its glass, since the sheet draws the glass under it: the drawing of its script, its view,
+    /// or the places of a widget, as the card draws them.
     @ViewBuilder
-    private func widgetLook(_ widget: SpotsModel.Entry, size: SpotSize) -> some View {
-        if let layout = widget.command.layout {
-            SpotWidgetView(layout: layout, places: widget.command.places, reading: { [model] in model.reading(of: $0) }, card: size)
+    private func cardLook(_ card: SpotsModel.Entry, size: SpotSize) -> some View {
+        let reading: (String) -> MetricReading? = card.kind == .widget ? { [model] in model.reading(of: $0) } : { _ in nil }
+        if card.item == nil, let layout = card.state.face.layout(for: size) {
+            SpotCardDrawing(layout: layout, face: card.state.face, card: size, reading: reading, view: { room in
+                card.command.view.map { SpotCustomView(source: $0, values: card.state.values, card: size, room: room, views: SpotViews.shared) }
+            }, onSlot: { _, _ in })
+            .padding(SpotTokens.cardPadding(for: size, isWidget: true))
+        } else if card.item == nil, card.state.face.hasView, let view = card.command.view {
+            SpotCustomView(source: view, values: card.state.values, card: size, views: SpotViews.shared)
+        } else if let layout = card.command.layout {
+            SpotWidgetView(layout: layout, places: card.command.places, reading: reading, card: size)
                 .padding(SpotTokens.cardPadding(for: size, isWidget: true))
         }
     }
