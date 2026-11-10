@@ -383,6 +383,8 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(slot.control, .toggle(false))
         XCTAssertEqual(slot.title, "Buy milk")
         XCTAssertTrue(PartCatalog.text.contains("`look=tick`"))
+        XCTAssertTrue(PartCatalog.text.contains("`color=#1BADF8`"))
+        XCTAssertTrue(PartCatalog.text.contains("`tone=good`, `warn` or `bad` on a text"))
     }
 
 }
