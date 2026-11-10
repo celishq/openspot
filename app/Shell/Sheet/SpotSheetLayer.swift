@@ -12,8 +12,10 @@ struct SpotSheetLayer: View {
     let sheetRect: CGRect
     /// Whether the sheet is open or on its way there.
     let isOpen: Bool
-    /// The mask of the grid's cards, which fades a closed sheet at the ends of the scroll as the grid fades its card.
-    let cardMask: LinearGradient
+    /// The fade of the grid's cards, which fades a closed sheet at the ends of the scroll as the grid fades its card.
+    let fade: SpotScrollFade
+    /// The height of the surface that the cards scroll in.
+    let fadeHeight: CGFloat
 
     var body: some View {
         SpotSheetView(
@@ -49,12 +51,7 @@ struct SpotSheetLayer: View {
             arrow: showsArrow ? AnyView(arrow) : nil,
             arrowBox: frame?.size ?? .zero
         ))
-        .mask {
-            ZStack {
-                cardMask
-                Color.black.opacity(isOpen ? 1 : 0)
-            }
-        }
+        .modifier(SheetFadeMask(fade: fade, height: fadeHeight, isOpen: isOpen))
     }
 
     /// The rect that the sheet grows out of and collapses into: its card, or the field for the install screen.
@@ -95,6 +92,23 @@ struct SpotSheetLayer: View {
         if let layout = widget.command.layout {
             SpotWidgetView(layout: layout, places: widget.command.places, reading: { [model] in model.reading(of: $0) }, card: size)
                 .padding(SpotTokens.cardPadding(for: size, isWidget: true))
+        }
+    }
+}
+
+/// The fade of a closed sheet at the ends of the scroll, as the grid fades its card. It alone reads the fade, so that a scroll
+/// near an end reruns no sheet.
+private struct SheetFadeMask: ViewModifier {
+    let fade: SpotScrollFade
+    let height: CGFloat
+    let isOpen: Bool
+
+    func body(content: Content) -> some View {
+        content.mask {
+            ZStack {
+                fade.edges.gradient(height: height)
+                Color.black.opacity(isOpen ? 1 : 0)
+            }
         }
     }
 }

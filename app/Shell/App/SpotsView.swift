@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 
 struct SpotsView: View {
     let model: SpotsModel
-    @State private var edges = SpotScrollEdges()
+    @State private var fade = SpotScrollFade()
     @State private var scroll = ScrollPosition()
     @State private var scrollOffset: CGFloat = 0
     @State private var dropTarget: String?
@@ -47,8 +47,8 @@ struct SpotsView: View {
             .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in
                 scrollOffset = offset
             })
-            .modifier(SpotScrollEdgeTracker(edges: $edges))
-            .mask(edges.gradient(height: cardHeight))
+            .modifier(SpotScrollEdgeTracker(edges: Binding(get: { fade.edges }, set: { fade.edges = $0 })))
+            .modifier(GridFadeMask(fade: fade, height: cardHeight))
             .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: !coversGrid)) { $0.opacity(coversGrid ? 0 : 1) }
             SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: gridHeight, sheetHeight: sheetID == nil ? gridHeight : sheetHeight)
                 .opacity(model.isShown ? 1 : 0)
@@ -61,7 +61,8 @@ struct SpotsView: View {
                     frame: frame,
                     sheetRect: sheetRect,
                     isOpen: sheetOpen,
-                    cardMask: edges.gradient(height: cardHeight)
+                    fade: fade,
+                    fadeHeight: cardHeight
                 )
             }
             SpotFieldView(
@@ -226,6 +227,17 @@ struct SpotsView: View {
         .padding(.horizontal, SpotTokens.padding)
         .frame(width: SpotTokens.gridWidth, height: SpotTokens.rowHeight)
         .offset(x: SpotTokens.halo, y: SpotTokens.halo)
+    }
+}
+
+/// The fade of the grid's cards at the ends of the scroll. It alone reads the fade, so that a scroll near an end reruns no
+/// other view.
+private struct GridFadeMask: ViewModifier {
+    let fade: SpotScrollFade
+    let height: CGFloat
+
+    func body(content: Content) -> some View {
+        content.mask(fade.edges.gradient(height: height))
     }
 }
 
