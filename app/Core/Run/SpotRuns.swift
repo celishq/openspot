@@ -18,15 +18,22 @@ public final class SpotRuns {
     /// Asks for the pictures of the colour glyphs of a whole list, once for each answer that holds its rows.
     @ObservationIgnored public var glyphsArrival: ([String]) -> Void = { _ in }
     /// The sheet whose open motion runs. What its script prints waits for the end of the motion, so that the motion keeps
-    /// its frames.
+    /// its frames. It ends after the length of the motion, though the spring settles later.
     @ObservationIgnored public var openingID: String? {
-        didSet { if openingID != oldValue { releaseOpening() } }
+        didSet {
+            guard openingID != oldValue else { return }
+            releaseOpening()
+            if openingID != nil { endOpening() }
+        }
     }
     @ObservationIgnored private var openingWaits: [CheckedContinuation<Void, Never>] = []
+    @ObservationIgnored private var openingSerial = 0
     /// The time a `read` has to its first frame or its end.
     public let readLimit: TimeInterval
     /// How long a sheet with no answer yet holds its motion for the first answer.
     public let firstAnswerPause: TimeInterval
+    /// The length of a sheet's open motion.
+    public let openLength: TimeInterval
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored private let stopPause: TimeInterval
     @ObservationIgnored private let tickPause: Duration
@@ -46,6 +53,7 @@ public final class SpotRuns {
     public init(
         readLimit: TimeInterval = 10,
         firstAnswerPause: TimeInterval = 0.15,
+        openLength: TimeInterval = 0.15,
         now: @escaping () -> Date = { Date() },
         stopPause: TimeInterval = 2,
         tickPause: Duration = .seconds(1),
@@ -54,6 +62,7 @@ public final class SpotRuns {
     ) {
         self.readLimit = readLimit
         self.firstAnswerPause = firstAnswerPause
+        self.openLength = openLength
         self.now = now
         self.stopPause = stopPause
         self.tickPause = tickPause
@@ -245,6 +254,16 @@ public final class SpotRuns {
     func opening(_ id: String) async {
         while openingID == id {
             await withCheckedContinuation { openingWaits.append($0) }
+        }
+    }
+
+    private func endOpening() {
+        openingSerial += 1
+        let serial = openingSerial
+        Task { [weak self, openLength] in
+            try? await Task.sleep(for: .seconds(openLength))
+            guard let self, openingSerial == serial else { return }
+            openingID = nil
         }
     }
 

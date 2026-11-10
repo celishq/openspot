@@ -80,6 +80,8 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testWhatASheetPrintsDuringItsOpenMotionShowsWhenTheMotionEnds() async throws {
+        runs.quit()
+        runs = SpotRuns(openLength: 30, stopPause: 0.2)
         try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
@@ -92,6 +94,18 @@ final class SpotRunsCallTests: SpotRunsCase {
         runs.openingID = nil
 
         try await wait("the rows") { sheet.list.shown.count == 1 }
+    }
+
+    func testWhatASheetPrintsShowsAfterTheLengthOfItsOpenMotionThoughItsSpringSettlesLater() async throws {
+        try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        runs.openingID = "script"
+
+        sheet.open {}
+
+        try await wait("the rows") { sheet.list.shown.count == 1 }
+        XCTAssertNil(runs.openingID)
     }
 
     func testTheOpenMotionOfAnotherSheetHoldsNothingOfThisOne() async throws {
