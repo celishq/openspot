@@ -348,6 +348,19 @@ final class SpotRunTests: XCTestCase {
         try await wait("the answer to the text") { sheet.list.shown.map(\.title) == ["read:rep"] }
     }
 
+    func testAReadWithNoTextGivesAScriptThatSearchesANewValue() async throws {
+        let sheet = try make("""
+        echo x >> '\(path("reads"))'
+        printf 'search=script\\n\\nnumber=next\\nvalue=%s\\ntitle=Next\\n\\nrow=a\\ntitle=A\\n' "$(wc -l < '\(path("reads"))' | tr -d ' ')"
+        """)
+        sheet.read(need: .change)
+        try await wait("the first value") { !sheet.isReading && sheet.reading.value?.title == "1" }
+
+        sheet.read(need: .change)
+
+        try await wait("the second value") { sheet.reading.value?.title == "2" }
+    }
+
     func testAScriptThatSearchesGetsEachFormOfTheText() async throws {
         let sheet = try make("printf 'search=script\\n\\nrow=a\\ntitle=%s:%s\\n' \"$2\" \"$3\"")
         sheet.open {}

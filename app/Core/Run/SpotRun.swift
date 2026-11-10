@@ -336,13 +336,13 @@ public final class SpotRun {
         link.leave()
     }
 
-    /// Asks the script for what it shows. A list that the script searches asks its search. A request joins the read that
-    /// runs, and a change reads again after it (M1). A `panel` or a `sheet` moment uses an answer younger than 5 seconds (M2).
-    /// A file with no `read` gets its click instead.
+    /// Asks the script for what it shows. A list that the script searches asks its search while text is typed. A request joins
+    /// the read that runs, and a change reads again after it (M1). A `panel` or a `sheet` moment uses an answer younger than 5
+    /// seconds (M2). A file with no `read` gets its click instead.
     public func read(selecting run: String? = nil, need: ReadNeed = .moment, reason: ReadReason? = nil) {
         let reason = reason ?? (need == .change ? .change : isOpen ? .sheet : .panel)
         if let run { selecting = run }
-        guard list.search == .local || command.stays else { return ask() }
+        guard list.search == .local || list.query.isEmpty || command.stays else { return ask() }
         if link.isAsking {
             if need == .change { readsAgain = true }
             return
