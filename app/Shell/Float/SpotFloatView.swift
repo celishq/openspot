@@ -8,6 +8,7 @@ struct SpotFloatView: View {
     let id: String
     let onSize: (CGSize) -> Void
     @State private var dropTarget: String?
+    @State private var dropWords: String?
 
     private var entry: SpotsModel.Entry? {
         model.cards.first { $0.id == id }
@@ -25,6 +26,7 @@ struct SpotFloatView: View {
         }
         .overlay { drop }
         .onDrop(of: [.fileURL], delegate: SpotCardDrop(id: id, model: model, target: $dropTarget, place: .float))
+        .onChange(of: dropTarget) { dropWords = dropTarget.flatMap { model.dropWords(SpotCardDrop.paths, on: $0) } }
         .onChange(of: size, initial: true) { onSize(size) }
         .environment(\.spotIsShown, true)
     }
@@ -122,7 +124,7 @@ struct SpotFloatView: View {
     /// What a drop adds, over the float, only while a drag that it takes lies over it (W9).
     @ViewBuilder
     private var drop: some View {
-        if dropTarget != nil, entry?.kind.opensSheet == true, let dropWords = model.dropWords(SpotCardDrop.paths, on: id) {
+        if let dropWords, entry?.kind.opensSheet == true {
             Text(dropWords)
                 .font(SpotType.body)
                 .foregroundStyle(SpotTheme.onSolid)

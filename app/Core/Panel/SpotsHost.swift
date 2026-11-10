@@ -27,6 +27,7 @@ public protocol SpotsHost: AnyObject {
     var isPointerOverDrop: Bool { get }
     /// The files of the drag in progress.
     var draggedPaths: [String] { get }
+    /// Whether the left mouse button is down, as it is through a drag.
     var isMouseDown: Bool { get }
     /// The files on the clipboard.
     var pastedPaths: [String] { get }

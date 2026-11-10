@@ -80,7 +80,7 @@ extension OpenspotApp: SpotsHost {
     }
 
     var isMouseDown: Bool {
-        NSEvent.pressedMouseButtons != 0
+        NSEvent.pressedMouseButtons & 1 != 0
     }
 
     var pastedPaths: [String] {
