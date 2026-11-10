@@ -2,13 +2,8 @@ import AppKit
 import OpenspotCore
 
 /// A picture book mapped from disk: each glyph's bitmap is read in place, with no copy, so its pages stay the file's and
-/// the system can drop them. A helper process draws the book, so the glyph caches of Core Text end with that process.
+/// the system can drop them. A helper process writes the book, so the glyph caches of Core Text end with that process.
 final class SpotGlyphBook: @unchecked Sendable {
-    /// The longest wait for a helper to draw a book.
-    private static let timeLimit: DispatchTimeInterval = .seconds(60)
-    /// How many books the folder keeps, the most recently used first.
-    private static let shelf = 3
-
     let layout: GlyphBook
     private let bytes: NSData
 
@@ -41,43 +36,6 @@ final class SpotGlyphBook: @unchecked Sendable {
         return SpotGlyphBook(layout: layout, bytes: bytes)
     }
 
-    /// Has a helper process draw the book into its file, waits for it, and maps it. A helper that fails leaves no book.
-    static func draw(_ layout: GlyphBook, at file: URL) -> SpotGlyphBook? {
-        let folder = file.deletingLastPathComponent()
-        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let part = folder.appendingPathComponent(UUID().uuidString + ".part")
-        defer { try? FileManager.default.removeItem(at: part) }
-        let process = Process()
-        let input = Pipe()
-        let ended = DispatchSemaphore(value: 0)
-        process.executableURL = Bundle.main.executableURL
-        process.arguments = ["helper", "glyphs", "\(layout.side)", "\(layout.fontSize)", part.path]
-        process.standardInput = input
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
-        process.terminationHandler = { _ in ended.signal() }
-        do {
-            try process.run()
-        } catch {
-            return nil
-        }
-        let text = Data(layout.glyphs.joined(separator: "\n").utf8)
-        let writing = input.fileHandleForWriting
-        DispatchQueue.global(qos: .utility).async {
-            try? writing.write(contentsOf: text)
-            try? writing.close()
-        }
-        if ended.wait(timeout: .now() + timeLimit) == .timedOut {
-            process.terminate()
-            ended.wait()
-        }
-        guard process.terminationStatus == 0 else { return nil }
-        try? FileManager.default.removeItem(at: file)
-        guard (try? FileManager.default.moveItem(at: part, to: file)) != nil else { return nil }
-        prune(folder)
-        return open(layout, at: file)
-    }
-
     /// Draws each glyph of the book into its tile, and writes the tiles in order to a file. The helper process runs it.
     static func write(_ layout: GlyphBook, to path: String) -> Bool {
         guard FileManager.default.createFile(atPath: path, contents: nil), let file = FileHandle(forWritingAtPath: path) else { return false }
@@ -94,18 +52,5 @@ final class SpotGlyphBook: @unchecked Sendable {
             guard written else { return false }
         }
         return true
-    }
-
-    /// Removes each book past the shelf, the least recently used first, and each part that a stopped helper left.
-    private static func prune(_ folder: URL) {
-        let files = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
-        let books = files.filter { $0.lastPathComponent.hasSuffix(GlyphBook.fileExtension) }.sorted { date(of: $0) > date(of: $1) }
-        for file in books.dropFirst(shelf) + files.filter({ $0.pathExtension == "part" }) {
-            try? FileManager.default.removeItem(at: file)
-        }
-    }
-
-    private static func date(of file: URL) -> Date {
-        (try? file.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
     }
 }
