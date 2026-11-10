@@ -99,8 +99,8 @@ while it needs a value, such as an app that it has not been told to use.
 
 A button with `form=true` asks for values first. The call runs once with empty stdin, and it prints a `title` in its head
 and one `field`, `choice`, `switch` or `slider` for each value. A choice starts on its first option. A form with one
-`choice` and nothing else shows its options as rows, each with the picture of `option=<id>:<title>:<icon>`, and Enter or a
-click on one sends it. With `type=multiple`, that choice picks several: a checkmark marks each option of a `value` line,
+`choice` and nothing else shows its options as rows under the search field, which narrows them, each with the picture of
+`option=<id>:<title>:<icon>`, and Enter or a click on one sends it. Esc clears the search first. With `type=multiple`, that choice picks several: a checkmark marks each option of a `value` line,
 Enter sends the option of its row, and `⌘⇧A` sends each option with no checkmark, one per line. The script keeps the picks
 and prints the form again with its new `value` lines, so the form stays open, and the spot reads again. Then the same call runs with the values on stdin, and it can print the id of the row to
 select. It can also print the form again, such as with a `title` that says what is wrong, and the form stays open.

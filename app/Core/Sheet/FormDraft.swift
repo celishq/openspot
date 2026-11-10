@@ -26,10 +26,18 @@ public struct FormDraft: Equatable, Sendable {
         }
     }
 
-    /// Starts from the form that a script answered with, on the row that the last draft had selected while the form has it.
+    /// Starts from the form that a script answered with, with the search of the last draft, on the row that it had selected
+    /// while the form has it.
     public init(form: ItemForm, after draft: FormDraft) {
         self.init(form: form)
+        search(draft.choices?.query ?? "")
         if let run = draft.choices?.selectedItem?.run, choices?.shown.contains(where: { $0.run == run }) == true { choose(run) }
+    }
+
+    /// Narrows the rows of its one choice to the options that match the text, and takes the first one left as the value.
+    public mutating func search(_ text: String) {
+        guard choices?.search(text) == true else { return }
+        takeChoice()
     }
 
     /// Whether its one choice picks several options, each of which a press turns on or off.

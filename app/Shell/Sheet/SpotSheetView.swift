@@ -69,7 +69,13 @@ struct SpotSheetView: View {
                         if let view = entry.command.view, panel.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
                     }
                 } else if let form {
-                    SpotFormView(draft: form, onValue: { model.setFormValue($0, for: $1) }, onChoose: { model.chooseFormOption($0) })
+                    if form.choices != nil { Color.clear.frame(height: SpotTokens.listRowHeight) }
+                    SpotFormView(
+                        draft: form,
+                        onValue: { model.setFormValue($0, for: $1) },
+                        onChoose: { model.chooseFormOption($0) },
+                        selection: { [model] in model.form?.draft.choices?.selected ?? 0 }
+                    )
                 } else {
                     Color.clear.frame(height: SpotTokens.listRowHeight)
                     if let createTitle {

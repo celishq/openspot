@@ -29,6 +29,7 @@ extension SpotsModel {
                 if let all = form.draft.selectingAll() { send(form, all) }
             case ActionKey(name: "up") where isList: self.form?.draft.move(by: -1)
             case ActionKey(name: "down") where isList: self.form?.draft.move(by: 1)
+            case ActionKey(name: "escape") where form.draft.choices?.query.isEmpty == false: self.form?.draft.search("")
             case ActionKey(name: "escape"): cancelForm()
             default: return false
             }

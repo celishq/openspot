@@ -262,6 +262,45 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertNotNil(model.form)
     }
 
+    func testAFormOfOneChoiceSearchesItsRowsWithTheFieldAndEscapeClearsTheSearchFirst() async throws {
+        let sent = folder.appendingPathComponent("sent").path
+        try script("list", header: "read=sheet", """
+        case "$1" in
+          pick)
+            input=$(cat)
+            [ -z "$input" ] || printf '%s\n' "$input" >> '\(sent)'
+            printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\noption=a:Apple\noption=b:Banana\noption=c:Blueberry\nvalue=a\n' ;;
+          *) printf 'button=pick\ntitle=Pick\nscope=command\nform=true\n\nrow=a\ntitle=Apple\n' ;;
+        esac
+        """)
+        let sends = { ((try? String(contentsOfFile: sent, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("list")
+        try await wait("the open list") { model.openList == "list" && model.openEntry?.command.actions.contains(where: \.isForm) == true }
+        let entry = try XCTUnwrap(model.openEntry)
+        model.openForm(try XCTUnwrap(entry.command.actions.first { $0.id == "pick" }), on: (entry, nil))
+        try await wait("the form") { model.form != nil }
+
+        XCTAssertTrue(model.showsSearch)
+        model.searchText = "b"
+        XCTAssertEqual(model.searchText, "b")
+        XCTAssertEqual(model.form?.draft.choices?.shown.map(\.title), ["Banana", "Blueberry"])
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        try await wait("the pick") { sends() == ["shown=c"] }
+        try await wait("the form again") { model.form?.draft.choices?.shown.first?.isOn == false && model.form?.draft.choices?.query == "b" }
+        XCTAssertEqual(model.form?.draft.choices?.selectedItem?.run, "c")
+        XCTAssertEqual(model.openItems?.query, "")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
+        XCTAssertEqual(model.searchText, "")
+        XCTAssertNotNil(model.form)
+        XCTAssertEqual(model.form?.draft.choices?.shown.count, 3)
+        XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
+        XCTAssertNil(model.form)
+    }
+
     func testAFormThatArrivesAfterThePanelHidDoesNotOpen() async throws {
         let gate = folder.appendingPathComponent("gate").path
         try script("list", header: "read=sheet", """

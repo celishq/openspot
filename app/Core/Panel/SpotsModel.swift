@@ -636,9 +636,11 @@ public final class SpotsModel {
         return list[selected]
     }
 
-    /// Whether the panel shows its search field, which a form or a sheet of parts with no rows replaces.
+    /// Whether the panel shows its search field, which a form or a sheet of parts with no rows replaces. A form of one choice
+    /// keeps it, to search the rows of its options.
     public var showsSearch: Bool {
-        form == nil && !isEditing && openPanel?.showsRows != false
+        if let form { return form.draft.choices != nil && !isEditing }
+        return !isEditing && openPanel?.showsRows != false
     }
 
     public var openPanel: SheetParts? {
@@ -659,9 +661,11 @@ public final class SpotsModel {
 
     /// The text of the field: the search of the open list, or else the search of the spots.
     public var searchText: String {
-        get { openItems?.query ?? query }
+        get { form?.draft.choices?.query ?? openItems?.query ?? query }
         set {
-            if let file = SharedSpot.file(in: newValue) {
+            if form?.draft.choices != nil {
+                form?.draft.search(newValue)
+            } else if let file = SharedSpot.file(in: newValue) {
                 query = ""
                 openSheet?.search("")
                 DispatchQueue.main.async { self.review([file]) }
