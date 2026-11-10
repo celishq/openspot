@@ -1,10 +1,12 @@
 #import <Cocoa/Cocoa.h>
 #import <Carbon/Carbon.h>
 #import <QuartzCore/QuartzCore.h>
+#import <ImageIO/ImageIO.h>
 #include <mach/mach_time.h>
 #include <unistd.h>
 #include "doomgeneric.h"
 #include "doomkeys.h"
+#include "doomstat.h"
 
 /// The size of the queue of key presses and releases.
 #define QUEUE_SIZE 256
@@ -13,8 +15,17 @@ static unsigned short queue[QUEUE_SIZE];
 static unsigned int queueStart;
 static unsigned int queueEnd;
 static BOOL held[256];
+/// The time in milliseconds between two pictures of the screen during play.
+#define SCREEN_PAUSE 5000
+
+/// The time in milliseconds after the start when `-screen` takes the title screen.
+#define TITLE_TIME 1500
+
 static NSWindow *window;
 static NSView *screen;
+static BOOL screenOnly;
+static uint32_t started;
+static uint32_t lastScreen;
 
 /// Puts one press or release of a Doom key at the end of the queue, and drops it when the queue is full.
 static void QueueKey(BOOL pressed, unsigned char key) {
@@ -138,6 +149,7 @@ static NSMenu *MainMenu(void) {
 }
 
 void DG_Init(void) {
+    if (screenOnly) return;
     window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 640, 480)
                                          styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable
                                            backing:NSBackingStoreBuffered
@@ -175,6 +187,34 @@ static CGImageRef ScreenImage(void) {
     return image;
 }
 
+/// Writes the screen as a new PNG of 640×480 pixels, the 4:3 shape of the original monitors, to `screens/`, and removes
+/// the older pictures there. A new name each time keeps a cache from showing an old picture.
+static void SaveScreen(void) {
+    NSFileManager *files = NSFileManager.defaultManager;
+    [files createDirectoryAtPath:@"screens" withIntermediateDirectories:YES attributes:nil error:nil];
+    CGImageRef frame = ScreenImage();
+    CGColorSpaceRef space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    CGContextRef context = CGBitmapContextCreate(NULL, 640, 480, 8, 0, space, kCGBitmapByteOrder32Little | kCGImageAlphaNoneSkipFirst);
+    CGContextSetInterpolationQuality(context, kCGInterpolationNone);
+    CGContextDrawImage(context, CGRectMake(0, 0, 640, 480), frame);
+    CGImageRef picture = CGBitmapContextCreateImage(context);
+    NSString *next = @"screens/.next.png";
+    CGImageDestinationRef file = CGImageDestinationCreateWithURL((__bridge CFURLRef)[NSURL fileURLWithPath:next], CFSTR("public.png"), 1, NULL);
+    CGImageDestinationAddImage(file, picture, NULL);
+    if (CGImageDestinationFinalize(file)) {
+        for (NSString *name in [files contentsOfDirectoryAtPath:@"screens" error:nil]) {
+            if ([name hasPrefix:@"screen-"]) [files removeItemAtPath:[@"screens" stringByAppendingPathComponent:name] error:nil];
+        }
+        NSString *name = [NSString stringWithFormat:@"screens/screen-%.0f.png", NSDate.date.timeIntervalSince1970 * 1000];
+        [files moveItemAtPath:next toPath:name error:nil];
+    }
+    CFRelease(file);
+    CGImageRelease(picture);
+    CGContextRelease(context);
+    CGColorSpaceRelease(space);
+    CGImageRelease(frame);
+}
+
 /// Handles each window event that waits, and returns at once when none waits.
 static void HandleEvents(void) {
     NSEvent *event;
@@ -184,6 +224,16 @@ static void HandleEvents(void) {
 }
 
 void DG_DrawFrame(void) {
+    uint32_t now = DG_GetTicksMs();
+    if (screenOnly) {
+        if (now - started < TITLE_TIME) return;
+        SaveScreen();
+        exit(0);
+    }
+    if (now - lastScreen >= SCREEN_PAUSE && gamestate == GS_LEVEL && !menuactive && !paused) {
+        SaveScreen();
+        lastScreen = now;
+    }
     CGImageRef image = ScreenImage();
     [CATransaction begin];
     [CATransaction setDisableActions:YES];
@@ -216,13 +266,20 @@ void DG_SetWindowTitle(const char *title) {
     window.title = [NSString stringWithUTF8String:title];
 }
 
-/// Starts the app with a Dock icon and a menu, then runs the game until it quits.
+/// Starts the app with a Dock icon and a menu, then runs the game until it quits. With `-screen`, it opens no window,
+/// writes the title screen to `screens/` and ends.
 int main(int argc, char **argv) {
+    started = DG_GetTicksMs();
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-screen") == 0) screenOnly = YES;
+    }
     @autoreleasepool {
-        [NSApplication sharedApplication];
-        [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
-        NSApp.mainMenu = MainMenu();
-        [NSApp finishLaunching];
+        if (!screenOnly) {
+            [NSApplication sharedApplication];
+            [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+            NSApp.mainMenu = MainMenu();
+            [NSApp finishLaunching];
+        }
         doomgeneric_Create(argc, argv);
     }
     for (;;) {
