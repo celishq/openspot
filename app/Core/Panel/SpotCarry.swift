@@ -6,11 +6,14 @@ public struct SpotCarry: Equatable {
     public let entry: SpotsModel.Entry
     public var size: SpotSize
     public let turnsOff: Bool
+    /// The tile of the dock that the card came from, in the panel's space. A card of the grid has none.
+    public let tile: CGRect?
     public var isOverDock = false
 
-    public init(entry: SpotsModel.Entry, size: SpotSize, turnsOff: Bool) {
+    public init(entry: SpotsModel.Entry, size: SpotSize, turnsOff: Bool, tile: CGRect? = nil) {
         self.entry = entry
         self.size = size
         self.turnsOff = turnsOff
+        self.tile = tile
     }
 }

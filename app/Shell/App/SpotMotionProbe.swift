@@ -98,7 +98,8 @@ final class SpotMotionProbe: NSObject {
     }
 
     /// Saves a picture of Edit Spots with its dock a second after it starts and, with `OPENSPOT_SPOT`, of that card carried
-    /// over the dock and a second after its release there.
+    /// over the dock, a second after its release there, then carried from the dock over the grid's first card, and a second
+    /// after its release there.
     private func shootEdit(into folder: String) {
         model.beginEditing()
         try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
@@ -117,8 +118,31 @@ final class SpotMotionProbe: NSObject {
                 self.model.dropSpot(by: move)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     self.save(to: "\(folder)/dropped.png")
-                    self.finish(with: "shots\n")
+                    self.shootArrival(of: id, into: folder)
                 }
+            }
+        }
+    }
+
+    /// Carries a spot of the dock over the left half of the grid's first card, and saves a picture of it there and a second
+    /// after its release.
+    private func shootArrival(of id: String, into folder: String) {
+        guard let dock = model.dockFrame, let index = model.dock.shown.firstIndex(where: { $0.id == id }), let first = model.placements.first else {
+            return finish(with: "shots\n")
+        }
+        let tile = model.dock.rects(columns: SpotTokens.dockColumns(width: dock.width))[index]
+        let origin = SpotTokens.gridOrigin(scrollOffset: model.gridScroll)
+        let target = CGPoint(x: origin.x + first.rect.minX + first.rect.width / 4, y: origin.y + first.rect.midY)
+        let start = CGPoint(x: dock.minX + SpotTokens.padding + tile.midX, y: dock.minY + SpotTokens.dockRowsTop + tile.midY - model.dockScroll)
+        let move = CGSize(width: target.x - start.x, height: target.y - start.y)
+        model.dragDockSpot(id, by: CGSize(width: 1, height: 1))
+        model.dragDockSpot(id, by: move)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.save(to: "\(folder)/arriving.png")
+            self.model.dropDockSpot(by: move)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                self.save(to: "\(folder)/arrived.png")
+                self.finish(with: "shots\n")
             }
         }
     }

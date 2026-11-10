@@ -3,7 +3,7 @@ import SwiftUI
 
 /// The dock of Edit Spots, on the glass of the panel's surfaces: its title with the number of spots that are off, its
 /// search, and those spots as their cards in rows that scroll down. The scroll reaches the dock's edges, and its margin lies
-/// inside it.
+/// inside it. A card dragged out of the dock leaves its place empty until it lands.
 struct SpotDockView: View {
     let model: SpotsModel
     let size: CGSize
@@ -34,6 +34,8 @@ struct SpotDockView: View {
                 ZStack(alignment: .topLeading) {
                     ForEach(Array(zip(dock.shown, rects)), id: \.0.id) { item, rect in
                         SpotDockTile(item: item, model: model)
+                            .simultaneousGesture(carry(item))
+                            .animation(nil) { $0.opacity(model.carry?.entry.id == item.id ? 0.001 : 1) }
                             .offset(x: rect.minX, y: rect.minY)
                     }
                 }
@@ -41,6 +43,7 @@ struct SpotDockView: View {
                 .padding(.horizontal, SpotTokens.padding)
                 .padding(.bottom, SpotTokens.padding)
             }
+            .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in model.dockScrolled(to: offset) })
             .overlay(alignment: .topLeading) {
                 if dock.shown.isEmpty {
                     Text(dock.query.isEmpty ? "Each spot is on." : "No spot has these words.")
@@ -55,6 +58,18 @@ struct SpotDockView: View {
         .modifier(SpotGlass(rimSize: size))
         .onChange(of: isSearching) { _, isOn in model.searchesDock(isOn) }
         .onChange(of: model.isSearchingDock) { _, isOn in if !isOn { isSearching = false } }
+    }
+
+    /// Carries a spot out of the dock: its card follows the pointer, and a release on the grid turns it on there. Its moves
+    /// carry no speed, so a release lands the card from rest.
+    private func carry(_ item: SpotDock.Item) -> some Gesture {
+        DragGesture(coordinateSpace: .global)
+            .onChanged { value in
+                var still = Transaction()
+                still.tracksVelocity = false
+                withTransaction(still) { model.dragDockSpot(item.id, by: value.translation) }
+            }
+            .onEnded { model.dropDockSpot(by: $0.translation) }
     }
 }
 

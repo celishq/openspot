@@ -98,6 +98,7 @@ extension SpotsModel {
             drag = nil
             landing = nil
             carry = nil
+            arrival = nil
             resize = nil
             pointerMove = nil
             if lift.offset != .zero { lift.offset = .zero }
@@ -113,7 +114,7 @@ extension SpotsModel {
             isSearchingDock = false
             return
         }
-        if drag != nil || resize != nil {
+        if drag != nil || resize != nil || carry != nil {
             if key.name == "escape" {
                 cancelDrag()
                 cancelResize()
@@ -141,7 +142,7 @@ extension SpotsModel {
     /// rested there for `dragRest`, and go back to their places while the pointer is off the grid. A card on the grid lands
     /// among the cards on the grid, and a hidden card among the hidden cards.
     public func dragSpot(_ id: String, by translation: CGSize) {
-        guard isEditing, query.isEmpty, resize == nil else { return }
+        guard isEditing, query.isEmpty, resize == nil, carry?.tile == nil else { return }
         if drag?.id != id {
             guard let start = visible.firstIndex(where: { $0.id == id }) else { return }
             let onGrid = visible.filter(\.isOnGrid).count
@@ -167,6 +168,11 @@ extension SpotsModel {
         let isOverDock = dockInGrid?.contains(centre) == true
         if carry?.isOverDock != isOverDock { carry?.isOverDock = isOverDock }
         let target = !isOverDock && drag.holds(centre) ? drag.nearest(to: drag.centre(movedBy: moved)) : drag.start
+        follow(target, of: drag)
+    }
+
+    /// Makes room at this place once the pointer has rested near it for `dragRest`.
+    private func follow(_ target: Int, of drag: SpotDrag) {
         guard target != drag.place else { return stopDragWait() }
         guard target != dragTarget else { return }
         stopDragWait()
@@ -205,8 +211,121 @@ extension SpotsModel {
         }, landed: { self.endLanding(of: drag.id) })
     }
 
-    /// Puts the dragged card and the cards that made room back where they were.
+    /// Moves a spot of the dock that the person drags, and lifts its card out of the dock when the drag starts. While the
+    /// card lies over the grid, it takes the size it has there, and the other cards make room where a release would turn
+    /// it on once the pointer has rested there for `dragRest`.
+    public func dragDockSpot(_ id: String, by translation: CGSize) {
+        guard isEditing, query.isEmpty, resize == nil else { return }
+        if carry?.entry.id != id {
+            guard carry == nil, drag == nil, let item = dock.shown.first(where: { $0.id == id }), let tile = tileRect(of: id) else { return }
+            let entry = Entry(command: item.command, run: nil, choice: arrangement)
+            let start = visible.filter(\.isOnGrid).count
+            var sizes = visible.map(\.size)
+            sizes.insert(entry.size, at: start)
+            arrival = SpotDrag(id: id, start: start, sizes: sizes, places: 0...start)
+            stopDragWait()
+            lift.origin = tile.origin
+            change(.edit) { carry = SpotCarry(entry: entry, size: item.size, turnsOff: false, tile: tile) }
+        }
+        pointerMove = translation
+        guard let carry, let tile = carry.tile, var arrival else { return }
+        let centre = CGPoint(x: tile.midX + translation.width, y: tile.midY + translation.height)
+        let grid = SpotTokens.gridOrigin(scrollOffset: gridScroll)
+        let point = CGPoint(x: centre.x - grid.x, y: centre.y - grid.y)
+        let panel = CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
+        let isOverGrid = panel.contains(centre) && dockFrame?.contains(centre) != true && arrival.holds(point)
+        let size = isOverGrid ? arrival.placement(at: arrival.start)?.size ?? carry.entry.size : dock.items.first { $0.id == id }?.size ?? carry.size
+        if carry.size != size { self.carry?.size = size }
+        let card = CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
+        let origin = held(CGRect(x: centre.x - card.width / 2, y: centre.y - card.height / 2, width: card.width, height: card.height))
+        if lift.origin != origin { lift.origin = origin }
+        guard isOverGrid else {
+            guard drag != nil else { return }
+            stopDragWait()
+            return change(.edit) {
+                drag = nil
+                updateVisible()
+            }
+        }
+        let start = arrival.rect(at: arrival.start)
+        let offset = CGSize(width: origin.x - grid.x - start.minX, height: origin.y - grid.y - start.minY)
+        if lift.offset != offset { lift.offset = offset }
+        let target = arrival.nearest(to: arrival.centre(movedBy: offset))
+        guard let drag else {
+            arrival.place = target
+            return change(.edit) {
+                drag = arrival
+                updateVisible()
+            }
+        }
+        follow(target, of: drag)
+    }
+
+    /// Ends the drag of a spot of the dock: over the grid it turns on at the place nearest its card, and anywhere else it
+    /// goes back to the dock.
+    public func dropDockSpot(by translation: CGSize) {
+        guard let carry, carry.tile != nil else { return }
+        dragDockSpot(carry.entry.id, by: translation)
+        guard let drag, drag.id == carry.entry.id else { return sendBack() }
+        turnOnDropped(carry.entry, at: drag.nearest(to: drag.centre(movedBy: lift.offset)))
+    }
+
+    /// Turns on a spot of the dock that the person dropped on the grid, at this place, and lands its card there.
+    private func turnOnDropped(_ entry: Entry, at place: Int) {
+        stopDragWait()
+        pointerMove = nil
+        arrival = nil
+        var order = (cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id)
+        order.insert(entry.id, at: min(place, order.count))
+        var next = arrangement
+        next.arrange(order)
+        next.set(isEnabled: true, of: files.folder.fileID(of: entry.command))
+        do {
+            try files.config.write(next)
+        } catch {
+            host.notify("\(entry.command.name) was not turned on. \(Self.reason(error))")
+            return sendBack()
+        }
+        change(.edit, {
+            drag = nil
+            landing = entry.id
+            reload()
+            if let index = visible.firstIndex(where: { $0.id == entry.id }) { selected = index }
+            carryHome()
+        }, completion: { self.endLanding(of: entry.id) })
+    }
+
+    /// Puts a carried spot of the dock back: its card leaves the grid, and glides back to its tile.
+    private func sendBack() {
+        guard let carry, let tile = carry.tile else { return }
+        let id = carry.entry.id
+        stopDragWait()
+        pointerMove = nil
+        arrival = nil
+        if let size = dock.items.first(where: { $0.id == id })?.size, size != carry.size { self.carry?.size = size }
+        let home = tileRect(of: id) ?? tile
+        change(.edit, {
+            drag = nil
+            updateVisible()
+            lift.origin = home.origin
+        }, completion: { self.endLanding(of: id) })
+    }
+
+    /// Where the card of a spot of the dock lies in the panel's space, as the dock shows it now.
+    private func tileRect(of id: String) -> CGRect? {
+        guard let dockFrame, let index = dock.shown.firstIndex(where: { $0.id == id }) else { return nil }
+        let rect = dock.rects(columns: SpotTokens.dockColumns(width: dockFrame.width))[index]
+        return rect.offsetBy(dx: dockFrame.minX + SpotTokens.padding, dy: dockFrame.minY + SpotTokens.dockRowsTop - dockScroll)
+    }
+
+    /// Takes how far the dock has scrolled.
+    public func dockScrolled(to offset: CGFloat) {
+        dockScroll = offset
+    }
+
+    /// Puts the dragged card and the cards that made room back where they were. A spot of the dock goes back to the dock.
     public func cancelDrag() {
+        if carry?.tile != nil { return sendBack() }
         guard let drag else { return }
         stopDragWait()
         pointerMove = nil
@@ -302,7 +421,9 @@ extension SpotsModel {
         guard gridScroll != offset else { return }
         gridScroll = offset
         guard let move = pointerMove else { return }
-        if let drag {
+        if let carry, carry.tile != nil {
+            dragDockSpot(carry.entry.id, by: move)
+        } else if let drag {
             dragSpot(drag.id, by: move)
         } else if let resize {
             resizeSpot(resize.id, by: move)
@@ -318,9 +439,19 @@ extension SpotsModel {
     /// holds the dock too.
     private var windowInGrid: CGRect {
         let origin = SpotTokens.gridOrigin(scrollOffset: gridScroll)
+        return windowInPanel.offsetBy(dx: -origin.x, dy: -origin.y)
+    }
+
+    /// The panel's window in the panel's space, a padding inside its edges. In Edit Spots it holds the dock too.
+    private var windowInPanel: CGRect {
         let panel = CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
-        let window = panel.union(dockFrame ?? panel)
-        return window.offsetBy(dx: -origin.x, dy: -origin.y).insetBy(dx: SpotTokens.padding, dy: SpotTokens.padding)
+        return panel.union(dockFrame ?? panel).insetBy(dx: SpotTokens.padding, dy: SpotTokens.padding)
+    }
+
+    /// The top left corner that keeps this card inside the window, nearest to its own.
+    private func held(_ card: CGRect) -> CGPoint {
+        let window = windowInPanel
+        return CGPoint(x: min(max(card.minX, window.minX), window.maxX - card.width), y: min(max(card.minY, window.minY), window.maxY - card.height))
     }
 
     /// The dock in the grid's places.

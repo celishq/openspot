@@ -323,6 +323,57 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertNil(model.carry)
     }
 
+    /// Where the card of a spot of the dock lies in the panel's space, with the dock not scrolled.
+    private func tile(_ id: String) -> CGRect {
+        let index = model.dock.shown.firstIndex { $0.id == id } ?? 0
+        let rect = model.dock.rects(columns: SpotTokens.dockColumns(width: dock.width))[index]
+        return rect.offsetBy(dx: dock.minX + SpotTokens.padding, dy: dock.minY + SpotTokens.dockRowsTop)
+    }
+
+    /// The pointer's move that takes the centre of the dock's card of a spot to this point of the grid.
+    private func dockMove(_ id: String, to point: CGPoint) -> CGSize {
+        let start = tile(id)
+        let grid = SpotTokens.gridOrigin(scrollOffset: 0)
+        return CGSize(width: point.x + grid.x - start.midX, height: point.y + grid.y - start.midY)
+    }
+
+    func testASpotDraggedFromTheDockMakesRoomOnTheGridAndAReleaseTurnsItOnThere() throws {
+        try "#!/bin/sh\n# size=wide\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        model.reload()
+        model.dockFrame = dock
+        let translation = dockMove("timer", to: leftHalf(of: "b"))
+
+        model.dragDockSpot("timer", by: translation)
+        XCTAssertEqual(model.carry?.entry.id, "timer")
+        XCTAssertEqual(order, ["a", "timer", "b", "c", "d"])
+
+        model.dropDockSpot(by: translation)
+        XCTAssertNil(model.carry)
+        XCTAssertEqual(order, ["a", "timer", "b", "c", "d"])
+        XCTAssertEqual(model.dock.items.map(\.id), [])
+        XCTAssertEqual(savedOrder(), ["a", "timer", "b", "c", "d"])
+    }
+
+    func testASpotOfTheDockReleasedOffTheGridGlidesBackToItsTileAndStaysOff() throws {
+        host.heldEnds = []
+        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        model.reload()
+        model.dockFrame = dock
+        model.dragDockSpot("timer", by: dockMove("timer", to: leftHalf(of: "b")))
+        XCTAssertTrue(order.contains("timer"))
+
+        let away = CGSize(width: 0, height: -5)
+        model.dragDockSpot("timer", by: away)
+        XCTAssertEqual(order, ["a", "b", "c", "d"])
+
+        model.dropDockSpot(by: away)
+        XCTAssertEqual(model.lift.origin, tile("timer").origin)
+        host.heldEnds?.forEach { $0() }
+        XCTAssertNil(model.carry)
+        XCTAssertEqual(model.dock.items.map(\.id), ["timer"])
+        XCTAssertEqual(savedOrder(), ["a", "b", "c", "d"])
+    }
+
     func testACardPutBackGlidesToWhereItStarted() {
         host.heldEnds = []
         let start = model.placements[3].rect

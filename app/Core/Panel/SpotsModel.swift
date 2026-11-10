@@ -197,8 +197,12 @@ public final class SpotsModel {
     public internal(set) var landing: String?
     /// The card that the window draws over the panel and the dock while the person carries it, until it lands.
     public internal(set) var carry: SpotCarry?
-    /// Where the dock lies in the panel's space while Edit Spots shows it.
+    /// Where the dock lies in the panel's space while Edit Spots shows it, and how far it has scrolled.
     @ObservationIgnored public var dockFrame: CGRect?
+    @ObservationIgnored public internal(set) var dockScroll: CGFloat = 0
+    /// The layouts of the grid for each place that a carried spot of the dock can take. Its card is on the grid while the
+    /// drag holds it there.
+    @ObservationIgnored var arrival: SpotDrag?
     /// The card that the person resizes by its corner in Edit Spots, and the size that a release keeps.
     public internal(set) var resize: SpotResize?
     /// How long the pointer stays near a new place before the other cards make room there.
@@ -474,7 +478,8 @@ public final class SpotsModel {
     private func found() -> [Entry] {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
-            return dragged(cards.filter(\.isOnGrid) + (isEditing ? cards.filter { !$0.isOnGrid } : []))
+            let arriving = carry.flatMap { $0.tile != nil && drag?.id == $0.entry.id ? [$0.entry] : nil } ?? []
+            return dragged(cards.filter(\.isOnGrid) + arriving + (isEditing ? cards.filter { !$0.isOnGrid } : []))
         }
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         spotList.replace(cards.filter(\.command.isFound).map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.command.name].compactMap { $0 }.joined(separator: " "), run: $0.id) })
