@@ -8,6 +8,13 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertFalse(CommandLineCall.usage.contains("helper"))
     }
 
+    func testTheAppDrawsAPictureBookWithAHelperCallThatTheUsageDoesNotList() {
+        XCTAssertEqual(CommandLineCall(arguments: ["helper", "glyphs", "24", "19.2", "/tmp/book"]), .glyphBook(side: 24, fontSize: 19.2, path: "/tmp/book"))
+        XCTAssertEqual(CommandLineCall(arguments: ["helper", "glyphs", "big", "19.2", "/tmp/book"]), .unknown("helper glyphs big 19.2 /tmp/book"))
+        XCTAssertEqual(CommandLineCall(arguments: ["helper", "glyphs", "24"]), .unknown("helper glyphs 24"))
+        XCTAssertFalse(CommandLineCall.usage.contains("glyphs"))
+    }
+
     func testEmojiCanNameATone() {
         XCTAssertEqual(CommandLineCall(arguments: ["emoji"]), .emoji(tone: .none))
         XCTAssertEqual(CommandLineCall(arguments: ["emoji", "--tone", "medium-dark"]), .emoji(tone: .mediumDark))

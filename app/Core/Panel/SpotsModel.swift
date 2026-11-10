@@ -145,6 +145,8 @@ public final class SpotsModel {
         didSet {
             let shown = transition.shown
             if shown != openList { openList = shown }
+            let opening = transition.phase == .opening ? transition.id : nil
+            if opening != (oldValue.phase == .opening ? oldValue.id : nil) { runs.opening.moving = opening }
         }
     }
     public var closingPick: (item: SpotItem, entry: Entry)?
@@ -194,6 +196,7 @@ public final class SpotsModel {
     @ObservationIgnored public var flashPause: Duration = .milliseconds(1500)
     @ObservationIgnored private var flashWatch: Task<Void, Never>?
     private var scanned: [Spot] = []
+    private var pluginScan = PluginScan()
     private var lastScan = ScanResult(plugins: [], refused: [])
     /// The files of the last spot that Delete moved to the Trash, which `⌘Z` puts back.
     @ObservationIgnored var removal: Removal?
@@ -210,7 +213,7 @@ public final class SpotsModel {
         self.files = files
         self.runs = runs ?? SpotRuns(
             recent: { files.recent(of: $0) },
-            prepare: { [unowned host] in await host.prepare($0) },
+            prepare: { [unowned host] in await host.prepare($0, glyphs: $1) },
             log: files.log
         )
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
@@ -243,15 +246,16 @@ public final class SpotsModel {
         host.present()
     }
 
-    /// Reads the config file and the plugin folder again. No script runs for this, and each card shows its header until its
-    /// answer arrives. A file that gives no spot shows a card of its faults, and any other fault shows in a toast.
+    /// Reads the config file again, and the plugin folder when a file that its scan reads has changed. No script runs for
+    /// this, and each card shows its header until its answer arrives. A file that gives no spot shows a card of its faults,
+    /// and any other fault shows in a toast.
     public func reload() {
         host.applyConfig()
         let config = files.config.read()
         let folder = files.folder(config)
         let shipped = host.shippedSpots(folder: folder, config: files.config, update: updateSpot, offersLogin: isFirstLaunch)
             + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
-        var scan = (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
+        var scan = pluginScan.look(at: folder, shipped: shipped)
         let new = shipped.lazy.compactMap { if case .new(let new)? = $0.shipped { new } else { nil } }.first
         let faults = new.map { folder.faultSpots(of: scan, new: $0) } ?? []
         if !faults.isEmpty { scan.plugins.append(Plugin(id: ShippedSpot.faultsID, commands: faults)) }
@@ -329,8 +333,8 @@ public final class SpotsModel {
     }
 
     /// The panel starts to show: a pick that its fade left finishes, the first card is selected, the held keys count, the
-    /// plugin folder is read again and each script that the panel shows reads. The panel says it shows on the next turn, so
-    /// that its fade starts from hidden.
+    /// plugin folder is read again if it changed, and each script that the panel shows reads. The panel says it shows on the
+    /// next turn, so that its fade starts from hidden.
     public func panelWillShow(holding modifiers: Shortcut.Modifiers) {
         finishPick()
         selected = 0
@@ -639,9 +643,10 @@ public final class SpotsModel {
         return list[selected]
     }
 
-    /// Whether the panel shows its search field, which a form or a sheet of parts with no rows replaces.
+    /// Whether the search field keeps the keys: no form, no Edit Spots and no shown sheet of parts with no rows takes them.
+    /// It follows the parts that show, so that the focus stays put while a sheet moves.
     public var showsSearch: Bool {
-        form == nil && !isEditing && openPanel?.showsRows != false
+        form == nil && !isEditing && openPanel?.kind.takesKeys != false
     }
 
     public var openPanel: SheetParts? {

@@ -147,6 +147,18 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertEqual(host.landings, ["note"])
     }
 
+    func testAFloatOfPartsWithNoFieldKeepsItsPartsWhenItCloses() async throws {
+        try script("note", header: "read=sheet", "printf 'text=hi\\ntitle=Hi\\n'")
+        model.reload()
+        model.press(try key("note"))
+        try await wait("the parts") { model.sheets["note"]?.panel != nil }
+
+        model.land("note")
+
+        XCTAssertNotNil(model.sheets["note"]?.panel)
+        XCTAssertEqual(host.landings, ["note"])
+    }
+
     func testADropOnAFloatGoesToItsScriptAndLeavesThePanel() async throws {
         try script("shelf", header: "read=sheet\ndrop=*", """
         case "$1" in

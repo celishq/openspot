@@ -46,7 +46,6 @@ struct SpotGridView: View {
                 )
                 .equatable()
                 .simultaneousGesture(DragGesture(minimumDistance: 0).updating($pressed) { _, pressed, _ in pressed = entry.id })
-                .onDrop(of: [.fileURL], delegate: SpotCardDrop(id: entry.id, model: model, target: $dropTarget))
                 .modifier(card.motion)
                 .zIndex(dragged?.id == entry.id ? 1 : 0)
                 .highPriorityGesture(moveGesture(of: entry), including: model.isEditing ? .all : .subviews)
@@ -57,6 +56,7 @@ struct SpotGridView: View {
         }
         .frame(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows), alignment: .topLeading)
         .contentShape(Rectangle())
+        .onDrop(of: [.fileURL], delegate: SpotGridDrop(model: model, target: $dropTarget))
     }
 
     /// Where a card lies in the grid, from its place, the drag of Edit Spots and the push of an open sheet, and how it

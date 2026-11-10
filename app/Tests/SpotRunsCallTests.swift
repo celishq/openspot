@@ -79,6 +79,99 @@ final class SpotRunsCallTests: SpotRunsCase {
         try await wait("the failure") { fixes == ["Allow it. x-apple.systempreferences:pane"] }
     }
 
+    func testWhatASheetPrintsDuringItsOpenMotionShowsWhenTheMotionEnds() async throws {
+        runs.quit()
+        runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
+        try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        runs.opening.moving = "script"
+        sheet.open {}
+        try await allEnded()
+        try await pause(0.2)
+
+        XCTAssertEqual(sheet.list.shown.count, 0)
+        runs.opening.moving = nil
+
+        try await wait("the rows") { sheet.list.shown.count == 1 }
+    }
+
+    func testASheetOfRowsSaysItsKindWhileItsFirstAnswerWaitsForTheOpenMotion() async throws {
+        runs.quit()
+        runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
+        try script(header: "read=sheet", "printf 'repeat=a\\n\\ntemplate=row\\ngrid=name\\ntext=name\\n\\nrow=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        runs.opening.moving = "script"
+        sheet.open {}
+        XCTAssertEqual(sheet.kind, .waiting)
+
+        try await wait("the kind") { sheet.kind == .rows }
+        XCTAssertNil(sheet.panel)
+        XCTAssertEqual(sheet.list.shown.count, 0)
+        runs.opening.moving = nil
+    }
+
+    func testASheetOfPartsWithNoRowsSaysItsKindWhileItsFirstAnswerWaitsForTheOpenMotion() async throws {
+        runs.quit()
+        runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
+        try script(header: "read=sheet", "printf 'text=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        runs.opening.moving = "script"
+        sheet.open {}
+        try await allEnded()
+        try await pause(0.2)
+
+        XCTAssertNil(sheet.panel)
+        XCTAssertEqual(sheet.kind, .parts)
+        runs.opening.moving = nil
+        try await wait("the parts") { sheet.panel != nil }
+        XCTAssertEqual(sheet.kind, .parts)
+    }
+
+    func testASheetForgetsTheKindOfAHeldAnswerThatItsStoppedReadDrops() async throws {
+        runs.quit()
+        runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
+        try script(header: "read=sheet", "printf 'text=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        runs.opening.moving = "script"
+        sheet.open {}
+        try await wait("the kind") { sheet.kind == .parts }
+
+        runs.panelClosed()
+        runs.opening.moving = nil
+        try await allEnded()
+        try await pause(0.2)
+
+        XCTAssertNil(sheet.panel)
+        XCTAssertEqual(sheet.kind, .rows)
+    }
+
+    func testWhatASheetPrintsShowsAfterTheLengthOfItsOpenMotionThoughItsSpringSettlesLater() async throws {
+        try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        runs.opening.moving = "script"
+
+        sheet.open {}
+
+        try await wait("the rows") { sheet.list.shown.count == 1 }
+        XCTAssertNil(runs.opening.moving)
+    }
+
+    func testTheOpenMotionOfAnotherSheetHoldsNothingOfThisOne() async throws {
+        try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        runs.opening.moving = "other"
+
+        sheet.open {}
+
+        try await wait("the rows") { sheet.list.shown.count == 1 }
+    }
+
     func testAReadStopsWhenThePanelThatWantedItCloses() async throws {
         try script(header: "read=panel\nglobal=true", "printf 'row=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
@@ -151,6 +244,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         let sheet = try sheet()
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
+        let frames = FrameLog(sheet)
         sheet.open {}
         try await wait("the part") { sheet.panel != nil && sheet.calls.isEmpty }
 
@@ -166,8 +260,8 @@ final class SpotRunsCallTests: SpotRunsCase {
 
         try await wait("the end of the work") { self.exists("done") && sheet.calls.isEmpty }
         XCTAssertEqual(toasts, ["Started", "Done"])
-        XCTAssertEqual(sheet.lastFrame, "toast=Done\n\ntext=bar\ntitle=done\n")
-        XCTAssertNil(sheet.panel)
+        XCTAssertEqual(frames.last, "toast=Done\n\ntext=bar\ntitle=done\n")
+        XCTAssertEqual(sheet.panel?.parts.last?.title, "half")
     }
 
     func testAFrameWithNoOpenSheetShowsOnlyItsToastAndItsState() async throws {
@@ -196,7 +290,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testOpeningASheetAddsTheLastFrameOfEachRunningCall() async throws {
         try script(header: "read=sheet", """
         case "$1" in
-          read) printf 'grid=go\\ngrid=bar\\n\\nbutton=go\\ntitle=Go\\n\\ntext=bar\\ntitle=idle\\n' ;;
+          read) printf 'grid=go\\ngrid=note\\ngrid=bar\\n\\nbutton=go\\ntitle=Go\\n\\nfield=note\\ntext=\\n\\ntext=bar\\ntitle=idle\\n' ;;
           go) printf 'text=bar\\ntitle=half\\n---\\n'; sleep 30 ;;
         esac
         """)

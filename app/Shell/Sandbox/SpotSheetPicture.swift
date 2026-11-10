@@ -8,7 +8,7 @@ enum SpotSheetPicture {
     private static let settle = 0.5
     private static let margin: CGFloat = 16
 
-    private static func list(of output: PluginOutput) -> ItemList {
+    static func list(of output: PluginOutput) -> ItemList {
         var list = ItemList(items: output.items)
         list.take(drawing: output.drawing, templates: output.templates)
         return list

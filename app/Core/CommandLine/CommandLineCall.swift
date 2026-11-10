@@ -49,6 +49,8 @@ public enum CommandLineCall: Equatable, Sendable {
     case screenRecordStatus
     /// Runs as the helper process of a capability. A script never makes this call, so the usage does not list it.
     case helper(String)
+    /// Draws the colour glyphs on stdin, one on each line, into a picture book at a path. Only the app makes this call.
+    case glyphBook(side: Double, fontSize: Double, path: String)
     case help
     case unknown(String)
 
@@ -152,6 +154,12 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("clipboard", "paste") where rest.count == 1: self = .clipboardPaste
         case ("translate", "languages") where rest.count == 1: self = .translateLanguages
         case ("helper", let name?) where rest.count == 1: self = .helper(name)
+        case ("helper", "glyphs") where rest.count == 4:
+            guard let side = Double(rest[1]), let fontSize = Double(rest[2]) else {
+                self = .unknown(arguments.joined(separator: " "))
+                return
+            }
+            self = .glyphBook(side: side, fontSize: fontSize, path: rest[3])
         case ("emoji", nil): self = .emoji(tone: .none)
         case ("symbols", nil): self = .symbols
         case ("emoji", "--tone") where rest.count == 2:

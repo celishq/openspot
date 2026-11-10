@@ -96,6 +96,17 @@ final class ScriptProcessTests: XCTestCase {
         folder.appendingPathComponent(name).path
     }
 
+    func testAProcessKeepsOnlyTheEndOfALongStderr() async throws {
+        let plugin = try writePlugin("loud.sh", "#!/bin/sh\ni=0\nwhile [ $i -lt 5000 ]; do echo \"line $i of a log that runs long\" >&2; i=$((i+1)); done\necho 'the end' >&2\n")
+        let process = ScriptProcess(url: plugin.url, limit: 10)
+
+        for try await _ in try process.start() {}
+
+        XCTAssertLessThanOrEqual(process.errors.utf8.count, 2 * 64 * 1024)
+        XCTAssertGreaterThan(process.errors.utf8.count, 60 * 1024)
+        XCTAssertTrue(process.errors.hasSuffix("line 4999 of a log that runs long\nthe end\n"))
+    }
+
     func testAStopEndsTheStreamAtOnceWithNoError() async throws {
         let plugin = try writePlugin("slow.sh", "#!/bin/sh\nsleep 30\n")
         let process = ScriptProcess(url: plugin.url)
@@ -261,6 +272,40 @@ final class ScriptProcessTests: XCTestCase {
 
         XCTAssertEqual(output, "a=1\n")
         XCTAssertLessThan(Date().timeIntervalSince(started), 2)
+    }
+
+    func testAFailureNamesTheLastLineOfALongStderr() async throws {
+        let body = "i=0\nwhile [ $i -lt 5000 ]; do echo \"line $i of the log\" >&2; i=$((i+1)); done\nprintf 'the last\\n\\n' >&2\nprintf 'cut' >&2\nprintf ' short\\n' >&2\nexit 3\n"
+        let plugin = try writePlugin("noisy.sh", "#!/bin/sh\n\(body)")
+
+        do {
+            _ = try await ScriptProcess.output(url: plugin.url, limit: 5)
+            XCTFail("expected a failure")
+        } catch {
+            XCTAssertEqual(error as? PluginError, .failed(3, "cut short"))
+        }
+    }
+
+    func testAFailureNamesItsLastWordsAfterManyBlankLines() async throws {
+        let plugin = try writePlugin("blank.sh", "#!/bin/sh\necho boom >&2\ni=0\nwhile [ $i -lt 80000 ]; do echo >&2; i=$((i+1)); done\nexit 3\n")
+
+        do {
+            _ = try await ScriptProcess.output(url: plugin.url, limit: 10)
+            XCTFail("expected a failure")
+        } catch {
+            XCTAssertEqual(error as? PluginError, .failed(3, "boom"))
+        }
+    }
+
+    func testAFailureNamesTheLastLineOfAStderrWithWindowsLineEnds() async throws {
+        let plugin = try writePlugin("crlf.sh", "#!/bin/sh\nprintf 'first\\r\\nboom\\r\\n\\r\\n' >&2\nexit 3\n")
+
+        do {
+            _ = try await ScriptProcess.output(url: plugin.url, limit: 10)
+            XCTFail("expected a failure")
+        } catch {
+            XCTAssertEqual(error as? PluginError, .failed(3, "boom"))
+        }
     }
 
     func testAScriptKilledBySomethingElseIsAFailure() async throws {

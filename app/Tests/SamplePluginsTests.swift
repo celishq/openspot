@@ -9,17 +9,18 @@ final class SamplePluginsTests: SamplePluginsCase {
         defer { try? FileManager.default.removeItem(at: tools) }
         try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("pbcopy"))
         try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("openspot"))
-        for (script, call) in [("emoji.sh", "open"), ("files.sh", "copy"), ("pulls.sh", "copy")] {
+        let examples = plugins.deletingLastPathComponent().appendingPathComponent("examples")
+        for (script, call) in [(plugins.appendingPathComponent("emoji.sh"), "open"), (plugins.appendingPathComponent("files.sh"), "copy"), (examples.appendingPathComponent("pulls.sh"), "copy")] {
             let process = Process()
             let out = Pipe()
-            process.executableURL = plugins.appendingPathComponent(script)
+            process.executableURL = script
             process.arguments = [call, "x"]
             process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "OPENSPOT_DATA": tools.path, "HOME": tools.path]
             process.standardOutput = out
             try process.run()
             process.waitUntilExit()
             let text = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-            XCTAssertEqual(text, "toast=Copied\n", script)
+            XCTAssertEqual(text, "toast=Copied\n", script.lastPathComponent)
         }
     }
 
@@ -53,6 +54,20 @@ final class SamplePluginsTests: SamplePluginsCase {
             let first = try await cpu.read(timeout: 10).points?.count ?? 0
             let second = try await cpu.read(timeout: 10).points?.count ?? 0
 
+            XCTAssertEqual(second, first + 1)
+        }
+    }
+
+    func testALookAtTheCPUShowsItNowAndLeavesItsTrendForTheReads() async throws {
+        let cpu = try XCTUnwrap(try scan.metrics.first { $0.id == "cpu" })
+
+        try await withPrivateHome { _ in
+            let first = try await cpu.read(timeout: 10).points?.count ?? 0
+            let look = MetricValue(output: PluginOutput(text: try await ScriptProcess.output(url: cpu.url, arguments: ["show"], limit: 10)))
+            let second = try await cpu.read(timeout: 10).points?.count ?? 0
+
+            XCTAssertEqual(look?.points?.count, first + 1)
+            XCTAssertNotNil(look?.title)
             XCTAssertEqual(second, first + 1)
         }
     }
@@ -222,7 +237,7 @@ final class SamplePluginsTests: SamplePluginsCase {
     }
 
     func testPullRequestsCountEachStateAndOfferEachOne() async throws {
-        let scan = try scan
+        let scan = try exampleScan
         let metric = try XCTUnwrap(scan.metrics.first { $0.id == "pulls" })
         let list = try XCTUnwrap(scan.commands.first { $0.id == "pulls" })
         try await withPrivateHome { folder in
@@ -247,7 +262,7 @@ final class SamplePluginsTests: SamplePluginsCase {
     }
 
     func testPullRequestsHideWhenThereAreNone() async throws {
-        let metric = try XCTUnwrap(try scan.metrics.first { $0.id == "pulls" })
+        let metric = try XCTUnwrap(try exampleScan.metrics.first { $0.id == "pulls" })
         try await withPrivateHome { folder in
             try #"{"data":{"mine":{"nodes":[]},"asked":{"nodes":[]}}}"#.write(to: folder.appendingPathComponent("gh-answer"), atomically: true, encoding: .utf8)
 
@@ -257,8 +272,12 @@ final class SamplePluginsTests: SamplePluginsCase {
         }
     }
 
-    func testAgentsShowInTheMenuBar() throws {
-        XCTAssertEqual(try scan.metrics.filter(\.isTray).map(\.id), ["agents", "pulls"])
+    func testAgentsAndPullRequestsShowInTheMenuBar() throws {
+        XCTAssertEqual(try exampleScan.metrics.filter(\.isTray).map(\.id), ["agents", "pulls"])
+    }
+
+    func testNoShippedSpotReadsOnATimerInTheMenuBar() throws {
+        XCTAssertEqual(try scan.metrics.filter { $0.isTray && $0.read?.seconds != nil }.map(\.id), [])
     }
 
     func testTheColorPickerCopiesAPickAndNothingOnACancel() async throws {

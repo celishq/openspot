@@ -124,17 +124,18 @@ final class DoomExampleTests: SamplePluginsCase {
         defer { runs.quit() }
         runs.take(try PluginFolder(url: plugins).scan())
         let sheet = try XCTUnwrap(runs.sheets["doom/doom"])
+        let log = FrameLog(sheet)
         var pictures: [(picture: String?, sheet: [[String]]?)] = []
         for change in [{}] + changes {
             try change()
             time += 10
-            let before = sheet.lastFrame
+            let before = log.frames.count
             runs.panelOpened()
-            for _ in 0..<500 where sheet.lastFrame == before || sheet.lastFrame == nil {
+            for _ in 0..<500 where log.frames.count == before {
                 try await Task.sleep(for: .milliseconds(10))
             }
             runs.panelClosed()
-            let drawing = PluginOutput(text: sheet.lastFrame ?? "").layout?.rows
+            let drawing = PluginOutput(text: log.last ?? "").layout?.rows
             pictures.append((sheet.state.face.hasView ? sheet.state.values["picture"]?.last : nil, drawing))
         }
         return pictures

@@ -10,7 +10,7 @@ struct SpotSoftBlur: NSViewRepresentable {
     private static let tintInset: CGFloat = SpotTokens.halo * 0.58
     private static let tintSoftness: CGFloat = SpotTokens.halo / 4.7
 
-    /// Black images whose alpha is the strength of the blur and of the tint at each point.
+    /// Images of alpha alone, which is the strength of the blur and of the tint at each point.
     struct Masks {
         let blur: CGImage?
         let tint: CGImage?
@@ -128,12 +128,18 @@ struct SpotSoftBlur: NSViewRepresentable {
         return masks
     }
 
+    /// Draws a soft rounded shape and keeps only its alpha, a quarter of the bytes of the drawing.
     private static func mask(height: CGFloat, inset: CGFloat, softness: CGFloat) -> CGImage? {
         let shape = RoundedRectangle(cornerRadius: SpotTokens.radius + SpotTokens.halo - inset, style: .continuous)
             .fill(Color.black)
             .padding(inset)
             .frame(width: SpotTokens.panelWidth, height: height)
             .blur(radius: softness)
-        return ImageRenderer(content: shape).cgImage
+        guard let drawn = ImageRenderer(content: shape).cgImage,
+              let alpha = CGContext(data: nil, width: drawn.width, height: drawn.height, bitsPerComponent: 8, bytesPerRow: 0,
+                                    space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.alphaOnly.rawValue)
+        else { return nil }
+        alpha.draw(drawn, in: CGRect(x: 0, y: 0, width: drawn.width, height: drawn.height))
+        return alpha.makeImage()
     }
 }

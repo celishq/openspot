@@ -8,9 +8,15 @@ class SamplePluginsCase: XCTestCase {
         URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("examples")
     }
 
+    var exampleScan: ScanResult {
+        get throws {
+            try PluginFolder(url: examples).scan()
+        }
+    }
+
     /// The example spot with this name.
     func example(_ name: String) throws -> Spot {
-        try XCTUnwrap(try PluginFolder(url: examples).scan().commands.first { $0.name == name })
+        try XCTUnwrap(try exampleScan.commands.first { $0.name == name })
     }
 
     var scan: ScanResult {
