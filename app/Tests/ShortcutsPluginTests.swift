@@ -9,13 +9,13 @@ final class ShortcutsPluginTests: SamplePluginsCase {
 
     /// Puts a fake `shortcuts` on the path. It lists one folder, and a run or a view writes its arguments to `shortcuts-args`,
     /// one on each line. A run gives the file `result` as its result, and fails when the file `fail` is there.
-    private static func fakeShortcuts(in folder: URL) throws {
+    private static func fakeShortcuts(in folder: URL, loose: String = "printf '%s\\n' 'Say \\ \"hi\" (now)' 'Take a break'") throws {
         let script = """
         #!/bin/sh
         case "$1 $2 $3" in
           'list --folders ') echo Media ;;
           'list --folder-name Media') echo 'Video to audio' ;;
-          'list --folder-name none') printf '%s\\n' 'Say \\ "hi" (now)' 'Take a break' ;;
+          'list --folder-name none') \(loose) ;;
           run*|view*)
             printf '%s\\n' "$@" > '\(folder.path)/shortcuts-args'
             [ -f '\(folder.path)/fail' ] && { echo 'Error: The operation could not be completed.' >&2; exit 1; }
@@ -52,6 +52,33 @@ final class ShortcutsPluginTests: SamplePluginsCase {
             XCTAssertEqual(lines.items.map(\.title), ["Say \\ \"hi\" (now)", "Take a break", "Video to audio"])
             XCTAssertEqual(lines.items.map(\.parent), [nil, nil, "Media"])
             XCTAssertEqual(Set(lines.items.map(\.iconFile)), ["/System/Applications/Shortcuts.app"])
+        }
+    }
+
+    /// The frames of one read of the spot, with its own data folder.
+    private static func frames(of shortcuts: Spot) async throws -> [String] {
+        var frames: [String] = []
+        for try await frame in ScriptProcess(url: shortcuts.url, arguments: ["read"], limit: 10, dataName: shortcuts.dataName).start() {
+            frames.append(frame)
+        }
+        return frames
+    }
+
+    func testAReadShowsTheKeptRowsFirstAndSendsFreshRowsOnlyWhenTheyChanged() async throws {
+        let shortcuts = try shortcuts()
+        try await withPrivateHome { folder in
+            try Self.fakeShortcuts(in: folder)
+
+            let first = try await Self.frames(of: shortcuts)
+            let same = try await Self.frames(of: shortcuts)
+            try Self.fakeShortcuts(in: folder, loose: "echo 'Make a GIF'")
+            let changed = try await Self.frames(of: shortcuts)
+
+            XCTAssertEqual(first.count, 1)
+            XCTAssertEqual(same, first)
+            XCTAssertEqual(changed.count, 2)
+            XCTAssertEqual(changed.first, first.first)
+            XCTAssertEqual(PluginOutput(text: changed.last ?? "").items.map(\.title), ["Make a GIF", "Video to audio"])
         }
     }
 

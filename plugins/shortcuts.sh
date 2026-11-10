@@ -7,6 +7,7 @@
 # drop=*
 . "$OPENSPOT_SH"
 input="$OPENSPOT_DATA/input"
+kept="$OPENSPOT_DATA/rows"
 app=/System/Applications/Shortcuts.app
 
 # Prints a row for each shortcut in a folder, or with "none" for each shortcut in no folder.
@@ -18,6 +19,31 @@ rows() {
     if (ENVIRON["parent"] != "") print ENVIRON["parent"]
     print ""
   }'
+}
+
+# Prints a row for each shortcut in no folder, then for each shortcut in each folder.
+all_rows() {
+  rows none
+  shortcuts list --folders | while IFS= read -r folder; do
+    [ -n "$folder" ] && rows "$folder"
+  done
+}
+
+# Prints the head of the list: the files that the next run takes, when there are some, and the buttons.
+head_of_list() {
+  if [ -s "$input" ]; then
+    count=$(wc -l <"$input" | tr -d ' ')
+    if [ "$count" = 1 ]; then
+      printf 'title=Run with %s\n' "$(esc "$(basename "$(cat "$input")")")"
+    else
+      printf 'title=Run with %s files\n' "$count"
+    fi
+    printf 'detail=Pick a shortcut\n\n'
+    printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=command\n\n'
+  fi
+  printf 'button=open\ntitle=Run\n\n'
+  printf 'button=clipboard\ntitle=Run with clipboard\nshortcut=cmd+return\nclose=true\n\n'
+  printf 'button=edit\ntitle=Open in Shortcuts\nshortcut=cmd+e\nclose=true\n\n'
 }
 
 # Runs a shortcut with each file as its input, copies its result, and says what happened.
@@ -56,23 +82,18 @@ run() {
 case "$1" in
   read)
     [ "$OPENSPOT_REASON" = panel ] && rm -f "$input"
-    if [ -s "$input" ]; then
-      count=$(wc -l <"$input" | tr -d ' ')
-      if [ "$count" = 1 ]; then
-        printf 'title=Run with %s\n' "$(esc "$(basename "$(cat "$input")")")"
-      else
-        printf 'title=Run with %s files\n' "$count"
-      fi
-      printf 'detail=Pick a shortcut\n\n'
-      printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=command\n\n'
+    head_of_list
+    if [ -s "$kept" ]; then
+      cat "$kept"
+      echo ---
+      fresh=$(all_rows)
+      [ "$fresh" = "$(cat "$kept")" ] && exit 0
+      head_of_list
+    else
+      fresh=$(all_rows)
     fi
-    printf 'button=open\ntitle=Run\n\n'
-    printf 'button=clipboard\ntitle=Run with clipboard\nshortcut=cmd+return\nclose=true\n\n'
-    printf 'button=edit\ntitle=Open in Shortcuts\nshortcut=cmd+e\nclose=true\n\n'
-    rows none
-    shortcuts list --folders | while IFS= read -r folder; do
-      [ -n "$folder" ] && rows "$folder"
-    done
+    printf '%s\n' "$fresh"
+    printf '%s\n' "$fresh" >"$kept.$$" && mv "$kept.$$" "$kept"
     ;;
   open)
     name=$2
