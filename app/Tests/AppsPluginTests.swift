@@ -103,6 +103,35 @@ final class AppsPluginTests: SamplePluginsCase {
         }
     }
 
+    func testAReadFindsTheAppsAgainOnlyWhenAFolderOfAppsChanged() async throws {
+        let apps = try apps()
+        try await withPrivateHome { folder in
+            let app = try Self.fakeApp(in: folder, running: false)
+            let scans = folder.appendingPathComponent("scans").path
+            let changed = folder.appendingPathComponent("changed").path
+            try """
+            #!/bin/sh
+            case " $* " in
+              *' -newer '*) cat '\(changed)' 2>/dev/null ;;
+              *) echo scan >> '\(scans)'; printf '%s\\n' "$(cat '\(folder.path)/found' 2>/dev/null || echo '\(app.path)')" ;;
+            esac
+
+            """.writeScript(to: folder.appendingPathComponent("tools/find"))
+
+            _ = try await apps.items(timeout: 10)
+            let kept = try await apps.items(timeout: 10)
+            try "/Applications/Alfa.app".write(toFile: folder.appendingPathComponent("found").path, atomically: true, encoding: .utf8)
+            let stillKept = try await apps.items(timeout: 10)
+            try "/Applications".write(toFile: changed, atomically: true, encoding: .utf8)
+            let found = try await apps.items(timeout: 10)
+
+            XCTAssertEqual(kept.items.map(\.title), ["Finder", "Zed"])
+            XCTAssertEqual(stillKept.items.map(\.title), ["Finder", "Zed"])
+            XCTAssertEqual(found.items.map(\.title), ["Alfa", "Finder"])
+            XCTAssertEqual(try self.read("scans", in: folder), "scan\nscan\n")
+        }
+    }
+
     func testASystemAppIsNeverDeleted() async throws {
         let apps = try apps()
         try await withPrivateHome { folder in
