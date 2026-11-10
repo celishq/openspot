@@ -380,9 +380,9 @@ public final class SpotsModel {
 
     /// A person pressed a key that they assigned to a command.
     public func press(_ key: GlobalKey) {
-        guard let sheet = sheets[key.spot] else { return }
-        sheet.pressKey(key.command)
-        flashSymbol = sheet.command.symbol(of: key.command)
+        guard let sheet = sheets[key.spot], let command = key.command else { return }
+        sheet.pressKey(command)
+        flashSymbol = sheet.command.symbol(of: command)
         flashWatch?.cancel()
         flashWatch = Task { [weak self, flashPause] in
             try? await Task.sleep(for: flashPause)

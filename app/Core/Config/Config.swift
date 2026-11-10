@@ -8,7 +8,7 @@ public struct Config: Equatable, Sendable {
     public private(set) var fixKey: Shortcut? = .fix
     public private(set) var faults: [String] = []
     public private(set) var arrangement = SpotArrangement()
-    /// The keys that the person assigned to commands of scripts.
+    /// The keys that the person assigned to commands of scripts, or to spots that they float.
     public private(set) var keys: [GlobalKey] = []
     /// The values that scripts keep for the person through `openspot setting` (K6).
     public private(set) var settings: [SpotSetting] = []
@@ -57,12 +57,13 @@ public struct Config: Equatable, Sendable {
 
     /// Reads one `[[keys]]` table. A table that it cannot use is a fault.
     private mutating func key(of table: [String: TomlDocument.Value]) -> GlobalKey? {
-        guard case .string(let spot)? = table["spot"], case .string(let command)? = table["command"], case .string(let text)? = table["key"] else {
-            faults.append("config.toml: a key needs a spot, a command and a key.")
+        guard case .string(let spot)? = table["spot"], case .string(let text)? = table["key"] else {
+            faults.append("config.toml: a key needs a spot and a key.")
             return nil
         }
+        let command: String? = if case .string(let command)? = table["command"] { command } else { nil }
         guard let shortcut = Shortcut(text: text) else {
-            faults.append("config.toml: \(spot) \(command) cannot use \(text).")
+            faults.append("config.toml: \([spot, command].compactMap { $0 }.joined(separator: " ")) cannot use \(text).")
             return nil
         }
         return GlobalKey(spot: spot, command: command, shortcut: shortcut)

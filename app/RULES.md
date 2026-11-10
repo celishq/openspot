@@ -67,7 +67,7 @@ A float is one spot in a window of its own, at the pointer, outside the panel.
 
 | ID | Rule |
 |---|---|
-| W1 | A `[[keys]]` entry with no `command` floats its spot: its sheet, or its card when it has no sheet. An entry with a `command` runs that command. A spot with `command` lines has no card, so only its commands take a key. |
+| W1 | A `[[keys]]` entry with no `command` floats its spot: its sheet, or its card when it has no sheet. An entry with a `command` runs that command. |
 | W2 | `key = "shake"` takes a shake of the pointer in place of a key press: quick turns left and right, with or without a drag. One entry at most holds it, and the app watches the pointer only while one does. The shake needs no permission, because the app reads the pointer and not the keys. |
 | W3 | Settings lists a Float row for each spot that has a card, beside its commands. Its key records a key press or a shake. |
 | W4 | A float opens at the pointer, whole on the pointer's screen. It has no card to grow from, so it shows whole once its first answer comes, or after 150 ms (A9). |

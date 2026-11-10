@@ -69,8 +69,14 @@ public struct SettingsSpot: Equatable, Sendable {
         let config = file.read()
         let panel = "row=\(Self.panelKey)\ntitle=Open Openspot\nicon=keyboard\nhides=\(Self.clear)\nshortcut=\((config.panelKey ?? .standard).text)\n"
         let fix = "row=\(Self.fixKey)\ntitle=Open a fix\nicon=wrench.and.screwdriver\nhides=\(Self.clear)\nshortcut=\((config.fixKey ?? .fix).text)\n"
-        let scripts = ((try? PluginFolder(url: folder, core: core, enabled: config.arrangement.enabled).scan())?.scripts ?? []).filter { only == nil || $0.id == only }
-        let rows = scripts.flatMap { script in
+        let scan = try? PluginFolder(url: folder, core: core, enabled: config.arrangement.enabled).scan()
+        let scripts = (scan?.scripts ?? []).filter { only == nil || $0.id == only }
+        let floats = only != nil ? [] : (scan?.commands ?? []).map { spot -> String in
+            let key = config.keys.first { $0.spot == spot.id && $0.command == nil }
+            let hides = key == nil ? "hides=\(Self.clear)\n" : ""
+            return "row=\(Self.keyPrefix)\(spot.id):\ntitle=Float\ndetail=\(spot.name)\nparent=\(spot.name)\nicon=\(spot.image ?? spot.file ?? spot.glyph ?? spot.symbol)\n\(hides)shortcut=\(key?.shortcut.text ?? "Record")\n"
+        }
+        let rows = floats + scripts.flatMap { script in
             script.offers.map { offer -> String in
                 let key = config.keys.first { $0.spot == script.id && $0.command == offer.id }
                 let hides = key == nil ? "hides=\(Self.clear)\n" : ""
@@ -120,14 +126,15 @@ public struct SettingsSpot: Equatable, Sendable {
         return (String(run[run.index(run.startIndex, offsetBy: Self.settingPrefix.count)..<split]), String(run[run.index(after: split)...]))
     }
 
-    /// The spot and the command that the run of a row names.
-    private func target(of run: String) -> (spot: String, command: String)? {
+    /// The spot and the command that the run of a row names. A row with no command floats its spot.
+    private func target(of run: String) -> (spot: String, command: String?)? {
         guard run.hasPrefix(Self.keyPrefix), let split = run.lastIndex(of: ":") else { return nil }
-        return (String(run[run.index(run.startIndex, offsetBy: Self.keyPrefix.count)..<split]), String(run[run.index(after: split)...]))
+        let command = String(run[run.index(after: split)...])
+        return (String(run[run.index(run.startIndex, offsetBy: Self.keyPrefix.count)..<split]), command.isEmpty ? nil : command)
     }
 
-    /// Gives a command this key in the file, or takes its key away, and keeps the place of each other key.
-    private func assign(_ shortcut: Shortcut?, to target: (spot: String, command: String)) throws {
+    /// Gives a command, or the float of a spot, this key in the file, or takes its key away, and keeps the place of each other key.
+    private func assign(_ shortcut: Shortcut?, to target: (spot: String, command: String?)) throws {
         var keys = file.read().keys
         let place = keys.firstIndex { $0.spot == target.spot && $0.command == target.command }
         let key = shortcut.map { GlobalKey(spot: target.spot, command: target.command, shortcut: $0) }

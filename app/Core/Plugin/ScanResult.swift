@@ -29,9 +29,12 @@ public struct ScanResult: Equatable, Sendable {
         plugins.flatMap(\.commands).filter { $0.kind != .widget }
     }
 
-    /// The assigned keys whose script still lists their command.
+    /// The assigned keys whose script still lists their command, and the keys with no command whose spot has a card (W1).
     public func offered(_ keys: [GlobalKey]) -> [GlobalKey] {
-        keys.filter { key in scripts.contains { $0.id == key.spot && $0.offers.contains { $0.id == key.command } } }
+        keys.filter { key in
+            guard let command = key.command else { return commands.contains { $0.id == key.spot } }
+            return scripts.contains { $0.id == key.spot && $0.offers.contains { $0.id == command } }
+        }
     }
 
     /// Makes each script that lists commands and has no read open to the keys of its commands.

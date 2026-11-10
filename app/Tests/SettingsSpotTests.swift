@@ -61,7 +61,7 @@ final class SettingsSpotTests: XCTestCase {
         try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# command=left:Left side\n# command=right:Right side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
         let runs = SpotRuns()
 
-        let before = try await spot.items(timeout: 1).items
+        let before = try await spot.items(timeout: 1).items.filter { $0.title != "Float" }
         XCTAssertEqual(before.map(\.title), ["Open Openspot", "Open a fix", "Left side", "Right side"])
         XCTAssertEqual(before.map(\.subtitle), [nil, nil, "Move", "Move"])
         XCTAssertEqual(before.dropFirst(2).map(\.shortcut), ["Record", "Record"])
@@ -72,12 +72,38 @@ final class SettingsSpotTests: XCTestCase {
 
         XCTAssertEqual(file.read().keys.map(\.command), ["left", "right"])
         XCTAssertEqual(file.read().keys.map(\.shortcut.text), ["ctrl+option+up", "ctrl+option+right"])
-        let after = try await spot.items(timeout: 1).items
+        let after = try await spot.items(timeout: 1).items.filter { $0.title != "Float" }
         XCTAssertEqual(after.map(\.shortcut).dropFirst(2), ["ctrl+option+up", "ctrl+option+right"])
 
         _ = try await runs.answer(of: spot, SpotAction(arguments: ["clear", "key:move:left"]), input: "", limit: 1)
 
         XCTAssertEqual(file.read().keys.map(\.command), ["right"])
+    }
+
+    func testTheSheetListsAFloatRowForEachSpotWithACardAndGivesItAKey() async throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try "#!/bin/sh\n# title=Shelf\n# icon=tray.full\n# shortcut=s\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
+        try "#!/bin/sh\n# title=Move\n# command=left:Left side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        let runs = SpotRuns()
+
+        let before = try await spot.items(timeout: 1).items
+        let floats = before.filter { $0.title == "Float" }
+        XCTAssertEqual(floats.map(\.run).sorted(), ["key:move:", "key:shelf:"])
+        XCTAssertEqual(before.last?.run, "key:move:left")
+        let shelf = try XCTUnwrap(floats.first { $0.run == "key:shelf:" })
+        XCTAssertEqual(shelf.subtitle, "Shelf")
+        XCTAssertEqual(shelf.symbol, "tray.full")
+        XCTAssertEqual(shelf.shortcut, "Record")
+
+        _ = try await runs.answer(of: spot, .set("key:shelf:", to: "ctrl+option+s"), input: "", limit: 1)
+
+        XCTAssertEqual(file.read().keys, [GlobalKey(spot: "shelf", command: nil, shortcut: try XCTUnwrap(Shortcut(text: "ctrl+option+s")))])
+        let after = try await spot.items(timeout: 1).items
+        XCTAssertEqual(after.first { $0.run == "key:shelf:" }?.shortcut, "ctrl+option+s")
+
+        _ = try await runs.answer(of: spot, SpotAction(arguments: ["clear", "key:shelf:"]), input: "", limit: 1)
+
+        XCTAssertEqual(file.read().keys, [])
     }
 
     func testTheSheetListsEachSettingThatAScriptNamesOrKeepsAndRemovesIt() async throws {
@@ -86,7 +112,7 @@ final class SettingsSpotTests: XCTestCase {
         try file.set(setting: "folder", of: "repos", to: "~/Code")
         try file.set(setting: "editor", of: "gone", to: "Zed")
 
-        let items = try await spot.items(timeout: 1).items.dropFirst(2)
+        let items = try await spot.items(timeout: 1).items.filter { $0.run.hasPrefix("setting:") }
 
         XCTAssertEqual(items.map(\.title), ["Folder", "Default app", "Editor"])
         XCTAssertEqual(items.map(\.subtitle), ["Repos · ~/Code", "Repos · Not set", "gone · Zed"])
@@ -112,7 +138,7 @@ final class SettingsSpotTests: XCTestCase {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# command=left:Left side:rectangle.lefthalf.filled\n# command=right:Right side\n# command=fun:Fun:🎉\n".writeScript(to: folder.appendingPathComponent("move.sh"))
 
-        let items = try await spot.items(timeout: 1).items
+        let items = try await spot.items(timeout: 1).items.filter { $0.title != "Float" }
 
         XCTAssertEqual(items.dropFirst(2).map(\.symbol), ["rectangle.lefthalf.filled", "macwindow", nil])
         XCTAssertEqual(items.dropFirst(2).map(\.glyph), [nil, nil, "🎉"])
