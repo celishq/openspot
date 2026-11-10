@@ -81,51 +81,51 @@ final class SpotRunsCallTests: SpotRunsCase {
 
     func testWhatASheetPrintsDuringItsOpenMotionShowsWhenTheMotionEnds() async throws {
         runs.quit()
-        runs = SpotRuns(openLength: 30, stopPause: 0.2)
+        runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
         try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
-        runs.openingID = "script"
+        runs.opening.moving = "script"
         sheet.open {}
         try await allEnded()
         try await pause(0.2)
 
         XCTAssertEqual(sheet.list.shown.count, 0)
-        runs.openingID = nil
+        runs.opening.moving = nil
 
         try await wait("the rows") { sheet.list.shown.count == 1 }
     }
 
     func testASheetOfRowsShowsItsFieldWhileItsFirstAnswerWaitsForTheOpenMotion() async throws {
         runs.quit()
-        runs = SpotRuns(openLength: 30, stopPause: 0.2)
+        runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
         try script(header: "read=sheet", "printf 'repeat=a\\n\\ntemplate=row\\ngrid=name\\ntext=name\\n\\nrow=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
-        runs.openingID = "script"
+        runs.opening.moving = "script"
         sheet.open {}
         XCTAssertFalse(sheet.showsField)
 
         try await wait("the field") { sheet.showsField }
         XCTAssertNil(sheet.panel)
         XCTAssertEqual(sheet.list.shown.count, 0)
-        runs.openingID = nil
+        runs.opening.moving = nil
     }
 
     func testASheetOfPartsWithNoRowsKeepsItsFieldHiddenWhileItsFirstAnswerWaitsForTheOpenMotion() async throws {
         runs.quit()
-        runs = SpotRuns(openLength: 30, stopPause: 0.2)
+        runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
         try script(header: "read=sheet", "printf 'text=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
-        runs.openingID = "script"
+        runs.opening.moving = "script"
         sheet.open {}
         try await allEnded()
         try await pause(0.2)
 
         XCTAssertNil(sheet.panel)
         XCTAssertFalse(sheet.showsField)
-        runs.openingID = nil
+        runs.opening.moving = nil
         try await wait("the parts") { sheet.panel != nil }
         XCTAssertFalse(sheet.showsField)
     }
@@ -134,19 +134,19 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
-        runs.openingID = "script"
+        runs.opening.moving = "script"
 
         sheet.open {}
 
         try await wait("the rows") { sheet.list.shown.count == 1 }
-        XCTAssertNil(runs.openingID)
+        XCTAssertNil(runs.opening.moving)
     }
 
     func testTheOpenMotionOfAnotherSheetHoldsNothingOfThisOne() async throws {
         try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
-        runs.openingID = "other"
+        runs.opening.moving = "other"
 
         sheet.open {}
 

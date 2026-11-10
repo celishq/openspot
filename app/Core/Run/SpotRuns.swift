@@ -17,23 +17,10 @@ public final class SpotRuns {
     @ObservationIgnored public var partsArrival: (String, () -> Void) -> Void = { _, bring in bring() }
     /// Asks for the pictures of the colour glyphs of a whole list, once for each answer that holds its rows.
     @ObservationIgnored public var glyphsArrival: ([String]) -> Void = { _ in }
-    /// The sheet whose open motion runs. What its script prints waits for the end of the motion, so that the motion keeps
-    /// its frames. It ends after the length of the motion, though the spring settles later.
-    @ObservationIgnored public var openingID: String? {
-        didSet {
-            guard openingID != oldValue else { return }
-            releaseOpening()
-            if openingID != nil { endOpening() }
-        }
-    }
-    @ObservationIgnored private var openingWaits: [CheckedContinuation<Void, Never>] = []
-    @ObservationIgnored private var openingSerial = 0
+    /// The open of a sheet: its motion waits for its first answer, and what its script prints waits for its motion.
+    @ObservationIgnored public let opening: SheetOpening
     /// The time a `read` has to its first frame or its end.
     public let readLimit: TimeInterval
-    /// How long a sheet with no answer yet holds its motion for the first answer.
-    public let firstAnswerPause: TimeInterval
-    /// How long a sheet's open motion moves, until its spring lies within a point of its end.
-    public let openLength: TimeInterval
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored private let stopPause: TimeInterval
     @ObservationIgnored private let tickPause: Duration
@@ -52,8 +39,7 @@ public final class SpotRuns {
 
     public init(
         readLimit: TimeInterval = 10,
-        firstAnswerPause: TimeInterval = 0.15,
-        openLength: TimeInterval = 0.25,
+        opening: SheetOpening = SheetOpening(),
         now: @escaping () -> Date = { Date() },
         stopPause: TimeInterval = 2,
         tickPause: Duration = .seconds(1),
@@ -61,8 +47,7 @@ public final class SpotRuns {
         prepare: @escaping ([SpotItem]) async -> Void = { _ in }
     ) {
         self.readLimit = readLimit
-        self.firstAnswerPause = firstAnswerPause
-        self.openLength = openLength
+        self.opening = opening
         self.now = now
         self.stopPause = stopPause
         self.tickPause = tickPause
@@ -185,7 +170,7 @@ public final class SpotRuns {
     public func quit() {
         clock?.cancel()
         clock = nil
-        openingID = nil
+        opening.end()
         let live = processes.filter(\.needsFinish)
         sheets.values.forEach { $0.prepareToQuit() }
         live.forEach { $0.leave() }
@@ -250,30 +235,14 @@ public final class SpotRuns {
         return command.isTray || read.has(.launch) || (isPanelOpen && (read.has(.panel) || placed.contains(command.id)))
     }
 
-    /// Waits while the open motion of this sheet runs. The sheet hears the frame that waits, so that its field can show
-    /// before the frame does.
-    func opening(_ id: String, hearing lines: PluginOutput) async {
-        guard openingID == id else { return }
+    /// Reads a frame of a script, on another thread when it is big, and waits while the open motion of its sheet runs. The
+    /// sheet hears a frame that waits, so that it can say its kind before the frame shows.
+    func intake(_ frame: String, of id: String?) async -> PluginOutput {
+        let lines = await PluginOutput.reading(frame)
+        guard let id, opening.moving == id else { return lines }
         sheets[id]?.hear(lines)
-        while openingID == id {
-            await withCheckedContinuation { openingWaits.append($0) }
-        }
-    }
-
-    private func endOpening() {
-        openingSerial += 1
-        let serial = openingSerial
-        Task { [weak self, openLength] in
-            try? await Task.sleep(for: .seconds(openLength))
-            guard let self, openingSerial == serial else { return }
-            openingID = nil
-        }
-    }
-
-    private func releaseOpening() {
-        let waits = openingWaits
-        openingWaits = []
-        waits.forEach { $0.resume() }
+        await opening.waitForMotion(of: id)
+        return lines
     }
 
     /// Starts one call. It gives each frame, as text and sorted by what each block is, and then its end, on the main actor. A
@@ -297,9 +266,7 @@ public final class SpotRuns {
             do {
                 for try await frame in stream {
                     guard !call.isStopped else { break }
-                    let output = await PluginOutput.reading(frame)
-                    await self?.opening(id, hearing: output)
-                    guard !call.isStopped else { break }
+                    guard let output = await self?.intake(frame, of: id), !call.isStopped else { break }
                     call.take(output)
                     await onFrame(call, frame, output)
                 }

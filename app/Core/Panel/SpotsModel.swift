@@ -139,7 +139,7 @@ public final class SpotsModel {
             let shown = transition.shown
             if shown != openList { openList = shown }
             let opening = transition.phase == .opening ? transition.id : nil
-            if opening != (oldValue.phase == .opening ? oldValue.id : nil) { runs.openingID = opening }
+            if opening != (oldValue.phase == .opening ? oldValue.id : nil) { runs.opening.moving = opening }
         }
     }
     public var closingPick: (item: SpotItem, entry: Entry)?

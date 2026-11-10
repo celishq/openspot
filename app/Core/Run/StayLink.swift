@@ -197,8 +197,7 @@ final class StayLink: ScriptLink {
     private func follow(_ script: ScriptProcess, _ frames: AsyncThrowingStream<String, Error>) async {
         do {
             for try await text in frames {
-                let lines = await PluginOutput.reading(text)
-                if let id = run?.command.id { await runs.opening(id, hearing: lines) }
+                let lines = await runs.intake(text, of: run?.command.id)
                 if self.script === script, !lines.ends.isEmpty {
                     endCalls(lines.ends)
                     settle()

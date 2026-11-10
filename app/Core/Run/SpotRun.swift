@@ -77,7 +77,6 @@ public final class SpotRun {
     private static let searchKey = "search"
     private static let cardKey = "card"
     private static let levelKey = "level"
-    private static let heldKey = "held"
     private static let globalKey = "global"
 
     public private(set) var command: Spot
@@ -156,8 +155,6 @@ public final class SpotRun {
     @ObservationIgnored private var hasAsked = false
     /// The work that waits for the next answer, such as a press of a card whose kind the answer says.
     @ObservationIgnored private var waiter: (() -> Void)?
-    /// The open that waits for the sheet's first answer.
-    @ObservationIgnored private var held: (() -> Void)?
     @ObservationIgnored private var selecting: String?
     @ObservationIgnored private var readsAgain = false
     @ObservationIgnored private var pauses: [String: Task<Void, Never>] = [:]
@@ -254,8 +251,7 @@ public final class SpotRun {
         list.selectFirst()
         if panel == nil, answered != nil { panel = lastAnswer.flatMap(SheetParts.init(output:)) }
         if answered == nil, command.stays || (waits && list.search == .local) {
-            held = onReady
-            if !command.stays { after(.seconds(runs.firstAnswerPause), key: Self.heldKey) { [weak self] in self?.endHold() } }
+            runs.opening.holdMotion(of: command.id, limited: !command.stays, start: onReady)
         } else {
             onReady()
         }
@@ -275,7 +271,7 @@ public final class SpotRun {
         }
         if let search = running(Self.searchKey) { stop(search) }
         editing = nil
-        held = nil
+        runs.opening.dropMotion(of: command.id)
         heardField = nil
         if panel?.isSelectionMoved == true { panel?.clearSelection() }
         link.settle()
@@ -829,7 +825,7 @@ public final class SpotRun {
         let work = waiter
         waiter = nil
         work?()
-        endHold()
+        runs.opening.startMotion(of: command.id)
     }
 
     /// Reads again when a change came during a read, once no read or search waits.
@@ -839,19 +835,9 @@ public final class SpotRun {
         read(need: .change)
     }
 
-    /// Lets a sheet that held its motion move.
-    private func endHold() {
-        pauses[Self.heldKey]?.cancel()
-        pauses[Self.heldKey] = nil
-        let work = held
-        held = nil
-        work?()
-    }
-
     /// Closes a sheet that waits for an answer that will not come.
     private func dropUnshownSheet() {
-        guard held != nil else { return }
-        held = nil
+        guard runs.opening.dropMotion(of: command.id) != nil else { return }
         runs.didClose(self)
         settle()
         runs.updateClock()

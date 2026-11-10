@@ -320,7 +320,7 @@ final class SpotsModelTests: XCTestCase {
         try await openList()
 
         XCTAssertTrue(host.openings.contains("list"))
-        XCTAssertNil(model.runs.openingID)
+        XCTAssertNil(model.runs.opening.moving)
     }
 
     func testASheetThatOpensWhileAnotherShowsTakesItsPlaceWithNoCollapseAndNoCard() async throws {
@@ -469,7 +469,7 @@ private final class TestHost: SpotsHost {
         motions.append(motion)
         body()
         if let phase = model?.transition.phase { phases.append(phase) }
-        openings.append(model?.runs.openingID)
+        openings.append(model?.runs.opening.moving)
         completion()
     }
 }
