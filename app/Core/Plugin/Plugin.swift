@@ -60,6 +60,8 @@ public struct Plugin: Equatable, Sendable {
             }
             return offer
         }
+        let press = header.value("press") ?? "sheet"
+        guard ["sheet", "run"].contains(press) else { throw PluginError.fault("\(name) has an unknown press: \(press). Use run or sheet") }
         let view = header.value("view")
         if let view, URL(fileURLWithPath: view).pathExtension != SwiftProgram.sourceExtension {
             throw PluginError.fault("\(name) needs a Swift file for its view, such as view=\(url.deletingPathExtension().lastPathComponent).swift")
@@ -80,6 +82,7 @@ public struct Plugin: Equatable, Sendable {
             isGlobal: isGlobal,
             isFound: header.value("global") != "rows",
             stays: stays,
+            pressRuns: press == "run",
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             isTray: isTray,
             offersFloat: (header.flag("float") ?? false) && (read?.seconds == nil || hasKey),

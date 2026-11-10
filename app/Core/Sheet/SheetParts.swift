@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 /// The parts of a sheet with what the person has set. Each change takes a new generation, and only the answer to the
@@ -10,6 +11,12 @@ public struct SheetParts: Equatable, Sendable {
 
         /// No press yet.
         public static let rest = Nudge(step: 0, serial: 0)
+    }
+
+    /// One press of return that asks the menu of a part to open. A new press takes the next serial.
+    public struct MenuOpening: Equatable, Sendable {
+        public let part: String
+        public let serial: Int
     }
 
     public private(set) var parts: [SpotPart]
@@ -67,14 +74,44 @@ public struct SheetParts: Equatable, Sendable {
         SheetKind(parts: parts, layout: layout)
     }
 
-    /// Whether the up and down keys select its parts. A sheet with a text area or with rows leaves them to those.
+    /// Whether the arrows move the focus among its parts. A sheet of rows leaves them to the rows, until the person moves
+    /// past the last row.
     public var takesArrows: Bool {
-        !showsRows && !parts.contains(where: \.isEditable) && parts.contains(where: \.isSelectable)
+        !showsRows && !focusOrder.isEmpty
     }
 
-    /// Whether the up and down keys scroll it: it has no part to select, no text area and no rows.
+    /// Whether the up and down keys scroll it: it has no part to focus and no rows.
     public var scrollsByArrows: Bool {
-        !showsRows && !parts.contains(where: \.isEditable) && !parts.contains(where: \.isSelectable)
+        !showsRows && focusOrder.isEmpty
+    }
+
+    /// The parts that take the focus, in the order they are drawn: line by line, and left to right on a line. A part that
+    /// no drawing places, such as an action, takes none. In a sheet of rows, only the parts below the rows do.
+    public var focusOrder: [SpotPart] {
+        let top = placement.repeatFrame?.maxY ?? -.infinity
+        let placed: [(part: SpotPart, rect: CGRect)] = parts.compactMap { part in
+            guard part.isFocusable, let rect = placement.frames[part.id]?.rect, rect.minY >= top else { return nil }
+            return (part, rect)
+        }
+        return placed
+            .sorted { $0.rect.minY == $1.rect.minY ? $0.rect.minX < $1.rect.minX : $0.rect.minY < $1.rect.minY }
+            .map(\.part)
+    }
+
+    /// The focusable parts in lines of the same top, from the top line down.
+    private var focusLines: [[SpotPart]] {
+        var lines: [[SpotPart]] = []
+        var top: CGFloat?
+        for part in focusOrder {
+            let minY = placement.frames[part.id]?.rect.minY
+            if minY == top, !lines.isEmpty {
+                lines[lines.count - 1].append(part)
+            } else {
+                lines.append([part])
+                top = minY
+            }
+        }
+        return lines
     }
 
     /// Whether a part with no icon keeps an empty icon column, so that its words line up with the lines that have one. Only a
@@ -84,17 +121,57 @@ public struct SheetParts: Equatable, Sendable {
             && parts.contains { !$0.isSection && $0.symbol != nil }
     }
 
-    /// The part that return uses: the one the person moved to, or else the first that takes a selection.
+    /// The part that has the focus: the one the person moved to, or else the first field, or else the first part. In a sheet
+    /// of rows, a part has it only once the person moved to it.
     public var selectedPart: SpotPart? {
+        let order = focusOrder
+        if let part = order.first(where: { $0.id == selected }) { return part }
         guard takesArrows else { return nil }
-        return parts.first { $0.id == selected && $0.isSelectable } ?? parts.first(where: \.isSelectable)
+        return order.first(where: \.isEditable) ?? order.first
     }
 
-    /// Moves the selection, and stops at the first and last part.
+    /// Moves the focus along its line, and stops at either end.
     public mutating func move(by step: Int) {
-        let ids = parts.filter(\.isSelectable).map(\.id)
-        guard let index = ids.firstIndex(where: { $0 == selectedPart?.id }) else { return }
-        selected = ids[min(max(index + step, 0), ids.count - 1)]
+        guard let current = selectedPart, let line = focusLines.first(where: { $0.contains { $0.id == current.id } }),
+              let index = line.firstIndex(where: { $0.id == current.id })
+        else { return }
+        selected = line[min(max(index + step, 0), line.count - 1)].id
+    }
+
+    /// Moves the focus to the part on the line above or below that lies closest across, the left one on a tie. The first
+    /// and the last line stop the move, except that a sheet of rows gives the focus back to its rows above its first line.
+    /// Returns whether the focus moved.
+    @discardableResult
+    public mutating func moveLine(by lines: Int) -> Bool {
+        guard let current = selectedPart, let from = placement.frames[current.id]?.rect else { return false }
+        let all = focusLines
+        guard let index = all.firstIndex(where: { $0.contains { $0.id == current.id } }) else { return false }
+        if index + lines < 0, showsRows {
+            selected = nil
+            return true
+        }
+        let target = min(max(index + lines, 0), all.count - 1)
+        guard target != index, let next = all[target].min(by: { distance($0, from) < distance($1, from) }) else { return false }
+        selected = next.id
+        return true
+    }
+
+    private func distance(_ part: SpotPart, _ rect: CGRect) -> CGFloat {
+        abs((placement.frames[part.id]?.rect.midX ?? 0) - rect.midX)
+    }
+
+    /// Gives the focus to the first part below its rows. Returns false when no part lies there.
+    @discardableResult
+    public mutating func leaveRows() -> Bool {
+        guard showsRows, let line = focusLines.first, let first = line.first else { return false }
+        selected = first.id
+        return true
+    }
+
+    /// Gives the focus to a part, as a click into its field does.
+    public mutating func focus(_ id: String) {
+        guard focusOrder.contains(where: { $0.id == id }) else { return }
+        selected = id
     }
 
     /// Whether the person moved the selection, so that a clear has something to change.

@@ -49,7 +49,7 @@ These rules come from the way Nostr writes its NIPs.
 
 | Word                                                                                                     | Kind                 | Spec |
 | -------------------------------------------------------------------------------------------------------- | -------------------- | ---- |
-| `title`, `icon`, `detail`, `shortcut`, `size`, `read`, `data`, `drop`, `command`, `settings`, `global`, `tray` | Header key | 01 |
+| `title`, `icon`, `detail`, `shortcut`, `size`, `read`, `data`, `drop`, `command`, `settings`, `global`, `tray`, `press` | Header key | 01 |
 | `view`                                                                                                   | Header key           | 03   |
 | `stay`                                                                                                   | Header key           | 05   |
 | `float`                                                                                                  | Header key           | 08   |

@@ -50,7 +50,7 @@ struct SpotCardView: View, Equatable {
             .overlay(alignment: .topTrailing) { if !isHiddenFromGrid { FailureMark(entry: entry, size: size) } }
             .contentShape(shape)
             .onHover { isHovered = $0 }
-            .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id) } }
+            .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.option)) } }
             .animation(.easeInOut(duration: 0.2), value: isOn)
             .scaleEffect(showsPress ? SpotMotion.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)

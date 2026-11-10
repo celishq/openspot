@@ -280,6 +280,7 @@ final class PluginFolderTests: XCTestCase {
         try write("j.sh", header: "read=open")
         try write("k.sh", header: "read=click")
         try write("l.sh", header: "read=panel,later")
+        try write("m.sh", header: "read=sheet\npress=jump")
 
         XCTAssertEqual(try scan.plugins, [])
         XCTAssertEqual(try scan.refused, [
@@ -290,7 +291,8 @@ final class PluginFolderTests: XCTestCase {
             ScanResult.Refusal(file: "h", reason: "H needs panel, launch or a number in its read to join the main search"),
             ScanResult.Refusal(file: "j", reason: "J has an unknown read: open. Use panel, sheet, launch, wake or a number of seconds"),
             ScanResult.Refusal(file: "k", reason: "K has an unknown read: click. Use panel, sheet, launch, wake or a number of seconds"),
-            ScanResult.Refusal(file: "l", reason: "L has an unknown read: panel,later. Use panel, sheet, launch, wake or a number of seconds")
+            ScanResult.Refusal(file: "l", reason: "L has an unknown read: panel,later. Use panel, sheet, launch, wake or a number of seconds"),
+            ScanResult.Refusal(file: "m", reason: "M has an unknown press: jump. Use run or sheet")
         ])
     }
 

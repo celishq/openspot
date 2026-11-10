@@ -32,6 +32,8 @@ public struct Spot: Equatable, Sendable {
     public let shipped: ShippedSpot?
     /// Whether the script stays running and takes calls on its standard input.
     public let stays: Bool
+    /// Whether Enter and a click on its card call `run` though it has a sheet, which ⌥ opens (`press=run`).
+    public let pressRuns: Bool
     /// The file extensions that its card takes, with `folder` and `*`.
     public let drop: [String]
     /// Whether the menu bar shows it.
@@ -83,6 +85,7 @@ public struct Spot: Equatable, Sendable {
         opens: String? = nil,
         shipped: ShippedSpot? = nil,
         stays: Bool = false,
+        pressRuns: Bool = false,
         drop: [String] = [],
         isTray: Bool = false,
         offersFloat: Bool = false,
@@ -117,6 +120,7 @@ public struct Spot: Equatable, Sendable {
         self.opens = opens
         self.shipped = shipped
         self.stays = stays
+        self.pressRuns = pressRuns
         self.drop = drop
         self.isTray = isTray
         self.offersFloat = offersFloat
@@ -267,7 +271,7 @@ public struct Spot: Equatable, Sendable {
         switch kind {
         case .launch: return "Run"
         case .toggle: return "Toggle"
-        case .list: return "Open"
+        case .list: return pressRuns ? "Run" : "Open"
         case .slider: return nil
         case .widget: return opens == nil ? nil : "Open"
         }

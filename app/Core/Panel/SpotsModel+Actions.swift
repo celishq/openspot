@@ -3,6 +3,9 @@ import Observation
 
 /// The keys of the panel, the actions menu, the forms of actions and the recording of keys.
 extension SpotsModel {
+    /// The footer label of ⌥ Return, which opens the sheet of a spot that Return runs.
+    static let openLabel = "⌥⏎"
+
     /// What the actions menu and the action keys work on: the selected row, or else the selected card.
     private var target: Target? {
         if let entry = openEntry { return (entry, openSheet?.selectedItem) }
@@ -37,6 +40,7 @@ extension SpotsModel {
         }
         if key == Self.undoKey, openList == nil, searchText.isEmpty, undoRemoval() { return true }
         if let panel = openPanel, !panel.showsRows { return handlePanelKey(key, panel) }
+        if let panel = openPanel, handleRowsPanelKey(key, panel) { return true }
         if let part = openPanel?.parts.first(where: { $0.key == key }) {
             pressPart(part)
             return true
@@ -77,8 +81,13 @@ extension SpotsModel {
 
     static let newSpotKey = ActionKey(name: "n", isCommand: true)
 
-    /// Does what the key of a footer label does, as if it were pressed: Return runs the selected row.
+    /// Does what the key of a footer label does, as if it were pressed: Return runs the selected row, and ⌥ Return opens the
+    /// sheet of a spot that Return runs.
     public func pressHint(_ label: String) {
+        if label == Self.openLabel {
+            openSelected()
+            return
+        }
         guard let key = ActionKey(label: label) else { return }
         if !handleKey(key), key == ActionKey(name: "return") { runSelected() }
     }
@@ -94,26 +103,62 @@ extension SpotsModel {
             closeList(moving: true)
             return true
         }
-        if panel.takesArrows, key == ActionKey(name: "up") || key == ActionKey(name: "down") {
-            openSheet?.movePart(by: key.name == "up" ? -1 : 1)
-            return true
-        }
         if panel.scrollsByArrows, key == ActionKey(name: "up") || key == ActionKey(name: "down") {
             openSheet?.scrollPanel(by: key.name == "up" ? -1 : 1)
             return true
         }
-        guard key == ActionKey(name: "return"), let part = panel.selectedPart else { return false }
-        useSelected(part)
+        guard let part = panel.selectedPart else { return false }
+        return handleFocusKey(key, part)
+    }
+
+    /// Takes the down arrow on the last line of rows, which moves the focus to the parts below them, and the keys of the part
+    /// that has the focus. All other keys go to the rows.
+    private func handleRowsPanelKey(_ key: ActionKey, _ panel: SheetParts) -> Bool {
+        if let part = panel.selectedPart { return handleFocusKey(key, part) }
+        guard key == ActionKey(name: "down"), openItems?.isOnLastLine != false else { return false }
+        return openSheet?.leaveRows() == true
+    }
+
+    /// Takes the arrows and return for the part that has the focus. Up and down move between lines, and left and right along
+    /// a line. A slider takes left and right, and a field keeps them and return for its text, and up and down past its edge
+    /// when no line lies there.
+    private func handleFocusKey(_ key: ActionKey, _ part: SpotPart) -> Bool {
+        switch key {
+        case ActionKey(name: "up"), ActionKey(name: "down"):
+            let moved = openSheet?.movePartLine(by: key.name == "up" ? -1 : 1) ?? false
+            return moved || !part.isEditable
+        case ActionKey(name: "left"), ActionKey(name: "right"):
+            guard !part.isEditable else { return false }
+            let step = key.name == "left" ? -1 : 1
+            if case .slider(let level, let low, let high) = part.control {
+                let next = min(max(level + Double(step) * max((high - low) / 20, 1), low), high)
+                setPart(part, to: String(Int(next.rounded())))
+            } else {
+                openSheet?.movePart(by: step)
+            }
+        case ActionKey(name: "return"):
+            guard !part.isEditable else { return false }
+            useSelected(part)
+        default:
+            return false
+        }
         return true
     }
 
-    /// Does what a click on the control of this part does.
+    /// Does what a click on the control of this part does. A menu opens.
     private func useSelected(_ part: SpotPart) {
         switch part.control {
         case .shortcut: toggleRecording(part)
         case .toggle(let on): setPart(part, to: on ? "false" : "true")
+        case .menu: openSheet?.openMenu(of: part)
+        case .slider: break
         default: pressPart(part)
         }
+    }
+
+    /// Gives the focus to a part, as a click into its field does.
+    public func focusPart(_ part: SpotPart) {
+        openSheet?.focusPart(part.id)
     }
 
     public func setPart(_ part: SpotPart, to value: String) {
@@ -253,7 +298,11 @@ extension SpotsModel {
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
         if let panel = openPanel, !panel.showsRows || panel.drawsKeys { return panel.hint { work(of: $0) != nil } }
         let keys = target.flatMap { target in
-            actionMenu(on: target)?.hint { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil }
+            let opens = openList == nil && target.item == nil && target.entry.command.pressRuns && target.entry.kind.opensSheet
+            return actionMenu(on: target)?.hint(
+                stopping: { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil },
+                second: opens ? "\(Self.openLabel) Settings" : nil
+            )
         } ?? "Esc Close"
         return selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
     }

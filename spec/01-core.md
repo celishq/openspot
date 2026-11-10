@@ -62,6 +62,7 @@ open -a Calendar
 | `tray`                   | `true` shows its main value in the menu bar. It needs a number in its `read`. Printing nothing removes the item until the next read. |
 | `settings`               | The values that the person chooses for it, each as `<key>[:<title>[:<icon>]]`, such as `folder,editor:Default app`. Settings lists each one, and Enter there runs the action of the same key. |
 | `stay`                   | `true` keeps one process that takes each call on stdin and prints frames at any time (05).                                                                           |
+| `press`                  | `run` makes Enter and a click on its card call `<script> run`, also when it has a sheet. With ⌥, they open the sheet. `sheet`, the default, opens it. |
 
 With `panel` in its `read`, the head of a frame can change `size`. The person's choice wins (F9). A script with `command`
 lines has no card on the grid, because its commands are what it gives.
@@ -89,7 +90,7 @@ a widget or the menu bar shows it, or while the open panel reads it at `panel` (
 | Call                                   | When                                                               |
 | -------------------------------------- | ------------------------------------------------------------------ |
 | `<script> read [text] [form]...`       | A moment, or a search change with `search=script` (02).            |
-| `<script> run`                         | A click on a card area that is not a control, with no sheet. |
+| `<script> run`                         | A click on a card area that is not a control, with no sheet or with `press=run`. |
 | `<script> open <row id>`               | A row is picked (02).                                              |
 | `<script> <id> [row id] [value]`       | A component changes or is pressed, with the id of its row (02).    |
 | `<script> drop <path> [path]...`       | Files are dropped on its card, each path as its own argument (D3). |
@@ -211,3 +212,4 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | The header is in each file, and a scan runs nothing.                          | A manifest.                         |
 | A plugin runs with the full access of the person.                    | A `uses` key, or a sandbox.         |
 | A script keeps a setting through `openspot setting`, and asks for it when it needs it. | A `setting` header key with a kind, and required settings. |
+| `press=run` lets a spot run at a press and keep its sheet for settings, behind ⌥. | A run button in its sheet, which costs a second press. |

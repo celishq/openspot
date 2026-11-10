@@ -26,9 +26,13 @@ struct SpotSheetView: View {
         model.sheets[entry.id]?.list ?? ItemList()
     }
 
-    /// Reads the selected row where it is called, so that only the view that shows it hears of a move.
+    /// Reads the selected row where it is called, so that only the view that shows it hears of a move. While a part below
+    /// the rows has the focus, no row is selected.
     private var selection: () -> Int {
-        { [model, id = entry.id] in model.sheets[id]?.selection ?? 0 }
+        { [model, id = entry.id] in
+            guard let sheet = model.sheets[id] else { return 0 }
+            return sheet.panel?.selectedPart == nil ? sheet.selection : Int.max
+        }
     }
 
     private var form: FormDraft? {
@@ -64,6 +68,8 @@ struct SpotSheetView: View {
                         onDragOut: { model.dragOut($0, of: entry.id) },
                         selection: selection,
                         nudge: { model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest },
+                        menuOpening: { model.sheets[entry.id]?.menuOpening },
+                        onFocus: { model.focusPart($0) },
                         customView: { room in
                             entry.command.view.map { SpotCustomView(source: $0, values: entry.state.values, card: entry.state.size ?? .square, room: room, views: SpotViews.shared) }
                         }

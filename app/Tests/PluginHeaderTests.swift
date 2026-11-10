@@ -33,6 +33,23 @@ final class PluginHeaderTests: XCTestCase {
         XCTAssertFalse(rows.isFound)
     }
 
+    func testPressRunMakesAPressOfASpotWithASheetRunIt() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-press-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let runs = folder.appendingPathComponent("runs.sh"), opens = folder.appendingPathComponent("opens.sh")
+        try "#!/bin/sh\n# read=sheet\n# press=run\n".writeScript(to: runs)
+        try "#!/bin/sh\n# read=sheet\n".writeScript(to: opens)
+
+        let run = try XCTUnwrap(try Plugin(file: runs, id: "runs")?.commands.first)
+        let open = try XCTUnwrap(try Plugin(file: opens, id: "opens")?.commands.first)
+
+        XCTAssertTrue(run.pressRuns)
+        XCTAssertEqual(run.primaryTitle(hasItem: false), "Run")
+        XCTAssertFalse(open.pressRuns)
+        XCTAssertEqual(open.primaryTitle(hasItem: false), "Open")
+    }
+
     func testReadsTheCommentLinesUnderTheFirstLine() {
         let header = PluginHeader(text: "#!/bin/sh\n# title=Morning\n#\n# Prose has no key.\n#icon=sun.max\nsay hello\n# shortcut=m\n")
 

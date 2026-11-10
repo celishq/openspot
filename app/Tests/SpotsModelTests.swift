@@ -532,6 +532,101 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.map(\.id), ["other"])
     }
 
+    /// Opens a sheet that a script prints on each read. The script writes each other call to the returned file.
+    private func openParts(_ sheet: String) async throws -> URL {
+        let calls = folder.appendingPathComponent("calls")
+        try script("parts", header: "read=sheet", "if [ \"$1\" = read ]; then printf '\(sheet)'; else echo \"$@\" >> '\(calls.path)'; fi")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.open("parts", moving: true)
+        try await wait("the open sheet") { model.openList == "parts" && model.openPanel != nil }
+        return calls
+    }
+
+    private func calls(in file: URL) -> [String] {
+        ((try? String(contentsOf: file, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init)
+    }
+
+    func testAPressOfASpotWithPressRunRunsItAndAPressWithOptionOpensItsSheet() async throws {
+        let log = folder.appendingPathComponent("calls")
+        try script("conf", header: "read=sheet\npress=run", "if [ \"$1\" = read ]; then printf 'choice=look\\noption=a:A\\nvalue=a\\n'; else echo \"$@\" >> '\(log.path)'; fi")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+
+        XCTAssertEqual(model.hint, "⏎ Run   ⌥⏎ Settings   ⌘K Actions")
+        model.tap("conf")
+        try await wait("the run") { self.calls(in: log) == ["run"] }
+        XCTAssertNil(model.openList)
+        XCTAssertEqual(host.dismissals, 1)
+
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.tap("conf", opening: true)
+        try await wait("the sheet") { model.openList == "conf" && model.openPanel != nil }
+        XCTAssertFalse(model.openSelected())
+        XCTAssertEqual(calls(in: log), ["run"])
+    }
+
+    func testReturnOpensAFocusedMenuAndPressesAFocusedButton() async throws {
+        let calls = try await openParts(
+            "grid=look look\\ngrid=key key\\ngrid=make play\\n\\nchoice=look\\noption=a:A\\noption=b:B\\nvalue=a\\n\\n"
+                + "hotkey=key\\nvalue=option+c\\n\\nbutton=make\\ntitle=Make\\n\\nbutton=play\\ntitle=Play\\n\\nbutton=paste\\ntitle=Paste\\n"
+        )
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        XCTAssertEqual(model.sheets["parts"]?.menuOpening?.part, "look")
+        for name in ["down", "down", "right"] { XCTAssertTrue(model.handleKey(ActionKey(name: name))) }
+        XCTAssertEqual(model.openPanel?.selectedPart?.id, "play")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+
+        try await wait("the press of play") { self.calls(in: calls) == ["play"] }
+    }
+
+    func testAKeyPressedWhileTheShortcutRowOnlyHasTheFocusIsNotRecorded() async throws {
+        let calls = try await openParts("grid=key\\n\\nhotkey=key\\nvalue=option+c\\n")
+
+        XCTAssertEqual(model.openPanel?.selectedPart?.id, "key")
+        XCTAssertFalse(model.handleKey(ActionKey(name: "c", isCommand: true)))
+        XCTAssertNil(model.recording)
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        XCTAssertEqual(model.recording, "key")
+        model.stopRecording()
+        XCTAssertEqual(self.calls(in: calls), [])
+    }
+
+    func testTheSideArrowsStepAFocusedSliderAndLeaveAFieldItsText() async throws {
+        _ = try await openParts("grid=level\\ngrid=note\\n\\nslider=level\\nlevel=50\\n\\nfield=note\\ntext=Hi\\n")
+
+        XCTAssertFalse(model.handleKey(ActionKey(name: "right")))
+        XCTAssertFalse(model.handleKey(ActionKey(name: "return")))
+        XCTAssertFalse(model.handleKey(ActionKey(name: "down")))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "up")))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "right")))
+        XCTAssertEqual(model.openPanel?.parts.first?.value, "55")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "left")))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "left")))
+        XCTAssertEqual(model.openPanel?.parts.first?.value, "45")
+    }
+
+    func testDownOnTheLastRowReachesTheButtonBelowAndUpComesBack() async throws {
+        let calls = try await openParts(
+            "grid=list\\ngrid=add\\n\\nrepeat=list\\n\\nbutton=add\\ntitle=Add\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n"
+        )
+        try await wait("the rows") { model.openItems?.shown.count == 2 }
+
+        XCTAssertFalse(model.handleKey(ActionKey(name: "down")))
+        model.moveItemLine(by: 1)
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertEqual(model.openPanel?.selectedPart?.id, "add")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        try await wait("the press of add") { self.calls(in: calls) == ["add"] }
+        XCTAssertTrue(model.handleKey(ActionKey(name: "up")))
+        XCTAssertNil(model.openPanel?.selectedPart)
+        XCTAssertEqual(model.openItems?.selected, 1)
+    }
+
     func testTheGridSearchFindsAGlobalSpotWithNoKeyBesideARowOfTheSameName() async throws {
         try script("apps", header: "title=Apps\nread=panel\nglobal=true\nshortcut=a", "printf 'row=shortcuts\\ntitle=Shortcuts\\n'")
         try script("shortcuts", header: "title=Shortcuts\nread=panel\nglobal=true", "printf 'row=daily\\ntitle=Daily\\n'")

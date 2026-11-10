@@ -184,6 +184,11 @@ public struct ItemList: Equatable, Sendable {
         shown = shown.map(changed)
     }
 
+    /// Whether the selection lies on the last line of the shown rows, or no row shows.
+    public var isOnLastLine: Bool {
+        shown.isEmpty || selected / perLine == (shown.count - 1) / perLine
+    }
+
     /// Moves to another line and keeps the place in the line. A shorter last line takes its last item, and the first and the
     /// last line stop the move.
     public mutating func moveLine(by lines: Int) {

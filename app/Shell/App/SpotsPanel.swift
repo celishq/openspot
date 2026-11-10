@@ -108,10 +108,28 @@ final class SpotsPanel: NSPanel {
                 }
                 return
             }
-            if let key = Self.actionKey(of: event), model?.handleKey(key) == true { return }
+            if Self.isOptionReturn(event), model?.openSelected() == true { return }
+            if let key = Self.actionKey(of: event), !textKeepsArrow(key), model?.handleKey(key) == true { return }
             if model?.handleChain(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags)) == true { return }
         }
         super.sendEvent(event)
+    }
+
+    /// Whether the text view that has the focus keeps an up or down arrow: up while its caret lies below its first line, and
+    /// down while it lies above its last. At an edge, the arrow moves the focus to the next part of the sheet.
+    private func textKeepsArrow(_ key: ActionKey) -> Bool {
+        guard key == ActionKey(name: "up") || key == ActionKey(name: "down"),
+              let text = firstResponder as? NSTextView, text.isEditable, !text.isFieldEditor
+        else { return false }
+        let line = { (location: Int) in text.firstRect(forCharacterRange: NSRange(location: location, length: 0), actualRange: nil).midY }
+        let caret = line(text.selectedRange().location)
+        let edge = line(key.name == "up" ? 0 : (text.string as NSString).length)
+        return abs(caret - edge) > 1
+    }
+
+    /// Whether a key press is Return with ⌥ and no other modifier.
+    private static func isOptionReturn(_ event: NSEvent) -> Bool {
+        [kVK_Return, kVK_ANSI_KeypadEnter].contains(Int(event.keyCode)) && modifiers(of: event.modifierFlags) == .option
     }
 
     private static func modifiers(of flags: NSEvent.ModifierFlags) -> Shortcut.Modifiers {

@@ -127,6 +127,8 @@ public final class SpotRun {
     }
     /// The last arrow press that asks the parts to scroll. It lives apart from the parts, so that a press redraws only the scroll.
     public private(set) var nudge = SheetParts.Nudge.rest
+    /// The last press of return that asks the menu of a part to open. It lives apart from the parts, as the nudge does.
+    public private(set) var menuOpening: SheetParts.MenuOpening?
     /// Whether this sheet is the open one, as the runs record it.
     public var isOpen: Bool {
         runs.openID == command.id
@@ -300,9 +302,28 @@ public final class SpotRun {
         runs.updateClock()
     }
 
-    /// Moves the selection among its parts.
+    /// Moves the focus along the line of its parts.
     public func movePart(by step: Int) {
         panel?.move(by: step)
+    }
+
+    /// Moves the focus to the line of parts above or below. Returns whether it moved.
+    public func movePartLine(by lines: Int) -> Bool {
+        panel?.moveLine(by: lines) ?? false
+    }
+
+    /// Gives the focus to the first part below the rows. Returns false when no part lies there.
+    public func leaveRows() -> Bool {
+        panel?.leaveRows() ?? false
+    }
+
+    public func focusPart(_ id: String) {
+        panel?.focus(id)
+    }
+
+    /// Asks the menu of a part to open.
+    public func openMenu(of part: SpotPart) {
+        menuOpening = SheetParts.MenuOpening(part: part.id, serial: (menuOpening?.serial ?? 0) + 1)
     }
 
     public func scrollPanel(by step: Int) {
