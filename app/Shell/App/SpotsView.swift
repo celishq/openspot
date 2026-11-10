@@ -208,7 +208,7 @@ struct SpotsView: View {
                 .font(SpotType.input)
                 .foregroundStyle(SpotTheme.ink)
             Spacer()
-            SpotRoundButton(symbol: "checkmark", label: "Done") { model.endEditing() }
+            SpotRoundButton(symbol: "checkmark", label: "Done", look: .strong) { model.endEditing() }
         }
         .padding(.horizontal, SpotTokens.padding)
         .frame(width: SpotTokens.gridWidth, height: SpotTokens.rowHeight)
