@@ -271,6 +271,7 @@
 		AFAD216C7558111B31ECD03E /* SpotGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97A09B4D4F88E55986E6C8FB /* SpotGrid.swift */; };
 		AFB220E986BE26D372CA92D7 /* SpotFileChooser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8432BCA1B2C4A049D23563DA /* SpotFileChooser.swift */; };
 		B0F6307B561D848B394C9403 /* ShortcutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 739B5C48B6D3AACC37BE65C8 /* ShortcutTests.swift */; };
+		B0F69B37D3952F5CF308D7F8 /* CalcDate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C544E7F0BD5FF71CCDB6E8C /* CalcDate.swift */; };
 		B1DF39E3F91226E7A117D160 /* MetricKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = F15937AFC37067A8AB8D0330 /* MetricKind.swift */; };
 		B2E3C86E6FCF335C8CFD98EE /* CommandLineCallTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 144AE8063E284949FC39AC18 /* CommandLineCallTests.swift */; };
 		B30D6A47969BC44C6722BD41 /* AgentPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BA2CD893CD36A22F56960F1 /* AgentPrompt.swift */; };
@@ -283,6 +284,7 @@
 		B512F4DB9EE1FF9D89C7C95E /* FormDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EC527B539564A89DFC014CA /* FormDraft.swift */; };
 		B601E166271674D8DBFE9FEF /* CalendarEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C5B6013A7D3A8A2D7C7E232 /* CalendarEntryTests.swift */; };
 		B6AE0BA72B641A993510EADF /* CalcCurrency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 251678C3FC2938A6AC64953A /* CalcCurrency.swift */; };
+		B78150E9402429982C071BF7 /* CalcDateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C0B9EE5490BB2E4EA1E7A2 /* CalcDateTests.swift */; };
 		B8676F4AC37D3BDC56CEA2C7 /* OnceLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F24F0582E0B95BF77DAE274 /* OnceLink.swift */; };
 		B8A49E6BBB851A2B11B29805 /* SheetFaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08BCC0C811343163ADD02A5D /* SheetFaults.swift */; };
 		B8E17CF1F501562EEBE736EC /* Event.swift in Sources */ = {isa = PBXBuildFile; fileRef = F70009486AB59B320D3B9046 /* Event.swift */; };
@@ -485,6 +487,7 @@
 		2B23CFBEA8B591C3422CA1B7 /* SheetPush.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetPush.swift; sourceTree = "<group>"; };
 		2B4C02AADC5F649901D17E1B /* AppLogin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogin.swift; sourceTree = "<group>"; };
 		2C3FCD7B90F15CF025562B55 /* UpdateSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateSpot.swift; sourceTree = "<group>"; };
+		2C544E7F0BD5FF71CCDB6E8C /* CalcDate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcDate.swift; sourceTree = "<group>"; };
 		2C8EA4B013951F882C97A132 /* SpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotTests.swift; sourceTree = "<group>"; };
 		2CD5DEDA870B21A220E7D870 /* SpotsModel+Actions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Actions.swift"; sourceTree = "<group>"; };
 		2CFA6717BC498DBE732137A5 /* SpotWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotWindow.swift; sourceTree = "<group>"; };
@@ -699,6 +702,7 @@
 		B0782EF217E4751597CC6415 /* PluginFolderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginFolderTests.swift; sourceTree = "<group>"; };
 		B0E60E2E582ECCBE8512675F /* GlobalKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalKey.swift; sourceTree = "<group>"; };
 		B1676F1A9C3F0901AD19016D /* ShellHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellHelperTests.swift; sourceTree = "<group>"; };
+		B1C0B9EE5490BB2E4EA1E7A2 /* CalcDateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcDateTests.swift; sourceTree = "<group>"; };
 		B25CD98CC5588AFF0409B9BF /* UpdateSpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateSpotTests.swift; sourceTree = "<group>"; };
 		B2C4F749FF5E92621742CB71 /* CaptureFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureFile.swift; sourceTree = "<group>"; };
 		B2D62D8B5553AF2E9EF9AFF3 /* CommandKeyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandKeyTests.swift; sourceTree = "<group>"; };
@@ -880,6 +884,7 @@
 				A5BA465D615938D925C6C478 /* CalcAnswer.swift */,
 				D17373A98AFFC41917BE455D /* CalcConversion.swift */,
 				251678C3FC2938A6AC64953A /* CalcCurrency.swift */,
+				2C544E7F0BD5FF71CCDB6E8C /* CalcDate.swift */,
 				88B9FA4F7FBE192C0F3F809B /* CalcExpression.swift */,
 				BAA1D7EA55A6E23D8075E202 /* CalcRateCache.swift */,
 				8C1AD818DAD0892B880BF962 /* CalcRates.swift */,
@@ -1103,6 +1108,7 @@
 				096ABE1561629A883A3D83E3 /* AppsPluginTests.swift */,
 				54721534E4A59D8BE9117831 /* BigPasteTests.swift */,
 				48F7451264C08B48BD7F2B65 /* CalcAnswerTests.swift */,
+				B1C0B9EE5490BB2E4EA1E7A2 /* CalcDateTests.swift */,
 				8B894C1134E1A0D2F7204CCD /* CalcRatesTests.swift */,
 				C0ABD4DC3959E204822BE5FD /* CalendarAddTests.swift */,
 				6C5B6013A7D3A8A2D7C7E232 /* CalendarEntryTests.swift */,
@@ -1844,6 +1850,7 @@
 				7E7C293B49749F1967615D57 /* CalcAnswer.swift in Sources */,
 				1E09F812834627CC3049BFF5 /* CalcConversion.swift in Sources */,
 				B6AE0BA72B641A993510EADF /* CalcCurrency.swift in Sources */,
+				B0F69B37D3952F5CF308D7F8 /* CalcDate.swift in Sources */,
 				C2D55EFB45E530CACBCC825D /* CalcExpression.swift in Sources */,
 				4532F7F19749CA37C62C6E58 /* CalcRateCache.swift in Sources */,
 				A67D9B1197DD1C93AD53140F /* CalcRates.swift in Sources */,
@@ -2125,6 +2132,7 @@
 				66D81DBDE4D214FE8E2E4D7C /* AppsPluginTests.swift in Sources */,
 				F35D6B0382CED10EFB06974F /* BigPasteTests.swift in Sources */,
 				D5C57189ADC4C94EBB64A0F7 /* CalcAnswerTests.swift in Sources */,
+				B78150E9402429982C071BF7 /* CalcDateTests.swift in Sources */,
 				DC54280DE35C6EE3B2BD156A /* CalcRatesTests.swift in Sources */,
 				095DF16B5D9CE11A2EE0D0AD /* CalendarAddTests.swift in Sources */,
 				B601E166271674D8DBFE9FEF /* CalendarEntryTests.swift in Sources */,

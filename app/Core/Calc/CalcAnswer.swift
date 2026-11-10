@@ -1,8 +1,9 @@
 import Foundation
 
 /// The answer to a typed sum or conversion, as one row: its id is the plain value to copy, its title the answer written the
-/// way of the Mac, and its detail how the text was read. Text that is not a sum has no answer, and a currency with no rates
-/// to convert it has the answer `status=offline`.
+/// way of the Mac, and its detail how the text was read. It tries a conversion, then a sum, then a date, and a text that
+/// starts as `2026-12-25` only as a date. Text that is none has no answer, and a currency with no rates to convert it has the
+/// answer `status=offline`.
 public struct CalcAnswer: Equatable, Sendable {
     /// The value with a dot and no grouping, such as `3.75`.
     public let value: String
@@ -25,10 +26,13 @@ public struct CalcAnswer: Equatable, Sendable {
             if asked == nil { asked = .some(rates()) }
             return asked ?? nil
         }
+        let isDate = text.prefixMatch(of: /\d{4}-\d{1,2}-\d{1,2}(\s|$)/) != nil
         if let answer = Self.conversion(of: text, locale: locale, clock: clock, now: now, rates: kept) {
             self = answer
-        } else if let expression = CalcExpression(text: text, locale: locale), !expression.isPlain {
+        } else if !isDate, let expression = CalcExpression(text: text, locale: locale), !expression.isPlain {
             self.init(value: Self.plain(expression.value, digits: 15), title: Self.written(expression.value, locale: locale), detail: expression.detail)
+        } else if let date = CalcDate(text: text, locale: locale, clock: clock, now: now) {
+            self.init(value: date.value, title: date.title, detail: date.detail)
         } else {
             return nil
         }

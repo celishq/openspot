@@ -4,8 +4,8 @@ import Foundation
 enum CalcCurrency {
     private static let fiat = Set(Locale.Currency.isoCurrencies.map { $0.identifier.uppercased() })
 
-    /// The code that a name gives, or nil when it can name no currency. A code is two to five letters or digits, and only
-    /// the rates can say whether it is a real one.
+    /// The code that a name gives, or nil when it can name no currency. A code is two to five letters or digits that name no
+    /// unit, and only the rates can say whether it is a real one.
     static func code(_ name: String) -> String? {
         let name = name.lowercased()
         switch name {
@@ -22,7 +22,7 @@ enum CalcCurrency {
         case "₿", "bitcoin", "bitcoins": return "BTC"
         case "ether", "ethereum": return "ETH"
         default:
-            guard (2...5).contains(name.count), name.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber) }) else { return nil }
+            guard (2...5).contains(name.count), name.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber) }), CalcUnit.named(name) == nil else { return nil }
             return name.uppercased()
         }
     }
