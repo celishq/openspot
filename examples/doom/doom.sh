@@ -2,6 +2,8 @@
 # title=Doom
 # icon=gamecontroller
 # detail=Play the first episode of Doom
+# read=panel
+# size=square
 engine_commit=e257a09527062bfb986b6e5e0780839b6cbd5b71
 engine_sha=26f8f60daa6c6e4d3c01e5eac9fb700d592dede803d13ac848154ff356b2a2e7
 engine_url=https://github.com/ozkl/doomgeneric/archive/$engine_commit.tar.gz
@@ -11,9 +13,15 @@ wad_size=1366368
 wad_urls='http://deb.debian.org/debian/pool/non-free/d/doom-wad-shareware/doom-wad-shareware_1.9.fixed-5_all.deb
 https://snapshot.debian.org/file/732562ea15f0a6623611bdb739a03af72d8dbaf1'
 
+data=$OPENSPOT_DATA
+
+if [ "$1" = read ]; then
+  newest=$(ls -t "$data"/screens/*.png 2>/dev/null | head -n 1)
+  [ -n "$newest" ] && printf 'grid.small=shot\n\npicture=shot\nicon=%s\n' "$newest"
+  exit 0
+fi
 [ "$1" = run ] || exit 0
 
-data=$OPENSPOT_DATA
 layer=$(cd "$(dirname "$0")" && pwd)/doomgeneric_mac.m
 source=$data/doomgeneric-$engine_commit
 wad=$data/doom1.wad
@@ -101,8 +109,9 @@ if [ ! -f "$wad" ]; then
   mv "$temp/doom1.wad" "$wad"
 fi
 
+cd "$data" || exit 1
+[ -d screens ] || "$engine" -iwad "$wad" -screen > /dev/null 2>&1
 stage 'Playing' 'Press to quit'
 rm -rf "$temp"
 trap - EXIT TERM
-cd "$data" || exit 1
 "$engine" -iwad "$wad" > "$data/doom.log"

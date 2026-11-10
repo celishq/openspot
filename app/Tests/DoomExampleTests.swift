@@ -128,6 +128,45 @@ final class DoomExampleTests: SamplePluginsCase {
         return text
     }
 
+    /// Copies the example into a plugins folder of its own, so that the panel reads no other spot.
+    private func plugins(in folder: URL) throws -> URL {
+        let plugins = folder.appendingPathComponent("plugins")
+        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
+        try FileManager.default.copyItem(at: examples.appendingPathComponent("doom"), to: plugins.appendingPathComponent("doom"))
+        return plugins
+    }
+
+    /// Opens the panel once for each change and once more, each 10 seconds after the last, as a person does, and returns
+    /// the picture that the card of the spot drew after each read, or nil for its default card. Each change runs while the
+    /// panel is closed.
+    @MainActor
+    private static func pictures(plugins: URL, changes: [@Sendable () throws -> Void]) async throws -> [String?] {
+        var time = Date(timeIntervalSince1970: 1000)
+        let runs = SpotRuns(now: { time }, stopPause: 0.2, tickPause: .milliseconds(50))
+        defer { runs.quit() }
+        runs.take(try PluginFolder(url: plugins).scan())
+        let sheet = try XCTUnwrap(runs.sheets["doom/doom"])
+        var pictures: [String?] = []
+        for change in [{}] + changes {
+            try change()
+            time += 10
+            let before = sheet.lastFrame
+            runs.panelOpened()
+            for _ in 0..<500 where sheet.lastFrame == before || sheet.lastFrame == nil {
+                try await Task.sleep(for: .milliseconds(10))
+            }
+            runs.panelClosed()
+            let shot = sheet.state.face.parts.first { $0.id == "shot" }
+            if case .image(let path)? = shot?.control {
+                XCTAssertEqual(sheet.state.face.drawing(for: .square), [["shot"]])
+                pictures.append(path)
+            } else {
+                pictures.append(nil)
+            }
+        }
+        return pictures
+    }
+
     private func lines(_ name: String, in folder: URL) -> [String] {
         ((try? read(name, in: folder)) ?? "").split(separator: "\n").map(String.init)
     }
@@ -278,5 +317,37 @@ final class DoomExampleTests: SamplePluginsCase {
             XCTAssertTrue(frames.contains("title=Building the engine\nvalue=0.50\ndetail=50%\n---"), frames)
             XCTAssertTrue(frames.contains("title=Building the engine\nvalue=1.00\ndetail=100%\n---"), frames)
         }
+    }
+
+    func testTheCardShowsTheNewestGameScreenFromTheNextOpenOfThePanel() async throws {
+        try await withPrivateHome { folder in
+            try self.fakeCurl(in: folder)
+            try self.fakeClang(in: folder)
+            let plugins = try self.plugins(in: folder)
+            let screens = self.data(in: folder).appendingPathComponent("screens")
+            let first = screens.appendingPathComponent("screen-1.png")
+            let second = screens.appendingPathComponent("screen-2.png")
+
+            let pictures = try await Self.pictures(plugins: plugins, changes: [
+                {
+                    try FileManager.default.createDirectory(at: screens, withIntermediateDirectories: true)
+                    try Data("png".utf8).write(to: first)
+                    try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 1000)], ofItemAtPath: first.path)
+                },
+                {
+                    try Data("png".utf8).write(to: second)
+                    try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 2000)], ofItemAtPath: second.path)
+                }
+            ])
+
+            XCTAssertEqual(pictures, [nil, first.path, second.path])
+            XCTAssertFalse(self.exists("fetched", in: folder))
+            XCTAssertFalse(self.exists("compiled", in: folder))
+            XCTAssertFalse(self.exists("played", in: folder))
+        }
+    }
+
+    func testTheCardIsSquareTheSizeNearestToTheShapeOfTheGameScreen() throws {
+        XCTAssertEqual(try doom().size, .square)
     }
 }
