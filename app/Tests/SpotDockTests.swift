@@ -28,8 +28,8 @@ final class SpotDockTests: XCTestCase {
         XCTAssertEqual(dock.shown.map(\.id), ["system"])
     }
 
-    func testTheDockLaysItsSpotsInRowsAndStartsARowForASpotThatDoesNotFit() {
-        let dock = SpotDock(items: [item("Coin", size: .small), item("Disk"), item("Timer", size: .small), item("Wave", size: .square)])
+    func testTheDockLaysItsSpotsAtTheirSizesInRowsAndMovesASmallerSpotUpIntoAGap() {
+        let dock = SpotDock(items: [item("Coin", size: .small), item("Disk"), item("Lamp", size: .square), item("Timer", size: .small), item("Wave", size: .large)])
         let cell = SpotTokens.cell, card = SpotTokens.rowHeight, wide = SpotTokens.width(columns: 2)
         let step = cell + SpotTokens.columnGap
         let row = SpotTokens.dockTileHeight + SpotTokens.rowGap
@@ -37,10 +37,16 @@ final class SpotDockTests: XCTestCase {
         XCTAssertEqual(dock.rects(columns: 4), [
             CGRect(x: 0, y: 0, width: cell, height: card),
             CGRect(x: step, y: 0, width: wide, height: card),
+            CGRect(x: 0, y: row, width: wide, height: SpotTokens.height(rows: 2)),
             CGRect(x: 3 * step, y: 0, width: cell, height: card),
-            CGRect(x: 0, y: row, width: wide, height: card),
+            CGRect(x: 0, y: 3 * row, width: SpotTokens.width(columns: 4), height: SpotTokens.height(rows: 2)),
         ])
-        XCTAssertEqual(dock.height(columns: 4), 2 * SpotTokens.dockTileHeight + SpotTokens.rowGap)
+        XCTAssertEqual(dock.height(columns: 4), 5 * SpotTokens.dockTileHeight + 4 * SpotTokens.rowGap)
+    }
+
+    func testASpotInTheDockTakesThePreferredSizeOverItsOwn() {
+        XCTAssertEqual(SpotDock.Item(command: Spot(id: "lamp", name: "Lamp", url: URL(fileURLWithPath: "/lamp.sh"), size: .small), size: .square).size, .square)
+        XCTAssertEqual(item("Lamp", size: .small).size, .small)
     }
 
     func testTheDockTakesAsManyColumnsAsItsWidthHolds() {

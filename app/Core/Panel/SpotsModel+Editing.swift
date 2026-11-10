@@ -33,7 +33,8 @@ extension SpotsModel {
 
     /// Makes the dock from the spots of this folder that are off, and keeps its search.
     func refreshDock(in folder: PluginFolder) {
-        var next = SpotDock(items: Self.offSpots(in: folder))
+        let choice = arrangement
+        var next = SpotDock(items: Self.offSpots(in: folder).map { SpotDock.Item(command: $0.command, isOwn: $0.isOwn, size: choice.size(of: $0.id)) })
         next.query = dock.query
         if next != dock { dock = next }
     }

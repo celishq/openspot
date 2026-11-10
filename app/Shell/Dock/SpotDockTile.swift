@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-/// A spot in the dock: its card as the grid draws it, 1x1 or wide, on the fill of a row, and the name under a 1x1 card,
+/// A spot in the dock: its card as the grid draws it, at its size, on the fill of a row, and the name under a 1x1 card,
 /// which shows no words. Its frame is the card's. A spot of the plugins folder shows a cross that deletes it. A right click
 /// turns the spot on.
 struct SpotDockTile: View {
@@ -24,7 +24,7 @@ struct SpotDockTile: View {
             model: model,
             onTap: {}
         )
-        .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.rowHeight)
+        .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
         .overlay(alignment: .topLeading) {
             if item.isOwn {

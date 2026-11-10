@@ -8,19 +8,18 @@ public struct SpotDock: Equatable, Sendable {
         public let command: Spot
         /// Whether the spot is a file of the plugins folder, which the dock can delete.
         public let isOwn: Bool
+        /// The size of its card, as the panel gives it: the preferred size, or else its own. A fault is never 1x1.
+        public let size: SpotSize
 
         public var id: String {
             command.id
         }
 
-        public init(command: Spot, isOwn: Bool = false) {
+        public init(command: Spot, isOwn: Bool = false, size: SpotSize? = nil) {
             self.command = command
             self.isOwn = isOwn
-        }
-
-        /// The size of its card in the dock: one column for a small spot, else two.
-        public var size: SpotSize {
-            command.size == .small && command.fault == nil ? .small : .wide
+            let own = size ?? command.size
+            self.size = command.fault != nil && own == .small ? .wide : own
         }
     }
 
@@ -38,26 +37,44 @@ public struct SpotDock: Equatable, Sendable {
         }
     }
 
-    /// Where the card of each shown spot lies, in the order of `shown`, from the top left of the first row. The spots fill
-    /// rows of this many columns in order, and a spot that does not fit on a row starts the next one.
+    /// Where the card of each shown spot lies, in the order of `shown`, from the top left of the first row. Each spot, at
+    /// its size, takes the first place from the top left where it fits in rows of this many columns, so a smaller spot
+    /// moves up into a gap that a larger one left.
     public func rects(columns: Int) -> [CGRect] {
-        var column = 0
-        var row = 0
-        return shown.map { item in
-            let span = item.size.columns
-            if column > 0, column + span > columns {
-                column = 0
-                row += 1
-            }
-            defer { column += span }
-            let x = CGFloat(column) * (SpotTokens.cell + SpotTokens.columnGap)
-            let y = CGFloat(row) * (SpotTokens.dockTileHeight + SpotTokens.rowGap)
-            return CGRect(x: x, y: y, width: SpotTokens.width(columns: span), height: SpotTokens.rowHeight)
+        places(columns: columns).map { place in
+            CGRect(
+                x: CGFloat(place.column) * (SpotTokens.cell + SpotTokens.columnGap),
+                y: CGFloat(place.row) * (SpotTokens.dockTileHeight + SpotTokens.rowGap),
+                width: SpotTokens.width(columns: place.size.columns),
+                height: SpotTokens.height(rows: place.size.rows)
+            )
         }
     }
 
     /// The height of the rows that hold the shown spots.
     public func height(columns: Int) -> CGFloat {
-        rects(columns: columns).last.map { $0.minY + SpotTokens.dockTileHeight } ?? 0
+        let rows = places(columns: columns).map { $0.row + $0.size.rows }.max() ?? 0
+        return rows == 0 ? 0 : CGFloat(rows) * SpotTokens.dockTileHeight + CGFloat(rows - 1) * SpotTokens.rowGap
+    }
+
+    /// The row and column of each shown spot, and its size, no wider than the rows.
+    private func places(columns: Int) -> [(row: Int, column: Int, size: SpotSize)] {
+        var taken = Set<[Int]>()
+        return shown.map { item in
+            let size = SpotSize(columns: min(item.size.columns, columns), rows: item.size.rows)
+            var row = 0
+            while true {
+                let fit = (0...(columns - size.columns)).first { column in
+                    (0..<size.rows).allSatisfy { down in (0..<size.columns).allSatisfy { !taken.contains([row + down, column + $0]) } }
+                }
+                if let column = fit {
+                    for down in 0..<size.rows {
+                        for across in 0..<size.columns { taken.insert([row + down, column + across]) }
+                    }
+                    return (row, column, size)
+                }
+                row += 1
+            }
+        }
     }
 }
