@@ -21,15 +21,16 @@ in_app_folders() {
 }
 
 # Keeps each app in the file of found apps as its name, a tab and its path, sorted by name. It looks for the apps again
-# only when a folder that holds them changed since the last look.
+# only when a folder that holds them changed since the last look started.
 find_apps() {
-  if [ ! -s "$found" ] || [ -n "$(in_app_folders -maxdepth 2 -name '*.app' -prune -o -type d -newer "$found" -print -quit)" ]; then
+  if [ ! -s "$found" ] || [ ! -f "$found.looked" ] || [ -n "$(in_app_folders -maxdepth 2 -name '*.app' -prune -o -type d -newer "$found.looked" -print -quit)" ]; then
+    : >"$found.looked.$$"
     {
       in_app_folders -maxdepth 3 -name '*.app' -prune
       echo /System/Library/CoreServices/Finder.app
     } | sed 's/\\/\\\\/g' \
       | awk -F/ '{ name = $NF; sub(/\.app$/, "", name); print name "\t" $0 }' \
-      | sort -f -u > "$found.$$" && mv "$found.$$" "$found"
+      | sort -f -u > "$found.$$" && mv "$found.$$" "$found" && mv "$found.looked.$$" "$found.looked"
   fi
 }
 

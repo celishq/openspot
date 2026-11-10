@@ -16,15 +16,28 @@ remember() {
   printf '%s\n' "$1" > "$saved.$$" && mv "$saved.$$" "$saved"
 }
 
-# Prints the rows of the emoji in the tone and of the symbols. It keeps them for each tone, and makes them again when the
-# app or the preferences of the Mac, such as its languages, changed since.
+# Prints the rows of the emoji in the tone and of the symbols. It keeps them for each tone, with the times of change of
+# the app, of macOS and of the Mac's preferences, which hold its languages, and makes them again when one of these differs.
 glyph_rows() {
   rows="$OPENSPOT_DATA/rows-$tone"
-  app=$(command -v openspot)
-  if [ ! -s "$rows" ] || [ "$app" -nt "$rows" ] || [ "$HOME/Library/Preferences/.GlobalPreferences.plist" -nt "$rows" ]; then
-    { openspot emoji --tone "$tone" && openspot symbols; } >"$rows.$$" && mv "$rows.$$" "$rows"
+  stamp=$(stat -n -L -f '%Fc ' "$(command -v openspot)" /System/Library/CoreServices/SystemVersion.plist "$HOME/Library/Preferences/.GlobalPreferences.plist" 2>/dev/null)
+  kept=''
+  [ -f "$rows.stamp" ] && IFS= read -r kept <"$rows.stamp"
+  if [ -s "$rows" ] && [ "$stamp" = "$kept" ]; then
+    cat "$rows"
+    return
   fi
-  cat "$rows"
+  rm -f "$OPENSPOT_DATA"/rows-*.[0-9]*
+  whole=true
+  openspot emoji --tone "$tone" >"$rows.$$" || whole=false
+  openspot symbols >>"$rows.$$" || whole=false
+  cat "$rows.$$"
+  if [ "$whole" = true ]; then
+    mv "$rows.$$" "$rows"
+    printf '%s\n' "$stamp" >"$rows.stamp"
+  else
+    rm -f "$rows.$$"
+  fi
 }
 
 # Prints the tone after this one, and the first after the last.

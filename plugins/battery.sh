@@ -1,8 +1,16 @@
 #!/bin/sh
 # read=30
 pmset -g batt | awk '
-  !found && match($0, /[0-9]+%/) {
-    found = 1
+  /InternalBattery/ && match($0, /[0-9]+%/) { line = $0 }
+  !first && /[0-9]+%/ { first = $0 }
+  END {
+    if (line == "") line = first
+    if (line == "") {
+      printf "gauge=battery\ntitle=–\ndetail=No battery\nicon=powerplug.fill\nvalue=0\n"
+      exit
+    }
+    $0 = line
+    match($0, /[0-9]+%/)
     percent = substr($0, RSTART, RLENGTH - 1) + 0
     symbol = "battery." int((percent + 12) / 25) * 25
     detail = match($0, /[0-9]+:[0-9]+/) ? substr($0, RSTART, RLENGTH) " left" : ""
@@ -16,7 +24,4 @@ pmset -g batt | awk '
     }
     if (percent == 100) detail = "Full"
     printf "gauge=battery\ntitle=%d%%\ndetail=%s\nicon=%s\nvalue=%s\ntone=%s\n", percent, (detail == "" ? "On battery" : detail), symbol, percent / 100, tone
-  }
-  END {
-    if (!found) printf "gauge=battery\ntitle=–\ndetail=No battery\nicon=powerplug.fill\nvalue=0\n"
   }'

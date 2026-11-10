@@ -82,6 +82,22 @@ final class ShortcutsPluginTests: SamplePluginsCase {
         }
     }
 
+    func testAListThatFailsLeavesTheKeptRows() async throws {
+        let shortcuts = try shortcuts()
+        try await withPrivateHome { folder in
+            try Self.fakeShortcuts(in: folder)
+            let first = try await Self.frames(of: shortcuts)
+            try "#!/bin/sh\nexit 1\n".writeScript(to: folder.appendingPathComponent("tools/shortcuts"))
+
+            let failed = try await Self.frames(of: shortcuts)
+            try Self.fakeShortcuts(in: folder)
+            let after = try await Self.frames(of: shortcuts)
+
+            XCTAssertEqual(failed, first)
+            XCTAssertEqual(after, first)
+        }
+    }
+
     func testEnterRunsTheShortcutAndCopiesItsText() async throws {
         let shortcuts = try shortcuts()
         try await withPrivateHome { folder in

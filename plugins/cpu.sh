@@ -5,7 +5,7 @@ history="${TMPDIR:-/tmp}/openspot-cpu"
 
 # Prints the use of all cores now, and the trend of the last points with the one of now. Only a read keeps the trend, so
 # that a look from another script adds no point.
-ps -A -o %cpu= | awk -v cores="$(/usr/sbin/sysctl -n hw.ncpu)" -v history="$history" -v kept="$history.$$" -v call="$1" '
+ps -A -o %cpu= | LC_ALL=C awk -v cores="$(/usr/sbin/sysctl -n hw.ncpu)" -v history="$history" -v kept="$history.$$" -v call="$1" '
   { sum += $1 }
   END {
     now = int(sum / cores)

@@ -21,10 +21,11 @@ rows() {
   }'
 }
 
-# Prints a row for each shortcut in no folder, then for each shortcut in each folder.
+# Prints a row for each shortcut in no folder, then for each shortcut in each folder. It fails when Shortcuts gives no list.
 all_rows() {
+  folders=$(shortcuts list --folders) || return 1
   rows none
-  shortcuts list --folders | while IFS= read -r folder; do
+  printf '%s\n' "$folders" | while IFS= read -r folder; do
     [ -n "$folder" ] && rows "$folder"
   done
 }
@@ -86,11 +87,11 @@ case "$1" in
     if [ -s "$kept" ]; then
       cat "$kept"
       echo ---
-      fresh=$(all_rows)
+      fresh=$(all_rows) || exit 0
       [ "$fresh" = "$(cat "$kept")" ] && exit 0
       head_of_list
     else
-      fresh=$(all_rows)
+      fresh=$(all_rows) || exit 0
     fi
     printf '%s\n' "$fresh"
     printf '%s\n' "$fresh" >"$kept.$$" && mv "$kept.$$" "$kept"

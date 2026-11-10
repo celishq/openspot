@@ -323,17 +323,36 @@ final class SamplePluginsTests: SamplePluginsCase {
         try await withPrivateHome { folder in
             let emoji = try self.fakeEmoji(in: folder)
             let tool = folder.appendingPathComponent("tools/openspot")
-            let first = try await emoji.items(timeout: 10)
-            try "#!/bin/sh\n[ \"$1\" = emoji ] && printf 'row=👎\\ntitle=thumbs down\\nicon=👎\\n'\nexit 0\n".writeScript(to: tool)
-            try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -60)], ofItemAtPath: tool.path)
+            let calls = folder.appendingPathComponent("calls").path
+            let fake = try String(contentsOf: tool, encoding: .utf8).replacingOccurrences(of: "case \"$1\" in", with: "echo \"$1\" >> '\(calls)'\ncase \"$1\" in")
+            try fake.writeScript(to: tool)
 
+            let first = try await emoji.items(timeout: 10)
             let kept = try await emoji.items(timeout: 10)
-            try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: 60)], ofItemAtPath: tool.path)
+            let callsWhenKept = try self.read("calls", in: folder)
+            try FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: tool.path)
             let made = try await emoji.items(timeout: 10)
 
             XCTAssertEqual(first.items.map(\.title), ["thumbs up, none", "rightwards arrow"])
             XCTAssertEqual(kept.items.map(\.title), first.items.map(\.title))
-            XCTAssertEqual(made.items.map(\.title), ["thumbs down"])
+            XCTAssertEqual(callsWhenKept, "emoji\nsymbols\n")
+            XCTAssertEqual(made.items.map(\.title), first.items.map(\.title))
+            XCTAssertEqual(try self.read("calls", in: folder), "emoji\nsymbols\nemoji\nsymbols\n")
+        }
+    }
+
+    func testEmojiShowsTheSymbolsAndKeepsNothingWhenTheEmojiFail() async throws {
+        try await withPrivateHome { folder in
+            let emoji = try self.fakeEmoji(in: folder)
+            let tool = folder.appendingPathComponent("tools/openspot")
+            let fake = try String(contentsOf: tool, encoding: .utf8).replacingOccurrences(of: "emoji) printf", with: "emoji) exit 1; printf")
+            try fake.writeScript(to: tool)
+
+            let failed = try await emoji.items(timeout: 10)
+            let data = folder.appendingPathComponent(".config/openspot/data/\(try XCTUnwrap(emoji.dataName))")
+
+            XCTAssertEqual(failed.items.map(\.title), ["rightwards arrow"])
+            XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: data.path).filter { $0.hasPrefix("rows") }, [])
         }
     }
 
