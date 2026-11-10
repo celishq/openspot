@@ -17,6 +17,8 @@ public enum SpotTokens {
     /// The side of the square that takes a drag of a card's resize handle, and the width of its line on the rim.
     public static let resizeHandle: CGFloat = 28
     public static let resizeHandleLine: CGFloat = 5
+    /// The step, in degrees, in which the pointer over a resize handle turns.
+    public static let handleAngleStep = 5
     /// How far from each edge the rim of a round corner passes through its diagonal, as a part of the radius.
     public static let rimPoint: CGFloat = 1 - 0.5.squareRoot()
     public static let listRowHeight: CGFloat = 40
@@ -58,6 +60,15 @@ public enum SpotTokens {
 
     public static func height(rows: Int) -> CGFloat {
         CGFloat(rows) * rowHeight + CGFloat(rows - 1) * rowGap
+    }
+
+    /// The angle, in degrees from the right and within 0 to 90, of the line from the centre of a card's bottom right corner
+    /// to this point of its handle's square, in steps of `handleAngleStep`.
+    public static func handleAngle(of size: SpotSize, at point: CGPoint) -> Int {
+        let centre = resizeHandle - corner(for: size)
+        let degrees = atan2(point.y - centre, point.x - centre) * 180 / .pi
+        let step = CGFloat(handleAngleStep)
+        return Int((min(max(degrees, 0), 90) / step).rounded() * step)
     }
 
     /// The space between the edge of a card and what it shows. A 1x1 widget keeps more room for its one mark.
