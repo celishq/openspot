@@ -644,7 +644,13 @@ public final class SpotsModel {
     }
 
     public var openPanel: SheetParts? {
-        openSheet?.panel
+        shownParts(of: openList)
+    }
+
+    /// The parts that the sheet of a spot shows: none while a form of that spot takes their place.
+    public func shownParts(of id: String?) -> SheetParts? {
+        guard let id, form?.entry.id != id else { return nil }
+        return sheets[id]?.panel
     }
 
     public var openSheet: SpotRun? {

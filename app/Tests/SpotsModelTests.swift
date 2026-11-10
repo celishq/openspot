@@ -324,6 +324,29 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.form?.draft.choices?.shown.map(\.run), ["b"])
     }
 
+    func testAFormTakesThePlaceOfThePartsOfTheSheetItOpensOn() async throws {
+        try script("agenda", header: "read=sheet\nsettings=pick", """
+        case "$1" in
+          pick) printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\noption=a:Apple\noption=b:Banana\nvalue=a\n' ;;
+          *) printf 'grid=items\ngrid.wide=next\n\nnumber=next\nvalue=09:30\n\nrepeat=items\n\nrow=e\ntitle=Standup\n' ;;
+        esac
+        """)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("agenda")
+        try await wait("the sheet of parts") { model.shownParts(of: "agenda")?.showsRows == true }
+        let change = try XCTUnwrap(SettingsSpot.change(of: "setting:agenda:pick"))
+
+        model.changeSetting(of: change.spot, with: change.action)
+        try await wait("the form") { model.form != nil }
+
+        XCTAssertNil(model.shownParts(of: "agenda"))
+        XCTAssertNil(model.openPanel)
+        model.cancelForm()
+        XCTAssertNotNil(model.shownParts(of: "agenda"))
+    }
+
     func testAFormThatArrivesAfterThePanelHidDoesNotOpen() async throws {
         let gate = folder.appendingPathComponent("gate").path
         try script("list", header: "read=sheet", """

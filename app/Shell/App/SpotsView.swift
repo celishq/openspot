@@ -144,7 +144,7 @@ struct SpotsView: View {
 
     /// The parts of the open sheet.
     private var shownPanel: SheetParts? {
-        model.sheets[sheetID ?? ""]?.panel
+        model.shownParts(of: sheetID)
     }
 
     /// How far the install screen pushes the grid: as far as its lower edge moves.
