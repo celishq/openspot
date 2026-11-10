@@ -94,6 +94,7 @@ public enum PartCatalog {
     | `close=true` | Closes the panel after a press. |
     | `align=left`, `right` or `center` | Places a component that is smaller than its cell. |
     | `look=tile`, `chip`, `strong` or `bare` | The box of a text, a number or a button. `tile` is a filled row. `chip` is a small capsule button. `strong` is the one main button, white. `bare` shows a button or a number with no fill. |
+    | `look=tick` | Draws a switch as a round tick before its words, for a thing to do, such as a reminder. |
 
     """
 

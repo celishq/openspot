@@ -33,9 +33,10 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case symbol(String)
     }
 
-    /// The box that the app draws around it, from the one set that the app owns. `pad` is the look of a key of a keypad.
+    /// The box that the app draws around it, from the one set that the app owns. `pad` is the look of a key of a keypad, and
+    /// `tick` draws a switch as a round tick, for a thing to do.
     public enum Look: String, Equatable, Sendable {
-        case tile, chip, strong, bare, pad
+        case tile, chip, strong, bare, pad, tick
     }
 
     public enum Align: String, Equatable, Sendable {

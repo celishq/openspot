@@ -9,6 +9,8 @@ struct SpotSlotView: View {
 
     var body: some View {
         switch part.control {
+        case .toggle(let on) where part.look == .tick:
+            SpotTick(isOn: on, words: words) { onSlot(part.id, $0 ? "true" : "false") }
         case .toggle(let on):
             let toggle = Toggle("", isOn: Binding(get: { on }, set: { onSlot(part.id, $0 ? "true" : "false") }))
                 .toggleStyle(.switch)

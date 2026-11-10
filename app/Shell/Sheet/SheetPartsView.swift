@@ -306,6 +306,9 @@ struct SheetPartsView: View {
     @ViewBuilder
     private func control(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         switch part.control {
+        case .toggle(let on) where part.look == .tick:
+            SpotTick(isOn: on, words: EmptyView()) { onSet(part, $0 ? "true" : "false") }
+                .fixedSize()
         case .toggle(let on):
             Toggle(part.title ?? part.id, isOn: Binding(get: { on }, set: { onSet(part, $0 ? "true" : "false") }))
                 .toggleStyle(.switch)

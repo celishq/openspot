@@ -349,4 +349,19 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(PluginOutput(text: "choice=a\noption=x:X\nlook=list\n").partFaults, ["the part a has an unknown look: list"])
     }
 
+    func testASwitchWithATickLookKeepsItsValueAndATemplateSlotTakesIt() throws {
+        let part = try XCTUnwrap(PluginOutput(text: "switch=done\ntitle=Call mom\non=true\nlook=tick\n").parts.first)
+        let template = try XCTUnwrap(RowTemplate(block: TextBlock(fields: [.init(key: "template", value: "reminder"), .init(key: "switch", value: "done"), .init(key: "done.look", value: "tick")])))
+        let item = try XCTUnwrap(SpotItem(block: try XCTUnwrap(TextBlock.blocks(in: "row=reminder:1\ntitle=Buy milk\ndone=false\ndone.title=Buy milk\n").first)))
+        let slot = try XCTUnwrap(template.parts(of: item).first)
+
+        XCTAssertEqual(part.look, .tick)
+        XCTAssertEqual(part.control, .toggle(true))
+        XCTAssertEqual(PluginOutput(text: "switch=done\non=true\nlook=tick\n").partFaults, [])
+        XCTAssertEqual(slot.look, .tick)
+        XCTAssertEqual(slot.control, .toggle(false))
+        XCTAssertEqual(slot.title, "Buy milk")
+        XCTAssertTrue(PartCatalog.text.contains("`look=tick`"))
+    }
+
 }
