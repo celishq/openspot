@@ -12,11 +12,34 @@ extension SpotsModel {
     public func beginEditing() {
         guard openList == nil else { return }
         closeMenu()
+        offSpots = Self.offSpots(in: files.folder, enabled: arrangement.enabled)
         change(.edit) {
             query = ""
             isEditing = true
             updateVisible()
+            refreshDock()
         }
+    }
+
+    /// Makes the dock from the cards that are not on the grid and the core spots that are off, and keeps its tab and search.
+    func refreshDock() {
+        let hidden = cards.filter { !$0.isOnGrid }.map { entry in
+            let command = entry.command
+            if case .fault = command.shipped { return SpotDock.Item(command: command, place: .fix) }
+            return SpotDock.Item(command: command, place: .search)
+        }
+        var next = SpotDock(items: hidden + offSpots)
+        next.tab = dock.tab
+        next.query = dock.query
+        if next != dock { dock = next }
+    }
+
+    /// The core spots of this folder that the config does not turn on. A file in the plugins folder is always on.
+    private static func offSpots(in folder: PluginFolder, enabled: Set<String>) -> [SpotDock.Item] {
+        let own = Set(((try? PluginFolder(url: folder.url).scan())?.plugins ?? []).map(\.id))
+        return folder.coreChoices()
+            .filter { !enabled.contains(PluginFolder.coreID(of: $0)) && !own.contains(PluginFolder.coreID(of: $0)) }
+            .map { SpotDock.Item(command: $0, place: .off) }
     }
 
     /// Ends Edit Spots. A panel that closes passes no motion, so that nothing moves during its fade.

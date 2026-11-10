@@ -14,6 +14,7 @@ final class SpotsModelDragTests: XCTestCase {
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-drag-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: core, withIntermediateDirectories: true)
         suite = "openspot-drag-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         let host = TestHost()
@@ -40,9 +41,13 @@ final class SpotsModelDragTests: XCTestCase {
         folder.appendingPathComponent("plugins", isDirectory: true)
     }
 
+    private var core: URL {
+        folder.appendingPathComponent("core", isDirectory: true)
+    }
+
     private var files: SpotFiles {
         SpotFiles(
-            environment: ["OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
+            environment: ["OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path, "OPENSPOT_CORE": core.path],
             home: folder,
             defaults: defaults
         )
@@ -302,6 +307,27 @@ final class SpotsModelDragTests: XCTestCase {
         model.panelWillHide()
 
         XCTAssertNil(model.resize)
+    }
+
+    func testTheDockHoldsTheSpotsThatAreNotOnTheGridAndTheCoreSpotsThatAreOff() throws {
+        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        model.setOnGrid(false, for: "d")
+
+        model.endEditing()
+        model.beginEditing()
+
+        XCTAssertEqual(model.dock.shown.map(\.id), ["d", "timer"])
+        XCTAssertEqual(model.dock.shown.map(\.place), [.search, .off])
+    }
+
+    func testTheDockFollowsAChangeOfTheGrid() {
+        model.setOnGrid(false, for: "c")
+
+        XCTAssertEqual(model.dock.shown.map(\.id), ["c"])
+
+        model.setOnGrid(true, for: "c")
+
+        XCTAssertEqual(model.dock.shown, [])
     }
 
     func testNoCardLiftsOutsideEditSpots() {

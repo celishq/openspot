@@ -207,6 +207,10 @@ public final class SpotsModel {
     @ObservationIgnored public internal(set) var gridScroll: CGFloat = 0
     @ObservationIgnored var scrollAtPress: CGFloat = 0
     @ObservationIgnored var pointerMove: CGSize?
+    /// The spots of Edit Spots' dock.
+    public internal(set) var dock = SpotDock(items: [])
+    /// The core spots that are off, which the dock shows, found when Edit Spots starts.
+    @ObservationIgnored var offSpots: [SpotDock.Item] = []
     /// Where the person pressed a card's resize handle, in the handle's square.
     @ObservationIgnored var resizeGrip = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)
     public var arrangement = SpotArrangement()
@@ -341,8 +345,10 @@ public final class SpotsModel {
         if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
     }
 
+    /// Makes the entries again from the scanned spots and the arrangement, and the dock in Edit Spots.
     public func rebuildEntries() {
         entries = ordered().map { Entry(command: $0, run: runs.sheets[$0.id], choice: arrangement) }
+        if isEditing { refreshDock() }
     }
 
     /// The scanned spots in their grid order, and the person's order in the config over it.
