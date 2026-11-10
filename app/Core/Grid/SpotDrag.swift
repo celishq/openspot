@@ -28,9 +28,13 @@ public struct SpotDrag: Equatable, Sendable {
         layouts[place] ?? []
     }
 
-    /// Where the card lies when it lands at this place.
+    /// Where the card lies, and its size, when it lands at this place.
+    public func placement(at place: Int) -> SpotPlacement? {
+        layout(at: place).first { $0.index == place }
+    }
+
     public func rect(at place: Int) -> CGRect {
-        layout(at: place).first { $0.index == place }?.rect ?? .zero
+        placement(at: place)?.rect ?? .zero
     }
 
     /// The place whose landing puts the card's centre nearest to this point. A tie keeps the lower place.

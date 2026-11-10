@@ -8,7 +8,6 @@ struct SpotsView: View {
     @State private var scroll = ScrollPosition()
     @State private var scrollOffset: CGFloat = 0
     @State private var dropTarget: String?
-    @State private var dragged: (id: String, offset: CGSize)?
 
     /// The sheet that is built, from its first frame on its card to the end of its close.
     private var sheetID: String? {
@@ -33,9 +32,7 @@ struct SpotsView: View {
                     isSheetOpen: sheetOpen,
                     openID: card?.id,
                     push: card.map(push(from:)),
-                    scrollOffset: $scrollOffset,
-                    dropTarget: $dropTarget,
-                    dragged: $dragged
+                    dropTarget: $dropTarget
                 )
                     .offset(y: gridPush)
                     .padding(.horizontal, SpotTokens.halo)
