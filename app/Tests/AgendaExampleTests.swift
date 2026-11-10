@@ -4,14 +4,6 @@ import XCTest
 /// Proves the Agenda example with its real script and a stand-in for the openspot command, which logs each call with its
 /// reason and its stdin.
 final class AgendaExampleTests: SamplePluginsCase {
-    private var examples: URL {
-        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("examples")
-    }
-
-    private func example(_ name: String) throws -> Spot {
-        try XCTUnwrap(try PluginFolder(url: examples).scan().commands.first { $0.name == name })
-    }
-
     /// A time from now in ISO 8601 with the offset of the zone, as `openspot calendar events` prints it.
     private func iso(_ seconds: TimeInterval) -> String {
         let format = ISO8601DateFormatter()

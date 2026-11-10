@@ -3,14 +3,6 @@ import XCTest
 
 /// Proves the Shot and Record examples with their real scripts and a stand-in for the openspot command.
 final class ScreenExamplesTests: SamplePluginsCase {
-    private var examples: URL {
-        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("examples")
-    }
-
-    private func example(_ name: String) throws -> Spot {
-        try XCTUnwrap(try PluginFolder(url: examples).scan().commands.first { $0.name == name })
-    }
-
     /// A stand-in for the openspot command that logs each call to `calls`, keeps settings and a recording in files, lists two
     /// mics, a camera and the sound, and takes the shot that the file `shot` names.
     private func fakeScreen(in folder: URL) throws {
