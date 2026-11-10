@@ -51,6 +51,8 @@ case "$1" in
     printf 'row=1800\ntitle=30 minutes\n\n'
     printf 'row=3600\ntitle=1 hour\n\n'
     printf 'row=7200\ntitle=2 hours\n\n'
+    printf 'row=14400\ntitle=4 hours\n\n'
+    printf 'row=28800\ntitle=8 hours\n\n'
     printf 'row=0\ntitle=Until turned off\n'
     ;;
   open)

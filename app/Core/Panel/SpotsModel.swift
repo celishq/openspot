@@ -644,13 +644,21 @@ public final class SpotsModel {
     }
 
     /// Whether the search field keeps the keys: no form, no Edit Spots and no shown sheet of parts with no rows takes them.
-    /// It follows the parts that show, so that the focus stays put while a sheet moves.
+    /// It follows the parts that show, so that the focus stays put while a sheet moves. A form of one choice keeps it, to
+    /// search the rows of its options.
     public var showsSearch: Bool {
-        form == nil && !isEditing && openPanel?.kind.takesKeys != false
+        if let form { return form.draft.choices != nil && !isEditing }
+        return !isEditing && openPanel?.kind.takesKeys != false
     }
 
     public var openPanel: SheetParts? {
-        openSheet?.panel
+        shownParts(of: openList)
+    }
+
+    /// The parts that the sheet of a spot shows: none while a form of that spot takes their place.
+    public func shownParts(of id: String?) -> SheetParts? {
+        guard let id, form?.entry.id != id else { return nil }
+        return sheets[id]?.panel
     }
 
     public var openSheet: SpotRun? {
@@ -667,9 +675,11 @@ public final class SpotsModel {
 
     /// The text of the field: the search of the open list, or else the search of the spots.
     public var searchText: String {
-        get { openItems?.query ?? query }
+        get { form?.draft.choices?.query ?? openItems?.query ?? query }
         set {
-            if let file = SharedSpot.file(in: newValue) {
+            if form?.draft.choices != nil {
+                form?.draft.search(newValue)
+            } else if let file = SharedSpot.file(in: newValue) {
                 query = ""
                 openSheet?.search("")
                 DispatchQueue.main.async { self.review([file]) }

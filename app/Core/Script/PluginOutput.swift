@@ -88,6 +88,7 @@ public struct PluginOutput: Equatable, Sendable {
         let repeated = repeats.first.flatMap { block in block.value(Self.repeatKind).map { (block, $0) } }
         if let (block, _) = repeated { drawing = RepeatDrawing(block: block) }
         let drawn = head.flatMap { SheetLayout(block: $0) }
+        let carded = Set(CardFace(head: head, parts: []).drawings.values.flatMap { $0.joined() })
         for block in blocks {
             let kind = block.fields.first?.key
             if kind == Self.repeatKind { continue }
@@ -98,7 +99,7 @@ public struct PluginOutput: Equatable, Sendable {
                 } else {
                     errors.append(block.firstLine)
                 }
-            } else if kind == Self.button, let id = block.value(Self.button), drawn?.areas[id] == nil {
+            } else if kind == Self.button, let id = block.value(Self.button), drawn?.areas[id] == nil, !carded.contains(id) {
                 take(action: id, block)
             } else if kind == "row" {
                 rows.append(block)
@@ -164,7 +165,8 @@ public struct PluginOutput: Equatable, Sendable {
         }
     }
 
-    /// Finds what is wrong with the names of the parts and the sheet they make.
+    /// Finds what is wrong with the names of the parts and the sheet they make. A part that only a card drawing places is
+    /// drawn only on the card, so the sheet's drawing need not place it.
     private mutating func check(layout: SheetLayout?) {
         for id in [Self.reserved] + Self.callKeys + Self.defaults + takenDefaults where parts.contains(where: { $0.id == id }) {
             checkedFaults.append("a part cannot be called \(id)")
@@ -174,7 +176,9 @@ public struct PluginOutput: Equatable, Sendable {
                 checkedFaults.append("the row \(row.value("row") ?? "") names the file \(file), which does not start with /")
             }
         }
-        if !parts.isEmpty { checkedFaults += SheetFaults.of(layout: layout, summary: summary, parts: parts) }
+        let carded = Set(face.drawings.values.flatMap { $0.joined() })
+        let sheet = parts.filter { !carded.contains($0.id) || layout?.areas[$0.id] != nil }
+        if !sheet.isEmpty { checkedFaults += SheetFaults.of(layout: layout, summary: summary, parts: sheet) }
     }
 
     /// The one switch or slider that is all the output, which the card draws and changes (U12).

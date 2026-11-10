@@ -317,6 +317,7 @@ final class SheetLayoutTests: XCTestCase {
 
         XCTAssertEqual(faults("grid=a b\ngrid=a\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), ["each grid line needs the same number of columns"])
         XCTAssertEqual(faults("grid=a\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), ["the part b is not in the drawing"])
+        XCTAssertEqual(faults("grid=a\ngrid.small=b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), [])
         XCTAssertEqual(faults("grid=a\n\ntext=a\ntitle=A\n\ntext=a\ntitle=B\n"), ["two parts are called a"])
         XCTAssertEqual(faults("grid=a\ncard=a z\n\ntext=a\ntitle=A\n"), ["the card names z, which the drawing does not have"])
         XCTAssertEqual(faults("grid=a b\n\nbutton=a\nlook=strong\nicon=play\n\nbutton=b\nlook=strong\nicon=stop\n"), ["only one part can use look=strong"])

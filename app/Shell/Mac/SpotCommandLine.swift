@@ -103,6 +103,28 @@ enum SpotCommandLine {
             SpotScreen.run { try SpotRecording.stop() }
         case .screenRecordStatus:
             SpotScreen.run { try SpotRecording.status() }
+        case .calendarEvents(let days, let hidden):
+            finish { try await SpotEventStore.events().events(days: days, hiding: hidden) }
+        case .calendarCalendars:
+            finish { try await SpotEventStore.events().calendars() }
+        case .remindersDue(let days, let hidden):
+            finish { try await SpotReminderStore.reminders().due(days: days, hiding: hidden) }
+        case .remindersLists:
+            finish { try await SpotReminderStore.reminders().lists() }
+        case .calendarAdd(let words, let isDry):
+            finish { try await SpotEventStore.events().add(words, isDry: isDry) }
+        case .remindersAdd(let words, let isDry):
+            finish { try await SpotReminderStore.reminders().add(words, isDry: isDry) }
+        case .calendarShow(let id):
+            finish { try SpotCalendarApp.show(try await SpotEventStore.events().day(of: id)) }
+        case .remindersDone(let id, let isDone):
+            finish { try await SpotReminderStore.reminders().done(id, isDone) }
+        case .remindersShow(let id):
+            finish {
+                let link = try await SpotReminderStore.reminders().link(of: id)
+                guard NSWorkspace.shared.open(link) else { throw PluginError.failed(1, "Openspot cannot open Reminders, so it cannot show \(id).") }
+                return ""
+            }
         }
     }
 
@@ -215,13 +237,14 @@ enum SpotCommandLine {
         }
     }
 
-    /// Prints what the work returns and exits. A failure goes to stderr, with exit code 1.
+    /// Prints what the work returns and exits. A failure goes to stderr, with exit code 1, and the link to its fix on stdout.
     private static func finish(_ work: @escaping @Sendable () async throws -> String) -> Never {
         Task {
             do {
                 print(try await work(), terminator: "")
                 exit(0)
             } catch {
+                if case PluginError.failedWithFix(_, _, let link) = error { print("link=\(link.absoluteString)") }
                 FileHandle.standardError.write(Data("\((error as? PluginError)?.reason ?? error.localizedDescription)\n".utf8))
                 exit(1)
             }

@@ -288,6 +288,132 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the shown panel") { model.isShown }
     }
 
+    func testAFormOfSeveralPicksStaysOpenThroughEachPickReadsTheSpotAgainAndSelectsAllOnCommandShiftA() async throws {
+        let sent = folder.appendingPathComponent("sent").path
+        let reads = folder.appendingPathComponent("reads").path
+        try script("list", header: "read=sheet", """
+        case "$1" in
+          pick)
+            input=$(cat)
+            [ -z "$input" ] || printf '%s\n' "$input" >> '\(sent)'
+            printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\noption=a:Apple\noption=b:Banana\noption=c:Cherry\nvalue=a\n' ;;
+          *)
+            echo read >> '\(reads)'
+            printf 'button=pick\ntitle=Pick\nscope=command\nform=true\n\nrow=a\ntitle=Apple\n' ;;
+        esac
+        """)
+        let sends = { ((try? String(contentsOfFile: sent, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
+        let readCount = { ((try? String(contentsOfFile: reads, encoding: .utf8)) ?? "").split(separator: "\n").count }
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("list")
+        try await wait("the open list") { model.openList == "list" && model.openEntry?.command.actions.contains(where: \.isForm) == true }
+        let entry = try XCTUnwrap(model.openEntry)
+        let action = try XCTUnwrap(entry.command.actions.first { $0.id == "pick" })
+        model.openForm(action, on: (entry, nil))
+        try await wait("the form") { model.form != nil }
+        XCTAssertEqual(model.form?.draft.choices?.shown.map(\.isOn), [true, false, false])
+        let before = readCount()
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        try await wait("the pick") { sends() == ["shown=b"] }
+        try await wait("the read after the pick") { readCount() > before }
+        XCTAssertNotNil(model.form)
+        XCTAssertEqual(model.form?.draft.choices?.selectedItem?.run, "b")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "a", isCommand: true, isShift: true)))
+        try await wait("select all") { sends().count == 2 }
+
+        XCTAssertEqual(sends().last, "shown=b\\nc")
+        XCTAssertNotNil(model.form)
+    }
+
+    func testAFormOfOneChoiceSearchesItsRowsWithTheFieldAndEscapeClearsTheSearchFirst() async throws {
+        let sent = folder.appendingPathComponent("sent").path
+        try script("list", header: "read=sheet", """
+        case "$1" in
+          pick)
+            input=$(cat)
+            [ -z "$input" ] || printf '%s\n' "$input" >> '\(sent)'
+            printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\noption=a:Apple\noption=b:Banana\noption=c:Blueberry\nvalue=a\n' ;;
+          *) printf 'button=pick\ntitle=Pick\nscope=command\nform=true\n\nrow=a\ntitle=Apple\n' ;;
+        esac
+        """)
+        let sends = { ((try? String(contentsOfFile: sent, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("list")
+        try await wait("the open list") { model.openList == "list" && model.openEntry?.command.actions.contains(where: \.isForm) == true }
+        let entry = try XCTUnwrap(model.openEntry)
+        model.openForm(try XCTUnwrap(entry.command.actions.first { $0.id == "pick" }), on: (entry, nil))
+        try await wait("the form") { model.form != nil }
+
+        XCTAssertTrue(model.showsSearch)
+        model.searchText = "b"
+        XCTAssertEqual(model.searchText, "b")
+        XCTAssertEqual(model.form?.draft.choices?.shown.map(\.title), ["Banana", "Blueberry"])
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return")))
+        try await wait("the pick") { sends() == ["shown=c"] }
+        try await wait("the form again") { model.form?.draft.choices?.shown.first?.isOn == false && model.form?.draft.choices?.query == "b" }
+        XCTAssertEqual(model.form?.draft.choices?.selectedItem?.run, "c")
+        XCTAssertEqual(model.openItems?.query, "")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
+        XCTAssertEqual(model.searchText, "")
+        XCTAssertNotNil(model.form)
+        XCTAssertEqual(model.form?.draft.choices?.shown.count, 3)
+        XCTAssertTrue(model.handleKey(ActionKey(name: "escape")))
+        XCTAssertNil(model.form)
+    }
+
+    func testTheFormOfASettingMovesWithTheArrowsAndSearchesItsRows() async throws {
+        try script("list", header: "read=sheet\nsettings=pick", """
+        case "$1" in
+          pick) printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\noption=a:Apple\noption=b:Banana\noption=c:Cherry\nvalue=a\n' ;;
+          *) printf 'row=a\ntitle=Apple\n' ;;
+        esac
+        """)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        let change = try XCTUnwrap(SettingsSpot.change(of: "setting:list:pick"))
+
+        model.changeSetting(of: change.spot, with: change.action)
+        try await wait("the form") { model.form != nil }
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+        XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
+
+        XCTAssertEqual(model.form?.draft.choices?.selectedItem?.run, "c")
+        XCTAssertTrue(model.showsSearch)
+        model.searchText = "ban"
+        XCTAssertEqual(model.form?.draft.choices?.shown.map(\.run), ["b"])
+    }
+
+    func testAFormTakesThePlaceOfThePartsOfTheSheetItOpensOn() async throws {
+        try script("agenda", header: "read=sheet\nsettings=pick", """
+        case "$1" in
+          pick) printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\noption=a:Apple\noption=b:Banana\nvalue=a\n' ;;
+          *) printf 'grid=items\ngrid.wide=next\n\nnumber=next\nvalue=09:30\n\nrepeat=items\n\nrow=e\ntitle=Standup\n' ;;
+        esac
+        """)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("agenda")
+        try await wait("the sheet of parts") { model.shownParts(of: "agenda")?.showsRows == true }
+        let change = try XCTUnwrap(SettingsSpot.change(of: "setting:agenda:pick"))
+
+        model.changeSetting(of: change.spot, with: change.action)
+        try await wait("the form") { model.form != nil }
+
+        XCTAssertNil(model.shownParts(of: "agenda"))
+        XCTAssertNil(model.openPanel)
+        model.cancelForm()
+        XCTAssertNotNil(model.shownParts(of: "agenda"))
+    }
+
     func testAFormThatArrivesAfterThePanelHidDoesNotOpen() async throws {
         let gate = folder.appendingPathComponent("gate").path
         try script("list", header: "read=sheet", """

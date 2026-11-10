@@ -47,6 +47,23 @@ public enum CommandLineCall: Equatable, Sendable {
     case screenRecordStart(ScreenCapture)
     case screenRecordStop
     case screenRecordStatus
+    /// Prints the events that have not ended through the end of a day, in each calendar but the hidden ones (E1).
+    case calendarEvents(days: Int, hidden: [String])
+    case calendarCalendars
+    /// Adds an event from the words, or with a dry run prints the row that it would add (E4, E5).
+    case calendarAdd(words: String, isDry: Bool)
+    /// Opens Calendar on the day of the event whose row has this id (E1).
+    case calendarShow(id: String)
+    /// Prints the open reminders that are late or due through the end of a day, and those done today, in each list but the
+    /// hidden ones.
+    case remindersDue(days: Int, hidden: [String])
+    case remindersLists
+    /// Adds a reminder from the words, or with a dry run prints the row that it would add (E4, E5).
+    case remindersAdd(words: String, isDry: Bool)
+    /// Ticks a reminder, or opens it again (E3).
+    case remindersDone(id: String, isDone: Bool)
+    /// Opens Reminders on the reminder whose row has this id (E1).
+    case remindersShow(id: String)
     /// Runs as the helper process of a capability. A script never makes this call, so the usage does not list it.
     case helper(String)
     /// Draws the colour glyphs on stdin, one on each line, into a picture book at a path. Only the app makes this call.
@@ -96,6 +113,22 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  --events writes each pointer move, click and key as a JSON line.
     openspot screen record stop                  Ends the recording and prints each file, the video first.
     openspot screen record status                Prints state=recording with its files and seconds, or state=idle.
+    openspot calendar events [--days n] [--hide id]...
+                                                 Prints each event that has not ended through the end of day n as a
+                                                 row. Day 1, the default, is today. --hide leaves out a calendar.
+    openspot calendar calendars                  Prints each calendar as a row.
+    openspot calendar add [--dry-run] <words>... Adds an event from words such as Lunch tomorrow 13:00, and prints its
+                                                 row. --dry-run prints the row and adds nothing.
+    openspot calendar show <id>                  Opens Calendar on the day of the event of a row.
+    openspot reminders due [--days n] [--hide id]...
+                                                 Prints each open reminder that is late or due through the end of day n,
+                                                 and each one done today, as a row. --hide leaves out a list.
+    openspot reminders lists                     Prints each list of reminders as a row.
+    openspot reminders add [--dry-run] <words>...
+                                                 Adds a reminder from words such as Call mom tomorrow 9am, and prints its
+                                                 row. --dry-run prints the row and adds nothing.
+    openspot reminders done <id> [true|false]    Ticks a reminder, or with false opens it again.
+    openspot reminders show <id>                 Opens Reminders on the reminder of a row.
 
     """
 
@@ -175,6 +208,26 @@ public enum CommandLineCall: Equatable, Sendable {
                 return
             }
             self = .windowMove(move)
+        case ("calendar", "events"):
+            self = Self.listing(Array(rest.dropFirst())).map { .calendarEvents(days: $0.days, hidden: $0.hidden) }
+                ?? .unknown(arguments.joined(separator: " "))
+        case ("calendar", "calendars") where rest.count == 1: self = .calendarCalendars
+        case ("calendar", "add"):
+            self = Self.adding(Array(rest.dropFirst()), environment) { .calendarAdd(words: $0, isDry: $1) }
+                .map { Self.changing($0, "openspot calendar add", "changes your calendars", environment) } ?? .unknown(arguments.joined(separator: " "))
+        case ("calendar", "show") where rest.count == 2:
+            self = Self.changing(.calendarShow(id: rest[1]), "openspot calendar show", "opens Calendar", environment)
+        case ("reminders", "due"):
+            self = Self.listing(Array(rest.dropFirst())).map { .remindersDue(days: $0.days, hidden: $0.hidden) }
+                ?? .unknown(arguments.joined(separator: " "))
+        case ("reminders", "lists") where rest.count == 1: self = .remindersLists
+        case ("reminders", "add"):
+            self = Self.adding(Array(rest.dropFirst()), environment) { .remindersAdd(words: $0, isDry: $1) }
+                .map { Self.changing($0, "openspot reminders add", "changes your reminders", environment) } ?? .unknown(arguments.joined(separator: " "))
+        case ("reminders", "done") where rest.count == 2 || (rest.count == 3 && ["true", "false"].contains(rest[2])):
+            self = Self.changing(.remindersDone(id: rest[1], isDone: rest.count == 2 || rest[2] == "true"), "openspot reminders done", "changes your reminders", environment)
+        case ("reminders", "show") where rest.count == 2:
+            self = Self.changing(.remindersShow(id: rest[1]), "openspot reminders show", "opens Reminders", environment)
         case ("translate", _):
             guard let options = Self.options(rest) else {
                 self = .unknown(arguments.joined(separator: " "))
@@ -201,6 +254,25 @@ public enum CommandLineCall: Equatable, Sendable {
         return call
     }
 
+    /// Reads `[--dry-run] <words>...` into the call that it makes, or returns nil with no words.
+    private static func adding(_ words: [String], _ environment: [String: String], _ call: (String, Bool) -> CommandLineCall) -> CommandLineCall? {
+        let isDry = words.first == "--dry-run"
+        let rest = isDry ? Array(words.dropFirst()) : words
+        guard !rest.isEmpty else { return nil }
+        return call(rest.joined(separator: " "), isDry)
+    }
+
+    /// The call of a command that changes the person's data or opens an app, or its refusal in a read, so that nothing changes
+    /// or opens by surprise. A dry run changes nothing, so it runs in a read (E9).
+    private static func changing(_ call: CommandLineCall, _ name: String, _ act: String, _ environment: [String: String]) -> CommandLineCall {
+        if case .calendarAdd(_, true) = call { return call }
+        if case .remindersAdd(_, true) = call { return call }
+        guard environment["OPENSPOT_REASON"] == nil else {
+            return .refused("`\(name)` \(act), so it cannot run in a read. Run it from a pick or an action.")
+        }
+        return call
+    }
+
     /// Reads the words of `openspot screen record <verb>`, or returns nil for anything else.
     private static func recording(_ words: [String], verb: String, _ environment: [String: String]) -> CommandLineCall? {
         switch verb {
@@ -223,6 +295,26 @@ public enum CommandLineCall: Equatable, Sendable {
         guard let key = words.first, !key.isEmpty, !key.hasPrefix("-"), words.count <= (sets ? 2 : 1) else { return nil }
         guard let spot else { return .refused("`openspot setting` needs a spot. Run it from a spot, or name one with `--spot <id>`.") }
         return sets ? .settingSet(spot: spot, key: key, value: words.dropFirst().first) : .settingGet(spot: spot, key: key)
+    }
+
+    /// Reads `[--days n]` and `--hide <id>`, which can repeat, or returns nil for anything else. Day 1 is today.
+    private static func listing(_ words: [String]) -> (days: Int, hidden: [String])? {
+        var days = 1
+        var hidden: [String] = []
+        var index = 0
+        while index < words.count {
+            guard index + 1 < words.count else { return nil }
+            let value = words[index + 1]
+            switch words[index] {
+            case "--days":
+                guard let number = Int(value), number > 0 else { return nil }
+                days = number
+            case "--hide": hidden.append(value)
+            default: return nil
+            }
+            index += 2
+        }
+        return (days, hidden)
     }
 
     /// Reads `--from` and `--to`, each with a value. Returns nil for anything else.
