@@ -105,11 +105,20 @@ final class AgendaExampleTests: SamplePluginsCase {
         }
     }
 
+    @MainActor
+    private static func wait(_ what: String, until condition: () -> Bool) async throws {
+        for _ in 0..<500 {
+            if condition() { return }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTFail("waited for \(what)")
+    }
+
     private func calls(in folder: URL) throws -> [String] {
         try read("calls", in: folder).split(separator: "\n").map(String.init)
     }
 
-    func testTheCardShowsTheNextTimedEventAndATickForEachOfTheFirstThreeReminders() async throws {
+    func testTheCardShowsTheNextTimedEventOverATickForEachOfTheFirstTwoOpenReminders() async throws {
         let agenda = try example("Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
@@ -120,15 +129,18 @@ final class AgendaExampleTests: SamplePluginsCase {
             XCTAssertEqual(next.control, .metric("in 12 min"))
             XCTAssertEqual(next.title, "Standup")
             let ticks = output.parts.filter { $0.look == .tick }
-            XCTAssertEqual(ticks.map(\.id), ["R1", "R2", "R3"])
-            XCTAssertEqual(ticks.map(\.control), [.toggle(false), .toggle(true), .toggle(false)])
-            XCTAssertEqual(ticks.first?.detail, "Late · Yesterday 18:00")
+            XCTAssertEqual(ticks.map(\.id), ["R1", "R3"])
+            XCTAssertEqual(ticks.map(\.control), [.toggle(false), .toggle(false)])
+            XCTAssertEqual(ticks.map(\.title), ["Call mom", "Water the plants"])
+            XCTAssertEqual(ticks.map(\.detail), [nil, nil])
+            XCTAssertEqual(output.parts.filter { $0.id.hasPrefix("due-") }.map(\.detail), ["Late", "18:00"])
             let time = DateFormatter()
             time.dateFormat = "HH:mm"
             XCTAssertEqual(output.parts.first { $0.id == "at" }?.control, .metric(time.string(from: Date().addingTimeInterval(750))))
-            XCTAssertEqual(output.face.drawing(for: .large), [["next", "next", "R1", "R1"], ["next", "next", "R2", "R2"], ["next", "next", "R3", "R3"]])
-            XCTAssertEqual(output.face.drawing(for: .square), [["next"], ["next"], ["R1"], ["R2"]])
-            XCTAssertEqual(output.face.drawing(for: .strip), [["next", "next", "R1", "R1"]])
+            XCTAssertEqual(output.face.drawing(for: .large), [["next", "next", "next", "next"], ["next", "next", "next", "next"], ["R1", "R1", "R1", "due-R1"], ["R3", "R3", "R3", "due-R3"]])
+            XCTAssertEqual(output.face.drawing(for: .square), [["next"], ["next"], ["R1"], ["R3"]])
+            XCTAssertEqual(output.face.drawing(for: .strip), [["next"]])
+            XCTAssertEqual(output.face.drawing(for: .wide), [["next"]])
             XCTAssertEqual(output.face.drawing(for: .small), [["at"]])
             XCTAssertEqual(output.errors, [])
             let calls = try self.calls(in: folder)
@@ -177,6 +189,30 @@ final class AgendaExampleTests: SamplePluginsCase {
             XCTAssertEqual(both.items[1].subtitle, "Call Ana · Tomorrow 09:00–10:00 · Work")
             XCTAssertTrue(try self.calls(in: folder).contains { $0.hasSuffix("|reminders add --dry-run call|") })
         }
+    }
+
+    func testTextTypedInTheOpenSheetShowsTheRowsThatMatch() async throws {
+        let agenda = try example("Agenda")
+        try await withPrivateHome { folder in
+            try self.fakeOpenspot(in: folder)
+
+            let rows = try await Self.rows(of: agenda, after: "call")
+
+            XCTAssertEqual(rows, ["add-reminder", "reminder:R1"])
+        }
+    }
+
+    /// The rows that the open sheet of a spot shows once the person types the text, through the app's own run of the spot.
+    @MainActor
+    private static func rows(of spot: Spot, after text: String) async throws -> [String] {
+        let runs = SpotRuns()
+        defer { runs.quit() }
+        let sheet = runs.sheet(for: spot)
+        sheet.open {}
+        try await wait("the first rows") { !sheet.list.shown.isEmpty && !sheet.isReading }
+        sheet.search(text)
+        try await wait("the rows of the text") { sheet.list.shown.count < 7 }
+        return sheet.list.shown.map(\.run)
     }
 
     func testPickingAnAddRowAddsTheTextOfTheFieldAndSaysSo() async throws {

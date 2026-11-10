@@ -26,25 +26,16 @@ field() { printf '%s\n' "$2" | sed -n "s/^$1=//p" | head -n 1; }
 # Seconds since 1970 of an ISO 8601 time, such as 2026-11-10T09:30:00+01:00.
 epoch() { date -j -f '%Y-%m-%dT%H:%M:%S%z' "$(printf '%s' "$1" | sed 's/:\([0-9][0-9]\)$/\1/')" +%s 2>/dev/null; }
 
-# Prints the head and the card: the next event in large type, with its time alone on the small card, and a tick for each
-# of the first three reminders beside it.
+# Prints the head and the card: the next event in large type across the top, with its time alone on the small card, and a
+# line below it for each of the first two open reminders, with a tick before its title and its due time at the end.
 card() {
   next=$(printf '%s\n' "$events" | awk 'BEGIN { RS = "" } /\nallday=true/ { next } /^row=/ { print; exit }')
-  ticks=$(printf '%s\n' "$reminders" | awk 'BEGIN { RS = ""; FS = "\n" } /^row=reminder:/ && shown < 3 { shown++; print substr($1, 14) }')
-  first=$(printf '%s\n' "$ticks" | head -n 1)
-  printf 'main=next\nsearch=script\nrecents=false\ngrid=items\ngrid.small=at\ngrid.wide=next\ngrid.square=next\n'
-  printf 'grid.strip=next next %s %s\n' "${first:-next}" "${first:-next}"
-  if [ -z "$ticks" ]; then
-    printf 'grid.large=next next\n'
-  else
-    printf 'grid.square=next\n'
-    count=0
-    for id in $ticks; do
-      count=$((count + 1))
-      printf 'grid.large=next next %s %s\n' "$id" "$id"
-      [ "$count" -gt 2 ] || printf 'grid.square=%s\n' "$id"
-    done
-  fi
+  ticks=$(printf '%s\n' "$reminders" | awk 'BEGIN { RS = ""; FS = "\n" } /^row=reminder:/ && /\ndone=false/ && shown < 2 { shown++; print substr($1, 14) }')
+  printf 'main=next\nsearch=script\nrecents=false\ngrid=items\ngrid.small=at\ngrid.wide=next\ngrid.strip=next\n'
+  printf 'grid.square=next\ngrid.square=next\ngrid.large=next next next next\ngrid.large=next next next next\n'
+  for id in $ticks; do
+    printf 'grid.square=%s\ngrid.large=%s %s %s due-%s\n' "$id" "$id" "$id" "$id" "$id"
+  done
   printf '\n'
   if [ "$events" = status=unasked ]; then
     value=Allow
@@ -71,15 +62,17 @@ card() {
   fi
   printf 'number=next\nvalue=%s\ntitle=%s\n\nnumber=at\nvalue=%s\ntitle=%s\n\n' "$value" "$title" "$time" "$title"
   printf '%s\n' "$reminders" | awk 'BEGIN { RS = ""; FS = "\n" }
-    function bare(d,   i, j) { j = 0; while ((i = index(substr(d, j + 1), " · ")) > 0) j += i; return j ? substr(d, 1, j - 1) : d }
-    /^row=reminder:/ && shown < 3 {
+    /^row=reminder:/ && /\ndone=false/ && shown < 2 {
       shown++
-      printf "switch=%s\nlook=tick\n", substr($1, 14)
+      id = substr($1, 14)
+      title = ""; due = ""; tone = ""
       for (i = 2; i <= NF; i++) {
-        if ($i ~ /^title=/) print $i
-        if ($i ~ /^detail=/) print "detail=" bare(substr($i, 8))
-        if ($i ~ /^done=/) print "on=" substr($i, 6)
+        if ($i ~ /^title=/) title = substr($i, 7)
+        if ($i ~ /^detail=/) { due = substr($i, 8); sub(/ · .*/, "", due) }
+        if ($i ~ /^tone=/) tone = $i
       }
+      printf "switch=%s\nlook=tick\ntitle=%s\non=false\n\ntext=due-%s\ndetail=%s\n", id, title, id, due
+      if (tone != "") print tone
       print ""
     }'
 }
