@@ -58,7 +58,10 @@ public struct SettingsSpot: Equatable, Sendable {
             }
             return ""
         case let run? where target(of: run) != nil:
-            try assign(try shortcut(from: arguments), to: target(of: run)!)
+            guard let trigger = arguments.dropFirst().first.flatMap(Trigger.init(text:)) else {
+                throw PluginError.failed(1, "Openspot cannot use this key.")
+            }
+            try assign(trigger, to: target(of: run)!)
             return ""
         default:
             throw PluginError.failed(1, "Settings cannot do that.")
@@ -74,14 +77,14 @@ public struct SettingsSpot: Equatable, Sendable {
         let floats = only != nil ? [] : (scan?.commands ?? []).filter { $0.kind != .widget }.map { spot -> String in
             let key = config.keys.first { $0.spot == spot.id && $0.command == nil }
             let hides = key == nil ? "hides=\(Self.clear)\n" : ""
-            return "row=\(Self.keyPrefix)\(spot.id):\ntitle=Float\ndetail=\(spot.name)\nparent=\(spot.name)\nicon=\(spot.image ?? spot.file ?? spot.glyph ?? spot.symbol)\n\(hides)shortcut=\(key?.shortcut.text ?? "Record")\n"
+            return "row=\(Self.keyPrefix)\(spot.id):\ntitle=Float\ndetail=\(spot.name)\nparent=\(spot.name)\nicon=\(spot.image ?? spot.file ?? spot.glyph ?? spot.symbol)\n\(hides)shortcut=\(key?.trigger.text ?? "Record")\n"
         }
         let rows = floats + scripts.flatMap { script in
             script.offers.map { offer -> String in
                 let key = config.keys.first { $0.spot == script.id && $0.command == offer.id }
                 let hides = key == nil ? "hides=\(Self.clear)\n" : ""
                 let detail = only == nil ? "detail=\(script.name)\nparent=\(script.name)\n" : ""
-                return "row=\(Self.keyPrefix)\(script.id):\(offer.id)\ntitle=\(offer.title)\n\(detail)icon=\(offer.icon ?? script.image ?? script.file ?? script.glyph ?? script.symbol)\n\(hides)shortcut=\(key?.shortcut.text ?? "Record")\n"
+                return "row=\(Self.keyPrefix)\(script.id):\(offer.id)\ntitle=\(offer.title)\n\(detail)icon=\(offer.icon ?? script.image ?? script.file ?? script.glyph ?? script.symbol)\n\(hides)shortcut=\(key?.trigger.text ?? "Record")\n"
             }
         }
         let named = scripts.flatMap { script in script.settings.map { (spot: script.id, offer: $0) } }
@@ -126,6 +129,11 @@ public struct SettingsSpot: Equatable, Sendable {
         return (String(run[run.index(run.startIndex, offsetBy: Self.settingPrefix.count)..<split]), String(run[run.index(after: split)...]))
     }
 
+    /// Whether the row of this run gives a key to a command or a float, which a shake can be (W2).
+    public static func takesShake(_ run: String) -> Bool {
+        run.hasPrefix(keyPrefix)
+    }
+
     /// The spot and the command that the run of a row names. A row with no command floats its spot.
     private func target(of run: String) -> (spot: String, command: String?)? {
         guard run.hasPrefix(Self.keyPrefix), let split = run.lastIndex(of: ":") else { return nil }
@@ -133,11 +141,13 @@ public struct SettingsSpot: Equatable, Sendable {
         return (String(run[run.index(run.startIndex, offsetBy: Self.keyPrefix.count)..<split]), command.isEmpty ? nil : command)
     }
 
-    /// Gives a command, or the float of a spot, this key in the file, or takes its key away, and keeps the place of each other key.
-    private func assign(_ shortcut: Shortcut?, to target: (spot: String, command: String?)) throws {
+    /// Gives a command, or the float of a spot, this key or the shake in the file, or takes its key away, and keeps the place
+    /// of each other key. One key at most holds the shake, so a new shake takes it from the one before (W2).
+    private func assign(_ trigger: Trigger?, to target: (spot: String, command: String?)) throws {
         var keys = file.read().keys
+        if trigger == .shake { keys.removeAll { $0.trigger == .shake && ($0.spot != target.spot || $0.command != target.command) } }
         let place = keys.firstIndex { $0.spot == target.spot && $0.command == target.command }
-        let key = shortcut.map { GlobalKey(spot: target.spot, command: target.command, shortcut: $0) }
+        let key = trigger.map { GlobalKey(spot: target.spot, command: target.command, trigger: $0) }
         switch (place, key) {
         case (let place?, let key?): keys[place] = key
         case (let place?, nil): keys.remove(at: place)

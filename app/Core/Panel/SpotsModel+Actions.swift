@@ -165,6 +165,31 @@ extension SpotsModel {
         }
     }
 
+    /// Whether the row that records takes a shake too: a row of Settings that gives a key to a command or a float (W3).
+    public var takesShake: Bool {
+        guard let recording, case .settings? = openEntry?.command.shipped else { return false }
+        return SettingsSpot.takesShake(recording)
+    }
+
+    /// The words of the key that records.
+    public var recordingWords: String {
+        takesShake ? "Press keys or shake" : "Press keys"
+    }
+
+    /// Takes a shake for the row of Settings that records, as it takes a key, and closes the panel. Any other row goes on
+    /// recording.
+    public func recordShake() {
+        guard takesShake, let recording, let entry = openEntry, let item = openItems?.shown.first(where: { $0.run == recording }) else { return }
+        stopRecording()
+        sheets[entry.id]?.set(item, to: Trigger.shake.text)
+        closingPick = (item, entry)
+        if isShown {
+            host.dismiss()
+        } else {
+            finishPick()
+        }
+    }
+
     /// Takes the keys of the open menu. In a menu that searches, a key with no ⌘ goes to its field, and returns false.
     private func handleMenuKey(_ key: ActionKey) -> Bool {
         let types = menu?.isSearchable == true && !key.isCommand

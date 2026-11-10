@@ -71,7 +71,7 @@ final class SettingsSpotTests: XCTestCase {
         _ = try await runs.answer(of: spot, .set("key:move:right", to: "ctrl+option+right"), input: "", limit: 1)
 
         XCTAssertEqual(file.read().keys.map(\.command), ["left", "right"])
-        XCTAssertEqual(file.read().keys.map(\.shortcut.text), ["ctrl+option+up", "ctrl+option+right"])
+        XCTAssertEqual(file.read().keys.map(\.trigger.text), ["ctrl+option+up", "ctrl+option+right"])
         let after = try await spot.items(timeout: 1).items.filter { $0.title != "Float" }
         XCTAssertEqual(after.map(\.shortcut).dropFirst(2), ["ctrl+option+up", "ctrl+option+right"])
 
@@ -104,6 +104,28 @@ final class SettingsSpotTests: XCTestCase {
         _ = try await runs.answer(of: spot, SpotAction(arguments: ["clear", "key:shelf:"]), input: "", limit: 1)
 
         XCTAssertEqual(file.read().keys, [])
+    }
+
+    func testAShakeOnARowTakesTheShakeFromTheRowThatHadIt() async throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try "#!/bin/sh\n# title=Shelf\n# shortcut=s\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
+        try "#!/bin/sh\n# title=Notes\n# shortcut=n\n".writeScript(to: folder.appendingPathComponent("notes.sh"))
+        let runs = SpotRuns()
+
+        _ = try await runs.answer(of: spot, .set("key:shelf:", to: "shake"), input: "", limit: 1)
+        XCTAssertEqual(file.read().keys, [GlobalKey(spot: "shelf", command: nil, trigger: .shake)])
+
+        _ = try await runs.answer(of: spot, .set("key:notes:", to: "shake"), input: "", limit: 1)
+        XCTAssertEqual(file.read().keys, [GlobalKey(spot: "notes", command: nil, trigger: .shake)])
+        let items = try await spot.items(timeout: 1).items
+        XCTAssertEqual(items.first { $0.run == "key:notes:" }?.shortcut, "shake")
+
+        do {
+            _ = try await runs.answer(of: spot, .set("panel_key", to: "shake"), input: "", limit: 1)
+            XCTFail("took a shake to open the panel")
+        } catch {
+            XCTAssertEqual(file.read().panelKey, .standard)
+        }
     }
 
     func testTheSheetListsEachSettingThatAScriptNamesOrKeepsAndRemovesIt() async throws {

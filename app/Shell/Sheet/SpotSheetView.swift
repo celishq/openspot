@@ -78,7 +78,7 @@ struct SpotSheetView: View {
                         }
                         .buttonStyle(.plain)
                     } else {
-                        SpotRowsView(list: list, recording: model.recording, onRun: { model.runItem($0) }, selection: selection, onSlot: { model.slot($1, of: $0, to: $2) })
+                        SpotRowsView(list: list, recording: model.recording, recordingWords: model.recordingWords, onRun: { model.runItem($0) }, selection: selection, onSlot: { model.slot($1, of: $0, to: $2) })
                     }
                 }
             }

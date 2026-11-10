@@ -53,7 +53,7 @@ final class GlobalKeyTests: XCTestCase {
         """)
 
         XCTAssertEqual(config.keys.map(\.command), ["left"])
-        XCTAssertEqual(config.keys.first?.shortcut.text, "ctrl+option+left")
+        XCTAssertEqual(config.keys.first?.trigger.text, "ctrl+option+left")
         XCTAssertEqual(config.faults, ["config.toml: windows right cannot use k.", "config.toml: a key needs a spot and a key."])
     }
 
@@ -70,6 +70,23 @@ final class GlobalKeyTests: XCTestCase {
 
         XCTAssertEqual(file.read().keys, config.keys)
         XCTAssertFalse(try String(contentsOf: file.url, encoding: .utf8).contains("command"))
+    }
+
+    func testAShakeIsAKeyThatTheFileKeeps() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keys-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
+        let config = Config(text: "[[keys]]\nspot = \"shelf\"\nkey = \"shake\"\n")
+
+        XCTAssertEqual(config.keys, [GlobalKey(spot: "shelf", command: nil, trigger: .shake)])
+        XCTAssertEqual(config.faults, [])
+
+        try file.write(keys: config.keys)
+
+        XCTAssertEqual(file.read().keys, config.keys)
+        XCTAssertTrue(try String(contentsOf: file.url, encoding: .utf8).contains("key = \"shake\""))
+        XCTAssertEqual(Trigger.shake.label, "Shake")
+        XCTAssertEqual(Trigger(text: "ctrl+space")?.label, "⌃Space")
     }
 
     func testAKeyWithNoCommandStaysOnlyForASpotWithACard() throws {

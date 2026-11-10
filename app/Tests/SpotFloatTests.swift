@@ -162,6 +162,28 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertNil(model.openList)
     }
 
+    func testAShakeWhileAFloatRowOfSettingsRecordsGivesItTheShake() async throws {
+        try script("shelf", header: "title=Shelf\nshortcut=s", "true")
+        host.shipped = ShippedSpot.commands(folder: plugins, guide: folder.appendingPathComponent("GUIDE.md"), app: "", config: model.files.config)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.openSettings()
+        try await wait("the rows of Settings") { model.openItems?.shown.contains { $0.run == "key:shelf:" } == true }
+
+        model.toggleRecording(id: "panel_key")
+        XCTAssertEqual(model.recordingWords, "Press keys")
+        model.recordShake()
+        XCTAssertEqual(model.recording, "panel_key")
+
+        model.toggleRecording(id: "key:shelf:")
+        XCTAssertEqual(model.recordingWords, "Press keys or shake")
+        model.recordShake()
+
+        XCTAssertNil(model.recording)
+        try await wait("the shake in the file") { model.files.config.read().keys == [GlobalKey(spot: "shelf", command: nil, trigger: .shake)] }
+    }
+
     func testAFloatOfACardWithNoReadRunsNothingUntilItsCardIsPressed() async throws {
         try script("go", header: "title=Go\nshortcut=g", "printf 'toast=Went\\n'")
         model.reload()

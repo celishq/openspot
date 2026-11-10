@@ -62,11 +62,11 @@ public struct Config: Equatable, Sendable {
             return nil
         }
         let command: String? = if case .string(let command)? = table["command"] { command } else { nil }
-        guard let shortcut = Shortcut(text: text) else {
+        guard let trigger = Trigger(text: text) else {
             faults.append("config.toml: \([spot, command].compactMap { $0 }.joined(separator: " ")) cannot use \(text).")
             return nil
         }
-        return GlobalKey(spot: spot, command: command, shortcut: shortcut)
+        return GlobalKey(spot: spot, command: command, trigger: trigger)
     }
 
     /// Reads one `[[spots]]` table. A table with no id is a fault, and any other bad value leaves that value out.

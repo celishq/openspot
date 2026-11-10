@@ -5,6 +5,8 @@ import SwiftUI
 struct SpotRowsView: View {
     let list: ItemList
     var recording: String?
+    /// The words of the key that records.
+    var recordingWords = "Press keys"
     let onRun: (SpotItem) -> Void
     /// Reads the selected row where it is called. Nil reads it from the list.
     var selection: (() -> Int)?
@@ -240,7 +242,7 @@ struct SpotRowsView: View {
             }
             Spacer(minLength: 0)
             if let shortcut = item.shortcut {
-                SpotKeyLabel(text: shortcut, isRecording: recording == item.run)
+                SpotKeyLabel(text: shortcut, isRecording: recording == item.run, recordingWords: recordingWords)
             }
             if item.isOn {
                 Image(systemName: "checkmark")
