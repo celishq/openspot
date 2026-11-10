@@ -465,17 +465,10 @@ struct SheetPartsView: View {
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
     }
 
-    /// The picture at a file path. A file it cannot read shows an empty tile.
     private func image(_ path: String) -> some View {
-        Group {
-            if let picture = NSImage(contentsOfFile: path) {
-                Image(nsImage: picture).resizable().scaledToFill()
-            } else {
-                SpotTheme.ink.opacity(SpotTheme.fill)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipShape(shape)
+        SheetPicture(key: SpotPictureStore.Key(path: path))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipShape(shape)
     }
 
     private func progress(_ part: SpotPart, level: Double) -> some View {
@@ -545,6 +538,25 @@ private struct TileLook: ViewModifier {
                 .modifier(SpotSelectionRing(isSelected: isSelected, shape: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)))
         } else {
             content
+        }
+    }
+}
+
+/// The picture at a file path, which shows an empty tile until it is read, and stays empty for a file it cannot read.
+private struct SheetPicture: View {
+    let key: SpotPictureStore.Key
+    @State private var loaded: (key: SpotPictureStore.Key, image: CGImage)?
+
+    var body: some View {
+        Group {
+            if let image = SpotPictureStore.shared.cached(key) ?? (loaded?.key == key ? loaded?.image : nil) {
+                Image(decorative: image, scale: SpotPictureStore.scale).resizable().scaledToFill()
+            } else {
+                SpotTheme.ink.opacity(SpotTheme.fill)
+            }
+        }
+        .task(id: key) {
+            if let image = await SpotPictureStore.shared.image(key) { loaded = (key, image) }
         }
     }
 }
