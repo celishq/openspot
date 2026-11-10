@@ -46,13 +46,6 @@ public struct ScreenPlace: Sendable {
         return CGRect(x: x, y: area.minY + margin, width: width, height: SpotTokens.dockHeight)
     }
 
-    /// How far the panel and the dock rise together when Edit Spots starts: as far as the dock needs to come up whole from
-    /// the bottom of the screen's area, and no further than the panel's glass can go under the top of that area.
-    public static func lift(of panel: CGRect, with dock: CGRect, in area: CGRect) -> CGFloat {
-        let room = area.maxY - SpotTokens.dockMargin - (panel.maxY - SpotTokens.halo)
-        return max(min(dock.maxY - area.minY, room), 0)
-    }
-
     private func screen(window: CGRect?, pointer: CGPoint) -> Screen? {
         if let window, let holding = screens.max(by: { Self.share(of: window, on: $0) < Self.share(of: window, on: $1) }),
            Self.share(of: window, on: holding) > 0 {

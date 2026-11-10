@@ -22,8 +22,7 @@ enum SpotMotion {
     static let follow = Animation.easeOut(duration: 0.2)
     static let arrowScroll = Animation.smooth(duration: 0.18)
     static let keycap = Animation.easeOut(duration: 0.12)
-    static let editDuration = 0.3
-    static let edit = Animation.spring(duration: editDuration, bounce: 0)
+    static let edit = Animation.spring(duration: 0.3, bounce: 0)
     static let hintFade = Animation.easeOut(duration: 0.15)
     static let liftFade = Animation.easeOut(duration: 0.15)
     static let handleFade = Animation.easeOut(duration: 0.12)

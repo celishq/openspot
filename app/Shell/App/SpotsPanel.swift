@@ -9,17 +9,9 @@ final class SpotsPanel: NSPanel {
     private let place = SpotsWindowPlace()
     /// The frame that the window had before Edit Spots grew it.
     private var restFrame: NSRect?
-    /// How far the window rose when Edit Spots started.
-    private var lift: CGFloat = 0
     private var pressWatch: Task<Void, Never>?
 
     override var canBecomeKey: Bool { true }
-
-    /// Keeps each frame as given. The panel places itself on its screen, and in Edit Spots its clear edge may pass the top
-    /// of the screen while its glass stays under it.
-    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
-        frameRect
-    }
 
     /// Opens the panel unseen, so that the first real open has its answers, its views and a ready text field. It then closes
     /// and runs the given work. A real open during this keeps the panel open.
@@ -94,9 +86,9 @@ final class SpotsPanel: NSPanel {
         return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
     }
 
-    /// Grows the window in Edit Spots to hold the dock under the panel, as far below its place along the bottom of the
-    /// screen as the two rise, then moves the window up while the dock fades in. When Edit Spots ends, the window moves back
-    /// down, and then gets its frame back. A panel that closes keeps its place until it is gone.
+    /// Grows the window in Edit Spots to hold the dock along the bottom of the screen, with the panel at its place on the
+    /// screen, and fades the dock in. When Edit Spots ends, the dock fades out, and then the window gets its frame back. A
+    /// panel that closes keeps its frame until it is gone.
     private func followEditing() {
         guard let model else { return }
         let isEditing = withObservationTracking { model.isEditing } onChange: { [weak self] in
@@ -105,34 +97,22 @@ final class SpotsPanel: NSPanel {
         if isEditing, restFrame == nil, let area = screen?.visibleFrame {
             let panel = frame
             let dock = ScreenPlace.dock(under: panel, in: area)
-            lift = ScreenPlace.lift(of: panel, with: dock, in: area)
-            let low = dock.offsetBy(dx: 0, dy: -lift)
-            let whole = panel.union(low)
+            let whole = panel.union(dock)
             restFrame = panel
             place.panel = CGPoint(x: panel.minX - whole.minX, y: whole.maxY - panel.maxY)
-            place.dock = CGRect(x: low.minX - whole.minX, y: whole.maxY - low.maxY, width: low.width, height: low.height)
+            place.dock = CGRect(x: dock.minX - whole.minX, y: whole.maxY - dock.maxY, width: dock.width, height: dock.height)
             place.isOut = false
             setFrame(whole, display: true)
             DispatchQueue.main.async { [weak self] in
                 guard let self, self.model?.isEditing == true else { return }
-                self.rise(by: self.lift, showing: true)
+                withAnimation(SpotMotion.edit) { self.place.isOut = true }
             }
         } else if !isEditing, restFrame != nil, model.isShown {
-            rise(by: -lift, showing: false) { [weak self] in
+            withAnimation(SpotMotion.edit) {
+                place.isOut = false
+            } completion: { [weak self] in
                 if self?.model?.isEditing == false { self?.restoreFrame() }
             }
-        }
-    }
-
-    /// Moves the window up this far, and shows or hides the dock, in one motion.
-    private func rise(by distance: CGFloat, showing isOut: Bool, then done: @escaping @MainActor () -> Void = {}) {
-        withAnimation(SpotMotion.edit) { place.isOut = isOut }
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = SpotMotion.editDuration
-            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            animator().setFrame(frame.offsetBy(dx: 0, dy: distance), display: false)
-        } completionHandler: {
-            MainActor.assumeIsolated { done() }
         }
     }
 
@@ -140,7 +120,6 @@ final class SpotsPanel: NSPanel {
     private func restoreFrame() {
         guard let rest = restFrame else { return }
         restFrame = nil
-        lift = 0
         place.isOut = false
         place.dock = nil
         place.panel = .zero
