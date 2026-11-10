@@ -119,6 +119,15 @@ final class RepeatTemplateTests: XCTestCase {
         XCTAssertEqual(frames["name"], CGRect(x: 32, y: 0, width: 180, height: 40))
     }
 
+    func testATickInARowTakesTheWidthOfItsColumnForItsWords() throws {
+        let output = PluginOutput(text: "template=task\ngrid=done\nswitch=done\ndone.look=tick\n\nrow=a\nas=task\ndone=false\ndone.title=Call mom\n")
+        let row = try XCTUnwrap(output.items.first)
+        let template = try XCTUnwrap(output.template(of: row))
+        let frames = RowPlacement(drawing: template.drawing(), parts: template.parts(of: row), size: CGSize(width: 260, height: 40)).frames
+
+        XCTAssertEqual(frames["done"], CGRect(x: 0, y: 0, width: 260, height: 40))
+    }
+
     func testASheetWithNoDrawingShowsItsComponentsThenItsRows() throws {
         let output = PluginOutput(text: "text=note\ntitle=Note\n\nbutton=copy\ntitle=Copy\n\nrow=a\ntitle=A\n")
 
