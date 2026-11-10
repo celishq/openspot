@@ -57,6 +57,7 @@ struct SpotFloatView: View {
                     onSlot: { model.slot($1, of: $0, in: id, to: $2) },
                     onDragOut: { model.dragOut($0, of: id) },
                     selection: { run.selection },
+                    selectedPart: { run.selectedPart?.id },
                     nudge: { run.nudge },
                     customView: { room in
                         entry.command.view.map { SpotCustomView(source: $0, values: entry.state.values, card: entry.state.size ?? .square, room: room, views: SpotViews.shared) }

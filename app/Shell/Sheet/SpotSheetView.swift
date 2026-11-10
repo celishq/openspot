@@ -64,6 +64,7 @@ struct SpotSheetView: View {
                         onSlot: { model.slot($1, of: $0, in: entry.id, to: $2) },
                         onDragOut: { model.dragOut($0, of: entry.id) },
                         selection: selection,
+                        selectedPart: { [model, id = entry.id] in model.sheets[id]?.selectedPart?.id },
                         nudge: { model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest },
                         customView: { room in
                             entry.command.view.map { SpotCustomView(source: $0, values: entry.state.values, card: entry.state.size ?? .square, room: room, views: SpotViews.shared) }

@@ -122,8 +122,29 @@ public final class SpotRun {
         access(keyPath: \.selection)
         return rows.selectedItem
     }
+    @ObservationIgnored private var parts: SheetParts?
+    /// The parts of the sheet. A move of the selection alone tells only the readers of `selectedPart`, so that an arrow press
+    /// redraws what shows the selection and not the sheet.
     public private(set) var panel: SheetParts? {
-        didSet { settle() }
+        get {
+            access(keyPath: \.panel)
+            return parts
+        }
+        set {
+            guard newValue != parts else { return }
+            if let newValue, let parts, newValue.differsOnlyInSelection(from: parts) {
+                withMutation(keyPath: \.selectedPart) { self.parts = newValue }
+                return
+            }
+            withMutation(keyPath: \.panel) { parts = newValue }
+            settle()
+        }
+    }
+    /// The part that return uses, read so that a move of the selection and a change of the parts both tell its reader.
+    public var selectedPart: SpotPart? {
+        access(keyPath: \.panel)
+        access(keyPath: \.selectedPart)
+        return parts?.selectedPart
     }
     /// The last arrow press that asks the parts to scroll. It lives apart from the parts, so that a press redraws only the scroll.
     public private(set) var nudge = SheetParts.Nudge.rest
