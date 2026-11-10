@@ -161,6 +161,7 @@ public final class SpotRun {
         didSet {
             guard state != oldValue else { return }
             if (state.on == true) != isOn { isOn = state.on == true }
+            if state.face != oldValue.face { runs.updatePlaced() }
             onReport(.listChange)
         }
     }
