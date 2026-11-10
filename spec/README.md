@@ -10,6 +10,7 @@ app, which the New spot sheet opens and `openspot guide` prints for an AI. How t
 | [03 Views](03-views.md)                 | draft  | 01 02 | A plugin's own SwiftUI view in an area.                                          |
 | [05 Stay](05-stay.md)                   | draft  | 01 02 | One process that stays and talks both ways over stdio, such as a local server.   |
 | [06 Screen](06-screen.md)               | draft  | 01 02 | Pictures and recordings of the screen, with the mic, the sound and the camera.   |
+| [07 Calendar](07-calendar.md)           | draft  | 01 02 | The events and the reminders of the person, read, added and ticked.              |
 
 A number that a spec gave up is not used again.
 
@@ -56,6 +57,8 @@ These rules come from the way Nostr writes its NIPs.
 | `OPENSPOT_STAY`                                                                                          | Environment variable | 05   |
 | `openspot <noun> <verb>`                                                                                 | Command              | 01   |
 | `openspot screen`                                                                                        | Command              | 06   |
+| `openspot calendar`, `openspot reminders`                                                                | Command              | 07   |
+| `start`, `end`, `due`, `allday`, `calendar`, `list`, `location`, `meeting`, `done`                       | Row key              | 07   |
 | `text`, `number`, `gauge`, `graph`, `picture`, `spot`, `switch`, `slider`, `field`, `choice`, `hotkey`, `button`, `section`, `row`, `repeat`, `template` | Block kind | 02 |
 | `view`                                                                                                   | Block kind           | 03   |
 | `grid`, `grid.<size>`, `card`, `pad`, `main`, `title`, `detail`, `size`, `search`, `recents`, `toast`, `link`, `select` | Head key | 02   |
