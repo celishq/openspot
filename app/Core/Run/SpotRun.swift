@@ -134,6 +134,8 @@ public final class SpotRun {
     public private(set) var shape = Shape(rows: 0, perLine: 1)
     /// Whether an open sheet still waits for the first answer, so that it cannot yet say what kind of sheet it is.
     public private(set) var awaitsFirstAnswer = false
+    /// Whether the first answer, while it waits for the open motion, shows the search field. Nil when no such answer waits.
+    private var heardField: Bool?
     public private(set) var state: SpotState {
         didSet { if state != oldValue { onReport(.listChange) } }
     }
@@ -224,6 +226,19 @@ public final class SpotRun {
         if waits != awaitsFirstAnswer { awaitsFirstAnswer = waits }
     }
 
+    /// Whether the sheet shows the search field: its parts draw rows or it has none, once its first answer is there. A first
+    /// answer that waits for the open motion says it before its parts show.
+    public var showsField: Bool {
+        heardField ?? (panel?.showsRows != false && !awaitsFirstAnswer)
+    }
+
+    /// Hears a frame that waits for the open motion. A sheet that waits for its first answer takes from it whether it shows
+    /// the search field.
+    func hear(_ lines: PluginOutput) {
+        guard awaitsFirstAnswer else { return }
+        heardField = SheetParts(output: lines)?.showsRows != false
+    }
+
     /// Asks for the first answer, and runs the given work when it arrives.
     public func afterAnswer(_ work: @escaping () -> Void) {
         waiter = work
@@ -261,6 +276,7 @@ public final class SpotRun {
         if let search = running(Self.searchKey) { stop(search) }
         editing = nil
         held = nil
+        heardField = nil
         if panel?.isSelectionMoved == true { panel?.clearSelection() }
         link.settle()
         stopUnwantedRead()
@@ -691,6 +707,7 @@ public final class SpotRun {
     /// itself, or the frame that ends a call of a staying script. A read's answer replaces all that the spot shows, and a
     /// search's answer replaces its rows (02, Y7).
     func takeAnswer(_ lines: PluginOutput, frame: String, to ask: Ask) async {
+        heardField = nil
         lastAnswer = lines.withoutBlocks()
         report(toastOf: lines)
         command = command.taking(lines)
@@ -734,6 +751,7 @@ public final class SpotRun {
     /// printed by itself. It changes only what it prints (02, Y7): the value when it prints the main component, the rows, the
     /// parts, and the control of the card. Only a later frame of a read changes the spot's words.
     func takeUpdate(_ lines: PluginOutput, frame: String, from source: Source) async {
+        heardField = nil
         report(toastOf: lines)
         if let main = lastAnswer?.value?.fields.first?.value, lines.value?.fields.first?.value == main, let value = MetricValue(output: lines) {
             changeReading { $0.take(value) }

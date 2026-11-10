@@ -250,8 +250,11 @@ public final class SpotRuns {
         return command.isTray || read.has(.launch) || (isPanelOpen && (read.has(.panel) || placed.contains(command.id)))
     }
 
-    /// Waits while the open motion of this sheet runs.
-    func opening(_ id: String) async {
+    /// Waits while the open motion of this sheet runs. The sheet hears the frame that waits, so that its field can show
+    /// before the frame does.
+    func opening(_ id: String, hearing lines: PluginOutput) async {
+        guard openingID == id else { return }
+        sheets[id]?.hear(lines)
         while openingID == id {
             await withCheckedContinuation { openingWaits.append($0) }
         }
@@ -295,7 +298,7 @@ public final class SpotRuns {
                 for try await frame in stream {
                     guard !call.isStopped else { break }
                     let output = await PluginOutput.reading(frame)
-                    await self?.opening(id)
+                    await self?.opening(id, hearing: output)
                     guard !call.isStopped else { break }
                     call.take(output)
                     await onFrame(call, frame, output)
