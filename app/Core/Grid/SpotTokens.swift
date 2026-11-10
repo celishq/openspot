@@ -62,13 +62,14 @@ public enum SpotTokens {
         CGFloat(rows) * rowHeight + CGFloat(rows - 1) * rowGap
     }
 
-    /// The angle, in degrees from the right and within 0 to 90, of the line from the centre of a card's bottom right corner
-    /// to this point of its handle's square, in steps of `handleAngleStep`.
+    /// The angle, in degrees from the right and below 180, of the line through the centre of a card's bottom right corner
+    /// and this point, in its handle's square, in steps of `handleAngleStep`.
     public static func handleAngle(of size: SpotSize, at point: CGPoint) -> Int {
         let centre = resizeHandle - corner(for: size)
         let degrees = atan2(point.y - centre, point.x - centre) * 180 / .pi
+        let line = (degrees + 360).truncatingRemainder(dividingBy: 180)
         let step = CGFloat(handleAngleStep)
-        return Int((min(max(degrees, 0), 90) / step).rounded() * step)
+        return Int((line / step).rounded() * step) % 180
     }
 
     /// The space between the edge of a card and what it shows. A 1x1 widget keeps more room for its one mark.

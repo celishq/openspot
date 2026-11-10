@@ -240,6 +240,19 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.selected, 2)
     }
 
+    func testTheResizePointerLiesInTheHandleOfTheCornerItPulls() {
+        let corner = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)
+        model.resizeSpot("c", by: .zero)
+        XCTAssertEqual(model.resizePointer, corner)
+
+        model.resizeSpot("c", by: CGSize(width: -10, height: 0))
+        XCTAssertEqual(model.resizePointer, CGPoint(x: corner.x - 10, y: corner.y))
+
+        model.resizeSpot("c", by: down)
+        XCTAssertEqual(model.placements[2].size, .square)
+        XCTAssertEqual(model.resizePointer, corner)
+    }
+
     func testEscapePutsTheSizeBackAndSavesNothing() {
         model.resizeSpot("c", by: down)
 

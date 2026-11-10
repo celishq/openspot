@@ -1,3 +1,4 @@
+import AppKit
 import OpenspotCore
 import SwiftUI
 
@@ -36,10 +37,20 @@ struct SpotEditControls: ViewModifier {
             }
     }
 
-    /// Resizes the card by its handle: it snaps to the nearest size, and the other cards make room.
+    /// Resizes the card by its handle: it snaps to the nearest size, and the other cards make room. The pointer keeps
+    /// pointing at the centre of the corner it pulls, and a release off the handle gives back the arrow.
     private var resizeGesture: some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .named(SpotsView.panelSpace))
-            .onChanged { model.resizeSpot(id, by: $0.translation) }
-            .onEnded { _ in model.dropResize() }
+            .onChanged {
+                model.resizeSpot(id, by: $0.translation)
+                guard let point = model.resizePointer, let resize = model.resize else { return }
+                SpotHandleArea.cursor(at: SpotTokens.handleAngle(of: resize.size, at: point)).set()
+            }
+            .onEnded { _ in
+                let square = CGRect(x: 0, y: 0, width: SpotTokens.resizeHandle, height: SpotTokens.resizeHandle)
+                let isOnHandle = model.resizePointer.map(square.contains) ?? false
+                model.dropResize()
+                if !isOnHandle { NSCursor.arrow.set() }
+            }
     }
 }

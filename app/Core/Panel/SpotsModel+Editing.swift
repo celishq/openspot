@@ -151,6 +151,13 @@ extension SpotsModel {
         }
     }
 
+    /// Where the pointer that resizes a card lies in the handle's square on the card's corner as it is now.
+    public var resizePointer: CGPoint? {
+        guard let resize, let move = pointerMove, let rect = resize.placement(of: resize.size)?.rect else { return nil }
+        let pointer = resize.corner(movedBy: inGrid(move))
+        return CGPoint(x: pointer.x - rect.maxX + SpotTokens.resizeHandle, y: pointer.y - rect.maxY + SpotTokens.resizeHandle)
+    }
+
     /// Ends the resize, and saves the size as the card's preferred size when it changed.
     public func dropResize() {
         guard let resize else { return }

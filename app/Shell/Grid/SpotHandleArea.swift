@@ -7,7 +7,7 @@ import SwiftUI
 struct SpotHandleArea: View {
     let size: SpotSize
     @State private var angle = 45
-    @MainActor private static var pointers: [Int: Image] = [:]
+    @MainActor private static var pointers: [Int: (image: Image, cursor: NSCursor)] = [:]
 
     var body: some View {
         Color.clear
@@ -17,12 +17,17 @@ struct SpotHandleArea: View {
                 let next = SpotTokens.handleAngle(of: size, at: point)
                 if next != angle { angle = next }
             }
-            .pointerStyle(.image(Self.pointer(at: angle), hotSpot: .center))
+            .pointerStyle(.image(Self.pointer(at: angle).image, hotSpot: .center))
+    }
+
+    /// The double arrow at this angle as the pointer of the app, for a drag, which no hover follows.
+    static func cursor(at angle: Int) -> NSCursor {
+        pointer(at: angle).cursor
     }
 
     /// A black double arrow with a white rim, as the system's resize arrows are, at this angle. It is drawn once for each
     /// angle.
-    private static func pointer(at angle: Int) -> Image {
+    private static func pointer(at angle: Int) -> (image: Image, cursor: NSCursor) {
         if let pointer = pointers[angle] { return pointer }
         let side: CGFloat = 24
         let radians = CGFloat(angle) * .pi / 180
@@ -42,7 +47,7 @@ struct SpotHandleArea: View {
             path.fill()
             return true
         }
-        let pointer = Image(nsImage: image)
+        let pointer = (image: Image(nsImage: image), cursor: NSCursor(image: image, hotSpot: NSPoint(x: side / 2, y: side / 2)))
         pointers[angle] = pointer
         return pointer
     }

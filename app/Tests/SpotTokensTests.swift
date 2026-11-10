@@ -25,8 +25,9 @@ final class SpotTokensTests: XCTestCase {
         XCTAssertEqual(SpotTokens.handleAngle(of: .small, at: CGPoint(x: 8, y: 26)), 70)
     }
 
-    func testTheAngleStaysWithinTheQuarterOfTheCorner() {
-        XCTAssertEqual(SpotTokens.handleAngle(of: .square, at: CGPoint(x: 28, y: 0)), 0)
-        XCTAssertEqual(SpotTokens.handleAngle(of: .square, at: CGPoint(x: 0, y: 28)), 90)
+    func testAPointerOnTheFarSideOfTheCentreGivesTheSameLine() {
+        XCTAssertEqual(SpotTokens.handleAngle(of: .small, at: CGPoint(x: -28, y: -28)), 45)
+        XCTAssertEqual(SpotTokens.handleAngle(of: .square, at: CGPoint(x: 28, y: 0)), 175)
+        XCTAssertEqual(SpotTokens.handleAngle(of: .square, at: CGPoint(x: 28, y: 2.5)), 0)
     }
 }
