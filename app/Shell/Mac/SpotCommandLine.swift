@@ -108,6 +108,10 @@ enum SpotCommandLine {
             finish { try await SpotAgendaStore.agenda().due(days: days, lists: lists) }
         case .remindersLists:
             finish { try await SpotAgendaStore.agenda().lists() }
+        case .calendarAdd(let words, let isDry):
+            finish { try await SpotAgendaStore.agenda().addEvent(words, isDry: isDry) }
+        case .remindersAdd(let words, let isDry):
+            finish { try await SpotAgendaStore.agenda().addReminder(words, isDry: isDry) }
         case .remindersDone(let id, let isDone):
             finish { try await SpotAgendaStore.agenda().done(id, isDone) }
         }

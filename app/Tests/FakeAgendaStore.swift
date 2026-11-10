@@ -24,11 +24,18 @@ final class FakeAgendaStore: AgendaStore {
     private(set) var ranges: [Range] = []
     private(set) var listed: [AgendaKind] = []
     private(set) var marks: [Mark] = []
+    private let defaults: [AgendaKind: AgendaList]
+    private(set) var addedEvents: [AgendaEvent] = []
+    private(set) var addedReminders: [AgendaReminder] = []
 
-    init(events: [AgendaEvent] = [], reminders: [AgendaReminder] = [], lists: [AgendaList] = [], access: AgendaAccess = .allowed, answer: AgendaAccess = .allowed) {
+    init(
+        events: [AgendaEvent] = [], reminders: [AgendaReminder] = [], lists: [AgendaList] = [], defaults: [AgendaKind: AgendaList] = [:],
+        access: AgendaAccess = .allowed, answer: AgendaAccess = .allowed
+    ) {
         allEvents = events
         allReminders = reminders
         allLists = lists
+        self.defaults = defaults
         self.access = access
         self.answer = answer
     }
@@ -60,6 +67,23 @@ final class FakeAgendaStore: AgendaStore {
         guard allReminders.contains(where: { $0.id == id }) else { return false }
         marks.append(Mark(id: id, isDone: done))
         return true
+    }
+
+    func defaultList(of kind: AgendaKind) -> AgendaList? {
+        defaults[kind]
+    }
+
+    /// Keeps the event in the default calendar with the next id, as EventKit gives a new one.
+    func add(_ event: AgendaEvent) throws -> AgendaEvent {
+        addedEvents.append(event)
+        let id = "saved-\(addedEvents.count + addedReminders.count)"
+        return AgendaEvent(id: id, title: event.title, start: event.start, end: event.end, isAllDay: event.isAllDay, calendar: defaults[.event]!, location: nil, url: nil, notes: nil)
+    }
+
+    func add(_ reminder: AgendaReminder) throws -> AgendaReminder {
+        addedReminders.append(reminder)
+        let id = "saved-\(addedEvents.count + addedReminders.count)"
+        return AgendaReminder(id: id, title: reminder.title, due: reminder.due, isAllDay: reminder.isAllDay, list: defaults[.reminder]!, doneAt: nil)
     }
 
     func lists(of kind: AgendaKind) -> [AgendaList] {

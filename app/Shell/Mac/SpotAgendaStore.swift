@@ -65,6 +65,37 @@ final class SpotAgendaStore: AgendaStore {
         store.calendars(for: Self.entity(of: kind)).map(Self.list)
     }
 
+    func defaultList(of kind: AgendaKind) -> AgendaList? {
+        (kind == .event ? store.defaultCalendarForNewEvents : store.defaultCalendarForNewReminders()).map(Self.list)
+    }
+
+    func add(_ event: AgendaEvent) throws -> AgendaEvent {
+        let new = EKEvent(eventStore: store)
+        new.title = event.title
+        new.startDate = event.start
+        new.endDate = event.end
+        new.isAllDay = event.isAllDay
+        new.calendar = store.defaultCalendarForNewEvents
+        try store.save(new, span: .thisEvent, commit: true)
+        return AgendaEvent(
+            id: new.eventIdentifier ?? new.calendarItemIdentifier, title: event.title, start: event.start, end: event.end, isAllDay: event.isAllDay,
+            calendar: Self.list(new.calendar), location: nil, url: nil, notes: nil
+        )
+    }
+
+    func add(_ reminder: AgendaReminder) throws -> AgendaReminder {
+        let new = EKReminder(eventStore: store)
+        new.title = reminder.title
+        new.calendar = store.defaultCalendarForNewReminders()
+        if let due = reminder.due {
+            let parts: Set<Calendar.Component> = reminder.isAllDay ? [.year, .month, .day] : [.year, .month, .day, .hour, .minute]
+            new.dueDateComponents = Calendar.current.dateComponents(parts, from: due)
+            if !reminder.isAllDay { new.addAlarm(EKAlarm(absoluteDate: due)) }
+        }
+        try store.save(new, commit: true)
+        return AgendaReminder(id: new.calendarItemIdentifier, title: reminder.title, due: reminder.due, isAllDay: reminder.isAllDay, list: Self.list(new.calendar), doneAt: nil)
+    }
+
     /// The reminders that a predicate matches, read into values in the callback, where EventKit hands them over.
     private func fetch(_ predicate: NSPredicate) async -> [AgendaReminder] {
         await withCheckedContinuation { answer in

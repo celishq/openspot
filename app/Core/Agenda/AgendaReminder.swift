@@ -47,7 +47,7 @@ public struct AgendaReminder: Equatable, Sendable {
     /// When it is due, in words: `Done`, or `Late` and its time, or its day and time with no day for today.
     private func when(_ clock: AgendaClock, isLate: Bool) -> String {
         guard doneAt == nil else { return "Done" }
-        guard let due else { return "Someday" }
+        guard let due else { return "No date" }
         let time = isAllDay ? nil : clock.time(due)
         let day = clock.day(due) ?? (time == nil ? "Today" : nil)
         let words = [day, time].compactMap(\.self).joined(separator: " ")

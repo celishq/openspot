@@ -197,6 +197,26 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertTrue(CommandLineCall.usage.contains("openspot reminders done"))
     }
 
+    func testAnAddJoinsItsWordsAndOnlyADryRunRunsInARead() {
+        let read = ["OPENSPOT_REASON": "search"]
+        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "add", "Lunch", "tomorrow", "13:00"]), .calendarAdd(words: "Lunch tomorrow 13:00", isDry: false))
+        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "add", "--dry-run", "Lunch tomorrow"], environment: read), .calendarAdd(words: "Lunch tomorrow", isDry: true))
+        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "add", "Call mom"]), .remindersAdd(words: "Call mom", isDry: false))
+        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "add", "--dry-run", "Call", "mom"], environment: read), .remindersAdd(words: "Call mom", isDry: true))
+        XCTAssertEqual(CommandLineCall(arguments: ["reminders", "add"]), .unknown("reminders add"))
+        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "add", "--dry-run"]), .unknown("calendar add --dry-run"))
+        XCTAssertEqual(
+            CommandLineCall(arguments: ["calendar", "add", "Lunch"], environment: read),
+            .refused("`openspot calendar add` changes your calendars, so it cannot run in a read. Run it from a pick or an action.")
+        )
+        XCTAssertEqual(
+            CommandLineCall(arguments: ["reminders", "add", "Call mom"], environment: read),
+            .refused("`openspot reminders add` changes your reminders, so it cannot run in a read. Run it from a pick or an action.")
+        )
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot calendar add"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot reminders add"))
+    }
+
     func testAnUnknownCallAsksForHelp() {
         XCTAssertEqual(CommandLineCall(arguments: ["paint"]), .unknown("paint"))
         XCTAssertEqual(CommandLineCall(arguments: ["color", "mix"]), .unknown("color mix"))

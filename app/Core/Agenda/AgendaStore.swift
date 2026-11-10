@@ -12,4 +12,10 @@ public protocol AgendaStore {
     /// Ticks the reminder with this id, or opens it again, and returns false when no reminder has the id.
     func mark(reminder id: String, done: Bool) throws -> Bool
     func lists(of kind: AgendaKind) -> [AgendaList]
+    /// The calendar or the list that a new event or reminder goes to, or nil when the person has none.
+    func defaultList(of kind: AgendaKind) -> AgendaList?
+    /// Saves a new event in the default calendar, and returns it with its new id.
+    func add(_ event: AgendaEvent) throws -> AgendaEvent
+    /// Saves a new reminder in the default list, with an alert at its time when it has one, and returns it with its new id.
+    func add(_ reminder: AgendaReminder) throws -> AgendaReminder
 }

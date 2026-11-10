@@ -50,9 +50,13 @@ public enum CommandLineCall: Equatable, Sendable {
     /// Prints the events that have not ended through the end of a day, in the calendars with these ids or in all (E1).
     case calendarEvents(days: Int, calendars: [String])
     case calendarCalendars
+    /// Adds an event from the words, or with a dry run prints the row that it would add (E4, E5).
+    case calendarAdd(words: String, isDry: Bool)
     /// Prints the open reminders that are late or due through the end of a day, and those done today, in some lists or all.
     case remindersDue(days: Int, lists: [String])
     case remindersLists
+    /// Adds a reminder from the words, or with a dry run prints the row that it would add (E4, E5).
+    case remindersAdd(words: String, isDry: Bool)
     /// Ticks a reminder, or opens it again (E3).
     case remindersDone(id: String, isDone: Bool)
     /// Runs as the helper process of a capability. A script never makes this call, so the usage does not list it.
@@ -106,10 +110,15 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  Prints each event that has not ended through the end of day n as a
                                                  row. Day 1, the default, is today. --calendar takes a calendar's id.
     openspot calendar calendars                  Prints each calendar as a row.
+    openspot calendar add [--dry-run] <words>... Adds an event from words such as Lunch tomorrow 13:00, and prints its
+                                                 row. --dry-run prints the row and adds nothing.
     openspot reminders due [--days n] [--list id]...
                                                  Prints each open reminder that is late or due through the end of day n,
                                                  and each one done today, as a row. --list takes a list's id.
     openspot reminders lists                     Prints each list of reminders as a row.
+    openspot reminders add [--dry-run] <words>...
+                                                 Adds a reminder from words such as Call mom tomorrow 9am, and prints its
+                                                 row. --dry-run prints the row and adds nothing.
     openspot reminders done <id> [true|false]    Ticks a reminder, or with false opens it again.
 
     """
@@ -188,10 +197,16 @@ public enum CommandLineCall: Equatable, Sendable {
             self = Self.listing(Array(rest.dropFirst()), filter: "--calendar").map { .calendarEvents(days: $0.days, calendars: $0.ids) }
                 ?? .unknown(arguments.joined(separator: " "))
         case ("calendar", "calendars") where rest.count == 1: self = .calendarCalendars
+        case ("calendar", "add"):
+            self = Self.adding(Array(rest.dropFirst()), environment) { .calendarAdd(words: $0, isDry: $1) }
+                .map { Self.changing($0, "openspot calendar add", "your calendars", environment) } ?? .unknown(arguments.joined(separator: " "))
         case ("reminders", "due"):
             self = Self.listing(Array(rest.dropFirst()), filter: "--list").map { .remindersDue(days: $0.days, lists: $0.ids) }
                 ?? .unknown(arguments.joined(separator: " "))
         case ("reminders", "lists") where rest.count == 1: self = .remindersLists
+        case ("reminders", "add"):
+            self = Self.adding(Array(rest.dropFirst()), environment) { .remindersAdd(words: $0, isDry: $1) }
+                .map { Self.changing($0, "openspot reminders add", "your reminders", environment) } ?? .unknown(arguments.joined(separator: " "))
         case ("reminders", "done") where rest.count == 2 || (rest.count == 3 && ["true", "false"].contains(rest[2])):
             self = Self.changing(.remindersDone(id: rest[1], isDone: rest.count == 2 || rest[2] == "true"), "openspot reminders done", "your reminders", environment)
         case ("translate", _):
@@ -220,9 +235,19 @@ public enum CommandLineCall: Equatable, Sendable {
         return call
     }
 
-    /// The call of a command that changes the person's data, or its refusal in a read, so that nothing changes by surprise
-    /// (E9).
+    /// Reads `[--dry-run] <words>...` into the call that it makes, or returns nil with no words.
+    private static func adding(_ words: [String], _ environment: [String: String], _ call: (String, Bool) -> CommandLineCall) -> CommandLineCall? {
+        let isDry = words.first == "--dry-run"
+        let rest = isDry ? Array(words.dropFirst()) : words
+        guard !rest.isEmpty else { return nil }
+        return call(rest.joined(separator: " "), isDry)
+    }
+
+    /// The call of a command that changes the person's data, or its refusal in a read, so that nothing changes by surprise.
+    /// A dry run changes nothing, so it runs in a read (E9).
     private static func changing(_ call: CommandLineCall, _ name: String, _ what: String, _ environment: [String: String]) -> CommandLineCall {
+        if case .calendarAdd(_, true) = call { return call }
+        if case .remindersAdd(_, true) = call { return call }
         guard environment["OPENSPOT_REASON"] == nil else {
             return .refused("`\(name)` changes \(what), so it cannot run in a read. Run it from a pick or an action.")
         }
