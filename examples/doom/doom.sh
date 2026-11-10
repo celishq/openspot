@@ -26,7 +26,7 @@ fi
 layer=$(cd "$(dirname "$0")" && pwd)/doomgeneric_mac.m
 source=$data/doomgeneric-$engine_commit
 wad=$data/doom1.wad
-engine=$data/doom
+engine=$data/doom-$engine_commit
 temp=$(mktemp -d "${TMPDIR:-/tmp}/doom.XXXXXX") || exit 1
 job=
 trap 'kill $job 2>/dev/null; rm -rf "$temp"' EXIT

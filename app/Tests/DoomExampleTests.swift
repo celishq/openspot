@@ -22,6 +22,11 @@ final class DoomExampleTests: SamplePluginsCase {
         folder.appendingPathComponent(".config/openspot/data/doom")
     }
 
+    /// The engine that the pinned commit names in the data folder.
+    private func engine(in folder: URL) throws -> URL {
+        data(in: folder).appendingPathComponent("doom-\(try engineCommit())")
+    }
+
     /// A curl that logs each address to `fetched`, fails for each address that holds a word of the file `unreachable`,
     /// and writes a file that is not the real one for each other address. With a number in the file `size`, it writes
     /// half of that many bytes, waits one second, then writes the rest.
@@ -77,7 +82,7 @@ final class DoomExampleTests: SamplePluginsCase {
 
     /// An engine that is already built, which writes `old` to `played` when it starts.
     private func builtEngine(in folder: URL) throws {
-        try "#!/bin/sh\necho old > '\(folder.path)/played'\n".writeScript(to: data(in: folder).appendingPathComponent("doom"))
+        try "#!/bin/sh\necho old > '\(folder.path)/played'\n".writeScript(to: try engine(in: folder))
     }
 
     private func engineSource(in folder: URL, files: String = "i_main.o doomgeneric_xlib.o") throws {
@@ -181,7 +186,7 @@ final class DoomExampleTests: SamplePluginsCase {
             try self.fakeCurl(in: folder)
             try self.fakeClang(in: folder)
             try self.gameData(in: folder)
-            try "#!/bin/sh\necho \"$*\" > '\(folder.path)/played'\npwd >> '\(folder.path)/played'\n".writeScript(to: self.data(in: folder).appendingPathComponent("doom"))
+            try "#!/bin/sh\necho \"$*\" > '\(folder.path)/played'\npwd >> '\(folder.path)/played'\n".writeScript(to: try self.engine(in: folder))
 
             let output = try await Self.press(doom)
 
@@ -202,7 +207,7 @@ final class DoomExampleTests: SamplePluginsCase {
             try self.gameData(in: folder)
             try self.engineSource(in: folder)
             try self.builtEngine(in: folder)
-            try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 0)], ofItemAtPath: self.data(in: folder).appendingPathComponent("doom").path)
+            try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 0)], ofItemAtPath: try self.engine(in: folder).path)
 
             _ = try await Self.press(doom)
 
@@ -212,6 +217,22 @@ final class DoomExampleTests: SamplePluginsCase {
             XCTAssertTrue(compiled.contains { $0.contains("doom/doomgeneric_mac.m") && $0.contains("-framework Cocoa") }, "\(compiled)")
             XCTAssertEqual(self.lines("played", in: folder).first, "-iwad \(self.data(in: folder).path)/doom1.wad")
             XCTAssertFalse(self.exists("fetched", in: folder))
+        }
+    }
+
+    func testAnEngineThatAnotherCommitBuiltIsBuiltAgainForThePinnedOne() async throws {
+        let doom = try doom()
+        try await withPrivateHome { folder in
+            try self.fakeCurl(in: folder)
+            try self.fakeClang(in: folder)
+            try self.gameData(in: folder)
+            try self.engineSource(in: folder)
+            try "#!/bin/sh\necho old > '\(folder.path)/played'\n".writeScript(to: self.data(in: folder).appendingPathComponent("doom"))
+
+            _ = try await Self.press(doom)
+
+            XCTAssertTrue(self.lines("compiled", in: folder).contains { $0.contains("doom/doomgeneric_mac.m") })
+            XCTAssertEqual(self.lines("played", in: folder).first, "-iwad \(self.data(in: folder).path)/doom1.wad")
         }
     }
 
@@ -282,7 +303,7 @@ final class DoomExampleTests: SamplePluginsCase {
 
             XCTAssertEqual(line, "Openspot cannot build the Doom engine. Install the Command Line Tools with `xcode-select --install`, then press Doom again.")
             XCTAssertTrue(self.lines("compiled", in: folder).contains { $0.contains("/i_main.c") })
-            XCTAssertFalse(self.exists("doom", in: self.data(in: folder)))
+            XCTAssertFalse(FileManager.default.fileExists(atPath: try self.engine(in: folder).path))
             XCTAssertEqual(try self.leftovers(in: folder), [])
         }
     }
@@ -349,7 +370,7 @@ final class DoomExampleTests: SamplePluginsCase {
             try self.fakeCurl(in: folder)
             try self.fakeClang(in: folder)
             try self.gameData(in: folder)
-            try "#!/bin/sh\necho \"$*\" > '\(folder.path)/played'\n".writeScript(to: self.data(in: folder).appendingPathComponent("doom"))
+            try "#!/bin/sh\necho \"$*\" > '\(folder.path)/played'\n".writeScript(to: try self.engine(in: folder))
             try FileManager.default.createDirectory(at: self.data(in: folder).appendingPathComponent("screens"), withIntermediateDirectories: true)
 
             _ = try await Self.press(doom, .press("play"))
