@@ -43,7 +43,9 @@ struct SpotsView: View {
             .modifier(GridSelectionFollow(model: model, scroll: $scroll, scrollOffset: $scrollOffset))
             .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in
                 scrollOffset = offset
+                model.gridScrolled(to: offset)
             })
+            .modifier(GridEdgeScroll(model: model, scroll: $scroll))
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask(edges.gradient(height: cardHeight))
             .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: !coversGrid)) { $0.opacity(coversGrid ? 0 : 1) }
@@ -211,6 +213,40 @@ struct SpotsView: View {
         .padding(.horizontal, SpotTokens.padding)
         .frame(width: SpotTokens.gridWidth, height: SpotTokens.rowHeight)
         .offset(x: SpotTokens.halo, y: SpotTokens.halo)
+    }
+}
+
+/// Scrolls the grid while a lifted card lies in the fade at either end of the grid's clear part, faster the deeper it lies,
+/// once a frame until the drag ends.
+private struct GridEdgeScroll: ViewModifier {
+    let model: SpotsModel
+    @Binding var scroll: ScrollPosition
+
+    func body(content: Content) -> some View {
+        content.task(id: model.drag?.id) {
+            var last = ContinuousClock.now
+            while !Task.isCancelled, model.drag != nil {
+                try? await Task.sleep(for: .milliseconds(8))
+                let now = ContinuousClock.now
+                let seconds = (now - last) / .seconds(1)
+                last = now
+                step(seconds: seconds)
+            }
+        }
+    }
+
+    private func step(seconds: Double) {
+        guard let drag = model.drag else { return }
+        let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
+        let window = ScrollWindow(
+            top: SpotTokens.halo + SpotTokens.rowHeight + SpotScrollEdges.fadeLength,
+            bottom: SpotTokens.panelHeight - SpotsView.gridBottom - SpotScrollEdges.fadeLength,
+            viewHeight: SpotTokens.panelHeight,
+            contentHeight: SpotTokens.gridTop + SpotTokens.height(rows: rows) + SpotsView.gridBottom
+        )
+        let point = SpotTokens.gridTop + drag.centre(movedBy: model.lift.offset).y
+        let next = window.offset(scrolling: point, from: model.gridScroll, by: SpotMotion.edgeScrollSpeed * seconds, over: SpotScrollEdges.fadeLength)
+        if next != model.gridScroll { scroll.scrollTo(y: next) }
     }
 }
 

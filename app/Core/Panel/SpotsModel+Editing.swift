@@ -28,6 +28,7 @@ extension SpotsModel {
             drag = nil
             landing = nil
             resize = nil
+            pointerMove = nil
             if lift.offset != .zero { lift.offset = .zero }
             selected = 0
             updateVisible()
@@ -68,14 +69,17 @@ extension SpotsModel {
             let onGrid = visible.filter(\.isOnGrid).count
             let places = visible[start].isOnGrid ? 0...(onGrid - 1) : onGrid...(visible.count - 1)
             stopDragWait()
+            scrollAtPress = gridScroll
             change(.edit) {
                 drag = SpotDrag(id: id, start: start, sizes: visible.map(\.size), places: places)
                 selected = start
             }
         }
-        if lift.offset != translation { lift.offset = translation }
+        pointerMove = translation
+        let moved = inGrid(translation)
+        if lift.offset != moved { lift.offset = moved }
         guard let drag else { return }
-        let target = drag.nearest(to: drag.centre(movedBy: translation))
+        let target = drag.nearest(to: drag.centre(movedBy: moved))
         guard target != drag.place else { return stopDragWait() }
         guard target != dragTarget else { return }
         stopDragWait()
@@ -93,10 +97,11 @@ extension SpotsModel {
     /// where the card started, puts every card back.
     public func dropSpot(by translation: CGSize) {
         guard let drag else { return }
-        let centre = drag.centre(movedBy: translation)
+        let centre = drag.centre(movedBy: inGrid(translation))
         let place = drag.nearest(to: centre)
         guard drag.holds(centre), place != drag.start else { return cancelDrag() }
         stopDragWait()
+        pointerMove = nil
         var order = dragged(cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id)
         order.removeAll { $0 == drag.id }
         order.insert(drag.id, at: place)
@@ -112,6 +117,7 @@ extension SpotsModel {
     public func cancelDrag() {
         guard let drag else { return }
         stopDragWait()
+        pointerMove = nil
         change(.edit, {
             self.drag = nil
             landing = drag.id
@@ -131,10 +137,12 @@ extension SpotsModel {
         if resize?.id != id {
             guard let index = visible.firstIndex(where: { $0.id == id }) else { return }
             resize = SpotResize(id: id, index: index, sizes: visible.map(\.size), choices: sizes(of: visible[index]))
+            scrollAtPress = gridScroll
             selected = index
         }
+        pointerMove = translation
         guard let resize else { return }
-        let target = resize.nearest(to: resize.corner(movedBy: translation))
+        let target = resize.nearest(to: resize.corner(movedBy: inGrid(translation)))
         guard target != resize.size else { return }
         change(.edit) {
             self.resize?.size = target
@@ -145,6 +153,7 @@ extension SpotsModel {
     /// Ends the resize, and saves the size as the card's preferred size when it changed.
     public func dropResize() {
         guard let resize else { return }
+        pointerMove = nil
         guard resize.size != resize.start else { return cancelResize() }
         arrangement.arrange(visible.map(\.id))
         arrangement.set(size: resize.size, of: resize.id)
@@ -154,10 +163,29 @@ extension SpotsModel {
     /// Puts the resized card and the cards that made room back as they were.
     public func cancelResize() {
         guard resize != nil else { return }
+        pointerMove = nil
         change(.edit) {
             resize = nil
             updateVisible()
         }
+    }
+
+    /// Takes how far the grid has scrolled. A card that the person drags or resizes moves with the grid, as if the pointer
+    /// moved as far.
+    public func gridScrolled(to offset: CGFloat) {
+        guard gridScroll != offset else { return }
+        gridScroll = offset
+        guard let move = pointerMove else { return }
+        if let drag {
+            dragSpot(drag.id, by: move)
+        } else if let resize {
+            resizeSpot(resize.id, by: move)
+        }
+    }
+
+    /// The pointer's move as a move over the grid, with the scroll since the press added.
+    private func inGrid(_ translation: CGSize) -> CGSize {
+        CGSize(width: translation.width, height: translation.height + gridScroll - scrollAtPress)
     }
 
     /// These cards with the dragged card moved to its place.

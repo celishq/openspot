@@ -4,8 +4,9 @@ import QuartzCore
 
 /// A run that opens and closes the sheet of one spot again and again, or with `OPENSPOT_ACTION` moves down its rows, types
 /// in its search, picks the row `OPENSPOT_ROW` or drags a card in Edit Spots, and writes the time of each frame to a file.
-/// `OPENSPOT_ACTION=mouse` drags a card with mouse events instead, or with `OPENSPOT_ROW` pulls its `corner` handle or
-/// presses its `minus`, and writes whether it lifted or resized, the order, its size and whether it is on the grid after.
+/// `OPENSPOT_ACTION=mouse` drags a card with mouse events instead, or with `OPENSPOT_ROW` holds it at the bottom `edge`,
+/// pulls its `corner` handle or presses its `minus`, and writes whether it lifted or resized, the order, its size and
+/// whether it is on the grid after.
 /// `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`. The panel stays almost clear, takes no focus and no clicks,
 /// unless `OPENSPOT_SEEN` asks for a picture. With `OPENSPOT_SHOTS`, a drag saves a picture of each state to that folder
 /// from a panel off every screen, and times nothing.
@@ -176,7 +177,7 @@ final class SpotMotionProbe: NSObject {
 
     /// Presses the card at this place, moves the mouse this far in steps and lets go, through events put in the app's queue
     /// for a panel off every screen, as a person's mouse sends them. The press starts at the card's centre, its corner
-    /// handle, which it pulls down a row, or its minus, which it only clicks.
+    /// handle, which it pulls down a row, or its minus, which it only clicks. At the edge it rests 1.5 s before it lets go.
     private func press(_ id: String, at rect: CGRect, by move: CGSize) {
         panel.setFrameOrigin(NSPoint(x: -9000, y: -9000))
         panel.alphaValue = 1
@@ -186,30 +187,39 @@ final class SpotMotionProbe: NSObject {
         let height = panel.contentView?.bounds.height ?? 0
         let inset = SpotTokens.keycap / 2
         let point = row == "corner" ? CGPoint(x: rect.maxX - inset, y: rect.maxY - inset) : row == "minus" ? CGPoint(x: rect.minX + inset, y: rect.minY + inset) : CGPoint(x: rect.midX, y: rect.midY)
-        let translation = row == "corner" ? CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap) : row == "minus" ? .zero : move
+        let edgeMove = CGSize(width: 0, height: SpotTokens.panelHeight - SpotTokens.halo - SpotTokens.hintBlock - 10 - (SpotTokens.gridTop + rect.midY))
+        let translation = row == "corner" ? CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap) : row == "minus" ? .zero : row == "edge" ? edgeMove : move
         let start = NSPoint(x: SpotTokens.halo + point.x, y: height - (SpotTokens.gridTop + point.y))
         let size = { self.model.visible.firstIndex { $0.id == id }.map { self.model.placements[$0].size.name } ?? "none" }
         let sizeBefore = size()
         let before = model.visible.map(\.id)
         var lifted = false
         var resizing = false
+        var maxScroll: CGFloat = 0
+        func scrolled(_ view: NSView?) -> CGFloat? {
+            guard let view else { return nil }
+            if let scroll = view as? NSScrollView { return scroll.contentView.bounds.minY }
+            return view.subviews.lazy.compactMap(scrolled).first
+        }
         func post(_ type: NSEvent.EventType, _ share: CGFloat) {
             let point = NSPoint(x: start.x + translation.width * share, y: start.y - translation.height * share)
             guard let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: panel.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1) else { return }
             NSApp.postEvent(event, atStart: false)
         }
-        let steps = [{ post(.leftMouseDown, 0) }] + (1...20).map { step in { post(.leftMouseDragged, CGFloat(step) / 20) } } + [{ post(.leftMouseUp, 1) }]
+        let rest: [() -> Void] = row == "edge" ? Array(repeating: {}, count: 75) : []
+        let steps = [{ post(.leftMouseDown, 0) }] + (1...20).map { step in { post(.leftMouseDragged, CGFloat(step) / 20) } } + rest + [{ post(.leftMouseUp, 1) }]
         func run(_ left: ArraySlice<() -> Void>) {
             guard let next = left.first else {
                 return DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                     let entry = self.model.visible.first { $0.id == id }
-                    self.finish(with: "lifted \(lifted)\nresizing \(resizing)\nbefore \(before)\nafter \(self.model.visible.map(\.id))\nsize \(sizeBefore) to \(size())\non grid \(entry?.isOnGrid ?? false)\n")
+                    self.finish(with: "lifted \(lifted)\nresizing \(resizing)\nmost scroll \(maxScroll)\nbefore \(before)\nafter \(self.model.visible.map(\.id))\nsize \(sizeBefore) to \(size())\non grid \(entry?.isOnGrid ?? false)\n")
                 }
             }
             next()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
                 lifted = lifted || self.model.drag != nil
                 resizing = resizing || self.model.resize != nil
+                maxScroll = max(maxScroll, scrolled(self.panel.contentView) ?? 0)
                 run(left.dropFirst())
             }
         }
@@ -225,7 +235,11 @@ final class SpotMotionProbe: NSObject {
         let near = CGSize(width: stops[1].width + SpotTokens.cell / 3, height: stops[1].height + SpotTokens.rowHeight / 3)
         let states: [(name: String, wait: Double, act: () -> Void)] = [
             ("edit", 1, {}),
-            ("lifting", 0.03, { self.model.dragSpot(id, by: CGSize(width: 1, height: 1)) }),
+            ("handle", 1, { self.model.resizeSpot(id, by: .zero) }),
+            ("lifting", 0.03, {
+                self.model.cancelResize()
+                self.model.dragSpot(id, by: CGSize(width: 1, height: 1))
+            }),
             ("lifted", 1, { self.model.dragSpot(id, by: near) }),
             ("dropping", 0.06, { self.model.dropSpot(by: near) }),
             ("dropped", 1, {}),

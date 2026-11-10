@@ -202,6 +202,11 @@ public final class SpotsModel {
     /// The place that the cards make room at when the pointer has rested near it for `dragRest`.
     @ObservationIgnored var dragTarget: Int?
     @ObservationIgnored var dragWait: Task<Void, Never>?
+    /// How far the grid has scrolled, how far it had when the pointer pressed a card to drag or resize it, and the
+    /// pointer's last move since, so that a scroll with no move of the pointer moves the card with the grid.
+    @ObservationIgnored public internal(set) var gridScroll: CGFloat = 0
+    @ObservationIgnored var scrollAtPress: CGFloat = 0
+    @ObservationIgnored var pointerMove: CGSize?
     public var arrangement = SpotArrangement()
     /// The symbol of the command whose key a person pressed last, which the Openspot item shows for `flashPause`.
     public private(set) var flashSymbol: String?

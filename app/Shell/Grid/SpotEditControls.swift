@@ -23,11 +23,18 @@ struct SpotEditControls: ViewModifier {
                     SpotHideButton(model: model, id: id, isHidden: isHidden, size: size)
                 }
             }
-            .overlay(alignment: .bottomTrailing) {
+            .overlay {
                 if isResizable {
                     SpotResizeHandle(size: size)
                         .opacity(showsHandle ? 1 : 0.001)
                         .animation(SpotMotion.handleFade, value: showsHandle)
+                }
+            }
+            .overlay(alignment: .bottomTrailing) {
+                if isResizable {
+                    Color.clear
+                        .frame(width: SpotTokens.resizeHandle, height: SpotTokens.resizeHandle)
+                        .contentShape(Rectangle())
                         .gesture(resizeGesture)
                 }
             }

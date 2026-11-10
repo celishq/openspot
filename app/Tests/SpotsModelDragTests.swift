@@ -113,6 +113,27 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertNil(model.landing)
     }
 
+    func testALiftedCardMovesWithTheGridWhenItScrollsAndLandsWhereThePointerIs() {
+        let row = SpotTokens.rowHeight + SpotTokens.rowGap
+        let translation = move("a", to: leftHalf(of: "a"))
+        model.dragSpot("a", by: translation)
+
+        model.gridScrolled(to: row)
+
+        XCTAssertEqual(model.lift.offset, CGSize(width: translation.width, height: translation.height + row))
+        XCTAssertEqual(order, ["b", "c", "a", "d"])
+        model.dropSpot(by: translation)
+        XCTAssertEqual(savedOrder(), ["b", "c", "a", "d"])
+    }
+
+    func testAResizedCardFollowsTheGridWhenItScrolls() {
+        model.resizeSpot("c", by: .zero)
+
+        model.gridScrolled(to: SpotTokens.rowHeight + SpotTokens.rowGap)
+
+        XCTAssertEqual(model.placements[2].size, .square)
+    }
+
     func testTheCardsWaitForThePointerToRestButAReleaseLandsAtOnce() {
         model.dragRest = .seconds(30)
         let translation = move("d", to: leftHalf(of: "c"))
