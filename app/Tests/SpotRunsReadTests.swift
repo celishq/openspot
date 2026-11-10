@@ -44,6 +44,23 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(sheet.reading.value?.title, "3")
     }
 
+    func testABigFrameAndASmallFrameAfterItShowInTheirOrder() async throws {
+        try script(header: "read=sheet", """
+        i=0
+        while [ $i -lt 3000 ]; do printf 'row=r%s\\ntitle=Row number %s\\n\\n' $i $i; i=$((i+1)); done
+        printf -- '---\\nrow=last\\ntitle=Last\\n---\\n'
+        """)
+        let sheet = try sheet()
+        let frames = FrameLog(sheet)
+
+        runs.panelOpened()
+        sheet.open {}
+
+        try await wait("both frames") { frames.frames.count == 2 }
+        XCTAssertGreaterThan(frames.frames.first?.utf8.count ?? 0, 64 << 10)
+        XCTAssertEqual(sheet.list.shown.map(\.run), ["last"])
+    }
+
     func testEachReadKnowsWhyItRuns() async throws {
         try script(header: "read=launch,wake,panel,sheet\nshortcut=r", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()

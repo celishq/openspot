@@ -234,7 +234,8 @@ public final class SpotRuns {
         return command.isTray || read.has(.launch) || (isPanelOpen && (read.has(.panel) || placed.contains(command.id)))
     }
 
-    /// Starts one call. It gives each frame, as text and sorted by what each block is, and then its end, on the main actor.
+    /// Starts one call. It gives each frame, as text and sorted by what each block is, and then its end, on the main actor. A
+    /// frame that its call stopped during the read changes nothing.
     func call(
         _ command: Spot,
         _ action: SpotAction,
@@ -253,7 +254,9 @@ public final class SpotRuns {
             do {
                 for try await frame in stream {
                     guard !call.isStopped else { break }
-                    let output = call.take(frame: frame)
+                    let output = await PluginOutput.reading(frame)
+                    guard !call.isStopped else { break }
+                    call.take(output)
                     await onFrame(call, frame, output)
                 }
             } catch {

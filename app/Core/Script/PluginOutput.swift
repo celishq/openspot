@@ -64,6 +64,16 @@ public struct PluginOutput: Equatable, Sendable {
         self.init(blocks: TextBlock.blocks(in: text), checks: false)
     }
 
+    /// The size from which a frame is read on another thread.
+    private static let bigFrame = 64 << 10
+
+    /// Reads a frame on the main thread, or a big one on another thread, so that a sheet in motion keeps its frames.
+    @MainActor
+    static func reading(_ text: String) async -> PluginOutput {
+        guard text.utf8.count >= bigFrame else { return PluginOutput(text: text) }
+        return await Task.detached(priority: .userInitiated) { PluginOutput(text: text) }.value
+    }
+
     private init(blocks: [TextBlock], checks: Bool) {
         self.blocks = blocks
         self.checks = checks
