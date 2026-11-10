@@ -380,7 +380,8 @@ public final class SpotsModel {
 
     /// A person pressed a key that they assigned to a command.
     public func press(_ key: GlobalKey) {
-        guard let sheet = sheets[key.spot], let command = key.command else { return }
+        guard let command = key.command else { return float(key.spot) }
+        guard let sheet = sheets[key.spot] else { return }
         sheet.pressKey(command)
         flashSymbol = sheet.command.symbol(of: command)
         flashWatch?.cancel()
@@ -403,6 +404,8 @@ public final class SpotsModel {
                 holdAssignedKeys(files.config.read())
             }
             if spotsChanged, id == ShippedSpot.spotsID { reloadUnderSheet() }
+        case .landed:
+            host.land(id)
         case .closed:
             if let shown = openList, runs.sheets[shown]?.isOpen != true { showSheet(nil, moving: false) }
         case .chooseFiles:

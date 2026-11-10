@@ -18,6 +18,8 @@ public final class SpotRun {
         case listChange
         /// A click on a card that takes files and has no sheet: the owner asks the person for files, and gives them to `drop`.
         case chooseFiles
+        /// The float of the script closed by itself, as when its script left the folder.
+        case landed
         /// The sheet closed by itself, as when the panel closed or its script left the folder.
         case closed
     }
@@ -128,6 +130,14 @@ public final class SpotRun {
     /// Whether this sheet is the open one, as the runs record it.
     public var isOpen: Bool {
         runs.openID == command.id
+    }
+    /// Whether the script shows in a float of its own (W7).
+    public var isFloating: Bool {
+        runs.floating.contains(command.id)
+    }
+    /// Whether its sheet shows: the open one of the panel, or a float.
+    private var showsSheet: Bool {
+        isOpen || isFloating
     }
     /// How many rows the list shows, and how many on a line. It changes only when they do, so a move of the selection leaves
     /// a view that sizes itself by it alone.
@@ -280,9 +290,9 @@ public final class SpotRun {
     }
 
     /// The panel closed: a sheet of parts, or of a script that holds its own state, closes and drops its values, so the next
-    /// open reads again. A sheet of rows stays.
+    /// open reads again. A sheet of rows stays, and so does a float.
     func panelClosed() {
-        if panel != nil || command.stays {
+        if !isFloating, panel != nil || command.stays {
             let wasOpen = isOpen
             close()
             panel = nil
@@ -291,6 +301,31 @@ public final class SpotRun {
         }
         stopUnwantedRead()
         link.settle()
+    }
+
+    /// The script began to float: its sheet selects its first row and reads. A card reads only when its header lists
+    /// `panel`, so that a float runs nothing that the panel would not.
+    func floated() {
+        settle()
+        list.selectFirst()
+        if panel == nil, answered != nil { panel = lastAnswer.flatMap(SheetParts.init(output:)) }
+        if let read = command.read, command.kind.opensSheet || read.has(.panel) {
+            self.read(reason: command.kind.opensSheet ? .sheet : .panel)
+        }
+        link.settle()
+        runs.updateClock()
+    }
+
+    /// The float closed: unless the panel shows the sheet, a sheet of parts, or of a script that holds its own state, drops
+    /// its values, so the next float reads again.
+    func landed() {
+        if !isInView, panel != nil || command.stays {
+            panel = nil
+            answered = nil
+        }
+        stopUnwantedRead()
+        link.settle()
+        runs.updateClock()
     }
 
     /// The panel opened: an open sheet of rows is in view again and reads, by M1 and M2.
@@ -312,7 +347,7 @@ public final class SpotRun {
 
     /// Whether the person sees this sheet: it is the open one, and the panel shows.
     private var isInView: Bool {
-        isOpen && runs.isPanelOpen
+        isOpen && runs.isPanelOpen || isFloating
     }
 
     /// Whether something wants this script now (L3), also a call of a staying script that waits for its `end`.
@@ -340,7 +375,7 @@ public final class SpotRun {
     /// runs, and a change reads again after it (M1). A `panel` or a `sheet` moment uses an answer younger than 5 seconds (M2).
     /// A file with no `read` gets its click instead.
     public func read(selecting run: String? = nil, need: ReadNeed = .moment, reason: ReadReason? = nil) {
-        let reason = reason ?? (need == .change ? .change : isOpen ? .sheet : .panel)
+        let reason = reason ?? (need == .change ? .change : showsSheet ? .sheet : .panel)
         if let run { selecting = run }
         guard list.search == .local || command.stays else { return ask() }
         if link.isAsking {
@@ -356,7 +391,7 @@ public final class SpotRun {
         let isSent = link.send(Call(
             action: action,
             key: Self.readKey,
-            input: isOpen ? panel?.values : nil,
+            input: showsSheet ? panel?.values : nil,
             limit: action == .read ? runs.readLimit : nil,
             reason: reason,
             variables: action == .read ? reason.variables : [:],
@@ -712,7 +747,7 @@ public final class SpotRun {
                 $0.replace(lines.items)
                 if let kept { $0.select(run: kept) }
             }
-            if isOpen || panel != nil { takePanel(lines, generation: generation) }
+            if showsSheet || panel != nil { takePanel(lines, generation: generation) }
             if list.search == .script, !list.query.isEmpty { self.ask() }
             showRunning()
         case .search(let query):
@@ -749,7 +784,7 @@ public final class SpotRun {
             state = keepingLevel(state.taking(lines))
         }
         if !lines.items.isEmpty { list.replace(lines.items) }
-        if isOpen {
+        if showsSheet {
             switch source {
             case .read: panel?.merge(lines, keeping: editing)
             case .call(let generation, let keeping): panel?.merge(lines, answering: generation, keeping: keeping ?? editing)
@@ -851,7 +886,7 @@ public final class SpotRun {
 
     /// Adds the last frame of each running call to an open sheet (L7).
     private func showRunning() {
-        guard isOpen else { return }
+        guard showsSheet else { return }
         for call in calls where call.doesWork {
             if let lines = call.output { panel?.merge(lines, keeping: editing) }
         }

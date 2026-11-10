@@ -71,7 +71,7 @@ public struct SettingsSpot: Equatable, Sendable {
         let fix = "row=\(Self.fixKey)\ntitle=Open a fix\nicon=wrench.and.screwdriver\nhides=\(Self.clear)\nshortcut=\((config.fixKey ?? .fix).text)\n"
         let scan = try? PluginFolder(url: folder, core: core, enabled: config.arrangement.enabled).scan()
         let scripts = (scan?.scripts ?? []).filter { only == nil || $0.id == only }
-        let floats = only != nil ? [] : (scan?.commands ?? []).map { spot -> String in
+        let floats = only != nil ? [] : (scan?.commands ?? []).filter { $0.kind != .widget }.map { spot -> String in
             let key = config.keys.first { $0.spot == spot.id && $0.command == nil }
             let hides = key == nil ? "hides=\(Self.clear)\n" : ""
             return "row=\(Self.keyPrefix)\(spot.id):\ntitle=Float\ndetail=\(spot.name)\nparent=\(spot.name)\nicon=\(spot.image ?? spot.file ?? spot.glyph ?? spot.symbol)\n\(hides)shortcut=\(key?.shortcut.text ?? "Record")\n"

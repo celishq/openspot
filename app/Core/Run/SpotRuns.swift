@@ -10,6 +10,8 @@ public final class SpotRuns {
     public private(set) var isPanelOpen = false
     /// The script whose sheet is open: the one record of it. A sheet that opens closes the one before.
     public private(set) var openID: String?
+    /// The scripts that float in windows of their own. Each one is in view while it floats (W7).
+    public private(set) var floating: Set<String> = []
     /// The files of the drag in progress, which each card that takes them all shows for the whole drag.
     public var draggedPaths: [String] = []
     @ObservationIgnored public var onReport: (String, SpotRun.Report) -> Void = { _, _ in }
@@ -68,6 +70,7 @@ public final class SpotRuns {
         for (id, sheet) in sheets where !order.contains(id) {
             sheets[id] = nil
             if sheet.isOpen { onReport(id, .closed) }
+            if floating.remove(id) != nil { onReport(id, .landed) }
             sheet.close()
             sheet.stopReads()
         }
@@ -101,6 +104,18 @@ public final class SpotRuns {
 
     func didClose(_ sheet: SpotRun) {
         if openID == sheet.command.id { openID = nil }
+    }
+
+    /// Shows a script in a float, where its sheet reads as an open sheet does (W7).
+    public func float(_ id: String) {
+        guard let sheet = sheets[id], floating.insert(id).inserted else { return }
+        sheet.floated()
+    }
+
+    /// Ends the float of a script. A sheet of parts drops its values, as the panel's close does (K5).
+    public func land(_ id: String) {
+        guard floating.remove(id) != nil else { return }
+        sheets[id]?.landed()
     }
 
     /// Closes the open sheet.

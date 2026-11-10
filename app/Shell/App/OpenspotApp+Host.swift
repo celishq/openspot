@@ -30,6 +30,10 @@ extension OpenspotApp: SpotsHost {
         toast?.show(text, symbol: ToastPanel.confirmSymbol)
     }
 
+    func float(_ entry: SpotsModel.Entry) {}
+
+    func land(_ id: String) {}
+
     func hold(_ keys: [GlobalKey]) {
         wantedKeys = keys
         holdWantedKeys()

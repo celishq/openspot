@@ -18,6 +18,10 @@ public protocol SpotsHost: AnyObject {
     func setEntryKey(on isOn: Bool)
     func hold(_ keys: [GlobalKey])
     func chooseFiles(for command: Spot, then take: @escaping ([String]) -> Void)
+    /// Shows the float of a spot at the pointer, or brings its float there when it shows (W4, W6).
+    func float(_ entry: SpotsModel.Entry)
+    /// Closes the float of a spot, when it shows.
+    func land(_ id: String)
     /// Whether the pointer lies on the panel or the menu bar item.
     var isPointerOverDrop: Bool { get }
     /// The files of the drag in progress.
