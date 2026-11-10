@@ -1,7 +1,7 @@
 import Foundation
 
 /// A calendar of events or a list of reminders, with the account that holds it.
-public struct AgendaList: Equatable, Sendable {
+public struct CalendarList: Equatable, Sendable {
     public let id: String
     public let title: String
     public let account: String

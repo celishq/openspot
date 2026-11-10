@@ -104,24 +104,24 @@ enum SpotCommandLine {
         case .screenRecordStatus:
             SpotScreen.run { try SpotRecording.status() }
         case .calendarEvents(let days, let hidden):
-            finish { try await SpotAgendaStore.agenda().events(days: days, hiding: hidden) }
+            finish { try await SpotEventStore.events().events(days: days, hiding: hidden) }
         case .calendarCalendars:
-            finish { try await SpotAgendaStore.agenda().calendars() }
+            finish { try await SpotEventStore.events().calendars() }
         case .remindersDue(let days, let hidden):
-            finish { try await SpotAgendaStore.agenda().due(days: days, hiding: hidden) }
+            finish { try await SpotReminderStore.reminders().due(days: days, hiding: hidden) }
         case .remindersLists:
-            finish { try await SpotAgendaStore.agenda().lists() }
+            finish { try await SpotReminderStore.reminders().lists() }
         case .calendarAdd(let words, let isDry):
-            finish { try await SpotAgendaStore.agenda().addEvent(words, isDry: isDry) }
+            finish { try await SpotEventStore.events().add(words, isDry: isDry) }
         case .remindersAdd(let words, let isDry):
-            finish { try await SpotAgendaStore.agenda().addReminder(words, isDry: isDry) }
+            finish { try await SpotReminderStore.reminders().add(words, isDry: isDry) }
         case .calendarShow(let id):
-            finish { try SpotCalendarApp.show(try await SpotAgendaStore.agenda().day(of: id)) }
+            finish { try SpotCalendarApp.show(try await SpotEventStore.events().day(of: id)) }
         case .remindersDone(let id, let isDone):
-            finish { try await SpotAgendaStore.agenda().done(id, isDone) }
+            finish { try await SpotReminderStore.reminders().done(id, isDone) }
         case .remindersShow(let id):
             finish {
-                let link = try await SpotAgendaStore.agenda().link(of: id)
+                let link = try await SpotReminderStore.reminders().link(of: id)
                 guard NSWorkspace.shared.open(link) else { throw PluginError.failed(1, "Openspot cannot open Reminders, so it cannot show \(id).") }
                 return ""
             }

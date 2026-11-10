@@ -1,7 +1,7 @@
 import Foundation
 
-/// The time now, with the calendar, the zone and the language in which an agenda writes each time.
-struct AgendaClock {
+/// The time now, with the calendar, the zone and the language in which a row writes each time.
+struct CalendarClock {
     let now: Date
     let calendar: Calendar
     let locale: Locale

@@ -2,7 +2,7 @@ import Foundation
 
 /// What a person typed to add an event or a reminder: the first date in the words, found by the date finder of macOS, and
 /// the rest of the words as the title (E4).
-public struct AgendaEntry: Equatable, Sendable {
+public struct CalendarEntry: Equatable, Sendable {
     /// Short words that tie a date to the title, such as `on` in `Pay rent on Nov 15`, which go with the date.
     private static let ties: Set<String> = ["at", "on", "by", "in", "for", "from", "until", "в", "во", "на", "к", "до"]
     private static let noon = 12 * 3600
@@ -29,6 +29,16 @@ public struct AgendaEntry: Equatable, Sendable {
         date = found?.date
         hasTime = found.map(Self.hasTime) ?? false
         length = found.flatMap { $0.duration > 0 ? $0.duration : nil }
+    }
+
+    /// Reads the words of an add, or fails with what they lack: any words, or a title beside the date.
+    init(titled words: String) throws {
+        let trimmed = words.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { throw PluginError.failed(1, "Openspot needs words, such as `Lunch tomorrow 13:00`.") }
+        self.init(words: words)
+        guard !title.isEmpty else {
+            throw PluginError.failed(1, "Openspot found only a date in `\(trimmed)`. Add a title, such as `Lunch tomorrow 13:00`.")
+        }
     }
 
     private static func date(in words: String) -> NSTextCheckingResult? {

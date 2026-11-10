@@ -1,7 +1,7 @@
 import Foundation
 
 /// One time of an event in a calendar. A repeating event gives one for each time.
-public struct AgendaEvent: Equatable, Sendable {
+public struct Event: Equatable, Sendable {
     private static let meetingHosts = [
         "zoom.us", "zoom.com", "meet.google.com", "teams.microsoft.com", "teams.live.com", "webex.com", "whereby.com", "meet.jit.si",
         "facetime.apple.com", "gotomeeting.com", "chime.aws"
@@ -12,12 +12,12 @@ public struct AgendaEvent: Equatable, Sendable {
     public let start: Date
     public let end: Date
     public let isAllDay: Bool
-    public let calendar: AgendaList
+    public let calendar: CalendarList
     public let location: String?
     public let url: String?
     public let notes: String?
 
-    public init(id: String, title: String, start: Date, end: Date, isAllDay: Bool, calendar: AgendaList, location: String?, url: String?, notes: String?) {
+    public init(id: String, title: String, start: Date, end: Date, isAllDay: Bool, calendar: CalendarList, location: String?, url: String?, notes: String?) {
         self.id = id
         self.title = title
         self.start = start
@@ -40,11 +40,11 @@ public struct AgendaEvent: Equatable, Sendable {
     }
 
     /// Its row (E2). The id names this time of the event, so each time of a repeating event has its own.
-    func row(_ clock: AgendaClock) -> TextBlock {
+    func row(_ clock: CalendarClock) -> TextBlock {
         let meeting = meeting
         let isOn = !isAllDay && start <= clock.now && clock.now < end
         var fields: [TextBlock.Field] = [
-            .init(key: "row", value: AgendaID.event(id, start: start).text),
+            .init(key: "row", value: CalendarItemID.event(id, start: start).text),
             .init(key: "title", value: title),
             .init(key: "detail", value: "\(when(clock)) · \(calendar.title)"),
             .init(key: "icon", value: meeting == nil ? "calendar" : "video"),
@@ -62,7 +62,7 @@ public struct AgendaEvent: Equatable, Sendable {
     }
 
     /// When it is, in words: its day unless it is today, then its times, or `All day`.
-    private func when(_ clock: AgendaClock) -> String {
+    private func when(_ clock: CalendarClock) -> String {
         let started = start < clock.startOfToday
         if isAllDay { return started ? "All day" : clock.day(start) ?? "All day" }
         if started { return "Until " + ([clock.day(end), clock.time(end)].compactMap(\.self).joined(separator: " ")) }
