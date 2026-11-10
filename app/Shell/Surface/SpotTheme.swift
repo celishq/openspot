@@ -101,8 +101,9 @@ struct SpotTheme {
     /// The shadow under a card that the person lifts in Edit Spots: its blur radius and its strength.
     static let liftShadow: CGFloat = 14
     static let liftShadowStrength = 0.25
-    /// The strength of ink in a card's resize handle.
-    static let handleStrength = 0.6
+    /// The colour of a card's resize handle, the same on every card and theme, and the strength of the line around it.
+    static let handle = Color.white
+    static let handleShadowStrength = 0.35
     @MainActor static var fill: Double { current.fillStrength }
     @MainActor static var disc: Double { current.discStrength }
     @MainActor static var chip: Double { current.chipStrength }

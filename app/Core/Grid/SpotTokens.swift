@@ -16,8 +16,8 @@ public enum SpotTokens {
     public static let keycapRadius: CGFloat = 6
     /// The side of the square that takes a drag of a card's resize handle, how far its arc lies outside the rim, and its line.
     public static let resizeHandle: CGFloat = 28
-    public static let resizeHandleGap: CGFloat = 4
-    public static let resizeHandleLine: CGFloat = 3
+    public static let resizeHandleGap: CGFloat = 1
+    public static let resizeHandleLine: CGFloat = 5
     /// How far from each edge the rim of a round corner passes through its diagonal, as a part of the radius.
     public static let rimPoint: CGFloat = 1 - 0.5.squareRoot()
     public static let listRowHeight: CGFloat = 40

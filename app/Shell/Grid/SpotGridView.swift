@@ -53,17 +53,16 @@ struct SpotGridView: View {
                 .equatable()
                 .simultaneousGesture(DragGesture(minimumDistance: 0).updating($pressed) { _, pressed, _ in pressed = entry.id })
                 .simultaneousGesture(moveGesture(of: entry), including: model.isEditing ? .all : .subviews)
-                .overlay(alignment: .topLeading) {
-                    if model.isEditing, entry.item == nil, !card.isLifted {
-                        SpotHideButton(model: model, id: entry.id, isHidden: !entry.isOnGrid, size: card.size)
-                    }
-                }
-                .overlay(alignment: .bottomTrailing) {
-                    if model.isEditing, !card.isLifted, model.sizes(of: entry).count > 1 {
-                        SpotResizeHandle(size: card.size)
-                            .gesture(resizeGesture(of: entry))
-                    }
-                }
+                .modifier(SpotEditControls(
+                    model: model,
+                    id: entry.id,
+                    size: card.size,
+                    showsHide: model.isEditing && entry.item == nil && !card.isLifted,
+                    isHidden: !entry.isOnGrid,
+                    isResizable: model.isEditing && !card.isLifted && model.sizes(of: entry).count > 1,
+                    isResizing: model.resize?.id == entry.id,
+                    isDragging: drag != nil
+                ))
                 .modifier(SpotLiftedCard(isLifted: card.isLifted, isSolid: card.isLifted || model.landing == entry.id, size: card.size))
                 .modifier(card.motion)
                 .modifier(SpotLiftOffset(lift: card.isLifted ? model.lift : nil))
@@ -133,12 +132,5 @@ struct SpotGridView: View {
         DragGesture(coordinateSpace: .named(SpotsView.panelSpace))
             .onChanged { model.dragSpot(entry.id, by: $0.translation) }
             .onEnded { model.dropSpot(by: $0.translation) }
-    }
-
-    /// Resizes a card by its corner handle: the card snaps to the nearest size, and the other cards make room.
-    private func resizeGesture(of entry: SpotsModel.Entry) -> some Gesture {
-        DragGesture(minimumDistance: 0, coordinateSpace: .named(SpotsView.panelSpace))
-            .onChanged { model.resizeSpot(entry.id, by: $0.translation) }
-            .onEnded { _ in model.dropResize() }
     }
 }

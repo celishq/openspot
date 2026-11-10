@@ -1,8 +1,8 @@
 import OpenspotCore
 import SwiftUI
 
-/// The handle on the bottom right corner of a card in Edit Spots: a short arc just outside its rim, which the person drags
-/// to resize the card.
+/// The handle on the bottom right corner of a card in Edit Spots: a bold arc on its rim, in a colour that stands out from
+/// any card, which the person drags to resize the card.
 struct SpotResizeHandle: View {
     let size: SpotSize
 
@@ -13,11 +13,12 @@ struct SpotResizeHandle: View {
             path.addRelativeArc(
                 center: CGPoint(x: side - radius, y: side - radius),
                 radius: radius + SpotTokens.resizeHandleGap,
-                startAngle: .degrees(15),
-                delta: .degrees(60)
+                startAngle: .degrees(10),
+                delta: .degrees(70)
             )
         }
-        .stroke(SpotTheme.ink.opacity(SpotTheme.handleStrength), style: StrokeStyle(lineWidth: SpotTokens.resizeHandleLine, lineCap: .round))
+        .stroke(SpotTheme.handle, style: StrokeStyle(lineWidth: SpotTokens.resizeHandleLine, lineCap: .round))
+        .shadow(color: .black.opacity(SpotTheme.handleShadowStrength), radius: 1)
         .frame(width: side, height: side)
         .contentShape(Rectangle())
     }
