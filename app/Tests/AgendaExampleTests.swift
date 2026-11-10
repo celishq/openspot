@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Agenda and Agenda calendars examples with their real scripts and a stand-in for the openspot command, which
+/// Proves the Agenda and Calendars for Agenda examples with their real scripts and a stand-in for the openspot command, which
 /// logs each call with its reason and its stdin.
 final class AgendaExampleTests: SamplePluginsCase {
     private var examples: URL {
@@ -37,6 +37,7 @@ final class AgendaExampleTests: SamplePluginsCase {
           'calendar calendars') cat '\(path)/calendars' ;;
           'reminders lists') cat '\(path)/lists' ;;
           'reminders add') if [ "$3" = --dry-run ]; then cat '\(path)/dry-reminder'; else cat '\(path)/added-reminder'; fi ;;
+          'reminders show') [ ! -e '\(path)/no-reminders-app' ] || exit 1 ;;
           'calendar add') if [ "$3" = --dry-run ]; then cat '\(path)/dry-event' 2>/dev/null || exit 1; else cat '\(path)/added-event'; fi ;;
         esac
 
@@ -156,7 +157,7 @@ final class AgendaExampleTests: SamplePluginsCase {
             XCTAssertEqual(tick.control, .toggle(true))
             XCTAssertEqual(tick.title, "Take pills")
             XCTAssertEqual(output.actions.map(\.id), ["join", "tick"])
-            XCTAssertEqual(output.primary, "Open in Calendar")
+            XCTAssertEqual(output.primary, "Open")
         }
     }
 
@@ -208,16 +209,31 @@ final class AgendaExampleTests: SamplePluginsCase {
         }
     }
 
-    func testEnterOpensCalendarOnTheItemAndJoinOpensTheCall() async throws {
+    func testEnterOpensAnEventInCalendarAndAReminderInRemindersAndJoinOpensTheCall() async throws {
         let agenda = try example("Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
 
             try await agenda.perform(.item(SpotItem(title: "Standup", run: "event:B/2")), timeout: 5)
+            try await agenda.perform(.item(SpotItem(title: "Call mom", run: "reminder:R1")), timeout: 5)
             try await agenda.perform(.action(CommandAction(id: "join", title: "Join call"), item: SpotItem(title: "Standup", run: "event:B/2")), timeout: 5)
 
-            XCTAssertTrue(try self.calls(in: folder).contains("act|calendar show event:B/2|"))
+            let opens = try self.calls(in: folder).filter { $0.contains(" show ") }
+            XCTAssertEqual(opens, ["act|calendar show event:B/2|", "act|reminders show reminder:R1|"])
             XCTAssertEqual(try self.read("opened", in: folder), "https://meet.google.com/abc-defg-hij\n")
+        }
+    }
+
+    func testAReminderThatRemindersCannotOpenOpensInCalendar() async throws {
+        let agenda = try example("Agenda")
+        try await withPrivateHome { folder in
+            try self.fakeOpenspot(in: folder)
+            try "".write(to: folder.appendingPathComponent("no-reminders-app"), atomically: true, encoding: .utf8)
+
+            try await agenda.perform(.item(SpotItem(title: "Call mom", run: "reminder:R1")), timeout: 5)
+
+            let opens = try self.calls(in: folder).filter { $0.contains(" show ") }
+            XCTAssertEqual(opens, ["act|reminders show reminder:R1|", "act|calendar show reminder:R1|"])
         }
     }
 
@@ -238,7 +254,7 @@ final class AgendaExampleTests: SamplePluginsCase {
         }
     }
 
-    func testAgendaKeepsTheCalendarsThatAgendaCalendarsDoesNotHide() async throws {
+    func testAgendaKeepsTheCalendarsThatCalendarsForAgendaDoesNotHide() async throws {
         let agenda = try example("Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
@@ -251,8 +267,8 @@ final class AgendaExampleTests: SamplePluginsCase {
         }
     }
 
-    func testAgendaCalendarsListsBothKindsAndAPickHidesOrShowsOne() async throws {
-        let calendars = try example("Agenda calendars")
+    func testCalendarsForAgendaListsBothKindsWithACheckboxAndAPickHidesOrShowsOne() async throws {
+        let calendars = try example("Calendars for Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
             try "B1".write(to: folder.appendingPathComponent("setting-hidden"), atomically: true, encoding: .utf8)
@@ -260,7 +276,7 @@ final class AgendaExampleTests: SamplePluginsCase {
             let output = try await calendars.items(timeout: 5)
             XCTAssertEqual(output.items.map(\.run), ["A8E2", "B1", "7D10"])
             XCTAssertEqual(output.items.map(\.subtitle), ["Calendar · iCloud", "Calendar · On My Mac", "Reminders · iCloud"])
-            XCTAssertEqual(output.items.filter { $0.tone == .on }.map(\.run), ["A8E2", "7D10"])
+            XCTAssertEqual(output.items.map(\.iconText), ["checkmark.square.fill", "square", "checkmark.square.fill"])
 
             try await calendars.perform(.item(SpotItem(title: "Family", run: "7D10")), timeout: 5)
             XCTAssertEqual(try self.read("setting-hidden", in: folder), "B1 7D10")

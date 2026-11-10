@@ -9,7 +9,7 @@
 
 hidden=$(openspot setting get --spot "${OPENSPOT_ID%/*}/calendars" hidden </dev/null)
 
-# Prints the flags that keep the calendars or lists that Agenda calendars does not hide, or one that keeps none.
+# Prints the flags that keep the calendars or lists that Calendars for Agenda does not hide, or one that keeps none.
 shown() {
   [ -n "$hidden" ] || return 0
   kept=$(openspot "$1" "$2" </dev/null | awk -v hidden=" $hidden " -v flag="$3" '
@@ -122,7 +122,7 @@ case "$1" in
     reminders=$(reminders) || { printf '%s\n' "$reminders"; exit 1; }
     card
     printf 'repeat=items\n\ntemplate=reminder\ngrid=done\nswitch=done\ndone.look=tick\n\n'
-    printf 'button=open\ntitle=Open in Calendar\n\nbutton=join\ntitle=Join call\nshortcut=cmd+j\nclose=true\n\n'
+    printf 'button=open\ntitle=Open\n\nbutton=join\ntitle=Join call\nshortcut=cmd+j\nclose=true\n\n'
     printf 'button=tick\ntitle=Mark as done\nshortcut=cmd+shift+c\n\n'
     if [ -n "$2" ]; then
       adding reminders "$2" reminder 'Add reminder'
@@ -142,6 +142,7 @@ case "$1" in
         added=$(openspot "$noun" add "$(value search)" </dev/null) || { printf '%s\n' "$added"; exit 1; }
         printf 'toast=Added %s.\n' "$(field title "$added")"
         ;;
+      reminder:*) openspot reminders show "$2" </dev/null 2>/dev/null || openspot calendar show "$2" </dev/null ;;
       *) openspot calendar show "$2" </dev/null ;;
     esac
     ;;

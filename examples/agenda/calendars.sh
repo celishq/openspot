@@ -1,16 +1,17 @@
 #!/bin/sh
-# title=Agenda calendars
+# title=Calendars for Agenda
 # icon=checklist
 # detail=The calendars and lists that Agenda shows
 # read=sheet
 hidden=$(openspot setting get hidden </dev/null)
 
-# Prints the rows of a list of calendars or of lists, with the kind before the account, and a dot on each that Agenda shows.
+# Prints the rows of a list of calendars or of lists, with the kind before the account, and a checkbox that is ticked on
+# each that Agenda shows.
 rows() {
   printf '%s\n' "$2" | awk -v hidden=" $hidden " -v kind="$1" 'BEGIN { RS = ""; FS = "\n" }
     /^row=./ {
       for (i = 1; i <= NF; i++) print ($i ~ /^detail=/ ? "detail=" kind " · " substr($i, 8) : $i)
-      if (!index(hidden, " " substr($1, 5) " ")) print "tone=on"
+      print (index(hidden, " " substr($1, 5) " ") ? "icon=square" : "icon=checkmark.square.fill")
       print ""
     }'
 }
