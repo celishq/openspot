@@ -347,10 +347,8 @@ public final class SpotsModel {
         if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
     }
 
-    /// Makes the entries again from the scanned spots and the arrangement, and the dock in Edit Spots.
     public func rebuildEntries() {
         entries = ordered().map { Entry(command: $0, run: runs.sheets[$0.id], choice: arrangement) }
-        if isEditing { refreshDock() }
     }
 
     /// The scanned spots in their grid order, and the person's order in the config over it.

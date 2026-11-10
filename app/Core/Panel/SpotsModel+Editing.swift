@@ -21,11 +21,6 @@ extension SpotsModel {
         }
     }
 
-    /// Shows the spots of this tab in the dock.
-    public func showDockTab(_ tab: SpotDock.Tab) {
-        dock.tab = tab
-    }
-
     /// Shows the spots of the dock whose name holds this text.
     public func searchDock(_ text: String) {
         dock.query = text
@@ -36,15 +31,9 @@ extension SpotsModel {
         if isSearchingDock != isOn { isSearchingDock = isOn }
     }
 
-    /// Makes the dock from the cards that are not on the grid and the core spots that are off, and keeps its tab and search.
+    /// Makes the dock from the core spots that are off, and keeps its search.
     func refreshDock() {
-        let hidden = cards.filter { !$0.isOnGrid }.map { entry in
-            let command = entry.command
-            if case .fault = command.shipped { return SpotDock.Item(command: command, place: .fix) }
-            return SpotDock.Item(command: command, place: .search)
-        }
-        var next = SpotDock(items: hidden + offSpots)
-        next.tab = dock.tab
+        var next = SpotDock(items: offSpots)
         next.query = dock.query
         if next != dock { dock = next }
     }
@@ -54,7 +43,7 @@ extension SpotsModel {
         let own = Set(((try? PluginFolder(url: folder.url).scan())?.plugins ?? []).map(\.id))
         return folder.coreChoices()
             .filter { !enabled.contains(PluginFolder.coreID(of: $0)) && !own.contains(PluginFolder.coreID(of: $0)) }
-            .map { SpotDock.Item(command: $0, place: .off) }
+            .map { SpotDock.Item(command: $0) }
     }
 
     /// Ends Edit Spots. A panel that closes passes no motion, so that nothing moves during its fade.

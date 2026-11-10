@@ -309,37 +309,17 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertNil(model.resize)
     }
 
-    func testTheDockHoldsTheSpotsThatAreNotOnTheGridAndTheCoreSpotsThatAreOff() throws {
+    func testTheDockHoldsTheCoreSpotsThatAreOffAndNoCardOfThePanel() throws {
         try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("coin.sh"))
         model.setOnGrid(false, for: "d")
 
         model.endEditing()
         model.beginEditing()
+        XCTAssertEqual(model.dock.shown.map(\.id), ["coin", "timer"])
 
-        XCTAssertEqual(model.dock.shown.map(\.id), ["d", "timer"])
-        XCTAssertEqual(model.dock.shown.map(\.place), [.search, .off])
-    }
-
-    func testTheDockFollowsAChangeOfTheGrid() {
-        model.setOnGrid(false, for: "c")
-
-        XCTAssertEqual(model.dock.shown.map(\.id), ["c"])
-
-        model.setOnGrid(true, for: "c")
-
-        XCTAssertEqual(model.dock.shown, [])
-    }
-
-    func testTheDockTakesATabAndASearch() {
-        model.setOnGrid(false, for: "c")
-        model.setOnGrid(false, for: "d")
-
-        model.showDockTab(.off)
-        XCTAssertEqual(model.dock.shown, [])
-
-        model.showDockTab(.all)
-        model.searchDock("c")
-        XCTAssertEqual(model.dock.shown.map(\.id), ["c"])
+        model.searchDock("ti")
+        XCTAssertEqual(model.dock.shown.map(\.id), ["timer"])
     }
 
     func testTypingInTheDockSearchTakesNoEditKeyAndEscapeEndsTheSearch() {
