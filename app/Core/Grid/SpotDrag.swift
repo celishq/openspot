@@ -50,6 +50,14 @@ public struct SpotDrag: Equatable, Sendable {
         return CGPoint(x: rect.midX + translation.width, y: rect.midY + translation.height)
     }
 
+    /// The move that keeps the lifted card inside these bounds, nearest to this move.
+    public func capped(_ translation: CGSize, within bounds: CGRect) -> CGSize {
+        let rect = rect(at: start)
+        let x = min(max(translation.width, bounds.minX - rect.minX), bounds.maxX - rect.maxX)
+        let y = min(max(translation.height, bounds.minY - rect.minY), bounds.maxY - rect.maxY)
+        return CGSize(width: x, height: y)
+    }
+
     /// Whether a release at this point lands on the grid: on its cards, or less than half a row past them.
     public func holds(_ point: CGPoint) -> Bool {
         let rows = layout(at: start).map { $0.row + $0.size.rows }.max() ?? 0

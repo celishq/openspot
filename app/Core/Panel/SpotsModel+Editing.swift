@@ -92,9 +92,9 @@ extension SpotsModel {
         }
     }
 
-    /// Moves the card that the person drags, and lifts it when the drag starts. The other cards make room where a release
-    /// would put it once the pointer has rested there for `dragRest`. A card on the grid lands among the cards on the grid,
-    /// and a hidden card among the hidden cards.
+    /// Moves the card that the person drags, inside the panel's window, and lifts it when the drag starts. The other cards
+    /// make room where a release would put it once the pointer has rested there for `dragRest`. A card on the grid lands
+    /// among the cards on the grid, and a hidden card among the hidden cards.
     public func dragSpot(_ id: String, by translation: CGSize) {
         guard isEditing, query.isEmpty, resize == nil else { return }
         if drag?.id != id {
@@ -109,9 +109,9 @@ extension SpotsModel {
             }
         }
         pointerMove = translation
-        let moved = inGrid(translation)
-        if lift.offset != moved { lift.offset = moved }
         guard let drag else { return }
+        let moved = drag.capped(inGrid(translation), within: windowInGrid)
+        if lift.offset != moved { lift.offset = moved }
         let target = drag.nearest(to: drag.centre(movedBy: moved))
         guard target != drag.place else { return stopDragWait() }
         guard target != dragTarget else { return }
@@ -126,13 +126,13 @@ extension SpotsModel {
         }
     }
 
-    /// Ends the drag: the card lands at the place nearest the pointer, and the order is saved. A release off the grid, or
-    /// where the card started, puts every card back.
+    /// Ends the drag: the card lands at the place nearest the lifted card, and the order is saved. A release with the
+    /// pointer off the grid, or where the card started, puts every card back.
     public func dropSpot(by translation: CGSize) {
         guard let drag else { return }
-        let centre = drag.centre(movedBy: inGrid(translation))
-        let place = drag.nearest(to: centre)
-        guard drag.holds(centre), place != drag.start else { return cancelDrag() }
+        let move = inGrid(translation)
+        let place = drag.nearest(to: drag.centre(movedBy: drag.capped(move, within: windowInGrid)))
+        guard drag.holds(drag.centre(movedBy: move)), place != drag.start else { return cancelDrag() }
         stopDragWait()
         pointerMove = nil
         var order = dragged(cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id)
@@ -229,6 +229,13 @@ extension SpotsModel {
     /// The pointer's move as a move over the grid, with the scroll since the press added.
     private func inGrid(_ translation: CGSize) -> CGSize {
         CGSize(width: translation.width, height: translation.height + gridScroll - scrollAtPress)
+    }
+
+    /// The panel's window in the grid's places, a padding inside its edges, where a lifted card stays.
+    private var windowInGrid: CGRect {
+        let origin = SpotTokens.gridOrigin(scrollOffset: gridScroll)
+        let window = CGRect(x: -origin.x, y: -origin.y, width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
+        return window.insetBy(dx: SpotTokens.padding, dy: SpotTokens.padding)
     }
 
     /// These cards with the dragged card moved to its place.

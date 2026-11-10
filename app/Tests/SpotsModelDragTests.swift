@@ -177,6 +177,20 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.lift.offset, .zero)
     }
 
+    func testADraggedCardStaysAPaddingInsideTheWindow() {
+        let rect = model.placements[0].rect
+        let inset = SpotTokens.padding
+
+        model.dragSpot("a", by: CGSize(width: -1000, height: -1000))
+        XCTAssertEqual(model.lift.offset, CGSize(width: inset - SpotTokens.halo - rect.minX, height: inset - SpotTokens.gridTop - rect.minY))
+
+        model.dragSpot("a", by: CGSize(width: 1000, height: 1000))
+        XCTAssertEqual(model.lift.offset, CGSize(
+            width: SpotTokens.panelWidth - inset - SpotTokens.halo - rect.maxX,
+            height: SpotTokens.panelHeight - inset - SpotTokens.gridTop - rect.maxY
+        ))
+    }
+
     func testEscapePutsTheCardsBackAndKeepsEditSpots() {
         let translation = move("d", to: leftHalf(of: "c"))
         model.dragSpot("d", by: translation)
