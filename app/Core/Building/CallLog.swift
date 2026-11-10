@@ -41,7 +41,8 @@ public final class CallLog: Sendable {
             }
             let head = "\(CallLog.mark)\(started.formatted(.iso8601)) · \(arguments.joined(separator: " ")) · \(ending) · \(String(format: "%.2f", seconds)) s\n"
             let share = limit / 4
-            let parts = [("stdin", input ?? ""), ("stdout", frames.joined(separator: "---\n")), ("stderr", errors)]
+            let printed = frames[CallLog.firstShown(of: frames, within: share)...].joined(separator: CallLog.frameSeparator)
+            let parts = [("stdin", input ?? ""), ("stdout", printed), ("stderr", errors)]
                 .filter { !$0.1.isEmpty }
                 .map { "\($0.0):\n\(Self.tail(of: $0.1, within: share))" }
             return head + parts.map { $0.hasSuffix("\n") ? $0 : $0 + "\n" }.joined() + "\n"
@@ -55,6 +56,7 @@ public final class CallLog: Sendable {
 
     /// The start of each record in a file.
     public static let mark = "== "
+    private static let frameSeparator = "---\n"
 
     public let folder: URL
     private let limit: Int
@@ -70,9 +72,36 @@ public final class CallLog: Sendable {
         queue.async { self.append(record) }
     }
 
-    /// The records of one spot, the oldest first, after each write that came before.
+    /// The records of one spot within the limit, the oldest first, after each write that came before.
     public func text(of id: String) -> String {
-        queue.sync { (try? String(contentsOf: file(of: id), encoding: .utf8)) ?? "" }
+        queue.sync { (try? Data(contentsOf: file(of: id))).map { String(decoding: Self.newest($0, within: limit), as: UTF8.self) } ?? "" }
+    }
+
+    /// Adds a frame that a call printed, and drops each older frame that the record of the call would not show.
+    public func add(_ frame: String, to frames: inout [String]) {
+        frames.append(frame)
+        let first = Self.firstShown(of: frames, within: limit / 4)
+        if first > 0 { frames.removeFirst(first) }
+    }
+
+    /// The index of the first frame that the end of the printed text shows, when it shows this many bytes.
+    private static func firstShown(of frames: [String], within share: Int) -> Int {
+        var first = frames.count
+        var bytes = 0
+        while first > 0, bytes < share + frameSeparator.utf8.count {
+            first -= 1
+            bytes += frames[first].utf8.count + frameSeparator.utf8.count
+        }
+        return first
+    }
+
+    /// The newest whole records of a log that fit in the limit, or the last record alone when it does not fit.
+    private static func newest(_ log: Data, within limit: Int) -> Data {
+        guard log.count > limit else { return log }
+        let start = Data("\n\(mark)".utf8)
+        let earliest = log.startIndex + log.count - limit - 1
+        guard let cut = log.range(of: start, in: earliest..<log.endIndex) ?? log.range(of: start, options: .backwards) else { return log }
+        return log[(cut.lowerBound + 1)...]
     }
 
     /// Takes away the records of one spot.
@@ -84,14 +113,21 @@ public final class CallLog: Sendable {
         folder.appendingPathComponent("\(id).log")
     }
 
+    /// Adds a record at the end of the file. A file that passes twice the limit keeps only its newest records within it.
     private func append(_ record: Record) {
         let file = file(of: record.spot)
-        try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-        var text = ((try? String(contentsOf: file, encoding: .utf8)) ?? "") + record.text(within: limit)
-        while text.utf8.count > limit, let next = text.dropFirst().range(of: "\n\(Self.mark)") {
-            text = String(text[text.index(after: next.lowerBound)...])
+        let text = Data(record.text(within: limit).utf8)
+        guard let handle = try? FileHandle(forWritingTo: file) else {
+            try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try? text.write(to: file)
+            return
         }
-        try? text.write(to: file, atomically: true, encoding: .utf8)
+        defer { try? handle.close() }
+        guard let size = try? handle.seekToEnd(), Int(size) + text.count > 2 * limit, let old = try? Data(contentsOf: file) else {
+            try? handle.write(contentsOf: text)
+            return
+        }
+        try? Self.newest(old + text, within: limit).write(to: file, options: .atomic)
     }
 }
 
