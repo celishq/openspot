@@ -64,7 +64,7 @@ case "$1" in
     for id in $(look_ids); do printf 'option=%s:%s\n' "$id" "$(esc "$(look_title "$id")")"; done
     printf 'value=%s\n\n' "$chosen"
     printf 'hotkey=key\ntitle=Shortcut\nvalue=%s\n\n' "$key"
-    printf 'button=make\ntitle=Make with AI\nalign=center\nshortcut=cmd+n\n\n'
+    printf 'button=make\ntitle=Make your own with AI\nalign=center\nshortcut=cmd+n\n\n'
     printf 'button=paste\ntitle=Paste a look from an AI chat\nshortcut=cmd+shift+v\n\n'
     if [ -f "$mine/$chosen.look" ]; then
       printf 'button=rename\ntitle=Rename %s\nshortcut=cmd+r\nform=true\n\n' "$(esc "$(look_title "$chosen")")"
