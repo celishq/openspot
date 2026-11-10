@@ -66,8 +66,7 @@ struct SpotGridGlass: View {
             .animation(SpotMotion.press, value: isPress && card.isPressed)
             .scaleEffect(isShown ? 1 : SpotMotion.hiddenScale)
             .scaleEffect(card.isLifted ? SpotMotion.liftedScale : 1)
-            .modifier(card.motion)
-            .modifier(SpotLiftOffset(lift: card.isLifted ? lift : nil))
+            .modifier(SpotCardPlace(motion: card.motion, lift: card.isLifted ? lift : nil))
             .opacity(card.isCovered || (isPress && !card.isPressed) ? 0 : 1)
     }
 }

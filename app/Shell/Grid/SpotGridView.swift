@@ -66,8 +66,7 @@ struct SpotGridView: View {
                     isDragging: drag != nil
                 ))
                 .modifier(SpotLiftedCard(isLifted: card.isLifted, isSolid: card.isHeld, size: card.size))
-                .modifier(card.motion)
-                .modifier(SpotLiftOffset(lift: card.isLifted ? model.lift : nil))
+                .modifier(SpotCardPlace(motion: card.motion, lift: card.isLifted ? model.lift : nil))
                 .zIndex(card.isHeld ? 1 : 0)
                 .contextMenu { spotMenu(of: entry) }
                 .opacity(entry.id == openID ? 0.001 : 1)
@@ -129,10 +128,14 @@ struct SpotGridView: View {
     }
 
     /// Moves a card in Edit Spots: it follows the pointer, the other cards make room, and a release puts it in that room. It
-    /// runs beside the card's press and tap.
+    /// runs beside the card's press and tap. Its moves carry no speed, so a release lands the card from rest.
     private func moveGesture(of entry: SpotsModel.Entry) -> some Gesture {
         DragGesture(coordinateSpace: .named(SpotsView.panelSpace))
-            .onChanged { model.dragSpot(entry.id, by: $0.translation) }
+            .onChanged { value in
+                var still = Transaction()
+                still.tracksVelocity = false
+                withTransaction(still) { model.dragSpot(entry.id, by: value.translation) }
+            }
             .onEnded { model.dropSpot(by: $0.translation) }
     }
 }
