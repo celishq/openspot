@@ -56,8 +56,8 @@ extension SpotsModel {
         }
     }
 
-    /// Runs a pick of a row of a float, which stays open (W8). A pick that asks with a form or records a key opens the spot
-    /// in the panel.
+    /// Runs a pick of a row of a float, which stays open with the picked row selected (W8). A pick that asks with a form or
+    /// records a key opens the spot in the panel.
     public func pickInFloat(_ item: SpotItem, of id: String) {
         guard let sheet = sheets[id] else { return }
         if sheet.command.pickForm != nil || item.shortcut != nil {
@@ -66,9 +66,27 @@ extension SpotsModel {
         }
         if sheet.command.keepsRecent {
             sheet.list.remember(item)
+            sheet.list.select(run: item.run)
             files.remember(sheet.list.recent, of: id)
         }
         sheet.pick(item)
+    }
+
+    /// Whether a float takes these dragged files, as its card would (W9).
+    public func floatAccepts(_ paths: [String], of id: String) -> Bool {
+        runs.floating.contains(id) && !SharedSpot.isFile(paths) && sheets[id]?.command.accepts(paths) == true
+    }
+
+    /// Takes a drop on a float as a drop on its card, and leaves the panel and the float as they are (W9). Returns false when
+    /// the float does not take these files.
+    public func dropOnFloat(_ paths: [String], of id: String) -> Bool {
+        guard floatAccepts(paths, of: id) else { return false }
+        return sheets[id]?.drop(paths) == true
+    }
+
+    /// Sends a change, or with no value a press, of a slot of a row of a float (U9).
+    public func slotInFloat(_ slot: String, of item: SpotItem, in id: String, to value: String?) {
+        if let value { sheets[id]?.set(slot: slot, of: item, to: value) } else { sheets[id]?.press(slot: slot, of: item) }
     }
 
     /// Runs a press of a float's card, as a press on the grid does, and leaves the panel as it is.

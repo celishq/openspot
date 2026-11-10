@@ -123,7 +123,7 @@ final class SpotsPanel: NSPanel {
         return modifiers
     }
 
-    private static func actionKey(of event: NSEvent) -> ActionKey? {
+    static func actionKey(of event: NSEvent) -> ActionKey? {
         let isCommand = event.modifierFlags.contains(.command)
         let isShift = event.modifierFlags.contains(.shift)
         let name: String

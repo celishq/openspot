@@ -11,6 +11,14 @@ final class PanelPlaceTests: XCTestCase {
         PanelPlace(screens: [main, left])
     }
 
+    func testAFloatCentresOnThePointerAndStaysWholeOnItsScreen() {
+        let float = CGSize(width: 289, height: 200)
+
+        XCTAssertEqual(place.origin(of: float, under: CGPoint(x: 700, y: 500)), CGPoint(x: 555, y: 400))
+        XCTAssertEqual(place.origin(of: float, under: CGPoint(x: 1490, y: 960)), CGPoint(x: 1207, y: 738))
+        XCTAssertEqual(place.origin(of: float, under: CGPoint(x: -2550, y: -280)), CGPoint(x: -2560, y: -288))
+    }
+
     func testThePanelSitsAsACentredWindowSits() {
         XCTAssertEqual(PanelPlace(screens: [main]).origin(of: size, window: nil, pointer: CGPoint(x: 10, y: 10)), CGPoint(x: 428, y: 185))
     }

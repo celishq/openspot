@@ -233,7 +233,7 @@ public final class SpotRun {
             ? Shape(rows: rows.drawing.lineCount(rows: rows.shown.count) * rows.drawing.columns, perLine: rows.drawing.columns)
             : Shape(rows: rows.perLine == 1 ? rows.spans : rows.shown.count, perLine: rows.perLine)
         if next != shape { shape = next }
-        let waits = isOpen && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
+        let waits = showsSheet && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
         if waits != awaitsFirstAnswer { awaitsFirstAnswer = waits }
     }
 

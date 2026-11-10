@@ -37,6 +37,8 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var showListener: NSObjectProtocol?
     private var isLaunched = false
     private var openedAtLaunch: [URL] = []
+    /// The window of each float, by the ID of its spot.
+    var floats: [String: SpotFloatPanel] = [:]
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)

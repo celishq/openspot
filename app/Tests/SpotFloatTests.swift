@@ -93,6 +93,7 @@ final class SpotFloatTests: XCTestCase {
 
         try await wait("the pick") { host.confirms == ["Opened b"] }
         XCTAssertEqual(model.runs.floating, ["list"])
+        XCTAssertEqual(model.sheets["list"]?.list.selectedItem?.run, "b")
 
         XCTAssertTrue(model.handleFloatKey(ActionKey(name: "escape"), in: "list"))
 
@@ -136,6 +137,29 @@ final class SpotFloatTests: XCTestCase {
 
         XCTAssertNil(model.sheets["note"]?.panel)
         XCTAssertEqual(host.landings, ["note"])
+    }
+
+    func testADropOnAFloatGoesToItsScriptAndLeavesThePanel() async throws {
+        try script("shelf", header: "read=sheet\ndrop=*", """
+        case "$1" in
+          read) printf 'row=a\\n' ;;
+          drop) shift; printf 'toast=Kept %s\\n' "$*" ;;
+        esac
+        """)
+        model.reload()
+        model.press(try key("shelf"))
+        try await wait("the float") { model.sheets["shelf"]?.list.shown.count == 1 }
+
+        let files = ["a.png", "b.txt", "c.spot"].map { folder.appendingPathComponent($0).path }
+        try files.forEach { try Data().write(to: URL(fileURLWithPath: $0)) }
+
+        XCTAssertTrue(model.floatAccepts([files[0]], of: "shelf"))
+        XCTAssertFalse(model.floatAccepts([files[2]], of: "shelf"))
+        XCTAssertTrue(model.dropOnFloat(Array(files.prefix(2)), of: "shelf"))
+
+        try await wait("the drop") { host.confirms == ["Kept \(files[0]) \(files[1])"] }
+        XCTAssertEqual(host.shows, 0)
+        XCTAssertNil(model.openList)
     }
 
     func testAFloatOfACardWithNoReadRunsNothingUntilItsCardIsPressed() async throws {
