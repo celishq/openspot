@@ -100,6 +100,10 @@ enum SpotCommandLine {
             SpotScreen.run { try SpotRecording.stop() }
         case .screenRecordStatus:
             SpotScreen.run { try SpotRecording.status() }
+        case .calendarEvents(let days, let calendars):
+            finish { try await SpotAgendaStore.agenda().events(days: days, calendars: calendars) }
+        case .calendarCalendars:
+            finish { try await SpotAgendaStore.agenda().calendars() }
         }
     }
 
@@ -212,13 +216,14 @@ enum SpotCommandLine {
         }
     }
 
-    /// Prints what the work returns and exits. A failure goes to stderr, with exit code 1.
+    /// Prints what the work returns and exits. A failure goes to stderr, with exit code 1, and the link to its fix on stdout.
     private static func finish(_ work: @escaping @Sendable () async throws -> String) -> Never {
         Task {
             do {
                 print(try await work(), terminator: "")
                 exit(0)
             } catch {
+                if case PluginError.failedWithFix(_, _, let link) = error { print("link=\(link.absoluteString)") }
                 FileHandle.standardError.write(Data("\((error as? PluginError)?.reason ?? error.localizedDescription)\n".utf8))
                 exit(1)
             }

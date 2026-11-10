@@ -47,6 +47,9 @@ public enum CommandLineCall: Equatable, Sendable {
     case screenRecordStart(ScreenCapture)
     case screenRecordStop
     case screenRecordStatus
+    /// Prints the events that have not ended through the end of a day, in the calendars with these ids or in all (E1).
+    case calendarEvents(days: Int, calendars: [String])
+    case calendarCalendars
     /// Runs as the helper process of a capability. A script never makes this call, so the usage does not list it.
     case helper(String)
     case help
@@ -94,6 +97,10 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  --events writes each pointer move, click and key as a JSON line.
     openspot screen record stop                  Ends the recording and prints each file, the video first.
     openspot screen record status                Prints state=recording with its files and seconds, or state=idle.
+    openspot calendar events [--days n] [--calendar id]...
+                                                 Prints each event that has not ended through the end of day n as a
+                                                 row. Day 1, the default, is today. --calendar takes a calendar's id.
+    openspot calendar calendars                  Prints each calendar as a row.
 
     """
 
@@ -167,6 +174,10 @@ public enum CommandLineCall: Equatable, Sendable {
                 return
             }
             self = .windowMove(move)
+        case ("calendar", "events"):
+            self = Self.listing(Array(rest.dropFirst()), filter: "--calendar").map { .calendarEvents(days: $0.days, calendars: $0.ids) }
+                ?? .unknown(arguments.joined(separator: " "))
+        case ("calendar", "calendars") where rest.count == 1: self = .calendarCalendars
         case ("translate", _):
             guard let options = Self.options(rest) else {
                 self = .unknown(arguments.joined(separator: " "))
@@ -215,6 +226,26 @@ public enum CommandLineCall: Equatable, Sendable {
         guard let key = words.first, !key.isEmpty, !key.hasPrefix("-"), words.count <= (sets ? 2 : 1) else { return nil }
         guard let spot else { return .refused("`openspot setting` needs a spot. Run it from a spot, or name one with `--spot <id>`.") }
         return sets ? .settingSet(spot: spot, key: key, value: words.dropFirst().first) : .settingGet(spot: spot, key: key)
+    }
+
+    /// Reads `[--days n]` and a filter flag with an id, which can repeat, or returns nil for anything else. Day 1 is today.
+    private static func listing(_ words: [String], filter: String) -> (days: Int, ids: [String])? {
+        var days = 1
+        var ids: [String] = []
+        var index = 0
+        while index < words.count {
+            guard index + 1 < words.count else { return nil }
+            let value = words[index + 1]
+            switch words[index] {
+            case "--days":
+                guard let number = Int(value), number > 0 else { return nil }
+                days = number
+            case filter: ids.append(value)
+            default: return nil
+            }
+            index += 2
+        }
+        return (days, ids)
     }
 
     /// Reads `--from` and `--to`, each with a value. Returns nil for anything else.

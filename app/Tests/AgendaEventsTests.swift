@@ -1,0 +1,209 @@
+import XCTest
+@testable import OpenspotCore
+
+/// Proves `openspot calendar events` and `calendars` through `Agenda`, with a fake store in place of EventKit.
+final class AgendaEventsTests: XCTestCase {
+    private let berlin = TimeZone(identifier: "Europe/Berlin")!
+    private let work = AgendaList(id: "A8E2", title: "Work", account: "iCloud", color: "#1BADF8")
+
+    private var clock: Calendar {
+        var clock = Calendar(identifier: .gregorian)
+        clock.timeZone = berlin
+        return clock
+    }
+
+    /// Tuesday 10 November 2026 at the hour and minute in Berlin, or on a later day.
+    private func at(_ hour: Int, _ minute: Int = 0, day: Int = 10) -> Date {
+        clock.date(from: DateComponents(year: 2026, month: 11, day: day, hour: hour, minute: minute))!
+    }
+
+    private func event(_ id: String, _ title: String, _ start: Date, _ end: Date, allDay: Bool = false, url: String? = nil, notes: String? = nil) -> AgendaEvent {
+        AgendaEvent(id: id, title: title, start: start, end: end, isAllDay: allDay, calendar: work, location: nil, url: url, notes: notes)
+    }
+
+    private func agenda(_ store: FakeAgendaStore, isRead: Bool = true) -> Agenda {
+        Agenda(store: store, now: at(9, 40), clock: clock, locale: Locale(identifier: "en_GB"), isRead: isRead)
+    }
+
+    private func rows(_ text: String) -> [TextBlock] {
+        TextBlock.blocks(in: text)
+    }
+
+    func testTodayHoldsEachEventThatHasNotEndedInTheOrderOfItsStart() async throws {
+        let store = FakeAgendaStore(events: [
+            event("lunch", "Lunch", at(13), at(14, 30)),
+            event("early", "Early call", at(8), at(9)),
+            event("standup", "Standup", at(9, 30), at(9, 45)),
+            event("tomorrow", "Review", at(10, day: 11), at(11, day: 11))
+        ])
+
+        let rows = rows(try await agenda(store).events(days: 1, calendars: []))
+
+        XCTAssertEqual(rows.map { $0.value("title") }, ["Standup", "Lunch"])
+        XCTAssertEqual(rows[0].value("detail"), "09:30–09:45 · Work")
+        XCTAssertEqual(rows[0].value("tone"), "on")
+        XCTAssertNil(rows[1].value("tone"))
+        XCTAssertEqual(rows[1].value("start"), "2026-11-10T13:00:00+01:00")
+        XCTAssertEqual(rows[1].value("end"), "2026-11-10T14:30:00+01:00")
+        XCTAssertEqual(rows[1].value("calendar"), "A8E2")
+        XCTAssertEqual(rows[1].value("color"), "#1BADF8")
+        XCTAssertEqual(rows[1].value("icon"), "calendar")
+    }
+
+    func testTwoDaysAddTomorrowAndNameItsDay() async throws {
+        let store = FakeAgendaStore(events: [
+            event("tomorrow", "Review", at(10, day: 11), at(11, day: 11)),
+            event("later", "Trip", at(10, day: 12), at(11, day: 12))
+        ])
+
+        let rows = rows(try await agenda(store).events(days: 2, calendars: []))
+
+        XCTAssertEqual(rows.map { $0.value("title") }, ["Review"])
+        XCTAssertEqual(rows[0].value("detail"), "Tomorrow 10:00–11:00 · Work")
+        XCTAssertEqual(store.ranges.last?.end, at(0, day: 12))
+    }
+
+    func testAnEventOfWholeDaysSaysSo() async throws {
+        let store = FakeAgendaStore(events: [event("holiday", "Holiday", at(0), at(0, day: 11), allDay: true)])
+
+        let text = try await agenda(store).events(days: 1, calendars: [])
+        let row = try XCTUnwrap(rows(text).first)
+
+        XCTAssertEqual(row.value("detail"), "All day · Work")
+        XCTAssertEqual(row.value("allday"), "true")
+        XCTAssertNil(row.value("tone"))
+    }
+
+    func testTheMeetingComesFromTheNotesAndNotFromAnotherAddress() async throws {
+        let store = FakeAgendaStore(events: [
+            event("call", "Design review", at(10), at(11), url: "https://example.com/doc", notes: "Agenda\nJoin: https://us02web.zoom.us/j/123?pwd=x\nThanks"),
+            event("doc", "Read the doc", at(12), at(13), url: "https://example.com/doc")
+        ])
+
+        let rows = rows(try await agenda(store).events(days: 1, calendars: []))
+
+        XCTAssertEqual(rows[0].value("meeting"), "https://us02web.zoom.us/j/123?pwd=x")
+        XCTAssertEqual(rows[0].value("icon"), "video")
+        XCTAssertNil(rows[1].value("meeting"))
+    }
+
+    func testATitleWithALineBreakStaysOneValue() async throws {
+        let store = FakeAgendaStore(events: [event("plan", "Plan\nreview", at(10), at(11))])
+
+        let text = try await agenda(store).events(days: 1, calendars: [])
+
+        XCTAssertTrue(text.contains("title=Plan\\nreview\n"), text)
+        XCTAssertEqual(rows(text).count, 1)
+    }
+
+    func testEachTimeOfARepeatingEventHasItsOwnId() async throws {
+        let store = FakeAgendaStore(events: [
+            event("daily", "Standup", at(10), at(10, 15)),
+            event("daily", "Standup", at(10, day: 11), at(10, 15, day: 11))
+        ])
+
+        let ids = rows(try await agenda(store).events(days: 2, calendars: [])).compactMap { $0.value("row") }
+
+        XCTAssertEqual(ids.count, 2)
+        XCTAssertEqual(Set(ids).count, 2)
+        XCTAssertTrue(ids.allSatisfy { $0.hasPrefix("event:daily") }, "\(ids)")
+    }
+
+    func testTheCalendarsNarrowTheEvents() async throws {
+        let store = FakeAgendaStore(events: [])
+
+        _ = try await agenda(store).events(days: 1, calendars: ["A8E2", "B1"])
+
+        XCTAssertEqual(store.ranges.last?.calendars, ["A8E2", "B1"])
+        XCTAssertEqual(store.ranges.last?.start, at(9, 40))
+    }
+
+    func testAReadThatHasNotAskedSaysUnaskedAndDoesNotAsk() async throws {
+        let store = FakeAgendaStore(events: [event("standup", "Standup", at(10), at(11))], access: .unasked)
+
+        let text = try await agenda(store, isRead: true).events(days: 1, calendars: [])
+
+        XCTAssertEqual(text, "status=unasked\n")
+        XCTAssertEqual(store.asked, [])
+    }
+
+    func testACallOutsideAReadAsksFirstAndThenAnswers() async throws {
+        let store = FakeAgendaStore(events: [event("standup", "Standup", at(10), at(11))], access: .unasked, answer: .allowed)
+
+        let rows = rows(try await agenda(store, isRead: false).events(days: 1, calendars: []))
+
+        XCTAssertEqual(store.asked, [.event])
+        XCTAssertEqual(rows.map { $0.value("title") }, ["Standup"])
+    }
+
+    func testARefusalFailsWithThePaneOfCalendars() async throws {
+        for (access, answer) in [(AgendaAccess.denied, AgendaAccess.denied), (.unasked, .denied)] {
+            let store = FakeAgendaStore(events: [event("standup", "Standup", at(10), at(11))], access: access, answer: answer)
+
+            do {
+                _ = try await agenda(store, isRead: false).events(days: 1, calendars: [])
+                XCTFail("a refusal printed a list")
+            } catch PluginError.failedWithFix(1, let message, let link) {
+                XCTAssertEqual(message, "Openspot has no access to your calendars. Allow Openspot in Privacy & Security › Calendars, then try again.")
+                XCTAssertEqual(link.absoluteString, "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars")
+            }
+        }
+    }
+
+    func testTheCalendarsAreRowsWhoseIdNarrowsTheEvents() async throws {
+        let store = FakeAgendaStore(events: [], lists: [work, AgendaList(id: "B1", title: "Home", account: "On My Mac", color: nil)])
+
+        let rows = rows(try await agenda(store).calendars())
+
+        XCTAssertEqual(rows.map { $0.value("row") }, ["A8E2", "B1"])
+        XCTAssertEqual(rows[0].value("title"), "Work")
+        XCTAssertEqual(rows[0].value("detail"), "iCloud")
+        XCTAssertEqual(rows[0].value("color"), "#1BADF8")
+        XCTAssertNil(rows[1].value("color"))
+        XCTAssertEqual(store.listed, [.event])
+    }
+}
+
+/// A store of events in memory that answers a range as EventKit does: each event that overlaps it.
+final class FakeAgendaStore: AgendaStore {
+    struct Range: Equatable {
+        let start: Date
+        let end: Date
+        let calendars: [String]
+    }
+
+    private let allEvents: [AgendaEvent]
+    private let allLists: [AgendaList]
+    private(set) var access: AgendaAccess
+    private let answer: AgendaAccess
+    private(set) var asked: [AgendaKind] = []
+    private(set) var ranges: [Range] = []
+    private(set) var listed: [AgendaKind] = []
+
+    init(events: [AgendaEvent], lists: [AgendaList] = [], access: AgendaAccess = .allowed, answer: AgendaAccess = .allowed) {
+        allEvents = events
+        allLists = lists
+        self.access = access
+        self.answer = answer
+    }
+
+    func access(to kind: AgendaKind) -> AgendaAccess {
+        access
+    }
+
+    func ask(for kind: AgendaKind) async -> AgendaAccess {
+        asked.append(kind)
+        access = answer
+        return answer
+    }
+
+    func events(from start: Date, to end: Date, in calendars: [String]) -> [AgendaEvent] {
+        ranges.append(Range(start: start, end: end, calendars: calendars))
+        return allEvents.filter { $0.start < end && $0.end > start }
+    }
+
+    func lists(of kind: AgendaKind) -> [AgendaList] {
+        listed.append(kind)
+        return allLists
+    }
+}

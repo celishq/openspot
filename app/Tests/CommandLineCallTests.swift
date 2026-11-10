@@ -161,6 +161,23 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertTrue(CommandLineCall.usage.contains("openspot screen record start"))
     }
 
+    func testACalendarCallReadsItsDaysAndCalendarsAndRunsInARead() {
+        let read = ["OPENSPOT_REASON": "panel"]
+        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "events"], environment: read), .calendarEvents(days: 1, calendars: []))
+        XCTAssertEqual(
+            CommandLineCall(arguments: ["calendar", "events", "--days", "2", "--calendar", "A8E2", "--calendar", "B1"]),
+            .calendarEvents(days: 2, calendars: ["A8E2", "B1"])
+        )
+        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "calendars"], environment: read), .calendarCalendars)
+        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "events", "--days", "0"]), .unknown("calendar events --days 0"))
+        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "events", "--days"]), .unknown("calendar events --days"))
+        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "events", "today"]), .unknown("calendar events today"))
+        XCTAssertEqual(CommandLineCall(arguments: ["calendar", "calendars", "all"]), .unknown("calendar calendars all"))
+        XCTAssertEqual(CommandLineCall(arguments: ["calendar"]), .unknown("calendar"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot calendar events"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot calendar calendars"))
+    }
+
     func testAnUnknownCallAsksForHelp() {
         XCTAssertEqual(CommandLineCall(arguments: ["paint"]), .unknown("paint"))
         XCTAssertEqual(CommandLineCall(arguments: ["color", "mix"]), .unknown("color mix"))
