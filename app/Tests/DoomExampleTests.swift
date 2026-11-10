@@ -93,8 +93,8 @@ final class DoomExampleTests: SamplePluginsCase {
 
     /// Presses the card once, as the panel does, and returns all that the run printed.
     @MainActor
-    private static func press(_ spot: Spot) async throws -> String {
-        try await SpotRuns().answer(of: spot, .run, limit: 30)
+    private static func press(_ spot: Spot, _ action: SpotAction = .run) async throws -> String {
+        try await SpotRuns().answer(of: spot, action, limit: 30)
     }
 
     private func failure(of spot: Spot) async throws -> String {
@@ -137,16 +137,16 @@ final class DoomExampleTests: SamplePluginsCase {
     }
 
     /// Opens the panel once for each change and once more, each 10 seconds after the last, as a person does, and returns
-    /// the picture that the card of the spot drew after each read, or nil for its default card. Each change runs while the
-    /// panel is closed.
+    /// the picture that the card of the spot drew after each read, or nil for its default card, with the drawing of its
+    /// sheet. Each change runs while the panel is closed.
     @MainActor
-    private static func pictures(plugins: URL, changes: [@Sendable () throws -> Void]) async throws -> [String?] {
+    private static func pictures(plugins: URL, changes: [@Sendable () throws -> Void]) async throws -> [(picture: String?, sheet: [[String]]?)] {
         var time = Date(timeIntervalSince1970: 1000)
         let runs = SpotRuns(now: { time }, stopPause: 0.2, tickPause: .milliseconds(50))
         defer { runs.quit() }
         runs.take(try PluginFolder(url: plugins).scan())
         let sheet = try XCTUnwrap(runs.sheets["doom/doom"])
-        var pictures: [String?] = []
+        var pictures: [(picture: String?, sheet: [[String]]?)] = []
         for change in [{}] + changes {
             try change()
             time += 10
@@ -156,13 +156,8 @@ final class DoomExampleTests: SamplePluginsCase {
                 try await Task.sleep(for: .milliseconds(10))
             }
             runs.panelClosed()
-            let shot = sheet.state.face.parts.first { $0.id == "shot" }
-            if case .image(let path)? = shot?.control {
-                XCTAssertEqual(sheet.state.face.drawing(for: .square), [["shot"]])
-                pictures.append(path)
-            } else {
-                pictures.append(nil)
-            }
+            let drawing = PluginOutput(text: sheet.lastFrame ?? "").layout?.rows
+            pictures.append((sheet.state.face.hasView ? sheet.state.values["picture"]?.last : nil, drawing))
         }
         return pictures
     }
@@ -340,10 +335,26 @@ final class DoomExampleTests: SamplePluginsCase {
                 }
             ])
 
-            XCTAssertEqual(pictures, [nil, first.path, second.path])
+            XCTAssertEqual(pictures.map(\.picture), [nil, first.path, second.path])
+            XCTAssertEqual(pictures.map(\.sheet), [nil, [["screen"], ["play"]], [["screen"], ["play"]]])
             XCTAssertFalse(self.exists("fetched", in: folder))
             XCTAssertFalse(self.exists("compiled", in: folder))
             XCTAssertFalse(self.exists("played", in: folder))
+        }
+    }
+
+    func testThePlayButtonOfTheSheetStartsTheGameAsAPressOfTheCardDoes() async throws {
+        let doom = try doom()
+        try await withPrivateHome { folder in
+            try self.fakeCurl(in: folder)
+            try self.fakeClang(in: folder)
+            try self.gameData(in: folder)
+            try "#!/bin/sh\necho \"$*\" > '\(folder.path)/played'\n".writeScript(to: self.data(in: folder).appendingPathComponent("doom"))
+            try FileManager.default.createDirectory(at: self.data(in: folder).appendingPathComponent("screens"), withIntermediateDirectories: true)
+
+            _ = try await Self.press(doom, .press("play"))
+
+            XCTAssertEqual(self.lines("played", in: folder), ["-iwad \(self.data(in: folder).path)/doom1.wad"])
         }
     }
 

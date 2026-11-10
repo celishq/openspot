@@ -4,6 +4,7 @@
 # detail=Play the first episode of Doom
 # read=panel
 # size=square
+# view=screen.swift
 engine_commit=e257a09527062bfb986b6e5e0780839b6cbd5b71
 engine_sha=26f8f60daa6c6e4d3c01e5eac9fb700d592dede803d13ac848154ff356b2a2e7
 engine_url=https://github.com/ozkl/doomgeneric/archive/$engine_commit.tar.gz
@@ -17,10 +18,10 @@ data=$OPENSPOT_DATA
 
 if [ "$1" = read ]; then
   newest=$(ls -t "$data"/screens/*.png 2>/dev/null | head -n 1)
-  [ -n "$newest" ] && printf 'grid.small=shot\n\npicture=shot\nicon=%s\n' "$newest"
+  [ -n "$newest" ] && printf 'grid=screen\ngrid=play\n\nview=screen\npicture=%s\n\nbutton=play\ntitle=Play\nshortcut=return\n' "$newest"
   exit 0
 fi
-[ "$1" = run ] || exit 0
+[ "$1" = run ] || [ "$1" = play ] || exit 0
 
 layer=$(cd "$(dirname "$0")" && pwd)/doomgeneric_mac.m
 source=$data/doomgeneric-$engine_commit
