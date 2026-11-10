@@ -57,12 +57,9 @@ extension OpenspotApp: SpotsHost {
         NSPasteboard.general.writeObjects([file as NSURL])
     }
 
-    func prepare(_ items: [SpotItem]) async {
+    func prepare(_ items: [SpotItem], glyphs: [String]) async {
+        if !glyphs.isEmpty { SpotItemIcon.bind(glyphs: glyphs) }
         await SpotIconStore.shared.prepare(items)
-    }
-
-    func prepare(glyphs: [String]) {
-        SpotItemIcon.bind(glyphs: glyphs)
     }
 
     func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?, offersLogin: Bool) -> [Spot] {

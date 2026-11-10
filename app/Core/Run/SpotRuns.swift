@@ -15,8 +15,6 @@ public final class SpotRuns {
     @ObservationIgnored public var onReport: (String, SpotRun.Report) -> Void = { _, _ in }
     /// Makes the change that brings a sheet its first parts, so that the shell can move the sheet to its new size.
     @ObservationIgnored public var partsArrival: (String, () -> Void) -> Void = { _, bring in bring() }
-    /// Asks for the pictures of the colour glyphs of a whole list, once for each answer that holds its rows.
-    @ObservationIgnored public var glyphsArrival: ([String]) -> Void = { _ in }
     /// The open of a sheet: its motion waits for its first answer, and what its script prints waits for its motion.
     @ObservationIgnored public let opening: SheetOpening
     /// The time a `read` has to its first frame or its end.
@@ -25,7 +23,7 @@ public final class SpotRuns {
     @ObservationIgnored private let stopPause: TimeInterval
     @ObservationIgnored private let tickPause: Duration
     @ObservationIgnored private let recent: (String) -> [String]
-    @ObservationIgnored private let prepare: ([SpotItem]) async -> Void
+    @ObservationIgnored private let prepare: ([SpotItem], [String]) async -> Void
     private var order: [String] = []
     @ObservationIgnored private var placedByFiles: Set<String> = []
 
@@ -44,7 +42,7 @@ public final class SpotRuns {
         stopPause: TimeInterval = 2,
         tickPause: Duration = .seconds(1),
         recent: @escaping (String) -> [String] = { _ in [] },
-        prepare: @escaping ([SpotItem]) async -> Void = { _ in }
+        prepare: @escaping ([SpotItem], [String]) async -> Void = { _, _ in }
     ) {
         self.readLimit = readLimit
         self.opening = opening

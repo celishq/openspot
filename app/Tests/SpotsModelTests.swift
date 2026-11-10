@@ -22,7 +22,7 @@ final class SpotsModelTests: XCTestCase {
             home: folder,
             defaults: defaults
         )
-        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2, prepare: { await host.prepare($0) }))
+        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2, prepare: { await host.prepare($0, glyphs: $1) }))
         host.model = model
     }
 
@@ -120,7 +120,7 @@ final class SpotsModelTests: XCTestCase {
     func testAListDrawsAheadTheRowsItShowsFirstWithARecentPickOnTop() async throws {
         try script("apps", header: "read=sheet", "for i in $(seq 1 100); do printf 'row=a%s\\ntitle=App %s\\nicon=/Applications/A%s.app\\n\\n' $i $i $i; done")
         let host = TestHost()
-        let ranked = SpotsModel(host: host, files: model.files, runs: SpotRuns(stopPause: 0.2, recent: { _ in ["a50"] }, prepare: { await host.prepare($0) }))
+        let ranked = SpotsModel(host: host, files: model.files, runs: SpotRuns(stopPause: 0.2, recent: { _ in ["a50"] }, prepare: { await host.prepare($0, glyphs: $1) }))
         host.model = ranked
         defer { ranked.quit() }
         ranked.reload()
@@ -453,12 +453,9 @@ private final class TestHost: SpotsHost {
 
     func copy(_ file: URL) {}
 
-    func prepare(_ items: [SpotItem]) async {
+    func prepare(_ items: [SpotItem], glyphs: [String]) async {
         prepared += items
-    }
-
-    func prepare(glyphs: [String]) {
-        glyphLists.append(glyphs)
+        if !glyphs.isEmpty { glyphLists.append(glyphs) }
     }
 
     func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?, offersLogin: Bool) -> [Spot] {

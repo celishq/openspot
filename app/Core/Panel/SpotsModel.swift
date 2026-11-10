@@ -199,10 +199,9 @@ public final class SpotsModel {
         self.files = files
         self.runs = runs ?? SpotRuns(
             recent: { files.recent(of: $0) },
-            prepare: { [unowned host] in await host.prepare($0) }
+            prepare: { [unowned host] in await host.prepare($0, glyphs: $1) }
         )
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
-        self.runs.glyphsArrival = { [unowned host] in host.prepare(glyphs: $0) }
         self.runs.partsArrival = { [weak self] id, bring in
             guard let self else { return bring() }
             bringParts(of: id, bring)

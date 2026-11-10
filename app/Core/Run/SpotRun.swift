@@ -149,7 +149,8 @@ public final class SpotRun {
     @ObservationIgnored public var partsArrival: (() -> Void) -> Void = { $0() }
     private var workPauses = 0
     @ObservationIgnored private let runs: SpotRuns
-    @ObservationIgnored private let prepare: ([SpotItem]) async -> Void
+    /// Makes the pictures of these rows ready ahead of their first frame, with the colour glyphs of the whole list.
+    @ObservationIgnored private let prepare: ([SpotItem], [String]) async -> Void
     @ObservationIgnored private var link: ScriptLink
     @ObservationIgnored private var answered: Date? {
         didSet { settle() }
@@ -165,7 +166,7 @@ public final class SpotRun {
     @ObservationIgnored private var waitingDrops: [[String]] = []
     @ObservationIgnored private var waitingKeys: [String] = []
 
-    init(command: Spot, runs: SpotRuns, recent: [String], prepare: @escaping ([SpotItem]) async -> Void) {
+    init(command: Spot, runs: SpotRuns, recent: [String], prepare: @escaping ([SpotItem], [String]) async -> Void) {
         self.command = command
         self.runs = runs
         self.prepare = prepare
@@ -721,7 +722,7 @@ public final class SpotRun {
             if list.search == .script, !list.query.isEmpty { self.ask() }
             showRunning()
         case .search(let query):
-            await prepare(firstScreen(of: lines.items))
+            await prepare(firstScreen(of: lines.items), [])
             guard query == list.query else { return }
             changeList {
                 $0.take(search: lines.search)
@@ -733,8 +734,7 @@ public final class SpotRun {
         readAgainIfAsked()
         onReport(.frame(frame))
         guard case .read = ask else { return }
-        runs.glyphsArrival(list.all.compactMap(\.glyph))
-        await prepare(firstScreen(of: list.shown))
+        await preparePictures()
         if command.hasSpot, !lines.errors.isEmpty {
             onReport(.failure("\(command.name) sent \(lines.errors.count) items Openspot cannot read."))
         }
@@ -763,8 +763,12 @@ public final class SpotRun {
         }
         onReport(.frame(frame))
         guard !lines.items.isEmpty else { return }
-        runs.glyphsArrival(list.all.compactMap(\.glyph))
-        await prepare(firstScreen(of: list.shown))
+        await preparePictures()
+    }
+
+    /// Makes the pictures of the list ready: the first screen of its rows, and the colour glyphs of all of them.
+    private func preparePictures() async {
+        await prepare(firstScreen(of: list.shown), list.all.compactMap(\.glyph))
     }
 
     /// The first of these rows, as many as the sheet shows before it scrolls. A later row draws its picture when it shows.
