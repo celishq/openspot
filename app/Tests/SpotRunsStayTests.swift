@@ -101,15 +101,16 @@ final class SpotRunsStayTests: SpotRunsCase {
         done
         """)
         let sheet = try sheet()
+        let frames = FrameLog(sheet)
         var isReady = false
         runs.panelOpened()
         sheet.open { isReady = true }
-        try await wait("the early frame") { sheet.lastFrame?.contains("Early") == true }
+        try await wait("the early frame") { frames.last?.contains("Early") == true }
 
         XCTAssertFalse(isReady)
         openGate()
 
-        try await wait("the late frame") { sheet.lastFrame?.contains("Late") == true }
+        try await wait("the late frame") { frames.last?.contains("Late") == true }
         XCTAssertTrue(isReady)
         XCTAssertEqual(sheet.list.shown.map(\.run), ["a"])
     }
@@ -543,6 +544,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         done
         """)
         let sheet = try sheet()
+        let frames = FrameLog(sheet)
         runs.panelOpened()
         sheet.open {}
         try await wait("the first rows") { sheet.list.search == .script && sheet.list.shown.count == 1 }
@@ -554,7 +556,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the newer answer") { sheet.list.shown.map(\.run) == ["n"] }
         XCTAssertTrue(exists("stopped"))
         openGate()
-        try await wait("the frame after the late answer") { sheet.lastFrame?.contains("Done") == true }
+        try await wait("the frame after the late answer") { frames.last?.contains("Done") == true }
         XCTAssertEqual(sheet.list.shown.map(\.run), ["n"])
     }
 

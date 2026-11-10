@@ -33,8 +33,10 @@ public protocol SpotsHost: AnyObject {
     var pastedPaths: [String] { get }
     /// Puts a file on the clipboard.
     func copy(_ file: URL)
-    /// Draws the icons of these rows ahead of their first frame.
-    func prepare(_ items: [SpotItem]) async
+    /// Makes a list's pictures ready: draws the icons of these rows ahead of their first frame, and draws the colour
+    /// glyphs of the whole list once, so that its rows find their pictures with no drawing in the app. No glyphs leave the
+    /// glyphs drawn before as they are.
+    func prepare(_ items: [SpotItem], glyphs: [String]) async
     /// The spots that ship with the app, as its bundle gives them.
     func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?, offersLogin: Bool) -> [Spot]
     /// Makes a change on a motion, or with none at all, and calls `completion` when its motion has ended.

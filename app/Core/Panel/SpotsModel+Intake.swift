@@ -9,6 +9,11 @@ extension SpotsModel {
         return isOpenToDrops && !SharedSpot.isFile(paths) && sheets[id]?.command.accepts(paths) == true
     }
 
+    /// The card whose place on the grid holds this point of the grid. A point in a gap has none.
+    public func card(at point: CGPoint) -> String? {
+        placements.first { $0.rect.contains(point) }.map { visible[$0.index].id }
+    }
+
     /// Whether a card shows that it takes the drag in progress.
     public func takesDrag(_ id: String) -> Bool {
         openList == nil && runs.takesDrag(id)

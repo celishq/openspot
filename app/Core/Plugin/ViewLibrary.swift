@@ -74,15 +74,9 @@ public struct ViewLibrary: Sendable {
         self.tools = tools
     }
 
-    /// The cache of the app: in the folder of a Debug build or of `OPENSPOT_CONFIG`, else in the person's Caches.
-    public static func standard(
-        environment: [String: String] = ProcessInfo.processInfo.environment,
-        home: URL = FileManager.default.homeDirectoryForCurrentUser,
-        devState: String? = Bundle.main.object(forInfoDictionaryKey: "OpenspotDevState") as? String
-    ) -> ViewLibrary {
-        let own = [environment["OPENSPOT_CONFIG"], devState].compactMap { $0 }.first { !$0.isEmpty }
-        let root = own.map { URL(fileURLWithPath: $0, isDirectory: true) } ?? home.appendingPathComponent("Library/Caches/openspot", isDirectory: true)
-        return ViewLibrary(cache: root.appendingPathComponent("views", isDirectory: true))
+    /// The libraries in the cache folder of the app.
+    public static func standard(cache: URL = AppCache.folder()) -> ViewLibrary {
+        ViewLibrary(cache: cache.appendingPathComponent("views", isDirectory: true))
     }
 
     /// The path of the library that travels beside a view's source, relative when the source path is.

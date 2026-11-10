@@ -15,13 +15,14 @@ final class SpotsModelTests: XCTestCase {
         try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
         suite = "openspot-panel-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        host = TestHost()
+        let host = TestHost()
+        self.host = host
         let files = SpotFiles(
             environment: ["OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
             home: folder,
             defaults: defaults
         )
-        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
+        model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2, prepare: { await host.prepare($0, glyphs: $1) }))
         host.model = model
     }
 
@@ -58,6 +59,32 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the open list") { model.openList == "list" && model.openItems?.shown.count == 2 }
     }
 
+    func testAPointOfTheGridFindsTheCardWhosePlaceHoldsIt() throws {
+        try script("one", header: "title=One", "")
+        try script("two", header: "title=Two", "")
+        model.reload()
+        let first = try XCTUnwrap(model.placements.first)
+        let second = try XCTUnwrap(model.placements.dropFirst().first)
+        let gap = CGPoint(x: first.rect.maxX + SpotTokens.columnGap / 2, y: first.rect.midY)
+
+        XCTAssertEqual(model.card(at: CGPoint(x: first.rect.midX, y: first.rect.midY)), model.visible[first.index].id)
+        XCTAssertEqual(model.card(at: CGPoint(x: second.rect.midX, y: second.rect.midY)), model.visible[second.index].id)
+        XCTAssertNil(model.card(at: gap))
+        XCTAssertNil(model.card(at: CGPoint(x: -1, y: -1)))
+    }
+
+    func testAnOpenFindsAScriptMadeExecutableSinceTheOpenBefore() throws {
+        let late = plugins.appendingPathComponent("late.sh")
+        try "#!/bin/sh\n# title=Late\n".write(to: late, atomically: false, encoding: .utf8)
+        model.panelWillShow(holding: [])
+        XCTAssertFalse(model.entries.contains { $0.id == "late" })
+
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: late.path)
+        model.panelWillShow(holding: [])
+
+        XCTAssertTrue(model.entries.contains { $0.id == "late" })
+    }
+
     func testAPressOfAListOpensItsSheetAndAStepBackClosesIt() async throws {
         try await openList()
 
@@ -75,6 +102,46 @@ final class SpotsModelTests: XCTestCase {
 
         XCTAssertEqual(model.openItems?.shown.map(\.run), ["b"])
         XCTAssertEqual(model.query, "")
+    }
+
+    func testAListDrawsAheadOnlyThePicturesOfTheRowsOnItsFirstScreen() async throws {
+        try script("apps", header: "read=sheet", "for i in $(seq 1 100); do printf 'row=a%s\\ntitle=App %s\\nicon=/Applications/A%s.app\\n\\n' $i $i $i; done")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("apps")
+        try await wait("the rows and their pictures") { model.openItems?.shown.count == 100 && !host.prepared.isEmpty }
+
+        let first = SpotTokens.firstScreen(perLine: 1)
+        XCTAssertLessThan(first, 20)
+        XCTAssertEqual(Set(host.prepared.map(\.run)), Set((1...first).map { "a\($0)" }))
+    }
+
+    func testAListDrawsAheadTheRowsItShowsFirstWithARecentPickOnTop() async throws {
+        try script("apps", header: "read=sheet", "for i in $(seq 1 100); do printf 'row=a%s\\ntitle=App %s\\nicon=/Applications/A%s.app\\n\\n' $i $i $i; done")
+        let host = TestHost()
+        let ranked = SpotsModel(host: host, files: model.files, runs: SpotRuns(stopPause: 0.2, recent: { _ in ["a50"] }, prepare: { await host.prepare($0, glyphs: $1) }))
+        host.model = ranked
+        defer { ranked.quit() }
+        ranked.reload()
+        ranked.isShown = true
+        ranked.panelWillShow(holding: [])
+        ranked.press("apps")
+        try await wait("the rows and their pictures") { ranked.openItems?.shown.count == 100 && !host.prepared.isEmpty }
+
+        XCTAssertEqual(ranked.openItems?.shown.first?.run, "a50")
+        XCTAssertTrue(host.prepared.contains { $0.run == "a50" })
+    }
+
+    func testAListAsksForThePicturesOfAllItsGlyphsOnce() async throws {
+        try script("faces", header: "read=sheet", "for i in $(seq 1 100); do printf 'row=f%s\\ntitle=Face %s\\nicon=😀\\n\\n' $i $i; done")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("faces")
+        try await wait("the glyphs") { !host.glyphLists.isEmpty }
+
+        XCTAssertEqual(host.glyphLists, [Array(repeating: "😀", count: 100)])
     }
 
     func testAStepBackClearsTheSearchBeforeItClosesTheList() async throws {
@@ -247,6 +314,13 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the end of the form call") { model.sheets["list"]?.calls.isEmpty == true }
         for _ in 0..<10 { await Task.yield() }
         XCTAssertNil(model.form)
+    }
+
+    func testASheetHoldsWhatItsScriptPrintsOnlyWhileItsOpenMotionRuns() async throws {
+        try await openList()
+
+        XCTAssertTrue(host.openings.contains("list"))
+        XCTAssertNil(model.runs.opening.moving)
     }
 
     func testASheetThatOpensWhileAnotherShowsTakesItsPlaceWithNoCollapseAndNoCard() async throws {

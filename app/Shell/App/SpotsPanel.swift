@@ -167,7 +167,7 @@ final class SpotsPanel: NSPanel {
     /// One look at the press and the drag pasteboard after a loss of the focus.
     private func step(of loss: FocusLoss) -> FocusLoss.Step {
         let drag = NSPasteboard(name: .drag)
-        return loss.step(isPressed: NSEvent.pressedMouseButtons != 0, dragCount: drag.changeCount, holdsFiles: !SpotCardDrop.paths(on: drag).isEmpty)
+        return loss.step(isPressed: NSEvent.pressedMouseButtons != 0, dragCount: drag.changeCount, holdsFiles: !SpotGridDrop.paths(on: drag).isEmpty)
     }
 
     /// Closes the panel, or keeps it open for a drag. Returns false while the panel still waits.

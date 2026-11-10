@@ -204,13 +204,14 @@ final class SpotDropTests: XCTestCase {
 
     func testADragRunsNoScript() async throws {
         try addScript("movies", header: "drop=mov")
+        let frames = FrameLog(try XCTUnwrap(runs.sheets["movies"]))
         runs.draggedPaths = [file("a.mov")]
 
         XCTAssertTrue(runs.takesDrag("movies"))
 
         try await pause()
         XCTAssertEqual(runs.sheets["movies"]?.calls.count, 0)
-        XCTAssertEqual(runs.sheets["movies"]?.lastFrame, nil)
+        XCTAssertTrue(frames.frames.isEmpty)
     }
 
     // MARK: D3
@@ -545,6 +546,7 @@ final class SpotDropTests: XCTestCase {
         let sheet = try sheet(header: "drop=mov", "printf 'gauge=progress\\ntitle=42%%\\nvalue=0.42\\n---\\n'\n\(untilRelease)\nprintf 'toast=Done\\n'")
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
+        let frames = FrameLog(sheet)
 
         XCTAssertTrue(sheet.drop([file("a.mov")]))
 
@@ -554,7 +556,7 @@ final class SpotDropTests: XCTestCase {
         XCTAssertEqual(sheet.calls.first?.fill, 0.42)
         FileManager.default.createFile(atPath: path("release"), contents: Data())
         try await wait("the toast") { toasts == ["Done"] }
-        XCTAssertEqual(sheet.lastFrame, "toast=Done\n")
+        XCTAssertEqual(frames.last, "toast=Done\n")
     }
 
     func testAFailedDropTellsThePerson() async throws {

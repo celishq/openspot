@@ -27,7 +27,7 @@ final class SpotQuietHost: SpotsHost {
     var isMouseDown: Bool { false }
     var pastedPaths: [String] { [] }
     func copy(_ file: URL) {}
-    func prepare(_ items: [SpotItem]) async {}
+    func prepare(_ items: [SpotItem], glyphs: [String]) async {}
 
     func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?, offersLogin: Bool) -> [Spot] {
         ShippedSpot.commands(

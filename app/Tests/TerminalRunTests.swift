@@ -33,6 +33,15 @@ final class TerminalRunTests: XCTestCase {
         XCTAssertEqual(end.errors, "Nothing to send.\n")
     }
 
+    func testARunReturnsAllOfALongStderr() async throws {
+        let spot = try spot("loud", "i=0\nwhile [ $i -lt 5000 ]; do echo \"line $i of a log that runs long\" >&2; i=$((i+1)); done\nexit 1")
+
+        let end = await TerminalRun(spot: spot, arguments: [], input: nil).start { _ in }
+
+        XCTAssertTrue(end.errors.hasPrefix("line 0 of a log that runs long\n"))
+        XCTAssertTrue(end.errors.hasSuffix("line 4999 of a log that runs long\n"))
+    }
+
     func testARunWithNoCallReadsASpotThatReadsAndRunsOneThatDoesNot() async throws {
         let reads = try spot("reads", header: "read=sheet", "echo \"$1 $OPENSPOT_REASON\"")
         let runs = try spot("runs", "echo \"$1\"")

@@ -41,8 +41,8 @@ extension OpenspotApp: SpotsHost {
         let window = SpotFloatPanel.make(model: model, id: entry.id)
         floats[entry.id] = window
         Task { @MainActor [model] in
-            let end = ContinuousClock.now + .seconds(model.runs.firstAnswerPause)
-            while model.sheets[entry.id]?.awaitsFirstAnswer == true, ContinuousClock.now < end {
+            let end = ContinuousClock.now + .seconds(model.runs.opening.answerPause)
+            while model.sheets[entry.id]?.kind == .waiting, ContinuousClock.now < end {
                 try? await Task.sleep(for: .milliseconds(10))
             }
             guard floats[entry.id] === window else { return }
@@ -76,7 +76,7 @@ extension OpenspotApp: SpotsHost {
     }
 
     var draggedPaths: [String] {
-        SpotCardDrop.paths
+        SpotGridDrop.paths
     }
 
     var isMouseDown: Bool {
@@ -84,7 +84,7 @@ extension OpenspotApp: SpotsHost {
     }
 
     var pastedPaths: [String] {
-        SpotCardDrop.paths(on: .general)
+        SpotGridDrop.paths(on: .general)
     }
 
     func copy(_ file: URL) {
@@ -92,7 +92,8 @@ extension OpenspotApp: SpotsHost {
         NSPasteboard.general.writeObjects([file as NSURL])
     }
 
-    func prepare(_ items: [SpotItem]) async {
+    func prepare(_ items: [SpotItem], glyphs: [String]) async {
+        if !glyphs.isEmpty { SpotItemIcon.bind(glyphs: glyphs) }
         await SpotIconStore.shared.prepare(items)
     }
 

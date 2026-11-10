@@ -17,15 +17,15 @@ public final class SpotRuns {
     @ObservationIgnored public var onReport: (String, SpotRun.Report) -> Void = { _, _ in }
     /// Makes the change that brings a sheet its first parts, so that the shell can move the sheet to its new size.
     @ObservationIgnored public var partsArrival: (String, () -> Void) -> Void = { _, bring in bring() }
+    /// The open of a sheet: its motion waits for its first answer, and what its script prints waits for its motion.
+    @ObservationIgnored public let opening: SheetOpening
     /// The time a `read` has to its first frame or its end.
     public let readLimit: TimeInterval
-    /// How long a sheet with no answer yet holds its motion for the first answer.
-    public let firstAnswerPause: TimeInterval
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored private let stopPause: TimeInterval
-    @ObservationIgnored private let tickPause: Duration
+    @ObservationIgnored let tickPause: Duration
     @ObservationIgnored private let recent: (String) -> [String]
-    @ObservationIgnored private let prepare: ([SpotItem]) async -> Void
+    @ObservationIgnored private let prepare: ([SpotItem], [String]) async -> Void
     private var order: [String] = []
     @ObservationIgnored private var placedByFiles: Set<String> = []
 
@@ -33,25 +33,26 @@ public final class SpotRuns {
     private var placed: Set<String> {
         placedByFiles.union(sheets.values.flatMap { $0.state.face.parts.filter { $0.kind == "spot" }.map(\.id) })
     }
-    @ObservationIgnored private var asked: [String: Date] = [:]
-    @ObservationIgnored private var clock: Task<Void, Never>?
+    /// When the clock last read each script with a number in its `read`.
+    @ObservationIgnored var asked: [String: Date] = [:]
+    @ObservationIgnored var clock: Task<Void, Never>?
     @ObservationIgnored private var processes: [ScriptProcess] = []
     /// The record of each call that runs once, or nil to keep none.
     @ObservationIgnored private let log: CallLog?
 
     public init(
         readLimit: TimeInterval = 10,
-        firstAnswerPause: TimeInterval = 0.15,
+        opening: SheetOpening = SheetOpening(),
         now: @escaping () -> Date = { Date() },
         stopPause: TimeInterval = 2,
         tickPause: Duration = .seconds(1),
         recent: @escaping (String) -> [String] = { _ in [] },
-        prepare: @escaping ([SpotItem]) async -> Void = { _ in },
+        prepare: @escaping ([SpotItem], [String]) async -> Void = { _, _ in },
         log: CallLog? = nil
     ) {
         self.log = log
         self.readLimit = readLimit
-        self.firstAnswerPause = firstAnswerPause
+        self.opening = opening
         self.now = now
         self.stopPause = stopPause
         self.tickPause = tickPause
@@ -112,7 +113,7 @@ public final class SpotRuns {
         sheet.floated()
     }
 
-    /// Ends the float of a script. A sheet of parts drops its values, as the panel's close does (K5).
+    /// Ends the float of a script. A sheet of parts with a field drops its values, as the panel's close does (K5).
     public func land(_ id: String) {
         guard floating.remove(id) != nil else { return }
         sheets[id]?.leftPlace()
@@ -142,7 +143,7 @@ public final class SpotRuns {
         sheets.values.contains(where: \.isReading)
     }
 
-    /// The panel closed: a sheet of parts closes and drops its values, and a read that nothing wants now stops.
+    /// The panel closed: a sheet of parts closes, one with a field drops its values, and a read that nothing wants now stops.
     public func panelClosed() {
         isPanelOpen = false
         sheets.values.forEach { $0.leftPlace() }
@@ -164,21 +165,11 @@ public final class SpotRuns {
         sheets.values.forEach { $0.settleScript() }
     }
 
-    /// Reads each wanted script whose number of seconds has passed.
-    public func tick() {
-        let time = now()
-        for sheet in sheets.values where sheet.isWanted {
-            guard let seconds = sheet.command.read?.seconds else { continue }
-            if let last = asked[sheet.command.id], time.timeIntervalSince(last) < seconds { continue }
-            asked[sheet.command.id] = time
-            sheet.read(need: .clock, reason: .timer)
-        }
-    }
-
     /// Stops each call, which changes nothing, and waits for the processes to end, for at most 2 seconds.
     public func quit() {
         clock?.cancel()
         clock = nil
+        opening.end()
         let live = processes.filter(\.needsFinish)
         sheets.values.forEach { $0.prepareToQuit() }
         live.forEach { $0.leave() }
@@ -243,7 +234,19 @@ public final class SpotRuns {
         return command.isTray || read.has(.launch) || (isPanelOpen && (read.has(.panel) || placed.contains(command.id)))
     }
 
-    /// Starts one call. It gives each frame, as text and sorted by what each block is, and then its end, on the main actor.
+    /// Reads a frame of a script, on another thread when it is big, and waits while the open motion of its sheet runs. The
+    /// sheet hears the frame while it waits, so that it can say its kind before the frame shows or its call drops it.
+    func intake(_ frame: String, of id: String?) async -> PluginOutput {
+        let lines = await PluginOutput.reading(frame)
+        guard let id, opening.moving == id else { return lines }
+        sheets[id]?.hear(lines)
+        await opening.waitForMotion(of: id)
+        sheets[id]?.hear(nil)
+        return lines
+    }
+
+    /// Starts one call. It gives each frame, as text and sorted by what each block is, and then its end, on the main actor. A
+    /// frame waits for the open motion of its sheet, and one that its call stopped meanwhile changes nothing.
     func call(
         _ command: Spot,
         _ action: SpotAction,
@@ -257,15 +260,17 @@ public final class SpotRuns {
         let call = ScriptCall(action: action, key: key, started: now())
         let (stream, halt, process) = frames(of: command, action, input: input, limit: limit, variables: variables)
         call.halt = halt
+        let id = command.id
         let begin = Date()
-        Task { [log] in
+        Task { [weak self, log] in
             var end = ScriptCall.End.ended
             var printed: [String] = []
             do {
                 for try await frame in stream {
                     guard !call.isStopped else { break }
                     printed.append(frame)
-                    let output = call.take(frame: frame)
+                    guard let output = await self?.intake(frame, of: id), !call.isStopped else { break }
+                    call.take(output)
                     await onFrame(call, frame, output)
                 }
             } catch {
@@ -334,22 +339,5 @@ public final class SpotRuns {
     private func keep(_ process: ScriptProcess) {
         processes.removeAll { !$0.needsFinish }
         processes.append(process)
-    }
-
-    /// Keeps the timers going while the panel is open, or while something wants a script with a number in its `read`.
-    func updateClock() {
-        guard isPanelOpen || sheets.values.contains(where: { $0.command.read?.seconds != nil && $0.isWanted }) else {
-            clock?.cancel()
-            clock = nil
-            return
-        }
-        tick()
-        guard clock == nil else { return }
-        clock = Task { [weak self, tickPause] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: tickPause)
-                self?.tick()
-            }
-        }
     }
 }

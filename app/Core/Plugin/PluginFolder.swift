@@ -1,6 +1,15 @@
 import Foundation
 
 public struct PluginFolder: Sendable {
+    /// What a scan reads: the identity, mode, size and times of each file through its links, the core spots that are on and
+    /// the shipped commands. An equal stamp gives an equal scan, because a write, a change of mode and a move each change
+    /// the change time of a file.
+    public struct Stamp: Equatable, Sendable {
+        fileprivate let files: [String: [Int]]
+        fileprivate let enabled: Set<String>
+        fileprivate let shipped: [Spot]
+    }
+
     private static let coreName = "spots"
     /// The core spots that start on: each reads only local data, and only at a person's act or when the panel opens.
     private static let startingIDs: Set<String> = ["apps", "caffeinate", "color-picker", "emoji", "files", "links", "paste-screenshot", "settings", "snippets", "translate"]
@@ -73,6 +82,21 @@ public struct PluginFolder: Sendable {
             result.listKeys(with: settings)
         }
         return result
+    }
+
+    /// The stamp of all that a scan reads: each entry at the top of the folder and of the core folder, and each entry one
+    /// folder down. A hidden file is in it too, so it can only ask for a scan that changes nothing.
+    public func stamp(shipped: [Spot] = []) -> Stamp {
+        var files: [String: [Int]] = [:]
+        for folder in [url.path] + (core.map { [$0.path] } ?? []) {
+            for entry in Self.entries(of: folder) {
+                let state = Self.state(of: entry)
+                files[entry] = state
+                guard state.first == Int(S_IFDIR) else { continue }
+                for file in Self.entries(of: entry) { files[file] = Self.state(of: file) }
+            }
+        }
+        return Stamp(files: files, enabled: enabled, shipped: shipped)
     }
 
     /// The core spots that a person can turn on. A core file with no card, such as a metric that a widget places or a sheet
@@ -158,6 +182,20 @@ public struct PluginFolder: Sendable {
     private func coreFiles() -> [(file: URL, id: String)] {
         guard let core, let files = try? Self.sorted(in: core) else { return [] }
         return files.map { ($0, $0.deletingPathExtension().lastPathComponent) }
+    }
+
+    private static func entries(of folder: String) -> [String] {
+        ((try? FileManager.default.contentsOfDirectory(atPath: folder)) ?? []).map { folder + "/" + $0 }
+    }
+
+    /// The kind, identity, mode, size, change time and modification time of a file, through its links.
+    private static func state(of path: String) -> [Int] {
+        var info = stat()
+        guard stat(path, &info) == 0 else { return [] }
+        return [
+            Int(info.st_mode & S_IFMT), Int(info.st_dev), Int(info.st_ino), Int(info.st_mode), Int(info.st_size),
+            info.st_ctimespec.tv_sec, info.st_ctimespec.tv_nsec, info.st_mtimespec.tv_sec, info.st_mtimespec.tv_nsec
+        ]
     }
 
     private static func sorted(in folder: URL) throws -> [URL] {

@@ -25,8 +25,8 @@ struct SpotFloatView: View {
             }
         }
         .overlay { drop }
-        .onDrop(of: [.fileURL], delegate: SpotCardDrop(id: id, model: model, target: $dropTarget, place: .float))
-        .onChange(of: dropTarget) { dropWords = dropTarget.flatMap { model.dropWords(SpotCardDrop.paths, on: $0) } }
+        .onDrop(of: [.fileURL], delegate: SpotFloatDrop(id: id, model: model, target: $dropTarget))
+        .onChange(of: dropTarget) { dropWords = dropTarget.flatMap { model.dropWords(SpotGridDrop.paths, on: $0) } }
         .onChange(of: size, initial: true) { onSize(size) }
         .environment(\.spotIsShown, true)
     }

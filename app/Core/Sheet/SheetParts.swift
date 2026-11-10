@@ -63,6 +63,10 @@ public struct SheetParts: Equatable, Sendable {
         layout?.repeated != nil
     }
 
+    public var kind: SheetKind {
+        SheetKind(parts: parts, layout: layout)
+    }
+
     /// Whether the up and down keys select its parts. A sheet with a text area or with rows leaves them to those.
     public var takesArrows: Bool {
         !showsRows && !parts.contains(where: \.isEditable) && parts.contains(where: \.isSelectable)
@@ -91,6 +95,11 @@ public struct SheetParts: Equatable, Sendable {
         let ids = parts.filter(\.isSelectable).map(\.id)
         guard let index = ids.firstIndex(where: { $0 == selectedPart?.id }) else { return }
         selected = ids[min(max(index + step, 0), ids.count - 1)]
+    }
+
+    /// Whether the person moved the selection, so that a clear has something to change.
+    public var isSelectionMoved: Bool {
+        selected != nil
     }
 
     public mutating func clearSelection() {

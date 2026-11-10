@@ -4,9 +4,10 @@
 # read=panel
 here=$(dirname "$0")
 
-# Prints what a metric script in this folder reads as the value and the mark of a line.
+# Prints what a metric script in this folder shows as the value and the mark of a line. It looks, and does not read, so
+# that the trend of a metric gets no point from it.
 reading() {
-  "$here/$1" read | sed -En 's/^title=/detail=/p; /^(value|point|max|tone)=./p'
+  "$here/$1" show | sed -En 's/^title=/detail=/p; /^(value|point|max|tone)=./p'
 }
 
 printf 'section=battery\ntitle=Battery\n\ntext=mac\ntitle=This Mac\nicon=macbook\n%s\n\n' "$(reading battery.sh)"

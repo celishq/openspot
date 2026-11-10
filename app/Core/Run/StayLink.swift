@@ -21,6 +21,8 @@ final class StayLink: ScriptLink {
     /// The date of the file when the script failed too often, which keeps it from starting until the file changes.
     private var givenUp: Date??
     private var formAnswer: CheckedContinuation<String?, Error>?
+    /// Whether the link held the script at the last settle, so that the clock hears when that changes.
+    private var heldScript = false
 
     init(runs: SpotRuns) {
         self.runs = runs
@@ -85,6 +87,9 @@ final class StayLink: ScriptLink {
         let isNeeded = run?.isWanted == true
         if isNeeded, script == nil { start() }
         if !isNeeded, script != nil { end() }
+        guard holdsScript != heldScript else { return }
+        heldScript = holdsScript
+        runs.updateClock()
     }
 
     func end() {
@@ -187,11 +192,12 @@ final class StayLink: ScriptLink {
         waiting?.resume(with: answer)
     }
 
-    /// Takes each frame of the script until it ends. A script that Openspot ended shows only its toast.
+    /// Takes each frame of the script until it ends, each after the open motion of its sheet. A script that Openspot ended
+    /// shows only its toast.
     private func follow(_ script: ScriptProcess, _ frames: AsyncThrowingStream<String, Error>) async {
         do {
             for try await text in frames {
-                let lines = PluginOutput(text: text)
+                let lines = await runs.intake(text, of: run?.command.id)
                 if self.script === script, !lines.ends.isEmpty {
                     endCalls(lines.ends)
                     settle()
