@@ -75,6 +75,11 @@ public final class SpotsModel {
             run?.state ?? fixedState
         }
 
+        /// Whether its card is on. A view that reads only this hears of no other change of its state.
+        @MainActor public var isOn: Bool {
+            run?.isOn ?? (fixedState.on == true)
+        }
+
         /// What the card shows: its own state, with the words of its running work over it.
         @MainActor public var shownState: SpotState {
             run?.shownState ?? fixedState

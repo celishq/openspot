@@ -49,7 +49,7 @@ struct SpotGridView: View {
                 .modifier(card.motion)
                 .zIndex(dragged?.id == entry.id ? 1 : 0)
                 .highPriorityGesture(moveGesture(of: entry), including: model.isEditing ? .all : .subviews)
-                .contextMenu { spotMenu(of: entry) }
+                .contextMenu { SpotCardMenu(model: model, entry: entry) }
                 .opacity(entry.id == openID ? 0.001 : 1)
                 .allowsHitTesting(entry.id != openID)
             }
@@ -83,23 +83,6 @@ struct SpotGridView: View {
         return away.columns < 0 ? .trailing : away.columns > 0 ? .leading : away.rows < 0 ? .bottom : away.rows > 0 ? .top : .center
     }
 
-    /// What a card offers on a right click: its preferred size, its place on the grid and Edit Spots.
-    @ViewBuilder
-    private func spotMenu(of entry: SpotsModel.Entry) -> some View {
-        let sizes = model.sizes(of: entry)
-        if !sizes.isEmpty {
-            Picker("Size", selection: Binding(get: { entry.size.name }, set: { name in
-                if let size = SpotSize(name: name) { model.prefer(size, for: entry.id) }
-            })) {
-                ForEach(sizes.map(\.name), id: \.self) { Text($0.capitalized).tag($0) }
-            }
-        }
-        if entry.item == nil {
-            Button(entry.isOnGrid ? "Hide from Grid" : "Show on Grid") { model.setOnGrid(!entry.isOnGrid, for: entry.id) }
-            Button("Edit Spots") { model.beginEditing() }
-        }
-    }
-
     /// Moves a card in Edit Spots: it follows the pointer, and takes the place of the card it lands on.
     private func moveGesture(of entry: SpotsModel.Entry) -> some Gesture {
         DragGesture(coordinateSpace: .named(SpotsView.panelSpace))
@@ -117,5 +100,27 @@ struct SpotGridView: View {
                 }
                 if let target { model.moveSpot(entry.id, to: target.index) }
             }
+    }
+}
+
+/// What a card offers on a right click: its preferred size, its place on the grid and Edit Spots. It reads the card's state
+/// itself, so that a change of a card's value reruns this menu and not the grid.
+private struct SpotCardMenu: View {
+    let model: SpotsModel
+    let entry: SpotsModel.Entry
+
+    var body: some View {
+        let sizes = model.sizes(of: entry)
+        if !sizes.isEmpty {
+            Picker("Size", selection: Binding(get: { entry.size.name }, set: { name in
+                if let size = SpotSize(name: name) { model.prefer(size, for: entry.id) }
+            })) {
+                ForEach(sizes.map(\.name), id: \.self) { Text($0.capitalized).tag($0) }
+            }
+        }
+        if entry.item == nil {
+            Button(entry.isOnGrid ? "Hide from Grid" : "Show on Grid") { model.setOnGrid(!entry.isOnGrid, for: entry.id) }
+            Button("Edit Spots") { model.beginEditing() }
+        }
     }
 }

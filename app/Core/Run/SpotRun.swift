@@ -154,8 +154,14 @@ public final class SpotRun {
         didSet { settle() }
     }
     public private(set) var state: SpotState {
-        didSet { if state != oldValue { onReport(.listChange) } }
+        didSet {
+            guard state != oldValue else { return }
+            if (state.on == true) != isOn { isOn = state.on == true }
+            onReport(.listChange)
+        }
     }
+    /// Whether its card is on. It changes only when that does, so that a view that shows only this hears of no other change.
+    public private(set) var isOn = false
     public private(set) var reading: MetricReading
     /// The words of its last failed call, until a call ends well.
     public private(set) var failure: String?
@@ -192,6 +198,7 @@ public final class SpotRun {
         rows = ItemList(recent: recent)
         state = command.headerState
         reading = MetricReading(label: command.name, headerSymbol: command.headerSymbol)
+        isOn = command.headerState.on == true
         settle()
         link.run = self
     }

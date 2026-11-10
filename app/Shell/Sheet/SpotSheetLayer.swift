@@ -23,7 +23,7 @@ struct SpotSheetLayer: View {
             entry: entry,
             cardSize: card?.placement.size ?? entry.size,
             isOpen: isOpen,
-            showsFill: entry.state.on == true && !isOpen,
+            showsFill: entry.isOn && !isOpen,
             rect: sheetRect,
             panel: panel,
             closeShift: isInstall ? 0 : showsArrow ? (frame?.width ?? sheetRect.width) - sheetRect.width : nil,
@@ -41,7 +41,7 @@ struct SpotSheetLayer: View {
         }
         .background {
             SpotTheme.solid
-                .animation(SpotMotion.fillFade(isOpen: isOpen)) { $0.opacity(entry.state.on == true && !isOpen ? 1 : 0) }
+                .animation(SpotMotion.fillFade(isOpen: isOpen)) { $0.opacity(entry.isOn && !isOpen ? 1 : 0) }
         }
         .modifier(SpotSheetFrame(
             rect: isOpen ? sheetRect : closedRect,
@@ -77,7 +77,7 @@ struct SpotSheetLayer: View {
 
     /// The arrow of the card while its sheet moves. It stays in view until the close button takes its place at the edge.
     private var arrow: some View {
-        SpotCardArrow(isOnSolid: entry.state.on == true && !isOpen)
+        SpotCardArrow(isOnSolid: entry.isOn && !isOpen)
             .placed(isTall: (frame?.height ?? 0) > SpotTokens.rowHeight)
             .animation(SpotMotion.sheetFade(isOpen: isOpen, isLate: !isOpen)) { $0.opacity(isOpen ? 0 : 1) }
             .allowsHitTesting(false)

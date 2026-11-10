@@ -86,6 +86,20 @@ final class SpotRunTests: XCTestCase {
         sheet.close()
     }
 
+    func testAnAnswerThatKeepsTheCardOnTellsNoReaderOfWhetherItIsOn() async throws {
+        let sheet = try make("n=$(cat '\(path("n"))' 2>/dev/null); echo $((n + 1)) > '\(path("n"))'; printf 'on=true\\ndetail=Read %s\\n' \"$n\"", read: .panel)
+        sheet.read()
+        try await wait("the card on") { sheet.isOn }
+        let detail = sheet.state.subtitle
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = sheet.isOn } onChange: { changed = true }
+
+        sheet.read(need: .change)
+        try await wait("the next answer") { sheet.state.subtitle != detail }
+
+        XCTAssertFalse(changed)
+    }
+
     func testACloseWithNoSelectionTellsNoReaderOfTheParts() async throws {
         let sheet = try holding("printf 'text=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n'", pause: 0.02)
         sheet.open(waits: true) {}
