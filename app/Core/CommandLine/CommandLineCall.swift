@@ -52,7 +52,7 @@ public enum CommandLineCall: Equatable, Sendable {
     case calendarCalendars
     /// Adds an event from the words, or with a dry run prints the row that it would add (E4, E5).
     case calendarAdd(words: String, isDry: Bool)
-    /// Opens Calendar on the day of the event or the reminder whose row has this id (E1).
+    /// Opens Calendar on the day of the event whose row has this id (E1).
     case calendarShow(id: String)
     /// Prints the open reminders that are late or due through the end of a day, and those done today, in some lists or all.
     case remindersDue(days: Int, lists: [String])
@@ -116,7 +116,7 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot calendar calendars                  Prints each calendar as a row.
     openspot calendar add [--dry-run] <words>... Adds an event from words such as Lunch tomorrow 13:00, and prints its
                                                  row. --dry-run prints the row and adds nothing.
-    openspot calendar show <id>                  Opens Calendar on the day of the event or the reminder of a row.
+    openspot calendar show <id>                  Opens Calendar on the day of the event of a row.
     openspot reminders due [--days n] [--list id]...
                                                  Prints each open reminder that is late or due through the end of day n,
                                                  and each one done today, as a row. --list takes a list's id.

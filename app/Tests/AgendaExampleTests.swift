@@ -37,7 +37,6 @@ final class AgendaExampleTests: SamplePluginsCase {
           'calendar calendars') cat '\(path)/calendars' ;;
           'reminders lists') cat '\(path)/lists' ;;
           'reminders add') if [ "$3" = --dry-run ]; then cat '\(path)/dry-reminder'; else cat '\(path)/added-reminder'; fi ;;
-          'reminders show') [ ! -e '\(path)/no-reminders-app' ] || exit 1 ;;
           'calendar add') if [ "$3" = --dry-run ]; then cat '\(path)/dry-event' 2>/dev/null || exit 1; else cat '\(path)/added-event'; fi ;;
         esac
 
@@ -270,19 +269,6 @@ final class AgendaExampleTests: SamplePluginsCase {
             let opens = try self.calls(in: folder).filter { $0.contains(" show ") }
             XCTAssertEqual(opens, ["act|calendar show event:B/2|", "act|reminders show reminder:R1|"])
             XCTAssertEqual(try self.read("opened", in: folder), "https://meet.google.com/abc-defg-hij\n")
-        }
-    }
-
-    func testAReminderThatRemindersCannotOpenOpensInCalendar() async throws {
-        let agenda = try example("Agenda")
-        try await withPrivateHome { folder in
-            try self.fakeOpenspot(in: folder)
-            try "".write(to: folder.appendingPathComponent("no-reminders-app"), atomically: true, encoding: .utf8)
-
-            try await agenda.perform(.item(SpotItem(title: "Call mom", run: "reminder:R1")), timeout: 5)
-
-            let opens = try self.calls(in: folder).filter { $0.contains(" show ") }
-            XCTAssertEqual(opens, ["act|reminders show reminder:R1|", "act|calendar show reminder:R1|"])
         }
     }
 

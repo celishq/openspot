@@ -73,18 +73,15 @@ public struct Agenda {
         return link
     }
 
-    /// The day that Calendar opens on for the id of a row: the time of an event, or the due time of a reminder, or now for a
-    /// reminder with no due date.
+    /// The time of the event whose row has this id, on whose day Calendar opens.
     public func day(of id: String) async throws -> Date {
-        let missing = PluginError.failed(1, "Openspot cannot find \(id). Read the list again, and use the id of one of its rows.")
-        if id.hasPrefix("event:") {
-            guard let seconds = id.split(separator: "/").last.flatMap({ Double($0) }), id.contains("/") else { throw missing }
-            return Date(timeIntervalSince1970: seconds)
+        if id.hasPrefix("reminder:") {
+            throw PluginError.failed(1, "\(id) is a reminder. Run `openspot reminders show \(id)` to open it in Reminders.")
         }
-        guard id.hasPrefix("reminder:") else { throw missing }
-        _ = try await isAllowed(.reminder)
-        guard let reminder = store.reminder(String(id.dropFirst("reminder:".count))) else { throw missing }
-        return reminder.due ?? clock.now
+        guard id.hasPrefix("event:"), id.contains("/"), let seconds = id.split(separator: "/").last.flatMap({ Double($0) }) else {
+            throw PluginError.failed(1, "Openspot cannot find \(id). Read the list again, and use the id of one of its rows.")
+        }
+        return Date(timeIntervalSince1970: seconds)
     }
 
     /// Adds an event from the words, and prints its row. A dry run prints the row it would add, with the id `event:new` (E5).

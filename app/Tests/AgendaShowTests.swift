@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves which day `openspot calendar show` opens for the id of a row, and which reminder `openspot reminders show` opens.
+/// Proves which day `openspot calendar show` opens for the id of an event, and which reminder `openspot reminders show` opens.
 final class AgendaShowTests: XCTestCase {
     private let family = AgendaList(id: "7D10", title: "Family", account: "iCloud", color: nil)
     private let work = AgendaList(id: "A8E2", title: "Work", account: "iCloud", color: nil)
@@ -25,19 +25,16 @@ final class AgendaShowTests: XCTestCase {
         XCTAssertEqual(day, start)
     }
 
-    func testAReminderOpensOnItsDueDayOrTodayWithNone() async throws {
-        let due = now.addingTimeInterval(-86_400)
-        let store = FakeAgendaStore(reminders: [
-            AgendaReminder(id: "late", title: "Call mom", due: due, isAllDay: false, list: family, doneAt: nil),
-            AgendaReminder(id: "loose", title: "Buy milk", due: nil, isAllDay: false, list: family, doneAt: nil)
-        ])
+    func testAReminderSaysToShowItInReminders() async throws {
+        let store = FakeAgendaStore(reminders: [AgendaReminder(id: "late", title: "Call mom", due: now, isAllDay: false, list: family, doneAt: nil)])
         let id = try id(try await agenda(store).due(days: 1, lists: []))
 
-        let late = try await agenda(store).day(of: id)
-        let loose = try await agenda(store).day(of: "reminder:loose")
-
-        XCTAssertEqual(late, due)
-        XCTAssertEqual(loose, now)
+        do {
+            _ = try await agenda(store).day(of: id)
+            XCTFail("\(id) opened a day")
+        } catch PluginError.failed(1, let message) {
+            XCTAssertEqual(message, "\(id) is a reminder. Run `openspot reminders show \(id)` to open it in Reminders.")
+        }
     }
 
     func testAReminderOpensInRemindersByItsOwnId() async throws {
@@ -65,7 +62,7 @@ final class AgendaShowTests: XCTestCase {
     func testAnIdThatNamesNothingFails() async throws {
         let store = FakeAgendaStore()
 
-        for id in ["reminder:gone", "event:new", "event:daily", "event:daily/soon", "Standup"] {
+        for id in ["event:new", "event:daily", "event:daily/soon", "Standup"] {
             do {
                 _ = try await agenda(store).day(of: id)
                 XCTFail("\(id) opened a day")

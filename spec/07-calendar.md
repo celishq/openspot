@@ -22,7 +22,7 @@ reminders. Each list prints rows (02), and the id of each row goes to each other
 | `openspot calendar events [--days n] [--calendar id]...` | Prints each event that has not ended, through the end of day `n`. Day 1 is today, and it is the default. |
 | `openspot calendar calendars`                            | Prints each calendar as a row.                                                          |
 | `openspot calendar add [--dry-run] <words>...`           | Adds an event from the words to the default calendar, and prints its row.              |
-| `openspot calendar show <id>`                            | Opens Calendar on the day of an event or a reminder.                                   |
+| `openspot calendar show <id>`                            | Opens Calendar on the day of an event.                                                  |
 | `openspot reminders due [--days n] [--list id]...`       | Prints each open reminder that is late or due through the end of day `n`, and each of those done today. |
 | `openspot reminders lists`                               | Prints each list of reminders as a row.                                                 |
 | `openspot reminders add [--dry-run] <words>...`          | Adds a reminder from the words to the default list, and prints its row.                |
@@ -86,7 +86,6 @@ Use it to show what the words will make before the person presses Enter.
 ## Access
 
 The `calendar` verbs need the person's leave to use Calendars, and the `reminders` verbs need it for Reminders.
-`calendar show` of a reminder needs Reminders.
 
 - Openspot never asks at its start. A verb outside a read asks macOS the first time, and goes on with the answer (E6).
 - In a read, a verb that has not asked yet prints `status=unasked` and exits 0, so that the script can offer a row that

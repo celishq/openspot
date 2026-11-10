@@ -141,7 +141,7 @@ case "$1" in
         added=$(openspot "$noun" add "$(value search)" </dev/null) || { printf '%s\n' "$added"; exit 1; }
         printf 'toast=Added %s.\n' "$(field title "$added")"
         ;;
-      reminder:*) openspot reminders show "$2" </dev/null 2>/dev/null || openspot calendar show "$2" </dev/null ;;
+      reminder:*) openspot reminders show "$2" </dev/null ;;
       *) openspot calendar show "$2" </dev/null ;;
     esac
     ;;
