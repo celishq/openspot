@@ -121,8 +121,9 @@ final class SpotFloatTests: XCTestCase {
     func testAnActionThatAsksWithAFormOpensTheSpotInThePanel() async throws {
         try await floatList()
         let rename = try XCTUnwrap(model.sheets["list"]?.command.actions.first { $0.id == "rename" })
+        let entry = try XCTUnwrap(model.cards.first { $0.id == "list" })
 
-        model.runInFloat(rename, of: "list", item: model.sheets["list"]?.list.selectedItem)
+        model.run(rename, on: (entry, model.sheets["list"]?.list.selectedItem), in: .float)
 
         XCTAssertEqual(host.shows, 1)
         try await wait("the sheet in the panel") { model.openList == "list" }
@@ -160,9 +161,10 @@ final class SpotFloatTests: XCTestCase {
         let files = ["a.png", "b.txt", "c.spot"].map { folder.appendingPathComponent($0).path }
         try files.forEach { try Data().write(to: URL(fileURLWithPath: $0)) }
 
-        XCTAssertTrue(model.floatAccepts([files[0]], of: "shelf"))
-        XCTAssertFalse(model.floatAccepts([files[2]], of: "shelf"))
-        XCTAssertTrue(model.dropOnFloat(Array(files.prefix(2)), of: "shelf"))
+        XCTAssertTrue(model.acceptsDrop([files[0]], on: "shelf", in: .float))
+        XCTAssertFalse(model.acceptsDrop([files[2]], on: "shelf", in: .float))
+        XCTAssertEqual(model.dropWords(Array(files.prefix(2)), on: "shelf"), "Add 2 files")
+        XCTAssertTrue(model.drop(Array(files.prefix(2)), on: "shelf", in: .float))
 
         try await wait("the drop") { host.confirms == ["Kept \(files[0]) \(files[1])"] }
         XCTAssertEqual(host.shows, 0)

@@ -293,8 +293,16 @@ extension SpotsModel {
         }
     }
 
-    public func run(_ action: CommandAction, on target: Target) {
-        if action == .share {
+    /// Runs an action on a row or on the whole spot. In a float, an action that asks with a form or for a second press opens
+    /// the spot in the panel, where both work, and any other runs at once and leaves the float open (W8).
+    public func run(_ action: CommandAction, on target: Target, in place: SheetPlace = .panel) {
+        if place == .float {
+            if action.isForm || action.confirm != nil {
+                press(target.entry.id)
+            } else {
+                sheets[target.entry.id]?.run(action, item: target.item)
+            }
+        } else if action == .share {
             share(target.entry)
         } else if action.id == CatalogSpot.reviewID, let item = target.item {
             reviewCore(item)

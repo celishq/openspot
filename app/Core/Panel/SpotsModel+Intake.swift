@@ -3,9 +3,10 @@ import Observation
 
 /// The drag of files over the panel, the review of a `.spot` file, and the share and turn-off of a spot.
 extension SpotsModel {
-    /// Whether a card takes these dragged files. A card under an open sheet takes none.
-    public func acceptsDrop(_ paths: [String], on id: String) -> Bool {
-        openList == nil && !SharedSpot.isFile(paths) && sheets[id]?.command.accepts(paths) == true
+    /// Whether a card, or a float, takes these dragged files. A card under an open sheet takes none (D2, W9).
+    public func acceptsDrop(_ paths: [String], on id: String, in place: SheetPlace = .panel) -> Bool {
+        let isOpenToDrops = place == .panel ? openList == nil : runs.floating.contains(id)
+        return isOpenToDrops && !SharedSpot.isFile(paths) && sheets[id]?.command.accepts(paths) == true
     }
 
     /// Whether a card shows that it takes the drag in progress.
@@ -47,10 +48,12 @@ extension SpotsModel {
         runs.draggedPaths = []
     }
 
-    /// Takes a drop on a card. A card with rows opens its sheet with the focus, so the person can act on what the drop added,
-    /// and any other card closes the panel (D8). Returns false when the card does not take these files.
-    public func drop(_ paths: [String], on id: String) -> Bool {
-        guard openList == nil, sheets[id]?.drop(paths) == true else { return false }
+    /// Takes a drop on a card or a float. On a card, a spot with rows opens its sheet with the focus, so the person can act
+    /// on what the drop added, and any other card closes the panel (D8). A float stays as it is (W9). Returns false when the
+    /// spot does not take these files.
+    public func drop(_ paths: [String], on id: String, in place: SheetPlace = .panel) -> Bool {
+        guard acceptsDrop(paths, on: id, in: place), sheets[id]?.drop(paths) == true else { return false }
+        guard place == .panel else { return true }
         endDrag()
         guard entries.first(where: { $0.id == id })?.kind == .list else {
             if isShown { host.dismiss() }

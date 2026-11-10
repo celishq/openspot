@@ -7,7 +7,7 @@ struct SpotFloatView: View {
     let model: SpotsModel
     let id: String
     let onSize: (CGSize) -> Void
-    @State private var dropWords: String?
+    @State private var dropTarget: String?
 
     private var entry: SpotsModel.Entry? {
         model.cards.first { $0.id == id }
@@ -24,7 +24,7 @@ struct SpotFloatView: View {
             }
         }
         .overlay { drop }
-        .onDrop(of: [.fileURL], delegate: SpotFloatDrop(id: id, model: model, words: $dropWords))
+        .onDrop(of: [.fileURL], delegate: SpotCardDrop(id: id, model: model, target: $dropTarget, place: .float))
         .onChange(of: size, initial: true) { onSize(size) }
         .environment(\.spotIsShown, true)
     }
@@ -51,8 +51,8 @@ struct SpotFloatView: View {
                         if part.closes { model.land(id) }
                     },
                     list: run.list,
-                    onRun: { model.pickInFloat($0, of: id) },
-                    onSlot: { model.slotInFloat($1, of: $0, in: id, to: $2) },
+                    onRun: { model.pick($0, of: entry, in: .float) },
+                    onSlot: { model.slot($1, of: $0, in: id, to: $2) },
                     onDragOut: { model.dragOut($0, of: id) },
                     selection: { run.selection },
                     nudge: { run.nudge },
@@ -66,9 +66,9 @@ struct SpotFloatView: View {
             } else {
                 SpotRowsView(
                     list: run.list,
-                    onRun: { model.pickInFloat($0, of: id) },
+                    onRun: { model.pick($0, of: entry, in: .float) },
                     selection: { run.selection },
-                    onSlot: { model.slotInFloat($1, of: $0, in: id, to: $2) },
+                    onSlot: { model.slot($1, of: $0, in: id, to: $2) },
                     onDragOut: { model.dragOut($0, of: id) }
                 )
             }
@@ -123,8 +123,8 @@ struct SpotFloatView: View {
             size: entry.size,
             index: -1,
             isPressed: false,
-            takesDrag: dropWords != nil,
-            isDropTarget: dropWords != nil,
+            takesDrag: dropTarget != nil,
+            isDropTarget: dropTarget != nil,
             chainLetter: nil,
             showsChain: false,
             isHiddenFromGrid: false,
@@ -137,7 +137,7 @@ struct SpotFloatView: View {
     /// What a drop adds, over the float, only while a drag that it takes lies over it (W9).
     @ViewBuilder
     private var drop: some View {
-        if let dropWords, entry?.kind.opensSheet == true {
+        if dropTarget != nil, entry?.kind.opensSheet == true, let dropWords = model.dropWords(SpotCardDrop.paths, on: id) {
             Text(dropWords)
                 .font(SpotType.body)
                 .foregroundStyle(SpotTheme.onSolid)
