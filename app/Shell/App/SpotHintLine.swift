@@ -10,14 +10,18 @@ struct SpotHintLine: View {
     let surfaceIsOut: Bool
     let gridHeight: CGFloat
     let sheetHeight: CGFloat
+    /// The width of the panel, across which the grid's hint is centred.
+    var width = SpotTokens.panelWidth
+    /// How far right the open sheet lies, under which the sheet's hint is centred.
+    var sheetShift: CGFloat = 0
     @State private var gridHint = ""
     @State private var sheetHint = ""
     @State private var hintIsForEdit = false
 
     var body: some View {
-        ZStack(alignment: .top) {
-            hint(gridHint, isShown: !surfaceIsOut, height: gridHeight)
-            hint(sheetWords, isShown: surfaceIsOut, height: sheetHeight)
+        ZStack(alignment: .topLeading) {
+            hint(gridHint, isShown: !surfaceIsOut, height: gridHeight, width: width, shift: 0)
+            hint(sheetWords, isShown: surfaceIsOut, height: sheetHeight, width: SpotTokens.panelWidth, shift: sheetShift)
         }
         .background {
             SpotHintWatch(model: model) { hint in
@@ -33,11 +37,11 @@ struct SpotHintLine: View {
         }
     }
 
-    private func hint(_ words: String, isShown: Bool, height: CGFloat) -> some View {
+    private func hint(_ words: String, isShown: Bool, height: CGFloat, width: CGFloat, shift: CGFloat) -> some View {
         SpotHint(text: words, activeKey: model.menu == nil ? nil : ActionMenu.key, onPress: model.pressHint)
-            .frame(width: SpotTokens.panelWidth)
+            .frame(width: width)
             .allowsHitTesting(isShown)
-            .offset(y: height - SpotTokens.halo - SpotTokens.hintPillHeight)
+            .offset(x: shift, y: height - SpotTokens.halo - SpotTokens.hintPillHeight)
             .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: isShown)) { $0.opacity(isShown ? 1 : 0) }
     }
 

@@ -189,7 +189,7 @@ final class SpotMotionProbe: NSObject {
         let height = panel.contentView?.bounds.height ?? 0
         let inset = SpotTokens.keycap / 2
         let point = row == "corner" ? CGPoint(x: rect.maxX - inset, y: rect.maxY - inset) : row == "minus" ? CGPoint(x: rect.minX + inset, y: rect.minY + inset) : CGPoint(x: rect.midX, y: rect.midY)
-        let edgeMove = CGSize(width: 0, height: SpotTokens.panelHeight - SpotTokens.halo - SpotTokens.hintBlock - 10 - (SpotTokens.gridTop + rect.midY))
+        let edgeMove = CGSize(width: 0, height: SpotTokens.gridPanelHeight(rows: model.panelSize.rows) - SpotTokens.halo - SpotTokens.hintBlock - 10 - (SpotTokens.gridTop + rect.midY))
         let translation = row == "corner" ? CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap) : row == "minus" ? .zero : row == "edge" ? edgeMove : move
         let start = NSPoint(x: SpotTokens.halo + point.x, y: height - (SpotTokens.gridTop + point.y))
         let size = { self.model.visible.firstIndex { $0.id == id }.map { self.model.placements[$0].size.name } ?? "none" }
@@ -235,8 +235,8 @@ final class SpotMotionProbe: NSObject {
     }
 
     /// Saves a picture of Edit Spots, of the card 30 ms into its lift and once the cards made room near the first place,
-    /// 60 ms into its drop there and after it, and of the card pulled a row taller by its corner and kept, from a panel off
-    /// every screen.
+    /// 60 ms into its drop there and after it, of the card pulled a row taller by its corner and kept, of the grid, and of
+    /// the sheet of the first card past four columns, from a panel off every screen.
     private func shoot(_ id: String, stops: [CGSize], into folder: String) {
         panel.setFrameOrigin(NSPoint(x: -9000, y: -9000))
         panel.alphaValue = 1
@@ -252,7 +252,13 @@ final class SpotMotionProbe: NSObject {
             ("dropping", 0.06, { self.model.dropSpot(by: near) }),
             ("dropped", 1, {}),
             ("resized", 1, { self.model.resizeSpot(id, by: CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap)) }),
-            ("kept", 1, { self.model.dropResize() })
+            ("kept", 1, { self.model.dropResize() }),
+            ("grid", 1, { self.model.endEditing() }),
+            ("sheet", 1.5, {
+                if let right = self.model.placements.first(where: { $0.column >= SpotTokens.columns }) {
+                    self.model.press(self.model.visible[right.index].id)
+                }
+            })
         ]
         func next(_ left: ArraySlice<(name: String, wait: Double, act: () -> Void)>) {
             guard let state = left.first else { return finish(with: "shots\n") }

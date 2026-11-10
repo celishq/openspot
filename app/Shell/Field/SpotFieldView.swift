@@ -20,7 +20,10 @@ struct SpotFieldView: View {
     let showsField: Bool
     /// Whether a sheet is out or a drop is taken, which sets the time of each fade.
     let surfaceIsOut: Bool
+    /// How far right of the field's place at rest the open sheet lies, which the field follows into the sheet.
+    var sheetShift: CGFloat = 0
     @FocusState private var isFocused: Bool
+    @Environment(\.spotPanelSize) private var panel
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -51,7 +54,7 @@ struct SpotFieldView: View {
     private var searchField: some View {
         let place = isInSheet ? fieldRowRect : Self.rect
         let top = SpotTokens.halo + (isInSheet ? SpotTokens.sheetFieldDrop - (SpotTokens.rowHeight - SpotTokens.listRowHeight) / 2 : 0)
-        let glyphLeft = SpotTokens.halo + SpotTokens.padding + (isInSheet ? SpotTokens.padding + (SpotTokens.listIconSize - SpotTokens.glyphSize) / 2 : 0)
+        let glyphLeft = SpotTokens.halo + SpotTokens.padding + (isInSheet ? sheetShift + SpotTokens.padding + (SpotTokens.listIconSize - SpotTokens.glyphSize) / 2 : 0)
         return ZStack(alignment: .topLeading) {
             SpotSurface(rect: place, radius: fieldRadius, glass: isInSheet || isInstall ? 0 : 1, fill: isInSheet ? 1 : 0)
             ZStack(alignment: .topLeading) {
@@ -77,15 +80,15 @@ struct SpotFieldView: View {
         }
         .font(SpotType.input)
         .foregroundStyle(SpotTheme.ink)
-        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
-        .scaleEffect(model.isShown ? 1 : SpotMotion.hiddenScale, anchor: UnitPoint(x: 0.5, y: Self.rect.midY / SpotTokens.panelHeight))
+        .frame(width: panel.width, height: panel.height, alignment: .topLeading)
+        .scaleEffect(model.isShown ? 1 : SpotMotion.hiddenScale, anchor: UnitPoint(x: 0.5, y: Self.rect.midY / panel.height))
         .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
     }
 
     /// The field's row in an open sheet.
     private var fieldRowRect: CGRect {
         CGRect(
-            x: SpotTokens.halo + SpotTokens.padding,
+            x: SpotTokens.halo + SpotTokens.padding + sheetShift,
             y: SpotTokens.halo + SpotTokens.sheetFieldDrop,
             width: SpotTokens.gridWidth - 2 * SpotTokens.padding,
             height: SpotTokens.listRowHeight
@@ -98,7 +101,7 @@ struct SpotFieldView: View {
     /// Where the field's words start, at rest and in a sheet.
     private var fieldTextLeft: CGFloat {
         isInSheet
-            ? SpotTokens.halo + 2 * SpotTokens.padding + SpotTokens.listIconSize + Self.gap
+            ? SpotTokens.halo + 2 * SpotTokens.padding + SpotTokens.listIconSize + Self.gap + sheetShift
             : SpotTokens.halo + SpotTokens.padding + SpotTokens.glyphSize + Self.gap
     }
 
@@ -164,10 +167,10 @@ struct SpotFieldView: View {
         return promptWords
             .frame(height: SpotTokens.rowHeight)
             .offset(x: left, y: top)
-            .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
+            .frame(width: panel.width, height: panel.height, alignment: .topLeading)
             .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: showsField)) { $0.opacity(showsField ? 1 : 0) }
             .opacity(model.isShown ? 1 : 0)
-            .scaleEffect(model.isShown ? 1 : SpotMotion.hiddenScale, anchor: UnitPoint(x: 0.5, y: (SpotTokens.halo + SpotTokens.rowHeight / 2) / SpotTokens.panelHeight))
+            .scaleEffect(model.isShown ? 1 : SpotMotion.hiddenScale, anchor: UnitPoint(x: 0.5, y: (SpotTokens.halo + SpotTokens.rowHeight / 2) / panel.height))
             .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
             .allowsHitTesting(false)
     }

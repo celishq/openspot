@@ -147,10 +147,32 @@ public enum SpotTokens {
         CGFloat(rows) * menuRowHeight + CGFloat(max(rows - 1, 0)) * menuRowGap + 2 * menuPadding
     }
 
-    /// The height of the blur around the search field and these card rows. It stops at the height of the panel.
-    public static func backdropHeight(rows: Int) -> CGFloat {
+    /// The height of the blur around the search field and these card rows. It stops at the height of the grid part of a
+    /// panel that shows this many rows.
+    public static func backdropHeight(rows: Int, shown: Int = PanelSize.standard.rows) -> CGFloat {
         let cards = rows > 0 ? rowGap + height(rows: rows) : 0
-        return min(2 * halo + rowHeight + cards + hintBlock, panelHeight)
+        return min(2 * halo + rowHeight + cards + hintBlock, gridPanelHeight(rows: shown))
+    }
+
+    /// The width of a panel whose grid has this many columns.
+    public static func panelWidth(columns: Int) -> CGFloat {
+        width(columns: columns) + 2 * halo
+    }
+
+    /// The height of the part of the panel that holds the field and this many rows of cards, with its margins and its hint.
+    public static func gridPanelHeight(rows: Int) -> CGFloat {
+        2 * halo + rowHeight + rowGap + height(rows: rows) + hintBlock
+    }
+
+    /// The height of the window of a panel that shows this many rows: its grid part, and never less than the room of the
+    /// tallest sheet.
+    public static func windowHeight(rows: Int) -> CGFloat {
+        max(gridPanelHeight(rows: rows), panelHeight)
+    }
+
+    /// How far a sheet lies to the right of the grid's left edge: at the start of the four columns that hold its card.
+    public static func sheetShift(column: Int) -> CGFloat {
+        CGFloat(column / columns) * (gridWidth + columnGap)
     }
 
     public static func corner(for size: SpotSize) -> CGFloat {
