@@ -15,6 +15,12 @@ final class SpotsPanel: NSPanel {
 
     override var canBecomeKey: Bool { true }
 
+    /// Keeps each frame as given. The panel places itself on its screen, and in Edit Spots its clear edge may pass the top
+    /// of the screen while its glass stays under it.
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        frameRect
+    }
+
     /// Opens the panel unseen, so that the first real open has its answers, its views and a ready text field. It then closes
     /// and runs the given work. A real open during this keeps the panel open.
     func warm(then done: @escaping () -> Void) {
@@ -124,7 +130,7 @@ final class SpotsPanel: NSPanel {
         NSAnimationContext.runAnimationGroup { context in
             context.duration = SpotMotion.editDuration
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            animator().setFrameOrigin(NSPoint(x: frame.minX, y: frame.minY + distance))
+            animator().setFrame(frame.offsetBy(dx: 0, dy: distance), display: false)
         } completionHandler: {
             MainActor.assumeIsolated { done() }
         }
