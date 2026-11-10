@@ -32,7 +32,7 @@ public final class SpotRuns {
     public let readLimit: TimeInterval
     /// How long a sheet with no answer yet holds its motion for the first answer.
     public let firstAnswerPause: TimeInterval
-    /// The length of a sheet's open motion.
+    /// How long a sheet's open motion moves, until its spring lies within a point of its end.
     public let openLength: TimeInterval
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored private let stopPause: TimeInterval
@@ -53,7 +53,7 @@ public final class SpotRuns {
     public init(
         readLimit: TimeInterval = 10,
         firstAnswerPause: TimeInterval = 0.15,
-        openLength: TimeInterval = 0.15,
+        openLength: TimeInterval = 0.25,
         now: @escaping () -> Date = { Date() },
         stopPause: TimeInterval = 2,
         tickPause: Duration = .seconds(1),
