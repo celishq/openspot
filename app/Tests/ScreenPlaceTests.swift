@@ -56,6 +56,21 @@ final class ScreenPlaceTests: XCTestCase {
         XCTAssertEqual(ScreenPlace.dock(under: panel, in: area), CGRect(x: 109, y: 20, width: 1220, height: 152))
     }
 
+    func testEditSpotsLiftsThePanelAsFarAsTheDockRises() {
+        let area = CGRect(x: 0, y: 0, width: 1440, height: 1300)
+        let panel = CGRect(x: 485, y: 300, width: 469, height: 736)
+
+        XCTAssertEqual(ScreenPlace.lift(of: panel, with: ScreenPlace.dock(under: panel, in: area), in: area), 172)
+    }
+
+    func testTheLiftedPanelStaysAMarginUnderTheTopOfItsScreen() {
+        let area = CGRect(x: 0, y: 0, width: 1440, height: 875)
+        let panel = CGRect(x: 485, y: 40, width: 469, height: 736)
+
+        XCTAssertEqual(ScreenPlace.lift(of: panel, with: ScreenPlace.dock(under: panel, in: area), in: area), 169)
+        XCTAssertEqual(ScreenPlace.lift(of: panel.offsetBy(dx: 0, dy: 200), with: ScreenPlace.dock(under: panel, in: area), in: area), 0)
+    }
+
     func testTheDockStaysWholeOnItsScreen() {
         let panel = CGRect(x: 600, y: 300, width: 469, height: 736)
 

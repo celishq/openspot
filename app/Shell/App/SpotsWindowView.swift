@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-/// What the panel's window shows: the panel, and in Edit Spots the dock under it.
+/// What the panel's window shows: the panel, and in Edit Spots the dock under it, which fades in as the window rises.
 struct SpotsWindowView: View {
     let model: SpotsModel
     let place: SpotsWindowPlace
@@ -14,7 +14,7 @@ struct SpotsWindowView: View {
                 SpotDockView(model: model, size: dock.size)
                     .environment(\.spotIsShown, model.isShown)
                     .offset(x: dock.minX, y: dock.minY)
-                    .transition(.opacity)
+                    .opacity(place.isOut ? 1 : 0.001)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

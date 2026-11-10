@@ -9,6 +9,8 @@ final class SpotsPanel: NSPanel {
     private let place = SpotsWindowPlace()
     /// The frame that the window had before Edit Spots grew it.
     private var restFrame: NSRect?
+    /// How far the window rose when Edit Spots started.
+    private var lift: CGFloat = 0
     private var pressWatch: Task<Void, Never>?
 
     override var canBecomeKey: Bool { true }
@@ -86,8 +88,9 @@ final class SpotsPanel: NSPanel {
         return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
     }
 
-    /// Grows the window in Edit Spots to hold the dock along the bottom of the screen, with the panel at its place on the
-    /// screen, and gives the window back its frame when Edit Spots ends.
+    /// Grows the window in Edit Spots to hold the dock under the panel, as far below its place along the bottom of the
+    /// screen as the two rise, then moves the window up while the dock fades in. When Edit Spots ends, the window moves back
+    /// down, and then gets its frame back. A panel that closes keeps its place until it is gone.
     private func followEditing() {
         guard let model else { return }
         let isEditing = withObservationTracking { model.isEditing } onChange: { [weak self] in
@@ -96,17 +99,46 @@ final class SpotsPanel: NSPanel {
         if isEditing, restFrame == nil, let area = screen?.visibleFrame {
             let panel = frame
             let dock = ScreenPlace.dock(under: panel, in: area)
-            let whole = panel.union(dock)
+            lift = ScreenPlace.lift(of: panel, with: dock, in: area)
+            let low = dock.offsetBy(dx: 0, dy: -lift)
+            let whole = panel.union(low)
             restFrame = panel
             place.panel = CGPoint(x: panel.minX - whole.minX, y: whole.maxY - panel.maxY)
-            place.dock = CGRect(x: dock.minX - whole.minX, y: whole.maxY - dock.maxY, width: dock.width, height: dock.height)
+            place.dock = CGRect(x: low.minX - whole.minX, y: whole.maxY - low.maxY, width: low.width, height: low.height)
+            place.isOut = false
             setFrame(whole, display: true)
-        } else if !isEditing, let rest = restFrame {
-            restFrame = nil
-            place.dock = nil
-            place.panel = .zero
-            setFrame(rest, display: true)
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.model?.isEditing == true else { return }
+                self.rise(by: self.lift, showing: true)
+            }
+        } else if !isEditing, restFrame != nil, model.isShown {
+            rise(by: -lift, showing: false) { [weak self] in
+                if self?.model?.isEditing == false { self?.restoreFrame() }
+            }
         }
+    }
+
+    /// Moves the window up this far, and shows or hides the dock, in one motion.
+    private func rise(by distance: CGFloat, showing isOut: Bool, then done: @escaping @MainActor () -> Void = {}) {
+        withAnimation(SpotMotion.edit) { place.isOut = isOut }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = SpotMotion.editDuration
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            animator().setFrameOrigin(NSPoint(x: frame.minX, y: frame.minY + distance))
+        } completionHandler: {
+            MainActor.assumeIsolated { done() }
+        }
+    }
+
+    /// Gives the window the frame it had before Edit Spots grew it, with the panel at its top left corner and no dock.
+    private func restoreFrame() {
+        guard let rest = restFrame else { return }
+        restFrame = nil
+        lift = 0
+        place.isOut = false
+        place.dock = nil
+        place.panel = .zero
+        setFrame(rest, display: true)
     }
 
     /// Starts the close motion, and takes the panel off the screen when it ends. Then it runs the given work.
@@ -116,6 +148,7 @@ final class SpotsPanel: NSPanel {
             defer { done?() }
             guard self.model?.isShown == false else { return }
             self.orderOut(nil)
+            if self.model?.isEditing == false { self.restoreFrame() }
             self.alphaValue = 1
             self.ignoresMouseEvents = false
             self.model?.panelDidHide()
