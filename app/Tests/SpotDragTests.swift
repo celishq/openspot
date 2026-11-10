@@ -44,6 +44,16 @@ final class SpotDragTests: XCTestCase {
         XCTAssertEqual(drag.nearest(to: CGPoint(x: SpotTokens.gridWidth, y: 1000)), 1)
     }
 
+    func testASquareDraggedOverTheSmallCardsBesideItLandsOnTheirRight() {
+        let sizes: [SpotSize] = [.square] + Array(repeating: .small, count: 8)
+        let drag = SpotDrag(id: "a", start: 0, sizes: sizes, places: 0...8)
+        let right = CGRect(x: SpotTokens.width(columns: 2) + SpotTokens.columnGap, y: 0, width: SpotTokens.width(columns: 2), height: SpotTokens.height(rows: 2))
+
+        let place = drag.nearest(to: centre(of: right))
+
+        XCTAssertEqual(drag.rect(at: place), right)
+    }
+
     func testTheLiftedCardsCentreFollowsThePointer() {
         let drag = SpotDrag(id: "d", start: 3, sizes: sizes, places: 0...3)
         let start = centre(of: drag.rect(at: 3))
