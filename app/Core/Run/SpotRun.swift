@@ -149,6 +149,10 @@ public final class SpotRun {
     /// What kind of sheet it is, from its parts, or from a first answer that waits for the open motion. An open sheet that
     /// still waits for its first answer cannot say yet.
     public private(set) var kind = SheetKind.rows
+    /// The rect of its sheet of parts, and the kind of those parts. They change only when they do, so that a new value of a
+    /// part reaches no view that reads only these.
+    public private(set) var partsRect: CGRect?
+    public private(set) var partsKind: SheetKind?
     /// The kind of the first answer while it waits for the open motion, or nil when no such answer waits.
     @ObservationIgnored private var heardKind: SheetKind? {
         didSet { settle() }
@@ -251,6 +255,10 @@ public final class SpotRun {
         let waits = showsSheet && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
         let nextKind = heardKind ?? (waits ? .waiting : panel?.kind ?? .rows)
         if nextKind != kind { kind = nextKind }
+        let rect = panel.map(SpotTokens.panelRect)
+        if rect != partsRect { partsRect = rect }
+        let parts = panel?.kind
+        if parts != partsKind { partsKind = parts }
     }
 
     /// Hears a frame that waits for the open motion, or nil when the wait ends. A sheet that waits for its first answer

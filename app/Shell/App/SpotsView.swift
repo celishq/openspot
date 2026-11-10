@@ -61,7 +61,6 @@ struct SpotsView: View {
                     frame: frame,
                     sheetRect: sheetRect,
                     isOpen: sheetOpen,
-                    panel: shownPanel,
                     cardMask: edges.gradient(height: cardHeight)
                 )
             }
@@ -130,7 +129,7 @@ struct SpotsView: View {
 
     /// The rect of a sheet from its parts, or else from the shape of its rows.
     private func rect(of id: String?) -> CGRect {
-        if let panel = model.sheets[id ?? ""]?.panel { return SpotTokens.panelRect(panel) }
+        if let rect = model.sheets[id ?? ""]?.partsRect { return rect }
         let shape = model.sheets[id ?? ""]?.shape
         return SpotTokens.sheetRect(rows: shape?.rows ?? 0, perLine: shape?.perLine ?? 1)
     }
@@ -140,11 +139,6 @@ struct SpotsView: View {
     private var replacedHeight: CGFloat {
         guard let replaced = model.transition.replaced else { return 0 }
         return rect(of: replaced).height + 2 * SpotTokens.halo + SpotTokens.hintBlock
-    }
-
-    /// The parts of the open sheet.
-    private var shownPanel: SheetParts? {
-        model.shownParts(of: sheetID)
     }
 
     /// How far the install screen pushes the grid: as far as its lower edge moves.

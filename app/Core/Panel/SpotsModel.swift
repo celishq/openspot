@@ -660,7 +660,7 @@ public final class SpotsModel {
     /// search the rows of its options.
     public var showsSearch: Bool {
         if let form { return form.draft.choices != nil && !isEditing }
-        return !isEditing && openPanel?.kind.takesKeys != false
+        return !isEditing && openSheet?.partsKind?.takesKeys != false
     }
 
     public var openPanel: SheetParts? {

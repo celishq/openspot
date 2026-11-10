@@ -13,12 +13,15 @@ struct SpotSheetView: View {
     /// own curve.
     let showsFill: Bool
     let rect: CGRect
-    /// The parts of the sheet, once they have landed.
-    let panel: SheetParts?
     /// How far the close button lies from its place at the card's edge. Nil for a card with no arrow, where the frame cuts it.
     let closeShift: CGFloat?
     /// The width of the card or field that the sheet grows out of and collapses into.
     let cardWidth: CGFloat
+
+    /// The parts of the sheet, once they have landed.
+    private var panel: SheetParts? {
+        model.shownParts(of: entry.id)
+    }
 
     private var list: ItemList {
         model.sheets[entry.id]?.list ?? ItemList()

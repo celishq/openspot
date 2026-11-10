@@ -100,6 +100,28 @@ final class SpotRunTests: XCTestCase {
         XCTAssertFalse(changed)
     }
 
+    func testANewValueOfAPartTellsNoReaderOfTheRectOrTheKindOfTheParts() async throws {
+        let sheet = try make("printf 'field=a\\ntitle=Name\\ntext=%s\\n\\ntext=b\\ntitle=B\\n' \"$2\"")
+        sheet.open {}
+        try await wait("the parts") { sheet.panel != nil }
+        let part = try XCTUnwrap(sheet.panel?.parts.first)
+        XCTAssertEqual(sheet.partsRect, sheet.panel.map(SpotTokens.panelRect))
+        XCTAssertEqual(sheet.partsKind, .parts)
+        nonisolated(unsafe) var changed = false
+        withObservationTracking {
+            _ = sheet.partsRect
+            _ = sheet.partsKind
+        } onChange: {
+            changed = true
+        }
+
+        sheet.set(part, to: "new")
+
+        XCTAssertEqual(sheet.panel?.parts.first?.value, "new")
+        XCTAssertFalse(changed)
+        sheet.close()
+    }
+
     func testACloseWithNoSelectionTellsNoReaderOfTheParts() async throws {
         let sheet = try holding("printf 'text=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n'", pause: 0.02)
         sheet.open(waits: true) {}
