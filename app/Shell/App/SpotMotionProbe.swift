@@ -3,7 +3,8 @@ import AppKit
 import QuartzCore
 
 /// A run that opens and closes the sheet of one spot again and again, or with `OPENSPOT_ACTION` moves down its rows, types
-/// in its search, picks the row `OPENSPOT_ROW` or drags a card in Edit Spots, and writes the time of each frame to a file.
+/// in its search, picks the row `OPENSPOT_ROW`, drags a card in Edit Spots or with `edit` starts and ends Edit Spots, and
+/// writes the time of each frame to a file.
 /// `OPENSPOT_ACTION=mouse` drags a card with mouse events instead, or with `OPENSPOT_ROW` holds it at the bottom `edge`,
 /// pulls its `corner` handle or presses its `minus`, and writes whether it lifted or resized, the order, its size and
 /// whether it is on the grid after.
@@ -57,6 +58,7 @@ final class SpotMotionProbe: NSObject {
 
     private func begin() {
         if action == "drag" || action == "mouse" { return beginDrag() }
+        if action == "edit" { return beginEdit() }
         let target = model.entries.first { spot == nil ? $0.kind == .widget && $0.command.opens != nil : $0.id == spot }
         guard let target, let view = panel.contentView else { return finish(with: "no spot to open\n") }
         let link = view.displayLink(target: self, selector: #selector(tick))
@@ -75,6 +77,22 @@ final class SpotMotionProbe: NSObject {
             default: self.arrow(left: self.presses)
             }
         }
+    }
+
+    /// Starts Edit Spots, and ends it as Done does, again and again.
+    private func beginEdit() {
+        guard let view = panel.contentView else { return finish(with: "no panel\n") }
+        let link = view.displayLink(target: self, selector: #selector(tick))
+        link.add(to: .main, forMode: .common)
+        self.link = link
+        start = CACurrentMediaTime()
+        edit(left: presses)
+    }
+
+    private func edit(left: Int) {
+        guard left > 0 else { return end() }
+        if left % 2 == 0 { model.beginEditing() } else { model.endEditing() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.edit(left: left - 1) }
     }
 
     /// Runs the work a second after the open sheet holds its rows.
