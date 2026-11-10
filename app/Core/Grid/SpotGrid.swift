@@ -1,36 +1,49 @@
 import Foundation
 
-/// Packs spots into full rows of four columns. Each spot takes the next shelf, a smaller spot moves up to fill
-/// a gap, and spots grow until their shelf has no hole. A square lies on the left of its shelf, or on the right when small
-/// spots that fit on half a line come before it.
+/// Packs spots into shelves four columns wide, and lays the shelves side by side across the grid's columns, each in the
+/// column of shelves that ends highest. Each spot takes the next shelf, a smaller spot moves up to fill a gap, and spots
+/// grow until their shelf has no hole. A square lies on the left of its shelf, or on the right when small spots that fit
+/// on half a line come before it.
 public struct SpotGrid: Sendable {
     private typealias Slot = (index: Int, size: SpotSize)
 
-    public init() {}
+    /// The number of shelves side by side: one for each four columns.
+    private let shelves: Int
+
+    public init(columns: Int = SpotTokens.columns) {
+        shelves = max(columns / SpotTokens.columns, 1)
+    }
 
     public func place(_ sizes: [SpotSize]) -> [SpotPlacement] {
         var queue: [Slot] = sizes.enumerated().map { (index: $0.offset, size: $0.element) }
         var placements: [SpotPlacement] = []
-        var row = 0
+        var ends = Array(repeating: 0, count: shelves)
         while let first = queue.first {
             queue.removeFirst()
+            var shelf: [SpotPlacement] = []
+            let rows: Int
             if first.size == .strip {
-                placements.append(SpotPlacement(index: first.index, row: row, column: 0, size: .strip))
-                row += 1
+                shelf.append(SpotPlacement(index: first.index, row: 0, column: 0, size: .strip))
+                rows = 1
             } else if first.size == .large {
-                placements.append(SpotPlacement(index: first.index, row: row, column: 0, size: .large))
-                row += 2
+                shelf.append(SpotPlacement(index: first.index, row: 0, column: 0, size: .large))
+                rows = 2
             } else if first.size.rows > 1 {
-                row += placeSquare(first, in: &queue, row: row, placements: &placements)
+                rows = placeSquare(first, in: &queue, row: 0, placements: &shelf)
             } else if let position = squarePosition(after: first, in: queue) {
                 let leading = [first] + queue[..<position]
                 let square = queue[position]
                 queue.removeSubrange(...position)
-                row += placeSquare(square, after: leading, in: &queue, row: row, placements: &placements)
+                rows = placeSquare(square, after: leading, in: &queue, row: 0, placements: &shelf)
             } else {
-                placeRow(taking(first, from: &queue, room: 4), row: row, placements: &placements)
-                row += 1
+                placeRow(taking(first, from: &queue, room: 4), row: 0, placements: &shelf)
+                rows = 1
             }
+            let column = ends.indices.min { (ends[$0], $0) < (ends[$1], $1) } ?? 0
+            placements += shelf.map {
+                SpotPlacement(index: $0.index, row: $0.row + ends[column], column: $0.column + SpotTokens.columns * column, size: $0.size)
+            }
+            ends[column] += rows
         }
         return placements.sorted { $0.index < $1.index }
     }

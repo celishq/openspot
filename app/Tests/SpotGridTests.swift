@@ -148,6 +148,59 @@ final class SpotGridTests: XCTestCase {
         XCTAssertEqual(SpotGrid().place([.wide, .small, .square]).map(\.row), [0, 0, 1])
     }
 
+    func testEightColumnsPutTheNextShelfBesideTheFirst() {
+        XCTAssertEqual(SpotGrid(columns: 8).place([.wide, .wide, .wide, .wide]), [
+            SpotPlacement(index: 0, row: 0, column: 0, size: .wide),
+            SpotPlacement(index: 1, row: 0, column: 2, size: .wide),
+            SpotPlacement(index: 2, row: 0, column: 4, size: .wide),
+            SpotPlacement(index: 3, row: 0, column: 6, size: .wide)
+        ])
+    }
+
+    func testAShelfGoesToTheColumnOfShelvesThatEndsHighest() {
+        XCTAssertEqual(SpotGrid(columns: 8).place([.large, .strip, .strip, .strip]), [
+            SpotPlacement(index: 0, row: 0, column: 0, size: .large),
+            SpotPlacement(index: 1, row: 0, column: 4, size: .strip),
+            SpotPlacement(index: 2, row: 1, column: 4, size: .strip),
+            SpotPlacement(index: 3, row: 2, column: 0, size: .strip)
+        ])
+    }
+
+    func testSixteenColumnsHoldFourShelvesInARow() {
+        XCTAssertEqual(SpotGrid(columns: 16).place([.strip, .strip, .strip, .strip, .strip]).map(\.column), [0, 4, 8, 12, 0])
+    }
+
+    func testEveryCombinationFillsEachColumnOfShelvesToItsEnd() {
+        let all: [SpotSize] = [.small, .wide, .square, .strip, .large]
+        var combinations: [[SpotSize]] = [[]]
+        for _ in 0..<5 {
+            combinations += combinations.filter { $0.count == combinations.last!.count }.flatMap { base in all.map { base + [$0] } }
+        }
+        for input in combinations {
+            let placements = SpotGrid(columns: 8).place(input)
+            XCTAssertEqual(placements.map(\.index), Array(input.indices), "\(input)")
+            var cells = Set<[Int]>()
+            for spot in placements {
+                XCTAssertLessThanOrEqual(spot.column + spot.size.columns, 8, "\(input)")
+                XCTAssertEqual(spot.column / 4, (spot.column + spot.size.columns - 1) / 4, "a spot across two shelves in \(input)")
+                for row in spot.row..<(spot.row + spot.size.rows) {
+                    for column in spot.column..<(spot.column + spot.size.columns) {
+                        XCTAssertTrue(cells.insert([row, column]).inserted, "overlap in \(input)")
+                    }
+                }
+            }
+            var ends = [0, 0]
+            for spot in placements {
+                ends[spot.column / 4] = max(ends[spot.column / 4], spot.row + spot.size.rows)
+            }
+            for block in 0..<2 {
+                let filled = cells.filter { (cell: [Int]) in cell[1] / 4 == block }.count
+                XCTAssertEqual(filled, ends[block] * 4, "hole in \(input)")
+            }
+            XCTAssertLessThanOrEqual(abs(ends[0] - ends[1]), 2, "\(input)")
+        }
+    }
+
     func testAFullSetKeepsItsSizes() {
         let input: [SpotSize] = [.square, .wide, .small, .small, .wide, .small, .small, .strip, .strip, .strip]
         XCTAssertEqual(sizes(input), input)
