@@ -118,7 +118,7 @@ final class AgendaExampleTests: SamplePluginsCase {
         try read("calls", in: folder).split(separator: "\n").map(String.init)
     }
 
-    func testTheCardShowsTheNextTimedEventOverATickForEachOfTheFirstTwoOpenReminders() async throws {
+    func testTheCardShowsTheNextTimedEventOverTheRemindersThatEachSizeHasRoomFor() async throws {
         let agenda = try example("Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
@@ -139,7 +139,10 @@ final class AgendaExampleTests: SamplePluginsCase {
             time.dateFormat = "HH:mm"
             XCTAssertEqual(output.parts.first { $0.id == "at" }?.control, .metric(time.string(from: Date().addingTimeInterval(750))))
             XCTAssertEqual(output.face.drawing(for: .large), [["next", "next", "next", "next"], ["next", "next", "next", "next"], ["R1", "R1", "R1", "due-R1"], ["R3", "R3", "R3", "due-R3"]])
-            XCTAssertEqual(output.face.drawing(for: .square), [["next"], ["next"], ["R1"], ["R3"]])
+            XCTAssertEqual(output.face.drawing(for: .square), [["next", "next"], ["next", "next"], ["todo", "late"]])
+            XCTAssertEqual(output.parts.first { $0.id == "todo" }?.title, "3 to do")
+            XCTAssertEqual(output.parts.first { $0.id == "late" }?.title, "1 late")
+            XCTAssertEqual(output.parts.first { $0.id == "late" }?.textTone, .bad)
             XCTAssertEqual(output.face.drawing(for: .strip), [["next"]])
             XCTAssertEqual(output.face.drawing(for: .wide), [["next"]])
             XCTAssertEqual(output.face.drawing(for: .small), [["at"]])
@@ -149,6 +152,25 @@ final class AgendaExampleTests: SamplePluginsCase {
                 "setting get calendars", "calendar events --days 2", "reminders due --days 2"
             ])
             XCTAssertTrue(calls.allSatisfy { $0.hasSuffix("|") }, "a call took stdin: \(calls)")
+        }
+    }
+
+    func testTheStripCardOffersToJoinACallThatStartsWithinTenMinutes() async throws {
+        let agenda = try example("Agenda")
+        try await withPrivateHome { folder in
+            try self.fakeOpenspot(in: folder)
+            let far = try await agenda.items(timeout: 5)
+            let near = "row=event:B/2\ntitle=Standup\ndetail=Soon · Work\nicon=video\nstart=\(self.iso(300))\nend=\(self.iso(1200))\nmeeting=https://meet.google.com/abc-defg-hij\n"
+            try near.write(to: folder.appendingPathComponent("events"), atomically: true, encoding: .utf8)
+
+            let output = try await agenda.items(timeout: 5)
+            try await agenda.perform(.press("join-now"), timeout: 5)
+
+            XCTAssertEqual(far.face.drawing(for: .strip), [["next"]])
+            XCTAssertEqual(output.face.drawing(for: .strip), [["next", "next", "next", "join-now"]])
+            XCTAssertEqual(output.parts.first { $0.id == "join-now" }?.title, "Join")
+            XCTAssertFalse(output.actions.contains { $0.id == "join-now" })
+            XCTAssertEqual(try self.read("opened", in: folder), "https://meet.google.com/abc-defg-hij\n")
         }
     }
 

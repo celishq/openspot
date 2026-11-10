@@ -73,6 +73,7 @@ public struct PluginOutput: Equatable, Sendable {
         let repeated = repeats.first.flatMap { block in block.value(Self.repeatKind).map { (block, $0) } }
         if let (block, _) = repeated { drawing = RepeatDrawing(block: block) }
         let drawn = head.flatMap { SheetLayout(block: $0) }
+        let carded = Set(CardFace(head: head, parts: []).drawings.values.flatMap { $0.joined() })
         for block in blocks {
             let kind = block.fields.first?.key
             if kind == Self.repeatKind { continue }
@@ -83,7 +84,7 @@ public struct PluginOutput: Equatable, Sendable {
                 } else {
                     errors.append(block.firstLine)
                 }
-            } else if kind == Self.button, let id = block.value(Self.button), drawn?.areas[id] == nil {
+            } else if kind == Self.button, let id = block.value(Self.button), drawn?.areas[id] == nil, !carded.contains(id) {
                 take(action: id, block)
             } else if kind == "row" {
                 rows.append(block)

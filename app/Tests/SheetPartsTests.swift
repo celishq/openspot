@@ -48,6 +48,15 @@ final class SheetPartsTests: XCTestCase {
         try XCTUnwrap(SheetParts(output: PluginOutput(text: text)))
     }
 
+    func testAButtonThatOnlyACardDrawingPlacesIsAPartOfTheCardAndNoAction() {
+        let output = PluginOutput(text: "grid.strip=next next next join-now\n\nnumber=next\nvalue=09:30\n\nbutton=join-now\ntitle=Join\n\nbutton=tick\ntitle=Mark as done\n")
+
+        XCTAssertEqual(output.parts.map(\.id), ["next", "join-now"])
+        XCTAssertEqual(output.actions.map(\.id), ["tick"])
+        XCTAssertEqual(output.face.drawing(for: .strip), [["next", "next", "next", "join-now"]])
+        XCTAssertEqual(output.partFaults, [])
+    }
+
     func testATextOrANumberTakesAColourForItsBarAndOtherPartsDoNot() {
         let output = PluginOutput(text: "number=next\nvalue=09:30\ncolor=#1BADF8\n\ntext=work\ncolor=#ff9500\n\nnumber=odd\nvalue=1\ncolor=blue\n\ngauge=disk\nvalue=0.5\ncolor=#1BADF8\n")
 

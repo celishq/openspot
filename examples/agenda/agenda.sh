@@ -59,17 +59,20 @@ field() { printf '%s\n' "$2" | sed -n "s/^$1=//p" | head -n 1; }
 # Seconds since 1970 of an ISO 8601 time, such as 2026-11-10T09:30:00+01:00.
 epoch() { date -j -f '%Y-%m-%dT%H:%M:%S%z' "$(printf '%s' "$1" | sed 's/:\([0-9][0-9]\)$/\1/')" +%s 2>/dev/null; }
 
-# Prints the head and the card: the next event in large type across the top, with its time alone on the small card, and a
-# line below it for each of the first two open reminders, with a tick before its title and its due time at the end.
+# Prints the next event that has a time, or nothing.
+next_event() { printf '%s\n' "$events" | awk 'BEGIN { RS = "" } /\nallday=true/ { next } /^row=/ { print; exit }'; }
+
+# Prints the head and the card: the next event in large type across the top, in the colour of its calendar, with its time
+# alone on the small card. The strip card adds Join while the event's call is on or starts within 10 minutes, the square
+# card a line with the number of open and of late reminders, and the large card a line for each of the first two open
+# reminders, with a tick before its title and its due time at the end.
 card() {
-  next=$(printf '%s\n' "$events" | awk 'BEGIN { RS = "" } /\nallday=true/ { next } /^row=/ { print; exit }')
+  next=$(next_event)
   ticks=$(printf '%s\n' "$reminders" | awk 'BEGIN { RS = ""; FS = "\n" } /^row=reminder:/ && /\ndone=false/ && shown < 2 { shown++; print substr($1, 14) }')
-  printf 'main=next\nsearch=script\nrecents=false\ngrid=items\ngrid.small=at\ngrid.wide=next\ngrid.strip=next\n'
-  printf 'grid.square=next\ngrid.square=next\ngrid.large=next next next next\ngrid.large=next next next next\n'
-  for id in $ticks; do
-    printf 'grid.square=%s\ngrid.large=%s %s %s due-%s\n' "$id" "$id" "$id" "$id" "$id"
-  done
-  printf '\n'
+  set -- $(printf '%s\n' "$reminders" | awk 'BEGIN { RS = ""; FS = "\n" } /^row=reminder:/ && /\ndone=false/ { open++; if (/\ntone=bad/) late++ } END { print open + 0, late + 0 }')
+  open=$1
+  late=$2
+  join=""
   if [ "$events" = status=unasked ]; then
     value=Allow
     time=Allow
@@ -92,9 +95,26 @@ card() {
     elif [ "$(date -r "$start" +%F)" != "$(date +%F)" ]; then
       title="$title · tomorrow"
     fi
+    if [ -n "$(field meeting "$next")" ] && { [ "$value" = Now ] || [ "$left" -le 10 ]; }; then join=1; fi
   fi
+  strip=next
+  [ -z "$join" ] || strip='next next next join-now'
+  printf 'main=next\nsearch=script\nrecents=false\ngrid=items\ngrid.small=at\ngrid.wide=next\ngrid.strip=%s\n' "$strip"
+  printf 'grid.square=next next\ngrid.square=next next\ngrid.large=next next next next\ngrid.large=next next next next\n'
+  if [ "$late" -gt 0 ]; then
+    printf 'grid.square=todo late\n'
+  elif [ "$open" -gt 0 ]; then
+    printf 'grid.square=todo todo\n'
+  fi
+  for id in $ticks; do
+    printf 'grid.large=%s %s %s due-%s\n' "$id" "$id" "$id" "$id"
+  done
+  printf '\n'
   color=$(field color "$next")
   printf 'number=next\nvalue=%s\ntitle=%s\ncolor=%s\n\nnumber=at\nvalue=%s\ntitle=%s\n\n' "$value" "$title" "$color" "$time" "$title"
+  [ "$open" -eq 0 ] || printf 'text=todo\ntitle=%s to do\n\n' "$open"
+  [ "$late" -eq 0 ] || printf 'text=late\ntitle=%s late\ntone=bad\n\n' "$late"
+  [ -z "$join" ] || printf 'button=join-now\ntitle=Join\n\n'
   printf '%s\n' "$reminders" | awk 'BEGIN { RS = ""; FS = "\n" }
     /^row=reminder:/ && /\ndone=false/ && shown < 2 {
       shown++
@@ -190,6 +210,12 @@ case "$1" in
     to=true
     [ "$state" = true ] && to=false
     openspot reminders done "$2" "$to" </dev/null
+    ;;
+  join-now)
+    events=$(events) || exit 1
+    link=$(field meeting "$(next_event)")
+    [ -n "$link" ] || { echo 'The next event has no call link.' >&2; exit 1; }
+    open "$link"
     ;;
   join)
     link=$(events | awk -v id="$2" 'BEGIN { RS = ""; FS = "\n" } $1 == "row=" id { for (i = 2; i <= NF; i++) if ($i ~ /^meeting=/) print substr($i, 9) }')
