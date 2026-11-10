@@ -3,8 +3,8 @@ import OpenspotCore
 import SwiftUI
 
 /// The square on a card's corner that takes the drag of its resize handle: the card snaps to the nearest size, and the
-/// other cards make room. The pointer over it, and through its drag, is a double arrow that always points at the centre
-/// of the card's corner. A release off the handle gives back the arrow.
+/// other cards make room. The pointer over it, and through its drag, is a double arrow at the angle `handleAngle` gives.
+/// A release off the handle gives back the arrow.
 struct SpotHandleArea: View {
     let model: SpotsModel
     let id: String
@@ -20,8 +20,7 @@ struct SpotHandleArea: View {
             .onContinuousHover { phase in
                 guard case .active(let point) = phase else { return }
                 grip = point
-                let next = SpotTokens.handleAngle(of: size, at: point)
-                if next != angle { angle = next }
+                if let next = SpotTokens.handleAngle(of: size, at: point), next != angle { angle = next }
             }
             .pointerStyle(.image(Self.pointer(at: angle).image, hotSpot: .center))
             .gesture(resize)
@@ -31,8 +30,8 @@ struct SpotHandleArea: View {
         DragGesture(minimumDistance: 0, coordinateSpace: .named(SpotsView.panelSpace))
             .onChanged {
                 model.resizeSpot(id, by: $0.translation, grip: grip)
-                guard let point = model.resizePointer, let resize = model.resize else { return }
-                Self.pointer(at: SpotTokens.handleAngle(of: resize.size, at: point)).cursor.set()
+                guard let point = model.resizePointer, let resize = model.resize, let angle = SpotTokens.handleAngle(of: resize.size, at: point) else { return }
+                Self.pointer(at: angle).cursor.set()
             }
             .onEnded { _ in
                 let square = CGRect(x: 0, y: 0, width: SpotTokens.resizeHandle, height: SpotTokens.resizeHandle)

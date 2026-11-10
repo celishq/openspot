@@ -22,8 +22,10 @@ public enum SpotTokens {
     public static let dockWidth: CGFloat = 1220
     public static let dockHeight: CGFloat = 2 * padding + menuRowHeight + rowGap + rowHeight + 4 + 14
     public static let dockMargin: CGFloat = 20
-    /// The step, in degrees, in which the pointer over a resize handle turns.
+    /// The step, in degrees, in which the pointer over a resize handle turns, and how near the centre of the card's corner
+    /// the pointer keeps the angle it has.
     public static let handleAngleStep = 5
+    public static let handleStill: CGFloat = 4
     /// How far from each edge the rim of a round corner passes through its diagonal, as a part of the radius.
     public static let rimPoint: CGFloat = 1 - 0.5.squareRoot()
     public static let listRowHeight: CGFloat = 40
@@ -67,14 +69,20 @@ public enum SpotTokens {
         CGFloat(rows) * rowHeight + CGFloat(rows - 1) * rowGap
     }
 
-    /// The angle, in degrees from the right and below 180, of the line through the centre of a card's bottom right corner
-    /// and this point, in its handle's square, in steps of `handleAngleStep`.
-    public static func handleAngle(of size: SpotSize, at point: CGPoint) -> Int {
+    /// The angle in degrees, from level to upright in steps of `handleAngleStep`, of the arrow at this point of a card's
+    /// corner handle: the line from the corner's centre to the point, which past the handle eases towards the diagonal.
+    /// Nil within `handleStill` of the centre.
+    public static func handleAngle(of size: SpotSize, at point: CGPoint) -> Int? {
         let centre = resizeHandle - corner(for: size)
-        let degrees = atan2(point.y - centre, point.x - centre) * 180 / .pi
-        let line = (degrees + 360).truncatingRemainder(dividingBy: 180)
+        let dx = point.x - centre, dy = point.y - centre
+        let distance = hypot(dx, dy)
+        guard distance >= handleStill else { return nil }
+        let line = (atan2(dy, dx) * 180 / .pi + 360).truncatingRemainder(dividingBy: 180)
+        let held = line <= 90 ? line : line < 135 ? 90 : 0
+        let reach = (resizeHandle - centre) * 2.squareRoot()
+        let eased = 45 + (held - 45) * min(reach / distance, 1)
         let step = CGFloat(handleAngleStep)
-        return Int((line / step).rounded() * step) % 180
+        return Int((eased / step).rounded() * step)
     }
 
     /// The space between the edge of a card and what it shows. A 1x1 widget keeps more room for its one mark.

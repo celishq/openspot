@@ -27,7 +27,21 @@ final class SpotTokensTests: XCTestCase {
 
     func testAPointerOnTheFarSideOfTheCentreGivesTheSameLine() {
         XCTAssertEqual(SpotTokens.handleAngle(of: .small, at: CGPoint(x: -28, y: -28)), 45)
-        XCTAssertEqual(SpotTokens.handleAngle(of: .square, at: CGPoint(x: 28, y: 0)), 175)
         XCTAssertEqual(SpotTokens.handleAngle(of: .square, at: CGPoint(x: 28, y: 2.5)), 0)
+    }
+
+    func testTheArrowStaysBetweenLevelAndUpright() {
+        XCTAssertEqual(SpotTokens.handleAngle(of: .square, at: CGPoint(x: 28, y: 0)), 0)
+        XCTAssertEqual(SpotTokens.handleAngle(of: .square, at: CGPoint(x: 12, y: -2)), 0)
+        XCTAssertEqual(SpotTokens.handleAngle(of: .square, at: CGPoint(x: -2, y: 12)), 90)
+    }
+
+    func testFarFromTheHandleTheArrowSettlesTowardsTheDiagonal() {
+        XCTAssertEqual(SpotTokens.handleAngle(of: .square, at: CGPoint(x: -198, y: -58)), 40)
+        XCTAssertEqual(SpotTokens.handleAngle(of: .square, at: CGPoint(x: -298, y: 2)), 40)
+    }
+
+    func testAtTheCentreOfTheCornerTheArrowHasNoAngle() {
+        XCTAssertNil(SpotTokens.handleAngle(of: .square, at: CGPoint(x: 3, y: 3)))
     }
 }
