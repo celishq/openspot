@@ -135,9 +135,13 @@ public final class SpotRun {
     public var isFloating: Bool {
         runs.floating.contains(command.id)
     }
-    /// Whether its sheet shows: the open one of the panel, or a float.
+    /// The places where its sheet shows, as the runs record them.
+    public var places: Set<SheetPlace> {
+        Set([isOpen ? SheetPlace.panel : nil, isFloating ? .float : nil].compactMap { $0 })
+    }
+    /// Whether its sheet shows in any place.
     private var showsSheet: Bool {
-        isOpen || isFloating
+        !places.isEmpty
     }
     /// How many rows the list shows, and how many on a line. It changes only when they do, so a move of the selection leaves
     /// a view that sizes itself by it alone.
@@ -173,6 +177,7 @@ public final class SpotRun {
     @ObservationIgnored private var readsAgain = false
     @ObservationIgnored private var pauses: [String: Task<Void, Never>] = [:]
     @ObservationIgnored private var editing: String?
+    /// The drops and the drags of files that wait for the running work, each in turn (D4, O2).
     @ObservationIgnored private var waitingFiles: [SpotAction] = []
     @ObservationIgnored private var waitingKeys: [String] = []
 
@@ -289,20 +294,6 @@ public final class SpotRun {
         nudge = SheetParts.Nudge(step: step, serial: nudge.serial + 1)
     }
 
-    /// The panel closed: a sheet of parts, or of a script that holds its own state, closes and drops its values, so the next
-    /// open reads again. A sheet of rows stays, and so does a float.
-    func panelClosed() {
-        if !isFloating, panel != nil || command.stays {
-            let wasOpen = isOpen
-            close()
-            panel = nil
-            answered = nil
-            if wasOpen { onReport(.closed) }
-        }
-        stopUnwantedRead()
-        link.settle()
-    }
-
     /// The script began to float: its sheet selects its first row and reads. A card reads only when its header lists
     /// `panel`, so that a float runs nothing that the panel would not.
     func floated() {
@@ -316,16 +307,19 @@ public final class SpotRun {
         runs.updateClock()
     }
 
-    /// The float closed: unless the panel shows the sheet, a sheet of parts, or of a script that holds its own state, drops
-    /// its values, so the next float reads again.
-    func landed() {
+    /// The sheet left a place, as when the panel or a float closed. Unless it still shows in a place in view, a sheet of
+    /// parts, or of a script that holds its own state, closes and drops its values, so that its next show reads again (K5,
+    /// W7). A sheet of rows stays.
+    func leftPlace() {
         if !isInView, panel != nil || command.stays {
+            let wasOpen = isOpen
+            close()
             panel = nil
             answered = nil
+            if wasOpen { onReport(.closed) }
         }
         stopUnwantedRead()
         link.settle()
-        runs.updateClock()
     }
 
     /// The panel opened: an open sheet of rows is in view again and reads, by M1 and M2.
@@ -505,8 +499,7 @@ public final class SpotRun {
         return true
     }
 
-    /// Tells the script of the rows that a drag took out to another app (O2). It runs as a drop does, once no call that does
-    /// work runs.
+    /// Tells the script of the rows that a drag took out to another app (O2).
     public func dragged(_ items: [SpotItem]) {
         guard !items.isEmpty else { return }
         waitingFiles.append(.drag(runs: items.map(\.run)))

@@ -115,7 +115,8 @@ public final class SpotRuns {
     /// Ends the float of a script. A sheet of parts drops its values, as the panel's close does (K5).
     public func land(_ id: String) {
         guard floating.remove(id) != nil else { return }
-        sheets[id]?.landed()
+        sheets[id]?.leftPlace()
+        updateClock()
     }
 
     /// Closes the open sheet.
@@ -144,7 +145,7 @@ public final class SpotRuns {
     /// The panel closed: a sheet of parts closes and drops its values, and a read that nothing wants now stops.
     public func panelClosed() {
         isPanelOpen = false
-        sheets.values.forEach { $0.panelClosed() }
+        sheets.values.forEach { $0.leftPlace() }
         updateClock()
     }
 
