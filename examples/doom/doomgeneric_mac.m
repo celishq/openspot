@@ -15,17 +15,6 @@ static unsigned short queue[QUEUE_SIZE];
 static unsigned int queueStart;
 static unsigned int queueEnd;
 static BOOL held[256];
-/// The time in milliseconds between two pictures of the screen during play.
-#define SCREEN_PAUSE 5000
-
-/// The time in milliseconds after the start when `-title` takes the title screen.
-#define TITLE_TIME 1500
-
-static NSWindow *window;
-static NSView *display;
-static BOOL titleOnly;
-static uint32_t started;
-static uint32_t lastScreen;
 
 /// Puts one press or release of a Doom key at the end of the queue, and drops it when the queue is full.
 static void QueueKey(BOOL pressed, unsigned char key) {
@@ -119,6 +108,9 @@ static BOOL ModifierIsDown(NSEvent *event) {
 
 @end
 
+static NSWindow *window;
+static NSView *display;
+
 /// Ends the game when its window closes, and releases the keys when the window loses the focus.
 @interface DoomWindowWatch : NSObject <NSWindowDelegate>
 @end
@@ -148,29 +140,23 @@ static NSMenu *MainMenu(void) {
     return bar;
 }
 
-void DG_Init(void) {
-    if (titleOnly) return;
-    window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 640, 480)
-                                         styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable
-                                           backing:NSBackingStoreBuffered
-                                             defer:NO];
-    window.title = @"Doom";
-    window.contentAspectRatio = NSMakeSize(4, 3);
-    window.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
-    window.releasedWhenClosed = NO;
-    watch = [[DoomWindowWatch alloc] init];
-    window.delegate = watch;
-    display = [[DoomView alloc] initWithFrame:NSMakeRect(0, 0, 640, 480)];
-    display.wantsLayer = YES;
-    display.layer.contentsGravity = kCAGravityResize;
-    display.layer.magnificationFilter = kCAFilterNearest;
-    display.layer.backgroundColor = NSColor.blackColor.CGColor;
-    window.contentView = display;
-    [window center];
-    [window makeKeyAndOrderFront:nil];
-    [window makeFirstResponder:display];
-    [NSApp activate];
+/// Handles each window event that waits, and returns at once when none waits.
+static void HandleEvents(void) {
+    NSEvent *event;
+    while ((event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:nil inMode:NSDefaultRunLoopMode dequeue:YES])) {
+        [NSApp sendEvent:event];
+    }
 }
+
+/// The time in milliseconds between two pictures of the screen during play.
+#define SCREEN_PAUSE 5000
+
+/// The time in milliseconds after the start when `-title` takes the title screen.
+#define TITLE_TIME 1500
+
+static BOOL titleOnly;
+static uint32_t started;
+static uint32_t lastScreen;
 
 /// The screen buffer of the engine as an image. Each pixel is 0x00RRGGBB.
 static CGImageRef ScreenImage(void) {
@@ -215,12 +201,28 @@ static void SaveScreen(void) {
     CGImageRelease(frame);
 }
 
-/// Handles each window event that waits, and returns at once when none waits.
-static void HandleEvents(void) {
-    NSEvent *event;
-    while ((event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:nil inMode:NSDefaultRunLoopMode dequeue:YES])) {
-        [NSApp sendEvent:event];
-    }
+void DG_Init(void) {
+    if (titleOnly) return;
+    window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 640, 480)
+                                         styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable
+                                           backing:NSBackingStoreBuffered
+                                             defer:NO];
+    window.title = @"Doom";
+    window.contentAspectRatio = NSMakeSize(4, 3);
+    window.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
+    window.releasedWhenClosed = NO;
+    watch = [[DoomWindowWatch alloc] init];
+    window.delegate = watch;
+    display = [[DoomView alloc] initWithFrame:NSMakeRect(0, 0, 640, 480)];
+    display.wantsLayer = YES;
+    display.layer.contentsGravity = kCAGravityResize;
+    display.layer.magnificationFilter = kCAFilterNearest;
+    display.layer.backgroundColor = NSColor.blackColor.CGColor;
+    window.contentView = display;
+    [window center];
+    [window makeKeyAndOrderFront:nil];
+    [window makeFirstResponder:display];
+    [NSApp activate];
 }
 
 void DG_DrawFrame(void) {
