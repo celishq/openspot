@@ -234,7 +234,7 @@ public final class SpotRuns {
         return command.isTray || read.has(.launch) || (isPanelOpen && (read.has(.panel) || placed.contains(command.id)))
     }
 
-    /// Reads a frame of a script, on another thread when it is big, and waits while the open motion of its sheet runs. The
+    /// Reads a frame of a script on another thread, and waits while the open motion of its sheet runs. The
     /// sheet hears the frame while it waits, so that it can say its kind before the frame shows or its call drops it.
     func intake(_ frame: String, of id: String?) async -> PluginOutput {
         let lines = await PluginOutput.reading(frame)
