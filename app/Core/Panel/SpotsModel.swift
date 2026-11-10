@@ -207,6 +207,8 @@ public final class SpotsModel {
     @ObservationIgnored public internal(set) var gridScroll: CGFloat = 0
     @ObservationIgnored var scrollAtPress: CGFloat = 0
     @ObservationIgnored var pointerMove: CGSize?
+    /// Where the person pressed a card's resize handle, in the handle's square.
+    @ObservationIgnored var resizeGrip = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)
     public var arrangement = SpotArrangement()
     /// The symbol of the command whose key a person pressed last, which the Openspot item shows for `flashPause`.
     public private(set) var flashSymbol: String?

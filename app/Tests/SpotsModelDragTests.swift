@@ -253,6 +253,15 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.resizePointer, corner)
     }
 
+    func testTheResizePointerKeepsWhereThePersonPressedTheHandle() {
+        let grip = CGPoint(x: 10, y: 20)
+        model.resizeSpot("c", by: .zero, grip: grip)
+        XCTAssertEqual(model.resizePointer, grip)
+
+        model.resizeSpot("c", by: CGSize(width: 5, height: 0), grip: CGPoint(x: 1, y: 1))
+        XCTAssertEqual(model.resizePointer, CGPoint(x: 15, y: 20))
+    }
+
     func testEscapePutsTheSizeBackAndSavesNothing() {
         model.resizeSpot("c", by: down)
 

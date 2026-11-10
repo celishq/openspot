@@ -2,11 +2,16 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// The square on a card's corner that takes the drag of its resize handle. The pointer over it is a double arrow that
-/// turns as the pointer moves, so that it always points at the centre of the card's corner.
+/// The square on a card's corner that takes the drag of its resize handle: the card snaps to the nearest size, and the
+/// other cards make room. The pointer over it, and through its drag, is a double arrow that always points at the centre
+/// of the card's corner. A release off the handle gives back the arrow.
 struct SpotHandleArea: View {
+    let model: SpotsModel
+    let id: String
     let size: SpotSize
     @State private var angle = 45
+    /// Where the pointer lies in the square, which is where a press grips the handle.
+    @State private var grip = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)
     @MainActor private static var pointers: [Int: (image: Image, cursor: NSCursor)] = [:]
 
     var body: some View {
@@ -14,15 +19,27 @@ struct SpotHandleArea: View {
             .contentShape(Rectangle())
             .onContinuousHover { phase in
                 guard case .active(let point) = phase else { return }
+                grip = point
                 let next = SpotTokens.handleAngle(of: size, at: point)
                 if next != angle { angle = next }
             }
             .pointerStyle(.image(Self.pointer(at: angle).image, hotSpot: .center))
+            .gesture(resize)
     }
 
-    /// The double arrow at this angle as the pointer of the app, for a drag, which no hover follows.
-    static func cursor(at angle: Int) -> NSCursor {
-        pointer(at: angle).cursor
+    private var resize: some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .named(SpotsView.panelSpace))
+            .onChanged {
+                model.resizeSpot(id, by: $0.translation, grip: grip)
+                guard let point = model.resizePointer, let resize = model.resize else { return }
+                Self.pointer(at: SpotTokens.handleAngle(of: resize.size, at: point)).cursor.set()
+            }
+            .onEnded { _ in
+                let square = CGRect(x: 0, y: 0, width: SpotTokens.resizeHandle, height: SpotTokens.resizeHandle)
+                let isOnHandle = model.resizePointer.map(square.contains) ?? false
+                model.dropResize()
+                if !isOnHandle { NSCursor.arrow.set() }
+            }
     }
 
     /// A black double arrow with a white rim, as the system's resize arrows are, at this angle. It is drawn once for each
