@@ -39,6 +39,6 @@ public protocol SpotsHost: AnyObject {
     func prepare(_ items: [SpotItem], glyphs: [String]) async
     /// The spots that ship with the app, as its bundle gives them.
     func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?, offersLogin: Bool) -> [Spot]
-    /// Makes a change on a motion, or with none at all, and calls `completion` when its motion has ended.
+    /// Makes a change on a motion, or with none at all, and calls `completion` when its motion reaches its end.
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void)
 }

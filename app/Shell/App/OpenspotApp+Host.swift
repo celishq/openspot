@@ -115,7 +115,7 @@ extension OpenspotApp: SpotsHost {
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {
         var transaction = Transaction(animation: motion.map(SpotMotion.animation))
         transaction.disablesAnimations = motion == nil
-        transaction.addAnimationCompletion(criteria: .removed) { MainActor.assumeIsolated { completion() } }
+        transaction.addAnimationCompletion(criteria: .logicallyComplete) { MainActor.assumeIsolated { completion() } }
         withTransaction(transaction, body)
     }
 }
