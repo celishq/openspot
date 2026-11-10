@@ -50,6 +50,11 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: ["drop"] + paths)
     }
 
+    /// The rows that a drag took out of the sheet as files (O2).
+    public static func drag(runs: [String]) -> SpotAction {
+        SpotAction(arguments: ["drag"] + runs)
+    }
+
     /// This call as one block for a script that stays: `call=<id>`, the `reason` of a read, one `arg` for each argument of a
     /// normal call, and each value that stdin holds in a normal call.
     public func event(values: String? = nil, id: Int, reason: ReadReason? = nil) -> String {

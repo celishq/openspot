@@ -173,7 +173,7 @@ public final class SpotRun {
     @ObservationIgnored private var readsAgain = false
     @ObservationIgnored private var pauses: [String: Task<Void, Never>] = [:]
     @ObservationIgnored private var editing: String?
-    @ObservationIgnored private var waitingDrops: [[String]] = []
+    @ObservationIgnored private var waitingFiles: [SpotAction] = []
     @ObservationIgnored private var waitingKeys: [String] = []
 
     init(command: Spot, runs: SpotRuns, recent: [String], prepare: @escaping ([SpotItem]) async -> Void) {
@@ -364,7 +364,7 @@ public final class SpotRun {
     func prepareToQuit() {
         pauses.values.forEach { $0.cancel() }
         pauses = [:]
-        waitingDrops = []
+        waitingFiles = []
         waitingKeys = []
         readsAgain = false
         calls.forEach(stop)
@@ -500,14 +500,22 @@ public final class SpotRun {
     @discardableResult
     public func drop(_ paths: [String]) -> Bool {
         guard command.accepts(paths) else { return false }
-        waitingDrops.append(paths)
-        startWaitingDrop()
+        waitingFiles.append(.drop(paths: paths))
+        startWaitingFiles()
         return true
     }
 
-    private func startWaitingDrop() {
-        guard !waitingDrops.isEmpty, !calls.contains(where: \.doesWork) else { return }
-        work(.drop(paths: waitingDrops.removeFirst()), key: Self.cardKey)
+    /// Tells the script of the rows that a drag took out to another app (O2). It runs as a drop does, once no call that does
+    /// work runs.
+    public func dragged(_ items: [SpotItem]) {
+        guard !items.isEmpty else { return }
+        waitingFiles.append(.drag(runs: items.map(\.run)))
+        startWaitingFiles()
+    }
+
+    private func startWaitingFiles() {
+        guard !waitingFiles.isEmpty, !calls.contains(where: \.doesWork) else { return }
+        work(waitingFiles.removeFirst(), key: Self.cardKey)
     }
 
     /// Takes a press of a key that a person assigned to a command. Presses run one at a time and in order, and none stops a call.
@@ -665,7 +673,7 @@ public final class SpotRun {
     /// Lets go of a call that ended, and starts a drop or a key press that waited for it.
     func callEnded(_ call: ScriptCall) {
         calls.removeAll { $0 === call }
-        startWaitingDrop()
+        startWaitingFiles()
         startWaitingKey()
     }
 

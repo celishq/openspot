@@ -53,6 +53,7 @@ struct SpotFloatView: View {
                     list: run.list,
                     onRun: { model.pickInFloat($0, of: id) },
                     onSlot: { model.slotInFloat($1, of: $0, in: id, to: $2) },
+                    onDragOut: { model.dragOut($0, of: id) },
                     selection: { run.selection },
                     nudge: { run.nudge },
                     customView: { room in
@@ -67,7 +68,8 @@ struct SpotFloatView: View {
                     list: run.list,
                     onRun: { model.pickInFloat($0, of: id) },
                     selection: { run.selection },
-                    onSlot: { model.slotInFloat($1, of: $0, in: id, to: $2) }
+                    onSlot: { model.slotInFloat($1, of: $0, in: id, to: $2) },
+                    onDragOut: { model.dragOut($0, of: id) }
                 )
             }
         }
@@ -79,6 +81,7 @@ struct SpotFloatView: View {
     private func header(_ entry: SpotsModel.Entry) -> some View {
         HStack(spacing: SpotTokens.padding - 5) {
             glyph(entry)
+                .modifier(SpotFileDragSource(items: model.sheets[id]?.list.shown ?? [], onDrop: { model.dragOut($0, of: id) }))
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 Text(entry.shownState.title)
                     .font(SpotType.title)

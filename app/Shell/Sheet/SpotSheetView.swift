@@ -59,6 +59,7 @@ struct SpotSheetView: View {
                         list: list,
                         onRun: { model.runItem($0) },
                         onSlot: { model.slot($1, of: $0, to: $2) },
+                        onDragOut: { model.dragOut($0, of: entry.id) },
                         selection: selection,
                         nudge: { model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest },
                         customView: { room in
@@ -78,7 +79,7 @@ struct SpotSheetView: View {
                         }
                         .buttonStyle(.plain)
                     } else {
-                        SpotRowsView(list: list, recording: model.recording, recordingWords: model.recordingWords, onRun: { model.runItem($0) }, selection: selection, onSlot: { model.slot($1, of: $0, to: $2) })
+                        SpotRowsView(list: list, recording: model.recording, recordingWords: model.recordingWords, onRun: { model.runItem($0) }, selection: selection, onSlot: { model.slot($1, of: $0, to: $2) }, onDragOut: { model.dragOut($0, of: entry.id) })
                     }
                 }
             }
@@ -174,6 +175,7 @@ struct SpotSheetView: View {
         }
         .animation(fillFade, value: showsFill)
         .offset(x: showsSmallCard ? (SpotTokens.cell - SpotTokens.glyphSize) / 2 - SpotTokens.padding : 0)
+        .modifier(SpotFileDragSource(items: isOpen ? list.shown : [], onDrop: { model.dragOut($0, of: entry.id) }))
     }
 
     /// The fade of the card's fill, which the colours on it follow.

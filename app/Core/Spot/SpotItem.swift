@@ -24,13 +24,15 @@ public struct SpotItem: Equatable, Sendable {
     public let template: String?
     /// Each line of its block that is not one of its own keys, from which the slots of a template take their values.
     public let fields: [TextBlock.Field]
+    /// The file that the row stands for, which a drag takes out of the sheet (O1).
+    public let carriedFile: String?
 
     /// The keys that a row reads itself, which are the slots of the default template (U14).
     public static let ownKeys: Set<String> = [
-        "row", "title", "detail", "icon", "parent", "hides", "keyword", "shortcut", "on", "tone", "as"
+        "row", "title", "detail", "icon", "parent", "hides", "keyword", "shortcut", "on", "tone", "as", "file"
     ]
 
-    public init(title: String, subtitle: String? = nil, run: String, symbol: String? = nil, file: String? = nil, image: String? = nil, glyph: String? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, isOn: Bool = false, tone: MetricValue.Tone? = nil, template: String? = nil, fields: [TextBlock.Field] = []) {
+    public init(title: String, subtitle: String? = nil, run: String, symbol: String? = nil, file: String? = nil, image: String? = nil, glyph: String? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, isOn: Bool = false, tone: MetricValue.Tone? = nil, template: String? = nil, fields: [TextBlock.Field] = [], carriedFile: String? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -46,6 +48,7 @@ public struct SpotItem: Equatable, Sendable {
         self.tone = tone
         self.template = template
         self.fields = fields
+        self.carriedFile = carriedFile
     }
 
     /// Reads the block of one row: `row=<id>`, which a pick sends, and `title`, which is the id when it has none.
@@ -69,7 +72,8 @@ public struct SpotItem: Equatable, Sendable {
             isOn: block.flag("on") ?? false,
             tone: block.value("tone").flatMap(MetricValue.Tone.init),
             template: block.value("as"),
-            fields: block.fields.filter { !Self.ownKeys.contains($0.key) }
+            fields: block.fields.filter { !Self.ownKeys.contains($0.key) },
+            carriedFile: block.value("file").flatMap { $0.hasPrefix("/") ? $0 : nil }
         )
     }
 

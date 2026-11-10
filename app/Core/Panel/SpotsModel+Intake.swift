@@ -63,6 +63,15 @@ extension SpotsModel {
         return true
     }
 
+    /// Tells the script of the rows that a drag took out of its sheet to another app (O2). A drag of every row with a file
+    /// out of a float closes it (W6).
+    public func dragOut(_ items: [SpotItem], of id: String) {
+        guard let sheet = sheets[id] else { return }
+        sheet.dragged(items)
+        let files = Set(sheet.list.shown.filter { $0.carriedFile != nil }.map(\.run))
+        if runs.floating.contains(id), !files.isEmpty, files.isSubset(of: items.map(\.run)) { land(id) }
+    }
+
     /// Shows the grid and not a sheet, so that a drag can reach the cards.
     public func prepareForDrag() {
         isOpenForDrag = true
