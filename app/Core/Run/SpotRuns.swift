@@ -17,6 +17,12 @@ public final class SpotRuns {
     @ObservationIgnored public var partsArrival: (String, () -> Void) -> Void = { _, bring in bring() }
     /// Asks for the pictures of the colour glyphs of a whole list, once for each answer that holds its rows.
     @ObservationIgnored public var glyphsArrival: ([String]) -> Void = { _ in }
+    /// The sheet whose open motion runs. What its script prints waits for the end of the motion, so that the motion keeps
+    /// its frames.
+    @ObservationIgnored public var openingID: String? {
+        didSet { if openingID != oldValue { releaseOpening() } }
+    }
+    @ObservationIgnored private var openingWaits: [CheckedContinuation<Void, Never>] = []
     /// The time a `read` has to its first frame or its end.
     public let readLimit: TimeInterval
     /// How long a sheet with no answer yet holds its motion for the first answer.
@@ -170,6 +176,7 @@ public final class SpotRuns {
     public func quit() {
         clock?.cancel()
         clock = nil
+        openingID = nil
         let live = processes.filter(\.needsFinish)
         sheets.values.forEach { $0.prepareToQuit() }
         live.forEach { $0.leave() }
@@ -234,8 +241,21 @@ public final class SpotRuns {
         return command.isTray || read.has(.launch) || (isPanelOpen && (read.has(.panel) || placed.contains(command.id)))
     }
 
+    /// Waits while the open motion of this sheet runs.
+    func opening(_ id: String) async {
+        while openingID == id {
+            await withCheckedContinuation { openingWaits.append($0) }
+        }
+    }
+
+    private func releaseOpening() {
+        let waits = openingWaits
+        openingWaits = []
+        waits.forEach { $0.resume() }
+    }
+
     /// Starts one call. It gives each frame, as text and sorted by what each block is, and then its end, on the main actor. A
-    /// frame that its call stopped during the read changes nothing.
+    /// frame waits for the open motion of its sheet, and one that its call stopped meanwhile changes nothing.
     func call(
         _ command: Spot,
         _ action: SpotAction,
@@ -249,12 +269,14 @@ public final class SpotRuns {
         let call = ScriptCall(action: action, key: key, started: now())
         let (stream, halt) = frames(of: command, action, input: input, limit: limit, variables: variables)
         call.halt = halt
-        Task {
+        let id = command.id
+        Task { [weak self] in
             var end = ScriptCall.End.ended
             do {
                 for try await frame in stream {
                     guard !call.isStopped else { break }
                     let output = await PluginOutput.reading(frame)
+                    await self?.opening(id)
                     guard !call.isStopped else { break }
                     call.take(output)
                     await onFrame(call, frame, output)

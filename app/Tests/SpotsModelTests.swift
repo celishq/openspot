@@ -316,6 +316,13 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertNil(model.form)
     }
 
+    func testASheetHoldsWhatItsScriptPrintsOnlyWhileItsOpenMotionRuns() async throws {
+        try await openList()
+
+        XCTAssertTrue(host.openings.contains("list"))
+        XCTAssertNil(model.runs.openingID)
+    }
+
     func testASheetThatOpensWhileAnotherShowsTakesItsPlaceWithNoCollapseAndNoCard() async throws {
         try await openList()
         try script("other", header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
@@ -398,6 +405,8 @@ private final class TestHost: SpotsHost {
     var motions: [PanelMotion?] = []
     /// The phase of the sheet's transition after each change.
     var phases: [SheetTransition.Phase] = []
+    /// The sheet whose open motion runs, after each change.
+    var openings: [String?] = []
     /// The spots that ship with the app in this test.
     var shipped: [Spot] = []
     /// The rows whose pictures the model asked to draw ahead.
@@ -460,6 +469,7 @@ private final class TestHost: SpotsHost {
         motions.append(motion)
         body()
         if let phase = model?.transition.phase { phases.append(phase) }
+        openings.append(model?.runs.openingID)
         completion()
     }
 }

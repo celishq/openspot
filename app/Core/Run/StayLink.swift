@@ -192,11 +192,13 @@ final class StayLink: ScriptLink {
         waiting?.resume(with: answer)
     }
 
-    /// Takes each frame of the script until it ends. A script that Openspot ended shows only its toast.
+    /// Takes each frame of the script until it ends, each after the open motion of its sheet. A script that Openspot ended
+    /// shows only its toast.
     private func follow(_ script: ScriptProcess, _ frames: AsyncThrowingStream<String, Error>) async {
         do {
             for try await text in frames {
                 let lines = await PluginOutput.reading(text)
+                if let id = run?.command.id { await runs.opening(id) }
                 if self.script === script, !lines.ends.isEmpty {
                     endCalls(lines.ends)
                     settle()

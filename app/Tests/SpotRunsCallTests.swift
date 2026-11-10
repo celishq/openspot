@@ -79,6 +79,32 @@ final class SpotRunsCallTests: SpotRunsCase {
         try await wait("the failure") { fixes == ["Allow it. x-apple.systempreferences:pane"] }
     }
 
+    func testWhatASheetPrintsDuringItsOpenMotionShowsWhenTheMotionEnds() async throws {
+        try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        runs.openingID = "script"
+        sheet.open {}
+        try await allEnded()
+        try await pause(0.2)
+
+        XCTAssertEqual(sheet.list.shown.count, 0)
+        runs.openingID = nil
+
+        try await wait("the rows") { sheet.list.shown.count == 1 }
+    }
+
+    func testTheOpenMotionOfAnotherSheetHoldsNothingOfThisOne() async throws {
+        try script(header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
+        let sheet = try sheet()
+        runs.panelOpened()
+        runs.openingID = "other"
+
+        sheet.open {}
+
+        try await wait("the rows") { sheet.list.shown.count == 1 }
+    }
+
     func testAReadStopsWhenThePanelThatWantedItCloses() async throws {
         try script(header: "read=panel\nglobal=true", "printf 'row=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
