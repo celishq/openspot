@@ -51,14 +51,21 @@ final class ScreenPlaceTests: XCTestCase {
 
     func testTheDockLiesAlongTheBottomUnderThePanelAndCentredOnIt() {
         let area = CGRect(x: 0, y: 0, width: 1440, height: 875)
-        let panel = CGRect(x: 485, y: 104, width: 469, height: 736)
+        let panel = CGRect(x: 575, y: 400, width: 289, height: 385)
 
-        XCTAssertEqual(ScreenPlace.dock(under: panel, in: area), CGRect(x: 109, y: 20, width: 1220, height: 152))
+        XCTAssertEqual(ScreenPlace.dock(under: panel, in: area), CGRect(x: 109, y: 20, width: 1220, height: SpotTokens.dockHeight(rows: 3)))
+    }
+
+    func testTheDockShowsTheRowsThatFitUnderThePanelAndOneAtLeast() {
+        let area = CGRect(x: 0, y: 0, width: 1440, height: 875)
+
+        XCTAssertEqual(ScreenPlace.dock(under: CGRect(x: 575, y: 300, width: 289, height: 485), in: area).height, SpotTokens.dockHeight(rows: 2))
+        XCTAssertEqual(ScreenPlace.dock(under: CGRect(x: 575, y: 50, width: 289, height: 735), in: area).height, SpotTokens.dockHeight(rows: 1))
     }
 
     func testTheDockStaysWholeOnItsScreen() {
-        let panel = CGRect(x: 600, y: 300, width: 469, height: 736)
+        let panel = CGRect(x: 690, y: 400, width: 289, height: 300)
 
-        XCTAssertEqual(ScreenPlace.dock(under: panel, in: CGRect(x: 0, y: 0, width: 1000, height: 800)), CGRect(x: 20, y: 20, width: 960, height: 152))
+        XCTAssertEqual(ScreenPlace.dock(under: panel, in: CGRect(x: 0, y: 0, width: 1000, height: 800)), CGRect(x: 20, y: 20, width: 960, height: SpotTokens.dockHeight(rows: 3)))
     }
 }

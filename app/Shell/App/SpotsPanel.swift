@@ -96,7 +96,9 @@ final class SpotsPanel: NSPanel {
         }
         if isEditing, restFrame == nil, let area = screen?.visibleFrame {
             let panel = frame
-            let dock = ScreenPlace.dock(under: panel, in: area)
+            let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
+            let content = SpotTokens.backdropHeight(rows: rows) - SpotTokens.halo
+            let dock = ScreenPlace.dock(under: NSRect(x: panel.minX, y: panel.maxY - content, width: panel.width, height: content), in: area)
             let whole = panel.union(dock)
             restFrame = panel
             place.panel = CGPoint(x: panel.minX - whole.minX, y: whole.maxY - panel.maxY)

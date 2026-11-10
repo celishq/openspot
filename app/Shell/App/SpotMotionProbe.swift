@@ -10,7 +10,8 @@ import QuartzCore
 /// whether it is on the grid after.
 /// `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`. The panel stays almost clear, takes no focus and no clicks,
 /// unless `OPENSPOT_SEEN` asks for a picture. With `OPENSPOT_SHOTS`, a drag saves a picture of each state to that folder
-/// from a panel off every screen, and times nothing.
+/// from a panel off every screen, `edit` saves one of Edit Spots with its dock from the panel at its place, and neither
+/// times anything.
 @MainActor
 final class SpotMotionProbe: NSObject {
     private let model: SpotsModel
@@ -82,6 +83,7 @@ final class SpotMotionProbe: NSObject {
     /// Starts Edit Spots, and ends it as Done does, again and again.
     private func beginEdit() {
         guard let view = panel.contentView else { return finish(with: "no panel\n") }
+        if let shots { return shootEdit(into: shots) }
         let link = view.displayLink(target: self, selector: #selector(tick))
         link.add(to: .main, forMode: .common)
         self.link = link
@@ -93,6 +95,16 @@ final class SpotMotionProbe: NSObject {
         guard left > 0 else { return end() }
         if left % 2 == 0 { model.beginEditing() } else { model.endEditing() }
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.edit(left: left - 1) }
+    }
+
+    /// Saves a picture of Edit Spots with its dock, a second after it starts.
+    private func shootEdit(into folder: String) {
+        model.beginEditing()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+            self.save(to: "\(folder)/dock.png")
+            self.finish(with: "shots\n")
+        }
     }
 
     /// Runs the work a second after the open sheet holds its rows.
