@@ -319,6 +319,24 @@ final class SamplePluginsTests: SamplePluginsCase {
         }
     }
 
+    func testEmojiKeepsItsRowsUntilTheAppChanges() async throws {
+        try await withPrivateHome { folder in
+            let emoji = try self.fakeEmoji(in: folder)
+            let tool = folder.appendingPathComponent("tools/openspot")
+            let first = try await emoji.items(timeout: 10)
+            try "#!/bin/sh\n[ \"$1\" = emoji ] && printf 'row=👎\\ntitle=thumbs down\\nicon=👎\\n'\nexit 0\n".writeScript(to: tool)
+            try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -60)], ofItemAtPath: tool.path)
+
+            let kept = try await emoji.items(timeout: 10)
+            try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: 60)], ofItemAtPath: tool.path)
+            let made = try await emoji.items(timeout: 10)
+
+            XCTAssertEqual(first.items.map(\.title), ["thumbs up, none", "rightwards arrow"])
+            XCTAssertEqual(kept.items.map(\.title), first.items.map(\.title))
+            XCTAssertEqual(made.items.map(\.title), ["thumbs down"])
+        }
+    }
+
     func testEmojiMovesToTheNextToneAndWrapsAround() async throws {
         try await withPrivateHome { folder in
             let emoji = try self.fakeEmoji(in: folder)
