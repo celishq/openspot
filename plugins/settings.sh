@@ -3,7 +3,7 @@
 # icon=gearshape
 # detail=Open a setting
 # read=panel
-# global=true
+# global=rows
 export LC_ALL=en_US.UTF-8
 panes="${SETTINGS_PANES:-/System/Library/ExtensionKit/Extensions}"
 link='x-apple.systempreferences:'
