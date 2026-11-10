@@ -23,7 +23,8 @@ final class DoomExampleTests: SamplePluginsCase {
     }
 
     /// A curl that logs each address to `fetched`, fails for each address that holds a word of the file `unreachable`,
-    /// and writes a file that is not the real one for each other address.
+    /// and writes a file that is not the real one for each other address. With a number in the file `size`, it writes
+    /// half of that many bytes, waits one second, then writes the rest.
     private func fakeCurl(in folder: URL) throws {
         try """
         #!/bin/sh
@@ -37,14 +38,21 @@ final class DoomExampleTests: SamplePluginsCase {
         for word in $(cat '\(folder.path)/unreachable' 2>/dev/null); do
           case "$url" in *"$word"*) exit 22 ;; esac
         done
-        echo 'not the real file' > "$out"
+        size=$(cat '\(folder.path)/size' 2>/dev/null)
+        if [ -n "$size" ]; then
+          head -c $((size / 2)) /dev/zero > "$out"
+          sleep 1
+          head -c $((size - size / 2)) /dev/zero >> "$out"
+        else
+          echo 'not the real file' > "$out"
+        fi
 
         """.writeScript(to: folder.appendingPathComponent("tools/curl"))
     }
 
     /// A clang that logs each call to `compiled`, fails as a Mac with no Command Line Tools does while the file
-    /// `clang-fails` is there, writes an empty object for `-c`, and links an engine that writes its arguments and its
-    /// folder to `played`.
+    /// `clang-fails` is there, writes an empty object for `-c`, one second later for a file named `slow`, and links an
+    /// engine that writes its arguments and its folder to `played`.
     private func fakeClang(in folder: URL) throws {
         try """
         #!/bin/sh
@@ -59,6 +67,7 @@ final class DoomExampleTests: SamplePluginsCase {
           previous=$a
         done
         case " $* " in
+          *" -c "*"/slow.c "*) sleep 1; : > "$out" ;;
           *" -c "*) : > "$out" ;;
           *) printf '#!/bin/sh\\necho "$*" > "%s/played"\\npwd >> "%s/played"\\n' '\(folder.path)' '\(folder.path)' > "$out"; chmod +x "$out" ;;
         esac
@@ -71,10 +80,10 @@ final class DoomExampleTests: SamplePluginsCase {
         try "#!/bin/sh\necho old > '\(folder.path)/played'\n".writeScript(to: data(in: folder).appendingPathComponent("doom"))
     }
 
-    private func engineSource(in folder: URL) throws {
+    private func engineSource(in folder: URL, files: String = "i_main.o doomgeneric_xlib.o") throws {
         let source = data(in: folder).appendingPathComponent("doomgeneric-\(try engineCommit())")
         try FileManager.default.createDirectory(at: source, withIntermediateDirectories: true)
-        try "SRC_DOOM = i_main.o doomgeneric_xlib.o\n".write(to: source.appendingPathComponent("Makefile"), atomically: true, encoding: .utf8)
+        try "SRC_DOOM = \(files)\n".write(to: source.appendingPathComponent("Makefile"), atomically: true, encoding: .utf8)
     }
 
     private func gameData(in folder: URL) throws {
@@ -96,6 +105,27 @@ final class DoomExampleTests: SamplePluginsCase {
         }
         XCTFail("the run did not fail")
         return ""
+    }
+
+    /// Runs the script once, as a press of its card does, and returns all that it printed, also when it fails.
+    private func frames(in folder: URL) throws -> String {
+        let process = Process()
+        let out = Pipe()
+        process.executableURL = examples.appendingPathComponent("doom/doom.sh")
+        process.arguments = ["run"]
+        process.environment = [
+            "PATH": "\(folder.path)/tools:/usr/bin:/bin",
+            "HOME": folder.path,
+            "TMPDIR": folder.path + "/",
+            "OPENSPOT_DATA": data(in: folder).path
+        ]
+        process.standardOutput = out
+        process.standardError = FileHandle.nullDevice
+        try FileManager.default.createDirectory(at: data(in: folder), withIntermediateDirectories: true)
+        try process.run()
+        let text = String(decoding: out.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        process.waitUntilExit()
+        return text
     }
 
     private func lines(_ name: String, in folder: URL) -> [String] {
@@ -220,6 +250,33 @@ final class DoomExampleTests: SamplePluginsCase {
             XCTAssertTrue(self.lines("compiled", in: folder).contains { $0.contains("/i_main.c") })
             XCTAssertFalse(self.exists("doom", in: self.data(in: folder)))
             XCTAssertEqual(try self.leftovers(in: folder), [])
+        }
+    }
+
+    func testADownloadShowsTheShareOfItsFileThatIsOnTheDisk() async throws {
+        try await withPrivateHome { folder in
+            try self.fakeCurl(in: folder)
+            try self.fakeClang(in: folder)
+            try "3090826".write(to: folder.appendingPathComponent("size"), atomically: true, encoding: .utf8)
+
+            let frames = try self.frames(in: folder)
+
+            XCTAssertTrue(frames.contains("title=Downloading the engine\nvalue=0.50\ndetail=50%\n---"), frames)
+            XCTAssertTrue(frames.contains("title=Downloading the engine\nvalue=1.00\ndetail=100%\n---"), frames)
+        }
+    }
+
+    func testABuildShowsTheShareOfItsFilesThatAreCompiled() async throws {
+        try await withPrivateHome { folder in
+            try self.fakeCurl(in: folder)
+            try self.fakeClang(in: folder)
+            try self.gameData(in: folder)
+            try self.engineSource(in: folder, files: "quick.o slow.o doomgeneric_xlib.o")
+
+            let frames = try self.frames(in: folder)
+
+            XCTAssertTrue(frames.contains("title=Building the engine\nvalue=0.50\ndetail=50%\n---"), frames)
+            XCTAssertTrue(frames.contains("title=Building the engine\nvalue=1.00\ndetail=100%\n---"), frames)
         }
     }
 }
