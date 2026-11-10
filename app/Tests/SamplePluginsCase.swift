@@ -3,6 +3,16 @@ import XCTest
 
 /// The scan of the repo plugins and the fakes and helpers of the tests that run them.
 class SamplePluginsCase: XCTestCase {
+    /// The folder of the example plugins, which the app does not ship.
+    var examples: URL {
+        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("examples")
+    }
+
+    /// The example spot with this name.
+    func example(_ name: String) throws -> Spot {
+        try XCTUnwrap(try PluginFolder(url: examples).scan().commands.first { $0.name == name })
+    }
+
     var scan: ScanResult {
         get throws {
             let root = URL(fileURLWithPath: #filePath)

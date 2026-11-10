@@ -6,8 +6,7 @@ import XCTest
 final class ShelfExampleTests: SamplePluginsCase {
     private var shelf: Spot {
         get throws {
-            let examples = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("examples")
-            return try XCTUnwrap(try PluginFolder(url: examples).scan().commands.first { $0.name == "Shelf" })
+            try example("Shelf")
         }
     }
 
