@@ -17,6 +17,8 @@ struct SpotGridGlass: View {
         let isPressed: Bool
         /// Whether the person drags the card in Edit Spots, which grows it and moves it with the pointer.
         let isLifted: Bool
+        /// Whether the card is lifted or still lands, when it shows no press.
+        let isHeld: Bool
     }
 
     let cards: [Card]

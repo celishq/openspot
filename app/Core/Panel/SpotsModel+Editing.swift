@@ -109,7 +109,6 @@ extension SpotsModel {
         saveArrangement(selecting: drag.id, ending: {
             self.drag = nil
             landing = drag.id
-            if lift.offset != .zero { lift.offset = .zero }
         }, landed: { self.endLanding(of: drag.id) })
     }
 
@@ -121,14 +120,16 @@ extension SpotsModel {
         change(.edit, {
             self.drag = nil
             landing = drag.id
-            if lift.offset != .zero { lift.offset = .zero }
             updateVisible()
             selected = drag.start
         }, completion: { self.endLanding(of: drag.id) })
     }
 
+    /// Ends the landing of a card, and clears the pointer's move, which no card reads once the drag ends. The move stays
+    /// through the landing, because a change of it there would move the card ahead of the landing's motion.
     private func endLanding(of id: String) {
         if landing == id { landing = nil }
+        if drag == nil, lift.offset != .zero { lift.offset = .zero }
     }
 
     /// Resizes a card by its corner: it takes the size whose corner lies nearest the pointer, and the other cards make room.

@@ -178,12 +178,14 @@ final class SpotMotionProbe: NSObject {
     /// Presses the card at this place, moves the mouse this far in steps and lets go, through events put in the app's queue
     /// for a panel off every screen, as a person's mouse sends them. The press starts at the card's centre, its corner
     /// handle, which it pulls down a row, or its minus, which it only clicks. At the edge it rests 1.5 s before it lets go.
+    /// The panel stays open when another app takes the focus. It logs the drag after each step, and each 10 ms after the last.
     private func press(_ id: String, at rect: CGRect, by move: CGSize) {
         panel.setFrameOrigin(NSPoint(x: -9000, y: -9000))
         panel.alphaValue = 1
         panel.ignoresMouseEvents = false
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKey()
+        model.isSettlingDrop = true
         let height = panel.contentView?.bounds.height ?? 0
         let inset = SpotTokens.keycap / 2
         let point = row == "corner" ? CGPoint(x: rect.maxX - inset, y: rect.maxY - inset) : row == "minus" ? CGPoint(x: rect.minX + inset, y: rect.minY + inset) : CGPoint(x: rect.midX, y: rect.midY)
@@ -208,11 +210,16 @@ final class SpotMotionProbe: NSObject {
         }
         let rest: [() -> Void] = row == "edge" ? Array(repeating: {}, count: 75) : []
         let steps = [{ post(.leftMouseDown, 0) }] + (1...20).map { step in { post(.leftMouseDragged, CGFloat(step) / 20) } } + rest + [{ post(.leftMouseUp, 1) }]
+        var log: [String] = []
+        func note() {
+            log.append("drag \(model.drag.map { "\($0.id) at \($0.place)" } ?? "none") landing \(model.landing ?? "none") lift \(model.lift.offset)")
+        }
         func run(_ left: ArraySlice<() -> Void>) {
             guard let next = left.first else {
+                (1...20).forEach { tick in DispatchQueue.main.asyncAfter(deadline: .now() + Double(tick) * 0.01, execute: note) }
                 return DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                     let entry = self.model.visible.first { $0.id == id }
-                    self.finish(with: "lifted \(lifted)\nresizing \(resizing)\nmost scroll \(maxScroll)\nbefore \(before)\nafter \(self.model.visible.map(\.id))\nsize \(sizeBefore) to \(size())\non grid \(entry?.isOnGrid ?? false)\n")
+                    self.finish(with: "lifted \(lifted)\nresizing \(resizing)\nmost scroll \(maxScroll)\nbefore \(before)\nafter \(self.model.visible.map(\.id))\nsize \(sizeBefore) to \(size())\non grid \(entry?.isOnGrid ?? false)\n" + log.joined(separator: "\n") + "\n")
                 }
             }
             next()
@@ -220,6 +227,7 @@ final class SpotMotionProbe: NSObject {
                 lifted = lifted || self.model.drag != nil
                 resizing = resizing || self.model.resize != nil
                 maxScroll = max(maxScroll, scrolled(self.panel.contentView) ?? 0)
+                note()
                 run(left.dropFirst())
             }
         }

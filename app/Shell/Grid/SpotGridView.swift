@@ -20,14 +20,16 @@ struct SpotGridView: View {
         let glass = placements.map { placement in
             let entry = model.visible[placement.index]
             let isLifted = drag?.id == entry.id
+            let isHeld = isLifted || model.landing == entry.id
             let shown = isLifted ? drag.flatMap { $0.placement(at: $0.start) } ?? placement : placement
             return SpotGridGlass.Card(
                 id: entry.id,
                 size: shown.size,
                 motion: motion(of: placement, at: shown.rect, id: entry.id),
                 isCovered: entry.id == openID || SpotCardView.isFilled(entry, takesDrag: model.takesDrag(entry.id), isDropTarget: dropTarget == entry.id),
-                isPressed: pressed == entry.id && !isLifted && SpotCardView.showsPress(of: entry),
-                isLifted: isLifted
+                isPressed: pressed == entry.id && !isHeld && SpotCardView.showsPress(of: entry),
+                isLifted: isLifted,
+                isHeld: isHeld
             )
         }
         return ZStack(alignment: .topLeading) {
@@ -42,7 +44,7 @@ struct SpotGridView: View {
                     entry: entry,
                     size: card.size,
                     index: placement.index,
-                    isPressed: pressed == entry.id && !card.isLifted,
+                    isPressed: pressed == entry.id && !card.isHeld,
                     takesDrag: model.takesDrag(entry.id),
                     isDropTarget: dropTarget == entry.id,
                     chainLetter: model.chainLetter(of: entry),
@@ -63,10 +65,10 @@ struct SpotGridView: View {
                     isResizing: model.resize?.id == entry.id,
                     isDragging: drag != nil
                 ))
-                .modifier(SpotLiftedCard(isLifted: card.isLifted, isSolid: card.isLifted || model.landing == entry.id, size: card.size))
+                .modifier(SpotLiftedCard(isLifted: card.isLifted, isSolid: card.isHeld, size: card.size))
                 .modifier(card.motion)
                 .modifier(SpotLiftOffset(lift: card.isLifted ? model.lift : nil))
-                .zIndex(card.isLifted || model.landing == entry.id ? 1 : 0)
+                .zIndex(card.isHeld ? 1 : 0)
                 .contextMenu { spotMenu(of: entry) }
                 .opacity(entry.id == openID ? 0.001 : 1)
                 .allowsHitTesting(entry.id != openID)

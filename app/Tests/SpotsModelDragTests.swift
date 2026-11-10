@@ -98,8 +98,10 @@ final class SpotsModelDragTests: XCTestCase {
 
         XCTAssertNil(model.drag)
         XCTAssertEqual(model.landing, "d")
+        XCTAssertEqual(model.lift.offset, translation)
         host.heldEnds?.forEach { $0() }
         XCTAssertNil(model.landing)
+        XCTAssertEqual(model.lift.offset, .zero)
     }
 
     func testACardPutBackByEscapeLandsUntilItsMotionEnds() {
