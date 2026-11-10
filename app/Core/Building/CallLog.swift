@@ -88,7 +88,7 @@ public final class CallLog: Sendable {
     private static func firstShown(of frames: [String], within share: Int) -> Int {
         var first = frames.count
         var bytes = 0
-        while first > 0, bytes < share + frameSeparator.utf8.count {
+        while first > 0, bytes <= share + frameSeparator.utf8.count {
             first -= 1
             bytes += frames[first].utf8.count + frameSeparator.utf8.count
         }

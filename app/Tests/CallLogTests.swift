@@ -66,6 +66,14 @@ final class CallLogTests: SpotRunsCase {
         XCTAssertFalse(text.contains("frame 90 "))
     }
 
+    func testARecordMarksTheCutWhenItDropsAnOlderFrame() {
+        let small = CallLog(folder: folder.appendingPathComponent("small"), limit: 2_000)
+
+        small.write(CallLog.Record(spot: "cut", arguments: ["read"], input: nil, frames: [String(repeating: "a", count: 10), String(repeating: "b", count: 500)], errors: "", end: .exited(0), started: time, seconds: 0.1))
+
+        XCTAssertTrue(small.text(of: "cut").contains("stdout:\n…" + String(repeating: "b", count: 500)))
+    }
+
     func testTheLogKeepsItsNewestCallsWhenItsFileHoldsMore() throws {
         let small = CallLog(folder: folder.appendingPathComponent("small"), limit: 2_000)
         for number in 0..<25 {
