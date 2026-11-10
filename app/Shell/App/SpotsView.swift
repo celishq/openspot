@@ -215,7 +215,7 @@ struct SpotsView: View {
 }
 
 /// Scrolls the grid until the selected spot lies clear of the fades at its two ends. It alone reads the selection, so that an
-/// arrow press on the grid reruns this modifier and not the panel.
+/// arrow press on the grid reruns this modifier and not the panel. The grid holds still under a drag.
 private struct GridSelectionFollow: ViewModifier {
     let model: SpotsModel
     @Binding var scroll: ScrollPosition
@@ -227,7 +227,7 @@ private struct GridSelectionFollow: ViewModifier {
 
     private func show() {
         let placements = model.placements
-        guard model.openList == nil, let spot = placements.first(where: { $0.index == model.selected }) else { return }
+        guard model.openList == nil, model.drag == nil, let spot = placements.first(where: { $0.index == model.selected }) else { return }
         let rows = placements.map { $0.row + $0.size.rows }.max() ?? 0
         let top = SpotTokens.gridTop + spot.rect.minY
         let window = ScrollWindow(
