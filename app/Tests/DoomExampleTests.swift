@@ -244,7 +244,7 @@ final class DoomExampleTests: SamplePluginsCase {
 
             let line = try await self.failure(of: doom)
 
-            XCTAssertEqual(line, "The downloaded Doom engine is not the expected file, so Openspot did not build it. Press Doom again to download it again.")
+            XCTAssertEqual(line, "The download of the Doom engine is not the expected file, so Openspot did not keep it. Press Doom again to download it again.")
             XCTAssertEqual(self.lines("fetched", in: folder).count, 1)
             XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: self.data(in: folder).path), [])
             XCTAssertEqual(try self.leftovers(in: folder), [])
@@ -267,7 +267,7 @@ final class DoomExampleTests: SamplePluginsCase {
             XCTAssertEqual(fetched.count, 2)
             XCTAssertTrue(fetched.first?.contains("deb.debian.org") == true, "\(fetched)")
             XCTAssertTrue(fetched.last?.contains("snapshot.debian.org") == true, "\(fetched)")
-            XCTAssertEqual(line, "The downloaded Doom is not the expected file, so Openspot did not keep it. Press Doom again to download it again.")
+            XCTAssertEqual(line, "The download of Doom is not the expected file, so Openspot did not keep it. Press Doom again to download it again.")
             XCTAssertFalse(self.exists("doom1.wad", in: self.data(in: folder)))
             XCTAssertEqual(try self.leftovers(in: folder), [])
             XCTAssertFalse(self.exists("played", in: folder))
@@ -316,8 +316,8 @@ final class DoomExampleTests: SamplePluginsCase {
 
             let frames = try self.frames(in: folder)
 
-            XCTAssertTrue(frames.contains("title=Downloading the engine\nvalue=0.50\ndetail=50%\n---"), frames)
-            XCTAssertTrue(frames.contains("title=Downloading the engine\nvalue=1.00\ndetail=100%\n---"), frames)
+            XCTAssertTrue(frames.contains("title=Downloading the Doom engine\nvalue=0.50\ndetail=50%\n---"), frames)
+            XCTAssertTrue(frames.contains("title=Downloading the Doom engine\nvalue=1.00\ndetail=100%\n---"), frames)
         }
     }
 
@@ -330,8 +330,8 @@ final class DoomExampleTests: SamplePluginsCase {
 
             let frames = try self.frames(in: folder)
 
-            XCTAssertTrue(frames.contains("title=Building the engine\nvalue=0.50\ndetail=50%\n---"), frames)
-            XCTAssertTrue(frames.contains("title=Building the engine\nvalue=1.00\ndetail=100%\n---"), frames)
+            XCTAssertTrue(frames.contains("title=Building the Doom engine\nvalue=0.50\ndetail=50%\n---"), frames)
+            XCTAssertTrue(frames.contains("title=Building the Doom engine\nvalue=1.00\ndetail=100%\n---"), frames)
         }
     }
 
