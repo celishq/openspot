@@ -1,0 +1,15 @@
+title=Metallic
+color=#E8579A
+color=#8C5BE8
+color=#3C7BEA
+color=#1FB5B0
+color=#2FA866
+color=#E2A92E
+color=#C9CED6
+color=#D9774A
+shape=rect 5
+shape=square 3
+shape=strip 1
+shape=streamer 1
+finish=foil
+amount=0.9

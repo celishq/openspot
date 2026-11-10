@@ -66,6 +66,19 @@ final class CoreSpotsTests: XCTestCase {
         XCTAssertEqual(scan.refused, [])
     }
 
+    func testTheFolderOfACoreSpotHoldsItsFilesAndIsNoSpot() throws {
+        let files = core.appendingPathComponent("party", isDirectory: true)
+        try FileManager.default.createDirectory(at: files, withIntermediateDirectories: true)
+        try write("party.sh", in: core, header: "title=Party")
+        try write("shared.sh", in: files)
+
+        let scan = try PluginFolder(url: folder, core: core, enabled: ["party"]).scan()
+
+        XCTAssertEqual(scan.commands.map(\.id), ["party"])
+        XCTAssertEqual(scan.commands.map(\.name), ["Party"])
+        XCTAssertEqual(scan.refused, [])
+    }
+
     func testAKeyOfAFolderFileWinsOverACoreSpot() throws {
         try write("mine.sh", in: folder, header: "shortcut=a")
         try write("apps.sh", in: core, header: "shortcut=a")

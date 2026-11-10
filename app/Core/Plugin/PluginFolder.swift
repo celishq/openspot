@@ -179,9 +179,10 @@ public struct PluginFolder: Sendable {
         ((try? Plugin(file: file.file, id: file.id)) ?? nil)?.commands ?? []
     }
 
+    /// The files of the core spots. A folder holds the files of the spot of its name, and is no spot itself.
     private func coreFiles() -> [(file: URL, id: String)] {
         guard let core, let files = try? Self.sorted(in: core) else { return [] }
-        return files.map { ($0, $0.deletingPathExtension().lastPathComponent) }
+        return files.filter { !$0.hasDirectoryPath }.map { ($0, $0.deletingPathExtension().lastPathComponent) }
     }
 
     private static func entries(of folder: String) -> [String] {
