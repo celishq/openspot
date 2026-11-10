@@ -190,7 +190,7 @@ struct SheetPartsView: View {
             if let title = part.title {
                 Text(title)
                     .font(part.isSection ? SpotType.title : SpotType.body)
-                    .foregroundStyle(SpotTheme.ink)
+                    .foregroundStyle(part.detail == nil ? SpotToneWords.colour(of: part.textTone) ?? SpotTheme.ink : SpotTheme.ink)
                     .lineLimit(1)
                     .layoutPriority(1)
             }
@@ -201,10 +201,7 @@ struct SheetPartsView: View {
                 SpotLineMark(value: mark, words: part.ringWords)
             }
             if let detail = part.detail, part.ringWords == nil {
-                Text(detail)
-                    .font(SpotType.detail)
-                    .modifier(SpotSecondaryText())
-                    .lineLimit(1)
+                SpotToneWords(text: detail, tone: part.textTone)
                     .frame(minWidth: part.mark == nil ? nil : Self.markValueWidth, alignment: .trailing)
                     .layoutPriority(2)
             }

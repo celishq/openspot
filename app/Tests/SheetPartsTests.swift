@@ -48,6 +48,12 @@ final class SheetPartsTests: XCTestCase {
         try XCTUnwrap(SheetParts(output: PluginOutput(text: text)))
     }
 
+    func testATextsToneColoursItsWordsAndAGaugeKeepsItsOwn() {
+        let output = PluginOutput(text: "text=due\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\ngauge=disk\nvalue=0.9\ntone=bad\n")
+
+        XCTAssertEqual(output.parts.map(\.textTone), [.bad, nil, nil])
+    }
+
     func testAScriptThatPrintsPartsIsAList() {
         XCTAssertEqual(PluginOutput(text: lights).kind, .list)
         XCTAssertNil(SheetParts(output: PluginOutput(text: "row=a\ntitle=A\n")))

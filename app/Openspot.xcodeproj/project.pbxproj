@@ -73,6 +73,7 @@
 		2D767FD965D15EAF5F644AF0 /* ConfigFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = C534CF8DF32EE7ABB64624F6 /* ConfigFile.swift */; };
 		2DA0ED84843B556BFECCAA29 /* ToastKeyFill.swift in Sources */ = {isa = PBXBuildFile; fileRef = D14A96CD1B177F8A53D7B7DE /* ToastKeyFill.swift */; };
 		30B15963F9513FE78062736C /* SpotRunsReadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F06E95F6AF356EBFD00D06E1 /* SpotRunsReadTests.swift */; };
+		31238DCDE06CF384FF529EC3 /* SpotToneWords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0344D30DF4D5FAD7AC93DE4D /* SpotToneWords.swift */; };
 		334685331FDFB1705B545498 /* Agenda.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD98F4E7A37705E7CE73FB3F /* Agenda.swift */; };
 		337A23F259AA3FAFF7693FAE /* FocusLossTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7B886397C19798D6A36AB5E /* FocusLossTests.swift */; };
 		34098263A3898B42FA2C7411 /* SheetArea.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC9DB55A3E5991608C7EEDC4 /* SheetArea.swift */; };
@@ -387,6 +388,7 @@
 		00873A3125CD49F10A1570BB /* SpotGlass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotGlass.swift; sourceTree = "<group>"; };
 		014371238ABD6B017288F20A /* SpotRim.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRim.swift; sourceTree = "<group>"; };
 		01C1EEC4277D8DD01CEEEE19 /* SpotCalendarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCalendarApp.swift; sourceTree = "<group>"; };
+		0344D30DF4D5FAD7AC93DE4D /* SpotToneWords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotToneWords.swift; sourceTree = "<group>"; };
 		03E365EF57C9E6341F281A78 /* SpotSoftBlur.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSoftBlur.swift; sourceTree = "<group>"; };
 		04422C7A233E68E420AB9537 /* TerminalRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalRun.swift; sourceTree = "<group>"; };
 		04798119A31A08BDE55ED6D1 /* libOpenspotCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libOpenspotCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -827,6 +829,7 @@
 				8D401F5E5AA11F7F32D56733 /* SpotTemplateRow.swift */,
 				725E312D3C764B1610D51C5A /* SpotTick.swift */,
 				9FA2E6CC7436778D0F50D325 /* SpotToneDot.swift */,
+				0344D30DF4D5FAD7AC93DE4D /* SpotToneWords.swift */,
 			);
 			path = Sheet;
 			sourceTree = "<group>";
@@ -1885,6 +1888,7 @@
 				5191D04ED65A1F1F14B70474 /* SpotTheme.swift in Sources */,
 				76275FF4660CF70F4F195246 /* SpotTick.swift in Sources */,
 				A4C6B67B3CB5AEB88193812B /* SpotToneDot.swift in Sources */,
+				31238DCDE06CF384FF529EC3 /* SpotToneWords.swift in Sources */,
 				9259CD61E77802CBC8D926A2 /* SpotTranslation.swift in Sources */,
 				C40D462E293CC2A3874D2572 /* SpotTrayBar.swift in Sources */,
 				01B0A38C02885CC5EFC1CD9C /* SpotTrayIconView.swift in Sources */,
