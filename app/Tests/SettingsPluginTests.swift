@@ -9,6 +9,14 @@ final class SettingsPluginTests: SamplePluginsCase {
         XCTAssertTrue(settings.isGlobal)
     }
 
+    func testSystemSettingsReadsAtLaunchAndWakeAndNotOnEachOpen() throws {
+        let read = try XCTUnwrap(try scan.commands.first { $0.name == "System Settings" }?.read)
+
+        XCTAssertTrue(read.has(.launch))
+        XCTAssertTrue(read.has(.wake))
+        XCTAssertFalse(read.has(.panel))
+    }
+
     func testAPaneAndItsSectionsAreRowsInTheLanguageOfTheMac() async throws {
         try await withPanes { home in
             let panes = home.appendingPathComponent("panes")
