@@ -26,7 +26,7 @@ struct SpotGridView: View {
                 size: shown.size,
                 motion: motion(of: placement, at: shown.rect, id: entry.id),
                 isCovered: entry.id == openID || SpotCardView.isFilled(entry, takesDrag: model.takesDrag(entry.id), isDropTarget: dropTarget == entry.id),
-                isPressed: pressed == entry.id && SpotCardView.showsPress(of: entry),
+                isPressed: pressed == entry.id && !isLifted && SpotCardView.showsPress(of: entry),
                 isLifted: isLifted
             )
         }
@@ -42,7 +42,7 @@ struct SpotGridView: View {
                     entry: entry,
                     size: card.size,
                     index: placement.index,
-                    isPressed: pressed == entry.id,
+                    isPressed: pressed == entry.id && !card.isLifted,
                     takesDrag: model.takesDrag(entry.id),
                     isDropTarget: dropTarget == entry.id,
                     chainLetter: model.chainLetter(of: entry),
@@ -56,7 +56,7 @@ struct SpotGridView: View {
                 .modifier(card.motion)
                 .modifier(SpotLiftOffset(lift: card.isLifted ? model.lift : nil))
                 .zIndex(card.isLifted ? 1 : 0)
-                .highPriorityGesture(moveGesture(of: entry), including: model.isEditing ? .all : .subviews)
+                .simultaneousGesture(moveGesture(of: entry), including: model.isEditing ? .all : .subviews)
                 .contextMenu { spotMenu(of: entry) }
                 .opacity(entry.id == openID ? 0.001 : 1)
                 .allowsHitTesting(entry.id != openID)
@@ -116,7 +116,8 @@ struct SpotGridView: View {
             .allowsHitTesting(false)
     }
 
-    /// Moves a card in Edit Spots: it follows the pointer, the other cards make room, and a release puts it in that room.
+    /// Moves a card in Edit Spots: it follows the pointer, the other cards make room, and a release puts it in that room. It
+    /// runs beside the card's press and tap.
     private func moveGesture(of entry: SpotsModel.Entry) -> some Gesture {
         DragGesture(coordinateSpace: .named(SpotsView.panelSpace))
             .onChanged { model.dragSpot(entry.id, by: $0.translation) }

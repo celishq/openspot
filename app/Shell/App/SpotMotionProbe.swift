@@ -4,6 +4,7 @@ import QuartzCore
 
 /// A run that opens and closes the sheet of one spot again and again, or with `OPENSPOT_ACTION` moves down its rows, types
 /// in its search, picks the row `OPENSPOT_ROW` or drags a card in Edit Spots, and writes the time of each frame to a file.
+/// `OPENSPOT_ACTION=mouse` drags a card with mouse events instead, and writes whether it lifted and the order after.
 /// `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`. The panel stays almost clear, takes no focus and no clicks,
 /// unless `OPENSPOT_SEEN` asks for a picture. With `OPENSPOT_SHOTS`, a drag saves a picture of each state to that folder
 /// from a panel off every screen, and times nothing.
@@ -53,7 +54,7 @@ final class SpotMotionProbe: NSObject {
     }
 
     private func begin() {
-        if action == "drag" { return beginDrag() }
+        if action == "drag" || action == "mouse" { return beginDrag() }
         let target = model.entries.first { spot == nil ? $0.kind == .widget && $0.command.opens != nil : $0.id == spot }
         guard let target, let view = panel.contentView else { return finish(with: "no spot to open\n") }
         let link = view.displayLink(target: self, selector: #selector(tick))
@@ -141,6 +142,7 @@ final class SpotMotionProbe: NSObject {
             CGPoint(x: rect.midX, y: rect.midY)
         ].map { CGSize(width: $0.x - rect.midX, height: $0.y - rect.midY) }
         if let shots { return shoot(id, stops: stops, into: shots) }
+        if action == "mouse" { return press(at: rect, by: stops[1]) }
         let link = view.displayLink(target: self, selector: #selector(tick))
         link.add(to: .main, forMode: .common)
         self.link = link
@@ -169,6 +171,39 @@ final class SpotMotionProbe: NSObject {
             model.dragSpot(id, by: translation)
         }
         start = CACurrentMediaTime()
+    }
+
+    /// Presses the card at this place, moves the mouse this far in steps and lets go, through events put in the app's queue
+    /// for a panel off every screen, as a person's mouse sends them.
+    private func press(at rect: CGRect, by translation: CGSize) {
+        panel.setFrameOrigin(NSPoint(x: -9000, y: -9000))
+        panel.alphaValue = 1
+        panel.ignoresMouseEvents = false
+        NSApp.activate(ignoringOtherApps: true)
+        panel.makeKey()
+        let height = panel.contentView?.bounds.height ?? 0
+        let start = NSPoint(x: SpotTokens.halo + rect.midX, y: height - (SpotTokens.gridTop + rect.midY))
+        let before = model.visible.map(\.id)
+        var lifted = false
+        func post(_ type: NSEvent.EventType, _ share: CGFloat) {
+            let point = NSPoint(x: start.x + translation.width * share, y: start.y - translation.height * share)
+            guard let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: panel.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1) else { return }
+            NSApp.postEvent(event, atStart: false)
+        }
+        let steps = [{ post(.leftMouseDown, 0) }] + (1...20).map { step in { post(.leftMouseDragged, CGFloat(step) / 20) } } + [{ post(.leftMouseUp, 1) }]
+        func run(_ left: ArraySlice<() -> Void>) {
+            guard let next = left.first else {
+                return DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    self.finish(with: "lifted \(lifted)\nbefore \(before)\nafter \(self.model.visible.map(\.id))\n")
+                }
+            }
+            next()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
+                lifted = lifted || self.model.drag != nil
+                run(left.dropFirst())
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { run(steps[...]) }
     }
 
     /// Saves a picture of Edit Spots, of the card lifted near the first place once the cards made room, and of the grid
