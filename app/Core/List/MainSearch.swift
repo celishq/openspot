@@ -1,13 +1,15 @@
 import Foundation
 
 /// The search of many lists at once that the main search runs on each key. It keeps the matches of the last text in each
-/// list, so that a longer text that narrows to it ranks only those. A list whose rows, search or picks changed is ranked
-/// whole again.
+/// list, so that a longer text that narrows to it ranks only those, and the folded texts of a list that its script searches.
+/// A list whose rows, search or picks changed is ranked whole again, and folded again when its rows changed.
 struct MainSearch {
-    /// The matches of one list for one text, with the rows, the search and the picks that they were found in.
+    /// The matches of one list for one text, with the rows, their folded texts, the search and the picks that they were
+    /// found in.
     private struct Kept {
         let query: SearchQuery
         let items: [SpotItem]
+        let texts: SearchIndex
         let search: ItemSearch
         let recent: [String]
         let matches: [Int]
@@ -23,6 +25,8 @@ struct MainSearch {
     private var kept: [Kept] = []
     /// The number of items that the last search ranked, in all lists.
     private(set) var ranked = 0
+    /// The number of lists whose texts it has folded.
+    private(set) var indexBuilds = 0
 
     /// The best `limit` items that match in all lists, as one ranking, with the index of the list each came from. Each list
     /// after the first that has no pick gives at most `unpickedLimit` items. Each list keeps only its own best, and only
@@ -33,13 +37,14 @@ struct MainSearch {
         kept = []
         return lists.enumerated()
             .flatMap { index, list in
-                let texts = list.search == .local ? list.searchIndex : SearchIndex(list.all)
+                let before = last.indices.contains(index) ? last[index] : nil
+                let texts = texts(of: list, before: before)
                 let count = min(limit, index > 0 && list.recent.isEmpty ? unpickedLimit : .max)
-                let among = last.indices.contains(index) ? last[index].matches(of: query, in: list) : nil
+                let among = before?.matches(of: query, in: list)
                 let offsets = among ?? Array(list.all.indices)
                 ranked += offsets.count
                 let matches = query.ranked(texts, items: list.all, among: offsets, recent: list.recent)
-                kept.append(Kept(query: query, items: list.all, search: list.search, recent: list.recent, matches: matches.map(\.offset)))
+                kept.append(Kept(query: query, items: list.all, texts: texts, search: list.search, recent: list.recent, matches: matches.map(\.offset)))
                 return SearchQuery.best(matches, count: count).map { (list: index, match: $0) }
             }
             .sorted { first, second in
@@ -48,5 +53,14 @@ struct MainSearch {
             }
             .prefix(limit)
             .map { (list: $0.list, item: lists[$0.list].all[$0.match.offset]) }
+    }
+
+    /// The folded texts of a list: its own index when it searches itself, else the texts folded for the same rows before, or
+    /// else its rows folded now.
+    private mutating func texts(of list: ItemList, before: Kept?) -> SearchIndex {
+        guard list.search == .script else { return list.searchIndex }
+        if let before, before.search == .script, before.items == list.all { return before.texts }
+        indexBuilds += 1
+        return SearchIndex(list.all)
     }
 }

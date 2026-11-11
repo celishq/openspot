@@ -49,6 +49,27 @@ final class MainSearchTests: XCTestCase {
         XCTAssertEqual(search.ranked, 3)
     }
 
+    func testAListThatItsScriptSearchesIsFoldedOnceForAllKeys() {
+        let list = ItemList(items: items(["Safe", "Notes", "Safari"]), search: .script)
+        var search = MainSearch()
+
+        for text in ["s", "sa", "saf", "safa", "sa"] { _ = search.matching(SearchQuery(text: text, layouts: []), in: [list]) }
+
+        XCTAssertEqual(search.indexBuilds, 1)
+    }
+
+    func testNewRowsOfAListThatItsScriptSearchesAreFoldedAgain() {
+        var list = ItemList(items: items(["Safe", "Notes"]), search: .script)
+        var search = MainSearch()
+        _ = search.matching(SearchQuery(text: "n", layouts: []), in: [list])
+        list.answer(items(["Notes", "Numbers"]), to: "")
+
+        let found = search.matching(SearchQuery(text: "nu", layouts: []), in: [list])
+
+        XCTAssertEqual(found.map(\.item.title), ["Numbers"])
+        XCTAssertEqual(search.indexBuilds, 2)
+    }
+
     func testAGrowingSearchFindsWhatAFreshSearchFinds() {
         let lists = [ItemList(items: items(["axbxc", "abc", "Abacus", "cab", "a b c", "xabcx", "Notes"]), recent: ["cab"]), ItemList(items: items(["Cabinet", "Abc Store"]))]
         var search = MainSearch()
