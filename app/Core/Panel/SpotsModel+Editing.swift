@@ -31,8 +31,9 @@ extension SpotsModel {
         beginEditing()
     }
 
-    /// Shows the spots of the dock whose name holds this text.
+    /// Shows the spots of the dock whose name holds this text, and closes the listing when the text changes.
     public func searchDock(_ text: String) {
+        guard text != dock.query else { return }
         dock.opened = nil
         dock.query = text
     }
@@ -146,6 +147,19 @@ extension SpotsModel {
         turn(item.command, on: true)
     }
 
+    /// Puts a spot of the store on the grid, in search only, or off. A built-in spot is never off. A spot that comes on
+    /// takes the place of the grid or of search only after it loads.
+    public func setState(_ state: SpotDock.State, of id: String) {
+        guard let item = dock.items.first(where: { $0.id == id }), item.state != state else { return }
+        if state == .off {
+            guard item.origin != .builtIn else { return }
+            turn(item.command, on: false)
+            return
+        }
+        if item.state == .off, !turn(item.command, on: true) { return }
+        if cards.first(where: { $0.id == id })?.isOnGrid != (state == .onGrid) { setOnGrid(state == .onGrid, for: id) }
+    }
+
     /// Turns on each spot of the store that is off, and loads the spots again on the edit motion.
     public func turnOnAll() {
         let off = dock.items.filter { $0.state == .off }
@@ -192,7 +206,6 @@ extension SpotsModel {
             landing = nil
             carry = nil
             arrival = nil
-            dockResize = nil
             resize = nil
             pointerMove = nil
             if lift.offset != .zero { lift.offset = .zero }
@@ -209,7 +222,7 @@ extension SpotsModel {
             isSearchingDock = false
             return
         }
-        if drag != nil || resize != nil || carry != nil || dockResize != nil {
+        if drag != nil || resize != nil || carry != nil {
             if key.name == "escape" {
                 cancelDrag()
                 cancelResize()
@@ -314,15 +327,15 @@ extension SpotsModel {
         }, landed: { self.endLanding(of: drag.id) })
     }
 
-    /// Moves a spot of the store that is off, which the person drags, and lifts its card out of the store when the drag
-    /// starts. While the card lies over the grid, it takes the size it has there, and the other cards make room where a
+    /// Moves a spot of the store that is not on the grid, which the person drags, and lifts its card out of the store when
+    /// the drag starts. While the card lies over the grid, it takes the size it has there, and the other cards make room where a
     /// release would turn it on once the pointer has rested there for `dragRest`. A spot that is on stays, and its card on
     /// the grid is selected.
     public func dragDockSpot(_ id: String, by translation: CGSize) {
-        guard isEditing, query.isEmpty, resize == nil, dockResize == nil else { return }
+        guard isEditing, query.isEmpty, resize == nil else { return }
         if carry?.entry.id != id {
             guard carry == nil, drag == nil, let item = dock.shown.first(where: { $0.id == id }) else { return }
-            guard item.state == .off else {
+            guard item.state != .onGrid else {
                 if let index = visible.firstIndex(where: { $0.id == id }), selected != index { selected = index }
                 return
             }
@@ -332,7 +345,7 @@ extension SpotsModel {
             var sizes = visible.map(\.size)
             sizes.insert(item.size, at: start)
             let kept = Set(grid.kept.map { $0 >= start ? $0 + 1 : $0 }).union([start])
-            arrival = SpotDrag(id: id, start: start, sizes: sizes, places: 0...start, grid: SpotGrid(split: hiddenStart.map { $0 + 1 }, kept: kept))
+            arrival = SpotDrag(id: id, start: start, sizes: sizes, places: 0...start, grid: SpotGrid(kept: kept))
             stopDragWait()
             lift.origin = tile.origin
             change(.edit) { carry = SpotCarry(entry: entry, size: item.size, tile: tile) }
@@ -474,7 +487,6 @@ extension SpotsModel {
     /// `grip` is where the person pressed the handle, in its square, and counts only when the resize starts.
     public func resizeSpot(_ id: String, by translation: CGSize, grip: CGPoint = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)) {
         guard isEditing, query.isEmpty, drag == nil else { return }
-        if dock.items.contains(where: { $0.id == id && $0.state == .off }) { return resizeTile(id, by: translation, grip: grip) }
         if resize?.id != id {
             guard let index = visible.firstIndex(where: { $0.id == id }) else { return }
             resize = SpotResize(id: id, index: index, sizes: visible.map(\.size), choices: sizes(of: visible[index]), grid: grid)
@@ -492,52 +504,13 @@ extension SpotsModel {
         }
     }
 
-    /// Resizes a spot of the dock by its corner: it takes the size, among its sizes, whose corner lies nearest the pointer,
-    /// and the dock lays out again.
-    private func resizeTile(_ id: String, by translation: CGSize, grip: CGPoint) {
-        guard carry == nil else { return }
-        if dockResize?.id != id {
-            guard let index = dock.shown.firstIndex(where: { $0.id == id }) else { return }
-            dockResize = (id, dock.shown[index].size, dock.rects(columns: dockColumns)[index].origin)
-            resizeGrip = grip
-        }
-        pointerMove = translation
-        guard let tile = dockResize, let item = dock.items.first(where: { $0.id == id }) else { return }
-        let corner = tileCorner(of: tile, movedBy: translation)
-        let reach = { (size: SpotSize) in
-            hypot(tile.origin.x + SpotTokens.width(columns: min(size.columns, self.dockColumns)) - corner.x, tile.origin.y + SpotTokens.height(rows: size.rows) - corner.y)
-        }
-        guard let target = sizes(of: Entry(command: item.command, run: nil)).min(by: { reach($0) < reach($1) }), target != item.size else { return }
-        change(.edit) { dock = dock.resized(id, to: target) }
-    }
-
-    /// Where the corner of a resized spot of the dock lies, in the dock's rows, when the pointer has moved this far.
-    private func tileCorner(of tile: (id: String, start: SpotSize, origin: CGPoint), movedBy translation: CGSize) -> CGPoint {
-        CGPoint(
-            x: tile.origin.x + SpotTokens.width(columns: min(tile.start.columns, dockColumns)) + translation.width,
-            y: tile.origin.y + SpotTokens.height(rows: tile.start.rows) + translation.height
-        )
-    }
-
-    /// How many columns the dock's rows hold.
-    private var dockColumns: Int {
-        SpotTokens.dockColumns(width: dockFrame?.width ?? SpotTokens.dockWidth)
-    }
-
-    /// The size of the card that the person resizes, in the grid or in the dock.
+    /// The size of the card that the person resizes.
     public var resizeSize: SpotSize? {
-        if let tile = dockResize { return dock.items.first { $0.id == tile.id }?.size }
-        return resize?.size
+        resize?.size
     }
 
     /// Where the pointer that resizes a card lies in the handle's square on the card's corner as it is now.
     public var resizePointer: CGPoint? {
-        if let tile = dockResize {
-            guard let move = pointerMove, let index = dock.shown.firstIndex(where: { $0.id == tile.id }) else { return nil }
-            let rect = dock.rects(columns: dockColumns)[index]
-            let corner = tileCorner(of: tile, movedBy: move)
-            return CGPoint(x: corner.x - rect.maxX + resizeGrip.x, y: corner.y - rect.maxY + resizeGrip.y)
-        }
         guard let resize, let move = pointerMove, let rect = resize.placement(of: resize.size)?.rect else { return nil }
         let pointer = resize.corner(movedBy: inGrid(move))
         return CGPoint(x: pointer.x - rect.maxX + resizeGrip.x, y: pointer.y - rect.maxY + resizeGrip.y)
@@ -545,7 +518,6 @@ extension SpotsModel {
 
     /// Ends the resize, and saves the size as the card's preferred size when it changed.
     public func dropResize() {
-        if let tile = dockResize { return keepSize(of: tile.id, from: tile.start) }
         guard let resize else { return }
         pointerMove = nil
         guard resize.size != resize.start else { return cancelResize() }
@@ -554,26 +526,8 @@ extension SpotsModel {
         saveArrangement(selecting: resize.id) { self.resize = nil }
     }
 
-    /// Keeps the size of a resized spot of the dock as its preferred size when it changed.
-    private func keepSize(of id: String, from start: SpotSize) {
-        pointerMove = nil
-        guard let size = dock.items.first(where: { $0.id == id })?.size, size != start else { return cancelResize() }
-        dockResize = nil
-        arrangement.set(size: size, of: id)
-        do {
-            try files.config.write(arrangement)
-        } catch {
-            host.notify("Openspot could not save the spots. \(Self.reason(error))")
-        }
-    }
-
     /// Puts the resized card and the cards that made room back as they were.
     public func cancelResize() {
-        if let tile = dockResize {
-            pointerMove = nil
-            dockResize = nil
-            return change(.edit) { dock = dock.resized(tile.id, to: tile.start) }
-        }
         guard resize != nil else { return }
         pointerMove = nil
         change(.edit) {

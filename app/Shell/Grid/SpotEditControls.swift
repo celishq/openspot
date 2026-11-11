@@ -1,16 +1,13 @@
 import OpenspotCore
 import SwiftUI
 
-/// The controls of a card in Edit Spots: the minus that turns the spot off on its top left corner, the eye that puts it on
-/// the grid or in search only on its top right corner, and the handle on its bottom right corner that resizes it. The open
-/// eye and the handle show while the pointer is over the card; the slashed eye always shows.
+/// The controls of a card in Edit Spots: the minus that turns the spot off on its top left corner, and the handle on its
+/// bottom right corner that resizes it, which shows while the pointer is over the card.
 struct SpotEditControls: ViewModifier {
     let model: SpotsModel
     let id: String
     let size: SpotSize
     let turnsOff: Bool
-    let showsEye: Bool
-    let isHidden: Bool
     /// The sizes that the handle offers. With fewer than two the card shows no handle.
     let sizes: [SpotSize]
     let isResizing: Bool
@@ -20,23 +17,12 @@ struct SpotEditControls: ViewModifier {
 
     func body(content: Content) -> some View {
         let showsHandle = isResizing || (isHovered && !isDragging)
-        let eyeIsOpen = isHovered && !isDragging
         return content
             .overlay(alignment: .topLeading) {
                 if turnsOff {
                     SpotCornerButton(symbol: "minus", label: "Turn off", corner: .leading, size: size, onHover: tip(.leadingCorner, text: "Turn off")) {
                         model.turnOff(id)
                     }
-                }
-            }
-            .overlay(alignment: .topTrailing) {
-                if showsEye {
-                    let label = isHidden ? "Show on grid" : "Hide from grid"
-                    SpotCornerButton(symbol: isHidden ? "eye.slash" : "eye", label: label, corner: .trailing, size: size, onHover: tip(.trailingCorner, text: label)) {
-                        model.setOnGrid(isHidden, for: id)
-                    }
-                    .opacity(isHidden || eyeIsOpen ? 1 : 0.001)
-                    .animation(SpotMotion.handleFade, value: isHidden || eyeIsOpen)
                 }
             }
             .overlay(alignment: .bottomTrailing) {

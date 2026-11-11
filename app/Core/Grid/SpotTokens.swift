@@ -25,6 +25,10 @@ public enum SpotTokens {
     public static let dockMargin: CGFloat = 20
     /// The most rows of spots that the dock shows before it scrolls.
     public static let dockRows = 3
+    /// The size of the Add pill of a store card, which takes the line under its name, and the height of that name.
+    public static let addWidth: CGFloat = 44
+    public static let addHeight: CGFloat = 18
+    public static let nameHeight: CGFloat = 16
     /// The height of the sheet that shows a listing in the store.
     public static let storeSheetHeight: CGFloat = height(rows: 3)
     /// Where the dock's first row of spots starts, under its title and its search.

@@ -18,15 +18,13 @@ public struct SpotDock: Equatable, Sendable {
         case current, changed
     }
 
-    /// The spots that the store shows: all, those that are on or off, or those of one origin.
+    /// The spots that the store shows: all, or those of one origin. The groups of the store show the state.
     public enum Filter: CaseIterable, Equatable, Sendable {
-        case all, on, off, core, mine
+        case all, core, mine
 
         public var title: String {
             switch self {
             case .all: "All"
-            case .on: "On"
-            case .off: "Off"
             case .core: "Core"
             case .mine: "Mine"
             }
@@ -35,12 +33,17 @@ public struct SpotDock: Equatable, Sendable {
         public func keeps(_ item: Item) -> Bool {
             switch self {
             case .all: true
-            case .on: item.state != .off
-            case .off: item.state == .off
             case .core: item.origin == .core
             case .mine: item.origin == .mine
             }
         }
+    }
+
+    /// The title of the shown spots of one state, the number of them, and the top of its band in the rows.
+    public struct Group: Equatable, Sendable {
+        public let state: State
+        public let count: Int
+        public let top: CGFloat
     }
 
     /// One spot in the store.
@@ -82,20 +85,20 @@ public struct SpotDock: Equatable, Sendable {
         self.items = items.sorted { $0.command.name.localizedCaseInsensitiveCompare($1.command.name) == .orderedAscending }
     }
 
-    /// The dock with this spot at this size.
-    public func resized(_ id: String, to size: SpotSize) -> SpotDock {
-        var next = SpotDock(items: items.map { $0.id == id ? Item(command: $0.command, origin: $0.origin, state: $0.state, size: size, publication: $0.publication) : $0 })
-        next.query = query
-        next.filter = filter
-        next.opened = opened
-        return next
-    }
-
-    /// The spots that the filter keeps and whose name, or the words under it, hold the search, by name.
+    /// The spots that the filter keeps and whose name, or the words under it, hold the search: off, then in search only,
+    /// then on the grid, each by name.
     public var shown: [Item] {
-        items.filter { item in
+        let kept = items.filter { item in
             filter.keeps(item) && (query.isEmpty || [item.command.name, item.command.subtitle ?? ""].contains { $0.localizedStandardContains(query) })
         }
+        return Self.states.flatMap { state in kept.filter { $0.state == state } }
+    }
+
+    private static let states: [State] = [.off, .searchOnly, .onGrid]
+
+    /// The titles of the groups of the shown spots, while more than one state has spots.
+    public func groups(columns: Int) -> [Group] {
+        layout(columns: columns).groups
     }
 
     /// Where the card of each shown spot lies, in the order of `shown`, from the top left of the first row, with the grid's
@@ -111,39 +114,68 @@ public struct SpotDock: Equatable, Sendable {
         sheetTop(in: closedRects(columns: columns)).map { CGRect(x: 0, y: $0, width: SpotTokens.width(columns: columns), height: SpotTokens.storeSheetHeight) }
     }
 
-    /// A part of a card in the store that a pointer can be over: the mark of its state, the cross that deletes a spot of the
-    /// plugins folder that is off, or the rest of the card.
+    /// A part of a card in the store that a pointer can be over: the Add of a spot that is not on the grid, the cross that
+    /// deletes a spot of the plugins folder that is off, or the rest of the card.
     public enum Part: Equatable, Sendable {
-        case mark, delete, card
+        case add, delete, card
     }
 
     /// The shown spot and the part of its card under a point of the rows, if any.
     public func part(at point: CGPoint, columns: Int) -> (id: String, part: Part)? {
-        guard let index = rects(columns: columns).firstIndex(where: { $0.contains(point) }) else { return nil }
-        let item = shown[index], rect = rects(columns: columns)[index]
+        let rects = rects(columns: columns)
+        guard let index = rects.firstIndex(where: { $0.contains(point) }) else { return nil }
+        let item = shown[index], rect = rects[index]
         let rim = SpotTokens.corner(for: item.size) * SpotTokens.rimPoint
-        let reach = SpotTokens.keycap / 2 + 2
-        if hypot(point.x - rect.minX - rim, point.y - rect.minY - rim) <= reach { return (item.id, .mark) }
-        if item.isOwn, item.state == .off, hypot(point.x - rect.maxX + rim, point.y - rect.minY - rim) <= reach { return (item.id, .delete) }
+        if item.state != .onGrid, Self.addRect(in: rect, size: item.size).insetBy(dx: -2, dy: -2).contains(point) { return (item.id, .add) }
+        if item.isOwn, item.state == .off, hypot(point.x - rect.maxX + rim, point.y - rect.minY - rim) <= SpotTokens.keycap / 2 + 2 { return (item.id, .delete) }
         return (item.id, .card)
+    }
+
+    /// Where the Add of a card lies: a pill on the line under its name, or a round mark on the top left rim of a 1x1 card,
+    /// which has no room for words.
+    public static func addRect(in rect: CGRect, size: SpotSize) -> CGRect {
+        guard size != .small else {
+            let rim = SpotTokens.corner(for: size) * SpotTokens.rimPoint
+            return CGRect(x: rect.minX + rim - SpotTokens.keycap / 2, y: rect.minY + rim - SpotTokens.keycap / 2, width: SpotTokens.keycap, height: SpotTokens.keycap)
+        }
+        let words = SpotTokens.nameHeight + 1 + SpotTokens.addHeight
+        guard size.rows == 1 else {
+            return CGRect(x: rect.minX + SpotTokens.padding, y: rect.maxY - SpotTokens.padding - SpotTokens.addHeight, width: SpotTokens.addWidth, height: SpotTokens.addHeight)
+        }
+        let x = rect.minX + SpotTokens.padding + SpotTokens.glyphSize + SpotTokens.padding - 5
+        return CGRect(x: x, y: rect.minY + (rect.height - words) / 2 + SpotTokens.nameHeight + 1, width: SpotTokens.addWidth, height: SpotTokens.addHeight)
     }
 
     /// The height of the rows that hold the shown spots, and of the sheet of the opened spot.
     public func height(columns: Int) -> CGFloat {
-        let rows = places(columns: columns).map { $0.row + $0.size.rows }.max() ?? 0
-        let sheet = sheetRect(columns: columns) == nil ? 0 : SpotTokens.storeSheetHeight + SpotTokens.rowGap
-        return rows == 0 ? 0 : SpotTokens.height(rows: rows) + sheet
+        (rects(columns: columns).map(\.maxY) + [sheetRect(columns: columns)?.maxY].compactMap { $0 }).max() ?? 0
     }
 
     private func closedRects(columns: Int) -> [CGRect] {
-        places(columns: columns).map { place in
-            CGRect(
-                x: CGFloat(place.column) * (SpotTokens.cell + SpotTokens.columnGap),
-                y: CGFloat(place.row) * (SpotTokens.rowHeight + SpotTokens.rowGap),
-                width: SpotTokens.width(columns: place.size.columns),
-                height: SpotTokens.height(rows: place.size.rows)
-            )
+        layout(columns: columns).rects
+    }
+
+    /// The rect of each shown spot with no sheet open, and the title of each group: each state packs its own shelves, under
+    /// its title band while more than one state has spots.
+    private func layout(columns: Int) -> (rects: [CGRect], groups: [Group]) {
+        let parts = Self.states.map { state in shown.filter { $0.state == state } }.filter { !$0.isEmpty }
+        let titled = parts.count > 1
+        var rects: [CGRect] = [], groups: [Group] = [], top: CGFloat = 0
+        for part in parts {
+            let start = top + (titled ? SpotTokens.groupTitleBand : 0)
+            let packed = places(of: part, columns: columns).map { place in
+                CGRect(
+                    x: CGFloat(place.column) * (SpotTokens.cell + SpotTokens.columnGap),
+                    y: start + CGFloat(place.row) * (SpotTokens.rowHeight + SpotTokens.rowGap),
+                    width: SpotTokens.width(columns: place.size.columns),
+                    height: SpotTokens.height(rows: place.size.rows)
+                )
+            }
+            if titled, let state = part.first?.state { groups.append(Group(state: state, count: part.count, top: top)) }
+            rects += packed
+            top = (packed.map(\.maxY).max() ?? start) + SpotTokens.rowGap
         }
+        return (rects, groups)
     }
 
     /// The top of the sheet: a gap under the lowest card that starts no lower than the opened card.
@@ -153,11 +185,11 @@ public struct SpotDock: Equatable, Sendable {
         return rects.filter { $0.minY <= start }.map(\.maxY).max().map { $0 + SpotTokens.rowGap }
     }
 
-    /// The row and column of each shown spot, and its size, no wider than the rows. The spots fill shelves in their order:
+    /// The row and column of each of these spots, and its size, no wider than the rows. The spots fill shelves in their order:
     /// a shelf is as tall as its first spot, and a later spot no taller moves up into the first place where it fits in
     /// that shelf. No spot grows, and none moves into an earlier shelf.
-    private func places(columns: Int) -> [(row: Int, column: Int, size: SpotSize)] {
-        var queue = shown.enumerated().map { (index: $0.offset, size: SpotSize(columns: min($0.element.size.columns, columns), rows: $0.element.size.rows)) }
+    private func places(of items: [Item], columns: Int) -> [(row: Int, column: Int, size: SpotSize)] {
+        var queue = items.enumerated().map { (index: $0.offset, size: SpotSize(columns: min($0.element.size.columns, columns), rows: $0.element.size.rows)) }
         var places = [(row: Int, column: Int, size: SpotSize)?](repeating: nil, count: queue.count)
         var row = 0
         while let first = queue.first {

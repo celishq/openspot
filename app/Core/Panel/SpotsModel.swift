@@ -228,9 +228,6 @@ public final class SpotsModel {
     /// The layouts of the grid for each place that a carried spot of the dock can take. Its card is on the grid while the
     /// drag holds it there.
     @ObservationIgnored var arrival: SpotDrag?
-    /// The spot of the dock that the person resizes by its corner, the size it had, and where its card lay in the dock's
-    /// rows when the drag started.
-    public internal(set) var dockResize: (id: String, start: SpotSize, origin: CGPoint)?
     /// The card that the person resizes by its corner in Edit Spots, and the size that a release keeps.
     public internal(set) var resize: SpotResize?
     /// How long the pointer stays near a new place before the other cards make room there.
@@ -494,20 +491,11 @@ public final class SpotsModel {
         (error as? PluginError)?.reason ?? error.localizedDescription
     }
 
-    /// Where the cards hidden from the grid start in the order of Edit Spots, after the cards on the grid and a card that
-    /// arrives from the dock. A dragged card counts in the group of its target. It is nil out of Edit Spots and while the
-    /// search has text.
-    var hiddenStart: Int? {
-        guard isEditing, query.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
-        let hidden = cards.filter { !$0.isOnGrid && $0.id != drag?.id }.count + (drag?.target.isOnGrid == false ? 1 : 0)
-        return visible.count - hidden
-    }
-
-    /// The grid of the cards shown: in the groups of Edit Spots, with the size of each card whose size the person chose, and
-    /// of a card that arrives from the dock.
+    /// The grid of the cards shown, with the size of each card whose size the person chose, and of a card that arrives from
+    /// the store.
     var grid: SpotGrid {
         let arriving = carry?.tile == nil ? nil : carry?.entry.id
-        return SpotGrid(split: hiddenStart, kept: Set(visible.indices.filter { visible[$0].isSizeChosen || visible[$0].id == arriving }))
+        return SpotGrid(kept: Set(visible.indices.filter { visible[$0].isSizeChosen || visible[$0].id == arriving }))
     }
 
     /// The entries that have a card. The install screen has none.
@@ -550,7 +538,7 @@ public final class SpotsModel {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
             let arriving = carry.flatMap { $0.tile != nil && drag?.id == $0.entry.id ? [$0.entry] : nil } ?? []
-            return dragged(cards.filter(\.isOnGrid) + arriving + (isEditing ? cards.filter { !$0.isOnGrid } : []))
+            return dragged(cards.filter(\.isOnGrid) + arriving)
         }
         var ids = Set<String>()
         let answers = entries.filter { $0.command.answers?.matches(text) == true }

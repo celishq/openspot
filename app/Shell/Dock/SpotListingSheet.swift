@@ -1,9 +1,9 @@
 import OpenspotCore
 import SwiftUI
 
-/// The listing of a spot in the store, in a sheet under the shelf of its card: its name and description, where it stands in
-/// the store, its readme, the rows of its preview, and buttons that copy a prompt for the person's agent, publish it or
-/// share its package. It grows out of the bottom of its card.
+/// The listing of a spot in the store, in a sheet under the shelf of its card: its name and description, where it shows,
+/// where it stands in the store, its readme, the rows of its preview, and buttons that copy a prompt for the person's
+/// agent, publish it or share its package. It grows out of the bottom of its card.
 struct SpotListingSheet: View {
     let item: SpotDock.Item
     let listing: SpotListing
@@ -24,6 +24,7 @@ struct SpotListingSheet: View {
                     }
                 }
                 Spacer(minLength: 0)
+                StateChoice(state: item.state, canBeOff: item.origin != .builtIn) { model.setState($0, of: item.id) }
                 if let status {
                     Text(status)
                         .font(SpotType.detail)
@@ -92,6 +93,35 @@ struct SpotListingSheet: View {
     private var readme: AttributedString {
         guard let text = listing.readme else { return AttributedString("This spot has no readme yet.") }
         return (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
+    }
+}
+
+/// Where a spot shows, as segments drawn in SwiftUI, since an AppKit control does not clip with a sheet that grows: on the
+/// grid, in search only, or off, which a built-in spot does not offer.
+private struct StateChoice: View {
+    let state: SpotDock.State
+    let canBeOff: Bool
+    let choose: (SpotDock.State) -> Void
+
+    var body: some View {
+        let choices: [(SpotDock.State, String)] = [(.onGrid, "Grid"), (.searchOnly, "Search only")] + (canBeOff ? [(.off, "Off")] : [])
+        HStack(spacing: 2) {
+            ForEach(choices, id: \.1) { choice, title in
+                Button { choose(choice) } label: {
+                    Text(title)
+                        .font(SpotType.action)
+                        .foregroundStyle(SpotTheme.ink)
+                        .padding(.horizontal, SpotTokens.controlPadding * 1.5)
+                        .frame(height: SpotTokens.menuRowHeight - SpotTokens.controlPadding - 4)
+                        .background(choice == state ? SpotTheme.keycap : .clear, in: Capsule())
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(choice == state ? .isSelected : [])
+            }
+        }
+        .padding(2)
+        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: Capsule())
     }
 }
 

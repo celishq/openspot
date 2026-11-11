@@ -14,7 +14,7 @@ struct SpotTipView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            if let tip = model.tip, model.isEditing, model.carry == nil, model.resize == nil, model.dockResize == nil, let top = top(of: tip) {
+            if let tip = model.tip, model.isEditing, model.carry == nil, model.resize == nil, let top = top(of: tip) {
                 Text(tip.text)
                     .font(SpotType.detail)
                     .foregroundStyle(SpotTheme.ink)

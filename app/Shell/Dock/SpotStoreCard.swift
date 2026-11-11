@@ -5,6 +5,8 @@ import SwiftUI
 /// the grid. It shows no live content, so that the store opens with no work for each spot.
 struct SpotStoreCard: View {
     let item: SpotDock.Item
+    /// Whether the line under the name stays empty for the Add pill, in place of the description.
+    var leavesRoomForAdd = false
 
     var body: some View {
         let size = item.size
@@ -37,7 +39,10 @@ struct SpotStoreCard: View {
             Text(item.command.name)
                 .font(SpotType.title)
                 .foregroundStyle(SpotTheme.ink)
-            if let detail = item.command.subtitle {
+                .frame(height: SpotTokens.nameHeight)
+            if leavesRoomForAdd {
+                Color.clear.frame(width: SpotTokens.addWidth, height: SpotTokens.addHeight)
+            } else if let detail = item.command.subtitle {
                 Text(detail)
                     .font(SpotType.detail)
                     .modifier(SpotSecondaryText())

@@ -1,10 +1,9 @@
 import OpenspotCore
 import SwiftUI
 
-/// The store of Edit Spots, on the glass of the panel's surfaces: its filters with the number of spots that the chosen one
-/// keeps, its search, and those spots as their cards in rows that scroll under the filters and fade at each end they pass.
-/// The scroll reaches the store's edges, and its margins lie inside it. A card dragged out of the store leaves its place
-/// empty until it lands.
+/// The store of Edit Spots, on the glass of the panel's surfaces: its filter by origin, its search, and the spots in groups
+/// by state under their titles, in rows that scroll under the filter and fade at each end they pass. The scroll reaches the
+/// store's edges, and its margins lie inside it. A card dragged out of the store leaves its place empty until it lands.
 struct SpotDockView: View {
     let model: SpotsModel
     let size: CGSize
@@ -18,9 +17,16 @@ struct SpotDockView: View {
         ZStack(alignment: .topLeading) {
             ScrollView(.vertical, showsIndicators: false) {
                 ZStack(alignment: .topLeading) {
+                    ForEach(dock.groups(columns: columns), id: \.state) { group in
+                        HStack(spacing: SpotTokens.padding) {
+                            SpotGroupTitle(name: Self.title(of: group.state), count: group.count)
+                            if group.state == .off { TextButton(title: "Turn On All") { model.turnOnAll() } }
+                        }
+                        .offset(y: group.top)
+                    }
                     ForEach(Array(zip(dock.shown, rects)), id: \.0.id) { item, rect in
-                        SpotDockTile(item: item, model: model)
-                            .simultaneousGesture(carry(item), isEnabled: item.state == .off)
+                        SpotDockTile(item: item)
+                            .simultaneousGesture(carry(item), isEnabled: item.state != .onGrid)
                             .animation(nil) { $0.opacity(model.carry?.entry.id == item.id ? 0.001 : 1) }
                             .offset(x: rect.minX, y: rect.minY)
                     }
@@ -56,18 +62,13 @@ struct SpotDockView: View {
                     .offset(y: SpotTokens.dockRowsTop)
             }
             HStack(spacing: SpotTokens.padding) {
-                HStack(spacing: SpotTokens.padding) {
-                    ForEach(SpotDock.Filter.allCases, id: \.self) { filter in
-                        FilterButton(filter: filter, count: filter == dock.filter ? dock.shown.count : nil) { model.filterDock(filter) }
-                    }
+                Picker("Spots", selection: Binding(get: { dock.filter }, set: { model.filterDock($0) })) {
+                    ForEach(SpotDock.Filter.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
                 Spacer(minLength: 0)
-                if dock.filter == .off, !dock.shown.isEmpty {
-                    Button("Turn On All") { model.turnOnAll() }
-                        .buttonStyle(.plain)
-                        .font(SpotType.body)
-                        .foregroundStyle(SpotTheme.ink)
-                }
                 SpotSearchField(prompt: "Search spots", text: dock.query, onSearch: { model.searchDock($0) }, isFocused: $isSearching)
                     .frame(width: SpotTokens.gridWidth)
             }
@@ -94,8 +95,17 @@ struct SpotDockView: View {
         }
     }
 
-    /// Shows the tip of the part of a card that the pointer lies over: the words of its mark or its cross, or its
-    /// description, with its name on a 1x1 card.
+    /// The title of the group of the spots in a state.
+    static func title(of state: SpotDock.State) -> String {
+        switch state {
+        case .onGrid: "On grid"
+        case .searchOnly: "Search only"
+        case .off: "Off"
+        }
+    }
+
+    /// Shows the tip of the part of a card that the pointer lies over: what its Add or its cross does, or its description,
+    /// with its name on a 1x1 card.
     private func hover(_ phase: HoverPhase, columns: Int) {
         guard case .active(let point) = phase, let (id, part) = model.dock.part(at: point, columns: columns),
               let item = model.dock.shown.first(where: { $0.id == id }) else {
@@ -105,20 +115,19 @@ struct SpotDockView: View {
         let changed = item.publication == .changed ? "Changes not published" : nil
         let words = (item.size == .small ? [item.command.name, item.command.subtitle] : [item.command.subtitle]).compactMap { $0 } + [changed].compactMap { $0 }
         let tip: SpotTip? = switch part {
-        case .mark: SpotTip(id: id, anchor: .dockCorner, text: SpotDockTile.mark(of: item).label)
+        case .add: SpotTip(id: id, anchor: .dockCard, text: item.state == .off ? "Turn on" : "Put on the grid")
         case .delete: SpotTip(id: id, anchor: .dockCard, text: "Delete")
         case .card: words.isEmpty ? nil : SpotTip(id: id, anchor: .dockCard, text: words.joined(separator: " · "))
         }
         if model.tip != tip { model.tip = tip }
     }
 
-    /// Acts on a click in the rows: the mark turns a spot that is off on, or selects the card of one that is on, the cross
-    /// deletes, and the rest of a card opens its listing.
+    /// Acts on a click in the rows: Add puts a spot on the grid, the cross deletes, and the rest of a card opens its listing.
     private func press(at point: CGPoint, columns: Int) {
         guard model.carry == nil, let (id, part) = model.dock.part(at: point, columns: columns),
               let item = model.dock.shown.first(where: { $0.id == id }) else { return }
         switch part {
-        case .mark: item.state == .off ? model.turnOn(id) : model.dragDockSpot(id, by: .zero)
+        case .add: model.setState(.onGrid, of: id)
         case .delete: model.delete(id)
         case .card: model.openListing(id)
         }
@@ -146,33 +155,17 @@ private struct SheetGrowth: ViewModifier {
     }
 }
 
-/// A filter of the store: its title, strong while it is chosen, with the number of spots that it keeps.
-private struct FilterButton: View {
-    let filter: SpotDock.Filter
-    let count: Int?
+/// A button that is its words alone, such as Turn On All beside the title of the spots that are off.
+private struct TextButton: View {
+    let title: String
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 6) {
-                if count != nil {
-                    Text(filter.title)
-                        .font(SpotType.title)
-                        .foregroundStyle(SpotTheme.ink)
-                } else {
-                    Text(filter.title)
-                        .font(SpotType.title)
-                        .modifier(SpotSecondaryText())
-                }
-                if let count {
-                    Text("\(count)")
-                        .font(SpotType.body)
-                        .modifier(SpotSecondaryText())
-                }
-            }
-            .contentShape(Rectangle())
+            Text(title)
+                .font(SpotType.detail)
+                .modifier(SpotSecondaryText())
         }
         .buttonStyle(.plain)
-        .accessibilityAddTraits(count != nil ? .isSelected : [])
     }
 }

@@ -207,13 +207,13 @@ final class SpotsModelDragTests: XCTestCase {
         ))
     }
 
-    func testTheHintNamesWhatTheHKeyDoesToTheSelectedSpot() {
+    func testTheHKeyPutsTheSelectedSpotInSearchOnlyInTheStore() {
         XCTAssertEqual(model.hint, "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done")
 
         model.handleEditKey(ActionKey(name: "h"))
-        XCTAssertEqual(model.hint, "S Size   H Show   L Letter   ⇧ Arrows Move   Esc Done")
 
-        model.handleEditKey(ActionKey(name: "h"))
+        XCTAssertEqual(order, ["b", "c", "d"])
+        XCTAssertEqual(model.dock.items.first { $0.id == "a" }?.state, .searchOnly)
         XCTAssertEqual(model.hint, "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done")
     }
 
@@ -241,36 +241,37 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(savedOrder(), ["a", "b", "c", "d"])
     }
 
-    func testAHiddenCardDroppedAmongTheHiddenCardsStaysHidden() {
-        model.setOnGrid(false, for: "b")
-        model.setOnGrid(false, for: "a")
-        XCTAssertEqual(order, ["c", "d", "a", "b"])
-
-        let translation = move("b", to: leftHalf(of: "a"))
-        model.dragSpot("b", by: translation)
-        model.dropSpot(by: translation)
-
-        XCTAssertEqual(order, ["c", "d", "b", "a"])
-        XCTAssertEqual(model.visible.map(\.isOnGrid), [true, true, false, false])
-    }
-
-    func testHiddenCardsLieInAGroupOfTheirOwnUnderATitleBand() {
-        XCTAssertEqual(model.placements.map(\.top), [0, 0, 0, 0])
-
+    func testInEditSpotsTheGridShowsOnlyTheCardsOnTheGrid() {
         model.setOnGrid(false, for: "a")
 
-        let band = SpotTokens.groupTitleBand
-        XCTAssertEqual(order, ["b", "c", "d", "a"])
-        XCTAssertEqual(model.placements.map(\.top), [band, band, band, 2 * band])
-        XCTAssertGreaterThan(model.placements[3].rect.minY, model.placements[2].rect.maxY + band)
-    }
-
-    func testTheGroupsEndWithEditSpots() {
-        model.setOnGrid(false, for: "a")
-
-        model.endEditing()
-
+        XCTAssertEqual(order, ["b", "c", "d"])
         XCTAssertEqual(model.placements.map(\.top), [0, 0, 0])
+        XCTAssertEqual(model.dock.items.first { $0.id == "a" }?.state, .searchOnly)
+    }
+
+    func testASearchOnlySpotDraggedFromTheStoreGoesOnTheGridThere() {
+        model.setOnGrid(false, for: "d")
+        model.dockFrame = dock
+        let translation = dockMove("d", to: leftHalf(of: "b"))
+
+        model.dragDockSpot("d", by: translation)
+        model.dropDockSpot(by: translation)
+
+        XCTAssertEqual(order, ["a", "d", "b", "c"])
+        XCTAssertEqual(model.dock.items.first { $0.id == "d" }?.state, .onGrid)
+    }
+
+    func testTheStateChoiceOfAListingPutsASpotInSearchTurnsItOffAndBringsItBack() {
+        model.setState(.searchOnly, of: "a")
+        XCTAssertEqual(order, ["b", "c", "d"])
+        XCTAssertEqual(model.dock.items.first { $0.id == "a" }?.state, .searchOnly)
+
+        model.setState(.off, of: "a")
+        XCTAssertEqual(offInStore, ["a"])
+
+        model.setState(.onGrid, of: "a")
+        XCTAssertEqual(offInStore, [])
+        XCTAssertTrue(order.contains("a"))
     }
 
     func testATipGoesWhenItsControlActsOrEditSpotsEnds() {
@@ -296,30 +297,6 @@ final class SpotsModelDragTests: XCTestCase {
         model.tip = SpotTip(id: "a", anchor: .dockCard, text: "A")
         model.dockScrolled(to: 40)
         XCTAssertNil(model.tip)
-    }
-
-    func testAHiddenCardDroppedAmongTheCardsOnTheGridGoesOnTheGrid() {
-        model.setOnGrid(false, for: "a")
-        XCTAssertEqual(order, ["b", "c", "d", "a"])
-
-        let translation = move("a", to: leftHalf(of: "b"))
-        model.dragSpot("a", by: translation)
-        model.dropSpot(by: translation)
-
-        XCTAssertEqual(order, ["a", "b", "c", "d"])
-        XCTAssertEqual(model.visible.map(\.isOnGrid), [true, true, true, true])
-        XCTAssertEqual(savedOrder(), ["a", "b", "c", "d"])
-    }
-
-    func testACardDroppedAmongTheHiddenCardsLeavesTheGrid() {
-        model.setOnGrid(false, for: "a")
-
-        let translation = move("b", to: leftHalf(of: "a"))
-        model.dragSpot("b", by: translation)
-        model.dropSpot(by: translation)
-
-        XCTAssertEqual(order, ["c", "d", "b", "a"])
-        XCTAssertEqual(model.visible.map(\.isOnGrid), [true, true, false, false])
     }
 
     func testAPanelThatHidesEndsTheDrag() {
@@ -442,7 +419,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(size(), .small)
 
         model.dropDockSpot(by: translation)
-        XCTAssertEqual(order, ["a", "b", "timer", "c", "d"])
+        XCTAssertEqual(order, ["a", "b", "timer", "c"])
         XCTAssertEqual(size(), .small)
     }
 
@@ -465,37 +442,6 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertNil(model.carry)
         XCTAssertEqual(offInStore, ["timer"])
         XCTAssertEqual(savedOrder(), ["a", "b", "c", "d"])
-    }
-
-    func testASpotOfTheDockResizedByItsCornerTakesTheNearestSizeAndKeepsItAsItsPreferredSize() throws {
-        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
-        model.reload()
-        model.dockFrame = dock
-        let right = CGSize(width: SpotTokens.cell + SpotTokens.columnGap, height: 0)
-
-        model.resizeSpot("timer", by: right)
-        XCTAssertEqual(model.dockResize?.id, "timer")
-        XCTAssertEqual(model.dock.items.first { $0.id == "timer" }?.size, .wide)
-        XCTAssertEqual(model.resizeSize, .wide)
-
-        model.dropResize()
-        XCTAssertNil(model.dockResize)
-        model.endEditing()
-        model.beginEditing()
-        XCTAssertEqual(model.dock.items.first { $0.id == "timer" }?.size, .wide)
-    }
-
-    func testEscapePutsTheSizeOfASpotOfTheDockBack() throws {
-        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
-        model.reload()
-        model.dockFrame = dock
-        model.resizeSpot("timer", by: CGSize(width: SpotTokens.cell + SpotTokens.columnGap, height: 0))
-
-        model.handleEditKey(ActionKey(name: "escape"))
-
-        XCTAssertTrue(model.isEditing)
-        XCTAssertNil(model.dockResize)
-        XCTAssertEqual(model.dock.items.first { $0.id == "timer" }?.size, .small)
     }
 
     func testACardPutBackGlidesToWhereItStarted() {
@@ -622,11 +568,9 @@ final class SpotsModelDragTests: XCTestCase {
             self.model.filterDock(filter)
             return self.model.dock.shown.map(\.id)
         }
-        XCTAssertEqual(shown(.on), ["a", "b", "c", "d"])
-        XCTAssertEqual(shown(.off), ["timer"])
         XCTAssertEqual(shown(.core), ["timer"])
-        XCTAssertEqual(shown(.mine), ["a", "b", "c", "d"])
-        XCTAssertEqual(shown(.all), ["a", "b", "c", "d", "timer"])
+        XCTAssertEqual(shown(.mine), ["d", "a", "b", "c"])
+        XCTAssertEqual(shown(.all), ["timer", "d", "a", "b", "c"])
     }
 
     func testTurnOnAllTurnsOnEachSpotThatIsOff() throws {
@@ -648,6 +592,9 @@ final class SpotsModelDragTests: XCTestCase {
         model.openListing("timer")
         XCTAssertEqual(model.dock.opened, "timer")
         XCTAssertEqual(model.dockListing?.readme, "Counts down.")
+
+        model.searchDock("")
+        XCTAssertEqual(model.dock.opened, "timer")
 
         model.handleEditKey(ActionKey(name: "escape"))
         XCTAssertNil(model.dock.opened)

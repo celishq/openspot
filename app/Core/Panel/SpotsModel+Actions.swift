@@ -251,7 +251,7 @@ extension SpotsModel {
     public var hint: String {
         if recording != nil, isEditing { return "Press a letter   ⌫ Remove   Esc Cancel" }
         if recording != nil { return "Esc Cancel" }
-        if isEditing { return "S Size   H \(selectedEntry?.isOnGrid == false ? "Show" : "Hide")   L Letter   ⇧ Arrows Move   Esc Done" }
+        if isEditing { return "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done" }
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
         if let panel = openPanel, !panel.showsRows || panel.drawsKeys { return panel.hint { work(of: $0) != nil } }
         let keys = target.flatMap { target in
