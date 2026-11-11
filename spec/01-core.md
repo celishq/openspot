@@ -121,7 +121,7 @@ they go at once when the pattern no longer matches (A3). A pick of a row is `<sc
 `answers` and no `read` has no card and shows only its answers. A staying script answers each text as a call of its own (I2). `openspot calc solve
 <words>...` prints the answer of a sum, a conversion or a date as a row, so a spot can print it as it is.
 
-A spot with a number in its `read`, or with `mode=stay` or `always`, and a main `text`, `number`, `gauge` or `graph` can show in the menu bar, when the
+A spot with a number or an event in its `read`, or with `mode=stay` or `always`, and a main `text`, `number`, `gauge` or `graph` can show in the menu bar, when the
 person puts it there. Printing nothing removes the item until the next read. A spot with a number in its `read` has no
 card on the grid until the person shows it (F7).
 

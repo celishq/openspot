@@ -33,7 +33,7 @@ public struct Plugin: Equatable, Sendable {
         var read: SpotRead?
         if let text = header.value("read") {
             guard let parsed = SpotRead(text: text) else {
-                throw PluginError.fault("\(name) has an unknown read: \(text). Use sheet, panel or a number of seconds")
+                throw PluginError.fault("\(name) has an unknown read: \(text). Use sheet, panel, a number of seconds or an event, such as clipboard or music.track")
             }
             read = parsed
         }

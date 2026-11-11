@@ -98,6 +98,7 @@ public struct ReviewSpot: Equatable, Sendable {
                 switch moment {
                 case .panel: moments.append("when the panel opens")
                 case .every(let seconds): moments.append("every \(Int(seconds)) seconds")
+                case .event(let name): moments.append("on \(name)")
                 case .sheet: break
                 }
             }

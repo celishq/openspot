@@ -8,6 +8,7 @@ extension SpotRuns {
         case .panel: openPanel()
         case .wake: wake()
         case .query(let text): ask(text)
+        case .named(let name, let value): read(name, value)
         }
     }
 
@@ -50,6 +51,13 @@ extension SpotRuns {
             sheet.read(need: .clock, reason: .timer)
         }
         sheets.values.forEach { $0.settleScript() }
+    }
+
+    /// Reads each wanted script that lists the event, at once and with no young answer, as the clock does (B1, B5).
+    private func read(_ name: String, _ value: String?) {
+        for sheet in sheets.values where sheet.isWanted && sheet.command.read?.has(.event(name)) == true {
+            sheet.read(need: .clock, reason: ReadReason(event: name, value: value))
+        }
     }
 
     /// Sends the text to each spot whose `answers` pattern matches it, and an empty text to the others, which drops their

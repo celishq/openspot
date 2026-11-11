@@ -224,9 +224,9 @@ public struct Spot: Equatable, Sendable {
         read?.has(.panel) == true && !isGlobal && !stays
     }
 
-    /// Whether the person can put it in the menu bar: it has a number in its `read`, or it stays.
+    /// Whether the person can put it in the menu bar: it has a number or an event in its `read`, or it stays.
     public var canShowInMenuBar: Bool {
-        read?.seconds != nil || stays
+        read?.seconds != nil || read?.hasEvent == true || stays
     }
 
     /// The call that a click on its card makes.

@@ -24,8 +24,8 @@ public final class SpotRun {
         case closed
     }
 
-    /// Why a read is asked. A `panel` or a `sheet` moment can use a young answer. The clock always runs and reports no failure
-    /// to a person. A change of state always runs, and runs again after a read that started before it.
+    /// Why a read is asked. A `panel` or a `sheet` moment can use a young answer. The clock and an event always run and report
+    /// no failure to a person. A change of state always runs, and runs again after a read that started before it.
     public enum ReadNeed: Sendable {
         case moment
         case clock

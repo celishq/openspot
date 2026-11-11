@@ -213,8 +213,8 @@ final class PluginFolderTests: XCTestCase {
 
         XCTAssertEqual(try scan.plugins, [])
         XCTAssertEqual(try scan.refused, [
-            ScanResult.Refusal(file: "a", reason: "A has an unknown read: launch. Use sheet, panel or a number of seconds"),
-            ScanResult.Refusal(file: "b", reason: "B has an unknown read: panel,wake. Use sheet, panel or a number of seconds")
+            ScanResult.Refusal(file: "a", reason: "A has an unknown read: launch. Use sheet, panel, a number of seconds or an event, such as clipboard or music.track"),
+            ScanResult.Refusal(file: "b", reason: "B has an unknown read: panel,wake. Use sheet, panel, a number of seconds or an event, such as clipboard or music.track")
         ])
     }
 
@@ -333,14 +333,14 @@ final class PluginFolderTests: XCTestCase {
 
         XCTAssertEqual(try scan.plugins, [])
         XCTAssertEqual(try scan.refused, [
-            ScanResult.Refusal(file: "a", reason: "A has an unknown read: sometimes. Use sheet, panel or a number of seconds"),
+            ScanResult.Refusal(file: "a", reason: "A has an unknown read: sometimes. Use sheet, panel, a number of seconds or an event, such as clipboard or music.track"),
             ScanResult.Refusal(file: "b", reason: "B has an unknown size: huge"),
             ScanResult.Refusal(file: "c", reason: "C has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots"),
             ScanResult.Refusal(file: "f", reason: "F needs panel or a number in its read to join the main search"),
             ScanResult.Refusal(file: "h", reason: "H needs panel or a number in its read to join the main search"),
-            ScanResult.Refusal(file: "j", reason: "J has an unknown read: open. Use sheet, panel or a number of seconds"),
-            ScanResult.Refusal(file: "k", reason: "K has an unknown read: click. Use sheet, panel or a number of seconds"),
-            ScanResult.Refusal(file: "l", reason: "L has an unknown read: panel,later. Use sheet, panel or a number of seconds")
+            ScanResult.Refusal(file: "j", reason: "J has an unknown read: open. Use sheet, panel, a number of seconds or an event, such as clipboard or music.track"),
+            ScanResult.Refusal(file: "k", reason: "K has an unknown read: click. Use sheet, panel, a number of seconds or an event, such as clipboard or music.track"),
+            ScanResult.Refusal(file: "l", reason: "L has an unknown read: panel,later. Use sheet, panel, a number of seconds or an event, such as clipboard or music.track")
         ])
     }
 

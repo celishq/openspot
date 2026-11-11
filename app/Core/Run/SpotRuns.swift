@@ -225,9 +225,10 @@ public final class SpotRuns {
         return lines
     }
 
-    /// Whether a call leaves no record: a timed read or a search that did not fail, which runs too often to keep.
+    /// Whether a call leaves no record: a timed read, a read of an event or a search that did not fail, which runs too often
+    /// to keep.
     private static func isQuiet(_ reason: ReadReason?, _ end: ScriptCall.End) -> Bool {
-        guard reason == .timer || reason == .search else { return false }
+        guard reason == .timer || reason == .search || reason?.isEvent == true else { return false }
         if case .failed = end { return false }
         return true
     }
