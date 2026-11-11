@@ -1,11 +1,15 @@
 import Foundation
 
 /// The rates that the calc helper keeps between calls: in memory, and in one file for the first ask after the helper starts
-/// and for an ask with no internet. Rates older than `freshness` answer at once while new ones come in the background, and
-/// with none kept an ask waits for them. A fetch that fails waits `retry` before the next one.
+/// and for an ask with no internet. Rates older than `freshness` answer at once while new ones come in the background, rates
+/// older than `staleness` wait a moment for new ones, and with none kept an ask waits for them. A fetch that fails waits
+/// `retry` before the next one.
 public actor CalcRateCache {
     public static let freshness: TimeInterval = 300
     static let retry: TimeInterval = 60
+    /// The age of rates for which an ask waits up to `patience` for new ones before it answers with them.
+    static let staleness: TimeInterval = 3600
+    static let patience: Duration = .seconds(1)
 
     /// The helper that keeps the cache, which `openspot calc solve` asks for the rates (K2).
     public static let capability = Capability(name: "calc")
@@ -31,8 +35,24 @@ public actor CalcRateCache {
             kept = (try? Data(contentsOf: file)).flatMap(CalcRates.init(file:))
         }
         guard let kept else { return await startRefresh()?.value }
-        if now().timeIntervalSince(kept.time) > Self.freshness { startRefresh() }
-        return kept
+        let age = now().timeIntervalSince(kept.time)
+        guard age > Self.freshness, let refresh = startRefresh() else { return kept }
+        guard age > Self.staleness else { return kept }
+        return await Self.first(of: refresh, within: Self.patience) ?? kept
+    }
+
+    /// The value of a fetch, or nil when it takes longer than the time.
+    private static func first(of refresh: Task<CalcRates?, Never>, within time: Duration) async -> CalcRates? {
+        await withTaskGroup(of: CalcRates?.self) { group in
+            group.addTask { await refresh.value }
+            group.addTask {
+                try? await Task.sleep(for: time)
+                return nil
+            }
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
+        }
     }
 
     /// Waits for the fetch that runs, if any.

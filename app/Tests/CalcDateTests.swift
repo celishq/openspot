@@ -49,6 +49,7 @@ final class CalcDateTests: XCTestCase {
             ("days since 1 jan 2026", "314", "314 days"),
             ("25 dec 2026 - today", "44", "44 days"),
             ("hours until tomorrow", "9", "9 hours"),
+            ("days since 1 jan", "314", "314 days"),
         ])
     }
 

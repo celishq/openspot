@@ -31,4 +31,10 @@ enum CalcCurrency {
     static func isFiat(_ code: String) -> Bool {
         fiat.contains(code)
     }
+
+    /// Whether a code names a currency that leaves no doubt: one of a country, bitcoin or ether. A conversion asks for rates
+    /// only with one, so that a word such as `apr` or `pi` stays a date or a sum.
+    static func isKnown(_ code: String) -> Bool {
+        isFiat(code) || code == "BTC" || code == "ETH"
+    }
 }

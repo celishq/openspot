@@ -11,7 +11,7 @@ final class CalculatorPluginTests: SamplePluginsCase {
         let pattern = try XCTUnwrap(try calculator.answers)
         let sums = [
             "2*(3+4)", "15% of 80", "-5+2", "(1+2)*3", ".5*2", "$15", "€20 in usd", "5 km in mi", "15 usd in eur", "today + 3 weeks",
-            "Tomorrow", "days until 25 dec", "now in tokyo", "3pm tokyo in kyiv", "next friday", "in 3 weeks", "sqrt 2", "pi*2", "time in london",
+            "Tomorrow", "days until 25 dec", "now in tokyo", "3pm tokyo in kyiv", "next friday", "in 3 weeks", "sqrt 2", "pi*2", "time in london", "₹500 in usd", "the time in tokyo",
         ]
         let names = ["safari", "notes", "calculator", "timer", "nowhere", "instagram", "pinterest", "logic pro", "nextcloud", "daystar", "lastpass"]
 

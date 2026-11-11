@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 final class CalcRatesTests: XCTestCase {
-    static let coinbase = Data(#"{"data":{"currency":"USD","rates":{"USD":"1.0","EUR":"0.8973","UAH":"45.4772","JPY":"153.2","GBP":"0.76","BTC":"0.0000135794951796"}}}"#.utf8)
+    static let coinbase = Data(#"{"data":{"currency":"USD","rates":{"USD":"1.0","EUR":"0.8973","UAH":"45.4772","JPY":"153.2","GBP":"0.76","APR":"29.15","BTC":"0.0000135794951796"}}}"#.utf8)
     private let time = Date(timeIntervalSince1970: 1_800_000_000)
     private var folder: URL!
 
@@ -115,6 +115,19 @@ final class CalcRatesTests: XCTestCase {
         XCTAssertEqual(kept?.rate(from: "USD", to: "EUR"), 0.8973)
         count = await source.count
         XCTAssertEqual(count, 3)
+    }
+
+    func testRatesAnHourOldWaitForNewOnesAndKeepTheOldWhenNoneCome() async throws {
+        let clock = Clock()
+        _ = await cache(Source(), clock).rates()
+        clock.now += 2 * 3600
+        let fresh = await cache(Source(), clock).rates()
+        XCTAssertEqual(fresh?.time, clock.now)
+        clock.now += 2 * 3600
+        let source = Source()
+        await source.setFails(true)
+        let kept = await cache(source, clock).rates()
+        XCTAssertEqual(kept?.time, clock.now - 2 * 3600)
     }
 
     func testACutFileCountsAsNone() async throws {

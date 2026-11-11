@@ -2,7 +2,7 @@
 # title=Calculator
 # icon=equal.square
 # detail=Sums, units, currencies and dates
-# answers=^\s*([-+(.$€£¥₴₿π0-9]|(?i:today|tomorrow|yesterday|now|time|next|last|in|days|weeks|months|years|hours|minutes|sqrt|sin|cos|tan|ln|log|abs|round|pi|noon|midnight)\b)
+# answers=^\s*([-+(.$€£¥₴₿₹₩₺₪π0-9]|(?i:the|today|tomorrow|yesterday|now|time|next|last|in|days|weeks|months|years|hours|minutes|sqrt|sin|cos|tan|ln|log|abs|round|pi|noon|midnight)\b)
 case "$1" in
   read)
     [ -n "$2" ] || exit 0

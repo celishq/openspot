@@ -55,9 +55,10 @@ public struct CalcAnswer: Equatable, Sendable {
     private static func conversion(of text: String, locale: Locale, clock: Calendar, now: Date, rates: () -> CalcRates?) -> CalcAnswer? {
         for split in CalcConversion.splits(of: text, locale: locale) {
             if let to = split.to, let answer = units(split.amount, from: split.from, to: to, locale: locale) { return answer }
-            guard let from = CalcCurrency.code(split.from), let to = split.to.map(CalcCurrency.code) ?? locale.currency?.identifier, from != to else { continue }
+            guard let from = CalcCurrency.code(split.from), let to = split.to.map(CalcCurrency.code) ?? locale.currency?.identifier, from != to,
+                  CalcCurrency.isKnown(from) || (split.to != nil && CalcCurrency.isKnown(to)) else { continue }
             guard let rates = rates() else {
-                if CalcCurrency.isFiat(from), CalcCurrency.isFiat(to) { return CalcAnswer(value: "", title: "", detail: "", status: "offline") }
+                if CalcCurrency.isKnown(from), CalcCurrency.isKnown(to) { return CalcAnswer(value: "", title: "", detail: "", status: "offline") }
                 continue
             }
             guard let rate = rates.rate(from: from, to: to) else { continue }
@@ -108,8 +109,18 @@ public struct CalcAnswer: Equatable, Sendable {
         return formatter.string(from: rates.time)
     }
 
+    /// A value with a dot, no grouping and at most `digits` significant digits, such as `5280000` or `0.000001`, and in
+    /// scientific notation only from 10¹⁵ up.
     private static func plain(_ value: Double, digits: Int) -> String {
-        String(format: "%.\(digits)g", value)
+        let fallback = String(format: "%.\(digits)g", value)
+        guard abs(value) < 1e15 else { return fallback }
+        let formatter = NumberFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.numberStyle = .decimal
+        formatter.usesGroupingSeparator = false
+        formatter.usesSignificantDigits = true
+        formatter.maximumSignificantDigits = digits
+        return formatter.string(from: NSNumber(value: value)) ?? fallback
     }
 
     /// A value written the way of the Mac, and in scientific notation when it is too large or too small for its digits.

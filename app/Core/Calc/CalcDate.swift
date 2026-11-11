@@ -3,7 +3,7 @@ import Foundation
 /// A typed sum of dates and times: a date moved by lengths, such as `today + 3 weeks`; a count to or from a date, such as
 /// `days until 25 dec`; the days between two dates; a time in another zone, such as `3pm tokyo in kyiv`; or a date alone,
 /// such as `next friday`. `now`, `today`, `tomorrow` and `yesterday` read from the clock, and other dates from the date
-/// finder of macOS.
+/// finder of macOS. A count since a date with no year counts from its last time, not its next.
 struct CalcDate {
     let value: String
     let title: String
@@ -60,10 +60,15 @@ struct CalcDate {
         var from: (date: Date, hasTime: Bool)
         var to: (date: Date, hasTime: Bool)
         if let match = text.firstMatch(of: /^(days|weeks|months|years|hours|minutes)\s+(until|till|to|before|since|from|after)\s+(.+)$/) {
-            guard let named = units[String(match.1)], let date = moment(String(match.3), format.clock, now) else { return nil }
+            guard let named = units[String(match.1)], var date = moment(String(match.3), format.clock, now) else { return nil }
             unit = named
             let start = (date: now, hasTime: true)
-            (from, to) = ["since", "from", "after"].contains(String(match.2)) ? (date, start) : (start, date)
+            let isSince = ["since", "from", "after"].contains(String(match.2))
+            if isSince, match.3.firstMatch(of: /\d{4}/) == nil {
+                let step: Calendar.Component = format.clock.isDate(date.date, inSameDayAs: now) ? .day : .year
+                while date.date > now, let earlier = format.clock.date(byAdding: step, value: -1, to: date.date) { date.date = earlier }
+            }
+            (from, to) = isSince ? (date, start) : (start, date)
         } else if let match = text.firstMatch(of: /^(.+?)\s+-\s+(.+)$/),
                   let later = moment(String(match.1), format.clock, now), let earlier = moment(String(match.2), format.clock, now) {
             unit = .day
