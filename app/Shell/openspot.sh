@@ -1,4 +1,5 @@
-# The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc`, `value` and `openspot_serve`.
+# The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc`, `value`, `openspot_kv`, `openspot_row`, `openspot_rows` and
+# `openspot_serve`.
 # Loading starts `cat` once, and each function starts `sed`, `tr` or `awk` only above 1 KB, where a shell loop is too slow.
 
 # Whether the header of the script says `mode=stay` or `mode=always`: the comment lines at its top, read with no process.
@@ -192,4 +193,36 @@ EOF_OPENSPOT
     _openspot_run "$@"
     printf '\n---\nend=%s\n---\n' "$_openspot_call"
   done
+}
+
+# Prints one line of a block with its value written for you, so that a new line or a backslash in the value stays in it (C8).
+openspot_kv() {
+  printf '%s=' "$1"
+  esc "${2-}"
+  printf '\n'
+}
+
+# Prints one row after a blank line: its id and title, and its detail and icon when they are given, each written for you
+# (C8). More lines of the row can follow with `openspot_kv`.
+openspot_row() {
+  printf '\n'
+  openspot_kv row "$1"
+  openspot_kv title "${2-}"
+  [ -z "${3-}" ] || openspot_kv detail "$3"
+  [ -z "${4-}" ] || openspot_kv icon "$4"
+}
+
+# Prints a block for each line of stdin, a row or one of the kind given, such as `text`. A line holds its id, title, detail
+# and icon split by tabs, and after them any more `key=value` fields of the block. Each backslash is written for you, and an
+# empty field prints no line (C8).
+openspot_rows() {
+  LC_ALL=C /usr/bin/sed 's/\\/\\\\/g' | LC_ALL=C /usr/bin/awk -F '\t' -v kind="${1:-row}" '
+    NF {
+      printf "\n%s=%s\n", kind, $1
+      if ($2 != "") printf "title=%s\n", $2
+      if ($3 != "") printf "detail=%s\n", $3
+      if ($4 != "") printf "icon=%s\n", $4
+      for (i = 5; i <= NF; i++) if ($i != "") print $i
+    }
+    END { if (NR) print "" }'
 }

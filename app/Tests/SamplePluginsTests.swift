@@ -15,7 +15,8 @@ final class SamplePluginsTests: SamplePluginsCase {
             let out = Pipe()
             process.executableURL = script
             process.arguments = [call, "x"]
-            process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "OPENSPOT_DATA": tools.path, "HOME": tools.path]
+            process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "OPENSPOT_DATA": tools.path, "HOME": tools.path, "OPENSPOT_SH": plugins.deletingLastPathComponent().appendingPathComponent("app/Shell/openspot.sh").path]
+            process.standardInput = FileHandle.nullDevice
             process.standardOutput = out
             try process.run()
             process.waitUntilExit()

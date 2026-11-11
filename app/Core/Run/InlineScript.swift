@@ -17,6 +17,21 @@ final class InlineScript: @unchecked Sendable {
     private static let timeLimit: TimeLimit? = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "JSContextGroupSetExecutionTimeLimit")
         .map { unsafeBitCast($0, to: TimeLimit.self) }
 
+    /// `openspot.frame(object)`, which writes an object as one block, or a list of objects as blocks, with each value
+    /// written as a value: a list repeats its key, and null leaves it out (C8).
+    private static let frame = """
+    openspot.frame = function frame(value) {
+      if (Array.isArray(value)) return value.map(frame).join("\\n")
+      const write = (one) => String(one).replace(/\\\\/g, "\\\\\\\\").replace(/\\n/g, "\\\\n")
+      let text = ""
+      for (const [key, each] of Object.entries(value || {})) {
+        if (each === undefined || each === null) continue
+        for (const one of Array.isArray(each) ? each : [each]) text += `${key}=${write(one)}\\n`
+      }
+      return text
+    }
+    """
+
     private let url: URL
     private let name: String
     private let environment: [String: String]
@@ -157,6 +172,7 @@ final class InlineScript: @unchecked Sendable {
         let openspot = JSValue(newObjectIn: context)
         openspot?.setObject(ask, forKeyedSubscript: "call" as NSString)
         context.setObject(openspot, forKeyedSubscript: "openspot" as NSString)
+        context.evaluateScript(Self.frame)
         let text = try String(contentsOf: url, encoding: .utf8)
         context.evaluateScript(text, withSourceURL: url)
         try rethrow()

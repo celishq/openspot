@@ -35,6 +35,18 @@ final class SpotCheckTests: XCTestCase {
         XCTAssertEqual(findings.map(\.fault), ["Relay has stay, which Openspot no longer reads. Use mode=stay or mode=always"])
     }
 
+    func testAValueWithANewLinePrintedByHandIsAFaultThatNamesTheHelper() async throws {
+        let file = folder.appendingPathComponent("notes.sh")
+        try "#!/bin/sh\n# read=sheet\nprintf 'row=a\\ntitle=one\\ntwo\\n\\nrow=b\\ntitle=B\\ntitle=C\\n'\n".writeScript(to: file)
+
+        let findings = await SpotCheck(folder: SpotFolder(url: folder)).findings()
+
+        XCTAssertEqual(findings.map(\.fault), [
+            "the block row=a has a line with no =, as a value with a new line prints. Print each value from data with openspot_kv, openspot_row or esc",
+            "the block row=b has title twice, as a value with a new line prints. Print each value from data with openspot_kv, openspot_row or esc"
+        ])
+    }
+
     func testNoFaultIsAnEmptyList() async throws {
         try "#!/bin/sh\necho\n".writeScript(to: folder.appendingPathComponent("hello.sh"))
 

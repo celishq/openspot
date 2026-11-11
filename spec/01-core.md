@@ -217,22 +217,24 @@ shell helper gives them to a function as a once script gets them (Y8, Y9). `mode
 #!/bin/sh
 # title=Notes
 # read=sheet
+. "$OPENSPOT_SH"
 case "$1" in
-  read) printf 'row=today\ntitle=Today\n' ;;
+  read) openspot_row today Today ;;
   open) open -a Notes ;;
 esac
 ```
 
 The shell helper gives `esc <text>`, which writes text as a value, and `value <id>`, which prints one value from stdin.
-`openspot_kv <key> <value>` prints one line with its value written for you, and `openspot_row <id> <title> [detail] [icon]`
-prints one row (C8). `openspot_serve <function> "$@"` runs the function with the three parts of each call: once in a script
+`openspot_kv <key> <value>` prints one line with its value written for you, `openspot_row <id> <title> [detail] [icon]`
+prints one row, and `openspot_rows [kind]` prints a row, or a block of the kind given, for each line of stdin with its id,
+title, detail and icon split by tabs (C8). `openspot_serve <function> "$@"` runs the function with the three parts of each call: once in a script
 that runs once, and for each call in a staying script (Y9). Loading it reads all of stdin, except in a staying script.
 
 ```sh
 #!/bin/sh
 . "$OPENSPOT_SH"
-input=$(value input)
-printf 'field=output\nvalue=%s\n' "$(esc "$input")"
+printf 'field=output\n'
+openspot_kv value "$(value input)"
 ```
 
 ## Frames
@@ -479,12 +481,15 @@ opens = "system-info"
 # drop=*
 # read=sheet
 # offers=float
+. "$OPENSPOT_SH"
 list="$OPENSPOT_DATA/files"
 case "$1" in
   read)
     [ -f "$list" ] || exit 0
     while IFS= read -r path; do
-      [ -e "$path" ] && printf 'row=%s\ntitle=%s\nicon=%s\nfile=%s\n\n' "$path" "${path##*/}" "$path" "$path"
+      [ -e "$path" ] || continue
+      openspot_row "$path" "${path##*/}" "" "$path"
+      openspot_kv file "$path"
     done < "$list"
     ;;
   drop) shift; printf '%s\n' "$@" >> "$list" ;;

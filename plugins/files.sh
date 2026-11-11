@@ -2,6 +2,7 @@
 # icon=doc.text.magnifyingglass
 # detail=Find a file
 # read=sheet
+. "$OPENSPOT_SH"
 case "$1" in
   read)
     printf 'search=script\n\n'
@@ -18,15 +19,15 @@ case "$1" in
     mdfind -onlyin "$HOME" "$predicate" 2>/dev/null \
       | grep -v "^$HOME/Library/" \
       | LC_ALL=C tr -d '\000-\011\013-\037' \
-      | sed 's/\\/\\\\/g' \
       | awk -F/ -v home="$HOME" '
           NR > 30 { exit }
           {
             folder = $0
             sub(/\/[^\/]*$/, "", folder)
             if (index(folder, home) == 1) folder = "~" substr(folder, length(home) + 1)
-            printf "row=%s\ntitle=%s\ndetail=%s\nicon=%s\n\n", $0, $NF, folder, $0
-          }'
+            printf "%s\t%s\t%s\t%s\n", $0, $NF, folder, $0
+          }' \
+      | openspot_rows
     ;;
   reveal)
     open -R "$2"

@@ -50,10 +50,12 @@ public struct SpotCheck: Sendable {
         for script in scan.scripts where script.read != nil {
             func found(_ fault: String) -> Finding { Finding(spot: script.id, file: script.url.path, fault: fault) }
             do {
-                let output = SpotOutput(text: try await runs.answer(of: script, .read, limit: timeout))
+                let text = try await runs.answer(of: script, .read, limit: timeout)
+                let output = SpotOutput(text: text)
                 _ = try script.state(of: output)
                 if script.read?.seconds != nil, MetricValue(output: output) == nil { throw SpotError.badMetric }
                 findings += output.errors.map { found("cannot read the item \($0)") }
+                findings += Self.brokenBlocks(in: text).map(found)
                 findings += output.partFaults.map(found)
             } catch {
                 findings.append(found(Self.reason(error)))
@@ -75,6 +77,26 @@ public struct SpotCheck: Sendable {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         return String(decoding: (try? encoder.encode(findings)) ?? Data("[]".utf8), as: UTF8.self) + "\n"
+    }
+
+    /// The faults of blocks that a value with a new line breaks: a line with no `=`, or a key twice that only a list repeats
+    /// (C8).
+    static func brokenBlocks(in text: String) -> [String] {
+        let fix = "as a value with a new line prints. Print each value from data with openspot_kv, openspot_row or esc"
+        let lists: Set<String> = ["grid", "value", "hides", "keyword", "color"]
+        var faults: [String] = []
+        let blocks = text.components(separatedBy: "\n").split { $0.isEmpty || $0 == SheetFrameReader.mark }
+        for block in blocks {
+            let name = block.first ?? ""
+            if block.contains(where: { !$0.contains("=") }) { faults.append("the block \(name) has a line with no =, \(fix)") }
+            var seen: Set<String> = []
+            var told: Set<String> = []
+            for line in block {
+                guard let key = line.split(separator: "=", maxSplits: 1).first.map(String.init), !lists.contains(key), !key.hasPrefix("grid.") else { continue }
+                if !seen.insert(key).inserted, told.insert(key).inserted { faults.append("the block \(name) has \(key) twice, \(fix)") }
+            }
+        }
+        return faults
     }
 
     private static func reason(_ error: Error) -> String {

@@ -14,7 +14,7 @@ const noRates = {
 function main([id, text]) {
   if (id === "open") {
     if (text === "offline" || openspot.call(["clipboard", "copy"], text).code !== 0) return ""
-    return `toast=Copied ${text}\n`
+    return openspot.frame({ toast: `Copied ${text}` })
   }
   if (!text) return ""
   const answer = openspot.call(["calc", "solve", text]).stdout

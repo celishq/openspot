@@ -101,7 +101,9 @@ show() {
   options
   printf '\n'
 
-  printf 'field=input\nvalue=%s\nplaceholder=Type or paste text\n\n' "$(esc "$input")"
+  printf 'field=input\nplaceholder=Type or paste text\n'
+  openspot_kv value "$input"
+  printf '\n'
 
   printf 'choice=target\nvalue=%s\n' "$target"
   options

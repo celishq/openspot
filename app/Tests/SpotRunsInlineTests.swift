@@ -133,6 +133,19 @@ final class SpotRunsInlineTests: SpotRunsCase {
         XCTAssertEqual(TextBlock.blocks(in: text).first?.value("title"), "2|read|a b|panel|script|note=x\ny")
     }
 
+    func testFrameWritesAValueWithANewLineAndAKeyLineAsOneValue() async throws {
+        try inline(header: "mode=inline", "function main() { return openspot.frame([{ row: 'a', title: 'one\\n\\nrow=x\\ntitle=x', hides: ['x', 'y'], none: null }, { row: 'b', value: true }]) }")
+        let spot = try XCTUnwrap(try scanned().scripts.first)
+
+        let text = try await runs.answer(of: spot, SpotAction(arguments: ["read"]), limit: 5)
+
+        let items = SpotOutput(text: text).items
+        XCTAssertEqual(items.map(\.run), ["a", "b"], text)
+        XCTAssertEqual(items.first?.title, "one\n\nrow=x\ntitle=x")
+        XCTAssertEqual(items.first?.hides, ["x", "y"])
+        XCTAssertEqual(items.last?.isOn, true)
+    }
+
     func testMainReadsItsStdinAsItsInput() async throws {
         try inline(header: "mode=inline", "function main(args, env, input) { return `toast=Saved ${input}` }")
         let spot = try XCTUnwrap(try scanned().scripts.first)

@@ -15,11 +15,15 @@ sheet() {
   printf 'grid=last last last\ngrid=last last last\ngrid=peer peer peer\ngrid=- - -\n'
   printf 'grid=message message message\ngrid=message message message\ngrid=. . send\n\n'
   if [ -s "$state/last" ]; then
-    printf 'text=last\ntitle=%s\ndetail=From a peer\n\n' "$(esc "$(cat "$state/last")")"
+    printf 'text=last\n'
+    openspot_kv title "$(cat "$state/last")"
+    printf 'detail=From a peer\n\n'
   else
     printf 'text=last\ntitle=No message yet\ndetail=Listening on 127.0.0.1:%s\n\n' "$port"
   fi
-  printf 'field=peer\ntitle=To\nvalue=%s\n\n' "$(esc "$(cat "$state/peer")")"
+  printf 'field=peer\ntitle=To\n'
+  openspot_kv value "$(cat "$state/peer")"
+  printf '\n'
   printf 'field=message\ntype=multiline\nplaceholder=Hello\n\n'
   printf 'button=send\ntitle=Send\nshortcut=cmd+return\n'
 }
@@ -28,7 +32,7 @@ listen() {
   while :; do
     nc -l 127.0.0.1 "$port" 2>/dev/null | while IFS= read -r line; do
       printf '%s' "$line" > "$state/last.new" && mv "$state/last.new" "$state/last"
-      sheet "toast=$(esc "$line")"
+      sheet "$(openspot_kv toast "$line")"
       printf -- '---\n'
     done
     sleep 1
@@ -44,7 +48,7 @@ main() {
       if { value message; echo; } | nc -w 1 "${peer%:*}" "${peer##*:}" 2>/dev/null; then
         printf 'toast=Sent\n'
       else
-        printf 'toast=Nothing listens on %s. Start Relay there first.\n' "$(esc "$peer")"
+        openspot_kv toast "Nothing listens on $peer. Start Relay there first."
       fi ;;
   esac
 }
