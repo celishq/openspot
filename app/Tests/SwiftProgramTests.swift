@@ -31,6 +31,79 @@ final class SwiftProgramTests: XCTestCase {
         try text.writeScript(to: url)
     }
 
+    /// Stand-ins for the build commands whose compiler logs each build and writes a C program that prints `text=program`,
+    /// with a cache in the test's folder.
+    private func caching() throws -> SwiftProgram {
+        let place = folder.appendingPathComponent("tools")
+        try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
+        try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/builds'\nwhile [ $# -gt 1 ]; do [ \"$1\" = -o ] && printf '#include <stdio.h>\\nint main(void) { return puts(\"text=program\") < 0; }' | /usr/bin/cc -x c - -o \"$2\"; shift; done\n"
+            .writeScript(to: place.appendingPathComponent("swiftc"))
+        return SwiftProgram(tools: place, cache: folder.appendingPathComponent("cache"))
+    }
+
+    private var builds: Int {
+        ((try? String(contentsOf: folder.appendingPathComponent("builds"), encoding: .utf8)) ?? "").split(separator: "\n").count
+    }
+
+    private func source(_ text: String = "#!/bin/sh\necho text=source\n") throws -> URL {
+        let url = folder.appendingPathComponent("hello.swift")
+        try text.writeScript(to: url)
+        return url
+    }
+
+    private func wait(_ what: String, until fact: () -> Bool) async throws {
+        for _ in 0..<1000 {
+            if fact() { return }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTFail("waited for \(what)")
+    }
+
+    func testASwiftScriptRunsItsSourceWhileItBuildsOnceAndThenItsProgram() async throws {
+        let program = try caching()
+        let source = try source()
+        let runs = SpotRuns(swift: program)
+        defer { runs.quit() }
+        let spot = Spot(id: "hello", name: "Hello", url: source)
+
+        let first = try await runs.answer(of: spot, .open)
+        try await wait("the build") { program.runnable(for: source) != source }
+        let later = try await runs.answer(of: spot, .open)
+
+        XCTAssertEqual(first, "text=source\n")
+        XCTAssertEqual(later, "text=program\n")
+        XCTAssertEqual(builds, 1)
+    }
+
+    func testAChangedSourceBuildsAgain() async throws {
+        let program = try caching()
+        let source = try source()
+        _ = program.runnable(for: source)
+        try await wait("the first build") { program.runnable(for: source) != source }
+
+        try "#!/bin/sh\necho text=changed\n".writeScript(to: source)
+
+        XCTAssertEqual(program.runnable(for: source), source)
+        try await wait("the second build") { program.runnable(for: source) != source }
+        XCTAssertEqual(builds, 2)
+    }
+
+    func testABadCachedProgramIsBuiltAgain() async throws {
+        let program = try caching()
+        let source = try source()
+        _ = program.runnable(for: source)
+        try await wait("the first build") { program.runnable(for: source) != source }
+        let cached = program.runnable(for: source)
+
+        try Data("bad".utf8).write(to: cached)
+
+        XCTAssertEqual(program.runnable(for: source), source)
+        try await wait("the second build") { program.runnable(for: source) != source }
+        XCTAssertEqual(builds, 2)
+        let printed = try await ScriptProcess.output(url: cached)
+        XCTAssertEqual(printed, "text=program\n")
+    }
+
     func testASourceBuildsAProgramThatRunsForBothKindsOfMac() async throws {
         let built = try await SwiftProgram().build(source: source)
 

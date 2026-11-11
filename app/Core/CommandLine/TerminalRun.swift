@@ -33,7 +33,7 @@ public struct TerminalRun {
     public func start(frame: (String) -> Void) async -> End {
         let isRead = action == .read
         if spot.mode == .inline { return await inline(isRead: isRead, frame: frame) }
-        let program = SwiftProgram.file(beside: spot.url) ?? spot.url
+        let program = SwiftProgram().runnable(for: spot.url, builds: false)
         let variables = ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }
         let process: ScriptProcess
         if spot.mode.stays {

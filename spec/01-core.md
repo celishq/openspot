@@ -21,7 +21,8 @@ say hello
 ```
 
 This is a spot called Hello, and a click runs it. A Swift file with `#!/usr/bin/env swift` on its first line is a script
-too, with its header in `//` lines. It needs the Command Line Tools on the Mac that runs it.
+too, with its header in `//` lines. It needs the Command Line Tools on the Mac that runs it. Its first run builds it once
+in the background, and each later run starts the built program, until the file changes.
 
 The script says what it has and what it offers. Openspot and the person decide where, when and on which key it shows.
 

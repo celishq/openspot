@@ -68,6 +68,8 @@ public final class SpotRuns {
     @ObservationIgnored public var api: CommandAPI?
     /// The record of each call that runs once, or nil to keep none.
     @ObservationIgnored private let log: CallLog?
+    /// The builds of Swift scripts, which each process runs once they are ready.
+    @ObservationIgnored private let swift: SwiftProgram
 
     public init(
         readLimit: TimeInterval = 10,
@@ -80,9 +82,11 @@ public final class SpotRuns {
         prepare: @escaping ([SpotItem], [String]) async -> Void = { _, _ in },
         inlineIdle: TimeInterval = 30,
         log: CallLog? = nil,
-        stats: URL? = nil
+        stats: URL? = nil,
+        swift: SwiftProgram = SwiftProgram()
     ) {
         self.log = log
+        self.swift = swift
         usage = SpotUsage(folder: stats, at: now())
         self.inlineIdle = inlineIdle
         self.readLimit = readLimit
@@ -341,7 +345,7 @@ public final class SpotRuns {
     /// Starts a script that stays, and returns it with its frames.
     func stay(_ spot: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>) {
         let token = tokens.issue(for: spot)
-        let script = ScriptProcess(url: SwiftProgram.file(beside: spot.url) ?? spot.url, mode: .stays, limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: ["OPENSPOT_ID": spot.id, CallerTokens.variable: token], careful: isCareful ? spot.uses : nil)
+        let script = ScriptProcess(url: swift.runnable(for: spot.url), mode: .stays, limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: ["OPENSPOT_ID": spot.id, CallerTokens.variable: token], careful: isCareful ? spot.uses : nil)
         track(script, of: spot.id, token: token)
         let frames = script.start()
         keep(script)
@@ -376,7 +380,7 @@ public final class SpotRuns {
         }
         let sent = action.sent(input: input)
         let token = tokens.issue(for: spot)
-        let process = ScriptProcess(url: SwiftProgram.file(beside: spot.url) ?? spot.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given }.merging([CallerTokens.variable: token]) { _, own in own }, careful: isCareful ? spot.uses : nil)
+        let process = ScriptProcess(url: swift.runnable(for: spot.url), arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given }.merging([CallerTokens.variable: token]) { _, own in own }, careful: isCareful ? spot.uses : nil)
         track(process, of: spot.id, token: token)
         let stream = process.start()
         keep(process)
