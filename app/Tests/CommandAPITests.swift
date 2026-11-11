@@ -87,6 +87,17 @@ final class CommandAPITests: XCTestCase {
         XCTAssertEqual(host.made, 1)
     }
 
+    func testTenCallsShareOneEventStore() async throws {
+        let api = CommandAPI(host: host)
+        let call = try XCTUnwrap(CommandLineCall(arguments: ["calendar", "calendars"], environment: environment))
+
+        for _ in 0..<10 {
+            _ = await api.work(for: call, input: { "" }, environment: environment)?()
+        }
+
+        XCTAssertEqual(host.made, 1)
+    }
+
     func testACallThatTheShellDoesHasNoWorkInCore() throws {
         for arguments in [["color", "pick"], ["render", "a.png"], ["spot", "run", "notes"], ["clipboard", "paste"], ["helper", "calc"], ["check"]] {
             let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: [:]))

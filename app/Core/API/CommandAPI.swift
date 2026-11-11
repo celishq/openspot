@@ -1,11 +1,16 @@
 import Foundation
 
 /// The work of each `openspot <noun> <verb>` that Core does. The app gives it over its socket, and a process of its own
-/// gives the same answer when the app does not run (S1, S2).
-public final class CommandAPI: Sendable {
+/// gives the same answer when the app does not run (S1, S2). It makes each store of the host and the keyword files once,
+/// so that the app answers each later call from them.
+public final class CommandAPI: @unchecked Sendable {
     public typealias Work = @Sendable () async -> CommandAnswer
 
     private let host: any CommandHost
+    private let lock = NSLock()
+    private var eventStore: (any EventStore)?
+    private var reminderStore: (any ReminderStore)?
+    private var glyphKeywords: GlyphKeywords?
 
     public init(host: any CommandHost) {
         self.host = host
@@ -59,9 +64,9 @@ public final class CommandAPI: Sendable {
         case .calcSolve(let words):
             return Self.answer { CalcAnswer(text: words, rates: CalcRateCache.ask)?.text ?? "" }
         case .emoji(let tone):
-            return Self.answer { try EmojiCatalog().rows(tone: tone) }
+            return Self.answer { try EmojiCatalog(keywords: self.keywords()).rows(tone: tone) }
         case .symbols:
-            return Self.answer { try SymbolCatalog().rows() }
+            return Self.answer { try SymbolCatalog(keywords: self.keywords()).rows() }
         case .calendarEvents(let days, let hidden):
             return Self.answer { try await self.events(isRead).events(days: days, hiding: hidden) }
         case .calendarCalendars:
@@ -95,11 +100,29 @@ public final class CommandAPI: Sendable {
     }
 
     private func events(_ isRead: Bool) -> Events {
-        Events(store: host.eventStore(), isRead: isRead)
+        let store = lock.withLock {
+            let store = eventStore ?? host.eventStore()
+            eventStore = store
+            return store
+        }
+        return Events(store: store, isRead: isRead)
     }
 
     private func reminders(_ isRead: Bool) -> Reminders {
-        Reminders(store: host.reminderStore(), isRead: isRead)
+        let store = lock.withLock {
+            let store = reminderStore ?? host.reminderStore()
+            reminderStore = store
+            return store
+        }
+        return Reminders(store: store, isRead: isRead)
+    }
+
+    private func keywords() -> GlyphKeywords {
+        lock.withLock {
+            let keywords = glyphKeywords ?? GlyphKeywords()
+            glyphKeywords = keywords
+            return keywords
+        }
     }
 
     /// The work that prints what the text work returns, and fails as `CommandAnswer(failure:)` says.
