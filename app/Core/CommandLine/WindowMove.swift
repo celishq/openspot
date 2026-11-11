@@ -35,11 +35,20 @@ public struct WindowMove: Equatable, Sendable {
         return rects[(held + 1) % rects.count]
     }
 
-    /// The top left corner for a window of this real size, which holds each edge of the area that the target touches.
+    /// The top left corner for a window of this real size in its target. On each axis it holds the target's edge in
+    /// the half of the area that holds the target, the top or the left one for a target in the middle, to a point. A window that
+    /// would leave the area from that edge holds the other edge, and it stays inside the area.
     public static func origin(of size: CGSize, target: CGRect, area: CGRect) -> CGPoint {
+        origin(of: size, target: target, holding: target, area: area)
+    }
+
+    /// The top left corner for a window of this real size in one step of a glide, which holds the edges that the last
+    /// target holds, so the glide ends where the window stays. A step on the way, not `inside`, may cross the edge of
+    /// the area, as a glide from another screen does.
+    public static func origin(of size: CGSize, target: CGRect, holding last: CGRect, area: CGRect, inside: Bool = true) -> CGPoint {
         CGPoint(
-            x: start(target.minX, target.maxX, area.minX, area.maxX, size.width),
-            y: start(target.minY, target.maxY, area.minY, area.maxY, size.height)
+            x: start(target.minX, target.maxX, last: (last.minX, last.maxX), length: size.width, area: (area.minX, area.maxX), inside: inside),
+            y: start(target.minY, target.maxY, last: (last.minY, last.maxY), length: size.height, area: (area.minY, area.maxY), inside: inside)
         )
     }
 
@@ -69,9 +78,12 @@ public struct WindowMove: Equatable, Sendable {
             && abs(first.width - second.width) <= margin && abs(first.height - second.height) <= margin
     }
 
-    private static func start(_ low: CGFloat, _ high: CGFloat, _ areaLow: CGFloat, _ areaHigh: CGFloat, _ length: CGFloat) -> CGFloat {
-        if abs(low - areaLow) < 1 { return low }
-        if abs(high - areaHigh) < 1 { return high - length }
-        return (low + (high - low - length) / 2).rounded()
+    /// The start on one axis. The edge comes from the last target and this length, so each step of a glide holds the
+    /// same edge as its end.
+    private static func start(_ low: CGFloat, _ high: CGFloat, last: (CGFloat, CGFloat), length: CGFloat, area: (CGFloat, CGFloat), inside: Bool) -> CGFloat {
+        let holdsLow = (last.0 + last.1) / 2 <= (area.0 + area.1) / 2 + 1
+        let fits = holdsLow ? last.0 + length <= area.1 : last.1 - length >= area.0
+        let begin = holdsLow == fits ? low : high - length
+        return inside ? max(area.0, min(begin, area.1 - length)) : begin
     }
 }

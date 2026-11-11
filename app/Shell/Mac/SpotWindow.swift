@@ -42,42 +42,45 @@ struct SpotWindow {
     }
 
     /// Glides the window from its frame to its target over a fifth of a second, so it flies there and takes its shape
-    /// on the way. An app that draws a web page shows a new size only once it has drawn it, so the last size is read
-    /// back only after the screen shows it. A last move then holds each edge the target touches when the app keeps
-    /// another size.
+    /// on the way. Each step places the size that the app really gave, by the edges the target holds, so a window
+    /// that keeps a larger or smaller size ends where it stays, with no jump. The last place waits until the screen
+    /// shows the last size, as an app that draws a web page shows a new size late.
     func move(_ move: WindowMove) throws {
         let window = frame
         let centre = CGPoint(x: window.midX, y: window.midY)
         let area = move.needsArea ? Self.area(holding: centre) : .zero
         let target = move.target(window: window, area: area)
-        glide(from: window, to: target)
-        try set(kAXPositionAttribute, .cgPoint, target.origin)
-        try set(kAXSizeAttribute, .cgSize, target.size)
-        settle(at: target.size)
-        let size = frame.size
-        guard size != target.size else { return }
         let bounds = move.needsArea ? area : Self.area(holding: CGPoint(x: target.midX, y: target.midY))
-        let origin = WindowMove.origin(of: size, target: target, area: bounds)
-        if origin != target.origin { try set(kAXPositionAttribute, .cgPoint, origin) }
-    }
-
-    /// Sets the frames between two frames, eased out, as fast as the app takes them, until the time is up.
-    private func glide(from start: CGRect, to end: CGRect) {
-        guard start != end else { return }
         let duration = 0.2
         let begin = Date()
-        while true {
-            let time = Date().timeIntervalSince(begin) / duration
-            guard time < 1 else { return }
+        var time = 0.0
+        while time < 1 {
             let step = 1 - pow(1 - time, 3)
-            let x = start.minX + (end.minX - start.minX) * step
-            let y = start.minY + (end.minY - start.minY) * step
-            let width = start.width + (end.width - start.width) * step
-            let height = start.height + (end.height - start.height) * step
-            try? set(kAXSizeAttribute, .cgSize, CGSize(width: width.rounded(), height: height.rounded()))
-            try? set(kAXPositionAttribute, .cgPoint, CGPoint(x: x.rounded(), y: y.rounded()))
+            let frame = CGRect(
+                x: window.minX + (target.minX - window.minX) * step,
+                y: window.minY + (target.minY - window.minY) * step,
+                width: window.width + (target.width - window.width) * step,
+                height: window.height + (target.height - window.height) * step
+            )
+            try? place(frame, holding: target, area: bounds)
             usleep(4_000)
+            time = Date().timeIntervalSince(begin) / duration
         }
+        let size = try place(target, holding: target, area: bounds)
+        settle(at: size)
+        let origin = WindowMove.origin(of: frame.size, target: target, area: bounds)
+        if origin != frame.origin { try set(kAXPositionAttribute, .cgPoint, origin) }
+    }
+
+    /// Asks for the size of this frame, then places the size that the app gave by the edges the target holds.
+    /// Returns that size.
+    @discardableResult
+    private func place(_ step: CGRect, holding target: CGRect, area: CGRect) throws -> CGSize {
+        try set(kAXSizeAttribute, .cgSize, CGSize(width: step.width.rounded(), height: step.height.rounded()))
+        let size = frame.size
+        let origin = WindowMove.origin(of: size, target: step, holding: target, area: area, inside: step == target)
+        try set(kAXPositionAttribute, .cgPoint, CGPoint(x: origin.x.rounded(), y: origin.y.rounded()))
+        return size
     }
 
     /// Waits, for a second at most, until the window server shows the window at this size.

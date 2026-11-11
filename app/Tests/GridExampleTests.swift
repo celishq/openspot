@@ -40,6 +40,37 @@ final class GridExampleTests: SamplePluginsCase {
         XCTAssertEqual(outside, "0 0 1 1/6\n")
     }
 
+    func testTheGreyBlockOfEachPickIsTheFrameThatTheMoveGivesTheWindowOnEachScreen() async throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-grid-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let grid = folder.appendingPathComponent("grid")
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-o", grid.path, examples.appendingPathComponent("grid/grid.swift").path])
+        let areas = [
+            CGRect(x: 0, y: 33, width: 1728, height: 1084),
+            CGRect(x: 0, y: 25, width: 1440, height: 875),
+            CGRect(x: -1920, y: -200, width: 1920, height: 1055),
+            CGRect(x: 1728, y: 0, width: 2560, height: 1415),
+            CGRect(x: 0, y: 38, width: 1511, height: 943),
+        ]
+        var checked = 0
+
+        for area in areas {
+            let numbers = [6, 6, area.minX, area.minY, area.width, area.height].map { String(Int($0)) }
+            let lines = try await ScriptProcess.output(url: grid, arguments: ["frames"] + numbers).split(separator: "\n")
+            for line in lines {
+                let parts = line.split(separator: "|")
+                let drawn = parts[1].split(separator: " ").compactMap { Double($0) }
+                let move = try XCTUnwrap(WindowMove(words: [String(parts[0])]))
+                let moved = move.target(window: .zero, area: area)
+                XCTAssertEqual(CGRect(x: drawn[0], y: drawn[1], width: drawn[2], height: drawn[3]), moved, "\(parts[0]) on \(area)")
+                checked += 1
+            }
+        }
+
+        XCTAssertEqual(checked, 5 * 666)
+    }
+
     func testARunMovesTheFrontWindowToTheBlockThatThePersonPicks() async throws {
         let grid = try example("Grid")
         try await withPrivateHome { folder in

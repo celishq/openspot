@@ -27,13 +27,25 @@ struct Pick: Equatable {
         return [part(left, columns), part(top, rows), part(width, columns), part(height, rows)].joined(separator: " ")
     }
 
-    /// The frame that `openspot window move` gives a window for this block, inside an area whose origin is its bottom
-    /// left, as AppKit draws. It rounds each edge from the top left of the area, as the move does.
+    /// The frame that `openspot window move` gives a window for this block, in an area whose origin is its top left,
+    /// as the windows of the Mac count. Each edge is rounded from the start of the area, by the same parts that `text`
+    /// gives the move.
+    func frame(in area: CGRect) -> CGRect {
+        func part(_ count: Int, _ whole: Int) -> CGFloat { count == whole ? 1 : CGFloat(count) / CGFloat(whole) }
+        let (x, width) = Self.span(part(left, columns), part(self.width, columns), area.minX, area.width)
+        let (y, height) = Self.span(part(top, rows), part(self.height, rows), area.minY, area.height)
+        return CGRect(x: x, y: y, width: width, height: height)
+    }
+
+    private static func span(_ start: CGFloat, _ length: CGFloat, _ low: CGFloat, _ size: CGFloat) -> (CGFloat, CGFloat) {
+        let begin = low + (size * start).rounded()
+        return (begin, low + (size * (start + length)).rounded() - begin)
+    }
+
+    /// The same frame inside an area whose origin is its bottom left, as AppKit draws.
     func rect(in area: CGRect) -> CGRect {
-        func edge(_ count: Int, _ whole: Int, _ size: CGFloat) -> CGFloat { (size * (CGFloat(count) / CGFloat(whole))).rounded() }
-        let left = edge(self.left, columns, area.width), right = edge(self.left + width, columns, area.width)
-        let top = edge(self.top, rows, area.height), bottom = edge(self.top + height, rows, area.height)
-        return CGRect(x: area.minX + left, y: area.maxY - bottom, width: right - left, height: bottom - top)
+        let frame = frame(in: CGRect(origin: .zero, size: area.size))
+        return CGRect(x: area.minX + frame.minX, y: area.maxY - frame.maxY, width: frame.width, height: frame.height)
     }
 }
 
@@ -436,6 +448,25 @@ struct Pending {
 }
 
 let arguments = Array(CommandLine.arguments.dropFirst())
+if arguments.first == "frames" {
+    let numbers = arguments.dropFirst().compactMap { Double($0) }
+    guard numbers.count == 6, numbers[0] > 0, numbers[1] > 0 else {
+        FileHandle.standardError.write(Data("Use: grid frames <columns> <rows> <x> <y> <width> <height>\n".utf8))
+        exit(2)
+    }
+    let columns = Int(numbers[0]), rows = Int(numbers[1])
+    let area = CGRect(x: numbers[2], y: numbers[3], width: numbers[4], height: numbers[5])
+    var lines: [String] = []
+    for first in 0..<columns * rows {
+        for last in first..<columns * rows {
+            let pick = Pick(columns: columns, rows: rows, from: (first % columns, first / columns), to: (last % columns, last / columns))
+            let frame = pick.frame(in: area)
+            lines.append("\(pick.text)|\([frame.minX, frame.minY, frame.width, frame.height].map { String(Int($0)) }.joined(separator: " "))")
+        }
+    }
+    print(lines.joined(separator: "\n"))
+    exit(0)
+}
 if arguments.first == "pick" {
     let numbers = arguments.dropFirst().compactMap { Int($0) }
     guard numbers.count == 6, numbers[0] > 0, numbers[1] > 0 else {

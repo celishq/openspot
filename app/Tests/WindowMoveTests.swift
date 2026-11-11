@@ -44,13 +44,41 @@ final class WindowMoveTests: XCTestCase {
         XCTAssertEqual(target(sides, from: CGRect(x: 0, y: 25, width: 350, height: 900))?.width, 300)
     }
 
-    func testAWindowThatKeepsItsOwnSizeHoldsTheEdgeOfTheAreaItTouches() {
-        let left = WindowMove.origin(of: CGSize(width: 700, height: 800), target: CGRect(x: 0, y: 25, width: 600, height: 900), area: area)
-        let right = WindowMove.origin(of: CGSize(width: 700, height: 800), target: CGRect(x: 600, y: 25, width: 600, height: 900), area: area)
-        let centre = WindowMove.origin(of: CGSize(width: 700, height: 500), target: CGRect(x: 210, y: 183, width: 780, height: 585), area: area)
+    func testAWindowThatKeepsItsOwnSizeHoldsTheEdgesOfItsZoneInTheHalfOfTheScreenThatHoldsIt() {
+        let size = CGSize(width: 400, height: 300)
+        let topRight = WindowMove.origin(of: size, target: CGRect(x: 1000, y: 25, width: 200, height: 150), area: area)
+        let bottomLeft = WindowMove.origin(of: size, target: CGRect(x: 0, y: 775, width: 200, height: 150), area: area)
+        let lowerMiddle = WindowMove.origin(of: size, target: CGRect(x: 400, y: 625, width: 200, height: 150), area: area)
 
-        XCTAssertEqual(left, CGPoint(x: 0, y: 25))
-        XCTAssertEqual(right, CGPoint(x: 500, y: 25))
-        XCTAssertEqual(centre, CGPoint(x: 250, y: 226))
+        XCTAssertEqual(topRight, CGPoint(x: 800, y: 25))
+        XCTAssertEqual(bottomLeft, CGPoint(x: 0, y: 625))
+        XCTAssertEqual(lowerMiddle, CGPoint(x: 400, y: 475))
+    }
+
+    func testAZoneInTheMiddleHoldsTheTopAndTheLeftEdge() {
+        let larger = WindowMove.origin(of: CGSize(width: 700, height: 800), target: CGRect(x: 0, y: 25, width: 1200, height: 900), area: area)
+        let smaller = WindowMove.origin(of: CGSize(width: 700, height: 500), target: CGRect(x: 210, y: 183, width: 780, height: 585), area: area)
+
+        XCTAssertEqual(larger, CGPoint(x: 0, y: 25))
+        XCTAssertEqual(smaller, CGPoint(x: 210, y: 183))
+    }
+
+    func testAWindowThatWouldLeaveTheScreenFromItsZoneEdgeHoldsTheOtherEdgeAndStaysOnTheScreen() {
+        let overflowsBelow = WindowMove.origin(of: CGSize(width: 200, height: 600), target: CGRect(x: 0, y: 380, width: 200, height: 150), area: area)
+        let overflowsRight = WindowMove.origin(of: CGSize(width: 900, height: 150), target: CGRect(x: 400, y: 25, width: 200, height: 150), area: area)
+        let taller = WindowMove.origin(of: CGSize(width: 200, height: 1000), target: CGRect(x: 0, y: 775, width: 200, height: 150), area: area)
+
+        XCTAssertEqual(overflowsBelow, CGPoint(x: 0, y: 25))
+        XCTAssertEqual(overflowsRight, CGPoint(x: 0, y: 25))
+        XCTAssertEqual(taller, CGPoint(x: 0, y: 25))
+    }
+
+    func testAStepOfAGlideHoldsTheEdgesThatItsTargetHolds() {
+        let target = CGRect(x: 1000, y: 775, width: 200, height: 150)
+        let step = CGRect(x: 800, y: 600, width: 300, height: 200)
+
+        let origin = WindowMove.origin(of: CGSize(width: 400, height: 300), target: step, holding: target, area: area)
+
+        XCTAssertEqual(origin, CGPoint(x: 700, y: 500))
     }
 }
