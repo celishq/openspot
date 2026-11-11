@@ -31,8 +31,8 @@ struct SpotHandleArea: View {
         DragGesture(minimumDistance: 0, coordinateSpace: .named(SpotsView.panelSpace))
             .onChanged {
                 model.resizeSpot(id, by: $0.translation, grip: grip)
-                guard let point = model.resizePointer, let resize = model.resize, let angle = SpotTokens.handleAngle(of: resize.size, at: point) else { return }
-                Self.pointer(at: angle, reach: resize.size.reach(among: sizes)).cursor.set()
+                guard let point = model.resizePointer, let size = model.resizeSize, let angle = SpotTokens.handleAngle(of: size, at: point) else { return }
+                Self.pointer(at: angle, reach: size.reach(among: sizes)).cursor.set()
             }
             .onEnded { _ in
                 let square = CGRect(x: 0, y: 0, width: SpotTokens.resizeHandle, height: SpotTokens.resizeHandle)

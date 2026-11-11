@@ -98,8 +98,8 @@ final class SpotMotionProbe: NSObject {
     }
 
     /// Saves a picture of Edit Spots with its dock a second after it starts and, with `OPENSPOT_SPOT`, of that card carried
-    /// over the dock, a second after its release there, then carried from the dock over the grid's first card, and a second
-    /// after its release there.
+    /// over the dock, a second after its release there, then carried from the dock over the grid's first card, a second
+    /// after its release there, and of the dock's first spot pulled a column wider and a row taller.
     private func shootEdit(into folder: String) {
         model.beginEditing()
         try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
@@ -142,8 +142,21 @@ final class SpotMotionProbe: NSObject {
             self.model.dropDockSpot(by: move)
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 self.save(to: "\(folder)/arrived.png")
-                self.finish(with: "shots\n")
+                self.shootTileResize(into: folder)
             }
+        }
+    }
+
+    /// Pulls the corner of the dock's first spot one column right and one row down, and saves a picture of it.
+    private func shootTileResize(into folder: String) {
+        guard let id = model.dock.shown.first?.id else { return finish(with: "shots\n") }
+        let move = CGSize(width: SpotTokens.cell + SpotTokens.columnGap, height: SpotTokens.rowHeight + SpotTokens.rowGap)
+        model.resizeSpot(id, by: .zero)
+        model.resizeSpot(id, by: move)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.save(to: "\(folder)/tile-resized.png")
+            self.model.cancelResize()
+            self.finish(with: "shots\n")
         }
     }
 

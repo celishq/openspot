@@ -374,6 +374,37 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(savedOrder(), ["a", "b", "c", "d"])
     }
 
+    func testASpotOfTheDockResizedByItsCornerTakesTheNearestSizeAndKeepsItAsItsPreferredSize() throws {
+        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        model.reload()
+        model.dockFrame = dock
+        let right = CGSize(width: SpotTokens.cell + SpotTokens.columnGap, height: 0)
+
+        model.resizeSpot("timer", by: right)
+        XCTAssertEqual(model.dockResize?.id, "timer")
+        XCTAssertEqual(model.dock.items.first?.size, .wide)
+        XCTAssertEqual(model.resizeSize, .wide)
+
+        model.dropResize()
+        XCTAssertNil(model.dockResize)
+        model.endEditing()
+        model.beginEditing()
+        XCTAssertEqual(model.dock.items.first?.size, .wide)
+    }
+
+    func testEscapePutsTheSizeOfASpotOfTheDockBack() throws {
+        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        model.reload()
+        model.dockFrame = dock
+        model.resizeSpot("timer", by: CGSize(width: SpotTokens.cell + SpotTokens.columnGap, height: 0))
+
+        model.handleEditKey(ActionKey(name: "escape"))
+
+        XCTAssertTrue(model.isEditing)
+        XCTAssertNil(model.dockResize)
+        XCTAssertEqual(model.dock.items.first?.size, .small)
+    }
+
     func testACardPutBackGlidesToWhereItStarted() {
         host.heldEnds = []
         let start = model.placements[3].rect

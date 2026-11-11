@@ -2,8 +2,8 @@ import OpenspotCore
 import SwiftUI
 
 /// A spot in the dock: its card as the grid draws it, at its size, on the fill of a row, and the name under a 1x1 card,
-/// which shows no words. Its frame is the card's. A spot of the plugins folder shows a cross that deletes it. A right click
-/// turns the spot on.
+/// which shows no words. Its frame is the card's. A spot of the plugins folder shows a cross that deletes it, and its corner
+/// handle resizes it as on the grid. A right click turns the spot on.
 struct SpotDockTile: View {
     let item: SpotDock.Item
     let model: SpotsModel
@@ -26,6 +26,17 @@ struct SpotDockTile: View {
         )
         .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
+        .modifier(SpotEditControls(
+            model: model,
+            id: item.id,
+            size: size,
+            turnsOff: false,
+            showsEye: false,
+            isHidden: false,
+            sizes: model.carry == nil ? model.sizes(of: SpotsModel.Entry(command: item.command, run: nil)) : [],
+            isResizing: model.dockResize?.id == item.id,
+            isDragging: model.carry != nil
+        ))
         .overlay(alignment: .topLeading) {
             if item.isOwn {
                 SpotCornerButton(symbol: "xmark", label: "Delete", corner: .leading, size: size) { model.delete(item.id) }

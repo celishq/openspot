@@ -30,6 +30,13 @@ public struct SpotDock: Equatable, Sendable {
         self.items = items.sorted { $0.command.name.localizedCaseInsensitiveCompare($1.command.name) == .orderedAscending }
     }
 
+    /// The dock with this spot at this size.
+    public func resized(_ id: String, to size: SpotSize) -> SpotDock {
+        var next = SpotDock(items: items.map { $0.id == id ? Item(command: $0.command, isOwn: $0.isOwn, size: size) : $0 })
+        next.query = query
+        return next
+    }
+
     /// The spots whose name, or the words under it, hold the search, by name.
     public var shown: [Item] {
         query.isEmpty ? items : items.filter { item in

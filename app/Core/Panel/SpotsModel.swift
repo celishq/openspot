@@ -203,6 +203,9 @@ public final class SpotsModel {
     /// The layouts of the grid for each place that a carried spot of the dock can take. Its card is on the grid while the
     /// drag holds it there.
     @ObservationIgnored var arrival: SpotDrag?
+    /// The spot of the dock that the person resizes by its corner, the size it had, and where its card lay in the dock's
+    /// rows when the drag started.
+    public internal(set) var dockResize: (id: String, start: SpotSize, origin: CGPoint)?
     /// The card that the person resizes by its corner in Edit Spots, and the size that a release keeps.
     public internal(set) var resize: SpotResize?
     /// How long the pointer stays near a new place before the other cards make room there.
