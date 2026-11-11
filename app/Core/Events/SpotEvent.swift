@@ -2,13 +2,14 @@ import Foundation
 
 /// A moment that selects the spots to read (B1): the open of the panel, the wake of the Mac, a tick of the clock of timed
 /// reads, a text of the main search, which each spot whose `answers` pattern matches it answers (A2), or an event with a
-/// name and a value (B2-B4).
+/// name and a value (B2-B4). An event with `readsEachSpot` reads each spot that lists it, wanted or not, such as a downloaded
+/// update that the app raises.
 public enum SpotEvent: Equatable, Sendable {
     case panel
     case wake
     case clock
     case query(String)
-    case named(String, value: String?)
+    case named(String, value: String?, readsEachSpot: Bool = false)
 
     /// The event that the Mac raises when another app comes to the front, with its bundle ID as the value (B2).
     public static let frontApp = "app.front"

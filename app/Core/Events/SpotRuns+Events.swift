@@ -9,7 +9,7 @@ extension SpotRuns {
         case .wake: wake()
         case .clock: tick()
         case .query(let text): ask(text)
-        case .named(let name, let value): read(name, value)
+        case .named(let name, let value, let readsEachSpot): read(name, value, readsEachSpot: readsEachSpot)
         }
     }
 
@@ -89,9 +89,10 @@ extension SpotRuns {
         sheets.values.forEach { $0.settleScript() }
     }
 
-    /// Reads each wanted script that lists the event, at once and with no young answer, as the clock does (B1, B5).
-    private func read(_ name: String, _ value: String?) {
-        for sheet in sheets.values where sheet.isWanted && sheet.spot.read?.has(.event(name)) == true {
+    /// Reads each wanted script that lists the event, or with `readsEachSpot` each one, at once and with no young answer, as
+    /// the clock does (B1, B5).
+    private func read(_ name: String, _ value: String?, readsEachSpot: Bool) {
+        for sheet in sheets.values where (readsEachSpot || sheet.isWanted) && sheet.spot.read?.has(.event(name)) == true {
             sheet.read(need: .clock, reason: ReadReason(event: name, value: value))
         }
     }

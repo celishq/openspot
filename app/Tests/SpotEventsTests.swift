@@ -102,6 +102,15 @@ final class SpotEventsTests: SpotRunsCase {
         XCTAssertEqual(log("unwanted"), [])
     }
 
+    func testAnEventForEachSpotReadsAnUnwantedSpotThatListsIt() async throws {
+        try script("unwanted", header: "on=app.update", log: "unwanted", "printf 'text=u\\ntitle=U\\n'")
+        _ = try scanned()
+
+        runs.raise(.named("app.update", value: "2.0", readsEachSpot: true))
+
+        try await wait("the read of the unwanted spot") { self.log("unwanted") == ["read"] }
+    }
+
     func testASpotThatWaitsForEventsReadsOnceAsItBecomesWanted() async throws {
         try script(header: "on=screen.wake", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
         _ = try scanned()

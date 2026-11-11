@@ -376,12 +376,10 @@ public final class SpotsModel {
         }
     }
 
-    /// A downloaded update waits, so each spot that lists `app.update` in its read reads now, wanted or not, and is on the
-    /// grid before the panel next opens.
+    /// A downloaded update waits, so the app raises `app.update` for each spot that lists it, wanted or not, which is then on
+    /// the grid before the panel next opens.
     public func updateIsReady(_ version: String) {
-        for sheet in sheets.values where sheet.spot.read?.has(.event(SpotEvent.appUpdate)) == true {
-            sheet.read(need: .change, reason: ReadReason(event: SpotEvent.appUpdate, value: version))
-        }
+        runs.raise(.named(SpotEvent.appUpdate, value: version, readsEachSpot: true))
     }
 
     /// Stops each call as the app quits.
