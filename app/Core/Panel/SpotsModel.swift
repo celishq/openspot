@@ -244,8 +244,10 @@ public final class SpotsModel {
     @ObservationIgnored public internal(set) var gridScroll: CGFloat = 0
     @ObservationIgnored var scrollAtPress: CGFloat = 0
     @ObservationIgnored var pointerMove: CGSize?
-    /// The spots of Edit Spots' dock.
+    /// The spots of Edit Spots' store.
     public internal(set) var dock = SpotDock(items: [])
+    /// The spots that are off, as the last read of the folder found them.
+    @ObservationIgnored var dockOff: [SpotDock.Item] = []
     /// Whether the person types in the dock's search, which then takes each key but Esc.
     public internal(set) var isSearchingDock = false
     /// Where the person pressed a card's resize handle, in the handle's square.

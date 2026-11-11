@@ -1,10 +1,10 @@
 import OpenspotCore
 import SwiftUI
 
-/// A spot in the dock: its card as the grid draws it, at its size, on the fill of a row. A 1x1 card, which shows no words,
-/// shows its name as a tip. Its frame is the card's, drawn in a layer of its own, so that a move of the dock's tiles redraws
-/// none. A spot of the plugins folder shows a cross that deletes it, and its corner handle resizes it as on the grid. A
-/// right click turns the spot on.
+/// A spot in the store: its card as the grid draws it, at its size, on the fill of a row, with a mark of its state on its
+/// top left corner: a plus that turns it on, a check that selects its card on the grid, or a slashed eye for search only.
+/// A 1x1 card shows its name as a tip. A spot of the plugins folder that is off shows a cross that deletes it, and its
+/// corner handle resizes it as on the grid.
 struct SpotDockTile: View {
     let item: SpotDock.Item
     let model: SpotsModel
@@ -35,18 +35,23 @@ struct SpotDockTile: View {
             turnsOff: false,
             showsEye: false,
             isHidden: false,
-            sizes: model.carry == nil ? model.sizes(of: SpotsModel.Entry(command: item.command, run: nil)) : [],
+            sizes: model.carry == nil && item.state == .off ? model.sizes(of: SpotsModel.Entry(command: item.command, run: nil)) : [],
             isResizing: model.dockResize?.id == item.id,
             isDragging: model.carry != nil
         ))
         .overlay(alignment: .topLeading) {
-            if item.isOwn {
-                SpotCornerButton(symbol: "xmark", label: "Delete", corner: .leading, size: size, onHover: deleteTip) { model.delete(item.id) }
+            SpotCornerButton(symbol: mark.symbol, label: mark.label, corner: .leading, size: size, onHover: tip(.dockCorner, text: mark.label)) {
+                item.state == .off ? model.turnOn(item.id) : model.dragDockSpot(item.id, by: .zero)
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            if item.isOwn, item.state == .off {
+                SpotCornerButton(symbol: "xmark", label: "Delete", corner: .trailing, size: size, onHover: tip(.dockCard, text: "Delete")) { model.delete(item.id) }
             }
         }
         .contextMenu {
-            Button("Turn On") { model.turnOn(item.id) }
-            if item.isOwn { Button("Delete") { model.delete(item.id) } }
+            if item.state == .off { Button("Turn On") { model.turnOn(item.id) } }
+            if item.isOwn, item.state == .off { Button("Delete") { model.delete(item.id) } }
         }
         .onHover { isOver in
             let tip = SpotTip(id: item.id, anchor: .dockCard, text: item.command.name)
@@ -59,13 +64,24 @@ struct SpotDockTile: View {
         }
     }
 
-    /// Shows the tip of the delete control while the pointer lies over it.
-    private func deleteTip(_ isOver: Bool) {
-        let tip = SpotTip(id: item.id, anchor: .dockCorner, text: "Delete")
-        if isOver {
-            model.tip = tip
-        } else if model.tip == tip {
-            model.tip = nil
+    /// The symbol and the words of the mark of the spot's state.
+    private var mark: (symbol: String, label: String) {
+        switch item.state {
+        case .off: ("plus", "Turn on")
+        case .onGrid: ("checkmark", "On grid")
+        case .searchOnly: ("eye.slash", "Search only")
+        }
+    }
+
+    /// Shows a tip at this anchor while the pointer lies over the control.
+    private func tip(_ anchor: SpotTip.Anchor, text: String) -> (Bool) -> Void {
+        let tip = SpotTip(id: item.id, anchor: anchor, text: text)
+        return { isOver in
+            if isOver {
+                model.tip = tip
+            } else if model.tip == tip {
+                model.tip = nil
+            }
         }
     }
 }

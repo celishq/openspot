@@ -1,10 +1,10 @@
 import OpenspotCore
 import SwiftUI
 
-/// The dock of Edit Spots, on the glass of the panel's surfaces: the title All with the number of spots that are off, its
-/// search, and those spots as their cards in rows that scroll under the title and fade at each end they pass. The scroll
-/// reaches the dock's edges, and its margins lie inside it. A card dragged out of the dock leaves its place empty until it
-/// lands.
+/// The store of Edit Spots, on the glass of the panel's surfaces: its filters with the number of spots that the chosen one
+/// keeps, its search, and those spots as their cards in rows that scroll under the filters and fade at each end they pass.
+/// The scroll reaches the store's edges, and its margins lie inside it. A card dragged out of the store leaves its place
+/// empty until it lands.
 struct SpotDockView: View {
     let model: SpotsModel
     let size: CGSize
@@ -34,20 +34,17 @@ struct SpotDockView: View {
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask(edgeFade)
             if dock.shown.isEmpty {
-                Text(dock.query.isEmpty ? "Each spot is on." : "No spot has these words.")
+                Text(dock.query.isEmpty ? "No spot is here." : "No spot has these words.")
                     .font(SpotType.body)
                     .modifier(SpotSecondaryText())
                     .padding(.horizontal, SpotTokens.padding)
                     .offset(y: SpotTokens.dockRowsTop)
             }
             HStack(spacing: SpotTokens.padding) {
-                HStack(spacing: 6) {
-                    Text("All")
-                        .font(SpotType.title)
-                        .foregroundStyle(SpotTheme.ink)
-                    Text("\(dock.shown.count)")
-                        .font(SpotType.body)
-                        .modifier(SpotSecondaryText())
+                HStack(spacing: SpotTokens.padding) {
+                    ForEach(SpotDock.Filter.allCases, id: \.self) { filter in
+                        FilterButton(filter: filter, count: filter == dock.filter ? dock.shown.count : nil) { model.filterDock(filter) }
+                    }
                 }
                 Spacer(minLength: 0)
                 SpotSearchField(prompt: "Search spots", text: dock.query, onSearch: { model.searchDock($0) }, isFocused: $isSearching)
@@ -57,7 +54,6 @@ struct SpotDockView: View {
             .padding([.horizontal, .top], SpotTokens.padding)
         }
         .frame(width: size.width, height: size.height, alignment: .topLeading)
-        .background { DropMark(model: model) }
         .modifier(SpotGlass(rimSize: size))
         .onChange(of: isSearching) { _, isOn in model.searchesDock(isOn) }
         .onChange(of: model.isSearchingDock) { _, isOn in if !isOn { isSearching = false } }
@@ -90,15 +86,33 @@ struct SpotDockView: View {
     }
 }
 
-/// The fill of the dock while a card that a release there turns off lies over it.
-private struct DropMark: View {
-    let model: SpotsModel
+/// A filter of the store: its title, strong while it is chosen, with the number of spots that it keeps.
+private struct FilterButton: View {
+    let filter: SpotDock.Filter
+    let count: Int?
+    let action: () -> Void
 
     var body: some View {
-        let isOn = model.carry.map { $0.turnsOff && $0.isOverDock } ?? false
-        RoundedRectangle(cornerRadius: SpotTokens.radius, style: .continuous)
-            .fill(SpotTheme.ink.opacity(SpotTheme.fill))
-            .opacity(isOn ? 1 : 0)
-            .animation(SpotMotion.liftFade, value: isOn)
+        Button(action: action) {
+            HStack(spacing: 6) {
+                if count != nil {
+                    Text(filter.title)
+                        .font(SpotType.title)
+                        .foregroundStyle(SpotTheme.ink)
+                } else {
+                    Text(filter.title)
+                        .font(SpotType.title)
+                        .modifier(SpotSecondaryText())
+                }
+                if let count {
+                    Text("\(count)")
+                        .font(SpotType.body)
+                        .modifier(SpotSecondaryText())
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(count != nil ? .isSelected : [])
     }
 }

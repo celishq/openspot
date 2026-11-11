@@ -1,13 +1,48 @@
 import Foundation
 
-/// The spots in the dock of Edit Spots: each spot that is off, which the person can turn on or, when it is a file of the
-/// plugins folder, delete, and the search that picks the spots that the dock shows.
+/// The store of Edit Spots: every spot with its state and its origin, the filter and the search that pick the spots that
+/// it shows. The person turns on a spot that is off, and deletes a file of the plugins folder that is off.
 public struct SpotDock: Equatable, Sendable {
-    /// One spot in the dock.
+    /// Whether a spot shows on the grid, only in search, or not at all.
+    public enum State: Equatable, Sendable {
+        case onGrid, searchOnly, off
+    }
+
+    /// Where a spot comes from: the core spots of the app, the plugins folder, or the app's own code.
+    public enum Origin: Equatable, Sendable {
+        case core, mine, builtIn
+    }
+
+    /// The spots that the store shows: all, those that are on or off, or those of one origin.
+    public enum Filter: CaseIterable, Equatable, Sendable {
+        case all, on, off, core, mine
+
+        public var title: String {
+            switch self {
+            case .all: "All"
+            case .on: "On"
+            case .off: "Off"
+            case .core: "Core"
+            case .mine: "Mine"
+            }
+        }
+
+        public func keeps(_ item: Item) -> Bool {
+            switch self {
+            case .all: true
+            case .on: item.state != .off
+            case .off: item.state == .off
+            case .core: item.origin == .core
+            case .mine: item.origin == .mine
+            }
+        }
+    }
+
+    /// One spot in the store.
     public struct Item: Identifiable, Equatable, Sendable {
         public let command: Spot
-        /// Whether the spot is a file of the plugins folder, which the dock can delete.
-        public let isOwn: Bool
+        public let origin: Origin
+        public let state: State
         /// The size of its card, as the panel gives it: the preferred size, or else its own. A fault is never 1x1.
         public let size: SpotSize
 
@@ -15,9 +50,15 @@ public struct SpotDock: Equatable, Sendable {
             command.id
         }
 
-        public init(command: Spot, isOwn: Bool = false, size: SpotSize? = nil) {
+        /// Whether the spot is a file of the plugins folder, which the store can delete while it is off.
+        public var isOwn: Bool {
+            origin == .mine
+        }
+
+        public init(command: Spot, origin: Origin = .core, state: State = .off, size: SpotSize? = nil) {
             self.command = command
-            self.isOwn = isOwn
+            self.origin = origin
+            self.state = state
             let own = size ?? command.size
             self.size = command.fault != nil && own == .small ? .wide : own
         }
@@ -25,6 +66,7 @@ public struct SpotDock: Equatable, Sendable {
 
     public let items: [Item]
     public var query = ""
+    public var filter = Filter.all
 
     public init(items: [Item]) {
         self.items = items.sorted { $0.command.name.localizedCaseInsensitiveCompare($1.command.name) == .orderedAscending }
@@ -32,15 +74,16 @@ public struct SpotDock: Equatable, Sendable {
 
     /// The dock with this spot at this size.
     public func resized(_ id: String, to size: SpotSize) -> SpotDock {
-        var next = SpotDock(items: items.map { $0.id == id ? Item(command: $0.command, isOwn: $0.isOwn, size: size) : $0 })
+        var next = SpotDock(items: items.map { $0.id == id ? Item(command: $0.command, origin: $0.origin, state: $0.state, size: size) : $0 })
         next.query = query
+        next.filter = filter
         return next
     }
 
-    /// The spots whose name, or the words under it, hold the search, by name.
+    /// The spots that the filter keeps and whose name, or the words under it, hold the search, by name.
     public var shown: [Item] {
-        query.isEmpty ? items : items.filter { item in
-            [item.command.name, item.command.subtitle ?? ""].contains { $0.localizedStandardContains(query) }
+        items.filter { item in
+            filter.keeps(item) && (query.isEmpty || [item.command.name, item.command.subtitle ?? ""].contains { $0.localizedStandardContains(query) })
         }
     }
 

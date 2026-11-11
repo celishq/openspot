@@ -29,16 +29,37 @@ extension SpotsModel {
         dock.query = text
     }
 
+    /// Shows the spots of the store that this filter keeps.
+    public func filterDock(_ filter: SpotDock.Filter) {
+        dock.filter = filter
+    }
+
     /// Takes whether the person types in the dock's search.
     public func searchesDock(_ isOn: Bool) {
         if isSearchingDock != isOn { isSearchingDock = isOn }
     }
 
-    /// Makes the dock from the spots of this folder that are off, and keeps its search.
+    /// Reads the spots of this folder that are off, and makes the store again.
     func refreshDock(in folder: PluginFolder) {
+        dockOff = Self.offSpots(in: folder)
+        composeDock()
+    }
+
+    /// Makes the store from each card of the panel and each spot that is off, and keeps its filter and its search. A part of
+    /// a widget, such as a metric that it places or a sheet that it opens, is not one.
+    func composeDock() {
+        let folder = files.folder
         let choice = arrangement
-        var next = SpotDock(items: Self.offSpots(in: folder).map { SpotDock.Item(command: $0.command, isOwn: $0.isOwn, size: choice.size(of: $0.id)) })
+        let spots = cards.filter { $0.item == nil && $0.command.fault == nil }
+        let parts = Set(spots.flatMap { $0.command.places + ($0.command.opens.map { [$0] } ?? []) })
+        let on = spots.filter { !parts.contains($0.id) }.map { entry in
+            let origin: SpotDock.Origin = entry.command.shipped != nil ? .builtIn : folder.isCore(entry.command) ? .core : .mine
+            return SpotDock.Item(command: entry.command, origin: origin, state: entry.isOnGrid ? .onGrid : .searchOnly, size: entry.size)
+        }
+        let off = dockOff.map { SpotDock.Item(command: $0.command, origin: $0.origin, size: choice.size(of: $0.id)) }
+        var next = SpotDock(items: on + off)
         next.query = dock.query
+        next.filter = dock.filter
         if next != dock { dock = next }
     }
 
@@ -51,7 +72,7 @@ extension SpotsModel {
             .filter { !folder.enabled.contains(PluginFolder.coreID(of: $0)) && !ownIDs.contains(PluginFolder.coreID(of: $0)) }
         let turnedOff = own.filter { folder.disabled.contains($0.id) }.flatMap(\.commands)
         let opened = Set(turnedOff.compactMap(\.opens))
-        return core.map { SpotDock.Item(command: $0) } + turnedOff.filter { !opened.contains($0.id) }.map { SpotDock.Item(command: $0, isOwn: true) }
+        return core.map { SpotDock.Item(command: $0) } + turnedOff.filter { !opened.contains($0.id) }.map { SpotDock.Item(command: $0, origin: .mine) }
     }
 
     /// Whether the minus of Edit Spots can turn this spot off. A built-in and a card of faults stay on.
@@ -65,15 +86,16 @@ extension SpotsModel {
         turn(entry.command, on: false)
     }
 
-    /// Turns a spot of the dock on: its card takes a place in the panel.
+    /// Turns a spot of the store that is off on: its card takes a place in the panel.
     public func turnOn(_ id: String) {
-        guard let item = dock.items.first(where: { $0.id == id }) else { return }
+        guard let item = dock.items.first(where: { $0.id == id && $0.state == .off }) else { return }
         turn(item.command, on: true)
     }
 
-    /// Moves the file of a spot of the dock to the Trash, as Delete does in the action menu, so `⌘Z` puts it back.
+    /// Moves the file of a spot of the store that is off to the Trash, as Delete does in the action menu, so `⌘Z` puts it
+    /// back.
     public func delete(_ id: String) {
-        guard let item = dock.items.first(where: { $0.id == id }), item.isOwn else { return }
+        guard let item = dock.items.first(where: { $0.id == id }), item.isOwn, item.state == .off else { return }
         remove(Entry(command: item.command, run: nil))
     }
 
@@ -162,7 +184,7 @@ extension SpotsModel {
             tip = nil
             change(.edit) {
                 drag = lifted
-                carry = SpotCarry(entry: entry, size: lifted.placement(at: lifted.home)?.size ?? entry.size, turnsOff: turnsOff(entry))
+                carry = SpotCarry(entry: entry, size: lifted.placement(at: lifted.home)?.size ?? entry.size)
                 selected = start
             }
         }
@@ -195,17 +217,13 @@ extension SpotsModel {
         }
     }
 
-    /// Ends the drag: the card lands at the place nearest the lifted card, and the order is saved. A release on the dock
-    /// turns the spot off when it can be off. A release with the pointer off the grid, or where the card started, puts every
-    /// card back.
+    /// Ends the drag: the card lands at the place nearest the lifted card, and the order is saved. A release on the store,
+    /// with the pointer off the grid, or where the card started, puts every card back.
     public func dropSpot(by translation: CGSize) {
         guard let drag else { return }
         let move = inGrid(translation)
         let centre = drag.centre(movedBy: move)
-        if dockInGrid?.contains(centre) == true {
-            guard carry?.turnsOff == true, let entry = visible.first(where: { $0.id == drag.id }) else { return cancelDrag() }
-            return turnOffDropped(entry)
-        }
+        guard dockInGrid?.contains(centre) != true else { return cancelDrag() }
         let target = drag.nearest(to: drag.centre(movedBy: drag.capped(move, within: windowInGrid)))
         guard drag.holds(centre), target != drag.home else { return cancelDrag() }
         stopDragWait()
@@ -221,13 +239,19 @@ extension SpotsModel {
         }, landed: { self.endLanding(of: drag.id) })
     }
 
-    /// Moves a spot of the dock that the person drags, and lifts its card out of the dock when the drag starts. While the
-    /// card lies over the grid, it takes the size it has there, and the other cards make room where a release would turn
-    /// it on once the pointer has rested there for `dragRest`.
+    /// Moves a spot of the store that is off, which the person drags, and lifts its card out of the store when the drag
+    /// starts. While the card lies over the grid, it takes the size it has there, and the other cards make room where a
+    /// release would turn it on once the pointer has rested there for `dragRest`. A spot that is on stays, and its card on
+    /// the grid is selected.
     public func dragDockSpot(_ id: String, by translation: CGSize) {
         guard isEditing, query.isEmpty, resize == nil, dockResize == nil else { return }
         if carry?.entry.id != id {
-            guard carry == nil, drag == nil, let item = dock.shown.first(where: { $0.id == id }), let tile = tileRect(of: id) else { return }
+            guard carry == nil, drag == nil, let item = dock.shown.first(where: { $0.id == id }) else { return }
+            guard item.state == .off else {
+                if let index = visible.firstIndex(where: { $0.id == id }), selected != index { selected = index }
+                return
+            }
+            guard let tile = tileRect(of: id) else { return }
             let entry = Entry(command: item.command, run: nil, choice: arrangement)
             let start = visible.filter(\.isOnGrid).count
             var sizes = visible.map(\.size)
@@ -236,7 +260,7 @@ extension SpotsModel {
             arrival = SpotDrag(id: id, start: start, sizes: sizes, places: 0...start, grid: SpotGrid(split: hiddenStart.map { $0 + 1 }, kept: kept))
             stopDragWait()
             lift.origin = tile.origin
-            change(.edit) { carry = SpotCarry(entry: entry, size: item.size, turnsOff: false, tile: tile) }
+            change(.edit) { carry = SpotCarry(entry: entry, size: item.size, tile: tile) }
         }
         pointerMove = translation
         guard let carry, let tile = carry.tile, var arrival else { return }
@@ -354,19 +378,6 @@ extension SpotsModel {
         }, completion: { self.endLanding(of: drag.id) })
     }
 
-    /// Turns off the spot of a card that the person dropped on the dock: the card fades where it lies, and the other cards
-    /// close the gap. A spot that cannot be turned off goes back.
-    private func turnOffDropped(_ entry: Entry) {
-        stopDragWait()
-        pointerMove = nil
-        let isOff = turn(entry.command, on: false) {
-            drag = nil
-            carry = nil
-        }
-        guard isOff else { return cancelDrag() }
-        if lift.offset != .zero { lift.offset = .zero }
-    }
-
     /// Moves the carried card to the place of its card on the grid, where it lands, and off the dock.
     private func carryHome() {
         guard let id = carry?.entry.id, let index = visible.firstIndex(where: { $0.id == id }), placements.indices.contains(index) else { return }
@@ -388,7 +399,7 @@ extension SpotsModel {
     /// `grip` is where the person pressed the handle, in its square, and counts only when the resize starts.
     public func resizeSpot(_ id: String, by translation: CGSize, grip: CGPoint = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)) {
         guard isEditing, query.isEmpty, drag == nil else { return }
-        if dock.items.contains(where: { $0.id == id }) { return resizeTile(id, by: translation, grip: grip) }
+        if dock.items.contains(where: { $0.id == id && $0.state == .off }) { return resizeTile(id, by: translation, grip: grip) }
         if resize?.id != id {
             guard let index = visible.firstIndex(where: { $0.id == id }) else { return }
             resize = SpotResize(id: id, index: index, sizes: visible.map(\.size), choices: sizes(of: visible[index]), grid: grid)
@@ -644,6 +655,7 @@ extension SpotsModel {
         change(.edit, {
             ending()
             rebuildEntries()
+            composeDock()
             if let place = visible.firstIndex(where: { $0.id == id }) { selected = place }
             carryHome()
         }, completion: landed)
