@@ -61,7 +61,7 @@ open -a Calendar
 | `answers`  | A regular expression of the texts of the main search that it answers, such as `^[0-9(]` (A1). See Places.               |
 | `view`     | A SwiftUI file beside the script, such as `view=cups.swift` (03).                                                        |
 | `stay`     | `true` keeps one process that takes each call on stdin, and `always` keeps it from the start of the app to its quit (05). |
-| `press`    | `run` makes Enter and a click on its card call `open` with no row, also when it has a sheet. With ⌘, they open the sheet. `sheet`, the default, opens it. |
+| `press`    | `open` makes Enter and a click on its card call `<script> open`, also when it has a sheet. With ⌘, they open the sheet. `sheet`, the default, opens it. |
 
 | Block           | Meaning                                                                                              |
 | --------------- | ---------------------------------------------------------------------------------------------------- |
@@ -147,7 +147,7 @@ a script while its sheet, a widget or the menu bar shows it, or while the open p
 | Call                                   | When                                                                   |
 | -------------------------------------- | ---------------------------------------------------------------------- |
 | `<script> read [text] [form]...`       | A moment, a search change with `search=script`, or a text that `answers` matches. |
-| `<script> open [row id]`               | A row is picked, or a card with no sheet is pressed.                   |
+| `<script> open [row id]`               | A row is picked, or a card with no sheet or with `press=open` is pressed. |
 | `<script> <id> [row id] [value]`       | A block changes or is pressed, with the id of its row.                 |
 | `<script> drop <path> [path]...`       | Files are dropped on its card, each path as its own argument (D3).     |
 | `<script> drag <row id> [row id]...`   | Rows that hold files are dragged out of its sheet (O2).                |
@@ -536,7 +536,7 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | An answer is the call of a search that the script does, so a script has one shape for both.                 | A new call, such as `answer <text>`.         |
 | Answers show first, because they are about the whole text that the person typed.                            | A rank that each spot gives its rows.        |
 | A plugin runs with the full access of the person.                                                           | A `uses` key, or a sandbox.                  |
-| `press=run` lets a spot run at a press and keep its sheet for settings, behind ⌘.                           | A run button in its sheet, which costs a second press. |
+| `press=open` lets a spot run at a press and keep its sheet for settings, behind ⌘.                           | A run button in its sheet, which costs a second press. |
 | A script keeps a setting through `openspot setting`, and asks for it when it needs it.                      | A `setting` header key with a kind, and required settings. |
 | A component is `<kind>=<id>`, so a block says what it is and where it goes in one line.                     | `part=<id>` with a kind found from its keys. |
 | The app owns each canvas, and a drawing only names areas, so each result stays even.                        | Sizes, gaps and colours in points.           |

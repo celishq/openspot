@@ -37,13 +37,13 @@ final class PluginHeaderTests: XCTestCase {
         XCTAssertFalse(search.offersFloat)
     }
 
-    func testPressRunMakesAPressOfASpotWithASheetRunIt() throws {
+    func testPressOpenMakesAPressOfASpotWithASheetRunIt() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-press-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         let runs = folder.appendingPathComponent("runs.sh"), opens = folder.appendingPathComponent("opens.sh")
         let unknown = folder.appendingPathComponent("unknown.sh")
-        try "#!/bin/sh\n# read=sheet\n# press=run\n".writeScript(to: runs)
+        try "#!/bin/sh\n# read=sheet\n# press=open\n".writeScript(to: runs)
         try "#!/bin/sh\n# read=sheet\n".writeScript(to: opens)
         try "#!/bin/sh\n# read=sheet\n# press=jump\n".writeScript(to: unknown)
 
@@ -55,7 +55,7 @@ final class PluginHeaderTests: XCTestCase {
         XCTAssertFalse(open.pressRuns)
         XCTAssertEqual(open.primaryTitle(hasItem: false), "Open")
         XCTAssertThrowsError(try Plugin(file: unknown, id: "unknown")) { error in
-            XCTAssertTrue((error as? PluginError)?.reason.contains("Use run or sheet") == true, "\(error)")
+            XCTAssertTrue((error as? PluginError)?.reason.contains("Use open or sheet") == true, "\(error)")
         }
     }
 

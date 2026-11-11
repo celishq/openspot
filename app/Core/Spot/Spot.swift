@@ -35,7 +35,7 @@ public struct Spot: Equatable, Sendable {
     public let stays: Bool
     /// Whether the script stays running from the start of the app to its quit.
     public let staysAlways: Bool
-    /// Whether Enter and a click on its card call `run` though it has a sheet, which ⌘ opens (`press=run`).
+    /// Whether Enter and a click on its card call `open` though it has a sheet, which ⌘ opens (`press=open`).
     public let pressRuns: Bool
     /// The file extensions that its card takes, with `folder` and `*`.
     public let drop: [String]
