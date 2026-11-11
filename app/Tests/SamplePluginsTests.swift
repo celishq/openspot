@@ -139,7 +139,7 @@ final class SamplePluginsTests: SamplePluginsCase {
     }
 
     func testEveryCommandCanBeRun() throws {
-        for command in try scan.commands where command.kind != .widget && command.host == nil {
+        for command in try scan.commands where command.kind != .widget && command.host == nil && !command.isInline {
             XCTAssertTrue(FileManager.default.isExecutableFile(atPath: command.url.path), command.name)
         }
     }

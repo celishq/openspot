@@ -29,7 +29,7 @@ final class InlineScript: @unchecked Sendable {
         let thread = Thread { [self] in follow() }
         thread.name = "openspot.inline.\(spot.id)"
         thread.stackSize = 8 << 20
-        thread.qualityOfService = .userInteractive
+        thread.qualityOfService = .userInitiated
         thread.start()
     }
 
@@ -135,7 +135,7 @@ final class InlineScript: @unchecked Sendable {
         if let api, let work = api.work(for: call, input: { input ?? "" }, environment: environment) {
             let box = Box()
             let done = DispatchSemaphore(value: 0)
-            Task.detached {
+            Task.detached(priority: .userInitiated) {
                 box.answer = await work()
                 done.signal()
             }

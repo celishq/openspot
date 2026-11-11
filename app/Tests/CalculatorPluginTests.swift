@@ -1,8 +1,17 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the Calculator plugin with its real script and a fake `openspot calc solve` that prints a file.
+/// Proves the Calculator plugin with its real script and a fake `openspot calc solve` that prints a file, and its time from
+/// a key to its rows with the real API.
 final class CalculatorPluginTests: SamplePluginsCase {
+    /// A host of the API that reaches nothing on the Mac.
+    private struct Host: CommandHost {
+        func eventStore() -> any EventStore { FakeEventStore() }
+        func reminderStore() -> any ReminderStore { FakeReminderStore() }
+        func showCalendar(at time: Date) throws {}
+        func open(_ link: URL) -> Bool { false }
+    }
+
     private var calculator: Spot {
         get throws { try XCTUnwrap(try scan.commands.first { $0.name == "Calculator" }) }
     }
@@ -68,5 +77,45 @@ final class CalculatorPluginTests: SamplePluginsCase {
             XCTAssertEqual(toast, "Copied 13.46")
             XCTAssertEqual(try String(contentsOf: home.appendingPathComponent("clipboard"), encoding: .utf8), "13.46")
         }
+    }
+
+    func testTheCalculatorRunsInline() throws {
+        XCTAssertTrue(try calculator.isInline)
+    }
+
+    /// Types a sum in the main search of a panel with the calculator and the real API, 5 times, and times each key whose
+    /// rows show in its own turn. The fastest proves the path, and a busy Mac can slow the others.
+    @MainActor
+    func testAKeyShowsTheRowOfASumWithin4Milliseconds() async throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-calc-\(UUID().uuidString)")
+        let plugins = folder.appendingPathComponent("plugins", isDirectory: true)
+        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        try FileManager.default.copyItem(at: try calculator.url, to: plugins.appendingPathComponent(try calculator.url.lastPathComponent))
+        let suite = "openspot-calc-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let host = TestHost()
+        let files = SpotFiles(environment: ["OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path], home: folder, defaults: defaults)
+        let model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
+        defer { model.quit() }
+        host.model = model
+        model.runs.api = CommandAPI(host: Host())
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.searchText = "2+2"
+        for _ in 0..<500 where model.visible.first?.id != "calculator\n4" { try await Task.sleep(for: .milliseconds(10)) }
+
+        var times: [Duration] = []
+        for _ in 0..<5 {
+            model.searchText = ""
+            let start = ContinuousClock.now
+            model.searchText = "12*(3+4)"
+            if model.visible.first?.id == "calculator\n84" { times.append(ContinuousClock.now - start) }
+            for _ in 0..<500 where model.visible.first?.id != "calculator\n84" { try await Task.sleep(for: .milliseconds(10)) }
+        }
+
+        XCTAssertLessThan(try XCTUnwrap(times.min(), "no key showed its rows in its own turn"), .milliseconds(4), "\(times)")
     }
 }
