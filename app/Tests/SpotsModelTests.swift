@@ -616,6 +616,34 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.map(\.id), ["settings\nsound"])
     }
 
+    func testTypingBuildsTheCardsAsSearchedItemsOnce() throws {
+        try script("notes", header: "title=Notes", "true")
+        try script("mail", header: "title=Mail", "true")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        let before = model.spotListBuilds
+
+        for text in ["n", "no", "not", "note", "notes"] { model.searchText = text }
+
+        XCTAssertEqual(model.spotListBuilds - before, 1)
+        XCTAssertEqual(model.visible.map(\.id), ["notes"])
+    }
+
+    func testAChangedTitleOfACardIsFoundOnTheNextKey() async throws {
+        try script("mood", header: "title=Calm\nread=panel", "printf 'title=Stormy\n'")
+        model.reload()
+        model.isShown = true
+        model.searchText = "c"
+        XCTAssertEqual(model.visible.map(\.id), ["mood"])
+        model.panelWillShow(holding: [])
+        try await wait("the read title") { model.sheets["mood"]?.state.title == "Stormy" }
+
+        model.searchText = "st"
+
+        XCTAssertEqual(model.visible.map(\.id), ["mood"])
+    }
+
     /// Shows the panel with a spot that answers the main search for text that starts with a digit.
     private func showAnswers(slow: String = "none") throws {
         let body = #"case "$2" in \#(slow)) sleep 0.5 ;; esac; case "$1" in read) [ -n "$2" ] && printf 'row=%s\ntitle=Is %s\ndetail=Read %s\n' "$2" "$2" "$2" ;; open) printf 'toast=Picked %s\n' "$2" ;; esac"#
