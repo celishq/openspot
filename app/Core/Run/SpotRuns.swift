@@ -87,7 +87,7 @@ public final class SpotRuns {
     ) {
         self.log = log
         self.swift = swift
-        usage = SpotUsage(folder: stats, at: now())
+        usage = SpotUsage(folder: stats, at: now(), now: now)
         self.inlineIdle = inlineIdle
         self.readLimit = readLimit
         self.opening = opening
@@ -339,7 +339,7 @@ public final class SpotRuns {
     func inline(_ spot: Spot, limit: TimeInterval? = nil) -> InlineScript {
         let id = spot.id
         return InlineScript(spot: spot, api: api, tokens: tokens, careful: isCareful ? spot.uses : nil, limit: limit ?? readLimit, idle: inlineIdle) { [usage] seconds in
-            usage.add(ProcessTime(cpu: seconds, wakeups: 0), to: id)
+            usage.add(ProcessTime(cpu: seconds, wakeups: 0), to: id, at: usage.now())
         }
     }
 

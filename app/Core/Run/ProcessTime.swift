@@ -40,6 +40,11 @@ public struct ProcessTime: Equatable, Sendable {
         written = 0
     }
 
+    /// The time since an earlier reading of the same process.
+    func since(_ earlier: ProcessTime) -> ProcessTime {
+        ProcessTime(cpu: max(cpu - earlier.cpu, 0), wakeups: wakeups &- min(earlier.wakeups, wakeups), read: read &- min(earlier.read, read), written: written &- min(earlier.written, written))
+    }
+
     public static func + (left: ProcessTime, right: ProcessTime) -> ProcessTime {
         ProcessTime(cpu: left.cpu + right.cpu, wakeups: left.wakeups + right.wakeups, read: left.read + right.read, written: left.written + right.written)
     }

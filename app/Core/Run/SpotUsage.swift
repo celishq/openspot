@@ -3,7 +3,8 @@ import Foundation
 /// What each spot cost and used, one day at a time (G1, Z10): its runs and failures, their time, the CPU time, the disk
 /// bytes and the wakeups of its processes, each use of a power and its last fault, with a short log of the uses of a
 /// power. Today lives in memory and goes to `<day>.json` in its folder at most once a pause, never on each call (G5). A
-/// start reads today's file again, and drops each file older than 90 days.
+/// process that runs counts its time since the last reading at each change of day and each flush, so that each day gets
+/// the time spent on it. A start reads today's file again, and drops each file older than 90 days.
 public final class SpotUsage: @unchecked Sendable {
     /// The count of one spot on one day.
     public struct Count: Codable, Equatable, Sendable {
@@ -80,14 +81,17 @@ public final class SpotUsage: @unchecked Sendable {
     private var today: Day
     private var isDirty = false
     private var isWaiting = false
-    /// Each process that has not ended, with the ID of its spot.
-    private var live: [ObjectIdentifier: (spot: String, process: ScriptProcess)] = [:]
+    /// Each process that has not ended, with the ID of its spot and its time that a day already counts.
+    private var live: [ObjectIdentifier: (spot: String, process: ScriptProcess, counted: ProcessTime)] = [:]
+    /// The clock of the days.
+    let now: () -> Date
 
     /// Starts the day of `date` from its file in `folder`, and drops each file older than 90 days. With no folder it keeps
     /// nothing on the disk. `pause` is the most time that a change waits for its write.
-    public init(folder: URL? = nil, at date: Date = Date(), pause: TimeInterval = 5) {
+    public init(folder: URL? = nil, at date: Date = Date(), pause: TimeInterval = 5, now: @escaping () -> Date = { Date() }) {
         self.folder = folder
         self.pause = pause
+        self.now = now
         let day = Self.day(of: date)
         today = folder.flatMap { Self.read(day, in: $0) } ?? Day(day: day)
         if let folder { Self.prune(folder, at: date) }
@@ -118,16 +122,16 @@ public final class SpotUsage: @unchecked Sendable {
     /// Counts the time of a process of a spot, while it runs and once it ends. Call it before the process starts.
     func track(_ process: ScriptProcess, of spot: String) {
         let key = ObjectIdentifier(process)
-        lock.withLock { live[key] = (spot, process) }
+        lock.withLock { live[key] = (spot, process, .zero) }
         process.onExit { [weak self] time in
-            guard let self, let spot = lock.withLock({ live.removeValue(forKey: key)?.spot }) else { return }
-            add(time, to: spot)
+            guard let self, let ended = lock.withLock({ live.removeValue(forKey: key) }) else { return }
+            add(time.since(ended.counted), to: ended.spot, at: now())
         }
     }
 
-    /// Adds the time of an ended process to a spot, on the day that runs.
-    func add(_ time: ProcessTime, to spot: String) {
-        change { $0.spots[spot, default: Count()].add(time) }
+    /// Adds time of a spot on the day of `date`.
+    func add(_ time: ProcessTime, to spot: String, at date: Date) {
+        change(at: date) { $0.spots[spot, default: Count()].add(time) }
     }
 
     /// Counts a call that ended after this many seconds, and whether it failed.
@@ -176,10 +180,18 @@ public final class SpotUsage: @unchecked Sendable {
         return tells
     }
 
-    /// Writes today's file now when it changed since the last write.
+    /// Counts the time of each process that runs since the last reading, on the day that runs or that the clock left, and
+    /// writes today's file now when it changed since the last write.
     public func flush() {
+        let date = now()
+        let ended: Day? = lock.withLock {
+            let ended = roll(to: date)
+            if countLive(into: &today) { isDirty = true }
+            return ended
+        }
         guard let folder else { return }
         writes.sync {
+            if let ended { Self.write(ended, in: folder) }
             let day: Day? = lock.withLock {
                 isWaiting = false
                 guard isDirty else { return nil }
@@ -188,6 +200,7 @@ public final class SpotUsage: @unchecked Sendable {
             }
             if let day { Self.write(day, in: folder) }
         }
+        if ended != nil { Self.prune(folder, at: date) }
     }
 
     /// The day of a date in the time zone of the Mac, such as `2026-11-11`.
@@ -199,11 +212,7 @@ public final class SpotUsage: @unchecked Sendable {
     /// Changes the day that runs, or with a date first moves to its day, and asks for a write after the pause.
     private func change(at date: Date? = nil, _ work: (inout Day) -> Void) {
         let (ended, waits): (Day?, Bool) = lock.withLock {
-            var ended: Day?
-            if let date, Self.day(of: date) != today.day {
-                if isDirty { ended = today }
-                today = folder.flatMap { Self.read(Self.day(of: date), in: $0) } ?? Day(day: Self.day(of: date))
-            }
+            let ended = date.flatMap(roll)
             work(&today)
             isDirty = true
             defer { isWaiting = true }
@@ -219,11 +228,36 @@ public final class SpotUsage: @unchecked Sendable {
         }
     }
 
-    /// The day with the time so far of each process that runs.
+    /// Moves to the day of a date, after the time so far of each process that runs goes to the day that ends, and returns
+    /// that day when it changed. Call it with the lock held.
+    private func roll(to date: Date) -> Day? {
+        guard Self.day(of: date) != today.day else { return nil }
+        if countLive(into: &today) { isDirty = true }
+        let ended = isDirty ? today : nil
+        today = folder.flatMap { Self.read(Self.day(of: date), in: $0) } ?? Day(day: Self.day(of: date))
+        return ended
+    }
+
+    /// Adds the time of each process that runs since its last reading to a day, and moves each reading. Returns whether
+    /// any time came. Call it with the lock held.
+    private func countLive(into day: inout Day) -> Bool {
+        var counted = false
+        for (key, entry) in live {
+            let time = entry.process.time
+            let spent = time.since(entry.counted)
+            guard spent != .zero else { continue }
+            day.spots[entry.spot, default: Count()].add(spent)
+            live[key]?.counted = time
+            counted = true
+        }
+        return counted
+    }
+
+    /// The day with the time of each process that runs since its last reading.
     private func withLive(_ day: Day) -> Day {
         var day = day
-        for (spot, process) in live.values {
-            day.spots[spot, default: Count()].add(process.time)
+        for entry in live.values {
+            day.spots[entry.spot, default: Count()].add(entry.process.time.since(entry.counted))
         }
         return day
     }

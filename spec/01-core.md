@@ -678,7 +678,7 @@ openspot spot stats [--days N] [--spot id] [--frame|--json]
 
 Openspot keeps what each spot cost and used, one file for each day, for 90 days (Z10). For each spot and day it counts the
 runs, the failures, the CPU seconds, the bytes read from and written to the disk, the wakeups, and each use, such as
-`screen.shot` or `clipboard.copy`. It keeps the last fault of each spot, and a short log of the uses of a power: the time,
+`screen.shot` or `clipboard.copy`. A process that stays counts its time on the day that it spent it. It keeps the last fault of each spot, and a short log of the uses of a power: the time,
 the spot, the call and whether its header names the use. It does not count the network: a spot's `network` shows as
 declared.
 

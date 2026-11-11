@@ -41,6 +41,37 @@ final class SpotUsageTests: SpotRunsCase {
         XCTAssertGreaterThan(cpu, 0.01)
     }
 
+    func testAStayingProcessPutsItsCPUTimeOnTheDayItWasSpent() async throws {
+        runs.quit()
+        runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), stats: folder.appendingPathComponent("stats"))
+        try script(header: "mode=stay\nread=sheet", """
+        \(Self.busyLoop)
+        touch '\(path("busy"))'
+        \(untilRelease)
+        \(Self.busyLoop)
+        touch '\(path("busy again"))'
+        while IFS= read -r line; do
+          case "$line" in call=*) call=${line#call=} ;; esac
+          [ -n "$line" ] || printf 'end=%s\\n\\nrow=a\\ntitle=A\\n---\\n' "$call"
+        done
+        """)
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the first busy loop") { self.exists("busy") }
+        time += 24 * 60 * 60
+        runs.usage.flush()
+
+        openGate()
+        try await wait("the second busy loop") { self.exists("busy again") }
+        runs.usage.flush()
+
+        let days = runs.usage.days(2, at: time)
+        XCTAssertEqual(days.count, 2)
+        XCTAssertGreaterThan(days.last?.spots["script"]?.cpu ?? 0, 0.01, "the day before")
+        XCTAssertGreaterThan(days.first?.spots["script"]?.cpu ?? 0, 0.01, "today")
+    }
+
     func testAFailedCallIsTheLastFaultAndAFailure() async throws {
         try script(header: "read=sheet", "echo 'No network.' >&2\nexit 3")
         let sheet = try sheet()
@@ -135,11 +166,11 @@ final class SpotUsageTests: SpotRunsCase {
     func testTheFrameIsARowForEachSpotWithTheMostCPUTimeFirstThenEachUseOfAPower() throws {
         let usage = SpotUsage(at: day)
         usage.called(spot("a", "Alpha"), seconds: 2, isFailure: true, at: day)
-        usage.add(ProcessTime(cpu: 0.04, wakeups: 0, read: 2048, written: 0), to: "a")
+        usage.add(ProcessTime(cpu: 0.04, wakeups: 0, read: 2048, written: 0), to: "a", at: day)
         usage.failed(spot("a", "Alpha"), fault: "Alpha failed.\nIt stopped.", at: day)
         usage.called(spot("b", "Beta", uses: [.network]), seconds: 0.25, isFailure: false, at: day)
         usage.called(spot("b", "Beta", uses: [.network]), seconds: 0.25, isFailure: false, at: day)
-        usage.add(ProcessTime(cpu: 1.5, wakeups: 7, read: 0, written: 10), to: "b")
+        usage.add(ProcessTime(cpu: 1.5, wakeups: 7, read: 0, written: 10), to: "b", at: day)
         _ = usage.used(try XCTUnwrap(SpotPower(arguments: ["screen", "shot"], of: "b")), by: .init(id: "b", name: "Beta", uses: [.network]), at: day.addingTimeInterval(60))
 
         let text = try StatsReport(days: usage.days(1, at: day), spot: nil).text(.frame)
