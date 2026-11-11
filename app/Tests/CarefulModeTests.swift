@@ -102,4 +102,43 @@ final class CarefulModeTests: SpotRunsCase {
 
         XCTAssertEqual(result, "kept")
     }
+
+    func testAStayingSpotStartsAgainInTheNewModeWhenTheModeChanges() async throws {
+        try script(header: "mode=stay\nread=sheet", """
+        echo a > '\(outside.path)/written-$$' 2>/dev/null && r=files || r=kept
+        while IFS= read -r line; do
+          case "$line" in call=*) call=${line#call=} ;; esac
+          [ -n "$line" ] || printf 'end=%s\\n\\ntext=t\\ntitle=%s\\n---\\n' "$call" "$r"
+        done
+        """)
+        let sheet = try sheet()
+        let first = try await result(of: sheet)
+        XCTAssertEqual(first, "files", "the script started as the person")
+
+        runs.isCareful = true
+
+        try await wait("the read of the new process") { sheet.reading.value?.title == "kept" }
+    }
+
+    func testOnTheSandboxDeniesAppleEvents() {
+        let words = CarefulMode(uses: Set(SpotUse.allCases)).words(data: "/d", temp: "/t", home: "/h")
+
+        XCTAssertTrue(words.contains { $0.contains("(deny appleevent-send)") })
+    }
+
+    func testOnTheHelperProcessOfAnInlineSpotIsCarefulToo() async throws {
+        let bin = folder.appendingPathComponent("bin", isDirectory: true)
+        try FileManager.default.createDirectory(at: bin, withIntermediateDirectories: true)
+        try "#!/bin/sh\necho a > '\(outside.path)/written' 2>/dev/null && echo files || echo kept\n".writeScript(to: bin.appendingPathComponent("openspot"))
+        let path = ProcessInfo.processInfo.environment["PATH"] ?? ""
+        setenv("PATH", "\(bin.path):\(path)", 1)
+        defer { setenv("PATH", path, 1) }
+        try "// mode=inline\n// read=sheet\nfunction main() { return `text=t\\ntitle=${openspot.call([\"color\", \"pick\"]).stdout.trim()}\\n` }\n"
+            .write(to: folder.appendingPathComponent("script.js"), atomically: true, encoding: .utf8)
+        runs.isCareful = true
+
+        let result = try await result(of: try sheet())
+
+        XCTAssertEqual(result, "kept")
+    }
 }

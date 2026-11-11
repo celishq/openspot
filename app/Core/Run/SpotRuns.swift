@@ -25,8 +25,15 @@ public final class SpotRuns {
     let inlineIdle: TimeInterval
     /// What each spot cost and used, day by day (G1, Z10).
     public nonisolated let usage: SpotUsage
-    /// Whether each new process of a spot runs in Careful mode, with only what its uses name (Z8).
-    @ObservationIgnored public var isCareful = false
+    /// Whether each process of a spot runs in Careful mode, with only what its uses name (Z8). A change starts each staying
+    /// script again in the new mode.
+    @ObservationIgnored public var isCareful = false {
+        didSet {
+            tokens.isCareful = isCareful
+            guard isCareful != oldValue else { return }
+            sheets.values.forEach { $0.restartStaying() }
+        }
+    }
     /// The token of each process and inline link that runs, by which the API knows a spot's call (Z2).
     public nonisolated let tokens = CallerTokens()
     @ObservationIgnored let now: () -> Date
@@ -326,7 +333,7 @@ public final class SpotRuns {
     /// A JavaScript spot of these runs, which loads at its first call and counts the CPU time of its thread (A26).
     func inline(_ spot: Spot, limit: TimeInterval? = nil) -> InlineScript {
         let id = spot.id
-        return InlineScript(spot: spot, api: api, tokens: tokens, limit: limit ?? readLimit, idle: inlineIdle) { [usage] seconds in
+        return InlineScript(spot: spot, api: api, tokens: tokens, careful: isCareful ? spot.uses : nil, limit: limit ?? readLimit, idle: inlineIdle) { [usage] seconds in
             usage.add(ProcessTime(cpu: seconds, wakeups: 0), to: id)
         }
     }

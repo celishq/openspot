@@ -276,6 +276,13 @@ public final class SpotRun {
         if new.headerState != header { takeState(lastAnswer) }
     }
 
+    /// Ends a staying script that runs, so that it starts again with the mode of the runs while something wants it (Z8).
+    func restartStaying() {
+        guard spot.mode.stays, link.isReachable else { return }
+        link.end()
+        link.settle()
+    }
+
     /// Whether a click must wait for the first answer, because the kind of this spot comes from what the script prints.
     public var awaitsAnswer: Bool {
         spot.readsState && !hasAsked

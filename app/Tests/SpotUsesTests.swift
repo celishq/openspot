@@ -89,6 +89,49 @@ final class SpotUsesTests: SpotRunsCase {
         XCTAssertEqual(toasts, [])
     }
 
+    /// A spot that runs the client with these words, and writes its code and its stderr.
+    private func caller(header: String = "", _ words: String) throws {
+        try script(header: header, "OPENSPOT_CONFIG='\(config.path)' '\(client.path)' \(words) > /dev/null 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
+    }
+
+    private func pressed() async throws -> (code: String, errors: String) {
+        try await press()
+        return (log("done").last ?? "", (try? String(contentsOfFile: path("errors"), encoding: .utf8)) ?? "")
+    }
+
+    func testASpotCannotChangeCarefulMode() async throws {
+        try caller(header: "uses=app", "app careful off")
+        _ = try scanned()
+
+        let (code, errors) = try await pressed()
+
+        XCTAssertEqual(code, "1")
+        XCTAssertEqual(errors, "Script cannot change Careful mode. Only you can, in Settings or with `openspot app careful on|off` in Terminal.\n")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: config.appendingPathComponent("config.toml").path))
+    }
+
+    func testInCarefulModeAnUndeclaredUseIsRefused() async throws {
+        runs.isCareful = true
+        try caller("setting list")
+        _ = try scanned()
+
+        let (code, errors) = try await pressed()
+
+        XCTAssertEqual(code, "1")
+        XCTAssertEqual(errors, "Careful mode stopped Script, because it read the settings of each spot without `uses=settings` in its header. Add it, or turn Careful mode off.\n")
+        XCTAssertEqual(toasts, [])
+    }
+
+    func testInCarefulModeADeclaredUseRuns() async throws {
+        runs.isCareful = true
+        try caller(header: "uses=settings", "setting list")
+        _ = try scanned()
+
+        let (code, _) = try await pressed()
+
+        XCTAssertEqual(code, "0")
+    }
+
     func testAnUnknownUseRefusesThePlugin() throws {
         try script(header: "uses=camera")
 

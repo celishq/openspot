@@ -13,11 +13,11 @@ struct BatchCalls {
                 let words = line.split { $0 == " " || $0 == "\t" }.map(String.init)
                 guard !words.isEmpty else { continue }
                 guard let call = CommandLineCall(arguments: words, environment: environment), call != .batch,
-                      let work = api.work(for: call, input: { "" }, environment: environment)
+                      api.work(for: call, input: { "" }, environment: environment) != nil,
+                      let work = api.work(for: api.admit(call, arguments: words, environment: environment), input: { "" }, environment: environment)
                 else {
                     return CommandAnswer(output: output, errors: "openspot batch cannot run `\(line)`, because it does not print data. Run it on its own.\n", code: 2)
                 }
-                api.note(call, arguments: words, environment: environment)
                 let answer = await work()
                 guard answer.code == 0 else { return CommandAnswer(output: output + answer.output, errors: answer.errors, code: answer.code) }
                 output += answer.output + (answer.output.isEmpty || answer.output.hasSuffix("\n") ? "" : "\n") + SheetFrameReader.mark + "\n"

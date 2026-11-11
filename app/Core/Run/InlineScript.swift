@@ -38,6 +38,8 @@ final class InlineScript: @unchecked Sendable {
     private let api: CommandAPI?
     private let tokens: CallerTokens?
     private let token: String?
+    /// The sandbox of Careful mode for each process that `openspot.call` starts, or nil to run them as the person.
+    private let careful: CarefulMode?
     private let limit: TimeInterval
     private let idle: TimeInterval
     /// Takes the CPU time of each call on the thread.
@@ -54,8 +56,10 @@ final class InlineScript: @unchecked Sendable {
     /// The variables of the call that runs, which `openspot.call` passes on.
     private var variables: [String: String] = [:]
 
-    /// `tokens` gives the script a token of its spot for as long as it lives (Z2).
-    init(spot: Spot, api: CommandAPI?, tokens: CallerTokens? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
+    /// `tokens` gives the script a token of its spot for as long as it lives (Z2). `careful` runs each process that it starts
+    /// in Careful mode with these uses (Z8).
+    init(spot: Spot, api: CommandAPI?, tokens: CallerTokens? = nil, careful: Set<SpotUse>? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
+        self.careful = careful.map(CarefulMode.init)
         url = spot.url
         name = spot.id
         self.api = api
@@ -211,8 +215,8 @@ final class InlineScript: @unchecked Sendable {
         guard let call = CommandLineCall(arguments: arguments, environment: environment) else {
             return CommandAnswer(errors: "openspot needs a call, such as calc solve 2+2.\n", code: 2)
         }
-        if let api, let work = api.work(for: call, input: { input ?? "" }, environment: environment) {
-            api.note(call, arguments: arguments, environment: environment)
+        if let api, api.work(for: call, input: { input ?? "" }, environment: environment) != nil,
+           let work = api.work(for: api.admit(call, arguments: arguments, environment: environment), input: { input ?? "" }, environment: environment) {
             let box = Box()
             let done = DispatchSemaphore(value: 0)
             Task.detached(priority: .userInitiated) {
@@ -225,11 +229,12 @@ final class InlineScript: @unchecked Sendable {
         return process(arguments, input: input, environment: environment)
     }
 
-    /// Runs the `openspot` command on the path, and returns its stdout and its code.
+    /// Runs the `openspot` command on the path, in Careful mode when it is on, and returns its stdout and its code.
     private func process(_ arguments: [String], input: String?, environment: [String: String]) -> CommandAnswer {
+        let words = (careful?.words(in: environment) ?? []) + ["/usr/bin/env", "openspot"] + arguments
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        process.arguments = ["openspot"] + arguments
+        process.executableURL = URL(fileURLWithPath: words[0])
+        process.arguments = Array(words.dropFirst())
         process.environment = environment
         let output = Pipe()
         let stdin = Pipe()

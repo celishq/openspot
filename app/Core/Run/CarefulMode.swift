@@ -1,9 +1,9 @@
 import Foundation
 
 /// The `sandbox-exec` words that run a spot's process in Careful mode (Z8): it reads everywhere, writes only to its data
-/// folder, the temp folders and the cache folder unless its uses name `files`, and the folder of screenshots, the Desktop
-/// and Movies too
-/// when they name `screen`. It reaches no network unless they name `network`.
+/// folder, the temp folders, `/private/tmp`, `/dev` and the cache folder unless its uses name `files`, and the folder of
+/// screenshots, the Desktop and Movies too when they name `screen`. It reaches no network unless they name `network`, and
+/// sends no Apple Event.
 struct CarefulMode: Equatable, Sendable {
     private static let program = "/usr/bin/sandbox-exec"
 
@@ -11,7 +11,7 @@ struct CarefulMode: Equatable, Sendable {
 
     /// The words before the program, with the data folder, the temp folder and the home of the process.
     func words(data: String, temp: String, home: String) -> [String] {
-        var rules = ["(version 1)", "(allow default)"]
+        var rules = ["(version 1)", "(allow default)", "(deny appleevent-send)"]
         if !uses.contains(.network) {
             rules += ["(deny network-outbound (remote ip))", "(deny network-inbound (local ip))"]
         }
@@ -29,6 +29,11 @@ struct CarefulMode: Equatable, Sendable {
             Self.program, "-D", "DATA=\(Self.real(data))", "-D", "TEMP=\(Self.real(temp))", "-D", "CACHE=\(Self.real(Self.cache))",
             "-D", "SHOTS=\(Self.real(shots))", "-D", "DESKTOP=\(Self.real(home + "/Desktop"))", "-D", "MOVIES=\(Self.real(home + "/Movies"))", "-p", rules.joined(separator: "\n")
         ]
+    }
+
+    /// The words before the program, with the data folder, the temp folder and the home that an environment names.
+    func words(in environment: [String: String]) -> [String] {
+        words(data: environment["OPENSPOT_DATA"] ?? NSTemporaryDirectory(), temp: environment["TMPDIR"] ?? NSTemporaryDirectory(), home: environment["HOME"] ?? NSHomeDirectory())
     }
 
     /// The cache folder of the person, which tools such as `swift` write to.

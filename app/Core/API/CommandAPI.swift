@@ -25,15 +25,24 @@ public final class CommandAPI: @unchecked Sendable {
         reminders = RemindersCalls(mac: mac)
     }
 
-    /// Tells the runs of a spot's call that uses a power, so that a use that its header does not name shows (Z4). It does
-    /// nothing for the person's call, for a refused call, or for a call that needs no use.
-    public func note(_ call: CommandLineCall, arguments: [String], environment: [String: String]) {
+    /// The call as it may run, after a look at its caller. A spot never changes Careful mode, and while that mode is on, a
+    /// spot's call of a use that its header does not name is refused (Z8). Else a spot's call of a use is told to the runs,
+    /// so that an undeclared one shows (Z4). The person's call passes as it is.
+    public func admit(_ call: CommandLineCall, arguments: [String], environment: [String: String]) -> CommandLineCall {
         switch call {
-        case .refused, .unknown: return
+        case .refused, .unknown: return call
         default: break
         }
-        guard let runs, let caller = runs.tokens.caller(of: environment), let power = SpotPower(arguments: arguments, of: caller.id) else { return }
+        guard let runs, let caller = runs.tokens.caller(of: environment) else { return call }
+        if case .appCareful = call, !caller.isBuiltIn {
+            return .refused("\(caller.name) cannot change Careful mode. Only you can, in Settings or with `openspot app careful on|off` in Terminal.")
+        }
+        guard let power = SpotPower(arguments: arguments, of: caller.id) else { return call }
+        if runs.tokens.isCareful, !caller.uses.contains(power.use) {
+            return .refused("Careful mode stopped \(caller.name), because it \(power.words) without `uses=\(power.use.rawValue)` in its header. Add it, or turn Careful mode off.")
+        }
         Task { @MainActor in runs.used(power, by: caller) }
+        return call
     }
 
     /// The work that answers a call, or nil for a call that runs in a process of its own: one that draws, waits for the

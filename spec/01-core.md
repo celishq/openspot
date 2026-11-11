@@ -603,8 +603,8 @@ folder window of macOS and prints the folder that the person picks, or nothing a
 
 ## Trust
 
-A spot runs with the person's rights, as any program that they start (Z1). Openspot asks nothing during daily use and
-blocks no call. It shows what a spot can do at the moment of trust, which is an add or an update, and it shows each use of
+A spot runs with the person's rights, as any program that they start (Z1). Openspot asks nothing during daily use, and
+blocks a call only in Careful mode. It shows what a spot can do at the moment of trust, which is an add or an update, and it shows each use of
 a power after it happens, so that the person can undo it.
 
 ```sh
@@ -635,7 +635,7 @@ socket of the API is a file with mode `0600`, so only the person's own processes
 
 Every other call, such as `calc solve`, `setting get` of its own spot or `spot stats`, needs no use.
 
-A spot's call that needs a use that its header does not name still runs (Z4). Openspot then shows one calm toast for each
+A spot's call that needs a use that its header does not name still runs, unless Careful mode is on (Z4). Openspot then shows one calm toast for each
 spot, use and day, such as ``Coffee quit Openspot without `uses=app` in its header. Add it to stop this note.`` The person's
 own calls never show it. `openspot check` reports nothing for a missing use, because only a run shows which calls a spot
 makes.
@@ -653,11 +653,14 @@ When one grew, the review of a `.spot` file starts with `This version adds: netw
 line and changes nothing until it runs again with `--yes`.
 
 Careful mode is a setting of the person, off by default, which Settings and `openspot app careful on|off` turn on and off,
-and which `app status` shows as `careful` (Z8). It runs each process of a spot under `sandbox-exec`: no
-network unless `uses=network`, writes only to its data folder, the temp folder and the cache folder unless `uses=files`,
-also to the folder of screenshots, the Desktop and Movies with `uses=screen`, and reads everywhere. A process that stays keeps the
-mode that it started in until it starts again. An inline spot has no files and no network in either mode. Without Careful mode, the data folder alone is no
-boundary: a spot reads and writes each file that the person can (Z9).
+and which `app status` shows as `careful` (Z8). No other spot can change it. It runs each process of a spot, and each
+process that an inline spot starts with `openspot.call`, under `sandbox-exec`: no network unless `uses=network`, writes
+only to its data folder, the temp folder, `/private/tmp`, `/dev` and the cache folder unless `uses=files`, also to the
+folder of screenshots, the Desktop and Movies with `uses=screen`, no Apple Event, and reads everywhere. A spot's call that
+needs a use that its header does not name fails, such as ``Careful mode stopped Coffee, because it quit Openspot without
+`uses=app` in its header. Add it, or turn Careful mode off.`` A change of the mode starts each staying process again. An
+inline spot has no files and no network in either mode. Without Careful mode, the data folder alone is no boundary: a spot
+reads and writes each file that the person can (Z9).
 
 ### Stats
 
