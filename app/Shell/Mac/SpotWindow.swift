@@ -41,20 +41,19 @@ struct SpotWindow {
             .map { String(Int($0.rounded())) }.joined(separator: " ")) + "\n"
     }
 
-    /// Puts the window at its target in one change. An app that draws a web page shows a new size only once it has
-    /// drawn it, but a new place at once. So a window that changes size waits out of sight until the screen shows its
-    /// new size, then comes to its target. A last move holds each edge the target touches when the app keeps another size.
+    /// Glides the window from its frame to its target over a fifth of a second, so it flies there and takes its shape
+    /// on the way. An app that draws a web page shows a new size only once it has drawn it, so the last size is read
+    /// back only after the screen shows it. A last move then holds each edge the target touches when the app keeps
+    /// another size.
     func move(_ move: WindowMove) throws {
         let window = frame
         let centre = CGPoint(x: window.midX, y: window.midY)
         let area = move.needsArea ? Self.area(holding: centre) : .zero
         let target = move.target(window: window, area: area)
-        if target.size != window.size {
-            try set(kAXPositionAttribute, .cgPoint, Self.aside)
-            try set(kAXSizeAttribute, .cgSize, target.size)
-            settle(at: target.size)
-        }
+        glide(from: window, to: target)
         try set(kAXPositionAttribute, .cgPoint, target.origin)
+        try set(kAXSizeAttribute, .cgSize, target.size)
+        settle(at: target.size)
         let size = frame.size
         guard size != target.size else { return }
         let bounds = move.needsArea ? area : Self.area(holding: CGPoint(x: target.midX, y: target.midY))
@@ -62,12 +61,23 @@ struct SpotWindow {
         if origin != target.origin { try set(kAXPositionAttribute, .cgPoint, origin) }
     }
 
-    /// The bottom right corner of all screens, where a window lies out of sight.
-    private static var aside: CGPoint {
-        let screens = NSScreen.screens
-        let top = screens.first?.frame.height ?? 0
-        let all = screens.reduce(CGRect.null) { $0.union(CGRect(x: $1.frame.minX, y: top - $1.frame.maxY, width: $1.frame.width, height: $1.frame.height)) }
-        return CGPoint(x: all.maxX, y: all.maxY)
+    /// Sets the frames between two frames, eased out, as fast as the app takes them, until the time is up.
+    private func glide(from start: CGRect, to end: CGRect) {
+        guard start != end else { return }
+        let duration = 0.2
+        let begin = Date()
+        while true {
+            let time = Date().timeIntervalSince(begin) / duration
+            guard time < 1 else { return }
+            let step = 1 - pow(1 - time, 3)
+            let x = start.minX + (end.minX - start.minX) * step
+            let y = start.minY + (end.minY - start.minY) * step
+            let width = start.width + (end.width - start.width) * step
+            let height = start.height + (end.height - start.height) * step
+            try? set(kAXSizeAttribute, .cgSize, CGSize(width: width.rounded(), height: height.rounded()))
+            try? set(kAXPositionAttribute, .cgPoint, CGPoint(x: x.rounded(), y: y.rounded()))
+            usleep(4_000)
+        }
     }
 
     /// Waits, for a second at most, until the window server shows the window at this size.
