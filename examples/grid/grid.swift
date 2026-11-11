@@ -242,6 +242,9 @@ final class Grid: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var shade: Shade?
     private var monitor: Any?
     private var sources: [DispatchSourceProtocol] = []
+    private var shownApp: pid_t?
+    private var pending: Pending?
+    private var pendingEnd = Date()
 
     init(stays: Bool, host: pid_t?) {
         self.stays = stays
@@ -271,6 +274,7 @@ final class Grid: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private func show(visible: Bool = true) {
         guard board == nil else { return }
         let front = Front.read()
+        shownApp = front.app?.processIdentifier
         let area = front.area
         let pad: CGFloat = 16, head: CGFloat = 78
         let cellsWidth = width - pad * 2
@@ -366,28 +370,59 @@ final class Grid: NSObject, NSApplicationDelegate, NSWindowDelegate {
             exit(0)
         }
         guard let pick else { return }
-        Self.move(to: pick)
+        pending = nil
+        move(to: pick, in: shownApp)
     }
 
-    /// Moves the front window through Openspot. When Openspot cannot, as without Accessibility, it opens the
-    /// settings link that Openspot prints, or else beeps, so a failure never passes in silence.
-    private static func move(to pick: Pick) {
+    /// Moves the front window through Openspot. Without Accessibility it opens the settings link that Openspot prints,
+    /// keeps the pick, and moves the window once the person allows it and comes back to the same app. Any other failure
+    /// beeps, so it never passes in silence.
+    private func move(to pick: Pick, in app: pid_t?) {
         let move = Process()
         let output = Pipe()
         move.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         move.arguments = ["openspot", "window", "move", pick.text]
         move.standardOutput = output
         move.standardError = output
-        move.terminationHandler = { done in
-            guard done.terminationStatus != 0 else { return }
+        move.terminationHandler = { [weak self] done in
             let text = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-            let link = text.split(separator: "\n").first { $0.hasPrefix("link=") }.flatMap { URL(string: String($0.dropFirst(5))) }
-            DispatchQueue.main.async {
-                if let link { NSWorkspace.shared.open(link) } else { NSSound.beep() }
-            }
+            DispatchQueue.main.async { self?.moved(pick, in: app, status: done.terminationStatus, text: text) }
         }
         do { try move.run() } catch { NSSound.beep() }
     }
+
+    private func moved(_ pick: Pick, in app: pid_t?, status: Int32, text: String) {
+        let waited = pending != nil
+        pending = nil
+        guard status != 0 else { return }
+        let link = text.split(separator: "\n").first { $0.hasPrefix("link=") }.flatMap { URL(string: String($0.dropFirst(5))) }
+        guard let link, let app else { return waited ? () : NSSound.beep() }
+        if !waited { NSWorkspace.shared.open(link) }
+        pending = Pending(pick: pick, app: app, end: waited ? pendingEnd : Date().addingTimeInterval(180))
+        pendingEnd = pending!.end
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.retry() }
+    }
+
+    /// Tries the kept pick again while its app is in front, until it moves or three minutes pass.
+    private func retry() {
+        guard let pending, board == nil else { return }
+        guard Date() < pending.end else {
+            self.pending = nil
+            return
+        }
+        guard NSWorkspace.shared.frontmostApplication?.processIdentifier == pending.app else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.retry() }
+            return
+        }
+        move(to: pending.pick, in: pending.app)
+    }
+}
+
+/// A pick that waits for Accessibility, with the app whose window it moves and the time it gives up.
+struct Pending {
+    let pick: Pick
+    let app: pid_t
+    let end: Date
 }
 
 let arguments = Array(CommandLine.arguments.dropFirst())

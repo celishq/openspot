@@ -2,11 +2,14 @@ import AppKit
 import ApplicationServices
 import OpenspotCore
 
+/// The number of the window server for the window of an Accessibility element.
+@_silgen_name("_AXUIElementGetWindow")
+private func windowNumber(_ element: AXUIElement, _ number: UnsafeMutablePointer<CGWindowID>) -> AXError
+
 /// The focused window of the front app, read and moved through Accessibility for the `openspot window` commands.
 /// Frames are in points from the top left of the main screen, as Accessibility gives them.
 @MainActor
 struct SpotWindow {
-    private let owner: AXUIElement
     private let element: AXUIElement
 
     /// The focused window of the front app. It fails without Accessibility, or when that app shows no window.
@@ -23,7 +26,7 @@ struct SpotWindow {
             }
             throw PluginError.fault("Openspot cannot find a window of \(app.localizedName ?? "the front app").")
         }
-        return SpotWindow(owner: owner, element: window as! AXUIElement)
+        return SpotWindow(element: window as! AXUIElement)
     }
 
     var frame: CGRect {
@@ -38,19 +41,18 @@ struct SpotWindow {
             .map { String(Int($0.rounded())) }.joined(separator: " ")) + "\n"
     }
 
-    /// Moves the window to its target first and sizes it there, so the edge of the screen never cuts the new size.
-    /// An app with enhanced accessibility animates each change, so it stops at the old size on the way. The move turns
-    /// that off for its length.
+    /// Sizes the window, waits until the screen shows that size, then moves it. An app that draws a web page shows a
+    /// new size only once it has drawn it, so a move first would show the old size at the new place. A second size
+    /// takes back what the edge of the screen cut from the first, and the last move holds each edge the target touches.
     func move(_ move: WindowMove) throws {
-        let enhanced = Self.attribute(owner, Self.enhanced) as? Bool == true
-        if enhanced { AXUIElementSetAttributeValue(owner, Self.enhanced as CFString, kCFBooleanFalse) }
-        defer { if enhanced { AXUIElementSetAttributeValue(owner, Self.enhanced as CFString, kCFBooleanTrue) } }
         let window = frame
         let centre = CGPoint(x: window.midX, y: window.midY)
         let area = move.needsArea ? Self.area(holding: centre) : .zero
         let target = move.target(window: window, area: area)
-        try set(kAXPositionAttribute, .cgPoint, target.origin)
         try set(kAXSizeAttribute, .cgSize, target.size)
+        settle(at: target.size)
+        try set(kAXPositionAttribute, .cgPoint, target.origin)
+        if frame.size != target.size { try set(kAXSizeAttribute, .cgSize, target.size) }
         let size = frame.size
         guard size != target.size else { return }
         let bounds = move.needsArea ? area : Self.area(holding: CGPoint(x: target.midX, y: target.midY))
@@ -58,7 +60,21 @@ struct SpotWindow {
         if origin != target.origin { try set(kAXPositionAttribute, .cgPoint, origin) }
     }
 
-    private static let enhanced = "AXEnhancedUserInterface"
+    /// Waits, for a second at most, until the window server shows the window at this size.
+    private func settle(at size: CGSize) {
+        var id: CGWindowID = 0
+        guard windowNumber(element, &id) == .success else { return }
+        let end = Date().addingTimeInterval(1)
+        while Date() < end {
+            let rows = CGWindowListCopyWindowInfo(.optionIncludingWindow, id) as? [[String: Any]]
+            if let bounds = rows?.first?[kCGWindowBounds as String] as! CFDictionary?,
+               let shown = CGRect(dictionaryRepresentation: bounds),
+               abs(shown.width - size.width) < 1, abs(shown.height - size.height) < 1 {
+                return
+            }
+            usleep(4_000)
+        }
+    }
 
     /// The usable area of the screen that holds this point, or of the main screen.
     private static func area(holding point: CGPoint) -> CGRect {
