@@ -6,23 +6,16 @@ import OpenspotCore
 /// from the Updates spot. A build with no update key has none of this.
 @MainActor
 final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelegate {
-    private(set) var spot: UpdateSpot!
     /// The version of the downloaded update that waits to install.
     private(set) var ready: String?
     private var controller: SPUStandardUpdaterController?
     private var install: (() -> Void)?
-    private let onReady: @MainActor () -> Void
+    private let onReady: @MainActor (String) -> Void
 
-    init?(runningWork: @escaping @MainActor () -> Int, onReady: @escaping @MainActor () -> Void) {
+    init?(onReady: @escaping @MainActor (String) -> Void) {
         guard let key = Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String, !key.isEmpty else { return nil }
         self.onReady = onReady
         super.init()
-        spot = UpdateSpot(
-            version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "",
-            runningWork: { await runningWork() },
-            check: { [weak self] in await self?.check() },
-            restart: { [weak self] in await self?.restart() }
-        )
         controller = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: self, userDriverDelegate: self)
     }
 
@@ -40,10 +33,7 @@ final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelega
         MainActor.assumeIsolated {
             install = handler
             ready = version
-            Task {
-                await spot.take(ready: version)
-                onReady()
-            }
+            onReady(version)
         }
         return true
     }

@@ -205,7 +205,6 @@ public final class SpotsModel {
     public var isOpenForDrag = false
     /// Whether a drop just opened a sheet, which holds the focus while the app that the drag came from lets go of it (D8).
     public var isSettlingDrop = false
-    public var updateSpot: UpdateSpot?
 
     public var entryKey = Shortcut.standard
     private var isChainHeld = false
@@ -323,7 +322,7 @@ public final class SpotsModel {
         let config = files.config.read()
         host.applyConfig(config)
         let folder = files.folder(config)
-        let shipped = host.shippedSpots(folder: folder, config: files.config, update: updateSpot, offersLogin: isFirstLaunch)
+        let shipped = host.shippedSpots(folder: folder, config: files.config, offersLogin: isFirstLaunch)
             + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
         var scan = pluginScan.look(at: folder, shipped: shipped)
         let prompt = shipped.lazy.compactMap(\.agentPrompt).first
@@ -445,10 +444,12 @@ public final class SpotsModel {
         }
     }
 
-    /// A downloaded update waits, so the spot that reads on an update reads now and is on the grid before the panel next
-    /// opens.
-    public func updateIsReady() {
-        sheets.values.first { $0.command.readsOnUpdate }?.read(need: .change)
+    /// A downloaded update waits, so each spot that lists `app.update` in its read reads now, wanted or not, and is on the
+    /// grid before the panel next opens.
+    public func updateIsReady(_ version: String) {
+        for sheet in sheets.values where sheet.command.read?.has(.event(SpotEvent.appUpdate)) == true {
+            sheet.read(need: .change, reason: ReadReason(event: SpotEvent.appUpdate, value: version))
+        }
     }
 
     /// Stops each call as the app quits.

@@ -75,6 +75,17 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertNil(SpotSheetCard.of("list", in: model)?.look)
     }
 
+    func testADownloadedUpdateReadsEachSpotThatListsItWhileThePanelIsHidden() async throws {
+        let seen = folder.appendingPathComponent("seen").path
+        try script("news", header: "read=panel,app.update", "[ \"$OPENSPOT_REASON\" = app.update ] && printf '%s' \"$OPENSPOT_VALUE\" > '\(seen)'; printf 'title=News\n'")
+        try script("other", header: "read=panel,app.front", "printf 'title=Other\n'")
+        model.reload()
+
+        model.updateIsReady("0.3.0")
+
+        try await wait("the read of the update") { (try? String(contentsOfFile: seen, encoding: .utf8)) == "0.3.0" }
+    }
+
     func testAPointOfTheGridFindsTheCardWhosePlaceHoldsIt() throws {
         try script("one", header: "title=One", "")
         try script("two", header: "title=Two", "")

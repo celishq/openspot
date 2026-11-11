@@ -191,21 +191,18 @@ final class SpotArrangementTests: XCTestCase {
 
         XCTAssertEqual(Spot(id: "a", name: "A", url: url).sizes.count, 5)
         XCTAssertEqual(Spot(id: "w", name: "W", url: url, kind: .widget).sizes, [])
-        let updates = ShippedSpot.commands(folder: url, guide: url, app: "", update: UpdateSpot(version: "1", runningWork: { 0 }, check: {}, restart: {}))
-        XCTAssertFalse(updates[0].sizes.contains(.small))
     }
 
     func testOnlyTheBuiltInsThatSayItChangeKeysReadOnAnUpdateOrTakeAShake() {
         let url = URL(fileURLWithPath: "/bin/true")
-        let commands = ShippedSpot.commands(folder: url, guide: url, app: "", update: UpdateSpot(version: "1", runningWork: { 0 }, check: {}, restart: {}))
+        let commands = ShippedSpot.commands(folder: url, guide: url, app: "")
         let settings = commands.first { $0.id == ShippedSpot.settingsID }
-        let updates = commands.first { $0.id == "openspot/updates" }
+        let spots = commands.first { $0.id == ShippedSpot.spotsID }
 
         XCTAssertEqual(commands.filter(\.setsKeys).map(\.id), [ShippedSpot.settingsID])
-        XCTAssertEqual(commands.filter(\.readsOnUpdate).map(\.id), ["openspot/updates"])
         XCTAssertEqual(settings?.shipped?.takesShake("key:apps:open"), true)
         XCTAssertEqual(settings?.shipped?.takesShake("setting:apps:size"), false)
-        XCTAssertEqual(updates?.shipped?.takesShake("key:apps:open"), false)
+        XCTAssertEqual(spots?.shipped?.takesShake("key:apps:open"), false)
     }
 
     func testSpotsOpensNewSpotFromARowReviewsCodeAndChangesSpotsWhileSettingsChangesASetting() {

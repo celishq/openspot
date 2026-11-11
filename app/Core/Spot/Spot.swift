@@ -60,12 +60,8 @@ public struct Spot: Equatable, Sendable {
     public let settings: [CommandOffer]
     /// The Settings rows of its own commands, which its sheet shows. Nil for a spot that draws its own sheet.
     public private(set) var keyList: SettingsSpot?
-    /// The sizes that a person can prefer for its card, when it offers fewer than all.
-    private let sizeChoices: [SpotSize]?
     /// Whether its own sheet changes the keys in the config file.
     private let changesKeys: Bool
-    /// Whether it reads again when an update of the app is ready.
-    public let readsOnUpdate: Bool
     /// The spot whose sheet a pick of each of these rows opens, by the row's ID.
     public let rowOpens: [String: String]
     /// The action that shows the code of the core spot that a row names.
@@ -115,9 +111,7 @@ public struct Spot: Equatable, Sendable {
         image: String? = nil,
         glyph: String? = nil,
         view: String? = nil,
-        sizes: [SpotSize]? = nil,
         setsKeys: Bool = false,
-        readsOnUpdate: Bool = false,
         rowOpens: [String: String] = [:],
         reviewAction: String? = nil,
         changesSpots: Bool = false,
@@ -131,9 +125,7 @@ public struct Spot: Equatable, Sendable {
         self.rowOpens = rowOpens
         self.reviewAction = reviewAction
         self.changesSpots = changesSpots
-        sizeChoices = sizes
         changesKeys = setsKeys
-        self.readsOnUpdate = readsOnUpdate
         self.id = id
         self.name = name
         self.url = url
@@ -180,7 +172,7 @@ public struct Spot: Equatable, Sendable {
 
     /// The sizes a person can prefer for its card. A widget has the size of its layout.
     public var sizes: [SpotSize] {
-        kind == .widget ? [] : sizeChoices ?? SpotSize.all
+        kind == .widget ? [] : SpotSize.all
     }
 
     /// The SF Symbol of one of its commands: the command's own icon when that is a symbol, or else its own symbol.

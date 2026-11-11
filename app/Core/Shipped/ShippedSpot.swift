@@ -5,15 +5,14 @@ public enum ShippedSpot: Equatable, Sendable {
     case spots(CatalogSpot)
     case new(NewSpot)
     case settings(SettingsSpot)
-    case updates(UpdateSpot)
     case review(ReviewSpot)
     /// The sheet of a file that does not load.
     case fault(FaultSpot)
 
     /// The commands of the shipped spots, in the order of the grid.
-    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil, core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil, offersLogin: Bool = false) -> [Spot] {
+    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil, offersLogin: Bool = false) -> [Spot] {
         let prompt = AgentPrompt(folder: folder, guide: guide, app: app)
-        var commands = [
+        return [
             Spot(
                 id: spotsID,
                 name: "Spots",
@@ -59,24 +58,6 @@ public enum ShippedSpot: Equatable, Sendable {
                 opensWithNewKey: true
             )
         ]
-        if let update {
-            commands.insert(
-                Spot(
-                    id: "openspot/updates",
-                    name: "Updates",
-                    url: folder,
-                    symbol: "arrow.triangle.2.circlepath",
-                    read: .panel,
-                    order: .min,
-                    shipped: .updates(update),
-                    isOnGrid: false,
-                    sizes: SpotSize.all.filter { $0.columns > 1 },
-                    readsOnUpdate: true
-                ),
-                at: 0
-            )
-        }
-        return commands
     }
 
     /// The ID of the list of spots that a person can turn on.
@@ -124,7 +105,6 @@ public enum ShippedSpot: Equatable, Sendable {
         case .spots(let catalog): try catalog.answer(arguments)
         case .new(let new): try await new.answer(arguments, input: input)
         case .settings(let settings): try settings.answer(arguments)
-        case .updates(let update): try await update.answer(arguments)
         case .review(let review): try review.answer(arguments)
         case .fault(let fault): try await fault.answer(arguments)
         }

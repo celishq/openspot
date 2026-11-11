@@ -14,6 +14,8 @@ public enum SpotEvent: Equatable, Sendable {
     public static let clipboard = "clipboard"
     /// The event that the Mac raises when the screen wakes (B2).
     public static let screenWake = "screen.wake"
+    /// The event that the app raises when it has downloaded an update, with its version as the value (B2).
+    public static let appUpdate = "app.update"
 
     /// Whether a word names an event: `clipboard`, or words of letters, digits, `-` and `_` joined by dots, such as
     /// `music.track`, that start with a letter.

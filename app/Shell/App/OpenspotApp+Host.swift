@@ -97,13 +97,12 @@ extension OpenspotApp: SpotsHost {
         await SpotIconStore.shared.prepare(items)
     }
 
-    func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?, offersLogin: Bool) -> [Spot] {
+    func shippedSpots(folder: PluginFolder, config: ConfigFile, offersLogin: Bool) -> [Spot] {
         ShippedSpot.commands(
             folder: folder.url,
             guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder.url,
             app: Bundle.main.executablePath ?? "",
             config: config,
-            update: update,
             core: folder.core,
             login: AppLogin.item,
             link: AppCommandLink.item,

@@ -139,11 +139,12 @@ card on the grid until the person shows it (F7).
 | an event | Each time the event occurs (B1).                                    |
 
 An event is a word with a dot, or `clipboard`. Openspot raises `app.front` when another app comes to the front, with its
-bundle ID as the value, `clipboard` when the clipboard changes and `screen.wake` when the screen wakes (B2). `openspot
+bundle ID as the value, `clipboard` when the clipboard changes, `screen.wake` when the screen wakes, and `app.update` when it
+has downloaded an update, with its version as the value (B2). `openspot
 event emit <event> [value]` raises any event in the running app, from a script or from a terminal, and each spot that
 lists it reads (B3). With the app closed, it fails and changes nothing. `OPENSPOT_REASON` gives the event, and
 `OPENSPOT_VALUE` its value (B4). A spot that lists an event reads only while something wants it, as for a number, and a spot that lists only events reads
-once when something starts to want it (B5).
+once when something starts to want it (B5). `app.update` reads each spot that lists it at once, wanted or not.
 
 ## Modes
 
