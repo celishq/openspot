@@ -12,6 +12,7 @@ final class InlineLink: ScriptLink {
         didSet { if let run { _ = current(for: run) } }
     }
     let holdsScript = false
+    let keepsState = false
     let isReachable = true
     private let runs: SpotRuns
     private var script: InlineScript?

@@ -10,6 +10,7 @@ final class StayLink: ScriptLink {
     private static let failureWindow: TimeInterval = 60
 
     weak var run: SpotRun?
+    let keepsState = true
     private let runs: SpotRuns
     private var script: ScriptProcess?
     /// Each read and search that the script has not ended yet, by its call number.
