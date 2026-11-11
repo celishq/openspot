@@ -226,8 +226,7 @@ extension SpotsModel {
             command: target.entry.command,
             item: target.item,
             showsPrimary: !isOpenList || target.item != nil,
-            extras: extras(on: target),
-            showsEdit: openList == nil && target.item == nil
+            extras: extras(on: target)
         )
     }
 
@@ -252,7 +251,7 @@ extension SpotsModel {
     public var hint: String {
         if recording != nil, isEditing { return "Press a letter   ⌫ Remove   Esc Cancel" }
         if recording != nil { return "Esc Cancel" }
-        if isEditing { return "S Size   H \(selectedEntry?.isOnGrid == false ? "Show" : "Hide")   L Letter   ⇧ Arrows Move   Esc Done" }
+        if isEditing { return "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done" }
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
         if let panel = openPanel, !panel.showsRows || panel.drawsKeys { return panel.hint { work(of: $0) != nil } }
         let keys = target.flatMap { target in
@@ -288,9 +287,7 @@ extension SpotsModel {
             return
         }
         closeMenu()
-        if row.opensEdit {
-            beginEditing()
-        } else if let action = row.action {
+        if let action = row.action {
             run(action, on: target)
         } else if let item = target.item {
             pick(item, of: target.entry)
@@ -310,8 +307,6 @@ extension SpotsModel {
             }
         } else if action == .share {
             share(target.entry)
-        } else if action.id == target.entry.command.reviewAction, let item = target.item {
-            reviewCore(item)
         } else if action.id == CommandAction.removeID {
             remove(target.entry)
         } else if action == .edit {
@@ -324,7 +319,6 @@ extension SpotsModel {
         } else if action.isForm {
             openForm(action, on: target)
         } else if action.after == .stay {
-            if target.entry.command.changesSpots { spotsChanged = true }
             sheets[target.entry.id]?.run(action, item: target.item)
         } else if let item = target.item {
             pick(item, of: target.entry, action: action)

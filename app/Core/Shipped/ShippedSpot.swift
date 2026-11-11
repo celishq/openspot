@@ -2,7 +2,8 @@ import Foundation
 
 /// A spot that ships with the app, so that it shows whatever the plugins folder holds.
 public enum ShippedSpot: Equatable, Sendable {
-    case spots(CatalogSpot)
+    /// The spot that opens the store, which runs no call.
+    case spots
     case new(NewSpot)
     case settings(SettingsSpot)
     case updates(UpdateSpot)
@@ -12,23 +13,20 @@ public enum ShippedSpot: Equatable, Sendable {
     case quit(QuitSpot)
 
     /// The commands of the shipped spots, in the order of the grid.
-    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil, core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil, offersLogin: Bool = false, quit: QuitSpot? = nil) -> [Spot] {
+    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil, core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil, quit: QuitSpot? = nil) -> [Spot] {
         let prompt = AgentPrompt(folder: folder, guide: guide, app: app)
         var commands = [
             Spot(
                 id: spotsID,
                 name: "Spots",
                 url: folder,
-                kind: .list,
                 size: .small,
                 symbol: "puzzlepiece.extension",
-                subtitle: "Turn on",
-                read: .sheet,
+                subtitle: "Edit Spots",
                 order: 1,
-                shipped: .spots(CatalogSpot(folder: folder, core: core, config: config, login: offersLogin ? login : nil)),
-                rowOpens: [CatalogSpot.buildRun: newID],
-                reviewAction: CatalogSpot.reviewID,
-                changesSpots: true
+                shipped: .spots,
+                keywords: ["edit spots"],
+                opensStore: true
             ),
             Spot(
                 id: Self.settingsID,
@@ -83,7 +81,7 @@ public enum ShippedSpot: Equatable, Sendable {
         return commands
     }
 
-    /// The ID of the list of spots that a person can turn on.
+    /// The ID of the spot that opens the store of Edit Spots.
     public static let spotsID = "openspot/spots"
     public static let settingsID = "openspot/settings"
 
@@ -128,7 +126,7 @@ public enum ShippedSpot: Equatable, Sendable {
     /// Answers one call with the text a script would print.
     func answer(_ arguments: [String], input: String?) async throws -> String {
         switch self {
-        case .spots(let catalog): try catalog.answer(arguments)
+        case .spots: ""
         case .new(let new): try await new.answer(arguments, input: input)
         case .settings(let settings): try settings.answer(arguments)
         case .updates(let update): try await update.answer(arguments)

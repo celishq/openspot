@@ -56,6 +56,11 @@ public struct SpotFiles {
         folder(config.read())
     }
 
+    /// The folder of the packages that the person published to the store.
+    public var store: URL {
+        PluginFolder.config(environment: environment, home: home).appendingPathComponent("store", isDirectory: true)
+    }
+
     /// The record of the calls of each spot, beside the plugins folder.
     public var log: CallLog {
         CallLog(folder: PluginFolder.config(environment: environment, home: home).appendingPathComponent("logs", isDirectory: true))

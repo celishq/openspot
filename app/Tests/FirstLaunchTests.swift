@@ -76,24 +76,4 @@ final class FirstLaunchTests: XCTestCase {
         XCTAssertEqual(Shortcut.standard.openHint, "Press `⌃Space` to open Openspot")
         XCTAssertEqual(try XCTUnwrap(Shortcut(text: "option+k")).openHint, "Press `⌥K` to open Openspot")
     }
-
-    func testTheFirstLaunchListOffersTheLoginRowAndAPickTurnsItOn() throws {
-        final class Fake: @unchecked Sendable { var isOn = false }
-        let fake = Fake()
-        let item = LoginItem(isOn: { fake.isOn }, set: { fake.isOn = $0 })
-        let catalog = CatalogSpot(folder: plugins, core: nil, config: file, login: item)
-
-        let rows = PluginOutput(text: try catalog.answer(["read"])).items
-        XCTAssertEqual(rows.map(\.run), [CatalogSpot.buildRun, LoginItem.run])
-        XCTAssertEqual(rows.last?.hides, [CatalogSpot.reviewID])
-
-        XCTAssertEqual(try catalog.answer(["open", LoginItem.run]), "")
-        XCTAssertTrue(fake.isOn)
-    }
-
-    func testTheNormalListHasNoLoginRow() throws {
-        let catalog = CatalogSpot(folder: plugins, core: nil, config: file)
-
-        XCTAssertEqual(PluginOutput(text: try catalog.answer(["read"])).items.map(\.run), [CatalogSpot.buildRun])
-    }
 }

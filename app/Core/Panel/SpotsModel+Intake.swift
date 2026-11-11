@@ -100,22 +100,8 @@ extension SpotsModel {
         closeList(moving: isShown)
         endReview()
         do {
-            show(try ReviewSpot(spot: SharedSpot(contentsOf: url), folder: files.folder.url))
+            show(try ReviewSpot(contents: SpotPackage.open(at: url), folder: files.folder.url))
             if urls.count > 1 { host.notify("Openspot installs one spot at a time.") }
-        } catch {
-            host.notify(Self.reason(error))
-        }
-    }
-
-    /// Shows the text of a core spot, which is on or off, with no way to add it.
-    public func reviewCore(_ item: SpotItem) {
-        let folder = files.folder
-        do {
-            let place = PluginFolder(url: folder.url, core: folder.core, enabled: folder.enabled.union([item.run]), disabled: folder.disabled)
-            let scan = try place.scan()
-            guard let command = scan.commands.first(where: { place.isCore($0) && PluginFolder.coreID(of: $0) == item.run }) else { return }
-            closeList(moving: isShown)
-            show(try ReviewSpot(spot: SharedSpot(sharing: command, from: scan), folder: folder.url, canAdd: false))
         } catch {
             host.notify(Self.reason(error))
         }
