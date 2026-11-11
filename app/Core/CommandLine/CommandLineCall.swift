@@ -451,7 +451,7 @@ public enum CommandLineCall: Equatable, Sendable {
             switch word {
             case "--days":
                 guard index + 1 < words.count, let number = Int(words[index + 1]), number > 0 else { return nil }
-                days = number
+                days = min(number, SpotUsage.keptDays)
                 index += 1
             case spotWord:
                 guard index + 1 < words.count else { return nil }

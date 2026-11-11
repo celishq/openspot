@@ -38,22 +38,26 @@ public enum SpotSource: Equatable, Sendable {
     }
 
     /// Puts the spot in the folder, a git source at `commit` or else at its newest commit, and returns the commit and the
-    /// paths at the top of the folder that it took. A path that is there already is a fault, unless `replacing` names it,
-    /// and then the new version takes its place. `check` sees the whole spot in a work folder first, and a throw from it,
-    /// as any fault, leaves the folder as it was.
-    func add(to folder: URL, at commit: String?, replacing: [String] = [], check: (URL, [String]) throws -> Void = { _, _ in }) async throws -> (commit: String?, paths: [String]) {
+    /// paths at the top of the folder that it took. A path that is there already is a fault, unless `replacing` names it:
+    /// then `discard` takes each replaced path, and each one the new version lacks, as the Trash does. `check` sees the whole
+    /// spot in a work folder first, and a throw from it, as any fault, leaves the folder as it was.
+    func add(
+        to folder: URL,
+        at commit: String?,
+        replacing: [String] = [],
+        discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) },
+        check: (URL, [String]) throws -> Void = { _, _ in }
+    ) async throws -> (commit: String?, paths: [String]) {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let work = try FileManager.default.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: folder, create: true)
         defer { try? FileManager.default.removeItem(at: work) }
         let (commit, paths) = try await stage(in: work, from: folder, at: commit, replacing: replacing)
         try check(work, paths)
+        for path in replacing where FileManager.default.fileExists(atPath: folder.appendingPathComponent(path).path) {
+            try discard(folder.appendingPathComponent(path))
+        }
         for path in paths {
-            let place = folder.appendingPathComponent(path)
-            if replacing.contains(path), FileManager.default.fileExists(atPath: place.path) {
-                _ = try FileManager.default.replaceItemAt(place, withItemAt: work.appendingPathComponent(path))
-            } else {
-                try FileManager.default.moveItem(at: work.appendingPathComponent(path), to: place)
-            }
+            try FileManager.default.moveItem(at: work.appendingPathComponent(path), to: folder.appendingPathComponent(path))
         }
         return (commit, paths)
     }

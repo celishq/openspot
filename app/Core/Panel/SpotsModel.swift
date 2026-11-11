@@ -309,6 +309,7 @@ public final class SpotsModel {
             if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
         case .careful:
             runs.isCareful = config.isCareful
+            if let loaded = loadedConfig, loaded.arrangement == config.arrangement, loaded.keys == config.keys, loaded.settings == config.settings { loadedConfig = config }
         case .value(let spot, let caller):
             if let loaded = loadedConfig, loaded.arrangement == config.arrangement, loaded.keys == config.keys, loaded.panelKey == config.panelKey, loaded.fixKey == config.fixKey {
                 loadedConfig = config

@@ -37,9 +37,9 @@ public struct ReviewSpot: Equatable, Sendable {
         let quiet = "Runs only when you use it"
         subtitle = !programs.isEmpty ? "Holds a program that you cannot read" : primary.subtitle ?? (runs.isEmpty ? quiet : "Runs by itself")
         let uses = SpotUse.allCases.filter { use in scan.scripts.contains { $0.uses.contains(use) } }
-        let replaced = spot.replaced(in: folder)
-        let installed = Set(replaced.flatMap { (try? SpotUse.set(SpotHeader(url: folder.appendingPathComponent($0)).block.value("uses"), of: $0)) ?? [] })
-        let grown = replaced.isEmpty ? [] : uses.filter { !installed.contains($0) }
+        let present = spot.files.map(\.path).filter { FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path) }
+        let installed = Set(present.flatMap { (try? SpotUse.set(SpotHeader(url: folder.appendingPathComponent($0)).block.value("uses"), of: $0)) ?? [] })
+        let grown = spot.replaced(in: folder).isEmpty ? [] : uses.filter { !installed.contains($0) }
         text = [
             grown.isEmpty ? "\(primary.name)\n\n" : "\(primary.name)\nThis version adds: \(grown.map(\.rawValue).joined(separator: ", "))\n\n",
             programs.isEmpty ? nil : Self.section(

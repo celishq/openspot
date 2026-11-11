@@ -102,11 +102,13 @@ public struct StatsReport: Sendable {
             let encoder = JSONEncoder()
             encoder.dateEncodingStrategy = .iso8601
             encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+            struct Shown: Encodable {
+                let day: String
+                let spots: [String: SpotUsage.Count]
+                let powers: [SpotUsage.Power]
+            }
             let kept = days.map { day in
-                var kept = day
-                kept.spots = day.spots.filter { spot == nil || $0.key == spot }
-                kept.powers = day.powers.filter { spot == nil || $0.spot == spot }
-                return kept
+                Shown(day: day.day, spots: day.spots.filter { spot == nil || $0.key == spot }, powers: day.powers.filter { spot == nil || $0.spot == spot })
             }
             return String(decoding: try encoder.encode(kept), as: UTF8.self) + "\n"
         }

@@ -383,7 +383,7 @@ public final class ScriptProcess: @unchecked Sendable {
         var none = sigset_t()
         sigemptyset(&none)
         posix_spawnattr_setsigmask(&attributes, &none)
-        let wrapper = careful?.words(data: environment["OPENSPOT_DATA"] ?? NSTemporaryDirectory(), temp: environment["TMPDIR"] ?? NSTemporaryDirectory()) ?? []
+        let wrapper = careful?.words(data: environment["OPENSPOT_DATA"] ?? NSTemporaryDirectory(), temp: environment["TMPDIR"] ?? NSTemporaryDirectory(), home: environment["HOME"] ?? NSHomeDirectory()) ?? []
         let words = (wrapper + [url.path] + arguments).map { strdup($0) } + [nil]
         let pairs = environment.map { strdup("\($0.key)=\($0.value)") } + [nil]
         defer { (words + pairs).forEach { free($0) } }

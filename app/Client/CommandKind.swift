@@ -1,7 +1,7 @@
 /// The two kinds of `openspot` call (S12). A call of files reads or writes only files, or asks the Mac, and gives the same
 /// answer with the app or without it, so it runs in a process of its own when the app is closed. A live call needs the
-/// state of the running app, so it always goes to the app, which starts first when it is closed. A quit and the stats of
-/// the calls are about the app that runs, so with none they run alone and say so.
+/// state of the running app, so it always goes to the app, which starts first when it is closed. A quit is about the app
+/// that runs, so with none it runs alone and says so, and the stats then come from the files of each day.
 enum CommandKind {
     /// The nouns, and the nouns with their verbs, of the live calls.
     private static let live: Set<String> = [

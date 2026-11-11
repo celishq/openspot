@@ -198,5 +198,6 @@ final class SpotUsageTests: SpotRunsCase {
         XCTAssertTrue(two.contains("runs=2\n"), two)
         let json = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(StatsReport(days: usage.days(2, at: day), spot: nil).text(.json).utf8)) as? [[String: Any]])
         XCTAssertEqual(json.map { $0["day"] as? String }, ["2026-11-11", "2026-11-10"])
+        XCTAssertNil(json.first?["told"])
     }
 }

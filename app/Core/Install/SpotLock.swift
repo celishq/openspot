@@ -66,11 +66,16 @@ public struct SpotLock: Sendable {
 
     /// Puts a spot from a source in the folder, and records it in place of each entry that shared a path with it. A source
     /// that the lock has already is an update of its spot, which applies only when it adds no use, or when `isConfirmed`
-    /// (Z7). Returns the line that tells the person what changed.
-    public func add(_ source: SpotSource, to folder: URL, isConfirmed: Bool = false) async throws -> String {
+    /// (Z7). The old copy goes to `discard`, as the Trash. Returns the line that tells the person what changed.
+    public func add(
+        _ source: SpotSource,
+        to folder: URL,
+        isConfirmed: Bool = false,
+        discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }
+    ) async throws -> String {
         let old = try entries().first { $0.source == source.text }
         var facts: Facts?
-        let (commit, paths) = try await source.add(to: folder, at: nil, replacing: old?.paths ?? []) { work, paths in
+        let (commit, paths) = try await source.add(to: folder, at: nil, replacing: old?.paths ?? [], discard: discard) { work, paths in
             let new = try Self.facts(of: paths, in: work)
             if let old, !isConfirmed {
                 try Self.refuseGrowth(from: old.uses ?? Self.facts(of: old.paths, in: folder).uses, to: new.uses, confirm: "openspot spot add \(source.text) --yes")
@@ -89,24 +94,26 @@ public struct SpotLock: Sendable {
         var added = ""
         var faults = ""
         var entries = try entries()
+        var changed: [String: Entry] = [:]
         for (index, entry) in entries.enumerated() where !FileManager.default.fileExists(atPath: folder.appendingPathComponent(entry.paths.first ?? "").path) {
             do {
                 let place = URL(fileURLWithPath: "/", isDirectory: true)
                 var facts: Facts?
-                _ = try await SpotSource(text: entry.source, place: place).add(to: folder, at: entry.commit) { work, paths in
+                _ = try await SpotSource(text: entry.source, place: place).add(to: folder, at: entry.commit, check: { work, paths in
                     let new = try Self.facts(of: paths, in: work)
                     if !isConfirmed, new.hash != entry.hash, let uses = entry.uses {
                         try Self.refuseGrowth(from: uses, to: new.uses, confirm: "openspot spot add --yes")
                     }
                     facts = new
-                }
+                })
                 entries[index] = Entry(source: entry.source, commit: entry.commit, paths: entry.paths, hash: facts?.hash, uses: facts?.uses)
+                changed[entry.source] = entries[index]
                 added += entry.added
             } catch {
                 faults += "\(entry.name): \((error as? SpotError)?.reason ?? error.localizedDescription)\n"
             }
         }
-        try write(entries)
+        if !changed.isEmpty { try write(try self.entries().map { changed[$0.source] ?? $0 }) }
         if added.isEmpty, faults.isEmpty { added = "Each spot of spots.lock is in the plugins folder.\n" }
         return CommandAnswer(output: added, errors: faults, code: faults.isEmpty ? 0 : 1)
     }

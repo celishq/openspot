@@ -75,6 +75,8 @@ public final class SpotUsage: @unchecked Sendable {
     private let folder: URL?
     private let pause: TimeInterval
     private let lock = NSLock()
+    /// The one queue of each write, so that a newer copy of a day never lands before an older one.
+    private let writes = DispatchQueue(label: "dev.openspot.stats")
     private var today: Day
     private var isDirty = false
     private var isWaiting = false
@@ -139,6 +141,14 @@ public final class SpotUsage: @unchecked Sendable {
         }
     }
 
+    /// Counts a failure of a spot that no ended call counts, such as of a process that stays.
+    func failedRun(_ spot: Spot, at date: Date) {
+        change(at: date) { day in
+            day.spots[spot.id, default: Count()].name = spot.name
+            day.spots[spot.id, default: Count()].failures += 1
+        }
+    }
+
     /// Keeps the fault that the person was told, as the last of this spot.
     func failed(_ spot: Spot, fault: String, at date: Date) {
         change(at: date) { day in
@@ -169,13 +179,15 @@ public final class SpotUsage: @unchecked Sendable {
     /// Writes today's file now when it changed since the last write.
     public func flush() {
         guard let folder else { return }
-        let day: Day? = lock.withLock {
-            isWaiting = false
-            guard isDirty else { return nil }
-            isDirty = false
-            return today
+        writes.sync {
+            let day: Day? = lock.withLock {
+                isWaiting = false
+                guard isDirty else { return nil }
+                isDirty = false
+                return today
+            }
+            if let day { Self.write(day, in: folder) }
         }
-        if let day { Self.write(day, in: folder) }
     }
 
     /// The day of a date in the time zone of the Mac, such as `2026-11-11`.
@@ -199,7 +211,7 @@ public final class SpotUsage: @unchecked Sendable {
         }
         guard let folder else { return }
         if let ended {
-            Self.write(ended, in: folder)
+            writes.sync { Self.write(ended, in: folder) }
             if let date { Self.prune(folder, at: date) }
         }
         if waits {

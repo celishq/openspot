@@ -233,6 +233,15 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertTrue(text.hasPrefix("Weather\nThis version adds: screen, network\n\n"), text)
     }
 
+    func testAReviewReadsTheUsesOfEachInstalledFileOfTheSpot() throws {
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("home"), withIntermediateDirectories: true)
+        try "#!/bin/sh\n# uses=network\n".writeScript(to: folder.appendingPathComponent("home/main.sh"))
+        try "#!/bin/sh\necho one\n".writeScript(to: folder.appendingPathComponent("home/helper.sh"))
+        let review = try ReviewSpot(spot: spot([("home/main.sh", "#!/bin/sh\n# uses=network\n", true), ("home/helper.sh", "#!/bin/sh\necho two\n", true)]), folder: folder)
+
+        XCTAssertFalse(try shown(review).contains("This version adds"))
+    }
+
     func testAReviewOfANewVersionThatAddsNothingSaysNothing() throws {
         try "#!/bin/sh\n# title=Weather\n# uses=app\n".writeScript(to: folder.appendingPathComponent("weather.sh"))
 

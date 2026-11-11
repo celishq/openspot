@@ -42,6 +42,8 @@ final class CarefulModeTests: SpotRunsCase {
         echo a > "${TMPDIR:-/tmp}/careful-$$" 2>/dev/null && r="${r}temp " && rm -f "${TMPDIR:-/tmp}/careful-$$"
         echo a > '\(outside.path)/written' 2>/dev/null && r="${r}files "
         /usr/bin/nc -z -w 2 127.0.0.1 \(port) >/dev/null 2>&1 && r="${r}network "
+        echo a > "$(getconf DARWIN_USER_CACHE_DIR)careful-$$" 2>/dev/null && r="${r}cache " && rm -f "$(getconf DARWIN_USER_CACHE_DIR)careful-$$"
+        mkdir -p "$HOME/Desktop" && echo a > "$HOME/Desktop/careful-$$" 2>/dev/null && r="${r}screenshots " && rm -f "$HOME/Desktop/careful-$$"
         head -c 1 /etc/hosts >/dev/null && r="${r}read"
         printf 'text=t\\ntitle=%s\\n' "$r"
         """)
@@ -58,7 +60,7 @@ final class CarefulModeTests: SpotRunsCase {
     func testOffASpotDoesAllThatThePersonCan() async throws {
         let result = try await result(of: trying())
 
-        XCTAssertEqual(result, "data temp files network read")
+        XCTAssertEqual(result, "data temp files network cache screenshots read")
     }
 
     func testOnASpotWritesOnlyToItsDataAndTheTempFolderAndReachesNoNetwork() async throws {
@@ -66,7 +68,7 @@ final class CarefulModeTests: SpotRunsCase {
 
         let result = try await result(of: trying())
 
-        XCTAssertEqual(result, "data temp read")
+        XCTAssertEqual(result, "data temp cache read")
         XCTAssertFalse(FileManager.default.fileExists(atPath: outside.appendingPathComponent("written").path))
     }
 
@@ -75,7 +77,15 @@ final class CarefulModeTests: SpotRunsCase {
 
         let result = try await result(of: trying(uses: "files,network"))
 
-        XCTAssertEqual(result, "data temp files network read")
+        XCTAssertEqual(result, "data temp files network cache screenshots read")
+    }
+
+    func testOnAScreenSpotWritesToTheFolderOfScreenshots() async throws {
+        runs.isCareful = true
+
+        let result = try await result(of: trying(uses: "screen"))
+
+        XCTAssertEqual(result, "data temp cache screenshots read")
     }
 
     func testOnAStayingSpotIsCarefulToo() async throws {

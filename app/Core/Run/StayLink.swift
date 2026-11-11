@@ -286,7 +286,7 @@ final class StayLink: ScriptLink {
     private func failed(_ error: Error) {
         guard let run else { return }
         let time = runs.now()
-        runs.usage.called(run.spot, seconds: 0, isFailure: true, at: time)
+        runs.usage.failedRun(run.spot, at: time)
         failures = failures.filter { time.timeIntervalSince($0) < Self.failureWindow } + [time]
         guard failures.count >= Self.failureLimit else { return run.fail(error) }
         givenUp = .some(fileDate)

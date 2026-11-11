@@ -268,6 +268,28 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries().map(\.commit), [commit])
     }
 
+    func testAnUpdateMovesTheOldCopyToTheTrashWithEachPathTheNewOneDrops() async throws {
+        let tea = root.appendingPathComponent("sources/tea.spot")
+        try FileManager.default.createDirectory(at: tea.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try SharedSpot(files: [.init(path: "tea.sh", isExecutable: true, contents: Data("#!/bin/sh\necho one\n".utf8)), .init(path: "old.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).data.write(to: tea)
+        let lock = SpotLock(url: root.appendingPathComponent("spots.lock"))
+        var discarded: [String] = []
+        let trash = root.appendingPathComponent("trash")
+        try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
+        let discard: (URL) throws -> Void = { url in
+            discarded.append(url.lastPathComponent)
+            try FileManager.default.moveItem(at: url, to: trash.appendingPathComponent(url.lastPathComponent))
+        }
+        _ = try await lock.add(SpotSource(text: tea.path, place: root), to: plugins, discard: discard)
+        try SharedSpot(files: [.init(path: "tea.sh", isExecutable: true, contents: Data("#!/bin/sh\necho two\n".utf8))]).data.write(to: tea)
+
+        _ = try await lock.add(SpotSource(text: tea.path, place: root), to: plugins, discard: discard)
+
+        XCTAssertEqual(discarded.sorted(), ["old.sh", "tea.sh"])
+        XCTAssertEqual(try String(contentsOf: trash.appendingPathComponent("tea.sh"), encoding: .utf8), "#!/bin/sh\necho one\n")
+        XCTAssertEqual(try ids(), ["tea"])
+    }
+
     func testWithNoSourceAFolderThatGrewAUseNeedsYes() async throws {
         let tea = root.appendingPathComponent("sources/tea")
         try FileManager.default.createDirectory(at: tea, withIntermediateDirectories: true)

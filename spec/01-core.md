@@ -653,8 +653,9 @@ line and changes nothing until it runs again with `--yes`.
 
 Careful mode is a setting of the person, off by default, which Settings and `openspot app careful on|off` turn on and off,
 and which `app status` shows as `careful` (Z8). It runs each process of a spot under `sandbox-exec`: no
-network unless `uses=network`, writes only to its data folder and the temp folder unless `uses=files`, and reads
-everywhere. An inline spot has no files and no network in either mode. Without Careful mode, the data folder alone is no
+network unless `uses=network`, writes only to its data folder, the temp folder and the cache folder unless `uses=files`,
+also to the folder of screenshots, the Desktop and Movies with `uses=screen`, and reads everywhere. A process that stays keeps the
+mode that it started in until it starts again. An inline spot has no files and no network in either mode. Without Careful mode, the data folder alone is no
 boundary: a spot reads and writes each file that the person can (Z9).
 
 ### Stats

@@ -71,6 +71,7 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "stats"]), .spotStats(days: 1, spot: nil, format: .text))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "stats", "--days", "7", "--spot", "home/coffee", "--json"]), .spotStats(days: 7, spot: "home/coffee", format: .json))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "stats", "--frame"]), .spotStats(days: 1, spot: nil, format: .frame))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "stats", "--days", "1000000"]), .spotStats(days: 90, spot: nil, format: .text))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "stats", "weather"]), .unknown("spot stats weather"))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "stats", "--days", "0"]), .unknown("spot stats --days 0"))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "stats", "--frame", "--json"]), .unknown("spot stats --frame --json"))
