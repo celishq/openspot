@@ -97,25 +97,9 @@ func request() -> [UInt8] {
     return Array(line.utf8)
 }
 
-/// Sends the line, with the descriptor of stdin beside its first byte when this process has one.
+/// Sends all the bytes, or returns false when the connection closed.
 func deliver(_ line: [UInt8], on socket: Int32) -> Bool {
-    let head = MemoryLayout<cmsghdr>.size
-    var control = [UInt8](repeating: 0, count: head + MemoryLayout<Int32>.size)
-    control.withUnsafeMutableBytes {
-        $0.storeBytes(of: cmsghdr(cmsg_len: socklen_t(head + MemoryLayout<Int32>.size), cmsg_level: SOL_SOCKET, cmsg_type: SCM_RIGHTS), as: cmsghdr.self)
-        $0.storeBytes(of: STDIN_FILENO, toByteOffset: head, as: Int32.self)
-    }
-    let hasInput = fcntl(STDIN_FILENO, F_GETFD) != -1
-    var offset = line.withUnsafeBytes { bytes in
-        control.withUnsafeMutableBytes { space in
-            var vector = iovec(iov_base: UnsafeMutableRawPointer(mutating: bytes.baseAddress), iov_len: bytes.count)
-            return withUnsafeMutablePointer(to: &vector) { vector in
-                var message = msghdr(msg_name: nil, msg_namelen: 0, msg_iov: vector, msg_iovlen: 1, msg_control: hasInput ? space.baseAddress : nil, msg_controllen: hasInput ? socklen_t(space.count) : 0, msg_flags: 0)
-                return sendmsg(socket, &message, 0)
-            }
-        }
-    }
-    guard offset > 0 else { return false }
+    var offset = 0
     while offset < line.count {
         let count = line.withUnsafeBytes { write(socket, $0.baseAddress! + offset, line.count - offset) }
         if count > 0 {
@@ -125,19 +109,6 @@ func deliver(_ line: [UInt8], on socket: Int32) -> Bool {
         }
     }
     return true
-}
-
-func receive(on socket: Int32) -> [UInt8] {
-    var answer: [UInt8] = []
-    var buffer = [UInt8](repeating: 0, count: 65_536)
-    while true {
-        let count = read(socket, &buffer, buffer.count)
-        if count > 0 {
-            answer += buffer[..<count]
-        } else if count == 0 || errno != EINTR {
-            return answer
-        }
-    }
 }
 
 func put(_ bytes: [UInt8], to descriptor: Int32) {
@@ -168,12 +139,36 @@ guard deliver(request(), on: connection) else {
     guard !isLive else { fail("Openspot stopped before it took the call. Run the call again.") }
     runAlone(app)
 }
-guard let answer = JSON(receive(on: connection)) else { fail("Openspot stopped before it answered. Run the call again.") }
-guard let result = answer["result"] else {
-    guard !isLive else { fail("Openspot cannot run this call. Run `openspot help` to see each call.") }
-    runAlone(app)
+var input = InputLink(socket: connection)
+var pending: [UInt8] = []
+var buffer = [UInt8](repeating: 0, count: 65_536)
+while true {
+    var watched = [pollfd(fd: connection, events: Int16(POLLIN), revents: 0), pollfd(fd: input.isWanted && !input.hasEnded ? STDIN_FILENO : -1, events: Int16(POLLIN), revents: 0)]
+    guard poll(&watched, 2, -1) >= 0 || errno == EINTR else { fail("openspot cannot wait for Openspot: \(String(cString: strerror(errno))).") }
+    if watched[1].revents != 0 { input.readOnce() }
+    guard watched[0].revents != 0 else { continue }
+    let count = read(connection, &buffer, buffer.count)
+    if count < 0, errno == EINTR { continue }
+    guard count > 0 else { fail("Openspot stopped before it answered. Run the call again.") }
+    pending += buffer[..<count]
+    while let end = pending.firstIndex(of: UInt8(ascii: "\n")) {
+        let line = JSON(Array(pending[..<end]))
+        pending.removeFirst(end + 1)
+        guard let line else { fail("Openspot stopped before it answered. Run the call again.") }
+        if case .text(let method)? = line["method"] {
+            let text: [UInt8] = if case .text(let text)? = line["params"]?["text"] { text } else { [] }
+            switch String(decoding: method, as: UTF8.self) {
+            case "stdout": put(text, to: STDOUT_FILENO)
+            case "stderr": put(text, to: STDERR_FILENO)
+            case "stdin": input.want()
+            default: break
+            }
+            continue
+        }
+        guard case .number(let code)? = line["result"]?["code"] else {
+            guard !isLive else { fail("Openspot cannot run this call. Run `openspot help` to see each call.") }
+            runAlone(app)
+        }
+        exit(Int32(code))
+    }
 }
-if case .text(let output)? = result["stdout"] { put(output, to: STDOUT_FILENO) }
-if case .text(let errors)? = result["stderr"] { put(errors, to: STDERR_FILENO) }
-if case .number(let code)? = result["code"] { exit(Int32(code)) }
-exit(1)

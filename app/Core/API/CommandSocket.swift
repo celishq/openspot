@@ -1,29 +1,12 @@
 import Foundation
 
-/// The socket of the API in the config folder, which answers each `openspot` call while the app runs (S1). A call is a
-/// JSON-RPC 2.0 request on one line (`CommandRequest`), with the descriptor of its stdin beside the line as `SCM_RIGHTS`.
-/// The answer is one line: a result with `stdout`, `stderr` and `code`, or an error for a call that the API leaves to a
-/// process of its own, which the caller then starts. A caller that closes its connection first stops the work of its call
-/// (S13).
+/// The socket of the API in the config folder, which answers each `openspot` call while the app runs (S1). It speaks
+/// JSON-RPC 2.0 with one JSON object on each line, as the stdio transport of MCP frames it. A call is a request
+/// (`CommandRequest`). The app answers with a notification `stdout` or `stderr` for each piece that the call prints, a
+/// notification `stdin` once the call reads stdin, and then a result with the `code`, or an error for a call that the API
+/// leaves to a process of its own, which the caller then starts. The caller answers `stdin` with notifications `stdin` whose
+/// params hold `text`, and then one whose params hold `end`. A caller that closes its connection stops its call (S13).
 public final class CommandSocket: @unchecked Sendable {
-    private struct Reply: Encodable {
-        struct Result: Encodable {
-            let stdout: String
-            let stderr: String
-            let code: Int32
-        }
-
-        struct Fault: Encodable {
-            let code: Int
-            let message: String
-        }
-
-        let jsonrpc = "2.0"
-        let id: Int?
-        var result: Result?
-        var error: Fault?
-    }
-
     public static let name = "api.socket"
     /// The JSON-RPC code of a line that is not a request.
     static let unreadable = -32700
@@ -74,46 +57,36 @@ public final class CommandSocket: @unchecked Sendable {
         unlink(path)
     }
 
-    /// Reads the request on a connection, answers it, and closes the connection and the stdin that came with it.
+    /// Reads the request on a connection, streams its answer, and closes the connection.
     private static func answer(_ connection: Int32, _ api: CommandAPI) {
         _ = fcntl(connection, F_SETFL, fcntl(connection, F_GETFL) & ~O_NONBLOCK)
         var on: Int32 = 1
         setsockopt(connection, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
         var time = timeval(tv_sec: callerLimit, tv_usec: 0)
         setsockopt(connection, SOL_SOCKET, SO_RCVTIMEO, &time, socklen_t(MemoryLayout<timeval>.size))
-        let (line, input) = receive(connection)
+        let (line, rest) = receive(connection)
+        let link = CommandConnection(descriptor: connection, rest: rest)
         guard let request = CommandRequest(line: line) else {
-            send(Reply(id: nil, error: .init(code: unreadable, message: "Openspot cannot read this request.")), to: connection, input: input)
-            return
+            return link.end(fault(unreadable, "Openspot cannot read this request.", id: nil))
         }
         let environment = api.environment(of: peer(of: connection), over: request.environment(over: ProcessInfo.processInfo.environment))
         let call = CommandLineCall(arguments: request.arguments, environment: environment).map { api.admit($0, arguments: request.arguments, environment: environment) }
-        guard let call, let work = api.work(for: call, input: { await Self.text(of: input) }, environment: environment) else {
-            send(Reply(id: request.id, error: .init(code: alone, message: "Run this call in a process of its own.")), to: connection, input: input)
-            return
+        let output = CommandOutput { text, isError in link.notify(isError ? "stderr" : "stdout", text: text) }
+        guard let call, let work = api.work(for: call, input: { await link.stdin() }, environment: environment, output: output) else {
+            return link.end(fault(alone, "Run this call in a process of its own.", id: request.id))
         }
         let task = Task.detached { await work() }
-        let watch = DispatchSource.makeReadSource(fileDescriptor: connection, queue: DispatchQueue(label: "dev.openspot.api.call"))
-        let ends = DispatchGroup()
-        ends.enter()
-        ends.enter()
-        watch.setEventHandler {
-            var bytes = [UInt8](repeating: 0, count: 512)
-            let count = recv(connection, &bytes, bytes.count, MSG_DONTWAIT)
-            guard count == 0 || (count < 0 && errno != EAGAIN && errno != EINTR) else { return }
-            task.cancel()
-            watch.cancel()
-        }
-        watch.setCancelHandler { ends.leave() }
-        watch.resume()
+        link.listen { task.cancel() }
         Task.detached {
             let answer = await task.value
-            watch.cancel()
-            ends.leave()
-            ends.notify(queue: .global()) {
-                send(Reply(id: request.id, result: .init(stdout: answer.output, stderr: answer.errors, code: answer.code)), to: connection, input: input)
-            }
+            output.print(answer.output)
+            output.report(answer.errors)
+            link.end(["jsonrpc": "2.0", "id": request.id.map { $0 as Any } ?? NSNull(), "result": ["code": answer.code]])
         }
+    }
+
+    private static func fault(_ code: Int, _ message: String, id: Int?) -> [String: Any] {
+        ["jsonrpc": "2.0", "id": id.map { $0 as Any } ?? NSNull(), "error": ["code": code, "message": message]]
     }
 
     /// The ID of the process at the other end of a connection, or 0 when the socket does not say.
@@ -123,73 +96,19 @@ public final class CommandSocket: @unchecked Sendable {
         return getsockopt(connection, SOL_LOCAL, LOCAL_PEERPID, &id, &size) == 0 ? id : 0
     }
 
-    /// Reads up to the end of the first line, and the descriptor that came with it, or -1 with none.
-    private static func receive(_ connection: Int32) -> (Data, Int32) {
-        var line = Data()
-        var input: Int32 = -1
+    /// Reads up to the end of the first line, and returns that line and the bytes after it.
+    private static func receive(_ connection: Int32) -> (Data, Data) {
+        var data = Data()
         var buffer = [UInt8](repeating: 0, count: chunk)
-        var control = [UInt8](repeating: 0, count: 64)
-        while !line.contains(UInt8(ascii: "\n")) {
-            let count = buffer.withUnsafeMutableBytes { data in
-                control.withUnsafeMutableBytes { space in
-                    var vector = iovec(iov_base: data.baseAddress, iov_len: data.count)
-                    return withUnsafeMutablePointer(to: &vector) { vector in
-                        var message = msghdr(msg_name: nil, msg_namelen: 0, msg_iov: vector, msg_iovlen: 1, msg_control: space.baseAddress, msg_controllen: socklen_t(space.count), msg_flags: 0)
-                        let count = recvmsg(connection, &message, 0)
-                        if count >= 0, input < 0 { input = descriptor(in: UnsafeRawBufferPointer(rebasing: space[..<Int(message.msg_controllen)])) }
-                        return count
-                    }
-                }
-            }
+        while !data.contains(UInt8(ascii: "\n")) {
+            let count = read(connection, &buffer, buffer.count)
             if count > 0 {
-                line.append(contentsOf: buffer[..<count])
+                data.append(contentsOf: buffer[..<count])
             } else if count == 0 || errno != EINTR {
                 break
             }
         }
-        return (line.prefix { $0 != UInt8(ascii: "\n") }, input)
-    }
-
-    /// The descriptor of the first `SCM_RIGHTS` message in a control buffer, or -1 with none.
-    private static func descriptor(in control: UnsafeRawBufferPointer) -> Int32 {
-        let head = MemoryLayout<cmsghdr>.size
-        guard control.count >= head + MemoryLayout<Int32>.size else { return -1 }
-        let header = control.loadUnaligned(as: cmsghdr.self)
-        guard header.cmsg_level == SOL_SOCKET, header.cmsg_type == SCM_RIGHTS else { return -1 }
-        let descriptor = control.loadUnaligned(fromByteOffset: head, as: Int32.self)
-        _ = fcntl(descriptor, F_SETFD, FD_CLOEXEC)
-        return descriptor
-    }
-
-    /// All that the stdin of the caller holds, or nothing when the caller sent none.
-    private static func text(of input: Int32) async -> String {
-        guard input >= 0 else { return "" }
-        var data = Data()
-        do {
-            for try await byte in FileHandle(fileDescriptor: input, closeOnDealloc: false).bytes { data.append(byte) }
-        } catch {
-            return String(decoding: data, as: UTF8.self)
-        }
-        return String(decoding: data, as: UTF8.self)
-    }
-
-    private static func send(_ reply: Reply, to connection: Int32, input: Int32) {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .withoutEscapingSlashes
-        var line = (try? encoder.encode(reply)) ?? Data()
-        line.append(UInt8(ascii: "\n"))
-        line.withUnsafeBytes { bytes in
-            var offset = 0
-            while offset < bytes.count {
-                let count = write(connection, bytes.baseAddress! + offset, bytes.count - offset)
-                if count > 0 {
-                    offset += count
-                } else if errno != EINTR {
-                    break
-                }
-            }
-        }
-        Darwin.close(connection)
-        if input >= 0 { Darwin.close(input) }
+        guard let end = data.firstIndex(of: UInt8(ascii: "\n")) else { return (data, Data()) }
+        return (data[data.startIndex..<end], Data(data[(end + 1)...]))
     }
 }

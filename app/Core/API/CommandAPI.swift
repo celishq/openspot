@@ -53,8 +53,14 @@ public final class CommandAPI: @unchecked Sendable {
 
     /// The work that answers a call, or nil for a call that runs in a process of its own: one that draws, or runs a helper,
     /// a spot or a check of a folder, and in Careful mode a spot's capture into a file that it
-    /// names, which only its sandbox can fence (Z8). `input` reads stdin, and only a call that takes stdin reads it.
-    public func work(for call: CommandLineCall, input: @escaping @Sendable () async -> String, environment: [String: String]) -> Work? {
+    /// names, which only its sandbox can fence (Z8). `input` reads stdin, and only a call that takes stdin reads it. A call
+    /// prints to `output` as it runs, and with none, its answer holds all that it printed.
+    public func work(for call: CommandLineCall, input: @escaping @Sendable () async -> String, environment: [String: String], output: CommandOutput? = nil) -> Work? {
+        guard let output else {
+            let kept = CommandOutput()
+            guard let work = work(for: call, input: input, environment: environment, output: kept) else { return nil }
+            return { kept.answer(ending: await work()) }
+        }
         let isRead = environment["OPENSPOT_REASON"] != nil
         let spots = SpotCalls(environment: environment, app: app, runs: runs)
         let settings = SettingCalls(environment: environment, app: app)
@@ -73,7 +79,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .settingGet(let spot, let key): return settings.get(key, of: spot)
         case .settingSet(let spot, let key, let value): return settings.set(key, of: spot, to: value)
         case .settingList(let frame): return settings.list(frame: frame)
-        case .batch: return BatchCalls(api: self, environment: environment).run(input)
+        case .batch: return BatchCalls(api: self, environment: environment).run(input, output: output)
         case .settingChange(let spot, let key): return settings.change(key, of: spot)
         case .spotList(let core, let frame): return spots.list(core: core, frame: frame)
         case .spotTurn(let ids, let isOn): return spots.turn(ids, on: isOn)

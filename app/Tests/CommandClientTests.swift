@@ -101,6 +101,45 @@ final class CommandClientTests: XCTestCase {
         XCTAssertEqual(unknown.code, 2)
     }
 
+    func testACallThatTakesNoStdinLeavesItForTheNextReader() throws {
+        listen()
+        let file = folder.appendingPathComponent("calls")
+        try "call=next\n".write(to: file, atomically: true, encoding: .utf8)
+        let stdin = try FileHandle(forReadingFrom: file)
+        defer { try? stdin.close() }
+        let process = Process()
+        process.executableURL = client
+        process.arguments = ["calc", "solve", "2+2"]
+        process.environment = ["OPENSPOT_CONFIG": config.path, "PATH": "/usr/bin:/bin"]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardInput = stdin
+        try process.run()
+        process.waitUntilExit()
+
+        XCTAssertEqual(process.terminationStatus, 0)
+        XCTAssertEqual(try stdin.offset(), 0)
+    }
+
+    func testAPipedStdinThatComesInPartsReachesTheCall() throws {
+        listen()
+        let process = Process()
+        let output = Pipe()
+        let stdin = Pipe()
+        process.executableURL = client
+        process.arguments = ["check", "--sheet"]
+        process.environment = ["OPENSPOT_CONFIG": config.path, "PATH": "/usr/bin:/bin"]
+        process.standardOutput = output
+        process.standardInput = stdin
+        try process.run()
+        stdin.fileHandleForWriting.write(Data("title=Hi\n".utf8))
+        stdin.fileHandleForWriting.write(Data("text=Привіт\n".utf8))
+        try stdin.fileHandleForWriting.close()
+        let printed = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        process.waitUntilExit()
+
+        XCTAssertEqual(printed, "the sheet has no parts\n1 faults.\n")
+    }
+
     func testWithNoSocketItStartsTheAppWithTheSameArguments() throws {
         XCTAssertEqual(try run(client, ["guide"]).output, "app: guide\n")
     }
@@ -108,7 +147,7 @@ final class CommandClientTests: XCTestCase {
     func testACallThatRunsAloneStartsTheApp() throws {
         listen()
 
-        XCTAssertEqual(try run(client, ["check"]).output, "app: check\n")
+        XCTAssertEqual(try run(client, ["render", "x.png"]).output, "app: render x.png\n")
     }
 
     /// Starts the program with the arguments and these more variables, and returns it as it runs.

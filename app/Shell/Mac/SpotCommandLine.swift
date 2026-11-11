@@ -11,11 +11,12 @@ enum SpotCommandLine {
     static func run(_ call: CommandLineCall) -> Never {
         enterBundle()
         let environment = ProcessInfo.processInfo.environment.merging(["PWD": FileManager.default.currentDirectoryPath]) { _, real in real }
-        if let work = CommandAPI(mac: SpotMac()).work(for: call, input: { standardInput }, environment: environment) {
+        let output = CommandOutput { text, isError in (isError ? FileHandle.standardError : FileHandle.standardOutput).write(Data(text.utf8)) }
+        if let work = CommandAPI(mac: SpotMac()).work(for: call, input: { standardInput }, environment: environment, output: output) {
             Task {
                 let answer = await work()
-                FileHandle.standardOutput.write(Data(answer.output.utf8))
-                FileHandle.standardError.write(Data(answer.errors.utf8))
+                output.print(answer.output)
+                output.report(answer.errors)
                 if call == .clipboardPaste { try? await Task.sleep(for: postPause) }
                 exit(answer.code)
             }
