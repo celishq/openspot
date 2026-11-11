@@ -582,7 +582,7 @@ public final class SpotsModel {
         sheets[entry.id]?.setLevel((entry.state.level ?? 0) + delta)
     }
 
-    /// Takes a click on a card. A click with ⌘ opens the sheet of a spot whose press runs it (`press=run`).
+    /// Takes a click on a card. A click with ⌘ opens the sheet of a spot whose press runs it (`press=open`).
     public func tap(_ id: String, opening: Bool = false) {
         guard let position = visible.firstIndex(where: { $0.id == id }) else { return }
         selected = position
@@ -615,7 +615,7 @@ public final class SpotsModel {
         run(entry)
     }
 
-    /// Takes ⌘ with Enter. On the grid, it opens the sheet of the selected spot whose Enter runs it (`press=run`). Returns
+    /// Takes ⌘ with Enter. On the grid, it opens the sheet of the selected spot whose Enter runs it (`press=open`). Returns
     /// false for any other spot, or away from the grid, so that the key goes on to the actions and the forms.
     @discardableResult
     public func openSelected() -> Bool {

@@ -586,9 +586,9 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.map(\.id), ["other"])
     }
 
-    func testEnterRunsASpotWithPressRunAndCommandEnterOpensItsSheet() async throws {
+    func testEnterRunsASpotWithPressOpenAndCommandEnterOpensItsSheet() async throws {
         let log = folder.appendingPathComponent("calls")
-        try script("conf", header: "read=sheet\npress=run", "if [ \"$1\" = read ]; then printf 'row=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
+        try script("conf", header: "read=sheet\npress=open", "if [ \"$1\" = read ]; then printf 'row=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
@@ -608,9 +608,9 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(calls(), ["open"])
     }
 
-    func testAClickWithCommandOpensTheSheetOfASpotWithPressRun() async throws {
+    func testAClickWithCommandOpensTheSheetOfASpotWithPressOpen() async throws {
         let log = folder.appendingPathComponent("calls")
-        try script("conf", header: "read=sheet\npress=run", "if [ \"$1\" = read ]; then printf 'row=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
+        try script("conf", header: "read=sheet\npress=open", "if [ \"$1\" = read ]; then printf 'row=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
@@ -621,7 +621,7 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: log.path))
     }
 
-    func testCommandEnterLeavesASpotWithNoPressRunToItsActions() async throws {
+    func testCommandEnterLeavesASpotWithNoPressOpenToItsActions() async throws {
         try script("list", header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
         model.reload()
         model.isShown = true
