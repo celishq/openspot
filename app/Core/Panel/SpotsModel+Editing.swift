@@ -146,22 +146,23 @@ extension SpotsModel {
 
     /// Moves the card that the person drags, inside the panel's window, and lifts it when the drag starts. The window
     /// carries it over the panel and the dock. The other cards make room where a release would put it once the pointer has
-    /// rested there for `dragRest`, and go back to their places while the pointer is off the grid. A card on the grid lands
-    /// among the cards on the grid, and a hidden card among the hidden cards.
+    /// rested there for `dragRest`, and go back to their places while the pointer is off the grid. A card lands in either
+    /// group, while both have cards.
     public func dragSpot(_ id: String, by translation: CGSize) {
         guard isEditing, query.isEmpty, resize == nil, carry?.tile == nil else { return }
         if drag?.id != id {
             guard let start = visible.firstIndex(where: { $0.id == id }) else { return }
-            let onGrid = visible.filter(\.isOnGrid).count
-            let places = visible[start].isOnGrid ? 0...(onGrid - 1) : onGrid...(visible.count - 1)
-            let lifted = SpotDrag(id: id, start: start, sizes: visible.map(\.size), places: places, split: hiddenStart)
             let entry = visible[start]
+            let others = visible.filter(\.isOnGrid).count - (entry.isOnGrid ? 1 : 0)
+            let hasHidden = !entry.isOnGrid || others < visible.count - 1
+            let targets = (0...others).map(SpotDrag.Target.onGrid) + (hasHidden ? (others...(visible.count - 1)).map(SpotDrag.Target.hidden) : [])
+            let lifted = SpotDrag(id: id, home: SpotDrag.Target(place: start, isOnGrid: entry.isOnGrid), sizes: visible.map(\.size), targets: targets, split: hiddenStart)
             stopDragWait()
             scrollAtPress = gridScroll
             tip = nil
             change(.edit) {
                 drag = lifted
-                carry = SpotCarry(entry: entry, size: lifted.placement(at: start)?.size ?? entry.size, turnsOff: turnsOff(entry))
+                carry = SpotCarry(entry: entry, size: lifted.placement(at: lifted.home)?.size ?? entry.size, turnsOff: turnsOff(entry))
                 selected = start
             }
         }
@@ -170,18 +171,18 @@ extension SpotsModel {
         let move = inGrid(translation)
         let moved = drag.capped(move, within: windowInGrid)
         if lift.offset != moved { lift.offset = moved }
-        let corner = inPanel(drag.rect(at: drag.start).offsetBy(dx: moved.width, dy: moved.height).origin)
+        let corner = inPanel(drag.rect(at: drag.home).offsetBy(dx: moved.width, dy: moved.height).origin)
         if lift.origin != corner { lift.origin = corner }
         let centre = drag.centre(movedBy: move)
         let isOverDock = dockInGrid?.contains(centre) == true
         if carry?.isOverDock != isOverDock { carry?.isOverDock = isOverDock }
-        let target = !isOverDock && drag.holds(centre) ? drag.nearest(to: drag.centre(movedBy: moved)) : drag.start
+        let target = !isOverDock && drag.holds(centre) ? drag.nearest(to: drag.centre(movedBy: moved)) : drag.home
         follow(target, of: drag)
     }
 
     /// Makes room at this place once the pointer has rested near it for `dragRest`.
-    private func follow(_ target: Int, of drag: SpotDrag) {
-        guard target != drag.place else { return stopDragWait() }
+    private func follow(_ target: SpotDrag.Target, of drag: SpotDrag) {
+        guard target != drag.target else { return stopDragWait() }
         guard target != dragTarget else { return }
         stopDragWait()
         dragTarget = target
@@ -205,14 +206,15 @@ extension SpotsModel {
             guard carry?.turnsOff == true, let entry = visible.first(where: { $0.id == drag.id }) else { return cancelDrag() }
             return turnOffDropped(entry)
         }
-        let place = drag.nearest(to: drag.centre(movedBy: drag.capped(move, within: windowInGrid)))
-        guard drag.holds(centre), place != drag.start else { return cancelDrag() }
+        let target = drag.nearest(to: drag.centre(movedBy: drag.capped(move, within: windowInGrid)))
+        guard drag.holds(centre), target != drag.home else { return cancelDrag() }
         stopDragWait()
         pointerMove = nil
-        var order = dragged(cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id)
+        var order = (cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id)
         order.removeAll { $0 == drag.id }
-        order.insert(drag.id, at: place)
+        order.insert(drag.id, at: target.place)
         arrangement.arrange(order)
+        if target.isOnGrid != drag.home.isOnGrid { arrangement.set(isOnGrid: target.isOnGrid, of: drag.id) }
         saveArrangement(selecting: drag.id, ending: {
             self.drag = nil
             landing = drag.id
@@ -242,7 +244,7 @@ extension SpotsModel {
         let point = CGPoint(x: centre.x - grid.x, y: centre.y - grid.y)
         let panel = CGRect(x: 0, y: 0, width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
         let isOverGrid = panel.contains(centre) && dockFrame?.contains(centre) != true && arrival.holds(point)
-        let size = isOverGrid ? arrival.placement(at: arrival.start)?.size ?? carry.entry.size : dock.items.first { $0.id == id }?.size ?? carry.size
+        let size = isOverGrid ? arrival.placement(at: arrival.home)?.size ?? carry.entry.size : dock.items.first { $0.id == id }?.size ?? carry.size
         if carry.size != size { self.carry?.size = size }
         let card = CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
         let origin = held(CGRect(x: centre.x - card.width / 2, y: centre.y - card.height / 2, width: card.width, height: card.height))
@@ -255,12 +257,12 @@ extension SpotsModel {
                 updateVisible()
             }
         }
-        let start = arrival.rect(at: arrival.start)
+        let start = arrival.rect(at: arrival.home)
         let offset = CGSize(width: origin.x - grid.x - start.minX, height: origin.y - grid.y - start.minY)
         if lift.offset != offset { lift.offset = offset }
         let target = arrival.nearest(to: arrival.centre(movedBy: offset))
         guard let drag else {
-            arrival.place = target
+            arrival.target = target
             return change(.edit) {
                 drag = arrival
                 updateVisible()
@@ -275,7 +277,7 @@ extension SpotsModel {
         guard let carry, carry.tile != nil else { return }
         dragDockSpot(carry.entry.id, by: translation)
         guard let drag, drag.id == carry.entry.id else { return sendBack() }
-        turnOnDropped(carry.entry, at: drag.nearest(to: drag.centre(movedBy: lift.offset)))
+        turnOnDropped(carry.entry, at: drag.nearest(to: drag.centre(movedBy: lift.offset)).place)
     }
 
     /// Turns on a spot of the dock that the person dropped on the grid, at this place, and lands its card there.
@@ -551,12 +553,12 @@ extension SpotsModel {
         return list
     }
 
-    private func land(at place: Int) {
+    private func land(at target: SpotDrag.Target) {
         dragTarget = nil
         change(.edit) {
-            drag?.place = place
+            drag?.target = target
             updateVisible()
-            selected = place
+            selected = target.place
         }
     }
 

@@ -21,7 +21,7 @@ struct SpotGridView: View {
             let entry = model.visible[placement.index]
             let isLifted = drag?.id == entry.id
             let isHeld = isLifted || model.landing == entry.id
-            let shown = isLifted ? drag.flatMap { $0.placement(at: $0.start) } ?? placement : placement
+            let shown = isLifted ? drag.flatMap { $0.placement(at: $0.home) } ?? placement : placement
             return SpotGridGlass.Card(
                 id: entry.id,
                 size: shown.size,

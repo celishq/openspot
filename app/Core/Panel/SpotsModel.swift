@@ -232,7 +232,7 @@ public final class SpotsModel {
     /// How long the pointer stays near a new place before the other cards make room there.
     @ObservationIgnored public var dragRest: Duration = .milliseconds(100)
     /// The place that the cards make room at when the pointer has rested near it for `dragRest`.
-    @ObservationIgnored var dragTarget: Int?
+    @ObservationIgnored var dragTarget: SpotDrag.Target?
     @ObservationIgnored var dragWait: Task<Void, Never>?
     /// How far the grid has scrolled, how far it had when the pointer pressed a card to drag or resize it, and the
     /// pointer's last move since, so that a scroll with no move of the pointer moves the card with the grid.
@@ -491,10 +491,12 @@ public final class SpotsModel {
     }
 
     /// Where the cards hidden from the grid start in the order of Edit Spots, after the cards on the grid and a card that
-    /// arrives from the dock. It is nil out of Edit Spots and while the search has text.
+    /// arrives from the dock. A dragged card counts in the group of its target. It is nil out of Edit Spots and while the
+    /// search has text.
     var hiddenStart: Int? {
         guard isEditing, query.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
-        return visible.count - cards.filter { !$0.isOnGrid }.count
+        let hidden = cards.filter { !$0.isOnGrid && $0.id != drag?.id }.count + (drag?.target.isOnGrid == false ? 1 : 0)
+        return visible.count - hidden
     }
 
     /// The entries that have a card. The install screen has none.

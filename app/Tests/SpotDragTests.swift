@@ -14,34 +14,34 @@ final class SpotDragTests: XCTestCase {
         let c = SpotGrid().place(sizes)[2].rect
         let leftHalf = CGPoint(x: c.minX + c.width / 4, y: c.midY)
 
-        XCTAssertEqual(drag.nearest(to: leftHalf), 2)
-        XCTAssertEqual(drag.layout(at: 2), [
+        XCTAssertEqual(drag.nearest(to: leftHalf), .onGrid(2))
+        XCTAssertEqual(drag.layout(at: .onGrid(2)), [
             SpotPlacement(index: 0, row: 0, column: 0, size: .wide),
             SpotPlacement(index: 1, row: 0, column: 2, size: .wide),
             SpotPlacement(index: 2, row: 1, column: 0, size: .wide),
             SpotPlacement(index: 3, row: 1, column: 2, size: .wide)
         ])
-        XCTAssertEqual(drag.rect(at: 2), c)
+        XCTAssertEqual(drag.rect(at: .onGrid(2)), c)
     }
 
     func testACardOverItsOwnPlaceStaysThere() {
         let drag = SpotDrag(id: "d", start: 3, sizes: sizes, places: 0...3)
 
-        XCTAssertEqual(drag.nearest(to: centre(of: drag.rect(at: 3))), 3)
-        XCTAssertEqual(drag.layout(at: 3), SpotGrid().place(sizes))
+        XCTAssertEqual(drag.nearest(to: centre(of: drag.rect(at: .onGrid(3)))), .onGrid(3))
+        XCTAssertEqual(drag.layout(at: .onGrid(3)), SpotGrid().place(sizes))
     }
 
     func testACardOverTheFirstCardTakesTheFirstPlace() {
         let drag = SpotDrag(id: "d", start: 3, sizes: sizes, places: 0...3)
 
-        XCTAssertEqual(drag.nearest(to: CGPoint(x: 1, y: 1)), 0)
-        XCTAssertEqual(drag.rect(at: 0).origin, .zero)
+        XCTAssertEqual(drag.nearest(to: CGPoint(x: 1, y: 1)), .onGrid(0))
+        XCTAssertEqual(drag.rect(at: .onGrid(0)).origin, .zero)
     }
 
     func testACardLandsOnlyAtThePlacesItMayTake() {
         let drag = SpotDrag(id: "b", start: 1, sizes: sizes, places: 0...1)
 
-        XCTAssertEqual(drag.nearest(to: CGPoint(x: SpotTokens.gridWidth, y: 1000)), 1)
+        XCTAssertEqual(drag.nearest(to: CGPoint(x: SpotTokens.gridWidth, y: 1000)), .onGrid(1))
     }
 
     func testASquareDraggedOverTheSmallCardsBesideItLandsOnTheirRight() {
@@ -56,7 +56,7 @@ final class SpotDragTests: XCTestCase {
 
     func testTheLiftedCardsCentreFollowsThePointer() {
         let drag = SpotDrag(id: "d", start: 3, sizes: sizes, places: 0...3)
-        let start = centre(of: drag.rect(at: 3))
+        let start = centre(of: drag.rect(at: .onGrid(3)))
 
         XCTAssertEqual(drag.centre(movedBy: CGSize(width: -40, height: 12)), CGPoint(x: start.x - 40, y: start.y + 12))
     }

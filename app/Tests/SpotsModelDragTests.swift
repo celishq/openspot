@@ -236,16 +236,17 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(savedOrder(), ["a", "b", "c", "d"])
     }
 
-    func testAHiddenCardMovesOnlyAmongTheHiddenCards() {
+    func testAHiddenCardDroppedAmongTheHiddenCardsStaysHidden() {
         model.setOnGrid(false, for: "b")
         model.setOnGrid(false, for: "a")
         XCTAssertEqual(order, ["c", "d", "a", "b"])
 
-        let translation = move("b", to: CGPoint(x: 1, y: 1))
+        let translation = move("b", to: leftHalf(of: "a"))
         model.dragSpot("b", by: translation)
         model.dropSpot(by: translation)
 
         XCTAssertEqual(order, ["c", "d", "b", "a"])
+        XCTAssertEqual(model.visible.map(\.isOnGrid), [true, true, false, false])
     }
 
     func testHiddenCardsLieInAGroupOfTheirOwnUnderATitleBand() {
@@ -292,6 +293,30 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertNil(model.tip)
     }
 
+    func testAHiddenCardDroppedAmongTheCardsOnTheGridGoesOnTheGrid() {
+        model.setOnGrid(false, for: "a")
+        XCTAssertEqual(order, ["b", "c", "d", "a"])
+
+        let translation = move("a", to: leftHalf(of: "b"))
+        model.dragSpot("a", by: translation)
+        model.dropSpot(by: translation)
+
+        XCTAssertEqual(order, ["a", "b", "c", "d"])
+        XCTAssertEqual(model.visible.map(\.isOnGrid), [true, true, true, true])
+        XCTAssertEqual(savedOrder(), ["a", "b", "c", "d"])
+    }
+
+    func testACardDroppedAmongTheHiddenCardsLeavesTheGrid() {
+        model.setOnGrid(false, for: "a")
+
+        let translation = move("b", to: leftHalf(of: "a"))
+        model.dragSpot("b", by: translation)
+        model.dropSpot(by: translation)
+
+        XCTAssertEqual(order, ["c", "d", "b", "a"])
+        XCTAssertEqual(model.visible.map(\.isOnGrid), [true, true, false, false])
+    }
+
     func testAPanelThatHidesEndsTheDrag() {
         model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
 
@@ -307,7 +332,7 @@ final class SpotsModelDragTests: XCTestCase {
 
     /// The pointer's move, since the drag started, that takes the centre of the lifted card to this point of the grid.
     private func dragMove(to point: CGPoint) -> CGSize {
-        let rect = model.drag.map { $0.rect(at: $0.start) } ?? .zero
+        let rect = model.drag.map { $0.rect(at: $0.home) } ?? .zero
         return CGSize(width: point.x - rect.midX, height: point.y - rect.midY)
     }
 
@@ -336,7 +361,7 @@ final class SpotsModelDragTests: XCTestCase {
         model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
         XCTAssertEqual(order, ["a", "b", "d", "c"])
 
-        let start = model.drag.map { $0.rect(at: $0.start) } ?? .zero
+        let start = model.drag.map { $0.rect(at: $0.home) } ?? .zero
         model.dragSpot("d", by: dragMove(to: CGPoint(x: SpotTokens.gridWidth + SpotTokens.rowHeight, y: start.midY)))
 
         XCTAssertEqual(order, ["a", "b", "c", "d"])
