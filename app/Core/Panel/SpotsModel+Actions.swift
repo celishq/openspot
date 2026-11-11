@@ -37,6 +37,7 @@ extension SpotsModel {
             return true
         }
         if key == Self.undoKey, openList == nil, searchText.isEmpty, undoRemoval() { return true }
+        if key == ActionKey(name: "return", isCommand: true), openSelected() { return true }
         if let panel = openPanel, !panel.showsRows { return handlePanelKey(key, panel) }
         if let part = openPanel?.parts.first(where: { $0.key == key }) {
             pressPart(part)
@@ -77,6 +78,9 @@ extension SpotsModel {
     }
 
     static let newSpotKey = ActionKey(name: "n", isCommand: true)
+
+    /// The footer label of ⌘ Return, which opens the sheet of a spot that Return runs.
+    static let openLabel = "⌘⏎"
 
     /// Does what the key of a footer label does, as if it were pressed: Return runs the selected row.
     public func pressHint(_ label: String) {
@@ -256,7 +260,11 @@ extension SpotsModel {
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
         if let panel = openPanel, !panel.showsRows || panel.drawsKeys { return panel.hint { work(of: $0) != nil } }
         let keys = target.flatMap { target in
-            actionMenu(on: target)?.hint { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil }
+            let opens = openList == nil && target.item == nil && target.entry.command.pressRuns && target.entry.kind.opensSheet
+            return actionMenu(on: target)?.hint(
+                stopping: { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil },
+                second: opens ? "\(Self.openLabel) Settings" : nil
+            )
         } ?? "Esc Close"
         return selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
     }
