@@ -37,8 +37,11 @@ public struct ReviewSpot: Equatable, Sendable {
         let quiet = "Runs only when you use it"
         subtitle = !programs.isEmpty ? "Holds a program that you cannot read" : primary.subtitle ?? (runs.isEmpty ? quiet : "Runs by itself")
         let uses = SpotUse.allCases.filter { use in scan.scripts.contains { $0.uses.contains(use) } }
+        let replaced = spot.replaced(in: folder)
+        let installed = Set(replaced.flatMap { (try? SpotUse.set(SpotHeader(url: folder.appendingPathComponent($0)).block.value("uses"), of: $0)) ?? [] })
+        let grown = replaced.isEmpty ? [] : uses.filter { !installed.contains($0) }
         text = [
-            "\(primary.name)\n\n",
+            grown.isEmpty ? "\(primary.name)\n\n" : "\(primary.name)\nThis version adds: \(grown.map(\.rawValue).joined(separator: ", "))\n\n",
             programs.isEmpty ? nil : Self.section(
                 "Program that Openspot cannot show",
                 programs + ["It can do all that you can. Add it only if you trust the sender."]

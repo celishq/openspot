@@ -21,8 +21,8 @@ public enum CommandLineCall: Equatable, Sendable {
     /// Turns spots that come with the app on or off.
     case spotTurn(ids: [String], on: Bool)
     /// Puts a spot from a git URL, a folder or a `.spot` file in the plugins folder, or with none each spot of `spots.lock`
-    /// that is missing (N1, N2).
-    case spotAdd(String?)
+    /// that is missing (N1, N2). An update that adds a use applies only when it is confirmed (Z7).
+    case spotAdd(String?, isConfirmed: Bool)
     /// Takes a spot that `spot add` added out of the plugins folder.
     case spotRemove(String)
     /// Opens the panel on the sheet of a spot.
@@ -129,10 +129,11 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  app, and whether it is on. --frame prints a spot=<id> block for each
                                                  spot, with a command=<id> or setting=<id> block for each of its own.
     openspot spot on|off <id>...                 Turns spots that come with the app on or off.
-    openspot spot add [git url | folder | file.spot]
+    openspot spot add [git url | folder | file.spot] [--yes]
                                                  Puts a spot in the plugins folder, a git one at its newest commit, and
-                                                 records it in spots.lock. With no source, it adds each spot of spots.lock
-                                                 that is missing, at its commit.
+                                                 records it in spots.lock. A source that spots.lock has already updates
+                                                 its spot. With no source, it adds each spot of spots.lock that is
+                                                 missing, at its commit. An update that adds a use needs --yes.
     openspot spot remove <id>                    Moves a spot that spot add added to the Trash, and drops it from spots.lock.
     openspot spot open <id>                      Opens the panel on the sheet of a spot.
     openspot spot review <id>                    Shows the whole text of a spot that comes with the app, and what of it
@@ -262,7 +263,8 @@ public enum CommandLineCall: Equatable, Sendable {
             self = .spotList(core: rest.contains("--core"), frame: rest.contains("--frame"))
         case ("spot", "on") where rest.count > 1, ("spot", "off") where rest.count > 1:
             self = .spotTurn(ids: Array(rest.dropFirst()), on: rest[0] == "on")
-        case ("spot", "add") where rest.count <= 2: self = Self.changing(.spotAdd(rest.dropFirst().first), "openspot spot add", "changes your plugins folder", environment)
+        case ("spot", "add") where rest.dropFirst().filter({ $0 != "--yes" }).count <= 1 && rest.filter({ $0 == "--yes" }).count <= 1:
+            self = Self.changing(.spotAdd(rest.dropFirst().first { $0 != "--yes" }, isConfirmed: rest.contains("--yes")), "openspot spot add", "changes your plugins folder", environment)
         case ("spot", "remove") where rest.count == 2: self = Self.changing(.spotRemove(rest[1]), "openspot spot remove", "changes your plugins folder", environment)
         case ("setting", "list") where Self.flags(rest.dropFirst(), within: ["--frame"]): self = .settingList(frame: rest.contains("--frame"))
         case ("setting", "change"):

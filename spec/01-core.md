@@ -561,7 +561,7 @@ prints the state of the app, `app login|link on|off` and `app quit` change the a
 fails in a read. The config gives a spot a key of the panel, which opens its sheet, by `key` in its `[[spots]]` table, and
 the default config gives `cmd+n` to New spot and `cmd+,` to Settings.
 
-`openspot spot add <git url | folder | file.spot>` puts a spot in the plugins folder, and `openspot spot remove <id>` takes
+`openspot spot add <git url | folder | file.spot> [--yes]` puts a spot in the plugins folder, and `openspot spot remove <id>` takes
 it out (N1). A git repository goes into a folder named after it, at its newest commit and with no `.git`. A folder is
 copied, and a `.spot` file is written as a drop writes it. A name that the plugins folder has already is a fault.
 `spots.lock` in the config folder lists the source, the commit, the paths, a hash of the files and the `uses` of each added

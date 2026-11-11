@@ -225,6 +225,22 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertTrue(try shown(review).contains("Can also\nCall openspot app quit without uses=app\n"))
     }
 
+    func testAReviewOfANewVersionSaysWhatItAdds() throws {
+        try "#!/bin/sh\n# title=Weather\n# uses=app\n".writeScript(to: folder.appendingPathComponent("weather.sh"))
+
+        let text = try shown(review("title=Weather\nuses=app,network,screen"))
+
+        XCTAssertTrue(text.hasPrefix("Weather\nThis version adds: screen, network\n\n"), text)
+    }
+
+    func testAReviewOfANewVersionThatAddsNothingSaysNothing() throws {
+        try "#!/bin/sh\n# title=Weather\n# uses=app\n".writeScript(to: folder.appendingPathComponent("weather.sh"))
+
+        let text = try shown(review("title=Weather\nuses=app"))
+
+        XCTAssertFalse(text.contains("This version adds"), text)
+    }
+
     func testAStayingScriptSaysSo() throws {
         let review = try review("title=Weather\nmode=stay\nread=sheet")
 

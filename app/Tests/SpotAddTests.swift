@@ -227,6 +227,66 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(answer.output, "Each spot of spots.lock is in the plugins folder.\n")
     }
 
+    func testTheLockKeepsAHashOfTheFilesAndTheUses() async throws {
+        let repo = try repo()
+        try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n# uses=network,app\necho one\n"])
+
+        _ = try await answer(["spot", "add", repo.url.path])
+
+        let entry = try XCTUnwrap(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries().first)
+        XCTAssertEqual(entry.hash?.count, 64)
+        XCTAssertEqual(entry.uses, [.app, .network])
+    }
+
+    func testAnUpdateThatAddsNoUseAppliesQuietly() async throws {
+        let repo = try repo()
+        _ = try await answer(["spot", "add", repo.url.path])
+        let commit = try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\necho two\n"])
+
+        let answer = try await answer(["spot", "add", repo.url.path])
+
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        XCTAssertEqual(answer.output, "Updated coffee to \(commit.prefix(7)).\n")
+        XCTAssertEqual(try String(contentsOf: plugins.appendingPathComponent("coffee/coffee.sh"), encoding: .utf8), "#!/bin/sh\n# title=Coffee\necho two\n")
+        XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries().map(\.commit), [commit])
+    }
+
+    func testAnUpdateThatAddsAUseNeedsYes() async throws {
+        let repo = try repo()
+        _ = try await answer(["spot", "add", repo.url.path])
+        let before = try files(in: plugins)
+        let commit = try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n# uses=network\ncurl example.com\n"])
+
+        let refused = try await answer(["spot", "add", repo.url.path])
+
+        XCTAssertEqual(refused.code, 1)
+        XCTAssertEqual(refused.errors, "This version adds: network.\nOpenspot kept the one you have. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to update it.\n")
+        XCTAssertEqual(try files(in: plugins), before)
+        let accepted = try await answer(["spot", "add", repo.url.path, "--yes"])
+        XCTAssertEqual(accepted.code, 0, accepted.errors)
+        XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries().map(\.uses), [[.network]])
+        XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries().map(\.commit), [commit])
+    }
+
+    func testWithNoSourceAFolderThatGrewAUseNeedsYes() async throws {
+        let tea = root.appendingPathComponent("sources/tea")
+        try FileManager.default.createDirectory(at: tea, withIntermediateDirectories: true)
+        try "#!/bin/sh\n".writeScript(to: tea.appendingPathComponent("tea.sh"))
+        _ = try await answer(["spot", "add", tea.path])
+        try "#!/bin/sh\n# uses=screen\n".writeScript(to: tea.appendingPathComponent("tea.sh"))
+        try FileManager.default.removeItem(at: plugins)
+
+        let refused = try await answer(["spot", "add"])
+
+        XCTAssertEqual(refused.code, 1)
+        XCTAssertEqual(refused.errors, "tea: This version adds: screen.\nOpenspot kept the one you have. Run `openspot spot add --yes` to update it.\n")
+        XCTAssertEqual(try ids(), [])
+        let accepted = try await answer(["spot", "add", "--yes"])
+        XCTAssertEqual(accepted.code, 0, accepted.errors)
+        XCTAssertEqual(try ids(), ["tea/tea"])
+        XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries().map(\.uses), [[.screen]])
+    }
+
     func testWithNoSourceASourceThatIsGoneIsAFaultAndTheOthersComeBack() async throws {
         let repo = try repo()
         let tea = root.appendingPathComponent("sources/tea")

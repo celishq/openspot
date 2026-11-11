@@ -38,25 +38,33 @@ public enum SpotSource: Equatable, Sendable {
     }
 
     /// Puts the spot in the folder, a git source at `commit` or else at its newest commit, and returns the commit and the
-    /// paths at the top of the folder that it took. A path that is there already is a fault, and then nothing changes.
-    func add(to folder: URL, at commit: String?) async throws -> (commit: String?, paths: [String]) {
+    /// paths at the top of the folder that it took. A path that is there already is a fault, unless `replacing` names it,
+    /// and then the new version takes its place. `check` sees the whole spot in a work folder first, and a throw from it,
+    /// as any fault, leaves the folder as it was.
+    func add(to folder: URL, at commit: String?, replacing: [String] = [], check: (URL, [String]) throws -> Void = { _, _ in }) async throws -> (commit: String?, paths: [String]) {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let work = try FileManager.default.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: folder, create: true)
         defer { try? FileManager.default.removeItem(at: work) }
-        let (commit, paths) = try await stage(in: work, from: folder, at: commit)
+        let (commit, paths) = try await stage(in: work, from: folder, at: commit, replacing: replacing)
+        try check(work, paths)
         for path in paths {
-            try FileManager.default.moveItem(at: work.appendingPathComponent(path), to: folder.appendingPathComponent(path))
+            let place = folder.appendingPathComponent(path)
+            if replacing.contains(path), FileManager.default.fileExists(atPath: place.path) {
+                _ = try FileManager.default.replaceItemAt(place, withItemAt: work.appendingPathComponent(path))
+            } else {
+                try FileManager.default.moveItem(at: work.appendingPathComponent(path), to: place)
+            }
         }
         return (commit, paths)
     }
 
     /// Writes the spot whole into a work folder, so that a failure leaves the plugins folder as it was.
-    private func stage(in work: URL, from folder: URL, at commit: String?) async throws -> (commit: String?, paths: [String]) {
+    private func stage(in work: URL, from folder: URL, at commit: String?, replacing: [String]) async throws -> (commit: String?, paths: [String]) {
         switch self {
         case .git(let text):
             if text.hasPrefix("/"), !FileManager.default.fileExists(atPath: text) { throw SpotError.fault("Openspot cannot find \(text).") }
             let name = try Self.name(of: text)
-            try Self.checkFree([name], in: folder)
+            try Self.checkFree([name], in: folder, replacing: replacing)
             let clone = work.appendingPathComponent(name)
             do {
                 try await Self.run(["clone", "--quiet", text, clone.path])
@@ -69,7 +77,7 @@ public enum SpotSource: Equatable, Sendable {
             }
         case .folder(let url):
             let name = url.lastPathComponent
-            try Self.checkFree([name], in: folder)
+            try Self.checkFree([name], in: folder, replacing: replacing)
             try FileManager.default.copyItem(at: url, to: work.appendingPathComponent(name))
             return (nil, [name])
         case .file(let url):
@@ -79,7 +87,7 @@ public enum SpotSource: Equatable, Sendable {
                 let top = String(file.path.split(separator: "/")[0])
                 if !paths.contains(top) { paths.append(top) }
             }
-            try Self.checkFree(paths, in: folder)
+            try Self.checkFree(paths, in: folder, replacing: replacing)
             try spot.add(to: work)
             return (nil, paths)
         }
@@ -97,8 +105,8 @@ public enum SpotSource: Equatable, Sendable {
         return name
     }
 
-    private static func checkFree(_ paths: [String], in folder: URL) throws {
-        for path in paths where FileManager.default.fileExists(atPath: folder.appendingPathComponent(path).path) {
+    private static func checkFree(_ paths: [String], in folder: URL, replacing: [String]) throws {
+        for path in paths where !replacing.contains(path) && FileManager.default.fileExists(atPath: folder.appendingPathComponent(path).path) {
             let name = URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
             throw SpotError.fault("The plugins folder has \(path) already. Run `openspot spot remove \(name)` first, or move it away.")
         }

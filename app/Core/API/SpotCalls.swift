@@ -28,18 +28,18 @@ struct SpotCalls {
         }
     }
 
-    func add(_ source: String) -> CommandAPI.Work {
+    func add(_ source: String, isConfirmed: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [environment] in
             let place = URL(fileURLWithPath: environment["PWD"] ?? FileManager.default.currentDirectoryPath, isDirectory: true)
             let folder = SpotFolder.standard(environment: environment, enabled: [], disabled: [])
-            return try await SpotLock.standard(environment: environment).add(SpotSource(text: source, place: place), to: folder.url).added
+            return try await SpotLock.standard(environment: environment).add(SpotSource(text: source, place: place), to: folder.url, isConfirmed: isConfirmed)
         }
     }
 
-    func restore() -> CommandAPI.Work {
+    func restore(isConfirmed: Bool) -> CommandAPI.Work {
         { [environment] in
             do {
-                return try await SpotLock.standard(environment: environment).restore(to: SpotFolder.standard(environment: environment, enabled: [], disabled: []).url)
+                return try await SpotLock.standard(environment: environment).restore(to: SpotFolder.standard(environment: environment, enabled: [], disabled: []).url, isConfirmed: isConfirmed)
             } catch {
                 return CommandAnswer(failure: error)
             }
