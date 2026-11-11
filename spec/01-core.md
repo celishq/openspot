@@ -55,12 +55,12 @@ open -a Calendar
 | `icon`     | Its picture, as for a block. A path that does not start with `/` starts at the folder of the script.                     |
 | `detail`   | The second line.                                                                                                         |
 | `size`     | The size it prefers: `wide` (the default), `small`, `square`, `strip` or `large`. The grid can change it, and the person's choice wins (F9). |
-| `read`     | When a read is safe: `sheet`, `panel` or a number of seconds, split by commas.                                           |
+| `read`     | When a read is safe: `sheet`, `panel`, a number of seconds or an event, split by commas (E1).                           |
 | `drop`     | The files that its card takes: extensions such as `mov,mkv`, `folder`, or `*`.                                          |
 | `offers`   | The places that it is made for, split by commas: `search`, `rows` or `float`.                                           |
 | `answers`  | A regular expression of the texts of the main search that it answers, such as `^[0-9(]` (A1). See Places.               |
 | `view`     | A SwiftUI file beside the script, such as `view=cups.swift` (03).                                                        |
-| `stay`     | `true` keeps one process that takes each call on stdin, and `always` keeps it from the start of the app to its quit (05). |
+| `mode`     | How it runs: `once` (the default), `stay`, `always` or `inline` (I1).                                                    |
 
 | Block           | Meaning                                                                                              |
 | --------------- | ---------------------------------------------------------------------------------------------------- |
@@ -118,10 +118,10 @@ esac
 with `OPENSPOT_REASON=search`, at each change of the text with no pause, and a newer text stops the older call (A2). Keep
 the answer fast. The rows show first in the main search, each with its `detail`, until the newest text is answered, and
 they go at once when the pattern no longer matches (A3). A pick of a row is `<script> open <row id>`. A spot with
-`answers` and no `read` has no card and shows only its answers. A staying script cannot answer. `openspot calc solve
+`answers` and no `read` has no card and shows only its answers. A staying script answers each text as a call of its own (I2). `openspot calc solve
 <words>...` prints the answer of a sum, a conversion or a date as a row, so a spot can print it as it is.
 
-A spot with a number in its `read`, or with `stay`, and a main `text`, `number`, `gauge` or `graph` can show in the menu bar, when the
+A spot with a number in its `read`, or with `mode=stay` or `always`, and a main `text`, `number`, `gauge` or `graph` can show in the menu bar, when the
 person puts it there. Printing nothing removes the item until the next read. A spot with a number in its `read` has no
 card on the grid until the person shows it (F7).
 
@@ -136,6 +136,24 @@ card on the grid until the person shows it (F7).
 | `sheet`  | When its sheet opens.                                               |
 | `panel`  | Each time the panel opens, and once as the app starts.              |
 | a number | Every that many seconds while something wants it, and when the Mac wakes. |
+| an event | Each time the event occurs (E1).                                    |
+
+An event is a word with a dot. Openspot raises `app.front` when another app comes to the front, `clipboard` when the
+clipboard changes and `screen.wake` when the screen wakes (E2). `openspot emit <event> [value]` raises any event, from a
+script or from a terminal, and each spot that lists it reads (E3). `OPENSPOT_REASON` gives the event, and
+`OPENSPOT_VALUE` its value (E4). A spot that lists an event reads only while something wants it, as for a number (E5).
+
+## Modes
+
+`mode=once` starts a process for each call. `mode=stay` keeps one process that takes each call on stdin while something
+wants it, and `mode=always` keeps it from the start of the app to its quit (05) (I1). A staying spot can answer the main
+search: each text is a call with its own id, and only the answer to the newest one shows (I2).
+
+`mode=inline` runs a JavaScript file inside the app, such as `calc.js`, with its header in `//` lines (I3). The file
+defines `read(reason, text)`, and may define `open(id)` and the other calls, and each one returns the text of a frame.
+`openspot.call(["calc", "solve", "2+2"])` asks the openspot command and returns `{ stdout, code }` (I4). An inline spot
+has no files, no network and no process of its own. Openspot waits 2 ms for its frame in the turn of the key, and shows a
+later frame in the next turn (I5).
 
 A read must be safe at each moment that its header lists, and only its author can promise this. A script has one read
 at a time (M1). `OPENSPOT_REASON` gives the reason: `panel`, `sheet`, `timer`, `search` or `change` (M6). Something wants
@@ -337,6 +355,7 @@ list.
 | `keyword`  | A word that finds the row in a search, which the row does not show.                      |
 | `shortcut` | A key at the end of the row. A pick records a new key and calls `<id> <shortcut>`.        |
 | `file`     | The file that the row stands for (O1). See Files out.                                    |
+| `to`       | The id of another spot that a pick goes to, as `<spot> open <row id>` with the row's fields on stdin (J1). |
 
 Openspot searches the rows itself and sorts recent picks first. The head can change this on each read:
 
@@ -455,7 +474,9 @@ each (O3).
 
 ## The openspot command
 
-A capability is `openspot <noun> <verb>`, and it works the same from a script and from a terminal (K1). `openspot help`
+A capability is `openspot <noun> <verb>`, and it works the same from a script and from a terminal (K1). While the app
+runs, the command asks it over a socket, so a call starts no second app and finds its data ready (S1). With the app
+closed, the command does the work itself, and gives the same output (S2). `openspot help`
 lists each one, and `openspot help <noun>` prints the guide of a noun, such as `screen` or `calendar`. A capability that
 cannot answer prints `status=<word>`. One that keeps state keeps it in its own helper, which a script never starts or
 stops (K3). When macOS already has a command, such as `pbcopy` or `open`, use it.
@@ -468,7 +489,12 @@ is `button`, `list`, `number` or `form`. `openspot spot run <id> [call] [value].
 with the same environment, and prints each frame, then stderr, and exits with the code of the script. With no call, it
 reads a spot that has a `read`, and opens one that has none. `openspot spot log <id>` prints the last calls that Openspot
 made to a spot, each with its stdin, stdout, stderr and exit code. A timed read or a search that does not fail
-leaves no record.
+leaves no record. `openspot spot stats` prints, for each spot, its calls, the time they took, its CPU time and its last
+fault (G1).
+
+`openspot spot add <git url | folder | file.spot>` puts a spot in the plugins folder, and `openspot spot remove <id>` takes
+it out (N1). A spot from git is kept at its commit, and `spots.lock` in the config folder lists the source and the commit
+of each added spot. `openspot spot add` with no source adds each spot of `spots.lock` that is missing (N2).
 
 `openspot render [--view <file.swift>] <file.png>` draws the sheet that stdin holds, with the plugin's view from a Swift
 file, and `openspot render --card <size> <file.png>` draws its card at a size such as `wide`, so you can see a result
@@ -527,7 +553,7 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | A value is whole, and a thing with its own title or picture is a block.                                     | `<id>:<title>:<icon>` in one value, which a URL or a time such as 09:30 breaks. |
 | The header is a frame in comments, so a command or a setting is a block, as in the output.                  | A `command` line and a `settings` list of colon fields.                     |
 | A person can see and stop each call, so a call has no time limit.                                           | A `job` key.                                 |
-| A script runs once for each call, unless its header says `stay` (05).                                       | A process that stays by default.             |
+| A script runs once for each call, unless its header gives another `mode` (I1).                                       | A process that stays by default.             |
 | The header is in each file, and a scan runs nothing.                                                        | A manifest.                                  |
 | `read` lists the moments when a read is safe, because only the author knows what a read costs.             | `read=true`, with moments that the app picks. |
 | The person gives each letter and puts each spot in the menu bar, and the header only offers places.         | `shortcut`, `tray` and `global` in the header, which two shared spots could both claim. |

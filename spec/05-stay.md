@@ -5,7 +5,7 @@
 ```sh
 #!/bin/sh
 # title=Relay
-# stay=always
+# mode=always
 # read=panel
 . "$OPENSPOT_SH"
 while next; do
@@ -17,7 +17,7 @@ while next; do
 done
 ```
 
-A script with `stay` in its header is one process that talks both ways over stdio (Y1). Use it to keep a connection,
+A script with `mode=stay` or `mode=always` in its header is one process that talks both ways over stdio (Y1). Use it to keep a connection,
 a model or a local server alive between calls. Each call reaches the running process, and no call starts a second copy (Y2).
 
 ## Calls on stdin
@@ -53,8 +53,8 @@ the script ends. A newer search sends `stop=<n>` for the search before it, whose
 
 ## Its life
 
-With `stay=true`, it runs while something wants it: its open sheet, a widget or the menu bar that shows it, the open panel
-with `panel` in its `read`, or a call that waits for its `end` (Y3). With `stay=always`, it runs from the start of the app
+With `mode=stay`, it runs while something wants it: its open sheet, a widget or the menu bar that shows it, the open panel
+with `panel` in its `read`, or a call that waits for its `end` (Y3). With `mode=always`, it runs from the start of the app
 to its quit. When nothing wants it, Openspot closes its stdin. The script must end then, and so must each process that it
 started. After 2 seconds its process group gets the terminate signal, and 2 seconds later the kill signal.
 
@@ -67,7 +67,7 @@ what must survive goes in `OPENSPOT_DATA`.
 | Decision                                                                              | Rejected                                                   |
 | ------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
 | A staying script says so in its header, because a script that runs once reads stdin to its end before it answers. | A script that keeps running after its first answer stays. |
-| One `stay` key holds the life of the process: `true` while something wants it, `always` from start to quit. | A `launch` moment beside `stay=true`.                        |
+| One `mode` key holds the life of the process: `stay` while something wants it, `always` from start to quit. | A `launch` moment beside `mode=stay`.                        |
 | A call holds the same `arg` words as the arguments of a call in 01, so one `case` handles both. | `name`, `value` and `field.<id>`.                          |
 | A frame follows the one rule of 01, so a peer's frame with a block is a new picture.  | A frame that merges what it prints.                        |
 | A stop is a block of its own, `stop=<n>`, so no id that an author picks can clash with it. | A call named `stop`.                                       |
