@@ -79,15 +79,24 @@ public final class ScriptProcess: @unchecked Sendable {
     public static func environment(base: [String: String], app: String, dataName: String? = nil) -> [String: String] {
         let contents = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent()
         let helpers = contents.appendingPathComponent("Helpers").path
-        let home = base["HOME"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? FileManager.default.homeDirectoryForCurrentUser
-        let config = SpotFolder.config(environment: base, home: home)
-        var data = config.appendingPathComponent("data", isDirectory: true)
-        if let dataName { data.appendPathComponent(URL(fileURLWithPath: dataName).lastPathComponent, isDirectory: true) }
+        let config = SpotFolder.config(environment: base, home: home(of: base))
+        let data = dataFolder(base: base, dataName: dataName)
         try? FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
         var environment = base.merging(["PATH": "\(helpers):\(base["PATH"] ?? "")", "OPENSPOT_DATA": data.path, "OPENSPOT_CONFIG": config.path], uniquingKeysWith: { _, new in new })
         let shell = contents.appendingPathComponent("Resources/openspot.sh").path
         if FileManager.default.fileExists(atPath: shell) { environment["OPENSPOT_SH"] = shell }
         return environment
+    }
+
+    /// The data folder of a script in an environment: `data` in the config folder, and the folder that `dataName` names in it.
+    static func dataFolder(base: [String: String], dataName: String?) -> URL {
+        var data = SpotFolder.config(environment: base, home: home(of: base)).appendingPathComponent("data", isDirectory: true)
+        if let dataName { data.appendPathComponent(URL(fileURLWithPath: dataName).lastPathComponent, isDirectory: true) }
+        return data
+    }
+
+    private static func home(of base: [String: String]) -> URL {
+        base["HOME"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? FileManager.default.homeDirectoryForCurrentUser
     }
 
     /// Runs a process once, and returns all that it prints.

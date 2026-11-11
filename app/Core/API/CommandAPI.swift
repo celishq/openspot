@@ -52,8 +52,7 @@ public final class CommandAPI: @unchecked Sendable {
     }
 
     /// The work that answers a call, or nil for a call that runs in a process of its own: one that draws a picture or runs
-    /// a helper, a show or a sandbox with no app to reach, and in Careful mode a spot's capture into a file that it names,
-    /// which only its sandbox can fence (Z8). `input` reads stdin, and only a call that takes stdin reads it. `isPiped` says
+    /// a helper, or a show or a sandbox with no app to reach. `input` reads stdin, and only a call that takes stdin reads it. `isPiped` says
     /// whether stdin is a pipe or a file, which `spot run` passes on. A call prints to `output` as it runs, and with none,
     /// its answer holds all that it printed.
     public func work(for call: CommandLineCall, input: @escaping @Sendable () async -> String, environment: [String: String], isPiped: Bool = true, output: CommandOutput? = nil) -> Work? {
@@ -68,7 +67,7 @@ public final class CommandAPI: @unchecked Sendable {
         let keys = KeyCalls(environment: environment, app: app)
         let apps = AppCalls(mac: mac, environment: environment, app: app)
         let clipboard = ClipboardCalls(mac: mac, environment: environment)
-        let screen = ScreenCalls(mac: mac, environment: environment)
+        let screen = ScreenCalls(mac: mac, environment: environment, fence: fence(of: environment))
         switch call {
         case .help: return HelpCalls().list()
         case .guideOf(let noun): return HelpCalls().guide(of: noun)
@@ -129,8 +128,8 @@ public final class CommandAPI: @unchecked Sendable {
             return ""
         }
         case .screenSources: return screen.sources()
-        case .screenShot(let capture): return isFenced(environment) && capture.file != nil ? nil : screen.shot(capture)
-        case .screenRecordStart(let capture): return isFenced(environment) && (capture.file ?? capture.events) != nil ? nil : screen.start(capture)
+        case .screenShot(let capture): return screen.shot(capture)
+        case .screenRecordStart(let capture): return screen.start(capture)
         case .screenRecordStop: return screen.stop()
         case .screenRecordStatus: return screen.status()
         case .translate(let from, let to): return CommandAnswer.work { [mac] in try await mac.translate(await input(), from: from, to: to) }
@@ -149,9 +148,9 @@ public final class CommandAPI: @unchecked Sendable {
         return runs.tokens.caller(of: environment)?.uses ?? Set(SpotUse.allCases)
     }
 
-    /// Whether the call comes from a spot that Careful mode keeps from writing outside its own folders (Z8).
-    private func isFenced(_ environment: [String: String]) -> Bool {
-        guard let runs, runs.tokens.isCareful, let caller = runs.tokens.caller(of: environment) else { return false }
-        return !caller.uses.contains(.files)
+    /// The spot that calls and its Careful mode, when that mode keeps it from writing outside its own folders (Z8).
+    private func fence(of environment: [String: String]) -> (caller: CallerTokens.Caller, mode: CarefulMode)? {
+        guard let runs, runs.tokens.isCareful, let caller = runs.tokens.caller(of: environment), !caller.uses.contains(.files) else { return nil }
+        return (caller, CarefulMode(uses: caller.uses))
     }
 }

@@ -666,7 +666,10 @@ Careful mode is a setting of the person, off by default, which Settings and `ope
 and which `app status` shows as `careful` (Z8). No other spot can change it. It runs each process of a spot, and each
 process that an inline spot starts with `openspot.call`, under `sandbox-exec`: no network unless `uses=network`, writes
 only to its data folder, the temp folder, `/private/tmp`, `/dev` and the cache folder unless `uses=files`, also to the
-folder of screenshots, the Desktop and Movies with `uses=screen`, no Apple Event, and reads everywhere. A process in a
+folder of screenshots, the Desktop and Movies with `uses=screen`, no Apple Event, and reads everywhere. A capture that
+`openspot screen` takes into a file that such a spot names follows the same folders, and another file fails, such as
+``Careful mode keeps Recorder from writing /Users/a/Documents/talk.mp4. Name a file in its data folder or a temp folder, or
+add `uses=files` to its header.`` A process in a
 sandbox that is no spot's known process, such as a child that left its group, has no use. A spot's call that
 needs a use that its header does not name fails, such as ``Careful mode stopped Coffee, because it quit Openspot without
 `uses=app` in its header. Add it, or turn Careful mode off.`` A change of the mode starts each staying process again. An

@@ -12,6 +12,8 @@ public final class CallerTokens: @unchecked Sendable {
         public let uses: Set<SpotUse>
         /// Whether the spot comes with the app, such as Settings.
         public var isBuiltIn = false
+        /// The folder of its files inside the data of the app, or nil for a caller with none.
+        public var dataName: String?
     }
 
     /// One token: its spot, the reason of its call, and the process group that it stands for, with the start of the
@@ -46,7 +48,7 @@ public final class CallerTokens: @unchecked Sendable {
     func issue(for spot: Spot, reason: String? = nil) -> String {
         var random = SystemRandomNumberGenerator()
         let token = String(format: "%016llx%016llx", random.next() as UInt64, random.next() as UInt64)
-        lock.withLock { records[token] = Record(caller: Caller(id: spot.id, name: spot.name, uses: spot.uses, isBuiltIn: spot.isBuiltIn), reason: reason) }
+        lock.withLock { records[token] = Record(caller: Caller(id: spot.id, name: spot.name, uses: spot.uses, isBuiltIn: spot.isBuiltIn, dataName: spot.dataName), reason: reason) }
         return token
     }
 
