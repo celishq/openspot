@@ -20,7 +20,7 @@ struct SpotDockView: View {
                 ZStack(alignment: .topLeading) {
                     ForEach(Array(zip(dock.shown, rects)), id: \.0.id) { item, rect in
                         SpotDockTile(item: item, model: model)
-                            .simultaneousGesture(carry(item))
+                            .simultaneousGesture(carry(item), isEnabled: item.state == .off)
                             .animation(nil) { $0.opacity(model.carry?.entry.id == item.id ? 0.001 : 1) }
                             .offset(x: rect.minX, y: rect.minY)
                     }
@@ -38,6 +38,9 @@ struct SpotDockView: View {
                     }
                 }
                 .frame(width: size.width - 2 * SpotTokens.padding, height: dock.height(columns: columns), alignment: .topLeading)
+                .contentShape(Rectangle())
+                .onContinuousHover { phase in hover(phase, columns: columns) }
+                .simultaneousGesture(SpatialTapGesture().onEnded { press(at: $0.location, columns: columns) })
                 .padding(.horizontal, SpotTokens.padding)
                 .padding(.top, SpotTokens.dockRowsTop)
                 .padding(.bottom, SpotTokens.padding)
@@ -88,6 +91,36 @@ struct SpotDockView: View {
             Color.black
             SpotScrollEdges.end(fading: edges.bottom, from: .bottom)
                 .frame(height: SpotScrollEdges.fadeLength)
+        }
+    }
+
+    /// Shows the tip of the part of a card that the pointer lies over: the words of its mark or its cross, or its
+    /// description, with its name on a 1x1 card.
+    private func hover(_ phase: HoverPhase, columns: Int) {
+        guard case .active(let point) = phase, let (id, part) = model.dock.part(at: point, columns: columns),
+              let item = model.dock.shown.first(where: { $0.id == id }) else {
+            if model.tip?.anchor == .dockCard || model.tip?.anchor == .dockCorner { model.tip = nil }
+            return
+        }
+        let changed = item.publication == .changed ? "Changes not published" : nil
+        let words = (item.size == .small ? [item.command.name, item.command.subtitle] : [item.command.subtitle]).compactMap { $0 } + [changed].compactMap { $0 }
+        let tip: SpotTip? = switch part {
+        case .mark: SpotTip(id: id, anchor: .dockCorner, text: SpotDockTile.mark(of: item).label)
+        case .delete: SpotTip(id: id, anchor: .dockCard, text: "Delete")
+        case .card: words.isEmpty ? nil : SpotTip(id: id, anchor: .dockCard, text: words.joined(separator: " · "))
+        }
+        if model.tip != tip { model.tip = tip }
+    }
+
+    /// Acts on a click in the rows: the mark turns a spot that is off on, or selects the card of one that is on, the cross
+    /// deletes, and the rest of a card opens its listing.
+    private func press(at point: CGPoint, columns: Int) {
+        guard model.carry == nil, let (id, part) = model.dock.part(at: point, columns: columns),
+              let item = model.dock.shown.first(where: { $0.id == id }) else { return }
+        switch part {
+        case .mark: item.state == .off ? model.turnOn(id) : model.dragDockSpot(id, by: .zero)
+        case .delete: model.delete(id)
+        case .card: model.openListing(id)
         }
     }
 

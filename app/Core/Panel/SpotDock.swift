@@ -111,6 +111,23 @@ public struct SpotDock: Equatable, Sendable {
         sheetTop(in: closedRects(columns: columns)).map { CGRect(x: 0, y: $0, width: SpotTokens.width(columns: columns), height: SpotTokens.storeSheetHeight) }
     }
 
+    /// A part of a card in the store that a pointer can be over: the mark of its state, the cross that deletes a spot of the
+    /// plugins folder that is off, or the rest of the card.
+    public enum Part: Equatable, Sendable {
+        case mark, delete, card
+    }
+
+    /// The shown spot and the part of its card under a point of the rows, if any.
+    public func part(at point: CGPoint, columns: Int) -> (id: String, part: Part)? {
+        guard let index = rects(columns: columns).firstIndex(where: { $0.contains(point) }) else { return nil }
+        let item = shown[index], rect = rects(columns: columns)[index]
+        let rim = SpotTokens.corner(for: item.size) * SpotTokens.rimPoint
+        let reach = SpotTokens.keycap / 2 + 2
+        if hypot(point.x - rect.minX - rim, point.y - rect.minY - rim) <= reach { return (item.id, .mark) }
+        if item.isOwn, item.state == .off, hypot(point.x - rect.maxX + rim, point.y - rect.minY - rim) <= reach { return (item.id, .delete) }
+        return (item.id, .card)
+    }
+
     /// The height of the rows that hold the shown spots, and of the sheet of the opened spot.
     public func height(columns: Int) -> CGFloat {
         let rows = places(columns: columns).map { $0.row + $0.size.rows }.max() ?? 0

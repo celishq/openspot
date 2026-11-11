@@ -20,7 +20,7 @@ extension SpotsModel {
             query = ""
             isEditing = true
             updateVisible()
-            refreshDock(in: folder)
+            if dockStamp == folder.stamp() { composeDock() } else { refreshDock(in: folder) }
         }
     }
 
@@ -75,10 +75,28 @@ extension SpotsModel {
 
     /// Reads the spots of this folder that are off and the packages of its files in the store, and makes the store again.
     func refreshDock(in folder: PluginFolder) {
-        let own = (try? PluginFolder(url: folder.url).scan()) ?? ScanResult(plugins: [], refused: [])
-        dockOff = Self.offSpots(in: folder, own: own.plugins)
-        dockPublications = Self.publications(of: own, in: folder, store: files.store)
+        dockRead?.cancel()
+        dockStamp = folder.stamp()
+        (dockOff, dockPublications) = Self.readDock(in: folder, store: files.store)
         composeDock()
+    }
+
+    /// Reads what the store needs from this folder off the main thread, so that Edit Spots starts with no read of the disk.
+    func readDockLater(in folder: PluginFolder) {
+        dockRead?.cancel()
+        let store = files.store
+        dockRead = Task { [weak self] in
+            let read = await Task.detached(priority: .utility) { (folder.stamp(), Self.readDock(in: folder, store: store)) }.value
+            guard let self, !Task.isCancelled else { return }
+            (self.dockOff, self.dockPublications) = read.1
+            self.dockStamp = read.0
+        }
+    }
+
+    /// The spots of this folder that are off, and whether the store's package of each file of the folder is current.
+    nonisolated static func readDock(in folder: PluginFolder, store: URL) -> ([SpotDock.Item], [String: SpotDock.Publication]) {
+        let own = (try? PluginFolder(url: folder.url).scan()) ?? ScanResult(plugins: [], refused: [])
+        return (offSpots(in: folder, own: own.plugins), publications(of: own, in: folder, store: store))
     }
 
     /// Makes the store from each card of the panel and each spot that is off, and keeps its filter and its search. A part of
@@ -102,7 +120,7 @@ extension SpotsModel {
 
     /// The core spots of this folder that are not on, and the spots of its files that the person turned off. A sheet that
     /// another spot opens is not one.
-    private static func offSpots(in folder: PluginFolder, own: [Plugin]) -> [SpotDock.Item] {
+    private nonisolated static func offSpots(in folder: PluginFolder, own: [Plugin]) -> [SpotDock.Item] {
         let ownIDs = Set(own.map(\.id))
         let core = folder.coreChoices()
             .filter { !folder.enabled.contains(PluginFolder.coreID(of: $0)) && !ownIDs.contains(PluginFolder.coreID(of: $0)) }

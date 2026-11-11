@@ -250,6 +250,10 @@ public final class SpotsModel {
     /// The spots that are off, and the packages of the spots of the plugins folder, as the last read of the folder found them.
     @ObservationIgnored var dockOff: [SpotDock.Item] = []
     @ObservationIgnored var dockPublications: [String: SpotDock.Publication] = [:]
+    /// The stamp of the folder that `dockOff` and `dockPublications` were read from, and the read that runs in the background.
+    /// A publish changes no stamp, so it reads the store again itself.
+    @ObservationIgnored var dockStamp: PluginFolder.Stamp?
+    @ObservationIgnored var dockRead: Task<Void, Never>?
     /// Whether the person types in the dock's search, which then takes each key but Esc.
     public internal(set) var isSearchingDock = false
     /// Where the person pressed a card's resize handle, in the handle's square.
@@ -342,7 +346,7 @@ public final class SpotsModel {
         arrangement = config.arrangement
         scanned = scan.commands
         rebuildEntries()
-        if isEditing { refreshDock(in: folder) }
+        if isEditing { refreshDock(in: folder) } else { readDockLater(in: folder) }
         if problems != self.problems, !problems.isEmpty {
             host.notify(problems.joined(separator: " "))
         }

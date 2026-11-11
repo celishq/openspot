@@ -93,4 +93,18 @@ final class SpotDockTests: XCTestCase {
         XCTAssertNil(dock.sheetRect(columns: 4))
         XCTAssertEqual(dock.rects(columns: 4).first?.minY, 0)
     }
+
+    func testAPointFindsTheMarkTheCrossOrTheCardOfASpot() {
+        let dock = SpotDock(items: [SpotDock.Item(command: Spot(id: "apple", name: "Apple", url: URL(fileURLWithPath: "/apple.sh")), origin: .mine), item("Bell")])
+        let rect = dock.rects(columns: 4)[0]
+        let rim = SpotTokens.corner(for: .wide) * SpotTokens.rimPoint
+
+        XCTAssertEqual(dock.part(at: CGPoint(x: rect.minX + rim, y: rect.minY + rim), columns: 4)?.part, .mark)
+        XCTAssertEqual(dock.part(at: CGPoint(x: rect.maxX - rim, y: rect.minY + rim), columns: 4)?.part, .delete)
+        XCTAssertEqual(dock.part(at: CGPoint(x: rect.midX, y: rect.midY), columns: 4)?.id, "apple")
+        XCTAssertEqual(dock.part(at: CGPoint(x: rect.midX, y: rect.midY), columns: 4)?.part, .card)
+        let bell = dock.rects(columns: 4)[1]
+        XCTAssertEqual(dock.part(at: CGPoint(x: bell.maxX - rim, y: bell.minY + rim), columns: 4)?.part, .card)
+        XCTAssertNil(dock.part(at: CGPoint(x: -50, y: -50), columns: 4))
+    }
 }

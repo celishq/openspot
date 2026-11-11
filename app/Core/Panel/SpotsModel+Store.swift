@@ -98,7 +98,7 @@ extension SpotsModel {
     }
 
     /// Whether the package of each spot of the plugins folder in the store holds its files as they are now.
-    static func publications(of scan: ScanResult, in folder: PluginFolder, store: URL) -> [String: SpotDock.Publication] {
+    nonisolated static func publications(of scan: ScanResult, in folder: PluginFolder, store: URL) -> [String: SpotDock.Publication] {
         var result: [String: SpotDock.Publication] = [:]
         for command in scan.commands {
             let package = SpotPackage(url: SpotPackage.url(for: folder.fileID(of: command), in: store))
