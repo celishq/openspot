@@ -3,11 +3,14 @@ import Foundation
 /// The link to a script that stays (05): one process that takes each call as a block on stdin and prints frames at any
 /// time. A frame with a block is the whole picture, and the frame that ends the read or the search that runs is its answer
 /// (Y7). The frames after `call=<n>` are the output of that call, as the frames of a once script are (Y8). It runs while
-/// something wants it (Y3), and after 3 failures in one minute it starts again only when its file changes (Y5).
+/// something wants it (Y3), and after 3 failures in one minute it starts again only when its file changes (Y5). A read or a
+/// search that the script does not end within the read limit stops, fails as a slow read, and its late answer changes
+/// nothing; a second such stop starts the script again.
 @MainActor
 final class StayLink: ScriptLink {
     private static let failureLimit = 3
     private static let failureWindow: TimeInterval = 60
+    private static let slowLimit = 2
 
     weak var run: SpotRun?
     let keepsState = true
@@ -33,6 +36,8 @@ final class StayLink: ScriptLink {
     private var formAnswer: CheckedContinuation<String?, Error>?
     /// Whether the link held the script at the last settle, so that the clock hears when that changes.
     private var heldScript = false
+    /// The asks of the script that runs which its read limit stopped.
+    private var slowAsks = 0
 
     init(runs: SpotRuns) {
         self.runs = runs
@@ -63,15 +68,15 @@ final class StayLink: ScriptLink {
                 return self.script != nil
             }
             let id = next()
-            asks[id] = .read(generation: generation, reports: reports)
+            ask(.read(generation: generation, reports: reports), id: id)
             script.send(.read, input: call.input, variables: call.variables, id: id)
         case .ask(.search(let query)):
             stop { if case .search = $0 { true } else { false } }
-            if let id = send(.items(query: query), input: nil, variables: call.variables) { asks[id] = .search(query) }
+            if let id = send(.items(query: query), input: nil, variables: call.variables) { ask(.search(query), id: id) }
         case .ask(.answer(let text)):
             stop(\.isAnswer)
             if let id = send(call.action, input: nil, variables: call.variables) {
-                asks[id] = .answer(text)
+                ask(.answer(text), id: id)
             } else {
                 run?.takeAnswers([], to: text)
             }
@@ -147,6 +152,7 @@ final class StayLink: ScriptLink {
         guard let run, givenUp == nil else { return }
         let (script, frames) = runs.stay(run.spot, limit: runs.readLimit)
         self.script = script
+        slowAsks = 0
         let id = next()
         asks[id] = .read(generation: nil, reports: true)
         script.send(.read, variables: (reason ?? startReason).variables, id: id)
@@ -172,6 +178,31 @@ final class StayLink: ScriptLink {
         }
         settle()
         return id
+    }
+
+    /// Keeps an ask until the frame that ends it, for the read limit at most.
+    private func ask(_ ask: SpotRun.Ask, id: Int) {
+        asks[id] = ask
+        guard let script else { return }
+        let limit = runs.readLimit
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(limit))
+            self?.timeOut(id, of: script)
+        }
+    }
+
+    /// Stops an ask that the script did not end in time, which fails as a slow read. The second one starts the script
+    /// again.
+    private func timeOut(_ id: Int, of script: ScriptProcess) {
+        guard self.script === script, let ask = asks.removeValue(forKey: id) else { return }
+        dropped.insert(id)
+        pictured.remove(id)
+        script.send(text: SpotAction.stopEvent(id: id))
+        slowAsks += 1
+        run?.askFailed(ask, SpotError.timedOut)
+        guard slowAsks >= Self.slowLimit else { return }
+        end()
+        settle()
     }
 
     /// Stops each ask of this kind that runs, and drops its answer when it comes (Y7).

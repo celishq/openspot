@@ -40,18 +40,8 @@ extension SpotRun {
                 readsAgain = false
                 eventAgain = nil
             }
-        case (.ask(.read(_, let reports, _)), .failed(let error)):
-            answered = nil
-            list.loadFailed()
-            changeReading { $0.markStale() }
-            answerArrived()
-            if reports { fail(error) }
-        case (.ask(.answer(let query)), .failed):
-            takeAnswers([], to: query)
-        case (.ask(.search(let query)), .failed(let error)):
-            list.stopWaiting(for: query)
-            answerArrived()
-            if error as? SpotError != .timedOut { fail(error) }
+        case (.ask(let ask), .failed(let error)):
+            take(error, of: ask)
         case (.work(let work), .stopped):
             if let undo = work.undo { state = undo }
         case (.work(let work), .ended):
@@ -71,6 +61,30 @@ extension SpotRun {
         }
         callEnded(call)
         readAgainIfAsked()
+    }
+
+    /// Takes the failure of a read or a search, such as one that a staying script did not answer in time, and reads again
+    /// when a change came meanwhile.
+    func askFailed(_ ask: Ask, _ error: Error) {
+        take(error, of: ask)
+        readAgainIfAsked()
+    }
+
+    private func take(_ error: Error, of ask: Ask) {
+        switch ask {
+        case .read(_, let reports, _):
+            answered = nil
+            list.loadFailed()
+            changeReading { $0.markStale() }
+            answerArrived()
+            if reports { fail(error) }
+        case .answer(let query):
+            takeAnswers([], to: query)
+        case .search(let query):
+            list.stopWaiting(for: query)
+            answerArrived()
+            if error as? SpotError != .timedOut { fail(error) }
+        }
     }
 
     /// The script that held its own state ended by itself: its value dims, its answer is old, and a sheet that waited for it

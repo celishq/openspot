@@ -50,7 +50,7 @@ alone. A frame of only `call=<n>` starts the output of that call: each frame aft
 the call as a frame of a once script answers it, and a frame of only `end=<n>` ends the call with what it printed (Y8).
 
 A call shows as running until its `end`, and a second press sends the block `stop=<n>`. A call that never ends runs until
-the script ends. A newer search, or a newer text of the main search for a spot with `answers`, sends `stop=<n>` for the one before it,
+the script ends, except a read or a search, which gets `stop=<n>` after 10 seconds and fails as a slow read (01). A newer search, or a newer text of the main search for a spot with `answers`, sends `stop=<n>` for the one before it,
 whose answer then changes nothing (I2). `openspot_serve` lets a stopped call run to its end, and its frames change nothing.
 
 ## Its life

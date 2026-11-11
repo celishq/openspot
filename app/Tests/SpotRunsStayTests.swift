@@ -653,6 +653,60 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the frame after the late answer") { frames.last?.contains("Done") == true }
         XCTAssertEqual(sheet.list.shown.map(\.run), ["n"])
     }
+    /// New runs whose read has `limit` seconds, and a staying script whose first process busy-waits 5 seconds on each call
+    /// while the file `slow` exists, then answers with the number of the call as its title.
+    private func slowStaying(limit: TimeInterval = 1) throws -> (sheet: SpotRun, told: () -> [String]) {
+        runs.quit()
+        runs = SpotRuns(readLimit: limit, now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50))
+        try script(header: "mode=stay\nread=sheet", """
+        first=; [ -f '\(path("started"))' ] || first=1; touch '\(path("started"))'
+        while IFS= read -r line; do
+          printf '%s\\n' "$line" >> '\(path("blocks"))'
+          case "$line" in call=*) call=${line#call=} ;; stop=*) call= ;; esac
+          if [ -z "$line" ] && [ -n "$call" ]; then
+            if [ -n "$first" ] && [ -f '\(path("slow"))' ]; then end=$(($(date +%s) + 5)); while [ "$(date +%s)" -lt "$end" ]; do :; done; fi
+            printf 'end=%s\\n\\ntext=t\\ntitle=%s\\n---\\n' "$call" "$call"
+          fi
+        done
+        """)
+        _ = try scanned()
+        return try toldSheet()
+    }
+
+    func testAReadOfAStayingScriptPastItsLimitFailsAsSlowAndItsLateAnswerChangesNothing() async throws {
+        let (sheet, told) = try slowStaying()
+        let frames = FrameLog(sheet)
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the first answer") { sheet.reading.value?.title == "1" }
+        FileManager.default.createFile(atPath: path("slow"), contents: Data())
+
+        sheet.read(need: .change)
+
+        try await wait("the failure") { told() == ["Script took too long, so Openspot stopped it."] }
+        try await wait("the stop of the slow read") { self.blocks(ids: true).contains { $0.contains("stop=2") } }
+        try FileManager.default.removeItem(atPath: path("slow"))
+        sheet.read(need: .change)
+        try await wait("the answer after the late one") { sheet.reading.value?.title == "3" }
+        XCTAssertFalse(frames.frames.contains { $0.contains("title=2") })
+    }
+
+    func testASecondSlowReadStartsTheStayingScriptAgain() async throws {
+        let (sheet, told) = try slowStaying()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the first answer") { sheet.reading.value?.title == "1" }
+        FileManager.default.createFile(atPath: path("slow"), contents: Data())
+        sheet.read(need: .change)
+        try await wait("the first failure") { told().count == 1 }
+
+        sheet.read(need: .change)
+
+        try await wait("the second failure") { told().count == 2 }
+        try await wait("a new process") { self.log("pids").count == 2 }
+        try await wait("the answer of the new process") { sheet.reading.value?.title == "4" }
+    }
+
     func testTheFirstPartsOfAStayingScriptArriveThroughTheArrival() async throws {
         try staying(frame: "text=a\\ntitle=A\\n")
         let sheet = try sheet()

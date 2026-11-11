@@ -261,7 +261,9 @@ head show on the spot only while the call runs. Openspot reads the codes `ESC ] 
 
 ## The life of a call
 
-- A `read` has 10 seconds until its first frame or its end. Any other call has no time limit.
+- A `read` has 10 seconds until its first frame or its end. In a staying script, a read or a search has 10 seconds until
+  the frame that ends it: after that, the script gets `stop=<n>`, the call fails as a slow read, and its late answer
+  changes nothing. A second slow call starts the script again. Any other call has no time limit.
 - A new value for a block stops the older call of that block. A second press of a running call stops it: its process
   group gets the terminate signal, and then the kill signal. Quitting Openspot stops each call.
 - A call ends when its output closes. A stopped call changes nothing.
