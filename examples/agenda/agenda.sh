@@ -3,7 +3,8 @@
 # icon=calendar
 # detail=Today and tomorrow, with your reminders
 # size=large
-# read=panel,60
+# read=panel
+# every=60
 #
 # setting=calendars
 # icon=calendar

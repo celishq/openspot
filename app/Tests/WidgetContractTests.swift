@@ -28,7 +28,7 @@ final class WidgetContractTests: XCTestCase {
     }
 
     private func power(_ body: String = "printf 'gauge=power\\ntitle=84%%\\nvalue=0.84\\ntone=good\\n'") throws {
-        try script("power.sh", "#!/bin/sh\n# read=5\n\(body)\n")
+        try script("power.sh", "#!/bin/sh\n# every=5\n\(body)\n")
     }
 
     private var scan: ScanResult {
@@ -42,7 +42,7 @@ final class WidgetContractTests: XCTestCase {
 
     func testAWidgetInAFolderNamesItsOwnToolsByFileNameAndOthersByID() throws {
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("morning"), withIntermediateDirectories: true)
-        try script("morning/power.sh", "#!/bin/sh\n# read=5\nprintf 'title=1\\n'\n")
+        try script("morning/power.sh", "#!/bin/sh\n# every=5\nprintf 'title=1\\n'\n")
         try script("morning/notes.sh", "#!/bin/sh\n# read=sheet\n")
         try power()
         try "[[widgets]]\ntitle = \"Now\"\ngrid = [\"power power morning/power morning/power\"]\nopens = \"notes\"\n"
@@ -94,7 +94,7 @@ final class WidgetContractTests: XCTestCase {
 
     func testAWidgetDrawingPlacesTheMetricThatEachWordNames() throws {
         try power()
-        try script("heat.sh", "#!/bin/sh\n# read=5\nprintf 'title=1\\n'\n")
+        try script("heat.sh", "#!/bin/sh\n# every=5\nprintf 'title=1\\n'\n")
         try widgets("""
         [[widgets]]
         title = "Mine"
@@ -176,7 +176,7 @@ final class WidgetContractTests: XCTestCase {
         try script("one.sh", "#!/bin/sh\n")
         try script("two.sh", "#!/bin/sh\n# read=panel\n")
         try script("three.sh", "#!/bin/sh\n# mode=stay\n")
-        try script("four.sh", "#!/bin/sh\n# read=5\n")
+        try script("four.sh", "#!/bin/sh\n# every=5\n")
 
         XCTAssertEqual(try scan.refused, [])
         XCTAssertEqual(try scan.scripts.filter(\.canShowInMenuBar).map(\.id), ["four", "three"])

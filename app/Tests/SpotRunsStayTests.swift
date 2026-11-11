@@ -429,7 +429,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testAStayingScriptThatNothingWantsDoesNotStartOnAWake() async throws {
-        try staying(header: "mode=stay\nread=600")
+        try staying(header: "mode=stay\nevery=600")
         _ = try scanned()
 
         runs.woke()
@@ -440,7 +440,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
     func testAStayingScriptWithANumberGetsAReadOnItsTimer() async throws {
         menuBar.insert("script")
-        try staying(header: "mode=stay\nread=5", frame: "text=n\\ntitle=3\\n")
+        try staying(header: "mode=stay\nevery=5", frame: "text=n\\ntitle=3\\n")
         _ = try scanned()
         try await wait("the mark") { !self.runs.trayMarks.isEmpty }
         XCTAssertEqual(blocks(), ["arg=read"])

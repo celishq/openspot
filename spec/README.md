@@ -78,7 +78,6 @@ Where the code still differs from the rules of 11-11-2026. Each fix removes its 
 
 | Rule              | Module that differs                                                                                  |
 | ----------------- | ---------------------------------------------------------------------------------------------------- |
-| B6, B7            | `SpotFile`, `SpotRead`, `SpotCheck`, each spot with a number or an event in its `read`.             |
 | S12, S13          | `Client/main.swift`, `CommandSocket`.                                                                 |
 
 Open: a stop of a call that `openspot_serve` runs does not end it early, so a slow staying call runs to its end.

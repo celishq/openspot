@@ -94,8 +94,8 @@ final class SharedSpotTests: XCTestCase {
     }
 
     func testAWidgetTravelsWithEachMetricItPlacesAndTheCommandItOpens() throws {
-        try script("cpu.sh", "#!/bin/sh\n# read=5\n")
-        try script("home/disk.sh", "#!/bin/sh\n# read=5\n")
+        try script("cpu.sh", "#!/bin/sh\n# every=5\n")
+        try script("home/disk.sh", "#!/bin/sh\n# every=5\n")
         try script("links.sh", "#!/bin/sh\n# read=sheet\n")
         try script("other.sh")
         try plain("board.toml", Data("""
@@ -113,7 +113,7 @@ final class SharedSpotTests: XCTestCase {
     }
 
     func testAWidgetThatOpensASpotOfTheAppCarriesNoFileForIt() throws {
-        try script("cpu.sh", "#!/bin/sh\n# read=5\n")
+        try script("cpu.sh", "#!/bin/sh\n# every=5\n")
         try plain("board.toml", Data("""
         [[widgets]]
         title = "Desk"

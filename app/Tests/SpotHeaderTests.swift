@@ -52,7 +52,7 @@ final class SpotHeaderTests: XCTestCase {
             ("read=panel\n# global=true", "offers=search"),
             ("read=panel\n# global=rows", "offers=rows"),
             ("read=sheet\n# float=true", "offers=float"),
-            ("read=60\n# tray=true", "menu bar")
+            ("every=60\n# tray=true", "menu bar")
         ]
         for (header, hint) in cases {
             let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-old-\(UUID().uuidString)")
@@ -74,8 +74,8 @@ final class SpotHeaderTests: XCTestCase {
     }
 
     func testReadsTheCommentsOfOtherLanguages() {
-        XCTAssertEqual(SpotHeader(text: "#!/usr/bin/env lua\n-- read=5\nprint(1)").block.value("read"), "5")
-        XCTAssertEqual(SpotHeader(text: "#!/usr/bin/env bun\n// read=5\nconsole.log(1)").block.value("read"), "5")
+        XCTAssertEqual(SpotHeader(text: "#!/usr/bin/env lua\n-- every=5\nprint(1)").block.value("every"), "5")
+        XCTAssertEqual(SpotHeader(text: "#!/usr/bin/env bun\n// every=5\nconsole.log(1)").block.value("every"), "5")
     }
 
     func testAProgramHasNoHeader() {

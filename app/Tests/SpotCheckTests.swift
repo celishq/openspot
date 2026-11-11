@@ -47,6 +47,17 @@ final class SpotCheckTests: XCTestCase {
         ])
     }
 
+    func testAnEventThatNoSpotRaisesIsAFaultThatNamesTheFix() async throws {
+        try "#!/bin/sh\n# on=music.track,clipboard\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.appendingPathComponent("song.sh"))
+
+        let alone = await SpotCheck(folder: SpotFolder(url: folder)).findings()
+        try "#!/bin/sh\n# emits=music.track\n".writeScript(to: folder.appendingPathComponent("player.sh"))
+        let named = await SpotCheck(folder: SpotFolder(url: folder)).findings()
+
+        XCTAssertEqual(alone.map(\.fault), ["Song reads on music.track, which Openspot does not raise and no spot names in its emits. Add emits=music.track to the spot that raises it, or fix the name"])
+        XCTAssertEqual(named, [])
+    }
+
     func testNoFaultIsAnEmptyList() async throws {
         try "#!/bin/sh\necho\n".writeScript(to: folder.appendingPathComponent("hello.sh"))
 

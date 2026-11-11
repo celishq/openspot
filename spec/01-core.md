@@ -455,7 +455,7 @@ widget or the menu bar can show any script with a `read`, by its ID (H1).
 #!/bin/sh
 # title=Cups today
 # icon=cup.and.saucer.fill
-# read=60
+# every=60
 printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'
 ```
 

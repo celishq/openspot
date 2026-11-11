@@ -217,8 +217,8 @@ final class SpotFolderTests: XCTestCase {
         XCTAssertTrue(commands[2].isGlobal)
     }
 
-    func testReadIsAListOfMoments() throws {
-        try write("a.sh", header: "read=panel, sheet,30")
+    func testReadIsAListOfPlacesBesideItsSeconds() throws {
+        try write("a.sh", header: "read=panel, sheet\nevery=30")
 
         let read = try XCTUnwrap(try scan.spots.first?.read)
 
@@ -232,8 +232,8 @@ final class SpotFolderTests: XCTestCase {
 
         XCTAssertEqual(try scan.files, [])
         XCTAssertEqual(try scan.refused, [
-            ScanResult.Refusal(file: "a", reason: "A has an unknown read: launch. Use sheet, panel, a number of seconds or an event, such as clipboard or music.track"),
-            ScanResult.Refusal(file: "b", reason: "B has an unknown read: panel,wake. Use sheet, panel, a number of seconds or an event, such as clipboard or music.track")
+            ScanResult.Refusal(file: "a", reason: "A has an unknown read: launch. Use sheet or panel"),
+            ScanResult.Refusal(file: "b", reason: "B has an unknown read: wake. Use sheet or panel")
         ])
     }
 
@@ -279,7 +279,7 @@ final class SpotFolderTests: XCTestCase {
     }
 
     func testANumberInAListOfMomentsStartsTheSpotOffTheGrid() throws {
-        try write("a.sh", header: "read=panel,30")
+        try write("a.sh", header: "read=panel\nevery=30")
 
         let scan = try scan
 
@@ -310,7 +310,7 @@ final class SpotFolderTests: XCTestCase {
 
     func testTheMainSearchNeedsAMomentOutsideTheSheet() throws {
         try write("a.sh", header: "read=panel\noffers=search")
-        try write("c.sh", header: "read=30\noffers=search")
+        try write("c.sh", header: "every=30\noffers=search")
 
         XCTAssertEqual(try scan.refused, [])
         XCTAssertEqual(try scan.spots.map(\.isGlobal), [true, true])
@@ -318,7 +318,7 @@ final class SpotFolderTests: XCTestCase {
     }
 
     func testANumberAsTheReadIsAMetricWhoseCardStartsOffTheGrid() throws {
-        try write("cups.sh", header: "title=Cups\nicon=cup.and.saucer\nread=30")
+        try write("cups.sh", header: "title=Cups\nicon=cup.and.saucer\nevery=30")
 
         let scan = try scan
         let metric = try XCTUnwrap(scan.metrics.first)
@@ -332,7 +332,7 @@ final class SpotFolderTests: XCTestCase {
     }
 
     func testAMetricIsAlsoAList() throws {
-        try write("pulls.sh", header: "read=120")
+        try write("pulls.sh", header: "every=120")
 
         let scan = try scan
 
@@ -354,7 +354,7 @@ final class SpotFolderTests: XCTestCase {
     func testAScriptThatAWidgetOpensHasNoCardOnTheGrid() throws {
         try write("details.sh", header: "read=panel")
         try write("other.sh", header: "read=panel")
-        try write("cpu.sh", header: "read=60")
+        try write("cpu.sh", header: "every=60")
         try "[[widgets]]\ntitle = \"Box\"\ngrid = [\"cpu\"]\nsize = \"square\"\nopens = \"details\"\n".write(to: folder.appendingPathComponent("box.toml"), atomically: true, encoding: .utf8)
 
         let commands = try scan.spots
@@ -375,14 +375,14 @@ final class SpotFolderTests: XCTestCase {
 
         XCTAssertEqual(try scan.files, [])
         XCTAssertEqual(try scan.refused, [
-            ScanResult.Refusal(file: "a", reason: "A has an unknown read: sometimes. Use sheet, panel, a number of seconds or an event, such as clipboard or music.track"),
+            ScanResult.Refusal(file: "a", reason: "A has an unknown read: sometimes. Use sheet or panel"),
             ScanResult.Refusal(file: "b", reason: "B has an unknown size: huge"),
             ScanResult.Refusal(file: "c", reason: "C has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots"),
-            ScanResult.Refusal(file: "f", reason: "F needs panel or a number in its read to join the main search"),
-            ScanResult.Refusal(file: "h", reason: "H needs panel or a number in its read to join the main search"),
-            ScanResult.Refusal(file: "j", reason: "J has an unknown read: open. Use sheet, panel, a number of seconds or an event, such as clipboard or music.track"),
-            ScanResult.Refusal(file: "k", reason: "K has an unknown read: click. Use sheet, panel, a number of seconds or an event, such as clipboard or music.track"),
-            ScanResult.Refusal(file: "l", reason: "L has an unknown read: panel,later. Use sheet, panel, a number of seconds or an event, such as clipboard or music.track")
+            ScanResult.Refusal(file: "f", reason: "F needs read=panel or an every to join the main search"),
+            ScanResult.Refusal(file: "h", reason: "H needs read=panel or an every to join the main search"),
+            ScanResult.Refusal(file: "j", reason: "J has an unknown read: open. Use sheet or panel"),
+            ScanResult.Refusal(file: "k", reason: "K has an unknown read: click. Use sheet or panel"),
+            ScanResult.Refusal(file: "l", reason: "L has an unknown read: later. Use sheet or panel")
         ])
     }
 

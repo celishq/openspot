@@ -31,12 +31,10 @@ public struct SpotFile: Equatable, Sendable {
         let name = header.value("title") ?? Self.name(of: url)
         let icon = Icon(text: header.value("icon"))
         let symbol = icon?.symbol
-        var read: SpotRead?
-        if let text = header.value("read") {
-            guard let parsed = SpotRead(text: text) else {
-                throw SpotError.fault("\(name) has an unknown read: \(text). Use sheet, panel, a number of seconds or an event, such as clipboard or music.track")
-            }
-            read = parsed
+        let read = try SpotRead(read: header.value("read"), every: header.value("every"), on: header.value("on"), of: name)
+        let emits = SpotRead.words(header.value("emits"))
+        if let word = emits.first(where: { !SpotEvent.isName($0) }) {
+            throw SpotError.fault("\(name) has an unknown event in its emits: \(word). Write a word with a dot, such as emits=music.track")
         }
         try Self.refuseOldKeys(header, of: name)
         let modeName = header.value("mode") ?? SpotMode.once.rawValue
@@ -53,7 +51,7 @@ public struct SpotFile: Equatable, Sendable {
         let isGlobal = isRowsOnly || places.contains("search")
         if isGlobal {
             guard read?.has(.panel) == true || read?.seconds != nil else {
-                throw SpotError.fault("\(name) needs panel or a number in its read to join the main search")
+                throw SpotError.fault("\(name) needs read=panel or an every to join the main search")
             }
         }
         var answers: AnswerPattern?
@@ -100,7 +98,8 @@ public struct SpotFile: Equatable, Sendable {
             file: icon?.file.map { Self.path($0, beside: url) },
             image: icon?.image.map { Self.path($0, beside: url) },
             glyph: icon?.glyph,
-            view: view.map { Self.path($0, beside: url) }
+            view: view.map { Self.path($0, beside: url) },
+            emits: emits
         )
         self.init(id: id, spots: [command])
     }

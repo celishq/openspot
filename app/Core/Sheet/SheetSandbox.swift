@@ -20,7 +20,7 @@ public struct SheetSandbox: Equatable, Sendable {
             name: file.lastPathComponent,
             url: file,
             kind: .list,
-            read: header.value("read").flatMap(SpotRead.init(text:)),
+            read: (try? SpotRead(read: header.value("read"), every: header.value("every"), on: header.value("on"), of: file.lastPathComponent)) ?? nil,
             mode: header.value("mode").flatMap(SpotMode.init(rawValue:)).map { $0.stays ? .stay : .once } ?? .once
         )
     }

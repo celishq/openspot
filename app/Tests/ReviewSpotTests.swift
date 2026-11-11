@@ -114,7 +114,7 @@ final class ReviewSpotTests: XCTestCase {
 
     func testAWidgetNamesItselfBeforeTheMetricsItPlaces() throws {
         let widget = "[[widgets]]\ntitle = \"Desk\"\ngrid = [\"cpu\"]\nsize = \"square\"\n"
-        let review = try ReviewSpot(spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# read=5\n", true)]), folder: folder)
+        let review = try ReviewSpot(spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# every=5\n", true)]), folder: folder)
 
         XCTAssertEqual(review.name, "Desk")
     }
@@ -168,7 +168,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testItSaysWhatRunsByItself() throws {
-        let review = try review("title=Weather\nread=panel,30")
+        let review = try review("title=Weather\nread=panel\nevery=30")
 
         XCTAssertEqual(review.subtitle, "Runs by itself")
         let text = try shown(review)

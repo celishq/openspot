@@ -63,7 +63,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAMenuBarPlaceAndAValueThatTheAPISetsBuildNoGridNowOrAtTheNextReload() throws {
-        try script("cups", header: "title=Cups\nread=60", "printf 'text=c\\ntitle=3\\n'")
+        try script("cups", header: "title=Cups\nevery=60", "printf 'text=c\\ntitle=3\\n'")
         try script("notes", header: "title=Notes", ":")
         model.reload()
         let builds = model.gridBuilds
@@ -127,8 +127,8 @@ final class SpotsModelTests: XCTestCase {
 
     func testADownloadedUpdateReadsEachSpotThatListsItWhileThePanelIsHidden() async throws {
         let seen = folder.appendingPathComponent("seen").path
-        try script("news", header: "read=panel,app.update", "[ \"$OPENSPOT_REASON\" = app.update ] && printf '%s' \"$OPENSPOT_VALUE\" > '\(seen)'; printf 'title=News\n'")
-        try script("other", header: "read=panel,app.front", "printf 'title=Other\n'")
+        try script("news", header: "read=panel\non=app.update", "[ \"$OPENSPOT_REASON\" = app.update ] && printf '%s' \"$OPENSPOT_VALUE\" > '\(seen)'; printf 'title=News\n'")
+        try script("other", header: "read=panel\non=app.front", "printf 'title=Other\n'")
         model.reload()
 
         model.updateIsReady("0.3.0")

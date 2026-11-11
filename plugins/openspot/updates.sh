@@ -1,7 +1,8 @@
 #!/bin/sh
 # title=Updates
 # icon=arrow.triangle.2.circlepath
-# read=panel,app.update
+# read=panel
+# on=app.update
 warned="$OPENSPOT_DATA/updates-warned"
 status=$(openspot app status --frame) || exit 1
 version= ready= calls=0

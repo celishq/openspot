@@ -72,7 +72,7 @@ final class SpotRunsWantTests: SpotRunsCase {
 
     func testTheMenuBarShowsWhatTheSheetHolds() async throws {
         menuBar.insert("pulls")
-        try script("pulls", header: "title=Pull requests\nread=120", "printf 'text=m\\ntitle=2\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'")
+        try script("pulls", header: "title=Pull requests\nevery=120", "printf 'text=m\\ntitle=2\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'")
         let sheet = try sheet("pulls")
 
         try await wait("the mark") { !self.runs.trayMarks.isEmpty }
@@ -82,7 +82,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testASpotShowsInTheMenuBarOnlyWhenThePersonPutsItThereAndCanShowThere() async throws {
-        try script("cups", header: "read=5", log: "cups", "printf 'text=t\\ntitle=3\\n'")
+        try script("cups", header: "every=5", log: "cups", "printf 'text=t\\ntitle=3\\n'")
         try script("notes", header: "read=panel", log: "notes", "printf 'text=t\\ntitle=4\\n'")
         _ = try scanned()
         XCTAssertTrue(runs.trayMarks.isEmpty)
@@ -99,7 +99,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         changed.assertForOverFulfill = false
         withObservationTracking { _ = runs.trayMarks } onChange: { changed.fulfill() }
         menuBar.insert("agents")
-        try script("agents", header: "read=5", "printf 'row=a\\n'")
+        try script("agents", header: "every=5", "printf 'row=a\\n'")
 
         _ = try scanned()
 
@@ -110,7 +110,7 @@ final class SpotRunsWantTests: SpotRunsCase {
 
     func testEachMomentReadsOnlyTheScriptsThatListIt() async throws {
         try script("onsheet", header: "read=sheet", log: "onsheet", "printf 'row=s\\ntitle=S\\n'")
-        try script("ontimer", header: "read=600", log: "ontimer", "printf 'text=t\\ntitle=T\\n'")
+        try script("ontimer", header: "every=600", log: "ontimer", "printf 'text=t\\ntitle=T\\n'")
         try script("onpanel", header: "read=panel", log: "onpanel", "printf 'text=m\\ntitle=P\\n'")
         _ = try scanned()
         try await pause(0.1)
@@ -126,7 +126,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testAnOpenSheetOfRowsIsNotReadWithThePanelClosedAndIsReadWhenThePanelOpens() async throws {
-        try script(header: "read=5", "printf 'row=a\\ntitle=A\\n'")
+        try script(header: "every=5", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -167,7 +167,7 @@ final class SpotRunsWantTests: SpotRunsCase {
 
     func testAScriptInTheMenuBarIsReadOnItsClockWithThePanelClosed() async throws {
         menuBar.insert("script")
-        try script(header: "read=1", "printf 'text=t\\ntitle=1\\n'")
+        try script(header: "every=1", "printf 'text=t\\ntitle=1\\n'")
         _ = try scanned()
         try await wait("the first read") { self.log().count == 1 }
 
@@ -183,7 +183,7 @@ final class SpotRunsWantTests: SpotRunsCase {
             return self.time
         }, stopPause: 0.2, tickPause: .milliseconds(50))
         menuBar.insert("script")
-        try script(header: "read=5", "printf 'text=t\\ntitle=1\\n'")
+        try script(header: "every=5", "printf 'text=t\\ntitle=1\\n'")
         _ = try scanned()
         try await wait("the first read") { self.log().count == 1 && self.runs.sheets["script"]?.calls.isEmpty == true }
         let before = looks
@@ -196,8 +196,8 @@ final class SpotRunsWantTests: SpotRunsCase {
 
     func testAScriptWantedWhileTheClockWaitsForALaterReadIsReadOnItsOwnTime() async throws {
         menuBar.insert("pulls")
-        try script("pulls", header: "read=120", log: "pulls", "printf 'text=t\\ntitle=1\\n'")
-        try script(header: "read=1", "printf 'row=a\\ntitle=A\\n'")
+        try script("pulls", header: "every=120", log: "pulls", "printf 'text=t\\ntitle=1\\n'")
+        try script(header: "every=1", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         try await wait("the read of the menu bar spot") { self.log("pulls").count == 1 }
         runs.panelOpened()
@@ -210,8 +210,8 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
     func testAStayingScriptThatACallHoldsIsReadOnItsOwnTimeWhileTheClockWaitsForALaterRead() async throws {
         menuBar.insert("pulls")
-        try script("pulls", header: "read=120", log: "pulls", "printf 'text=t\\ntitle=1\\n'")
-        try script("stayer", header: "mode=stay\nread=1", """
+        try script("pulls", header: "every=120", log: "pulls", "printf 'text=t\\ntitle=1\\n'")
+        try script("stayer", header: "mode=stay\nevery=1", """
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("blocks"))'
           case "$line" in call=*) call=${line#call=}; args= ;; arg=*) args="$args ${line#arg=}" ;; esac
@@ -265,8 +265,8 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testATimedSpotJoinsTheMainSearchWithNoKeyAndStartsOffTheGrid() throws {
-        try script("a", header: "read=30\noffers=search")
-        try script("b", header: "read=panel,30\noffers=search")
+        try script("a", header: "every=30\noffers=search")
+        try script("b", header: "read=panel\nevery=30\noffers=search")
 
         let scan = try SpotFolder(url: folder).scan()
 

@@ -66,7 +66,7 @@ final class SpotAPITests: XCTestCase {
 
     func testTheListHoldsEachScriptWithItsCommandsSettingsAndKeys() async throws {
         try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# offers=float\n#\n# command=left\n# title=Left side\n#\n# setting=folder\n".writeScript(to: plugins.appendingPathComponent("move.sh"))
-        try "#!/bin/sh\n# title=Cups\n# read=60\n".writeScript(to: plugins.appendingPathComponent("cups.sh"))
+        try "#!/bin/sh\n# title=Cups\n# every=60\n".writeScript(to: plugins.appendingPathComponent("cups.sh"))
         try file.write(keys: [
             GlobalKey(spot: "move", act: .command("left"), trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+left")))),
             GlobalKey(spot: "move", act: .float, trigger: .shake)
@@ -92,7 +92,7 @@ final class SpotAPITests: XCTestCase {
         try "#!/bin/sh\n# detail=Open app\n# icon=star\n".writeScript(to: core.appendingPathComponent("zebra.sh"))
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.sh"))
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("files.sh"))
-        try "#!/bin/sh\n# read=5\n".writeScript(to: core.appendingPathComponent("cpu.sh"))
+        try "#!/bin/sh\n# every=5\n".writeScript(to: core.appendingPathComponent("cpu.sh"))
         try "#!/bin/sh\n".writeScript(to: plugins.appendingPathComponent("files.sh"))
         try file.turn("zebra", on: true)
 
