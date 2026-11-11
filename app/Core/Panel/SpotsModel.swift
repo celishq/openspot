@@ -157,7 +157,9 @@ public final class SpotsModel {
     /// The number of times that the cards were made into the items of `spotList`.
     @ObservationIgnored private(set) var spotListBuilds = 0
     /// Which `answers` patterns match the text of the main search.
-    @ObservationIgnored private(set) var answerMatches = AnswerMatches()
+    var answerMatches: AnswerMatches {
+        runs.answerMatches
+    }
     /// The search of the cards and the lists that offer their rows, which keeps the matches of the last text.
     @ObservationIgnored private var mainSearch = MainSearch()
     /// Where each visible spot lies on the grid, in the order of `visible`.
@@ -519,14 +521,9 @@ public final class SpotsModel {
         if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
     }
 
-    /// Sends the text of the main search to each spot whose `answers` pattern matches it, and an empty text to the others,
-    /// which drops their answers (A2).
+    /// Raises the text of the main search, which each spot whose `answers` pattern matches answers (A2).
     private func askAnswers() {
-        let text = query.trimmingCharacters(in: .whitespaces)
-        for entry in entries {
-            guard let pattern = entry.command.answers else { continue }
-            sheets[entry.id]?.answer(!text.isEmpty && answerMatches.matches(pattern, text) ? text : "")
-        }
+        runs.raise(.query(query))
     }
 
     /// The cards that the search finds, or each card on the grid when there is no search. The rows that spots give as
@@ -538,7 +535,7 @@ public final class SpotsModel {
             return dragged(cards.filter(\.isOnGrid) + arriving + (isEditing ? cards.filter { !$0.isOnGrid } : []))
         }
         var ids = Set<String>()
-        let answers = entries.filter { $0.command.answers.map { answerMatches.matches($0, text) } == true }
+        let answers = entries.filter { $0.command.answers.map { runs.answerMatches.matches($0, text) } == true }
             .flatMap { entry in (sheets[entry.id]?.answers ?? []).map { Entry(command: entry.command, item: $0, isAnswer: true) } }
             .filter { ids.insert($0.id).inserted }
             .prefix(Self.searchLimit)

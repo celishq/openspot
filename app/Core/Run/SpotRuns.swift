@@ -7,7 +7,7 @@ import Observation
 @Observable
 public final class SpotRuns {
     public private(set) var sheets: [String: SpotRun] = [:]
-    public private(set) var isPanelOpen = false
+    public internal(set) var isPanelOpen = false
     /// The script whose sheet is open: the one record of it. A sheet that opens closes the one before.
     public private(set) var openID: String?
     /// The scripts that float in windows of their own. Each one is in view while it floats (W7).
@@ -29,12 +29,14 @@ public final class SpotRuns {
     private var order: [String] = []
 
     /// Each script that a widget file places, which the open panel reads.
-    @ObservationIgnored private var placed: Set<String> = []
+    @ObservationIgnored private(set) var placed: Set<String> = []
     /// Each script that the person put in the menu bar.
     private var menuBar: Set<String> = []
     /// When the clock last read each script with a number in its `read`.
     @ObservationIgnored var asked: [String: Date] = [:]
     @ObservationIgnored var clock: Task<Void, Never>?
+    /// Which `answers` patterns match the text of the main search.
+    @ObservationIgnored var answerMatches = AnswerMatches()
     @ObservationIgnored private var processes: [ScriptProcess] = []
     /// The record of each call that runs once, or nil to keep none.
     @ObservationIgnored private let log: CallLog?
@@ -125,19 +127,6 @@ public final class SpotRuns {
         openID.flatMap { sheets[$0] }?.close()
     }
 
-    /// The panel opened: reads each script that this moment lists or that a widget places, and starts the timers.
-    public func panelOpened() {
-        let wasOpen = isPanelOpen
-        isPanelOpen = true
-        if !wasOpen { sheets.values.forEach { $0.panelOpened() } }
-        tick()
-        readPanel()
-        for id in placed {
-            if let sheet = sheets[id], sheet.command.read?.seconds == nil { sheet.read() }
-        }
-        updateClock()
-    }
-
     /// Whether a read of any script runs.
     public var isReading: Bool {
         sheets.values.contains(where: \.isReading)
@@ -148,26 +137,6 @@ public final class SpotRuns {
         isPanelOpen = false
         sheets.values.forEach { $0.leftPlace() }
         updateClock()
-    }
-
-    /// Reads each script with `panel` in its `read`, all at the same time, each of which can use a young answer. A staying
-    /// script that something wants and that ended starts again.
-    private func readPanel() {
-        for sheet in sheets.values where sheet.command.read?.has(.panel) == true {
-            sheet.read(need: .moment, reason: .panel)
-        }
-        sheets.values.forEach { $0.settleScript() }
-    }
-
-    /// The Mac woke: each wanted script with a number in its `read` reads at once, and its clock starts again from now. A
-    /// staying script that something wants and that ended starts again.
-    public func woke() {
-        let time = now()
-        for sheet in sheets.values where sheet.isWanted && sheet.command.read?.seconds != nil {
-            asked[sheet.command.id] = time
-            sheet.read(need: .clock, reason: .timer)
-        }
-        sheets.values.forEach { $0.settleScript() }
     }
 
     /// Stops each call, which changes nothing, and waits for the processes to end, for at most 2 seconds.
