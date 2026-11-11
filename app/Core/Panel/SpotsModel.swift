@@ -387,6 +387,12 @@ public final class SpotsModel {
         return true
     }
 
+    /// Takes a change that the API wrote to the config: the keys follow it, and the grid loads again, under a sheet that
+    /// shows.
+    public func configChanged() {
+        reloadUnderSheet()
+    }
+
     /// Brings the grid up to date while a sheet covers it, so that the sheet closes onto the card's real place. The selected
     /// card stays selected.
     private func reloadUnderSheet() {

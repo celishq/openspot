@@ -11,16 +11,18 @@ public final class CommandAPI: @unchecked Sendable {
     private let raise: (@Sendable (SpotEvent) async -> Void)?
     /// The rows of `openspot spot stats` in the running app, or nil in a process with no app to reach.
     private let stats: (@Sendable () -> String)?
+    private let app: (any RunningApp)?
     private let lock = NSLock()
     /// The stores kept warm across calls, each one only once the person gave it leave.
     private var eventStore: (any EventStore)?
     private var reminderStore: (any ReminderStore)?
     private var glyphKeywords: GlyphKeywords?
 
-    public init(host: any CommandHost, raise: (@Sendable (SpotEvent) async -> Void)? = nil, stats: (@Sendable () -> String)? = nil) {
+    public init(host: any CommandHost, raise: (@Sendable (SpotEvent) async -> Void)? = nil, stats: (@Sendable () -> String)? = nil, app: (any RunningApp)? = nil) {
         self.host = host
         self.raise = raise
         self.stats = stats
+        self.app = app
     }
 
     /// The work that answers a call, or nil for a call that runs in a process of its own: one that draws, waits for the
@@ -40,6 +42,19 @@ public final class CommandAPI: @unchecked Sendable {
         case .settingSet(let spot, let key, let value):
             return Self.answer {
                 try ConfigFile.standard(environment: environment).set(setting: key, of: spot, to: value)
+                return ""
+            }
+        case .settingList:
+            return Self.answer { try SpotList(folder: PluginFolder.standard(environment: environment), config: ConfigFile.standard(environment: environment).read()).values() }
+        case .spotList(let core):
+            return Self.answer {
+                let list = SpotList(folder: PluginFolder.standard(environment: environment), config: ConfigFile.standard(environment: environment).read())
+                return try core ? list.core() : list.loaded()
+            }
+        case .spotTurn(let ids, let isOn):
+            return Self.answer {
+                try PluginFolder.standard(environment: environment).turn(ids, on: isOn, in: ConfigFile.standard(environment: environment))
+                await self.app?.configChanged()
                 return ""
             }
         case .guide:

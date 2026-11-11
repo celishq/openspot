@@ -48,7 +48,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         let usage = model.runs.usage
         commandSocket = CommandSocket(folder: ConfigFile.standard().url.deletingLastPathComponent(), api: CommandAPI(host: SpotCommandHost(), raise: { [model] event in
             await MainActor.run { model.runs.raise(event) }
-        }, stats: { usage.text }))
+        }, stats: { usage.text }, app: SpotRunningApp(model: model)))
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         #if DEBUG
         item.button?.image = NSImage(named: "TrayMarkNightly")

@@ -15,6 +15,10 @@ public enum CommandLineCall: Equatable, Sendable {
     /// Prints the record of the last calls of a spot.
     case spotLog(String)
     case spotStats
+    /// Prints each script that the app loads as JSON, or with `core` each spot that comes with the app.
+    case spotList(core: Bool)
+    /// Turns spots that come with the app on or off.
+    case spotTurn(ids: [String], on: Bool)
     /// Draws the sheet of an installed spot, or its card at a size.
     case renderSpot(id: String, size: SpotSize?, path: String)
     case checkSheet
@@ -29,6 +33,8 @@ public enum CommandLineCall: Equatable, Sendable {
     case settingGet(spot: String, key: String)
     /// Keeps the value of a spot's setting, or removes it with no value (K6).
     case settingSet(spot: String, key: String, value: String?)
+    /// Prints each value that a spot keeps, as JSON.
+    case settingList
     /// A call that cannot run here, with the line that says why and how to fix it.
     case refused(String)
     /// Copies a file, or the text on stdin with no file.
@@ -86,6 +92,10 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot spot stats                          Prints a row for each spot: its calls, their time, its CPU time and
                                                  its last fault, since the app started.
     openspot spot show <id>                      Opens the panel with the spot selected.
+    openspot spot list [--core]                  Prints each spot that the app loads as JSON, with its commands, its
+                                                 settings and their keys. --core prints each spot that comes with the
+                                                 app, and whether it is on.
+    openspot spot on|off <id>...                 Turns spots that come with the app on or off.
     openspot check [--json] [folder]             Reports the faults of a plugins folder.
     openspot check --sheet                       Reports the faults of a sheet on stdin.
     openspot render [--view file] <file.png>     Draws the sheet on stdin to a picture, with its view from a Swift file.
@@ -97,6 +107,7 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot folder pick                         Prints the folder the person picks, or nothing after Cancel.
     openspot setting get [--spot id] <key>       Prints the value the person chose for the spot, or nothing.
     openspot setting set [--spot id] <key> [v]   Keeps a value for the spot, or removes it with no value.
+    openspot setting list                        Prints each value that a spot keeps as JSON, with its spot and key.
     openspot clipboard copy [file]               Copies the file as Finder does, or the text on stdin.
     openspot clipboard paste                     Pastes the clipboard into the front app.
     openspot event emit <name> [value]           Raises an event in the running app, such as music.track. Each spot
@@ -182,6 +193,11 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("spot", "show") where rest.count == 2: self = .spotShow(rest[1])
         case ("spot", "log") where rest.count == 2: self = .spotLog(rest[1])
         case ("spot", "stats") where rest.count == 1: self = .spotStats
+        case ("spot", "list") where rest.count == 1: self = .spotList(core: false)
+        case ("spot", "list") where rest == ["list", "--core"]: self = .spotList(core: true)
+        case ("spot", "on") where rest.count > 1, ("spot", "off") where rest.count > 1:
+            self = .spotTurn(ids: Array(rest.dropFirst()), on: rest[0] == "on")
+        case ("setting", "list") where rest.count == 1: self = .settingList
         case ("render", "--spot") where rest.count == 3: self = .renderSpot(id: rest[1], size: nil, path: rest[2])
         case ("render", "--spot") where rest.count == 5 && rest[2] == "--card":
             guard let size = SpotSize(name: rest[3]) else { self = .unknown(arguments.joined(separator: " ")); return }
