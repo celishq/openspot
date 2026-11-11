@@ -1,8 +1,8 @@
 import Foundation
 
 /// What the Mac gives through the frameworks that Core does not import: EventKit, the apps that open, the settings of the
-/// app, the events of the Mac with the count of changes of the clipboard (B2), the clipboard, the window in front and the
-/// screen. A test gives a Mac of its own. A member with no `@MainActor` runs on the thread of its call, never on the main thread of the app.
+/// app, the events of the Mac with the count of changes of the clipboard (B2), the clipboard, the window in front, the
+/// screen and translation. A test gives a Mac of its own. A member with no `@MainActor` runs on the thread of its call, never on the main thread of the app.
 public protocol Mac: AnyObject, Sendable {
     func eventStore() -> any EventStore
     func reminderStore() -> any ReminderStore
@@ -42,6 +42,10 @@ public protocol Mac: AnyObject, Sendable {
     /// Ends the recording, and returns each of its files on a line, the video first.
     func stopRecording() async throws -> String
     func recordingStatus() async throws -> String
+    /// Translates the text in the translate helper (K2), and returns the block that says what happened.
+    func translate(_ text: String, from: String?, to: String?) async throws -> String
+    /// The languages that the person prefers, then a block for each language that the Mac translates.
+    func translationLanguages() async -> String
 }
 
 extension Mac {
@@ -62,4 +66,6 @@ extension Mac {
     public func startRecording(_ capture: ScreenCapture, in folder: URL) async throws -> String { throw SpotError.fault("This Mac has no screen.") }
     public func stopRecording() async throws -> String { throw SpotError.fault("This Mac has no screen.") }
     public func recordingStatus() async throws -> String { throw SpotError.fault("This Mac has no screen.") }
+    public func translate(_ text: String, from: String?, to: String?) async throws -> String { throw SpotError.fault("This Mac cannot translate.") }
+    public func translationLanguages() async -> String { "" }
 }

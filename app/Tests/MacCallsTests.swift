@@ -44,6 +44,13 @@ final class MacCallsTests: XCTestCase {
 
         func stopRecording() async throws -> String { "/shots/a.mp4\n" }
         func recordingStatus() async throws -> String { "state=idle\n" }
+
+        func translate(_ text: String, from: String?, to: String?) async throws -> String {
+            keep("translate \(text) from \(from ?? "-") to \(to ?? "-")")
+            return "text=hello\n"
+        }
+
+        func translationLanguages() async -> String { "preferred=en\n" }
     }
 
     private var folder: URL!
@@ -149,5 +156,13 @@ final class MacCallsTests: XCTestCase {
         XCTAssertNil(try work(["screen", "record", "start", "display:1", "--events", "e.json"], fenced))
         XCTAssertNotNil(try work(["screen", "shot", "display:1"], fenced))
         XCTAssertNotNil(try work(["screen", "shot", "display:1", "a.png"], free))
+    }
+
+    func testTheAppTranslatesStdinAndListsItsLanguages() throws {
+        let translated = try run(["translate", "--to", "en"], input: "hola")
+        let languages = try run(["translate", "languages"])
+
+        XCTAssertEqual([translated.output, languages.output], ["text=hello\n", "preferred=en\n"])
+        XCTAssertEqual(host.acts, ["translate hola from - to en"])
     }
 }

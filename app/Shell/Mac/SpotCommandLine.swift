@@ -50,9 +50,6 @@ enum SpotCommandLine {
             SpotSheetPicture.run(text: standardInput, path: path, view: view)
         case .renderCard(let size, let path):
             SpotCardPicture.run(text: standardInput, size: size, path: path)
-        case .translate(let from, let to):
-            let text = standardInput
-            finish { try SpotTranslation.call(text: text, from: from, to: to) }
         case .helper(SpotTranslation.capability.name):
             SpotTranslation.serve()
         case .helper(SpotRecording.capability.name):
@@ -64,8 +61,6 @@ enum SpotCommandLine {
         case .glyphBook(let side, let fontSize, let path):
             let glyphs = standardInput.split(separator: "\n").map(String.init)
             exit(SpotGlyphBook.write(GlyphBook(glyphs: glyphs, side: side, fontSize: fontSize), to: path) ? 0 : 1)
-        case .translateLanguages:
-            finish { await SpotTranslation.languages() }
         default:
             preconditionFailure("CommandAPI answers \(call).")
         }
@@ -167,20 +162,5 @@ enum SpotCommandLine {
         case .screenShot, .screenRecordStart, .screenRecordStop, .screenRecordStatus: true
         default: false
         }
-    }
-
-    /// Prints what the work returns and exits. A failure goes to stderr, with exit code 1, and the link to its fix on stdout.
-    private static func finish(_ work: @escaping @Sendable () async throws -> String) -> Never {
-        Task {
-            do {
-                print(try await work(), terminator: "")
-                exit(0)
-            } catch {
-                if case SpotError.failedWithFix(_, _, let link) = error { print("link=\(link.absoluteString)") }
-                FileHandle.standardError.write(Data("\((error as? SpotError)?.reason ?? error.localizedDescription)\n".utf8))
-                exit(1)
-            }
-        }
-        dispatchMain()
     }
 }

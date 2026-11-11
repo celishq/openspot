@@ -121,8 +121,10 @@ public final class CommandAPI: @unchecked Sendable {
         case .screenRecordStart(let capture): return isFenced(environment) && (capture.file ?? capture.events) != nil ? nil : screen.start(capture)
         case .screenRecordStop: return screen.stop()
         case .screenRecordStatus: return screen.status()
+        case .translate(let from, let to): return CommandAnswer.work { [mac] in try await mac.translate(await input(), from: from, to: to) }
+        case .translateLanguages: return { [mac] in CommandAnswer(output: await mac.translationLanguages()) }
         case .check, .checkJSON, .spotRun, .spotShow, .renderSpot, .render, .renderCard, .sandbox, .colorPick, .folderPick,
-             .translate, .translateLanguages, .helper, .glyphBook:
+             .helper, .glyphBook:
             return nil
         }
     }
