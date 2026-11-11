@@ -10,6 +10,7 @@ struct SpotDockView: View {
     let size: CGSize
     @FocusState private var isSearching: Bool
     @State private var edges = SpotScrollEdges()
+    @State private var scroll = ScrollPosition()
 
     var body: some View {
         let dock = model.dock
@@ -36,10 +37,7 @@ struct SpotDockView: View {
                         let row = rects[index]
                         SpotListingSheet(item: dock.shown[index], listing: listing, model: model)
                             .frame(width: sheet.width, height: sheet.height)
-                            .transition(.modifier(
-                                active: SheetGrowth(rect: CGRect(x: row.minX, y: 0, width: row.width, height: 0)),
-                                identity: SheetGrowth(rect: CGRect(origin: .zero, size: sheet.size))
-                            ))
+                            .modifier(SheetGrowth(rect: dock.isSheetOut ? CGRect(origin: .zero, size: sheet.size) : CGRect(x: row.minX, y: 0, width: row.width, height: 0)))
                             .offset(x: sheet.minX, y: sheet.minY)
                             .id(dock.opened)
                     }
@@ -51,6 +49,7 @@ struct SpotDockView: View {
                 .padding(.trailing, SpotTokens.padding)
                 .padding(.vertical, origin.y)
             }
+            .scrollPosition($scroll)
             .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in model.dockScrolled(to: offset) })
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask(edgeFade)
@@ -66,6 +65,7 @@ struct SpotDockView: View {
         }
         .frame(width: size.width, height: size.height, alignment: .topLeading)
         .modifier(SpotGlass(rimSize: size))
+        .onChange(of: dock.isSheetOut) { _, isOut in if isOut { reveal(dock.opened) } }
         .onChange(of: isSearching) { _, isOn in model.searchesDock(isOn) }
         .onChange(of: model.isSearchingDock) { _, isOn in if !isOn { isSearching = false } }
     }
@@ -96,6 +96,16 @@ struct SpotDockView: View {
             SpotScrollEdges.end(fading: edges.bottom, from: .bottom)
                 .frame(height: SpotScrollEdges.fadeLength)
         }
+    }
+
+    /// Scrolls the rows, on the sheet's motion, as little as shows the whole sheet of the opened spot, and never past the top
+    /// of its row.
+    private func reveal(_ id: String?) {
+        let dock = model.dock
+        guard let id, let index = dock.shown.firstIndex(where: { $0.id == id }), let sheet = dock.sheetRect else { return }
+        let bottom = sheet.maxY + 2 * SpotDock.rowsOrigin.y - size.height
+        guard bottom > model.dockScroll else { return }
+        withAnimation(SpotMotion.edit) { scroll.scrollTo(y: min(dock.rects[index].minY, bottom)) }
     }
 
     /// Acts on a click in the rows: the button does the next step, its arrow opens the menu, and the rest of a row opens its
@@ -164,9 +174,15 @@ private struct SectionRow: View {
     }
 }
 
-/// The clip of a listing sheet, from a sliver under its row to its whole size.
-private struct SheetGrowth: ViewModifier {
-    let rect: CGRect
+/// The clip of a listing sheet: a sliver under its row while it is in, and its whole size while it is out. Its rect is
+/// animatable, so that it grows and shrinks on the store's motion.
+private struct SheetGrowth: ViewModifier, @preconcurrency Animatable {
+    var rect: CGRect
+
+    var animatableData: AnimatablePair<AnimatablePair<CGFloat, CGFloat>, AnimatablePair<CGFloat, CGFloat>> {
+        get { AnimatablePair(AnimatablePair(rect.minX, rect.minY), AnimatablePair(rect.width, rect.height)) }
+        set { rect = CGRect(x: newValue.first.first, y: newValue.first.second, width: newValue.second.first, height: newValue.second.second) }
+    }
 
     func body(content: Content) -> some View {
         content.clipShape(SpotSheetClip(rect: rect))

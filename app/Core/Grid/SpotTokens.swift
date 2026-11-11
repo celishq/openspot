@@ -23,12 +23,10 @@ public enum SpotTokens {
     /// The widest the store of Edit Spots grows, twelve columns of the grid, and its gap to the edges of the screen.
     public static let dockWidth: CGFloat = 2 * padding + width(columns: 12)
     public static let dockMargin: CGFloat = 20
-    /// The most lines of rows that the store shows before it scrolls.
-    public static let dockRows = 3
     /// The height of the button at the end of a store row, the width of its main part, which every step shares, and of its arrow.
-    public static let storeButtonHeight: CGFloat = 24
+    public static let storeButtonHeight: CGFloat = 28
     public static let storeStepWidth: CGFloat = 80
-    public static let storeArrowWidth: CGFloat = 24
+    public static let storeArrowWidth: CGFloat = 26
     /// The height of the sheet that shows a listing in the store.
     public static let storeSheetHeight: CGFloat = height(rows: 3)
     /// Where the store's rows start: the title of their first group lies on the middle line of the search beside it.

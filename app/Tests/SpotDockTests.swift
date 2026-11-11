@@ -89,12 +89,24 @@ final class SpotDockTests: XCTestCase {
         dock.section = .store
         let closed = dock.rects
         dock.opened = "apple"
+        XCTAssertEqual(dock.rects, closed)
+        dock.isSheetOut = true
 
         let open = dock.rects
         let sheet = SpotTokens.storeSheetHeight + SpotTokens.rowGap
         XCTAssertEqual(open[1], closed[1])
         XCTAssertEqual(open[2], closed[2].offsetBy(dx: 0, dy: sheet))
         XCTAssertEqual(dock.sheetRect, CGRect(x: 0, y: closed[0].maxY + SpotTokens.rowGap, width: SpotTokens.width(columns: 8), height: SpotTokens.storeSheetHeight))
+    }
+
+    func testAnOpenedSpotPushesTheTitlesOfTheLaterGroupsDown() {
+        var dock = SpotDock(items: [item("Apple", state: .onGrid), item("Bell", state: .searchOnly)])
+        let closed = dock.groups
+        dock.opened = "apple"
+        dock.isSheetOut = true
+
+        XCTAssertEqual(dock.groups[0].top, closed[0].top)
+        XCTAssertEqual(dock.groups[1].top, closed[1].top + SpotTokens.storeSheetHeight + SpotTokens.rowGap)
     }
 
     func testASpotThatTheStoreDoesNotShowOpensNoSheet() {

@@ -109,6 +109,8 @@ struct SpotTheme {
     static let rimSideStrengths: [CGFloat] = [0, 0.3, 0.3, 0]
     /// The mark of the selected card, row or item, and of a drop.
     static let accent = Color.accentColor
+    /// Words on the accent, such as the step of a store row that changes the spot.
+    static let onAccent = Color.white
     static let secondaryLight = 0.7
     static let dragFill = 0.4
     /// The shadow under a card that the person lifts in Edit Spots: its blur radius and its strength.

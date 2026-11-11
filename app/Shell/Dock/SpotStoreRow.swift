@@ -1,14 +1,15 @@
 import OpenspotCore
 import SwiftUI
 
-/// A spot in the store as a row as wide as the panel's grid: its picture, its name, the one fact that matters under it, and
-/// the button of its next step with the arrow of its menu. The store's rows take the pointer for every row, so that a row
-/// draws and tracks nothing of its own.
+/// A spot in the store as a card of the panel's grid, four columns wide, on the glass with the card's rim: its picture, its
+/// name, the one fact that matters under it, and the button of its next step with the arrow of its menu. The store's rows
+/// take the pointer for every row, so that a row draws and tracks nothing of its own.
 struct SpotStoreRow: View, Equatable {
     let item: SpotDock.Item
 
     var body: some View {
         let bounds = CGRect(x: 0, y: 0, width: SpotTokens.gridWidth, height: SpotTokens.rowHeight)
+        let radius = SpotTokens.corner(for: SpotSize(columns: 4, rows: 1))
         let step = SpotDock.stepRect(in: bounds)
         HStack(spacing: SpotTokens.padding - 5) {
             SpotItemIcon(icon: item.command.icon, glyph: item.command.glyph, symbol: item.command.symbol, size: SpotTokens.glyphSize)
@@ -29,7 +30,7 @@ struct SpotStoreRow: View, Equatable {
         }
         .padding(.horizontal, SpotTokens.padding)
         .frame(width: bounds.width, height: bounds.height)
-        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: RoundedRectangle(cornerRadius: SpotTokens.corner(for: SpotSize(columns: 4, rows: 1)), style: .continuous))
+        .modifier(SpotGlass(radius: radius, blursBehind: false, rimSize: bounds.size))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(item.command.name)
     }
@@ -47,8 +48,8 @@ struct SpotStoreRow: View, Equatable {
     }
 }
 
-/// The button at the end of a row: the next step on its main part, and the arrow of the menu after a thin line. A step that
-/// changes the spot, Add or Publish, is drawn solid.
+/// The button at the end of a row, as large as the App Store's: the next step on its main part, and the arrow of the menu
+/// after a thin line. A step that changes the spot, Add or Publish, is drawn on the accent.
 private struct StepButton: View {
     let title: String
     let isStrong: Bool
@@ -58,19 +59,19 @@ private struct StepButton: View {
             Text(title)
                 .frame(maxWidth: .infinity)
             Rectangle()
-                .fill(ink.opacity(SpotTheme.secondaryLight * 0.4))
+                .fill(ink.opacity(0.3))
                 .frame(width: 1, height: SpotTokens.storeButtonHeight / 2)
             Image(systemName: "chevron.down")
-                .font(.system(size: 8, weight: .bold))
+                .font(.system(size: 9, weight: .bold))
                 .frame(width: SpotTokens.storeArrowWidth - 1)
         }
-        .font(SpotType.action)
+        .font(.system(size: 12, weight: .bold))
         .foregroundStyle(ink)
-        .background(isStrong ? SpotTheme.ink : SpotTheme.keycap, in: Capsule())
+        .background(isStrong ? SpotTheme.accent : SpotTheme.keycap, in: Capsule())
         .overlay { if !isStrong { Capsule().strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)) } }
     }
 
     private var ink: Color {
-        isStrong ? SpotTheme.onSolid : SpotTheme.ink
+        isStrong ? SpotTheme.onAccent : SpotTheme.ink
     }
 }

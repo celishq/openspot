@@ -601,7 +601,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertTrue(order.contains("timer"))
     }
 
-    func testAClickOnAStoreCardOpensItsListingAndEscapeClosesIt() throws {
+    func testAClickOnAStoreCardOpensItsListingAndEscapeClosesIt() async throws {
         try "#!/bin/sh\n# size=small\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.sh"))
         try "Counts down.".write(to: core.appendingPathComponent("timer.md"), atomically: true, encoding: .utf8)
         model.reload()
@@ -609,7 +609,10 @@ final class SpotsModelDragTests: XCTestCase {
 
         model.openListing("timer")
         XCTAssertEqual(model.dock.opened, "timer")
+        XCTAssertFalse(model.dock.isSheetOut)
         XCTAssertEqual(model.dockListing?.readme, "Counts down.")
+        for _ in 0..<1000 where !model.dock.isSheetOut { await Task.yield() }
+        XCTAssertTrue(model.dock.isSheetOut)
 
         model.searchDock("")
         XCTAssertEqual(model.dock.opened, "timer")

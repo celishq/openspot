@@ -122,6 +122,9 @@ public struct SpotDock: Equatable, Sendable {
     public var section = Section.added
     /// The spot whose listing shows in a sheet under its line.
     public var opened: String?
+    /// Whether the sheet of the opened spot is out at its whole size, with the later rows pushed down. A sheet starts in,
+    /// so that it is built before it grows.
+    public var isSheetOut = false
 
     public init(items: [Item]) {
         self.items = items.sorted { $0.command.name.localizedCaseInsensitiveCompare($1.command.name) == .orderedAscending }
@@ -154,26 +157,31 @@ public struct SpotDock: Equatable, Sendable {
         return groups.filter { !$0.1.isEmpty }.map { (title: $0.0, items: $0.1) }
     }
 
+    /// The titles of the groups. The titles under the sheet of an opened spot lie lower by the sheet and a gap.
     public var groups: [Group] {
-        layout.groups
+        let (rects, groups) = layout
+        guard isSheetOut, let top = sheetTop(in: rects) else { return groups }
+        return groups.map { $0.top < top ? $0 : Group(title: $0.title, count: $0.count, top: $0.top + Self.sheetDrop) }
     }
 
     /// Where the row of each shown spot lies, in the order of `shown`, from the top left of the rows. The rows under the sheet
     /// of an opened spot lie lower by the sheet and a gap.
     public var rects: [CGRect] {
         let rects = layout.rects
-        guard let top = sheetTop(in: rects) else { return rects }
-        return rects.map { $0.minY < top ? $0 : $0.offsetBy(dx: 0, dy: SpotTokens.storeSheetHeight + SpotTokens.rowGap) }
+        guard isSheetOut, let top = sheetTop(in: rects) else { return rects }
+        return rects.map { $0.minY < top ? $0 : $0.offsetBy(dx: 0, dy: Self.sheetDrop) }
     }
+
+    private static let sheetDrop = SpotTokens.storeSheetHeight + SpotTokens.rowGap
 
     /// Where the sheet of the opened spot lies: under the line of its row, as wide as the rows.
     public var sheetRect: CGRect? {
         sheetTop(in: layout.rects).map { CGRect(x: 0, y: $0, width: SpotTokens.width(columns: 8), height: SpotTokens.storeSheetHeight) }
     }
 
-    /// The height of the rows that hold the shown spots, and of the sheet of the opened spot.
+    /// The height of the rows that hold the shown spots, and of the sheet of the opened spot while it is out.
     public var height: CGFloat {
-        (rects.map(\.maxY) + [sheetRect?.maxY].compactMap { $0 }).max() ?? 0
+        (rects.map(\.maxY) + [isSheetOut ? sheetRect?.maxY : nil].compactMap { $0 }).max() ?? 0
     }
 
     /// The shown spot and the part of its row under a point of the rows, if any.

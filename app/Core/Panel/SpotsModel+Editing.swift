@@ -35,6 +35,7 @@ extension SpotsModel {
     public func searchDock(_ text: String) {
         guard text != dock.query else { return }
         dock.opened = nil
+        dock.isSheetOut = false
         dock.query = text
     }
 
@@ -43,6 +44,7 @@ extension SpotsModel {
         guard section != dock.section else { return }
         change(.edit) {
             dock.opened = nil
+            dock.isSheetOut = false
             dock.section = section
         }
     }
@@ -74,13 +76,26 @@ extension SpotsModel {
         }
     }
 
-    /// Opens the listing of a spot of the store in a sheet under its shelf, or closes it when it is open.
+    /// Opens the listing of a spot of the store in a sheet under its line, or closes it when it is open. A new sheet is built
+    /// closed and grows on the next turn; an open sheet moves to the line of another spot.
     public func openListing(_ id: String) {
         guard let item = dock.shown.first(where: { $0.id == id }) else { return }
         tip = nil
-        let isOpen = dock.opened == id
-        if !isOpen { dockListing = SpotListing(beside: item.command) }
-        change(.edit) { dock.opened = isOpen ? nil : id }
+        guard dock.opened != id else { return closeListing() }
+        dockListing = SpotListing(beside: item.command)
+        guard !dock.isSheetOut else { return change(.edit) { dock.opened = id } }
+        dock.opened = id
+        Task { @MainActor [weak self] in
+            guard let self, self.dock.opened == id, !self.dock.isSheetOut else { return }
+            self.change(.edit) { self.dock.isSheetOut = true }
+        }
+    }
+
+    /// Closes the sheet of the opened spot back under its line, and drops it when it is in.
+    private func closeListing() {
+        change(.edit, { dock.isSheetOut = false }, completion: {
+            if !self.dock.isSheetOut { self.dock.opened = nil }
+        })
     }
 
     /// Copies a prompt for the person's agent: to change a spot of the plugins folder, or to review any other spot.
@@ -144,6 +159,7 @@ extension SpotsModel {
         next.query = dock.query
         next.section = dock.section
         next.opened = dock.opened
+        next.isSheetOut = dock.isSheetOut
         if next != dock { dock = next }
     }
 
@@ -240,6 +256,7 @@ extension SpotsModel {
             selected = 0
             isSearchingDock = false
             dock.opened = nil
+            dock.isSheetOut = false
             updateVisible()
         }
     }
