@@ -50,6 +50,17 @@ final class CalculatorPluginTests: SamplePluginsCase {
         }
     }
 
+    func testADeadSourceShowsARowThatSaysWhatStillWorks() async throws {
+        try await withPrivateHome { home in
+            try "status=unavailable\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+
+            let rows = try await self.calculator.items(query: "15 usd in eur", timeout: 5).items
+
+            XCTAssertEqual(rows.map(\.title), ["No exchange rates"])
+            XCTAssertEqual(rows.first?.subtitle, "The source of the rates does not answer. Sums, units and dates still work. Try again later.")
+        }
+    }
+
     func testAPickCopiesThePlainValue() async throws {
         try await withPrivateHome { home in
             let toast = try await self.calculator.perform(.item(SpotItem(title: "13,46 €", run: "13.46")), timeout: 5)

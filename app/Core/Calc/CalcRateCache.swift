@@ -21,6 +21,7 @@ public actor CalcRateCache {
     private var hasRead = false
     private var refresh: Task<CalcRates?, Never>?
     private var failedAt: Date?
+    private var failure: CalcRateFailure?
 
     public init(file: URL, now: @escaping @Sendable () -> Date, fetch: @escaping @Sendable () async throws -> Data) {
         self.file = file
@@ -39,6 +40,12 @@ public actor CalcRateCache {
         guard age > Self.freshness, let refresh = startRefresh() else { return kept }
         guard age > Self.staleness else { return kept }
         return await Self.first(of: refresh, within: Self.patience) ?? kept
+    }
+
+    /// The newest rates it has, or why it has none.
+    public func answer() async -> Result<CalcRates, CalcRateFailure> {
+        guard let rates = await rates() else { return .failure(failure ?? .unavailable) }
+        return .success(rates)
     }
 
     /// The value of a fetch, or nil when it takes longer than the time.
@@ -66,11 +73,19 @@ public actor CalcRateCache {
         if let failedAt, now().timeIntervalSince(failedAt) < Self.retry { return nil }
         let task = Task { () -> CalcRates? in
             defer { refresh = nil }
-            guard let data = try? await fetch(), let rates = CalcRates(exchangeAPI: data, time: now()) else {
+            let rates: CalcRates
+            do {
+                guard let read = CalcRates(exchangeAPI: try await fetch(), time: now()), kept.map(read.replaces) ?? true else {
+                    throw CalcRateFailure.unavailable
+                }
+                rates = read
+            } catch {
                 failedAt = now()
+                failure = CalcRateFailure(error)
                 return nil
             }
             failedAt = nil
+            failure = nil
             kept = rates
             try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
             try? rates.file.write(to: file, options: .atomic)
@@ -92,14 +107,23 @@ public actor CalcRateCache {
         }
     }
 
-    /// Runs as the helper: each call gets the kept rates as `file` writes them, or nothing when it has none.
+    /// Runs as the helper: each call gets the kept rates as `file` writes them, or `status=<failure>` when it has none.
     public static func serve() -> Never {
         let cache = standard
-        capability.serve { _ in await cache.rates()?.file ?? Data() }
+        capability.serve { _ in
+            switch await cache.answer() {
+            case .success(let rates): rates.file
+            case .failure(let failure): Data(TextBlock(fields: [.init(key: "status", value: failure.rawValue)]).text.utf8)
+            }
+        }
     }
 
-    /// Asks the helper for the rates, and starts it when it does not run. Nil when it has none or cannot start.
-    public static func ask() -> CalcRates? {
-        (try? capability.call(Data("rates".utf8))).flatMap(CalcRates.init(file:))
+    /// Asks the helper for the rates, and starts it when it does not run. A helper that cannot start counts as a source that
+    /// does not answer.
+    public static func ask() -> Result<CalcRates, CalcRateFailure> {
+        guard let answer = try? capability.call(Data("rates".utf8)) else { return .failure(.unavailable) }
+        if let rates = CalcRates(file: answer) { return .success(rates) }
+        let status = TextBlock.blocks(in: String(decoding: answer, as: UTF8.self)).first?.value("status")
+        return .failure(status.flatMap(CalcRateFailure.init(rawValue:)) ?? .unavailable)
     }
 }

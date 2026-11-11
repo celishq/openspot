@@ -344,6 +344,7 @@
 		D4FCC1ED72664CC622423052 /* OpenspotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C5560019E060B304559DE2B /* OpenspotApp.swift */; };
 		D5AE4DC5DC48D88986CB8A60 /* MetricReading.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F7D8339A70284F520E87CFE /* MetricReading.swift */; };
 		D5C57189ADC4C94EBB64A0F7 /* CalcAnswerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48F7451264C08B48BD7F2B65 /* CalcAnswerTests.swift */; };
+		D6941DD74277E9AFBBA2CE8B /* CalcRateFailure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9447205042159420F5563CF7 /* CalcRateFailure.swift */; };
 		D76F7916D5206BF1C167FCA1 /* openspot.sh in Resources */ = {isa = PBXBuildFile; fileRef = 94B0E4567AE631D558192FF8 /* openspot.sh */; };
 		D8146746E1EB9C6FE5E2D733 /* SpotBlur.swift in Sources */ = {isa = PBXBuildFile; fileRef = A16D81BC1C192B2BA575CD34 /* SpotBlur.swift */; };
 		D8A70148E3BAE709446C0E33 /* SamplePluginsCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38E153F29DE57F5F69177C5D /* SamplePluginsCase.swift */; };
@@ -651,6 +652,7 @@
 		9273105C990676AF772DB05A /* ActionMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionMenu.swift; sourceTree = "<group>"; };
 		92A4BCB2AF5BC515EE265370 /* RemindersTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindersTests.swift; sourceTree = "<group>"; };
 		93364F1D8B0024749079178D /* CommandLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandLink.swift; sourceTree = "<group>"; };
+		9447205042159420F5563CF7 /* CalcRateFailure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcRateFailure.swift; sourceTree = "<group>"; };
 		949E8A52AB0A32C750A39623 /* CalculatorPluginTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorPluginTests.swift; sourceTree = "<group>"; };
 		94AFA591AD3DD2DD52772CD5 /* ReviewSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewSpot.swift; sourceTree = "<group>"; };
 		94B0E4567AE631D558192FF8 /* openspot.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = openspot.sh; sourceTree = "<group>"; };
@@ -891,6 +893,7 @@
 				2C544E7F0BD5FF71CCDB6E8C /* CalcDate.swift */,
 				88B9FA4F7FBE192C0F3F809B /* CalcExpression.swift */,
 				BAA1D7EA55A6E23D8075E202 /* CalcRateCache.swift */,
+				9447205042159420F5563CF7 /* CalcRateFailure.swift */,
 				8C1AD818DAD0892B880BF962 /* CalcRates.swift */,
 				837BF87417D5A992B8089FFC /* CalcToken.swift */,
 				DCEAFAAD1530234B5C063AD8 /* CalcUnit.swift */,
@@ -1860,6 +1863,7 @@
 				B0F69B37D3952F5CF308D7F8 /* CalcDate.swift in Sources */,
 				C2D55EFB45E530CACBCC825D /* CalcExpression.swift in Sources */,
 				4532F7F19749CA37C62C6E58 /* CalcRateCache.swift in Sources */,
+				D6941DD74277E9AFBBA2CE8B /* CalcRateFailure.swift in Sources */,
 				A67D9B1197DD1C93AD53140F /* CalcRates.swift in Sources */,
 				FA383513EEEF5ABB9C96606D /* CalcToken.swift in Sources */,
 				88B04045130083F5DFEA8026 /* CalcUnit.swift in Sources */,

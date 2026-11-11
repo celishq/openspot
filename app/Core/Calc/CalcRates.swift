@@ -39,17 +39,35 @@ public struct CalcRates: Equatable, Sendable, Codable {
         (try? JSONEncoder().encode(self)) ?? Data()
     }
 
+    /// How many currencies it knows.
+    public var count: Int {
+        perDollar.count
+    }
+
+    /// Whether these rates may take the place of kept ones: they are of the same day or a later one, and they know at least
+    /// half as many currencies, so that a broken or old copy of the file never replaces good rates.
+    public func replaces(_ kept: CalcRates) -> Bool {
+        day >= kept.day && count * 2 >= kept.count
+    }
+
     /// How many of one currency one of another buys, by their codes in any case. Nil when it knows either code not.
     public func rate(from: String, to: String) -> Double? {
         guard let from = perDollar[from.uppercased()], let to = perDollar[to.uppercased()] else { return nil }
         return to / from
     }
 
-    /// The first file of the sources that loads and reads as rates, so that a dead or broken address falls to the next.
+    /// The first file of the sources that loads and reads as rates, so that a dead or broken address falls to the next. With
+    /// none, it throws `offline` when a load said that the Mac has no internet, and else `unavailable`.
     public static func download(from sources: [URL] = sources, using load: @Sendable (URL) async throws -> Data) async throws -> Data {
+        var failure = CalcRateFailure.unavailable
         for source in sources {
-            if let data = try? await load(source), CalcRates(exchangeAPI: data, time: Date()) != nil { return data }
+            do {
+                let data = try await load(source)
+                if CalcRates(exchangeAPI: data, time: Date()) != nil { return data }
+            } catch {
+                if CalcRateFailure(error) == .offline { failure = .offline }
+            }
         }
-        throw URLError(.cannotLoadFromNetwork)
+        throw failure
     }
 }

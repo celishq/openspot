@@ -59,14 +59,21 @@ final class CalcRatesTests: XCTestCase {
     private actor Source {
         var count = 0
         var fails = false
+        var error: Error = URLError(.notConnectedToInternet)
+        var file = CalcRatesTests.file
 
         func fetch() throws -> Data {
             count += 1
-            if fails { throw URLError(.notConnectedToInternet) }
-            return CalcRatesTests.file
+            if fails { throw error }
+            return file
         }
 
-        func setFails(_ value: Bool) { fails = value }
+        func setFails(_ value: Bool, with error: Error = URLError(.notConnectedToInternet)) {
+            fails = value
+            self.error = error
+        }
+
+        func setFile(_ value: Data) { file = value }
     }
 
     /// A clock that a test moves.
@@ -149,6 +156,51 @@ final class CalcRatesTests: XCTestCase {
         await source.setFails(true)
         let kept = await cache(source, clock).rates()
         XCTAssertEqual(kept?.time, clock.now - CalcRateCache.staleness - 1)
+    }
+
+    func testNoRatesSayWhetherTheInternetOrTheSourceIsDown() async {
+        let offline = Source()
+        await offline.setFails(true)
+        let dead = Source()
+        await dead.setFails(true, with: URLError(.badServerResponse))
+
+        let none = await cache(offline, Clock()).answer()
+        let down = await cache(dead, Clock()).answer()
+        XCTAssertEqual(none, .failure(.offline))
+        XCTAssertEqual(down, .failure(.unavailable))
+    }
+
+    func testAFileWithFarFewerCurrenciesOrAnOlderDayLeavesTheKeptRates() async throws {
+        let clock = Clock()
+        _ = await cache(Source(), clock).rates()
+        let source = Source()
+        let cache = cache(source, clock)
+        for file in [#"{"date":"2026-11-11","usd":{"eur":0.9}}"#, #"{"date":"2026-11-01","usd":{"usd":1,"eur":0.9,"uah":45,"jpy":150,"gbp":0.7,"apr":29,"btc":0.00001}}"#] {
+            await source.setFile(Data(file.utf8))
+            clock.now += CalcRateCache.staleness + CalcRateCache.retry + 1
+            let kept = await cache.rates()
+            await cache.settled()
+            XCTAssertEqual(kept?.day, "2026-11-10", file)
+            let again = await cache.rates()
+            XCTAssertEqual(again?.day, "2026-11-10", file)
+        }
+    }
+
+    func testADownloadThatFindsNoFileSaysWhetherTheInternetIsDown() async throws {
+        let first = try XCTUnwrap(URL(string: "https://first.example/usd.json"))
+        let backup = try XCTUnwrap(URL(string: "https://backup.example/usd.json"))
+        do {
+            _ = try await CalcRates.download(from: [first, backup]) { _ in throw URLError(.notConnectedToInternet) }
+            XCTFail("no file")
+        } catch {
+            XCTAssertEqual(error as? CalcRateFailure, .offline)
+        }
+        do {
+            _ = try await CalcRates.download(from: [first, backup]) { _ in Data("<html>".utf8) }
+            XCTFail("no file")
+        } catch {
+            XCTAssertEqual(error as? CalcRateFailure, .unavailable)
+        }
     }
 
     func testACutFileCountsAsNone() async throws {

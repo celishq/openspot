@@ -7,11 +7,15 @@ case "$1" in
   read)
     [ -n "$2" ] || exit 0
     answer=$(openspot calc solve "$2")
-    if [ "$answer" = "status=offline" ]; then
-      printf 'row=offline\ntitle=No exchange rates\ndetail=Openspot cannot get exchange rates. Connect to the internet, then type again.\nicon=wifi.slash\n'
-    else
-      printf '%s\n' "$answer"
-    fi
+    case "$answer" in
+      status=offline)
+        printf 'row=offline\ntitle=No exchange rates\ndetail=Openspot cannot get exchange rates. Connect to the internet, then type again.\nicon=wifi.slash\n'
+        ;;
+      status=unavailable)
+        printf 'row=offline\ntitle=No exchange rates\ndetail=The source of the rates does not answer. Sums, units and dates still work. Try again later.\nicon=exclamationmark.triangle\n'
+        ;;
+      *) printf '%s\n' "$answer" ;;
+    esac
     ;;
   open)
     [ "$2" = offline ] && exit 0

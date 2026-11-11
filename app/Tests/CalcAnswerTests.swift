@@ -13,8 +13,8 @@ final class CalcAnswerTests: XCTestCase {
     /// Wednesday 11 November 2026 at 14:05 in Berlin.
     private let now = Date(timeIntervalSince1970: 1_794_402_300)
 
-    private func answer(_ text: String, in locale: Locale? = nil, rates: CalcRates? = nil) -> CalcAnswer? {
-        CalcAnswer(text: text, locale: locale ?? english, clock: berlin, now: now, rates: { rates })
+    private func answer(_ text: String, in locale: Locale? = nil, rates: CalcRates? = nil, failure: CalcRateFailure = .offline) -> CalcAnswer? {
+        CalcAnswer(text: text, locale: locale ?? english, clock: berlin, now: now, rates: { rates.map { .success($0) } ?? .failure(failure) })
     }
 
     /// The text with the narrow and the no-break spaces that macOS writes in times and amounts as plain spaces.
@@ -112,7 +112,17 @@ final class CalcAnswerTests: XCTestCase {
         XCTAssertNil(answer("3 apples", rates: rates()))
     }
 
-    func testWithNoRatesAKnownCurrencySaysItIsOfflineAndAnUnknownOneSaysNothing() {
+    func testOldRatesWarnWithTheirAge() throws {
+        let file = String(decoding: CalcRatesTests.file, as: UTF8.self).replacingOccurrences(of: "2026-11-10", with: "2026-11-02")
+        let old = try XCTUnwrap(CalcRates(exchangeAPI: Data(file.utf8), time: now))
+        let yesterday = try XCTUnwrap(CalcRates(exchangeAPI: CalcRatesTests.file, time: now))
+
+        XCTAssertEqual(answer("15 usd in eur", rates: old)?.text, "row=13.46\ntitle=€13.46\ndetail=15 USD in EUR · rates of Nov 2, 9 days old\ntone=warn\n")
+        XCTAssertEqual(answer("15 usd in eur", rates: yesterday)?.text, "row=13.46\ntitle=€13.46\ndetail=15 USD in EUR · rates of Nov 10\n")
+    }
+
+    func testWithNoRatesAKnownCurrencySaysWhyAndAnUnknownOneSaysNothing() {
+        XCTAssertEqual(answer("15 usd in eur", failure: .unavailable)?.text, "status=unavailable\n")
         XCTAssertEqual(answer("15 usd in eur")?.text, "status=offline\n")
         XCTAssertEqual(answer("1 btc in usd")?.text, "status=offline\n")
         XCTAssertNil(answer("1 xyz in abc"))
@@ -126,9 +136,9 @@ final class CalcAnswerTests: XCTestCase {
 
     func testRatesAreAskedOnlyForACurrency() {
         var asks = 0
-        let count: () -> CalcRates? = {
+        let count: () -> Result<CalcRates, CalcRateFailure> = {
             asks += 1
-            return nil
+            return .failure(.offline)
         }
         _ = CalcAnswer(text: "2*(3+4)", locale: english, clock: berlin, now: now, rates: count)
         _ = CalcAnswer(text: "5 km in mi", locale: english, clock: berlin, now: now, rates: count)

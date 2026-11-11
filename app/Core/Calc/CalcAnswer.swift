@@ -11,6 +11,8 @@ public struct CalcAnswer: Equatable, Sendable {
     public let detail: String
     /// Why there is no value, such as `offline`.
     public let status: String?
+    /// `warn` for an answer from old rates.
+    public let tone: String?
 
     /// Reads the text. `rates` gives the exchange rates, and is asked only for a currency.
     public init?(
@@ -18,13 +20,14 @@ public struct CalcAnswer: Equatable, Sendable {
         locale: Locale = .autoupdatingCurrent,
         clock: Calendar = .autoupdatingCurrent,
         now: Date = Date(),
-        rates: @escaping () -> CalcRates? = { nil }
+        rates: @escaping () -> Result<CalcRates, CalcRateFailure> = { .failure(.offline) }
     ) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        var asked: CalcRates??
+        var asked: Result<CalcRates, CalcRateFailure>?
         let kept = {
-            if asked == nil { asked = .some(rates()) }
-            return asked ?? nil
+            let answer = asked ?? rates()
+            asked = answer
+            return answer
         }
         let isDate = text.prefixMatch(of: /\d{4}-\d{1,2}-\d{1,2}(\s|$)/) != nil
         if let answer = Self.conversion(of: text, locale: locale, clock: clock, now: now, rates: kept) {
@@ -38,27 +41,32 @@ public struct CalcAnswer: Equatable, Sendable {
         }
     }
 
-    private init(value: String, title: String, detail: String, status: String? = nil) {
+    private init(value: String, title: String, detail: String, status: String? = nil, tone: String? = nil) {
         self.value = value
         self.title = title
         self.detail = detail
         self.status = status
+        self.tone = tone
     }
 
     /// The row that `openspot calc solve` prints, or its status.
     public var text: String {
         if let status { return TextBlock(fields: [.init(key: "status", value: status)]).text }
-        return TextBlock(fields: [.init(key: "row", value: value), .init(key: "title", value: title), .init(key: "detail", value: detail)]).text
+        let fields: [TextBlock.Field] = [.init(key: "row", value: value), .init(key: "title", value: title), .init(key: "detail", value: detail)]
+        return TextBlock(fields: fields + (tone.map { [.init(key: "tone", value: $0)] } ?? [])).text
     }
 
     /// The first split of the text whose names are two units of one kind, or two currencies that the rates know.
-    private static func conversion(of text: String, locale: Locale, clock: Calendar, now: Date, rates: () -> CalcRates?) -> CalcAnswer? {
+    private static func conversion(of text: String, locale: Locale, clock: Calendar, now: Date, rates asking: () -> Result<CalcRates, CalcRateFailure>) -> CalcAnswer? {
         for split in CalcConversion.splits(of: text, locale: locale) {
             if let to = split.to, let answer = units(split.amount, from: split.from, to: to, locale: locale) { return answer }
             guard let from = CalcCurrency.code(split.from), let to = split.to.map(CalcCurrency.code) ?? locale.currency?.identifier, from != to,
                   CalcCurrency.isKnown(from) || (split.to != nil && CalcCurrency.isKnown(to)) else { continue }
-            guard let rates = rates() else {
-                if CalcCurrency.isKnown(from), CalcCurrency.isKnown(to) { return CalcAnswer(value: "", title: "", detail: "", status: "offline") }
+            let rates: CalcRates
+            switch asking() {
+            case .success(let kept): rates = kept
+            case .failure(let failure):
+                if CalcCurrency.isKnown(from), CalcCurrency.isKnown(to) { return CalcAnswer(value: "", title: "", detail: "", status: failure.rawValue) }
                 continue
             }
             guard let rate = rates.rate(from: from, to: to) else { continue }
@@ -75,11 +83,14 @@ public struct CalcAnswer: Equatable, Sendable {
             plain.locale = Locale(identifier: "en_US_POSIX")
             plain.usesGroupingSeparator = false
             plain.maximumFractionDigits = formatter.maximumFractionDigits
-            let detail = "\(split.amount.detail) \(from) in \(to) · rates of \(day(of: rates, clock: clock, now: now, locale: locale))"
+            let age = days(of: rates, clock: clock, now: now)
+            let old = age.map { $0 >= oldDays ? ", \(daysWritten($0, clock: clock, locale: locale)) old" : "" } ?? ""
+            let detail = "\(split.amount.detail) \(from) in \(to) · rates of \(day(of: rates, clock: clock, now: now, locale: locale))\(old)"
             return CalcAnswer(
                 value: plain.string(from: NSNumber(value: value)) ?? Self.plain(value, digits: 15),
                 title: formatter.string(from: NSNumber(value: value)) ?? "",
-                detail: detail
+                detail: detail,
+                tone: old.isEmpty ? nil : "warn"
             )
         }
         return nil
@@ -98,13 +109,36 @@ public struct CalcAnswer: Equatable, Sendable {
         return CalcAnswer(value: plain(value, digits: 6), title: title, detail: "\(amount.detail) \(from) in \(to)")
     }
 
-    /// The day that the rates are of, such as `Nov 10`, with its year when it is not the year of now.
-    private static func day(of rates: CalcRates, clock: Calendar, now: Date, locale: Locale) -> String {
+    /// The age in days from which an answer says that its rates are old. The file changes once a day.
+    private static let oldDays = 3
+
+    private static func date(of rates: CalcRates, clock: Calendar) -> Date? {
         let parser = DateFormatter()
         parser.locale = Locale(identifier: "en_US_POSIX")
         parser.timeZone = clock.timeZone
         parser.dateFormat = "yyyy-MM-dd"
-        guard let date = parser.date(from: rates.day) else { return rates.day }
+        return parser.date(from: rates.day)
+    }
+
+    /// The days from the day of the rates to the day of now, counted on the clock that it is given.
+    private static func days(of rates: CalcRates, clock: Calendar, now: Date) -> Int? {
+        date(of: rates, clock: clock).flatMap { clock.dateComponents([.day], from: clock.startOfDay(for: $0), to: clock.startOfDay(for: now)).day }
+    }
+
+    /// A count of days in the words of the Mac, such as `9 days`.
+    private static func daysWritten(_ count: Int, clock: Calendar, locale: Locale) -> String {
+        let formatter = DateComponentsFormatter()
+        formatter.unitsStyle = .full
+        formatter.allowedUnits = [.day]
+        var calendar = clock
+        calendar.locale = locale
+        formatter.calendar = calendar
+        return formatter.string(from: DateComponents(day: count)) ?? "\(count) days"
+    }
+
+    /// The day that the rates are of, such as `Nov 10`, with its year when it is not the year of now.
+    private static func day(of rates: CalcRates, clock: Calendar, now: Date, locale: Locale) -> String {
+        guard let date = date(of: rates, clock: clock) else { return rates.day }
         let formatter = DateFormatter()
         formatter.locale = locale
         formatter.calendar = clock
