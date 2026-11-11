@@ -307,6 +307,7 @@ final class SamplePluginsTests: SamplePluginsCase {
             let picked = try await self.pickColor(answer: "#0080FF", in: folder)
             XCTAssertEqual(picked, "Copied #0080FF")
             XCTAssertEqual(try self.read("clipboard", in: folder), "#0080FF")
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("direct").path))
 
             try FileManager.default.removeItem(at: folder.appendingPathComponent("clipboard"))
             let cancelled = try await self.pickColor(answer: "", in: folder)
@@ -403,6 +404,18 @@ final class SamplePluginsTests: SamplePluginsCase {
             _ = try await SpotRuns().answer(of: emoji, .item(SpotItem(title: "thumbs up", run: "👍")), input: nil, limit: 30)
 
             XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("clipboard"), encoding: .utf8), "👍")
+        }
+    }
+
+    func testFilesCopiesThePath() async throws {
+        try await withPrivateHome { folder in
+            let files = try XCTUnwrap(try self.scan.spots.first { $0.name == "Files" })
+
+            let toast = try await files.perform(SpotAction(arguments: ["copy", "/a/b é.txt"]), timeout: 5)
+
+            XCTAssertEqual(toast, "Copied")
+            XCTAssertEqual(try self.read("clipboard", in: folder), "/a/b é.txt")
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("direct").path))
         }
     }
 

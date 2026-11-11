@@ -103,6 +103,7 @@ final class TranslatePluginTests: SamplePluginsCase {
 
             XCTAssertEqual(output.summary?.value("toast"), "Copied")
             XCTAssertEqual(try self.read("clipboard", in: folder), "OnE\nTWO")
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("direct").path))
         }
     }
 

@@ -146,7 +146,7 @@ case "$1" in
     open "$settings"
     ;;
   copy)
-    value output | pbcopy
+    value output | openspot clipboard copy
     printf 'toast=Copied\n'
     ;;
   swap)

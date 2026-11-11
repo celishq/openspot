@@ -58,7 +58,7 @@ case "$1" in
           exit 1
         fi
         prompt=$(openspot prompt new "$text") || exit 1
-        printf '%s' "$prompt" | LC_ALL=en_US.UTF-8 pbcopy || exit 1
+        printf '%s' "$prompt" | openspot clipboard copy || exit 1
         echo 'toast=Copied a prompt for your agent. Paste it into Claude Code, Codex or another agent.'
         ;;
       button|list|number|form)

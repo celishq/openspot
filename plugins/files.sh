@@ -34,7 +34,7 @@ case "$1" in
     open -R "$2"
     ;;
   copy)
-    printf '%s' "$2" | LC_ALL=en_US.UTF-8 pbcopy
+    printf '%s' "$2" | openspot clipboard copy
     echo "toast=Copied"
     ;;
   open)

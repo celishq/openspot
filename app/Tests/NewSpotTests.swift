@@ -13,7 +13,10 @@ final class NewSpotTests: BuiltInCase {
         try await super.setUp()
         guideText = try joinedSpecs()
         try guideText.write(to: guide, atomically: true, encoding: .utf8)
-        try fake("pbcopy", "cat > '\(root.path)/clipboard'")
+        try fake("pbcopy", "cat > '\(root.path)/direct'")
+        let real = tools.appendingPathComponent("openspot-real")
+        try FileManager.default.moveItem(at: tools.appendingPathComponent("openspot"), to: real)
+        try fake("openspot", "[ \"$1 $2\" = 'clipboard copy' ] && exec cat > '\(root.path)/clipboard'\nexec '\(real.path)' \"$@\"")
         try fake("open", "echo \"$@\" > '\(root.path)/opened'")
     }
 

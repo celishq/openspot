@@ -179,7 +179,7 @@ case "$1" in
     ;;
   copy)
     url=$(link "$2") || exit 1
-    printf '%s' "$url" | pbcopy
+    printf '%s' "$url" | openspot clipboard copy
     echo "toast=Copied"
     ;;
   reveal)

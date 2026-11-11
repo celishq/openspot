@@ -99,6 +99,7 @@ final class LinksPluginTests: SamplePluginsCase {
 
             try await links.perform(.action(try await self.action("copy", of: links), item: item), timeout: 5)
             XCTAssertEqual(try self.read("clipboard", in: folder), "https://github.com/a/b")
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("direct").path))
         }
     }
 

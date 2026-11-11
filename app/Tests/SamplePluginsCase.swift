@@ -181,14 +181,17 @@ class SamplePluginsCase: XCTestCase {
         try String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8)
     }
 
-    /// Runs the color picker with a stand-in for the openspot command, which prints this answer.
+    /// Runs the color picker with a stand-in for the openspot command, which prints this answer and copies as the fake of
+    /// `withPrivateHome` does.
     func pickColor(answer: String, in folder: URL) async throws -> String? {
-        try "#!/bin/sh\n[ \"$1 $2\" = 'color pick' ] && printf '%s' '\(answer)'\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
+        let script = "#!/bin/sh\n[ \"$1 $2\" = 'color pick' ] && { printf '%s' '\(answer)'; exit 0; }\n\(Self.fakeOpenspot(in: folder))\n"
+        try script.writeScript(to: folder.appendingPathComponent("tools/openspot"))
         let picker = try XCTUnwrap(try scan.spots.first { $0.name == "Color picker" })
         return try await picker.perform(picker.click, timeout: 5)
     }
 
-    /// Puts a stand-in for the openspot command on the path. It knows two languages and translates to upper case.
+    /// Puts a stand-in for the openspot command on the path. It knows two languages, translates to upper case, and copies as
+    /// the fake of `withPrivateHome` does.
     func fakeTranslate(in folder: URL, status: String? = nil) throws -> Spot {
         let reply = status.map { "printf 'status=\($0)\\nfrom=ru\\nto=en\\n'" } ?? #"""
         case "$text" in *[а-я]*) found=ru ;; *) found=en ;; esac
@@ -198,6 +201,10 @@ class SamplePluginsCase: XCTestCase {
         """#
         let script = """
         #!/bin/sh
+        if [ "$1" = clipboard ]; then
+          \(Self.fakeOpenspot(in: folder))
+          exit 0
+        fi
         if [ "$2" = languages ]; then
           printf 'preferred=en\\npreferred=ru\\n\\nlanguage=en\\nname=English\\n\\nlanguage=ru\\nname=Russian\\n'
           exit 0
