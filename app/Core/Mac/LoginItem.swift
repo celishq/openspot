@@ -1,6 +1,6 @@
 import Foundation
 
-/// The setting that opens the app at login. The app gives one only when the Mac can register it.
+/// The setting that opens the app at login.
 public struct LoginItem: Equatable, Sendable {
     /// The value of its row in a list.
     public static let run = "open_at_login"
