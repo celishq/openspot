@@ -25,10 +25,6 @@ enum SpotCommandLine {
             dispatchMain()
         }
         switch call {
-        case .colorPick:
-            SpotColorPick.run()
-        case .folderPick:
-            SpotFolderPick.run()
         case .check(let path):
             TerminalStop.watch()
             check(path)
@@ -159,7 +155,7 @@ enum SpotCommandLine {
     /// Whether a call needs the event loop of an app, for a pick or for an overlay over the screens.
     private static func needsEvents(_ call: CommandLineCall) -> Bool {
         switch call {
-        case .screenShot, .screenRecordStart, .screenRecordStop, .screenRecordStatus: true
+        case .colorPick, .folderPick, .screenShot, .screenRecordStart, .screenRecordStop, .screenRecordStatus: true
         default: false
         }
     }

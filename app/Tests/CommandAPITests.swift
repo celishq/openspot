@@ -75,6 +75,14 @@ final class CommandAPITests: XCTestCase {
         XCTAssertFalse(answer.output.contains("row=6"))
     }
 
+    func testABatchRunsNoCallThatCanWaitForThePerson() async throws {
+        for line in ["color pick", "folder pick", "screen shot", "screen record start"] {
+            let answer = try await answer(["batch"], input: line + "\n")
+
+            XCTAssertEqual(answer.errors, "openspot batch cannot run `\(line)`, because it does not print data. Run it on its own.\n")
+        }
+    }
+
     func testCalcSolvesASum() async throws {
         let answer = try await answer(["calc", "solve", "2+2"])
 
@@ -182,7 +190,7 @@ final class CommandAPITests: XCTestCase {
     }
 
     func testACallThatTheShellDoesHasNoWorkInCore() throws {
-        for arguments in [["color", "pick"], ["render", "a.png"], ["spot", "run", "notes"], ["helper", "calc"], ["check"]] {
+        for arguments in [["render", "a.png"], ["spot", "run", "notes"], ["helper", "calc"], ["check"]] {
             let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: [:]))
             XCTAssertNil(CommandAPI(mac: host).work(for: call, input: { "" }, environment: [:]), arguments.joined(separator: " "))
         }

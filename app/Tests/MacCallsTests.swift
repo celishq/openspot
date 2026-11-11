@@ -51,6 +51,8 @@ final class MacCallsTests: XCTestCase {
         }
 
         func translationLanguages() async -> String { "preferred=en\n" }
+        func pickColor() async -> String { "#FF8800\n" }
+        func pickFolder() async -> String { "/Users/a/Repos\n" }
     }
 
     private var folder: URL!
@@ -80,6 +82,10 @@ final class MacCallsTests: XCTestCase {
 
     /// Runs the command with the arguments and stdin in a folder, and returns what it prints and its exit code.
     private func run(_ arguments: [String], input: String = "", in place: URL? = nil) throws -> (output: String, errors: String, code: Int32) {
+        try Self.run(client, config: config, arguments, input: input, in: place ?? folder)
+    }
+
+    private static func run(_ client: URL, config: URL, _ arguments: [String], input: String, in place: URL) throws -> (output: String, errors: String, code: Int32) {
         let process = Process()
         let output = Pipe()
         let errors = Pipe()
@@ -87,7 +93,7 @@ final class MacCallsTests: XCTestCase {
         process.executableURL = client
         process.arguments = arguments
         process.environment = ["OPENSPOT_CONFIG": config.path, "PATH": "/usr/bin:/bin"]
-        process.currentDirectoryURL = place ?? folder
+        process.currentDirectoryURL = place
         process.standardOutput = output
         process.standardError = errors
         process.standardInput = stdin
@@ -164,5 +170,15 @@ final class MacCallsTests: XCTestCase {
 
         XCTAssertEqual([translated.output, languages.output], ["text=hello\n", "preferred=en\n"])
         XCTAssertEqual(host.acts, ["translate hola from - to en"])
+    }
+
+    /// A pick runs on the main thread of the app, so the test waits for the command off it.
+    func testTheAppAsksForAColourAndAFolder() async throws {
+        let (client, config, folder) = (client, config, folder!)
+        let colour = try await Task.detached { try Self.run(client, config: config, ["color", "pick"], input: "", in: folder) }.value
+        let picked = try await Task.detached { try Self.run(client, config: config, ["folder", "pick"], input: "", in: folder) }.value
+
+        XCTAssertEqual(colour.output, "#FF8800\n")
+        XCTAssertEqual(picked.output, "/Users/a/Repos\n")
     }
 }

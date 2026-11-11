@@ -51,8 +51,8 @@ public final class CommandAPI: @unchecked Sendable {
         return call
     }
 
-    /// The work that answers a call, or nil for a call that runs in a process of its own: one that draws, waits for the
-    /// person, or runs a helper, a spot or a check of a folder, and in Careful mode a spot's capture into a file that it
+    /// The work that answers a call, or nil for a call that runs in a process of its own: one that draws, or runs a helper,
+    /// a spot or a check of a folder, and in Careful mode a spot's capture into a file that it
     /// names, which only its sandbox can fence (Z8). `input` reads stdin, and only a call that takes stdin reads it.
     public func work(for call: CommandLineCall, input: @escaping @Sendable () async -> String, environment: [String: String]) -> Work? {
         let isRead = environment["OPENSPOT_REASON"] != nil
@@ -123,8 +123,9 @@ public final class CommandAPI: @unchecked Sendable {
         case .screenRecordStatus: return screen.status()
         case .translate(let from, let to): return CommandAnswer.work { [mac] in try await mac.translate(await input(), from: from, to: to) }
         case .translateLanguages: return { [mac] in CommandAnswer(output: await mac.translationLanguages()) }
-        case .check, .checkJSON, .spotRun, .spotShow, .renderSpot, .render, .renderCard, .sandbox, .colorPick, .folderPick,
-             .helper, .glyphBook:
+        case .colorPick: return { [mac] in CommandAnswer(output: await mac.pickColor()) }
+        case .folderPick: return { [mac] in CommandAnswer(output: await mac.pickFolder()) }
+        case .check, .checkJSON, .spotRun, .spotShow, .renderSpot, .render, .renderCard, .sandbox, .helper, .glyphBook:
             return nil
         }
     }

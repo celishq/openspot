@@ -108,7 +108,7 @@ final class CommandClientTests: XCTestCase {
     func testACallThatRunsAloneStartsTheApp() throws {
         listen()
 
-        XCTAssertEqual(try run(client, ["color", "pick"]).output, "app: color pick\n")
+        XCTAssertEqual(try run(client, ["check"]).output, "app: check\n")
     }
 
     /// Starts the program with the arguments and these more variables, and returns it as it runs.

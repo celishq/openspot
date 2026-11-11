@@ -3,7 +3,7 @@ import OpenspotCore
 
 /// What the API and the runs reach through the Mac: EventKit, Calendar, the app that opens a link, the settings of the app,
 /// the events of NSWorkspace and the general pasteboard: the wake of the Mac, another app that comes to the front, with its
-/// bundle ID, and the wake of the screen (B2), the clipboard, the window in front, the screen and translation.
+/// bundle ID, and the wake of the screen (B2), the clipboard, the window in front, the screen, translation and the picks.
 @MainActor
 final class SpotMac: Mac {
     private var observers: [NSObjectProtocol] = []
@@ -82,6 +82,14 @@ final class SpotMac: Mac {
 
     nonisolated func translationLanguages() async -> String {
         await SpotTranslation.languages()
+    }
+
+    func pickColor() async -> String {
+        await SpotColorPick.pick()
+    }
+
+    func pickFolder() async -> String {
+        await SpotFolderPick.pick()
     }
 
     var clipboardCount: Int {

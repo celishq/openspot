@@ -75,7 +75,7 @@ final class CommandSocketTests: XCTestCase {
     }
 
     func testACallThatRunsAloneGetsAnError() throws {
-        let answer = try ask(["color", "pick"])
+        let answer = try ask(["check"])
 
         XCTAssertNil(answer["result"])
         XCTAssertNotNil((answer["error"] as? [String: Any])?["code"] as? Int)

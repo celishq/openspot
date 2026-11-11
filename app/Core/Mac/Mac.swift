@@ -2,7 +2,7 @@ import Foundation
 
 /// What the Mac gives through the frameworks that Core does not import: EventKit, the apps that open, the settings of the
 /// app, the events of the Mac with the count of changes of the clipboard (B2), the clipboard, the window in front, the
-/// screen and translation. A test gives a Mac of its own. A member with no `@MainActor` runs on the thread of its call, never on the main thread of the app.
+/// screen, translation and the picks of a colour and a folder. A test gives a Mac of its own. A member with no `@MainActor` runs on the thread of its call, never on the main thread of the app.
 public protocol Mac: AnyObject, Sendable {
     func eventStore() -> any EventStore
     func reminderStore() -> any ReminderStore
@@ -46,6 +46,10 @@ public protocol Mac: AnyObject, Sendable {
     func translate(_ text: String, from: String?, to: String?) async throws -> String
     /// The languages that the person prefers, then a block for each language that the Mac translates.
     func translationLanguages() async -> String
+    /// Shows the colour sampler of macOS, and returns the picked colour on a line, or nothing after a cancel.
+    @MainActor func pickColor() async -> String
+    /// Shows the folder window of macOS, and returns the picked folder on a line, or nothing after a cancel.
+    @MainActor func pickFolder() async -> String
 }
 
 extension Mac {
@@ -68,4 +72,6 @@ extension Mac {
     public func recordingStatus() async throws -> String { throw SpotError.fault("This Mac has no screen.") }
     public func translate(_ text: String, from: String?, to: String?) async throws -> String { throw SpotError.fault("This Mac cannot translate.") }
     public func translationLanguages() async -> String { "" }
+    @MainActor public func pickColor() async -> String { "" }
+    @MainActor public func pickFolder() async -> String { "" }
 }
