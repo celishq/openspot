@@ -132,14 +132,18 @@ _openspot_decode() {
 # `_openspot_args` with one written argument on each line, and `_openspot_stdin`, and exports each variable of the call in
 # place of those of the call before. A stop block gives no call.
 _openspot_next() {
-  _openspot_call= _openspot_args= _openspot_stdin=
+  _openspot_call= _openspot_args= _openspot_stdin= _openspot_count=0
   for _openspot_name in $_openspot_env; do unset "$_openspot_name"; done
   _openspot_env=
   while IFS= read -r _openspot_line; do
     case $_openspot_line in
       '') [ -z "$_openspot_call" ] || return 0 ;;
       call=*) _openspot_call=${_openspot_line#call=} ;;
-      arg=*) _openspot_args="${_openspot_args:+$_openspot_args$_openspot_nl}${_openspot_line#arg=}" ;;
+      arg=*)
+        [ "$_openspot_count" = 0 ] || _openspot_args=$_openspot_args$_openspot_nl
+        _openspot_args=$_openspot_args${_openspot_line#arg=}
+        _openspot_count=$((_openspot_count + 1))
+        ;;
       env.OPENSPOT_*=*)
         _openspot_name=${_openspot_line%%=*}
         _openspot_name=${_openspot_name#env.}
@@ -181,7 +185,7 @@ openspot_serve() {
   fi
   while _openspot_next; do
     set --
-    if [ -n "$_openspot_args" ]; then
+    if [ "$_openspot_count" -gt 0 ]; then
       while IFS= read -r _openspot_line; do
         _openspot_decode "$_openspot_line"
         set -- "$@" "$_openspot_text"

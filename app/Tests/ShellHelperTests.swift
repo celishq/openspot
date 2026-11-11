@@ -232,6 +232,19 @@ final class ShellHelperTests: XCTestCase {
         XCTAssertEqual(printed.filter { $0.hasPrefix("end=") }, ["end=1\n", "end=2\n"])
     }
 
+    func testServeKeepsAnEmptyFirstArgument() async throws {
+        let url = try script("main() { printf 'count=%s|%s\\n' \"$#\" \"$2\"; }\nopenspot_serve main \"$@\"", header: "# mode=stay\n")
+        let live = ScriptProcess(url: url, mode: .stays, limit: 5)
+        var frames = live.start().makeAsyncIterator()
+
+        live.send(SpotAction(arguments: ["", "x"]), id: 1)
+        live.end()
+        var printed: [String] = []
+        while let frame = try await frames.next() { printed.append(frame) }
+
+        XCTAssertEqual(printed.filter { $0.hasPrefix("count=") }, ["count=2|x\n\n"])
+    }
+
     func testOnceServeReturnsTheCodeOfMain() async throws {
         let url = try script("main() { echo 'No sky' >&2; return 3; }\nopenspot_serve main \"$@\"")
         let process = ScriptProcess(url: url, arguments: ["read"], limit: 5)

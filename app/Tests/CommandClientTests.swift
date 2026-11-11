@@ -163,6 +163,16 @@ final class CommandClientTests: XCTestCase {
         XCTAssertEqual(run.process.terminationStatus, 1)
     }
 
+    func testAQuitOrTheStatsOfAClosedAppStartNoApp() async throws {
+        for call in [["app", "quit"], ["spot", "stats"]] {
+            let run = try start(call, variables: ["OPENSPOT_START_WAIT": "5"])
+
+            try await wait("the end of the call") { !run.process.isRunning }
+
+            XCTAssertEqual(String(decoding: run.output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self), "app: \(call.joined(separator: " "))\n")
+        }
+    }
+
     func testCtrlCStopsTheWorkOfTheCallInTheAppAndItChangesNothing() async throws {
         socket = CommandSocket(folder: config, api: CommandAPI(mac: Host(), app: SlowApp(folder: folder)))
         let run = try start(["setting", "change", "--spot", "repos", "folder"])
@@ -177,10 +187,10 @@ final class CommandClientTests: XCTestCase {
     }
 
     func testOnlyACallThatNeedsTheStateOfTheAppIsLive() {
-        for live in [["app", "status"], ["app", "quit"], ["spot", "open", "x"], ["setting", "change", "k"], ["event", "emit", "a.b"], ["update", "check"], ["batch"]] {
+        for live in [["app", "status"], ["spot", "open", "x"], ["setting", "change", "k"], ["event", "emit", "a.b"], ["update", "check"], ["batch"]] {
             XCTAssertTrue(CommandKind.needsApp(live), live.joined(separator: " "))
         }
-        for files in [["spot", "list"], ["setting", "get", "k"], ["calc", "solve", "1"], ["app", "login", "on"], ["guide"], ["screen", "shot"], []] {
+        for files in [["spot", "list"], ["setting", "get", "k"], ["calc", "solve", "1"], ["app", "login", "on"], ["app", "quit"], ["spot", "stats"], ["guide"], ["screen", "shot"], []] {
             XCTAssertFalse(CommandKind.needsApp(files), files.joined(separator: " "))
         }
     }

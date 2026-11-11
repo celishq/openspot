@@ -162,7 +162,7 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  link, update, calls and firstLaunch. --frame prints them as one block.
     openspot batch                               Runs one call for each line of stdin, its words split at spaces, and
                                                  prints the output of each with a line --- after it. It stops at the first
-                                                 call that fails, and takes only a call that prints data.
+                                                 call that fails, and takes only a call that the app answers.
     openspot app login on|off                    Opens the app at login, or stops it.
     openspot app link on|off                     Puts openspot on the path of Terminal, or takes it off.
     openspot app quit                            Ends the running app.

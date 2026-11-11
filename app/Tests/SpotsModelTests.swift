@@ -79,6 +79,18 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.entries, entries)
     }
 
+    func testAFileThatChangesBesideASpotThatTheAPITurnsOnStillShowsItsCard() throws {
+        try script("cups", header: "title=Cups\nevery=60", "printf 'text=c\\ntitle=3\\n'")
+        model.reload()
+        try script("notes", header: "title=Notes", ":")
+        try script("cups", header: "title=Mugs\nevery=60", "printf 'text=c\\ntitle=3\\n'")
+
+        model.configChanged(.spots(["other"]))
+        model.folderChanged()
+
+        XCTAssertEqual(Set(model.entries.map { $0.spot.name }), ["Mugs", "Notes"])
+    }
+
     /// Shows the panel with one list of two rows, and opens that list.
     private func openList() async throws {
         try script("list", header: "read=sheet", "printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n'")

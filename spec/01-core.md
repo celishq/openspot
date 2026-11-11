@@ -521,8 +521,8 @@ kinds (S12):
 - A call that reads or writes only files, or asks the Mac, such as `spot list`, `setting get`, `calc solve` or
   `screen shot`, gives the same answer with the app or without it. While the app runs, the command asks it over a socket,
   so a call starts no second app and finds its data ready (S1). With the app closed, the command does the work itself (S2).
-- A call that needs the state of the running app, such as `app status`, `app quit`, `spot open`, `spot show`, `spot review`,
-  `spot stats`, `setting change`, `event emit` or `update check`, always goes to the app. With the app closed, the command
+- A call that needs the state of the running app, such as `app status`, `spot open`, `spot show`, `spot review`,
+  `setting change`, `event emit` or `update check`, always goes to the app. With the app closed, the command
   starts it in the background and waits up to 10 seconds for it. After that it fails, and says to open Openspot.
 
 Ctrl-C stops a call: the command closes its connection, and the app stops the work of that call, which then changes
@@ -532,7 +532,8 @@ helper, which a script never starts or stops (K3). When macOS already has a comm
 
 `openspot batch` reads one call per line from stdin, with its words split at spaces, and prints the output of each call
 and then a line `---`. It stops at the first call that fails, with the stderr and the code of that call. It takes only a
-call that prints data, so a read can ask several things with one process (K7). `--frame` makes `app status`, `spot list`
+call that the app answers, not one that draws or waits for the person, so a read can ask several things with one process
+(K7). `--frame` makes `app status`, `spot list`
 and `setting list` print `key=value` blocks in place of JSON, each value written as in a frame, so that a shell reads them
 with `while IFS== read -r key value` and needs no `jq` (K8).
 

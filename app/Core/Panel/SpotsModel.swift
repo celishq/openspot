@@ -237,11 +237,14 @@ public final class SpotsModel {
         lastScan = scan
         loadedStamp = spotScan.stamp
         loadedConfig = config
-        fileStamps = Self.stamps(of: scan)
+        let stamps = Self.stamps(of: scan)
+        let others = ids.map { ids in { (stamps: [String: String]) in stamps.filter { !ids.contains($0.key) } } }
+        let isOnlyNamed = others.map { $0(stamps) == $0(fileStamps) } ?? false
+        fileStamps = stamps
         holdAssignedKeys(config)
         arrangement = config.arrangement
         scanned = scan.spots
-        if let ids { patchEntries(ids) } else { rebuildEntries() }
+        if let ids, isOnlyNamed { patchEntries(ids) } else { rebuildEntries() }
         if isEditing { refreshDock(in: folder) }
         if problems != self.problems, !problems.isEmpty {
             host.notify(problems.joined(separator: " "))

@@ -98,8 +98,9 @@ public final class CommandSocket: @unchecked Sendable {
         ends.enter()
         ends.enter()
         watch.setEventHandler {
-            var byte: UInt8 = 0
-            guard recv(connection, &byte, 1, MSG_PEEK | MSG_DONTWAIT) == 0 else { return }
+            var bytes = [UInt8](repeating: 0, count: 512)
+            let count = recv(connection, &bytes, bytes.count, MSG_DONTWAIT)
+            guard count == 0 || (count < 0 && errno != EAGAIN && errno != EINTR) else { return }
             task.cancel()
             watch.cancel()
         }
