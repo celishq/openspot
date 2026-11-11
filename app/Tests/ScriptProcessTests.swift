@@ -22,6 +22,32 @@ final class ScriptProcessTests: XCTestCase {
         return Spot(id: name, name: name, url: url)
     }
 
+    func testRunningScriptsHoldNoThreadEach() async throws {
+        let plugin = try writePlugin("stays.sh", "#!/bin/sh\nprintf 'title=A\\n---\\n'\nexec sleep 30\n")
+        let before = Self.threadCount()
+        var processes: [ScriptProcess] = []
+        for _ in 0..<16 {
+            let process = ScriptProcess(url: plugin.url, mode: .stays, stopPause: Self.stopPause)
+            var frames = process.start().makeAsyncIterator()
+            _ = try await frames.next()
+            processes.append(process)
+        }
+
+        let during = Self.threadCount()
+        processes.forEach { $0.stop() }
+        for process in processes { process.finish(by: Date().addingTimeInterval(5)) }
+
+        XCTAssertLessThan(during - before, 16)
+    }
+
+    private static func threadCount() -> Int {
+        var list: thread_act_array_t?
+        var count: mach_msg_type_number_t = 0
+        guard task_threads(mach_task_self_, &list, &count) == KERN_SUCCESS, let list else { return 0 }
+        vm_deallocate(mach_task_self_, vm_address_t(bitPattern: list), vm_size_t(Int(count) * MemoryLayout<thread_t>.stride))
+        return Int(count)
+    }
+
     func testReturnsWhatThePluginPrintsForTheArguments() async throws {
         let plugin = try writePlugin("echo.sh", "#!/bin/sh\necho \"$1\"\n")
 

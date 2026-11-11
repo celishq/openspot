@@ -31,6 +31,8 @@ public final class ScriptProcess: @unchecked Sendable {
     private var id: pid_t = 0
     private let errorText: ErrorTail
     private var unended: String?
+    /// The frames of the output so far, which only the output's handler reads, one read at a time.
+    private var reader = SheetFrameReader()
 
     /// `limit` is the time the script has to its first frame or its end. With none, it has no limit. `stopPause` is the time
     /// between each step of a stop. `variables` add to its environment. `errorLimit` is how many of the last bytes of stderr
@@ -119,8 +121,9 @@ public final class ScriptProcess: @unchecked Sendable {
         if wasStopped { stopGroup() }
         if let text { writeAndClose(text) }
         if let limit {
-            DispatchQueue.global().asyncAfter(deadline: .now() + limit) { [self] in
-                if !lock.withLock({ hasFrame }) { stop(because: PluginError.timedOut) }
+            DispatchQueue.global().asyncAfter(deadline: .now() + limit) { [weak self] in
+                guard let self, !lock.withLock({ hasFrame }) else { return }
+                stop(because: PluginError.timedOut)
             }
         }
         follow(output: output, errors: errors)
@@ -232,8 +235,10 @@ public final class ScriptProcess: @unchecked Sendable {
     private func stopGroup() {
         lock.withLock { killsLater = true }
         deliver(SIGTERM)
-        DispatchQueue.global().asyncAfter(deadline: .now() + stopPause) { [self] in
-            deliver(SIGKILL)
+        let id = lock.withLock { id }
+        DispatchQueue.global().asyncAfter(deadline: .now() + stopPause) { [weak self] in
+            if id > 0 { kill(-id, SIGKILL) }
+            guard let self else { return }
             lock.withLock { killsLater = false }
         }
     }
@@ -250,44 +255,47 @@ public final class ScriptProcess: @unchecked Sendable {
         if id > 0 { kill(-id, number) }
     }
 
+    /// Takes the output and stderr as each read arrives, with no thread that waits on a pipe, and ends the stream once the
+    /// output closes.
     private func follow(output: Pipe, errors: Pipe) {
         let errorsRead = DispatchSemaphore(value: 0)
         let lastErrors = LastLine()
         let errorText = errorText
-        DispatchQueue.global().async {
-            while let data = Self.next(errors) {
-                lastErrors.take(data)
-                errorText.take(data)
-            }
-            errorsRead.signal()
-        }
-        DispatchQueue.global().async { [self] in
-            var reader = SheetFrameReader()
-            while let data = Self.next(output) {
-                for frame in reader.read(data) { yield(frame) }
-            }
-            let hasExited = waitForExit(seconds: Self.exitPause)
-            _ = errorsRead.wait(timeout: .now() + Self.errorsPause)
-            guard !isStopped else { return lock.withLock { ended = true } }
-            if hasExited, process.terminationStatus != 0 {
-                let line = lastErrors.text
-                let last = reader.finish()
-                lock.withLock { unended = last }
-                let fix = last.flatMap { PluginOutput(text: $0).link }.flatMap(URL.init(string:))
-                finish(throwing: fix.map { PluginError.failedWithFix(process.terminationStatus, line, $0) } ?? PluginError.failed(process.terminationStatus, line))
+        errors.fileHandleForReading.readabilityHandler = { handle in
+            let data = handle.availableData
+            guard !data.isEmpty else {
+                handle.readabilityHandler = nil
+                errorsRead.signal()
                 return
             }
-            if let frame = reader.finish() { yield(frame) }
-            finish(throwing: nil)
+            lastErrors.take(data)
+            errorText.take(data)
+        }
+        output.fileHandleForReading.readabilityHandler = { [self] handle in
+            let data = handle.availableData
+            guard !data.isEmpty else {
+                handle.readabilityHandler = nil
+                return DispatchQueue.global().async { [self] in end(errorsRead: errorsRead, lastErrors: lastErrors) }
+            }
+            for frame in reader.read(data) { yield(frame) }
         }
     }
 
-    /// The next bytes of a pipe, or nil at its end. Each read frees its own buffer, so a long read keeps none of the last.
-    private static func next(_ pipe: Pipe) -> Data? {
-        autoreleasepool {
-            let data = pipe.fileHandleForReading.availableData
-            return data.isEmpty ? nil : data
+    /// Ends the stream once the output closed: with the reason of a failed exit, or with the last frame.
+    private func end(errorsRead: DispatchSemaphore, lastErrors: LastLine) {
+        let hasExited = waitForExit(seconds: Self.exitPause)
+        _ = errorsRead.wait(timeout: .now() + Self.errorsPause)
+        guard !isStopped else { return lock.withLock { ended = true } }
+        if hasExited, process.terminationStatus != 0 {
+            let line = lastErrors.text
+            let last = reader.finish()
+            lock.withLock { unended = last }
+            let fix = last.flatMap { PluginOutput(text: $0).link }.flatMap(URL.init(string:))
+            finish(throwing: fix.map { PluginError.failedWithFix(process.terminationStatus, line, $0) } ?? PluginError.failed(process.terminationStatus, line))
+            return
         }
+        if let frame = reader.finish() { yield(frame) }
+        finish(throwing: nil)
     }
 
     private func yield(_ frame: String) {
