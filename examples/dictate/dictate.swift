@@ -84,7 +84,7 @@ final class Recording {
         var sum: Float = 0
         for index in 0..<Int(buffer.frameLength) { sum += channel[index] * channel[index] }
         let decibels = 20 * log10(max(sqrt(sum / Float(buffer.frameLength)), 1e-6))
-        return min(max((decibels + 55) / 40, 0), 1)
+        return min(max((decibels + 50) / 32, 0), 1)
     }
 }
 
@@ -320,9 +320,11 @@ final class Bars: NSView {
     static var length: CGFloat { CGFloat(count) * width + CGFloat(count - 1) * gap }
 
     private let shares: [CGFloat] = (0..<Bars.count).map { index in
-        let distance = (CGFloat(index) - CGFloat(Bars.count - 1) / 2) / (CGFloat(Bars.count) / 4)
-        return 0.3 + 0.7 * exp(-distance * distance)
+        let distance = (CGFloat(index) - CGFloat(Bars.count - 1) / 2) / (CGFloat(Bars.count) / 3.6)
+        return 0.06 + 0.94 * exp(-distance * distance)
     }
+    /// How fast each bar sways while the voice holds it up, so the bars move apart and not as one block.
+    private let tempos: [CGFloat] = (0..<Bars.count).map { index in 3.1 + CGFloat((index * 7) % 5) * 0.55 }
     private var bars: [CALayer] = []
     private var level: CGFloat = 0
     private var target: CGFloat = 0
@@ -371,7 +373,7 @@ final class Bars: NSView {
     }
 
     private func draw() {
-        level += (target - level) * (target > level ? 0.5 : 0.15)
+        level += (target - level) * (target > level ? 0.65 : 0.22)
         phase += 0.06
         let isColumn = turn > 0.5
         let fullness = abs(1 - 2 * turn)
@@ -383,7 +385,8 @@ final class Bars: NSView {
         CATransaction.setDisableActions(true)
         for (index, bar) in bars.enumerated() {
             let wave = (sin(phase - CGFloat(index) * 0.5) + 1) / 2
-            let share = max(shares[index] * level * (0.8 + 0.2 * wave), 0.14 * wave * (1 - level))
+            let sway = (sin(phase * tempos[index] + CGFloat(index) * 1.3) + 1) / 2
+            let share = max(shares[index] * level * (0.55 + 0.45 * sway), 0.14 * wave * (1 - level) * shares[index])
             let extent = Self.width + share * room * fullness
             let offset = (CGFloat(index) - CGFloat(Self.count - 1) / 2) * (Self.width + Self.gap) * squeeze
             let frame = isColumn
@@ -400,6 +403,8 @@ final class Bars: NSView {
 /// no room for the word, so only the dots show, one above the other. The blink runs in Core Animation, off the main thread.
 final class Transcribing: NSView {
     private let word = NSTextField(labelWithString: "Transcribing")
+    /// The mask of the word, whose bright band sweeps across it.
+    private let shine = CAGradientLayer()
     private var dots: [CALayer] = []
     private let size: CGFloat = 4
     private let gap: CGFloat = 4
@@ -410,11 +415,18 @@ final class Transcribing: NSView {
         word.font = .systemFont(ofSize: 12, weight: .medium)
         word.textColor = .white
         word.sizeToFit()
+        word.wantsLayer = true
+        shine.colors = [NSColor(white: 1, alpha: 0.55).cgColor, NSColor.white.cgColor, NSColor(white: 1, alpha: 0.55).cgColor]
+        shine.startPoint = CGPoint(x: 0, y: 0.5)
+        shine.endPoint = CGPoint(x: 1, y: 0.5)
+        shine.locations = [0, 0.5, 1]
+        word.layer?.mask = shine
         addSubview(word)
         for _ in 0..<3 {
             let dot = CALayer()
             dot.backgroundColor = NSColor.white.cgColor
             dot.cornerRadius = size / 2
+            dot.opacity = 0.4
             dot.actions = ["bounds": NSNull(), "position": NSNull()]
             layer?.addSublayer(dot)
             dots.append(dot)
@@ -424,23 +436,59 @@ final class Transcribing: NSView {
     required init?(coder: NSCoder) { nil }
 
     /// Starts the blink, each dot a third of a beat after the one before.
+    /// Starts the motion at once: a soft bright band sweeps across the word and on over the dots, and each dot brightens,
+    /// swells and rises a little exactly while the band passes over it, so the word and the dots move as one light.
     func blink() {
-        let now = CACurrentMediaTime()
+        let beat: CFTimeInterval = 2.4
+        let steps = 72
+        let word = max(self.word.frame.width, 1)
+        let band: Double = 0.32
+        let from = -0.3, to = 1.75
+        let centres = (0...steps).map { from + (to - from) * Self.eased(Double($0) / Double(steps)) }
+        let start = centres.firstIndex { $0 >= 0.05 }.map { Double($0) / Double(steps) } ?? 0
         for (index, dot) in dots.enumerated() {
-            let fade = CABasicAnimation(keyPath: "opacity")
-            fade.fromValue = 1
-            fade.toValue = 0.2
-            fade.duration = 0.45
-            fade.autoreverses = true
-            fade.repeatCount = .infinity
-            fade.beginTime = now + Double(index) * 0.3
-            fade.fillMode = .backwards
-            dot.add(fade, forKey: "blink")
+            let place = Double((self.word.frame.width + 3 + size / 2 + CGFloat(index) * (size + gap)) / word)
+            let light = centres.map { exp(-pow(($0 - place) / band, 2)) }
+            let glow = CAKeyframeAnimation(keyPath: "opacity")
+            glow.values = light.map { 0.4 + 0.6 * $0 }
+            let swell = CAKeyframeAnimation(keyPath: "transform.scale")
+            swell.values = light.map { 1 + 0.12 * $0 }
+            let lift = CAKeyframeAnimation(keyPath: "position.y")
+            lift.values = light.map { 1.2 * $0 }
+            lift.isAdditive = true
+            let pass = CAAnimationGroup()
+            pass.animations = [glow, swell, lift]
+            pass.duration = beat
+            pass.repeatCount = .infinity
+            pass.timeOffset = beat * start
+            dot.add(pass, forKey: "blink")
         }
+        shine.frame = self.word.bounds
+        let sweep = CAKeyframeAnimation(keyPath: "locations")
+        sweep.values = centres.map { [$0 - band, $0, $0 + band] }
+        sweep.duration = beat
+        sweep.repeatCount = .infinity
+        sweep.timeOffset = beat * start
+        shine.add(sweep, forKey: "blink")
+    }
+
+    /// The share of the way that the light has gone at a share of the beat: slow to start, smooth through the middle, slow
+    /// to stop, on the curve (0.45, 0, 0.55, 1).
+    private static func eased(_ share: Double) -> Double {
+        func point(_ t: Double, _ a: Double, _ b: Double) -> Double { 3 * a * t * (1 - t) * (1 - t) + 3 * b * t * t * (1 - t) + t * t * t }
+        var low = 0.0, high = 1.0
+        for _ in 0..<30 {
+            let middle = (low + high) / 2
+            if point(middle, 0.45, 0.55) < share { low = middle } else { high = middle }
+        }
+        return point((low + high) / 2, 0, 1)
     }
 
     func rest() {
-        dots.forEach { $0.removeAnimation(forKey: "blink") }
+        dots.forEach {
+            $0.removeAnimation(forKey: "blink")
+        }
+        shine.removeAnimation(forKey: "blink")
     }
 
     /// Lays out the word and the dots in a row, or only the dots in a column.
@@ -657,19 +705,28 @@ final class Pill {
         bars.isHidden = false
         close.isHidden = false
         done.isHidden = false
+        for view in [bars, close, done] as [NSView] { view.alphaValue = 1 }
         bars.run()
         show()
     }
 
     /// Shows Transcribing with its dots in place of the buttons and the bars, while Whisper reads the words.
     func work() {
-        bars.rest()
-        bars.isHidden = true
-        close.isHidden = true
-        done.isHidden = true
+        let leaving: [NSView] = [bars, close, done]
+        transcribing.alphaValue = 0
         transcribing.isHidden = false
         transcribing.lay(column: turn > 0.5)
         transcribing.blink()
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.25
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            for view in leaving { view.animator().alphaValue = 0 }
+            transcribing.animator().alphaValue = 1
+        }, completionHandler: { [weak self] in
+            guard let self, !transcribing.isHidden else { return }
+            bars.rest()
+            for view in leaving { view.isHidden = true }
+        })
     }
 
     /// Shows a short line in place of the dots, in a row beside the pill's edge, then hides the pill after `time`.
@@ -1077,6 +1134,31 @@ case "remember":
 case "wave":
     let samples = arguments.dropFirst(2).compactMap(Float.init)
     FileHandle.standardOutput.write(Wave(samples: samples, rate: Recording.rate).data)
+case "preview":
+    let app = NSApplication.shared
+    app.setActivationPolicy(.accessory)
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent("dictate-preview")
+    try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let pill = Pill(folder: folder, discard: { exit(0) }, finish: { exit(0) })
+    var phase = 0.0
+    let voice = Timer(timeInterval: 1 / 30, repeats: true) { _ in
+        phase += 1 / 30
+        pill.bars.take(Float(max(0, 0.55 + 0.35 * sin(phase * 5.3) * sin(phase * 1.7))))
+    }
+    RunLoop.main.add(voice, forMode: .common)
+    func round() {
+        pill.record()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            pill.work()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                pill.hide()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { round() }
+            }
+        }
+    }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { round() }
+    print("Previewing the pill. Click ✕ or ✓, or press Control-C, to stop.")
+    app.run()
 case "stay":
     guard arguments.count >= 4, let parent = pid_t(arguments[2]) else { exit(2) }
     let app = NSApplication.shared
