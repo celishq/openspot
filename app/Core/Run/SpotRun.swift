@@ -656,8 +656,13 @@ public final class SpotRun {
     }
 
     /// Runs a pick of a row. A second pick of a running row stops its call. In a list that the script searches, stdin holds
-    /// the text of the search, so that a pick that comes before the read of the last text still gets it.
+    /// the text of the search, so that a pick that comes before the read of the last text still gets it. A row with `to` goes
+    /// to that spot instead, with the row on stdin (J1).
     public func pick(_ item: SpotItem) {
+        if let to = item.to {
+            guard let other = runs.sheets[to] else { return fail(PluginError.failed(1, "\(command.name) hands this row to `\(to)`, which is not on. Turn it on, then try again.")) }
+            return other.press(.item(item), input: item.fields)
+        }
         guard list.search == .script, !list.query.isEmpty else { return press(.item(item)) }
         press(.item(item), input: TextBlock(fields: [.init(key: "search", value: list.query)]).text)
     }
