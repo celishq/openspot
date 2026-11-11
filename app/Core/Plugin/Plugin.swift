@@ -58,7 +58,7 @@ public struct Plugin: Equatable, Sendable {
             guard let pattern = AnswerPattern(text) else {
                 throw PluginError.fault("\(name) has an unknown answers pattern: \(text). Write a regular expression, such as answers=^[0-9]")
             }
-            guard !stays else { throw PluginError.fault("\(name) answers the main search, so it runs once for each call. Remove stay=true or answers") }
+            guard !stays else { throw PluginError.fault("\(name) answers the main search, so it runs once for each call. Remove stay or answers") }
             answers = pattern
         }
         let answersOnly = answers != nil && read == nil

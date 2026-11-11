@@ -95,6 +95,15 @@ final class PluginHeaderTests: XCTestCase {
         XCTAssertEqual(spot.view, "/plugins/home/cups.swift")
     }
 
+    func testAnAnswersPatternIsTheWholeRestOfItsLine() throws {
+        let header = PluginHeader(text: "#!/bin/sh\n# answers=^\\s*([0-9,.]|(?i:today|now)\\b)\n").block
+
+        let spot = try XCTUnwrap(try Plugin(script: URL(fileURLWithPath: "/plugins/calc.sh"), header: header, id: "calc").commands.first)
+
+        XCTAssertEqual(spot.answers?.text, #"^\s*([0-9,.]|(?i:today|now)\b)"#)
+        XCTAssertEqual(["1,5", "Today", "notes"].map { spot.answers?.matches($0) }, [true, true, false])
+    }
+
     func testAHeaderPictureOnTheWebKeepsItsURL() throws {
         let header = PluginHeader(text: "#!/bin/sh\n# icon=https://example.com/cups.png\n").block
 

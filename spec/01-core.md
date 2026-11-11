@@ -58,6 +58,7 @@ open -a Calendar
 | `read`     | When a read is safe: `sheet`, `panel` or a number of seconds, split by commas.                                           |
 | `drop`     | The files that its card takes: extensions such as `mov,mkv`, `folder`, or `*`.                                          |
 | `offers`   | The places that it is made for, split by commas: `search`, `rows` or `float`.                                           |
+| `answers`  | A regular expression of the texts of the main search that it answers, such as `^[0-9(]` (A1). See Places.               |
 | `view`     | A SwiftUI file beside the script, such as `view=cups.swift` (03).                                                        |
 | `stay`     | `true` keeps one process that takes each call on stdin, and `always` keeps it from the start of the app to its quit (05). |
 
@@ -101,6 +102,25 @@ place.
   spot in a small window of its own at the pointer: its sheet, or its card when it has no sheet. The window stays while
   the person works in other apps, and the same key or shake closes it. The script never learns where it shows.
 
+```sh
+#!/bin/sh
+# title=Calculator
+# icon=equal.square
+# answers=^[0-9(]
+case "$1" in
+  read) [ -n "$2" ] && openspot calc solve "$2" ;;
+  open) printf %s "$2" | pbcopy && printf 'toast=Copied %s\n' "$2" ;;
+esac
+```
+
+`answers` makes a spot answer the main search (A1). Its value is a regular expression that searches the typed text, so
+`^` ties it to the start. Openspot sends each text that it matches, such as `2*(3+4)`, as `<script> read <text> [form]...`
+with `OPENSPOT_REASON=search`, at each change of the text with no pause, and a newer text stops the older call (A2). Keep
+the answer fast. The rows show first in the main search, each with its `detail`, until the newest text is answered, and
+they go at once when the pattern no longer matches (A3). A pick of a row is `<script> open <row id>`. A spot with
+`answers` and no `read` has no card and shows only its answers. A staying script cannot answer. `openspot calc solve
+<words>...` prints the answer of a sum, a conversion or a date as a row, so a spot can print it as it is.
+
 A spot with a number in its `read`, or with `stay`, and a main `text`, `number`, `gauge` or `graph` can show in the menu bar, when the
 person puts it there. Printing nothing removes the item until the next read. A spot with a number in its `read` has no
 card on the grid until the person shows it (F7).
@@ -125,7 +145,7 @@ a script while its sheet, a widget or the menu bar shows it, or while the open p
 
 | Call                                   | When                                                                   |
 | -------------------------------------- | ---------------------------------------------------------------------- |
-| `<script> read [text] [form]...`       | A moment, or a search change with `search=script`.                     |
+| `<script> read [text] [form]...`       | A moment, a search change with `search=script`, or a text that `answers` matches. |
 | `<script> open [row id]`               | A row is picked, or a card with no sheet is pressed.                   |
 | `<script> <id> [row id] [value]`       | A block changes or is pressed, with the id of its row.                 |
 | `<script> drop <path> [path]...`       | Files are dropped on its card, each path as its own argument (D3).     |
@@ -511,6 +531,9 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | `read` lists the moments when a read is safe, because only the author knows what a read costs.             | `read=true`, with moments that the app picks. |
 | The person gives each letter and puts each spot in the menu bar, and the header only offers places.         | `shortcut`, `tray` and `global` in the header, which two shared spots could both claim. |
 | One `offers` key lists the places a spot is made for.                                                       | A key for each place.                        |
+| A pattern in the header says which text a spot answers, so a scan learns it with no run, and a key starts no other script. | Each script asked at each key. |
+| An answer is the call of a search that the script does, so a script has one shape for both.                 | A new call, such as `answer <text>`.         |
+| Answers show first, because they are about the whole text that the person typed.                            | A rank that each spot gives its rows.        |
 | A plugin runs with the full access of the person.                                                           | A `uses` key, or a sandbox.                  |
 | A script keeps a setting through `openspot setting`, and asks for it when it needs it.                      | A `setting` header key with a kind, and required settings. |
 | A component is `<kind>=<id>`, so a block says what it is and where it goes in one line.                     | `part=<id>` with a kind found from its keys. |

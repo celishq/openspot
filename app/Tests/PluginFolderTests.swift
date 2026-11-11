@@ -315,11 +315,13 @@ final class PluginFolderTests: XCTestCase {
     func testRefusesAnAnswersPatternThatIsNoneOrThatStays() throws {
         try write("m.sh", header: "answers=[0-9")
         try write("n.sh", header: "answers=^[0-9]\nstay=true")
+        try write("o.sh", header: "answers=^[0-9]\nstay=always")
 
         XCTAssertEqual(try scan.plugins, [])
         XCTAssertEqual(try scan.refused, [
             ScanResult.Refusal(file: "m", reason: "M has an unknown answers pattern: [0-9. Write a regular expression, such as answers=^[0-9]"),
-            ScanResult.Refusal(file: "n", reason: "N answers the main search, so it runs once for each call. Remove stay=true or answers"),
+            ScanResult.Refusal(file: "n", reason: "N answers the main search, so it runs once for each call. Remove stay or answers"),
+            ScanResult.Refusal(file: "o", reason: "O answers the main search, so it runs once for each call. Remove stay or answers"),
         ])
     }
 

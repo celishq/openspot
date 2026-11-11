@@ -8,7 +8,6 @@ app, which the New spot sheet opens and `openspot guide` prints for an AI. How t
 | [01 Core](01-core.md)           | draft  |       | The file, the header, the places, the calls, the frames, the blocks, rows, widgets and files out. |
 | [03 Views](03-views.md)         | draft  | 01    | A plugin's own SwiftUI view in an area.                                                          |
 | [05 Stay](05-stay.md)           | draft  | 01    | One process that stays and talks both ways over stdio, such as a local server.                   |
-| [10 Answers](10-answers.md)     | draft  | 01    | A spot that answers the text of the main search, such as a sum.                                  |
 
 A number that a spec gave up is not used again.
 
@@ -45,11 +44,10 @@ These rules come from the way Nostr writes its NIPs.
 
 | Word                                                                                                     | Kind                 | Spec |
 | -------------------------------------------------------------------------------------------------------- | -------------------- | ---- |
-| `title`, `icon`, `detail`, `size`, `read`, `drop`, `offers`                                              | Header key           | 01   |
+| `title`, `icon`, `detail`, `size`, `read`, `drop`, `offers`, `answers`                                   | Header key           | 01   |
 | `command`, `setting`                                                                                     | Header block         | 01   |
 | `view`                                                                                                   | Header key           | 03   |
 | `stay`                                                                                                   | Header key           | 05   |
-| `answers`                                                                                                | Header key           | 10   |
 | `sheet`, `panel`, a number                                                                               | Moment               | 01   |
 | `search`, `rows`, `float`                                                                                | Place                | 01   |
 | `read`                                                                                                   | Reserved call        | 01   |
