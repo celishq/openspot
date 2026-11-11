@@ -137,6 +137,7 @@ targets:
     platform: macOS
     sources:
       - path: Tests
+      - path: ../plugins/draw/model
     dependencies:
       - target: OpenspotCore
       - target: OpenspotStandIn
