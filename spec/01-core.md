@@ -617,10 +617,13 @@ a power after it happens, so that the person can undo it.
 openspot app quit
 ```
 
-Each process of a spot, and each inline spot, gets `OPENSPOT_TOKEN`: a random token for that process or that inline link,
-which Openspot maps to the spot's ID while it runs (Z2). A call of `openspot` with that token is the spot's call, and the
-children of a process inherit it. A call with no token, or with one that Openspot does not know, is the person's call. The
-socket of the API is a file with mode `0600`, so only the person's own processes reach it.
+Openspot starts each process of a spot in a process group of its own, and knows a call of `openspot` from that group as
+the spot's call, also from a child that outlives the first process (Z2). It takes the spot's ID and whether the call is in a
+read from its own record of the call, not from the variables of the process. Each process of a spot, and each inline spot,
+also gets `OPENSPOT_TOKEN`, a random token that Openspot maps to the spot's ID while it runs, which names the spot of a
+call from outside its group, such as a process that an inline spot starts. A call from no group of a spot and with no
+known token is the person's call. The socket of the API is a file with mode `0600`, so only the person's own processes
+reach it.
 
 `uses` names the powers that a spot uses (Z3). It is a closed set, and an unknown word is a fault that names the key.
 
@@ -735,7 +738,7 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | An answer is the call of a search that the script does, so a script has one shape for both.                 | A new call, such as `answer <text>`.         |
 | Answers show first, because they are about the whole text that the person typed.                            | A rank that each spot gives its rows.        |
 | A plugin runs with the full access of the person, names its powers in `uses`, and each use shows after it happens (Z1, Z4). | A prompt at each use, a refused call, or a sandbox by default. |
-| A spot's call is known by a token that Openspot gives its process (Z2).                                     | `OPENSPOT_ID`, which any process can set.    |
+| A spot's call is known by the process group that Openspot made for it, and a token only names the rest (Z2). | `OPENSPOT_ID` or a token alone, which a process can set or drop. |
 | A missing use shows when a run makes it, and `openspot check` does not guess it (Z4).                      | A check that reads the text for calls.       |
 | The person decides at an add or an update, which shows the uses and what grew (Z6, Z7).                     | A review of each call.                       |
 | Careful mode is a sandbox that the person turns on, and it allows what `uses` names (Z8).                  | A data folder that claims to be a boundary.  |

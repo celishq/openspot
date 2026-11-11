@@ -86,7 +86,7 @@ public final class CommandSocket: @unchecked Sendable {
             send(Reply(id: nil, error: .init(code: unreadable, message: "Openspot cannot read this request.")), to: connection, input: input)
             return
         }
-        let environment = request.environment(over: ProcessInfo.processInfo.environment)
+        let environment = api.environment(of: peer(of: connection), over: request.environment(over: ProcessInfo.processInfo.environment))
         let call = CommandLineCall(arguments: request.arguments, environment: environment).map { api.admit($0, arguments: request.arguments, environment: environment) }
         guard let call, let work = api.work(for: call, input: { await Self.text(of: input) }, environment: environment) else {
             send(Reply(id: request.id, error: .init(code: alone, message: "Run this call in a process of its own.")), to: connection, input: input)
@@ -114,6 +114,13 @@ public final class CommandSocket: @unchecked Sendable {
                 send(Reply(id: request.id, result: .init(stdout: answer.output, stderr: answer.errors, code: answer.code)), to: connection, input: input)
             }
         }
+    }
+
+    /// The ID of the process at the other end of a connection, or 0 when the socket does not say.
+    private static func peer(of connection: Int32) -> pid_t {
+        var id: pid_t = 0
+        var size = socklen_t(MemoryLayout<pid_t>.size)
+        return getsockopt(connection, SOL_LOCAL, LOCAL_PEERPID, &id, &size) == 0 ? id : 0
     }
 
     /// Reads up to the end of the first line, and the descriptor that came with it, or -1 with none.

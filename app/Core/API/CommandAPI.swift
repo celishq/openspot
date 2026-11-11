@@ -25,6 +25,12 @@ public final class CommandAPI: @unchecked Sendable {
         reminders = RemindersCalls(mac: mac)
     }
 
+    /// The environment of a call from a process: with the token, the ID and the reason of the spot whose process group
+    /// holds it, by the app's own record, and as it came for any other process (Z2).
+    public func environment(of peer: pid_t, over environment: [String: String]) -> [String: String] {
+        runs?.tokens.environment(of: peer, over: environment) ?? environment
+    }
+
     /// The call as it may run, after a look at its caller. A spot never changes Careful mode, and while that mode is on, a
     /// spot's call of a use that its header does not name is refused (Z8). Else a spot's call of a use is told to the runs,
     /// so that an undeclared one shows (Z4). The person's call passes as it is.

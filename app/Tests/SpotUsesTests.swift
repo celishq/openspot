@@ -132,6 +132,40 @@ final class SpotUsesTests: SpotRunsCase {
         XCTAssertEqual(code, "0")
     }
 
+    func testASpotThatDropsItsTokenIsStillKnownByItsProcessGroup() async throws {
+        try script(header: "", "OPENSPOT_CONFIG='\(config.path)' /usr/bin/env -u OPENSPOT_TOKEN '\(client.path)' setting list > /dev/null && echo done >> '\(path("done"))'")
+        _ = try scanned()
+
+        try await press()
+
+        try await wait("the toast") { !self.toasts.isEmpty }
+        XCTAssertEqual(toasts, ["Script read the settings of each spot without `uses=settings` in its header. Add it to stop this note."])
+    }
+
+    func testAChildThatOutlivesItsSpotsProcessIsStillTheSpot() async throws {
+        try script(header: "", "( \(untilRelease); OPENSPOT_CONFIG='\(config.path)' /usr/bin/env -u OPENSPOT_TOKEN '\(client.path)' setting list > /dev/null; echo done >> '\(path("done"))' ) > /dev/null 2>&1 &")
+        _ = try scanned()
+        try XCTUnwrap(runs.sheets["script"]).pressCard()
+        try await wait("the start of the call") { self.log().count == 1 }
+        try await allEnded()
+
+        openGate()
+
+        try await wait("the call of the child") { self.log("done").count == 1 }
+        try await wait("the toast") { !self.toasts.isEmpty }
+    }
+
+    func testAReadIsKnownFromTheAppsRecordAndNotFromTheVariables() async throws {
+        try script(header: "read=sheet", "OPENSPOT_CONFIG='\(config.path)' /usr/bin/env -u OPENSPOT_REASON '\(client.path)' spot remove other > /dev/null 2> '\(path("errors"))'; echo $? >> '\(path("done"))'")
+        let sheet = try sheet()
+        runs.panelOpened()
+
+        sheet.open {}
+
+        try await wait("the read") { self.log("done").count == 1 }
+        XCTAssertEqual(try String(contentsOfFile: path("errors"), encoding: .utf8), "`openspot spot remove` changes your plugins folder, so it cannot run in a read. Run it from a pick or an action.\n")
+    }
+
     func testAnUnknownUseRefusesThePlugin() throws {
         try script(header: "uses=camera")
 

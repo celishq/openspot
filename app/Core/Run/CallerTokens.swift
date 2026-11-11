@@ -1,7 +1,9 @@
 import Foundation
 
-/// The token of each process and inline link of a spot that runs, which marks its calls of `openspot` as the spot's (Z2).
-/// A call with no token, or with one that is not here, is the person's.
+/// The record of each process and inline link of a spot that runs, which marks its calls of `openspot` as the spot's (Z2).
+/// A call comes from the process group that Openspot started for the spot, or else carries the spot's token. The record
+/// keeps the reason of the call that runs, and outlives the first process of its group while a child of it still runs. A
+/// call from no known group and with no known token is the person's.
 public final class CallerTokens: @unchecked Sendable {
     /// The spot that a token stands for.
     public struct Caller: Equatable, Sendable {
@@ -12,19 +14,31 @@ public final class CallerTokens: @unchecked Sendable {
         public var isBuiltIn = false
     }
 
+    /// One token: its spot, the reason of its call, and the process group that it stands for, with the start of the
+    /// group's first process.
+    private struct Record {
+        let caller: Caller
+        var reason: String?
+        var group: pid_t?
+        var start: UInt64 = 0
+        var hasEnded = false
+    }
+
     public static let variable = "OPENSPOT_TOKEN"
+    private static let reason = "OPENSPOT_REASON"
 
     private let lock = NSLock()
-    private var callers: [String: Caller] = [:]
+    private var records: [String: Record] = [:]
+    private var groups: [pid_t: String] = [:]
     private var careful = false
 
     public init() {}
 
-    /// A new random token that stands for the spot until its release.
-    func issue(for spot: Spot) -> String {
+    /// A new random token that stands for the spot until its release, with the reason of its call.
+    func issue(for spot: Spot, reason: String? = nil) -> String {
         var random = SystemRandomNumberGenerator()
         let token = String(format: "%016llx%016llx", random.next() as UInt64, random.next() as UInt64)
-        lock.withLock { callers[token] = Caller(id: spot.id, name: spot.name, uses: spot.uses, isBuiltIn: spot.isBuiltIn) }
+        lock.withLock { records[token] = Record(caller: Caller(id: spot.id, name: spot.name, uses: spot.uses, isBuiltIn: spot.isBuiltIn), reason: reason) }
         return token
     }
 
@@ -34,13 +48,71 @@ public final class CallerTokens: @unchecked Sendable {
         set { lock.withLock { careful = newValue } }
     }
 
+    /// Ties a token to the process group that its process started, and lets go of each ended group.
+    func enter(_ group: pid_t, token: String) {
+        let start = Self.start(of: group)
+        lock.withLock {
+            for (other, held) in groups where records[held]?.hasEnded == true && kill(-other, 0) != 0 {
+                groups[other] = nil
+                records[held] = nil
+            }
+            guard records[token] != nil else { return }
+            records[token]?.group = group
+            records[token]?.start = start
+            groups[group] = token
+        }
+    }
+
+    /// Sets the reason of the call that a token's process runs now, or nil when it runs none that reads.
+    func setReason(_ reason: String?, of token: String) {
+        lock.withLock { records[token]?.reason = reason }
+    }
+
+    /// Lets go of a token whose process ended. A token whose group still runs a child stays until that child ends.
     func release(_ token: String) {
-        lock.withLock { callers[token] = nil }
+        lock.withLock {
+            guard let group = records[token]?.group, kill(-group, 0) == 0 else {
+                if let group = records[token]?.group { groups[group] = nil }
+                records[token] = nil
+                return
+            }
+            records[token]?.hasEnded = true
+        }
     }
 
     /// The spot whose token the environment of a call holds, or nil for the person's call.
     public func caller(of environment: [String: String]) -> Caller? {
         guard let token = environment[Self.variable] else { return nil }
-        return lock.withLock { callers[token] }
+        return lock.withLock { records[token]?.caller }
+    }
+
+    /// The environment of a call from a process: with the token, the ID and the reason of the spot whose group holds the
+    /// process, or as it is for a process of no known group, whose token alone can name its spot.
+    public func environment(of peer: pid_t, over environment: [String: String]) -> [String: String] {
+        let group = getpgid(peer)
+        guard group > 0 else { return environment }
+        let known: (String, Record)? = lock.withLock {
+            guard let token = groups[group], let record = records[token] else { return nil }
+            guard kill(group, 0) != 0 || Self.start(of: group) == record.start else {
+                groups[group] = nil
+                return nil
+            }
+            return (token, record)
+        }
+        guard let (token, record) = known else { return environment }
+        var environment = environment
+        environment[Self.variable] = token
+        environment["OPENSPOT_ID"] = record.caller.id
+        environment[Self.reason] = record.reason
+        return environment
+    }
+
+    /// When a process started, which tells it apart from a later process with the same ID, or 0 when none runs.
+    private static func start(of id: pid_t) -> UInt64 {
+        var info = rusage_info_v2()
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: rusage_info_t?.self, capacity: 1) { proc_pid_rusage(id, RUSAGE_INFO_V2, $0) }
+        }
+        return result == 0 ? info.ri_proc_start_abstime : 0
     }
 }

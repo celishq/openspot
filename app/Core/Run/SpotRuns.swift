@@ -232,7 +232,8 @@ public final class SpotRuns {
     /// a sheet takes as its answer.
     public func answer(of spot: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil) async throws -> String {
         if spot.mode.stays, action == .read {
-            let (script, frames) = stay(spot, limit: limit)
+            let (script, frames, token) = stay(spot, limit: limit)
+            tokens.setReason(ReadReason.panel.variables["OPENSPOT_REASON"], of: token)
             defer { script.end() }
             script.send(.read, variables: ReadReason.panel.variables, id: 1)
             for try await frame in frames where !SpotOutput(text: frame).isMark || SpotOutput(text: frame).ends.contains("1") { return frame }
@@ -342,14 +343,14 @@ public final class SpotRuns {
         }
     }
 
-    /// Starts a script that stays, and returns it with its frames.
-    func stay(_ spot: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>) {
+    /// Starts a script that stays, and returns it with its frames and the token of its spot, whose reason its link keeps.
+    func stay(_ spot: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>, String) {
         let token = tokens.issue(for: spot)
         let script = ScriptProcess(url: swift.runnable(for: spot.url), mode: .stays, limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: ["OPENSPOT_ID": spot.id, CallerTokens.variable: token], careful: isCareful ? spot.uses : nil)
         track(script, of: spot.id, token: token)
         let frames = script.start()
         keep(script)
-        return (script, frames)
+        return (script, frames, token)
     }
 
     private func frames(of spot: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String] = [:]) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void, process: ScriptProcess?) {
@@ -379,7 +380,7 @@ public final class SpotRuns {
             }, nil)
         }
         let sent = action.sent(input: input)
-        let token = tokens.issue(for: spot)
+        let token = tokens.issue(for: spot, reason: variables["OPENSPOT_REASON"])
         let process = ScriptProcess(url: swift.runnable(for: spot.url), arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given }.merging([CallerTokens.variable: token]) { _, own in own }, careful: isCareful ? spot.uses : nil)
         track(process, of: spot.id, token: token)
         let stream = process.start()
@@ -411,9 +412,11 @@ public final class SpotRuns {
         onReport(caller.id, .toast("\(caller.name) \(power.words) without `uses=\(power.use.rawValue)` in its header. Add it to stop this note."))
     }
 
-    /// Counts the time of a process of a spot, and lets go of its token once it ends.
+    /// Counts the time of a process of a spot, ties its token to its process group, and lets go of the token once the group
+    /// ends.
     private func track(_ process: ScriptProcess, of spot: String, token: String) {
         usage.track(process, of: spot)
+        process.onStart { [tokens] group in tokens.enter(group, token: token) }
         process.onExit { [tokens] _ in tokens.release(token) }
     }
 

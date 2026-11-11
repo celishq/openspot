@@ -16,8 +16,14 @@ final class StayLink: ScriptLink {
     let keepsState = true
     private let runs: SpotRuns
     private var script: ScriptProcess?
+    /// The token of the script that runs, whose reason tells the API whether the script reads now (Z2).
+    private var token: String?
     /// Each read and search that the script has not ended yet, by its call number.
-    private var asks: [Int: SpotRun.Ask] = [:]
+    private var asks: [Int: SpotRun.Ask] = [:] {
+        didSet { noteReason() }
+    }
+    /// The reason of the newest read or search that was sent.
+    private var askReason: String?
     /// The call numbers of searches and texts of the main search that a newer one stopped, whose late answers change nothing.
     private var dropped: Set<Int> = []
     /// The call numbers of reads and searches that a picture came after, which a frame of only a head then answers.
@@ -29,7 +35,9 @@ final class StayLink: ScriptLink {
     private var count = 0
     /// When each call that has not ended was sent, by its number.
     private var sent: [Int: Date] = [:]
-    private var calls: [String: ScriptCall] = [:]
+    private var calls: [String: ScriptCall] = [:] {
+        didSet { noteReason() }
+    }
     private var failures: [Date] = []
     /// The date of the file when the script failed too often, which keeps it from starting until the file changes.
     private var givenUp: Date??
@@ -68,15 +76,15 @@ final class StayLink: ScriptLink {
                 return self.script != nil
             }
             let id = next()
-            ask(.read(generation: generation, reports: reports), id: id)
+            ask(.read(generation: generation, reports: reports), id: id, reason: call.variables["OPENSPOT_REASON"])
             script.send(.read, input: call.input, variables: call.variables, id: id)
         case .ask(.search(let query)):
             stop { if case .search = $0 { true } else { false } }
-            if let id = send(.items(query: query), input: nil, variables: call.variables) { ask(.search(query), id: id) }
+            if let id = send(.items(query: query), input: nil, variables: call.variables) { ask(.search(query), id: id, reason: call.variables["OPENSPOT_REASON"]) }
         case .ask(.answer(let text)):
             stop(\.isAnswer)
             if let id = send(call.action, input: nil, variables: call.variables) {
-                ask(.answer(text), id: id)
+                ask(.answer(text), id: id, reason: call.variables["OPENSPOT_REASON"])
             } else {
                 run?.takeAnswers([], to: text)
             }
@@ -150,12 +158,15 @@ final class StayLink: ScriptLink {
     /// Starts the script and asks it for what it shows, with no values. A script that failed too often does not start.
     private func start(reason: ReadReason? = nil) {
         guard let run, givenUp == nil else { return }
-        let (script, frames) = runs.stay(run.spot, limit: runs.readLimit)
+        let (script, frames, token) = runs.stay(run.spot, limit: runs.readLimit)
         self.script = script
+        self.token = token
         slowAsks = 0
         let id = next()
+        let variables = (reason ?? startReason).variables
+        askReason = variables["OPENSPOT_REASON"]
         asks[id] = .read(generation: nil, reports: true)
-        script.send(.read, variables: (reason ?? startReason).variables, id: id)
+        script.send(.read, variables: variables, id: id)
         Task { await follow(script, frames) }
     }
 
@@ -181,7 +192,8 @@ final class StayLink: ScriptLink {
     }
 
     /// Keeps an ask until the frame that ends it, for the read limit at most.
-    private func ask(_ ask: SpotRun.Ask, id: Int) {
+    private func ask(_ ask: SpotRun.Ask, id: Int, reason: String?) {
+        askReason = reason
         asks[id] = ask
         guard let script else { return }
         let limit = runs.readLimit
@@ -189,6 +201,13 @@ final class StayLink: ScriptLink {
             try? await Task.sleep(for: .seconds(limit))
             self?.timeOut(id, of: script)
         }
+    }
+
+    /// Tells the API the reason of the script's call: that of the newest ask while one waits and no call of work runs, and
+    /// none else, so that a call of `openspot` from the script is refused in a read whatever its variables say.
+    private func noteReason() {
+        guard let token else { return }
+        runs.tokens.setReason(calls.isEmpty && !asks.isEmpty ? askReason : nil, of: token)
     }
 
     /// Stops an ask that the script did not end in time, which fails as a slow read. The second one starts the script

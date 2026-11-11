@@ -40,6 +40,7 @@ public final class ScriptProcess: @unchecked Sendable {
     private var endTime: ProcessTime?
     private var exitWatch: DispatchSourceProcess?
     private var exitHandlers: [@Sendable (ProcessTime) -> Void] = []
+    private var startHandlers: [@Sendable (pid_t) -> Void] = []
     private let errorText: ErrorTail
     private var unended: String?
     /// The frames of the output so far, which only the output's handler reads, one read at a time.
@@ -125,10 +126,11 @@ public final class ScriptProcess: @unchecked Sendable {
         try? output.fileHandleForWriting.close()
         try? errors.fileHandleForWriting.close()
         TerminalStop.enter(started)
-        let wasStopped = lock.withLock {
+        let (wasStopped, starts) = lock.withLock {
             id = started
-            return stopped
+            return (stopped, startHandlers)
         }
+        starts.forEach { $0(started) }
         watchExit(of: started)
         if wasStopped { stopGroup() }
         if let text { writeAndClose(text) }
@@ -196,6 +198,12 @@ public final class ScriptProcess: @unchecked Sendable {
         if let endTime { return endTime }
         guard id > 0 else { return .zero }
         return ProcessTime(of: id) ?? .zero
+    }
+
+    /// Adds a handler that takes the ID of the process, which is also the ID of its group, once it starts. Add it before
+    /// `start`.
+    func onStart(_ handler: @escaping @Sendable (pid_t) -> Void) {
+        lock.withLock { startHandlers.append(handler) }
     }
 
     /// Adds a handler that takes the time of the process once it ends. Add it before `start`.
