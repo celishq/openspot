@@ -100,17 +100,17 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         }
         switch kind {
         case "switch":
-            control = .toggle(block.flag("on") ?? false)
+            control = .toggle(block.flag("value") ?? false)
         case "gauge":
             control = .progress(level: (block.number("value") ?? 0) * 100)
         case "graph":
-            control = .chart(block.values("point").compactMap(Double.init))
+            control = .chart(block.values("value").compactMap(Double.init))
         case "picture":
             control = icon?.image.map(Control.image) ?? .none
         case "slider":
-            control = .slider(level: block.number("level") ?? 0, min: block.number("min") ?? 0, max: block.number("max") ?? 100)
+            control = .slider(level: block.number("value") ?? 0, min: block.number("min") ?? 0, max: block.number("max") ?? 100)
         case "field":
-            control = .text(block.value("text") ?? "", placeholder: block.value("placeholder"), isReadOnly: block.flag("readonly") ?? false)
+            control = .text(block.value("value") ?? "", placeholder: block.value("placeholder"), isReadOnly: block.flag("readonly") ?? false)
         case "hotkey":
             control = .shortcut(block.value("value") ?? "")
         case "choice":
@@ -133,14 +133,13 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     }
 
     private static func mark(_ block: TextBlock) -> MetricValue? {
-        let points = block.values("point").compactMap(Double.init).filter(\.isFinite)
-        let value = block.number("value")
-        guard value != nil || !points.isEmpty else { return nil }
+        let data = MetricValue.data(of: block)
+        guard data.value != nil || data.points != nil else { return nil }
         return MetricValue(
             title: block.value("detail") ?? "",
             tone: block.value("tone").flatMap(MetricValue.Tone.init),
-            value: value,
-            points: points.isEmpty ? nil : points,
+            value: data.value,
+            points: data.points,
             max: block.number("max")
         )
     }

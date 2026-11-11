@@ -360,7 +360,7 @@ final class SpotDropTests: XCTestCase {
 
     func testARunningReadDoesNotHoldADrop() async throws {
         let sheet = try sheet(header: "read=panel\ndrop=mov", """
-        [ "$1" = read ] && { printf 'switch=power\\non=false\\n---\\n'; sleep 30; }
+        [ "$1" = read ] && { printf 'switch=power\\nvalue=false\\n---\\n'; sleep 30; }
         exit 0
         """)
         runs.panelOpened()
@@ -514,7 +514,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testAToggleWithDropKeepsItsClick() async throws {
-        let sheet = try sheet(header: "read=panel\ndrop=mov", "[ \"$1\" = read ] && printf 'switch=power\\non=false\\n'\nexit 0")
+        let sheet = try sheet(header: "read=panel\ndrop=mov", "[ \"$1\" = read ] && printf 'switch=power\\nvalue=false\\n'\nexit 0")
         let choices = choiceCount(of: sheet)
         runs.panelOpened()
         try await wait("the kind") { sheet.command.kind == .toggle }

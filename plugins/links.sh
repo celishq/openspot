@@ -124,12 +124,12 @@ form() {
 
 field=title
 title=Name
-text=\($v.title | esc)
+value=\($v.title | esc)
 required=true
 
 field=url
 title=Link
-text=\($v.url | esc)
+value=\($v.url | esc)
 required=true
 placeholder=example.com or ~/Downloads"'
 }

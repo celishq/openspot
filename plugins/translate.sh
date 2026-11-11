@@ -102,13 +102,13 @@ show() {
   options
   printf 'value=%s\n\n' "$source"
 
-  printf 'field=input\ntext=%s\nplaceholder=Type or paste text\n\n' "$(esc "$input")"
+  printf 'field=input\nvalue=%s\nplaceholder=Type or paste text\n\n' "$(esc "$input")"
 
   printf 'choice=target\n'
   options
   printf 'value=%s\n\n' "$target"
 
-  printf 'field=output\ntext=%s\nplaceholder=Translation\nreadonly=true\n\n' "$output"
+  printf 'field=output\nvalue=%s\nplaceholder=Translation\nreadonly=true\n\n' "$output"
 
   printf 'button=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\n\n'
 

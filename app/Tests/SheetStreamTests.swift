@@ -132,9 +132,9 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAFrameKeepsTheTextThePersonIsTyping() throws {
-        var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "field=a\ntext=typed\n")))
+        var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "field=a\nvalue=typed\n")))
 
-        panel.merge(PluginOutput(text: "field=a\ntext=old\n"), keeping: "a")
+        panel.merge(PluginOutput(text: "field=a\nvalue=old\n"), keeping: "a")
 
         XCTAssertEqual(panel.parts.first?.value, "typed")
     }

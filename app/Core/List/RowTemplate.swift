@@ -7,8 +7,8 @@ public struct RowTemplate: Equatable, Sendable {
     public static let defaultName = "row"
     /// The key that each kind of slot takes from `<slot>=<value>`.
     private static let mainKeys = [
-        "text": "title", "number": "value", "button": "title", "gauge": "value", "graph": "point", "switch": "on", "slider": "level",
-        "field": "text", "choice": "value", "hotkey": "value"
+        "text": "title", "number": "value", "button": "title", "gauge": "value", "graph": "value", "switch": "value", "slider": "value",
+        "field": "value", "choice": "value", "hotkey": "value"
     ]
 
     public let name: String
@@ -75,15 +75,16 @@ public struct RowTemplate: Equatable, Sendable {
             if kind == "picture", let icon = item.iconText { fields.append(.init(key: "icon", value: icon)) }
             if let main = Self.mainKeys[kind], let value = item.value(of: slot) { fields.append(.init(key: main, value: value)) }
             fields += item.keys(of: slot)
-            return SpotPart(block: TextBlock(fields: Self.lastWins(fields)))
+            return SpotPart(block: TextBlock(fields: Self.lastWins(fields, repeating: kind == "graph" ? "value" : nil)))
         }
     }
 
-    /// The fields with only the last value of each key, except `point` and `option`, which repeat.
-    private static func lastWins(_ fields: [TextBlock.Field]) -> [TextBlock.Field] {
+    /// The fields with only the last value of each key, except `option`, `color` and the key that the kind repeats, such as
+    /// the `value` of a graph.
+    private static func lastWins(_ fields: [TextBlock.Field], repeating: String?) -> [TextBlock.Field] {
         var seen = Set<String>()
         return fields.reversed().filter { field in
-            ["point", "option", "color"].contains(field.key) || seen.insert(field.key).inserted
+            ["option", "color", repeating].contains(field.key) || seen.insert(field.key).inserted
         }.reversed()
     }
 

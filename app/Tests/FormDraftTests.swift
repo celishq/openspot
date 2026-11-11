@@ -11,6 +11,12 @@ final class FormDraftTests: XCTestCase {
         XCTAssertEqual(FormDraft(form: form).values, ["title": "", "content": "old"])
     }
 
+    func testAFormReadsTheValueOfASwitchASliderAndAField() throws {
+        let form = try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=Repos\n\nswitch=hidden\ntitle=Hidden\nvalue=true\n\nslider=depth\ntitle=Depth\nvalue=3\nmin=1\nmax=4\n\nfield=note\ntitle=Note\nvalue=Hi\n")))
+
+        XCTAssertEqual(FormDraft(form: form).values, ["hidden": "true", "depth": "3", "note": "Hi"])
+    }
+
     func testAFormTakesAChoiceASwitchAndASliderWithTheirValues() throws {
         let form = try XCTUnwrap(ItemForm(output: PluginOutput(text: """
         title=Repos
@@ -22,11 +28,11 @@ final class FormDraftTests: XCTestCase {
 
         switch=hidden
         title=Show hidden folders
-        on=true
+        value=true
 
         slider=depth
         title=Depth
-        level=2
+        value=2
         min=1
         max=4
 

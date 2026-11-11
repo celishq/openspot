@@ -101,7 +101,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testANewValueOfAPartTellsNoReaderOfTheRectOrTheKindOfTheParts() async throws {
-        let sheet = try make("printf 'field=a\\ntitle=Name\\ntext=%s\\n\\ntext=b\\ntitle=B\\n' \"$2\"")
+        let sheet = try make("printf 'field=a\\ntitle=Name\\nvalue=%s\\n\\ntext=b\\ntitle=B\\n' \"$2\"")
         sheet.open {}
         try await wait("the parts") { sheet.panel != nil }
         let part = try XCTUnwrap(sheet.panel?.parts.first)
@@ -135,7 +135,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testACloseClearsTheSelectionOfTheParts() async throws {
-        let sheet = try holding("printf 'hotkey=k\\nvalue=ctrl+space\\n\\nswitch=w\\non=true\\n'", pause: 0.02)
+        let sheet = try holding("printf 'hotkey=k\\nvalue=ctrl+space\\n\\nswitch=w\\nvalue=true\\n'", pause: 0.02)
         sheet.open(waits: true) {}
         try await wait("the parts") { sheet.panel != nil }
         let first = sheet.panel?.selectedPart?.id
@@ -148,7 +148,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAMoveOfThePartSelectionTellsOnlyTheReadersOfTheSelectedPart() async throws {
-        let sheet = try holding("printf 'hotkey=k\\nvalue=ctrl+space\\n\\nswitch=w\\non=true\\n'", pause: 0.02)
+        let sheet = try holding("printf 'hotkey=k\\nvalue=ctrl+space\\n\\nswitch=w\\nvalue=true\\n'", pause: 0.02)
         sheet.open(waits: true) {}
         try await wait("the parts") { sheet.panel != nil }
         let first = sheet.selectedPart?.id
@@ -298,8 +298,8 @@ final class SpotRunTests: XCTestCase {
     func testAnOlderAnswerDoesNotReplaceANewerChange() async throws {
         let sheet = try make("""
         case "$1" in
-          a) [ "$2" = old ] && sleep 0.2; printf 'field=a\\ntitle=%s\\ntext=x\\n' "$2" ;;
-          *) printf 'field=a\\ntitle=start\\ntext=x\\n' ;;
+          a) [ "$2" = old ] && sleep 0.2; printf 'field=a\\ntitle=%s\\nvalue=x\\n' "$2" ;;
+          *) printf 'field=a\\ntitle=start\\nvalue=x\\n' ;;
         esac
         """)
         sheet.open {}
@@ -404,7 +404,7 @@ final class SpotRunTests: XCTestCase {
           case "$line" in
             call=*) call=${line#call=} ;;
             input=*) seen=${line#input=} ;;
-            '') printf 'end=%s\\n\\nfield=input\\ntext=x\\n\\ntext=seen\\ntitle=%s\\n---\\n' "$call" "$seen" ;;
+            '') printf 'end=%s\\n\\nfield=input\\nvalue=x\\n\\ntext=seen\\ntitle=%s\\n---\\n' "$call" "$seen" ;;
           esac
         done
         """, stays: true)

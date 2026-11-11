@@ -149,9 +149,9 @@ final class PluginOutputTests: XCTestCase {
     func testWhatItPrintsDecidesTheKindOfSpot() {
         XCTAssertEqual(PluginOutput(text: "").kind, .launch)
         XCTAssertEqual(PluginOutput(text: "title=Hi\n").kind, .launch)
-        XCTAssertEqual(PluginOutput(text: "switch=power\non=true\n").kind, .toggle)
-        XCTAssertEqual(PluginOutput(text: "slider=volume\nlevel=7\n").kind, .slider)
-        XCTAssertEqual(PluginOutput(text: "switch=power\non=true\n\nrow=a\ntitle=A\n").kind, .list)
+        XCTAssertEqual(PluginOutput(text: "switch=power\nvalue=true\n").kind, .toggle)
+        XCTAssertEqual(PluginOutput(text: "slider=volume\nvalue=7\n").kind, .slider)
+        XCTAssertEqual(PluginOutput(text: "switch=power\nvalue=true\n\nrow=a\ntitle=A\n").kind, .list)
         XCTAssertEqual(PluginOutput(text: "button=new\ntitle=New\n").kind, .list)
     }
 
@@ -164,8 +164,16 @@ final class PluginOutputTests: XCTestCase {
         XCTAssertEqual(try kind("text=m\ntitle=3\nicon=star\ntone=good\n"), .value)
         XCTAssertEqual(try kind("text=m\ntitle=Up\ntone=good\n"), .status)
         XCTAssertEqual(try kind("gauge=m\ntitle=84%\nvalue=0.84\n"), .gauge)
-        XCTAssertEqual(try kind("graph=m\ntitle=2\npoint=1\npoint=2\n"), .trend)
+        XCTAssertEqual(try kind("graph=m\ntitle=2\nvalue=1\nvalue=2\n"), .trend)
         XCTAssertEqual(try kind("row=Build\n"), .rows)
+    }
+
+    func testAGraphReadsItsBarsFromValueLines() throws {
+        let value = try XCTUnwrap(MetricValue(output: PluginOutput(text: "graph=m\ntitle=2\nmax=10\nvalue=1\nvalue=2\n")))
+
+        XCTAssertEqual(value.kind, .trend)
+        XCTAssertEqual(value.points, [1, 2])
+        XCTAssertNil(value.value)
     }
 
     func testRowsCountThemselvesUnlessATitleIsPrinted() throws {

@@ -2,11 +2,11 @@ import Foundation
 
 /// Every part that a script can print, and the faults a printed part can have. It is the contract of a sheet.
 public enum PartCatalog {
-    private static let keys: Set<String> = Set(SpotPart.kinds).union([
-        "title", "detail", "icon", "on", "level", "min", "max", "color", "value", "option", "text",
-        "placeholder", "readonly", "required", "type", "close", "confirm", "scope", "form", "align", "look", "point",
+    private static let keys: Set<String> = [
+        "title", "detail", "icon", "min", "max", "color", "value", "option",
+        "placeholder", "readonly", "required", "type", "close", "confirm", "scope", "form", "align", "look",
         "shortcut", "tone", "tint"
-    ])
+    ]
     /// The kinds whose blocks can hold keys of the plugin's own, which a view reads.
     private static let open: Set<String> = ["view"]
 
@@ -70,18 +70,18 @@ public enum PartCatalog {
     | Kind and keys | Shows | Calls the script with |
     |---|---|---|
     | `text`, with `title`, `detail`, `icon` | A line: the title on the left, the detail on the right. | |
-    | `text` with `value=0.84`, or with `point=3` lines and optional `max` | A small mark before the detail: a bar from \
-    `value`, or bars from the points. `tone=good`, `warn` or `bad` colours it. | |
+    | `text` with `value=0.84`, or with `max=100` and a `value=30` line for each bar | A small mark before the detail: a bar \
+    from `value`, or bars from the values up to `max`. `tone=good`, `warn` or `bad` colours it. | |
     | `number`, with `value=42%`, optional `title` | A big number in a tile, with its title under it. It needs 2 columns of 4, and 2 rows with a title. | |
-    | `switch`, with `on=true` or `on=false` | A switch at the end of the line. | `<id> true` or `false` |
-    | `slider`, with `level=70`, optional `min`, `max`, `title`, `icon` | A slider, from 0 to 100 unless `min` and `max` say. Give each slider a `title` or an `icon`. | `<id> <number>` |
+    | `switch`, with `value=true` or `value=false` | A switch at the end of the line. | `<id> true` or `false` |
+    | `slider`, with `value=70`, optional `min`, `max`, `title`, `icon` | A slider, from 0 to 100 unless `min` and `max` say. Give each slider a `title` or an `icon`. | `<id> <number>` |
     | `choice`, with `color=#ff0000` for each colour, `value=#ff0000` | A row of swatches. One `color=` with a `title` is one small swatch at the end of the line. | `<id> <color>` |
     | `choice`, with `option=id:Title` for each choice, `value=id` | A menu. Drawn over two lines or more, a list to choose from, which scrolls. | `<id> <option id>` |
-    | `field`, with `text=...`, optional `readonly=true`, `placeholder` | A text area, which scrolls. Write a line break as `\\n`. | `<id> <text>` |
+    | `field`, with `value=...`, optional `readonly=true`, `placeholder` | A text area, which scrolls. Write a line break as `\\n`. | `<id> <text>` |
     | `hotkey`, with `value=ctrl+space` and `title` | A key at the end of the line. A click records the next key that the person presses, and Esc cancels. | `<id> <key>`, such as `<id> cmd+k` |
     | `button`, with `title` | A button that fills its cell. | `<id>` |
     | `button`, with `icon=arrow.up` or another SF Symbol name | A round button, which shrinks to fit its area, up to 44pt. | `<id>` |
-    | `graph`, with `point=3` for each bar | A bar chart in a tile. | |
+    | `graph`, with `value=3` for each bar | A bar chart in a tile. | |
     | `picture`, with `icon=/path/to/file` | A picture from a file. | |
     | `gauge`, with `value=0.4`, `title`, `detail` | A title line over a bar. It needs 2 rows. | |
 
@@ -151,7 +151,7 @@ public enum PartCatalog {
     public static func faults(in block: TextBlock) -> [String] {
         let name = block.fields.first?.value ?? ""
         let isOpen = open.contains(block.fields.first?.key ?? "")
-        var faults = isOpen ? [] : block.fields.map(\.key).filter { !keys.contains($0) }.map { "the part \(name) has an unknown key: \($0)" }
+        var faults = isOpen ? [] : block.fields.dropFirst().map(\.key).filter { !keys.contains($0) }.map { "the part \(name) has an unknown key: \($0)" }
         faults += block.values("option").filter { !$0.contains(":") }.map { "the part \(name) needs an option as id:title: \($0)" }
         faults += block.values("color").filter { !isColor($0) }.map { "the part \(name) needs a color as #rrggbb: \($0)" }
         if let look = block.value("look"), SpotPart.Look(rawValue: look) == nil || look == "pad" {
@@ -163,7 +163,7 @@ public enum PartCatalog {
         if let tone = block.value("tone"), MetricValue.Tone(rawValue: tone) == nil {
             faults.append("the part \(name) has an unknown tone: \(tone)")
         }
-        if let level = block.number("level") {
+        if block.fields.first?.key == "slider", let level = block.number("value") {
             let low = block.number("min") ?? 0, high = block.number("max") ?? 100
             if level < low || level > high {
                 faults.append("the part \(name) has a level of \(Int(level)), outside \(Int(low)) to \(Int(high))")

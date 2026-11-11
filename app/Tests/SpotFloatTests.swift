@@ -130,7 +130,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatOfPartsKeepsItsValuesWhenThePanelClosesAndDropsThemWhenItCloses() async throws {
-        try script("note", header: "read=sheet", "printf 'field=note\\ntext=hi\\n'")
+        try script("note", header: "read=sheet", "printf 'field=note\\nvalue=hi\\n'")
         model.reload()
         model.press(try key("note"))
         try await wait("the parts") { model.sheets["note"]?.panel != nil }

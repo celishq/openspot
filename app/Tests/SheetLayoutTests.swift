@@ -26,14 +26,14 @@ final class SheetLayoutTests: XCTestCase {
     value=en
 
     field=input
-    text=Hello
+    value=Hello
 
     choice=target
     option=ru:Russian
     value=ru
 
     field=output
-    text=Привет
+    value=Привет
     readonly=true
 
     button=swap
@@ -143,7 +143,7 @@ final class SheetLayoutTests: XCTestCase {
         grid=note save
 
         field=note
-        text=Hello
+        value=Hello
 
         button=save
         icon=checkmark
@@ -167,7 +167,7 @@ final class SheetLayoutTests: XCTestCase {
         value=a
 
         field=output
-        text=Hello
+        value=Hello
         """)
         XCTAssertEqual(try XCTUnwrap(sheet.frames["output"]).clearTop, 0)
 
@@ -180,7 +180,7 @@ final class SheetLayoutTests: XCTestCase {
         value=a
 
         field=output
-        text=Hello
+        value=Hello
         """)
         XCTAssertGreaterThan(try XCTUnwrap(over.frames["output"]).clearTop, 0)
     }
@@ -280,7 +280,7 @@ final class SheetLayoutTests: XCTestCase {
 
         switch=left
         title=Left
-        on=false
+        value=false
 
         section=power
         title=Power
@@ -335,14 +335,14 @@ final class SheetLayoutTests: XCTestCase {
     func testTheFaultsThatComeFromSize() {
         func faults(_ text: String) -> [String] { output(text).partFaults }
 
-        XCTAssertEqual(faults("slider=a\nlevel=255\n"), ["the part a has a level of 255, outside 0 to 100"])
-        XCTAssertEqual(faults("slider=a\nlevel=255\nmax=255\n"), [])
+        XCTAssertEqual(faults("slider=a\nvalue=255\n"), ["the part a has a level of 255, outside 0 to 100"])
+        XCTAssertEqual(faults("slider=a\nvalue=255\nmax=255\n"), [])
         XCTAssertEqual(faults("grid=a b c d\ngrid=a b c d\n\nnumber=a\nvalue=1\n\ntext=b\ntitle=B\n\ntext=c\ntitle=C\n\ntext=d\ntitle=D\n"), ["the part a needs at least 2 columns of 4 for its number"])
         XCTAssertEqual(faults("grid=a a\n\nnumber=a\nvalue=1\ntitle=CPU\n"), ["the part a needs at least 2 rows for its number and title"])
         XCTAssertEqual(faults("grid=p p\n\ngauge=p\nvalue=0.01\n"), ["the part p needs at least 2 rows for its title and bar"])
         XCTAssertEqual(faults("grid=a b c d\n\ntext=a\ntitle=A very long title indeed\n\ntext=b\ntitle=B\n\ntext=c\ntitle=C\n\ntext=d\ntitle=D\n"), ["the title of the part a may not fit its cell"])
-        XCTAssertEqual(faults("grid=a b\ngrid=t b\n\ntext=a\ntitle=Item\n\ntext=t\ntitle=Other\n\nfield=b\ntext=Hi\n"), ["the part a sits in rows that stretch, so draw a choice over two lines for a list", "the part t sits in rows that stretch, so draw a choice over two lines for a list"])
-        XCTAssertEqual(faults(String(repeating: "grid=a\n", count: 20) + "\nfield=a\ntext=Hi\n"), ["the drawing is too tall: 914pt of 442pt"])
+        XCTAssertEqual(faults("grid=a b\ngrid=t b\n\ntext=a\ntitle=Item\n\ntext=t\ntitle=Other\n\nfield=b\nvalue=Hi\n"), ["the part a sits in rows that stretch, so draw a choice over two lines for a list", "the part t sits in rows that stretch, so draw a choice over two lines for a list"])
+        XCTAssertEqual(faults(String(repeating: "grid=a\n", count: 20) + "\nfield=a\nvalue=Hi\n"), ["the drawing is too tall: 914pt of 442pt"])
     }
 
     func testAViewFillsItsAreaOfASheetAndSharesTheFreeHeight() throws {

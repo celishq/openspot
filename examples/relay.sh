@@ -12,7 +12,7 @@ sheet() {
   printf 'end=%s\ngrid=last last last\ngrid=last last last\ngrid=peer peer peer\ngrid=- - -\n' "$call"
   printf 'grid=message message message\ngrid=message message message\ngrid=. . send\n\n'
   printf 'text=last\ntitle=No message yet\ndetail=Listening on 127.0.0.1:%s\n\n' "$port"
-  printf 'field=peer\ntitle=To\ntext=%s\n\n' "$(esc "$peer")"
+  printf 'field=peer\ntitle=To\nvalue=%s\n\n' "$(esc "$peer")"
   printf 'field=message\ntype=multiline\nplaceholder=Hello\n\n'
   printf 'button=send\ntitle=Send\nshortcut=cmd+return\n---\n'
 }

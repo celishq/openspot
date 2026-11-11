@@ -33,13 +33,13 @@ form() {
 
 field=title
 title=Name
-text=\($v.title | esc)
+value=\($v.title | esc)
 required=true
 
 field=content
 title=Text
 type=multiline
-text=\($v.content | esc)
+value=\($v.content | esc)
 required=true"'
 }
 

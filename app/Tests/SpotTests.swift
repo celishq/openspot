@@ -42,7 +42,7 @@ final class SpotTests: XCTestCase {
 
     func testReadsTheStateACommandPrintsForRead() async throws {
         let command = try writeCommand(kind: .toggle, read: .panel, """
-        [ "$1" = read ] && [ -z "$2" ] && printf 'switch=focus\\ntitle=Focus\\ndetail=On\\non=true\\n'
+        [ "$1" = read ] && [ -z "$2" ] && printf 'switch=focus\\ntitle=Focus\\ndetail=On\\nvalue=true\\n'
         """)
 
         let state = try await command.state(timeout: 5)
@@ -61,7 +61,7 @@ final class SpotTests: XCTestCase {
     }
 
     func testAStateKeepsWhatItLeavesOutFromTheHeader() async throws {
-        let command = try writeCommand(kind: .toggle, subtitle: "Header", read: .panel, "printf 'switch=power\\non=true\\n'")
+        let command = try writeCommand(kind: .toggle, subtitle: "Header", read: .panel, "printf 'switch=power\\nvalue=true\\n'")
 
         let state = try await command.state(timeout: 5)
 
@@ -79,7 +79,7 @@ final class SpotTests: XCTestCase {
 
     func testOpeningGivesTheKindAndTheActionsThatItPrints() async throws {
         let command = try writeCommand(kind: .launch, read: .panel, """
-        printf 'switch=power\\non=true\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=a\\ntitle=A\\n'
+        printf 'switch=power\\nvalue=true\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=a\\ntitle=A\\n'
         """)
 
         let opened = try await command.opened(timeout: 5)

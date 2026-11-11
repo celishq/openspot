@@ -268,7 +268,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(header: "read=panel", """
         case "$1" in
           read) printf 'detail=Idle\\n\\nrow=a\\ntitle=A\\n\\ntext=bar\\ntitle=idle\\n' ;;
-          open) printf 'toast=Saved\\ntitle=Other\\nmain=power\\n\\nswitch=power\\non=true\\n\\ntext=bar\\ntitle=work\\n' ;;
+          open) printf 'toast=Saved\\ntitle=Other\\nmain=power\\n\\nswitch=power\\nvalue=true\\n\\ntext=bar\\ntitle=work\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -290,7 +290,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testOpeningASheetAddsTheLastFrameOfEachRunningCall() async throws {
         try script(header: "read=sheet", """
         case "$1" in
-          read) printf 'grid=go\\ngrid=note\\ngrid=bar\\n\\nbutton=go\\ntitle=Go\\n\\nfield=note\\ntext=\\n\\ntext=bar\\ntitle=idle\\n' ;;
+          read) printf 'grid=go\\ngrid=note\\ngrid=bar\\n\\nbutton=go\\ntitle=Go\\n\\nfield=note\\nvalue=\\n\\ntext=bar\\ntitle=idle\\n' ;;
           go) printf 'text=bar\\ntitle=half\\n---\\n'; sleep 30 ;;
         esac
         """)
@@ -312,7 +312,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testANewValueStopsTheOlderCallOfThatPartAndNoOther() async throws {
         try script(header: "read=sheet", """
         case "$1" in
-          read) printf 'switch=a\\non=false\\n\\nswitch=b\\non=false\\n\\ntext=out\\ntitle=none\\n' ;;
+          read) printf 'switch=a\\nvalue=false\\n\\nswitch=b\\nvalue=false\\n\\ntext=out\\ntitle=none\\n' ;;
           a) [ "$2" = true ] && { sleep 30; touch '\(path("old-a"))'; exit 0; }; touch '\(path("new-a"))'; printf 'text=out\\ntitle=new\\n' ;;
           b) \(untilRelease); touch '\(path("b"))'; printf 'text=out\\ntitle=b\\n' ;;
         esac
@@ -339,9 +339,9 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testAnOlderCallOfAnotherPartLeavesAPartThatChangedSince() async throws {
         try script(header: "read=sheet", """
         case "$1" in
-          read) printf 'switch=a\\non=false\\n\\nswitch=b\\non=false\\n' ;;
-          a) sleep 0.2; printf 'switch=a\\non=true\\n\\nswitch=b\\non=false\\n' ;;
-          b) printf 'switch=b\\non=true\\n' ;;
+          read) printf 'switch=a\\nvalue=false\\n\\nswitch=b\\nvalue=false\\n' ;;
+          a) sleep 0.2; printf 'switch=a\\nvalue=true\\n\\nswitch=b\\nvalue=false\\n' ;;
+          b) printf 'switch=b\\nvalue=true\\n' ;;
         esac
         """)
         let sheet = try sheet()
@@ -402,7 +402,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAStoppedToggleGoesBack() async throws {
-        try script(header: "read=panel", "[ \"$1\" = read ] && { printf 'switch=power\\non=false\\n'; exit 0; }\nsleep 5")
+        try script(header: "read=panel", "[ \"$1\" = read ] && { printf 'switch=power\\nvalue=false\\n'; exit 0; }\nsleep 5")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.command.kind == .toggle }
@@ -422,7 +422,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testATwoMegabyteValueOfAPartIsLeftOutOfTheArgumentsAndStdinHoldsIt() async throws {
         try script(header: "read=sheet", """
         case "$1" in
-          read) printf 'field=input\\ntext=\\n' ;;
+          read) printf 'field=input\\nvalue=\\n' ;;
           input) printf '%s' "$#" > '\(path("count"))'; cat > '\(path("got"))'; touch '\(path("done"))' ;;
         esac
         """)

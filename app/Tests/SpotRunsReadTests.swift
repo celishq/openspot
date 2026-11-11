@@ -280,7 +280,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testASheetWithAFieldDropsWhatWasTypedWhenThePanelClosesAndReadsAgain() async throws {
-        try script(header: "read=sheet", "printf 'field=note\\ntext=\\n'")
+        try script(header: "read=sheet", "printf 'field=note\\nvalue=\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -423,7 +423,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testASpotShowsItsHeaderUntilItsAnswerArrives() async throws {
-        try script(header: "read=panel\ndetail=Header", "sleep 0.2\nprintf 'switch=power\\ndetail=Answer\\non=true\\n'")
+        try script(header: "read=panel\ndetail=Header", "sleep 0.2\nprintf 'switch=power\\ndetail=Answer\\nvalue=true\\n'")
         let sheet = try sheet()
 
         runs.panelOpened()
@@ -435,7 +435,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testAKindThatARunTaughtStaysAfterANewScan() async throws {
-        try script(header: "read=panel", "printf 'switch=power\\non=true\\n'")
+        try script(header: "read=panel", "printf 'switch=power\\nvalue=true\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.command.kind == .toggle }
@@ -460,7 +460,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testACallWithNoFrameReadsOnce() async throws {
-        try script(header: "read=panel", "[ \"$1\" = read ] && printf 'switch=power\\non=false\\n'\nexit 0")
+        try script(header: "read=panel", "[ \"$1\" = read ] && printf 'switch=power\\nvalue=false\\n'\nexit 0")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.command.kind == .toggle }
@@ -487,7 +487,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testACallThatShowsItsStateIsNotReadAgain() async throws {
-        try script(header: "read=panel", "[ \"$1\" = read ] && printf 'switch=power\\non=false\\n'\n[ \"$1\" = power ] && printf 'switch=power\\non=true\\n'\nexit 0")
+        try script(header: "read=panel", "[ \"$1\" = read ] && printf 'switch=power\\nvalue=false\\n'\n[ \"$1\" = power ] && printf 'switch=power\\nvalue=true\\n'\nexit 0")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the kind") { sheet.command.kind == .toggle }

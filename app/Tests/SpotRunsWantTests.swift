@@ -8,7 +8,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     // MARK: K5
 
     func testClosingThePanelClosesASheetOfPartsAndTheNextOpenReads() async throws {
-        try script(header: "read=sheet", "printf 'field=a\\ntext=one\\n'")
+        try script(header: "read=sheet", "printf 'field=a\\nvalue=one\\n'")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the part") { sheet.panel != nil }

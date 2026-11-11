@@ -53,7 +53,7 @@ public struct ItemForm: Equatable, Sendable {
             switch kind {
             case "field":
                 let type = block.value("type").flatMap(Kind.init).flatMap { [.text, .multiline].contains($0) ? $0 : nil } ?? .text
-                self.init(name: name, label: label, type: type, value: block.value("text") ?? block.value("value"), required: block.flag("required"), placeholder: block.value("placeholder"))
+                self.init(name: name, label: label, type: type, value: block.value("value"), required: block.flag("required"), placeholder: block.value("placeholder"))
             case "choice" where block.value("type") == "multiple":
                 let options = block.values("option").map(SpotPart.option)
                 self.init(name: name, label: label, type: .choice, value: options.first?.id, options: options, picks: Set(block.values("value")))
@@ -61,11 +61,11 @@ public struct ItemForm: Equatable, Sendable {
                 let options = block.values("option").map(SpotPart.option)
                 self.init(name: name, label: label, type: .choice, value: block.value("value") ?? options.first?.id, options: options)
             case "switch":
-                self.init(name: name, label: label, type: .switch, value: block.flag("on") == true ? "true" : "false")
+                self.init(name: name, label: label, type: .switch, value: block.flag("value") == true ? "true" : "false")
             case "slider":
                 let low = block.number("min") ?? 0
                 let range = low...max(block.number("max") ?? 100, low + 1)
-                let level = min(max(block.number("level") ?? low, range.lowerBound), range.upperBound)
+                let level = min(max(block.number("value") ?? low, range.lowerBound), range.upperBound)
                 self.init(name: name, label: label, type: .slider, value: String(Int(level.rounded())), range: range)
             default:
                 return nil

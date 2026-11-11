@@ -206,7 +206,7 @@ when it changes. Ids are unique in one output. Each kind keeps its data in `valu
 
 | Kind      | Shows                                                   | Its own keys                                                    | Sends                  |
 | --------- | ------------------------------------------------------- | --------------------------------------------------------------- | ---------------------- |
-| `text`    | Words.                                                  |                                                                 |                        |
+| `text`    | Words, and a small mark: a bar from `value`, or with `max` a bar for each `value` line. | `value`, `max`               |                        |
 | `number`  | A big number, with its `title` under it.                | `value`                                                         |                        |
 | `gauge`   | A ring in a square area, a bar in a wide one.           | `value` from 0 to 1                                             |                        |
 | `graph`   | Bars. The last bar is the newest.                       | `value`, one line for each bar, and `max`                       |                        |

@@ -125,7 +125,7 @@ card() {
         if ($i ~ /^detail=/) { due = substr($i, 8); sub(/ · .*/, "", due) }
         if ($i ~ /^tone=/) tone = $i
       }
-      printf "switch=%s\nlook=tick\ntitle=%s\non=false\n\ntext=due-%s\ndetail=%s\n", id, title, id, due
+      printf "switch=%s\nlook=tick\ntitle=%s\nvalue=false\n\ntext=due-%s\ndetail=%s\n", id, title, id, due
       if (tone != "") print tone
       print ""
     }'

@@ -77,7 +77,7 @@ public struct ReviewSpot: Equatable, Sendable {
         TextBlock(fields: [
             .init(key: "field", value: "review"),
             .init(key: "readonly", value: "true"),
-            .init(key: "text", value: text)
+            .init(key: "value", value: text)
         ])
     }
 

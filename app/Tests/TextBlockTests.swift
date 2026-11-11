@@ -76,10 +76,9 @@ final class TextBlockTests: XCTestCase {
         detail=Today
         icon=star
         tone=warn
-        value=0.5
-        point=1
-        point=wide
-        point=3
+        value=1
+        value=wide
+        value=3
         max=9
 
         row=Fix "tray"
@@ -94,7 +93,6 @@ final class TextBlockTests: XCTestCase {
             detail: "Today",
             symbol: "star",
             tone: .warn,
-            value: 0.5,
             points: [1, 3],
             max: 9,
             rows: [.init(title: "Fix \"tray\"", detail: "failing", tone: .bad), .init(title: "Docs")]
