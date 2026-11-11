@@ -14,7 +14,7 @@ public final class CommandAPI: Sendable {
     /// The work that answers a call, or nil for a call that runs in a process of its own: one that draws, waits for the
     /// person, reaches the screen, a window or the clipboard, or runs a helper, a spot or a check of a folder. `input`
     /// reads stdin, and only a call that takes stdin reads it.
-    public func work(for call: CommandLineCall, input: @escaping @Sendable () -> String, environment: [String: String]) -> Work? {
+    public func work(for call: CommandLineCall, input: @escaping @Sendable () async -> String, environment: [String: String]) -> Work? {
         let isRead = environment["OPENSPOT_REASON"] != nil
         switch call {
         case .help:
@@ -52,7 +52,7 @@ public final class CommandAPI: Sendable {
             }
         case .checkSheet:
             return {
-                let faults = PluginOutput(text: input()).sheetFaults
+                let faults = PluginOutput(text: await input()).sheetFaults
                 let text = faults.map { $0 + "\n" }.joined() + (faults.isEmpty ? "No faults.\n" : "\(faults.count) faults.\n")
                 return CommandAnswer(output: text, code: faults.isEmpty ? 0 : 1)
             }

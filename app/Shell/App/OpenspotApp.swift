@@ -35,6 +35,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var update: AppUpdate?
     private var folderWatch: SpotFolderWatch?
     private var showListener: NSObjectProtocol?
+    private var commandSocket: CommandSocket?
     private var isLaunched = false
     private var openedAtLaunch: [URL] = []
     /// The window of each float, by the ID of its spot.
@@ -43,6 +44,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var shakeWatch: SpotShakeWatch?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        commandSocket = CommandSocket(folder: ConfigFile.standard().url.deletingLastPathComponent(), api: CommandAPI(host: SpotCommandHost()))
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         #if DEBUG
         item.button?.image = NSImage(named: "TrayMarkNightly")
@@ -179,6 +181,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         folderWatch?.stop()
+        commandSocket?.close()
         model.quit()
     }
 
