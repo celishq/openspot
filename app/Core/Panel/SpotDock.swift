@@ -224,11 +224,12 @@ public struct SpotDock: Equatable, Sendable {
     }
 
     /// The rect of each shown spot with no sheet open, and the title of each group: two rows to a line, each group under its
-    /// title band.
+    /// title band, and each group after the first a gap lower.
     private var layout: (rects: [CGRect], groups: [Group]) {
         var rects: [CGRect] = [], groups: [Group] = [], top: CGFloat = 0
         let line = SpotTokens.rowHeight + SpotTokens.rowGap
         for part in parts {
+            if !groups.isEmpty { top += SpotTokens.groupGap }
             groups.append(Group(title: part.title, count: part.items.count, top: top))
             let start = top + SpotTokens.groupTitleBand
             rects += part.items.indices.map { index in

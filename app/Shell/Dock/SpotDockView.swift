@@ -2,9 +2,9 @@ import OpenspotCore
 import SwiftUI
 
 /// The store of Edit Spots, on the glass of the panel's surfaces: a sidebar as wide as the panel's grid with the search and
-/// the sections, and right of it the rows of the shown spots, two to a line under the titles of their states. The rows scroll
-/// and fade at each end they pass, and the scroll reaches the store's edges. A row dragged out of the store leaves its place
-/// empty until it lands.
+/// the sections, and right of it, on a darker tint past a line, the rows of the shown spots, two to a line under the titles
+/// of their states, with a line between groups. The rows scroll and fade at each end they pass. A row dragged out of the
+/// store leaves its place empty until it lands.
 struct SpotDockView: View {
     let model: SpotsModel
     let size: CGSize
@@ -17,8 +17,15 @@ struct SpotDockView: View {
         let rects = dock.rects
         let origin = SpotDock.rowsOrigin
         ZStack(alignment: .topLeading) {
+            rowsTint
             ScrollView(.vertical, showsIndicators: false) {
                 ZStack(alignment: .topLeading) {
+                    ForEach(dock.groups.dropFirst(), id: \.title) { group in
+                        Rectangle()
+                            .fill(SpotTheme.ink.opacity(SpotTheme.track))
+                            .frame(width: SpotTokens.width(columns: 8), height: 1)
+                            .offset(y: group.top - SpotTokens.groupGap / 2)
+                    }
                     ForEach(dock.groups, id: \.title) { group in
                         HStack(spacing: SpotTokens.padding) {
                             SpotGroupTitle(name: group.title, count: group.count)
@@ -86,6 +93,19 @@ struct SpotDockView: View {
         .frame(width: SpotTokens.gridWidth)
         .padding([.leading, .top], SpotTokens.padding)
     }
+
+    /// The tint of the rows' side of the store, from the middle of the gap after the sidebar to the store's trailing edge,
+    /// with a line at its leading edge.
+    private var rowsTint: some View {
+        let radius = SpotTokens.radius
+        return UnevenRoundedRectangle(bottomTrailingRadius: radius, topTrailingRadius: radius, style: .continuous)
+            .fill(SpotTheme.well)
+            .overlay(alignment: .leading) { Rectangle().fill(SpotTheme.ink.opacity(SpotTheme.track)).frame(width: 1) }
+            .frame(width: size.width - Self.tintEdge, height: size.height)
+            .offset(x: Self.tintEdge)
+    }
+
+    private static let tintEdge = (SpotDock.rowsOrigin.x - SpotTokens.columnGap / 2).rounded()
 
     /// The fade of the rows at each end, as strong as the rows have scrolled past that end, as on the panel's grid.
     private var edgeFade: some View {

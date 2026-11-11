@@ -65,17 +65,17 @@ final class SpotDockTests: XCTestCase {
         XCTAssertEqual(SpotDock.Step.allCases.map(\.title), ["Open", "Add", "Add to Grid", "Publish"])
     }
 
-    func testTheRowsLieTwoToALineOfTheGridsWidthUnderTheirTitles() {
+    func testTheRowsLieTwoToALineOfTheGridsWidthUnderTheirTitlesWithAGapForALineBeforeEachLaterGroup() {
         let rects = dock.rects
-        let band = SpotTokens.groupTitleBand, line = SpotTokens.rowHeight + SpotTokens.rowGap
+        let band = SpotTokens.groupTitleBand, line = SpotTokens.rowHeight + SpotTokens.rowGap, gap = SpotTokens.groupGap
         let width = SpotTokens.gridWidth, step = width + SpotTokens.columnGap
 
         XCTAssertEqual(rects[0], CGRect(x: 0, y: band, width: width, height: SpotTokens.rowHeight))
         XCTAssertEqual(rects[1].origin, CGPoint(x: step, y: band))
         XCTAssertEqual(rects[2].origin, CGPoint(x: 0, y: band + line))
-        XCTAssertEqual(dock.groups[1].top, band + 2 * line)
-        XCTAssertEqual(rects[3].origin, CGPoint(x: 0, y: 2 * band + 2 * line))
-        XCTAssertEqual(dock.height, 2 * band + 3 * line - SpotTokens.rowGap)
+        XCTAssertEqual(dock.groups[1].top, band + 2 * line + gap)
+        XCTAssertEqual(rects[3].origin, CGPoint(x: 0, y: 2 * band + 2 * line + gap))
+        XCTAssertEqual(dock.height, 2 * band + 3 * line + gap - SpotTokens.rowGap)
     }
 
     func testTheStoreIsTwelveColumnsWithTheSidebarAsWideAsTheGrid() {

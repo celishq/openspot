@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-/// A spot in the store as a card of the panel's grid, four columns wide, on the glass with the card's rim: its picture, its
+/// A spot in the store as a card of the panel's grid, four columns wide, raised on the store with the card's rim: its picture, its
 /// name, the one fact that matters under it, and the button of its next step with the arrow of its menu. The store's rows
 /// take the pointer for every row, so that a row draws and tracks nothing of its own.
 struct SpotStoreRow: View, Equatable {
@@ -25,11 +25,12 @@ struct SpotStoreRow: View, Equatable {
             }
             .lineLimit(1)
             .frame(maxWidth: .infinity, alignment: .leading)
-            StepButton(title: item.step.title, isStrong: item.step == .add || item.step == .publish)
+            StepButton(title: item.step.title)
                 .frame(width: step.width + SpotTokens.storeArrowWidth, height: step.height)
         }
         .padding(.horizontal, SpotTokens.padding)
         .frame(width: bounds.width, height: bounds.height)
+        .background(SpotTheme.raised, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
         .modifier(SpotGlass(radius: radius, blursBehind: false, rimSize: bounds.size))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(item.command.name)
@@ -48,30 +49,25 @@ struct SpotStoreRow: View, Equatable {
     }
 }
 
-/// The button at the end of a row, as large as the App Store's: the next step on its main part, and the arrow of the menu
-/// after a thin line. A step that changes the spot, Add or Publish, is drawn on the accent.
+/// The button at the end of a row, as the App Store's Get: bold words in the accent on a pale pill, with the next step on
+/// its main part and the arrow of the menu after a thin line.
 private struct StepButton: View {
     let title: String
-    let isStrong: Bool
 
     var body: some View {
         HStack(spacing: 0) {
             Text(title)
                 .frame(maxWidth: .infinity)
             Rectangle()
-                .fill(ink.opacity(0.3))
+                .fill(SpotTheme.accent.opacity(0.3))
                 .frame(width: 1, height: SpotTokens.storeButtonHeight / 2)
             Image(systemName: "chevron.down")
                 .font(.system(size: 9, weight: .bold))
                 .frame(width: SpotTokens.storeArrowWidth - 1)
         }
-        .font(.system(size: 12, weight: .bold))
-        .foregroundStyle(ink)
-        .background(isStrong ? SpotTheme.accent : SpotTheme.keycap, in: Capsule())
-        .overlay { if !isStrong { Capsule().strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)) } }
-    }
-
-    private var ink: Color {
-        isStrong ? SpotTheme.onAccent : SpotTheme.ink
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .font(.system(size: 13, weight: .bold))
+        .foregroundStyle(SpotTheme.accent)
+        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: Capsule())
     }
 }

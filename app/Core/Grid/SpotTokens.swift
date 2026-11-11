@@ -13,6 +13,8 @@ public enum SpotTokens {
     /// The height of a group's title in Edit Spots, and of its band over the group's cards.
     public static let groupTitleHeight: CGFloat = 16
     public static let groupTitleBand: CGFloat = groupTitleHeight + placeGap
+    /// The gap that a group of the store keeps above its title after another group, with a line across its middle.
+    public static let groupGap: CGFloat = rowGap
     public static let glyphSize: CGFloat = 36
     public static let workMark: CGFloat = 16
     public static let keycap: CGFloat = 20
