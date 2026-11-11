@@ -7,6 +7,7 @@ public struct SettingsSpot: Equatable, Sendable {
     private static let keyPrefix = "key:"
     private static let floatPrefix = "float:"
     private static let settingPrefix = "setting:"
+    private static let menuBarPrefix = "menubar:"
     private static let clear = "clear"
 
     public let file: ConfigFile
@@ -48,6 +49,10 @@ public struct SettingsSpot: Equatable, Sendable {
             return ""
         case "open" where arguments.dropFirst().first == CommandLink.run:
             return try link?.toggle() ?? ""
+        case "open" where arguments.dropFirst().first?.hasPrefix(Self.menuBarPrefix) == true:
+            let id = String(arguments[1].dropFirst(Self.menuBarPrefix.count))
+            try file.showInMenuBar(id, !file.read().arrangement.menuBar.contains(id))
+            return ""
         case Self.panelKey, Self.fixKey:
             try file.set(arguments[0], to: try shortcut(from: arguments).text)
             return ""
@@ -78,6 +83,17 @@ public struct SettingsSpot: Equatable, Sendable {
         let floats = only != nil ? [] : scripts.filter(\.offersFloat).map { script in
             keyRow(of: script, act: .float, title: "Float", icon: Self.picture(of: script), keys: config.keys)
         }
+        let menuBar = only != nil ? [] : scripts.filter(\.canShowInMenuBar).map { script in
+            TextBlock(fields: [
+                .init(key: "row", value: "\(Self.menuBarPrefix)\(script.id)"),
+                .init(key: "title", value: "Show in the menu bar"),
+                .init(key: "detail", value: script.name),
+                .init(key: "parent", value: script.name),
+                .init(key: "icon", value: Self.picture(of: script)),
+                .init(key: "hides", value: Self.clear),
+                .init(key: "on", value: String(config.arrangement.menuBar.contains(script.id)))
+            ]).text
+        }
         let rows = floats + scripts.flatMap { script in
             script.offers.map { offer in
                 keyRow(of: script, act: .command(offer.id), title: offer.title, icon: offer.icon ?? Self.picture(of: script), keys: config.keys)
@@ -103,7 +119,7 @@ public struct SettingsSpot: Equatable, Sendable {
         let link = self.link.map { [$0.row.text] } ?? []
         let app = only == nil ? [panel, fix] + login + link : []
         let actions = ["recents=false\n", "button=open\ntitle=Change\nclose=false\n", "button=\(Self.clear)\ntitle=Remove\nshortcut=cmd+backspace\n"]
-        return (actions + app + rows + values).joined(separator: "\n")
+        return (actions + app + menuBar + rows + values).joined(separator: "\n")
     }
 
     private func shortcut(from arguments: [String]) throws -> Shortcut {

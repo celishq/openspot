@@ -71,7 +71,8 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testTheMenuBarShowsWhatTheSheetHolds() async throws {
-        try script("pulls", header: "title=Pull requests\nread=120\nshortcut=g\ntray=true", "printf 'text=m\\ntitle=2\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'")
+        menuBar.insert("pulls")
+        try script("pulls", header: "title=Pull requests\nread=120\nshortcut=g", "printf 'text=m\\ntitle=2\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'")
         let sheet = try sheet("pulls")
 
         try await wait("the mark") { !self.runs.trayMarks.isEmpty }
@@ -80,11 +81,25 @@ final class SpotRunsWantTests: SpotRunsCase {
         XCTAssertEqual(sheet.list.shown.count, 2)
     }
 
+    func testASpotShowsInTheMenuBarOnlyWhenThePersonPutsItThereAndCanShowThere() async throws {
+        try script("cups", header: "read=5", log: "cups", "printf 'text=t\\ntitle=3\\n'")
+        try script("notes", header: "read=panel", log: "notes", "printf 'text=t\\ntitle=4\\n'")
+        _ = try scanned()
+        XCTAssertTrue(runs.trayMarks.isEmpty)
+
+        menuBar = ["cups", "notes"]
+        _ = try scanned()
+
+        try await wait("the mark") { !self.runs.trayMarks.isEmpty }
+        XCTAssertEqual(runs.trayMarks.map(\.id), ["cups"])
+    }
+
     func testTheMenuBarHearsOfAMarkThatComesAfterItFirstLooked() async throws {
         let changed = expectation(description: "a change of the marks")
         changed.assertForOverFulfill = false
         withObservationTracking { _ = runs.trayMarks } onChange: { changed.fulfill() }
-        try script("agents", header: "read=5\ntray=true", "printf 'row=a\\n'")
+        menuBar.insert("agents")
+        try script("agents", header: "read=5", "printf 'row=a\\n'")
 
         _ = try scanned()
 
@@ -151,7 +166,8 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testAScriptInTheMenuBarIsReadOnItsClockWithThePanelClosed() async throws {
-        try script(header: "read=1\ntray=true", "printf 'text=t\\ntitle=1\\n'")
+        menuBar.insert("script")
+        try script(header: "read=1", "printf 'text=t\\ntitle=1\\n'")
         _ = try scanned()
         try await wait("the first read") { self.log().count == 1 }
 
@@ -166,7 +182,8 @@ final class SpotRunsWantTests: SpotRunsCase {
             looks += 1
             return self.time
         }, stopPause: 0.2, tickPause: .milliseconds(50))
-        try script(header: "read=5\ntray=true", "printf 'text=t\\ntitle=1\\n'")
+        menuBar.insert("script")
+        try script(header: "read=5", "printf 'text=t\\ntitle=1\\n'")
         _ = try scanned()
         try await wait("the first read") { self.log().count == 1 && self.runs.sheets["script"]?.calls.isEmpty == true }
         let before = looks
@@ -178,7 +195,8 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testAScriptWantedWhileTheClockWaitsForALaterReadIsReadOnItsOwnTime() async throws {
-        try script("pulls", header: "read=120\ntray=true", log: "pulls", "printf 'text=t\\ntitle=1\\n'")
+        menuBar.insert("pulls")
+        try script("pulls", header: "read=120", log: "pulls", "printf 'text=t\\ntitle=1\\n'")
         try script(header: "read=1\nshortcut=a", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         try await wait("the read of the menu bar spot") { self.log("pulls").count == 1 }
@@ -191,7 +209,8 @@ final class SpotRunsWantTests: SpotRunsCase {
         try await wait("the read from the clock") { self.log().count == 2 }
     }
     func testAStayingScriptThatACallHoldsIsReadOnItsOwnTimeWhileTheClockWaitsForALaterRead() async throws {
-        try script("pulls", header: "read=120\ntray=true", log: "pulls", "printf 'text=t\\ntitle=1\\n'")
+        menuBar.insert("pulls")
+        try script("pulls", header: "read=120", log: "pulls", "printf 'text=t\\ntitle=1\\n'")
         try script("stayer", header: "stay=true\nread=1", """
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("blocks"))'
@@ -245,16 +264,15 @@ final class SpotRunsWantTests: SpotRunsCase {
         XCTAssertFalse(exists("went-on"))
     }
 
-    func testTheMainSearchWithANumberNeedsAKey() throws {
-        try script("a", header: "read=30\nglobal=true")
-        try script("b", header: "read=panel,30\nglobal=true")
-        try script("c", header: "read=30\nglobal=true\nshortcut=c")
+    func testATimedSpotJoinsTheMainSearchWithNoKeyAndStartsOffTheGrid() throws {
+        try script("a", header: "read=30\noffers=search")
+        try script("b", header: "read=panel,30\noffers=search")
 
-        XCTAssertEqual(try PluginFolder(url: folder).scan().refused.map(\.file), ["a", "b"])
-        XCTAssertEqual(
-            try PluginFolder(url: folder).scan().refused.first?.reason,
-            "A needs a shortcut to join the main search, because a number in its read and no shortcut gives it no spot"
-        )
+        let scan = try PluginFolder(url: folder).scan()
+
+        XCTAssertEqual(scan.refused, [])
+        XCTAssertEqual(scan.commands.map(\.isGlobal), [true, true])
+        XCTAssertEqual(scan.commands.map(\.headerState.isOnGrid), [false, false])
     }
 
     func testTheSandboxClicksAFileWithNoRead() async throws {

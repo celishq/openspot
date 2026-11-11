@@ -160,7 +160,8 @@ final class SpotRunsReadTests: SpotRunsCase {
         let scan = try scanned()
 
         XCTAssertEqual(Set(runs.sheets.keys), ["cups", "tool", "once"])
-        XCTAssertEqual(Set(scan.commands.map(\.id)), ["tool", "once", "w/W"])
+        XCTAssertEqual(Set(scan.commands.map(\.id)), ["cups", "tool", "once", "w/W"])
+        XCTAssertEqual(scan.commands.first { $0.id == "cups" }?.headerState.isOnGrid, false)
     }
 
     func testASheetReportsItsFrameAndKeepsItsRowsPartsAndValue() async throws {
@@ -206,7 +207,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testAPanelOpenAndASheetOpenWithinFiveSecondsRunOnce() async throws {
-        try script(header: "read=panel\nglobal=true", "printf 'row=a\\ntitle=A\\n'")
+        try script(header: "read=panel\noffers=search", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
 
         runs.panelOpened()
@@ -297,7 +298,8 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testATimerReadAlwaysRuns() async throws {
-        try script("fast", header: "read=1\ntray=true", "printf 'title=1\\n'")
+        menuBar.insert("fast")
+        try script("fast", header: "read=1", "printf 'title=1\\n'")
         _ = try scanned()
         try await wait("the first read") { self.log().count == 1 }
         try await pause(0.1)
@@ -309,7 +311,8 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testAWakeReadsAWantedScriptWithANumberAtOnceAsATimerRead() async throws {
-        try script(header: "read=600\ntray=true", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'text=a\\ntitle=A\\n'")
+        menuBar.insert("script")
+        try script(header: "read=600", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'text=a\\ntitle=A\\n'")
         try script("idle", header: "read=600", log: "idle", "printf 'text=b\\ntitle=B\\n'")
         _ = try scanned()
         try await wait("the first read") { self.log("reasons") == ["timer"] && !self.runs.isReading }
@@ -355,8 +358,10 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testEachScriptIsReadWhenItsTimePasses() async throws {
-        try script("fast", header: "read=5\ntray=true", log: "fast", "printf 'title=1\\n'")
-        try script("slow", header: "read=60\ntray=true", log: "slow", "printf 'title=1\\n'")
+        menuBar.insert("fast")
+        try script("fast", header: "read=5", log: "fast", "printf 'title=1\\n'")
+        menuBar.insert("slow")
+        try script("slow", header: "read=60", log: "slow", "printf 'title=1\\n'")
         _ = try scanned()
         try await wait("the first reads") { self.log("fast").count == 1 && self.log("slow").count == 1 }
 
@@ -372,7 +377,8 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testATimerReadIsWantedByTheMenuBarAlwaysAndByAWidgetWithThePanelOpen() async throws {
-        try script("tray", header: "read=5\ntray=true", log: "tray", "printf 'title=1\\n'")
+        menuBar.insert("tray")
+        try script("tray", header: "read=5", log: "tray", "printf 'title=1\\n'")
         try script("placed", header: "read=5", log: "placed", "printf 'title=1\\n'")
         try script("idle", header: "read=5", log: "idle", "printf 'title=1\\n'")
         try "[[widgets]]\ntitle = \"W\"\ngrid = [\"a\"]\nplaces = { a = \"placed\" }\nsize = \"square\"\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
@@ -411,8 +417,8 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testOneSlowScriptDoesNotDelayAnother() async throws {
-        try script("slow", header: "read=panel\nglobal=true", "\(untilRelease)\nprintf 'row=s\\ntitle=S\\n'")
-        try script("fast", header: "read=panel\nglobal=true", "printf 'row=f\\ntitle=F\\n'")
+        try script("slow", header: "read=panel\noffers=search", "\(untilRelease)\nprintf 'row=s\\ntitle=S\\n'")
+        try script("fast", header: "read=panel\noffers=search", "printf 'row=f\\ntitle=F\\n'")
         _ = try scanned()
 
         runs.panelOpened()

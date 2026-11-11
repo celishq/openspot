@@ -25,7 +25,7 @@ public struct Plugin: Equatable, Sendable {
         }
     }
 
-    /// A script with a number in its `read` has a spot, a list, only when it has a key.
+    /// A script with a number in its `read` starts off the grid until the person shows it (F7).
     public init(script url: URL, header: TextBlock, id: String) throws {
         let name = header.value("title") ?? Self.name(of: url)
         let icon = Icon(text: header.value("icon"))
@@ -37,25 +37,21 @@ public struct Plugin: Equatable, Sendable {
             }
             read = parsed
         }
-        let isTray = header.flag("tray") ?? false
+        try Self.refuseOldPlaces(header, of: name)
         let stay = header.value("stay")
         guard stay == nil || ["true", "false", "always"].contains(stay) else {
             throw PluginError.fault("\(name) has an unknown stay: \(stay!). Use true or always")
         }
         let stays = stay == "true" || stay == "always"
         let hasKey = header.value("shortcut") != nil
-        if read?.seconds == nil, isTray, !stays {
-            throw PluginError.fault("\(name) needs a number in its read, or stay=true, to show in the menu bar")
-        }
         let sizeName = header.value("size") ?? "wide"
         guard let size = SpotSize(name: sizeName) else { throw PluginError.fault("\(name) has an unknown size: \(sizeName)") }
-        let isGlobal = header.value("global") == "rows" || header.flag("global") == true
+        let places = try Self.places(header.value("offers"), of: name)
+        let isRowsOnly = places.contains("rows")
+        let isGlobal = isRowsOnly || places.contains("search")
         if isGlobal {
             guard read?.has(.panel) == true || read?.seconds != nil else {
                 throw PluginError.fault("\(name) needs panel or a number in its read to join the main search")
-            }
-            guard read?.seconds == nil || hasKey else {
-                throw PluginError.fault("\(name) needs a shortcut to join the main search, because a number in its read and no shortcut gives it no spot")
             }
         }
         let offers = try header.values("command").map { text in
@@ -82,15 +78,13 @@ public struct Plugin: Equatable, Sendable {
             key: try Self.key(header.value("shortcut"), of: name),
             read: read,
             isGlobal: isGlobal,
-            isFound: header.value("global") != "rows",
+            isFound: !isRowsOnly,
             stays: stays,
             staysAlways: stay == "always",
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
-            isTray: isTray,
-            offersFloat: (header.flag("float") ?? false) && (read?.seconds == nil || hasKey),
+            offersFloat: places.contains("float"),
             dataName: header.value("data") ?? id.split(separator: "/").first.map(String.init),
-            hasSpot: read?.seconds == nil || hasKey,
-            isOnGrid: offers.isEmpty && (hasKey || !isGlobal),
+            isOnGrid: offers.isEmpty && !isRowsOnly && (hasKey || (!isGlobal && read?.seconds == nil)),
             headerSymbol: symbol,
             offers: offers,
             settings: header.value("settings")?.split(separator: ",").compactMap { CommandOffer(setting: String($0)) } ?? [],
@@ -100,6 +94,33 @@ public struct Plugin: Equatable, Sendable {
             view: view.map { Self.path($0, beside: url) }
         )
         self.init(id: id, commands: [command])
+    }
+
+    /// The places that `offers` names. An unknown place, or `search` with `rows`, is a fault.
+    private static func places(_ text: String?, of name: String) throws -> Set<String> {
+        guard let text else { return [] }
+        let words = text.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+        if let word = words.first(where: { !["search", "rows", "float"].contains($0) }) {
+            throw PluginError.fault("\(name) offers an unknown place: \(word). Use search, rows or float")
+        }
+        if words.contains("search"), words.contains("rows") {
+            throw PluginError.fault("\(name) offers both search and rows. Use search for the spot and its rows, or rows for its rows alone")
+        }
+        return Set(words)
+    }
+
+    /// Refuses a header that still places the spot with `global`, `float` or `tray`, and names the new way.
+    private static func refuseOldPlaces(_ header: TextBlock, of name: String) throws {
+        if let global = header.value("global") {
+            let place = global == "rows" ? "rows" : "search"
+            throw PluginError.fault("\(name) has global=\(global), which Openspot no longer reads. Use offers=\(place)")
+        }
+        if header.value("float") != nil {
+            throw PluginError.fault("\(name) has float, which Openspot no longer reads. Use offers=float")
+        }
+        if header.value("tray") != nil {
+            throw PluginError.fault("\(name) has tray, which Openspot no longer reads. The person puts a spot in the menu bar in Settings")
+        }
     }
 
     /// A path that the header names: a full path stays, and any other starts at the folder of the script.

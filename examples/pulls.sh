@@ -4,7 +4,6 @@
 # detail=On GitHub
 # shortcut=g
 # read=120
-# tray=true
 export LC_ALL=en_US.UTF-8
 export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
 

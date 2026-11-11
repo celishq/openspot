@@ -3,7 +3,7 @@
 # detail=Open app
 # shortcut=a
 # read=panel
-# global=true
+# offers=search
 data=${OPENSPOT_DATA:-${TMPDIR:-/tmp}}
 pending="$data/uninstall"
 kept="$data/uninstall-kept"

@@ -51,7 +51,7 @@ final class CoreSpotsTests: XCTestCase {
         XCTAssertEqual(off.scripts.map(\.id), [])
 
         let on = try PluginFolder(url: folder, core: core, enabled: ["overview"]).scan()
-        XCTAssertEqual(on.commands.map(\.name), ["Overview"])
+        XCTAssertEqual(on.commands.filter(\.headerState.isOnGrid).map(\.name), ["Overview"])
         XCTAssertEqual(on.scripts.map(\.id), ["cpu"])
         XCTAssertEqual(on.refused, [])
     }
@@ -62,7 +62,7 @@ final class CoreSpotsTests: XCTestCase {
 
         let scan = try PluginFolder(url: folder, core: core, enabled: []).scan()
 
-        XCTAssertEqual(scan.commands.map(\.name), ["Mine"])
+        XCTAssertEqual(scan.commands.filter(\.headerState.isOnGrid).map(\.name), ["Mine"])
         XCTAssertEqual(scan.refused, [])
     }
 
@@ -136,7 +136,7 @@ final class CoreSpotsTests: XCTestCase {
         try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
         let scan = try PluginFolder(url: folder, core: core, enabled: ["overview"]).scan()
 
-        let spot = try SharedSpot(sharing: XCTUnwrap(scan.commands.first), from: scan)
+        let spot = try SharedSpot(sharing: XCTUnwrap(scan.commands.first { $0.name == "Overview" }), from: scan)
 
         XCTAssertEqual(spot.files.map(\.path), ["overview.toml", "cpu.sh"])
         XCTAssertEqual(spot.files.last?.isExecutable, true)

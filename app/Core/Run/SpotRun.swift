@@ -815,7 +815,7 @@ public final class SpotRun {
         onReport(.frame(frame))
         guard case .read = ask else { return }
         await preparePictures()
-        if command.hasSpot, !lines.errors.isEmpty {
+        if !lines.errors.isEmpty {
             onReport(.failure("\(command.name) sent \(lines.errors.count) items Openspot cannot read."))
         }
     }

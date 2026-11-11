@@ -94,7 +94,7 @@ final class CatalogSpotTests: XCTestCase {
         try await spot.perform(.item(row), timeout: 1)
 
         let scan = try PluginFolder(url: folder, core: core, enabled: file.read().arrangement.enabled).scan()
-        XCTAssertEqual(scan.commands.map(\.name), ["Overview"])
+        XCTAssertEqual(scan.commands.filter(\.headerState.isOnGrid).map(\.name), ["Overview"])
     }
 
     func testAReadAfterAPickIsNotAFirstAnswer() async throws {

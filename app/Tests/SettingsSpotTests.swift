@@ -36,6 +36,27 @@ final class SettingsSpotTests: XCTestCase {
         XCTAssertTrue(try spot.read?.has(.panel) == true)
     }
 
+    func testTheSheetListsAMenuBarRowForEachSpotThatCanShowThereAndEnterTurnsItOnAndOff() async throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try "#!/bin/sh\n# title=Cups\n# read=60\n".writeScript(to: folder.appendingPathComponent("cups.sh"))
+        try "#!/bin/sh\n# title=Relay\n# stay=true\n".writeScript(to: folder.appendingPathComponent("relay.sh"))
+        try "#!/bin/sh\n# title=Notes\n# read=panel\n".writeScript(to: folder.appendingPathComponent("notes.sh"))
+
+        let before = try await spot.items(timeout: 1).items
+        XCTAssertEqual(before.filter { $0.run.hasPrefix("menubar:") }.map(\.run), ["menubar:cups", "menubar:relay"])
+        XCTAssertEqual(before.first { $0.run == "menubar:cups" }?.isOn, false)
+
+        _ = try await SpotRuns().answer(of: spot, SpotAction(arguments: ["open", "menubar:cups"]), input: "", limit: 1)
+
+        XCTAssertEqual(file.read().arrangement.menuBar, ["cups"])
+        let after = try await spot.items(timeout: 1).items
+        XCTAssertEqual(after.first { $0.run == "menubar:cups" }?.isOn, true)
+
+        _ = try await SpotRuns().answer(of: spot, SpotAction(arguments: ["open", "menubar:cups"]), input: "", limit: 1)
+
+        XCTAssertEqual(file.read().arrangement.menuBar, [])
+    }
+
     func testTheSheetListsTheKeyOfTheFile() async throws {
         try file.set("panel_key", to: "option+space")
 
@@ -82,7 +103,7 @@ final class SettingsSpotTests: XCTestCase {
 
     func testTheSheetListsAFloatRowForEachSpotThatOffersOneAndGivesItAKey() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# title=Shelf\n# icon=tray.full\n# shortcut=s\n# float=true\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
+        try "#!/bin/sh\n# title=Shelf\n# icon=tray.full\n# shortcut=s\n# offers=float\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
         try "#!/bin/sh\n# title=Notes\n# shortcut=n\n".writeScript(to: folder.appendingPathComponent("notes.sh"))
         try "#!/bin/sh\n# title=Move\n# command=left:Left side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
         let runs = SpotRuns()
@@ -109,8 +130,8 @@ final class SettingsSpotTests: XCTestCase {
 
     func testAShakeOnARowTakesTheShakeFromTheRowThatHadIt() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# title=Shelf\n# shortcut=s\n# float=true\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
-        try "#!/bin/sh\n# title=Notes\n# shortcut=n\n# float=true\n".writeScript(to: folder.appendingPathComponent("notes.sh"))
+        try "#!/bin/sh\n# title=Shelf\n# shortcut=s\n# offers=float\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
+        try "#!/bin/sh\n# title=Notes\n# shortcut=n\n# offers=float\n".writeScript(to: folder.appendingPathComponent("notes.sh"))
         let runs = SpotRuns()
 
         _ = try await runs.answer(of: spot, .set("float:shelf", to: "shake"), input: "", limit: 1)
@@ -172,7 +193,7 @@ final class SettingsSpotTests: XCTestCase {
 
     func testAScriptWithCommandsAndNoReadOpensToTheKeysOfItsOwnCommands() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# title=Move\n# float=true\n# command=left:Left side\n[ \"$1\" = left ] && printf 'toast=Left\\n'\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# title=Move\n# offers=float\n# command=left:Left side\n[ \"$1\" = left ] && printf 'toast=Left\\n'\n".writeScript(to: folder.appendingPathComponent("move.sh"))
         try "#!/bin/sh\n# title=Other\n# command=up:Up\n".writeScript(to: folder.appendingPathComponent("other.sh"))
         let scan = try PluginFolder(url: folder).scan(shipped: ShippedSpot.commands(folder: folder, guide: folder, app: "", config: file))
         let move = try XCTUnwrap(scan.commands.first { $0.id == "move" })

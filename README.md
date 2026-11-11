@@ -68,7 +68,7 @@ The [`plugins`](plugins) folder has more tools to copy, such as battery, windows
 The [`examples`](examples) folder has tools that draw their card with their own SwiftUI view, as [spec 03](spec/03-views.md)
 describes, Relay, which stays running and sends lines to another process, as [spec 05](spec/05-stay.md) describes,
 Repos, which names a folder and an editor as settings that Settings lists and changes, Agents, Pull requests and World
-clock, which show in the menu bar, and Shelf, which keeps the files that you drop on it until you drag them out again, as
+clock, which you can put in the menu bar from Settings, and Shelf, which keeps the files that you drop on it until you drag them out again, as
 [spec 01](spec/01-core.md#files-out) describes. Doom is a tool that downloads and builds the first episode of Doom on its first
 run, then plays it in a window of its own.
 
@@ -99,7 +99,7 @@ command = "pause"
 key = "ctrl+option+p"
 ```
 
-A tool whose header says `float=true` can float: Settings lists a Float row for it, and a key with no `command` shows
+A tool whose header says `offers=float` can float: Settings lists a Float row for it, and a key with no `command` shows
 its sheet, or its card, in a small window at the pointer that stays while you work in other apps, until the same key
 closes it. `key = "shake"` takes a quick shake of the pointer in place of a key, so that a shake while you drag files
 opens Shelf under them:

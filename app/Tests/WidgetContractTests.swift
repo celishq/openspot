@@ -177,22 +177,14 @@ final class WidgetContractTests: XCTestCase {
         }
     }
 
-    func testAMetricCanAskToShowInTheMenuBar() throws {
-        try script("power.sh", "#!/bin/sh\n# read=5\n# tray=true\n")
-        try script("other.sh", "#!/bin/sh\n# read=5\n")
-
-        XCTAssertEqual(try scan.metrics.filter(\.isTray).map(\.id), ["power"])
-    }
-
     func testOnlyAMetricOrAStayingScriptCanShowInTheMenuBar() throws {
-        try script("one.sh", "#!/bin/sh\n# tray=true\n")
-        try script("two.sh", "#!/bin/sh\n# read=panel\n# tray=true\n")
-        try script("three.sh", "#!/bin/sh\n# stay=true\n# tray=true\n")
+        try script("one.sh", "#!/bin/sh\n")
+        try script("two.sh", "#!/bin/sh\n# read=panel\n")
+        try script("three.sh", "#!/bin/sh\n# stay=true\n")
+        try script("four.sh", "#!/bin/sh\n# read=5\n")
 
-        XCTAssertEqual(try scan.refused, [
-            ScanResult.Refusal(file: "one", reason: "One needs a number in its read, or stay=true, to show in the menu bar"),
-            ScanResult.Refusal(file: "two", reason: "Two needs a number in its read, or stay=true, to show in the menu bar")
-        ])
+        XCTAssertEqual(try scan.refused, [])
+        XCTAssertEqual(try scan.scripts.filter(\.canShowInMenuBar).map(\.id), ["four", "three"])
     }
 
     func testAWidgetFilePlacesMetricsOfOtherScripts() throws {
@@ -215,7 +207,8 @@ final class WidgetContractTests: XCTestCase {
         let widget = try XCTUnwrap(scan.commands.first)
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.id), ["mine/Now", "mine/Then"])
+        XCTAssertEqual(scan.commands.map(\.id), ["mine/Now", "mine/Then", "power"])
+        XCTAssertEqual(scan.commands.map(\.headerState.isOnGrid), [true, true, false])
         XCTAssertEqual(widget.kind, .widget)
         XCTAssertEqual(widget.size, .strip)
         XCTAssertEqual(widget.layout, WidgetLayout(drawing: ["a a b b"]))
@@ -250,7 +243,7 @@ final class WidgetContractTests: XCTestCase {
 
         let scan = try scan
 
-        XCTAssertEqual(scan.commands, [])
+        XCTAssertEqual(scan.commands.map(\.id), ["power"])
         XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "mine", reason: "Now opens no command called nothing")])
     }
 
@@ -264,8 +257,8 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testALostKeyKeepsTheRestOfTheCommand() throws {
-        try script("one.sh", "#!/bin/sh\n# shortcut=x\n# read=panel\n# global=true\n")
-        try script("two.sh", "#!/bin/sh\n# shortcut=x\n# read=panel\n# global=true\n")
+        try script("one.sh", "#!/bin/sh\n# shortcut=x\n# read=panel\n# offers=search\n")
+        try script("two.sh", "#!/bin/sh\n# shortcut=x\n# read=panel\n# offers=search\n")
 
         XCTAssertEqual(try scan.commands.map(\.isGlobal), [true, true])
     }

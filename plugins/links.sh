@@ -3,7 +3,7 @@
 # detail=Open a link
 # shortcut=l
 # read=panel
-# global=true
+# offers=search
 export LC_ALL=en_US.UTF-8
 data="$OPENSPOT_DATA/links.json"
 icons="$OPENSPOT_DATA/icons"

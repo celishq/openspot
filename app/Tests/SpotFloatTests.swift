@@ -184,7 +184,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAShakeWhileAFloatRowOfSettingsRecordsGivesItTheShake() async throws {
-        try script("shelf", header: "title=Shelf\nshortcut=s\nfloat=true", "true")
+        try script("shelf", header: "title=Shelf\nshortcut=s\noffers=float", "true")
         host.shipped = ShippedSpot.commands(folder: plugins, guide: folder.appendingPathComponent("GUIDE.md"), app: "", config: model.files.config)
         model.reload()
         model.isShown = true

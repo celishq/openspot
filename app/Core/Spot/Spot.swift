@@ -19,7 +19,7 @@ public struct Spot: Equatable, Sendable {
     public private(set) var pickForm: CommandAction?
     /// Whether its rows join the main search.
     public let isGlobal: Bool
-    /// Whether the main search finds the spot itself. A header with `global=rows` offers only its rows.
+    /// Whether the main search finds the spot itself. A header with `offers=rows` offers only its rows.
     public let isFound: Bool
     /// Its place in the grid before the person's choice: a lower number first. The person's newest file comes first.
     public private(set) var order: Int
@@ -36,16 +36,12 @@ public struct Spot: Equatable, Sendable {
     public let staysAlways: Bool
     /// The file extensions that its card takes, with `folder` and `*`.
     public let drop: [String]
-    /// Whether the menu bar shows it.
-    public let isTray: Bool
-    /// Whether its header offers it as a float, which the person can give a key or a shake (T1). A spot with no card offers
-    /// none, because a float shows its sheet or its card.
+    /// Whether its header offers it as a float, which the person can give a key or a shake (T1).
     public let offersFloat: Bool
     /// The folder of its files inside the data of the app. A shipped spot and a widget have none.
     public let dataName: String?
-    /// Whether it has a card. A script with a number in its `read` and no `key` has none (F7).
-    public let hasSpot: Bool
-    /// Whether the grid shows its card. A script with commands, or one that a widget opens, has no card on the grid.
+    /// Whether the grid shows its card before the person's choice. A script with commands, one that offers only its rows,
+    /// one with a number in its `read` (F7), or one that a widget opens, has no card on the grid.
     public private(set) var isOnGrid: Bool
     /// The `symbol` its header names, if any.
     public let headerSymbol: String?
@@ -87,10 +83,8 @@ public struct Spot: Equatable, Sendable {
         stays: Bool = false,
         staysAlways: Bool = false,
         drop: [String] = [],
-        isTray: Bool = false,
         offersFloat: Bool = false,
         dataName: String? = nil,
-        hasSpot: Bool = true,
         isOnGrid: Bool = true,
         headerSymbol: String? = nil,
         offers: [CommandOffer] = [],
@@ -122,10 +116,8 @@ public struct Spot: Equatable, Sendable {
         self.stays = stays
         self.staysAlways = staysAlways
         self.drop = drop
-        self.isTray = isTray
         self.offersFloat = offersFloat
         self.dataName = dataName
-        self.hasSpot = hasSpot
         self.isOnGrid = isOnGrid
         self.headerSymbol = headerSymbol
         self.offers = offers
@@ -196,6 +188,11 @@ public struct Spot: Equatable, Sendable {
     /// Whether the panel asks the command how it looks each time it opens.
     public var readsState: Bool {
         read?.has(.panel) == true && !isGlobal && !stays
+    }
+
+    /// Whether the person can put it in the menu bar: it has a number in its `read`, or it stays.
+    public var canShowInMenuBar: Bool {
+        read?.seconds != nil || stays
     }
 
     /// The call that a click on its card makes.

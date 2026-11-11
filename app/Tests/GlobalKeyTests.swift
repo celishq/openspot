@@ -93,16 +93,16 @@ final class GlobalKeyTests: XCTestCase {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keys-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        try "#!/bin/sh\n# shortcut=s\n# float=true\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
+        try "#!/bin/sh\n# shortcut=s\n# offers=float\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
         try "#!/bin/sh\n# shortcut=n\n".writeScript(to: folder.appendingPathComponent("notes.sh"))
-        try "#!/bin/sh\n# read=60\n# float=true\necho text=cups\n".writeScript(to: folder.appendingPathComponent("cups.sh"))
+        try "#!/bin/sh\n# read=60\n# offers=float\necho text=cups\n".writeScript(to: folder.appendingPathComponent("cups.sh"))
         let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+up"))
         let shelf = GlobalKey(spot: "shelf", act: .float, trigger: .key(shortcut))
         let cups = GlobalKey(spot: "cups", act: .float, trigger: .key(shortcut))
         let notes = GlobalKey(spot: "notes", act: .float, trigger: .key(shortcut))
         let gone = GlobalKey(spot: "gone", act: .float, trigger: .key(shortcut))
 
-        XCTAssertEqual(try PluginFolder(url: folder).scan().offered([shelf, cups, notes, gone]), [shelf])
+        XCTAssertEqual(try PluginFolder(url: folder).scan().offered([shelf, cups, notes, gone]), [shelf, cups])
     }
 
     func testSavingTheGridKeepsTheKeys() throws {

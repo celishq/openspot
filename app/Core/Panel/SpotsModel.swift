@@ -271,7 +271,7 @@ public final class SpotsModel {
         guard pluginScan.stamp != loadedStamp || config != loadedConfig else { return holdAssignedKeys(config) }
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
-        runs.take(scan)
+        runs.take(scan, menuBar: config.arrangement.menuBar)
         lastScan = scan
         loadedStamp = pluginScan.stamp
         loadedConfig = config

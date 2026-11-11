@@ -65,6 +65,23 @@ final class SpotArrangementTests: XCTestCase {
         XCTAssertEqual(config.arrangement.isGlobal(of: "files"), false)
     }
 
+    func testTheConfigKeepsTheSpotsThatThePersonPutInTheMenuBar() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-arrangement-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let file = ConfigFile(url: folder.appendingPathComponent("config.toml"))
+        try file.write(SpotArrangement(choices: [choice("apps", size: .small)]))
+
+        try file.showInMenuBar("cups", true)
+        try file.showInMenuBar("pulls", true)
+        try file.showInMenuBar("pulls", false)
+
+        let config = file.read()
+        XCTAssertEqual(config.faults, [])
+        XCTAssertEqual(config.arrangement.menuBar, ["cups"])
+        XCTAssertEqual(config.arrangement.size(of: "apps"), .small)
+        XCTAssertEqual(Config(text: "[[spots]]\nid = \"cups\"\ntray = true\n").arrangement.menuBar, ["cups"])
+    }
+
     func testTheConfigReportsWhatItCannotUseAndKeepsTheRest() {
         let config = Config(text: """
         [[spots]]

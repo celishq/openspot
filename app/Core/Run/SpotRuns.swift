@@ -30,6 +30,8 @@ public final class SpotRuns {
 
     /// Each script that a widget file places, which the open panel reads.
     @ObservationIgnored private var placed: Set<String> = []
+    /// Each script that the person put in the menu bar.
+    private var menuBar: Set<String> = []
     /// When the clock last read each script with a number in its `read`.
     @ObservationIgnored var asked: [String: Date] = [:]
     @ObservationIgnored var clock: Task<Void, Never>?
@@ -59,11 +61,12 @@ public final class SpotRuns {
 
     nonisolated deinit {}
 
-    /// Takes a new look at the plugin folder. Each script keeps its sheet, and a sheet whose script is gone stops its reads.
-    /// A staying script that something wants starts.
-    public func take(_ scan: ScanResult) {
+    /// Takes a new look at the plugin folder, with the spots that the person put in the menu bar. Each script keeps its sheet,
+    /// and a sheet whose script is gone stops its reads. A staying script that something wants starts.
+    public func take(_ scan: ScanResult, menuBar: Set<String> = []) {
         let scripts = scan.scripts
         placed = Set(scan.commands.flatMap(\.places))
+        self.menuBar = menuBar
         order = scripts.map(\.id)
         for (id, sheet) in sheets where !order.contains(id) {
             sheets[id] = nil
@@ -182,9 +185,14 @@ public final class SpotRuns {
     /// The marks of the scripts that show in the menu bar, in the order of the folder.
     public var trayMarks: [(id: String, mark: TrayMark)] {
         order.compactMap { id in
-            guard let sheet = sheets[id], sheet.command.isTray, let mark = TrayMark(reading: sheet.reading) else { return nil }
+            guard let sheet = sheets[id], isInMenuBar(sheet.command), let mark = TrayMark(reading: sheet.reading) else { return nil }
             return (id, mark)
         }
+    }
+
+    /// Whether the menu bar shows this script: the person put it there, and it can show there.
+    private func isInMenuBar(_ command: Spot) -> Bool {
+        menuBar.contains(command.id) && command.canShowInMenuBar
     }
 
     /// The running work of all scripts, the oldest first, with the ID of each script.
@@ -232,7 +240,7 @@ public final class SpotRuns {
 
     /// Whether something other than its sheet in view wants this script.
     func wants(_ command: Spot) -> Bool {
-        if command.isTray || command.staysAlways { return true }
+        if isInMenuBar(command) || command.staysAlways { return true }
         guard let read = command.read else { return false }
         return isPanelOpen && (read.has(.panel) || placed.contains(command.id))
     }

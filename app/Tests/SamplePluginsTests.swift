@@ -251,7 +251,7 @@ final class SamplePluginsTests: SamplePluginsCase {
             XCTAssertEqual(lines.errors, [])
             XCTAssertEqual(lines.items.map(\.run), (1...3).map { "https://github.test/a/\($0)" } + ["https://github.test/b/4"])
             XCTAssertEqual(lines.items.last?.subtitle, "No checks · To review · b")
-            XCTAssertTrue(metric.isTray)
+            XCTAssertTrue(metric.canShowInMenuBar)
             XCTAssertEqual(list.id, metric.id)
 
             let item = try XCTUnwrap(lines.items.first)
@@ -273,12 +273,10 @@ final class SamplePluginsTests: SamplePluginsCase {
         }
     }
 
-    func testAgentsPullRequestsAndTheClockShowInTheMenuBar() throws {
-        XCTAssertEqual(try exampleScan.scripts.filter(\.isTray).map(\.id), ["agents", "clock", "pulls"])
-    }
+    func testAgentsPullRequestsAndTheClockCanShowInTheMenuBar() throws {
+        let scripts = try exampleScan.scripts.filter { ["agents", "clock", "pulls"].contains($0.id) }
 
-    func testNoShippedSpotReadsOnATimerInTheMenuBar() throws {
-        XCTAssertEqual(try scan.metrics.filter { $0.isTray && $0.read?.seconds != nil }.map(\.id), [])
+        XCTAssertEqual(scripts.map(\.canShowInMenuBar), [true, true, true])
     }
 
     func testTheColorPickerCopiesAPickAndNothingOnACancel() async throws {

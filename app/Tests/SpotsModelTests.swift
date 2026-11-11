@@ -572,8 +572,8 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testTheGridSearchFindsAGlobalSpotWithNoKeyBesideARowOfTheSameName() async throws {
-        try script("apps", header: "title=Apps\nread=panel\nglobal=true\nshortcut=a", "printf 'row=shortcuts\\ntitle=Shortcuts\\n'")
-        try script("shortcuts", header: "title=Shortcuts\nread=panel\nglobal=true", "printf 'row=daily\\ntitle=Daily\\n'")
+        try script("apps", header: "title=Apps\nread=panel\noffers=search\nshortcut=a", "printf 'row=shortcuts\\ntitle=Shortcuts\\n'")
+        try script("shortcuts", header: "title=Shortcuts\nread=panel\noffers=search", "printf 'row=daily\\ntitle=Daily\\n'")
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
@@ -585,7 +585,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testTheGridSearchFindsOnlyTheRowsOfASpotWhoseHeaderSaysGlobalRows() async throws {
-        try script("settings", header: "title=System Settings\nread=panel\nglobal=rows", "printf 'row=sound\\ntitle=Sound Settings\\n'")
+        try script("settings", header: "title=System Settings\nread=panel\noffers=rows", "printf 'row=sound\\ntitle=Sound Settings\\n'")
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])

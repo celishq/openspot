@@ -99,12 +99,12 @@ public struct PluginFolder: Sendable {
         return Stamp(files: files, enabled: enabled, shipped: shipped)
     }
 
-    /// The core spots that a person can turn on. A core file with no card, such as a metric that a widget places or a sheet
-    /// off the grid that a widget opens, is not one.
+    /// The core spots that a person can turn on. A part of a widget, such as a metric that it places or a sheet off the grid
+    /// that it opens, is not one: it comes with its widget.
     public func coreChoices() -> [Spot] {
         let commands = ScanResult(plugins: coreFiles().compactMap { try? Plugin(file: $0.file, id: $0.id) }, refused: []).commands
         let opened = Set(commands.compactMap(\.opens))
-        return commands.filter { !opened.contains($0.id) }
+        return commands.filter { !opened.contains($0.id) && ($0.read?.seconds == nil || $0.key != nil) }
     }
 
     /// The ID that turns a core command on: the name of its file, which a widget shares with the others in that file.

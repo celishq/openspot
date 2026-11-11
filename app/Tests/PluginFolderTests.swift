@@ -159,7 +159,7 @@ final class PluginFolderTests: XCTestCase {
     func testReadSaysWhatKindOfSpotItIsBeforeAnyRun() throws {
         try write("a.sh", header: "read=sheet")
         try write("b.sh", header: "read=panel")
-        try write("c.sh", header: "read=panel\nglobal=true")
+        try write("c.sh", header: "read=panel\noffers=search")
 
         let commands = try scan.commands
 
@@ -206,12 +206,13 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(try scan.commands.map(\.drop), [["mov", "mkv", "folder"], []])
     }
 
-    func testANumberInAListOfMomentsWithNoKeyHasNoSpot() throws {
+    func testANumberInAListOfMomentsStartsTheSpotOffTheGrid() throws {
         try write("a.sh", header: "read=panel,30")
 
         let scan = try scan
 
-        XCTAssertEqual(scan.commands, [])
+        XCTAssertEqual(scan.commands.map(\.id), ["a"])
+        XCTAssertEqual(scan.commands.map(\.headerState.isOnGrid), [false])
         XCTAssertEqual(scan.metrics.map(\.read?.seconds), [30])
     }
 
@@ -229,21 +230,22 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testTheMainSearchNeedsAMomentOutsideTheSheet() throws {
-        try write("a.sh", header: "read=panel\nglobal=true")
-        try write("c.sh", header: "read=30\nglobal=true\nshortcut=c")
+        try write("a.sh", header: "read=panel\noffers=search")
+        try write("c.sh", header: "read=30\noffers=search")
 
         XCTAssertEqual(try scan.refused, [])
         XCTAssertEqual(try scan.commands.map(\.isGlobal), [true, true])
         XCTAssertEqual(try scan.commands.map(\.kind), [.list, .list])
     }
 
-    func testANumberAsTheReadIsAMetricWithNoSpot() throws {
+    func testANumberAsTheReadIsAMetricWhoseCardStartsOffTheGrid() throws {
         try write("cups.sh", header: "title=Cups\nicon=cup.and.saucer\nread=30")
 
         let scan = try scan
         let metric = try XCTUnwrap(scan.metrics.first)
 
-        XCTAssertEqual(scan.commands, [])
+        XCTAssertEqual(scan.commands.map(\.id), ["cups"])
+        XCTAssertFalse(metric.headerState.isOnGrid)
         XCTAssertEqual(metric.id, "cups")
         XCTAssertEqual(metric.name, "Cups")
         XCTAssertEqual(metric.symbol, "cup.and.saucer")
@@ -286,8 +288,8 @@ final class PluginFolderTests: XCTestCase {
         try write("a.sh", header: "read=sometimes")
         try write("b.sh", header: "size=huge")
         try write("c.sh", header: "shortcut=ctrl+d")
-        try write("f.sh", header: "global=true")
-        try write("h.sh", header: "read=sheet\nglobal=true")
+        try write("f.sh", header: "offers=search")
+        try write("h.sh", header: "read=sheet\noffers=search")
         try write("j.sh", header: "read=open")
         try write("k.sh", header: "read=click")
         try write("l.sh", header: "read=panel,later")

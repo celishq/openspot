@@ -36,7 +36,8 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAFailedTimerReadKeepsTheValueAndDimsWithNoToast() async throws {
-        try script(header: "read=5\ntray=true", """
+        menuBar.insert("script")
+        try script(header: "read=5", """
         [ -f '\(path("second"))' ] && exit 1
         touch '\(path("second"))'
         printf 'text=m\\ntitle=3\\n'
@@ -173,7 +174,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testAReadStopsWhenThePanelThatWantedItCloses() async throws {
-        try script(header: "read=panel\nglobal=true", "printf 'row=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
+        try script(header: "read=panel\noffers=search", "printf 'row=a\\ntitle=A\\n---\\n'\nsleep 5\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
         runs.panelOpened()
         try await wait("the first frame") { sheet.list.shown.count == 1 }
@@ -186,7 +187,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     }
 
     func testClosingASheetLeavesAReadThatThePanelWants() async throws {
-        try script(header: "read=panel\nglobal=true", "sleep 0.2\nprintf 'row=a\\ntitle=A\\n'")
+        try script(header: "read=panel\noffers=search", "sleep 0.2\nprintf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
