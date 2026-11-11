@@ -107,11 +107,15 @@ public final class ScriptProcess: @unchecked Sendable {
         let environment = Self.environment(base: ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", dataName: dataName).merging(variables) { _, new in new }
         let errors = errorOutput
         signal(SIGPIPE, SIG_IGN)
-        guard !isStopped else { return lock.withLock { ended = true } }
+        guard !isStopped else {
+            lock.withLock { ended = true }
+            return abandon()
+        }
         let started: pid_t
         do {
             started = try spawn(input: hasInput ? input.fileHandleForReading : nil, output: output.fileHandleForWriting, errors: errors.fileHandleForWriting, environment: environment)
         } catch {
+            abandon()
             return finish(throwing: error)
         }
         if hasInput { try? input.fileHandleForReading.close() }
@@ -339,6 +343,20 @@ public final class ScriptProcess: @unchecked Sendable {
         return status & 0x7f == 0 ? (status >> 8) & 0xff : status & 0x7f
     }
 
+    /// Closes each end of its pipes and gives its exit handler no time, for a process that never started.
+    private func abandon() {
+        for handle in [input.fileHandleForReading, output.fileHandleForReading, output.fileHandleForWriting, errorOutput.fileHandleForReading, errorOutput.fileHandleForWriting] {
+            try? handle.close()
+        }
+        closeInput()
+        let handler = lock.withLock {
+            endTime = .zero
+            defer { exitHandler = nil }
+            return exitHandler
+        }
+        handler?(.zero)
+    }
+
     /// Starts the program in a process group of its own, with these ends of pipes as its stdin, stdout and stderr, and with
     /// no other open file and no signal that the app ignores.
     private func spawn(input: FileHandle?, output: FileHandle, errors: FileHandle, environment: [String: String]) throws -> pid_t {
@@ -368,7 +386,10 @@ public final class ScriptProcess: @unchecked Sendable {
         defer { (words + pairs).forEach { free($0) } }
         var started: pid_t = 0
         let code = posix_spawn(&started, url.path, &actions, &attributes, words, pairs)
-        guard code == 0 else { throw POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO) }
+        guard code == 0 else {
+            guard code == ENOENT || code == EACCES else { throw POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO) }
+            throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: url.path, NSURLErrorKey: url])
+        }
         return started
     }
 
@@ -393,9 +414,12 @@ public final class ScriptProcess: @unchecked Sendable {
         }
         guard isFirst else { return }
         let read = ProcessTime(of: started)
+        lock.withLock { endTime = read }
         var code: Int32 = 0
         var usage = rusage()
-        while wait4(started, &code, 0, &usage) == -1, errno == EINTR {}
+        var result: pid_t = -1
+        repeat { result = wait4(started, &code, 0, &usage) } while result == -1 && errno == EINTR
+        if result == -1 { code = 1 << 8 }
         let time = read ?? ProcessTime(usage)
         let handler = lock.withLock {
             status = code

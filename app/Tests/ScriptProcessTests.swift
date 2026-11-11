@@ -158,6 +158,40 @@ final class ScriptProcessTests: XCTestCase {
         }
     }
 
+    func testAScriptThatCannotStartClosesItsPipesAndEnds() async throws {
+        let before = Self.openFileCount()
+        var processes: [ScriptProcess] = []
+        var times = 0
+        for _ in 0..<20 {
+            let process = ScriptProcess(url: folder.appendingPathComponent("missing.sh"))
+            let ended = expectation(description: "the end")
+            process.onExit { _ in ended.fulfill() }
+            do { for try await _ in process.start() {} } catch {}
+            await fulfillment(of: [ended], timeout: 5)
+            times += 1
+            processes.append(process)
+        }
+
+        XCTAssertEqual(times, 20)
+        XCTAssertLessThan(Self.openFileCount() - before, 6)
+    }
+
+    func testAMissingScriptFailsAsAMissingFile() async throws {
+        let url = folder.appendingPathComponent("missing.sh")
+
+        do {
+            _ = try await ScriptProcess.output(url: url)
+            XCTFail("no failure")
+        } catch let error as CocoaError {
+            XCTAssertEqual(error.code, .fileNoSuchFile)
+            XCTAssertEqual(error.userInfo[NSFilePathErrorKey] as? String, url.path)
+        }
+    }
+
+    private static func openFileCount() -> Int {
+        (try? FileManager.default.contentsOfDirectory(atPath: "/dev/fd").count) ?? 0
+    }
+
     func testAStopRightAfterTheStartLeavesNoScriptRunning() async throws {
         let plugin = try writePlugin("slow.sh", "#!/bin/sh\n\(writesPid("script"))\nsleep 30\n")
         let process = ScriptProcess(url: plugin.url, stopPause: Self.stopPause)
