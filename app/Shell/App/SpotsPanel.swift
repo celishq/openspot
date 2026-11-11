@@ -82,8 +82,7 @@ final class SpotsPanel: NSPanel {
     /// Whether a point on the screen lies on the part of the panel that takes a drop. The window is taller than that.
     func showsDrop(at point: NSPoint) -> Bool {
         guard let model, model.isShown else { return false }
-        let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
-        let height = SpotTokens.backdropHeight(rows: rows)
+        let height = SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: model.placements))
         return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
     }
 
@@ -97,8 +96,7 @@ final class SpotsPanel: NSPanel {
         }
         if isEditing, restFrame == nil, let area = screen?.visibleFrame {
             let panel = frame
-            let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
-            let content = SpotTokens.backdropHeight(rows: rows) - SpotTokens.halo
+            let content = SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: model.placements)) - SpotTokens.halo
             let dock = ScreenPlace.dock(under: NSRect(x: panel.minX, y: panel.maxY - content, width: panel.width, height: content), in: area)
             let whole = panel.union(dock)
             restFrame = panel

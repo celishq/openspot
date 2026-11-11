@@ -175,4 +175,26 @@ final class SpotGridTests: XCTestCase {
             XCTAssertEqual(cells.count, rows * 4, "hole in \(input)")
         }
     }
+
+    func testTwoGroupsLieEachUnderItsTitleBand() {
+        let placements = SpotGrid().place([.small, .small, .small, .small, .small], split: 2)
+        let band = SpotTokens.groupTitleBand
+        XCTAssertEqual(placements.map(\.index), [0, 1, 2, 3, 4])
+        XCTAssertEqual(placements[0].rect.minY, band)
+        XCTAssertEqual(placements[2].row, 1)
+        XCTAssertEqual(placements[2].column, 0)
+        XCTAssertEqual(placements[2].rect.minY, placements[0].rect.maxY + SpotTokens.rowGap + band)
+        XCTAssertEqual(SpotGrid.height(of: placements), placements[4].rect.maxY)
+    }
+
+    func testOneGroupHasNoTitleBand() {
+        let sizes: [SpotSize] = [.small, .wide, .small]
+        XCTAssertEqual(SpotGrid().place(sizes, split: 3), SpotGrid().place(sizes))
+        XCTAssertEqual(SpotGrid().place(sizes, split: 0), SpotGrid().place(sizes))
+        XCTAssertEqual(SpotGrid().place(sizes, split: nil), SpotGrid().place(sizes))
+    }
+
+    func testAnEmptyGridHasNoHeight() {
+        XCTAssertEqual(SpotGrid.height(of: []), 0)
+    }
 }

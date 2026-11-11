@@ -8,6 +8,24 @@ public struct SpotGrid: Sendable {
 
     public init() {}
 
+    /// Lays out the spots before `split` and the spots from it as two groups, each under a title band, when both groups have
+    /// spots. The rows count on through both groups.
+    public func place(_ sizes: [SpotSize], split: Int?) -> [SpotPlacement] {
+        guard let split, split > 0, split < sizes.count else { return place(sizes) }
+        let band = SpotTokens.groupTitleBand
+        let first = place(Array(sizes[..<split])).map { SpotPlacement(index: $0.index, row: $0.row, column: $0.column, size: $0.size, top: band) }
+        let rows = first.map { $0.row + $0.size.rows }.max() ?? 0
+        let second = place(Array(sizes[split...])).map {
+            SpotPlacement(index: $0.index + split, row: $0.row + rows, column: $0.column, size: $0.size, top: 2 * band)
+        }
+        return first + second
+    }
+
+    /// The height of the cards and the title bands of these placements.
+    public static func height(of placements: [SpotPlacement]) -> CGFloat {
+        placements.map(\.rect.maxY).max() ?? 0
+    }
+
     public func place(_ sizes: [SpotSize]) -> [SpotPlacement] {
         var queue: [Slot] = sizes.enumerated().map { (index: $0.offset, size: $0.element) }
         var placements: [SpotPlacement] = []

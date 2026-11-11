@@ -248,6 +248,25 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(order, ["c", "d", "b", "a"])
     }
 
+    func testHiddenCardsLieInAGroupOfTheirOwnUnderATitleBand() {
+        XCTAssertEqual(model.placements.map(\.top), [0, 0, 0, 0])
+
+        model.setOnGrid(false, for: "a")
+
+        let band = SpotTokens.groupTitleBand
+        XCTAssertEqual(order, ["b", "c", "d", "a"])
+        XCTAssertEqual(model.placements.map(\.top), [band, band, band, 2 * band])
+        XCTAssertGreaterThan(model.placements[3].rect.minY, model.placements[2].rect.maxY + band)
+    }
+
+    func testTheGroupsEndWithEditSpots() {
+        model.setOnGrid(false, for: "a")
+
+        model.endEditing()
+
+        XCTAssertEqual(model.placements.map(\.top), [0, 0, 0])
+    }
+
     func testAPanelThatHidesEndsTheDrag() {
         model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
 

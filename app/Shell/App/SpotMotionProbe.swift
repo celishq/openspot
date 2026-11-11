@@ -357,11 +357,10 @@ final class SpotMotionProbe: NSObject {
         guard let id = spot ?? model.visible.last(where: \.isOnGrid)?.id, let index = model.visible.firstIndex(where: { $0.id == id }),
               let view = panel.contentView else { return finish(with: "no card to drag\n") }
         let rect = model.placements[index].rect
-        let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
         let stops = [
             CGPoint(x: rect.midX, y: rect.midY),
             CGPoint(x: SpotTokens.cell / 2, y: SpotTokens.rowHeight / 2),
-            CGPoint(x: SpotTokens.gridWidth / 2, y: SpotTokens.height(rows: rows) / 2),
+            CGPoint(x: SpotTokens.gridWidth / 2, y: SpotGrid.height(of: model.placements) / 2),
             CGPoint(x: rect.midX, y: rect.midY)
         ].map { CGSize(width: $0.x - rect.midX, height: $0.y - rect.midY) }
         if let shots { return shoot(id, stops: stops, into: shots) }

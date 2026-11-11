@@ -10,6 +10,9 @@ public enum SpotTokens {
     public static let columns = 4
     public static let cell: CGFloat = (gridWidth - columnGap * CGFloat(columns - 1)) / CGFloat(columns)
     public static let rowHeight: CGFloat = 64
+    /// The height of a group's title in Edit Spots, and of its band over the group's cards.
+    public static let groupTitleHeight: CGFloat = 16
+    public static let groupTitleBand: CGFloat = groupTitleHeight + placeGap
     public static let glyphSize: CGFloat = 36
     public static let workMark: CGFloat = 16
     public static let keycap: CGFloat = 20
@@ -163,9 +166,9 @@ public enum SpotTokens {
         CGFloat(rows) * menuRowHeight + CGFloat(max(rows - 1, 0)) * menuRowGap + 2 * menuPadding
     }
 
-    /// The height of the blur around the search field and these card rows. It stops at the height of the panel.
-    public static func backdropHeight(rows: Int) -> CGFloat {
-        let cards = rows > 0 ? rowGap + height(rows: rows) : 0
+    /// The height of the blur around the search field and a grid this tall. It stops at the height of the panel.
+    public static func backdropHeight(gridHeight: CGFloat) -> CGFloat {
+        let cards = gridHeight > 0 ? rowGap + gridHeight : 0
         return min(2 * halo + rowHeight + cards + hintBlock, panelHeight)
     }
 

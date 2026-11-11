@@ -5,12 +5,15 @@ public struct SpotPlacement: Equatable, Sendable {
     public let row: Int
     public let column: Int
     public let size: SpotSize
+    /// How far the title bands above the spot push it down.
+    public let top: CGFloat
 
-    public init(index: Int, row: Int, column: Int, size: SpotSize) {
+    public init(index: Int, row: Int, column: Int, size: SpotSize, top: CGFloat = 0) {
         self.index = index
         self.row = row
         self.column = column
         self.size = size
+        self.top = top
     }
 
     /// The way this spot moves when another spot opens: up or down if it lies above or below it, else to its side.
@@ -25,7 +28,7 @@ public struct SpotPlacement: Equatable, Sendable {
     public var rect: CGRect {
         CGRect(
             x: CGFloat(column) * (SpotTokens.cell + SpotTokens.columnGap),
-            y: CGFloat(row) * (SpotTokens.rowHeight + SpotTokens.rowGap),
+            y: CGFloat(row) * (SpotTokens.rowHeight + SpotTokens.rowGap) + top,
             width: SpotTokens.width(columns: size.columns),
             height: SpotTokens.height(rows: size.rows)
         )

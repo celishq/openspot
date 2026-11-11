@@ -153,7 +153,7 @@ extension SpotsModel {
             guard let start = visible.firstIndex(where: { $0.id == id }) else { return }
             let onGrid = visible.filter(\.isOnGrid).count
             let places = visible[start].isOnGrid ? 0...(onGrid - 1) : onGrid...(visible.count - 1)
-            let lifted = SpotDrag(id: id, start: start, sizes: visible.map(\.size), places: places)
+            let lifted = SpotDrag(id: id, start: start, sizes: visible.map(\.size), places: places, split: hiddenStart)
             let entry = visible[start]
             stopDragWait()
             scrollAtPress = gridScroll
@@ -228,7 +228,7 @@ extension SpotsModel {
             let start = visible.filter(\.isOnGrid).count
             var sizes = visible.map(\.size)
             sizes.insert(entry.size, at: start)
-            arrival = SpotDrag(id: id, start: start, sizes: sizes, places: 0...start)
+            arrival = SpotDrag(id: id, start: start, sizes: sizes, places: 0...start, split: hiddenStart.map { $0 + 1 })
             stopDragWait()
             lift.origin = tile.origin
             change(.edit) { carry = SpotCarry(entry: entry, size: item.size, turnsOff: false, tile: tile) }

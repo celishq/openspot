@@ -149,6 +149,7 @@ public final class SpotsModel {
     public private(set) var visible: [Entry] = []
     /// The sizes that `placements` were laid out from.
     @ObservationIgnored private var laidOutSizes: [SpotSize] = []
+    @ObservationIgnored private var laidOutSplit: Int?
     /// The cards as the items that the main search finds. It folds them again only when they change.
     @ObservationIgnored private var spotList = ItemList()
     /// Where each visible spot lies on the grid, in the order of `visible`.
@@ -487,6 +488,13 @@ public final class SpotsModel {
         (error as? PluginError)?.reason ?? error.localizedDescription
     }
 
+    /// Where the cards hidden from the grid start in the order of Edit Spots, after the cards on the grid and a card that
+    /// arrives from the dock. It is nil out of Edit Spots and while the search has text.
+    var hiddenStart: Int? {
+        guard isEditing, query.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+        return visible.count - cards.filter { !$0.isOnGrid }.count
+    }
+
     /// The entries that have a card. The install screen has none.
     public var cards: [Entry] {
         entries.filter { $0.id != ShippedSpot.installID }
@@ -501,9 +509,11 @@ public final class SpotsModel {
         let next = found()
         if next != visible { visible = next }
         let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { _ in SpotSize.strip }
-        if sizes != laidOutSizes {
+        let split = hiddenStart
+        if sizes != laidOutSizes || split != laidOutSplit {
             laidOutSizes = sizes
-            placements = SpotGrid().place(sizes)
+            laidOutSplit = split
+            placements = SpotGrid().place(sizes, split: split)
         }
         if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
     }
