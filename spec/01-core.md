@@ -138,9 +138,10 @@ card on the grid until the person shows it (F7).
 | a number | Every that many seconds while something wants it, and when the Mac wakes. |
 | an event | Each time the event occurs (B1).                                    |
 
-An event is a word with a dot. Openspot raises `app.front` when another app comes to the front, `clipboard` when the
-clipboard changes and `screen.wake` when the screen wakes (B2). `openspot emit <event> [value]` raises any event, from a
-script or from a terminal, and each spot that lists it reads (B3). `OPENSPOT_REASON` gives the event, and
+An event is a word with a dot, or `clipboard`. Openspot raises `app.front` when another app comes to the front, with its
+bundle ID as the value, `clipboard` when the clipboard changes and `screen.wake` when the screen wakes (B2). `openspot
+event emit <event> [value]` raises any event in the running app, from a script or from a terminal, and each spot that
+lists it reads (B3). With the app closed, it fails and changes nothing. `OPENSPOT_REASON` gives the event, and
 `OPENSPOT_VALUE` its value (B4). A spot that lists an event reads only while something wants it, as for a number (B5).
 
 ## Modes

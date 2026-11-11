@@ -33,6 +33,8 @@ public enum CommandLineCall: Equatable, Sendable {
     /// Copies a file, or the text on stdin with no file.
     case clipboardCopy(String?)
     case clipboardPaste
+    /// Raises an event in the running app, with a value, so that each spot that lists it reads (B3).
+    case eventEmit(name: String, value: String?)
     case translate(from: String?, to: String?)
     case translateLanguages
     /// Prints the answer of a sum or a conversion as one row, or nothing for words that are not one.
@@ -94,6 +96,8 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot setting set [--spot id] <key> [v]   Keeps a value for the spot, or removes it with no value.
     openspot clipboard copy [file]               Copies the file as Finder does, or the text on stdin.
     openspot clipboard paste                     Pastes the clipboard into the front app.
+    openspot event emit <name> [value]           Raises an event in the running app, such as music.track. Each spot
+                                                 that lists it in its read reads, with the value in OPENSPOT_VALUE.
     openspot translate [--from code] [--to code] Translates the text on stdin.
     openspot translate languages                 Prints the languages it knows.
     openspot calc solve <words>...               Prints the answer of a sum, such as 2*(3+4) or 15% of 80, a conversion,
@@ -199,6 +203,10 @@ public enum CommandLineCall: Equatable, Sendable {
             self = Self.setting(Array(rest.dropFirst()), sets: rest.first == "set", environment) ?? .unknown(arguments.joined(separator: " "))
         case ("clipboard", "copy") where rest.count <= 2: self = .clipboardCopy(rest.dropFirst().first)
         case ("clipboard", "paste") where rest.count == 1: self = .clipboardPaste
+        case ("event", "emit") where rest.count == 2 || rest.count == 3:
+            self = SpotEvent.isName(rest[1])
+                ? .eventEmit(name: rest[1], value: rest.count == 3 ? rest[2] : nil)
+                : .refused("`\(rest[1])` is not an event. Name one with a dot, such as `music.track`, or `clipboard`.")
         case ("translate", "languages") where rest.count == 1: self = .translateLanguages
         case ("calc", "solve") where rest.count > 1: self = .calcSolve(rest.dropFirst().joined(separator: " "))
         case ("helper", let name?) where rest.count == 1: self = .helper(name)

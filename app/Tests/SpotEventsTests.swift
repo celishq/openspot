@@ -147,4 +147,39 @@ final class SpotEventsTests: SpotRunsCase {
 
         XCTAssertFalse(runs.watchesClipboard)
     }
+
+    // MARK: B3, openspot event emit
+
+    func testAnEventFromAShellReadsTheSpotThatListsIt() async throws {
+        menuBar.insert("script")
+        try script(header: "read=music.track", "\(reasons)\nprintf 'text=t\\ntitle=%s\\n' \"$OPENSPOT_VALUE\"")
+        let sheet = try sheet()
+        let config = FileManager.default.temporaryDirectory.appendingPathComponent("oe-\(UUID().uuidString.prefix(8))", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: config) }
+        let client = folder.appendingPathComponent("A.app/Contents/Helpers/openspot")
+        try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.copyItem(at: Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot"), to: client)
+        let runs = runs!
+        let socket = try XCTUnwrap(CommandSocket(folder: config, api: CommandAPI(host: NoHost(), raise: { event in await MainActor.run { runs.raise(event) } })))
+        defer { socket.close() }
+        let shell = Process()
+        shell.executableURL = URL(fileURLWithPath: "/bin/sh")
+        shell.arguments = ["-c", "\"$0\" event emit music.track 'Blue in Green'", client.path]
+        shell.environment = ["OPENSPOT_CONFIG": config.path, "PATH": "/usr/bin:/bin"]
+
+        try shell.run()
+
+        try await wait("the end of the shell") { !shell.isRunning }
+        XCTAssertEqual(shell.terminationStatus, 0)
+        try await wait("the read of the event") { self.log("reasons") == ["music.track Blue in Green"] }
+        try await wait("the frame of the event") { sheet.reading.value?.title == "Blue in Green" }
+    }
+}
+
+/// A host of the API that reaches nothing on the Mac.
+private struct NoHost: CommandHost {
+    func eventStore() -> any EventStore { FakeEventStore() }
+    func reminderStore() -> any ReminderStore { FakeReminderStore() }
+    func showCalendar(at time: Date) throws {}
+    func open(_ link: URL) -> Bool { false }
 }

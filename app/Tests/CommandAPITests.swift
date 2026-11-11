@@ -112,10 +112,38 @@ final class CommandAPITests: XCTestCase {
         XCTAssertEqual(host.made, 2)
     }
 
+    func testAnEventReachesTheRunningApp() async throws {
+        let raised = LockedEvents()
+        let call = try XCTUnwrap(CommandLineCall(arguments: ["event", "emit", "music.track", "Song"], environment: [:]))
+        let work = try XCTUnwrap(CommandAPI(host: host, raise: { await raised.add($0) }).work(for: call, input: { "" }, environment: [:]))
+
+        let answer = await work()
+
+        XCTAssertEqual(answer, CommandAnswer())
+        let events = await raised.events
+        XCTAssertEqual(events, [.named("music.track", value: "Song")])
+    }
+
+    func testAnEventWithNoAppToReachFails() async throws {
+        let answer = try await answer(["event", "emit", "music.track"])
+
+        XCTAssertEqual(answer.errors, "Openspot is not running, so no spot hears `music.track`. Open Openspot, then run this again.\n")
+        XCTAssertEqual(answer.code, 1)
+    }
+
     func testACallThatTheShellDoesHasNoWorkInCore() throws {
         for arguments in [["color", "pick"], ["render", "a.png"], ["spot", "run", "notes"], ["clipboard", "paste"], ["helper", "calc"], ["check"]] {
             let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: [:]))
             XCTAssertNil(CommandAPI(host: host).work(for: call, input: { "" }, environment: [:]), arguments.joined(separator: " "))
         }
+    }
+}
+
+/// The events that a test's API raised.
+private actor LockedEvents {
+    private(set) var events: [SpotEvent] = []
+
+    func add(_ event: SpotEvent) {
+        events.append(event)
     }
 }

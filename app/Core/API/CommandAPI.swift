@@ -7,14 +7,17 @@ public final class CommandAPI: @unchecked Sendable {
     public typealias Work = @Sendable () async -> CommandAnswer
 
     private let host: any CommandHost
+    /// Raises an event in the running app, or nil in a process with no app to reach.
+    private let raise: (@Sendable (SpotEvent) async -> Void)?
     private let lock = NSLock()
     /// The stores kept warm across calls, each one only once the person gave it leave.
     private var eventStore: (any EventStore)?
     private var reminderStore: (any ReminderStore)?
     private var glyphKeywords: GlyphKeywords?
 
-    public init(host: any CommandHost) {
+    public init(host: any CommandHost, raise: (@Sendable (SpotEvent) async -> Void)? = nil) {
         self.host = host
+        self.raise = raise
     }
 
     /// The work that answers a call, or nil for a call that runs in a process of its own: one that draws, waits for the
@@ -61,6 +64,14 @@ public final class CommandAPI: @unchecked Sendable {
                 let faults = PluginOutput(text: await input()).sheetFaults
                 let text = faults.map { $0 + "\n" }.joined() + (faults.isEmpty ? "No faults.\n" : "\(faults.count) faults.\n")
                 return CommandAnswer(output: text, code: faults.isEmpty ? 0 : 1)
+            }
+        case .eventEmit(let name, let value):
+            guard let raise else {
+                return { CommandAnswer(errors: "Openspot is not running, so no spot hears `\(name)`. Open Openspot, then run this again.\n", code: 1) }
+            }
+            return {
+                await raise(.named(name, value: value))
+                return CommandAnswer()
             }
         case .calcSolve(let words):
             return Self.answer { CalcAnswer(text: words, rates: CalcRateCache.ask)?.text ?? "" }
