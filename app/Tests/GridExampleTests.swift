@@ -82,6 +82,20 @@ final class GridExampleTests: SamplePluginsCase {
         }
     }
 
+    func testARunWithoutAccessibilityOpensItsSettingsAndShowsNoFailure() async throws {
+        let grid = try example("Grid")
+        try await withPrivateHome { folder in
+            _ = try self.fakeGrid("echo '0 0 1/2 1'", in: folder)
+            let link = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+            try "#!/bin/sh\necho link=\(link)\necho 'Openspot cannot move the window.' >&2\nexit 1\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
+            try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/opened'\n".writeScript(to: folder.appendingPathComponent("tools/open"))
+
+            _ = try await grid.perform(.open, timeout: 5)
+
+            XCTAssertEqual(try self.read("opened", in: folder), "\(link)\n")
+        }
+    }
+
     func testARunThatThePersonCancelsMovesNothing() async throws {
         let grid = try example("Grid")
         try await withPrivateHome { folder in

@@ -38,6 +38,10 @@ case "$1" in
       exit 1
     }
     pick=$("$helper") || exit 1
-    [ -z "$pick" ] || openspot window move "$pick"
+    [ -z "$pick" ] && exit 0
+    moved=$(openspot window move "$pick") && exit 0
+    link=$(printf '%s\n' "$moved" | sed -n 's/^link=//p' | head -n 1)
+    [ -n "$link" ] || exit 1
+    open "$link"
     ;;
 esac
