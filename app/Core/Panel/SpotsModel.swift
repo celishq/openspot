@@ -156,6 +156,8 @@ public final class SpotsModel {
     @ObservationIgnored private var spotListIsStale = true
     /// The number of times that the cards were made into the items of `spotList`.
     @ObservationIgnored private(set) var spotListBuilds = 0
+    /// Which `answers` patterns match the text of the main search.
+    @ObservationIgnored private(set) var answerMatches = AnswerMatches()
     /// The search of the cards and the lists that offer their rows, which keeps the matches of the last text.
     @ObservationIgnored private var mainSearch = MainSearch()
     /// Where each visible spot lies on the grid, in the order of `visible`.
@@ -523,7 +525,7 @@ public final class SpotsModel {
         let text = query.trimmingCharacters(in: .whitespaces)
         for entry in entries {
             guard let pattern = entry.command.answers else { continue }
-            sheets[entry.id]?.answer(!text.isEmpty && pattern.matches(text) ? text : "")
+            sheets[entry.id]?.answer(!text.isEmpty && answerMatches.matches(pattern, text) ? text : "")
         }
     }
 
@@ -536,7 +538,7 @@ public final class SpotsModel {
             return dragged(cards.filter(\.isOnGrid) + arriving + (isEditing ? cards.filter { !$0.isOnGrid } : []))
         }
         var ids = Set<String>()
-        let answers = entries.filter { $0.command.answers?.matches(text) == true }
+        let answers = entries.filter { $0.command.answers.map { answerMatches.matches($0, text) } == true }
             .flatMap { entry in (sheets[entry.id]?.answers ?? []).map { Entry(command: entry.command, item: $0, isAnswer: true) } }
             .filter { ids.insert($0.id).inserted }
             .prefix(Self.searchLimit)

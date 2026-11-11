@@ -670,6 +670,19 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(model.visible.contains { $0.id.hasPrefix("calc") })
     }
 
+    func testEachKeyMatchesEachAnswersPatternOnce() throws {
+        try script("calc", header: "title=Calc\nanswers=^[0-9]", "true")
+        try script("units", header: "title=Units\nanswers=[0-9] ?(km|mi)", "true")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        let before = model.answerMatches.count
+
+        for text in ["1", "12", "12 k", "12 km", "12 kmh"] { model.searchText = text }
+
+        XCTAssertEqual(model.answerMatches.count - before, 10)
+    }
+
     func testTheLastAnswerStaysUntilTheNewestTextIsAnswered() async throws {
         try showAnswers(slow: "12")
 
