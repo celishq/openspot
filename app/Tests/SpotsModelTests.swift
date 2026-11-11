@@ -75,6 +75,26 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertNil(SpotSheetCard.of("list", in: model)?.look)
     }
 
+    func testTheDefaultConfigOrdersItsSpotsUnderThePersonsOrder() throws {
+        let added = Date(timeIntervalSince1970: 1_700_000_000)
+        for name in ["a", "b", "c", "d"] {
+            try script(name, header: "title=\(name.uppercased())", "")
+            try FileManager.default.setAttributes([.creationDate: added], ofItemAtPath: plugins.appendingPathComponent("\(name).sh").path)
+        }
+        let defaults = folder.appendingPathComponent("defaults.toml")
+        try "[[spots]]\nid = \"d\"\n\n[[spots]]\nid = \"b\"\n".write(to: defaults, atomically: true, encoding: .utf8)
+        let files = SpotFiles(environment: model.files.environment, home: folder, defaults: self.defaults, defaultConfig: defaults)
+        let ordered = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
+        defer { ordered.quit() }
+
+        ordered.reload()
+        XCTAssertEqual(ordered.entries.map(\.id), ["a", "d", "c", "b"])
+
+        try ordered.files.config.write(SpotArrangement(choices: [SpotArrangement.Choice(id: "b"), SpotArrangement.Choice(id: "a")]))
+        ordered.reload()
+        XCTAssertEqual(ordered.entries.map(\.id), ["b", "d", "c", "a"])
+    }
+
     func testADownloadedUpdateReadsEachSpotThatListsItWhileThePanelIsHidden() async throws {
         let seen = folder.appendingPathComponent("seen").path
         try script("news", header: "read=panel,app.update", "[ \"$OPENSPOT_REASON\" = app.update ] && printf '%s' \"$OPENSPOT_VALUE\" > '\(seen)'; printf 'title=News\n'")

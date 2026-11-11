@@ -3,6 +3,8 @@ import Foundation
 /// What a person sees before they add a shared spot: its whole text and what runs by itself. It learns this from the text
 /// of the files, and runs none of them.
 public struct ReviewSpot: Equatable, Sendable {
+    /// The ID of its sheet, which has no card in the grid.
+    public static let id = "openspot/install"
     static let textLimit = 256_000
     private static let installPart = "install"
 
@@ -43,6 +45,11 @@ public struct ReviewSpot: Equatable, Sendable {
             Self.section("Replaces, and moves the old file to the Trash", spot.replaced(in: folder)),
             Self.section("Will not load", scan.refused.map { "\($0.file): \($0.reason)" })
         ].compactMap { $0 }.joined() + spot.files.map(Self.shown).joined(separator: "\n")
+    }
+
+    /// Its sheet, which grows out of the search field.
+    public var command: Spot {
+        Spot(id: Self.id, name: name, url: folder, kind: .list, symbol: symbol, subtitle: subtitle, read: .sheet, order: .max, host: .review(self), growsFromField: true)
     }
 
     /// Answers one call with the text a script would print.

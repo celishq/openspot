@@ -131,6 +131,8 @@ public final class SpotsModel {
     private static let loadPause: Duration = .milliseconds(20)
     public static let dropPause: Duration = .milliseconds(300)
 
+    /// The sheet that grows out of the search field in place of a card, such as the install screen, while it is loaded.
+    public private(set) var fieldSheet: String?
     public var entries: [Entry] = [] {
         didSet {
             spotListIsStale = true
@@ -321,11 +323,10 @@ public final class SpotsModel {
         let config = files.config.read()
         host.applyConfig(config)
         let folder = files.folder(config)
-        let shipped = reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? []
-        var scan = pluginScan.look(at: folder, shipped: shipped)
+        var scan = pluginScan.look(at: folder, hosted: reviewed.map { [$0.command] } ?? [])
         scan.listKeys(in: files.config)
         let faults = folder.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
-        if !faults.isEmpty { scan.plugins.append(Plugin(id: ShippedSpot.faultsID, commands: faults)) }
+        if !faults.isEmpty { scan.plugins.append(Plugin(id: FaultSpot.pluginID, commands: faults)) }
         guard pluginScan.stamp != loadedStamp || config != loadedConfig else { return holdAssignedKeys(config) }
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
@@ -361,7 +362,7 @@ public final class SpotsModel {
     /// The stamp of each script file of the last scan: its date of change and its file number, which a rewrite changes.
     private static func stamps(of scan: ScanResult) -> [String: String] {
         var stamps: [String: String] = [:]
-        for script in scan.scripts where script.shipped == nil {
+        for script in scan.scripts where script.host == nil {
             guard let values = try? FileManager.default.attributesOfItem(atPath: script.url.path) else { continue }
             let date = (values[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
             stamps[script.id] = "\(date) \(values[.systemFileNumber] ?? "")"
@@ -400,13 +401,16 @@ public final class SpotsModel {
 
     public func rebuildEntries() {
         let letters = arrangement.letters(over: defaultArrangement)
-        entries = ordered().map { Entry(command: $0, run: runs.sheets[$0.id], choice: arrangement, defaults: defaultArrangement, letter: letters[$0.id]) }
+        let next = ordered().map { Entry(command: $0, run: runs.sheets[$0.id], choice: arrangement, defaults: defaultArrangement, letter: letters[$0.id]) }
+        let field = next.first { $0.command.growsFromField }?.id
+        if field != fieldSheet { fieldSheet = field }
+        entries = next
     }
 
-    /// The scanned spots in their grid order, and the person's order in the config over it.
+    /// The scanned spots in their grid order, the order of the default config over it, and the person's order over both.
     private func ordered() -> [Spot] {
         let sorted = scanned.enumerated().sorted { ($0.element.order, $0.offset) < ($1.element.order, $1.offset) }.map(\.element)
-        return arrangement.ordered(sorted)
+        return arrangement.ordered(defaultArrangement.ordered(sorted))
     }
 
     /// The panel starts to show: a pick that its fade left finishes, the first card is selected, the held keys count, the
@@ -499,9 +503,9 @@ public final class SpotsModel {
         (error as? PluginError)?.reason ?? error.localizedDescription
     }
 
-    /// The entries that have a card. The install screen has none.
+    /// The entries that have a card. A sheet that grows out of the field, such as the install screen, has none.
     public var cards: [Entry] {
-        entries.filter { $0.id != ShippedSpot.installID }
+        entries.filter { $0.id != fieldSheet }
     }
 
     /// The most rows that the main search shows from a list that the person never picked from.
@@ -893,7 +897,7 @@ public final class SpotsModel {
     /// Whether the built sheet has a place to close into: its card on the grid, or the field for the install screen.
     private func hasPlace(_ id: String?) -> Bool {
         guard let id else { return false }
-        return id == ShippedSpot.installID || SpotSheetCard.of(id, in: self) != nil
+        return id == fieldSheet || SpotSheetCard.of(id, in: self) != nil
     }
 
     /// Moves the sheet on its spring, in one transaction, and ends the motion when it is done. The words of a review leave
@@ -905,7 +909,7 @@ public final class SpotsModel {
             motion = transition.motion
         }) { [weak self] in
             guard let self else { return }
-            let isInstall = transition.id == ShippedSpot.installID
+            let isInstall = transition.id != nil && transition.id == fieldSheet
             change(nil) {
                 self.transition.finish(motion)
                 if isInstall, self.transition.phase == .open {

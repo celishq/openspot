@@ -56,7 +56,7 @@ extension SpotsModel {
 
     /// Whether the minus of Edit Spots can turn this spot off. A built-in and a card of faults stay on.
     public func turnsOff(_ entry: Entry) -> Bool {
-        entry.item == nil && entry.command.shipped == nil && !entry.command.isBuiltIn && entry.command.fault == nil
+        entry.item == nil && entry.command.host == nil && !entry.command.isBuiltIn && entry.command.fault == nil
     }
 
     /// Turns a spot off from Edit Spots: its card leaves the panel, and the dock shows it.

@@ -86,7 +86,7 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(review.name, "Weather now")
         XCTAssertEqual(review.symbol, "sun.max")
         XCTAssertEqual(review.subtitle, "Today and tomorrow")
-        let command = ShippedSpot.command(reviewing: review)
+        let command = review.command
         XCTAssertEqual(command.name, "Weather now")
         XCTAssertEqual(command.symbol, "sun.max")
     }
@@ -236,15 +236,16 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(scan.refused, [])
     }
 
-    func testAShippedSpotOffersTheReviewAsASheet() async throws {
+    func testTheAppOffersTheReviewAsASheetThatGrowsOutOfTheField() async throws {
         let review = try review("title=Weather")
-        let command = ShippedSpot.command(reviewing: review)
+        let command = review.command
 
         XCTAssertEqual(command.name, "Weather")
         XCTAssertEqual(command.subtitle, "Runs only when you use it")
         XCTAssertEqual(command.kind, .list)
         XCTAssertEqual(command.read, .sheet)
-        let answer = try await command.shipped?.answer(["read"], input: nil)
+        XCTAssertTrue(command.growsFromField)
+        let answer = try await command.host?.answer(["read"])
         XCTAssertEqual(answer, try review.answer(["read"]))
     }
 

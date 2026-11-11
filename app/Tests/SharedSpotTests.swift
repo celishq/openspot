@@ -112,7 +112,7 @@ final class SharedSpotTests: XCTestCase {
         XCTAssertEqual(spot.files.first?.path, "board.toml")
     }
 
-    func testAWidgetThatOpensAShippedSpotCarriesNoFileForIt() throws {
+    func testAWidgetThatOpensASpotOfTheAppCarriesNoFileForIt() throws {
         try script("cpu.sh", "#!/bin/sh\n# read=5\n")
         try plain("board.toml", Data("""
         [[widgets]]

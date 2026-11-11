@@ -10,11 +10,11 @@ public struct PluginScan {
     public init() {}
 
     /// Scans the folder when a file that the last scan read has changed, and returns the scan. A folder that cannot be read
-    /// gives the shipped spots alone.
-    public mutating func look(at folder: PluginFolder, shipped: [Spot]) -> ScanResult {
-        let next = folder.stamp(shipped: shipped)
+    /// gives the sheets of the app alone.
+    public mutating func look(at folder: PluginFolder, hosted: [Spot]) -> ScanResult {
+        let next = folder.stamp(hosted: hosted)
         if next != stamp {
-            result = (try? folder.scan(shipped: shipped)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: shipped)], refused: [])
+            result = (try? folder.scan(hosted: hosted)) ?? ScanResult(plugins: [Plugin(id: "openspot", commands: hosted)], refused: [])
             stamp = next
         }
         return result

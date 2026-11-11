@@ -242,7 +242,7 @@ extension SpotsModel {
         guard openList == nil, target.item == nil else { return [] }
         let command = target.entry.command
         if command.fault != nil { return [.edit, .remove()] }
-        guard command.shipped == nil, !command.isBuiltIn else { return [] }
+        guard command.host == nil, !command.isBuiltIn else { return [] }
         guard !files.folder(Config(text: "")).isCore(command) else { return [.share, .turnOff] }
         return [.edit, .copyPrompt, .share, .remove(widgets: widgets(sharingFileWith: target.entry))]
     }

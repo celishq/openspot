@@ -30,7 +30,10 @@ public struct Spot: Equatable, Sendable {
     public let layout: WidgetLayout?
     public let places: [String]
     public let opens: String?
-    public let shipped: ShippedSpot?
+    /// The sheet that the app answers in Swift for it, when it is the card of a file that does not load or a review.
+    public let host: HostSheet?
+    /// Whether its sheet grows out of the search field in place of a card, as the review of a dropped spot does.
+    public let growsFromField: Bool
     /// Whether the script stays running and takes calls on its standard input.
     public let stays: Bool
     /// Whether the script stays running from the start of the app to its quit.
@@ -39,7 +42,7 @@ public struct Spot: Equatable, Sendable {
     public let drop: [String]
     /// Whether its header offers it as a float, which the person can give a key or a shake (T1).
     public let offersFloat: Bool
-    /// The folder of its files inside the data of the app. A shipped spot and a widget have none.
+    /// The folder of its files inside the data of the app. A sheet of the app and a widget have none.
     public let dataName: String?
     /// Whether the grid shows its card before the person's choice. A script with commands, one that offers only its rows,
     /// one with a number in its `read` (F7), or one that a widget opens, has no card on the grid.
@@ -83,7 +86,8 @@ public struct Spot: Equatable, Sendable {
         layout: WidgetLayout? = nil,
         places: [String] = [],
         opens: String? = nil,
-        shipped: ShippedSpot? = nil,
+        host: HostSheet? = nil,
+        growsFromField: Bool = false,
         stays: Bool = false,
         staysAlways: Bool = false,
         drop: [String] = [],
@@ -116,7 +120,8 @@ public struct Spot: Equatable, Sendable {
         self.layout = layout
         self.places = places
         self.opens = opens
-        self.shipped = shipped
+        self.host = host
+        self.growsFromField = growsFromField
         self.stays = stays
         self.staysAlways = staysAlways
         self.drop = drop
@@ -134,7 +139,7 @@ public struct Spot: Equatable, Sendable {
 
     /// The sheet of the file that does not load, which this card stands for.
     public var fault: FaultSpot? {
-        if case .fault(let fault)? = shipped { fault } else { nil }
+        if case .fault(let fault)? = host { fault } else { nil }
     }
 
     /// The picture its header names in place of its symbol: its image, or else the icon of its file.
@@ -155,7 +160,7 @@ public struct Spot: Equatable, Sendable {
     /// The same spot, which opens to the keys of its commands in this config when it lists commands and has no read of its
     /// own.
     func listingKeys(in config: ConfigFile) -> Spot {
-        guard !offers.isEmpty, read == nil, shipped == nil else { return self }
+        guard !offers.isEmpty, read == nil, host == nil else { return self }
         var spot = self
         spot.kind = .list
         spot.read = .sheet
@@ -262,7 +267,7 @@ public struct Spot: Equatable, Sendable {
         guard output.summary != nil || output.errors.isEmpty else { throw PluginError.badState }
         var state = SpotState(output: output, header: headerState)
         if view != nil { state = state.holding(output.view) }
-        guard shipped != nil || isBuiltIn, let isOnGrid = output.summary?.flag("grid") else { return state }
+        guard isBuiltIn, let isOnGrid = output.summary?.flag("grid") else { return state }
         return state.onGrid(isOnGrid)
     }
 

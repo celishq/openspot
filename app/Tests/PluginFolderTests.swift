@@ -59,7 +59,7 @@ final class PluginFolderTests: XCTestCase {
             XCTAssertNotEqual(plugins.stamp(), before, change)
         }
         XCTAssertNotEqual(PluginFolder(url: folder, core: folder, enabled: ["a"]).stamp(), PluginFolder(url: folder, core: folder).stamp())
-        XCTAssertNotEqual(plugins.stamp(shipped: [Spot(id: "x", name: "X", url: folder)]), plugins.stamp())
+        XCTAssertNotEqual(plugins.stamp(hosted: [Spot(id: "x", name: "X", url: folder)]), plugins.stamp())
     }
 
     func testAKeptScanEqualsAScanAndSeesANewFile() throws {

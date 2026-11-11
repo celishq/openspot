@@ -127,7 +127,7 @@ extension SpotsModel {
         let moves = isShown
         reviewed = review
         host.present()
-        open(ShippedSpot.command(reviewing: review).id, moving: moves)
+        open(review.command.id, moving: moves)
     }
 
     /// What the search field says as the open review grows out of it.

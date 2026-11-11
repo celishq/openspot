@@ -313,8 +313,8 @@ public final class SpotRuns {
             let (stream, halt) = answered { try keyList.answer(action.arguments) }
             return (stream, halt, nil)
         }
-        if let shipped = command.shipped {
-            let (stream, halt) = answered { try await shipped.answer(action.arguments, input: input) }
+        if let sheet = command.host {
+            let (stream, halt) = answered { try await sheet.answer(action.arguments) }
             return (stream, halt, nil)
         }
         let sent = action.sent(input: input)

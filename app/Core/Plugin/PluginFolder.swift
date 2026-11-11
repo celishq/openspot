@@ -3,13 +3,13 @@ import Synchronization
 
 public struct PluginFolder: Sendable {
     /// What a scan reads: the identity, mode, size and times of each file through its links, the spots that are on or off
-    /// and the shipped commands. An equal stamp gives an equal scan, because a write, a change of mode and a move each change
+    /// and the sheets of the app. An equal stamp gives an equal scan, because a write, a change of mode and a move each change
     /// the change time of a file.
     public struct Stamp: Equatable, Sendable {
         fileprivate let files: [String: [Int]]
         fileprivate let enabled: Set<String>
         fileprivate let disabled: Set<String>
-        fileprivate let shipped: [Spot]
+        fileprivate let hosted: [Spot]
     }
 
     private static let coreName = "spots"
@@ -64,11 +64,11 @@ public struct PluginFolder: Sendable {
         return home.appendingPathComponent(".config/openspot", isDirectory: true)
     }
 
-    /// Reads each executable and widget file that is not off, at the top of the folder or one folder down, after the shipped
-    /// commands. Then it reads each core spot that is on, each core file that a spot needs, and each spot of the app. A file
+    /// Reads each executable and widget file that is not off, at the top of the folder or one folder down, after the sheets
+    /// of the app. Then it reads each core spot that is on, each core file that a spot needs, and each spot of the app. A file
     /// in the folder hides a core file with the same ID.
-    public func scan(shipped: [Spot] = []) throws -> ScanResult {
-        var result = ScanResult(plugins: shipped.isEmpty ? [] : [Plugin(id: "openspot", commands: shipped)], refused: [])
+    public func scan(hosted: [Spot] = []) throws -> ScanResult {
+        var result = ScanResult(plugins: hosted.isEmpty ? [] : [Plugin(id: "openspot", commands: hosted)], refused: [])
         let entries = core == nil ? try Self.sorted(in: url) : (try? Self.sorted(in: url)) ?? []
         var ownIDs = Set<String>()
         for entry in entries {
@@ -96,7 +96,7 @@ public struct PluginFolder: Sendable {
 
     /// The stamp of all that a scan reads: each entry at the top of the folder and of the core folder, and each entry one
     /// folder down. A hidden file is in it too, so it can only ask for a scan that changes nothing.
-    public func stamp(shipped: [Spot] = []) -> Stamp {
+    public func stamp(hosted: [Spot] = []) -> Stamp {
         var files: [String: [Int]] = [:]
         for folder in [url.path] + (core.map { [$0.path] } ?? []) {
             for entry in Self.entries(of: folder) {
@@ -106,7 +106,7 @@ public struct PluginFolder: Sendable {
                 for file in Self.entries(of: entry) { files[file] = Self.state(of: file) }
             }
         }
-        return Stamp(files: files, enabled: enabled, disabled: disabled, shipped: shipped)
+        return Stamp(files: files, enabled: enabled, disabled: disabled, hosted: hosted)
     }
 
     /// Whether a scan reads this path: the folder, or an entry at its top or one folder down that is not hidden.
@@ -178,14 +178,14 @@ public struct PluginFolder: Sendable {
 
     /// Whether a command runs from the core folder of the app.
     public func isCore(_ command: Spot) -> Bool {
-        guard let core, command.shipped == nil, !command.isBuiltIn else { return false }
+        guard let core, command.host == nil, !command.isBuiltIn else { return false }
         return command.url.standardizedFileURL.path.hasPrefix(core.standardizedFileURL.path + "/")
     }
 
     /// Takes the file of a spot, its program, and its view with the view's library out of the folder. They go to the Trash,
     /// and the other files of its folder stay.
     public func remove(_ command: Spot, discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws {
-        guard command.shipped == nil, !command.isBuiltIn, !isCore(command) else { throw PluginError.fault("\(command.name) comes with Openspot, so it cannot be removed.") }
+        guard command.host == nil, !command.isBuiltIn, !isCore(command) else { throw PluginError.fault("\(command.name) comes with Openspot, so it cannot be removed.") }
         try discard(command.url)
         if let program = SwiftProgram.file(beside: command.url) { try discard(program) }
         guard let view = command.view.map(URL.init(fileURLWithPath:)), view.deletingLastPathComponent() == command.url.deletingLastPathComponent() else { return }

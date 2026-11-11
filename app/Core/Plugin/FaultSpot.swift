@@ -3,6 +3,8 @@ import Foundation
 /// The sheet of a spot whose file does not load: the file, each fault, and the two acts that fix it. It runs nothing of the
 /// file.
 public struct FaultSpot: Equatable, Sendable {
+    /// The ID of the plugin that holds the cards of the files that do not load.
+    public static let pluginID = "openspot/faults"
     static let fixPart = "fix"
     static let editPart = "edit"
 

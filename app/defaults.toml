@@ -1,8 +1,4 @@
 [[spots]]
-id = "openspot/spots"
-letter = "p"
-
-[[spots]]
 id = "apps"
 letter = "a"
 
@@ -35,25 +31,29 @@ id = "paste-screenshot"
 letter = "v"
 
 [[spots]]
-id = "snippets"
-letter = "n"
-
-[[spots]]
 id = "shortcuts"
 grid = false
+
+[[spots]]
+id = "snippets"
+letter = "n"
 
 [[spots]]
 id = "translate"
 letter = "t"
 
 [[spots]]
-id = "openspot/quit"
-grid = false
+id = "openspot/spots"
+letter = "p"
+
+[[spots]]
+id = "openspot/settings"
+key = "cmd+,"
 
 [[spots]]
 id = "openspot/new"
 key = "cmd+n"
 
 [[spots]]
-id = "openspot/settings"
-key = "cmd+,"
+id = "openspot/quit"
+grid = false

@@ -496,6 +496,16 @@ made to a spot, each with its stdin, stdout, stderr and exit code. A timed read 
 leaves no record. `openspot spot stats` prints, for each spot, its calls, the time they took, its CPU time and its last
 fault (G1).
 
+The spots of the app, such as Settings, Spots and New spot, are scripts in its `openspot` folder that use this command
+like any other spot, and are always on. `openspot spot list [--core]` prints the spots as JSON, `spot on|off <id>...`
+turns spots that come with the app on or off, `spot open <id>` opens a spot's sheet, and `spot review <id>` shows the text
+of a spot that comes with the app. `openspot key set` gives keys, `menubar on|off <id>` places a spot in the menu bar,
+`setting list` prints each value that spots keep, `setting change <key>` runs a value's action in the panel, `app status`
+prints the state of the app, `app login|link on|off` and `app quit` change the app, `update check|install` updates it, and
+`prompt new <words>` prints a prompt for a coding agent. Each call that changes the Mac, ends the app or opens the panel
+fails in a read. The config gives a spot a key of the panel, which opens its sheet, by `key` in its `[[spots]]` table, and
+the default config gives `cmd+n` to New spot and `cmd+,` to Settings.
+
 `openspot spot add <git url | folder | file.spot>` puts a spot in the plugins folder, and `openspot spot remove <id>` takes
 it out (N1). A spot from git is kept at its commit, and `spots.lock` in the config folder lists the source and the commit
 of each added spot. `openspot spot add` with no source adds each spot of `spots.lock` that is missing (N2).

@@ -20,7 +20,7 @@ extension PluginFolder {
                 symbol: "exclamationmark.triangle",
                 subtitle: name,
                 read: .sheet,
-                shipped: .fault(FaultSpot(file: file, name: name, faults: reasons, prompt: prompt))
+                host: .fault(FaultSpot(file: file, name: name, faults: reasons, prompt: prompt))
             )
             let added = try? file.resourceValues(forKeys: [.creationDateKey]).creationDate
             return added.map(spot.added(at:)) ?? spot

@@ -79,7 +79,7 @@ struct SpotSheetLayer: View {
     }
 
     private var isInstall: Bool {
-        entry.id == ShippedSpot.installID
+        entry.command.growsFromField
     }
 
     private var cardIsSelected: Bool {
