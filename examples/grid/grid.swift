@@ -366,10 +366,27 @@ final class Grid: NSObject, NSApplicationDelegate, NSWindowDelegate {
             exit(0)
         }
         guard let pick else { return }
+        Self.move(to: pick)
+    }
+
+    /// Moves the front window through Openspot. When Openspot cannot, as without Accessibility, it opens the
+    /// settings link that Openspot prints, or else beeps, so a failure never passes in silence.
+    private static func move(to pick: Pick) {
         let move = Process()
+        let output = Pipe()
         move.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         move.arguments = ["openspot", "window", "move", pick.text]
-        try? move.run()
+        move.standardOutput = output
+        move.standardError = output
+        move.terminationHandler = { done in
+            guard done.terminationStatus != 0 else { return }
+            let text = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+            let link = text.split(separator: "\n").first { $0.hasPrefix("link=") }.flatMap { URL(string: String($0.dropFirst(5))) }
+            DispatchQueue.main.async {
+                if let link { NSWorkspace.shared.open(link) } else { NSSound.beep() }
+            }
+        }
+        do { try move.run() } catch { NSSound.beep() }
     }
 }
 
