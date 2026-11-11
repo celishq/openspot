@@ -2,6 +2,19 @@ import XCTest
 @testable import OpenspotCore
 
 final class SheetSandboxTests: XCTestCase {
+    func testTheSandboxRunsAScriptOfEachStayingModeAsOneThatStaysWhileInUse() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("sandbox-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let modes = try ["stay", "always", "once", "inline"].map { mode in
+            let file = folder.appendingPathComponent("\(mode).sh")
+            try "#!/bin/sh\n# mode=\(mode)\n".write(to: file, atomically: true, encoding: .utf8)
+            return SheetSandbox.command(file: file).mode
+        }
+
+        XCTAssertEqual(modes, [.stay, .stay, .once, .once])
+    }
+
     func testEachExampleHasNoFaults() {
         for example in SheetExamples.all {
             XCTAssertEqual(SpotOutput(text: example.text).sheetFaults, [], example.name)

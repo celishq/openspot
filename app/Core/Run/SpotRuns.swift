@@ -45,6 +45,9 @@ public final class SpotRuns {
     /// When the clock last read each script with a number in its `read`.
     @ObservationIgnored var asked: [String: Date] = [:]
     @ObservationIgnored var clock: Task<Void, Never>?
+    /// The seconds until the next timed read, as the last tick of the clock found them, or nil when no wanted script has a
+    /// number in its `read`.
+    @ObservationIgnored var nextRead: TimeInterval?
     /// Which `answers` patterns match the text of the main search.
     @ObservationIgnored var answerMatches = AnswerMatches()
     @ObservationIgnored private var processes: [ScriptProcess] = []
