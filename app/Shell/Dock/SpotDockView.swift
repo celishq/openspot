@@ -2,12 +2,13 @@ import OpenspotCore
 import SwiftUI
 
 /// The dock of Edit Spots, on the glass of the panel's surfaces: its title with the number of spots that are off, its
-/// search, and those spots as their cards in rows that scroll down. The scroll reaches the dock's edges, and its margin lies
-/// inside it. A card dragged out of the dock leaves its place empty until it lands.
+/// search, and those spots as their cards in rows that scroll down and fade at each end they pass. The scroll reaches the
+/// dock's edges, and its margin lies inside it. A card dragged out of the dock leaves its place empty until it lands.
 struct SpotDockView: View {
     let model: SpotsModel
     let size: CGSize
     @FocusState private var isSearching: Bool
+    @State private var edges = SpotScrollEdges()
 
     var body: some View {
         let dock = model.dock
@@ -44,6 +45,8 @@ struct SpotDockView: View {
                 .padding(.bottom, SpotTokens.padding)
             }
             .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in model.dockScrolled(to: offset) })
+            .modifier(SpotScrollEdgeTracker(edges: $edges))
+            .mask(edgeFade)
             .overlay(alignment: .topLeading) {
                 if dock.shown.isEmpty {
                     Text(dock.query.isEmpty ? "Each spot is on." : "No spot has these words.")
@@ -58,6 +61,17 @@ struct SpotDockView: View {
         .modifier(SpotGlass(rimSize: size))
         .onChange(of: isSearching) { _, isOn in model.searchesDock(isOn) }
         .onChange(of: model.isSearchingDock) { _, isOn in if !isOn { isSearching = false } }
+    }
+
+    /// The fade at each end of the dock's rows, as strong as the rows have scrolled past that end, as on the panel's grid.
+    private var edgeFade: some View {
+        VStack(spacing: 0) {
+            SpotScrollEdges.end(fading: edges.top, from: .top)
+                .frame(height: SpotScrollEdges.fadeLength)
+            Color.black
+            SpotScrollEdges.end(fading: edges.bottom, from: .bottom)
+                .frame(height: SpotScrollEdges.fadeLength)
+        }
     }
 
     /// Carries a spot out of the dock: its card follows the pointer, and a release on the grid turns it on there. Its moves
