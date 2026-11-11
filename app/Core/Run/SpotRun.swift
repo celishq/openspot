@@ -93,8 +93,16 @@ public final class SpotRun {
     public private(set) var command: Spot
     /// The rows that the script gave for the text of the main search, which stay until the newest text is answered (A3).
     public private(set) var answers: [SpotItem] = []
-    /// The text of the main search that the script was last asked to answer.
+    /// The text of the main search that the script was last asked to answer, and the text that its rows answer.
     private var answerQuery = ""
+    private var answeredQuery = ""
+    /// The work that waits for the answer to the newest text, such as a pick of a row of the older one.
+    private var answerWaiters: [() -> Void] = []
+
+    /// Whether the script has not yet answered the newest text that it was asked.
+    public var isAnswering: Bool {
+        answeredQuery != answerQuery
+    }
     @ObservationIgnored private var rows: ItemList
 
     /// The rows of the sheet. A move of the selection alone tells only the readers of `selection` and reports nothing, so
@@ -253,6 +261,7 @@ public final class SpotRun {
     /// or stops staying gets a new link.
     public func update(_ new: Spot) {
         let header = command.headerState
+        if new.answers != command.answers { answer("") }
         if new.stays != command.stays {
             let old = link
             link = Self.link(for: new, runs: runs)
@@ -404,6 +413,7 @@ public final class SpotRun {
     /// Stops each read of this script, whose sheet no longer has a use for it, and ends the script.
     func stopReads() {
         if let read = running(Self.readKey) { stop(read) }
+        if let answer = running(Self.answerKey) { stop(answer) }
         link.end()
     }
 
@@ -478,6 +488,8 @@ public final class SpotRun {
         answerQuery = text
         if let older = running(Self.answerKey) { stop(older) }
         guard !text.isEmpty else {
+            answeredQuery = ""
+            answerWaiters = []
             takeAnswers([])
             return
         }
@@ -491,10 +503,25 @@ public final class SpotRun {
         ))
     }
 
-    private func takeAnswers(_ rows: [SpotItem]) {
-        guard rows != answers else { return }
-        answers = rows
-        onReport(.listChange)
+    /// Runs the work once the newest text is answered, or at once when it is.
+    public func afterAnswers(_ work: @escaping () -> Void) {
+        if isAnswering { answerWaiters.append(work) } else { work() }
+    }
+
+    /// Takes the rows that answer a text, and runs the work that waited for them when the text is the newest.
+    private func takeAnswers(_ rows: [SpotItem], to query: String? = nil) {
+        if let query {
+            guard query == answerQuery else { return }
+            answeredQuery = query
+        }
+        if rows != answers {
+            answers = rows
+            onReport(.listChange)
+        }
+        guard !isAnswering else { return }
+        let waiting = answerWaiters
+        answerWaiters = []
+        waiting.forEach { $0() }
     }
 
     /// Takes a value the person set, so that it shows at once, and tells the script after a pause that fits the control. It
@@ -781,7 +808,8 @@ public final class SpotRun {
     /// of its failure. A call of work that ended is followed by a read: with the row that a `select` effect named selected
     /// (D8), or else when it showed nothing (M4). A stopped toggle goes back.
     func ended(_ call: ScriptCall, _ purpose: Purpose, _ end: ScriptCall.End, hadAnswer: Bool, showedParts: Bool, selected: String?) {
-        if case .ended = end, failure != nil { failure = nil }
+        let isAnswer = if case .ask(let ask) = purpose { ask.isAnswer } else { false }
+        if case .ended = end, failure != nil, !isAnswer { failure = nil }
         switch (purpose, end) {
         case (.ask(.read), .stopped):
             list.stopLoading()
@@ -796,7 +824,7 @@ public final class SpotRun {
             answerArrived()
             if reports { fail(error) }
         case (.ask(.answer(let query)), .failed):
-            if query == answerQuery { takeAnswers([]) }
+            takeAnswers([], to: query)
         case (.ask(.search(let query)), .failed(let error)):
             list.stopWaiting(for: query)
             answerArrived()
@@ -840,10 +868,7 @@ public final class SpotRun {
     /// silence of one that ended by itself, or the frame that ends a call of a staying script. A read's answer replaces all
     /// that the spot shows, and a search's answer replaces its rows (02, Y7).
     func takeAnswer(_ lines: PluginOutput, frame: String, to ask: Ask) async {
-        if case .answer(let query) = ask {
-            if query == answerQuery { takeAnswers(lines.items) }
-            return
-        }
+        if case .answer(let query) = ask { return takeAnswers(lines.items, to: query) }
         let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: lines.search) } else { nil }
         lastAnswer = lines.withoutBlocks()
         report(toastOf: lines)
