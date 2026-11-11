@@ -439,11 +439,6 @@ public final class SpotsModel {
         }
     }
 
-    /// The Mac woke, so each wanted script with a number in its `read` reads at once.
-    public func woke() {
-        runs.woke()
-    }
-
     /// A downloaded update waits, so the spot that reads on an update reads now and is on the grid before the panel next
     /// opens.
     public func updateIsReady() {

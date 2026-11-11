@@ -23,6 +23,41 @@ extension SpotRuns {
         raise(.wake)
     }
 
+    /// Takes the events of the Mac from the source, and looks at its clipboard while a spot lists `clipboard`.
+    public func listen(to source: any EventSource) {
+        self.source = source
+        source.listen { [weak self] in self?.raise($0) }
+        watchClipboard()
+    }
+
+    /// Whether the clipboard is looked at.
+    var watchesClipboard: Bool {
+        clipboardWatch != nil
+    }
+
+    /// Looks at the count of the clipboard after each pause while a scanned spot lists `clipboard`, and raises `clipboard`
+    /// when it changes. With no such spot, nothing looks.
+    func watchClipboard() {
+        let isListed = sheets.values.contains { $0.command.read?.has(.event(SpotEvent.clipboard)) == true }
+        guard let source, isListed else {
+            clipboardWatch?.cancel()
+            clipboardWatch = nil
+            return
+        }
+        guard clipboardWatch == nil else { return }
+        var count = source.clipboardCount
+        clipboardWatch = Task { [weak self, weak source, clipboardPause] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: clipboardPause, tolerance: clipboardPause / 2)
+                guard !Task.isCancelled, let self, let source else { return }
+                let next = source.clipboardCount
+                guard next != count else { continue }
+                count = next
+                raise(.named(SpotEvent.clipboard, value: nil))
+            }
+        }
+    }
+
     private func openPanel() {
         let wasOpen = isPanelOpen
         isPanelOpen = true

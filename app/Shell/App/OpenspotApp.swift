@@ -36,6 +36,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var folderWatch: SpotFolderWatch?
     private var showListener: NSObjectProtocol?
     private var commandSocket: CommandSocket?
+    private let macEvents = SpotMacEvents()
     private var isLaunched = false
     private var openedAtLaunch: [URL] = []
     /// The window of each float, by the ID of its spot.
@@ -87,7 +88,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         isLaunched = true
         if !openedAtLaunch.isEmpty { model.review(openedAtLaunch) }
-        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(didWake), name: NSWorkspace.didWakeNotification, object: nil)
+        model.runs.listen(to: macEvents)
     }
 
     /// Takes what the config file asks for. A key that macOS refuses leaves the current one in use, and the person sees why.
@@ -183,10 +184,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         folderWatch?.stop()
         commandSocket?.close()
         model.quit()
-    }
-
-    @objc private func didWake() {
-        model.woke()
     }
 
     /// A click on the Openspot item goes to running work, if any shows (G3).

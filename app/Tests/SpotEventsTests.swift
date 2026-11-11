@@ -4,6 +4,29 @@ import XCTest
 /// The rules of events: a spot lists them in its `read`, and each one reads the wanted spots that list it (B1-B5).
 @MainActor
 final class SpotEventsTests: SpotRunsCase {
+    /// A Mac that raises what a test tells it, with a clipboard whose count the test sets.
+    private final class FakeMac: EventSource {
+        var heard: (@MainActor (SpotEvent) -> Void)?
+        var count = 0
+        private(set) var looks = 0
+
+        func listen(_ heard: @escaping @MainActor (SpotEvent) -> Void) {
+            self.heard = heard
+        }
+
+        var clipboardCount: Int {
+            looks += 1
+            return count
+        }
+    }
+
+    private var mac = FakeMac()
+
+    override func setUp() async throws {
+        try await super.setUp()
+        runs = SpotRuns(now: { [unowned self] in self.time }, stopPause: 0.2, tickPause: .milliseconds(50), clipboardPause: .milliseconds(20))
+    }
+
     private var reasons: String {
         "echo \"$OPENSPOT_REASON ${OPENSPOT_VALUE-none}\" >> '\(path("reasons"))'"
     }
@@ -55,5 +78,73 @@ final class SpotEventsTests: SpotRunsCase {
     func testASpotThatListsAnEventCanShowInTheMenuBar() throws {
         try script(header: "read=app.front", "printf 'text=t\\ntitle=T\\n'")
         XCTAssertTrue(try sheet().command.canShowInMenuBar)
+    }
+
+    // MARK: B2, the events of the Mac
+
+    func testTheMacRaisesTheFrontAppAndTheScreenWake() async throws {
+        menuBar.insert("script")
+        try script(header: "read=app.front,screen.wake", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
+        _ = try scanned()
+        runs.listen(to: mac)
+
+        mac.heard?(.named(SpotEvent.frontApp, value: "com.apple.Safari"))
+        try await wait("the front app read") { self.log("reasons") == ["app.front com.apple.Safari"] && !self.runs.isReading }
+        mac.heard?(.named(SpotEvent.screenWake, value: nil))
+
+        try await wait("the screen wake read") { self.log("reasons") == ["app.front com.apple.Safari", "screen.wake none"] }
+    }
+
+    func testTheMacRaisesTheWakeOfTheMac() async throws {
+        menuBar.insert("script")
+        try script(header: "read=600", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
+        _ = try scanned()
+        runs.listen(to: mac)
+        try await wait("the first read") { self.log("reasons") == ["timer none"] && !self.runs.isReading }
+
+        mac.heard?(.wake)
+
+        try await wait("the wake read") { self.log("reasons") == ["timer none", "timer none"] }
+    }
+
+    func testAChangeOfTheClipboardRaisesClipboard() async throws {
+        menuBar.insert("script")
+        try script(header: "read=clipboard", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
+        _ = try scanned()
+        runs.listen(to: mac)
+        try await wait("a look at the clipboard") { self.mac.looks > 1 }
+        XCTAssertEqual(log("reasons"), [])
+
+        mac.count += 1
+
+        try await wait("the clipboard read") { self.log("reasons") == ["clipboard none"] }
+    }
+
+    func testTheClipboardIsWatchedOnlyWhileASpotListsIt() async throws {
+        try script("other", header: "read=panel", log: "other", "printf 'text=o\\ntitle=O\\n'")
+        _ = try scanned()
+        runs.listen(to: mac)
+        XCTAssertFalse(runs.watchesClipboard)
+        XCTAssertEqual(mac.looks, 0)
+
+        try script(header: "read=clipboard", "printf 'text=t\\ntitle=T\\n'")
+        _ = try scanned()
+        XCTAssertTrue(runs.watchesClipboard)
+
+        try FileManager.default.removeItem(at: folder.appendingPathComponent("script.sh"))
+        _ = try scanned()
+        XCTAssertFalse(runs.watchesClipboard)
+    }
+
+    func testAQuitEndsTheWatchOfTheClipboard() async throws {
+        try script(header: "read=clipboard", "printf 'text=t\\ntitle=T\\n'")
+        _ = try scanned()
+        runs.listen(to: mac)
+        let watch = try XCTUnwrap(runs.clipboardWatch)
+
+        runs.quit()
+        await watch.value
+
+        XCTAssertFalse(runs.watchesClipboard)
     }
 }
