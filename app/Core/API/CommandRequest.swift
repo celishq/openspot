@@ -36,8 +36,9 @@ struct CommandRequest: Equatable {
         }
     }
 
-    /// The environment of the call: that of the app, with the `OPENSPOT_*` variables of the caller in place of its own.
+    /// The environment of the call: that of the app, with the `OPENSPOT_*` variables of the caller in place of its own, and
+    /// its working folder as `PWD`.
     func environment(over base: [String: String]) -> [String: String] {
-        base.filter { !$0.key.hasPrefix("OPENSPOT_") }.merging(environment) { _, caller in caller }
+        base.filter { !$0.key.hasPrefix("OPENSPOT_") }.merging(environment.merging(["PWD": folder]) { own, _ in own }) { _, caller in caller }
     }
 }

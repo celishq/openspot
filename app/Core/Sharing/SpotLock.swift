@@ -1,0 +1,81 @@
+import Foundation
+
+/// `spots.lock` in the config folder: the source of each spot that `openspot spot add` put in the plugins folder, the
+/// commit of a git source, and the paths at the top of the folder that the spot took (N1, N2).
+public struct SpotLock: Sendable {
+    public struct Entry: Codable, Equatable, Sendable {
+        public let source: String
+        public let commit: String?
+        public let paths: [String]
+
+        /// The name of the spot: its first path with no extension.
+        public var name: String {
+            URL(fileURLWithPath: paths.first ?? source).deletingPathExtension().lastPathComponent
+        }
+
+        /// Whether a spot of this ID came from this entry: a script at the top of the folder, or any script in its folder.
+        func holds(_ id: String) -> Bool {
+            paths.contains { path in
+                id == path || id == URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent || id.hasPrefix(path + "/")
+            }
+        }
+
+        /// The line that tells the person what came in.
+        var added: String {
+            commit.map { "Added \(name) at \($0.prefix(7)).\n" } ?? "Added \(name).\n"
+        }
+    }
+
+    private static let name = "spots.lock"
+
+    public let url: URL
+
+    public init(url: URL) {
+        self.url = url
+    }
+
+    public static func standard(environment: [String: String], home: URL = FileManager.default.homeDirectoryForCurrentUser) -> SpotLock {
+        SpotLock(url: PluginFolder.config(environment: environment, home: home).appendingPathComponent(name))
+    }
+
+    /// Each entry, in the order that the spots came in. No file has none.
+    public func entries() throws -> [Entry] {
+        guard let data = try? Data(contentsOf: url) else { return [] }
+        guard let entries = try? JSONDecoder().decode([Entry].self, from: data) else {
+            throw PluginError.fault("Openspot cannot read \(url.path). Fix it or delete it, then try again.")
+        }
+        return entries
+    }
+
+    /// Puts a spot from a source in the folder, and records it in place of each entry that shared a path with it.
+    public func add(_ source: SpotSource, to folder: URL) async throws -> Entry {
+        let kept = try entries()
+        let (commit, paths) = try await source.add(to: folder, at: nil)
+        let entry = Entry(source: source.text, commit: commit, paths: paths)
+        try write(kept.filter { Set($0.paths).isDisjoint(with: paths) } + [entry])
+        return entry
+    }
+
+    /// Takes the spot of this ID out of the folder with each path of its entry, and drops the entry. A spot that `spot add`
+    /// did not add stays, with a fault.
+    public func remove(_ id: String, from folder: URL) throws -> Entry {
+        var entries = try entries()
+        guard let index = entries.firstIndex(where: { $0.holds(id) }) else {
+            throw PluginError.fault("`openspot spot add` did not add \(id), so Openspot leaves it. Move its file to the Trash to remove it.")
+        }
+        let entry = entries.remove(at: index)
+        for path in entry.paths {
+            let file = folder.appendingPathComponent(path)
+            if FileManager.default.fileExists(atPath: file.path) { try FileManager.default.removeItem(at: file) }
+        }
+        try write(entries)
+        return entry
+    }
+
+    private func write(_ entries: [Entry]) throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try encoder.encode(entries).write(to: url, options: .atomic)
+    }
+}

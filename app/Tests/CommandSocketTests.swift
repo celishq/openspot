@@ -82,6 +82,19 @@ final class CommandSocketTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("own/config.toml").path))
     }
 
+    func testARelativeSourceOfSpotAddIsReadFromTheWorkingFolderOfTheCaller() throws {
+        let source = folder.appendingPathComponent("sources/tea")
+        try FileManager.default.createDirectory(at: source, withIntermediateDirectories: true)
+        try "#!/bin/sh\n".writeScript(to: source.appendingPathComponent("tea.sh"))
+        let plugins = folder.appendingPathComponent("plugins").path
+        let request: [String: Any] = ["jsonrpc": "2.0", "id": 1, "method": "ask", "params": ["argv": ["spot", "add", "tea"], "cwd": folder.appendingPathComponent("sources").path, "env": ["OPENSPOT_CONFIG": folder.path, "OPENSPOT_PLUGINS": plugins]]]
+
+        let result = try XCTUnwrap(try send(String(decoding: JSONSerialization.data(withJSONObject: request), as: UTF8.self))["result"] as? [String: Any])
+
+        XCTAssertEqual(result["code"] as? Int, 0, result["stderr"] as? String ?? "")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: plugins + "/tea/tea.sh"))
+    }
+
     func testALineThatIsNoRequestGetsAnError() throws {
         XCTAssertEqual((try send("hello")["error"] as? [String: Any])?["code"] as? Int, -32700)
     }

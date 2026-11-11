@@ -507,8 +507,11 @@ fails in a read. The config gives a spot a key of the panel, which opens its she
 the default config gives `cmd+n` to New spot and `cmd+,` to Settings.
 
 `openspot spot add <git url | folder | file.spot>` puts a spot in the plugins folder, and `openspot spot remove <id>` takes
-it out (N1). A spot from git is kept at its commit, and `spots.lock` in the config folder lists the source and the commit
-of each added spot. `openspot spot add` with no source adds each spot of `spots.lock` that is missing (N2).
+it out (N1). A git repository goes into a folder named after it, at its newest commit and with no `.git`. A folder is
+copied, and a `.spot` file is written as a drop writes it. A name that the plugins folder has already is a fault.
+`spots.lock` in the config folder lists the source, the commit and the paths of each added spot. `openspot spot add` with
+no source adds each spot of `spots.lock` that is missing, a git one at its commit (N2). `spot remove` takes out only a spot
+that `spot add` added, with all of its paths, and its line in `spots.lock`.
 
 `openspot render [--view <file.swift>] <file.png>` draws the sheet that stdin holds, with the plugin's view from a Swift
 file, and `openspot render --card <size> <file.png>` draws its card at a size such as `wide`, so you can see a result

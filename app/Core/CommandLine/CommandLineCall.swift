@@ -19,6 +19,11 @@ public enum CommandLineCall: Equatable, Sendable {
     case spotList(core: Bool)
     /// Turns spots that come with the app on or off.
     case spotTurn(ids: [String], on: Bool)
+    /// Puts a spot from a git URL, a folder or a `.spot` file in the plugins folder, or with none each spot of `spots.lock`
+    /// that is missing (N1, N2).
+    case spotAdd(String?)
+    /// Takes a spot that `spot add` added out of the plugins folder.
+    case spotRemove(String)
     /// Opens the panel on the sheet of a spot.
     case spotOpen(String)
     /// Shows the whole text of a spot that comes with the app.
@@ -120,6 +125,11 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  settings and their keys. --core prints each spot that comes with the
                                                  app, and whether it is on.
     openspot spot on|off <id>...                 Turns spots that come with the app on or off.
+    openspot spot add [git url | folder | file.spot]
+                                                 Puts a spot in the plugins folder, a git one at its newest commit, and
+                                                 records it in spots.lock. With no source, it adds each spot of spots.lock
+                                                 that is missing, at its commit.
+    openspot spot remove <id>                    Takes out a spot that spot add added, and its record in spots.lock.
     openspot spot open <id>                      Opens the panel on the sheet of a spot.
     openspot spot review <id>                    Shows the whole text of a spot that comes with the app, and what of it
                                                  runs by itself.
@@ -239,6 +249,8 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("spot", "list") where rest == ["list", "--core"]: self = .spotList(core: true)
         case ("spot", "on") where rest.count > 1, ("spot", "off") where rest.count > 1:
             self = .spotTurn(ids: Array(rest.dropFirst()), on: rest[0] == "on")
+        case ("spot", "add") where rest.count <= 2: self = Self.changing(.spotAdd(rest.dropFirst().first), "openspot spot add", "changes your plugins folder", environment)
+        case ("spot", "remove") where rest.count == 2: self = Self.changing(.spotRemove(rest[1]), "openspot spot remove", "changes your plugins folder", environment)
         case ("setting", "list") where rest.count == 1: self = .settingList
         case ("setting", "change"):
             self = Self.setting(Array(rest.dropFirst()), sets: false, environment).map { call in

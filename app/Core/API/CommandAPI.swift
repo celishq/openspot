@@ -57,6 +57,19 @@ public final class CommandAPI: @unchecked Sendable {
                 await self.app?.configChanged()
                 return ""
             }
+        case .spotAdd(let source?):
+            return Self.answer {
+                let place = URL(fileURLWithPath: environment["PWD"] ?? FileManager.default.currentDirectoryPath, isDirectory: true)
+                let folder = PluginFolder.standard(environment: environment, enabled: [], disabled: [])
+                return try await SpotLock.standard(environment: environment).add(SpotSource(text: source, place: place), to: folder.url).added
+            }
+        case .spotAdd(nil):
+            return { CommandAnswer(errors: "openspot spot add needs a source.\n", code: 1) }
+        case .spotRemove(let id):
+            return Self.answer {
+                let folder = PluginFolder.standard(environment: environment, enabled: [], disabled: [])
+                return "Removed \(try SpotLock.standard(environment: environment).remove(id, from: folder.url).name).\n"
+            }
         case .appKeySet(let name, let key):
             return Self.answer {
                 guard let shortcut = Shortcut(text: key) else { throw PluginError.failed(1, "Openspot cannot use `\(key)`. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.") }
