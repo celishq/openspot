@@ -46,6 +46,9 @@ Code and tests name a rule by its ID.
 | D7 | When a press in another app takes the focus, the panel closes as the press ends. A drag of files that the press starts keeps it open, as a drag over the menu bar item does (D5): the other app keeps the focus, and the panel closes when the drag ends, unless D8 keeps it. |
 | D8 | A drop on a card with rows opens its sheet with the focus, and the panel stays open, so the person can act on what the drop added. The sheet holds the focus while the app that the drag came from lets go of it. A drop on any other card closes the panel. |
 | K2 | A capability's helper starts at its first call, and exits after 30 seconds with no call. The app does not track it. |
+| A25 | A change that the API writes to the config applies only what changed. A key holds the keys again, a spot that turns on or off adds or removes its card, and a value of a spot reads that spot again. The grid does not build again. |
+| A26 | An inline spot makes its JavaScript context and its thread at its first call, and drops them after 30 seconds with no call. Its calls go in the call log, the CPU time of its thread counts in `spot stats`, and Review shows its text. |
+| A27 | Settings, Spots and Updates read with one `openspot` process and no `jq`. |
 
 ## Sharing
 

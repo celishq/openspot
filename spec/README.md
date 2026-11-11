@@ -44,11 +44,11 @@ These rules come from the way Nostr writes its NIPs.
 
 | Word                                                                                                     | Kind                 | Spec |
 | -------------------------------------------------------------------------------------------------------- | -------------------- | ---- |
-| `title`, `icon`, `detail`, `size`, `read`, `drop`, `offers`, `answers`                                   | Header key           | 01   |
+| `title`, `icon`, `detail`, `size`, `read`, `every`, `on`, `emits`, `drop`, `offers`, `answers`          | Header key           | 01   |
 | `command`, `setting`                                                                                     | Header block         | 01   |
 | `view`                                                                                                   | Header key           | 03   |
 | `mode`: `once`, `stay`, `always`, `inline`                                                               | Header key           | 01   |
-| `sheet`, `panel`, a number, an event such as `app.front`, `clipboard`, `screen.wake`                     | Moment               | 01   |
+| `sheet`, `panel` in `read`; seconds in `every`; an event such as `app.front`, `clipboard`, `screen.wake` in `on` | Moment       | 01   |
 | `search`, `rows`, `float`                                                                                | Place                | 01   |
 | `read`                                                                                                   | Reserved call        | 01   |
 | `open`, `drop`, `drag`                                                                                   | Default id           | 01   |
@@ -60,7 +60,7 @@ These rules come from the way Nostr writes its NIPs.
 | `parent`, `hides`, `keyword`, `shortcut`, `file`                                                         | Row key              | 01   |
 | `grid`, `grid.<size>`, `main`, `title`, `detail`, `search`, `recents`, `toast`, `link`, `progress`, `select` | Head key | 01 |
 | `end`                                                                                                    | Head key             | 05   |
-| `call`, `reason`, `value`, `arg`, `stop`                                                                 | Stdin key            | 05   |
+| `call`, `arg`, `env.<name>`, `input`, `stop`                                                             | Stdin key            | 05   |
 | `title`, `detail`, `size`, `grid`, `opens`                                                               | Widget key           | 01   |
 
 The verbs and the row keys of each `openspot` noun, such as `screen` or `calendar`, are in `openspot help <noun>`.
@@ -71,3 +71,18 @@ An old script never sees a word that it did not ask for. To add a default id, a 
 or a block kind, add one word to one spec and to the registry. A new `openspot` noun gets its guide in `app/Help`. An old app skips a key that
 it does not know, and skips and reports a block that it does not know. A new default id reaches only a script that asks
 for it.
+
+## Gaps
+
+Where the code still differs from the rules of 11-11-2026. Each fix removes its row.
+
+| Rule              | Module that differs                                                                                  |
+| ----------------- | ---------------------------------------------------------------------------------------------------- |
+| C7, Y8, Y9, I6    | `StayLink`, `SpotAction.event`, `openspot.sh`, `InlineScript`, the staying and inline spots.          |
+| I7, A26           | `InlineScript` and `InlineLink`: no time limit, a context at scan, no log, no CPU time, no review.    |
+| K7, K8, A25, A27  | `CommandAPI`, `settings.sh`, `spots.sh`, `updates.sh`, `SpotsModel.configChanged`.                    |
+| C8                | `openspot.sh`, `InlineScript`, `SpotCheck`, each spot that prints a value from data.                 |
+| B6, B7            | `SpotFile`, `SpotRead`, `SpotCheck`, each spot with a number or an event in its `read`.             |
+| S12, S13          | `Client/main.swift`, `CommandSocket`.                                                                 |
+
+Open: a stop of a call that `openspot_serve` runs does not end it early, so a slow staying call runs to its end.

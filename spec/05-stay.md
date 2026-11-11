@@ -22,35 +22,36 @@ a model or a local server alive between calls. Each call reaches the running pro
 
 ## Calls on stdin
 
-Openspot writes each call to stdin as one block, then a blank line. `call=<n>` numbers the call, and a read has
-`reason=<word>` with the word that `OPENSPOT_REASON` gives in 01, and a read of an event with a value has `value=<value>`.
-One `arg` line follows for each argument of the same call in 01, in order. The values of the sheet follow, as stdin holds them in 01.
+Openspot writes each call to stdin as one block, then a blank line. The block holds the three parts of a call in 01 (C7):
+`call=<n>` numbers the call, an `arg` line gives each argument in order, an `env.<name>` line gives each variable of the
+call, such as `env.OPENSPOT_REASON=panel`, and one `input` line holds its stdin as one value, with each new line as `\n`
+(Y8).
 
 ```text
 call=4
-arg=wifi
-arg=home
-arg=false
-wifi=false
+arg=send
+input=peer=127.0.0.1:47800\nmessage=Hello\n
 
 ```
 
-`call`, `reason` and `arg` are reserved, so no block can take them as its id. Stdin stays open while the script runs.
+A value of the sheet lives inside `input`, so no id that an author picks can clash with a key of the block. Stdin stays
+open while the script runs.
 
-The shell helper of 01 reads the calls. `next` reads one call and fails at the end of stdin. It sets `call`, `reason` and
-`OPENSPOT_VALUE`, and `arg <n>` and `value <id>` give the arguments and the values of that call. After a stop block, `stop` holds the number
-of the call to stop.
+The shell helper of 01 reads the calls. `openspot_serve main "$@"` reads each block, runs `main` with its arguments, its
+variables and its stdin, as a script that runs once gets them, and then prints `end=<n>` (Y9). So one `main` runs unchanged
+with each mode. It runs one call at a time.
 
 ## Frames on stdout
 
 The script prints frames at any time, also with no call, such as when a message comes from another process. Each frame
 follows the rule of 01: a frame with a block is the whole picture, and a frame of only a head carries effects. The script
 ends each call with `end=<n>` in the head of a frame (Y7), so a frame can end a call with a new picture, or with effects
-alone.
+alone. A frame belongs to the oldest call that has not ended, and with no such call to none, so a frame of only `end=<n>`
+ends a call with the frames that it printed before (Y8).
 
 A call shows as running until its `end`, and a second press sends the block `stop=<n>`. A call that never ends runs until
 the script ends. A newer search, or a newer text of the main search for a spot with `answers`, sends `stop=<n>` for the one before it,
-whose answer then changes nothing (I2).
+whose answer then changes nothing (I2). `openspot_serve` lets a stopped call run to its end, and its frames change nothing.
 
 ## Its life
 
@@ -69,7 +70,7 @@ what must survive goes in `OPENSPOT_DATA`.
 | ------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
 | A staying script says so in its header, because a script that runs once reads stdin to its end before it answers. | A script that keeps running after its first answer stays. |
 | One `mode` key holds the life of the process: `stay` while something wants it, `always` from start to quit. | A `launch` moment beside `mode=stay`.                        |
-| A call holds the same `arg` words as the arguments of a call in 01, so one `case` handles both. | `name`, `value` and `field.<id>`.                          |
+| A call holds the three parts of a call in 01, and `openspot_serve` gives them to one `main` as a once script gets them (Y8, Y9). | `call`, `reason`, `value` and `arg` lines that a script reads with `next` and `arg`. |
 | A frame follows the one rule of 01, so a peer's frame with a block is a new picture.  | A frame that merges what it prints.                        |
 | A stop is a block of its own, `stop=<n>`, so no id that an author picks can clash with it. | A call named `stop`.                                       |
 | The script owns its sockets and its peers, and the app owns only stdio.               | A network capability in the app.                           |

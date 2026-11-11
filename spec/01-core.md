@@ -30,7 +30,7 @@ The script says what it has and what it offers. Openspot and the person decide w
 A line is `key=value`, and it splits at its first `=`. A blank line ends a block, and a line `---` ends a frame. In a
 value, `\n` stands for a new line and `\\` for a backslash. These are the only escapes. An empty value counts as no value.
 A value is never split again, so a URL or a colon stays whole in it. Only a list of plain words splits at commas, such as
-`read=panel,60`. A thing with its own title or picture is a block of its own, such as an `option` after a `choice`.
+`read=panel,sheet`. A thing with its own title or picture is a block of its own, such as an `option` after a `choice`.
 
 The first key of a block names its kind, and its value is the id of the block (U2). The one block whose first key names
 no kind is the head, which holds the drawing and the effects of the frame. A line with an unknown key is skipped.
@@ -55,7 +55,10 @@ open -a Calendar
 | `icon`     | Its picture, as for a block. A path that does not start with `/` starts at the folder of the script.                     |
 | `detail`   | The second line.                                                                                                         |
 | `size`     | The size it prefers: `wide` (the default), `small`, `square`, `strip` or `large`. The grid can change it, and the person's choice wins (F9). |
-| `read`     | When a read is safe: `sheet`, `panel`, a number of seconds or an event, split by commas (B1).                           |
+| `read`     | The places where a read is safe: `sheet` and `panel`, split by commas (B6).                                              |
+| `every`    | A number of seconds: a read that often while something wants it (B6).                                                   |
+| `on`       | The events that read it, split by commas, such as `on=clipboard` (B1, B6).                                               |
+| `emits`    | The events that it raises with `openspot event emit`, split by commas (B7).                                              |
 | `drop`     | The files that its card takes: extensions such as `mov,mkv`, `folder`, or `*`.                                          |
 | `offers`   | The places that it is made for, split by commas: `search`, `rows` or `float`.                                           |
 | `answers`  | A regular expression of the texts of the main search that it answers, such as `^[0-9(]` (A1). See Places.               |
@@ -95,7 +98,7 @@ place.
 
 `offers` names the places that a spot is made for:
 
-- `search` shows the spot and its rows in the main search. It needs `panel` or a number in its `read`. Openspot ranks the
+- `search` shows the spot and its rows in the main search. It needs `panel` in its `read`, or an `every`. Openspot ranks the
   rows by the person's picks.
 - `rows` shows its rows in the main search, but not the spot itself, and the spot has no card on the grid.
 - `float` lets the person give the spot a key or a shake of the pointer, in Settings (T1). That key or shake shows the
@@ -121,45 +124,60 @@ they go at once when the pattern no longer matches (A3). A pick of a row is `<sc
 `answers` and no `read` has no card and shows only its answers. A staying script answers each text as a call of its own (I2). `openspot calc solve
 <words>...` prints the answer of a sum, a conversion or a date as a row, so a spot can print it as it is.
 
-A spot with a number or an event in its `read`, or with `mode=stay` or `always`, and a main `text`, `number`, `gauge` or `graph` can show in the menu bar, when the
-person puts it there. Printing nothing removes the item until the next read. A spot with a number in its `read` has no
-card on the grid until the person shows it (F7).
+A spot with an `every` or an `on`, or with `mode=stay` or `always`, and a main `text`, `number`, `gauge` or `graph` can show in the menu bar, when the
+person puts it there. Printing nothing removes the item until the next read. A spot with an `every` has no card on the grid
+until the person shows it (F7).
 
 ## When Openspot reads
 
-`read` lists when a read is safe, split by commas, such as `read=panel,60`. At each of these moments Openspot calls
-`<script> read`.
+Three keys say when Openspot calls `<script> read`, and each one holds one type of word, so that a wrong word is a fault
+that names its key (B6).
 
-| `read`   | Openspot reads it                                                   |
-| -------- | ------------------------------------------------------------------- |
-| none     | Never. A click runs `<script> open`.                                |
-| `sheet`  | When its sheet opens.                                               |
-| `panel`  | Each time the panel opens, and once as the app starts.              |
-| a number | Every that many seconds while something wants it, and when the Mac wakes. |
-| an event | Each time the event occurs (B1).                                    |
+| Key                | Openspot reads it                                                         |
+| ------------------ | ------------------------------------------------------------------------- |
+| none               | Never. A click runs `<script> open`.                                      |
+| `read=sheet`       | When its sheet opens.                                                     |
+| `read=panel`       | Each time the panel opens, and once as the app starts.                    |
+| `every=<seconds>`  | Every that many seconds while something wants it, and when the Mac wakes. |
+| `on=<event>,...`   | Each time one of the events occurs (B1).                                  |
 
 An event is a word with a dot, or `clipboard`. Openspot raises `app.front` when another app comes to the front, with its
 bundle ID as the value, `clipboard` when the clipboard changes, `screen.wake` when the screen wakes, and `app.update` when it
 has downloaded an update, with its version as the value (B2). `openspot
 event emit <event> [value]` raises any event in the running app, from a script or from a terminal, and each spot that
-lists it reads (B3). With the app closed, it fails and changes nothing. `OPENSPOT_REASON` gives the event, and
-`OPENSPOT_VALUE` its value (B4). A spot that lists an event reads only while something wants it, as for a number, and a spot that lists only events reads
-once when something starts to want it (B5). `app.update` reads each spot that lists it at once, wanted or not.
+lists it in `on` reads (B3). With the app closed, the command starts it first (S12). `OPENSPOT_REASON` gives the event, and
+`OPENSPOT_VALUE` its value (B4). A spot with an `on` reads only while something wants it, as for `every`, and a spot with an
+`on` and no `read` or `every` reads once when something starts to want it (B5). `app.update` reads each spot that lists it
+at once, wanted or not.
+
+A spot that raises its own event names it in `emits`, such as `emits=music.track`. `openspot check` reports each name in an
+`on` that Openspot does not raise and that no spot in the folder names in its `emits`, and says how to fix it (B7).
 
 ## Modes
 
 `mode=once` starts a process for each call. `mode=stay` keeps one process that takes each call on stdin while something
 wants it, and `mode=always` keeps it from the start of the app to its quit (05) (I1). A staying spot can answer the main
-search: each text is a call with its own id, and only the answer to the newest one shows (I2).
+search: each text is a call with its own id, and only the answer to the newest one shows (I2). A call has the same three
+parts in each mode (C7).
 
 `mode=inline` runs a JavaScript file inside the app, such as `calc.js`, with its header in `//` lines (I3). The file
-defines `read(reason, text)`, and may define `open(id)` and the other calls, and each one returns the text of a frame.
-`openspot.call(["calc", "solve", "2+2"])` asks the openspot command and returns `{ stdout, code }`, and a second argument
-gives its stdin (I4). `openspot.input` holds the stdin of the call, and `openspot.value` the value of its event. A `.js`
-file with no `mode=inline` is no spot. An inline spot has no files, no network and no process of its own. It runs on a thread of its own,
-one call at a time, and a call that a newer one stopped before it ran does not run. Openspot waits 2 ms for its frame in
-the turn of the key, and shows a later frame in the next turn, with the last rows kept until then (I5). A function that
-never returns keeps that thread until the app quits, and the spot then answers no more.
+defines `main(args, env, input)`, which gets the three parts of each call as an array, an object and a string, and returns
+the text of a frame (I6). `openspot.call(["calc", "solve", "2+2"])` asks the openspot command and returns `{ stdout, code }`,
+and a second argument gives its stdin (I4). `openspot.frame(object)` writes an object as one block (C8). A `.js` file with no
+`mode=inline` is no spot. An inline spot has no files, no network and no process of its own. It runs on a thread of its
+own, one call at a time, and a call that a newer one stopped before it ran does not run. Openspot waits 2 ms for its frame
+in the turn of the key, and shows a later frame in the next turn, with the last rows kept until then (I5). A call has 10
+seconds. After that it fails with `It took too long.`, and the spot answers its next call (I7).
+
+```js
+// title=Hello
+// mode=inline
+// read=sheet
+function main(args, env, input) {
+  if (args[0] === "read") return openspot.frame({ row: "hi", title: `Hello from ${env.OPENSPOT_REASON}` })
+  return ""
+}
+```
 
 A read must be safe at each moment that its header lists, and only its author can promise this. A script has one read
 at a time (M1). `OPENSPOT_REASON` gives the reason: `panel`, `sheet`, `timer`, `search` or `change` (M6). Something wants
@@ -177,18 +195,23 @@ a script while its sheet, a widget or the menu bar shows it, or while the open p
 | `<script> <command>`                   | A key that the person gave a command is pressed.                       |
 
 `read` is the only reserved call. `open`, `drop` and `drag` are default ids, and a block cannot use one, but a button can
-use `open`. `call`, `reason` and `arg` are reserved ids too (05). A new default id reaches only a script that asks for it.
+use `open`. A new default id reaches only a script that asks for it.
 
 A drop on a card with a running call waits for that call (D4). A drop on a card with rows opens its sheet, and the answer
 to the drop can select the row that it added with `select=` (D8). Presses of the keys of one script run one at a time, in
 order, and never stop a call. Only the person gives a command its key (P8).
 
-A script gets:
+A call has three parts in each mode, as a CGI program gets them (C7):
 
-- **Arguments:** the id and its values. A value over 64 KB goes on stdin only (C6).
+- **Arguments:** the id and its values, so that `case "$1"` handles each call. A value over 64 KB goes on stdin only (C6).
+- **Variables:** `OPENSPOT_REASON` and `OPENSPOT_VALUE` of a read (M6, B4), with `OPENSPOT_ID`, the ID of its spot, such as
+  `home/coffee`, `OPENSPOT_DATA`, a folder for its files, shared by one plugin folder, `OPENSPOT_SH`, the shell helper, and
+  `PATH`, with the `openspot` command first.
 - **Stdin:** what the person filled in, as one block. A value that is not a field of the sheet comes as `value=`.
-- **Environment:** `OPENSPOT_ID`, the ID of its spot, such as `home/coffee`. `OPENSPOT_DATA`, a folder for its files,
-  shared by one plugin folder. `OPENSPOT_SH`, the shell helper. `PATH`, with the `openspot` command first.
+
+`mode=once` gets them as its arguments, its environment and its stdin. `mode=stay` gets them in one block on stdin, and the
+shell helper gives them to a function as a once script gets them (Y8, Y9). `mode=inline` gets them as the arguments of
+`main` (I6).
 
 ```sh
 #!/bin/sh
@@ -201,7 +224,9 @@ esac
 ```
 
 The shell helper gives `esc <text>`, which writes text as a value, and `value <id>`, which prints one value from stdin.
-Loading it reads all of stdin. In a staying script it gives `next` and `arg <n>` for each call instead (05).
+`openspot_kv <key> <value>` prints one line with its value written for you, and `openspot_row <id> <title> [detail] [icon]`
+prints one row (C8). `openspot_serve <function> "$@"` runs the function with the three parts of each call: once in a script
+that runs once, and for each call in a staying script (Y9). Loading it reads all of stdin, except in a staying script.
 
 ```sh
 #!/bin/sh
@@ -220,6 +245,10 @@ stdin, and prints the whole output again, or nothing.
 - A read that ends with no picture shows nothing. Another call that ends with no picture makes Openspot read the script
   once (M4).
 - Openspot draws a change at once, and drops the answer to a call that a newer change has outdated (U10).
+- A value from data goes through a helper: `openspot_kv`, `openspot_row` or `esc` in a shell, and `openspot.frame` in
+  JavaScript. A helper writes each new line and backslash of a value, so that a value never adds a line or a block.
+  `openspot check` warns of a block with a line that has no `=`, or with a key twice that only a list repeats, as a value
+  with a new line prints (C8).
 
 A call shows its progress with `progress=<0 to 1>` in a head, such as `progress=0.42`, and `title` and `detail` in that
 head show on the spot only while the call runs. Openspot reads the codes `ESC ] 9;4;1;<percent>` as `progress` and
@@ -417,7 +446,7 @@ A press on a card area that is not a control opens the spot's sheet, or calls `<
 
 ## Metrics and widgets
 
-A metric is a spot with a number in its `read`, and its main block is a `text`, a `number`, a `gauge` or a `graph`. A
+A metric is a spot with an `every`, and its main block is a `text`, a `number`, a `gauge` or a `graph`. A
 widget or the menu bar can show any script with a `read`, by its ID (H1).
 
 ```sh
@@ -481,26 +510,40 @@ each (O3).
 
 ## The openspot command
 
-A capability is `openspot <noun> <verb>`, and it works the same from a script and from a terminal (K1). While the app
-runs, the command asks it over a socket, so a call starts no second app and finds its data ready (S1). With the app
-closed, the command does the work itself, and gives the same output (S2). `openspot help`
-lists each one, and `openspot help <noun>` prints the guide of a noun, such as `screen` or `calendar`. A capability that
-cannot answer prints `status=<word>`. One that keeps state keeps it in its own helper, which a script never starts or
-stops (K3). When macOS already has a command, such as `pbcopy` or `open`, use it.
+A capability is `openspot <noun> <verb>`, and it works the same from a script and from a terminal (K1). A call is one of two
+kinds (S12):
+
+- A call that reads or writes only files, or asks the Mac, such as `spot list`, `setting get`, `calc solve` or
+  `screen shot`, gives the same answer with the app or without it. While the app runs, the command asks it over a socket,
+  so a call starts no second app and finds its data ready (S1). With the app closed, the command does the work itself (S2).
+- A call that needs the state of the running app, such as `app status`, `app quit`, `spot open`, `spot show`, `spot review`,
+  `spot stats`, `setting change`, `event emit` or `update check`, always goes to the app. With the app closed, the command
+  starts it in the background and waits up to 10 seconds for it. After that it fails, and says to open Openspot.
+
+Ctrl-C stops a call: the command closes its connection, and the app stops the work of that call, which then changes
+nothing (S13). `openspot help` lists each capability, and `openspot help <noun>` prints the guide of a noun, such as
+`screen` or `calendar`. A capability that cannot answer prints `status=<word>`. One that keeps state keeps it in its own
+helper, which a script never starts or stops (K3). When macOS already has a command, such as `pbcopy` or `open`, use it.
+
+`openspot batch` reads one call per line from stdin, with its words split at spaces, and prints the output of each call
+and then a line `---`. It stops at the first call that fails, with the stderr and the code of that call. It takes only a
+call that prints data, so a read can ask several things with one process (K7). `--frame` makes `app status`, `spot list`
+and `setting list` print `key=value` blocks in place of JSON, each value written as in a frame, so that a shell reads them
+with `while IFS== read -r key value` and needs no `jq` (K8).
 
 A command that waits for the person, such as `openspot color pick` or `openspot folder pick`, fails in a read (K4). Run it
 from a pick or an action.
 
 `openspot guide` prints this guide. `openspot spot new <name> --from <kind>` writes a working spot to change, where a kind
 is `button`, `list`, `number` or `form`. `openspot spot run <id> [call] [value]...` makes one call as Openspot makes it,
-with the same environment, and prints each frame, then stderr, and exits with the code of the script. With no call, it
+with the same three parts, and prints each frame, then stderr, and exits with the code of the script. With no call, it
 reads a spot that has a `read`, and opens one that has none. `openspot spot log <id>` prints the last calls that Openspot
 made to a spot, each with its stdin, stdout, stderr and exit code. A timed read or a search that does not fail
 leaves no record. `openspot spot stats` prints, for each spot, its calls, the time they took, its CPU time and its last
 fault (G1).
 
 The spots of the app, such as Settings, Spots and New spot, are scripts in its `openspot` folder that use this command
-like any other spot, and are always on. `openspot spot list [--core]` prints the spots as JSON, `spot on|off <id>...`
+like any other spot, and are always on. `openspot spot list [--core] [--frame]` prints the spots as JSON, `spot on|off <id>...`
 turns spots that come with the app on or off, `spot open <id>` opens a spot's sheet, and `spot review <id>` shows the text
 of a spot that comes with the app. `openspot key set` gives keys, `menubar on|off <id>` places a spot in the menu bar,
 `setting list` prints each value that spots keep, `setting change <key>` runs a value's action in the panel, `app status`
@@ -574,8 +617,14 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | The header is a frame in comments, so a command or a setting is a block, as in the output.                  | A `command` line and a `settings` list of colon fields.                     |
 | A person can see and stop each call, so a call has no time limit.                                           | A `job` key.                                 |
 | A script runs once for each call, unless its header gives another `mode` (I1).                                       | A process that stays by default.             |
+| A call is the same arguments, variables and stdin in each mode, as CGI and the socket of the API give them (C7).    | `call=` blocks read with `next`, and a JavaScript function for each id. |
+| A helper writes each value from data (C8).                                                                  | An author who escapes each value by hand.    |
 | The header is in each file, and a scan runs nothing.                                                        | A manifest.                                  |
-| `read` lists the moments when a read is safe, because only the author knows what a read costs.             | `read=true`, with moments that the app picks. |
+| `read` lists the places where a read is safe, because only the author knows what a read costs.             | `read=true`, with moments that the app picks. |
+| Each key of the reads holds one type: places in `read`, seconds in `every` and events in `on` (B6).          | One `read` list of places, numbers and events, where a typo is an event. |
+| A spot names the events that it raises in `emits`, so that a check can know each name (B7).                | Any word with a dot as an event.             |
+| A call that needs the app starts it, and a call of files runs where it is (S12).                           | A process of its own that answers in part, or fails. |
+| One call of `openspot batch` asks several things, and `--frame` prints them as frames (K7, K8).              | A process and a `jq` for each thing.         |
 | The person gives each letter and puts each spot in the menu bar, and the header only offers places.         | `shortcut`, `tray` and `global` in the header, which two shared spots could both claim. |
 | One `offers` key lists the places a spot is made for.                                                       | A key for each place.                        |
 | A pattern in the header says which text a spot answers, so a scan learns it with no run, and a key starts no other script. | Each script asked at each key. |
