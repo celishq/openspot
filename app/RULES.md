@@ -40,6 +40,7 @@ Code and tests name a rule by its ID.
 | G1 | A running call shows a ring from the `value` of its last frame, or a spinner with no `value`. |
 | G3 | The menu bar item shows the oldest running call and how many run. A click on it opens the panel with that spot selected. |
 | G4 | The `title` and `detail` of a call's last frame of only a head show on the spot only while its call runs. |
+| G5 | Today's stats stay in memory, and go to `stats/<day>.json` in the config folder at most every 5 seconds and at quit, never on each call. A start reads today's file again, and drops each file older than 90 days (Z10). |
 | D2 | During a drag, only a card whose `drop` takes every dragged file shows it and takes the drop. |
 | D6 | A `drop` call runs as any other call does. |
 | D5 | A click on a card with `drop` and no sheet opens a file chooser, and the choice runs the same call. A drag over the menu bar item opens the panel with no change of focus, and a drop closes it, unless D8 keeps it. |

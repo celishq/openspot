@@ -64,6 +64,7 @@ open -a Calendar
 | `answers`  | A regular expression of the texts of the main search that it answers, such as `^[0-9(]` (A1). See Places.               |
 | `view`     | A SwiftUI file beside the script, such as `view=cups.swift` (03).                                                        |
 | `mode`     | How it runs: `once` (the default), `stay`, `always` or `inline` (I1).                                                    |
+| `uses`     | The powers that it uses, split by commas: `app`, `update`, `spots`, `settings`, `screen`, `clipboard`, `calendar`, `network` and `files` (Z3). |
 
 | Block           | Meaning                                                                                              |
 | --------------- | ---------------------------------------------------------------------------------------------------- |
@@ -205,8 +206,8 @@ A call has three parts in each mode, as a CGI program gets them (C7):
 
 - **Arguments:** the id and its values, so that `case "$1"` handles each call. A value over 64 KB goes on stdin only (C6).
 - **Variables:** `OPENSPOT_REASON` and `OPENSPOT_VALUE` of a read (M6, B4), with `OPENSPOT_ID`, the ID of its spot, such as
-  `home/coffee`, `OPENSPOT_DATA`, a folder for its files, shared by one plugin folder, `OPENSPOT_SH`, the shell helper, and
-  `PATH`, with the `openspot` command first.
+  `home/coffee`, `OPENSPOT_DATA`, a folder for its files, shared by one plugin folder, `OPENSPOT_SH`, the shell helper,
+  `OPENSPOT_TOKEN`, which marks its calls of `openspot` as the spot's (Z2), and `PATH`, with the `openspot` command first.
 - **Stdin:** what the person filled in, as one block. A value that is not a field of the sheet comes as `value=`.
 
 `mode=once` gets them as its arguments, its environment and its stdin. `mode=stay` gets them in one block on stdin, and the
@@ -528,7 +529,8 @@ kinds (S12):
 Ctrl-C stops a call: the command closes its connection, and the app stops the work of that call, which then changes
 nothing (S13). `openspot help` lists each capability, and `openspot help <noun>` prints the guide of a noun, such as
 `screen` or `calendar`. A capability that cannot answer prints `status=<word>`. One that keeps state keeps it in its own
-helper, which a script never starts or stops (K3). When macOS already has a command, such as `pbcopy` or `open`, use it.
+helper, which a script never starts or stops (K3). When macOS already has a command, such as `open`, use it. For the screen
+and the clipboard, use `openspot screen` and `openspot clipboard`, so that the person sees each use (Z5).
 
 `openspot batch` reads one call per line from stdin, with its words split at spaces, and prints the output of each call
 and then a line `---`. It stops at the first call that fails, with the stderr and the code of that call. It takes only a
@@ -545,8 +547,7 @@ is `button`, `list`, `number` or `form`. `openspot spot run <id> [call] [value].
 with the same three parts, and prints each frame, then stderr, and exits with the code of the script. With no call, it
 reads a spot that has a `read`, and opens one that has none. `openspot spot log <id>` prints the last calls that Openspot
 made to a spot, each with its stdin, stdout, stderr and exit code. A timed read or a search that does not fail
-leaves no record. `openspot spot stats` prints, for each spot, its calls, the time they took, its CPU time and its last
-fault (G1).
+leaves no record. `openspot spot stats` prints what each spot cost and used, day by day (G1, Z10).
 
 The spots of the app, such as Settings, Spots and New spot, are scripts in its `openspot` folder that use this command
 like any other spot, and are always on. `openspot spot list [--core] [--frame]` prints the spots as JSON, `spot on|off <id>...`
@@ -561,9 +562,10 @@ the default config gives `cmd+n` to New spot and `cmd+,` to Settings.
 `openspot spot add <git url | folder | file.spot>` puts a spot in the plugins folder, and `openspot spot remove <id>` takes
 it out (N1). A git repository goes into a folder named after it, at its newest commit and with no `.git`. A folder is
 copied, and a `.spot` file is written as a drop writes it. A name that the plugins folder has already is a fault.
-`spots.lock` in the config folder lists the source, the commit and the paths of each added spot. `openspot spot add` with
-no source adds each spot of `spots.lock` that is missing, a git one at its commit (N2). `spot remove` moves to the Trash only a
-spot that `spot add` added, with all of its paths, and drops its line in `spots.lock`.
+`spots.lock` in the config folder lists the source, the commit, the paths, a hash of the files and the `uses` of each added
+spot. `openspot spot add` with no source adds each spot of `spots.lock` that is missing, a git one at its commit (N2), and
+`spot add` of a source that `spots.lock` has already updates its spot, a git one to its newest commit (Z7). `spot remove`
+moves to the Trash only a spot that `spot add` added, with all of its paths, and drops its line in `spots.lock`.
 
 `openspot render [--view <file.swift>] <file.png>` draws the sheet that stdin holds, with the plugin's view from a Swift
 file, and `openspot render --card <size> <file.png>` draws its card at a size such as `wide`, so you can see a result
@@ -596,6 +598,91 @@ done. The action can answer with a form, and the person can remove a value with 
 the person there, such as a folder, and keep what the script makes, such as a cache, in `OPENSPOT_DATA` (K6). The Settings
 spot also lists each value that the header does not name, so the person can remove it. `openspot folder pick` shows the
 folder window of macOS and prints the folder that the person picks, or nothing after Cancel.
+
+## Trust
+
+A spot runs with the person's rights, as any program that they start (Z1). Openspot asks nothing during daily use and
+blocks no call. It shows what a spot can do at the moment of trust, which is an add or an update, and it shows each use of
+a power after it happens, so that the person can undo it.
+
+```sh
+#!/bin/sh
+# title=Coffee
+# uses=app
+openspot app quit
+```
+
+Each process of a spot, and each inline spot, gets `OPENSPOT_TOKEN`: a random token for that process or that inline link,
+which Openspot maps to the spot's ID while it runs (Z2). A call of `openspot` with that token is the spot's call, and the
+children of a process inherit it. A call with no token, or with one that Openspot does not know, is the person's call. The
+socket of the API is a file with mode `0600`, so only the person's own processes reach it.
+
+`uses` names the powers that a spot uses (Z3). It is a closed set, and an unknown word is a fault that names the key.
+
+| Use         | The calls that need it                                                                                 |
+| ----------- | ------------------------------------------------------------------------------------------------------ |
+| `app`       | `app login`, `app link`, `app quit`, `key set` and `menubar`                                           |
+| `update`    | `update check` and `update install`                                                                    |
+| `spots`     | `spot add`, `spot remove`, `spot on`, `spot off`, `spot new`, `spot run` and `spot log`                |
+| `settings`  | `setting list`, `setting change`, and `setting get` or `setting set` of another spot                   |
+| `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`       |
+| `clipboard` | `clipboard copy` and `clipboard paste`                                                                 |
+| `calendar`  | each call of `calendar` and `reminders`                                                                |
+| `network`   | No call. It says that the spot reaches the network, which a review shows and Careful mode allows (Z8). |
+| `files`     | No call. It says that the spot writes outside its data folder, which Careful mode allows (Z8).         |
+
+Every other call, such as `calc solve`, `setting get` of its own spot or `spot stats`, needs no use.
+
+A spot's call that needs a use that its header does not name still runs (Z4). Openspot then shows one calm toast for each
+spot, use and day, such as ``Coffee quit Openspot without `uses=app` in its header. Add it to stop this note.`` The person's
+own calls never show it. `openspot check` reports nothing for a missing use, because only a run shows which calls a spot
+makes.
+
+`openspot screen` and `openspot clipboard` count each use, and `screencapture` or `pbcopy` run directly do not (Z5).
+
+Before a person adds a spot, its review shows its title, the `uses` that it names, and a line `Can also` with what its text
+seems to do and does not name (Z6): it reaches the network (`curl`, `wget`, `nc`), it deletes files (`rm`), it runs
+`screencapture` or `pbcopy` directly, which `openspot screen` and `openspot clipboard` replace, or it calls `openspot` for a
+use that `uses` does not name. The review reads the text and runs none of it. It warns and never refuses.
+
+An update compares the `uses` of the new version with those of the one in place (Z7). When none grew, it applies quietly.
+When one grew, the review of a `.spot` file starts with `This version adds: network`, and `openspot spot add` prints that
+line and changes nothing until it runs again with `--yes`.
+
+Careful mode is a setting of the person, off by default (Z8). It runs each process of a spot under `sandbox-exec`: no
+network unless `uses=network`, writes only to its data folder and the temp folder unless `uses=files`, and reads
+everywhere. An inline spot has no files and no network in either mode. Without Careful mode, the data folder alone is no
+boundary: a spot reads and writes each file that the person can (Z9).
+
+### Stats
+
+```text
+openspot spot stats [--days N] [--spot id] [--frame|--json]
+```
+
+Openspot keeps what each spot cost and used, one file for each day, for 90 days (Z10). For each spot and day it counts the
+runs, the failures, the CPU seconds, the bytes read from and written to the disk, the wakeups, and each use, such as
+`screen.shot` or `clipboard.copy`. It keeps the last fault of each spot, and a short log of the uses of a power: the time,
+the spot, the call and whether its header names the use. It does not count the network: a spot's `network` shows as
+declared.
+
+`--days N` sums the last N days, today included, and 1 is the default. `--spot <id>` keeps one spot. The plain output is
+for a person. `--frame` prints a `row=<id>` block for each spot, the most CPU time first, which a sheet can draw as it is,
+then a `power=<n>` block for each use of a power, the newest first. `--json` prints the days as JSON. Today's numbers are
+live in the running app, and the command reads the files when the app is closed (Z11).
+
+| Row key              | Meaning                                                              |
+| -------------------- | -------------------------------------------------------------------- |
+| `title`, `detail`    | The name of the spot, and its numbers in words.                      |
+| `runs`, `failures`   | The calls that ended, and those of them that failed.                 |
+| `cpu`, `seconds`     | The CPU seconds of its processes, and the wall time of its calls.    |
+| `read`, `written`    | The bytes that its processes read from and wrote to the disk.        |
+| `wakeups`            | The times its processes woke the CPU.                                |
+| `use.<name>`         | The count of one use, such as `use.screen.shot=2`.                   |
+| `network`            | `declared` when its header names `network`.                          |
+| `fault`, `tone`      | Its last fault, with `tone=bad`.                                     |
+
+A `power` block holds `time`, `spot`, `call`, such as `app.quit`, and `declared`, `true` or `false`.
 
 ## Messages
 
@@ -636,7 +723,11 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | A pattern in the header says which text a spot answers, so a scan learns it with no run, and a key starts no other script. | Each script asked at each key. |
 | An answer is the call of a search that the script does, so a script has one shape for both.                 | A new call, such as `answer <text>`.         |
 | Answers show first, because they are about the whole text that the person typed.                            | A rank that each spot gives its rows.        |
-| A plugin runs with the full access of the person.                                                           | A `uses` key, or a sandbox.                  |
+| A plugin runs with the full access of the person, names its powers in `uses`, and each use shows after it happens (Z1, Z4). | A prompt at each use, a refused call, or a sandbox by default. |
+| A spot's call is known by a token that Openspot gives its process (Z2).                                     | `OPENSPOT_ID`, which any process can set.    |
+| A missing use shows when a run makes it, and `openspot check` does not guess it (Z4).                      | A check that reads the text for calls.       |
+| The person decides at an add or an update, which shows the uses and what grew (Z6, Z7).                     | A review of each call.                       |
+| Careful mode is a sandbox that the person turns on, and it allows what `uses` names (Z8).                  | A data folder that claims to be a boundary.  |
 | A script keeps a setting through `openspot setting`, and asks for it when it needs it.                      | A `setting` header key with a kind, and required settings. |
 | A component is `<kind>=<id>`, so a block says what it is and where it goes in one line.                     | `part=<id>` with a kind found from its keys. |
 | The app owns each canvas, and a drawing only names areas, so each result stays even.                        | Sizes, gaps and colours in points.           |

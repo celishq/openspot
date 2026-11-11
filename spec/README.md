@@ -44,7 +44,8 @@ These rules come from the way Nostr writes its NIPs.
 
 | Word                                                                                                     | Kind                 | Spec |
 | -------------------------------------------------------------------------------------------------------- | -------------------- | ---- |
-| `title`, `icon`, `detail`, `size`, `read`, `every`, `on`, `emits`, `drop`, `offers`, `answers`          | Header key           | 01   |
+| `title`, `icon`, `detail`, `size`, `read`, `every`, `on`, `emits`, `drop`, `offers`, `answers`, `uses`  | Header key           | 01   |
+| `app`, `update`, `spots`, `settings`, `screen`, `clipboard`, `calendar`, `network`, `files`              | Use                  | 01   |
 | `command`, `setting`                                                                                     | Header block         | 01   |
 | `view`                                                                                                   | Header key           | 03   |
 | `mode`: `once`, `stay`, `always`, `inline`                                                               | Header key           | 01   |
@@ -52,7 +53,7 @@ These rules come from the way Nostr writes its NIPs.
 | `search`, `rows`, `float`                                                                                | Place                | 01   |
 | `read`                                                                                                   | Reserved call        | 01   |
 | `open`, `drop`, `drag`                                                                                   | Default id           | 01   |
-| `OPENSPOT_ID`, `OPENSPOT_REASON`, `OPENSPOT_VALUE`, `OPENSPOT_DATA`, `OPENSPOT_SH`                        | Environment variable | 01   |
+| `OPENSPOT_ID`, `OPENSPOT_REASON`, `OPENSPOT_VALUE`, `OPENSPOT_DATA`, `OPENSPOT_SH`, `OPENSPOT_TOKEN`      | Environment variable | 01   |
 | `openspot <noun> <verb>`, `openspot help <noun>`                                                         | Command              | 01   |
 | `text`, `number`, `gauge`, `graph`, `picture`, `switch`, `slider`, `field`, `choice`, `option`, `hotkey`, `button`, `section`, `repeat`, `row` | Block kind | 01 |
 | `view`                                                                                                   | Block kind           | 03   |
