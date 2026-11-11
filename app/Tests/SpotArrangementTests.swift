@@ -124,8 +124,8 @@ final class SpotArrangementTests: XCTestCase {
         let sizes: [SpotSize] = [.square, .small, .small, .wide, .small]
 
         XCTAssertEqual(SpotGrid().nextPlace(of: 0, in: sizes, step: 1), 1)
-        XCTAssertEqual(SpotGrid().nextPlace(of: 1, in: [.small, .square, .small, .small, .square], step: 1), 4)
-        XCTAssertNil(SpotGrid().nextPlace(of: 1, in: [.small, .square, .small, .small], step: 1))
+        XCTAssertEqual(SpotGrid().nextPlace(of: 1, in: [.small, .square, .small, .small, .square], step: 1), 3)
+        XCTAssertNil(SpotGrid().nextPlace(of: 1, in: [.small, .square, .small], step: 1))
     }
 
     func testAMoveStepFindsNoPlaceAtTheEndOfTheGrid() {
@@ -140,5 +140,40 @@ final class SpotArrangementTests: XCTestCase {
         XCTAssertEqual(Spot(id: "w", name: "W", url: url, kind: .widget).sizes, [])
         let updates = ShippedSpot.commands(folder: url, guide: url, app: "", update: UpdateSpot(version: "1", runningWork: { 0 }, check: {}, restart: {}))
         XCTAssertFalse(updates[0].sizes.contains(.small))
+    }
+
+    func testOnlyTheBuiltInsThatSayItChangeKeysReadOnAnUpdateOrTakeAShake() {
+        let url = URL(fileURLWithPath: "/bin/true")
+        let commands = ShippedSpot.commands(folder: url, guide: url, app: "", update: UpdateSpot(version: "1", runningWork: { 0 }, check: {}, restart: {}))
+        let settings = commands.first { $0.id == ShippedSpot.settingsID }
+        let updates = commands.first { $0.id == "openspot/updates" }
+
+        XCTAssertEqual(commands.filter(\.setsKeys).map(\.id), [ShippedSpot.settingsID])
+        XCTAssertEqual(commands.filter(\.readsOnUpdate).map(\.id), ["openspot/updates"])
+        XCTAssertEqual(settings?.shipped?.takesShake("key:apps:open"), true)
+        XCTAssertEqual(settings?.shipped?.takesShake("setting:apps:size"), false)
+        XCTAssertEqual(updates?.shipped?.takesShake("key:apps:open"), false)
+    }
+
+    func testSpotsOpensNewSpotFromARowReviewsCodeAndChangesSpotsWhileSettingsChangesASetting() {
+        let url = URL(fileURLWithPath: "/bin/true")
+        let commands = ShippedSpot.commands(folder: url, guide: url, app: "")
+        let spots = commands.first { $0.id == ShippedSpot.spotsID }
+        let settings = commands.first { $0.id == ShippedSpot.settingsID }
+
+        XCTAssertEqual(spots?.rowOpens, [CatalogSpot.buildRun: ShippedSpot.newID])
+        XCTAssertEqual(spots?.reviewAction, CatalogSpot.reviewID)
+        XCTAssertEqual(commands.filter(\.changesSpots).map(\.id), [ShippedSpot.spotsID])
+        XCTAssertEqual(settings?.shipped?.settingChange(of: "setting:apps:size")?.spot, "apps")
+        XCTAssertNil(spots?.shipped?.settingChange(of: "setting:apps:size"))
+    }
+
+    func testNewSpotGivesTheAgentPromptAndSettingsOpensWithTheSettingsKey() {
+        let url = URL(fileURLWithPath: "/bin/true")
+        let commands = ShippedSpot.commands(folder: url, guide: url, app: "")
+
+        XCTAssertEqual(commands.filter { $0.agentPrompt != nil }.map(\.id), [ShippedSpot.newID])
+        XCTAssertEqual(commands.filter(\.opensWithSettingsKey).map(\.id), [ShippedSpot.settingsID])
+        XCTAssertEqual(commands.filter(\.opensWithNewKey).map(\.id), [ShippedSpot.newID])
     }
 }

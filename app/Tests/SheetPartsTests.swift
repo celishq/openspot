@@ -69,6 +69,17 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(output.parts.map(\.textTone), [.bad, nil, nil])
     }
 
+    func testASetValueKeepsThePlacementOfTheParts() throws {
+        var panel = try panel(lights)
+        let placement = panel.placement
+
+        panel.set("true", of: "left")
+        panel.set("20", of: "brightness")
+        panel.set("#ff0000", of: "color")
+
+        XCTAssertEqual(panel.placement, placement)
+    }
+
     func testAScriptThatPrintsPartsIsAList() {
         XCTAssertEqual(PluginOutput(text: lights).kind, .list)
         XCTAssertNil(SheetParts(output: PluginOutput(text: "row=a\ntitle=A\n")))

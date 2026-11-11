@@ -8,6 +8,16 @@ struct SpotScrollEdges: Equatable {
 
     static let fadeLength = 56.0
 
+    /// A mask for one end of a scroll area, `fadeLength` long, from that end inwards, for an end that fades this strongly.
+    static func end(fading strength: Double, from edge: UnitPoint) -> LinearGradient {
+        LinearGradient(stops: [
+            .init(color: .black.opacity(1 - strength), location: 0),
+            .init(color: .black.opacity(1 - 0.6 * strength), location: 1.0 / 3),
+            .init(color: .black.opacity(1 - 0.2 * strength), location: 2.0 / 3),
+            .init(color: .black, location: 1)
+        ], startPoint: edge, endPoint: edge == .top ? .bottom : .top)
+    }
+
     /// A mask for cards that scroll in a surface of this height.
     func gradient(height: CGFloat) -> LinearGradient {
         LinearGradient(stops: stops(height: height), startPoint: .top, endPoint: .bottom)

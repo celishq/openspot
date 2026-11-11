@@ -27,6 +27,8 @@ public final class ScriptProcess: @unchecked Sendable {
     private var stopped = false
     private var ended = false
     private var killsLater = false
+    /// The process ID once it runs, and 0 before.
+    private var id: pid_t = 0
     private let errorText: ErrorTail
     private var unended: String?
 
@@ -65,15 +67,27 @@ public final class ScriptProcess: @unchecked Sendable {
     /// Runs a process once, and returns all that it prints.
     public static func output(url: URL, arguments: [String] = [], input: String? = nil, limit: TimeInterval? = nil) async throws -> String {
         var text = ""
-        for try await frame in try ScriptProcess(url: url, arguments: arguments, mode: .once(input: input), limit: limit).start() {
+        for try await frame in ScriptProcess(url: url, arguments: arguments, mode: .once(input: input), limit: limit).start() {
             text += frame
         }
         return text
     }
 
-    /// Starts the process, and returns its frames. A line `---` ends a frame, and so does the end of the output. Ending the
-    /// stream early stops a process that runs once.
-    public func start() throws -> AsyncThrowingStream<String, Error> {
+    /// Starts the process on another thread, and returns its frames at once. A line `---` ends a frame, and so does the end
+    /// of the output. A script that cannot start ends its frames with the reason. Ending the stream early stops a process
+    /// that runs once.
+    public func start() -> AsyncThrowingStream<String, Error> {
+        let (stream, continuation) = AsyncThrowingStream.makeStream(of: String.self)
+        lock.withLock { self.continuation = continuation }
+        continuation.onTermination = { [self] reason in
+            if case .cancelled = reason, case .once = mode { stop() }
+        }
+        DispatchQueue.global(qos: .userInitiated).async { [self] in launch() }
+        return stream
+    }
+
+    /// Runs the process, unless a stop came first, and follows its output. A stop that comes while it starts reaches it.
+    private func launch() {
         var text: String?
         var stays = false
         switch mode {
@@ -92,20 +106,24 @@ public final class ScriptProcess: @unchecked Sendable {
         let exit = exit
         process.terminationHandler = { _ in exit.signal() }
         signal(SIGPIPE, SIG_IGN)
-        try process.run()
-        if let text { writeAndClose(text) }
-        let (stream, continuation) = AsyncThrowingStream.makeStream(of: String.self)
-        lock.withLock { self.continuation = continuation }
-        continuation.onTermination = { [self] reason in
-            if case .cancelled = reason, case .once = mode { stop() }
+        guard !isStopped else { return lock.withLock { ended = true } }
+        do {
+            try process.run()
+        } catch {
+            return finish(throwing: error)
         }
+        let wasStopped = lock.withLock {
+            id = process.processIdentifier
+            return stopped
+        }
+        if wasStopped { stopGroup() }
+        if let text { writeAndClose(text) }
         if let limit {
             DispatchQueue.global().asyncAfter(deadline: .now() + limit) { [self] in
                 if !lock.withLock({ hasFrame }) { stop(because: PluginError.timedOut) }
             }
         }
         follow(output: output, errors: errors)
-        return stream
     }
 
     /// Sends one call to the script as a block, with its `id`, the `reason` of a read and the values of its sheet, in the
@@ -222,13 +240,13 @@ public final class ScriptProcess: @unchecked Sendable {
 
     /// Whether a process of its group still runs.
     private var hasGroup: Bool {
-        let id = process.processIdentifier
+        let id = lock.withLock { self.id }
         return id > 0 && kill(-id, 0) == 0
     }
 
     /// Sends a signal to the process group of the script, which holds the children it started.
     private func deliver(_ number: Int32) {
-        let id = process.processIdentifier
+        let id = lock.withLock { self.id }
         if id > 0 { kill(-id, number) }
     }
 

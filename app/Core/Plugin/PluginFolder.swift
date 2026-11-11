@@ -1,12 +1,13 @@
 import Foundation
 
 public struct PluginFolder: Sendable {
-    /// What a scan reads: the identity, mode, size and times of each file through its links, the core spots that are on and
-    /// the shipped commands. An equal stamp gives an equal scan, because a write, a change of mode and a move each change
+    /// What a scan reads: the identity, mode, size and times of each file through its links, the spots that are on or off
+    /// and the shipped commands. An equal stamp gives an equal scan, because a write, a change of mode and a move each change
     /// the change time of a file.
     public struct Stamp: Equatable, Sendable {
         fileprivate let files: [String: [Int]]
         fileprivate let enabled: Set<String>
+        fileprivate let disabled: Set<String>
         fileprivate let shipped: [Spot]
     }
 
@@ -19,25 +20,32 @@ public struct PluginFolder: Sendable {
     public let core: URL?
     /// The IDs of the core spots that the person turned on.
     public let enabled: Set<String>
+    /// The IDs of the spots of the folder that the person turned off. Their files stay, and a scan does not load them.
+    public let disabled: Set<String>
 
-    public init(url: URL, core: URL? = nil, enabled: Set<String> = []) {
+    public init(url: URL, core: URL? = nil, enabled: Set<String> = [], disabled: Set<String> = []) {
         self.url = url
         self.core = core
         self.enabled = enabled
+        self.disabled = disabled
     }
 
     public static func standard(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         home: URL = FileManager.default.homeDirectoryForCurrentUser,
-        enabled: Set<String>? = nil
+        enabled: Set<String>? = nil,
+        disabled: Set<String>? = nil
     ) -> PluginFolder {
-        let core = Bundle.main.resourceURL?.appendingPathComponent(coreName, isDirectory: true)
-        let enabled = enabled ?? ConfigFile.standard(environment: environment, home: home).read().arrangement.enabled
+        let core = environment["OPENSPOT_CORE"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0, isDirectory: true) }
+            ?? Bundle.main.resourceURL?.appendingPathComponent(coreName, isDirectory: true)
+        let arrangement = enabled == nil || disabled == nil ? ConfigFile.standard(environment: environment, home: home).read().arrangement : nil
+        let enabled = enabled ?? arrangement?.enabled ?? []
+        let disabled = disabled ?? arrangement?.disabled ?? []
         if let path = environment["OPENSPOT_PLUGINS"], !path.isEmpty {
-            return PluginFolder(url: URL(fileURLWithPath: path, isDirectory: true), core: core, enabled: enabled)
+            return PluginFolder(url: URL(fileURLWithPath: path, isDirectory: true), core: core, enabled: enabled, disabled: disabled)
         }
         let url = config(environment: environment, home: home).appendingPathComponent("plugins", isDirectory: true)
-        return PluginFolder(url: url, core: core, enabled: enabled)
+        return PluginFolder(url: url, core: core, enabled: enabled, disabled: disabled)
     }
 
     /// The folder that holds the plugins folder and the data of plugins.
@@ -53,8 +61,8 @@ public struct PluginFolder: Sendable {
         return home.appendingPathComponent(".config/openspot", isDirectory: true)
     }
 
-    /// Reads each executable and widget file, at the top of the folder or one folder down, after the shipped commands.
-    /// Then it reads each core spot that is on, and each core file that a spot needs. When two commands share a key, the
+    /// Reads each executable and widget file that is not off, at the top of the folder or one folder down, after the shipped
+    /// commands. Then it reads each core spot that is on, and each core file that a spot needs. When two commands share a key, the
     /// first keeps it. A file in the folder hides a core file with the same ID. With Settings among the shipped commands,
     /// a script that lists commands and has no read opens to their keys.
     public func scan(shipped: [Spot] = []) throws -> ScanResult {
@@ -70,6 +78,7 @@ public struct PluginFolder: Sendable {
                 let stem = file.deletingPathExtension().lastPathComponent
                 let id = isFolder.boolValue ? "\(entry.lastPathComponent)/\(stem)" : stem
                 ownIDs.insert(id)
+                guard !disabled.contains(id) else { continue }
                 Self.read(file, id: id, into: &result, taken: &taken, isDated: true)
             }
         }
@@ -96,7 +105,7 @@ public struct PluginFolder: Sendable {
                 for file in Self.entries(of: entry) { files[file] = Self.state(of: file) }
             }
         }
-        return Stamp(files: files, enabled: enabled, shipped: shipped)
+        return Stamp(files: files, enabled: enabled, disabled: disabled, shipped: shipped)
     }
 
     /// The core spots that a person can turn on. A core file with no card, such as a metric that a widget places or a sheet
@@ -110,6 +119,15 @@ public struct PluginFolder: Sendable {
     /// The ID that turns a core command on: the name of its file, which a widget shares with the others in that file.
     public static func coreID(of command: Spot) -> String {
         command.url.deletingPathExtension().lastPathComponent
+    }
+
+    /// The ID that turns a spot on or off: the core ID of a core spot, or the place of its file in the folder, with no
+    /// extension.
+    public func fileID(of command: Spot) -> String {
+        guard !isCore(command) else { return Self.coreID(of: command) }
+        let parent = command.url.deletingLastPathComponent().standardizedFileURL
+        let stem = command.url.deletingPathExtension().lastPathComponent
+        return parent.path == url.standardizedFileURL.path ? stem : "\(parent.lastPathComponent)/\(stem)"
     }
 
     /// Whether the app runs for the first time here: no config file, and no spot in the folder.

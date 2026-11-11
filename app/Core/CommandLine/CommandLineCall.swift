@@ -36,6 +36,8 @@ public enum CommandLineCall: Equatable, Sendable {
     case clipboardPaste
     case translate(from: String?, to: String?)
     case translateLanguages
+    /// Prints the answer of a sum or a conversion as one row, or nothing for words that are not one.
+    case calcSolve(String)
     case emoji(tone: EmojiCatalog.Tone)
     case symbols
     case windowFrame
@@ -93,6 +95,14 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot clipboard paste                     Pastes the clipboard into the front app.
     openspot translate [--from code] [--to code] Translates the text on stdin.
     openspot translate languages                 Prints the languages it knows.
+    openspot calc solve <words>...               Prints the answer of a sum, such as 2*(3+4) or 15% of 80, a conversion,
+                                                 such as 5 km in mi or 15 usd in eur, or a date, such as today + 3 weeks,
+                                                 days until 25 dec or 3pm tokyo in kyiv, as a row. It prints nothing for
+                                                 words that are none. A currency with no rates prints status=offline with
+                                                 no internet, or status=unavailable when the source does not answer.
+                                                 Rates 3 days old or more say their age, with tone=warn. The row's id is
+                                                 the plain value. Rates come from exchange-api, a public-domain file
+                                                 that changes once a day.
     openspot emoji [--tone name]                 Prints each emoji as a row, with its name in the language of the Mac.
                                                  A tone is none, light, medium-light, medium, medium-dark or dark.
     openspot symbols                             Prints each symbol of the Character Viewer as a row, with its name and section.
@@ -186,6 +196,7 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("clipboard", "copy") where rest.count <= 2: self = .clipboardCopy(rest.dropFirst().first)
         case ("clipboard", "paste") where rest.count == 1: self = .clipboardPaste
         case ("translate", "languages") where rest.count == 1: self = .translateLanguages
+        case ("calc", "solve") where rest.count > 1: self = .calcSolve(rest.dropFirst().joined(separator: " "))
         case ("helper", let name?) where rest.count == 1: self = .helper(name)
         case ("helper", "glyphs") where rest.count == 4:
             guard let side = Double(rest[1]), let fontSize = Double(rest[2]) else {

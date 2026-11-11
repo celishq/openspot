@@ -29,21 +29,21 @@ extension SpotsModel {
         }
     }
 
-    /// The New spot sheet, which holds the words of each prompt.
-    private var newSpot: NewSpot? {
-        entries.lazy.compactMap { if case .new(let new)? = $0.command.shipped { new } else { nil } }.first
+    /// The prompt that asks an agent to write or fix a spot.
+    private var agentPrompt: AgentPrompt? {
+        entries.lazy.compactMap(\.command.agentPrompt).first
     }
 
     /// Copies a prompt that asks an agent to change the file of a spot, with the words of its last failed call.
     func copyPrompt(changing entry: Entry) {
-        guard let new = newSpot else {
+        guard let prompt = agentPrompt else {
             host.notify("Openspot cannot write the prompt, because New spot is missing. Quit and open Openspot again.")
             return
         }
-        let text = new.prompt.changing(file(of: entry), failure: entry.failure)
+        let text = prompt.changing(file(of: entry), failure: entry.failure)
         Task {
             do {
-                host.confirm(try await new.prompt.copy(text))
+                host.confirm(try await prompt.copy(text))
             } catch {
                 host.notify("The prompt for \(entry.command.name) was not copied. \(Self.reason(error))")
             }

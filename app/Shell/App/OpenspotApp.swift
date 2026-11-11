@@ -77,6 +77,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         panel?.warm { [weak self] in
             guard let self else { return }
             SpotSheetWarmth.draw()
+            SpotSoftBlur.warm(SpotsView.blurHeights(of: model))
             if isFirstLaunch {
                 model.beginFirstLaunch()
             } else {

@@ -21,14 +21,12 @@ final class FileIconTests: XCTestCase {
         XCTAssertEqual(FileIcon(path: "/Users/me/Downloads"), .file("/Users/me/Downloads"))
     }
 
-    func testAnItemUsesItsImageBeforeItsFile() {
-        let item = SpotItem(title: "A", run: "a", iconFile: "/a/report.pdf", image: "/icons/a.icon")
-
-        XCTAssertEqual(item.icon, .image("/icons/a.icon"))
+    func testAnItemWithAnImageUsesTheImage() {
+        XCTAssertEqual(SpotItem(title: "A", run: "a", picture: .image("/icons/a.icon")).icon, .image("/icons/a.icon"))
     }
 
     func testAnItemWithAFileUsesTheIconOfTheFile() {
-        XCTAssertEqual(SpotItem(title: "A", run: "a", iconFile: "/a/report.pdf").icon, .type("pdf"))
+        XCTAssertEqual(SpotItem(title: "A", run: "a", picture: .file("/a/report.pdf")).icon, .type("pdf"))
     }
 
     func testAnItemWithNeitherHasNoIcon() {

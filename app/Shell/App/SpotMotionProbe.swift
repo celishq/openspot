@@ -3,10 +3,21 @@ import AppKit
 import QuartzCore
 
 /// A run that opens and closes the sheet of one spot again and again, or with `OPENSPOT_ACTION` moves down its rows, types
-/// in its search or picks the row `OPENSPOT_ROW`, and writes the time of each frame to a file. `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`.
-/// The panel stays almost clear, takes no focus and no clicks, unless `OPENSPOT_SEEN` asks for a picture.
+/// in its search, picks the row `OPENSPOT_ROW`, types `OPENSPOT_TEXT` in the main search, opens the panel itself after
+/// `OPENSPOT_PAUSE`, drags a card in Edit Spots or with `edit` starts and ends Edit Spots, and writes the time of each frame
+/// to a file.
+/// `OPENSPOT_ACTION=mouse` drags a card with mouse events instead, or with `OPENSPOT_ROW` holds it at the bottom `edge`,
+/// pulls its `corner` handle or presses its `minus`, and writes whether it lifted or resized, the order, its size and
+/// whether it is on the grid after.
+/// `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`. The panel stays almost clear, takes no focus and no clicks,
+/// unless `OPENSPOT_SEEN` asks for a picture. With `OPENSPOT_SHOTS`, a drag saves a picture of each state to that folder
+/// from a panel off every screen, `edit` saves Edit Spots with its dock from the panel at its place, and a card carried to
+/// the dock, and neither times anything. `tile` pulls the corner of a spot of the dock, or with `OPENSPOT_ROW=grid` of a
+/// card, with mouse events on each frame, and writes how often its size changed.
 @MainActor
 final class SpotMotionProbe: NSObject {
+    /// How long each open of the panel is timed: its fade and the reads that land in it.
+    private static let openWindow: CFTimeInterval = 1
     private let model: SpotsModel
     private let panel: NSPanel
     private let output: String
@@ -18,9 +29,19 @@ final class SpotMotionProbe: NSObject {
     private let action: String?
     /// The row that the `pick` action picks.
     private let row: String?
+    /// The folder for the pictures of a drag.
+    private let shots: String?
+    /// Moves the lifted card on each frame of a drag, from the time of that frame.
+    private var dragStep: ((CFTimeInterval) -> Void)?
+    /// The text that the `search` action types in the main search.
+    private let text: String
     private var link: CADisplayLink?
     private var frames: [CFTimeInterval] = []
     private var start: CFTimeInterval = 0
+    /// The times that the `panel` action counts frames in, one from each open, so that the hidden panel counts for nothing.
+    private var windows: [ClosedRange<CFTimeInterval>] = []
+    /// The milliseconds of each open press of the `panel` action, on the main thread.
+    private var pressTimes: [Double] = []
 
     init?(model: SpotsModel, panel: NSPanel, environment: [String: String] = ProcessInfo.processInfo.environment) {
         guard let output = environment["OPENSPOT_PROBE"] else { return nil }
@@ -33,6 +54,8 @@ final class SpotMotionProbe: NSObject {
         isSeen = environment["OPENSPOT_SEEN"] != nil
         action = environment["OPENSPOT_ACTION"].flatMap { $0.isEmpty ? nil : $0 }
         row = environment["OPENSPOT_ROW"]
+        shots = environment["OPENSPOT_SHOTS"]
+        text = environment["OPENSPOT_TEXT"].flatMap { $0.isEmpty ? nil : $0 } ?? "2*(3+4)"
     }
 
     /// Shows the panel, waits for its reads, then starts the presses.
@@ -46,6 +69,14 @@ final class SpotMotionProbe: NSObject {
     }
 
     private func begin() {
+        if action == "panel" { return beginOpens() }
+        if action == "search" { return beginSearch() }
+        if action == "drag" || action == "mouse" { return beginDrag() }
+        if action == "edit" { return beginEdit() }
+        if action == "tile" {
+            model.beginEditing()
+            return DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.pullTile() }
+        }
         let target = model.entries.first { spot == nil ? $0.kind == .widget && $0.command.opens != nil : $0.id == spot }
         guard let target, let view = panel.contentView else { return finish(with: "no spot to open\n") }
         let link = view.displayLink(target: self, selector: #selector(tick))
@@ -64,6 +95,207 @@ final class SpotMotionProbe: NSObject {
             default: self.arrow(left: self.presses)
             }
         }
+    }
+
+    /// Starts Edit Spots, and ends it as Done does, again and again.
+    private func beginEdit() {
+        guard let view = panel.contentView else { return finish(with: "no panel\n") }
+        if let shots { return shootEdit(into: shots) }
+        let link = view.displayLink(target: self, selector: #selector(tick))
+        link.add(to: .main, forMode: .common)
+        self.link = link
+        start = CACurrentMediaTime()
+        edit(left: presses)
+    }
+
+    private func edit(left: Int) {
+        guard left > 0 else { return end() }
+        if left % 2 == 0 { model.beginEditing() } else { model.endEditing() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.edit(left: left - 1) }
+    }
+
+    /// Saves a picture of Edit Spots with its dock a second after it starts and, with `OPENSPOT_SPOT`, of that card carried
+    /// over the dock, a second after its release there, then carried from the dock over the grid's first card, a second
+    /// after its release there, and of the dock's first spot pulled a column wider and a row taller.
+    private func shootEdit(into folder: String) {
+        model.beginEditing()
+        try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.save(to: "\(folder)/dock.png")
+            guard let id = self.spot, let index = self.model.visible.firstIndex(where: { $0.id == id }), let dock = self.model.dockFrame else {
+                return self.finish(with: "shots\n")
+            }
+            let rect = self.model.placements[index].rect
+            let origin = SpotTokens.gridOrigin(scrollOffset: self.model.gridScroll)
+            let move = CGSize(width: dock.midX - origin.x - rect.midX, height: dock.midY - origin.y - rect.midY)
+            self.model.dragSpot(id, by: CGSize(width: 1, height: 1))
+            self.model.dragSpot(id, by: move)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.save(to: "\(folder)/carried.png")
+                self.model.dropSpot(by: move)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    self.save(to: "\(folder)/dropped.png")
+                    self.shootArrival(of: id, into: folder)
+                }
+            }
+        }
+    }
+
+    /// Carries a spot of the dock over the left half of the grid's first card, and saves a picture of it there and a second
+    /// after its release.
+    private func shootArrival(of id: String, into folder: String) {
+        guard let dock = model.dockFrame, let index = model.dock.shown.firstIndex(where: { $0.id == id }), let first = model.placements.first else {
+            return finish(with: "shots\n")
+        }
+        let tile = model.dock.rects(columns: SpotTokens.dockColumns(width: dock.width))[index]
+        let origin = SpotTokens.gridOrigin(scrollOffset: model.gridScroll)
+        let target = CGPoint(x: origin.x + first.rect.minX + first.rect.width / 4, y: origin.y + first.rect.midY)
+        let start = CGPoint(x: dock.minX + SpotTokens.padding + tile.midX, y: dock.minY + SpotTokens.dockRowsTop + tile.midY - model.dockScroll)
+        let move = CGSize(width: target.x - start.x, height: target.y - start.y)
+        model.dragDockSpot(id, by: CGSize(width: 1, height: 1))
+        model.dragDockSpot(id, by: move)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.save(to: "\(folder)/arriving.png")
+            self.model.dropDockSpot(by: move)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                self.save(to: "\(folder)/arrived.png")
+                self.shootTileResize(into: folder)
+            }
+        }
+    }
+
+    /// Pulls the corner of the dock's first spot one column right and one row down, and saves a picture of it.
+    private func shootTileResize(into folder: String) {
+        guard let id = model.dock.shown.first?.id else { return finish(with: "shots\n") }
+        let move = CGSize(width: SpotTokens.cell + SpotTokens.columnGap, height: SpotTokens.rowHeight + SpotTokens.rowGap)
+        model.resizeSpot(id, by: .zero)
+        model.resizeSpot(id, by: move)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.save(to: "\(folder)/tile-resized.png")
+            self.model.cancelResize()
+            self.finish(with: "shots\n")
+        }
+    }
+
+    /// Presses the corner handle of the dock's first spot with more than one size, or of the grid's smallest such card, and
+    /// pulls it two columns right and a row down and back, once for every four presses, with a mouse event on each frame.
+    /// The app takes the focus, as the events reach only the key window.
+    private func pullTile() {
+        let index = model.dock.shown.firstIndex { model.sizes(of: SpotsModel.Entry(command: $0.command, run: nil)).count > 1 }
+        guard let window = panel as? SpotsPanel, let view = panel.contentView, let dock = model.dockFrame, let index else {
+            return finish(with: "no spot in the dock\n")
+        }
+        let cards = model.visible.indices.filter { model.visible[$0].isOnGrid && model.sizes(of: model.visible[$0]).count > 1 }
+        let card = row == "grid" ? cards.min { model.visible[$0].size.columns * model.visible[$0].size.rows < model.visible[$1].size.columns * model.visible[$1].size.rows } : nil
+        let id = card.map { model.visible[$0].id } ?? model.dock.shown[index].id
+        let tile = model.dock.rects(columns: SpotTokens.dockColumns(width: dock.width))[index]
+        let grid = SpotTokens.gridOrigin(scrollOffset: model.gridScroll)
+        let end = card.map { CGPoint(x: grid.x + model.placements[$0].rect.maxX, y: grid.y + model.placements[$0].rect.maxY) }
+            ?? CGPoint(x: dock.minX + SpotTokens.padding + tile.maxX, y: dock.minY + SpotTokens.dockRowsTop + tile.maxY - model.dockScroll)
+        panel.ignoresMouseEvents = false
+        NSApp.activate(ignoringOtherApps: true)
+        panel.makeKey()
+        let inset = SpotTokens.keycap / 2
+        let corner = CGPoint(x: window.place.panel.x + end.x - inset, y: window.place.panel.y + end.y - inset)
+        let reach = CGSize(width: 2 * (SpotTokens.cell + SpotTokens.columnGap), height: SpotTokens.rowHeight + SpotTokens.rowGap)
+        func post(_ type: NSEvent.EventType, _ share: CGFloat) {
+            let point = NSPoint(x: corner.x + reach.width * share, y: view.bounds.height - corner.y - reach.height * share)
+            guard let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: panel.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1) else { return }
+            NSApp.postEvent(event, atStart: false)
+        }
+        let size = { self.model.dock.items.first { $0.id == id }?.size ?? self.model.visible.first { $0.id == id }?.size }
+        var last = size()
+        var changes = 0
+        var steps: [String] = []
+        var resized = false
+        let leg = 0.5
+        let tours = Double(max(presses / 4, 1))
+        var begun: CFTimeInterval?
+        let link = view.displayLink(target: self, selector: #selector(tick))
+        link.add(to: .main, forMode: .common)
+        self.link = link
+        dragStep = { [weak self] now in
+            guard let self else { return }
+            guard let first = begun else {
+                begun = now
+                start = CACurrentMediaTime()
+                return post(.leftMouseDown, 0)
+            }
+            let time = now - first
+            resized = resized || model.dockResize != nil || model.resize != nil
+            if size() != last {
+                changes += 1
+                last = size()
+                steps.append(String(format: "%.2f %@", time, last?.name ?? "none"))
+            }
+            guard time < tours * 2 * leg else {
+                post(.leftMouseUp, 0)
+                dragStep = nil
+                return DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.finish(with: self.report() + "\(id) resized \(resized), size changes \(changes)\n" + steps.joined(separator: "\n") + "\n")
+                }
+            }
+            let phase = time.truncatingRemainder(dividingBy: 2 * leg) / leg
+            post(.leftMouseDragged, CGFloat(phase < 1 ? phase : 2 - phase))
+        }
+    }
+
+    /// Opens the panel again and again, once its first reads have ended, each after the pause, so that each open reads its
+    /// scripts as an open of a person does.
+    private func beginOpens() {
+        guard !model.runs.isReading else {
+            return DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { self.beginOpens() }
+        }
+        guard let view = panel.contentView, let panel = panel as? SpotsPanel else { return finish(with: "no panel\n") }
+        let link = view.displayLink(target: self, selector: #selector(tick))
+        link.add(to: .main, forMode: .common)
+        self.link = link
+        panel.hide()
+        DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.open(panel, left: self.presses / 2) }
+    }
+
+    /// Opens the panel as the key does, but with no focus, and times the press. It hides the panel when its window ends.
+    private func open(_ panel: SpotsPanel, left: Int) {
+        guard left > 0 else { return finish(with: report()) }
+        panel.alphaValue = 0.02
+        let pressed = CACurrentMediaTime()
+        panel.place(over: NSWorkspace.shared.frontmostApplication)
+        model.panelWillShow(holding: [])
+        panel.orderFrontRegardless()
+        pressTimes.append((CACurrentMediaTime() - pressed) * 1000)
+        frames.append(pressed)
+        windows.append(pressed...(pressed + Self.openWindow))
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.openWindow) {
+            panel.hide()
+            DispatchQueue.main.asyncAfter(deadline: .now() + self.pause) { self.open(panel, left: left - 1) }
+        }
+    }
+
+    /// Types the text in the main search once the first reads have ended.
+    private func beginSearch() {
+        guard !model.runs.isReading else {
+            return DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { self.beginSearch() }
+        }
+        guard let view = panel.contentView else { return finish(with: "no panel\n") }
+        let link = view.displayLink(target: self, selector: #selector(tick))
+        link.add(to: .main, forMode: .common)
+        self.link = link
+        start = CACurrentMediaTime()
+        search(left: presses)
+    }
+
+    /// Types the text a letter at a time from an empty search, again and again, then types it whole and adds the title and
+    /// the detail of each card that shows to the report.
+    private func search(left: Int) {
+        guard left > 0 else {
+            model.searchText = text
+            return DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                let shown = self.model.visible.map { "\($0.state.title) · \($0.state.subtitle ?? "")" }
+                self.finish(with: self.report() + "shows:\n" + shown.joined(separator: "\n") + "\n")
+            }
+        }
+        model.searchText = String(text.prefix((presses - left) % (text.count + 1)))
+        DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.search(left: left - 1) }
     }
 
     /// Runs the work a second after the open sheet holds its rows.
@@ -115,11 +347,164 @@ final class SpotMotionProbe: NSObject {
 
     @objc private func tick(_ link: CADisplayLink) {
         frames.append(link.timestamp)
+        dragStep?(link.timestamp)
     }
 
-    /// The frame times from the first press, in milliseconds: their spread, then each one.
+    /// Lifts the last card on the grid, or `OPENSPOT_SPOT`, in Edit Spots, and moves it along a tour of the grid once for
+    /// every two presses: to the first place, to the middle, and back to where it started, with a rest at each stop.
+    private func beginDrag() {
+        model.beginEditing()
+        guard let id = spot ?? model.visible.last(where: \.isOnGrid)?.id, let index = model.visible.firstIndex(where: { $0.id == id }),
+              let view = panel.contentView else { return finish(with: "no card to drag\n") }
+        let rect = model.placements[index].rect
+        let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
+        let stops = [
+            CGPoint(x: rect.midX, y: rect.midY),
+            CGPoint(x: SpotTokens.cell / 2, y: SpotTokens.rowHeight / 2),
+            CGPoint(x: SpotTokens.gridWidth / 2, y: SpotTokens.height(rows: rows) / 2),
+            CGPoint(x: rect.midX, y: rect.midY)
+        ].map { CGSize(width: $0.x - rect.midX, height: $0.y - rect.midY) }
+        if let shots { return shoot(id, stops: stops, into: shots) }
+        if action == "mouse" { return press(id, at: rect, by: stops[1]) }
+        let link = view.displayLink(target: self, selector: #selector(tick))
+        link.add(to: .main, forMode: .common)
+        self.link = link
+        let leg = 0.5
+        var tours = max(presses / 4, 1)
+        var tourStart: CFTimeInterval?
+        dragStep = { [weak self] now in
+            guard let self else { return }
+            let begun = tourStart ?? now
+            tourStart = begun
+            let time = now - begun
+            let index = min(Int(time / leg), stops.count - 2)
+            let share = min(max((time - Double(index) * leg) / (leg / 2), 0), 1)
+            let from = stops[index], to = stops[index + 1]
+            let translation = CGSize(width: from.width + (to.width - from.width) * share, height: from.height + (to.height - from.height) * share)
+            guard time < Double(stops.count - 1) * leg else {
+                model.dropSpot(by: translation)
+                tourStart = nil
+                tours -= 1
+                if tours == 0 {
+                    dragStep = nil
+                    end()
+                }
+                return
+            }
+            model.dragSpot(id, by: translation)
+        }
+        start = CACurrentMediaTime()
+    }
+
+    /// Presses the card at this place, moves the mouse this far in steps and lets go, through events put in the app's queue
+    /// for a panel off every screen, as a person's mouse sends them. The press starts at the card's centre, its corner
+    /// handle, which it pulls down a row, or its minus, which it only clicks. At the edge it rests 1.5 s before it lets go.
+    /// The panel stays open when another app takes the focus. It logs the drag after each step, and each 10 ms after the last.
+    private func press(_ id: String, at rect: CGRect, by move: CGSize) {
+        panel.setFrameOrigin(NSPoint(x: -9000, y: -9000))
+        panel.alphaValue = 1
+        panel.ignoresMouseEvents = false
+        NSApp.activate(ignoringOtherApps: true)
+        panel.makeKey()
+        model.isSettlingDrop = true
+        let height = panel.contentView?.bounds.height ?? 0
+        let inset = SpotTokens.keycap / 2
+        let point = row == "corner" ? CGPoint(x: rect.maxX - inset, y: rect.maxY - inset) : row == "minus" ? CGPoint(x: rect.minX + inset, y: rect.minY + inset) : CGPoint(x: rect.midX, y: rect.midY)
+        let edgeMove = CGSize(width: 0, height: SpotTokens.panelHeight - SpotTokens.halo - SpotTokens.hintBlock - 10 - (SpotTokens.gridTop + rect.midY))
+        let translation = row == "corner" ? CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap) : row == "minus" ? .zero : row == "edge" ? edgeMove : move
+        let start = NSPoint(x: SpotTokens.halo + point.x, y: height - (SpotTokens.gridTop + point.y))
+        let size = { self.model.visible.firstIndex { $0.id == id }.map { self.model.placements[$0].size.name } ?? "none" }
+        let sizeBefore = size()
+        let before = model.visible.map(\.id)
+        var lifted = false
+        var resizing = false
+        var maxScroll: CGFloat = 0
+        func scrolled(_ view: NSView?) -> CGFloat? {
+            guard let view else { return nil }
+            if let scroll = view as? NSScrollView { return scroll.contentView.bounds.minY }
+            return view.subviews.lazy.compactMap(scrolled).first
+        }
+        func post(_ type: NSEvent.EventType, _ share: CGFloat) {
+            let point = NSPoint(x: start.x + translation.width * share, y: start.y - translation.height * share)
+            guard let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: panel.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1) else { return }
+            NSApp.postEvent(event, atStart: false)
+        }
+        let rest: [() -> Void] = row == "edge" ? Array(repeating: {}, count: 75) : []
+        let steps = [{ post(.leftMouseDown, 0) }] + (1...20).map { step in { post(.leftMouseDragged, CGFloat(step) / 20) } } + rest + [{ post(.leftMouseUp, 1) }]
+        var log: [String] = []
+        func note() {
+            log.append("drag \(model.drag.map { "\($0.id) at \($0.place)" } ?? "none") landing \(model.landing ?? "none") lift \(model.lift.offset)")
+        }
+        func run(_ left: ArraySlice<() -> Void>) {
+            guard let next = left.first else {
+                (1...20).forEach { tick in DispatchQueue.main.asyncAfter(deadline: .now() + Double(tick) * 0.01, execute: note) }
+                return DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    let entry = self.model.visible.first { $0.id == id }
+                    self.finish(with: "lifted \(lifted)\nresizing \(resizing)\nmost scroll \(maxScroll)\nbefore \(before)\nafter \(self.model.visible.map(\.id))\nsize \(sizeBefore) to \(size())\non grid \(entry?.isOnGrid ?? false)\n" + log.joined(separator: "\n") + "\n")
+                }
+            }
+            next()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
+                lifted = lifted || self.model.drag != nil
+                resizing = resizing || self.model.resize != nil
+                maxScroll = max(maxScroll, scrolled(self.panel.contentView) ?? 0)
+                note()
+                run(left.dropFirst())
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { run(steps[...]) }
+    }
+
+    /// Saves a picture of Edit Spots, of the card 30 ms into its lift and once the cards made room near the first place,
+    /// 60 ms into its drop there and after it, and of the card pulled a row taller by its corner and kept, from a panel off
+    /// every screen.
+    private func shoot(_ id: String, stops: [CGSize], into folder: String) {
+        panel.setFrameOrigin(NSPoint(x: -9000, y: -9000))
+        panel.alphaValue = 1
+        let near = CGSize(width: stops[1].width + SpotTokens.cell / 3, height: stops[1].height + SpotTokens.rowHeight / 3)
+        let states: [(name: String, wait: Double, act: () -> Void)] = [
+            ("edit", 1, {}),
+            ("handle", 1, { self.model.resizeSpot(id, by: .zero) }),
+            ("lifting", 0.03, {
+                self.model.cancelResize()
+                self.model.dragSpot(id, by: CGSize(width: 1, height: 1))
+            }),
+            ("lifted", 1, { self.model.dragSpot(id, by: near) }),
+            ("dropping", 0.06, { self.model.dropSpot(by: near) }),
+            ("dropped", 1, {}),
+            ("resized", 1, { self.model.resizeSpot(id, by: CGSize(width: 0, height: SpotTokens.rowHeight + SpotTokens.rowGap)) }),
+            ("kept", 1, { self.model.dropResize() })
+        ]
+        func next(_ left: ArraySlice<(name: String, wait: Double, act: () -> Void)>) {
+            guard let state = left.first else { return finish(with: "shots\n") }
+            state.act()
+            DispatchQueue.main.asyncAfter(deadline: .now() + state.wait) {
+                self.save(to: "\(folder)/\(state.name).png")
+                next(left.dropFirst())
+            }
+        }
+        try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+        next(states[...])
+    }
+
+    /// Writes the panel's content as a PNG over the colour of a window, since the blur draws nothing off screen.
+    private func save(to path: String) {
+        guard let view = panel.contentView, let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
+        view.cacheDisplay(in: view.bounds, to: bitmap)
+        let image = NSImage(size: view.bounds.size, flipped: false) { bounds in
+            NSColor(SpotTheme.window).setFill()
+            bounds.fill()
+            bitmap.draw(in: bounds)
+            return true
+        }
+        guard let tiff = image.tiffRepresentation, let data = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) else { return }
+        FileManager.default.createFile(atPath: path, contents: data)
+    }
+
+    /// The frame times from the first press, or in the windows of the opens, in milliseconds: their spread, then each one.
     private func report() -> String {
-        let gaps = zip(frames.dropFirst(), frames).filter { $0.1 >= start }.map { ($0.0 - $0.1) * 1000 }
+        let counted = { (time: CFTimeInterval) in self.windows.isEmpty ? time >= self.start : self.windows.contains { $0.contains(time) } }
+        let gaps = zip(frames.dropFirst(), frames).filter { counted($0.1) }.map { ($0.0 - $0.1) * 1000 }
         let sorted = gaps.sorted()
         guard !sorted.isEmpty else { return "no frames\n" }
         let budget = 1000 / Double(NSScreen.main?.maximumFramesPerSecond ?? 120)
@@ -127,9 +512,11 @@ final class SpotMotionProbe: NSObject {
         let late = gaps.filter { $0 > budget * 1.05 }
         let dropped = gaps.map { max(Int(($0 / budget).rounded()) - 1, 0) }.reduce(0, +)
         let seconds = gaps.reduce(0, +) / 1000
+        let presses = pressTimes.sorted()
+        let press = presses.isEmpty ? "" : String(format: ", press p50 %.2f ms, worst %.2f ms", presses[presses.count / 2], presses.last ?? 0)
         let head = String(
-            format: "fps %.0f, p50 %.1f ms, p90 %.1f ms, p99 %.1f ms, worst %.1f ms, late %d of %d, dropped %d\n",
-            Double(gaps.count) / seconds, at(0.5), at(0.9), at(0.99), sorted.last ?? 0, late.count, gaps.count, dropped
+            format: "fps %.0f, p50 %.1f ms, p90 %.1f ms, p99 %.1f ms, worst %.1f ms, late %d of %d, dropped %d%@\n",
+            Double(gaps.count) / seconds, at(0.5), at(0.9), at(0.99), sorted.last ?? 0, late.count, gaps.count, dropped, press
         )
         return head + gaps.map { String(format: "%.1f", $0) }.joined(separator: " ") + "\n"
     }

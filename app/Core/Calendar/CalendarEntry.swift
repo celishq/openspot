@@ -48,7 +48,7 @@ public struct CalendarEntry: Equatable, Sendable {
 
     /// Whether the words gave a time and not only a day. The date finder says so in a key of its own, and with no such key
     /// a date at noon counts as a day, as the finder gives a day.
-    private static func hasTime(_ found: NSTextCheckingResult) -> Bool {
+    static func hasTime(_ found: NSTextCheckingResult) -> Bool {
         let key = "timeIsSignificant"
         if found.responds(to: NSSelectorFromString(key)), let isSignificant = found.value(forKey: key) as? Bool { return isSignificant }
         guard let date = found.date else { return false }

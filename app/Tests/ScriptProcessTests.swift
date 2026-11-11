@@ -100,7 +100,7 @@ final class ScriptProcessTests: XCTestCase {
         let plugin = try writePlugin("loud.sh", "#!/bin/sh\ni=0\nwhile [ $i -lt 5000 ]; do echo \"line $i of a log that runs long\" >&2; i=$((i+1)); done\necho 'the end' >&2\n")
         let process = ScriptProcess(url: plugin.url, limit: 10)
 
-        for try await _ in try process.start() {}
+        for try await _ in process.start() {}
 
         XCTAssertLessThanOrEqual(process.errors.utf8.count, 2 * 64 * 1024)
         XCTAssertGreaterThan(process.errors.utf8.count, 60 * 1024)
@@ -110,7 +110,7 @@ final class ScriptProcessTests: XCTestCase {
     func testAStopEndsTheStreamAtOnceWithNoError() async throws {
         let plugin = try writePlugin("slow.sh", "#!/bin/sh\nsleep 30\n")
         let process = ScriptProcess(url: plugin.url)
-        let frames = try process.start()
+        let frames = process.start()
         let started = Date()
 
         process.stop()
@@ -120,10 +120,37 @@ final class ScriptProcessTests: XCTestCase {
         XCTAssertTrue(process.isStopped)
     }
 
+    func testAScriptThatCannotStartEndsItsFramesWithTheReason() async throws {
+        let process = ScriptProcess(url: folder.appendingPathComponent("missing.sh"), limit: 5)
+        let frames = process.start()
+
+        do {
+            for try await _ in frames { XCTFail("no frame") }
+            XCTFail("no failure")
+        } catch {
+            XCTAssertFalse(process.isRunning)
+        }
+    }
+
+    func testAStopRightAfterTheStartLeavesNoScriptRunning() async throws {
+        let plugin = try writePlugin("slow.sh", "#!/bin/sh\n\(writesPid("script"))\nsleep 30\n")
+        let process = ScriptProcess(url: plugin.url, stopPause: Self.stopPause)
+        let frames = process.start()
+
+        process.stop()
+        for try await _ in frames { XCTFail("no frame") }
+        try await Task.sleep(for: .seconds(Self.stopPause * 3))
+
+        if exists("script") {
+            let script = try await pid("script")
+            XCTAssertFalse(runs(script))
+        }
+    }
+
     func testAStopReachesEachChildOfTheScript() async throws {
         let plugin = try writePlugin("child.sh", "#!/bin/sh\n(sleep 0.3; touch '\(path("child"))') &\nprintf 'a=1\\n---\\n'\nwait\n")
         let process = ScriptProcess(url: plugin.url)
-        var frames = try process.start().makeAsyncIterator()
+        var frames = process.start().makeAsyncIterator()
         _ = try await frames.next()
 
         process.stop()
@@ -135,7 +162,7 @@ final class ScriptProcessTests: XCTestCase {
     func testAStopGivesTheScriptTheTerminateSignalAndTimeToEnd() async throws {
         let plugin = try writePlugin("term.sh", "#!/bin/sh\ntrap 'sleep 0.1; touch \"\(path("cleaned"))\"; exit 0' TERM\nprintf 'a=1\\n---\\n'\n\(String.longLoop)\n")
         let process = ScriptProcess(url: plugin.url)
-        var frames = try process.start().makeAsyncIterator()
+        var frames = process.start().makeAsyncIterator()
         _ = try await frames.next()
 
         process.stop()
@@ -146,7 +173,7 @@ final class ScriptProcessTests: XCTestCase {
     func testAScriptThatIgnoresTheTerminateSignalEndsAfterTwoSeconds() async throws {
         let plugin = try writePlugin("deaf.sh", "#!/bin/sh\ntrap '' TERM\nprintf 'a=1\\n---\\n'\n\(String.longLoop)\n")
         let process = ScriptProcess(url: plugin.url)
-        var frames = try process.start().makeAsyncIterator()
+        var frames = process.start().makeAsyncIterator()
         _ = try await frames.next()
 
         let started = Date()
@@ -186,7 +213,7 @@ final class ScriptProcessTests: XCTestCase {
     func testAScriptAndAChildThatIgnoreTheTerminateSignalAreGoneOnePauseAfterAStop() async throws {
         let plugin = try writePlugin("deaf.sh", "#!/bin/sh\ntrap '' TERM\n\(writesPid("script"))\n\(deafChild())printf 'a=1\\n---\\n'\n\(String.longLoop)\n")
         let process = ScriptProcess(url: plugin.url, stopPause: Self.stopPause)
-        var frames = try process.start().makeAsyncIterator()
+        var frames = process.start().makeAsyncIterator()
         _ = try await frames.next()
         let script = try await pid("script")
         let child = try await pid("child")
@@ -201,7 +228,7 @@ final class ScriptProcessTests: XCTestCase {
     func testAChildThatIgnoresTheTerminateSignalIsGoneAfterItsScriptEndedAtTheStop() async throws {
         let plugin = try writePlugin("parent.sh", "#!/bin/sh\n\(deafChild())printf 'a=1\\n---\\n'\nsleep 30\n")
         let process = ScriptProcess(url: plugin.url, stopPause: Self.stopPause)
-        var frames = try process.start().makeAsyncIterator()
+        var frames = process.start().makeAsyncIterator()
         _ = try await frames.next()
         let child = try await pid("child")
         let started = Date()
@@ -216,7 +243,7 @@ final class ScriptProcessTests: XCTestCase {
     func testAStopLeavesAChildAloneAfterItsCallEndedByItself() async throws {
         let plugin = try writePlugin("away.sh", "#!/bin/sh\n\(deafChild())\n")
         let process = ScriptProcess(url: plugin.url, stopPause: Self.stopPause)
-        for try await _ in try process.start() {}
+        for try await _ in process.start() {}
         let child = try await pid("child")
         defer { kill(child, SIGKILL) }
 
@@ -229,7 +256,7 @@ final class ScriptProcessTests: XCTestCase {
     func testAnEndClosesTheInputThenStopsThenKillsTheGroupOfAStayingScript() async throws {
         let plugin = try writePlugin("stay.sh", "#!/bin/sh\ntrap '' TERM\n\(writesPid("script"))\n\(deafChild())printf 'a=1\\n---\\n'\n\(String.longLoop)\n")
         let live = ScriptProcess(url: plugin.url, mode: .stays, stopPause: Self.stopPause)
-        var frames = try live.start().makeAsyncIterator()
+        var frames = live.start().makeAsyncIterator()
         _ = try await frames.next()
         let script = try await pid("script")
         let child = try await pid("child")
@@ -244,7 +271,7 @@ final class ScriptProcessTests: XCTestCase {
     func testAnEndReachesAChildAfterAStayingScriptEndedWithItsInput() async throws {
         let plugin = try writePlugin("stay.sh", "#!/bin/sh\n\(deafChild())printf 'a=1\\n---\\n'\ncat >/dev/null\n")
         let live = ScriptProcess(url: plugin.url, mode: .stays, stopPause: Self.stopPause)
-        var frames = try live.start().makeAsyncIterator()
+        var frames = live.start().makeAsyncIterator()
         _ = try await frames.next()
         let child = try await pid("child")
         let started = Date()

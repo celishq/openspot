@@ -180,8 +180,9 @@ in a row sends `<script> <slot> <row id> [value]` (U9), and a row hides one with
 
 The script holds no state. Each call gets the values on stdin (01), and prints the whole output again, or nothing to be
 read again. The app draws a change at once, and drops the
-answer to a call that a newer change has outdated (U10). The first frame of a read replaces all that the spot shows, and
-each later frame of the same read changes only what it prints.
+answer to a call that a newer change has outdated (U10). The first frame of a read replaces all that the spot shows. A
+later frame of the same read that has a head replaces all again, so it can remove rows and parts. A later frame with no
+head changes only what it prints. A script that stays follows the rule of 05.
 
 The head is the one block with no kind, at any place in the output, and it is not drawn. It holds four groups:
 

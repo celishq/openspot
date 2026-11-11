@@ -17,6 +17,20 @@ final class SpotRunsWorkTests: SpotRunsCase {
         FileManager.default.createFile(atPath: path(name), contents: nil)
     }
 
+    func testAReadTellsNoReaderOfTheWorkOfItsCard() async throws {
+        try script(header: "read=panel", "printf 'title=Same\\n'")
+        let sheet = try sheet()
+        sheet.read(need: .change)
+        try await wait("the first read") { self.log().count == 1 && sheet.calls.isEmpty }
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = sheet.work; _ = sheet.cardWork; _ = sheet.shownState } onChange: { changed = true }
+
+        sheet.read(need: .change)
+        try await wait("the second read") { self.log().count == 2 && sheet.calls.isEmpty }
+
+        XCTAssertFalse(changed)
+    }
+
     func testWorkShowsOnlyAfterItsCallHasRunForOneSecond() async throws {
         try script(body: Self.progress)
         let sheet = try sheet()

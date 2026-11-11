@@ -13,6 +13,7 @@ app, which the New spot sheet opens and `openspot guide` prints for an AI. How t
 | [07 Files out](07-files-out.md)         | draft  | 01 02 | Rows that a person drags out of a sheet as files.                                |
 | [08 Float](08-float.md)                 | draft  | 01 02 | A spot that a key or a shake shows in a window of its own at the pointer.        |
 | [09 Calendar](09-calendar.md)           | draft  | 01 02 | The events and the reminders of the person, read, added and ticked.              |
+| [10 Answers](10-answers.md)             | draft  | 01 02 | A spot that answers the text of the main search, such as a sum.                  |
 
 A number that a spec gave up is not used again.
 
@@ -53,6 +54,7 @@ These rules come from the way Nostr writes its NIPs.
 | `view`                                                                                                   | Header key           | 03   |
 | `stay`                                                                                                   | Header key           | 05   |
 | `float`                                                                                                  | Header key           | 08   |
+| `answers`                                                                                                | Header key           | 10   |
 | `sheet`, `panel`, a number, `launch`, `wake`                                                             | Moment               | 01   |
 | `read`                                                                                                   | Reserved call        | 01   |
 | `run`, `open`, `drop`                                                                                    | Default id           | 01   |
@@ -63,6 +65,7 @@ These rules come from the way Nostr writes its NIPs.
 | `openspot <noun> <verb>`                                                                                 | Command              | 01   |
 | `openspot screen`                                                                                        | Command              | 06   |
 | `openspot calendar`, `openspot reminders`                                                                | Command              | 09   |
+| `openspot calc`                                                                                          | Command              | 10   |
 | `start`, `end`, `due`, `allday`, `calendar`, `list`, `location`, `meeting`, `done`                       | Row key              | 09   |
 | `text`, `number`, `gauge`, `graph`, `picture`, `spot`, `switch`, `slider`, `field`, `choice`, `hotkey`, `button`, `section`, `row`, `repeat`, `template` | Block kind | 02 |
 | `view`                                                                                                   | Block kind           | 03   |

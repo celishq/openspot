@@ -50,4 +50,42 @@ final class CallLogTests: SpotRunsCase {
         XCTAssertFalse(text.contains("run 0\n"))
         XCTAssertTrue(text.hasPrefix(CallLog.mark))
     }
+
+    func testACallKeepsOnlyTheFramesThatItsRecordShows() {
+        let small = CallLog(folder: folder.appendingPathComponent("small"), limit: 2_000)
+        var frames: [String] = []
+        for number in 0..<100 {
+            small.add("frame \(number) " + String(repeating: "x", count: 90), to: &frames)
+        }
+        small.write(CallLog.Record(spot: "many", arguments: ["read"], input: nil, frames: frames, errors: "", end: .exited(0), started: time, seconds: 0.1))
+
+        let text = small.text(of: "many")
+
+        XCTAssertLessThan(frames.count, 10)
+        XCTAssertTrue(text.contains("frame 99 "))
+        XCTAssertFalse(text.contains("frame 90 "))
+    }
+
+    func testARecordMarksTheCutWhenItDropsAnOlderFrame() {
+        let small = CallLog(folder: folder.appendingPathComponent("small"), limit: 2_000)
+
+        small.write(CallLog.Record(spot: "cut", arguments: ["read"], input: nil, frames: [String(repeating: "a", count: 10), String(repeating: "b", count: 500)], errors: "", end: .exited(0), started: time, seconds: 0.1))
+
+        XCTAssertTrue(small.text(of: "cut").contains("stdout:\n…" + String(repeating: "b", count: 500)))
+    }
+
+    func testTheLogKeepsItsNewestCallsWhenItsFileHoldsMore() throws {
+        let small = CallLog(folder: folder.appendingPathComponent("small"), limit: 2_000)
+        for number in 0..<25 {
+            small.write(CallLog.Record(spot: "big", arguments: ["run", "\(number)"], input: nil, frames: [String(repeating: "x", count: 100)], errors: "", end: .exited(0), started: time, seconds: 0.1))
+        }
+
+        let text = small.text(of: "big")
+        let file = try Data(contentsOf: folder.appendingPathComponent("small/big.log"))
+
+        XCTAssertLessThanOrEqual(file.count, 4_000)
+        XCTAssertLessThanOrEqual(text.utf8.count, 2_000)
+        XCTAssertTrue(text.contains("run 24"))
+        XCTAssertTrue(text.hasPrefix(CallLog.mark))
+    }
 }

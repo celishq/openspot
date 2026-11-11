@@ -5,11 +5,8 @@ public struct SpotItem: Equatable, Sendable {
     public let title: String
     public let subtitle: String?
     public let run: String
-    public let symbol: String?
-    /// The file whose Finder icon the row draws.
-    public let iconFile: String?
-    public let image: String?
-    public let glyph: String?
+    /// The picture that its `icon` value names.
+    public let picture: Icon?
     /// The name of the place inside its spot that it sits under, such as the pane of a section.
     public let parent: String?
     public let hides: [String]?
@@ -33,14 +30,11 @@ public struct SpotItem: Equatable, Sendable {
         "row", "title", "detail", "icon", "parent", "hides", "keyword", "shortcut", "on", "tone", "as", "file"
     ]
 
-    public init(title: String, subtitle: String? = nil, run: String, symbol: String? = nil, iconFile: String? = nil, image: String? = nil, glyph: String? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, isOn: Bool = false, tone: MetricValue.Tone? = nil, template: String? = nil, fields: [TextBlock.Field] = [], file: String? = nil) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, isOn: Bool = false, tone: MetricValue.Tone? = nil, template: String? = nil, fields: [TextBlock.Field] = [], file: String? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
-        self.symbol = symbol
-        self.iconFile = iconFile
-        self.image = image
-        self.glyph = glyph
+        self.picture = picture
         self.parent = parent
         self.hides = hides
         self.keywords = keywords
@@ -57,15 +51,11 @@ public struct SpotItem: Equatable, Sendable {
         guard let run = block.value("row") else { return nil }
         let title = block.value("title") ?? run
         let hides = block.values("hides")
-        let icon = Icon(text: block.value("icon"))
         self.init(
             title: title,
             subtitle: block.value("detail"),
             run: run,
-            symbol: icon?.symbol,
-            iconFile: icon?.file,
-            image: icon?.image,
-            glyph: icon?.glyph,
+            picture: Icon(text: block.value("icon")),
             parent: block.value("parent"),
             hides: hides.isEmpty ? nil : hides,
             keywords: block.values("keyword"),
@@ -88,6 +78,26 @@ public struct SpotItem: Equatable, Sendable {
         fields.compactMap { field in
             field.key.hasPrefix(slot + ".") ? .init(key: String(field.key.dropFirst(slot.count + 1)), value: field.value) : nil
         }
+    }
+
+    /// The SF Symbol of its picture.
+    public var symbol: String? {
+        picture?.symbol
+    }
+
+    /// The file whose Finder icon the row draws.
+    public var iconFile: String? {
+        picture?.file
+    }
+
+    /// The picture file that the row draws.
+    public var image: String? {
+        picture?.image
+    }
+
+    /// The text, such as an emoji, that the row draws as its picture.
+    public var glyph: String? {
+        picture?.glyph
     }
 
     /// The `icon` value of its picture.

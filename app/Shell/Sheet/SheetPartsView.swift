@@ -16,6 +16,8 @@ struct SheetPartsView: View {
     var onSlot: (SpotItem, String, String?) -> Void = { _, _, _ in }
     var onDragOut: ([SpotItem]) -> Void = { _ in }
     var selection: (() -> Int)?
+    /// Reads the id of the selected part where it is called. Nil reads it from the parts.
+    var selectedPart: (() -> String?)?
     var nudge: () -> SheetParts.Nudge = { SheetParts.Nudge.rest }
     /// The last press of return that asks a menu to open.
     var menuOpening: () -> SheetParts.MenuOpening? = { nil }
@@ -24,7 +26,6 @@ struct SheetPartsView: View {
     /// The plugin's own view at the size of the area of a `view` component (V1).
     var customView: (CGSize) -> SpotCustomView? = { _ in nil }
     @FocusState private var focus: String?
-    @Environment(\.spotIsShown) private var isShown
 
     private static let swatchSize: CGFloat = 22
     private static let smallSwatch: CGFloat = 16
@@ -52,10 +53,8 @@ struct SheetPartsView: View {
             }
         }
         .onAppear(perform: focusSelectedField)
-        .onChange(of: isShown) { _, isShown in
-            if isShown { DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeInDuration, execute: focusSelectedField) }
-        }
-        .onChange(of: panel.selectedPart?.id) { focusSelectedField() }
+        .modifier(FocusOnShow(focus: focusSelectedField))
+        .modifier(FocusOnSelect(selectedID: selectedID, focus: focusSelectedField))
         .onChange(of: focus) { _, id in
             if let part = panel.parts.first(where: { $0.id == id }) { onFocus(part) }
         }
@@ -97,27 +96,16 @@ struct SheetPartsView: View {
             )
             .frame(width: frame.rect.width, height: frame.rect.height, alignment: Self.alignment(frame))
             .background {
-                if isSelected(part) { focusRing(part, frame) }
+                if part.isFocusable {
+                    Color.clear.modifier(PartRing(id: part.id, selectedID: selectedID, hasBox: hasBox(part, frame), shape: shape))
+                }
             }
             .offset(x: frame.rect.minX, y: frame.rect.minY)
             .zIndex(frame.isOnTop ? 1 : 0)
     }
 
-    private func isSelected(_ part: SpotPart) -> Bool {
-        panel.selectedPart?.id == part.id
-    }
-
-    /// The ring of the focused part: a few points outside its own box, with that box's corners, or around its line, with
-    /// room for its words at each side, when it has no box.
-    @ViewBuilder
-    private func focusRing(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
-        if hasBox(part, frame) {
-            let gap = SpotTokens.focusGap
-            let ring = RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding + gap, style: .continuous)
-            Color.clear.modifier(SpotSelectionRing(isSelected: true, shape: ring)).padding(-gap)
-        } else {
-            Color.clear.modifier(SpotSelectionRing(isSelected: true, shape: shape)).padding(.horizontal, -SpotTokens.controlPadding)
-        }
+    private var selectedID: () -> String? {
+        selectedPart ?? { [panel] in panel.selectedPart?.id }
     }
 
     /// Whether a part fills its whole cell with a box of its own, as a button, a tile or a field does.
@@ -148,7 +136,8 @@ struct SheetPartsView: View {
     /// Gives the text focus to the field that has the focus of the sheet, and takes it from a field that lost it.
     private func focusSelectedField() {
         guard !panel.showsRows else { return }
-        DispatchQueue.main.async { focus = panel.selectedPart.flatMap { $0.isEditable ? $0.id : nil } }
+        let id = selectedID()
+        DispatchQueue.main.async { focus = panel.parts.first { $0.id == id && $0.isEditable }?.id }
     }
 
     @ViewBuilder
@@ -507,17 +496,10 @@ struct SheetPartsView: View {
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
     }
 
-    /// The picture at a file path. A file it cannot read shows an empty tile.
     private func image(_ path: String) -> some View {
-        Group {
-            if let picture = NSImage(contentsOfFile: path) {
-                Image(nsImage: picture).resizable().scaledToFill()
-            } else {
-                SpotTheme.ink.opacity(SpotTheme.fill)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipShape(shape)
+        SheetPicture(key: SpotPictureStore.Key(path: path))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipShape(shape)
     }
 
     private func progress(_ part: SpotPart, level: Double) -> some View {
@@ -573,6 +555,48 @@ struct SheetPartsView: View {
     }
 }
 
+/// Gives the focus back once the panel has faded in. It alone reads whether the panel shows, so that a show reruns no part.
+private struct FocusOnShow: ViewModifier {
+    let focus: () -> Void
+    @Environment(\.spotIsShown) private var isShown
+
+    func body(content: Content) -> some View {
+        content.onChange(of: isShown) { _, isShown in
+            if isShown { DispatchQueue.main.asyncAfter(deadline: .now() + SpotMotion.fadeInDuration, execute: focus) }
+        }
+    }
+}
+
+/// The ring of the focused part: a few points outside its own box, with that box's corners, or around its line, with room
+/// for its words at each side, when it has no box. It reads the focus itself, so a move of the focus redraws only rings.
+private struct PartRing: ViewModifier {
+    let id: String
+    let selectedID: () -> String?
+    let hasBox: Bool
+    let shape: RoundedRectangle
+
+    func body(content: Content) -> some View {
+        let isSelected = selectedID() == id
+        if hasBox {
+            let gap = SpotTokens.focusGap
+            let ring = RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding + gap, style: .continuous)
+            content.modifier(SpotSelectionRing(isSelected: isSelected, shape: ring)).padding(-gap)
+        } else {
+            content.modifier(SpotSelectionRing(isSelected: isSelected, shape: shape)).padding(.horizontal, -SpotTokens.controlPadding)
+        }
+    }
+}
+
+/// Gives the focus to the field that the keyboard selects. It reads the selection itself, so a move redraws only this.
+private struct FocusOnSelect: ViewModifier {
+    let selectedID: () -> String?
+    let focus: () -> Void
+
+    func body(content: Content) -> some View {
+        content.onChange(of: selectedID()) { focus() }
+    }
+}
+
 /// The filled row of `look=tile`.
 private struct TileLook: ViewModifier {
     let isOn: Bool
@@ -586,5 +610,26 @@ private struct TileLook: ViewModifier {
         } else {
             content
         }
+    }
+}
+
+/// The picture at a file path, which fills its area and is cut at its edges. It shows an empty tile until it is read, and
+/// stays empty for a file it cannot read.
+private struct SheetPicture: View {
+    let key: SpotPictureStore.Key
+    @State private var loaded: (key: SpotPictureStore.Key, image: CGImage)?
+
+    var body: some View {
+        Color.clear
+            .overlay {
+                if let image = SpotPictureStore.shared.cached(key) ?? (loaded?.key == key ? loaded?.image : nil) {
+                    Image(decorative: image, scale: SpotPictureStore.scale).resizable().scaledToFill()
+                } else {
+                    SpotTheme.ink.opacity(SpotTheme.fill)
+                }
+            }
+            .task(id: key) {
+                if let image = await SpotPictureStore.shared.image(key) { loaded = (key, image) }
+            }
     }
 }

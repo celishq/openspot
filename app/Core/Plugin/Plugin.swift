@@ -54,6 +54,15 @@ public struct Plugin: Equatable, Sendable {
                 throw PluginError.fault("\(name) needs a shortcut to join the main search, because a number in its read and no shortcut gives it no spot")
             }
         }
+        var answers: AnswerPattern?
+        if let text = header.value("answers") {
+            guard let pattern = AnswerPattern(text) else {
+                throw PluginError.fault("\(name) has an unknown answers pattern: \(text). Write a regular expression, such as answers=^[0-9]")
+            }
+            guard !stays else { throw PluginError.fault("\(name) answers the main search, so it runs once for each call. Remove stay=true or answers") }
+            answers = pattern
+        }
+        let answersOnly = answers != nil && read == nil
         let offers = try header.values("command").map { text in
             guard let offer = CommandOffer(text: text) else {
                 throw PluginError.fault("\(name) has an unknown command: \(text). Write an ID and a title, such as left:Left side")
@@ -80,7 +89,8 @@ public struct Plugin: Equatable, Sendable {
             key: try Self.key(header.value("shortcut"), of: name),
             read: read,
             isGlobal: isGlobal,
-            isFound: header.value("global") != "rows",
+            isFound: header.value("global") != "rows" && !answersOnly,
+            answers: answers,
             stays: stays,
             pressRuns: press == "run",
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
@@ -88,7 +98,7 @@ public struct Plugin: Equatable, Sendable {
             offersFloat: (header.flag("float") ?? false) && (read?.seconds == nil || hasKey),
             dataName: header.value("data") ?? id.split(separator: "/").first.map(String.init),
             hasSpot: read?.seconds == nil || hasKey,
-            isOnGrid: offers.isEmpty && (hasKey || !isGlobal),
+            isOnGrid: offers.isEmpty && (hasKey || !isGlobal) && !answersOnly,
             headerSymbol: symbol,
             offers: offers,
             settings: header.value("settings")?.split(separator: ",").compactMap { CommandOffer(setting: String($0)) } ?? [],

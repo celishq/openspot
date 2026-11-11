@@ -18,6 +18,12 @@ public struct SpotSize: Equatable, Sendable {
         self.rows = rows
     }
 
+    /// Whether a card of this size can take a larger size, or a smaller one, among these sizes.
+    public func reach(among sizes: [SpotSize]) -> (grows: Bool, shrinks: Bool) {
+        let area = columns * rows
+        return (sizes.contains { $0.columns * $0.rows > area }, sizes.contains { $0.columns * $0.rows < area })
+    }
+
     /// The word a file uses for this size.
     public var name: String {
         switch self {

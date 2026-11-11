@@ -174,6 +174,13 @@ public struct SheetParts: Equatable, Sendable {
         selected = id
     }
 
+    /// Whether it holds the same parts and state as another, and differs at most in the selected part.
+    public func differsOnlyInSelection(from other: SheetParts) -> Bool {
+        var same = self
+        same.selected = other.selected
+        return same == other
+    }
+
     /// Whether the person moved the selection, so that a clear has something to change.
     public var isSelectionMoved: Bool {
         selected != nil
@@ -187,7 +194,6 @@ public struct SheetParts: Equatable, Sendable {
     @discardableResult
     public mutating func set(_ value: String, of id: String) -> Int {
         parts.firstIndex { $0.id == id }.map { parts[$0].set(value) }
-        place()
         let generation = advance()
         changes[id] = generation
         return generation

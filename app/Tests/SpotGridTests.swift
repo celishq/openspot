@@ -127,6 +127,27 @@ final class SpotGridTests: XCTestCase {
         ])
     }
 
+    func testASquareAfterASmallSpotLiesOnTheRightOfTheSmallSpots() {
+        XCTAssertEqual(SpotGrid().place([.small, .square, .small, .small, .small]), [
+            SpotPlacement(index: 0, row: 0, column: 0, size: .small),
+            SpotPlacement(index: 1, row: 0, column: 2, size: .square),
+            SpotPlacement(index: 2, row: 0, column: 1, size: .small),
+            SpotPlacement(index: 3, row: 1, column: 0, size: .small),
+            SpotPlacement(index: 4, row: 1, column: 1, size: .small)
+        ])
+    }
+
+    func testAWideSpotBeforeASquareGrowsToASquareOnItsLeft() {
+        XCTAssertEqual(SpotGrid().place([.wide, .square]), [
+            SpotPlacement(index: 0, row: 0, column: 0, size: .square),
+            SpotPlacement(index: 1, row: 0, column: 2, size: .square)
+        ])
+    }
+
+    func testSpotsWiderThanHalfARowBeforeASquareFillARowOfTheirOwn() {
+        XCTAssertEqual(SpotGrid().place([.wide, .small, .square]).map(\.row), [0, 0, 1])
+    }
+
     func testAFullSetKeepsItsSizes() {
         let input: [SpotSize] = [.square, .wide, .small, .small, .wide, .small, .small, .strip, .strip, .strip]
         XCTAssertEqual(sizes(input), input)

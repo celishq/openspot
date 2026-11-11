@@ -22,6 +22,15 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["emoji", "--tone"]), .unknown("emoji --tone"))
     }
 
+    func testCalcSolvesTheWordsAfterItsVerbAlsoInARead() {
+        XCTAssertEqual(CommandLineCall(arguments: ["calc", "solve", "2*(3+4)"]), .calcSolve("2*(3+4)"))
+        XCTAssertEqual(CommandLineCall(arguments: ["calc", "solve", "5", "km", "in", "mi"]), .calcSolve("5 km in mi"))
+        XCTAssertEqual(CommandLineCall(arguments: ["calc", "solve", "1+1"], environment: ["OPENSPOT_REASON": "search"]), .calcSolve("1+1"))
+        XCTAssertEqual(CommandLineCall(arguments: ["calc", "solve"]), .unknown("calc solve"))
+        XCTAssertEqual(CommandLineCall(arguments: ["calc", "2+2"]), .unknown("calc 2+2"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot calc solve <words>..."))
+    }
+
     func testSymbolsTakeNoOptions() {
         XCTAssertEqual(CommandLineCall(arguments: ["symbols"]), .symbols)
         XCTAssertEqual(CommandLineCall(arguments: ["symbols", "--tone", "dark"]), .unknown("symbols --tone dark"))

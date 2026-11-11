@@ -23,6 +23,14 @@ final class ScreenPlaceTests: XCTestCase {
         XCTAssertEqual(ScreenPlace(screens: [main]).origin(of: size, window: nil, pointer: CGPoint(x: 10, y: 10)), CGPoint(x: 428, y: 185))
     }
 
+    func testWithOneScreenThePanelOpensThereWhereverTheWindowIs() {
+        let one = ScreenPlace(screens: [main])
+        let alone = one.origin(of: size, window: nil, pointer: CGPoint(x: 10, y: 10))
+
+        XCTAssertEqual(one.origin(of: size, window: CGRect(x: 100, y: 100, width: 800, height: 600), pointer: CGPoint(x: 10, y: 10)), alone)
+        XCTAssertEqual(one.origin(of: size, window: CGRect(x: -2000, y: 100, width: 800, height: 600), pointer: CGPoint(x: 9000, y: 9000)), alone)
+    }
+
     func testThePanelOpensOnTheScreenOfTheFrontWindow() {
         let window = CGRect(x: -2000, y: 100, width: 800, height: 600)
 
@@ -47,5 +55,25 @@ final class ScreenPlaceTests: XCTestCase {
         let bounds = CGRect(x: -2000, y: 100, width: 800, height: 600)
 
         XCTAssertEqual(ScreenPlace.frame(ofBounds: bounds, mainHeight: 967), CGRect(x: -2000, y: 267, width: 800, height: 600))
+    }
+
+    func testTheDockLiesAlongTheBottomUnderThePanelAndCentredOnIt() {
+        let area = CGRect(x: 0, y: 0, width: 1440, height: 875)
+        let panel = CGRect(x: 575, y: 400, width: 289, height: 385)
+
+        XCTAssertEqual(ScreenPlace.dock(under: panel, in: area), CGRect(x: 109, y: 20, width: 1220, height: SpotTokens.dockHeight(rows: 3)))
+    }
+
+    func testTheDockShowsTheRowsThatFitUnderThePanelAndOneAtLeast() {
+        let area = CGRect(x: 0, y: 0, width: 1440, height: 875)
+
+        XCTAssertEqual(ScreenPlace.dock(under: CGRect(x: 575, y: 300, width: 289, height: 485), in: area).height, SpotTokens.dockHeight(rows: 2))
+        XCTAssertEqual(ScreenPlace.dock(under: CGRect(x: 575, y: 50, width: 289, height: 735), in: area).height, SpotTokens.dockHeight(rows: 1))
+    }
+
+    func testTheDockStaysWholeOnItsScreen() {
+        let panel = CGRect(x: 690, y: 400, width: 289, height: 300)
+
+        XCTAssertEqual(ScreenPlace.dock(under: panel, in: CGRect(x: 0, y: 0, width: 1000, height: 800)), CGRect(x: 20, y: 20, width: 960, height: SpotTokens.dockHeight(rows: 3)))
     }
 }

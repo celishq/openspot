@@ -20,8 +20,6 @@ struct SpotCardView: View, Equatable {
     let model: SpotsModel
     /// What a tap does in place of a press on the grid, such as on a float.
     var onTap: (() -> Void)?
-    @State private var isHovered = false
-    @Environment(\.spotIsShown) private var isShown
 
     /// Whether two cards show the same values, so that a run of the grid reruns only the cards that changed.
     nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
@@ -43,20 +41,16 @@ struct SpotCardView: View, Equatable {
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))
             .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, blursBehind: false, rimSize: CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))))
-            .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : isHovered ? 0.08 : 0)).allowsHitTesting(false))
-            .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).opacity(isShown ? 1 : 0).scaleEffect(isShown ? 1 : SpotMotion.hiddenScale).animation(SpotMotion.surface(isShown: isShown), value: isShown).allowsHitTesting(false))
+            .modifier(CardHover(shape: shape, isFilled: isFilled, showsPress: showsPress))
+            .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).modifier(CardReveal()).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { keycap }
-            .overlay(alignment: .topTrailing) { hiddenMark }
             .overlay(alignment: .topTrailing) { if !isHiddenFromGrid { FailureMark(entry: entry, size: size) } }
             .contentShape(shape)
-            .onHover { isHovered = $0 }
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.option)) } }
             .animation(.easeInOut(duration: 0.2), value: isOn)
             .scaleEffect(showsPress ? SpotMotion.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
-            .task(id: ownView.map { "\($0)\n\(isShown)" }) {
-                if let ownView { await SpotViews.shared.load(ownView) }
-            }
+            .modifier(CardViewLoad(source: ownView))
     }
 
     @ViewBuilder
@@ -129,7 +123,7 @@ struct SpotCardView: View, Equatable {
 
     /// Whether a card draws the solid fill of a spot that is on, which no drag or drop tints.
     static func isFilled(_ entry: SpotsModel.Entry, takesDrag: Bool, isDropTarget: Bool) -> Bool {
-        entry.state.on == true && !takesDrag && !isDropTarget
+        entry.isOn && !takesDrag && !isDropTarget
     }
 
     private var row: some View {
@@ -250,22 +244,6 @@ struct SpotCardView: View, Equatable {
         }
     }
 
-    /// The mark that says Edit Spots shows this card and the grid does not.
-    @ViewBuilder
-    private var hiddenMark: some View {
-        if isHiddenFromGrid {
-            let inset = SpotTokens.corner(for: size) * SpotTokens.rimPoint - SpotTokens.keycap / 2
-            Image(systemName: "eye.slash")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(SpotTheme.ink)
-                .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
-                .background(SpotTheme.keycap, in: RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
-                .offset(x: -inset, y: inset)
-                .allowsHitTesting(false)
-        }
-    }
-
     private var symbolGlyph: some View {
         Image(systemName: entry.symbol)
             .font(.system(size: 17, weight: .semibold))
@@ -283,6 +261,46 @@ private struct CardRing: ViewModifier {
 
     func body(content: Content) -> some View {
         content.modifier(SpotSelectionRing(isSelected: model.selected == index, shape: shape))
+    }
+}
+
+/// The tint of a card under the pointer or a press. It alone holds the hover, so that a hover reruns no card.
+private struct CardHover: ViewModifier {
+    let shape: RoundedRectangle
+    let isFilled: Bool
+    let showsPress: Bool
+    @State private var isHovered = false
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : isHovered ? 0.08 : 0)).allowsHitTesting(false))
+            .contentShape(shape)
+            .onHover { isHovered = $0 }
+    }
+}
+
+/// The fade and the scale of a ring as the panel shows and hides. It alone reads whether the panel shows, so that a show
+/// reruns no card.
+private struct CardReveal: ViewModifier {
+    @Environment(\.spotIsShown) private var isShown
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(isShown ? 1 : 0)
+            .scaleEffect(isShown ? 1 : SpotMotion.hiddenScale)
+            .animation(SpotMotion.surface(isShown: isShown), value: isShown)
+    }
+}
+
+/// Builds the plugin's own view of a card each time the panel shows (V3).
+private struct CardViewLoad: ViewModifier {
+    let source: String?
+    @Environment(\.spotIsShown) private var isShown
+
+    func body(content: Content) -> some View {
+        content.task(id: source.map { "\($0)\n\(isShown)" }) {
+            if let source { await SpotViews.shared.load(source) }
+        }
     }
 }
 

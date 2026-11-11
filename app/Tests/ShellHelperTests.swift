@@ -181,7 +181,7 @@ final class ShellHelperTests: XCTestCase {
         printf 'over=1\\n'
         """)
         let live = ScriptProcess(url: url, mode: .stays, limit: 5)
-        var frames = try live.start().makeAsyncIterator()
+        var frames = live.start().makeAsyncIterator()
 
         live.send(.read, values: "note=a\\\\b\n", id: 1, reason: .panel)
         let first = try await frames.next()
@@ -207,7 +207,7 @@ final class ShellHelperTests: XCTestCase {
         """)
         let live = ScriptProcess(url: url, mode: .stays, limit: 3)
         defer { live.end() }
-        var frames = try live.start().makeAsyncIterator()
+        var frames = live.start().makeAsyncIterator()
 
         let first = try await frames.next()
         live.send(.press("go"), id: 1)

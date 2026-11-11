@@ -30,7 +30,7 @@ final class OnceLink: ScriptLink {
             showedParts = showedParts || !lines.parts.isEmpty
             selected = lines.select ?? selected
             switch call.purpose {
-            case .ask(.read) where hasAnswer:
+            case .ask(.read) where hasAnswer && lines.summary == nil:
                 await run.takeUpdate(lines, frame: text, from: .read)
             case .ask(let ask):
                 guard !made.isStopped else { return }
@@ -49,7 +49,7 @@ final class OnceLink: ScriptLink {
             }
             run.ended(made, call.purpose, end, hadAnswer: hasAnswer, showedParts: showedParts, selected: selected)
         }
-        if case .ask = call.purpose { asking.append(made) }
+        if case .ask(let ask) = call.purpose, !ask.isAnswer { asking.append(made) }
         run.track(made)
         return true
     }
