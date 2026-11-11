@@ -102,7 +102,7 @@ final class SpotAddTests: XCTestCase {
     }
 
     func testASourceThatGitCannotCloneIsAFaultAndLeavesNothing() async throws {
-        let answer = try await answer(["spot", "add", root.appendingPathComponent("nothing.git").path])
+        let answer = try await answer(["spot", "add", "file://\(root.path)/nothing.git"])
 
         XCTAssertEqual(answer.code, 1)
         XCTAssertTrue(answer.errors.hasPrefix("Openspot cannot add "), answer.errors)
@@ -145,5 +145,75 @@ final class SpotAddTests: XCTestCase {
 
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "add", "x"], environment: read), .refused("`openspot spot add` changes your plugins folder, so it cannot run in a read. Run it from a pick or an action."))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "remove", "x"], environment: read), .refused("`openspot spot remove` changes your plugins folder, so it cannot run in a read. Run it from a pick or an action."))
+    }
+
+    private func files(in folder: URL) throws -> [String: Data] {
+        let paths = FileManager.default.subpaths(atPath: folder.path) ?? []
+        var files: [String: Data] = [:]
+        for path in paths where !path.hasSuffix("/") {
+            var isFolder: ObjCBool = false
+            FileManager.default.fileExists(atPath: folder.appendingPathComponent(path).path, isDirectory: &isFolder)
+            if !isFolder.boolValue { files[path] = try Data(contentsOf: folder.appendingPathComponent(path)) }
+        }
+        return files
+    }
+
+    func testTheLockKeepsTheSourceTheCommitAndThePathsOfEachAddedSpot() async throws {
+        let repo = try repo()
+        let file = root.appendingPathComponent("Cups.spot")
+        try SharedSpot(files: [.init(path: "cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).data.write(to: file)
+
+        _ = try await answer(["spot", "add", repo.url.path])
+        _ = try await answer(["spot", "add", file.path])
+
+        let entries = try SpotLock(url: root.appendingPathComponent("spots.lock")).entries()
+        XCTAssertEqual(entries.map(\.source), [repo.url.standardizedFileURL.path, file.path])
+        XCTAssertEqual(entries.map(\.paths), [["coffee"], ["cups.sh"]])
+        XCTAssertEqual(entries.first?.commit?.count, 40)
+        XCTAssertNil(entries.last?.commit)
+    }
+
+    func testWithNoSourceItAddsTheSameFilesAgainAtTheCommitOfTheLock() async throws {
+        let repo = try repo()
+        _ = try await answer(["spot", "add", repo.url.path])
+        let added = try files(in: plugins)
+        let commit = try XCTUnwrap(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries().first?.commit)
+        try repo.commit(["coffee.sh": "#!/bin/sh\necho two\n"])
+        try FileManager.default.removeItem(at: plugins)
+
+        let answer = try await answer(["spot", "add"])
+
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        XCTAssertEqual(answer.output, "Added coffee at \(commit.prefix(7)).\n")
+        XCTAssertEqual(try files(in: plugins), added)
+        XCTAssertTrue(FileManager.default.isExecutableFile(atPath: plugins.appendingPathComponent("coffee/coffee.sh").path))
+    }
+
+    func testWithNoSourceASpotThatIsThereStays() async throws {
+        let repo = try repo()
+        _ = try await answer(["spot", "add", repo.url.path])
+
+        let answer = try await answer(["spot", "add"])
+
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        XCTAssertEqual(answer.output, "Each spot of spots.lock is in the plugins folder.\n")
+    }
+
+    func testWithNoSourceASourceThatIsGoneIsAFaultAndTheOthersComeBack() async throws {
+        let repo = try repo()
+        let tea = root.appendingPathComponent("sources/tea")
+        try FileManager.default.createDirectory(at: tea, withIntermediateDirectories: true)
+        try "#!/bin/sh\n".writeScript(to: tea.appendingPathComponent("tea.sh"))
+        _ = try await answer(["spot", "add", tea.path])
+        _ = try await answer(["spot", "add", repo.url.path])
+        try FileManager.default.removeItem(at: tea)
+        try FileManager.default.removeItem(at: plugins)
+
+        let answer = try await answer(["spot", "add"])
+
+        XCTAssertEqual(answer.code, 1)
+        XCTAssertEqual(answer.errors, "tea: Openspot cannot find \(tea.standardizedFileURL.path).\n")
+        XCTAssertEqual(try ids(), ["coffee/coffee"])
+        XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries().count, 2)
     }
 }

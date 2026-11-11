@@ -43,6 +43,7 @@ public enum SpotSource: Equatable, Sendable {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         switch self {
         case .git(let text):
+            if text.hasPrefix("/"), !FileManager.default.fileExists(atPath: text) { throw PluginError.fault("Openspot cannot find \(text).") }
             let name = try Self.name(of: text)
             try Self.checkFree([name], in: folder)
             let work = try FileManager.default.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: folder, create: true)

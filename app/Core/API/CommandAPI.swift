@@ -64,7 +64,13 @@ public final class CommandAPI: @unchecked Sendable {
                 return try await SpotLock.standard(environment: environment).add(SpotSource(text: source, place: place), to: folder.url).added
             }
         case .spotAdd(nil):
-            return { CommandAnswer(errors: "openspot spot add needs a source.\n", code: 1) }
+            return {
+                do {
+                    return try await SpotLock.standard(environment: environment).restore(to: PluginFolder.standard(environment: environment, enabled: [], disabled: []).url)
+                } catch {
+                    return CommandAnswer(failure: error)
+                }
+            }
         case .spotRemove(let id):
             return Self.answer {
                 let folder = PluginFolder.standard(environment: environment, enabled: [], disabled: [])

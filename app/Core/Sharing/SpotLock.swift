@@ -56,6 +56,24 @@ public struct SpotLock: Sendable {
         return entry
     }
 
+    /// Adds each spot of the lockfile whose first path the folder lacks, a git one at its commit. A spot that cannot come
+    /// back is a fault line, and the others still come.
+    public func restore(to folder: URL) async throws -> CommandAnswer {
+        var added = ""
+        var faults = ""
+        for entry in try entries() where !FileManager.default.fileExists(atPath: folder.appendingPathComponent(entry.paths.first ?? "").path) {
+            do {
+                let place = URL(fileURLWithPath: "/", isDirectory: true)
+                _ = try await SpotSource(text: entry.source, place: place).add(to: folder, at: entry.commit)
+                added += entry.added
+            } catch {
+                faults += "\(entry.name): \((error as? PluginError)?.reason ?? error.localizedDescription)\n"
+            }
+        }
+        if added.isEmpty, faults.isEmpty { added = "Each spot of spots.lock is in the plugins folder.\n" }
+        return CommandAnswer(output: added, errors: faults, code: faults.isEmpty ? 0 : 1)
+    }
+
     /// Takes the spot of this ID out of the folder with each path of its entry, and drops the entry. A spot that `spot add`
     /// did not add stays, with a fault.
     public func remove(_ id: String, from folder: URL) throws -> Entry {
