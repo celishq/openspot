@@ -1,7 +1,6 @@
 #!/bin/sh
 # icon=link
 # detail=Open a link
-# shortcut=l
 # read=panel
 # offers=search
 export LC_ALL=en_US.UTF-8

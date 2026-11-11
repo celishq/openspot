@@ -1,7 +1,6 @@
 #!/bin/sh
 # icon=translate
 # detail=Between languages
-# shortcut=t
 # size=small
 # read=sheet
 . "$OPENSPOT_SH"

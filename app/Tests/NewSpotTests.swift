@@ -50,14 +50,13 @@ final class NewSpotTests: XCTestCase {
         return try XCTUnwrap(SheetParts(output: output))
     }
 
-    func testTheSpotsSpotShowsWithAnEmptyFolderAndKeepsItsKey() throws {
-        try "#!/bin/sh\n# shortcut=p\n".writeScript(to: plugins.appendingPathComponent("mine.sh"))
+    func testTheSpotsSpotShowsWithAnEmptyFolder() throws {
         let shipped = ShippedSpot.commands(folder: plugins, guide: guideURL, app: "")
 
         let scan = try PluginFolder(url: plugins).scan(shipped: shipped)
 
-        XCTAssertEqual(scan.commands.first { $0.key?.name == "p" }?.name, "Spots")
-        XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "mine", reason: "Mine cannot use key p, because another command has it")])
+        XCTAssertTrue(scan.commands.contains { $0.id == ShippedSpot.spotsID })
+        XCTAssertEqual(scan.refused, [])
     }
 
     func testTheSheetIsAListThatSearchesByScriptWithCopyPromptForAIFirstThenEachStarter() async throws {

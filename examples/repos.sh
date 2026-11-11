@@ -1,7 +1,6 @@
 #!/bin/sh
 # icon=arrow.triangle.branch
 # detail=Open a git repo
-# shortcut=r
 # size=small
 # read=sheet
 # settings=folder,editor:Default app

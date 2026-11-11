@@ -1,7 +1,6 @@
 #!/bin/sh
 # icon=/System/Applications/Apps.app
 # detail=Open app
-# shortcut=a
 # read=panel
 # offers=search
 data=${OPENSPOT_DATA:-${TMPDIR:-/tmp}}

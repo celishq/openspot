@@ -17,10 +17,9 @@ final class PluginHeaderTests: XCTestCase {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-grid-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        let searchOnly = folder.appendingPathComponent("search.sh"), keyed = folder.appendingPathComponent("keyed.sh")
+        let searchOnly = folder.appendingPathComponent("search.sh")
         let rowsOnly = folder.appendingPathComponent("rows.sh"), floating = folder.appendingPathComponent("float.sh")
         try "#!/bin/sh\n# read=panel\n# offers=search\n".writeScript(to: searchOnly)
-        try "#!/bin/sh\n# read=panel\n# offers=search\n# shortcut=k\n".writeScript(to: keyed)
         try "#!/bin/sh\n# read=panel\n# offers=rows\n".writeScript(to: rowsOnly)
         try "#!/bin/sh\n# read=sheet\n# offers=float\n".writeScript(to: floating)
 
@@ -28,7 +27,6 @@ final class PluginHeaderTests: XCTestCase {
         let rows = try XCTUnwrap(try Plugin(file: rowsOnly, id: "rows")?.commands.first)
         let float = try XCTUnwrap(try Plugin(file: floating, id: "float")?.commands.first)
         XCTAssertFalse(search.headerState.isOnGrid)
-        XCTAssertTrue(try XCTUnwrap(try Plugin(file: keyed, id: "keyed")?.commands.first).headerState.isOnGrid)
         XCTAssertTrue(search.isGlobal)
         XCTAssertTrue(search.isFound)
         XCTAssertTrue(rows.isGlobal)

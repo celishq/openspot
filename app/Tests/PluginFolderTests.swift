@@ -93,7 +93,7 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testAnExecutableIsASpotWithItsHeader() throws {
-        try write("one.sh", header: "title=First\nsize=square\nicon=moon\ndetail=Off\nshortcut=o")
+        try write("one.sh", header: "title=First\nsize=square\nicon=moon\ndetail=Off")
 
         XCTAssertEqual(try scan.refused, [])
         let one = try XCTUnwrap(try scan.commands.first)
@@ -102,7 +102,6 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(one.size, .square)
         XCTAssertEqual(one.symbol, "moon")
         XCTAssertEqual(one.subtitle, "Off")
-        XCTAssertEqual(one.key?.name, "o")
         XCTAssertEqual(one.url.lastPathComponent, "one.sh")
     }
 
@@ -131,7 +130,6 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(command.kind, .launch)
         XCTAssertEqual(command.size, .wide)
         XCTAssertEqual(command.symbol, "app")
-        XCTAssertNil(command.key)
         XCTAssertNil(command.read)
         XCTAssertFalse(command.readsState)
         XCTAssertEqual(command.pick, .close)
@@ -169,7 +167,7 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testReadIsAListOfMoments() throws {
-        try write("a.sh", header: "read=panel, sheet,30\nshortcut=a")
+        try write("a.sh", header: "read=panel, sheet,30")
 
         let read = try XCTUnwrap(try scan.commands.first?.read)
 
@@ -252,8 +250,8 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(metric.read?.seconds, 30)
     }
 
-    func testAMetricWithAKeyIsAlsoAList() throws {
-        try write("pulls.sh", header: "read=120\nshortcut=g")
+    func testAMetricIsAlsoAList() throws {
+        try write("pulls.sh", header: "read=120")
 
         let scan = try scan
 
@@ -298,7 +296,7 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(try scan.refused, [
             ScanResult.Refusal(file: "a", reason: "A has an unknown read: sometimes. Use sheet, panel or a number of seconds"),
             ScanResult.Refusal(file: "b", reason: "B has an unknown size: huge"),
-            ScanResult.Refusal(file: "c", reason: "C has an unknown shortcut: ctrl+d"),
+            ScanResult.Refusal(file: "c", reason: "C has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots"),
             ScanResult.Refusal(file: "f", reason: "F needs panel or a number in its read to join the main search"),
             ScanResult.Refusal(file: "h", reason: "H needs panel or a number in its read to join the main search"),
             ScanResult.Refusal(file: "j", reason: "J has an unknown read: open. Use sheet, panel or a number of seconds"),
@@ -335,11 +333,10 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(folder.url.path, "/home/.config/openspot/plugins")
     }
 
-    func testTheFirstCommandKeepsATakenKey() throws {
+    func testAShortcutInTheHeaderIsRefusedBecauseThePersonGivesTheLetter() throws {
         try write("a.sh", header: "title=One\nshortcut=d")
-        try write("b.sh", header: "title=Two\nshortcut=D")
 
-        XCTAssertEqual(try scan.commands.map(\.key?.name), ["d", nil])
-        XCTAssertEqual(try scan.refused, [ScanResult.Refusal(file: "b", reason: "Two cannot use key d, because another command has it")])
+        XCTAssertEqual(try scan.commands.map(\.id), [])
+        XCTAssertEqual(try scan.refused, [ScanResult.Refusal(file: "a", reason: "One has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots")])
     }
 }

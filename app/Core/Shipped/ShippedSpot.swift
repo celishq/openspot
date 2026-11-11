@@ -22,7 +22,6 @@ public enum ShippedSpot: Equatable, Sendable {
                 size: .small,
                 symbol: "puzzlepiece.extension",
                 subtitle: "Turn on",
-                key: CommandKey(name: "p"),
                 read: .sheet,
                 order: 1,
                 shipped: .spots(CatalogSpot(folder: folder, core: core, config: config, login: offersLogin ? login : nil))

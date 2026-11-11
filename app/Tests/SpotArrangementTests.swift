@@ -82,6 +82,42 @@ final class SpotArrangementTests: XCTestCase {
         XCTAssertEqual(Config(text: "[[spots]]\nid = \"cups\"\ntray = true\n").arrangement.menuBar, ["cups"])
     }
 
+    func testTheConfigReadsAndWritesTheLetterOfASpot() {
+        let config = Config(text: "[[spots]]\nid = \"mail\"\nletter = \"M\"\n\n[[spots]]\nid = \"notes\"\nletter = \"\"\n\n[[spots]]\nid = \"bad\"\nletter = \"??\"\n")
+
+        XCTAssertEqual(config.faults, ["config.toml: bad cannot use the letter ??."])
+        XCTAssertEqual(config.arrangement.choices.map(\.letter), ["m", "", nil])
+        XCTAssertEqual(Config(text: config.arrangement.text).arrangement.choices.map(\.letter), ["m", "", nil])
+    }
+
+    func testThePersonsLettersWinOverTheDefaultLetters() {
+        let defaults = SpotArrangement(choices: [
+            SpotArrangement.Choice(id: "apps", letter: "a"),
+            SpotArrangement.Choice(id: "notes", letter: "n"),
+            SpotArrangement.Choice(id: "files", letter: "f")
+        ])
+        let person = SpotArrangement(choices: [
+            SpotArrangement.Choice(id: "mail", letter: "a"),
+            SpotArrangement.Choice(id: "notes", letter: "")
+        ])
+
+        let letters = person.letters(over: defaults)
+
+        XCTAssertEqual(letters.mapValues(\.name), ["mail": "a", "files": "f"])
+    }
+
+    func testGivingALetterTakesItFromTheSpotThatHeldIt() {
+        let defaults = SpotArrangement(choices: [SpotArrangement.Choice(id: "notes", letter: "n")])
+        var person = SpotArrangement(choices: [SpotArrangement.Choice(id: "mail", letter: "m")])
+
+        let lost = person.give(CommandKey(name: "n"), to: "mail", over: defaults)
+
+        XCTAssertEqual(lost, "notes")
+        XCTAssertEqual(person.letters(over: defaults).mapValues(\.name), ["mail": "n"])
+        XCTAssertNil(person.give(nil, to: "mail", over: defaults))
+        XCTAssertEqual(person.letters(over: defaults).mapValues(\.name), [:])
+    }
+
     func testTheConfigReportsWhatItCannotUseAndKeepsTheRest() {
         let config = Config(text: """
         [[spots]]

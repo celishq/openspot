@@ -15,11 +15,14 @@ public final class SpotsModel {
         private let fixedCommand: Spot
         private let fixedState: SpotState
         private let gridChoice: Bool?
+        /// The letter that runs it from the panel, which the person or the default config gives it.
+        public let letter: CommandKey?
 
-        public init(command: Spot, run: SpotRun?, choice: SpotArrangement = SpotArrangement()) {
+        public init(command: Spot, run: SpotRun?, choice: SpotArrangement = SpotArrangement(), defaults: SpotArrangement = SpotArrangement(), letter: CommandKey? = nil) {
             id = command.id
             sizeChoice = choice.size(of: command.id)
-            gridChoice = choice.isOnGrid(of: command.id)
+            gridChoice = choice.isOnGrid(of: command.id) ?? defaults.isOnGrid(of: command.id)
+            self.letter = letter
             item = nil
             self.run = run
             fixedCommand = command
@@ -31,6 +34,7 @@ public final class SpotsModel {
             id = "\(command.id)\n\(item.run)"
             sizeChoice = .strip
             gridChoice = nil
+            letter = nil
             self.item = item
             run = nil
             fixedCommand = command
@@ -196,6 +200,8 @@ public final class SpotsModel {
     /// Whether the grid is in Edit Spots, where it also shows the spots that are off the grid, and a press only selects.
     public var isEditing = false
     public var arrangement = SpotArrangement()
+    /// The choices of the config that ships with the app, which count where the person's config makes none.
+    @ObservationIgnored public private(set) var defaultArrangement = SpotArrangement()
     /// The symbol of the command whose key a person pressed last, which the Openspot item shows for `flashPause`.
     public private(set) var flashSymbol: String?
     @ObservationIgnored public var flashPause: Duration = .milliseconds(1500)
@@ -219,6 +225,7 @@ public final class SpotsModel {
     public init(host: SpotsHost, files: SpotFiles = .standard, runs: SpotRuns? = nil) {
         self.host = host
         self.files = files
+        defaultArrangement = files.defaultArrangement
         self.runs = runs ?? SpotRuns(
             recent: { files.recent(of: $0) },
             prepare: { [unowned host] in await host.prepare($0, glyphs: $1) },
@@ -335,7 +342,8 @@ public final class SpotsModel {
     }
 
     public func rebuildEntries() {
-        entries = ordered().map { Entry(command: $0, run: runs.sheets[$0.id], choice: arrangement) }
+        let letters = arrangement.letters(over: defaultArrangement)
+        entries = ordered().map { Entry(command: $0, run: runs.sheets[$0.id], choice: arrangement, defaults: defaultArrangement, letter: letters[$0.id]) }
     }
 
     /// The scanned spots in their grid order, and the person's order in the config over it.
@@ -538,14 +546,15 @@ public final class SpotsModel {
         }
     }
 
-    /// Whether the spots show their letters.
+    /// Whether the spots show their letters: while the person holds the key that opens the panel, and in Edit Spots, where
+    /// `L` gives them.
     public var showsChain: Bool {
-        isChainHeld && isOnGrid
+        (isChainHeld && isOnGrid) || isEditing
     }
 
     /// The letter of a spot that has a key.
     public func chainLetter(of entry: Entry) -> String? {
-        entry.item == nil ? entry.command.key?.name.uppercased() : nil
+        entry.letter?.name.uppercased()
     }
 
     private var isOnGrid: Bool {
@@ -555,7 +564,7 @@ public final class SpotsModel {
     /// Runs the spot whose letter this press holds, whatever the search shows. A spot with no sheet closes the panel.
     public func handleChain(code: UInt32, modifiers: Shortcut.Modifiers) -> Bool {
         guard isOnGrid, let entry = entries.first(where: { entry in
-            entry.command.key.map { entryKey.chains(to: $0, code: code, modifiers: modifiers) } ?? false
+            entry.letter.map { entryKey.chains(to: $0, code: code, modifiers: modifiers) } ?? false
         }) else { return false }
         press(entry.id)
         if entry.kind == .toggle { host.dismiss() }

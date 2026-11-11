@@ -93,8 +93,8 @@ final class GlobalKeyTests: XCTestCase {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keys-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        try "#!/bin/sh\n# shortcut=s\n# offers=float\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
-        try "#!/bin/sh\n# shortcut=n\n".writeScript(to: folder.appendingPathComponent("notes.sh"))
+        try "#!/bin/sh\n# offers=float\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
+        try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("notes.sh"))
         try "#!/bin/sh\n# read=60\n# offers=float\necho text=cups\n".writeScript(to: folder.appendingPathComponent("cups.sh"))
         let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+up"))
         let shelf = GlobalKey(spot: "shelf", act: .float, trigger: .key(shortcut))

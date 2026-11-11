@@ -68,7 +68,7 @@ final class SpotFaultTests: XCTestCase {
 
     /// Opens the sheet of the spot of a file that does not load.
     private func openFault() async throws -> SheetParts {
-        try script("weather", header: "shortcut=??", "echo")
+        try script("weather", header: "size=huge", "echo")
         model.reload()
         model.isShown = true
         model.press("weather")
@@ -77,7 +77,7 @@ final class SpotFaultTests: XCTestCase {
     }
 
     func testAFileThatDoesNotLoadKeepsAWideCardThatSaysHowToFixIt() throws {
-        try script("weather", header: "shortcut=??", "echo")
+        try script("weather", header: "size=huge", "echo")
 
         model.reload()
 
@@ -90,7 +90,7 @@ final class SpotFaultTests: XCTestCase {
     }
 
     func testAFaultCardStaysWideWhenThePersonChoseTheSmallSize() throws {
-        try script("weather", header: "shortcut=??", "echo")
+        try script("weather", header: "size=huge", "echo")
         model.reload()
 
         model.prefer(.small, for: "weather")
@@ -103,7 +103,7 @@ final class SpotFaultTests: XCTestCase {
 
         let text = sheet.parts.compactMap { if case .text(let value, _, _) = $0.control { value } else { nil } }.joined()
         XCTAssertTrue(text.contains(plugins.appendingPathComponent("weather.sh").path))
-        XCTAssertTrue(text.contains("Weather has an unknown shortcut: ??"))
+        XCTAssertTrue(text.contains("Weather has an unknown size: huge"))
         XCTAssertEqual(Set(sheet.parts.map(\.id)).intersection(["fix", "edit"]), ["fix", "edit"])
     }
 
@@ -117,7 +117,7 @@ final class SpotFaultTests: XCTestCase {
 
         let prompt = try XCTUnwrap(saved("clipboard"))
         XCTAssertTrue(prompt.contains(plugins.appendingPathComponent("weather.sh").path))
-        XCTAssertTrue(prompt.contains("Weather has an unknown shortcut: ??"))
+        XCTAssertTrue(prompt.contains("Weather has an unknown size: huge"))
         XCTAssertTrue(prompt.contains("check"))
     }
 
@@ -131,10 +131,10 @@ final class SpotFaultTests: XCTestCase {
     }
 
     func testAFileThatLoadsAgainTakesBackItsCard() throws {
-        try script("weather", header: "shortcut=??", "echo")
+        try script("weather", header: "size=huge", "echo")
         model.reload()
 
-        try script("weather", header: "shortcut=w", "echo")
+        try script("weather", header: "size=small", "echo")
         model.folderChanged()
 
         XCTAssertEqual(entry("weather")?.state.title, "Weather")

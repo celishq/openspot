@@ -2,7 +2,6 @@
 # title=Pull requests
 # icon=arrow.triangle.pull
 # detail=On GitHub
-# shortcut=g
 # read=120
 export LC_ALL=en_US.UTF-8
 export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"

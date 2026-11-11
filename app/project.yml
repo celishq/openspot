@@ -88,13 +88,14 @@ targets:
         basedOnDependencyAnalysis: false
         script: |
           sh "$SRCROOT/../scripts/guide.sh" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/GUIDE.md"
-      - name: Copy the core spots
+      - name: Copy the core spots and their defaults
         basedOnDependencyAnalysis: false
         script: |
           core="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots"
           rm -rf "$core"
           mkdir -p "$(dirname "$core")"
           cp -RL "$SRCROOT/../plugins" "$core"
+          cp "$SRCROOT/defaults.toml" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/defaults.toml"
       - name: Copy the emoji keywords
         basedOnDependencyAnalysis: false
         script: |

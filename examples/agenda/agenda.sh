@@ -2,7 +2,6 @@
 # title=Agenda
 # icon=calendar
 # detail=Today and tomorrow, with your reminders
-# shortcut=d
 # size=large
 # read=panel,60
 # settings=calendars:Calendars:calendar

@@ -194,7 +194,6 @@ final class WidgetContractTests: XCTestCase {
         title = "Now"
         grid = ["a a b b"]
         places = { a = "power", b = "power" }
-        shortcut = "w"
 
         [[widgets]]
         title = "Then"
@@ -213,7 +212,6 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(widget.size, .strip)
         XCTAssertEqual(widget.layout, WidgetLayout(drawing: ["a a b b"]))
         XCTAssertEqual(widget.places, ["power", "power"])
-        XCTAssertEqual(widget.key?.name, "w")
     }
 
     func testAWidgetNeedsAMetricForEachLetter() throws {
@@ -256,11 +254,11 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(opening.primaryTitle(hasItem: false), "Open")
     }
 
-    func testALostKeyKeepsTheRestOfTheCommand() throws {
-        try script("one.sh", "#!/bin/sh\n# shortcut=x\n# read=panel\n# offers=search\n")
-        try script("two.sh", "#!/bin/sh\n# shortcut=x\n# read=panel\n# offers=search\n")
+    func testAWidgetWithAShortcutIsRefusedBecauseThePersonGivesTheLetter() throws {
+        try power()
+        try widget(places: ["power", "power"], more: "shortcut = \"w\"")
 
-        XCTAssertEqual(try scan.commands.map(\.isGlobal), [true, true])
+        XCTAssertEqual(try scan.refused.first?.reason, "Now has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots")
     }
 
     func testEveryLayoutFillsItsSizeWithNoOverlap() {

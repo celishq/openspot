@@ -89,6 +89,16 @@ letter, by its ID: its path with no extension, such as `cpu` or `home/coffee`. A
 them by file name alone, and the whole folder is shared as one. `opens` names the tool that a click opens, and that tool
 has no card of its own.
 
+Each tool can have a letter: hold the key that opens the panel and press the letter to run it. Press `L` in Edit Spots,
+then the letter, to give the selected tool one, or Delete to take its letter away. The letter goes to
+`~/.config/openspot/config.toml`:
+
+```text
+[[spots]]
+id = "home/coffee"
+letter = "k"
+```
+
 Settings gives a key to each command that a tool lists. It writes the key to `~/.config/openspot/config.toml`, and you can
 write it there by hand too:
 

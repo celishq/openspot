@@ -24,11 +24,10 @@ final class SettingsSpotTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    func testTwoSpotsShipAndSettingsHasNoLetter() throws {
+    func testThreeSpotsShip() throws {
         let commands = ShippedSpot.commands(folder: folder, guide: folder, app: "", config: file)
 
         XCTAssertEqual(commands.map(\.name), ["Spots", "Settings", "New spot"])
-        XCTAssertEqual(commands.map(\.key?.name), ["p", nil, nil])
     }
 
     func testTheMainSearchFindsItsRows() throws {
@@ -103,8 +102,8 @@ final class SettingsSpotTests: XCTestCase {
 
     func testTheSheetListsAFloatRowForEachSpotThatOffersOneAndGivesItAKey() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# title=Shelf\n# icon=tray.full\n# shortcut=s\n# offers=float\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
-        try "#!/bin/sh\n# title=Notes\n# shortcut=n\n".writeScript(to: folder.appendingPathComponent("notes.sh"))
+        try "#!/bin/sh\n# title=Shelf\n# icon=tray.full\n# offers=float\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
+        try "#!/bin/sh\n# title=Notes\n".writeScript(to: folder.appendingPathComponent("notes.sh"))
         try "#!/bin/sh\n# title=Move\n# command=left:Left side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
         let runs = SpotRuns()
 
@@ -130,8 +129,8 @@ final class SettingsSpotTests: XCTestCase {
 
     func testAShakeOnARowTakesTheShakeFromTheRowThatHadIt() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# title=Shelf\n# shortcut=s\n# offers=float\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
-        try "#!/bin/sh\n# title=Notes\n# shortcut=n\n# offers=float\n".writeScript(to: folder.appendingPathComponent("notes.sh"))
+        try "#!/bin/sh\n# title=Shelf\n# offers=float\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
+        try "#!/bin/sh\n# title=Notes\n# offers=float\n".writeScript(to: folder.appendingPathComponent("notes.sh"))
         let runs = SpotRuns()
 
         _ = try await runs.answer(of: spot, .set("float:shelf", to: "shake"), input: "", limit: 1)
@@ -152,7 +151,7 @@ final class SettingsSpotTests: XCTestCase {
 
     func testTheSheetListsEachSettingThatAScriptNamesOrKeepsAndRemovesIt() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# title=Repos\n# icon=folder\n# shortcut=r\n# settings=folder, editor:Default app:app.badge\n".writeScript(to: folder.appendingPathComponent("repos.sh"))
+        try "#!/bin/sh\n# title=Repos\n# icon=folder\n# settings=folder, editor:Default app:app.badge\n".writeScript(to: folder.appendingPathComponent("repos.sh"))
         try file.set(setting: "folder", of: "repos", to: "~/Code")
         try file.set(setting: "editor", of: "gone", to: "Zed")
 

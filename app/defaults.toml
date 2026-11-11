@@ -1,0 +1,46 @@
+[[spots]]
+id = "openspot/spots"
+letter = "p"
+
+[[spots]]
+id = "apps"
+letter = "a"
+grid = true
+
+[[spots]]
+id = "caffeinate"
+letter = "c"
+
+[[spots]]
+id = "color-picker"
+letter = "o"
+
+[[spots]]
+id = "confetti"
+letter = "k"
+
+[[spots]]
+id = "emoji"
+letter = "e"
+
+[[spots]]
+id = "files"
+letter = "f"
+
+[[spots]]
+id = "links"
+letter = "l"
+grid = true
+
+[[spots]]
+id = "paste-screenshot"
+letter = "v"
+
+[[spots]]
+id = "snippets"
+letter = "n"
+grid = true
+
+[[spots]]
+id = "translate"
+letter = "t"

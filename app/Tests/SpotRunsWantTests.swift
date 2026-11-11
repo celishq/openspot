@@ -38,8 +38,8 @@ final class SpotRunsWantTests: SpotRunsCase {
     // MARK: F7
 
     func testAWidgetCanPlaceAnyScriptWithARead() async throws {
-        try script("onpanel", header: "read=panel\nshortcut=p", log: "onpanel", "printf 'text=m\\ntitle=P\\n'")
-        try script("onsheet", header: "read=sheet\nshortcut=s", log: "onsheet", "printf 'text=m\\ntitle=S\\n'")
+        try script("onpanel", header: "read=panel", log: "onpanel", "printf 'text=m\\ntitle=P\\n'")
+        try script("onsheet", header: "read=sheet", log: "onsheet", "printf 'text=m\\ntitle=S\\n'")
         try "[[widgets]]\ntitle = \"W\"\ngrid = [\"a a b b\"]\nplaces = { a = \"onpanel\", b = \"onsheet\" }\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
         _ = try scanned()
         XCTAssertEqual(log("onsheet"), [])
@@ -72,7 +72,7 @@ final class SpotRunsWantTests: SpotRunsCase {
 
     func testTheMenuBarShowsWhatTheSheetHolds() async throws {
         menuBar.insert("pulls")
-        try script("pulls", header: "title=Pull requests\nread=120\nshortcut=g", "printf 'text=m\\ntitle=2\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'")
+        try script("pulls", header: "title=Pull requests\nread=120", "printf 'text=m\\ntitle=2\\n\\nrow=a\\ntitle=A\\n\\nrow=b\\ntitle=B\\n'")
         let sheet = try sheet("pulls")
 
         try await wait("the mark") { !self.runs.trayMarks.isEmpty }
@@ -126,7 +126,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testAnOpenSheetOfRowsIsNotReadWithThePanelClosedAndIsReadWhenThePanelOpens() async throws {
-        try script(header: "read=5\nshortcut=a", "printf 'row=a\\ntitle=A\\n'")
+        try script(header: "read=5", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
@@ -197,7 +197,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     func testAScriptWantedWhileTheClockWaitsForALaterReadIsReadOnItsOwnTime() async throws {
         menuBar.insert("pulls")
         try script("pulls", header: "read=120", log: "pulls", "printf 'text=t\\ntitle=1\\n'")
-        try script(header: "read=1\nshortcut=a", "printf 'row=a\\ntitle=A\\n'")
+        try script(header: "read=1", "printf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         try await wait("the read of the menu bar spot") { self.log("pulls").count == 1 }
         runs.panelOpened()

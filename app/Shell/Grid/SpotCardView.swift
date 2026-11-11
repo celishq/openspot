@@ -227,7 +227,7 @@ struct SpotCardView: View, Equatable {
         }
     }
 
-    /// The letter of the spot, on the rim of its top right corner.
+    /// The letter of the spot, on the rim of its top right corner. The mark of a hidden card takes its place in Edit Spots.
     @ViewBuilder
     private var keycap: some View {
         if let chainLetter {
@@ -239,7 +239,7 @@ struct SpotCardView: View, Equatable {
                 .background(SpotTheme.keycap, in: RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
                 .offset(x: -inset, y: inset)
-                .opacity(showsChain ? 1 : 0)
+                .opacity(showsChain && !isHiddenFromGrid ? 1 : 0)
                 .animation(SpotMotion.keycap, value: showsChain)
                 .allowsHitTesting(false)
         }

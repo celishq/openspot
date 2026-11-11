@@ -35,6 +35,7 @@
 		0E9309F74DE066684EDAE4FF /* SpotFieldView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9051FED1F4E39B3FA592FB60 /* SpotFieldView.swift */; };
 		0EC360BE3AACA148BEA813DC /* SpotCommandLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73A309DA9916A40E8B090717 /* SpotCommandLine.swift */; };
 		1064A19A03A4673163C44065 /* SpotActionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE269E08E251D3B432156C6C /* SpotActionTests.swift */; };
+		10A735F7E45F8993245C8AEA /* SpotLettersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 388DD49347FBC8DF7841EDA3 /* SpotLettersTests.swift */; };
 		10C3A44530536E225FA3B518 /* CardFaceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51C4D39DCAE1A0AAAF08596B /* CardFaceTests.swift */; };
 		11017F855C62A2AEF639E339 /* IconBodyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFF264B9C03AA68F80541F4F /* IconBodyTests.swift */; };
 		115B455C4123F78170847C47 /* CardPush.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D50478A53DB8348510EBFE6 /* CardPush.swift */; };
@@ -490,6 +491,7 @@
 		379119BAB9FCAE26334CE7CA /* SpotEventLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotEventLog.swift; sourceTree = "<group>"; };
 		385F2DE8E51252AF29605552 /* SearchQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchQuery.swift; sourceTree = "<group>"; };
 		3877CFF30920155EFDB75B9F /* SpotGlyphShelf.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotGlyphShelf.swift; sourceTree = "<group>"; };
+		388DD49347FBC8DF7841EDA3 /* SpotLettersTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotLettersTests.swift; sourceTree = "<group>"; };
 		38E153F29DE57F5F69177C5D /* SamplePluginsCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SamplePluginsCase.swift; sourceTree = "<group>"; };
 		39A95D19000F5C1357154B1B /* SpotFaultTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotFaultTests.swift; sourceTree = "<group>"; };
 		3AD5607F47BCD0BAD71F0BA0 /* SheetStreamTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetStreamTests.swift; sourceTree = "<group>"; };
@@ -1142,6 +1144,7 @@
 				39A95D19000F5C1357154B1B /* SpotFaultTests.swift */,
 				F80C1E926FC7BB5C6B6247A9 /* SpotFloatTests.swift */,
 				70703B1BFAD84794E4BDC0F9 /* SpotGridTests.swift */,
+				388DD49347FBC8DF7841EDA3 /* SpotLettersTests.swift */,
 				318EF34C019A7228CFC97E67 /* SpotPlacementTests.swift */,
 				72638E1D79E36A1B4B4F9038 /* SpotRunsCallTests.swift */,
 				2A78CD5EDF1BFFA52E0B36DF /* SpotRunsCase.swift */,
@@ -1527,7 +1530,7 @@
 				9377494807D855EA77601A31 /* Frameworks */,
 				FA5BD7132374A84E31CCF0E4 /* Link the openspot command */,
 				1DAD7541105D3747B4671C0E /* Join the guide */,
-				9A5AB7CBDD408EEAF102FD46 /* Copy the core spots */,
+				483CB758F22DD0EEA8575ACE /* Copy the core spots and their defaults */,
 				A5068AFF8D453D11CC2A8674 /* Copy the emoji keywords */,
 				0D4FDAB32F3B0E2B15E19EB2 /* Fill the dev state */,
 			);
@@ -1720,7 +1723,7 @@
 			shellPath = /bin/sh;
 			shellScript = "sh \"$SRCROOT/../scripts/guide.sh\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/GUIDE.md\"\n";
 		};
-		9A5AB7CBDD408EEAF102FD46 /* Copy the core spots */ = {
+		483CB758F22DD0EEA8575ACE /* Copy the core spots and their defaults */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -1730,14 +1733,14 @@
 			);
 			inputPaths = (
 			);
-			name = "Copy the core spots";
+			name = "Copy the core spots and their defaults";
 			outputFileListPaths = (
 			);
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "core=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots\"\nrm -rf \"$core\"\nmkdir -p \"$(dirname \"$core\")\"\ncp -RL \"$SRCROOT/../plugins\" \"$core\"\n";
+			shellScript = "core=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots\"\nrm -rf \"$core\"\nmkdir -p \"$(dirname \"$core\")\"\ncp -RL \"$SRCROOT/../plugins\" \"$core\"\ncp \"$SRCROOT/defaults.toml\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/defaults.toml\"\n";
 		};
 		A5068AFF8D453D11CC2A8674 /* Copy the emoji keywords */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -2149,6 +2152,7 @@
 				41942C953B6FD5F320465AEF /* SpotFaultTests.swift in Sources */,
 				B97129763388BC38EC210A5B /* SpotFloatTests.swift in Sources */,
 				C9D26DAF8D6E073BEB6E59C3 /* SpotGridTests.swift in Sources */,
+				10A735F7E45F8993245C8AEA /* SpotLettersTests.swift in Sources */,
 				EE028419E9629C6AEF4E1986 /* SpotPlacementTests.swift in Sources */,
 				9AFFCD32DD15224FB3E9C04A /* SpotRunTests.swift in Sources */,
 				433CF6740190BC31E3E431E6 /* SpotRunsCallTests.swift in Sources */,

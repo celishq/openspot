@@ -1,8 +1,11 @@
 import Foundation
 import Observation
 
-/// Edit Spots: the order, the size and the place on the grid of each spot.
+/// Edit Spots: the order, the size, the letter and the place on the grid of each spot.
 extension SpotsModel {
+    /// The code of the Delete key, which takes away the letter that records.
+    private static let deleteCode: UInt32 = 51
+
     /// The sizes that a person can prefer for a spot, in words for its menu.
     public func sizes(of entry: Entry) -> [SpotSize] {
         entry.item == nil ? entry.command.sizes : []
@@ -42,6 +45,7 @@ extension SpotsModel {
         case ("right", true), ("down", true): moveSelectedSpot(by: 1, in: order)
         case ("s", _): stepSelectedSize()
         case ("h", _): toggleSelectedOnGrid()
+        case ("l", _): if let entry = selectedEntry, entry.item == nil { toggleRecording(id: entry.id) }
         default: break
         }
     }
@@ -83,6 +87,26 @@ extension SpotsModel {
     public func setOnGrid(_ isOn: Bool, for id: String) {
         arrangement.arrange((cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id))
         arrangement.set(isOnGrid: isOn, of: id)
+        saveArrangement(selecting: id)
+    }
+
+    /// Takes the letter for the spot that records: a letter or a digit with no modifier gives it, and Delete takes its letter
+    /// away. A letter that another spot held moves, and a toast names that spot. Any other key leaves it recording, and says
+    /// why.
+    func recordLetter(code: UInt32, modifiers: Shortcut.Modifiers) {
+        guard let id = recording else { return }
+        let letter = CommandKey(code: code)
+        guard code == Self.deleteCode || (letter != nil && modifiers.isEmpty) else {
+            host.notify("Press a letter or a digit with no other key, or Delete to take the letter away.")
+            return
+        }
+        stopRecording()
+        arrangement.arrange(visible.map(\.id))
+        let holder = arrangement.give(code == Self.deleteCode ? nil : letter, to: id, over: defaultArrangement)
+        if let holder, let letter {
+            let name = { (spot: String) in self.entries.first { $0.id == spot }?.command.name ?? spot }
+            host.notify("\(letter.name.uppercased()) now runs \(name(id)), so \(name(holder)) has no letter.")
+        }
         saveArrangement(selecting: id)
     }
 

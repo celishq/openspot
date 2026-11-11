@@ -12,7 +12,6 @@ public struct Spot: Equatable, Sendable {
     public let size: SpotSize
     public let symbol: String
     public let subtitle: String?
-    public private(set) var key: CommandKey?
     public private(set) var read: SpotRead?
     public private(set) var pick: ItemPick
     /// The form that Enter on a row asks with first, from the last output of its script.
@@ -68,7 +67,6 @@ public struct Spot: Equatable, Sendable {
         size: SpotSize = .wide,
         symbol: String = "app",
         subtitle: String? = nil,
-        key: CommandKey? = nil,
         read: SpotRead? = nil,
         pick: ItemPick = .close,
         isGlobal: Bool = false,
@@ -101,7 +99,6 @@ public struct Spot: Equatable, Sendable {
         self.size = size
         self.symbol = symbol
         self.subtitle = subtitle
-        self.key = key
         self.read = read
         self.pick = pick
         self.isGlobal = isGlobal
@@ -272,11 +269,5 @@ public struct Spot: Equatable, Sendable {
         case .slider: return nil
         case .widget: return opens == nil ? nil : "Open"
         }
-    }
-
-    public func withoutKey() -> Spot {
-        var command = self
-        command.key = nil
-        return command
     }
 }

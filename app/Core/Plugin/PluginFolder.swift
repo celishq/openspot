@@ -54,12 +54,11 @@ public struct PluginFolder: Sendable {
     }
 
     /// Reads each executable and widget file, at the top of the folder or one folder down, after the shipped commands.
-    /// Then it reads each core spot that is on, and each core file that a spot needs. When two commands share a key, the
-    /// first keeps it. A file in the folder hides a core file with the same ID. With Settings among the shipped commands,
-    /// a script that lists commands and has no read opens to their keys.
+    /// Then it reads each core spot that is on, and each core file that a spot needs. A file in the folder hides a core file
+    /// with the same ID. With Settings among the shipped commands, a script that lists commands and has no read opens to
+    /// their keys.
     public func scan(shipped: [Spot] = []) throws -> ScanResult {
         var result = ScanResult(plugins: shipped.isEmpty ? [] : [Plugin(id: "openspot", commands: shipped)], refused: [])
-        var taken = Set(shipped.compactMap(\.key?.name))
         let entries = core == nil ? try Self.sorted(in: url) : (try? Self.sorted(in: url)) ?? []
         var ownIDs = Set<String>()
         for entry in entries {
@@ -70,11 +69,11 @@ public struct PluginFolder: Sendable {
                 let stem = file.deletingPathExtension().lastPathComponent
                 let id = isFolder.boolValue ? "\(entry.lastPathComponent)/\(stem)" : stem
                 ownIDs.insert(id)
-                Self.read(file, id: id, into: &result, taken: &taken, isDated: true)
+                Self.read(file, id: id, into: &result, isDated: true)
             }
         }
         for (file, id) in wantedCoreFiles(after: result, hiding: ownIDs) {
-            Self.read(file, id: id, into: &result, taken: &taken)
+            Self.read(file, id: id, into: &result)
         }
         result.removeWidgetsWithLostParts()
         result.keepOpenedOffTheGrid()
@@ -104,7 +103,7 @@ public struct PluginFolder: Sendable {
     public func coreChoices() -> [Spot] {
         let commands = ScanResult(plugins: coreFiles().compactMap { try? Plugin(file: $0.file, id: $0.id) }, refused: []).commands
         let opened = Set(commands.compactMap(\.opens))
-        return commands.filter { !opened.contains($0.id) && ($0.read?.seconds == nil || $0.key != nil) }
+        return commands.filter { !opened.contains($0.id) && $0.read?.seconds == nil }
     }
 
     /// The ID that turns a core command on: the name of its file, which a widget shares with the others in that file.
@@ -141,18 +140,12 @@ public struct PluginFolder: Sendable {
         }
     }
 
-    /// Adds what one file gives, and reports a fault or a key that is taken. A dated file takes its place in the grid by the
-    /// date it was added.
-    private static func read(_ file: URL, id: String, into result: inout ScanResult, taken: inout Set<String>, isDated: Bool = false) {
+    /// Adds what one file gives, and reports its fault. A dated file takes its place in the grid by the date it was added.
+    private static func read(_ file: URL, id: String, into result: inout ScanResult, isDated: Bool = false) {
         do {
             guard let plugin = try Plugin(file: file, id: id) else { return }
             let added = isDated ? (try? file.resourceValues(forKeys: [.creationDateKey]).creationDate) : nil
-            let commands = plugin.commands.map { command -> Spot in
-                let command = added.map(command.added(at:)) ?? command
-                guard let key = command.key, !taken.insert(key.name).inserted else { return command }
-                result.refused.append(ScanResult.Refusal(file: id, reason: "\(command.name) cannot use key \(key.name), because another command has it"))
-                return command.withoutKey()
-            }
+            let commands = plugin.commands.map { command in added.map(command.added(at:)) ?? command }
             result.plugins.append(Plugin(id: id, commands: commands))
         } catch {
             let reason = (error as? PluginError)?.reason ?? String(describing: error)

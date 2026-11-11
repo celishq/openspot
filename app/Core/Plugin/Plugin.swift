@@ -43,7 +43,6 @@ public struct Plugin: Equatable, Sendable {
             throw PluginError.fault("\(name) has an unknown stay: \(stay!). Use true or always")
         }
         let stays = stay == "true" || stay == "always"
-        let hasKey = header.value("shortcut") != nil
         let sizeName = header.value("size") ?? "wide"
         guard let size = SpotSize(name: sizeName) else { throw PluginError.fault("\(name) has an unknown size: \(sizeName)") }
         let places = try Self.places(header.value("offers"), of: name)
@@ -75,7 +74,6 @@ public struct Plugin: Equatable, Sendable {
             size: size,
             symbol: symbol ?? "app",
             subtitle: header.value("detail"),
-            key: try Self.key(header.value("shortcut"), of: name),
             read: read,
             isGlobal: isGlobal,
             isFound: !isRowsOnly,
@@ -84,7 +82,7 @@ public struct Plugin: Equatable, Sendable {
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             offersFloat: places.contains("float"),
             dataName: header.value("data") ?? id.split(separator: "/").first.map(String.init),
-            isOnGrid: offers.isEmpty && !isRowsOnly && (hasKey || (!isGlobal && read?.seconds == nil)),
+            isOnGrid: offers.isEmpty && !isGlobal && read?.seconds == nil,
             headerSymbol: symbol,
             offers: offers,
             settings: header.value("settings")?.split(separator: ",").compactMap { CommandOffer(setting: String($0)) } ?? [],
@@ -121,6 +119,13 @@ public struct Plugin: Equatable, Sendable {
         if header.value("tray") != nil {
             throw PluginError.fault("\(name) has tray, which Openspot no longer reads. The person puts a spot in the menu bar in Settings")
         }
+        try refuseLetter(header.value("shortcut"), of: name)
+    }
+
+    /// Refuses a letter that a file names, because the person gives each spot its letter.
+    private static func refuseLetter(_ text: String?, of name: String) throws {
+        guard text != nil else { return }
+        throw PluginError.fault("\(name) has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots")
     }
 
     /// A path that the header names: a full path stays, and any other starts at the folder of the script.
@@ -136,11 +141,6 @@ public struct Plugin: Equatable, Sendable {
         return words.prefix(1).uppercased() + words.dropFirst()
     }
 
-    private static func key(_ text: String?, of name: String) throws -> CommandKey? {
-        guard let text else { return nil }
-        guard let key = CommandKey(name: text) else { throw PluginError.fault("\(name) has an unknown shortcut: \(text)") }
-        return key
-    }
 
     private static func widget(_ table: [String: TomlDocument.Value], id: String, url: URL) throws -> Spot {
         func text(_ key: String) -> String? {
@@ -148,6 +148,7 @@ public struct Plugin: Equatable, Sendable {
             return nil
         }
         guard let name = text("title") else { throw PluginError.fault("a widget needs a title") }
+        try refuseLetter(text("shortcut"), of: name)
         if case .strings(let drawing)? = table["grid"] {
             return try drawn(drawing, table, name: name, id: id, url: url)
         }
@@ -183,7 +184,6 @@ public struct Plugin: Equatable, Sendable {
             kind: .widget,
             size: layout.size,
             subtitle: text("detail"),
-            key: try key(text("shortcut"), of: name),
             layout: layout,
             places: layout.letters.compactMap { places[$0] }.map { tool($0, beside: url, id: id) },
             opens: text("opens").map { tool($0, beside: url, id: id) }

@@ -572,7 +572,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testTheGridSearchFindsAGlobalSpotWithNoKeyBesideARowOfTheSameName() async throws {
-        try script("apps", header: "title=Apps\nread=panel\noffers=search\nshortcut=a", "printf 'row=shortcuts\\ntitle=Shortcuts\\n'")
+        try script("apps", header: "title=Apps\nread=panel\noffers=search", "printf 'row=shortcuts\\ntitle=Shortcuts\\n'")
         try script("shortcuts", header: "title=Shortcuts\nread=panel\noffers=search", "printf 'row=daily\\ntitle=Daily\\n'")
         model.reload()
         model.isShown = true
