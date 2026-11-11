@@ -41,6 +41,16 @@ public enum CommandLineCall: Equatable, Sendable {
     case keySet(spot: String, act: GlobalKey.Act, key: String?)
     /// Puts a spot in the menu bar, or takes it out.
     case menuBar(id: String, isShown: Bool)
+    /// Prints the state of the app as JSON: its version, its keys, its login and terminal settings, and its update.
+    case appStatus
+    /// Opens the app at login, or stops it.
+    case appLogin(Bool)
+    /// Puts `openspot` on the path of a terminal, or takes it off.
+    case appLink(Bool)
+    case appQuit
+    case updateCheck
+    /// Restarts the app into the downloaded update.
+    case updateInstall
     /// A call that cannot run here, with the line that says why and how to fix it.
     case refused(String)
     /// Copies a file, or the text on stdin with no file.
@@ -119,6 +129,13 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  Gives a command of a spot, or its float, a key such as ctrl+option+k,
                                                  or shake. With no key, it takes the key away.
     openspot menubar on|off <id>                 Puts a spot in the menu bar, or takes it out.
+    openspot app status                          Prints the state of the app as JSON: version, panelKey, fixKey, login
+                                                 and link, and while it runs update, calls and firstLaunch.
+    openspot app login on|off                    Opens the app at login, or stops it.
+    openspot app link on|off                     Puts openspot on the path of Terminal, or takes it off.
+    openspot app quit                            Ends the running app.
+    openspot update check                        Asks for a new version of the app now.
+    openspot update install                      Restarts the app into the update that it downloaded.
     openspot clipboard copy [file]               Copies the file as Finder does, or the text on stdin.
     openspot clipboard paste                     Pastes the clipboard into the front app.
     openspot event emit <name> [value]           Raises an event in the running app, such as music.track. Each spot
@@ -210,6 +227,14 @@ public enum CommandLineCall: Equatable, Sendable {
             self = .spotTurn(ids: Array(rest.dropFirst()), on: rest[0] == "on")
         case ("setting", "list") where rest.count == 1: self = .settingList
         case ("key", "set"): self = Self.key(Array(rest.dropFirst())) ?? .unknown(arguments.joined(separator: " "))
+        case ("app", "status") where rest.count == 1: self = .appStatus
+        case ("app", "login") where rest == ["login", "on"] || rest == ["login", "off"]:
+            self = Self.changing(.appLogin(rest[1] == "on"), "openspot app login", "changes your Mac", environment)
+        case ("app", "link") where rest == ["link", "on"] || rest == ["link", "off"]:
+            self = Self.changing(.appLink(rest[1] == "on"), "openspot app link", "changes your Mac", environment)
+        case ("app", "quit") where rest.count == 1: self = Self.changing(.appQuit, "openspot app quit", "ends Openspot", environment)
+        case ("update", "check") where rest.count == 1: self = Self.changing(.updateCheck, "openspot update check", "opens a window", environment)
+        case ("update", "install") where rest.count == 1: self = Self.changing(.updateInstall, "openspot update install", "restarts Openspot", environment)
         case ("menubar", "on") where rest.count == 2, ("menubar", "off") where rest.count == 2:
             self = .menuBar(id: rest[1], isShown: rest[0] == "on")
         case ("render", "--spot") where rest.count == 3: self = .renderSpot(id: rest[1], size: nil, path: rest[2])

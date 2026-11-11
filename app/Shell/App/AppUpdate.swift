@@ -7,6 +7,8 @@ import OpenspotCore
 @MainActor
 final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelegate {
     private(set) var spot: UpdateSpot!
+    /// The version of the downloaded update that waits to install.
+    private(set) var ready: String?
     private var controller: SPUStandardUpdaterController?
     private var install: (() -> Void)?
     private let onReady: @MainActor () -> Void
@@ -37,6 +39,7 @@ final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelega
         nonisolated(unsafe) let handler = immediateInstallHandler
         MainActor.assumeIsolated {
             install = handler
+            ready = version
             Task {
                 await spot.take(ready: version)
                 onReady()
@@ -64,12 +67,16 @@ final class AppUpdate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelega
         }
     }
 
-    private func check() {
+    func check() {
         NSApp.activate(ignoringOtherApps: true)
         controller?.checkForUpdates(nil)
     }
 
-    private func restart() {
-        install?()
+    /// Restarts into the downloaded update, and returns false when none waits.
+    @discardableResult
+    func restart() -> Bool {
+        guard let install else { return false }
+        install()
+        return true
     }
 }

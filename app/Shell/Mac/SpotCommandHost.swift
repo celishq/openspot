@@ -18,4 +18,12 @@ struct SpotCommandHost: CommandHost {
     func open(_ link: URL) -> Bool {
         NSWorkspace.shared.open(link)
     }
+
+    var login: LoginItem? {
+        AppLogin.item
+    }
+
+    var link: CommandLink? {
+        AppCommandLink.item
+    }
 }

@@ -17,7 +17,7 @@ public struct CommandLink: Equatable, Sendable {
         self.elevated = elevated
     }
 
-    var isOn: Bool {
+    public var isOn: Bool {
         (try? FileManager.default.destinationOfSymbolicLink(atPath: link.path)) == target.path
     }
 
@@ -49,6 +49,11 @@ public struct CommandLink: Equatable, Sendable {
             try elevated("/bin/mkdir -p \(folder) && /bin/ln -sfn \(Self.quoted(target.path)) \(Self.quoted(link.path))")
         }
         return "toast=Installed openspot\n"
+    }
+
+    /// Adds the link or removes it, and does nothing when it is so already.
+    func set(_ isOn: Bool) throws {
+        if isOn != self.isOn { _ = try toggle() }
     }
 
     private static func quoted(_ path: String) -> String {

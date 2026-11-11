@@ -80,6 +80,51 @@ public final class CommandAPI: @unchecked Sendable {
                 await self.app?.configChanged()
                 return ""
             }
+        case .appStatus:
+            return Self.answer {
+                let config = ConfigFile.standard(environment: environment).read()
+                let running = await self.app?.status()
+                return try AppStatus(
+                    version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "",
+                    panelKey: (config.panelKey ?? .standard).text,
+                    fixKey: (config.fixKey ?? .fix).text,
+                    login: self.host.login?.isOn(),
+                    link: self.host.link?.isOn,
+                    update: running?.update,
+                    calls: running?.calls,
+                    firstLaunch: running?.isFirstLaunch
+                ).json()
+            }
+        case .appLogin(let isOn):
+            return Self.answer {
+                guard let login = self.host.login else { throw PluginError.failed(1, "This copy of Openspot cannot open at login. Move it to Applications, then try again.") }
+                try login.set(isOn)
+                return ""
+            }
+        case .appLink(let isOn):
+            return Self.answer {
+                guard let link = self.host.link else { throw PluginError.failed(1, "This copy of Openspot cannot put openspot in Terminal.") }
+                try link.set(isOn)
+                return ""
+            }
+        case .appQuit:
+            guard let app else { return Self.notRunning }
+            return {
+                await app.quit()
+                return CommandAnswer()
+            }
+        case .updateCheck:
+            guard let app else { return Self.notRunning }
+            return Self.answer {
+                guard await app.checkUpdate() else { throw PluginError.failed(1, "This copy of Openspot does not update itself.") }
+                return ""
+            }
+        case .updateInstall:
+            guard let app else { return Self.notRunning }
+            return Self.answer {
+                guard await app.installUpdate() else { throw PluginError.failed(1, "No update is ready. Run `openspot update check` first.") }
+                return ""
+            }
         case .guide:
             return Self.answer {
                 guard let guide = Bundle.main.url(forResource: "GUIDE", withExtension: "md") else { throw PluginError.fault("This copy of Openspot has no guide. Install Openspot again.") }
@@ -181,6 +226,11 @@ public final class CommandAPI: @unchecked Sendable {
             glyphKeywords = keywords
             return keywords
         }
+    }
+
+    /// The work of a call that only the running app can answer, when no app runs.
+    private static let notRunning: Work = {
+        CommandAnswer(errors: "Openspot is not running. Open Openspot, then run this again.\n", code: 1)
     }
 
     /// The work that prints what the text work returns, and fails as `CommandAnswer(failure:)` says.

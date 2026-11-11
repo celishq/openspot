@@ -4,19 +4,53 @@ import XCTest
 /// Proves the calls of `openspot` that the spots of the app make: the list of spots, a spot turned on or off, and the
 /// values that the spots keep.
 final class SpotAPITests: XCTestCase {
+    private final class Login: @unchecked Sendable {
+        var isOn = false
+    }
+
     private struct Host: CommandHost {
+        var login: LoginItem?
+
         func eventStore() -> any EventStore { FakeEventStore() }
         func reminderStore() -> any ReminderStore { FakeReminderStore() }
         func showCalendar(at time: Date) throws {}
         func open(_ link: URL) -> Bool { true }
     }
 
-    /// The running app of a test, which counts each change of the config that the API reports.
+    /// The running app of a test, which counts each change of the config that the API reports and each act it asks for.
     private actor App: RunningApp {
         var changes = 0
+        var checks = 0
+        var installs = 0
+        var quits = 0
+        var update: String?
+        var calls = 0
 
         func configChanged() {
             changes += 1
+        }
+
+        func status() -> (update: String?, calls: Int, isFirstLaunch: Bool) {
+            (update, calls, true)
+        }
+
+        func checkUpdate() -> Bool {
+            checks += 1
+            return true
+        }
+
+        func installUpdate() -> Bool {
+            installs += 1
+            return update != nil
+        }
+
+        func quit() {
+            quits += 1
+        }
+
+        func set(update: String?, calls: Int) {
+            self.update = update
+            self.calls = calls
         }
     }
 
@@ -45,10 +79,16 @@ final class SpotAPITests: XCTestCase {
         try? FileManager.default.removeItem(at: root)
     }
 
-    private func answer(_ arguments: [String]) async throws -> CommandAnswer {
+    private func answer(_ arguments: [String], host: Host = Host(), app: (any RunningApp)? = nil, reason: String? = nil) async throws -> CommandAnswer {
+        let environment = environment.merging(reason.map { ["OPENSPOT_REASON": $0] } ?? [:]) { _, new in new }
         let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment))
-        let work = try XCTUnwrap(CommandAPI(host: Host(), app: app).work(for: call, input: { "" }, environment: environment))
+        let work = try XCTUnwrap(CommandAPI(host: host, app: app ?? self.app).work(for: call, input: { "" }, environment: environment))
         return await work()
+    }
+
+    private func appWork(_ arguments: [String]) throws -> CommandAPI.Work? {
+        let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment))
+        return CommandAPI(host: Host()).work(for: call, input: { "" }, environment: environment)
     }
 
     private func json(_ arguments: [String]) async throws -> [[String: Any]] {
@@ -206,5 +246,74 @@ final class SpotAPITests: XCTestCase {
         XCTAssertEqual(file.read().arrangement.menuBar, [])
         let changes = await app.changes
         XCTAssertEqual(changes, 2)
+    }
+
+    func testTheStatusOfTheAppNamesItsKeysAndWhatOnlyTheRunningAppKnows() async throws {
+        try file.set("panel_key", to: "option+space")
+        await app.set(update: "0.3.0", calls: 2)
+
+        let running = try await answer(["app", "status"])
+        let alone = try await XCTUnwrap(appWork(["app", "status"]))()
+
+        let status = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(running.output.utf8)) as? [String: Any])
+        XCTAssertEqual(status["panelKey"] as? String, "option+space")
+        XCTAssertEqual(status["fixKey"] as? String, "cmd+option+o")
+        XCTAssertEqual(status["update"] as? String, "0.3.0")
+        XCTAssertEqual(status["calls"] as? Int, 2)
+        XCTAssertEqual(status["firstLaunch"] as? Bool, true)
+        XCTAssertNil(status["login"])
+        let quiet = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(alone.output.utf8)) as? [String: Any])
+        XCTAssertNil(quiet["update"])
+        XCTAssertNil(quiet["calls"])
+        XCTAssertNotNil(quiet["version"])
+    }
+
+    func testLoginTurnsTheLoginItemOnAndOff() async throws {
+        let state = Login()
+        let host = Host(login: LoginItem(isOn: { state.isOn }, set: { state.isOn = $0 }))
+
+        _ = try await answer(["app", "login", "on"], host: host)
+        XCTAssertTrue(state.isOn)
+        let status = try await answer(["app", "status"], host: host)
+        XCTAssertTrue(status.output.contains("\"login\":true"))
+
+        _ = try await answer(["app", "login", "off"], host: host)
+        XCTAssertFalse(state.isOn)
+        let none = try await answer(["app", "login", "on"])
+        XCTAssertEqual(none.errors, "This copy of Openspot cannot open at login. Move it to Applications, then try again.\n")
+    }
+
+    func testTheRunningAppChecksInstallsAndQuits() async throws {
+        let none = try await answer(["update", "install"])
+        XCTAssertEqual(none.errors, "No update is ready. Run `openspot update check` first.\n")
+        await app.set(update: "0.3.0", calls: 0)
+
+        _ = try await answer(["update", "check"])
+        let install = try await answer(["update", "install"])
+        _ = try await answer(["app", "quit"])
+
+        XCTAssertEqual(install, CommandAnswer())
+        let checks = await app.checks
+        let installs = await app.installs
+        let quits = await app.quits
+        XCTAssertEqual(checks, 1)
+        XCTAssertEqual(installs, 2)
+        XCTAssertEqual(quits, 1)
+    }
+
+    func testWithNoRunningAppTheActsOfTheAppFail() async throws {
+        for arguments in [["app", "quit"], ["update", "check"], ["update", "install"]] {
+            let answer = try await XCTUnwrap(appWork(arguments))()
+            XCTAssertEqual(answer.errors, "Openspot is not running. Open Openspot, then run this again.\n", arguments.joined(separator: " "))
+            XCTAssertEqual(answer.code, 1)
+        }
+    }
+
+    func testAReadCannotQuitOrRestartTheApp() {
+        let read = ["OPENSPOT_REASON": "panel"]
+
+        XCTAssertEqual(CommandLineCall(arguments: ["app", "quit"], environment: read), .refused("`openspot app quit` ends Openspot, so it cannot run in a read. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["update", "install"], environment: read), .refused("`openspot update install` restarts Openspot, so it cannot run in a read. Run it from a pick or an action."))
+        XCTAssertEqual(CommandLineCall(arguments: ["app", "status"], environment: read), .appStatus)
     }
 }

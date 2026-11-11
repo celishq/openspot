@@ -45,10 +45,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var shakeWatch: SpotShakeWatch?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let usage = model.runs.usage
-        commandSocket = CommandSocket(folder: ConfigFile.standard().url.deletingLastPathComponent(), api: CommandAPI(host: SpotCommandHost(), raise: { [model] event in
-            await MainActor.run { model.runs.raise(event) }
-        }, stats: { usage.text }, app: SpotRunningApp(model: model)))
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         #if DEBUG
         item.button?.image = NSImage(named: "TrayMarkNightly")
@@ -73,6 +69,10 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         let update = AppUpdate(runningWork: { [model] in model.workCount }, onReady: { [model] in model.updateIsReady() })
         self.update = update
+        let usage = model.runs.usage
+        commandSocket = CommandSocket(folder: ConfigFile.standard().url.deletingLastPathComponent(), api: CommandAPI(host: SpotCommandHost(), raise: { [model] event in
+            await MainActor.run { model.runs.raise(event) }
+        }, stats: { usage.text }, app: SpotRunningApp(model: model, update: update)))
         model.updateSpot = update?.spot
         model.reload()
         folderWatch = SpotFolderWatch(folder: model.files.folder.url) { [weak self] in self?.model.folderChanged() }

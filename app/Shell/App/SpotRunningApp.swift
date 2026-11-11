@@ -1,10 +1,32 @@
+import AppKit
 import OpenspotCore
 
 /// The app as the API reaches it while it runs.
 struct SpotRunningApp: RunningApp {
     let model: SpotsModel
+    let update: AppUpdate?
 
     func configChanged() async {
         await model.configChanged()
+    }
+
+    func status() async -> (update: String?, calls: Int, isFirstLaunch: Bool) {
+        await MainActor.run { (update?.ready, model.workCount, model.isFirstLaunch) }
+    }
+
+    func checkUpdate() async -> Bool {
+        await MainActor.run {
+            guard let update else { return false }
+            update.check()
+            return true
+        }
+    }
+
+    func installUpdate() async -> Bool {
+        await MainActor.run { update?.restart() ?? false }
+    }
+
+    func quit() async {
+        await MainActor.run { NSApp.terminate(nil) }
     }
 }
