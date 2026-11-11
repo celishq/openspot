@@ -46,7 +46,7 @@ final class AppsPluginTests: SamplePluginsCase {
             let zed = try XCTUnwrap(lines.items.first { $0.run == app.path })
             let notes = try XCTUnwrap(lines.items.first { $0.title == "Notes" })
             XCTAssertEqual(lines.errors, [])
-            XCTAssertEqual(zed.tone, .on)
+            XCTAssertTrue(zed.isOn)
             XCTAssertNil(zed.hides)
             XCTAssertEqual(notes.hides, ["quit", "uninstall"])
             XCTAssertEqual(apps.taking(lines).actions(for: zed).map(\.id), ["reveal", "quit", "uninstall"])

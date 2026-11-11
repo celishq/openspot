@@ -39,7 +39,7 @@ row=event:3F2A…                      row=reminder:9C41…
 title=Standup                        title=Call mom
 detail=09:30–09:45 · Work            detail=Late · Yesterday 18:00 · Family
 icon=video                           icon=circle
-tone=on                              tone=bad
+value=true                           tone=bad
 start=2026-11-10T09:30:00+01:00      due=2026-11-09T18:00:00+01:00
 end=2026-11-10T09:45:00+01:00        list=7D10…
 calendar=A8E2…                       color=#FF9500
@@ -48,8 +48,8 @@ location=Room 4
 meeting=https://meet.google.com/abc-defg-hij
 ```
 
-A row has the keys of 01: `title`, a `detail` in the language of the Mac that says when and where, an `icon`, and a
-`tone`: `on` for an event that is on now, and `bad` for a late reminder. Its other keys hold the data, so a view (03) can draw them (E2):
+A row has the keys of 01: `title`, a `detail` in the language of the Mac that says when and where, an `icon`,
+`value=true` for an event that is on now, and `tone=bad` for a late reminder. Its other keys hold the data, so a view (03) can draw them (E2):
 
 | Key        | Holds                                                                                       |
 | ---------- | ------------------------------------------------------------------------------------------- |

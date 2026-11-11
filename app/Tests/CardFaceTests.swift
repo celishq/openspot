@@ -42,6 +42,10 @@ final class CardFaceTests: XCTestCase {
         XCTAssertNil(PluginOutput(text: "text=a\ntitle=A\n\ntext=b\ntitle=B\n").value)
     }
 
+    func testOnlyTheMainSwitchSaysWhetherTheCardIsOn() {
+        XCTAssertNil(SpotState(output: PluginOutput(text: "on=true\ndetail=Awake\n"), header: SpotState(title: "Clock")).on)
+    }
+
     func testTheNamedSwitchSaysWhetherTheCardIsOnWhereverItPrints() {
         let text = "main=power\n\nswitch=other\nvalue=false\n\nswitch=power\nvalue=true\n"
         XCTAssertEqual(SpotState(output: PluginOutput(text: text), header: SpotState(title: "Clock")).on, true)

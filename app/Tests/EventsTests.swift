@@ -41,8 +41,8 @@ final class EventsTests: XCTestCase {
 
         XCTAssertEqual(rows.map { $0.value("title") }, ["Standup", "Lunch"])
         XCTAssertEqual(rows[0].value("detail"), "09:30–09:45 · Work")
-        XCTAssertEqual(rows[0].value("tone"), "on")
-        XCTAssertNil(rows[1].value("tone"))
+        XCTAssertEqual(rows[0].value("value"), "true")
+        XCTAssertNil(rows[1].value("value"))
         XCTAssertEqual(rows[1].value("start"), "2026-11-10T13:00:00+01:00")
         XCTAssertEqual(rows[1].value("end"), "2026-11-10T14:30:00+01:00")
         XCTAssertEqual(rows[1].value("calendar"), "A8E2")

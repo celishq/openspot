@@ -146,7 +146,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
 
     /// The good, warn or bad tone of a text, which colours its words. Another part shows its tone in its own way.
     public var textTone: MetricValue.Tone? {
-        kind == "text" && tone != .on ? tone : nil
+        kind == "text" ? tone : nil
     }
 
     /// Reads an `option` line, `<id>:<title>[:<icon>]`, or an id that is its own title. The icon follows the last colon, so

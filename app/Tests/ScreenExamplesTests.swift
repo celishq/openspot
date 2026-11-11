@@ -54,7 +54,7 @@ final class ScreenExamplesTests: SamplePluginsCase {
             let items = try await inputs.items(timeout: 5).items
 
             XCTAssertEqual(items.map(\.run), ["system", "mic:A1", "mic:B2", "camera:C3"])
-            XCTAssertEqual(items.filter { $0.tone == .on }.map(\.run), ["mic:B2", "camera:C3"])
+            XCTAssertEqual(items.filter(\.isOn).map(\.run), ["mic:B2", "camera:C3"])
         }
     }
 

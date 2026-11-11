@@ -26,6 +26,8 @@ stop() {
   running=0
 }
 
+[ "$1" = awake ] && { [ "$2" = true ] && set -- open 0 || set -- open off; }
+
 case "$1" in
   read)
     detail="Off"
@@ -42,7 +44,8 @@ case "$1" in
         fi
       fi
     fi
-    printf 'detail=%s\non=%s\nrecents=false\n\n' "$detail" "$on"
+    printf 'detail=%s\nrecents=false\n\n' "$detail"
+    printf 'switch=awake\ntitle=Awake\nvalue=%s\n\n' "$on"
     printf 'button=open\ntitle=Select\n\n'
     if [ "$running" = 1 ]; then
       printf 'row=off\ntitle=Turn off\n\n'

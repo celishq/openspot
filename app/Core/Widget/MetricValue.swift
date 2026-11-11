@@ -7,8 +7,6 @@ public struct MetricValue: Equatable, Sendable {
         case good
         case warn
         case bad
-        /// A plain dot that says that a thing is active.
-        case on
     }
 
     /// One line of a metric of the rows kind.

@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-/// The dot on a picture that says a row's tone, such as an app that runs. It shows nothing with no tone.
+/// The dot on a picture that says a row's tone, such as a disk that is almost full. It shows nothing with no tone.
 struct SpotToneDot: View {
     let tone: MetricValue.Tone?
     let side: CGFloat

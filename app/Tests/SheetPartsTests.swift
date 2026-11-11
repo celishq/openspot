@@ -66,6 +66,7 @@ final class SheetPartsTests: XCTestCase {
         let output = PluginOutput(text: "text=due\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\ngauge=disk\nvalue=0.9\ntone=bad\n")
 
         XCTAssertEqual(output.parts.map(\.textTone), [.bad, nil, nil])
+        XCTAssertEqual(output.partFaults, ["the part now has an unknown tone: on"])
     }
 
     func testASetValueKeepsThePlacementOfTheParts() throws {

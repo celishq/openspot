@@ -14,9 +14,9 @@ public struct SpotItem: Equatable, Sendable {
     public let keywords: [String]
     /// The key this row shows. A pick records the next key that the person presses.
     public let shortcut: String?
-    /// Whether this row shows that its thing is on.
+    /// Whether this row shows that its thing is on, from its `value`.
     public let isOn: Bool
-    /// The dot on its picture, such as `on` for a thing that is active.
+    /// The colour of the dot on its picture.
     public let tone: MetricValue.Tone?
     /// The file that the row stands for, which a drag takes out of the sheet (O1).
     public let file: String?
@@ -49,7 +49,7 @@ public struct SpotItem: Equatable, Sendable {
             hides: hides.isEmpty ? nil : hides,
             keywords: block.values("keyword"),
             shortcut: block.value("shortcut"),
-            isOn: block.flag("on") ?? false,
+            isOn: block.flag("value") ?? false,
             tone: block.value("tone").flatMap(MetricValue.Tone.init),
             file: block.value("file").flatMap { $0.hasPrefix("/") ? $0 : nil }
         )

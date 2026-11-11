@@ -8,7 +8,7 @@ final class RepeatDrawingTests: XCTestCase {
     row=/Applications/Safari.app
     title=Safari
     icon=/Applications/Safari.app
-    tone=on
+    value=true
 
     row=/Applications/Notes.app
     title=Notes

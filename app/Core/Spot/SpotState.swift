@@ -44,14 +44,14 @@ public struct SpotState: Equatable, Sendable {
         self.face = face
     }
 
-    /// Reads how a spot looks from what its script printed: the words of its head, and its value, which says whether its card
-    /// is on or at what level. An `on` in the head comes before the value of a switch. A spot whose output is one switch or one slider takes that control's words for its card (U12).
+    /// Reads how a spot looks from what its script printed: the words of its head, and its main value, which says whether its
+    /// card is on or at what level. A spot whose output is one switch or one slider takes that control's words for its card (U12).
     /// What the output leaves out comes from the header.
     public init(output: PluginOutput, header: SpotState) {
         let block = output.summary
         let control = output.control
-        var on = block?.flag("on")
-        if on == nil, case .toggle(let value)? = output.valuePart?.control { on = value }
+        var on: Bool?
+        if case .toggle(let value)? = output.valuePart?.control { on = value }
         var level: (Double, Double, Double)?
         if case .slider(let value, let low, let high)? = output.valuePart?.control { level = (value, low, high) }
         self.init(

@@ -87,7 +87,7 @@ final class SpotRunTests: XCTestCase {
     }
 
     func testAnAnswerThatKeepsTheCardOnTellsNoReaderOfWhetherItIsOn() async throws {
-        let sheet = try make("n=$(cat '\(path("n"))' 2>/dev/null); echo $((n + 1)) > '\(path("n"))'; printf 'on=true\\ndetail=Read %s\\n' \"$n\"", read: .panel)
+        let sheet = try make("n=$(cat '\(path("n"))' 2>/dev/null); echo $((n + 1)) > '\(path("n"))'; printf 'detail=Read %s\\n\\nswitch=power\\nvalue=true\\n' \"$n\"", read: .panel)
         sheet.read()
         try await wait("the card on") { sheet.isOn }
         let detail = sheet.state.subtitle

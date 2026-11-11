@@ -313,7 +313,6 @@ struct SpotMetricView: View {
         case .good: .green
         case .warn: .orange
         case .bad: .red
-        case .on: SpotTheme.ink.opacity(SpotTheme.secondaryLight)
         }
     }
 

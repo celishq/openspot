@@ -31,7 +31,6 @@ final class PluginOutputTests: XCTestCase {
     func testSortsBlocksByTheKeyThatSaysWhatTheyAre() {
         let output = PluginOutput(text: """
         title=Caffeinate
-        on=true
 
         button=copy
         title=Copy

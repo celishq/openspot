@@ -91,7 +91,7 @@ public struct SettingsSpot: Equatable, Sendable {
                 .init(key: "parent", value: script.name),
                 .init(key: "icon", value: Self.picture(of: script)),
                 .init(key: "hides", value: Self.clear),
-                .init(key: "on", value: String(config.arrangement.menuBar.contains(script.id)))
+                .init(key: "value", value: String(config.arrangement.menuBar.contains(script.id)))
             ]).text
         }
         let rows = floats + scripts.flatMap { script in

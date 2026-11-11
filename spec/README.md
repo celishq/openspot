@@ -56,8 +56,8 @@ These rules come from the way Nostr writes its NIPs.
 | `text`, `number`, `gauge`, `graph`, `picture`, `switch`, `slider`, `field`, `choice`, `hotkey`, `button`, `section`, `repeat`, `row` | Block kind | 01 |
 | `view`                                                                                                   | Block kind           | 03   |
 | `title`, `detail`, `icon`, `tone`, `value`, `color`, `look`, `align`                                     | Block key            | 01   |
-| `parent`, `on`, `hides`, `keyword`, `shortcut`, `file`                                                   | Row key              | 01   |
-| `grid`, `grid.<size>`, `main`, `title`, `detail`, `size`, `on`, `search`, `recents`, `toast`, `link`, `progress`, `select` | Head key | 01 |
+| `parent`, `hides`, `keyword`, `shortcut`, `file`                                                         | Row key              | 01   |
+| `grid`, `grid.<size>`, `main`, `title`, `detail`, `size`, `search`, `recents`, `toast`, `link`, `progress`, `select` | Head key | 01 |
 | `end`                                                                                                    | Head key             | 05   |
 | `call`, `reason`, `arg`, `stop`                                                                          | Stdin key            | 05   |
 | `title`, `detail`, `size`, `grid`, `places`, `opens`                                                     | Widget key           | 01   |

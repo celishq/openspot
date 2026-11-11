@@ -77,7 +77,7 @@ apps() {
   awk -F'\t' 'NR == FNR { live[$0] = 1; next }
       {
         printf "row=%s\ntitle=%s\nicon=%s\n", $2, $1, $2
-        if ($2 in live) print "tone=on"; else print "hides=quit"
+        if ($2 in live) print "value=true"; else print "hides=quit"
         if ($2 ~ /^\/System\//) print "hides=uninstall"
         print ""
       }' "$live" "$found"
@@ -103,7 +103,7 @@ uninstall_sheet() {
     chosen=true
     grep -Fxq "$path" "$kept" 2>/dev/null && chosen=false
     where=$(dirname "$path" | sed "s#^$HOME#~#")
-    printf 'row=%s\ntitle=%s\ndetail=%s\nicon=%s\non=%s\n\n' \
+    printf 'row=%s\ntitle=%s\ndetail=%s\nicon=%s\nvalue=%s\n\n' \
       "$(esc "$path")" "$(esc "$(basename "$path")")" "$(esc "$where")" "$(esc "$path")" "$chosen"
   done
 }

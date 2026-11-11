@@ -187,7 +187,7 @@ repeat=nets
 row=home
 title=Home
 icon=wifi
-tone=on
+value=true
 
 row=office
 title=Office
@@ -226,7 +226,7 @@ when it changes. Ids are unique in one output. Each kind keeps its data in `valu
 Each kind also takes `title`, `detail`, `tone` and `icon`. The value of `icon` says what the picture is: a path
 of a picture file, such as `cups.png`, draws the picture; any other path draws the file's Finder icon; a name of lowercase
 letters, digits and dots, such as `wifi`, is an SF Symbol; and any other text, such as `😀`, is drawn as it is. `tone` is
-`good`, `warn` or `bad` for a colour that means something, and `on` for a plain dot that says that a thing is active. On a
+`good`, `warn` or `bad`, a colour that means something. On a
 text, `good`, `warn` and `bad` colour its detail, or its title when it has no detail, such as a `Late` in red. On a text or
 a number, `color=#RRGGBB` draws a thin bar of that colour at its leading edge, such as the colour of a calendar. `look` is
 the box of a text, a number or a button: `tile`, `bare`, and on a button also `chip` or `strong`. On a switch, `look=tick`
@@ -285,8 +285,8 @@ list.
 | `detail`   | The second line.                                                                         |
 | `icon`     | The picture.                                                                             |
 | `parent`   | The place in its spot that it sits under. The main search shows `<spot> › <parent>`.     |
-| `tone`     | A dot on the picture.                                                                    |
-| `on`       | `true` draws a checkmark at the end, for an item that is picked.                         |
+| `tone`     | A dot of its colour on the picture.                                                      |
+| `value`    | `true` draws a checkmark at the end, for a thing that is on.                             |
 | `hides`    | The id of an action that this row does not offer. Repeat the line for each one.          |
 | `keyword`  | A word that finds the row in a search, which the row does not show.                      |
 | `shortcut` | A key at the end of the row. A pick records a new key and calls `<id> <shortcut>`.        |
@@ -312,7 +312,7 @@ grid=a a d e
 ```
 
 The first is a bento of one large place and four small ones, the second is a grid of seven to a line, and the third, the
-default, is a list. A row draws its `icon`, its `title` and `detail`, its `tone` and its `shortcut`. A row that needs more
+default, is a list. A row draws its `icon`, its `title` and `detail`, its `tone`, its `value` and its `shortcut`. A row that needs more
 offers it as an action, or the spot draws it with a `view` (03).
 
 ## The head
@@ -320,8 +320,8 @@ offers it as an action, or the spot draws it with a `view` (03).
 The head is the one block with no kind, at any place in the output, and it is not drawn. It holds four groups:
 
 - the drawing: `grid=` lines for the sheet, and `grid.<size>=` lines for the card;
-- the spot: `main`, and `title`, `detail`, `size` and `on` for its card. `on=true` shows the card as on, and it comes
-  before a main `switch`. With `panel` in its `read`, a head can change `size`, and the person's choice wins (F9);
+- the spot: `main`, and `title`, `detail` and `size` for its card. With `panel` in its `read`, a head can change `size`,
+  and the person's choice wins (F9);
 - the rows: `search` and `recents`;
 - the effects: `toast`, `link=<url>`, which opens the URL, `progress`, `end=<call>`, which ends a call of a staying
   script (05), and `select=<row id>`, which reads again with that row selected when the call ends, such as the row that a
@@ -474,6 +474,7 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | A press of a card with no sheet is `open` with no row.                                                      | A `run` id beside `open`.                    |
 | The first key names the kind of a block.                                                                    | A kind found from any key.                   |
 | Each kind keeps its data in `value`.                                                                        | `point`, `on`, `level` and `text` by kind.   |
+| A row and a card say that a thing is on only by `value`: a row's own, and the card's main `switch`.        | `on` in a row and in the head, and an `on` tone. |
 | A frame with a block is the whole picture, and a head alone carries effects.                                | A later frame that merges what it prints.    |
 | Escape codes report and never act.                                                                          | OSC 8 as `link`.                             |
 | `openspot guide` is the one text of the contract, and a part takes only the keys that it names.             | A catalog of parts beside the guide.         |
