@@ -13,6 +13,8 @@ public final class ScriptProcess: @unchecked Sendable {
     private static let forcePause: TimeInterval = 0.1
 
     private let url: URL
+    /// The first argument that the program sees, such as the path of the script of a built program.
+    private let name: String?
     private let arguments: [String]
     private let mode: Mode
     private let limit: TimeInterval?
@@ -49,7 +51,9 @@ public final class ScriptProcess: @unchecked Sendable {
     /// `limit` is the time the script has to its first frame or its end. With none, it has no limit. `stopPause` is the time
     /// between each step of a stop. `variables` add to its environment. `errorLimit` is how many of the last bytes of stderr
     /// it keeps, and nil keeps all. `careful` runs it in Careful mode with these uses (Z8), and nil runs it as the person.
-    public init(url: URL, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil) {
+    /// `name` is its first argument in place of its path, which `sandbox-exec` in Careful mode does not pass on.
+    public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil) {
+        self.name = name
         self.careful = careful.map(CarefulMode.init)
         errorText = ErrorTail(limit: errorLimit)
         self.dataName = dataName
@@ -393,7 +397,7 @@ public final class ScriptProcess: @unchecked Sendable {
         sigemptyset(&none)
         posix_spawnattr_setsigmask(&attributes, &none)
         let wrapper = careful?.words(in: environment) ?? []
-        let words = (wrapper + [url.path] + arguments).map { strdup($0) } + [nil]
+        let words = (wrapper.isEmpty ? [name ?? url.path] + arguments : wrapper + [url.path] + arguments).map { strdup($0) } + [nil]
         let pairs = environment.map { strdup("\($0.key)=\($0.value)") } + [nil]
         defer { (words + pairs).forEach { free($0) } }
         var started: pid_t = 0

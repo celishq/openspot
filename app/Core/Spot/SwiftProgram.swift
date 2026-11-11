@@ -2,7 +2,8 @@ import CryptoKit
 import Foundation
 
 /// The compiled form of a Swift script, which travels beside its source so that a Mac with no Swift tools can run it, or
-/// which a first run builds once into a cache, named by the hash of its source.
+/// which a first run builds once into a cache, named by the hash of its source. A prune keeps the cache to the builds of
+/// the sources that are there and that ran in the last 30 days.
 public struct SwiftProgram: Sendable {
     static let sourceExtension = "swift"
     private static let programExtension = "program"
@@ -17,14 +18,21 @@ public struct SwiftProgram: Sendable {
     nonisolated(unsafe) private static var hashes: [String: (stamp: [Int], hash: String)] = [:]
     /// The first bytes of a program for one kind of Mac, and of a universal one.
     private static let magics: Set<[UInt8]> = [[0xcf, 0xfa, 0xed, 0xfe], [0xca, 0xfe, 0xba, 0xbe]]
+    private static let day: TimeInterval = 86_400
+    /// The days with no run after which a prune removes a build.
+    private static let unusedDays: TimeInterval = 30
+    /// The file whose date of change is the time of the last prune.
+    private static let pruneMark = ".pruned"
 
     private let tools: URL
     private let cache: URL
+    private let now: @Sendable () -> Date
 
     /// `tools` is the folder that holds `xcode-select`, `swiftc` and `lipo`. `cache` holds the program that a first run of
     /// each source builds, by default in the caches of the home, where no spot in Careful mode can write.
-    public init(tools: URL = URL(fileURLWithPath: "/usr/bin", isDirectory: true), cache: URL? = nil) {
+    public init(tools: URL = URL(fileURLWithPath: "/usr/bin", isDirectory: true), cache: URL? = nil, now: @escaping @Sendable () -> Date = { Date() }) {
         self.tools = tools
+        self.now = now
         let home = ProcessInfo.processInfo.environment["HOME"] ?? NSHomeDirectory()
         self.cache = cache ?? URL(fileURLWithPath: home, isDirectory: true).appendingPathComponent("Library/Caches/dev.openspot/swift", isDirectory: true)
     }
@@ -35,12 +43,67 @@ public struct SwiftProgram: Sendable {
         if let program = Self.file(beside: script) { return program }
         guard script.pathExtension == Self.sourceExtension, let name = Self.hash(of: script) else { return script }
         let program = cache.appendingPathComponent(name)
-        if Self.isWhole(program) { return program }
+        if Self.isWhole(program) {
+            markUsed(program)
+            return program
+        }
         guard builds, Self.lock.withLock({ Self.started.insert(program.path).inserted }) else { return script }
         Task.detached(priority: .utility) { [self] in
             if let source = try? Data(contentsOf: script), (try? await cached(source, at: program)) != nil { Self.lock.withLock { _ = Self.started.remove(program.path) } }
         }
         return script
+    }
+
+    /// Removes each build whose hash is no source of these scripts, and each build that did not run for 30 days, apart from
+    /// a build that runs now. It runs at most once a day, on a thread of its own, and returns nil when it does not run.
+    @discardableResult
+    func prune(keeping scripts: [URL]) -> Task<Void, Never>? {
+        let date = now()
+        let mark = cache.appendingPathComponent(Self.pruneMark)
+        if let last = Self.changed(mark), date.timeIntervalSince(last) < Self.day { return nil }
+        guard FileManager.default.createFile(atPath: mark.path, contents: nil, attributes: [.modificationDate: date]) else { return nil }
+        let sources = scripts.filter { $0.pathExtension == Self.sourceExtension }
+        return Task.detached(priority: .utility) { [cache] in
+            let kept = Set(sources.compactMap(Self.hash(of:)))
+            let running = Self.runningPrograms()
+            let names = (try? FileManager.default.contentsOfDirectory(atPath: cache.path)) ?? []
+            for name in names where !name.hasPrefix(".") {
+                let program = cache.appendingPathComponent(name)
+                let isStale = date.timeIntervalSince(Self.changed(program) ?? date) > Self.unusedDays * Self.day
+                guard !kept.contains(name) || isStale, !running.contains(Self.real(program)) else { continue }
+                try? FileManager.default.removeItem(at: program)
+            }
+        }
+    }
+
+    /// Dates a build to now when its last run is more than a day old, so that a prune knows it runs.
+    private func markUsed(_ program: URL) {
+        let date = now()
+        guard let last = Self.changed(program), date.timeIntervalSince(last) > Self.day else { return }
+        try? FileManager.default.setAttributes([.modificationDate: date], ofItemAtPath: program.path)
+    }
+
+    private static func changed(_ file: URL) -> Date? {
+        (try? FileManager.default.attributesOfItem(atPath: file.path))?[.modificationDate] as? Date
+    }
+
+    private static func real(_ file: URL) -> String {
+        guard let path = realpath(file.path, nil) else { return file.path }
+        defer { free(path) }
+        return String(cString: path)
+    }
+
+    /// The path of the program of each process that runs now.
+    private static func runningPrograms() -> Set<String> {
+        var ids = [pid_t](repeating: 0, count: Int(proc_listallpids(nil, 0)) + 64)
+        let count = Int(proc_listallpids(&ids, Int32(ids.count * MemoryLayout<pid_t>.size)))
+        var paths: Set<String> = []
+        var buffer = [UInt8](repeating: 0, count: Int(MAXPATHLEN))
+        for id in ids.prefix(max(count, 0)) {
+            let length = proc_pidpath(id, &buffer, UInt32(buffer.count))
+            if length > 0 { paths.insert(String(decoding: buffer[..<Int(length)], as: UTF8.self)) }
+        }
+        return paths
     }
 
     /// The SHA-256 of a source, read again only when its size, its file number or its date of change moved.

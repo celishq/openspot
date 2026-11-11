@@ -37,10 +37,10 @@ public struct TerminalRun {
         let variables = ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }
         let process: ScriptProcess
         if spot.mode.stays {
-            process = ScriptProcess(url: program, mode: .stays, limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: nil)
+            process = ScriptProcess(url: program, name: spot.url.path, mode: .stays, limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: nil)
         } else {
             let sent = action.sent(input: input)
-            process = ScriptProcess(url: program, arguments: sent.arguments, mode: .once(input: sent.input), limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: nil)
+            process = ScriptProcess(url: program, name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: nil)
         }
         var code: Int32 = 0
         do {

@@ -31,14 +31,32 @@ final class SwiftProgramTests: XCTestCase {
         try text.writeScript(to: url)
     }
 
-    /// Stand-ins for the build commands whose compiler logs each build and writes a C program that prints `text=program`,
-    /// with a cache in the test's folder.
-    private func caching() throws -> SwiftProgram {
+    /// A clock that a test moves.
+    private final class Clock: @unchecked Sendable {
+        private let lock = NSLock()
+        private var date = Date()
+
+        var now: Date { lock.withLock { date } }
+
+        func move(days: Double) {
+            lock.withLock { date += days * 86_400 }
+        }
+    }
+
+    private let clock = Clock()
+    private var cache: URL { folder.appendingPathComponent("cache") }
+
+    /// Stand-ins for the build commands whose compiler logs each build and writes a C program, by default one that prints
+    /// `text=program`, with a cache in the test's folder.
+    private func caching(_ program: String = "int main(void) { return puts(\"text=program\") < 0; }") throws -> SwiftProgram {
         let place = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
-        try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/builds'\nwhile [ $# -gt 1 ]; do [ \"$1\" = -o ] && printf '#include <stdio.h>\\nint main(void) { return puts(\"text=program\") < 0; }' | /usr/bin/cc -x c - -o \"$2\"; shift; done\n"
+        let c = place.appendingPathComponent("program.c")
+        try ("#include <stdio.h>\n" + program + "\n").write(to: c, atomically: true, encoding: .utf8)
+        try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/builds'\nwhile [ $# -gt 1 ]; do [ \"$1\" = -o ] && /usr/bin/cc -x c '\(c.path)' -o \"$2\"; shift; done\n"
             .writeScript(to: place.appendingPathComponent("swiftc"))
-        return SwiftProgram(tools: place, cache: folder.appendingPathComponent("cache"))
+        let clock = clock
+        return SwiftProgram(tools: place, cache: cache, now: { clock.now })
     }
 
     private var builds: Int {
@@ -233,5 +251,86 @@ final class SwiftProgramTests: XCTestCase {
         let part = try XCTUnwrap(SpotOutput(text: try review.answer(["read"])).parts.first { $0.id == "review" })
         guard case .text(let text, _, _) = part.control else { throw SpotError.badForm }
         XCTAssertTrue(text.hasPrefix("Hello\n\nProgram that Openspot cannot show\nhello.program\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
+    }
+
+    func testABuiltProgramGetsThePathOfItsScriptAsItsFirstArgument() async throws {
+        let program = try caching("int main(int count, char **words) { return printf(\"text=%s\\n\", words[0]) < 0; }")
+        let source = try source()
+        let runs = SpotRuns(swift: program)
+        defer { runs.quit() }
+        _ = program.runnable(for: source)
+        try await wait("the build") { program.runnable(for: source) != source }
+
+        let answer = try await runs.answer(of: Spot(id: "hello", name: "Hello", url: source), .open)
+
+        XCTAssertEqual(answer, "text=\(source.path)\n")
+    }
+
+    /// Builds each source, and returns the path of its program in the cache.
+    private func built(_ sources: [URL], by program: SwiftProgram) async throws -> [URL] {
+        var programs: [URL] = []
+        for source in sources {
+            _ = program.runnable(for: source)
+            try await wait("the build") { program.runnable(for: source) != source }
+            programs.append(program.runnable(for: source))
+        }
+        return programs
+    }
+
+    private func age(_ file: URL, days: Double) throws {
+        try FileManager.default.setAttributes([.modificationDate: clock.now.addingTimeInterval(-days * 86_400)], ofItemAtPath: file.path)
+    }
+
+    private func exists(_ file: URL) -> Bool {
+        FileManager.default.fileExists(atPath: file.path)
+    }
+
+    func testAPruneRemovesEachBuildOfNoSourceAndEachNotRunFor30Days() async throws {
+        let program = try caching()
+        let used = try source()
+        let idle = folder.appendingPathComponent("idle.swift")
+        try "#!/bin/sh\necho text=idle\n".writeScript(to: idle)
+        let builds = try await built([used, idle], by: program)
+        let orphan = cache.appendingPathComponent(String(repeating: "a", count: 64))
+        try FileManager.default.copyItem(at: builds[0], to: orphan)
+        try builds.forEach { try age($0, days: 31) }
+        _ = program.runnable(for: used)
+
+        await program.prune(keeping: [used, idle])?.value
+
+        XCTAssertEqual([exists(builds[0]), exists(builds[1]), exists(orphan)], [true, false, false])
+    }
+
+    func testAPruneRunsAtMostOnceADay() async throws {
+        let program = try caching()
+        let source = try source()
+        let builds = try await built([source], by: program)
+        await program.prune(keeping: [source])?.value
+
+        XCTAssertNil(program.prune(keeping: []))
+        XCTAssertTrue(exists(builds[0]))
+        clock.move(days: 1.1)
+        await program.prune(keeping: [])?.value
+        XCTAssertFalse(exists(builds[0]))
+    }
+
+    func testAPruneKeepsABuildWhileItRuns() async throws {
+        let program = try caching("int main(void) { return getchar() == EOF ? 0 : 1; }")
+        let source = try source()
+        let builds = try await built([source], by: program)
+        let process = Process()
+        let input = Pipe()
+        process.executableURL = builds[0]
+        process.standardInput = input
+        try process.run()
+
+        await program.prune(keeping: [])?.value
+        XCTAssertTrue(exists(builds[0]))
+        try input.fileHandleForWriting.close()
+        process.waitUntilExit()
+        clock.move(days: 1.1)
+        await program.prune(keeping: [])?.value
+
+        XCTAssertFalse(exists(builds[0]))
     }
 }

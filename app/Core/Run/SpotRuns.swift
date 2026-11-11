@@ -102,7 +102,8 @@ public final class SpotRuns {
     nonisolated deinit {}
 
     /// Takes a new look at the plugin folder, with the spots that the person put in the menu bar. Each script keeps its sheet,
-    /// and a sheet whose script is gone stops its reads. A staying script that something wants starts.
+    /// and a sheet whose script is gone stops its reads. A staying script that something wants starts. At most once a day, it
+    /// prunes the builds of Swift scripts.
     public func take(_ scan: ScanResult, menuBar: Set<String> = []) {
         let scripts = scan.scripts
         placed = Set(scan.spots.flatMap(\.places))
@@ -116,6 +117,7 @@ public final class SpotRuns {
             sheet.stopReads()
         }
         scripts.forEach { sheet(for: $0).scanned() }
+        swift.prune(keeping: scripts.map(\.url))
         updateClock()
     }
 
@@ -346,7 +348,7 @@ public final class SpotRuns {
     /// Starts a script that stays, and returns it with its frames and the token of its spot, whose reason its link keeps.
     func stay(_ spot: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>, String) {
         let token = tokens.issue(for: spot)
-        let script = ScriptProcess(url: swift.runnable(for: spot.url), mode: .stays, limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: ["OPENSPOT_ID": spot.id, CallerTokens.variable: token], careful: isCareful ? spot.uses : nil)
+        let script = ScriptProcess(url: swift.runnable(for: spot.url), name: spot.url.path, mode: .stays, limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: ["OPENSPOT_ID": spot.id, CallerTokens.variable: token], careful: isCareful ? spot.uses : nil)
         track(script, of: spot.id, token: token)
         let frames = script.start()
         keep(script)
@@ -381,7 +383,7 @@ public final class SpotRuns {
         }
         let sent = action.sent(input: input)
         let token = tokens.issue(for: spot, reason: variables["OPENSPOT_REASON"])
-        let process = ScriptProcess(url: swift.runnable(for: spot.url), arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given }.merging([CallerTokens.variable: token]) { _, own in own }, careful: isCareful ? spot.uses : nil)
+        let process = ScriptProcess(url: swift.runnable(for: spot.url), name: spot.url.path, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given }.merging([CallerTokens.variable: token]) { _, own in own }, careful: isCareful ? spot.uses : nil)
         track(process, of: spot.id, token: token)
         let stream = process.start()
         keep(process)
