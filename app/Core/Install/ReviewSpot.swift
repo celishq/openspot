@@ -1,7 +1,8 @@
 import Foundation
 
-/// What a person sees before they add a shared spot: its whole text and what runs by itself. It learns this from the text
-/// of the files, and runs none of them.
+/// What a person sees before they add a shared spot: its title, the uses that it names, what its text seems to do beyond
+/// them, what runs by itself and its whole text (Z6). It learns this from the text of the files, runs none of them, and
+/// warns without a refusal.
 public struct ReviewSpot: Equatable, Sendable {
     /// The ID of its sheet, which has no card in the grid.
     public static let id = "openspot/install"
@@ -35,12 +36,16 @@ public struct ReviewSpot: Equatable, Sendable {
         let programs = spot.files.filter { ($0.isExecutable || ViewLibrary.isLibrary($0.path)) && !Self.canShow($0) }.map(\.path)
         let quiet = "Runs only when you use it"
         subtitle = !programs.isEmpty ? "Holds a program that you cannot read" : primary.subtitle ?? (runs.isEmpty ? quiet : "Runs by itself")
+        let uses = SpotUse.allCases.filter { use in scan.scripts.contains { $0.uses.contains(use) } }
         text = [
+            "\(primary.name)\n\n",
             programs.isEmpty ? nil : Self.section(
                 "Program that Openspot cannot show",
                 programs + ["It can do all that you can. Add it only if you trust the sender."]
                     + (programs.contains { Self.hasSource($0, in: spot) } ? ["The source beside it may not match the program."] : [])
             ),
+            uses.isEmpty ? "Uses no power\n\n" : Self.section("Uses", [uses.map(\.rawValue).joined(separator: ", ")]),
+            Self.section("Can also", Self.canAlso(spot, uses: Set(uses), id: primary.id)),
             runs.isEmpty ? "\(quiet)\n\n" : Self.section("Runs by itself", runs),
             Self.section("Replaces, and moves the old file to the Trash", spot.replaced(in: folder)),
             Self.section("Will not load", scan.refused.map { "\($0.file): \($0.reason)" })
@@ -118,6 +123,50 @@ public struct ReviewSpot: Equatable, Sendable {
             }
             return moments.isEmpty ? nil : "\(script.name): \(moments.joined(separator: ", "))"
         }
+    }
+
+    /// A line for each thing that the text of the files seems to do and `uses` does not name: the network, a delete, a
+    /// screenshot or a copy that skips `openspot`, and each call of `openspot` for another use.
+    private static func canAlso(_ spot: SharedSpot, uses: Set<SpotUse>, id: String) -> [String] {
+        let texts = spot.files.compactMap(\.text)
+        func found(_ tools: [String]) -> [String] {
+            tools.filter { tool in
+                let word = try? NSRegularExpression(pattern: "(?<![\\w./-])\(tool)(?![\\w-])")
+                return texts.contains { word?.firstMatch(in: $0, range: NSRange($0.startIndex..., in: $0)) != nil }
+            }
+        }
+        var lines: [String] = []
+        let network = found(["curl", "wget", "nc"])
+        if !network.isEmpty, !uses.contains(.network) { lines.append("Reach the network with \(listed(network))") }
+        if !found(["rm"]).isEmpty { lines.append("Delete files with rm") }
+        if !found(["screencapture"]).isEmpty { lines.append("Take screenshots with screencapture in place of openspot screen") }
+        if !found(["pbcopy"]).isEmpty { lines.append("Copy with pbcopy in place of openspot clipboard") }
+        for arguments in texts.flatMap(calls) {
+            guard let power = SpotPower(arguments: arguments, of: id), !uses.contains(power.use) else { continue }
+            let line = "Call openspot \(arguments[0]) \(arguments[1]) without uses=\(power.use.rawValue)"
+            if !lines.contains(line) { lines.append(line) }
+        }
+        return lines
+    }
+
+    /// The words of each call of `openspot` in a text: a command in a shell, or `openspot.call([...])` in JavaScript.
+    private static func calls(in text: String) -> [[String]] {
+        let shell = text.matches(of: /openspot[ \t]+([a-z]+)[ \t]+([a-z-]+)((?:[ \t]+[^\s;|&)]+)*)/).map { match in
+            [String(match.1), String(match.2)] + match.3.split(whereSeparator: { $0 == " " || $0 == "\t" }).map(unquoted)
+        }
+        let inline = text.matches(of: /openspot\.call\(\s*\[([^\]]*)\]/).map { match in
+            match.1.split(separator: ",").map(unquoted)
+        }
+        return shell + inline
+    }
+
+    private static func unquoted(_ word: Substring) -> String {
+        word.trimmingCharacters(in: CharacterSet(charactersIn: " \t\"'"))
+    }
+
+    /// Words joined as a list is read: `a`, `a and b`, `a, b and c`.
+    private static func listed(_ words: [String]) -> String {
+        words.count < 2 ? words.joined() : "\(words.dropLast().joined(separator: ", ")) and \(words.last ?? "")"
     }
 
     private static func section(_ title: String, _ lines: [String]) -> String? {

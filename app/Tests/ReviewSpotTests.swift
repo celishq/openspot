@@ -85,7 +85,7 @@ final class ReviewSpotTests: XCTestCase {
 
         XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
         let text = try shown(review)
-        XCTAssertTrue(text.hasPrefix("Program that Openspot cannot show\ntool\nIt can do all that you can. Add it only if you trust the sender.\n\n"), text)
+        XCTAssertTrue(text.hasPrefix("\(review.name)\n\nProgram that Openspot cannot show\ntool\nIt can do all that you can. Add it only if you trust the sender.\n\n"), text)
     }
 
     func testVeryLongTextIsNamedAndNotDrawn() throws {
@@ -163,7 +163,7 @@ final class ReviewSpotTests: XCTestCase {
 
         XCTAssertEqual(review.subtitle, "Runs only when you use it")
         let text = try shown(review)
-        XCTAssertTrue(text.hasPrefix("Runs only when you use it\n\n"), text)
+        XCTAssertTrue(text.hasPrefix("Weather\n\nUses no power\n\nRuns only when you use it\n\n"), text)
         XCTAssertFalse(text.contains("Runs by itself"))
     }
 
@@ -172,7 +172,57 @@ final class ReviewSpotTests: XCTestCase {
 
         XCTAssertEqual(review.subtitle, "Runs by itself")
         let text = try shown(review)
-        XCTAssertTrue(text.hasPrefix("Runs by itself\nWeather: when the panel opens, every 30 seconds\n"), text)
+        XCTAssertTrue(text.hasPrefix("Weather\n\nUses no power\n\nRuns by itself\nWeather: when the panel opens, every 30 seconds\n"), text)
+    }
+
+    func testItShowsTheUsesThatTheHeaderNames() throws {
+        let text = try shown(review("title=Coffee\nuses=network,app"))
+
+        XCTAssertTrue(text.hasPrefix("Coffee\n\nUses\napp, network\n\n"), text)
+        XCTAssertFalse(text.contains("Can also"), text)
+    }
+
+    func testCanAlsoSaysWhatTheTextSeemsToDoAndDoesNotName() throws {
+        let body = """
+        curl -s https://example.com | nc host 80
+        rm -f "$OPENSPOT_DATA/old"
+        screencapture -x shot.png && printf x | pbcopy
+        openspot app quit
+        openspot setting get --spot notes tone
+        openspot setting get tone
+        openspot clipboard copy
+        """
+        let review = try review("title=Coffee\nuses=clipboard", body: body)
+
+        let text = try shown(review)
+
+        XCTAssertTrue(text.contains("""
+        Uses
+        clipboard
+
+        Can also
+        Reach the network with curl and nc
+        Delete files with rm
+        Take screenshots with screencapture in place of openspot screen
+        Copy with pbcopy in place of openspot clipboard
+        Call openspot app quit without uses=app
+        Call openspot setting get without uses=settings
+
+
+        """), text)
+        XCTAssertNotNil(try sheet(review).parts.first { $0.id == "install" }, "a review warns and never refuses")
+    }
+
+    func testANamedNetworkIsNoCanAlso() throws {
+        let text = try shown(review("title=Coffee\nuses=network", body: "curl -s https://example.com\n"))
+
+        XCTAssertFalse(text.contains("Can also"), text)
+    }
+
+    func testCanAlsoReadsTheCallsOfAnInlineSpot() throws {
+        let review = try ReviewSpot(spot: spot([("bye.js", "// title=Bye\n// mode=inline\nfunction main() { openspot.call([\"app\", \"quit\"]) }\n", false)]), folder: folder)
+
+        XCTAssertTrue(try shown(review).contains("Can also\nCall openspot app quit without uses=app\n"))
     }
 
     func testAStayingScriptSaysSo() throws {

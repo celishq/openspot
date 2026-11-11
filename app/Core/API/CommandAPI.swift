@@ -29,9 +29,13 @@ public final class CommandAPI: @unchecked Sendable {
     }
 
     /// Tells the runs of a spot's call that uses a power, so that a use that its header does not name shows (Z4). It does
-    /// nothing for the person's call, or for a call that needs no use.
-    public func note(_ call: CommandLineCall, environment: [String: String]) {
-        guard let runs, let caller = runs.tokens.caller(of: environment), let power = SpotPower(call, of: caller.id) else { return }
+    /// nothing for the person's call, for a refused call, or for a call that needs no use.
+    public func note(_ call: CommandLineCall, arguments: [String], environment: [String: String]) {
+        switch call {
+        case .refused, .unknown: return
+        default: break
+        }
+        guard let runs, let caller = runs.tokens.caller(of: environment), let power = SpotPower(arguments: arguments, of: caller.id) else { return }
         Task { @MainActor in runs.used(power, by: caller) }
     }
 

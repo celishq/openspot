@@ -17,7 +17,7 @@ struct BatchCalls {
                 else {
                     return CommandAnswer(output: output, errors: "openspot batch cannot run `\(line)`, because it does not print data. Run it on its own.\n", code: 2)
                 }
-                api.note(call, environment: environment)
+                api.note(call, arguments: words, environment: environment)
                 let answer = await work()
                 guard answer.code == 0 else { return CommandAnswer(output: output + answer.output, errors: answer.errors, code: answer.code) }
                 output += answer.output + (answer.output.isEmpty || answer.output.hasSuffix("\n") ? "" : "\n") + SheetFrameReader.mark + "\n"

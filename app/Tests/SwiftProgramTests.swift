@@ -159,6 +159,6 @@ final class SwiftProgramTests: XCTestCase {
         XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
         let part = try XCTUnwrap(SpotOutput(text: try review.answer(["read"])).parts.first { $0.id == "review" })
         guard case .text(let text, _, _) = part.control else { throw SpotError.badForm }
-        XCTAssertTrue(text.hasPrefix("Program that Openspot cannot show\nhello.program\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
+        XCTAssertTrue(text.hasPrefix("Hello\n\nProgram that Openspot cannot show\nhello.program\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
     }
 }

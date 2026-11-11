@@ -109,10 +109,9 @@ final class SpotUsesTests: SpotRunsCase {
             (["spot", "stats"], nil), (["spot", "list"], nil), (["event", "emit", "a.b"], nil)
         ]
         for (arguments, use) in cases {
-            let call = CommandLineCall(arguments: arguments, environment: ["OPENSPOT_ID": "own"])!
-            XCTAssertEqual(SpotPower(call, of: "own")?.use.rawValue, use, arguments.joined(separator: " "))
+            XCTAssertEqual(SpotPower(arguments: arguments, of: "own")?.use.rawValue, use, arguments.joined(separator: " "))
         }
-        XCTAssertNil(SpotPower(.settingGet(spot: "record/inputs", key: "k"), of: "record/record"), "a script of the same folder is the same plugin")
-        XCTAssertNotNil(SpotPower(.settingGet(spot: "notes", key: "k"), of: "record/record"))
+        XCTAssertNil(SpotPower(arguments: ["setting", "get", "--spot", "record/inputs", "k"], of: "record/record"), "a script of the same folder is the same plugin")
+        XCTAssertNotNil(SpotPower(arguments: ["setting", "get", "--spot", "notes", "k"], of: "record/record"))
     }
 }
