@@ -4,28 +4,78 @@
 # detail=Turn on
 # size=small
 # read=sheet
+nl='
+'
 
-# Prints the state of the app, and fails when it cannot.
+# Prints the value of a key of the state of the app.
 status() {
-  openspot app status
+  state=$(openspot app status --frame) || exit 1
+  while IFS= read -r line; do
+    case $line in "$1="*) printf '%s' "${line#*=}"; return ;; esac
+  done <<EOF
+$state
+EOF
+}
+
+# Prints a row for each core spot from its block, and the row of the login on a first launch from the state of the app.
+sheet() {
+  part=1 id= first= login=
+  while IFS= read -r line; do
+    case $part:$line in
+      *:---) part=$((part + 1)) ;;
+      1:spot=*) id=${line#spot=}; printf '\nrow=%s\n' "$id"; own= detail= ;;
+      1:name=*) printf 'title=%s\n' "${line#*=}" ;;
+      1:icon=*) printf 'icon=%s\n' "${line#*=}" ;;
+      1:detail=*) detail=${line#*=} ;;
+      1:own=*) own=${line#*=} ;;
+      1:on=*) printf 'value=%s\n' "${line#*=}" ;;
+      1:)
+        if [ "$own" = true ]; then
+          printf 'detail=In your plugins folder\n'
+        elif [ -n "$detail" ]; then
+          printf 'detail=%s\n' "$detail"
+        fi
+        own= detail=
+        ;;
+      2:firstLaunch=*) first=${line#*=} ;;
+      2:login=*) login=${line#*=} ;;
+    esac
+  done <<EOF
+$1
+EOF
+  [ "$first" != true ] || [ -z "$login" ] || printf '\nrow=open_at_login\ntitle=Open at login\nicon=power\nvalue=%s\nhides=review\n' "$login"
+}
+
+# Sets `on` and `own` from the block of one core spot, and fails when there is none.
+choice() {
+  spots=$(openspot spot list --core --frame) || exit 1
+  current= on= own=
+  while IFS= read -r line; do
+    case $line in
+      spot=*) [ "$current" != "$1" ] || return 0; current=${line#spot=} on= own= ;;
+      on=*) on=${line#on=} ;;
+      own=*) own=${line#own=} ;;
+    esac
+  done <<EOF
+$spots
+EOF
+  [ "$current" = "$1" ]
 }
 
 case "$1" in
   read)
-    spots=$(openspot spot list --core) || exit 1
-    app=$(status) || exit 1
+    frames=$(openspot batch <<EOF
+spot list --core --frame
+app status --frame
+EOF
+) || exit 1
     printf 'recents=false\n'
     printf '\nbutton=open\ntitle=Select\nclose=false\n'
     printf '\nbutton=select-all\ntitle=Select all\nshortcut=cmd+shift+a\nscope=command\n'
     printf '\nbutton=review\ntitle=Review code\n'
     printf '\nbutton=add\ntitle=Add a spot\nform=true\nscope=command\n'
     printf '\nrow=new\ntitle=New spot\ndetail=Make your own with AI or a starter\nicon=plus\nhides=review\n'
-    printf '%s' "$spots" | jq -r 'def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");
-      .[] | "\nrow=\(.id | esc)\ntitle=\(.name | esc)\nicon=\(.icon | esc)\n"
-      + (if .own then "detail=In your plugins folder\n" elif .detail then "detail=\(.detail | esc)\n" else "" end)
-      + "value=\(.on)"'
-    printf '%s' "$app" | jq -r 'select(.firstLaunch == true and .login != null)
-      | "\nrow=open_at_login\ntitle=Open at login\nicon=power\nvalue=\(.login)\nhides=review"'
+    sheet "$frames"
     ;;
   open)
     case "$2" in
@@ -33,25 +83,31 @@ case "$1" in
         exec openspot spot open openspot/new
         ;;
       open_at_login)
-        if [ "$(status | jq -r '.login')" = true ]; then exec openspot app login off; else exec openspot app login on; fi
+        if [ "$(status login)" = true ]; then exec openspot app login off; else exec openspot app login on; fi
         ;;
     esac
-    spots=$(openspot spot list --core) || exit 1
-    spot=$(printf '%s' "$spots" | jq -c --arg id "$2" '.[] | select(.id == $id)')
-    if [ -z "$spot" ]; then
+    if ! choice "$2"; then
       echo 'Spots has no such spot.' >&2
       exit 1
-    elif [ "$(printf '%s' "$spot" | jq -r '.own')" = true ]; then
+    elif [ "$own" = true ]; then
       echo 'toast=This spot is a file in your plugins folder.'
-    elif [ "$(printf '%s' "$spot" | jq -r '.on')" = true ]; then
+    elif [ "$on" = true ]; then
       exec openspot spot off "$2"
     else
       exec openspot spot on "$2"
     fi
     ;;
   select-all)
-    spots=$(openspot spot list --core) || exit 1
-    ids=$(printf '%s' "$spots" | jq -r '.[] | select(.own | not) | .id')
+    spots=$(openspot spot list --core --frame) || exit 1
+    ids= current=
+    while IFS= read -r line; do
+      case $line in
+        spot=*) current=${line#spot=} ;;
+        own=false) ids="$ids $current" ;;
+      esac
+    done <<EOF
+$spots
+EOF
     [ -z "$ids" ] || exec openspot spot on $ids
     ;;
   review)

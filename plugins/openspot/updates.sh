@@ -3,8 +3,17 @@
 # icon=arrow.triangle.2.circlepath
 # read=panel,app.update
 warned="$OPENSPOT_DATA/updates-warned"
-status=$(openspot app status) || exit 1
-eval "$(printf '%s' "$status" | jq -r '@sh "version=\(.version) ready=\(.update // "") calls=\(.calls // 0)"')"
+status=$(openspot app status --frame) || exit 1
+version= ready= calls=0
+while IFS='=' read -r key value; do
+  case $key in
+    version) version=$value ;;
+    update) ready=$value ;;
+    calls) calls=$value ;;
+  esac
+done <<EOF
+$status
+EOF
 
 # Prints a count of calls, such as 1 call or 2 calls.
 calls() {

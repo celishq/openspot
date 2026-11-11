@@ -62,7 +62,12 @@ final class TestHost: SpotsHost {
 
     func setEntryKey(on isOn: Bool) {}
 
-    func hold(_ keys: [GlobalKey]) {}
+    /// The keys that the model held, at each time it held them.
+    var held: [[GlobalKey]] = []
+
+    func hold(_ keys: [GlobalKey]) {
+        held.append(keys)
+    }
 
     func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {}
 

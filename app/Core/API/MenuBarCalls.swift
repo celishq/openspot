@@ -8,7 +8,7 @@ struct MenuBarCalls {
     func show(_ id: String, _ isShown: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [environment, app] in
             try ConfigFile.standard(environment: environment).showInMenuBar(id, isShown)
-            await app?.configChanged()
+            await app?.configChanged(.spots([id]))
             return ""
         }
     }

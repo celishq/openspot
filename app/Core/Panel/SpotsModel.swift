@@ -162,6 +162,8 @@ public final class SpotsModel {
     /// The stamp of the folder and the config that the cards were last built from.
     @ObservationIgnored private var loadedStamp: SpotFolder.Stamp?
     @ObservationIgnored private var loadedConfig: Config?
+    /// How many times the grid built all its cards again, which a change of the config through the API does not do (A25).
+    @ObservationIgnored private(set) var gridBuilds = 0
     /// The files of the last spot that Delete moved to the Trash, which `⌘Z` puts back.
     @ObservationIgnored var removal: Removal?
     /// The stamp of each script file at the last scan, which says which scripts a change of the folder touched.
@@ -216,6 +218,11 @@ public final class SpotsModel {
     /// and any other fault shows in a toast. With no file changed and the same config as the last time, it only holds the
     /// keys again.
     public func reload() {
+        reload(patching: nil)
+    }
+
+    /// Reloads as `reload` does. With `ids`, only the cards of those spots change, and each other card stays as it is.
+    private func reload(patching ids: Set<String>?) {
         let config = files.config.read()
         host.applyConfig(config)
         let folder = files.folder(config)
@@ -234,7 +241,7 @@ public final class SpotsModel {
         holdAssignedKeys(config)
         arrangement = config.arrangement
         scanned = scan.spots
-        rebuildEntries()
+        if let ids { patchEntries(ids) } else { rebuildEntries() }
         if isEditing { refreshDock(in: folder) }
         if problems != self.problems, !problems.isEmpty {
             host.notify(problems.joined(separator: " "))
@@ -281,21 +288,41 @@ public final class SpotsModel {
         return true
     }
 
-    /// Takes a change that the API wrote to the config: the keys follow it, and the grid loads again, under a sheet that
-    /// shows.
-    public func configChanged() {
-        reloadUnderSheet()
+    /// Takes a change that the API wrote to the config, and applies only what changed (A25): a key holds the keys again, a
+    /// spot that turns on or off or goes into the menu bar changes its own card under a sheet that shows, and a value reads
+    /// its spot again when something wants it and another caller set it.
+    public func configChanged(_ change: ConfigChange) {
+        let config = files.config.read()
+        switch change {
+        case .keys:
+            host.applyConfig(config)
+            holdAssignedKeys(config)
+            if let loaded = loadedConfig, loaded.arrangement == config.arrangement, loaded.settings == config.settings { loadedConfig = config }
+        case .spots(let ids):
+            let id = selectedEntry?.id
+            reload(patching: Set(ids))
+            if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
+        case .value(let spot, let caller):
+            if let loaded = loadedConfig, loaded.arrangement == config.arrangement, loaded.keys == config.keys, loaded.panelKey == config.panelKey, loaded.fixKey == config.fixKey {
+                loadedConfig = config
+            }
+            if caller != spot, let sheet = sheets[spot], sheet.isWanted { sheet.read(need: .change) }
+        }
     }
 
-    /// Brings the grid up to date while a sheet covers it, so that the sheet closes onto the card's real place. The selected
-    /// card stays selected.
-    private func reloadUnderSheet() {
-        let id = selectedEntry?.id
-        reload()
-        if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
+    /// Builds the card of each spot that these IDs name again, by its ID or its core ID, and keeps each other card (A25).
+    private func patchEntries(_ ids: Set<String>) {
+        let named: (Spot) -> Bool = { ids.contains($0.id) || ids.contains(SpotFolder.coreID(of: $0)) }
+        let letters = arrangement.letters(over: defaultArrangement)
+        var next = entries.filter { !named($0.spot) }
+        for (index, spot) in ordered().enumerated() where named(spot) {
+            next.insert(Entry(spot: spot, run: runs.sheets[spot.id], choice: arrangement, defaults: defaultArrangement, letter: letters[spot.id]), at: min(index, next.count))
+        }
+        if next != entries { entries = next }
     }
 
     public func rebuildEntries() {
+        gridBuilds += 1
         let letters = arrangement.letters(over: defaultArrangement)
         let next = ordered().map { Entry(spot: $0, run: runs.sheets[$0.id], choice: arrangement, defaults: defaultArrangement, letter: letters[$0.id]) }
         let field = next.first { $0.spot.growsFromField }?.id

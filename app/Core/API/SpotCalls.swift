@@ -8,17 +8,22 @@ struct SpotCalls {
     /// The rows of `openspot spot stats` in the running app, or nil in a process with no app to reach.
     let stats: (@Sendable () -> String)?
 
-    func list(core: Bool) -> CommandAPI.Work {
+    func list(core: Bool, frame: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [environment] in
             let list = SpotList(folder: SpotFolder.standard(environment: environment), config: ConfigFile.standard(environment: environment).read())
-            return try core ? list.core() : list.loaded()
+            switch (core, frame) {
+            case (true, true): return list.coreFrame()
+            case (true, false): return try list.core()
+            case (false, true): return try list.loadedFrame()
+            case (false, false): return try list.loaded()
+            }
         }
     }
 
     func turn(_ ids: [String], on isOn: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [environment, app] in
             try SpotFolder.standard(environment: environment).turn(ids, on: isOn, in: ConfigFile.standard(environment: environment))
-            await app?.configChanged()
+            await app?.configChanged(.spots(ids))
             return ""
         }
     }

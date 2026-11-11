@@ -48,6 +48,22 @@ final class CommandAPITests: XCTestCase {
         return await work()
     }
 
+    func testABatchPrintsTheOutputOfEachCallWithAMarkAfterIt() async throws {
+        let answer = try await answer(["batch"], input: "calc solve 2+2\n\nsetting list --frame\n")
+
+        XCTAssertEqual(answer.code, 0)
+        XCTAssertEqual(answer.output.components(separatedBy: "---\n").count, 3)
+        XCTAssertTrue(answer.output.hasPrefix("row=4\n"), answer.output)
+    }
+
+    func testABatchStopsAtACallThatPrintsNoData() async throws {
+        let answer = try await answer(["batch"], input: "calc solve 2+2\ncolor pick\ncalc solve 3+3\n")
+
+        XCTAssertEqual(answer.code, 2)
+        XCTAssertEqual(answer.errors, "openspot batch cannot run `color pick`, because it does not print data. Run it on its own.\n")
+        XCTAssertFalse(answer.output.contains("row=6"))
+    }
+
     func testCalcSolvesASum() async throws {
         let answer = try await answer(["calc", "solve", "2+2"])
 

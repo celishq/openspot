@@ -62,6 +62,17 @@ class BuiltInCase: XCTestCase {
         try "#!/bin/sh\n\(body)\n".writeScript(to: tools.appendingPathComponent(name))
     }
 
+    /// Puts a counter in front of `openspot` and `jq` on the path, and returns a reader of the programs that they started, one
+    /// line for each.
+    func countPrograms() throws -> () -> [String] {
+        let log = root.appendingPathComponent("programs")
+        let real = tools.appendingPathComponent("openspot-real")
+        try FileManager.default.moveItem(at: tools.appendingPathComponent("openspot"), to: real)
+        try fake("openspot", "echo \"openspot $*\" >> '\(log.path)'\nexec '\(real.path)' \"$@\"")
+        try fake("jq", "echo jq >> '\(log.path)'\nexec /usr/bin/jq \"$@\"")
+        return { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
+    }
+
     /// Whether the app opens at login, as the API sees it.
     var opensAtLogin: Bool {
         mac.isOn

@@ -8,6 +8,14 @@ final class UpdateSpotTests: BuiltInCase {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
     }
 
+    func testAReadStartsOneOpenspotAndNoJq() async throws {
+        let programs = try countPrograms()
+
+        _ = try await spot("updates").state(timeout: 5)
+
+        XCTAssertEqual(programs(), ["openspot app status --frame"])
+    }
+
     func testTheCardShowsTheVersionAndAPressChecks() async throws {
         let spot = try spot("updates")
 

@@ -281,7 +281,7 @@ final class SpotAPITests: XCTestCase {
 
         XCTAssertEqual(CommandLineCall(arguments: ["app", "quit"], environment: read), .refused("`openspot app quit` ends Openspot, so it cannot run in a read. Run it from a pick or an action."))
         XCTAssertEqual(CommandLineCall(arguments: ["update", "install"], environment: read), .refused("`openspot update install` restarts Openspot, so it cannot run in a read. Run it from a pick or an action."))
-        XCTAssertEqual(CommandLineCall(arguments: ["app", "status"], environment: read), .appStatus)
+        XCTAssertEqual(CommandLineCall(arguments: ["app", "status"], environment: read), .appStatus(frame: false))
     }
 
     func testTheRunningAppOpensASheetAReviewAndAChangeOfASetting() async throws {

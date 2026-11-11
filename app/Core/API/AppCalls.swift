@@ -6,7 +6,7 @@ struct AppCalls {
     let environment: [String: String]
     let app: (any RunningApp)?
 
-    func status() -> CommandAPI.Work {
+    func status(frame: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [mac, environment, app] in
             let config = ConfigFile.standard(environment: environment).read()
             let running = await app?.status()
@@ -19,7 +19,7 @@ struct AppCalls {
                 update: running?.update,
                 calls: running?.calls,
                 firstLaunch: running?.isFirstLaunch
-            ).json()
+            ).text(frame: frame)
         }
     }
 

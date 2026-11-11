@@ -12,8 +12,12 @@ actor FakeRunningApp: RunningApp {
     private var calls = 0
     private var isFirstLaunch = false
 
-    func configChanged() {
+    /// Each change of the config that the API reported, in order.
+    private(set) var changeList: [ConfigChange] = []
+
+    func configChanged(_ change: ConfigChange) {
         changes += 1
+        changeList.append(change)
     }
 
     func status() -> (update: String?, calls: Int, isFirstLaunch: Bool) {

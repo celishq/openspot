@@ -56,6 +56,15 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(changes, 2)
     }
 
+    func testAReadStartsOneOpenspotAndNoJq() async throws {
+        try script("cups.sh", "title=Cups\nread=60\n\nsetting=size")
+        let programs = try countPrograms()
+
+        _ = try await items()
+
+        XCTAssertEqual(programs(), ["openspot batch"])
+    }
+
     func testTheSheetListsTheKeyOfTheFile() async throws {
         try file.set("panel_key", to: "option+space")
 

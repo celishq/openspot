@@ -9,7 +9,7 @@ struct KeyCalls {
         CommandAnswer.work { [environment, app] in
             guard let shortcut = Shortcut(text: key) else { throw SpotError.failed(1, "Openspot cannot use `\(key)`. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.") }
             try ConfigFile.standard(environment: environment).set(name, to: shortcut.text)
-            await app?.configChanged()
+            await app?.configChanged(.keys)
             return ""
         }
     }
@@ -21,7 +21,7 @@ struct KeyCalls {
                 return trigger
             }
             try ConfigFile.standard(environment: environment).assign(trigger, to: spot, act: act)
-            await app?.configChanged()
+            await app?.configChanged(.keys)
             return ""
         }
     }

@@ -49,6 +49,36 @@ final class SpotsModelTests: XCTestCase {
         XCTFail("waited for \(what)")
     }
 
+    func testAKeyThatTheAPISetsHoldsTheKeysAgainAndBuildsNoGrid() throws {
+        try script("move", header: "title=Move\n\ncommand=left\ntitle=Left side", ":")
+        model.reload()
+        let builds = model.gridBuilds
+        let trigger = try XCTUnwrap(Trigger(text: "ctrl+option+l"))
+        try model.files.config.assign(trigger, to: "move", act: .command("left"))
+
+        model.configChanged(.keys)
+
+        XCTAssertEqual(model.gridBuilds, builds)
+        XCTAssertEqual(host.held.last, [GlobalKey(spot: "move", act: .command("left"), trigger: trigger)])
+    }
+
+    func testAMenuBarPlaceAndAValueThatTheAPISetsBuildNoGridNowOrAtTheNextReload() throws {
+        try script("cups", header: "title=Cups\nread=60", "printf 'text=c\\ntitle=3\\n'")
+        try script("notes", header: "title=Notes", ":")
+        model.reload()
+        let builds = model.gridBuilds
+        let entries = model.entries
+
+        try model.files.config.showInMenuBar("cups", true)
+        model.configChanged(.spots(["cups"]))
+        try model.files.config.set(setting: "size", of: "cups", to: "big")
+        model.configChanged(.value(spot: "cups", caller: nil))
+        model.reload()
+
+        XCTAssertEqual(model.gridBuilds, builds)
+        XCTAssertEqual(model.entries, entries)
+    }
+
     /// Shows the panel with one list of two rows, and opens that list.
     private func openList() async throws {
         try script("list", header: "read=sheet", "printf 'row=a\\ntitle=Apple\\n\\nrow=b\\ntitle=Banana\\n'")

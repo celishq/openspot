@@ -1,6 +1,7 @@
 import Foundation
 
-/// What `openspot app status` prints as JSON. A value that only the running app knows is absent in a process of its own.
+/// What `openspot app status` prints as JSON, or as one block. A value that only the running app knows is absent in a
+/// process of its own.
 struct AppStatus: Encodable {
     let version: String
     let panelKey: String
@@ -15,9 +16,17 @@ struct AppStatus: Encodable {
     let calls: Int?
     let firstLaunch: Bool?
 
-    func json() throws -> String {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
-        return String(decoding: try encoder.encode(self), as: UTF8.self) + "\n"
+    /// The state as JSON, or with `frame` as one block of `key=value` lines (K8).
+    func text(frame: Bool) throws -> String {
+        guard frame else {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+            return String(decoding: try encoder.encode(self), as: UTF8.self) + "\n"
+        }
+        let pairs: [(String, String?)] = [
+            ("version", version), ("panelKey", panelKey), ("fixKey", fixKey), ("login", login.map(String.init)), ("link", link.map(String.init)),
+            ("update", update), ("calls", calls.map(String.init)), ("firstLaunch", firstLaunch.map(String.init))
+        ]
+        return TextBlock(fields: pairs.compactMap { key, value in value.map { TextBlock.Field(key: key, value: $0) } }).text
     }
 }

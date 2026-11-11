@@ -12,15 +12,17 @@ struct SettingCalls {
     }
 
     func set(_ key: String, of spot: String, to value: String?) -> CommandAPI.Work {
-        CommandAnswer.work { [environment] in
+        CommandAnswer.work { [environment, app] in
             try ConfigFile.standard(environment: environment).set(setting: key, of: spot, to: value)
+            await app?.configChanged(.value(spot: spot, caller: environment["OPENSPOT_ID"]))
             return ""
         }
     }
 
-    func list() -> CommandAPI.Work {
+    func list(frame: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [environment] in
-            try SpotList(folder: SpotFolder.standard(environment: environment), config: ConfigFile.standard(environment: environment).read()).values()
+            let list = SpotList(folder: SpotFolder.standard(environment: environment), config: ConfigFile.standard(environment: environment).read())
+            return try frame ? list.valuesFrame() : list.values()
         }
     }
 

@@ -36,6 +36,14 @@ final class CatalogSpotTests: BuiltInCase {
         XCTAssertEqual(scan.refused, [])
     }
 
+    func testAReadStartsOneOpenspotAndNoJq() async throws {
+        let programs = try countPrograms()
+
+        _ = try await catalog.items(timeout: 5)
+
+        XCTAssertEqual(programs(), ["openspot batch"])
+    }
+
     func testItListsTheRowForAuthorsThenTheCoreSpotsByName() async throws {
         let items = try await catalog.items(timeout: 5).items
 

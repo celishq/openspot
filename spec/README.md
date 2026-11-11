@@ -78,7 +78,6 @@ Where the code still differs from the rules of 11-11-2026. Each fix removes its 
 
 | Rule              | Module that differs                                                                                  |
 | ----------------- | ---------------------------------------------------------------------------------------------------- |
-| K7, K8, A25, A27  | `CommandAPI`, `settings.sh`, `spots.sh`, `updates.sh`, `SpotsModel.configChanged`.                    |
 | C8                | `openspot.sh`, `InlineScript`, `SpotCheck`, each spot that prints a value from data.                 |
 | B6, B7            | `SpotFile`, `SpotRead`, `SpotCheck`, each spot with a number or an event in its `read`.             |
 | S12, S13          | `Client/main.swift`, `CommandSocket`.                                                                 |
