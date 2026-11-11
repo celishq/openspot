@@ -8,6 +8,7 @@ public final class CommandAPI: @unchecked Sendable {
 
     private let host: any CommandHost
     private let lock = NSLock()
+    /// The stores kept warm across calls, each one only once the person gave it leave.
     private var eventStore: (any EventStore)?
     private var reminderStore: (any ReminderStore)?
     private var glyphKeywords: GlyphKeywords?
@@ -102,7 +103,7 @@ public final class CommandAPI: @unchecked Sendable {
     private func events(_ isRead: Bool) -> Events {
         let store = lock.withLock {
             let store = eventStore ?? host.eventStore()
-            eventStore = store
+            eventStore = store.access() == .allowed ? store : nil
             return store
         }
         return Events(store: store, isRead: isRead)
@@ -111,7 +112,7 @@ public final class CommandAPI: @unchecked Sendable {
     private func reminders(_ isRead: Bool) -> Reminders {
         let store = lock.withLock {
             let store = reminderStore ?? host.reminderStore()
-            reminderStore = store
+            reminderStore = store.access() == .allowed ? store : nil
             return store
         }
         return Reminders(store: store, isRead: isRead)

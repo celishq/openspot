@@ -6,10 +6,11 @@ final class CommandAPITests: XCTestCase {
     private final class Host: CommandHost, @unchecked Sendable {
         var made = 0
         var opened: [URL] = []
+        var access = CalendarAccess.allowed
 
         func eventStore() -> any EventStore {
             made += 1
-            return FakeEventStore(calendars: [CalendarList(id: "A8E2", title: "Work", account: "iCloud", color: "#1BADF8")])
+            return FakeEventStore(calendars: [CalendarList(id: "A8E2", title: "Work", account: "iCloud", color: "#1BADF8")], access: access)
         }
 
         func reminderStore() -> any ReminderStore {
@@ -96,6 +97,19 @@ final class CommandAPITests: XCTestCase {
         }
 
         XCTAssertEqual(host.made, 1)
+    }
+
+    func testAStoreWithNoLeaveIsMadeAgainAtTheNextCall() async throws {
+        host.access = .denied
+        let api = CommandAPI(host: host)
+        let call = try XCTUnwrap(CommandLineCall(arguments: ["calendar", "calendars"], environment: environment))
+
+        _ = await api.work(for: call, input: { "" }, environment: environment)?()
+        host.access = .allowed
+        _ = await api.work(for: call, input: { "" }, environment: environment)?()
+        _ = await api.work(for: call, input: { "" }, environment: environment)?()
+
+        XCTAssertEqual(host.made, 2)
     }
 
     func testACallThatTheShellDoesHasNoWorkInCore() throws {
