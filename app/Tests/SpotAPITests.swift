@@ -48,6 +48,23 @@ final class SpotAPITests: XCTestCase {
             quits += 1
         }
 
+        var opened: [String] = []
+
+        func open(_ id: String) -> Bool {
+            opened.append("open \(id)")
+            return id != "gone"
+        }
+
+        func review(_ id: String) -> Bool {
+            opened.append("review \(id)")
+            return id != "gone"
+        }
+
+        func changeSetting(_ key: String, of spot: String) -> Bool {
+            opened.append("change \(spot) \(key)")
+            return spot != "gone"
+        }
+
         func set(update: String?, calls: Int) {
             self.update = update
             self.calls = calls
@@ -315,5 +332,32 @@ final class SpotAPITests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["app", "quit"], environment: read), .refused("`openspot app quit` ends Openspot, so it cannot run in a read. Run it from a pick or an action."))
         XCTAssertEqual(CommandLineCall(arguments: ["update", "install"], environment: read), .refused("`openspot update install` restarts Openspot, so it cannot run in a read. Run it from a pick or an action."))
         XCTAssertEqual(CommandLineCall(arguments: ["app", "status"], environment: read), .appStatus)
+    }
+
+    func testTheRunningAppOpensASheetAReviewAndAChangeOfASetting() async throws {
+        _ = try await answer(["spot", "open", "notes"])
+        _ = try await answer(["spot", "review", "apps"])
+        let change = try await answer(["setting", "change", "--spot", "repos", "folder"])
+        let gone = try await answer(["spot", "open", "gone"])
+        let goneReview = try await answer(["spot", "review", "gone"])
+
+        XCTAssertEqual(change, CommandAnswer())
+        let opened = await app.opened
+        XCTAssertEqual(opened, ["open notes", "review apps", "change repos folder", "open gone", "review gone"])
+        XCTAssertEqual(gone.errors, "Openspot has no spot `gone`. Run `openspot spot list` to see each one.\n")
+        XCTAssertEqual(goneReview.code, 1)
+        for arguments in [["spot", "open", "notes"], ["spot", "review", "apps"], ["setting", "change", "--spot", "a", "b"]] {
+            let answer = try await XCTUnwrap(appWork(arguments))()
+            XCTAssertEqual(answer.code, 1, arguments.joined(separator: " "))
+        }
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "open", "notes"], environment: ["OPENSPOT_REASON": "panel"]), .refused("`openspot spot open` opens the panel, so it cannot run in a read. Run it from a pick or an action."))
+    }
+
+    func testThePromptAsksForASpotInThePluginsFolder() async throws {
+        let answer = try await answer(["prompt", "new", "Show", "the weather"])
+
+        XCTAssertTrue(answer.output.hasPrefix("Build an Openspot spot that does this: Show the weather\n"))
+        XCTAssertTrue(answer.output.contains(plugins.path))
+        XCTAssertEqual(CommandLineCall(arguments: ["prompt", "new"], environment: [:]), .unknown("prompt new"))
     }
 }

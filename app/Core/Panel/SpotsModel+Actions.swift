@@ -311,7 +311,7 @@ extension SpotsModel {
         } else if action == .share {
             share(target.entry)
         } else if action.id == target.entry.command.reviewAction, let item = target.item {
-            reviewCore(item)
+            reviewCore(item.run)
         } else if action.id == CommandAction.removeID {
             remove(target.entry)
         } else if action == .edit {
@@ -364,10 +364,11 @@ extension SpotsModel {
 
     /// Runs the action that changes a setting of a spot. A form that it answers with opens on the sheet of that spot, and
     /// the panel closes when it is done.
-    public func changeSetting(of id: String, with action: CommandAction) {
+    @discardableResult
+    public func changeSetting(of id: String, with action: CommandAction) -> Bool {
         guard let entry = entries.first(where: { $0.id == id }), let sheet = sheets[id] else {
             host.notify("Openspot cannot find \(id). Turn it on in Spots, then try again.")
-            return
+            return false
         }
         let ask = UUID()
         formAsk = ask
@@ -386,6 +387,7 @@ extension SpotsModel {
                 host.notify("\(action.title) failed. \(Self.reason(error))")
             }
         }
+        return true
     }
 
     /// Takes a click on an option of a form of one choice, and saves the form with it.

@@ -125,6 +125,30 @@ public final class CommandAPI: @unchecked Sendable {
                 guard await app.installUpdate() else { throw PluginError.failed(1, "No update is ready. Run `openspot update check` first.") }
                 return ""
             }
+        case .spotOpen(let id):
+            guard let app else { return Self.notRunning }
+            return Self.answer {
+                guard await app.open(id) else { throw PluginError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
+                return ""
+            }
+        case .spotReview(let id):
+            guard let app else { return Self.notRunning }
+            return Self.answer {
+                guard await app.review(id) else { throw PluginError.failed(1, "`\(id)` is not a spot that comes with Openspot. Run `openspot spot list --core` to see each one.") }
+                return ""
+            }
+        case .settingChange(let spot, let key):
+            guard let app else { return Self.notRunning }
+            return Self.answer {
+                guard await app.changeSetting(key, of: spot) else { throw PluginError.failed(1, "Openspot cannot find \(spot). Turn it on in Spots, then try again.") }
+                return ""
+            }
+        case .promptNew(let words):
+            return Self.answer {
+                let folder = PluginFolder.standard(environment: environment).url
+                let guide = Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder
+                return AgentPrompt(folder: folder, guide: guide, app: Bundle.main.executablePath ?? "openspot").building(words)
+            }
         case .guide:
             return Self.answer {
                 guard let guide = Bundle.main.url(forResource: "GUIDE", withExtension: "md") else { throw PluginError.fault("This copy of Openspot has no guide. Install Openspot again.") }

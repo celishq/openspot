@@ -19,6 +19,14 @@ public enum CommandLineCall: Equatable, Sendable {
     case spotList(core: Bool)
     /// Turns spots that come with the app on or off.
     case spotTurn(ids: [String], on: Bool)
+    /// Opens the panel on the sheet of a spot.
+    case spotOpen(String)
+    /// Shows the whole text of a spot that comes with the app.
+    case spotReview(String)
+    /// Runs the action of a spot's setting in the panel, as Enter on its row in Settings does.
+    case settingChange(spot: String, key: String)
+    /// Prints the prompt that asks a coding agent to build a spot that does what the words say.
+    case promptNew(String)
     /// Draws the sheet of an installed spot, or its card at a size.
     case renderSpot(id: String, size: SpotSize?, path: String)
     case checkSheet
@@ -112,6 +120,9 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  settings and their keys. --core prints each spot that comes with the
                                                  app, and whether it is on.
     openspot spot on|off <id>...                 Turns spots that come with the app on or off.
+    openspot spot open <id>                      Opens the panel on the sheet of a spot.
+    openspot spot review <id>                    Shows the whole text of a spot that comes with the app, and what of it
+                                                 runs by itself.
     openspot check [--json] [folder]             Reports the faults of a plugins folder.
     openspot check --sheet                       Reports the faults of a sheet on stdin.
     openspot render [--view file] <file.png>     Draws the sheet on stdin to a picture, with its view from a Swift file.
@@ -124,6 +135,9 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot setting get [--spot id] <key>       Prints the value the person chose for the spot, or nothing.
     openspot setting set [--spot id] <key> [v]   Keeps a value for the spot, or removes it with no value.
     openspot setting list                        Prints each value that a spot keeps as JSON, with its spot and key.
+    openspot setting change [--spot id] <key>    Runs the action of the setting in the panel, which can ask with a form.
+    openspot prompt new <words>...               Prints a prompt that asks a coding agent to build a spot that does
+                                                 what the words say.
     openspot key set --panel|--fix <key>         Gives the key that opens the panel, or the one that opens a fix.
     openspot key set <id> <command>|--float [key]
                                                  Gives a command of a spot, or its float, a key such as ctrl+option+k,
@@ -226,6 +240,14 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("spot", "on") where rest.count > 1, ("spot", "off") where rest.count > 1:
             self = .spotTurn(ids: Array(rest.dropFirst()), on: rest[0] == "on")
         case ("setting", "list") where rest.count == 1: self = .settingList
+        case ("setting", "change"):
+            self = Self.setting(Array(rest.dropFirst()), sets: false, environment).map { call in
+                guard case .settingGet(let spot, let key) = call else { return call }
+                return Self.changing(.settingChange(spot: spot, key: key), "openspot setting change", "opens a form", environment)
+            } ?? .unknown(arguments.joined(separator: " "))
+        case ("spot", "open") where rest.count == 2: self = Self.changing(.spotOpen(rest[1]), "openspot spot open", "opens the panel", environment)
+        case ("spot", "review") where rest.count == 2: self = Self.changing(.spotReview(rest[1]), "openspot spot review", "opens the panel", environment)
+        case ("prompt", "new") where rest.count > 1: self = .promptNew(rest.dropFirst().joined(separator: " "))
         case ("key", "set"): self = Self.key(Array(rest.dropFirst())) ?? .unknown(arguments.joined(separator: " "))
         case ("app", "status") where rest.count == 1: self = .appStatus
         case ("app", "login") where rest == ["login", "on"] || rest == ["login", "off"]:

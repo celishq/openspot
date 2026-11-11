@@ -808,6 +808,17 @@ public final class SpotsModel {
         return true
     }
 
+    /// Opens the sheet of a spot, as `openspot spot open` asks: in the panel that shows, or else in the panel that it shows.
+    /// Returns false when no spot has that ID.
+    public func openSheet(_ id: String) -> Bool {
+        guard entries.contains(where: { $0.id == id }) else { return false }
+        let moves = isShown
+        if !moves { host.show() }
+        endEditing(moving: false)
+        open(id, moving: moves)
+        return true
+    }
+
     /// Opens the sheet that the settings key of the Mac opens.
     public func openSettings() {
         guard let id = entries.first(where: { $0.command.opensWithSettingsKey })?.id else { return }
