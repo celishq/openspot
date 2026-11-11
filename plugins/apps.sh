@@ -72,13 +72,12 @@ apps() {
   printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\nclose=true\n\n'
   printf 'button=quit\ntitle=Quit\nshortcut=cmd+shift+q\n\n'
   printf 'button=uninstall\ntitle=Delete\nshortcut=cmd+backspace\n\n'
-  printf 'template=row\ngrid=pic name name name name quit\npicture=pic\ntext=name\nbutton=quit\nquit.icon=xmark.circle\nquit.title=Quit\n\n'
   live="$data/running"
   { echo; running; } > "$live"
   find_apps
   awk -F'\t' 'NR == FNR { live[$0] = 1; next }
       {
-        printf "row=%s\ntitle=%s\nicon=%s\nname=%s\n", $2, $1, $2, $1
+        printf "row=%s\ntitle=%s\nicon=%s\n", $2, $1, $2
         if ($2 in live) print "tone=on"; else print "hides=quit"
         if ($2 ~ /^\/System\//) print "hides=uninstall"
         print ""
@@ -98,15 +97,15 @@ uninstall_sheet() {
   while [ "$i" -lt "$lines" ]; do printf 'grid=files files files files\n'; i=$((i + 1)); done
   printf '\n'
   printf 'repeat=files\n\n'
-  printf 'template=row\ngrid=pic name name name name trash\npicture=pic\ntext=name\nswitch=trash\n\n'
+  printf 'button=open\ntitle=Keep or move to Trash\nclose=false\n\n'
   printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=command\n\n'
   printf 'button=remove\ntitle=Move to Trash\nshortcut=cmd+return\nscope=command\n\n'
   printf '%s\n' "$files" | while IFS= read -r path; do
-    keep=true
-    grep -Fxq "$path" "$kept" 2>/dev/null && keep=false
+    chosen=true
+    grep -Fxq "$path" "$kept" 2>/dev/null && chosen=false
     where=$(dirname "$path" | sed "s#^$HOME#~#")
-    printf 'row=%s\ntitle=%s\nicon=%s\nname=%s\nname.detail=%s\ntrash=%s\n\n' \
-      "$(esc "$path")" "$(esc "$(basename "$path")")" "$(esc "$path")" "$(esc "$(basename "$path")")" "$(esc "$where")" "$keep"
+    printf 'row=%s\ntitle=%s\ndetail=%s\nicon=%s\non=%s\n\n' \
+      "$(esc "$path")" "$(esc "$(basename "$path")")" "$(esc "$where")" "$(esc "$path")" "$chosen"
   done
 }
 
@@ -130,7 +129,12 @@ case "$1" in
     open -R "$2"
     ;;
   open)
-    if [ -s "$pending" ]; then open -R "$2"; else open "$2"; fi
+    if [ -s "$pending" ]; then
+      if grep -Fxq "$2" "$kept" 2>/dev/null; then grep -Fxv "$2" "$kept" > "$kept.tmp"; else { cat "$kept" 2>/dev/null; printf '%s\n' "$2"; } > "$kept.tmp"; fi
+      mv "$kept.tmp" "$kept"
+    else
+      open "$2"
+    fi
     ;;
   quit)
     if ! quit_app "$2"; then
@@ -145,12 +149,6 @@ case "$1" in
     esac
     printf '%s' "$2" > "$pending.tmp" && mv "$pending.tmp" "$pending"
     rm -f "$kept"
-    ;;
-  trash)
-    [ -s "$pending" ] || exit 0
-    grep -Fxv "$2" "$kept" > "$kept.tmp" 2>/dev/null
-    [ "$3" = false ] && printf '%s\n' "$2" >> "$kept.tmp"
-    mv "$kept.tmp" "$kept"
     ;;
   cancel)
     rm -f "$pending" "$kept"

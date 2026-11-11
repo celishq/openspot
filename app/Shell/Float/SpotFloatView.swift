@@ -54,7 +54,6 @@ struct SpotFloatView: View {
                     },
                     list: run.list,
                     onRun: { model.pick($0, of: entry, in: .float) },
-                    onSlot: { model.slot($1, of: $0, in: id, to: $2) },
                     onDragOut: { model.dragOut($0, of: id) },
                     selection: { run.selection },
                     selectedPart: { run.selectedPart?.id },
@@ -71,7 +70,6 @@ struct SpotFloatView: View {
                     list: run.list,
                     onRun: { model.pick($0, of: entry, in: .float) },
                     selection: { run.selection },
-                    onSlot: { model.slot($1, of: $0, in: id, to: $2) },
                     onDragOut: { model.dragOut($0, of: id) }
                 )
             }

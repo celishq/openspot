@@ -882,11 +882,6 @@ public final class SpotsModel {
         openForm(action, on: (entry, nil), prefill: openItems?.query ?? "")
     }
 
-    /// Sends a change of a slot of a row of a spot, or a press of one when it has no value (U9).
-    public func slot(_ slot: String, of item: SpotItem, in id: String, to value: String?) {
-        if let value { sheets[id]?.set(slot: slot, of: item, to: value) } else { sheets[id]?.press(slot: slot, of: item) }
-    }
-
     public func runItem(_ item: SpotItem) {
         guard let entry = openEntry else { return }
         pick(item, of: entry)

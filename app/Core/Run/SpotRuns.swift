@@ -27,9 +27,8 @@ public final class SpotRuns {
     @ObservationIgnored private let recent: (String) -> [String]
     @ObservationIgnored private let prepare: ([SpotItem], [String]) async -> Void
     private var order: [String] = []
-    @ObservationIgnored private var placedByFiles: Set<String> = []
 
-    /// Each script that a widget file or a `spot` component of a card places, which the open panel reads.
+    /// Each script that a widget file places, which the open panel reads.
     @ObservationIgnored private var placed: Set<String> = []
     /// When the clock last read each script with a number in its `read`.
     @ObservationIgnored var asked: [String: Date] = [:]
@@ -64,7 +63,7 @@ public final class SpotRuns {
     /// A staying script that something wants starts.
     public func take(_ scan: ScanResult) {
         let scripts = scan.scripts
-        placedByFiles = Set(scan.commands.flatMap(\.places))
+        placed = Set(scan.commands.flatMap(\.places))
         order = scripts.map(\.id)
         for (id, sheet) in sheets where !order.contains(id) {
             sheets[id] = nil
@@ -73,14 +72,8 @@ public final class SpotRuns {
             sheet.close()
             sheet.stopReads()
         }
-        updatePlaced()
         scripts.forEach { sheet(for: $0).scanned() }
         updateClock()
-    }
-
-    /// Works out again which scripts the widget files and the cards place, after a scan or a change of a card's components.
-    func updatePlaced() {
-        placed = placedByFiles.union(sheets.values.flatMap { $0.state.face.parts.filter { $0.kind == "spot" }.map(\.id) })
     }
 
     /// The sheet of a script, with the command as the folder last gave it.

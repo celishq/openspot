@@ -26,8 +26,6 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var face = CardFace.none
     /// The drawing that the rows flow through (U7). With no `repeat` block, the rows are a list.
     public private(set) var drawing = RepeatDrawing.list
-    /// Each template that draws rows, by its name (U8).
-    public private(set) var templates: [String: RowTemplate] = [:]
     public private(set) var toast: String?
     /// The URL of a `link` effect, which opens it, such as the fix of a failure.
     public private(set) var link: String?
@@ -53,7 +51,9 @@ public struct PluginOutput: Equatable, Sendable {
     }
     private static let button = "button"
     private static let repeatKind = "repeat"
-    private static let templateKind = "template"
+    /// The kinds of block that Openspot no longer reads. Each one is skipped and reported, so it never takes the place of the
+    /// head.
+    private static let retiredKinds: Set<String> = ["template", "spot"]
     /// The area of the rows in the default drawing of a sheet with no `repeat` block (U13).
     private static let rowsArea = "rows"
     private static let formKinds: Set<String> = ["field", "choice", "switch", "slider"]
@@ -62,7 +62,7 @@ public struct PluginOutput: Equatable, Sendable {
 
     /// Whether a first key names a row or a part, so that the block is not the head.
     private static func isKind(_ key: String) -> Bool {
-        key == "row" || key == repeatKind || key == templateKind || SpotPart.kinds.contains(key)
+        key == "row" || key == repeatKind || retiredKinds.contains(key) || SpotPart.kinds.contains(key)
     }
 
     public init(text: String) {
@@ -87,13 +87,8 @@ public struct PluginOutput: Equatable, Sendable {
         for block in blocks {
             let kind = block.fields.first?.key
             if kind == Self.repeatKind { continue }
-            if kind == Self.templateKind {
-                if let template = RowTemplate(block: block) {
-                    templates[template.name] = template
-                    if checks { checkedFaults += template.faults }
-                } else {
-                    errors.append(block.firstLine)
-                }
+            if let kind, Self.retiredKinds.contains(kind) {
+                errors.append(block.firstLine)
             } else if kind == Self.button, let id = block.value(Self.button), drawn?.areas[id] == nil, !carded.contains(id) {
                 take(action: id, block)
             } else if kind == "row" {
@@ -130,7 +125,6 @@ public struct PluginOutput: Equatable, Sendable {
             value = values.first
         }
         if checks { check(head: head) }
-        parts += layout?.keyParts ?? []
         if checks { check(layout: layout) }
     }
 
@@ -167,6 +161,9 @@ public struct PluginOutput: Equatable, Sendable {
             checkedFaults.append("a part cannot be called \(id)")
         }
         for row in rows {
+            if row.value("as") != nil {
+                checkedFaults.append("the row \(row.value("row") ?? "") has as=, which Openspot no longer reads. A row draws its own keys")
+            }
             if let file = row.value("file"), !file.hasPrefix("/") {
                 checkedFaults.append("the row \(row.value("row") ?? "") names the file \(file), which does not start with /")
             }
@@ -205,11 +202,6 @@ public struct PluginOutput: Equatable, Sendable {
     /// How many rows go on one line, when the script prints a repeat.
     public var perLine: Int? {
         layout?.repeated?.perLine
-    }
-
-    /// The template that draws a row: the one it names, or else `template=row`.
-    public func template(of item: SpotItem) -> RowTemplate? {
-        templates[item.template ?? RowTemplate.defaultName]
     }
 
     /// Whether recent picks sort first, unless it prints `recents=false`.

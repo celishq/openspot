@@ -61,20 +61,6 @@ final class SpotRunsWantTests: SpotRunsCase {
 
         try await wait("the start of the placed script") { self.exists("pids") }
     }
-
-    func testASpotComponentOfACardMakesTheOpenPanelReadThatSpot() async throws {
-        try script("card", header: "read=panel\nshortcut=c", log: "card", "printf 'grid.wide=heat\\n\\nspot=heat\\n'")
-        try script("heat", header: "read=300", log: "heat", "printf 'text=t\\ntitle=41°\\n'")
-        _ = try scanned()
-
-        runs.panelOpened()
-        try await wait("the card") { self.runs.sheets["card"]?.state.face.parts.map(\.id) == ["heat"] }
-        runs.panelClosed()
-        runs.panelOpened()
-
-        try await wait("the placed spot") { self.runs.sheets["heat"]?.reading.value?.title == "41°" }
-    }
-
     func testAWidgetCannotPlaceAScriptWithNoRead() throws {
         try script("once")
         try "[[widgets]]\ntitle = \"W\"\ngrid = [\"a\"]\nplaces = { a = \"once\" }\nsize = \"square\"\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
@@ -204,20 +190,6 @@ final class SpotRunsWantTests: SpotRunsCase {
 
         try await wait("the read from the clock") { self.log().count == 2 }
     }
-
-    func testASpotThatACardPlacesWhileThePanelIsOpenIsReadAtOnce() async throws {
-        try script("pulls", header: "read=120\ntray=true", log: "pulls", "printf 'text=t\\ntitle=1\\n'")
-        try script("card", header: "read=panel\nshortcut=c", log: "card", "printf 'grid.wide=heat\\n\\nspot=heat\\n'")
-        try script("heat", header: "read=300", log: "heat", "printf 'text=t\\ntitle=41\\n'")
-        _ = try scanned()
-        try await wait("the read of the menu bar spot") { self.log("pulls").count == 1 }
-
-        runs.panelOpened()
-        try await wait("the card") { self.runs.sheets["card"]?.state.face.parts.map(\.id) == ["heat"] }
-
-        try await wait("the placed spot") { self.log("heat").count == 1 }
-    }
-
     func testAStayingScriptThatACallHoldsIsReadOnItsOwnTimeWhileTheClockWaitsForALaterRead() async throws {
         try script("pulls", header: "read=120\ntray=true", log: "pulls", "printf 'text=t\\ntitle=1\\n'")
         try script("stayer", header: "stay=true\nread=1", """

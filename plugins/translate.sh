@@ -96,7 +96,7 @@ show() {
 
   printf 'grid=source source . .\ngrid=input input input input\ngrid=input input input swap\ngrid=- - - swap\n'
   printf 'grid=target target . swap\ngrid=output output output output\ngrid=output output output %s\n' "$corner"
-  printf 'card=source input target output\n\n'
+  printf '\n'
 
   printf 'choice=source\noption=auto:%s\n' "$auto"
   options

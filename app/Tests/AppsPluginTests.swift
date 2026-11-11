@@ -49,7 +49,6 @@ final class AppsPluginTests: SamplePluginsCase {
             XCTAssertEqual(zed.tone, .on)
             XCTAssertNil(zed.hides)
             XCTAssertEqual(notes.hides, ["quit", "uninstall"])
-            XCTAssertEqual(lines.template(of: zed)?.parts(of: zed).map(\.id), ["pic", "name", "quit"])
             XCTAssertEqual(apps.taking(lines).actions(for: zed).map(\.id), ["reveal", "quit", "uninstall"])
         }
     }
@@ -59,7 +58,7 @@ final class AppsPluginTests: SamplePluginsCase {
         try await withPrivateHome { folder in
             let app = try Self.fakeApp(in: folder, running: true)
 
-            try await apps.perform(.slot("quit", run: app.path), timeout: 10)
+            try await apps.perform(SpotAction(arguments: ["quit", app.path]), timeout: 10)
 
             let said = try String(contentsOf: folder.appendingPathComponent("osascript-args"), encoding: .utf8)
             XCTAssertEqual(said, "-e\ntell application id \"dev.zed.Zed\" to quit\n")
@@ -77,7 +76,7 @@ final class AppsPluginTests: SamplePluginsCase {
             setenv("OPENSPOT_REASON", "change", 1)
             defer { unsetenv("OPENSPOT_REASON") }
 
-            try await apps.perform(.slot("uninstall", run: app.path), timeout: 10)
+            try await apps.perform(SpotAction(arguments: ["uninstall", app.path]), timeout: 10)
             let sheet = try await apps.items(timeout: 10)
 
             XCTAssertEqual(sheet.summary?.value("title"), "Delete Zed")
@@ -88,9 +87,12 @@ final class AppsPluginTests: SamplePluginsCase {
             XCTAssertEqual(Set(sheet.items.map(\.run)), [
                 app.path, support.deletingLastPathComponent().path, cache.deletingLastPathComponent().path, preferences.path
             ])
-            XCTAssertEqual(sheet.items.map { $0.value(of: "trash") }, Array(repeating: "true", count: 4))
+            XCTAssertEqual(sheet.items.map(\.isOn), Array(repeating: true, count: 4))
+            XCTAssertEqual(sheet.pick, .stay)
 
-            try await apps.perform(.slot("trash", run: preferences.path, value: "false"), timeout: 10)
+            try await apps.perform(.item(SpotItem(title: "dev.zed.Zed.plist", run: preferences.path)), timeout: 10)
+            let kept = try await apps.items(timeout: 10)
+            XCTAssertEqual(kept.items.first { $0.run == preferences.path }?.isOn, false)
             let toast = try await apps.perform(.press("remove"), timeout: 10)
 
             let said = try String(contentsOf: folder.appendingPathComponent("osascript-args"), encoding: .utf8)
@@ -138,7 +140,7 @@ final class AppsPluginTests: SamplePluginsCase {
             _ = try Self.fakeApp(in: folder, running: false)
 
             do {
-                try await apps.perform(.slot("uninstall", run: "/System/Applications/Notes.app"), timeout: 10)
+                try await apps.perform(SpotAction(arguments: ["uninstall", "/System/Applications/Notes.app"]), timeout: 10)
                 XCTFail("A system app was taken for deletion")
             } catch PluginError.failed(_, let message) {
                 XCTAssertEqual(message, "Notes is part of macOS, so it cannot be deleted.")

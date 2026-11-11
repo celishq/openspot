@@ -131,7 +131,7 @@ card() {
     }'
 }
 
-# Prints the rows of the sheet: the events, and the reminders with a tick, each with the actions that fit it. With texts,
+# Prints the rows of the sheet: the events and the reminders, each with the actions that fit it. With texts,
 # such as the typed text and each other form of it, it keeps the rows whose title or detail holds any of them.
 rows() {
   printf '%s\n\n%s\n' "$events" "$reminders" | TEXTS=$(printf '%s\n' "$@") awk '
@@ -148,7 +148,7 @@ rows() {
       for (t = 1; t <= count; t++) if (texts[t] != "" && index(shown, texts[t])) found = 1
       if (!found) next
       print
-      if ($1 ~ /^row=reminder:/) printf "as=reminder\ndone.title=%s\ndone.detail=%s\nhides=join\n", title, detail
+      if ($1 ~ /^row=reminder:/) print "hides=join"
       else { print "hides=tick"; if (!meeting) print "hides=join" }
       print ""
     }'
@@ -173,7 +173,7 @@ case "$1" in
     events=$(events) || { printf '%s\n' "$events"; exit 1; }
     reminders=$(reminders) || { printf '%s\n' "$reminders"; exit 1; }
     card
-    printf 'repeat=items\n\ntemplate=reminder\ngrid=done\nswitch=done\ndone.look=tick\n\n'
+    printf 'repeat=items\n\n'
     printf 'button=open\ntitle=Open\n\nbutton=join\ntitle=Join call\nshortcut=cmd+j\nclose=true\n\n'
     printf 'button=tick\ntitle=Mark as done\nshortcut=cmd+shift+c\n\nbutton=calendars\ntitle=Choose calendars\nform=true\nscope=command\n\n'
     if [ -n "$2" ]; then
@@ -199,7 +199,6 @@ case "$1" in
       *) openspot calendar show "$2" </dev/null ;;
     esac
     ;;
-  done) openspot reminders done "$2" "$3" </dev/null ;;
   calendars)
     picked=$(value calendars)
     [ -z "$picked" ] || toggle $picked

@@ -25,7 +25,7 @@ public struct Reminder: Equatable, Sendable {
         return isAllDay ? due < clock.startOfToday : due < clock.now
     }
 
-    /// Its row (E2). `done` holds whether it is ticked, so that a template can draw a tick.
+    /// Its row (E2). `done` holds whether it is ticked.
     func row(_ clock: CalendarClock) -> TextBlock {
         let isLate = isLate(clock)
         var fields: [TextBlock.Field] = [

@@ -119,7 +119,6 @@ final class TextBlockTests: XCTestCase {
         let volume = SpotItem(block: TextBlock.blocks(in: "row=v\ntitle=Volume\ndetail=Loud\nparent=Sound")[0])
 
         XCTAssertEqual(volume?.parent, "Sound")
-        XCTAssertEqual(volume?.fields, [])
         XCTAssertEqual(volume?.path(in: spot), "System Settings › Sound")
         XCTAssertEqual(SpotItem(title: "Sound", subtitle: "Loud", run: "s").path(in: spot), "System Settings")
     }

@@ -243,4 +243,30 @@ final class PluginOutputTests: XCTestCase {
 
         XCTAssertEqual(output.items.first?.keywords, ["happy", "smile"])
     }
+
+    func testATemplateOrASpotBlockIsSkippedAndReportedWhereverItIs() {
+        let output = PluginOutput(text: "template=row\ngrid=pic name\npicture=pic\n\nspot=cpu\n\ntitle=Apps\n\nrow=a\ntitle=A\nname=A\n")
+
+        XCTAssertEqual(output.errors, ["template=row", "spot=cpu"])
+        XCTAssertEqual(output.summary?.value("title"), "Apps")
+        XCTAssertEqual(output.parts.map(\.id), [])
+        XCTAssertEqual(output.items.map(\.run), ["a"])
+    }
+
+    func testCardAndPadLinesDrawNothingAndACheckReportsThem() throws {
+        let output = PluginOutput(text: "grid=a a\ncard=a\npad=7 8 9\n\ntext=a\ntitle=A\n")
+
+        XCTAssertEqual(output.parts.map(\.id), ["a"])
+        XCTAssertEqual(output.layout?.rows, [["a", "a"]])
+        XCTAssertTrue(output.partFaults.contains("a sheet has no card key, so leave it out: each part draws its own box"), "\(output.partFaults)")
+        XCTAssertTrue(output.partFaults.contains("a sheet has no pad key, so print a button for each key"), "\(output.partFaults)")
+    }
+
+    func testARowDrawsItsOwnKeysAndACheckReportsAs() throws {
+        let output = PluginOutput(text: "row=r\ntitle=R\nas=big\nname=Big\n")
+
+        let row = try XCTUnwrap(output.items.first)
+        XCTAssertEqual(row, SpotItem(title: "R", run: "r"))
+        XCTAssertTrue(output.partFaults.contains("the row r has as=, which Openspot no longer reads. A row draws its own keys"), "\(output.partFaults)")
+    }
 }

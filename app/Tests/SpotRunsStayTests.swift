@@ -558,18 +558,6 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the frame after the late answer") { frames.last?.contains("Done") == true }
         XCTAssertEqual(sheet.list.shown.map(\.run), ["n"])
     }
-
-    func testTheAnswerOfAStayingScriptTakesTheTemplatesOfItsRows() async throws {
-        try staying(frame: "template=row\\ngrid=name\\ntext=name\\n\\nrow=a\\ntitle=A\\n")
-        let sheet = try sheet()
-
-        runs.panelOpened()
-        sheet.open {}
-
-        try await wait("the row") { sheet.list.shown.count == 1 }
-        XCTAssertNotNil(sheet.list.template(of: try XCTUnwrap(sheet.list.shown.first)))
-    }
-
     func testTheFirstPartsOfAStayingScriptArriveThroughTheArrival() async throws {
         try staying(frame: "text=a\\ntitle=A\\n")
         let sheet = try sheet()

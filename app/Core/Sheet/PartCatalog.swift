@@ -36,11 +36,8 @@ public enum PartCatalog {
     - `.` is an empty cell.
     - `grid=- - - -` is a divider. An id in that row, such as `grid=- - - swap`, is a component that crosses the divider and \
     centres on it.
-    - `card=source input` makes these components share one background. Their text loses its own box.
     - A smaller area inside or across a larger one floats on top, with its own blurred background. This is how you make a \
     floating button. Text moves clear of it.
-    - `pad=7 8 9 +` adds a row of keypad buttons. Use it for any keypad, in place of a button for each key. A word that \
-    repeats next to itself spans those cells. Pressing a key calls `<word>`.
 
     A `repeat=a` block flows the rows of the script through the area `a`, and the area scrolls. Its own `grid=` lines are \
     a drawing in which each word is the place of one row, and the drawing repeats down: `grid=a` is a list, \
@@ -49,10 +46,9 @@ public enum PartCatalog {
     `open <value>`. A square button shows its `icon`, and `row` is the word that a search \
     finds. The app draws the search field over the sheet. A sheet can repeat one area.
 
-    A `template=row` block draws each row: each `<kind>=<slot>` line gives a slot a kind, its `grid=` lines place the slots, \
-    and `grid.2x2=` lines draw a row in a place of 2 by 2 cells. A row fills a slot with `<slot>=<value>`, sets any other \
-    key of it with `<slot>.<key>=<value>`, picks another template with `as=<name>`, and hides a slot with `hides=<slot>`. A \
-    control in a row calls `<slot> <row id> [value]`. `tone=on` puts a dot on a row's picture.
+    A row draws its `icon`, its `title` and `detail`, its `tone` and its `shortcut`. `tone=on` puts a dot on a row's \
+    picture, and `hides=<action>` leaves out an action that the row does not offer. A row that needs more offers it as an \
+    action.
 
     Every row has one height: \(Int(SheetPlacement.rowHeight))pt. The gap between cells is \(Int(SheetPlacement.gap))pt. To \
     make something taller, draw more rows. Rows that hold a field, a list, a graph or a picture share the free height, and \
@@ -154,7 +150,7 @@ public enum PartCatalog {
         var faults = isOpen ? [] : block.fields.dropFirst().map(\.key).filter { !keys.contains($0) }.map { "the part \(name) has an unknown key: \($0)" }
         faults += block.values("option").filter { !$0.contains(":") }.map { "the part \(name) needs an option as id:title: \($0)" }
         faults += block.values("color").filter { !isColor($0) }.map { "the part \(name) needs a color as #rrggbb: \($0)" }
-        if let look = block.value("look"), SpotPart.Look(rawValue: look) == nil || look == "pad" {
+        if let look = block.value("look"), SpotPart.Look(rawValue: look) == nil {
             faults.append("the part \(name) has an unknown look: \(look)")
         }
         if let align = block.value("align"), SpotPart.Align(rawValue: align) == nil {

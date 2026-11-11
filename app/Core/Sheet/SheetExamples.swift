@@ -16,7 +16,6 @@ public enum SheetExamples {
         grid=target target . swap
         grid=output output output output
         grid=output output output copy
-        card=source input target output
 
         choice=source
         option=auto:Automatic
@@ -88,7 +87,6 @@ public enum SheetExamples {
         grid=status status status status
         grid=log log log log
         grid=log log log stop
-        card=file quality format
 
         text=file
         title=Demo.mov
@@ -273,19 +271,6 @@ public enum SheetExamples {
         look=bare
         title=Quit
         shortcut=cmd+q
-
-        """),
-        Example(name: "a drawing with keys", text: """
-        grid=value value value value
-        pad=7 8 9 ÷
-        pad=4 5 6 ×
-        pad=1 2 3 −
-        pad=0 0 . +
-        pad=C C C =
-
-        number=value
-        value=1,284
-        look=bare
 
         """),
         tiles

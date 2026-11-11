@@ -36,10 +36,10 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case symbol(String)
     }
 
-    /// The box that the app draws around it, from the one set that the app owns. `pad` is the look of a key of a keypad, and
-    /// `tick` draws a switch as a round tick, for a thing to do.
+    /// The box that the app draws around it, from the one set that the app owns. `tick` draws a switch as a round tick, for a
+    /// thing to do.
     public enum Look: String, Equatable, Sendable {
-        case tile, chip, strong, bare, pad, tick
+        case tile, chip, strong, bare, tick
     }
 
     public enum Align: String, Equatable, Sendable {
@@ -71,7 +71,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     public let mark: MetricValue?
 
     /// The kinds of block that make a part, in the order of the table in spec 01 (U2).
-    public static let kinds = ["text", "number", "gauge", "graph", "picture", "view", "spot", "switch", "slider", "field", "choice", "hotkey", "button", "section"]
+    public static let kinds = ["text", "number", "gauge", "graph", "picture", "view", "switch", "slider", "field", "choice", "hotkey", "button", "section"]
 
     /// Reads a block whose first key is a kind of part. Its value is the id, and the kind decides the control.
     public init?(block: TextBlock) {
@@ -189,7 +189,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         if kind == "view" { return true }
         return switch control {
         case .text, .list, .metric, .chart, .image, .progress: true
-        default: look == .pad
+        default: false
         }
     }
 

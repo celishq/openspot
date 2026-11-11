@@ -77,7 +77,6 @@ The specs above are the contract. Until each row below is done, the app still do
 
 | Phase | Rule                                                                                         | Where the code differs today                                   |
 | ----- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| 4     | No `card=`, `pad=`, `template`, slots, `as`, or `spot` block.                                | `PluginOutput`, `RowTemplate`, `SheetLayout`, `PartCatalog`.   |
 | 5     | A frame with a block is the whole picture; a head alone carries effects; `progress=`.        | `SpotRun.takeUpdate` merges; a main gauge shows progress.      |
 | 6     | `offers`; the person gives letters and menu bar places.                                      | `shortcut`, `tray`, `global` and `float` in the header.        |
 | 7     | No `data` key, and no `OPENSPOT_STAY`.                                                       | `Plugin`, `ScriptProcess`.                                     |

@@ -57,7 +57,7 @@ struct SpotCardView: View, Equatable {
     @ViewBuilder
     private var content: some View {
         if entry.item == nil, let layout = entry.state.face.layout(for: size) {
-            SpotCardDrawing(layout: layout, face: entry.state.face, card: size, reading: reading, view: { room in
+            SpotCardDrawing(layout: layout, face: entry.state.face, card: size, view: { room in
                 drawnView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, views: SpotViews.shared) }
             }) { model.setCardPart(entry.id, $0, to: $1) }
         } else if let view = drawnView {

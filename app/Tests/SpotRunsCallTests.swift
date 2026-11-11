@@ -99,7 +99,7 @@ final class SpotRunsCallTests: SpotRunsCase {
     func testASheetOfRowsSaysItsKindWhileItsFirstAnswerWaitsForTheOpenMotion() async throws {
         runs.quit()
         runs = SpotRuns(opening: SheetOpening(motionLength: 30), stopPause: 0.2)
-        try script(header: "read=sheet", "printf 'repeat=a\\n\\ntemplate=row\\ngrid=name\\ntext=name\\n\\nrow=a\\ntitle=A\\n'")
+        try script(header: "read=sheet", "printf 'repeat=a\\n\\nrow=a\\ntitle=A\\n'")
         let sheet = try sheet()
         runs.panelOpened()
         runs.opening.moving = "script"

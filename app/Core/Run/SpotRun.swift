@@ -182,7 +182,6 @@ public final class SpotRun {
         didSet {
             guard state != oldValue else { return }
             if (state.on == true) != isOn { isOn = state.on == true }
-            if state.face != oldValue.face { runs.updatePlaced() }
             onReport(.listChange)
         }
     }
@@ -274,7 +273,7 @@ public final class SpotRun {
     private func settle() {
         let next = rows.isBento
             ? Shape(rows: rows.drawing.lineCount(rows: rows.shown.count) * rows.drawing.columns, perLine: rows.drawing.columns)
-            : Shape(rows: rows.perLine == 1 ? rows.spans : rows.shown.count, perLine: rows.perLine)
+            : Shape(rows: rows.shown.count, perLine: rows.perLine)
         if next != shape { shape = next }
         let waits = showsSheet && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
         let nextKind = heardKind ?? (waits ? .waiting : panel?.kind ?? .rows)
@@ -604,17 +603,6 @@ public final class SpotRun {
         press(.set(item.run, to: value))
     }
 
-    /// Takes a value that the person set in a slot of a row, shows it at once, and tells the script (U9, U10).
-    public func set(slot: String, of item: SpotItem, to value: String) {
-        list.set(value, of: slot, in: item.run)
-        press(.slot(slot, run: item.run, value: value))
-    }
-
-    /// Runs a press of a button in a slot of a row (U9). A second press of a running one stops its call.
-    public func press(slot: String, of item: SpotItem) {
-        press(.slot(slot, run: item.run))
-    }
-
     /// Runs an action. A second press of a running action stops its call.
     public func run(_ action: CommandAction, item: SpotItem?) {
         press(.action(action, item: item))
@@ -813,7 +801,7 @@ public final class SpotRun {
             selecting = nil
             changeList {
                 $0.take(search: lines.search)
-                $0.take(drawing: lines.drawing, templates: lines.templates)
+                $0.take(drawing: lines.drawing)
                 if let next { $0.replace(next) }
                 if let kept { $0.select(run: kept) }
             }
@@ -825,7 +813,7 @@ public final class SpotRun {
             guard query == list.query else { return }
             changeList {
                 $0.take(search: lines.search)
-                $0.take(drawing: lines.drawing, templates: lines.templates)
+                $0.take(drawing: lines.drawing)
                 $0.answer(lines.items, to: query)
             }
         }
