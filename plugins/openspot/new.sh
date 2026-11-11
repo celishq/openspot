@@ -41,17 +41,30 @@ case "$1" in
   open)
     case "$2" in
       ask)
-        text=$(sed -n 's/^search=//p' | head -1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        text=$(sed -n 's/^search=//p' | head -1 | awk '{
+          s = $0; out = ""
+          while ((i = index(s, "\\")) > 0) {
+            c = substr(s, i + 1, 1)
+            if (c == "n" || c == "\\") { out = out substr(s, 1, i - 1) (c == "n" ? "\n" : "\\"); s = substr(s, i + 2) }
+            else { out = out substr(s, 1, i); s = substr(s, i + 1) }
+          }
+          out = out s
+          sub(/^[ \t\n]+/, "", out); sub(/[ \t\n]+$/, "", out)
+          printf "%s", out
+        }')
         if [ -z "$text" ]; then
           echo 'Type what the spot should do, then press `⏎`.' >&2
           exit 1
         fi
-        openspot prompt new "$text" | LC_ALL=en_US.UTF-8 pbcopy || exit 1
+        prompt=$(openspot prompt new "$text") || exit 1
+        printf '%s' "$prompt" | LC_ALL=en_US.UTF-8 pbcopy || exit 1
         echo 'toast=Copied a prompt for your agent. Paste it into Claude Code, Codex or another agent.'
         ;;
       button|list|number|form)
         made=$(starter "$2") || exit 1
-        open -t "$(printf '%s' "$made" | sed -n 2p)"
+        file=$(printf '%s' "$made" | sed -n 2p)
+        [ -n "$file" ] || { echo 'Openspot wrote the spot but cannot find its file.' >&2; exit 1; }
+        open -t "$file" || exit 1
         printf 'toast=Made %s. Change the file that opened to make it yours.\n' "$(printf '%s' "$made" | sed -n 1p)"
         ;;
       *)

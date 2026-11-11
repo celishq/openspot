@@ -19,8 +19,9 @@ case "$1" in
     printf '\nbutton=select-all\ntitle=Select all\nshortcut=cmd+shift+a\nscope=command\n'
     printf '\nbutton=review\ntitle=Review code\n'
     printf '\nrow=new\ntitle=New spot\ndetail=Make your own with AI or a starter\nicon=plus\nhides=review\n'
-    printf '%s' "$spots" | jq -r '.[] | "\nrow=\(.id)\ntitle=\(.name)\nicon=\(.icon)\n"
-      + (if .own then "detail=In your plugins folder\n" elif .detail then "detail=\(.detail)\n" else "" end)
+    printf '%s' "$spots" | jq -r 'def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");
+      .[] | "\nrow=\(.id | esc)\ntitle=\(.name | esc)\nicon=\(.icon | esc)\n"
+      + (if .own then "detail=In your plugins folder\n" elif .detail then "detail=\(.detail | esc)\n" else "" end)
       + "value=\(.on)"'
     printf '%s' "$app" | jq -r 'select(.firstLaunch == true and .login != null)
       | "\nrow=open_at_login\ntitle=Open at login\nicon=power\nvalue=\(.login)\nhides=review"'
@@ -53,7 +54,7 @@ case "$1" in
     [ -z "$ids" ] || exec openspot spot on $ids
     ;;
   review)
-    exec openspot spot review "$2"
+    [ -z "$2" ] || exec openspot spot review "$2"
     ;;
   *)
     echo 'Spots cannot do that.' >&2

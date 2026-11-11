@@ -324,10 +324,10 @@ public final class SpotsModel {
         host.applyConfig(config)
         let folder = files.folder(config)
         var scan = pluginScan.look(at: folder, hosted: reviewed.map { [$0.command] } ?? [])
-        scan.listKeys(in: files.config)
         let faults = folder.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.plugins.append(Plugin(id: FaultSpot.pluginID, commands: faults)) }
         guard pluginScan.stamp != loadedStamp || config != loadedConfig else { return holdAssignedKeys(config) }
+        scan.listKeys(in: files.config)
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.take(scan, menuBar: config.arrangement.menuBar)

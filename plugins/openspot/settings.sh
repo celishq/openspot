@@ -26,7 +26,8 @@ case "$1" in
     spots=$(openspot spot list) || exit 1
     values=$(openspot setting list) || exit 1
     jq -n -r --argjson app "$app" --argjson spots "$spots" --argjson values "$values" '
-      def block: to_entries | map(select(.value != null) | "\(.key)=\(.value)") | "\n" + join("\n") + "\n";
+      def esc: tostring | gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");
+      def block: to_entries | map(select(.value != null) | "\(.key)=\(.value | esc)") | "\n" + join("\n") + "\n";
       def keyrow($run; $title; $icon; $key; $spot):
         {row: $run, title: $title, detail: $spot.name, parent: $spot.name, icon: $icon,
          hides: (if $key then null else "clear" end), shortcut: ($key // "Record"), shake: true};
