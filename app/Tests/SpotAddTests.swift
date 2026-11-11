@@ -19,6 +19,7 @@ final class SpotAddTests: XCTestCase {
     }
 
     override func setUpWithError() throws {
+        GitRepo.isolate()
         root = FileManager.default.temporaryDirectory.appendingPathComponent("spot-add-\(UUID().uuidString.prefix(8))")
         plugins = root.appendingPathComponent("plugins")
         try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
@@ -109,25 +110,52 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: plugins.path), [])
     }
 
-    func testRemoveTakesOutTheWholeFolderOfAnAddedSpot() async throws {
+    /// Removes through the lock as the API does, with the Trash of the test in place of the person's.
+    private func remove(_ id: String) throws -> (name: String, discarded: [String]) {
+        var discarded: [String] = []
+        let trash = root.appendingPathComponent("trash")
+        try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
+        let entry = try SpotLock(url: root.appendingPathComponent("spots.lock")).remove(id, from: plugins) { url in
+            discarded.append(url.lastPathComponent)
+            try FileManager.default.moveItem(at: url, to: trash.appendingPathComponent(url.lastPathComponent))
+        }
+        return (entry.name, discarded)
+    }
+
+    func testRemoveMovesTheWholeFolderOfAnAddedSpotToTheTrash() async throws {
         let repo = try repo()
         _ = try await answer(["spot", "add", repo.url.path])
 
-        let answer = try await answer(["spot", "remove", "coffee/coffee"])
+        let removed = try remove("coffee/coffee")
 
-        XCTAssertEqual(answer.code, 0, answer.errors)
-        XCTAssertEqual(answer.output, "Removed coffee.\n")
+        XCTAssertEqual(removed.name, "coffee")
+        XCTAssertEqual(removed.discarded, ["coffee"])
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: plugins.path), [])
+        XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries(), [])
     }
 
     func testRemoveTakesTheNameOfTheFolderToo() async throws {
         let repo = try repo()
         _ = try await answer(["spot", "add", repo.url.path])
 
-        let answer = try await answer(["spot", "remove", "coffee"])
+        _ = try remove("coffee")
 
-        XCTAssertEqual(answer.code, 0, answer.errors)
         XCTAssertEqual(try ids(), [])
+    }
+
+    func testAFolderThatCannotBeCopiedWholeLeavesNothing() async throws {
+        let folder = root.appendingPathComponent("sources/tea")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("a.sh"))
+        try "secret".write(to: folder.appendingPathComponent("z.txt"), atomically: true, encoding: .utf8)
+        chmod(folder.appendingPathComponent("z.txt").path, 0)
+        defer { chmod(folder.appendingPathComponent("z.txt").path, 0o644) }
+
+        let answer = try await answer(["spot", "add", folder.path])
+
+        XCTAssertEqual(answer.code, 1)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: plugins.path), [])
+        XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries(), [])
     }
 
     func testRemoveLeavesASpotThatAddDidNotAdd() async throws {

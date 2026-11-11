@@ -49,10 +49,10 @@ public struct SpotLock: Sendable {
 
     /// Puts a spot from a source in the folder, and records it in place of each entry that shared a path with it.
     public func add(_ source: SpotSource, to folder: URL) async throws -> Entry {
-        let kept = try entries()
+        _ = try entries()
         let (commit, paths) = try await source.add(to: folder, at: nil)
         let entry = Entry(source: source.text, commit: commit, paths: paths)
-        try write(kept.filter { Set($0.paths).isDisjoint(with: paths) } + [entry])
+        try write(try entries().filter { Set($0.paths).isDisjoint(with: paths) } + [entry])
         return entry
     }
 
@@ -74,9 +74,9 @@ public struct SpotLock: Sendable {
         return CommandAnswer(output: added, errors: faults, code: faults.isEmpty ? 0 : 1)
     }
 
-    /// Takes the spot of this ID out of the folder with each path of its entry, and drops the entry. A spot that `spot add`
-    /// did not add stays, with a fault.
-    public func remove(_ id: String, from folder: URL) throws -> Entry {
+    /// Moves each path of the entry that holds this ID to the Trash, and drops the entry. A spot that `spot add` did not add
+    /// stays, with a fault.
+    public func remove(_ id: String, from folder: URL, discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws -> Entry {
         var entries = try entries()
         guard let index = entries.firstIndex(where: { $0.holds(id) }) else {
             throw PluginError.fault("`openspot spot add` did not add \(id), so Openspot leaves it. Move its file to the Trash to remove it.")
@@ -84,7 +84,7 @@ public struct SpotLock: Sendable {
         let entry = entries.remove(at: index)
         for path in entry.paths {
             let file = folder.appendingPathComponent(path)
-            if FileManager.default.fileExists(atPath: file.path) { try FileManager.default.removeItem(at: file) }
+            if FileManager.default.fileExists(atPath: file.path) { try discard(file) }
         }
         try write(entries)
         return entry

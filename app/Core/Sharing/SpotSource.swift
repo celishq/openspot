@@ -41,20 +41,28 @@ public enum SpotSource: Equatable, Sendable {
     /// paths at the top of the folder that it took. A path that is there already is a fault, and then nothing changes.
     func add(to folder: URL, at commit: String?) async throws -> (commit: String?, paths: [String]) {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let work = try FileManager.default.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: folder, create: true)
+        defer { try? FileManager.default.removeItem(at: work) }
+        let (commit, paths) = try await stage(in: work, from: folder, at: commit)
+        for path in paths {
+            try FileManager.default.moveItem(at: work.appendingPathComponent(path), to: folder.appendingPathComponent(path))
+        }
+        return (commit, paths)
+    }
+
+    /// Writes the spot whole into a work folder, so that a failure leaves the plugins folder as it was.
+    private func stage(in work: URL, from folder: URL, at commit: String?) async throws -> (commit: String?, paths: [String]) {
         switch self {
         case .git(let text):
             if text.hasPrefix("/"), !FileManager.default.fileExists(atPath: text) { throw PluginError.fault("Openspot cannot find \(text).") }
             let name = try Self.name(of: text)
             try Self.checkFree([name], in: folder)
-            let work = try FileManager.default.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: folder, create: true)
-            defer { try? FileManager.default.removeItem(at: work) }
             let clone = work.appendingPathComponent(name)
             do {
                 try await Self.run(["clone", "--quiet", text, clone.path])
                 if let commit { try await Self.run(["-C", clone.path, "checkout", "--quiet", "--detach", commit]) }
                 let head = try await Self.run(["-C", clone.path, "rev-parse", "HEAD"]).trimmingCharacters(in: .whitespacesAndNewlines)
                 try FileManager.default.removeItem(at: clone.appendingPathComponent(".git"))
-                try FileManager.default.moveItem(at: clone, to: folder.appendingPathComponent(name))
                 return (head, [name])
             } catch let error as PluginError {
                 throw PluginError.fault("Openspot cannot add \(text). \(error.reason)")
@@ -62,7 +70,7 @@ public enum SpotSource: Equatable, Sendable {
         case .folder(let url):
             let name = url.lastPathComponent
             try Self.checkFree([name], in: folder)
-            try FileManager.default.copyItem(at: url, to: folder.appendingPathComponent(name))
+            try FileManager.default.copyItem(at: url, to: work.appendingPathComponent(name))
             return (nil, [name])
         case .file(let url):
             let spot = try SharedSpot(contentsOf: url)
@@ -72,7 +80,7 @@ public enum SpotSource: Equatable, Sendable {
                 if !paths.contains(top) { paths.append(top) }
             }
             try Self.checkFree(paths, in: folder)
-            try spot.add(to: folder)
+            try spot.add(to: work)
             return (nil, paths)
         }
     }
@@ -96,13 +104,14 @@ public enum SpotSource: Equatable, Sendable {
         }
     }
 
-    /// Runs git with no input, and returns what it prints, which must fit in a pipe. A failure throws its last line on stderr.
+    /// Runs git with no input and no prompt for a password, and returns what it prints, which must fit in a pipe. A failure throws its last line on stderr.
     @discardableResult
     private static func run(_ arguments: [String]) async throws -> String {
         let process = Process()
         process.executableURL = git
         process.arguments = arguments
         process.standardInput = FileHandle.nullDevice
+        process.environment = ProcessInfo.processInfo.environment.merging(["GIT_TERMINAL_PROMPT": "0"]) { _, new in new }
         let output = Pipe()
         let errors = Pipe()
         process.standardOutput = output

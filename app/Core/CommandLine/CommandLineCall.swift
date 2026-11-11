@@ -129,7 +129,7 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  Puts a spot in the plugins folder, a git one at its newest commit, and
                                                  records it in spots.lock. With no source, it adds each spot of spots.lock
                                                  that is missing, at its commit.
-    openspot spot remove <id>                    Takes out a spot that spot add added, and its record in spots.lock.
+    openspot spot remove <id>                    Moves a spot that spot add added to the Trash, and drops it from spots.lock.
     openspot spot open <id>                      Opens the panel on the sheet of a spot.
     openspot spot review <id>                    Shows the whole text of a spot that comes with the app, and what of it
                                                  runs by itself.

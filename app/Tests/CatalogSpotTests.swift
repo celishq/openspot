@@ -235,6 +235,7 @@ final class CatalogSpotTests: BuiltInCase {
     }
 
     func testAddAddsASpotFromALocalGitRepositoryAndSaysSo() async throws {
+        GitRepo.isolate()
         let repo = try GitRepo(at: root.appendingPathComponent("sources/coffee"))
         try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n"])
         let spot = try catalog

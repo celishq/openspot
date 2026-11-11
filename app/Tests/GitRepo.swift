@@ -4,6 +4,12 @@ import Foundation
 struct GitRepo {
     let url: URL
 
+    /// Keeps the git that this test process starts, such as the one of `openspot spot add`, from the person's git config.
+    static func isolate() {
+        setenv("GIT_CONFIG_GLOBAL", "/dev/null", 1)
+        setenv("GIT_CONFIG_NOSYSTEM", "1", 1)
+    }
+
     init(at url: URL) throws {
         self.url = url
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
