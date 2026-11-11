@@ -58,7 +58,7 @@ final class TestHost: SpotsHost {
         confirms.append(text)
     }
 
-    func applyConfig() {}
+    func applyConfig(_ config: Config) {}
 
     func setEntryKey(on isOn: Bool) {}
 

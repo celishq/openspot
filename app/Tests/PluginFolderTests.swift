@@ -62,6 +62,18 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertNotEqual(plugins.stamp(shipped: [Spot(id: "x", name: "X", url: folder)]), plugins.stamp())
     }
 
+    func testAScanReadsEachEntryUpToOneFolderDownThatIsNotHidden() {
+        let plugins = PluginFolder(url: folder)
+
+        XCTAssertTrue(plugins.reads(folder.path))
+        XCTAssertTrue(plugins.reads(folder.appendingPathComponent("tool.sh").path))
+        XCTAssertTrue(plugins.reads(folder.appendingPathComponent("kit/tool.sh").path))
+        XCTAssertFalse(plugins.reads(folder.appendingPathComponent("kit/cache/data.json").path))
+        XCTAssertFalse(plugins.reads(folder.appendingPathComponent(".git/index").path))
+        XCTAssertFalse(plugins.reads(folder.appendingPathComponent("kit/.state").path))
+        XCTAssertFalse(plugins.reads("/elsewhere/tool.sh"))
+    }
+
     func testADebugBuildKeepsItsStateInItsOwnFolder() {
         let home = URL(fileURLWithPath: "/Users/a")
 

@@ -14,7 +14,7 @@ public protocol SpotsHost: AnyObject {
     func notify(_ text: String, fix: URL)
     func confirm(_ text: String)
     /// Takes what the config file asks for, such as the key that opens the panel.
-    func applyConfig()
+    func applyConfig(_ config: Config)
     func setEntryKey(on isOn: Bool)
     func hold(_ keys: [GlobalKey])
     func chooseFiles(for command: Spot, then take: @escaping ([String]) -> Void)

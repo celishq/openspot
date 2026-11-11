@@ -90,8 +90,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     /// Takes what the config file asks for. A key that macOS refuses leaves the current one in use, and the person sees why.
-    func applyConfig() {
-        let config = ConfigFile.standard().read()
+    func applyConfig(_ config: Config) {
         var faults = config.faults
         let key = config.panelKey ?? model.entryKey
         if hotKey == nil || key != model.entryKey {

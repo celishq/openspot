@@ -302,8 +302,8 @@ public final class SpotsModel {
     /// and any other fault shows in a toast. With no file changed and the same config as the last time, it only holds the
     /// keys again.
     public func reload() {
-        host.applyConfig()
         let config = files.config.read()
+        host.applyConfig(config)
         let folder = files.folder(config)
         let shipped = host.shippedSpots(folder: folder, config: files.config, update: updateSpot, offersLogin: isFirstLaunch)
             + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
@@ -462,8 +462,9 @@ public final class SpotsModel {
             updateVisible()
         case .frame:
             if sheets[id]?.command.setsKeys == true {
-                host.applyConfig()
-                holdAssignedKeys(files.config.read())
+                let config = files.config.read()
+                host.applyConfig(config)
+                holdAssignedKeys(config)
             }
             if spotsChanged, sheets[id]?.command.changesSpots == true { reloadUnderSheet() }
         case .landed:

@@ -108,6 +108,14 @@ public struct PluginFolder: Sendable {
         return Stamp(files: files, enabled: enabled, disabled: disabled, shipped: shipped)
     }
 
+    /// Whether a scan reads this path: the folder, or an entry at its top or one folder down that is not hidden.
+    public func reads(_ path: String) -> Bool {
+        let roots = [url.path, url.resolvingSymlinksInPath().path].map { $0.hasSuffix("/") ? String($0.dropLast()) : $0 }
+        guard let root = roots.first(where: { path == $0 || path.hasPrefix($0 + "/") }) else { return false }
+        let parts = path.dropFirst(root.count).split(separator: "/")
+        return parts.count <= 2 && !parts.contains { $0.hasPrefix(".") }
+    }
+
     /// The core spots that a person can turn on. A core file with no card, such as a metric that a widget places or a sheet
     /// off the grid that a widget opens, is not one.
     public func coreChoices() -> [Spot] {
