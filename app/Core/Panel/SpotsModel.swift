@@ -133,6 +133,7 @@ public final class SpotsModel {
 
     public var entries: [Entry] = [] {
         didSet {
+            spotListIsStale = true
             askAnswers()
             updateVisible()
         }
@@ -151,6 +152,14 @@ public final class SpotsModel {
     @ObservationIgnored private var laidOutSizes: [SpotSize] = []
     /// The cards as the items that the main search finds. It folds them again only when they change.
     @ObservationIgnored private var spotList = ItemList()
+    /// Whether a card changed since `spotList` was built: its entry, or the state or the command that its run reports.
+    @ObservationIgnored private var spotListIsStale = true
+    /// The number of times that the cards were made into the items of `spotList`.
+    @ObservationIgnored private(set) var spotListBuilds = 0
+    /// Which `answers` patterns match the text of the main search.
+    @ObservationIgnored private(set) var answerMatches = AnswerMatches()
+    /// The search of the cards and the lists that offer their rows, which keeps the matches of the last text.
+    @ObservationIgnored private var mainSearch = MainSearch()
     /// Where each visible spot lies on the grid, in the order of `visible`.
     public private(set) var placements: [SpotPlacement] = []
     public var selected = 0
@@ -467,8 +476,10 @@ public final class SpotsModel {
         case .failure(let text): host.notify(text)
         case .failureWithFix(let text, let fix): host.notify(text, fix: fix)
         case .listChange:
+            spotListIsStale = true
             updateVisible()
         case .frame:
+            spotListIsStale = true
             if sheets[id]?.command.setsKeys == true {
                 let config = files.config.read()
                 host.applyConfig(config)
@@ -514,7 +525,7 @@ public final class SpotsModel {
         let text = query.trimmingCharacters(in: .whitespaces)
         for entry in entries {
             guard let pattern = entry.command.answers else { continue }
-            sheets[entry.id]?.answer(!text.isEmpty && pattern.matches(text) ? text : "")
+            sheets[entry.id]?.answer(!text.isEmpty && answerMatches.matches(pattern, text) ? text : "")
         }
     }
 
@@ -527,14 +538,18 @@ public final class SpotsModel {
             return dragged(cards.filter(\.isOnGrid) + arriving + (isEditing ? cards.filter { !$0.isOnGrid } : []))
         }
         var ids = Set<String>()
-        let answers = entries.filter { $0.command.answers?.matches(text) == true }
+        let answers = entries.filter { $0.command.answers.map { answerMatches.matches($0, text) } == true }
             .flatMap { entry in (sheets[entry.id]?.answers ?? []).map { Entry(command: entry.command, item: $0, isAnswer: true) } }
             .filter { ids.insert($0.id).inserted }
             .prefix(Self.searchLimit)
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        spotList.replace(cards.filter(\.command.isFound).map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.command.name].compactMap { $0 }.joined(separator: " "), run: $0.id) })
+        if spotListIsStale {
+            spotListIsStale = false
+            spotListBuilds += 1
+            spotList.replace(cards.filter(\.command.isFound).map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.command.name].compactMap { $0 }.joined(separator: " "), run: $0.id) })
+        }
         let sources = entries.filter { $0.command.isGlobal && arrangement.isGlobal(of: $0.id) != false }
-        let found = SearchQuery(text: text).matching(in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() }, unpickedLimit: Self.unpickedRows, limit: Self.searchLimit - answers.count)
+        let found = mainSearch.matching(SearchQuery(text: text), in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() }, unpickedLimit: Self.unpickedRows, limit: Self.searchLimit - answers.count)
         return answers + found.compactMap { match in
             match.list == 0 ? spots[match.item.run] : Entry(command: sources[match.list - 1].command, item: match.item)
         }.filter { !ids.contains($0.id) }
