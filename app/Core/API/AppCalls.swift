@@ -14,6 +14,7 @@ struct AppCalls {
                 version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "",
                 panelKey: (config.panelKey ?? .standard).text,
                 fixKey: (config.fixKey ?? .fix).text,
+                careful: config.isCareful,
                 login: mac.login?.isOn(),
                 link: mac.link?.isOn,
                 update: running?.update,
@@ -35,6 +36,15 @@ struct AppCalls {
         CommandAnswer.work { [mac] in
             guard let link = mac.link else { throw SpotError.failed(1, "This copy of Openspot cannot put openspot in Terminal.") }
             try link.set(isOn)
+            return ""
+        }
+    }
+
+    /// Turns Careful mode on or off, and tells the running app (Z8).
+    func careful(_ isOn: Bool) -> CommandAPI.Work {
+        CommandAnswer.work { [environment, app] in
+            try ConfigFile.standard(environment: environment).set("careful", to: isOn)
+            await app?.configChanged(.careful)
             return ""
         }
     }

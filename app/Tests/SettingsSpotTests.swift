@@ -70,17 +70,17 @@ final class SettingsSpotTests: BuiltInCase {
 
         let items = try await items()
 
-        XCTAssertEqual(items.map(\.run), ["panel_key", "fix_key"])
+        XCTAssertEqual(items.map(\.run), ["panel_key", "fix_key", "careful_mode"])
         XCTAssertEqual(items.first?.title, "Open Openspot")
         XCTAssertEqual(items.first?.shortcut, "option+space")
-        XCTAssertEqual(items.map { $0.hides ?? [] }, [["clear"], ["clear"]])
-        XCTAssertEqual(items.map(\.takesShake), [false, false])
+        XCTAssertEqual(items.map { $0.hides ?? [] }, [["clear"], ["clear"], []])
+        XCTAssertEqual(items.map(\.takesShake), [false, false, false])
     }
 
     func testTheSheetListsTheFixKeyAndChangesIt() async throws {
         let before = try await items()
-        XCTAssertEqual(before.last?.title, "Open a fix")
-        XCTAssertEqual(before.last?.shortcut, "cmd+option+o")
+        XCTAssertEqual(before[1].title, "Open a fix")
+        XCTAssertEqual(before[1].shortcut, "cmd+option+o")
 
         try await call(["fix_key", "ctrl+option+f"])
 
@@ -91,10 +91,10 @@ final class SettingsSpotTests: BuiltInCase {
         try script("move.sh", "title=Move\nicon=macwindow\n\ncommand=left\ntitle=Left side\n\ncommand=right\ntitle=Right side")
 
         let before = try await items()
-        XCTAssertEqual(before.map(\.title), ["Open Openspot", "Open a fix", "Left side", "Right side"])
-        XCTAssertEqual(before.map(\.subtitle), [nil, nil, "Move", "Move"])
-        XCTAssertEqual(before.dropFirst(2).map(\.shortcut), ["Record", "Record"])
-        XCTAssertEqual(before.dropFirst(2).map(\.takesShake), [true, true])
+        XCTAssertEqual(before.map(\.title), ["Open Openspot", "Open a fix", "Careful mode", "Left side", "Right side"])
+        XCTAssertEqual(before.map(\.subtitle), [nil, nil, "Spots get only what their uses name", "Move", "Move"])
+        XCTAssertEqual(before.dropFirst(3).map(\.shortcut), ["Record", "Record"])
+        XCTAssertEqual(before.dropFirst(3).map(\.takesShake), [true, true])
 
         try await call(["key:move:left", "ctrl+option+left"])
         try await call(["key:move:left", "ctrl+option+up"])
@@ -103,8 +103,8 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(file.read().keys.map(\.act), [.command("left"), .command("right")])
         XCTAssertEqual(file.read().keys.map(\.trigger.text), ["ctrl+option+up", "ctrl+option+right"])
         let after = try await items()
-        XCTAssertEqual(after.map(\.shortcut).dropFirst(2), ["ctrl+option+up", "ctrl+option+right"])
-        XCTAssertEqual(after.dropFirst(2).map(\.hides), [nil, nil])
+        XCTAssertEqual(after.map(\.shortcut).dropFirst(3), ["ctrl+option+up", "ctrl+option+right"])
+        XCTAssertEqual(after.dropFirst(3).map(\.hides), [nil, nil])
 
         try await call(["clear", "key:move:left"])
 
@@ -162,7 +162,7 @@ final class SettingsSpotTests: BuiltInCase {
         try file.set(setting: "folder", of: "repos", to: "~/Code")
         try file.set(setting: "editor", of: "gone", to: "Zed")
 
-        let items = try await items().dropFirst(2)
+        let items = try await items().dropFirst(3)
 
         XCTAssertEqual(items.map(\.title), ["Folder", "Default app", "Editor"])
         XCTAssertEqual(items.map(\.subtitle), ["Repos · ~/Code", "Repos · Not set", "gone · Zed"])
@@ -181,7 +181,7 @@ final class SettingsSpotTests: BuiltInCase {
         try script("repos.sh", "title=Repos\nicon=folder")
         try file.set(setting: "theme", of: "repos", to: "dark")
 
-        let items = try await items().dropFirst(2)
+        let items = try await items().dropFirst(3)
 
         XCTAssertEqual(items.map(\.title), ["Theme"])
         XCTAssertEqual(items.map(\.subtitle), ["Repos · dark"])
@@ -201,11 +201,11 @@ final class SettingsSpotTests: BuiltInCase {
 
         let items = try await items()
 
-        XCTAssertEqual(items.dropFirst(2).map(\.symbol), ["rectangle.lefthalf.filled", "macwindow", nil])
-        XCTAssertEqual(items.dropFirst(2).map(\.glyph), [nil, nil, "🎉"])
-        XCTAssertEqual(items.dropFirst(2).map(\.title), ["Left side", "Right side", "Fun"])
-        XCTAssertEqual(items.dropFirst(2).map(\.subtitle), ["Move", "Move", "Move"])
-        XCTAssertEqual(items.dropFirst(2).map(\.parent), ["Move", "Move", "Move"])
+        XCTAssertEqual(items.dropFirst(3).map(\.symbol), ["rectangle.lefthalf.filled", "macwindow", nil])
+        XCTAssertEqual(items.dropFirst(3).map(\.glyph), [nil, nil, "🎉"])
+        XCTAssertEqual(items.dropFirst(3).map(\.title), ["Left side", "Right side", "Fun"])
+        XCTAssertEqual(items.dropFirst(3).map(\.subtitle), ["Move", "Move", "Move"])
+        XCTAssertEqual(items.dropFirst(3).map(\.parent), ["Move", "Move", "Move"])
     }
 
     func testTheSheetListsTheStandardKeyWithNoFile() async throws {
@@ -261,7 +261,7 @@ final class SettingsSpotTests: BuiltInCase {
         offerLogin()
 
         let off = try await items()
-        XCTAssertEqual(off.map(\.run), ["panel_key", "fix_key", "open_at_login"])
+        XCTAssertEqual(off.map(\.run), ["panel_key", "fix_key", "careful_mode", "open_at_login"])
         XCTAssertEqual(off.last?.title, "Open at login")
         XCTAssertEqual(off.last?.isOn, false)
 
@@ -274,11 +274,28 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertFalse(opensAtLogin)
     }
 
+    func testTheCarefulRowShowsItsStateAndAPickTurnsItOnAndOff() async throws {
+        let off = try await items()
+        let row = try XCTUnwrap(off.first { $0.run == "careful_mode" })
+        XCTAssertEqual(row.title, "Careful mode")
+        XCTAssertEqual(row.isOn, false)
+
+        try await call(["open", "careful_mode"])
+        XCTAssertTrue(file.read().isCareful)
+        let on = try await items()
+        XCTAssertEqual(on.first { $0.run == "careful_mode" }?.isOn, true)
+
+        try await call(["open", "careful_mode"])
+        XCTAssertFalse(file.read().isCareful)
+        let changes = await app.changes
+        XCTAssertEqual(changes, 2)
+    }
+
     func testTheLinkRowIsOffUntilALinkPointsAtTheAppAndAPickLinksAndRemovesIt() async throws {
         offerLink()
 
         let off = try await items()
-        XCTAssertEqual(off.map(\.run), ["panel_key", "fix_key", "command_link"])
+        XCTAssertEqual(off.map(\.run), ["panel_key", "fix_key", "careful_mode", "command_link"])
         XCTAssertEqual(off.last?.title, "Use openspot in Terminal")
         XCTAssertEqual(off.last?.isOn, false)
 

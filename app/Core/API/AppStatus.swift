@@ -6,6 +6,8 @@ struct AppStatus: Encodable {
     let version: String
     let panelKey: String
     let fixKey: String
+    /// Whether each spot runs with only what its uses name (Z8).
+    let careful: Bool
     /// Whether the app opens at login, absent when the Mac cannot register it.
     let login: Bool?
     /// Whether `openspot` is on the path of a terminal.
@@ -24,7 +26,7 @@ struct AppStatus: Encodable {
             return String(decoding: try encoder.encode(self), as: UTF8.self) + "\n"
         }
         let pairs: [(String, String?)] = [
-            ("version", version), ("panelKey", panelKey), ("fixKey", fixKey), ("login", login.map(String.init)), ("link", link.map(String.init)),
+            ("version", version), ("panelKey", panelKey), ("fixKey", fixKey), ("careful", String(careful)), ("login", login.map(String.init)), ("link", link.map(String.init)),
             ("update", update), ("calls", calls.map(String.init)), ("firstLaunch", firstLaunch.map(String.init))
         ]
         return TextBlock(fields: pairs.compactMap { key, value in value.map { TextBlock.Field(key: key, value: $0) } }).text

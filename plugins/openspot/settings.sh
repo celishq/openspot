@@ -87,7 +87,7 @@ flush() {
 
 # Prints the sheet from the frames of the batch: the values, the state of the app, then the spots.
 sheet() {
-  part=1 values= names= named= menubars= floats= keys= settings= kind=
+  part=1 values= names= named= menubars= floats= keys= settings= kind= careful=
   while IFS= read -r line; do
     case $part:$line in
       *:---) flush; part=$((part + 1)) ;;
@@ -97,6 +97,7 @@ sheet() {
       1:value=*) values="$values$value_spot$nl$value_key$nl${line#value=}$nl" ;;
       2:panelKey=*) panel=${line#*=} ;;
       2:fixKey=*) fix=${line#*=} ;;
+      2:careful=*) careful=${line#*=} ;;
       2:login=*) login=${line#*=} ;;
       2:link=*) link=${line#*=} ;;
       3:spot=* | 3:command=* | 3:setting=*) flush; kind=${line%%=*} id=${line#*=} ;;
@@ -115,6 +116,7 @@ EOF
   printf 'recents=false\n\nbutton=open\ntitle=Change\nclose=false\n\nbutton=clear\ntitle=Remove\nshortcut=cmd+backspace\n'
   printf '\nrow=panel_key\ntitle=Open Openspot\nicon=keyboard\nhides=clear\nshortcut=%s\n' "$panel"
   printf '\nrow=fix_key\ntitle=Open a fix\nicon=wrench.and.screwdriver\nhides=clear\nshortcut=%s\n' "$fix"
+  printf '\nrow=careful_mode\ntitle=Careful mode\ndetail=Spots get only what their uses name\nicon=lock.shield\nvalue=%s\n' "$careful"
   [ -z "$login" ] || printf '\nrow=open_at_login\ntitle=Open at login\nicon=power\nvalue=%s\n' "$login"
   [ -z "$link" ] || printf '\nrow=command_link\ntitle=Use openspot in Terminal\ndetail=The command line tool\nicon=terminal\nvalue=%s\n' "$link"
   printf '%s%s%s%s' "$menubars" "$floats" "$keys" "$settings"
@@ -172,6 +174,9 @@ EOF
     case "$2" in
       open_at_login)
         if [ "$(status login)" = true ]; then exec openspot app login off; else exec openspot app login on; fi
+        ;;
+      careful_mode)
+        if [ "$(status careful)" = true ]; then exec openspot app careful off; else exec openspot app careful on; fi
         ;;
       command_link)
         if [ "$(status link)" = true ]; then

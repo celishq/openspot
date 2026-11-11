@@ -77,6 +77,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .appStatus(let frame): return apps.status(frame: frame)
         case .appLogin(let isOn): return apps.login(isOn)
         case .appLink(let isOn): return apps.link(isOn)
+        case .appCareful(let isOn): return apps.careful(isOn)
         case .appQuit: return apps.quit()
         case .updateCheck: return UpdateCalls(app: app).check()
         case .updateInstall: return UpdateCalls(app: app).install()

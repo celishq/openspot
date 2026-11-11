@@ -233,6 +233,7 @@ public final class SpotsModel {
         scan.listKeys(in: files.config)
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
+        runs.isCareful = config.isCareful
         runs.take(scan, menuBar: config.arrangement.menuBar)
         lastScan = scan
         loadedStamp = spotScan.stamp
@@ -305,6 +306,8 @@ public final class SpotsModel {
             let id = selectedEntry?.id
             reload(patching: Set(ids))
             if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
+        case .careful:
+            runs.isCareful = config.isCareful
         case .value(let spot, let caller):
             if let loaded = loadedConfig, loaded.arrangement == config.arrangement, loaded.keys == config.keys, loaded.panelKey == config.panelKey, loaded.fixKey == config.fixKey {
                 loadedConfig = config

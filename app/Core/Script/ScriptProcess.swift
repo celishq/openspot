@@ -17,6 +17,8 @@ public final class ScriptProcess: @unchecked Sendable {
     private let mode: Mode
     private let limit: TimeInterval?
     private let dataName: String?
+    /// The sandbox of Careful mode, or nil to run as the person.
+    private let careful: CarefulMode?
     private let variables: [String: String]
     private let stopPause: TimeInterval
     private let input = Pipe()
@@ -45,8 +47,9 @@ public final class ScriptProcess: @unchecked Sendable {
 
     /// `limit` is the time the script has to its first frame or its end. With none, it has no limit. `stopPause` is the time
     /// between each step of a stop. `variables` add to its environment. `errorLimit` is how many of the last bytes of stderr
-    /// it keeps, and nil keeps all.
-    public init(url: URL, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024) {
+    /// it keeps, and nil keeps all. `careful` runs it in Careful mode with these uses (Z8), and nil runs it as the person.
+    public init(url: URL, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil) {
+        self.careful = careful.map(CarefulMode.init)
         errorText = ErrorTail(limit: errorLimit)
         self.dataName = dataName
         self.variables = variables
@@ -380,11 +383,12 @@ public final class ScriptProcess: @unchecked Sendable {
         var none = sigset_t()
         sigemptyset(&none)
         posix_spawnattr_setsigmask(&attributes, &none)
-        let words = ([url.path] + arguments).map { strdup($0) } + [nil]
+        let wrapper = careful?.words(data: environment["OPENSPOT_DATA"] ?? NSTemporaryDirectory(), temp: environment["TMPDIR"] ?? NSTemporaryDirectory()) ?? []
+        let words = (wrapper + [url.path] + arguments).map { strdup($0) } + [nil]
         let pairs = environment.map { strdup("\($0.key)=\($0.value)") } + [nil]
         defer { (words + pairs).forEach { free($0) } }
         var started: pid_t = 0
-        let code = posix_spawn(&started, url.path, &actions, &attributes, words, pairs)
+        let code = posix_spawn(&started, wrapper.first ?? url.path, &actions, &attributes, words, pairs)
         guard code == 0 else {
             guard code == ENOENT || code == EACCES else { throw POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO) }
             throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: url.path, NSURLErrorKey: url])

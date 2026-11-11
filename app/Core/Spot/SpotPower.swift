@@ -26,6 +26,7 @@ public struct SpotPower: Equatable, Sendable {
         return switch (arguments[0], arguments[1]) {
         case ("app", "login"): (.app, "changed whether Openspot opens at login")
         case ("app", "link"): (.app, "changed the openspot command in Terminal")
+        case ("app", "careful"): (.app, "changed Careful mode")
         case ("app", "quit"): (.app, "quit Openspot")
         case ("key", "set"): (.app, "changed a key")
         case ("menubar", "on"), ("menubar", "off"): (.app, "changed the menu bar")

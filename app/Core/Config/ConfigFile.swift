@@ -19,11 +19,19 @@ public struct ConfigFile: Equatable, Sendable {
 
     /// Writes one setting above the tables, and keeps each other line as the person wrote it.
     public func set(_ key: String, to value: String) throws {
+        try set(key, line: "\(key) = \"\(value)\"")
+    }
+
+    /// Writes one switch above the tables, as `true` or `false`.
+    public func set(_ key: String, to isOn: Bool) throws {
+        try set(key, line: "\(key) = \(isOn)")
+    }
+
+    private func set(_ key: String, line: String) throws {
         try locked {
             let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
             var lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
             if lines.last == "" { lines.removeLast() }
-            let line = "\(key) = \"\(value)\""
             if let index = lines.firstIndex(where: { $0.split(separator: "=", maxSplits: 1).first?.trimmingCharacters(in: .whitespaces) == key }) {
                 lines[index] = line
             } else {

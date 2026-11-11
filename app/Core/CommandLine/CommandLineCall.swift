@@ -63,6 +63,8 @@ public enum CommandLineCall: Equatable, Sendable {
     case appLogin(Bool)
     /// Puts `openspot` on the path of a terminal, or takes it off.
     case appLink(Bool)
+    /// Turns Careful mode on or off (Z8).
+    case appCareful(Bool)
     case appQuit
     case updateCheck
     /// Restarts the app into the downloaded update.
@@ -166,6 +168,7 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  call that fails, and takes only a call that the app answers.
     openspot app login on|off                    Opens the app at login, or stops it.
     openspot app link on|off                     Puts openspot on the path of Terminal, or takes it off.
+    openspot app careful on|off                  Runs each spot with only what its uses name, or as you.
     openspot app quit                            Ends the running app.
     openspot update check                        Asks for a new version of the app now.
     openspot update install                      Restarts the app into the update that it downloaded.
@@ -280,6 +283,8 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("batch", nil): self = .batch
         case ("app", "login") where rest == ["login", "on"] || rest == ["login", "off"]:
             self = Self.changing(.appLogin(rest[1] == "on"), "openspot app login", "changes your Mac", environment)
+        case ("app", "careful") where rest == ["careful", "on"] || rest == ["careful", "off"]:
+            self = Self.changing(.appCareful(rest[1] == "on"), "openspot app careful", "changes how spots run", environment)
         case ("app", "link") where rest == ["link", "on"] || rest == ["link", "off"]:
             self = Self.changing(.appLink(rest[1] == "on"), "openspot app link", "changes your Mac", environment)
         case ("app", "quit") where rest.count == 1: self = Self.changing(.appQuit, "openspot app quit", "ends Openspot", environment)

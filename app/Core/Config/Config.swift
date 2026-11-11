@@ -12,6 +12,8 @@ public struct Config: Equatable, Sendable {
     public private(set) var keys: [GlobalKey] = []
     /// The values that scripts keep for the person through `openspot setting` (K6).
     public private(set) var settings: [SpotSetting] = []
+    /// Whether each spot's process runs with only what its uses name (Z8).
+    public private(set) var isCareful = false
 
     public init(text: String) {
         let document: TomlDocument
@@ -22,7 +24,7 @@ public struct Config: Equatable, Sendable {
             faults = ["config.toml: \((error as? SpotError)?.reason ?? String(describing: error))"]
             return
         }
-        for key in (Array(document.values.keys) + Array(document.arrays.keys)).sorted() where !["panel_key", "fix_key", "spots", "keys", "settings"].contains(key) {
+        for key in (Array(document.values.keys) + Array(document.arrays.keys)).sorted() where !["panel_key", "fix_key", "careful", "spots", "keys", "settings"].contains(key) {
             faults.append("config.toml: \(key) is not a setting.")
         }
         arrangement = SpotArrangement(choices: (document.arrays["spots"] ?? []).compactMap { choice(of: $0) })
@@ -30,6 +32,11 @@ public struct Config: Equatable, Sendable {
         settings = (document.arrays["settings"] ?? []).compactMap { setting(of: $0) }
         panelKey = shortcut(document.values["panel_key"], named: "panel_key", or: .standard)
         fixKey = shortcut(document.values["fix_key"], named: "fix_key", or: .fix)
+        switch document.values["careful"] {
+        case .boolean(let isOn)?: isCareful = isOn
+        case nil: break
+        default: faults.append("config.toml: careful is true or false.")
+        }
     }
 
     /// The value that a script keeps under this key for its spot.

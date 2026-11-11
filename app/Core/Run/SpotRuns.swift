@@ -25,6 +25,8 @@ public final class SpotRuns {
     let inlineIdle: TimeInterval
     /// What each spot cost since the app started (G1).
     public nonisolated let usage = SpotUsage()
+    /// Whether each new process of a spot runs in Careful mode, with only what its uses name (Z8).
+    @ObservationIgnored public var isCareful = false
     /// The token of each process and inline link that runs, by which the API knows a spot's call (Z2).
     public nonisolated let tokens = CallerTokens()
     @ObservationIgnored let now: () -> Date
@@ -329,7 +331,7 @@ public final class SpotRuns {
     /// Starts a script that stays, and returns it with its frames.
     func stay(_ spot: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>) {
         let token = tokens.issue(for: spot)
-        let script = ScriptProcess(url: SwiftProgram.file(beside: spot.url) ?? spot.url, mode: .stays, limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: ["OPENSPOT_ID": spot.id, CallerTokens.variable: token])
+        let script = ScriptProcess(url: SwiftProgram.file(beside: spot.url) ?? spot.url, mode: .stays, limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: ["OPENSPOT_ID": spot.id, CallerTokens.variable: token], careful: isCareful ? spot.uses : nil)
         track(script, of: spot.id, token: token)
         let frames = script.start()
         keep(script)
@@ -364,7 +366,7 @@ public final class SpotRuns {
         }
         let sent = action.sent(input: input)
         let token = tokens.issue(for: spot)
-        let process = ScriptProcess(url: SwiftProgram.file(beside: spot.url) ?? spot.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given }.merging([CallerTokens.variable: token]) { _, own in own })
+        let process = ScriptProcess(url: SwiftProgram.file(beside: spot.url) ?? spot.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given }.merging([CallerTokens.variable: token]) { _, own in own }, careful: isCareful ? spot.uses : nil)
         track(process, of: spot.id, token: token)
         let stream = process.start()
         keep(process)

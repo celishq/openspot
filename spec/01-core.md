@@ -651,7 +651,8 @@ An update compares the `uses` of the new version with those of the one in place 
 When one grew, the review of a `.spot` file starts with `This version adds: network`, and `openspot spot add` prints that
 line and changes nothing until it runs again with `--yes`.
 
-Careful mode is a setting of the person, off by default (Z8). It runs each process of a spot under `sandbox-exec`: no
+Careful mode is a setting of the person, off by default, which Settings and `openspot app careful on|off` turn on and off,
+and which `app status` shows as `careful` (Z8). It runs each process of a spot under `sandbox-exec`: no
 network unless `uses=network`, writes only to its data folder and the temp folder unless `uses=files`, and reads
 everywhere. An inline spot has no files and no network in either mode. Without Careful mode, the data folder alone is no
 boundary: a spot reads and writes each file that the person can (Z9).
