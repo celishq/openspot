@@ -29,7 +29,7 @@ public final class SpotRuns {
     /// The time between two looks at the clipboard, while a spot lists `clipboard`.
     @ObservationIgnored let clipboardPause: Duration
     /// What raises the events of the Mac, once the app gives it.
-    @ObservationIgnored var source: (any EventSource)?
+    @ObservationIgnored var source: (any Mac)?
     /// The looks at the clipboard, which run only while a spot lists `clipboard`.
     @ObservationIgnored var clipboardWatch: Task<Void, Never>?
     /// Whether the app quit, after which nothing starts.

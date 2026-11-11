@@ -8,8 +8,12 @@ final class SpotAPITests: XCTestCase {
         var isOn = false
     }
 
-    private struct Host: CommandHost {
-        var login: LoginItem?
+    private final class Host: Mac {
+        let login: LoginItem?
+
+        init(login: LoginItem? = nil) {
+            self.login = login
+        }
 
         func eventStore() -> any EventStore { FakeEventStore() }
         func reminderStore() -> any ReminderStore { FakeReminderStore() }
@@ -45,13 +49,13 @@ final class SpotAPITests: XCTestCase {
     private func answer(_ arguments: [String], host: Host = Host(), app: (any RunningApp)? = nil, reason: String? = nil) async throws -> CommandAnswer {
         let environment = environment.merging(reason.map { ["OPENSPOT_REASON": $0] } ?? [:]) { _, new in new }
         let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment))
-        let work = try XCTUnwrap(CommandAPI(host: host, app: app ?? self.app).work(for: call, input: { "" }, environment: environment))
+        let work = try XCTUnwrap(CommandAPI(mac: host, app: app ?? self.app).work(for: call, input: { "" }, environment: environment))
         return await work()
     }
 
     private func appWork(_ arguments: [String]) throws -> CommandAPI.Work? {
         let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment))
-        return CommandAPI(host: Host()).work(for: call, input: { "" }, environment: environment)
+        return CommandAPI(mac: Host()).work(for: call, input: { "" }, environment: environment)
     }
 
     private func json(_ arguments: [String]) async throws -> [[String: Any]] {

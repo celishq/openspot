@@ -7,7 +7,7 @@ enum SpotCommandLine {
     /// Does the call: the work of the API when Core has it, or the work of the Shell, and exits.
     static func run(_ call: CommandLineCall) -> Never {
         enterBundle()
-        if let work = CommandAPI(host: SpotCommandHost()).work(for: call, input: { standardInput }, environment: ProcessInfo.processInfo.environment) {
+        if let work = CommandAPI(mac: SpotMac()).work(for: call, input: { standardInput }, environment: ProcessInfo.processInfo.environment) {
             Task {
                 let answer = await work()
                 FileHandle.standardOutput.write(Data(answer.output.utf8))

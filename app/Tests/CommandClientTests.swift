@@ -4,7 +4,7 @@ import XCTest
 /// Proves `Contents/Helpers/openspot`: it asks the socket of the running app, and starts the program of its app with the
 /// same arguments when no socket answers or the call runs in a process of its own.
 final class CommandClientTests: XCTestCase {
-    private struct Host: CommandHost {
+    private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }
         func reminderStore() -> any ReminderStore { FakeReminderStore() }
         func showCalendar(at time: Date) throws {}
@@ -33,7 +33,7 @@ final class CommandClientTests: XCTestCase {
     }
 
     private func listen() {
-        socket = CommandSocket(folder: config, api: CommandAPI(host: Host()))
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: Host()))
     }
 
     /// Runs the program with the arguments and stdin, and returns what it prints and its exit code.

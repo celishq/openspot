@@ -1,7 +1,8 @@
 import Foundation
 
-/// What the API reaches through the frameworks of the Mac that Core does not import: EventKit and the apps that open.
-public protocol CommandHost: Sendable {
+/// What the Mac gives through the frameworks that Core does not import: EventKit, the apps that open, the settings of the
+/// app, and the events of the Mac with the count of changes of the clipboard (B2). A test gives a Mac of its own.
+public protocol Mac: AnyObject, Sendable {
     func eventStore() -> any EventStore
     func reminderStore() -> any ReminderStore
     /// Opens Calendar on the day of a time.
@@ -14,10 +15,17 @@ public protocol CommandHost: Sendable {
     var link: CommandLink? { get }
     /// The guide to building a spot, which `openspot guide` prints.
     var guide: URL? { get }
+    /// Calls `heard` with `wake`, `app.front` and `screen.wake` each time one occurs.
+    @MainActor func listen(_ heard: @escaping @MainActor (SpotEvent) -> Void)
+    /// The count of changes of the clipboard, which each copy makes larger.
+    @MainActor var clipboardCount: Int { get }
 }
 
-extension CommandHost {
+extension Mac {
     public var login: LoginItem? { nil }
     public var link: CommandLink? { nil }
     public var guide: URL? { Bundle.main.url(forResource: "GUIDE", withExtension: "md") }
+    /// A Mac with no events hears none.
+    @MainActor public func listen(_ heard: @escaping @MainActor (SpotEvent) -> Void) {}
+    @MainActor public var clipboardCount: Int { 0 }
 }

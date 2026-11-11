@@ -36,7 +36,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var folderWatch: SpotFolderWatch?
     private var showListener: NSObjectProtocol?
     private var commandSocket: CommandSocket?
-    private let macEvents = SpotMacEvents()
+    private let mac = SpotMac()
     private var isLaunched = false
     private var openedAtLaunch: [URL] = []
     /// The window of each float, by the ID of its spot.
@@ -70,7 +70,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         let update = AppUpdate { [model] in model.updateIsReady($0) }
         self.update = update
         let usage = model.runs.usage
-        let api = CommandAPI(host: SpotCommandHost(), raise: { [model] event in
+        let api = CommandAPI(mac: mac, raise: { [model] event in
             await MainActor.run { model.runs.raise(event) }
         }, stats: { usage.text }, app: SpotRunningApp(model: model, update: update))
         model.runs.api = api
@@ -92,7 +92,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         isLaunched = true
         if !openedAtLaunch.isEmpty { model.review(openedAtLaunch) }
-        model.runs.listen(to: macEvents)
+        model.runs.listen(to: mac)
     }
 
     /// Takes what the config file asks for. A key that macOS refuses leaves the current one in use, and the person sees why.

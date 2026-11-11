@@ -5,9 +5,14 @@ import XCTest
 /// through the real command to the socket of a test's API, with a config and a plugins folder of the test's own.
 @MainActor
 class BuiltInCase: XCTestCase {
-    private struct Host: CommandHost {
-        let mac: Mac
+    private final class Host: Mac {
+        let mac: MacSettings
         let guide: URL?
+
+        init(mac: MacSettings, guide: URL?) {
+            self.mac = mac
+            self.guide = guide
+        }
 
         var login: LoginItem? { mac.login }
         var link: CommandLink? { mac.link }
@@ -19,7 +24,7 @@ class BuiltInCase: XCTestCase {
     }
 
     /// The settings of the Mac that a test offers: the login item and the link of the command, and what they did.
-    final class Mac: @unchecked Sendable {
+    final class MacSettings: @unchecked Sendable {
         var isOn = false
         var login: LoginItem?
         var link: CommandLink?
@@ -34,7 +39,7 @@ class BuiltInCase: XCTestCase {
     /// The folder of the tools on the path, with `openspot` in it.
     var tools: URL!
     let app = FakeRunningApp()
-    let mac = Mac()
+    let mac = MacSettings()
     private var socket: CommandSocket?
     private var before: [String: String] = [:]
 
@@ -95,7 +100,7 @@ class BuiltInCase: XCTestCase {
         setenv("OPENSPOT_CONFIG", root.path, 1)
         setenv("OPENSPOT_PLUGINS", plugins.path, 1)
         setenv("OPENSPOT_CORE", core.path, 1)
-        socket = CommandSocket(folder: root, api: CommandAPI(host: Host(mac: mac, guide: guide), app: app))
+        socket = CommandSocket(folder: root, api: CommandAPI(mac: Host(mac: mac, guide: guide), app: app))
     }
 
     override func tearDown() async throws {

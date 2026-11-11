@@ -3,7 +3,7 @@ import XCTest
 
 /// Proves that the socket of the API answers a JSON-RPC request on one line with what the call prints.
 final class CommandSocketTests: XCTestCase {
-    private struct Host: CommandHost {
+    private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }
         func reminderStore() -> any ReminderStore { FakeReminderStore() }
         func showCalendar(at time: Date) throws {}
@@ -15,7 +15,7 @@ final class CommandSocketTests: XCTestCase {
 
     override func setUpWithError() throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("os-\(UUID().uuidString.prefix(8))", isDirectory: true)
-        socket = CommandSocket(folder: folder, api: CommandAPI(host: Host()))
+        socket = CommandSocket(folder: folder, api: CommandAPI(mac: Host()))
     }
 
     override func tearDownWithError() throws {

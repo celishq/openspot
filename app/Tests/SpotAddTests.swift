@@ -4,7 +4,7 @@ import XCTest
 /// Proves `openspot spot add` and `openspot spot remove`: a spot from a git repository, a folder or a `.spot` file goes into
 /// the plugins folder, and only a spot that `spot add` added comes out (N1).
 final class SpotAddTests: XCTestCase {
-    private struct Host: CommandHost {
+    private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }
         func reminderStore() -> any ReminderStore { FakeReminderStore() }
         func showCalendar(at time: Date) throws {}
@@ -31,7 +31,7 @@ final class SpotAddTests: XCTestCase {
 
     private func answer(_ arguments: [String]) async throws -> CommandAnswer {
         let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment))
-        let work = try XCTUnwrap(CommandAPI(host: Host()).work(for: call, input: { "" }, environment: environment))
+        let work = try XCTUnwrap(CommandAPI(mac: Host()).work(for: call, input: { "" }, environment: environment))
         return await work()
     }
 

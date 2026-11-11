@@ -5,7 +5,7 @@ import XCTest
 /// a key to its rows with the real API.
 final class CalculatorPluginTests: SamplePluginsCase {
     /// A host of the API that reaches nothing on the Mac.
-    private struct Host: CommandHost {
+    private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }
         func reminderStore() -> any ReminderStore { FakeReminderStore() }
         func showCalendar(at time: Date) throws {}
@@ -100,7 +100,7 @@ final class CalculatorPluginTests: SamplePluginsCase {
         let model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
         defer { model.quit() }
         host.model = model
-        model.runs.api = CommandAPI(host: Host())
+        model.runs.api = CommandAPI(mac: Host())
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])

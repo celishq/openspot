@@ -24,7 +24,7 @@ extension SpotRuns {
     }
 
     /// Takes the events of the Mac from the source, and looks at its clipboard while a spot lists `clipboard`.
-    public func listen(to source: any EventSource) {
+    public func listen(to source: any Mac) {
         self.source = source
         source.listen { [weak self] in self?.raise($0) }
         watchClipboard()

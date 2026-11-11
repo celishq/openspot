@@ -3,7 +3,7 @@ import XCTest
 
 /// Proves the work of `openspot <noun> <verb>` that Core does, the same for the app and for a process of its own.
 final class CommandAPITests: XCTestCase {
-    private final class Host: CommandHost, @unchecked Sendable {
+    private final class Host: Mac, @unchecked Sendable {
         var made = 0
         var opened: [URL] = []
         var access = CalendarAccess.allowed
@@ -44,7 +44,7 @@ final class CommandAPITests: XCTestCase {
     private func answer(_ arguments: [String], input: String = "", environment: [String: String]? = nil) async throws -> CommandAnswer {
         let environment = environment ?? self.environment
         let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment))
-        let work = try XCTUnwrap(CommandAPI(host: host).work(for: call, input: { input }, environment: environment))
+        let work = try XCTUnwrap(CommandAPI(mac: host).work(for: call, input: { input }, environment: environment))
         return await work()
     }
 
@@ -89,7 +89,7 @@ final class CommandAPITests: XCTestCase {
     }
 
     func testTenCallsShareOneEventStore() async throws {
-        let api = CommandAPI(host: host)
+        let api = CommandAPI(mac: host)
         let call = try XCTUnwrap(CommandLineCall(arguments: ["calendar", "calendars"], environment: environment))
 
         for _ in 0..<10 {
@@ -101,7 +101,7 @@ final class CommandAPITests: XCTestCase {
 
     func testAStoreWithNoLeaveIsMadeAgainAtTheNextCall() async throws {
         host.access = .denied
-        let api = CommandAPI(host: host)
+        let api = CommandAPI(mac: host)
         let call = try XCTUnwrap(CommandLineCall(arguments: ["calendar", "calendars"], environment: environment))
 
         _ = await api.work(for: call, input: { "" }, environment: environment)?()
@@ -115,7 +115,7 @@ final class CommandAPITests: XCTestCase {
     func testAnEventReachesTheRunningApp() async throws {
         let raised = LockedEvents()
         let call = try XCTUnwrap(CommandLineCall(arguments: ["event", "emit", "music.track", "Song"], environment: [:]))
-        let work = try XCTUnwrap(CommandAPI(host: host, raise: { await raised.add($0) }).work(for: call, input: { "" }, environment: [:]))
+        let work = try XCTUnwrap(CommandAPI(mac: host, raise: { await raised.add($0) }).work(for: call, input: { "" }, environment: [:]))
 
         let answer = await work()
 
@@ -133,7 +133,7 @@ final class CommandAPITests: XCTestCase {
 
     func testStatsComeFromTheRunningApp() async throws {
         let call = try XCTUnwrap(CommandLineCall(arguments: ["spot", "stats"], environment: [:]))
-        let work = try XCTUnwrap(CommandAPI(host: host, stats: { "row=a\n" }).work(for: call, input: { "" }, environment: [:]))
+        let work = try XCTUnwrap(CommandAPI(mac: host, stats: { "row=a\n" }).work(for: call, input: { "" }, environment: [:]))
 
         let answer = await work()
 
@@ -150,7 +150,7 @@ final class CommandAPITests: XCTestCase {
     func testACallThatTheShellDoesHasNoWorkInCore() throws {
         for arguments in [["color", "pick"], ["render", "a.png"], ["spot", "run", "notes"], ["clipboard", "paste"], ["helper", "calc"], ["check"]] {
             let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: [:]))
-            XCTAssertNil(CommandAPI(host: host).work(for: call, input: { "" }, environment: [:]), arguments.joined(separator: " "))
+            XCTAssertNil(CommandAPI(mac: host).work(for: call, input: { "" }, environment: [:]), arguments.joined(separator: " "))
         }
     }
 }

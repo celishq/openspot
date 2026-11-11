@@ -6,7 +6,7 @@ import XCTest
 @MainActor
 final class SpotRunsInlineTests: SpotRunsCase {
     /// A host of the API that reaches nothing on the Mac.
-    private struct Host: CommandHost {
+    private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }
         func reminderStore() -> any ReminderStore { FakeReminderStore() }
         func showCalendar(at time: Date) throws {}
@@ -68,7 +68,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testOpenspotCallAsksTheAPIInTheApp() async throws {
-        runs.api = CommandAPI(host: Host())
+        runs.api = CommandAPI(mac: Host())
         try inline(header: "mode=inline\nanswers=^[0-9]", """
         function read(reason, text) {
           const answer = openspot.call(["calc", "solve", text])

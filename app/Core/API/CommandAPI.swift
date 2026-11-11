@@ -1,12 +1,12 @@
 import Foundation
 
 /// The work of each `openspot <noun> <verb>` that Core does. The app gives it over its socket, and a process of its own
-/// gives the same answer when the app does not run (S1, S2). It makes each store of the host and the keyword files once,
+/// gives the same answer when the app does not run (S1, S2). It makes each store of the Mac and the keyword files once,
 /// so that the app answers each later call from them.
 public final class CommandAPI: @unchecked Sendable {
     public typealias Work = @Sendable () async -> CommandAnswer
 
-    private let host: any CommandHost
+    private let mac: any Mac
     /// Raises an event in the running app, or nil in a process with no app to reach.
     private let raise: (@Sendable (SpotEvent) async -> Void)?
     /// The rows of `openspot spot stats` in the running app, or nil in a process with no app to reach.
@@ -18,8 +18,8 @@ public final class CommandAPI: @unchecked Sendable {
     private var reminderStore: (any ReminderStore)?
     private var glyphKeywords: GlyphKeywords?
 
-    public init(host: any CommandHost, raise: (@Sendable (SpotEvent) async -> Void)? = nil, stats: (@Sendable () -> String)? = nil, app: (any RunningApp)? = nil) {
-        self.host = host
+    public init(mac: any Mac, raise: (@Sendable (SpotEvent) async -> Void)? = nil, stats: (@Sendable () -> String)? = nil, app: (any RunningApp)? = nil) {
+        self.mac = mac
         self.raise = raise
         self.stats = stats
         self.app = app
@@ -107,8 +107,8 @@ public final class CommandAPI: @unchecked Sendable {
                     version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "",
                     panelKey: (config.panelKey ?? .standard).text,
                     fixKey: (config.fixKey ?? .fix).text,
-                    login: self.host.login?.isOn(),
-                    link: self.host.link?.isOn,
+                    login: self.mac.login?.isOn(),
+                    link: self.mac.link?.isOn,
                     update: running?.update,
                     calls: running?.calls,
                     firstLaunch: running?.isFirstLaunch
@@ -116,13 +116,13 @@ public final class CommandAPI: @unchecked Sendable {
             }
         case .appLogin(let isOn):
             return Self.answer {
-                guard let login = self.host.login else { throw SpotError.failed(1, "This copy of Openspot cannot open at login. Move it to Applications, then try again.") }
+                guard let login = self.mac.login else { throw SpotError.failed(1, "This copy of Openspot cannot open at login. Move it to Applications, then try again.") }
                 try login.set(isOn)
                 return ""
             }
         case .appLink(let isOn):
             return Self.answer {
-                guard let link = self.host.link else { throw SpotError.failed(1, "This copy of Openspot cannot put openspot in Terminal.") }
+                guard let link = self.mac.link else { throw SpotError.failed(1, "This copy of Openspot cannot put openspot in Terminal.") }
                 try link.set(isOn)
                 return ""
             }
@@ -165,12 +165,12 @@ public final class CommandAPI: @unchecked Sendable {
         case .promptNew(let words):
             return Self.answer {
                 let folder = SpotFolder.standard(environment: environment).url
-                let guide = self.host.guide ?? folder
+                let guide = self.mac.guide ?? folder
                 return AgentPrompt(folder: folder, guide: guide, app: Bundle.main.executablePath ?? "openspot").building(words)
             }
         case .guide:
             return Self.answer {
-                guard let guide = self.host.guide else { throw SpotError.fault("This copy of Openspot has no guide. Install Openspot again.") }
+                guard let guide = self.mac.guide else { throw SpotError.fault("This copy of Openspot has no guide. Install Openspot again.") }
                 return try String(contentsOf: guide, encoding: .utf8)
             }
         case .guideOf(let noun):
@@ -221,7 +221,7 @@ public final class CommandAPI: @unchecked Sendable {
             return Self.answer { try await self.events(isRead).add(words, isDry: isDry) }
         case .calendarShow(let id):
             return Self.answer {
-                try self.host.showCalendar(at: try await self.events(isRead).day(of: id))
+                try self.mac.showCalendar(at: try await self.events(isRead).day(of: id))
                 return ""
             }
         case .remindersDue(let days, let hidden):
@@ -235,7 +235,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .remindersShow(let id):
             return Self.answer {
                 let link = try await self.reminders(isRead).link(of: id)
-                guard self.host.open(link) else { throw SpotError.failed(1, "Openspot cannot open Reminders, so it cannot show \(id).") }
+                guard self.mac.open(link) else { throw SpotError.failed(1, "Openspot cannot open Reminders, so it cannot show \(id).") }
                 return ""
             }
         case .check, .checkJSON, .spotRun, .spotShow, .renderSpot, .render, .renderCard, .sandbox, .colorPick, .folderPick,
@@ -247,7 +247,7 @@ public final class CommandAPI: @unchecked Sendable {
 
     private func events(_ isRead: Bool) -> Events {
         let store = lock.withLock {
-            let store = eventStore ?? host.eventStore()
+            let store = eventStore ?? mac.eventStore()
             eventStore = store.access() == .allowed ? store : nil
             return store
         }
@@ -256,7 +256,7 @@ public final class CommandAPI: @unchecked Sendable {
 
     private func reminders(_ isRead: Bool) -> Reminders {
         let store = lock.withLock {
-            let store = reminderStore ?? host.reminderStore()
+            let store = reminderStore ?? mac.reminderStore()
             reminderStore = store.access() == .allowed ? store : nil
             return store
         }
