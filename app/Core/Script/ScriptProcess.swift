@@ -12,13 +12,16 @@ public final class ScriptProcess: @unchecked Sendable {
     private static let errorsPause: TimeInterval = 0.5
     private static let forcePause: TimeInterval = 0.1
 
-    private let process = Process()
+    private let url: URL
+    private let arguments: [String]
     private let mode: Mode
     private let limit: TimeInterval?
     private let dataName: String?
     private let variables: [String: String]
     private let stopPause: TimeInterval
     private let input = Pipe()
+    private let output = Pipe()
+    private let errorOutput = Pipe()
     private let writes = DispatchQueue(label: "openspot.script")
     private let exit = DispatchSemaphore(value: 0)
     private let lock = NSLock()
@@ -29,6 +32,12 @@ public final class ScriptProcess: @unchecked Sendable {
     private var killsLater = false
     /// The process ID once it runs, and 0 before.
     private var id: pid_t = 0
+    /// The wait status once the process ended and Openspot reaped it.
+    private var status: Int32?
+    /// Its time once it ended.
+    private var endTime: ProcessTime?
+    private var exitWatch: DispatchSourceProcess?
+    private var exitHandler: (@Sendable (ProcessTime) -> Void)?
     private let errorText: ErrorTail
     private var unended: String?
     /// The frames of the output so far, which only the output's handler reads, one read at a time.
@@ -41,8 +50,8 @@ public final class ScriptProcess: @unchecked Sendable {
         errorText = ErrorTail(limit: errorLimit)
         self.dataName = dataName
         self.variables = variables
-        process.executableURL = url
-        process.arguments = arguments
+        self.url = url
+        self.arguments = arguments
         self.mode = mode
         self.limit = limit
         self.stopPause = stopPause
@@ -90,31 +99,29 @@ public final class ScriptProcess: @unchecked Sendable {
     /// Runs the process, unless a stop came first, and follows its output. A stop that comes while it starts reaches it.
     private func launch() {
         var text: String?
-        switch mode {
-        case .stays:
-            process.standardInput = input
-        case .once(let given):
+        var hasInput = true
+        if case .once(let given) = mode {
             text = given
-            process.standardInput = given == nil ? FileHandle.nullDevice : input
+            hasInput = given != nil
         }
-        process.environment = Self.environment(base: ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", dataName: dataName).merging(variables) { _, new in new }
-        let output = Pipe()
-        process.standardOutput = output
-        let errors = Pipe()
-        process.standardError = errors
-        let exit = exit
-        process.terminationHandler = { _ in exit.signal() }
+        let environment = Self.environment(base: ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", dataName: dataName).merging(variables) { _, new in new }
+        let errors = errorOutput
         signal(SIGPIPE, SIG_IGN)
         guard !isStopped else { return lock.withLock { ended = true } }
+        let started: pid_t
         do {
-            try process.run()
+            started = try spawn(input: hasInput ? input.fileHandleForReading : nil, output: output.fileHandleForWriting, errors: errors.fileHandleForWriting, environment: environment)
         } catch {
             return finish(throwing: error)
         }
+        if hasInput { try? input.fileHandleForReading.close() }
+        try? output.fileHandleForWriting.close()
+        try? errors.fileHandleForWriting.close()
         let wasStopped = lock.withLock {
-            id = process.processIdentifier
+            id = started
             return stopped
         }
+        watchExit(of: started)
         if wasStopped { stopGroup() }
         if let text { writeAndClose(text) }
         if let limit {
@@ -173,7 +180,20 @@ public final class ScriptProcess: @unchecked Sendable {
     }
 
     public var isRunning: Bool {
-        process.isRunning
+        lock.withLock { id > 0 && status == nil }
+    }
+
+    /// The CPU time and the wakeups of the process so far, or all of them once it ended.
+    public var time: ProcessTime {
+        let (id, endTime) = lock.withLock { (self.id, self.endTime) }
+        if let endTime { return endTime }
+        guard id > 0 else { return .zero }
+        return ProcessTime(of: id) ?? .zero
+    }
+
+    /// Takes the time of the process once it ends. Set it before `start`.
+    func onExit(_ handler: @escaping @Sendable (ProcessTime) -> Void) {
+        lock.withLock { exitHandler = handler }
     }
 
     /// Whether its output is still open, so that the call has not ended.
@@ -283,12 +303,12 @@ public final class ScriptProcess: @unchecked Sendable {
         let hasExited = waitForExit(seconds: Self.exitPause)
         _ = errorsRead.wait(timeout: .now() + Self.errorsPause)
         guard !isStopped else { return lock.withLock { ended = true } }
-        if hasExited, process.terminationStatus != 0 {
+        if hasExited, exitCode != 0 {
             let line = lastErrors.text
             let last = reader.finish()
             lock.withLock { unended = last }
             let fix = last.flatMap { PluginOutput(text: $0).link }.flatMap(URL.init(string:))
-            finish(throwing: fix.map { PluginError.failedWithFix(process.terminationStatus, line, $0) } ?? PluginError.failed(process.terminationStatus, line))
+            finish(throwing: fix.map { PluginError.failedWithFix(exitCode, line, $0) } ?? PluginError.failed(exitCode, line))
             return
         }
         if let frame = reader.finish() { yield(frame) }
@@ -313,7 +333,81 @@ public final class ScriptProcess: @unchecked Sendable {
         continuation?.finish(throwing: error)
     }
 
-    /// Waits for the termination handler to signal, and leaves the signal for the next one that waits.
+    /// The code that the process exited with, or the number of the signal that ended it.
+    private var exitCode: Int32 {
+        let status = lock.withLock { self.status } ?? 0
+        return status & 0x7f == 0 ? (status >> 8) & 0xff : status & 0x7f
+    }
+
+    /// Starts the program in a process group of its own, with these ends of pipes as its stdin, stdout and stderr, and with
+    /// no other open file and no signal that the app ignores.
+    private func spawn(input: FileHandle?, output: FileHandle, errors: FileHandle, environment: [String: String]) throws -> pid_t {
+        var actions: posix_spawn_file_actions_t?
+        posix_spawn_file_actions_init(&actions)
+        defer { posix_spawn_file_actions_destroy(&actions) }
+        if let input {
+            posix_spawn_file_actions_adddup2(&actions, input.fileDescriptor, STDIN_FILENO)
+        } else {
+            posix_spawn_file_actions_addopen(&actions, STDIN_FILENO, "/dev/null", O_RDONLY, 0)
+        }
+        posix_spawn_file_actions_adddup2(&actions, output.fileDescriptor, STDOUT_FILENO)
+        posix_spawn_file_actions_adddup2(&actions, errors.fileDescriptor, STDERR_FILENO)
+        var attributes: posix_spawnattr_t?
+        posix_spawnattr_init(&attributes)
+        defer { posix_spawnattr_destroy(&attributes) }
+        posix_spawnattr_setflags(&attributes, Int16(POSIX_SPAWN_SETPGROUP | POSIX_SPAWN_SETSIGDEF | POSIX_SPAWN_SETSIGMASK | POSIX_SPAWN_CLOEXEC_DEFAULT))
+        posix_spawnattr_setpgroup(&attributes, 0)
+        var all = sigset_t()
+        sigfillset(&all)
+        posix_spawnattr_setsigdefault(&attributes, &all)
+        var none = sigset_t()
+        sigemptyset(&none)
+        posix_spawnattr_setsigmask(&attributes, &none)
+        let words = ([url.path] + arguments).map { strdup($0) } + [nil]
+        let pairs = environment.map { strdup("\($0.key)=\($0.value)") } + [nil]
+        defer { (words + pairs).forEach { free($0) } }
+        var started: pid_t = 0
+        let code = posix_spawn(&started, url.path, &actions, &attributes, words, pairs)
+        guard code == 0 else { throw POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO) }
+        return started
+    }
+
+    /// Reaps the process once it ends, with no thread that waits for it. A process that ended before the watch began is
+    /// reaped at once.
+    private func watchExit(of started: pid_t) {
+        let watch = DispatchSource.makeProcessSource(identifier: started, eventMask: .exit, queue: .global())
+        watch.setEventHandler { [self] in reap(started) }
+        lock.withLock { exitWatch = watch }
+        watch.resume()
+        var info = siginfo_t()
+        if waitid(P_PID, id_t(started), &info, WEXITED | WNOHANG | WNOWAIT) == 0, info.si_pid == started { reap(started) }
+    }
+
+    /// Reads the time of the ended process before it is reaped, so that it holds all of it, then reaps it.
+    private func reap(_ started: pid_t) {
+        let isFirst = lock.withLock {
+            guard let watch = exitWatch else { return false }
+            watch.cancel()
+            exitWatch = nil
+            return true
+        }
+        guard isFirst else { return }
+        let read = ProcessTime(of: started)
+        var code: Int32 = 0
+        var usage = rusage()
+        while wait4(started, &code, 0, &usage) == -1, errno == EINTR {}
+        let time = read ?? ProcessTime(usage)
+        let handler = lock.withLock {
+            status = code
+            endTime = time
+            defer { exitHandler = nil }
+            return exitHandler
+        }
+        handler?(time)
+        exit.signal()
+    }
+
+    /// Waits for the reap to signal, and leaves the signal for the next one that waits.
     private func waitForExit(seconds: TimeInterval) -> Bool {
         guard exit.wait(timeout: .now() + max(seconds, 0)) == .success else { return false }
         exit.signal()

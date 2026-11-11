@@ -1078,6 +1078,7 @@ public final class SpotRun {
         case nil: "\(command.name) failed. \(error.localizedDescription)"
         }
         failure = text
+        runs.usage.failed(command.id, name: command.name, fault: text)
         if case .failedWithFix(_, _, let fix) = error as? PluginError { return onReport(.failureWithFix(text, fix)) }
         onReport(.failure(text))
     }

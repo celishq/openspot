@@ -21,6 +21,8 @@ public final class SpotRuns {
     @ObservationIgnored public let opening: SheetOpening
     /// The time a `read` has to its first frame or its end.
     public let readLimit: TimeInterval
+    /// What each spot cost since the app started (G1).
+    public nonisolated let usage = SpotUsage()
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored private let stopPause: TimeInterval
     @ObservationIgnored let tickPause: Duration
@@ -279,6 +281,7 @@ public final class SpotRuns {
                 end = .failed(error)
             }
             let ending: ScriptCall.End = call.isStopped ? .stopped : end
+            self?.usage.called(id, name: command.name, seconds: Date().timeIntervalSince(begin))
             if let log, let process, !Self.isQuiet(reason, ending) {
                 log.write(CallLog.Record(
                     spot: command.id,
@@ -299,6 +302,7 @@ public final class SpotRuns {
     /// Starts a script that stays, and returns it with its frames.
     func stay(_ command: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>) {
         let script = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, mode: .stays, limit: limit, stopPause: stopPause, dataName: command.dataName, variables: ["OPENSPOT_ID": command.id])
+        usage.track(script, of: command.id)
         let frames = script.start()
         keep(script)
         return (script, frames)
@@ -311,6 +315,7 @@ public final class SpotRuns {
         }
         let sent = action.sent(input: input)
         let process = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: command.dataName, variables: variables.merging(["OPENSPOT_ID": command.id]) { given, _ in given })
+        usage.track(process, of: command.id)
         let stream = process.start()
         keep(process)
         return (stream, { process.stop() }, process)

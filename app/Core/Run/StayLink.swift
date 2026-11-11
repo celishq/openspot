@@ -21,6 +21,8 @@ final class StayLink: ScriptLink {
     /// The last frame with a block, which answers a read that ends with only a head.
     private var lastPicture: PluginOutput?
     private var count = 0
+    /// When each call that has not ended was sent, by its number.
+    private var sent: [Int: Date] = [:]
     private var calls: [String: ScriptCall] = [:]
     private var failures: [Date] = []
     /// The date of the file when the script failed too often, which keeps it from starting until the file changes.
@@ -172,6 +174,7 @@ final class StayLink: ScriptLink {
     }
 
     private func forgetAsks() {
+        sent = [:]
         asks = [:]
         dropped = []
         pictured = []
@@ -179,6 +182,7 @@ final class StayLink: ScriptLink {
 
     private func next() -> Int {
         count += 1
+        sent[count] = Date()
         return count
     }
 
@@ -202,6 +206,7 @@ final class StayLink: ScriptLink {
         do {
             for try await text in frames {
                 let lines = await runs.intake(text, of: run?.command.id)
+                if self.script === script { counted(lines.ends) }
                 if self.script === script, !lines.ends.isEmpty {
                     endCalls(lines.ends)
                     settle()
@@ -248,6 +253,15 @@ final class StayLink: ScriptLink {
         answerForm(with: .success(""))
     }
 
+    /// Counts each call that a frame ends, with the time since it was sent.
+    private func counted(_ ends: [String]) {
+        guard let run else { return }
+        for id in ends.compactMap(Int.init) {
+            guard let date = sent.removeValue(forKey: id) else { continue }
+            runs.usage.called(run.command.id, name: run.command.name, seconds: Date().timeIntervalSince(date))
+        }
+    }
+
     /// Counts a failure. It tells the person each one, and the third in one minute stops new starts (Y5).
     private func failed(_ error: Error) {
         guard let run else { return }
@@ -255,7 +269,9 @@ final class StayLink: ScriptLink {
         failures = failures.filter { time.timeIntervalSince($0) < Self.failureWindow } + [time]
         guard failures.count >= Self.failureLimit else { return run.fail(error) }
         givenUp = .some(fileDate)
-        run.onReport(.failure("\(run.command.name) failed \(Self.failureLimit) times in one minute. Openspot will not start it again until its file changes."))
+        let text = "\(run.command.name) failed \(Self.failureLimit) times in one minute. Openspot will not start it again until its file changes."
+        runs.usage.failed(run.command.id, name: run.command.name, fault: text)
+        run.onReport(.failure(text))
     }
 
     private var fileDate: Date? {
