@@ -144,6 +144,7 @@ public struct ReviewSpot: Equatable, Sendable {
         if !found(["rm"]).isEmpty { lines.append("Delete files with rm") }
         if !found(["screencapture"]).isEmpty { lines.append("Take screenshots with screencapture in place of openspot screen") }
         if !found(["pbcopy"]).isEmpty { lines.append("Copy with pbcopy in place of openspot clipboard") }
+        if !found(["pbpaste"]).isEmpty { lines.append("Read the clipboard with pbpaste in place of openspot clipboard") }
         for arguments in texts.flatMap(calls) {
             guard let power = SpotPower(arguments: arguments, of: id), !uses.contains(power.use) else { continue }
             let line = "Call openspot \(arguments[0]) \(arguments[1]) without uses=\(power.use.rawValue)"

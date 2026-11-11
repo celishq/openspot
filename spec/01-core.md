@@ -628,7 +628,7 @@ socket of the API is a file with mode `0600`, so only the person's own processes
 | `spots`     | `spot add`, `spot remove`, `spot on`, `spot off`, `spot new`, `spot run` and `spot log`                |
 | `settings`  | `setting list`, and `setting get`, `setting set` or `setting change` of another spot                   |
 | `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`       |
-| `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                              |
+| `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                               |
 | `calendar`  | each call of `calendar` and `reminders`                                                                |
 | `network`   | No call. It says that the spot reaches the network, which a review shows and Careful mode allows (Z8). |
 | `files`     | No call. It says that the spot writes outside its data folder, which Careful mode allows (Z8).         |
@@ -640,12 +640,13 @@ spot, use and day, such as ``Coffee quit Openspot without `uses=app` in its head
 own calls never show it. `openspot check` reports nothing for a missing use, because only a run shows which calls a spot
 makes.
 
-`openspot screen` and `openspot clipboard` count each use, and `screencapture` or `pbcopy` run directly do not (Z5).
+`openspot screen` and `openspot clipboard` count each use, and `screencapture`, `pbcopy` or `pbpaste` run directly do not
+(Z5).
 
 Before a person adds a spot, its review shows its title, the `uses` that it names, and a line `Can also` with what its text
 seems to do and does not name (Z6): it reaches the network (`curl`, `wget`, `nc`), it deletes files (`rm`), it runs
-`screencapture` or `pbcopy` directly, which `openspot screen` and `openspot clipboard` replace, or it calls `openspot` for a
-use that `uses` does not name. The review reads the text and runs none of it. It warns and never refuses.
+`screencapture`, `pbcopy` or `pbpaste` directly, which `openspot screen` and `openspot clipboard` replace, or it calls
+`openspot` for a use that `uses` does not name. The review reads the text and runs none of it. It warns and never refuses.
 
 An update compares the `uses` of the new version with those of the one in place (Z7). When none grew, it applies quietly.
 When one grew, the review of a `.spot` file starts with `This version adds: network`, and `openspot spot add` prints that

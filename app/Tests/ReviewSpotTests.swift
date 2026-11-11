@@ -187,6 +187,7 @@ final class ReviewSpotTests: XCTestCase {
         curl -s https://example.com | nc host 80
         rm -f "$OPENSPOT_DATA/old"
         screencapture -x shot.png && printf x | pbcopy
+        old=$(pbpaste)
         openspot app quit
         openspot setting get --spot notes tone
         openspot setting get tone
@@ -205,6 +206,7 @@ final class ReviewSpotTests: XCTestCase {
         Delete files with rm
         Take screenshots with screencapture in place of openspot screen
         Copy with pbcopy in place of openspot clipboard
+        Read the clipboard with pbpaste in place of openspot clipboard
         Call openspot app quit without uses=app
         Call openspot setting get without uses=settings
 
