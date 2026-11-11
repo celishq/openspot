@@ -586,6 +586,52 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.map(\.id), ["other"])
     }
 
+    func testEnterRunsASpotWithPressOpenAndCommandEnterOpensItsSheet() async throws {
+        let log = folder.appendingPathComponent("calls")
+        try script("conf", header: "read=sheet\npress=open", "if [ \"$1\" = read ]; then printf 'row=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        let calls = { ((try? String(contentsOf: log, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
+
+        XCTAssertEqual(model.hint, "⏎ Run   ⌘⏎ Settings   ⌘K Actions")
+        model.pressHint("⏎")
+        try await wait("the run") { calls() == ["open"] }
+        XCTAssertNil(model.openList)
+        XCTAssertEqual(host.dismissals, 1)
+
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        XCTAssertTrue(model.handleKey(ActionKey(name: "return", isCommand: true)))
+        try await wait("the sheet") { model.openList == "conf" }
+        XCTAssertFalse(model.openSelected())
+        XCTAssertEqual(calls(), ["open"])
+    }
+
+    func testAClickWithCommandOpensTheSheetOfASpotWithPressOpen() async throws {
+        let log = folder.appendingPathComponent("calls")
+        try script("conf", header: "read=sheet\npress=open", "if [ \"$1\" = read ]; then printf 'row=a\\ntitle=A\\n'; else echo \"$@\" >> '\(log.path)'; fi")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+
+        model.tap("conf", opening: true)
+
+        try await wait("the sheet") { model.openList == "conf" }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: log.path))
+    }
+
+    func testCommandEnterLeavesASpotWithNoPressOpenToItsActions() async throws {
+        try script("list", header: "read=sheet", "printf 'row=a\\ntitle=A\\n'")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+
+        XCTAssertFalse(model.hint.contains("Settings"))
+        XCTAssertFalse(model.handleKey(ActionKey(name: "return", isCommand: true)))
+        XCTAssertNil(model.openList)
+    }
+
     func testTheGridSearchFindsAGlobalSpotWithNoKeyBesideARowOfTheSameName() async throws {
         try script("apps", header: "title=Apps\nread=panel\noffers=search", "printf 'row=shortcuts\\ntitle=Shortcuts\\n'")
         try script("shortcuts", header: "title=Shortcuts\nread=panel\noffers=search", "printf 'row=daily\\ntitle=Daily\\n'")
