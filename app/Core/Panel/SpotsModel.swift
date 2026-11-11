@@ -196,7 +196,6 @@ public final class SpotsModel {
     /// The shared spot that the open review shows, which exists only as long as that sheet.
     public var reviewed: ReviewSpot?
     public var isFirstLaunch = false
-    public var spotsChanged = false
     public var isShown = false
     /// Whether the app is opening the panel unseen as it starts, which a press of the key ends.
     public var isWarming = false
@@ -394,7 +393,6 @@ public final class SpotsModel {
     /// Brings the grid up to date while a sheet covers it, so that the sheet closes onto the card's real place. The selected
     /// card stays selected.
     private func reloadUnderSheet() {
-        spotsChanged = false
         let id = selectedEntry?.id
         reload()
         if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
@@ -488,7 +486,6 @@ public final class SpotsModel {
                 host.applyConfig(config)
                 holdAssignedKeys(config)
             }
-            if spotsChanged, sheets[id]?.command.changesSpots == true { reloadUnderSheet() }
         case .landed:
             host.land(id)
         case .closed:
@@ -1017,11 +1014,6 @@ public final class SpotsModel {
             remember(item, of: entry)
             sheets[entry.id]?.list.select(run: item.run)
         } else {
-            if action == nil, let id = entry.command.rowOpens[item.run] {
-                open(id, moving: true)
-                return
-            }
-            if entry.command.changesSpots, action == nil { spotsChanged = true }
             if action == nil, item.shortcut != nil {
                 toggleRecording(id: item.run)
                 return

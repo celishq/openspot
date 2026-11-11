@@ -544,16 +544,11 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(host.motions.contains(.sheet(isOpen: false)))
     }
 
-    func testAPickOfARowThatOpensASpotOpensItInPlaceOfTheListWithNoCollapse() async throws {
-        let build = plugins.appendingPathComponent("build.sh")
-        try "#!/bin/sh\nprintf 'row=g\\ntitle=Guide\\n'\n".writeScript(to: build)
-        let rows = plugins.appendingPathComponent("rows.sh")
-        try "#!/bin/sh\nprintf 'row=\(CatalogSpot.buildRun)\\ntitle=New spot\\n'\n".writeScript(to: rows)
-        host.shipped = [
-            Spot(id: ShippedSpot.newID, name: "New spot", url: build, kind: .list, read: .sheet, isOnGrid: false),
-            Spot(id: "picker", name: "Picker", url: rows, kind: .list, read: .sheet, rowOpens: [CatalogSpot.buildRun: ShippedSpot.newID])
-        ]
+    func testASpotThatTheAPIOpensOpensInPlaceOfTheListWithNoCollapse() async throws {
+        try script("build", header: "read=sheet", "printf 'row=g\\ntitle=Guide\\n'")
+        try script("picker", header: "read=sheet", "printf 'row=new\\ntitle=New spot\\n'")
         model.reload()
+        model.setOnGrid(false, for: "build")
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("picker")
@@ -562,9 +557,11 @@ final class SpotsModelTests: XCTestCase {
         host.motions = []
         host.phases = []
 
-        model.pick(SpotItem(title: "New spot", run: CatalogSpot.buildRun), of: entry)
+        XCTAssertEqual(entry.id, "picker")
 
-        try await wait("the New spot sheet") { model.openList == ShippedSpot.newID }
+        XCTAssertTrue(model.openSheet("build"))
+
+        try await wait("the New spot sheet") { model.openList == "build" }
         XCTAssertEqual(model.transition.phase, .open)
         XCTAssertFalse(host.phases.contains(.closing))
         XCTAssertFalse(host.phases.contains(.ready))
@@ -800,6 +797,17 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(host.shows, 1)
         XCTAssertEqual(model.selectedEntry?.id, "one")
         XCTAssertFalse(model.reveal("three"))
+    }
+
+    func testTheAPIOpensASheetWithThePanelHiddenAndNoSpotForAnUnknownID() async throws {
+        try script("list", header: "read=sheet", "printf 'row=a\\ntitle=Apple\\n'")
+        model.reload()
+
+        XCTAssertFalse(model.openSheet("gone"))
+        XCTAssertTrue(model.openSheet("list"))
+
+        XCTAssertEqual(host.shows, 1)
+        try await wait("the sheet") { model.openList == "list" }
     }
 
     func testAKeyOfTheConfigOpensTheSheetOfItsSpotFromTheGridAndFromEditSpots() async throws {

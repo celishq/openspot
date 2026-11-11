@@ -197,25 +197,18 @@ final class SpotArrangementTests: XCTestCase {
         let url = URL(fileURLWithPath: "/bin/true")
         let commands = ShippedSpot.commands(folder: url, guide: url, app: "")
         let settings = commands.first { $0.id == ShippedSpot.settingsID }
-        let spots = commands.first { $0.id == ShippedSpot.spotsID }
 
         XCTAssertEqual(commands.filter(\.setsKeys).map(\.id), [ShippedSpot.settingsID])
         XCTAssertEqual(settings?.shipped?.takesShake("key:apps:open"), true)
         XCTAssertEqual(settings?.shipped?.takesShake("setting:apps:size"), false)
-        XCTAssertEqual(spots?.shipped?.takesShake("key:apps:open"), false)
     }
 
-    func testSpotsOpensNewSpotFromARowReviewsCodeAndChangesSpotsWhileSettingsChangesASetting() {
+    func testSettingsChangesASetting() {
         let url = URL(fileURLWithPath: "/bin/true")
         let commands = ShippedSpot.commands(folder: url, guide: url, app: "")
-        let spots = commands.first { $0.id == ShippedSpot.spotsID }
         let settings = commands.first { $0.id == ShippedSpot.settingsID }
 
-        XCTAssertEqual(spots?.rowOpens, [CatalogSpot.buildRun: ShippedSpot.newID])
-        XCTAssertEqual(spots?.reviewAction, CatalogSpot.reviewID)
-        XCTAssertEqual(commands.filter(\.changesSpots).map(\.id), [ShippedSpot.spotsID])
         XCTAssertEqual(settings?.shipped?.settingChange(of: "setting:apps:size")?.spot, "apps")
-        XCTAssertNil(spots?.shipped?.settingChange(of: "setting:apps:size"))
     }
 
     func testSettingsOpensWithTheSettingsKey() {

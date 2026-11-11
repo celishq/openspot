@@ -2,7 +2,6 @@ import Foundation
 
 /// A spot that ships with the app, so that it shows whatever the plugins folder holds.
 public enum ShippedSpot: Equatable, Sendable {
-    case spots(CatalogSpot)
     case settings(SettingsSpot)
     case review(ReviewSpot)
     /// The sheet of a file that does not load.
@@ -11,21 +10,6 @@ public enum ShippedSpot: Equatable, Sendable {
     /// The commands of the shipped spots, in the order of the grid.
     public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil, offersLogin: Bool = false) -> [Spot] {
         [
-            Spot(
-                id: spotsID,
-                name: "Spots",
-                url: folder,
-                kind: .list,
-                size: .small,
-                symbol: "puzzlepiece.extension",
-                subtitle: "Turn on",
-                read: .sheet,
-                order: 1,
-                shipped: .spots(CatalogSpot(folder: folder, core: core, config: config, login: offersLogin ? login : nil)),
-                rowOpens: [CatalogSpot.buildRun: newID],
-                reviewAction: CatalogSpot.reviewID,
-                changesSpots: true
-            ),
             Spot(
                 id: Self.settingsID,
                 name: "Settings",
@@ -44,12 +28,7 @@ public enum ShippedSpot: Equatable, Sendable {
         ]
     }
 
-    /// The ID of the list of spots that a person can turn on.
-    public static let spotsID = "openspot/spots"
     public static let settingsID = "openspot/settings"
-
-    /// The ID of the sheet that makes a new spot, which ⌘N opens.
-    public static let newID = "openspot/new"
 
     /// The ID of the plugin that holds the cards of the files that do not load.
     public static let faultsID = "openspot/faults"
@@ -86,7 +65,6 @@ public enum ShippedSpot: Equatable, Sendable {
     /// Answers one call with the text a script would print.
     func answer(_ arguments: [String], input: String?) async throws -> String {
         switch self {
-        case .spots(let catalog): try catalog.answer(arguments)
         case .settings(let settings): try settings.answer(arguments)
         case .review(let review): try review.answer(arguments)
         case .fault(let fault): try await fault.answer(arguments)

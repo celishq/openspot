@@ -62,12 +62,6 @@ public struct Spot: Equatable, Sendable {
     public private(set) var keyList: SettingsSpot?
     /// Whether its own sheet changes the keys in the config file.
     private let changesKeys: Bool
-    /// The spot whose sheet a pick of each of these rows opens, by the row's ID.
-    public let rowOpens: [String: String]
-    /// The action that shows the code of the core spot that a row names.
-    public let reviewAction: String?
-    /// Whether its sheet turns spots on or off, so that the grid loads again under it.
-    public let changesSpots: Bool
     /// Whether the settings key of the Mac opens its sheet.
     public let opensWithSettingsKey: Bool
     /// Whether it comes with the app as a part of it: always on, and never edited, removed or shared as a file of the
@@ -108,15 +102,9 @@ public struct Spot: Equatable, Sendable {
         glyph: String? = nil,
         view: String? = nil,
         setsKeys: Bool = false,
-        rowOpens: [String: String] = [:],
-        reviewAction: String? = nil,
-        changesSpots: Bool = false,
         opensWithSettingsKey: Bool = false
     ) {
         self.opensWithSettingsKey = opensWithSettingsKey
-        self.rowOpens = rowOpens
-        self.reviewAction = reviewAction
-        self.changesSpots = changesSpots
         changesKeys = setsKeys
         self.id = id
         self.name = name
