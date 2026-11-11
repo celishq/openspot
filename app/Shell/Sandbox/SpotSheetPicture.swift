@@ -10,7 +10,7 @@ enum SpotSheetPicture {
 
     static func list(of output: PluginOutput) -> ItemList {
         var list = ItemList(items: output.items)
-        list.take(drawing: output.drawing, templates: output.templates)
+        list.take(drawing: output.drawing)
         return list
     }
 
@@ -40,6 +40,7 @@ enum SpotSheetPicture {
         window.orderBack(nil)
         Task { @MainActor in
             if let source { await views.load(source) }
+            for picture in output.webPictures { _ = await WebPictures.shared.path(of: picture) }
             DispatchQueue.main.asyncAfter(deadline: .now() + settle) {
                 MainActor.assumeIsolated {
                     guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { exit(1) }

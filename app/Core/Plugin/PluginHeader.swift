@@ -1,10 +1,13 @@
 import Foundation
 
-/// The `key=value` comment lines at the top of a script, which say what it is without running it.
+/// The `key=value` comment lines at the top of a script, which say what it is without running it. They are a frame in
+/// comments: a blank comment line ends a block, and a `command` or `setting` block follows the keys of the spot.
 public struct PluginHeader: Equatable, Sendable {
     private static let limit = 4096
     private static let marks = ["//", "--", "#"]
+    private static let kinds: Set<String> = ["command", "setting"]
 
+    /// The keys of the spot, with each `command` and `setting` block as a child.
     public let block: TextBlock
 
     /// Reads the comment lines under the first line of a script. The first other line ends them, and a program has none.
@@ -16,10 +19,18 @@ public struct PluginHeader: Equatable, Sendable {
             defer { isFirst = false }
             if isFirst, line.hasPrefix("#!") { continue }
             guard let mark = Self.marks.first(where: { line.hasPrefix($0) }) else { break }
-            let comment = line.dropFirst(mark.count).trimmingCharacters(in: .whitespaces)
-            if !comment.isEmpty { lines.append(comment) }
+            lines.append(line.dropFirst(mark.count).trimmingCharacters(in: .whitespaces))
         }
-        block = TextBlock.blocks(in: lines.joined(separator: "\n")).first ?? TextBlock(fields: [])
+        var keys: [TextBlock.Field] = []
+        var children: [TextBlock] = []
+        for block in TextBlock.blocks(in: lines.joined(separator: "\n")) {
+            if let kind = block.fields.first?.key, Self.kinds.contains(kind) {
+                children.append(block)
+            } else {
+                keys += block.fields
+            }
+        }
+        block = TextBlock(fields: keys, children: children)
     }
 
     /// Takes the next line off the front of the text, so that a read stops at the end of the header and splits no more.

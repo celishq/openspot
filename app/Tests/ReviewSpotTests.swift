@@ -92,7 +92,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAWidgetNamesItselfBeforeTheMetricsItPlaces() throws {
-        let widget = "[[widgets]]\ntitle = \"Desk\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\n"
+        let widget = "[[widgets]]\ntitle = \"Desk\"\ngrid = [\"cpu\"]\nsize = \"square\"\n"
         let review = try ReviewSpot(spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# read=5\n", true)]), folder: folder)
 
         XCTAssertEqual(review.name, "Desk")
@@ -147,11 +147,11 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testItSaysWhatRunsByItself() throws {
-        let review = try review("title=Weather\nread=panel,wake,launch,30")
+        let review = try review("title=Weather\nread=panel,30")
 
         XCTAssertEqual(review.subtitle, "Runs by itself")
         let text = try shown(review)
-        XCTAssertTrue(text.hasPrefix("Runs by itself\nWeather: when the panel opens, when the Mac wakes, when Openspot starts, every 30 seconds\n"), text)
+        XCTAssertTrue(text.hasPrefix("Runs by itself\nWeather: when the panel opens, every 30 seconds\n"), text)
     }
 
     func testAStayingScriptSaysSo() throws {
@@ -161,8 +161,15 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertTrue(text.contains("Weather: keeps running while it is in use"), text)
     }
 
+    func testAScriptThatAlwaysStaysSaysSo() throws {
+        let review = try review("title=Relay\nstay=always")
+
+        let text = try shown(review)
+        XCTAssertTrue(text.contains("Relay: keeps running while Openspot runs"), text)
+    }
+
     func testAMetricThatAWidgetPlacesRunsWhenThePanelOpens() throws {
-        let widget = "[[widgets]]\ntitle = \"Desk\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\n"
+        let widget = "[[widgets]]\ntitle = \"Desk\"\ngrid = [\"cpu\"]\nsize = \"square\"\n"
         let review = try ReviewSpot(
             spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# read=sheet\n", true)]),
             folder: folder
@@ -212,7 +219,7 @@ final class ReviewSpotTests: XCTestCase {
 
     func testNoScriptRunsForAReviewOrForAdd() throws {
         let mark = folder.appendingPathComponent("ran")
-        let review = try review("read=panel,launch", body: "touch \"\(mark.path)\"\n")
+        let review = try review("read=panel", body: "touch \"\(mark.path)\"\n")
         _ = try review.answer(["read"])
 
         _ = try review.answer(["install"])

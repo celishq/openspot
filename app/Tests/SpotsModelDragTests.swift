@@ -203,13 +203,13 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testTheHintNamesWhatTheHKeyDoesToTheSelectedSpot() {
-        XCTAssertEqual(model.hint, "S Size   H Hide   ⇧ Arrows Move   Esc Done")
+        XCTAssertEqual(model.hint, "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done")
 
         model.handleEditKey(ActionKey(name: "h"))
-        XCTAssertEqual(model.hint, "S Size   H Show   ⇧ Arrows Move   Esc Done")
+        XCTAssertEqual(model.hint, "S Size   H Show   L Letter   ⇧ Arrows Move   Esc Done")
 
         model.handleEditKey(ActionKey(name: "h"))
-        XCTAssertEqual(model.hint, "S Size   H Hide   ⇧ Arrows Move   Esc Done")
+        XCTAssertEqual(model.hint, "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done")
     }
 
     func testEscapePutsTheCardsBackAndKeepsEditSpots() {

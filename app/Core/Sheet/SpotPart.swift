@@ -36,10 +36,10 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case symbol(String)
     }
 
-    /// The box that the app draws around it, from the one set that the app owns. `pad` is the look of a key of a keypad, and
-    /// `tick` draws a switch as a round tick, for a thing to do.
+    /// The box that the app draws around it, from the one set that the app owns. `tick` draws a switch as a round tick, for a
+    /// thing to do.
     public enum Look: String, Equatable, Sendable {
-        case tile, chip, strong, bare, pad, tick
+        case tile, chip, strong, bare, tick
     }
 
     public enum Align: String, Equatable, Sendable {
@@ -70,8 +70,8 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     /// detail from `point` lines.
     public let mark: MetricValue?
 
-    /// The kinds of block that make a part, in the order of the table in spec 02 (U2).
-    public static let kinds = ["text", "number", "gauge", "graph", "picture", "view", "spot", "switch", "slider", "field", "choice", "hotkey", "button", "section"]
+    /// The kinds of block that make a part, in the order of the table in spec 01 (U2).
+    public static let kinds = ["text", "number", "gauge", "graph", "picture", "view", "switch", "slider", "field", "choice", "hotkey", "button", "section"]
 
     /// Reads a block whose first key is a kind of part. Its value is the id, and the kind decides the control.
     public init?(block: TextBlock) {
@@ -100,21 +100,21 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         }
         switch kind {
         case "switch":
-            control = .toggle(block.flag("on") ?? false)
+            control = .toggle(block.flag("value") ?? false)
         case "gauge":
             control = .progress(level: (block.number("value") ?? 0) * 100)
         case "graph":
-            control = .chart(block.values("point").compactMap(Double.init))
+            control = .chart(block.values("value").compactMap(Double.init))
         case "picture":
             control = icon?.image.map(Control.image) ?? .none
         case "slider":
-            control = .slider(level: block.number("level") ?? 0, min: block.number("min") ?? 0, max: block.number("max") ?? 100)
+            control = .slider(level: block.number("value") ?? 0, min: block.number("min") ?? 0, max: block.number("max") ?? 100)
         case "field":
-            control = .text(block.value("text") ?? "", placeholder: block.value("placeholder"), isReadOnly: block.flag("readonly") ?? false)
+            control = .text(block.value("value") ?? "", placeholder: block.value("placeholder"), isReadOnly: block.flag("readonly") ?? false)
         case "hotkey":
             control = .shortcut(block.value("value") ?? "")
         case "choice":
-            let options = block.values("option").map(Self.option)
+            let options = Self.options(of: block)
             if !block.values("color").isEmpty {
                 control = .swatches(block.values("color"), value: block.value("value"))
             } else {
@@ -133,30 +133,27 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
     }
 
     private static func mark(_ block: TextBlock) -> MetricValue? {
-        let points = block.values("point").compactMap(Double.init).filter(\.isFinite)
-        let value = block.number("value")
-        guard value != nil || !points.isEmpty else { return nil }
+        let data = MetricValue.data(of: block)
+        guard data.value != nil || data.points != nil else { return nil }
         return MetricValue(
             title: block.value("detail") ?? "",
             tone: block.value("tone").flatMap(MetricValue.Tone.init),
-            value: value,
-            points: points.isEmpty ? nil : points,
+            value: data.value,
+            points: data.points,
             max: block.number("max")
         )
     }
 
     /// The good, warn or bad tone of a text, which colours its words. Another part shows its tone in its own way.
     public var textTone: MetricValue.Tone? {
-        kind == "text" && tone != .on ? tone : nil
+        kind == "text" ? tone : nil
     }
 
-    /// Reads an `option` line, `<id>:<title>[:<icon>]`, or an id that is its own title. The icon follows the last colon, so
-    /// a title with an icon keeps each colon of its own.
-    static func option(_ text: String) -> Option {
-        guard let first = text.firstIndex(of: ":") else { return Option(id: text, title: text) }
-        let rest = text[text.index(after: first)...]
-        guard let last = rest.lastIndex(of: ":") else { return Option(id: String(text[..<first]), title: String(rest)) }
-        return Option(id: String(text[..<first]), title: String(rest[..<last]), icon: String(rest[rest.index(after: last)...]))
+    /// The options of a choice: the `option` blocks after it, each with its id, its `title` or else its id, and its `icon`.
+    static func options(of block: TextBlock) -> [Option] {
+        block.children.compactMap { child in
+            child.value("option").map { Option(id: $0, title: child.value("title") ?? $0, icon: child.value("icon")) }
+        }
     }
 
     /// The value of its control, as the script reads it. A line with no control has none.
@@ -190,7 +187,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         if kind == "view" { return true }
         return switch control {
         case .text, .list, .metric, .chart, .image, .progress: true
-        default: look == .pad
+        default: false
         }
     }
 

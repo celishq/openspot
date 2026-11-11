@@ -85,7 +85,7 @@ public struct CatalogSpot: Equatable, Sendable {
             ]
             let detail = own.contains(id) ? "In your plugins folder" : command.subtitle
             if let detail { fields.append(.init(key: "detail", value: detail)) }
-            fields.append(.init(key: "on", value: String(own.contains(id) || enabled.contains(id))))
+            fields.append(.init(key: "value", value: String(own.contains(id) || enabled.contains(id))))
             return TextBlock(fields: fields)
         }
         let build = TextBlock(fields: [

@@ -37,7 +37,7 @@ final class UpdateSpotTests: XCTestCase {
         let command = try command(spot())
 
         let state = try await command.state(timeout: 5)
-        _ = try await command.perform(.run, timeout: 5)
+        _ = try await command.perform(.open, timeout: 5)
 
         XCTAssertEqual(state, SpotState(title: "Updates", subtitle: "0.2.0", isOnGrid: false))
         let checks = await presses.checks
@@ -52,7 +52,7 @@ final class UpdateSpotTests: XCTestCase {
         let command = try command(spot)
 
         let state = try await command.state(timeout: 5)
-        _ = try await command.perform(.run, timeout: 5)
+        _ = try await command.perform(.open, timeout: 5)
 
         XCTAssertEqual(state, SpotState(title: "Restart", subtitle: "Update 0.3.0", isOnGrid: true))
         let checks = await presses.checks
@@ -82,10 +82,10 @@ final class UpdateSpotTests: XCTestCase {
         await work.set(2)
         let command = try command(spot)
 
-        let warning = try await spot.answer(["run"])
+        let warning = try await spot.answer(["open"])
         let warned = try await command.state(timeout: 5)
         let first = await presses.restarts
-        _ = try await spot.answer(["run"])
+        _ = try await spot.answer(["open"])
         let second = await presses.restarts
 
         XCTAssertEqual(warning, "toast=Restarting stops 2 calls. Press again to restart.\n")
@@ -99,7 +99,7 @@ final class UpdateSpotTests: XCTestCase {
         await spot.take(ready: "0.3.0")
         await work.set(1)
 
-        let warning = try await spot.answer(["run"])
+        let warning = try await spot.answer(["open"])
 
         XCTAssertEqual(warning, "toast=Restarting stops 1 call. Press again to restart.\n")
     }
@@ -108,10 +108,10 @@ final class UpdateSpotTests: XCTestCase {
         let spot = spot()
         await spot.take(ready: "0.3.0")
         await work.set(2)
-        _ = try await spot.answer(["run"])
+        _ = try await spot.answer(["open"])
         await work.set(1)
 
-        _ = try await spot.answer(["run"])
+        _ = try await spot.answer(["open"])
 
         let restarts = await presses.restarts
         XCTAssertEqual(restarts, 0)

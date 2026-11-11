@@ -54,13 +54,12 @@ struct SpotFloatView: View {
                     },
                     list: run.list,
                     onRun: { model.pick($0, of: entry, in: .float) },
-                    onSlot: { model.slot($1, of: $0, in: id, to: $2) },
                     onDragOut: { model.dragOut($0, of: id) },
                     selection: { run.selection },
                     selectedPart: { run.selectedPart?.id },
                     nudge: { run.nudge },
                     customView: { room in
-                        entry.command.view.map { SpotCustomView(source: $0, values: entry.state.values, card: entry.state.size ?? .square, room: room, views: SpotViews.shared) }
+                        entry.command.view.map { SpotCustomView(source: $0, values: entry.state.values, card: .square, room: room, views: SpotViews.shared) }
                     }
                 )
                 .task(id: parts.parts.contains { $0.kind == "view" } ? entry.command.view : nil) {
@@ -71,7 +70,6 @@ struct SpotFloatView: View {
                     list: run.list,
                     onRun: { model.pick($0, of: entry, in: .float) },
                     selection: { run.selection },
-                    onSlot: { model.slot($1, of: $0, in: id, to: $2) },
                     onDragOut: { model.dragOut($0, of: id) }
                 )
             }

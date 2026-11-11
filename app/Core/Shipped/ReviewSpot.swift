@@ -77,7 +77,7 @@ public struct ReviewSpot: Equatable, Sendable {
         TextBlock(fields: [
             .init(key: "field", value: "review"),
             .init(key: "readonly", value: "true"),
-            .init(key: "text", value: text)
+            .init(key: "value", value: text)
         ])
     }
 
@@ -93,12 +93,10 @@ public struct ReviewSpot: Equatable, Sendable {
     private static func selfRuns(in scan: ScanResult) -> [String] {
         let placed = Set(scan.plugins.flatMap(\.commands).flatMap(\.places))
         return scan.scripts.compactMap { script in
-            var moments = script.stays ? ["keeps running while it is in use"] : []
+            var moments = script.staysAlways ? ["keeps running while Openspot runs"] : script.stays ? ["keeps running while it is in use"] : []
             for moment in script.read?.moments ?? [] {
                 switch moment {
                 case .panel: moments.append("when the panel opens")
-                case .wake: moments.append("when the Mac wakes")
-                case .launch: moments.append("when Openspot starts")
                 case .every(let seconds): moments.append("every \(Int(seconds)) seconds")
                 case .sheet: break
                 }

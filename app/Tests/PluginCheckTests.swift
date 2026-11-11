@@ -17,13 +17,13 @@ final class PluginCheckTests: XCTestCase {
 
     func testAFindingNamesItsSpotItsFileAndItsFault() async throws {
         let file = folder.appendingPathComponent("weather.sh")
-        try "#!/bin/sh\n# shortcut=??\necho\n".writeScript(to: file)
+        try "#!/bin/sh\n# size=huge\necho\n".writeScript(to: file)
 
         let findings = await PluginCheck(folder: PluginFolder(url: folder)).findings()
 
-        XCTAssertEqual(findings, [PluginCheck.Finding(spot: "weather", file: file.path, fault: "Weather has an unknown shortcut: ??")])
+        XCTAssertEqual(findings, [PluginCheck.Finding(spot: "weather", file: file.path, fault: "Weather has an unknown size: huge")])
         let json = try JSONSerialization.jsonObject(with: Data(PluginCheck.json(findings).utf8)) as? [[String: String]]
-        XCTAssertEqual(json, [["spot": "weather", "file": file.path, "fault": "Weather has an unknown shortcut: ??"]])
+        XCTAssertEqual(json, [["spot": "weather", "file": file.path, "fault": "Weather has an unknown size: huge"]])
     }
 
     func testNoFaultIsAnEmptyList() async throws {

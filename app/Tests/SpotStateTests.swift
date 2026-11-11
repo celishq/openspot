@@ -15,21 +15,10 @@ final class SpotStateTests: XCTestCase {
         XCTAssertTrue(try state("grid=false").isOnGrid)
     }
 
-    func testAReadSetsTheSizeOfItsCardAndAChangeKeepsIt() throws {
-        let read = try state("size=large")
-        let block = PluginOutput(text: "switch=power\non=true")
-
-        XCTAssertNil(header.size)
-        XCTAssertEqual(read.size, .large)
-        XCTAssertEqual(read.taking(block).size, .large)
-        XCTAssertEqual(read.showing(title: "Busy", detail: nil).size, .large)
-        XCTAssertEqual(read.withLevel(2).size, .large)
-    }
-
     func testAReadKeepsEachValueOfItsHeadForAViewAndAChangeKeepsThem() throws {
         let head = try XCTUnwrap(TextBlock.blocks(in: "title=3\npoint=1\npoint=0\npoint=2").first)
         let read = SpotState(output: PluginOutput(text: head.text), header: header).holding(head)
-        let block = PluginOutput(text: "switch=power\non=true")
+        let block = PluginOutput(text: "switch=power\nvalue=true")
 
         XCTAssertEqual(SpotState(output: PluginOutput(text: head.text), header: header).values, [:])
         XCTAssertEqual(read.values, ["title": ["3"], "point": ["1", "0", "2"]])
@@ -46,7 +35,7 @@ final class SpotStateTests: XCTestCase {
 
     func testAChangedStateStaysOffTheGrid() throws {
         let hidden = SpotState(title: "Name", level: 1, isOnGrid: false)
-        let block = PluginOutput(text: "switch=power\non=true")
+        let block = PluginOutput(text: "switch=power\nvalue=true")
 
         XCTAssertFalse(hidden.taking(block).isOnGrid)
         XCTAssertFalse(hidden.showing(title: "Work", detail: nil).isOnGrid)
@@ -54,21 +43,21 @@ final class SpotStateTests: XCTestCase {
     }
 
     func testReadsAToggleState() throws {
-        let state = try state("switch=wifi\ntitle=Wi-Fi\ndetail=VIRGIN-telco_5668\non=true")
+        let state = try state("switch=wifi\ntitle=Wi-Fi\ndetail=VIRGIN-telco_5668\nvalue=true")
         XCTAssertEqual(state.title, "Wi-Fi")
         XCTAssertEqual(state.subtitle, "VIRGIN-telco_5668")
         XCTAssertEqual(state.on, true)
     }
 
     func testReadsASliderState() throws {
-        let state = try state("slider=display\ntitle=Display\nlevel=70\nmin=0\nmax=100")
+        let state = try state("slider=display\ntitle=Display\nvalue=70\nmin=0\nmax=100")
         XCTAssertEqual(state.level, 70)
         XCTAssertEqual(state.min, 0)
         XCTAssertEqual(state.max, 100)
     }
 
     func testAStateTakesFromTheHeaderWhatItLeavesOut() throws {
-        let state = try state("switch=power\non=true")
+        let state = try state("switch=power\nvalue=true")
         XCTAssertEqual(state.title, "Name")
         XCTAssertEqual(state.subtitle, "From header")
     }

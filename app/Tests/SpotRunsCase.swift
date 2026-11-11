@@ -7,6 +7,8 @@ class SpotRunsCase: XCTestCase {
     var folder: URL!
     var runs: SpotRuns!
     var time = Date(timeIntervalSince1970: 1000)
+    /// The spots that the person put in the menu bar, which each scan gives the runs.
+    var menuBar: Set<String> = []
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-runs-\(UUID().uuidString)")
@@ -49,7 +51,7 @@ class SpotRunsCase: XCTestCase {
     func scanned() throws -> ScanResult {
         let scan = try PluginFolder(url: folder).scan()
         XCTAssertEqual(scan.refused, [])
-        runs.take(scan)
+        runs.take(scan, menuBar: menuBar)
         return scan
     }
 

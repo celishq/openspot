@@ -5,7 +5,7 @@ public struct SpotAction: Equatable, Sendable {
 
     public let arguments: [String]
 
-    public static let run = SpotAction(arguments: ["run"])
+    public static let open = SpotAction(arguments: ["open"])
     public static let read = SpotAction(arguments: ["read"])
 
     public init(arguments: [String]) {
@@ -33,11 +33,6 @@ public struct SpotAction: Equatable, Sendable {
     /// A person set the value of a part.
     public static func set(_ part: String, to value: String) -> SpotAction {
         SpotAction(arguments: [part, value])
-    }
-
-    /// A person changed or pressed a slot of a row: `<slot> <run> [value]` (U9).
-    public static func slot(_ slot: String, run: String, value: String? = nil) -> SpotAction {
-        SpotAction(arguments: [slot, run] + (value.map { [$0] } ?? []))
     }
 
     /// A person pressed a part.

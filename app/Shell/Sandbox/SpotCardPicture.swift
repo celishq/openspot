@@ -12,7 +12,8 @@ enum SpotCardPicture {
     /// output with no drawing that fits the size exits with 1.
     static func run(text: String, size: SpotSize, path: String) -> Never {
         NSApplication.shared.setActivationPolicy(.prohibited)
-        let face = PluginOutput(text: text).face
+        let output = PluginOutput(text: text)
+        let face = output.face
         guard let layout = face.layout(for: size) else {
             FileHandle.standardError.write(Data("The card has no drawing for the size \(size.name). Print grid.\(size.name)= lines.\n".utf8))
             exit(1)
@@ -30,12 +31,15 @@ enum SpotCardPicture {
         let window = NSWindow(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false)
         window.contentView = view
         window.orderBack(nil)
-        DispatchQueue.main.asyncAfter(deadline: .now() + settle) {
-            MainActor.assumeIsolated {
-                guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { exit(1) }
-                view.cacheDisplay(in: view.bounds, to: bitmap)
-                let data = bitmap.representation(using: .png, properties: [:])
-                exit(FileManager.default.createFile(atPath: path, contents: data) ? 0 : 1)
+        Task { @MainActor in
+            for picture in output.webPictures { _ = await WebPictures.shared.path(of: picture) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + settle) {
+                MainActor.assumeIsolated {
+                    guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { exit(1) }
+                    view.cacheDisplay(in: view.bounds, to: bitmap)
+                    let data = bitmap.representation(using: .png, properties: [:])
+                    exit(FileManager.default.createFile(atPath: path, contents: data) ? 0 : 1)
+                }
             }
         }
         NSApplication.shared.run()

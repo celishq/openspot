@@ -7,8 +7,6 @@ public struct MetricValue: Equatable, Sendable {
         case good
         case warn
         case bad
-        /// A plain dot that says that a thing is active.
-        case on
     }
 
     /// One line of a metric of the rows kind.
@@ -32,7 +30,6 @@ public struct MetricValue: Equatable, Sendable {
     public let points: [Double]?
     public let max: Double?
     public let rows: [Row]?
-    public let tint: MetricTint?
     public let isHidden: Bool
 
     public init(
@@ -44,7 +41,6 @@ public struct MetricValue: Equatable, Sendable {
         points: [Double]? = nil,
         max: Double? = nil,
         rows: [Row]? = nil,
-        tint: MetricTint? = nil,
         isHidden: Bool = false
     ) {
         self.title = title
@@ -55,7 +51,6 @@ public struct MetricValue: Equatable, Sendable {
         self.points = points
         self.max = max
         self.rows = rows
-        self.tint = tint
         self.isHidden = isHidden
     }
 
@@ -72,18 +67,29 @@ public struct MetricValue: Equatable, Sendable {
         }
         let isNumber = block.fields.first?.key == "number"
         guard let title = (isNumber ? block.value("value") : block.value("title")) ?? (rows.isEmpty ? nil : String(rows.count)) else { return nil }
-        let points = block.values("point").compactMap(Double.init).filter(\.isFinite)
+        let data = Self.data(of: block)
         self.init(
             title: title,
             detail: isNumber ? block.value("title") : block.value("detail"),
             symbol: Icon(text: block.value("icon"))?.symbol,
             tone: block.value("tone").flatMap(Tone.init),
-            value: isNumber ? nil : block.number("value"),
-            points: points.isEmpty ? nil : points,
+            value: data.value,
+            points: data.points,
             max: block.number("max"),
-            rows: rows.isEmpty ? nil : rows,
-            tint: block.value("tint").flatMap(MetricTint.init)
+            rows: rows.isEmpty ? nil : rows
         )
+    }
+
+    /// The level or the bars that a block holds in its `value` lines. A graph, or a text with `max`, has a bar for each line,
+    /// another kind has the level of its first line, and a number has neither.
+    static func data(of block: TextBlock) -> (value: Double?, points: [Double]?) {
+        let kind = block.fields.first?.key
+        if kind == "number" { return (nil, nil) }
+        if kind == "graph" || (kind == "text" && block.value("max") != nil) {
+            let points = block.values("value").compactMap(Double.init).filter(\.isFinite)
+            return (nil, points.isEmpty ? nil : points)
+        }
+        return (block.number("value"), nil)
     }
 
     /// How a place draws this value, which follows from what the script printed.

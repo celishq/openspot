@@ -1,7 +1,6 @@
 #!/bin/sh
 # icon=eyedropper
 # detail=Copy a color
-# shortcut=o
 # size=small
 color=$(openspot color pick) || exit 1
 [ -n "$color" ] || exit 0

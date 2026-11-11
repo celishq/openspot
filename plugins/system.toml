@@ -1,6 +1,5 @@
 [[widgets]]
 title = "System"
 detail = "Battery, CPU, memory and devices"
-grid = ["b b c c", "b b m m", "b b d d"]
-places = { b = "battery", c = "cpu", m = "memory", d = "devices" }
+grid = ["battery battery cpu cpu", "battery battery memory memory", "battery battery devices devices"]
 opens = "system-info"

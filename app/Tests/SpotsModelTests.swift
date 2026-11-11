@@ -37,7 +37,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     private func script(_ name: String, header: String, _ body: String) throws {
-        let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
+        let lines = header.split(separator: "\n", omittingEmptySubsequences: false).map { "# \($0)" }.joined(separator: "\n")
         try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: plugins.appendingPathComponent("\(name).sh"))
     }
 
@@ -288,20 +288,13 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(host.motions.isEmpty)
     }
 
-    func testAReadThatChangesTheSizeOfACardLaysOutTheGridAgain() async throws {
-        let large = folder.appendingPathComponent("large").path
-        try script("grow", header: "read=panel", "if [ -f '\(large)' ]; then printf 'size=large\\n'; else printf 'size=small\\n'; fi")
+    func testASizeInAReadLeavesTheCardAtTheSizeOfItsHeader() async throws {
+        try script("grow", header: "read=panel\nsize=small", "printf 'size=large\\ndetail=Read\\n'")
         model.reload()
         model.panelWillShow(holding: [])
-        try await wait("the small card") { model.visible.first?.size == .small }
-        let small = model.placements
+        try await wait("the read") { model.visible.first?.state.subtitle == "Read" }
 
-        FileManager.default.createFile(atPath: large, contents: Data())
-        model.sheets["grow"]?.read(need: .change)
-
-        try await wait("the large card") { model.visible.first?.size == .large }
-        XCTAssertEqual(model.placements, SpotGrid().place(model.visible.map(\.size)))
-        XCTAssertNotEqual(model.placements, small)
+        XCTAssertEqual(model.visible.first?.size, .small)
     }
 
     func testASubmitThatEndsAfterThePersonOpenedANewFormLeavesTheNewForm() async throws {
@@ -370,7 +363,7 @@ final class SpotsModelTests: XCTestCase {
           pick)
             input=$(cat)
             [ -z "$input" ] || printf '%s\n' "$input" >> '\(sent)'
-            printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\noption=a:Apple\noption=b:Banana\noption=c:Cherry\nvalue=a\n' ;;
+            printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n\noption=c\ntitle=Cherry\n' ;;
           *)
             echo read >> '\(reads)'
             printf 'button=pick\ntitle=Pick\nscope=command\nform=true\n\nrow=a\ntitle=Apple\n' ;;
@@ -410,7 +403,7 @@ final class SpotsModelTests: XCTestCase {
           pick)
             input=$(cat)
             [ -z "$input" ] || printf '%s\n' "$input" >> '\(sent)'
-            printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\noption=a:Apple\noption=b:Banana\noption=c:Blueberry\nvalue=a\n' ;;
+            printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n\noption=c\ntitle=Blueberry\n' ;;
           *) printf 'button=pick\ntitle=Pick\nscope=command\nform=true\n\nrow=a\ntitle=Apple\n' ;;
         esac
         """)
@@ -443,9 +436,9 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testTheFormOfASettingMovesWithTheArrowsAndSearchesItsRows() async throws {
-        try script("list", header: "read=sheet\nsettings=pick", """
+        try script("list", header: "read=sheet\n\nsetting=pick", """
         case "$1" in
-          pick) printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\noption=a:Apple\noption=b:Banana\noption=c:Cherry\nvalue=a\n' ;;
+          pick) printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n\noption=c\ntitle=Cherry\n' ;;
           *) printf 'row=a\ntitle=Apple\n' ;;
         esac
         """)
@@ -466,9 +459,9 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAFormTakesThePlaceOfThePartsOfTheSheetItOpensOn() async throws {
-        try script("agenda", header: "read=sheet\nsettings=pick", """
+        try script("agenda", header: "read=sheet\n\nsetting=pick", """
         case "$1" in
-          pick) printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\noption=a:Apple\noption=b:Banana\nvalue=a\n' ;;
+          pick) printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n' ;;
           *) printf 'grid=items\ngrid.wide=next\n\nnumber=next\nvalue=09:30\n\nrepeat=items\n\nrow=e\ntitle=Standup\n' ;;
         esac
         """)
@@ -599,8 +592,8 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testTheGridSearchFindsAGlobalSpotWithNoKeyBesideARowOfTheSameName() async throws {
-        try script("apps", header: "title=Apps\nread=panel\nglobal=true\nshortcut=a", "printf 'row=shortcuts\\ntitle=Shortcuts\\n'")
-        try script("shortcuts", header: "title=Shortcuts\nread=panel\nglobal=true", "printf 'row=daily\\ntitle=Daily\\n'")
+        try script("apps", header: "title=Apps\nread=panel\noffers=search", "printf 'row=shortcuts\\ntitle=Shortcuts\\n'")
+        try script("shortcuts", header: "title=Shortcuts\nread=panel\noffers=search", "printf 'row=daily\\ntitle=Daily\\n'")
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
@@ -612,7 +605,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testTheGridSearchFindsOnlyTheRowsOfASpotWhoseHeaderSaysGlobalRows() async throws {
-        try script("settings", header: "title=System Settings\nread=panel\nglobal=rows", "printf 'row=sound\\ntitle=Sound Settings\\n'")
+        try script("settings", header: "title=System Settings\nread=panel\noffers=rows", "printf 'row=sound\\ntitle=Sound Settings\\n'")
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
@@ -699,7 +692,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAnAnswerAndARowOfItsSpotWithOneIdShowOnce() async throws {
-        try script("both", header: "title=Both\nread=panel\nglobal=rows\nanswers=^[0-9]", "printf 'row=7\\ntitle=7 days\\n'")
+        try script("both", header: "title=Both\nread=panel\noffers=rows\nanswers=^[0-9]", "printf 'row=7\\ntitle=7 days\\n'")
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
@@ -725,7 +718,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAKeyShowsTheSymbolOfItsCommandOrElseOfItsScriptForAMoment() async throws {
-        try script("move", header: "icon=macwindow\ncommand=left:Left side:rectangle.lefthalf.inset.filled\ncommand=plain:Plain", "true")
+        try script("move", header: "icon=macwindow\n\ncommand=left\ntitle=Left side\nicon=rectangle.lefthalf.inset.filled\n\ncommand=plain\ntitle=Plain", "true")
         model.reload()
         model.flashPause = .milliseconds(50)
         let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+left"))

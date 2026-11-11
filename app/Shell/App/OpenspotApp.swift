@@ -72,7 +72,6 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         folderWatch = SpotFolderWatch(folder: model.files.folder.url) { [weak self] in self?.model.folderChanged() }
         try? AgentNote(command: Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/openspot").path).write(in: model.files.folder.url)
         showListener = SpotShowLink.listen { [weak self] id in self?.model.reveal(id) ?? false }
-        model.arrive(.launch)
         let isFirstLaunch = PluginFolder.standard().isFirstLaunch(config: .standard())
         panel?.warm { [weak self] in
             guard let self else { return }
@@ -184,7 +183,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     @objc private func didWake() {
-        model.arrive(.wake)
+        model.woke()
     }
 
     /// A click on the Openspot item goes to running work, if any shows (G3).

@@ -19,7 +19,7 @@ public struct LoginItem: Equatable, Sendable {
             .init(key: "row", value: Self.run),
             .init(key: "title", value: "Open at login"),
             .init(key: "icon", value: "power"),
-            .init(key: "on", value: String(isOn()))
+            .init(key: "value", value: String(isOn()))
         ])
     }
 

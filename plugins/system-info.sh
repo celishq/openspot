@@ -7,7 +7,7 @@ here=$(dirname "$0")
 # Prints what a metric script in this folder shows as the value and the mark of a line. It looks, and does not read, so
 # that the trend of a metric gets no point from it.
 reading() {
-  "$here/$1" show | sed -En 's/^title=/detail=/p; /^(value|point|max|tone)=./p'
+  "$here/$1" show | sed -En 's/^title=/detail=/p; /^(value|max|tone)=./p'
 }
 
 printf 'section=battery\ntitle=Battery\n\ntext=mac\ntitle=This Mac\nicon=macbook\n%s\n\n' "$(reading battery.sh)"
@@ -26,7 +26,7 @@ function symbol(name, part) {
   print ""
 }'
 
-printf 'section=cpu\ntitle=CPU\n\ntext=cpu-all\ntitle=All cores\nicon=cpu\n%s\n\n' "$(reading cpu.sh | grep -v '^max=')"
+printf 'section=cpu\ntitle=CPU\n\ntext=cpu-all\ntitle=All cores\nicon=cpu\n%s\n\n' "$(reading cpu.sh)"
 ps -Aco pcpu=,comm= -r | head -3 | awk '{
   cpu = $1; $1 = ""; sub(/^ /, "")
   printf "text=cpu-%d\ntitle=%s\ndetail=%s%%\n\n", NR, $0, cpu

@@ -10,8 +10,6 @@ struct SpotRowsView: View {
     let onRun: (SpotItem) -> Void
     /// Reads the selected row where it is called. Nil reads it from the list.
     var selection: (() -> Int)?
-    /// Takes a change or a press of a slot of a row: the row, the slot and its new value (U9).
-    var onSlot: (SpotItem, String, String?) -> Void = { _, _, _ in }
     /// Takes the rows whose files a drag took out to another app (O2).
     var onDragOut: ([SpotItem]) -> Void = { _ in }
     @State private var position = ScrollPosition(edge: .top)
@@ -70,7 +68,7 @@ struct SpotRowsView: View {
     }
 
     private var bottomInset: CGFloat {
-        SpotTokens.sheetFits(rows: list.perLine == 1 ? list.spans : list.shown.count, perLine: list.perLine) ? SpotTokens.padding : Self.bottomFade
+        SpotTokens.sheetFits(rows: list.shown.count, perLine: list.perLine) ? SpotTokens.padding : Self.bottomFade
     }
 
     private var lineScroll: some View {
@@ -112,17 +110,13 @@ struct SpotRowsView: View {
     private var lines: some View {
         LazyVStack(spacing: SpotTokens.listRowGap) {
             ForEach(list.shown, id: \.run) { item in
-                if let template = list.template(of: item) {
-                    templateRow(item, template: template)
-                } else {
-                    Button {
-                        onRun(item)
-                    } label: {
-                        rowLabel(item)
-                    }
-                    .buttonStyle(.plain)
-                    .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
+                Button {
+                    onRun(item)
+                } label: {
+                    rowLabel(item)
                 }
+                .buttonStyle(.plain)
+                .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
             }
         }
     }
@@ -133,40 +127,13 @@ struct SpotRowsView: View {
         return LazyVGrid(columns: columns, spacing: SpotTokens.listRowGap) {
             ForEach(list.shown.indices, id: \.self) { index in
                 let item = list.shown[index]
-                if let template = list.template(of: item) {
-                    SpotTemplateRow(item: item, template: template, size: CGSize(width: side, height: side), place: "1x1") { onSlot(item, $0, $1) }
-                        .equatable()
-                        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
-                        .contentShape(row)
-                        .onTapGesture { onRun(item) }
-                        .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
-                } else {
-                    SpotGridCell(item: item, side: side)
-                        .equatable()
-                        .onTapGesture { onRun(item) }
-                        .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
-                }
+                SpotGridCell(item: item, side: side)
+                    .equatable()
+                    .onTapGesture { onRun(item) }
+                    .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
             }
         }
         .overlay(alignment: .topLeading) { GridRing(selection: selected, count: list.shown.count, perLine: list.perLine, side: side) }
-    }
-
-    /// A row that its template draws. A press outside its controls picks it.
-    private func templateRow(_ item: SpotItem, template: RowTemplate) -> some View {
-        let height = SpotTokens.listRowHeight(span: template.span)
-        return SpotTemplateRow(
-            item: item,
-            template: template,
-            size: CGSize(width: SheetPlacement.width - 2 * SpotTokens.padding, height: height - 8)
-        ) { onSlot(item, $0, $1) }
-        .equatable()
-        .padding(.horizontal, SpotTokens.padding)
-        .frame(height: height)
-        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
-        .modifier(RowRing(run: item.run, selectedRun: selectedRun, shape: row))
-        .contentShape(row)
-        .onTapGesture { onRun(item) }
-        .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
     }
 
     /// The rows of a bento: the drawing of the repeat, tile under tile, with each row drawn at the size of its place.
@@ -180,7 +147,7 @@ struct SpotRowsView: View {
                 ZStack(alignment: .topLeading) {
                     ForEach(Array(list.shown.enumerated()), id: \.element.run) { index, item in
                         let area = drawing.area(of: index)
-                        bentoCell(item, size: Self.size(of: area, step: step), place: drawing.size(of: index))
+                        bentoCell(item, size: Self.size(of: area, step: step))
                             .id(item.run)
                             .offset(x: CGFloat(area.x0) * step, y: CGFloat(area.y0) * step)
                     }
@@ -202,18 +169,10 @@ struct SpotRowsView: View {
         )
     }
 
-    private func bentoCell(_ item: SpotItem, size: CGSize, place: String) -> some View {
-        Group {
-            if let template = list.template(of: item) {
-                SpotTemplateRow(item: item, template: template, size: size, place: place) { onSlot(item, $0, $1) }
-                    .equatable()
-            } else {
-                SpotItemIcon(item: item, size: min(size.width, size.height) * 0.5)
-                    .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: min(size.width, size.height) * 0.5) }
-                    .frame(width: size.width, height: size.height)
-            }
-        }
-        .frame(width: size.width, height: size.height)
+    private func bentoCell(_ item: SpotItem, size: CGSize) -> some View {
+        SpotItemIcon(item: item, size: min(size.width, size.height) * 0.5)
+            .overlay(alignment: .bottomTrailing) { SpotToneDot(tone: item.tone, side: min(size.width, size.height) * 0.5) }
+            .frame(width: size.width, height: size.height)
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .contentShape(row)
         .onTapGesture { onRun(item) }

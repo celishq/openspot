@@ -48,7 +48,7 @@ final class SpotPictureStore {
     func image(_ key: Key) async -> CGImage? {
         if let image = cached(key) { return image }
         if let load = loads[key] { return await load.value }
-        let load = Task.detached(priority: .userInitiated) { Self.picture(at: key.path) }
+        let load = Task.detached(priority: .userInitiated) { await WebPictures.shared.path(of: key.path).flatMap(Self.picture(at:)) }
         loads[key] = load
         let image = await load.value
         loads[key] = nil

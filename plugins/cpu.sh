@@ -14,7 +14,7 @@ ps -A -o %cpu= | LC_ALL=C awk -v cores="$(/usr/sbin/sysctl -n hw.ncpu)" -v histo
     points[n++] = now
     printf "graph=cpu\ntitle=%d%%\nmax=100\n", now
     for (i = first; i < n; i++) {
-      print "point=" points[i]
+      print "value=" points[i]
       if (call == "read") print points[i] > kept
     }
   }'

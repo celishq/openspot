@@ -1,8 +1,8 @@
 import CoreGraphics
 import Foundation
 
-/// How the places of a widget lie: a drawing in the letters of a sheet's grid. Each letter is one place, and each place
-/// takes its form from the room its cell has on the card.
+/// How the places of a widget lie: a drawing of the names of its metrics, as a card drawing is of ids. Each name is one
+/// place, and each place takes its form from the room its cell has on the card.
 public struct WidgetLayout: Equatable, Sendable {
     /// How a place shows its metric.
     public enum Form: Equatable, Sendable {
@@ -17,7 +17,8 @@ public struct WidgetLayout: Equatable, Sendable {
     public let size: SpotSize
     public let columns: Int
     public let rows: Int
-    public let letters: [String]
+    /// The name in each place, in the order in which each first shows.
+    public let names: [String]
     public let slots: [SheetArea]
 
     /// Reads a drawing. Its size is a strip when it has one line, and else the largest size, unless the file asks for another.
@@ -27,21 +28,21 @@ public struct WidgetLayout: Equatable, Sendable {
 
     private init(name: String, size: SpotSize, drawing: [String]) {
         let cells = drawing.map(Self.words)
-        var letters: [String] = []
+        var names: [String] = []
         var areas: [String: SheetArea] = [:]
         for (y, line) in cells.enumerated() {
-            for (x, letter) in line.enumerated() where letter != SheetLayout.empty {
+            for (x, name) in line.enumerated() where name != SheetLayout.empty {
                 let area = SheetArea(x0: x, x1: x, y0: y, y1: y)
-                if areas[letter] == nil { letters.append(letter) }
-                areas[letter] = areas[letter]?.joined(area) ?? area
+                if areas[name] == nil { names.append(name) }
+                areas[name] = areas[name]?.joined(area) ?? area
             }
         }
         self.name = name
         self.size = size
         columns = max(cells.map(\.count).max() ?? 1, 1)
         rows = max(cells.count, 1)
-        self.letters = letters
-        slots = letters.compactMap { areas[$0] }
+        self.names = names
+        slots = names.compactMap { areas[$0] }
     }
 
     /// What is wrong with a drawing for a widget, in words that let a person fix it.
@@ -52,9 +53,9 @@ public struct WidgetLayout: Equatable, Sendable {
         if Set(cells.map(\.count)).count > 1 { faults.append("each grid line needs the same number of columns") }
         if cells.contains(where: { $0.contains(SheetLayout.divider) }) { faults.append("a widget's grid cannot have a divider") }
         let layout = WidgetLayout(drawing: drawing)
-        for (letter, area) in zip(layout.letters, layout.slots) where letter != SheetLayout.divider {
-            let count = cells.reduce(0) { $0 + $1.filter { $0 == letter }.count }
-            if count != area.size { faults.append("the letter \(letter) is not a rectangle") }
+        for (name, area) in zip(layout.names, layout.slots) where name != SheetLayout.divider {
+            let count = cells.reduce(0) { $0 + $1.filter { $0 == name }.count }
+            if count != area.size { faults.append("the metric \(name) is not a rectangle") }
         }
         return faults
     }

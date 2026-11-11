@@ -1,7 +1,8 @@
 import Foundation
 
-/// The link to a script that runs once for each call (01). Each call is a process of its own. The first frame of a read is
-/// its answer, each frame of a search answers it, and the silence of either that ended by itself answers it too.
+/// The link to a script that runs once for each call (01). Each call is a process of its own. Each frame with a block of a
+/// read or a search answers it, and one that ended with no picture answers with its last head. A frame of only a head
+/// carries effects.
 @MainActor
 final class OnceLink: ScriptLink {
     weak var run: SpotRun?
@@ -23,31 +24,38 @@ final class OnceLink: ScriptLink {
     func send(_ call: SpotRun.Call) -> Bool {
         guard let run else { return false }
         var hasAnswer = false
-        var showedParts = false
+        var showedPicture = false
+        var lastHead: PluginOutput?
         var selected: String?
         let made = runs.call(run.command, call.action, key: call.key, input: call.input, limit: call.limit, reason: call.reason, variables: call.variables) { [weak run] made, text, lines in
             guard let run else { return }
-            showedParts = showedParts || !lines.parts.isEmpty
             selected = lines.select ?? selected
             switch call.purpose {
-            case .ask(.read) where hasAnswer && lines.summary == nil:
-                await run.takeUpdate(lines, frame: text, from: .read)
             case .ask(let ask):
                 guard !made.isStopped else { return }
-                hasAnswer = true
-                await run.takeAnswer(lines, frame: text, to: ask)
+                if lines.isPicture {
+                    await run.takeAnswer(lines, frame: text, to: ask, keeping: hasAnswer ? run.typedPart : nil)
+                    hasAnswer = true
+                } else {
+                    lastHead = lines
+                    run.takeEffects(lines, frame: text)
+                }
             case .work(let work):
-                await run.takeUpdate(lines, frame: text, from: .call(generation: work.generation, keeping: work.keeping))
+                if lines.isPicture {
+                    if await run.takePicture(lines, frame: text, of: work) { showedPicture = true }
+                } else {
+                    run.takeEffects(lines, frame: text)
+                }
             }
-            if case .ask(.read) = call.purpose, !run.isWanted, !made.isStopped { run.stop(made) }
+            if case .ask(.read) = call.purpose, lines.isPicture, !run.isWanted, !made.isStopped { run.stop(made) }
         } onEnd: { [weak self, weak run] made, end in
             self?.asking.removeAll { $0 === made }
             guard let run else { return }
             if case .ended = end, !hasAnswer, case .ask(let ask) = call.purpose {
                 hasAnswer = true
-                await run.takeAnswer(PluginOutput(text: ""), frame: "", to: ask)
+                await run.takeAnswer(lastHead?.withoutEffects() ?? PluginOutput(text: ""), frame: "", to: ask)
             }
-            run.ended(made, call.purpose, end, hadAnswer: hasAnswer, showedParts: showedParts, selected: selected)
+            run.ended(made, call.purpose, end, hadAnswer: hasAnswer, showedPicture: showedPicture, selected: selected)
         }
         if case .ask(let ask) = call.purpose, !ask.isAnswer { asking.append(made) }
         run.track(made)

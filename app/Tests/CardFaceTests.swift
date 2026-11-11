@@ -16,7 +16,7 @@ final class CardFaceTests: XCTestCase {
 
     switch=power
     title=Alarm
-    on=false
+    value=false
     """
 
     func testACardTakesTheDrawingOfItsSizeOrTheNearestSmallerOne() {
@@ -42,10 +42,14 @@ final class CardFaceTests: XCTestCase {
         XCTAssertNil(PluginOutput(text: "text=a\ntitle=A\n\ntext=b\ntitle=B\n").value)
     }
 
+    func testOnlyTheMainSwitchSaysWhetherTheCardIsOn() {
+        XCTAssertNil(SpotState(output: PluginOutput(text: "on=true\ndetail=Awake\n"), header: SpotState(title: "Clock")).on)
+    }
+
     func testTheNamedSwitchSaysWhetherTheCardIsOnWhereverItPrints() {
-        let text = "main=power\n\nswitch=other\non=false\n\nswitch=power\non=true\n"
+        let text = "main=power\n\nswitch=other\nvalue=false\n\nswitch=power\nvalue=true\n"
         XCTAssertEqual(SpotState(output: PluginOutput(text: text), header: SpotState(title: "Clock")).on, true)
-        XCTAssertNil(SpotState(output: PluginOutput(text: "switch=a\non=true\n\nswitch=b\non=false\n"), header: SpotState(title: "Clock")).on)
+        XCTAssertNil(SpotState(output: PluginOutput(text: "switch=a\nvalue=true\n\nswitch=b\nvalue=false\n"), header: SpotState(title: "Clock")).on)
     }
 
     func testANameThatNoValueHasAndAnUnknownPlaceAreFaults() {

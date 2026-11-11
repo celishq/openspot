@@ -27,10 +27,11 @@ public final class SpotRuns {
     @ObservationIgnored private let recent: (String) -> [String]
     @ObservationIgnored private let prepare: ([SpotItem], [String]) async -> Void
     private var order: [String] = []
-    @ObservationIgnored private var placedByFiles: Set<String> = []
 
-    /// Each script that a widget file or a `spot` component of a card places, which the open panel reads.
+    /// Each script that a widget file places, which the open panel reads.
     @ObservationIgnored private var placed: Set<String> = []
+    /// Each script that the person put in the menu bar.
+    private var menuBar: Set<String> = []
     /// When the clock last read each script with a number in its `read`.
     @ObservationIgnored var asked: [String: Date] = [:]
     @ObservationIgnored var clock: Task<Void, Never>?
@@ -60,11 +61,12 @@ public final class SpotRuns {
 
     nonisolated deinit {}
 
-    /// Takes a new look at the plugin folder. Each script keeps its sheet, and a sheet whose script is gone stops its reads.
-    /// A staying script that something wants starts.
-    public func take(_ scan: ScanResult) {
+    /// Takes a new look at the plugin folder, with the spots that the person put in the menu bar. Each script keeps its sheet,
+    /// and a sheet whose script is gone stops its reads. A staying script that something wants starts.
+    public func take(_ scan: ScanResult, menuBar: Set<String> = []) {
         let scripts = scan.scripts
-        placedByFiles = Set(scan.commands.flatMap(\.places))
+        placed = Set(scan.commands.flatMap(\.places))
+        self.menuBar = menuBar
         order = scripts.map(\.id)
         for (id, sheet) in sheets where !order.contains(id) {
             sheets[id] = nil
@@ -73,14 +75,8 @@ public final class SpotRuns {
             sheet.close()
             sheet.stopReads()
         }
-        updatePlaced()
         scripts.forEach { sheet(for: $0).scanned() }
         updateClock()
-    }
-
-    /// Works out again which scripts the widget files and the cards place, after a scan or a change of a card's components.
-    func updatePlaced() {
-        placed = placedByFiles.union(sheets.values.flatMap { $0.state.face.parts.filter { $0.kind == "spot" }.map(\.id) })
     }
 
     /// The sheet of a script, with the command as the folder last gave it.
@@ -135,7 +131,7 @@ public final class SpotRuns {
         isPanelOpen = true
         if !wasOpen { sheets.values.forEach { $0.panelOpened() } }
         tick()
-        arrive(.panel)
+        readPanel()
         for id in placed {
             if let sheet = sheets[id], sheet.command.read?.seconds == nil { sheet.read() }
         }
@@ -154,17 +150,22 @@ public final class SpotRuns {
         updateClock()
     }
 
-    /// A moment arrived: reads each script whose `read` lists it, all at the same time. Only `panel` can use a young answer.
-    /// A staying script that something wants and that ended starts again.
-    public func arrive(_ moment: SpotRead.Moment) {
-        let reason: ReadReason = switch moment {
-        case .launch: .launch
-        case .wake: .wake
-        case .sheet: .sheet
-        case .panel, .every: .panel
+    /// Reads each script with `panel` in its `read`, all at the same time, each of which can use a young answer. A staying
+    /// script that something wants and that ended starts again.
+    private func readPanel() {
+        for sheet in sheets.values where sheet.command.read?.has(.panel) == true {
+            sheet.read(need: .moment, reason: .panel)
         }
-        for sheet in sheets.values where sheet.command.read?.has(moment) == true {
-            sheet.read(need: moment == .panel ? .moment : .clock, reason: reason)
+        sheets.values.forEach { $0.settleScript() }
+    }
+
+    /// The Mac woke: each wanted script with a number in its `read` reads at once, and its clock starts again from now. A
+    /// staying script that something wants and that ended starts again.
+    public func woke() {
+        let time = now()
+        for sheet in sheets.values where sheet.isWanted && sheet.command.read?.seconds != nil {
+            asked[sheet.command.id] = time
+            sheet.read(need: .clock, reason: .timer)
         }
         sheets.values.forEach { $0.settleScript() }
     }
@@ -184,9 +185,14 @@ public final class SpotRuns {
     /// The marks of the scripts that show in the menu bar, in the order of the folder.
     public var trayMarks: [(id: String, mark: TrayMark)] {
         order.compactMap { id in
-            guard let sheet = sheets[id], sheet.command.isTray, let mark = TrayMark(reading: sheet.reading) else { return nil }
+            guard let sheet = sheets[id], isInMenuBar(sheet.command), let mark = TrayMark(reading: sheet.reading) else { return nil }
             return (id, mark)
         }
+    }
+
+    /// Whether the menu bar shows this script: the person put it there, and it can show there.
+    private func isInMenuBar(_ command: Spot) -> Bool {
+        menuBar.contains(command.id) && command.canShowInMenuBar
     }
 
     /// The running work of all scripts, the oldest first, with the ID of each script.
@@ -234,8 +240,9 @@ public final class SpotRuns {
 
     /// Whether something other than its sheet in view wants this script.
     func wants(_ command: Spot) -> Bool {
-        guard let read = command.read else { return command.isTray }
-        return command.isTray || read.has(.launch) || (isPanelOpen && (read.has(.panel) || placed.contains(command.id)))
+        if isInMenuBar(command) || command.staysAlways { return true }
+        guard let read = command.read else { return false }
+        return isPanelOpen && (read.has(.panel) || placed.contains(command.id))
     }
 
     /// Reads a frame of a script on another thread, and waits while the open motion of its sheet runs. The

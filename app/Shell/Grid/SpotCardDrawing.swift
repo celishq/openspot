@@ -8,8 +8,6 @@ struct SpotCardDrawing: View {
     let layout: WidgetLayout
     let face: CardFace
     let card: SpotSize
-    /// The last value of each script, which a `spot` component draws.
-    var reading: (String) -> MetricReading? = { _ in nil }
     /// The plugin's own view at the size of its area, once it is built (V3).
     var view: (CGSize) -> SpotCustomView? = { _ in nil }
     let onSlot: (String, String?) -> Void
@@ -21,14 +19,12 @@ struct SpotCardDrawing: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            ForEach(Array(zip(layout.letters, layout.slots)), id: \.0) { id, slot in
+            ForEach(Array(zip(layout.names, layout.slots)), id: \.0) { id, slot in
                 if let part = face.parts.first(where: { $0.id == id }) {
                     let rect = layout.rect(of: slot, in: room, gap: SpotTokens.placeGap, sideGap: SpotTokens.sideGap)
                     Group {
                         if part.kind == "view" {
                             view(rect.size)
-                        } else if part.kind == "spot" {
-                            SpotMetricView(reading: reading(part.id), form: layout.form(of: slot, on: card), isMirrored: false, size: rect.size)
                         } else {
                             SpotSlotView(part: part, tone: part.tone, onSlot: onSlot)
                         }

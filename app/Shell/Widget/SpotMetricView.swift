@@ -25,7 +25,6 @@ struct SpotMetricView: View {
     private var kind: MetricKind { reading?.kind ?? .value }
     private var value: MetricValue? { reading?.value }
     private var title: String { value?.title ?? "–" }
-    private var tint: Color? { reading?.tint.map(Self.colour) }
 
     var body: some View {
         content
@@ -213,25 +212,9 @@ struct SpotMetricView: View {
             .frame(width: Self.dot, height: Self.dot)
     }
 
-    /// The colour of a mark: what its tone means, or else its tint, or else white.
+    /// The colour of a mark: what its tone means, or else white.
     private var markColour: Color {
-        value?.tone.map(Self.colour) ?? tint ?? SpotTheme.ink
-    }
-
-    private static func colour(_ tint: MetricTint) -> Color {
-        switch tint {
-        case .red: .red
-        case .orange: .orange
-        case .yellow: .yellow
-        case .green: .green
-        case .mint: .mint
-        case .teal: .teal
-        case .cyan: .cyan
-        case .blue: .blue
-        case .indigo: .indigo
-        case .purple: .purple
-        case .pink: .pink
-        }
+        value?.tone.map(Self.colour) ?? SpotTheme.ink
     }
 
     private var bigRing: some View {
@@ -330,7 +313,6 @@ struct SpotMetricView: View {
         case .good: .green
         case .warn: .orange
         case .bad: .red
-        case .on: SpotTheme.ink.opacity(SpotTheme.secondaryLight)
         }
     }
 

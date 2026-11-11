@@ -28,7 +28,7 @@ public struct CommandLink: Equatable, Sendable {
             .init(key: "title", value: "Use openspot in Terminal"),
             .init(key: "detail", value: "The command line tool"),
             .init(key: "icon", value: "terminal"),
-            .init(key: "on", value: String(isOn))
+            .init(key: "value", value: String(isOn))
         ])
     }
 

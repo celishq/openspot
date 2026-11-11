@@ -86,7 +86,7 @@ final class CatalogSpotTests: XCTestCase {
     }
 
     func testTurningOnACoreWidgetLoadsItInAScan() async throws {
-        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
         let spot = try spot
         let items = try await spot.items(timeout: 1).items
         let row = try XCTUnwrap(items.first { $0.title == "Overview" })
@@ -94,7 +94,7 @@ final class CatalogSpotTests: XCTestCase {
         try await spot.perform(.item(row), timeout: 1)
 
         let scan = try PluginFolder(url: folder, core: core, enabled: file.read().arrangement.enabled).scan()
-        XCTAssertEqual(scan.commands.map(\.name), ["Overview"])
+        XCTAssertEqual(scan.commands.filter(\.headerState.isOnGrid).map(\.name), ["Overview"])
     }
 
     func testAReadAfterAPickIsNotAFirstAnswer() async throws {
@@ -187,9 +187,11 @@ final class CatalogSpotTests: XCTestCase {
         XCTAssertFalse(output.items.isEmpty)
     }
 
-    func testTheRowOfACoreSpotReadsOnFromItsBlock() throws {
-        let block = try XCTUnwrap(TextBlock.blocks(in: "row=apps\ntitle=Apps\non=true\n").first)
+    func testARowIsOnByItsValue() throws {
+        let on = try XCTUnwrap(TextBlock.blocks(in: "row=apps\ntitle=Apps\nvalue=true\n").first)
+        let old = try XCTUnwrap(TextBlock.blocks(in: "row=apps\ntitle=Apps\non=true\n").first)
 
-        XCTAssertEqual(SpotItem(block: block)?.isOn, true)
+        XCTAssertEqual(SpotItem(block: on)?.isOn, true)
+        XCTAssertEqual(SpotItem(block: old)?.isOn, false)
     }
 }

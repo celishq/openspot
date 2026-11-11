@@ -54,10 +54,17 @@ final class SpotIconStore {
         }
     }
 
+    /// Draws an icon, after it fetches a picture on the web into a file.
     private func draw(_ icon: FileIcon) async -> CGImage? {
-        await withCheckedContinuation { continuation in
+        var file = icon
+        if case .image(let path) = icon {
+            guard let kept = await WebPictures.shared.path(of: path) else { return nil }
+            file = .image(kept)
+        }
+        let drawn = file
+        return await withCheckedContinuation { continuation in
             drawing.addOperation {
-                continuation.resume(returning: Self.bitmap(of: icon))
+                continuation.resume(returning: Self.bitmap(of: drawn))
             }
         }
     }

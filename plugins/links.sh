@@ -1,9 +1,8 @@
 #!/bin/sh
 # icon=link
 # detail=Open a link
-# shortcut=l
 # read=panel
-# global=true
+# offers=search
 export LC_ALL=en_US.UTF-8
 data="$OPENSPOT_DATA/links.json"
 icons="$OPENSPOT_DATA/icons"
@@ -124,12 +123,12 @@ form() {
 
 field=title
 title=Name
-text=\($v.title | esc)
+value=\($v.title | esc)
 required=true
 
 field=url
 title=Link
-text=\($v.url | esc)
+value=\($v.url | esc)
 required=true
 placeholder=example.com or ~/Downloads"'
 }
