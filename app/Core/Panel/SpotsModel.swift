@@ -45,10 +45,10 @@ public final class SpotsModel {
             run?.command ?? fixedCommand
         }
 
-        /// The size of its card: the person's choice, or else what its last read says, or else its header (F9). A card of a
-        /// fault is never small, so that its words show.
+        /// The size of its card: the person's choice, or else its header (F9). A card of a fault is never small, so that its
+        /// words show.
         @MainActor public var size: SpotSize {
-            let size = sizeChoice ?? state.size ?? command.size
+            let size = sizeChoice ?? command.size
             return command.fault != nil && size == .small ? .wide : size
         }
 

@@ -15,17 +15,6 @@ final class SpotStateTests: XCTestCase {
         XCTAssertTrue(try state("grid=false").isOnGrid)
     }
 
-    func testAReadSetsTheSizeOfItsCardAndAChangeKeepsIt() throws {
-        let read = try state("size=large")
-        let block = PluginOutput(text: "switch=power\nvalue=true")
-
-        XCTAssertNil(header.size)
-        XCTAssertEqual(read.size, .large)
-        XCTAssertEqual(read.taking(block).size, .large)
-        XCTAssertEqual(read.showing(title: "Busy", detail: nil).size, .large)
-        XCTAssertEqual(read.withLevel(2).size, .large)
-    }
-
     func testAReadKeepsEachValueOfItsHeadForAViewAndAChangeKeepsThem() throws {
         let head = try XCTUnwrap(TextBlock.blocks(in: "title=3\npoint=1\npoint=0\npoint=2").first)
         let read = SpotState(output: PluginOutput(text: head.text), header: header).holding(head)

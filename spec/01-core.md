@@ -320,8 +320,7 @@ offers it as an action, or the spot draws it with a `view` (03).
 The head is the one block with no kind, at any place in the output, and it is not drawn. It holds four groups:
 
 - the drawing: `grid=` lines for the sheet, and `grid.<size>=` lines for the card;
-- the spot: `main`, and `title`, `detail` and `size` for its card. With `panel` in its `read`, a head can change `size`,
-  and the person's choice wins (F9);
+- the spot: `main`, and `title` and `detail` for its card;
 - the rows: `search` and `recents`;
 - the effects: `toast`, `link=<url>`, which opens the URL, `progress`, `end=<call>`, which ends a call of a staying
   script (05), and `select=<row id>`, which reads again with that row selected when the call ends, such as the row that a
@@ -496,6 +495,7 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | A complex view is a `view` of the plugin in an area, so the text language stays small.                      | More words for each new look.                |
 | A widget of several metrics is a TOML file, which a person writes by hand.                                  | A `spot` block in a script's output.         |
 | A widget's grid names its metrics, as a card drawing names its blocks.                                      | Letters, and a `places` table that names a metric for each. |
+| The header holds the size that a spot prefers, and the person's choice wins.                                | A `size` in the head of a read.              |
 | `file` names the file of a row, apart from its id and its picture.                                          | A row id that is a path, which makes the id say two things. |
 | `drag` tells the script after the drop, and the script says what stays.                                     | A key that removes a row after a drag.       |
 | Openspot drags the file itself, and the other app copies or moves it.                                       | A file promise that the script writes on request. |

@@ -59,7 +59,7 @@ struct SpotFloatView: View {
                     selectedPart: { run.selectedPart?.id },
                     nudge: { run.nudge },
                     customView: { room in
-                        entry.command.view.map { SpotCustomView(source: $0, values: entry.state.values, card: entry.state.size ?? .square, room: room, views: SpotViews.shared) }
+                        entry.command.view.map { SpotCustomView(source: $0, values: entry.state.values, card: .square, room: room, views: SpotViews.shared) }
                     }
                 )
                 .task(id: parts.parts.contains { $0.kind == "view" } ? entry.command.view : nil) {

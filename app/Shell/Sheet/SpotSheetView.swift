@@ -68,7 +68,7 @@ struct SpotSheetView: View {
                         selectedPart: { [model, id = entry.id] in model.sheets[id]?.selectedPart?.id },
                         nudge: { model.sheets[entry.id]?.nudge ?? SheetParts.Nudge.rest },
                         customView: { room in
-                            entry.command.view.map { SpotCustomView(source: $0, values: entry.state.values, card: entry.state.size ?? .square, room: room, views: SpotViews.shared) }
+                            entry.command.view.map { SpotCustomView(source: $0, values: entry.state.values, card: .square, room: room, views: SpotViews.shared) }
                         }
                     )
                     .task(id: panel.parts.contains { $0.kind == "view" } ? entry.command.view : nil) {

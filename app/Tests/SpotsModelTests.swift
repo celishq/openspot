@@ -269,20 +269,13 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(host.motions.isEmpty)
     }
 
-    func testAReadThatChangesTheSizeOfACardLaysOutTheGridAgain() async throws {
-        let large = folder.appendingPathComponent("large").path
-        try script("grow", header: "read=panel", "if [ -f '\(large)' ]; then printf 'size=large\\n'; else printf 'size=small\\n'; fi")
+    func testASizeInAReadLeavesTheCardAtTheSizeOfItsHeader() async throws {
+        try script("grow", header: "read=panel\nsize=small", "printf 'size=large\\ndetail=Read\\n'")
         model.reload()
         model.panelWillShow(holding: [])
-        try await wait("the small card") { model.visible.first?.size == .small }
-        let small = model.placements
+        try await wait("the read") { model.visible.first?.state.subtitle == "Read" }
 
-        FileManager.default.createFile(atPath: large, contents: Data())
-        model.sheets["grow"]?.read(need: .change)
-
-        try await wait("the large card") { model.visible.first?.size == .large }
-        XCTAssertEqual(model.placements, SpotGrid().place(model.visible.map(\.size)))
-        XCTAssertNotEqual(model.placements, small)
+        XCTAssertEqual(model.visible.first?.size, .small)
     }
 
     func testASubmitThatEndsAfterThePersonOpenedANewFormLeavesTheNewForm() async throws {
