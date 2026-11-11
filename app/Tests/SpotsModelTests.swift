@@ -532,10 +532,10 @@ final class SpotsModelTests: XCTestCase {
         let build = plugins.appendingPathComponent("build.sh")
         try "#!/bin/sh\nprintf 'row=g\\ntitle=Guide\\n'\n".writeScript(to: build)
         let rows = plugins.appendingPathComponent("rows.sh")
-        try "#!/bin/sh\nprintf 'row=\(CatalogSpot.buildRun)\\ntitle=New spot\\n'\n".writeScript(to: rows)
+        try "#!/bin/sh\nprintf 'row=openspot.build\\ntitle=New spot\\n'\n".writeScript(to: rows)
         host.shipped = [
             Spot(id: ShippedSpot.newID, name: "New spot", url: build, kind: .list, read: .sheet, isOnGrid: false),
-            Spot(id: "picker", name: "Picker", url: rows, kind: .list, read: .sheet, rowOpens: [CatalogSpot.buildRun: ShippedSpot.newID])
+            Spot(id: "picker", name: "Picker", url: rows, kind: .list, read: .sheet, rowOpens: ["openspot.build": ShippedSpot.newID])
         ]
         model.reload()
         model.isShown = true
@@ -546,7 +546,7 @@ final class SpotsModelTests: XCTestCase {
         host.motions = []
         host.phases = []
 
-        model.pick(SpotItem(title: "New spot", run: CatalogSpot.buildRun), of: entry)
+        model.pick(SpotItem(title: "New spot", run: "openspot.build"), of: entry)
 
         try await wait("the New spot sheet") { model.openList == ShippedSpot.newID }
         XCTAssertEqual(model.transition.phase, .open)
@@ -806,5 +806,17 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "n", isCommand: true)))
         XCTAssertFalse(model.isEditing)
         try await wait("the New spot sheet from Edit Spots") { model.openList == ShippedSpot.newID }
+    }
+
+    func testAKeywordFindsASpotAndASpotThatOpensTheStoreStartsEditSpots() {
+        host.shipped = [Spot(id: "store", name: "Spots", url: plugins, keywords: ["edit spots"], opensStore: true)]
+        model.reload()
+
+        model.query = "edit spots"
+        XCTAssertEqual(model.visible.first?.id, "store")
+
+        model.press("store")
+        XCTAssertTrue(model.isEditing)
+        XCTAssertEqual(model.query, "")
     }
 }

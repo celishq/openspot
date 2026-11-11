@@ -56,12 +56,11 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(menu.lines, 4)
     }
 
-    func testAGridCardOffersToEditTheSpotsAfterItsActions() throws {
-        let menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, showsEdit: true))
+    func testEachRowOfAGridCardsMenuActsOnThatCard() throws {
+        let menu = try XCTUnwrap(ActionMenu(command: command(), item: nil, extras: [.share]))
 
-        XCTAssertEqual(menu.rows.last?.title, "Edit Spots")
-        XCTAssertEqual(menu.rows.last?.opensEdit, true)
-        XCTAssertFalse(menu.hint.contains("Edit Spots"))
+        XCTAssertEqual(menu.rows.dropFirst().filter { $0.action == nil }.map(\.title), [])
+        XCTAssertFalse(menu.rows.map(\.title).contains("Edit Spots"))
     }
 
     func testAnItemListsWhatEnterDoesThenEachAction() throws {

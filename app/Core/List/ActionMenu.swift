@@ -4,7 +4,6 @@ public struct ActionMenu: Equatable, Sendable {
         public let title: String
         public let keyLabel: String
         public let action: CommandAction?
-        public var opensEdit = false
         /// Whether the hint leaves it out, as a row that each spot has.
         var isQuiet = false
     }
@@ -27,16 +26,15 @@ public struct ActionMenu: Equatable, Sendable {
     public private(set) var selected = 0
     public private(set) var confirming: String?
 
-    /// Lists what Enter does, the actions that fit, the rows that the app adds, then Edit Spots. Returns nil when there is
-    /// nothing to list.
-    public init?(command: Spot, item: SpotItem?, showsPrimary: Bool = true, extras: [CommandAction] = [], showsEdit: Bool = false) {
+    /// Lists what Enter does, the actions that fit, then the rows that the app adds, each of them on this command or item.
+    /// Returns nil when there is nothing to list.
+    public init?(command: Spot, item: SpotItem?, showsPrimary: Bool = true, extras: [CommandAction] = []) {
         var rows: [Row] = []
         if showsPrimary, let title = item?.openTitle ?? item?.shortcut.map { $0 == SettingsSpot.unset ? Self.setTitle : Self.changeTitle } ?? command.primaryTitle(hasItem: item != nil) {
             rows.append(Row(title: title, keyLabel: "⏎", action: nil))
         }
         rows += command.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
         rows += extras.map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0, isQuiet: true) }
-        if showsEdit { rows.append(Row(title: "Edit Spots", keyLabel: "", action: nil, opensEdit: true)) }
         guard !rows.isEmpty else { return nil }
         self.rows = rows
         shown = rows

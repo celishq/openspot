@@ -14,15 +14,22 @@ public struct ReviewSpot: Equatable, Sendable {
     public let subtitle: String
     private let text: String
     private let canAdd: Bool
+    /// The readme and the preview of the listing, which the install keeps beside the spot's file.
+    private let readme: String?
+    private let preview: String?
+    private let primaryPath: String
 
     /// Reads a spot for a plugins folder. Throws a fault when it gives no spot or cannot go into that folder. With `canAdd`
     /// false it only shows the text.
-    public init(spot: SharedSpot, folder: URL, canAdd: Bool = true) throws {
+    public init(spot: SharedSpot, folder: URL, canAdd: Bool = true, readme: String? = nil, preview: String? = nil) throws {
         if let clash = spot.clash(in: folder) { throw PluginError.fault(clash) }
         let scan = try Self.scan(of: spot)
         let commands = scan.plugins.flatMap(\.commands)
-        let primary = spot.files.lazy.compactMap { file in commands.first { $0.url.path.hasSuffix("/\(file.path)") } }.first
-        guard let primary else { throw PluginError.fault("This file holds no spot.") }
+        let found = spot.files.lazy.compactMap { file in commands.first { $0.url.path.hasSuffix("/\(file.path)") }.map { (file.path, $0) } }.first
+        guard let (path, primary) = found else { throw PluginError.fault("This file holds no spot.") }
+        primaryPath = path
+        self.readme = readme
+        self.preview = preview
         let runs = Self.selfRuns(in: scan)
         self.spot = spot
         self.canAdd = canAdd
@@ -33,7 +40,10 @@ public struct ReviewSpot: Equatable, Sendable {
         let programs = spot.files.filter { ($0.isExecutable || ViewLibrary.isLibrary($0.path)) && !Self.canShow($0) }.map(\.path)
         let quiet = "Runs only when you use it"
         subtitle = !programs.isEmpty ? "Holds a program that you cannot read" : primary.subtitle ?? (runs.isEmpty ? quiet : "Runs by itself")
+        let rows = preview.map { PluginOutput(text: $0).items.map(\.title) } ?? []
         text = [
+            readme.map { "\($0)\n\n" },
+            Self.section("Preview", rows),
             programs.isEmpty ? nil : Self.section(
                 "Program that Openspot cannot show",
                 programs + ["It can do all that you can. Add it only if you trust the sender."]
@@ -45,6 +55,11 @@ public struct ReviewSpot: Equatable, Sendable {
         ].compactMap { $0 }.joined() + spot.files.map(Self.shown).joined(separator: "\n")
     }
 
+    /// Reads what a package, a zip of one or a `.spot` file holds, with its listing.
+    public init(contents: SpotPackage.Contents, folder: URL) throws {
+        try self.init(spot: contents.spot, folder: folder, readme: contents.readme, preview: contents.preview)
+    }
+
     /// Answers one call with the text a script would print.
     public func answer(_ arguments: [String]) throws -> String {
         switch arguments.first {
@@ -52,6 +67,9 @@ public struct ReviewSpot: Equatable, Sendable {
             return sheet
         case Self.installPart where canAdd:
             try spot.add(to: folder)
+            let file = folder.appendingPathComponent(primaryPath)
+            if let readme { try readme.write(to: SpotListing.readme(of: file), atomically: true, encoding: .utf8) }
+            if let preview { try preview.write(to: SpotListing.preview(of: file), atomically: true, encoding: .utf8) }
             return TextBlock(fields: [.init(key: "toast", value: "\(name) added")]).text
         default:
             throw PluginError.failed(1, "This sheet cannot do that.")

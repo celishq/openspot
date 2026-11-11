@@ -15,7 +15,6 @@ struct SpotCardView: View, Equatable {
     let isDropTarget: Bool
     let chainLetter: String?
     let showsChain: Bool
-    let isHiddenFromGrid: Bool
     /// The model that a tap and a slide go to.
     let model: SpotsModel
     /// What a tap does in place of a press on the grid, such as on a float.
@@ -25,7 +24,7 @@ struct SpotCardView: View, Equatable {
     nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.entry == rhs.entry && lhs.size == rhs.size && lhs.index == rhs.index && lhs.isPressed == rhs.isPressed
             && lhs.takesDrag == rhs.takesDrag && lhs.isDropTarget == rhs.isDropTarget && lhs.chainLetter == rhs.chainLetter
-            && lhs.showsChain == rhs.showsChain && lhs.isHiddenFromGrid == rhs.isHiddenFromGrid && lhs.model === rhs.model
+            && lhs.showsChain == rhs.showsChain && lhs.model === rhs.model
     }
 
     /// How far a line reaches past the inset at its trailing end, where the round end of the card leaves room.
@@ -44,7 +43,7 @@ struct SpotCardView: View, Equatable {
             .modifier(CardHover(shape: shape, isFilled: isFilled, showsPress: showsPress))
             .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).modifier(CardReveal()).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { keycap }
-            .overlay(alignment: .topTrailing) { if !isHiddenFromGrid { FailureMark(entry: entry, size: size) } }
+            .overlay(alignment: .topTrailing) { FailureMark(entry: entry, size: size) }
             .contentShape(shape)
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.command)) } }
             .animation(.easeInOut(duration: 0.2), value: isOn)
@@ -226,7 +225,7 @@ struct SpotCardView: View, Equatable {
         }
     }
 
-    /// The letter of the spot, on the rim of its top right corner. The mark of a hidden card takes its place in Edit Spots.
+    /// The letter of the spot, on the rim of its top right corner.
     @ViewBuilder
     private var keycap: some View {
         if let chainLetter {
@@ -238,7 +237,7 @@ struct SpotCardView: View, Equatable {
                 .background(SpotTheme.keycap, in: RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
                 .offset(x: -inset, y: inset)
-                .opacity(showsChain && !isHiddenFromGrid ? 1 : 0)
+                .opacity(showsChain ? 1 : 0)
                 .animation(SpotMotion.keycap, value: showsChain)
                 .allowsHitTesting(false)
         }

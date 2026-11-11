@@ -77,6 +77,10 @@ public struct Plugin: Equatable, Sendable {
         if let view, !id.contains("/") {
             throw PluginError.fault("\(name) has a view, so it needs a folder of its own. Move \(url.lastPathComponent) and \(view) into a folder such as \(id)/")
         }
+        let preview = header.value("preview")
+        guard preview == nil || preview == "sample" else {
+            throw PluginError.fault("\(name) has an unknown preview: \(preview!). Use preview=sample, and print fake data while OPENSPOT_PREVIEW is 1")
+        }
         let command = Spot(
             id: id,
             name: name,
@@ -102,7 +106,9 @@ public struct Plugin: Equatable, Sendable {
             file: icon?.file.map { Self.path($0, beside: url) },
             image: icon?.image.map { Self.path($0, beside: url) },
             glyph: icon?.glyph,
-            view: view.map { Self.path($0, beside: url) }
+            view: view.map { Self.path($0, beside: url) },
+            keywords: header.values("keyword"),
+            previewsSample: preview != nil
         )
         self.init(id: id, commands: [command])
     }

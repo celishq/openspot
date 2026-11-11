@@ -251,4 +251,21 @@ final class ReviewSpotTests: XCTestCase {
     func testAnUnknownCallFails() throws {
         XCTAssertThrowsError(try review("").answer(["other"]))
     }
+
+    func testTheReviewShowsTheReadmeAndThePreviewAndTheInstallKeepsThemBesideTheSpot() throws {
+        let contents = SpotPackage.Contents(
+            spot: try spot([("timer.sh", "#!/bin/sh\n# title=Timer\n", true)]),
+            description: "Counts down",
+            readme: "Counts down from a time you pick.",
+            preview: "row=a\ntitle=5 minutes\n"
+        )
+        let review = try ReviewSpot(contents: contents, folder: folder)
+
+        let text = try shown(review)
+        XCTAssertTrue(text.hasPrefix("Counts down from a time you pick.\n\nPreview\n5 minutes\n\n"), text)
+
+        _ = try review.answer(["install"])
+        XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("timer.md"), encoding: .utf8), "Counts down from a time you pick.")
+        XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("timer.preview.txt"), encoding: .utf8), "row=a\ntitle=5 minutes\n")
+    }
 }

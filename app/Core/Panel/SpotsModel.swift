@@ -191,7 +191,6 @@ public final class SpotsModel {
     /// The shared spot that the open review shows, which exists only as long as that sheet.
     public var reviewed: ReviewSpot?
     public var isFirstLaunch = false
-    public var spotsChanged = false
     public var isShown = false
     /// Whether the app is opening the panel unseen as it starts, which a press of the key ends.
     public var isWarming = false
@@ -229,9 +228,6 @@ public final class SpotsModel {
     /// The layouts of the grid for each place that a carried spot of the dock can take. Its card is on the grid while the
     /// drag holds it there.
     @ObservationIgnored var arrival: SpotDrag?
-    /// The spot of the dock that the person resizes by its corner, the size it had, and where its card lay in the dock's
-    /// rows when the drag started.
-    public internal(set) var dockResize: (id: String, start: SpotSize, origin: CGPoint)?
     /// The card that the person resizes by its corner in Edit Spots, and the size that a release keeps.
     public internal(set) var resize: SpotResize?
     /// How long the pointer stays near a new place before the other cards make room there.
@@ -244,8 +240,17 @@ public final class SpotsModel {
     @ObservationIgnored public internal(set) var gridScroll: CGFloat = 0
     @ObservationIgnored var scrollAtPress: CGFloat = 0
     @ObservationIgnored var pointerMove: CGSize?
-    /// The spots of Edit Spots' dock.
+    /// The spots of Edit Spots' store.
     public internal(set) var dock = SpotDock(items: [])
+    /// The listing of the spot that the store opened.
+    public internal(set) var dockListing: SpotListing?
+    /// The spots that are off, and the packages of the spots of the plugins folder, as the last read of the folder found them.
+    @ObservationIgnored var dockOff: [SpotDock.Item] = []
+    @ObservationIgnored var dockPublications: [String: SpotDock.Publication] = [:]
+    /// The stamp of the folder that `dockOff` and `dockPublications` were read from, and the read that runs in the background.
+    /// A publish changes no stamp, so it reads the store again itself.
+    @ObservationIgnored var dockStamp: PluginFolder.Stamp?
+    @ObservationIgnored var dockRead: Task<Void, Never>?
     /// Whether the person types in the dock's search, which then takes each key but Esc.
     public internal(set) var isSearchingDock = false
     /// Where the person pressed a card's resize handle, in the handle's square.
@@ -322,7 +327,7 @@ public final class SpotsModel {
         host.applyConfig()
         let config = files.config.read()
         let folder = files.folder(config)
-        let shipped = host.shippedSpots(folder: folder, config: files.config, update: updateSpot, offersLogin: isFirstLaunch)
+        let shipped = host.shippedSpots(folder: folder, config: files.config, update: updateSpot)
             + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
         var scan = pluginScan.look(at: folder, shipped: shipped)
         let prompt = shipped.lazy.compactMap(\.agentPrompt).first
@@ -340,7 +345,7 @@ public final class SpotsModel {
         arrangement = config.arrangement
         scanned = scan.commands
         rebuildEntries()
-        if isEditing { refreshDock(in: folder) }
+        if isEditing { refreshDock(in: folder) } else { readDockLater(in: folder) }
         if problems != self.problems, !problems.isEmpty {
             host.notify(problems.joined(separator: " "))
         }
@@ -386,14 +391,6 @@ public final class SpotsModel {
         return true
     }
 
-    /// Brings the grid up to date while a sheet covers it, so that the sheet closes onto the card's real place. The selected
-    /// card stays selected.
-    private func reloadUnderSheet() {
-        spotsChanged = false
-        let id = selectedEntry?.id
-        reload()
-        if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
-    }
 
     public func rebuildEntries() {
         let letters = arrangement.letters(over: defaultArrangement)
@@ -484,7 +481,6 @@ public final class SpotsModel {
                 host.applyConfig()
                 holdAssignedKeys(files.config.read())
             }
-            if spotsChanged, sheets[id]?.command.changesSpots == true { reloadUnderSheet() }
         case .landed:
             host.land(id)
         case .closed:
@@ -498,20 +494,11 @@ public final class SpotsModel {
         (error as? PluginError)?.reason ?? error.localizedDescription
     }
 
-    /// Where the cards hidden from the grid start in the order of Edit Spots, after the cards on the grid and a card that
-    /// arrives from the dock. A dragged card counts in the group of its target. It is nil out of Edit Spots and while the
-    /// search has text.
-    var hiddenStart: Int? {
-        guard isEditing, query.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
-        let hidden = cards.filter { !$0.isOnGrid && $0.id != drag?.id }.count + (drag?.target.isOnGrid == false ? 1 : 0)
-        return visible.count - hidden
-    }
-
-    /// The grid of the cards shown: in the groups of Edit Spots, with the size of each card whose size the person chose, and
-    /// of a card that arrives from the dock.
+    /// The grid of the cards shown, with the size of each card whose size the person chose, and of a card that arrives from
+    /// the store.
     var grid: SpotGrid {
         let arriving = carry?.tile == nil ? nil : carry?.entry.id
-        return SpotGrid(split: hiddenStart, kept: Set(visible.indices.filter { visible[$0].isSizeChosen || visible[$0].id == arriving }))
+        return SpotGrid(kept: Set(visible.indices.filter { visible[$0].isSizeChosen || visible[$0].id == arriving }))
     }
 
     /// The entries that have a card. The install screen has none.
@@ -554,7 +541,7 @@ public final class SpotsModel {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
             let arriving = carry.flatMap { $0.tile != nil && drag?.id == $0.entry.id ? [$0.entry] : nil } ?? []
-            return dragged(cards.filter(\.isOnGrid) + arriving + (isEditing ? cards.filter { !$0.isOnGrid } : []))
+            return dragged(cards.filter(\.isOnGrid) + arriving)
         }
         var ids = Set<String>()
         let answers = entries.filter { $0.command.answers?.matches(text) == true }
@@ -562,7 +549,7 @@ public final class SpotsModel {
             .filter { ids.insert($0.id).inserted }
             .prefix(Self.searchLimit)
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        spotList.replace(cards.filter(\.command.isFound).map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.command.name].compactMap { $0 }.joined(separator: " "), run: $0.id) })
+        spotList.replace(cards.filter(\.command.isFound).map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.command.name].compactMap { $0 }.joined(separator: " "), run: $0.id, keywords: $0.command.keywords) })
         let sources = entries.filter { $0.command.isGlobal && arrangement.isGlobal(of: $0.id) != false }
         let found = SearchQuery(text: text).matching(in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() }, unpickedLimit: Self.unpickedRows, limit: Self.searchLimit - answers.count)
         return answers + found.compactMap { match in
@@ -630,6 +617,7 @@ public final class SpotsModel {
     /// Runs a command by its key, with the panel open only when its spot needs it.
     public func press(_ id: String) {
         guard let entry = entries.first(where: { $0.id == id }) else { return }
+        guard !entry.command.opensStore else { return openStore() }
         if let sheet = sheets[id], sheet.awaitsAnswer {
             sheet.afterAnswer { [weak self] in self?.press(id) }
             return
@@ -683,6 +671,7 @@ public final class SpotsModel {
     }
 
     public func run(_ entry: Entry) {
+        guard !entry.command.opensStore else { return openStore() }
         if let item = entry.item, let list = entries.first(where: { $0.id == entry.command.id }) {
             if item.shortcut != nil, openList != list.id {
                 open(list.id, moving: true)
@@ -781,7 +770,6 @@ public final class SpotsModel {
 
     /// The running call that a press of this row of the open menu stops.
     public func work(of row: ActionMenu.Row) -> ScriptCall? {
-        if row.opensEdit { return nil }
         return menuTarget.flatMap { sheets[$0.entry.id]?.work(of: row, item: $0.item) }
     }
 
@@ -1077,7 +1065,6 @@ public final class SpotsModel {
                 open(id, moving: true)
                 return
             }
-            if entry.command.changesSpots, action == nil { spotsChanged = true }
             if action == nil, item.shortcut != nil {
                 toggleRecording(id: item.run)
                 return
