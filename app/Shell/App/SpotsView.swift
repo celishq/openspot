@@ -72,10 +72,6 @@ struct SpotsView: View {
                 showsField: showsSearchField,
                 surfaceIsOut: surfaceIsOut
             )
-            if model.isEditing {
-                editHeader
-                    .transition(.opacity)
-            }
             if let menu = model.menu {
                 Color.clear
                     .contentShape(Rectangle())
@@ -212,20 +208,6 @@ struct SpotsView: View {
         if let form = model.form { return form.draft.choices != nil }
         guard sheetOpen else { return true }
         return model.sheets[sheetID ?? ""]?.kind.showsField != false
-    }
-
-    /// The top of the grid in Edit Spots, in the place of the search field.
-    private var editHeader: some View {
-        HStack {
-            Text("Edit Spots")
-                .font(SpotType.input)
-                .foregroundStyle(SpotTheme.ink)
-            Spacer()
-            SpotRoundButton(symbol: "checkmark", label: "Done", look: .strong) { model.endEditing() }
-        }
-        .padding(.horizontal, SpotTokens.padding)
-        .frame(width: SpotTokens.gridWidth, height: SpotTokens.rowHeight)
-        .offset(x: SpotTokens.halo, y: SpotTokens.halo)
     }
 }
 
