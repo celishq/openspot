@@ -28,6 +28,18 @@ final class PluginFolderTests: XCTestCase {
         get throws { try PluginFolder(url: folder).scan() }
     }
 
+    func testAFolderBesideItsScriptIsNoSpotOfItsOwn() throws {
+        try write("plugins/board.sh", header: "read=panel,sheet\noffers=rows")
+        try write("plugins/board/app/main.sh")
+        try write("core/sketch.sh", header: "read=panel,sheet\noffers=rows")
+        try write("core/sketch/app/main.sh")
+
+        let result = try PluginFolder(url: folder.appendingPathComponent("plugins"), core: folder.appendingPathComponent("core"), enabled: ["sketch"]).scan()
+
+        XCTAssertEqual(result.commands.map(\.id).sorted(), ["board", "sketch"])
+        XCTAssertEqual(result.commands.map(\.isOnGrid), [false, false])
+    }
+
     func testTheStampStaysWhileNothingThatAScanReadsChanges() throws {
         try write("a.sh", header: "title=A")
         try write("home/b.sh", header: "title=B")

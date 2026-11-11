@@ -12,8 +12,10 @@ public struct Plugin: Equatable, Sendable {
         self.commands = commands
     }
 
-    /// Reads a file with no run of it. Returns nil for a file that is neither. Throws a fault that names what is wrong.
+    /// Reads a file with no run of it. Returns nil for a folder and for a file that is neither. Throws a fault that names what is wrong.
     public init?(file url: URL, id: String) throws {
+        var isFolder: ObjCBool = false
+        if FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder), isFolder.boolValue { return nil }
         if SwiftProgram.isProgram(url) { return nil }
         if url.pathExtension == Self.widgetExtension {
             let document = try TomlDocument(text: try String(contentsOf: url, encoding: .utf8))
