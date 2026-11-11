@@ -158,7 +158,8 @@ from a pick or an action.
 is `button`, `list`, `number` or `form`. `openspot spot run <id> [call] [value]...` makes one call as Openspot makes it,
 with the same environment, and prints each frame, then stderr, and exits with the code of the script. With no call, it
 reads a spot that has a `read`, and runs one that has none. `openspot spot log <id>` prints the last calls that Openspot
-made to a spot, each with its stdin, stdout, stderr and exit code.
+made to a spot, each with its stdin, stdout, stderr and exit code. A timed read or a search that does not fail
+leaves no record.
 
 `openspot render [--view <file.swift>] <file.png>` draws the sheet that stdin holds, with the plugin's view from a Swift file, and `openspot render --card <size> <file.png>` draws its card
 at a size such as `wide`, so you can see a result before you stop. `openspot render --spot <id> [--card <size>] <file.png>`

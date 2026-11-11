@@ -249,6 +249,13 @@ public final class SpotRuns {
         return lines
     }
 
+    /// Whether a call leaves no record: a timed read or a search that did not fail, which runs too often to keep.
+    private static func isQuiet(_ reason: ReadReason?, _ end: ScriptCall.End) -> Bool {
+        guard reason == .timer || reason == .search else { return false }
+        if case .failed = end { return false }
+        return true
+    }
+
     /// Starts one call. It gives each frame, as text and sorted by what each block is, and then its end, on the main actor. A
     /// frame waits for the open motion of its sheet, and one that its call stopped meanwhile changes nothing.
     func call(
@@ -257,6 +264,7 @@ public final class SpotRuns {
         key: String,
         input: String?,
         limit: TimeInterval?,
+        reason: ReadReason? = nil,
         variables: [String: String] = [:],
         onFrame: @escaping @MainActor (ScriptCall, String, PluginOutput) async -> Void,
         onEnd: @escaping @MainActor (ScriptCall, ScriptCall.End) async -> Void
@@ -281,7 +289,7 @@ public final class SpotRuns {
                 end = .failed(error)
             }
             let ending: ScriptCall.End = call.isStopped ? .stopped : end
-            if let log, let process {
+            if let log, let process, !Self.isQuiet(reason, ending) {
                 log.write(CallLog.Record(
                     spot: command.id,
                     arguments: action.arguments,

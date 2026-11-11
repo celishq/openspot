@@ -25,7 +25,7 @@ final class OnceLink: ScriptLink {
         var hasAnswer = false
         var showedParts = false
         var selected: String?
-        let made = runs.call(run.command, call.action, key: call.key, input: call.input, limit: call.limit, variables: call.variables) { [weak run] made, text, lines in
+        let made = runs.call(run.command, call.action, key: call.key, input: call.input, limit: call.limit, reason: call.reason, variables: call.variables) { [weak run] made, text, lines in
             guard let run else { return }
             showedParts = showedParts || !lines.parts.isEmpty
             selected = lines.select ?? selected
