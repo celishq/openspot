@@ -129,6 +129,7 @@ struct SpotFieldView: View {
                         model.moveItem(by: -1)
                         return .handled
                     }
+                    if !model.query.isEmpty { return .ignored }
                     if model.selectedIsSlider {
                         model.adjustSelected(by: -5)
                     } else {
@@ -142,6 +143,7 @@ struct SpotFieldView: View {
                         model.moveItem(by: 1)
                         return .handled
                     }
+                    if !model.query.isEmpty { return .ignored }
                     if model.selectedIsSlider {
                         model.adjustSelected(by: 5)
                     } else {

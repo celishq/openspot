@@ -495,11 +495,12 @@ public final class SpotsModel {
     /// The most rows that the main search shows from a list that the person never picked from.
     private static let unpickedRows = 3
 
-    /// Shows the spots that the search finds and the items it finds in the lists that offer them, in one ranking.
+    /// Shows the spots that the search finds and the items it finds in the lists that offer them, in one ranking. While the
+    /// search has text, each one is a full-width row.
     public func updateVisible() {
         let next = found()
         if next != visible { visible = next }
-        let sizes = visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size }
+        let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { _ in SpotSize.strip }
         if sizes != laidOutSizes {
             laidOutSizes = sizes
             placements = SpotGrid().place(sizes)
