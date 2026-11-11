@@ -13,13 +13,13 @@ public struct SpotResize: Sendable {
     private let layouts: [(size: SpotSize, places: [SpotPlacement])]
 
     /// Lays out the grid once for each size in `choices`, and leaves out each size that gives the grid the layout of a size
-    /// kept before it. The card's own size is always kept.
-    public init(id: String, index: Int, sizes: [SpotSize], choices: [SpotSize]) {
+    /// kept before it. The card's own size is always kept. The grid keeps the size of the card.
+    public init(id: String, index: Int, sizes: [SpotSize], choices: [SpotSize], grid: SpotGrid = SpotGrid()) {
         self.id = id
         self.index = index
         start = sizes[index]
         size = sizes[index]
-        let grid = SpotGrid()
+        let grid = grid.keeping(index)
         let own = grid.place(sizes)
         var layouts: [(size: SpotSize, places: [SpotPlacement])] = []
         for choice in choices.contains(start) ? choices : [start] + choices {

@@ -50,6 +50,11 @@ public final class SpotsModel {
             run?.command ?? fixedCommand
         }
 
+        /// Whether the person chose the size of its card, which the grid then keeps.
+        public var isSizeChosen: Bool {
+            sizeChoice != nil
+        }
+
         /// The size of its card: the person's choice, or else its header (F9). A card of a fault is never small, so that its
         /// words show.
         @MainActor public var size: SpotSize {
@@ -149,6 +154,7 @@ public final class SpotsModel {
     public private(set) var visible: [Entry] = []
     /// The sizes that `placements` were laid out from.
     @ObservationIgnored private var laidOutSizes: [SpotSize] = []
+    @ObservationIgnored private var laidOutGrid = SpotGrid()
     /// The cards as the items that the main search finds. It folds them again only when they change.
     @ObservationIgnored private var spotList = ItemList()
     /// Where each visible spot lies on the grid, in the order of `visible`.
@@ -208,6 +214,8 @@ public final class SpotsModel {
     @ObservationIgnored var formAsk: UUID?
     /// Whether the grid is in Edit Spots, where it also shows the spots that are off the grid, and a press only selects.
     public var isEditing = false
+    /// The tip of the corner control that the pointer lies over in Edit Spots.
+    public var tip: SpotTip?
     /// The card that the person drags in Edit Spots, and where a release puts it.
     public internal(set) var drag: SpotDrag?
     public let lift = SpotLift()
@@ -229,7 +237,7 @@ public final class SpotsModel {
     /// How long the pointer stays near a new place before the other cards make room there.
     @ObservationIgnored public var dragRest: Duration = .milliseconds(100)
     /// The place that the cards make room at when the pointer has rested near it for `dragRest`.
-    @ObservationIgnored var dragTarget: Int?
+    @ObservationIgnored var dragTarget: SpotDrag.Target?
     @ObservationIgnored var dragWait: Task<Void, Never>?
     /// How far the grid has scrolled, how far it had when the pointer pressed a card to drag or resize it, and the
     /// pointer's last move since, so that a scroll with no move of the pointer moves the card with the grid.
@@ -487,6 +495,22 @@ public final class SpotsModel {
         (error as? PluginError)?.reason ?? error.localizedDescription
     }
 
+    /// Where the cards hidden from the grid start in the order of Edit Spots, after the cards on the grid and a card that
+    /// arrives from the dock. A dragged card counts in the group of its target. It is nil out of Edit Spots and while the
+    /// search has text.
+    var hiddenStart: Int? {
+        guard isEditing, query.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+        let hidden = cards.filter { !$0.isOnGrid && $0.id != drag?.id }.count + (drag?.target.isOnGrid == false ? 1 : 0)
+        return visible.count - hidden
+    }
+
+    /// The grid of the cards shown: in the groups of Edit Spots, with the size of each card whose size the person chose, and
+    /// of a card that arrives from the dock.
+    var grid: SpotGrid {
+        let arriving = carry?.tile == nil ? nil : carry?.entry.id
+        return SpotGrid(split: hiddenStart, kept: Set(visible.indices.filter { visible[$0].isSizeChosen || visible[$0].id == arriving }))
+    }
+
     /// The entries that have a card. The install screen has none.
     public var cards: [Entry] {
         entries.filter { $0.id != ShippedSpot.installID }
@@ -501,9 +525,12 @@ public final class SpotsModel {
         let next = found()
         if next != visible { visible = next }
         let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { _ in SpotSize.strip }
-        if sizes != laidOutSizes {
+        let index = visible.firstIndex { $0.id == resize?.id }
+        let grid = index.map(self.grid.keeping) ?? self.grid
+        if sizes != laidOutSizes || grid != laidOutGrid {
             laidOutSizes = sizes
-            placements = SpotGrid().place(sizes)
+            laidOutGrid = grid
+            placements = grid.place(sizes)
         }
         if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
     }

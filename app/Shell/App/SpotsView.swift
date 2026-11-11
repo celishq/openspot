@@ -72,10 +72,6 @@ struct SpotsView: View {
                 showsField: showsSearchField,
                 surfaceIsOut: surfaceIsOut
             )
-            if model.isEditing {
-                editHeader
-                    .transition(.opacity)
-            }
             if let menu = model.menu {
                 Color.clear
                     .contentShape(Rectangle())
@@ -149,7 +145,7 @@ struct SpotsView: View {
     }
 
     private static func gridHeight(of model: SpotsModel) -> CGFloat {
-        SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0)
+        SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: model.placements))
     }
 
     /// The height of the sheet that the open one took the place of, so that the blur stays under both until the change
@@ -213,20 +209,6 @@ struct SpotsView: View {
         guard sheetOpen else { return true }
         return model.sheets[sheetID ?? ""]?.kind.showsField != false
     }
-
-    /// The top of the grid in Edit Spots, in the place of the search field.
-    private var editHeader: some View {
-        HStack {
-            Text("Edit Spots")
-                .font(SpotType.input)
-                .foregroundStyle(SpotTheme.ink)
-            Spacer()
-            SpotRoundButton(symbol: "checkmark", label: "Done", look: .strong) { model.endEditing() }
-        }
-        .padding(.horizontal, SpotTokens.padding)
-        .frame(width: SpotTokens.gridWidth, height: SpotTokens.rowHeight)
-        .offset(x: SpotTokens.halo, y: SpotTokens.halo)
-    }
 }
 
 /// Scrolls the grid while a lifted card lies in the fade at either end of the grid's clear part, faster the deeper it lies,
@@ -250,12 +232,11 @@ private struct GridEdgeScroll: ViewModifier {
 
     private func step(seconds: Double) {
         guard let drag = model.drag, model.carry?.isOverDock != true else { return }
-        let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
         let window = ScrollWindow(
             top: SpotTokens.halo + SpotTokens.rowHeight + SpotScrollEdges.fadeLength,
             bottom: SpotTokens.panelHeight - SpotsView.gridBottom - SpotScrollEdges.fadeLength,
             viewHeight: SpotTokens.panelHeight,
-            contentHeight: SpotTokens.gridTop + SpotTokens.height(rows: rows) + SpotsView.gridBottom
+            contentHeight: SpotTokens.gridTop + SpotGrid.height(of: model.placements) + SpotsView.gridBottom
         )
         let point = SpotTokens.gridTop + drag.centre(movedBy: model.lift.offset).y
         guard point - model.gridScroll < SpotTokens.panelHeight else { return }
@@ -289,13 +270,12 @@ private struct GridSelectionFollow: ViewModifier {
     private func show() {
         let placements = model.placements
         guard model.openList == nil, model.drag == nil, let spot = placements.first(where: { $0.index == model.selected }) else { return }
-        let rows = placements.map { $0.row + $0.size.rows }.max() ?? 0
         let top = SpotTokens.gridTop + spot.rect.minY
         let window = ScrollWindow(
             top: SpotTokens.halo + SpotTokens.rowHeight + SpotScrollEdges.fadeLength,
             bottom: SpotTokens.panelHeight - SpotsView.gridBottom - SpotScrollEdges.fadeLength,
             viewHeight: SpotTokens.panelHeight,
-            contentHeight: SpotTokens.gridTop + SpotTokens.height(rows: rows) + SpotsView.gridBottom
+            contentHeight: SpotTokens.gridTop + SpotGrid.height(of: model.placements) + SpotsView.gridBottom
         )
         let offset = window.offset(showing: top...(top + SpotTokens.height(rows: spot.size.rows)), from: scrollOffset)
         guard offset != scrollOffset else { return }

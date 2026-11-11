@@ -16,12 +16,12 @@ struct SpotGridView: View {
     var body: some View {
         let placements = model.placements
         let drag = model.drag
-        let rows = placements.map { $0.row + $0.size.rows }.max() ?? 0
+        let height = SpotGrid.height(of: placements)
         let glass = placements.map { placement in
             let entry = model.visible[placement.index]
             let isLifted = drag?.id == entry.id
             let isHeld = isLifted || model.landing == entry.id
-            let shown = isLifted ? drag.flatMap { $0.placement(at: $0.start) } ?? placement : placement
+            let shown = isLifted ? drag.flatMap { $0.placement(at: $0.home) } ?? placement : placement
             return SpotGridGlass.Card(
                 id: entry.id,
                 size: shown.size,
@@ -33,10 +33,11 @@ struct SpotGridView: View {
             )
         }
         return ZStack(alignment: .topLeading) {
-            SpotGridGlass(cards: glass, pressable: openID == nil ? glass : [], size: CGSize(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows)), lift: model.lift)
+            SpotGridGlass(cards: glass, pressable: openID == nil ? glass : [], size: CGSize(width: SpotTokens.gridWidth, height: height), lift: model.lift)
             if model.isEditing {
                 landing(of: drag, in: placements)
-                    .frame(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows))
+                    .frame(width: SpotTokens.gridWidth, height: height)
+                groupTitles(of: placements)
             }
             ForEach(Array(zip(placements, glass)), id: \.1.id) { placement, card in
                 let entry = model.visible[placement.index]
@@ -75,7 +76,7 @@ struct SpotGridView: View {
                 .allowsHitTesting(entry.id != openID)
             }
         }
-        .frame(width: SpotTokens.gridWidth, height: SpotTokens.height(rows: rows), alignment: .topLeading)
+        .frame(width: SpotTokens.gridWidth, height: height, alignment: .topLeading)
         .contentShape(Rectangle())
         .onDrop(of: [.fileURL], delegate: SpotGridDrop(model: model, target: $dropTarget))
     }
@@ -100,6 +101,23 @@ struct SpotGridView: View {
         guard let push else { return .center }
         let away = placement.direction(awayFrom: push.open)
         return away.columns < 0 ? .trailing : away.columns > 0 ? .leading : away.rows < 0 ? .bottom : away.rows > 0 ? .top : .center
+    }
+
+    /// The title over each group of Edit Spots, with the number of its cards, at the top of the group's band. It shows while
+    /// the grid has two groups, and moves with the cards.
+    private func groupTitles(of placements: [SpotPlacement]) -> some View {
+        let band = SpotTokens.groupTitleBand
+        let hidden = placements.filter { $0.top == 2 * band }
+        let shown = placements.filter { $0.top == band }
+        let hiddenTop = (hidden.map(\.rect.minY).min() ?? band) - band
+        return ZStack(alignment: .topLeading) {
+            GroupTitle(name: "On grid", count: shown.count)
+            GroupTitle(name: "Search only", count: hidden.count)
+                .offset(y: hiddenTop)
+        }
+        .frame(width: SpotTokens.gridWidth, alignment: .topLeading)
+        .opacity(hidden.isEmpty ? 0 : 1)
+        .allowsHitTesting(false)
     }
 
     /// The faint shape where a release puts the lifted card. With no card lifted it lies under the selected card, unseen, so
@@ -144,5 +162,24 @@ private struct SpotCardMenu: View {
             Button(entry.isOnGrid ? "Hide from Grid" : "Show on Grid") { model.setOnGrid(!entry.isOnGrid, for: entry.id) }
             Button("Edit Spots") { model.beginEditing() }
         }
+    }
+}
+
+/// The name of a group of Edit Spots and the number of its cards, as the dock names its spots that are off.
+private struct GroupTitle: View {
+    let name: String
+    let count: Int
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(name)
+                .font(SpotType.title)
+                .foregroundStyle(SpotTheme.ink)
+            Text("\(count)")
+                .font(SpotType.body)
+                .modifier(SpotSecondaryText())
+        }
+        .frame(height: SpotTokens.groupTitleHeight)
+        .padding(.horizontal, SpotTokens.padding)
     }
 }

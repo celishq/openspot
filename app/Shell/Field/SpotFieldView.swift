@@ -26,10 +26,12 @@ struct SpotFieldView: View {
         ZStack(alignment: .topLeading) {
             searchField
                 .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: showsField)) { $0.opacity(showsField ? 1 : 0) }
-                .opacity(model.isEditing ? 0 : 1)
                 .allowsHitTesting(showsField && !model.isEditing)
             promptLayer
                 .opacity(model.isEditing ? 0 : 1)
+            editHeader
+                .opacity(model.isEditing ? 1 : 0)
+                .allowsHitTesting(model.isEditing)
         }
         .onChange(of: model.isShown) { _, isShown in
             guard isShown else {
@@ -64,7 +66,7 @@ struct SpotFieldView: View {
                     .offset(x: fieldTextLeft, y: top)
             }
             .modifier(SpotFieldCrossing(isOpen: isOpen, crosses: !isInstall))
-            .opacity(model.showsFieldDrop ? 0 : 1)
+            .opacity(model.showsFieldDrop || model.isEditing ? 0 : 1)
             .opacity(model.isShown ? 1 : 0)
             .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
             if let drop = model.fieldDrop {
@@ -80,6 +82,21 @@ struct SpotFieldView: View {
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
         .scaleEffect(model.isShown ? 1 : SpotMotion.hiddenScale, anchor: UnitPoint(x: 0.5, y: Self.rect.midY / SpotTokens.panelHeight))
         .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
+    }
+
+    /// The words of Edit Spots and its Done button, on the field's glass in the place of the search.
+    private var editHeader: some View {
+        HStack {
+            Text("Edit Spots")
+                .font(SpotType.input)
+                .foregroundStyle(SpotTheme.ink)
+            Spacer()
+            SpotRoundButton(symbol: "checkmark", label: "Done", look: .strong) { model.endEditing() }
+        }
+        .padding(.horizontal, SpotTokens.padding)
+        .frame(width: Self.rect.width, height: Self.rect.height)
+        .offset(x: Self.rect.minX, y: Self.rect.minY)
+        .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)
     }
 
     /// The field's row in an open sheet.
