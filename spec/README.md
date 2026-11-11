@@ -53,7 +53,7 @@ These rules come from the way Nostr writes its NIPs.
 | `open`, `drop`, `drag`                                                                                   | Default id           | 01   |
 | `OPENSPOT_ID`, `OPENSPOT_REASON`, `OPENSPOT_DATA`, `OPENSPOT_SH`                                         | Environment variable | 01   |
 | `openspot <noun> <verb>`, `openspot help <noun>`                                                         | Command              | 01   |
-| `text`, `number`, `gauge`, `graph`, `picture`, `switch`, `slider`, `field`, `choice`, `hotkey`, `button`, `section`, `repeat`, `row` | Block kind | 01 |
+| `text`, `number`, `gauge`, `graph`, `picture`, `switch`, `slider`, `field`, `choice`, `option`, `hotkey`, `button`, `section`, `repeat`, `row` | Block kind | 01 |
 | `view`                                                                                                   | Block kind           | 03   |
 | `title`, `detail`, `icon`, `tone`, `value`, `color`, `look`, `align`                                     | Block key            | 01   |
 | `parent`, `hides`, `keyword`, `shortcut`, `file`                                                         | Row key              | 01   |

@@ -3,19 +3,27 @@ import Foundation
 /// Every key that a part can hold, as the kinds table of the guide names them, and the faults a printed part can have.
 public enum PartCatalog {
     static let keys: Set<String> = [
-        "title", "detail", "icon", "min", "max", "color", "value", "option",
+        "title", "detail", "icon", "min", "max", "color", "value",
         "placeholder", "readonly", "required", "type", "close", "confirm", "scope", "form", "align", "look",
         "shortcut", "tone"
     ]
     /// The kinds whose blocks can hold keys of the plugin's own, which a view reads.
     private static let open: Set<String> = ["view"]
+    /// The keys of an `option` block after a choice.
+    private static let optionKeys: Set<String> = ["option", "title", "icon"]
 
     /// What is wrong with a block of a part, in words for a person or an agent.
     public static func faults(in block: TextBlock) -> [String] {
         let name = block.fields.first?.value ?? ""
         let isOpen = open.contains(block.fields.first?.key ?? "")
-        var faults = isOpen ? [] : block.fields.dropFirst().map(\.key).filter { !keys.contains($0) }.map { "the part \(name) has an unknown key: \($0)" }
-        faults += block.values("option").filter { !$0.contains(":") }.map { "the part \(name) needs an option as id:title: \($0)" }
+        var faults = isOpen ? [] : block.fields.dropFirst().map(\.key).filter { !keys.contains($0) && $0 != "option" }.map { "the part \(name) has an unknown key: \($0)" }
+        if !block.values("option").isEmpty {
+            faults.append("the part \(name) has option lines, which Openspot no longer reads. Print each option as a block after its choice, such as option=en with title=English")
+        }
+        for option in block.children {
+            let id = option.value("option") ?? ""
+            faults += option.fields.map(\.key).filter { !optionKeys.contains($0) }.map { "the option \(id) of \(name) has an unknown key: \($0)" }
+        }
         faults += block.values("color").filter { !isColor($0) }.map { "the part \(name) needs a color as #rrggbb: \($0)" }
         if let look = block.value("look"), SpotPart.Look(rawValue: look) == nil {
             faults.append("the part \(name) has an unknown look: \(look)")

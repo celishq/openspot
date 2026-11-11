@@ -21,15 +21,19 @@ final class SheetLayoutTests: XCTestCase {
     grid=output output output copy
 
     choice=source
-    option=en:English
     value=en
+
+    option=en
+    title=English
 
     field=input
     value=Hello
 
     choice=target
-    option=ru:Russian
     value=ru
+
+    option=ru
+    title=Russian
 
     field=output
     value=Привет
@@ -147,8 +151,10 @@ final class SheetLayoutTests: XCTestCase {
         grid=output output
 
         choice=target
-        option=a:A
         value=a
+
+        option=a
+        title=A
 
         field=output
         value=Hello
@@ -160,8 +166,10 @@ final class SheetLayoutTests: XCTestCase {
         grid=output output
 
         choice=target
-        option=a:A
         value=a
+
+        option=a
+        title=A
 
         field=output
         value=Hello
@@ -204,8 +212,10 @@ final class SheetLayoutTests: XCTestCase {
 
     choice=tone
     title=Tone
-    option=x:X
     value=x
+
+    option=x
+    title=X
 
     row=1
     title=one

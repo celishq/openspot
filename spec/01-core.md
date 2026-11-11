@@ -29,6 +29,8 @@ The script says what it has and what it offers. Openspot and the person decide w
 
 A line is `key=value`, and it splits at its first `=`. A blank line ends a block, and a line `---` ends a frame. In a
 value, `\n` stands for a new line and `\\` for a backslash. These are the only escapes. An empty value counts as no value.
+A value is never split again, so a URL or a colon stays whole in it. Only a list of plain words splits at commas, such as
+`read=panel,60`. A thing with its own title or picture is a block of its own, such as an `option` after a `choice`.
 
 The first key of a block names its kind, and its value is the id of the block (U2). The one block whose first key names
 no kind is the head, which holds the drawing and the effects of the frame. A line with an unknown key is skipped.
@@ -216,7 +218,8 @@ when it changes. Ids are unique in one output. Each kind keeps its data in `valu
 | `switch`  | A switch.                                               | `value`: `true` or `false`                                      | `<id> true` or `false` |
 | `slider`  | A slider. It sends when the person lets go.             | `value`, `min` and `max`, from 0 to 100 by default              | `<id> <number>`        |
 | `field`   | A text field.                                           | `value`, `placeholder`, `type=multiline`, `required`, `readonly` | `<id> <text>`          |
-| `choice`  | A menu of `option` lines, a list when it covers two lines or more, or swatches of `color` lines. | `option=<id>:<title>`, `color`, `value` | `<id> <option id>` |
+| `choice`  | A menu of the `option` blocks after it, a list when it covers two lines or more, or swatches of `color` lines. | `color`, `value` | `<id> <option id>` |
+| `option`  | One choice of the `choice` right before it, by its id. |  `title`, `icon`                                                |                        |
 | `hotkey`  | A key combination that a press records.                 | `value`                                                         | `<id> <shortcut>`      |
 | `button`  | A button, or an action (see below).                     | `shortcut`, `confirm`, `close`, `look`, `form`, `scope`         | `<id>`                 |
 | `section` | A title over the lines that follow it.                  |                                                                 |                        |
@@ -265,7 +268,7 @@ while it needs a value, such as an app that it has not been told to use.
 A button with `form=true` asks for values first. The call runs once with empty stdin, and it prints a `title` in its head
 and one `field`, `choice`, `switch` or `slider` for each value. A choice starts on its first option. A form with one
 `choice` and nothing else shows its options as rows under the search field, which narrows them, each with the picture of
-`option=<id>:<title>:<icon>`, and Enter or a click on one sends it. Esc clears the search first. With `type=multiple`, that
+its `icon`, and Enter or a click on one sends it. Esc clears the search first. With `type=multiple`, that
 choice picks several: a checkmark marks each option of a `value` line, Enter sends the option of its row, and `⌘⇧A` sends
 each option with no checkmark, one per line. The script keeps the picks and prints the form again with its new `value`
 lines, so the form stays open, and the spot reads again. Then the same call runs with the values on stdin, and it can
@@ -475,6 +478,7 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | A frame with a block is the whole picture, and a head alone carries effects.                                | A later frame that merges what it prints.    |
 | Escape codes report and never act.                                                                          | OSC 8 as `link`.                             |
 | `openspot guide` is the one text of the contract, and a part takes only the keys that it names.             | A catalog of parts beside the guide.         |
+| A value is whole, and a thing with its own title or picture is a block.                                     | `<id>:<title>:<icon>` in one value, which a URL or a time such as 09:30 breaks. |
 | A person can see and stop each call, so a call has no time limit.                                           | A `job` key.                                 |
 | A script runs once for each call, unless its header says `stay` (05).                                       | A process that stays by default.             |
 | The header is in each file, and a scan runs nothing.                                                        | A manifest.                                  |

@@ -18,18 +18,26 @@ public enum SheetExamples {
         grid=output output output copy
 
         choice=source
-        option=auto:Automatic
-        option=en:English
         value=auto
+
+        option=auto
+        title=Automatic
+
+        option=en
+        title=English
 
         field=input
         value=Good morning
         placeholder=Type or paste text
 
         choice=target
-        option=fr:French
-        option=de:German
         value=fr
+
+        option=fr
+        title=French
+
+        option=de
+        title=German
 
         field=output
         value=Bonjour
@@ -93,14 +101,20 @@ public enum SheetExamples {
         detail=1.2 GB
 
         choice=quality
-        option=high:High quality
-        option=low:Low quality
         value=high
+
+        option=high
+        title=High quality
+
+        option=low
+        title=Low quality
 
         choice=format
         align=right
-        option=mp4:MP4
         value=mp4
+
+        option=mp4
+        title=MP4
 
         gauge=status
         title=Converting
@@ -133,9 +147,13 @@ public enum SheetExamples {
 
         choice=model
         align=left
-        option=fast:Fast
-        option=deep:Deep
         value=fast
+
+        option=fast
+        title=Fast
+
+        option=deep
+        title=Deep
 
         button=ask
         look=strong
@@ -187,10 +205,16 @@ public enum SheetExamples {
         grid=paste paste paste paste
 
         choice=items
-        option=address:Address
-        option=signature:Signature
-        option=link:Meeting link
         value=address
+
+        option=address
+        title=Address
+
+        option=signature
+        title=Signature
+
+        option=link
+        title=Meeting link
 
         field=preview
         value=Rosenthaler Str. 40\\n10178 Berlin
@@ -289,9 +313,13 @@ public enum SheetExamples {
 
     choice=tone
     title=Skin tone
-    option=none:Yellow
-    option=light:Light
     value=none
+
+    option=none
+    title=Yellow
+
+    option=light
+    title=Light
 
     row=grin
     title=Grinning face

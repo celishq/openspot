@@ -54,6 +54,7 @@ public struct PluginOutput: Equatable, Sendable {
     }
     private static let button = "button"
     private static let repeatKind = "repeat"
+    private static let optionKind = "option"
     /// The kinds of block that Openspot no longer reads. Each one is skipped and reported, so it never takes the place of the
     /// head.
     private static let retiredKinds: Set<String> = ["template", "spot"]
@@ -65,7 +66,23 @@ public struct PluginOutput: Equatable, Sendable {
 
     /// Whether a first key names a row or a part, so that the block is not the head.
     private static func isKind(_ key: String) -> Bool {
-        key == "row" || key == repeatKind || retiredKinds.contains(key) || SpotPart.kinds.contains(key)
+        key == "row" || key == repeatKind || key == optionKind || retiredKinds.contains(key) || SpotPart.kinds.contains(key)
+    }
+
+    /// Folds the `option` blocks right after a choice into it. An option with no choice before it stays, and is reported.
+    private static func grouping(_ blocks: [TextBlock]) -> [TextBlock] {
+        var grouped: [TextBlock] = []
+        var choice: Int?
+        for block in blocks {
+            let kind = block.fields.first?.key
+            if kind == optionKind, let index = choice {
+                grouped[index] = grouped[index].adding(child: block)
+            } else {
+                choice = kind == "choice" ? grouped.count : nil
+                grouped.append(block)
+            }
+        }
+        return grouped
     }
 
     public init(text: String) {
@@ -78,6 +95,7 @@ public struct PluginOutput: Equatable, Sendable {
     }
 
     private init(blocks: [TextBlock], checks: Bool) {
+        let blocks = Self.grouping(blocks)
         self.blocks = blocks
         self.checks = checks
         isPicture = blocks.contains { block in block.fields.first.map { Self.isKind($0.key) } ?? false }

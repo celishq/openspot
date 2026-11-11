@@ -114,7 +114,7 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         case "hotkey":
             control = .shortcut(block.value("value") ?? "")
         case "choice":
-            let options = block.values("option").map(Self.option)
+            let options = Self.options(of: block)
             if !block.values("color").isEmpty {
                 control = .swatches(block.values("color"), value: block.value("value"))
             } else {
@@ -149,13 +149,11 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         kind == "text" ? tone : nil
     }
 
-    /// Reads an `option` line, `<id>:<title>[:<icon>]`, or an id that is its own title. The icon follows the last colon, so
-    /// a title with an icon keeps each colon of its own.
-    static func option(_ text: String) -> Option {
-        guard let first = text.firstIndex(of: ":") else { return Option(id: text, title: text) }
-        let rest = text[text.index(after: first)...]
-        guard let last = rest.lastIndex(of: ":") else { return Option(id: String(text[..<first]), title: String(rest)) }
-        return Option(id: String(text[..<first]), title: String(rest[..<last]), icon: String(rest[rest.index(after: last)...]))
+    /// The options of a choice: the `option` blocks after it, each with its id, its `title` or else its id, and its `icon`.
+    static func options(of block: TextBlock) -> [Option] {
+        block.children.compactMap { child in
+            child.value("option").map { Option(id: $0, title: child.value("title") ?? $0, icon: child.value("icon")) }
+        }
     }
 
     /// The value of its control, as the script reads it. A line with no control has none.

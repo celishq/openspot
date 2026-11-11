@@ -23,8 +23,12 @@ final class FormDraftTests: XCTestCase {
 
         choice=editor
         title=Editor
-        option=/Applications/Zed.app:Zed
-        option=/System/Library/CoreServices/Finder.app:Finder
+
+        option=/Applications/Zed.app
+        title=Zed
+
+        option=/System/Library/CoreServices/Finder.app
+        title=Finder
 
         switch=hidden
         title=Show hidden folders
@@ -48,7 +52,7 @@ final class FormDraftTests: XCTestCase {
     }
 
     func testAFormOfOneChoiceListsItsOptionsAsRowsThatTheArrowsChoose() throws {
-        let form = try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=Editor\n\nchoice=editor\ntitle=Editor\nvalue=b\noption=a:A\noption=b:B\noption=c:C\n")))
+        let form = try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=Editor\n\nchoice=editor\ntitle=Editor\nvalue=b\n\noption=a\ntitle=A\n\noption=b\ntitle=B\n\noption=c\ntitle=C\n")))
         var draft = FormDraft(form: form)
 
         XCTAssertEqual(draft.choices?.shown.map(\.title), ["A", "B", "C"])
@@ -60,7 +64,7 @@ final class FormDraftTests: XCTestCase {
         draft.choose("a")
         XCTAssertEqual(draft.values["editor"], "a")
         XCTAssertEqual(draft.choices?.selectedItem?.run, "a")
-        let longer = try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=Editor\n\nchoice=editor\ntitle=Editor\noption=a\noption=b\noption=c\noption=d\n")))
+        let longer = try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=Editor\n\nchoice=editor\ntitle=Editor\n\noption=a\n\noption=b\n\noption=c\n\noption=d\n")))
         XCTAssertLessThan(SpotTokens.formRect(form).height, SpotTokens.formRect(longer).height)
     }
 
@@ -71,11 +75,19 @@ final class FormDraftTests: XCTestCase {
         choice=shown
         title=Calendars
         type=multiple
-        option=a:Work · iCloud:calendar
-        option=b:Home
-        option=c:Family · iCloud:list.bullet
         value=a
         value=c
+
+        option=a
+        title=Work · iCloud
+        icon=calendar
+
+        option=b
+        title=Home
+
+        option=c
+        title=Family · iCloud
+        icon=list.bullet
         """)))
         var draft = FormDraft(form: form)
 
@@ -91,21 +103,21 @@ final class FormDraftTests: XCTestCase {
         let kept = FormDraft(form: form, after: draft)
         XCTAssertEqual(kept.choices?.selectedItem?.run, "b")
         XCTAssertEqual(kept.values["shown"], "b")
-        let all = try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=A\n\nchoice=shown\ntitle=A\ntype=multiple\noption=a\noption=b\nvalue=a\nvalue=b\n")))
+        let all = try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=A\n\nchoice=shown\ntitle=A\ntype=multiple\nvalue=a\nvalue=b\n\noption=a\n\noption=b\n")))
         XCTAssertNil(FormDraft(form: all).selectingAll())
-        let none = try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=A\n\nchoice=shown\ntitle=A\ntype=multiple\noption=a\noption=b\n")))
+        let none = try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=A\n\nchoice=shown\ntitle=A\ntype=multiple\n\noption=a\n\noption=b\n")))
         XCTAssertEqual(FormDraft(form: none).selectingAll()?.values["shown"], "a\nb")
-        XCTAssertNil(FormDraft(form: try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=A\n\nchoice=one\ntitle=A\noption=a\noption=b\n")))).selectingAll())
+        XCTAssertNil(FormDraft(form: try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=A\n\nchoice=one\ntitle=A\n\noption=a\n\noption=b\n")))).selectingAll())
     }
 
     func testAnOptionKeepsEachColonOfItsTitleBeforeItsIcon() throws {
-        let form = try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=A\n\nchoice=c\ntitle=A\noption=a:Team: Design:calendar\noption=b:B\noption=c\n")))
+        let form = try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=A\n\nchoice=c\ntitle=A\n\noption=a\ntitle=Team: Design\nicon=calendar\n\noption=b\ntitle=B\n\noption=c\n")))
 
         XCTAssertEqual(form.fields[0].options, [.init(id: "a", title: "Team: Design", icon: "calendar"), .init(id: "b", title: "B"), .init(id: "c", title: "c")])
     }
 
     func testAFormWithAChoiceAndAFieldKeepsItsControls() throws {
-        let form = try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=Editor\n\nchoice=editor\ntitle=Editor\noption=a:A\n\nfield=note\ntitle=Note\n")))
+        let form = try XCTUnwrap(ItemForm(output: PluginOutput(text: "title=Editor\n\nchoice=editor\ntitle=Editor\n\noption=a\ntitle=A\n\nfield=note\ntitle=Note\n")))
 
         XCTAssertNil(FormDraft(form: form).choices)
     }

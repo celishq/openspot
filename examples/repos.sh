@@ -78,7 +78,7 @@ branch() {
 form() {
   printf 'title=%s\n\nchoice=editor\ntitle=Default app\nvalue=%s\n' "$1" "$(esc "$editor")"
   installed | while IFS= read -r app; do
-    printf 'option=%s:%s\n' "$(esc "$app")" "$(esc "$(name "$app")")"
+    printf '\noption=%s\ntitle=%s\n' "$(esc "$app")" "$(esc "$(name "$app")")"
   done
 }
 

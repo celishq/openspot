@@ -25,7 +25,7 @@ final class RepeatDrawingTests: XCTestCase {
     }
 
     func testOneLineOfSingleCellsIsAGrid() {
-        let output = PluginOutput(text: "grid=tone\ngrid=a\n\nrepeat=a\ngrid=a b c d e f g\n\nchoice=tone\noption=none:Yellow\n\nrow=x\ntitle=x\n")
+        let output = PluginOutput(text: "grid=tone\ngrid=a\n\nrepeat=a\ngrid=a b c d e f g\n\nchoice=tone\n\noption=none\ntitle=Yellow\n\nrow=x\ntitle=x\n")
 
         XCTAssertEqual(output.drawing.perLine, 7)
         XCTAssertEqual(output.perLine, 7)

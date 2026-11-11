@@ -44,9 +44,10 @@ calendars_form() {
           if ($i ~ /^title=/) title = substr($i, 7)
           if ($i ~ /^detail=/) account = substr($i, 8)
         }
-        printf "option=%s:%s · %s:%s\n", head[2], title, account, head[1]
+        options = options sprintf("\noption=%s\ntitle=%s · %s\nicon=%s\n", head[2], title, account, head[1])
         if (!index(hidden, " " head[2] " ")) printf "value=%s\n", head[2]
-      }'
+      }
+      END { printf "%s", options }'
 }
 
 events() { openspot calendar events --days 2 $(hides) </dev/null; }

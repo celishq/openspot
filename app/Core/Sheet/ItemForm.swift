@@ -55,10 +55,10 @@ public struct ItemForm: Equatable, Sendable {
                 let type = block.value("type").flatMap(Kind.init).flatMap { [.text, .multiline].contains($0) ? $0 : nil } ?? .text
                 self.init(name: name, label: label, type: type, value: block.value("value"), required: block.flag("required"), placeholder: block.value("placeholder"))
             case "choice" where block.value("type") == "multiple":
-                let options = block.values("option").map(SpotPart.option)
+                let options = SpotPart.options(of: block)
                 self.init(name: name, label: label, type: .choice, value: options.first?.id, options: options, picks: Set(block.values("value")))
             case "choice":
-                let options = block.values("option").map(SpotPart.option)
+                let options = SpotPart.options(of: block)
                 self.init(name: name, label: label, type: .choice, value: block.value("value") ?? options.first?.id, options: options)
             case "switch":
                 self.init(name: name, label: label, type: .switch, value: block.flag("value") == true ? "true" : "false")

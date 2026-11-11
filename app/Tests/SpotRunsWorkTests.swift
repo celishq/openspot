@@ -433,7 +433,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(header: "read=sheet", """
         case "$1" in
           read) printf 'row=a\\ntitle=A\\n' ;;
-          editor) printf 'title=Editor\\n\\nchoice=editor\\ntitle=Editor\\noption=zed:Zed\\n' ;;
+          editor) printf 'title=Editor\\n\\nchoice=editor\\ntitle=Editor\\n\\noption=zed\\ntitle=Zed\\n' ;;
           folder) touch "\(path("folder"))" ;;
         esac
         """)

@@ -119,9 +119,13 @@ final class SheetPartsTests: XCTestCase {
     func testAMenuAndATextAreaReadTheirOptions() throws {
         let parts = try panel("""
         choice=source
-        option=auto:Auto
-        option=en:English
         value=en
+
+        option=auto
+        title=Auto
+
+        option=en
+        title=English
 
         field=output
         value=one\\ntwo
@@ -131,6 +135,14 @@ final class SheetPartsTests: XCTestCase {
 
         XCTAssertEqual(parts[0].control, .menu([.init(id: "auto", title: "Auto"), .init(id: "en", title: "English")], value: "en"))
         XCTAssertEqual(parts[1].control, .text("one\ntwo", placeholder: "Translation", isReadOnly: true))
+    }
+
+    func testAChoiceTakesTheOptionBlocksAfterItWithEachTitleAndIconWhole() {
+        let output = PluginOutput(text: "choice=c\nvalue=b\n\noption=a\ntitle=Team: 09:30\nicon=https://example.com/a.png\n\noption=b\n\nfield=f\n\noption=x\n")
+
+        XCTAssertEqual(output.parts.map(\.id), ["c", "f"])
+        XCTAssertEqual(output.parts.first?.control, .menu([.init(id: "a", title: "Team: 09:30", icon: "https://example.com/a.png"), .init(id: "b", title: "b")], value: "b"))
+        XCTAssertEqual(output.errors, ["option=x"])
     }
 
     func testValuesGoToTheScriptAsOneBlock() throws {
@@ -213,7 +225,7 @@ final class SheetPartsTests: XCTestCase {
     func testTheCatalogReportsWhatAPartCannotHold() {
         XCTAssertEqual(PluginOutput(text: lights).partFaults, [])
         XCTAssertEqual(PluginOutput(text: "text=a\ncolour=red\n").partFaults, ["the part a has an unknown key: colour"])
-        XCTAssertEqual(PluginOutput(text: "choice=a\noption=English\n").partFaults, ["the part a needs an option as id:title: English"])
+        XCTAssertEqual(PluginOutput(text: "choice=a\noption=en:English\n").partFaults, ["the part a has option lines, which Openspot no longer reads. Print each option as a block after its choice, such as option=en with title=English"])
         XCTAssertEqual(PluginOutput(text: "choice=a\ncolor=red\n").partFaults, ["the part a needs a color as #rrggbb: red"])
         XCTAssertEqual(PluginOutput(text: "text=a\nshortcut=nope+a\n").partFaults, ["the part a has an unknown key combination: nope+a"])
         XCTAssertEqual(PluginOutput(text: "text=a\ntitle=A\ndetail=9%\nvalue=0.09\ntone=bad\n").partFaults, [])
@@ -377,21 +389,21 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testAChoiceDrawnOverTwoLinesIsAListAndOverOneLineAMenu() throws {
-        let choice = "choice=c\noption=a:A\noption=b:B\nvalue=a\n"
+        let choice = "choice=c\nvalue=a\n\noption=a\ntitle=A\n\noption=b\ntitle=B\n"
         let tall = try XCTUnwrap(PluginOutput(text: "grid=c\ngrid=c\n\n" + choice).parts.first)
         let short = try XCTUnwrap(PluginOutput(text: "grid=c\n\n" + choice).parts.first)
         var sheet = try XCTUnwrap(SheetParts(output: PluginOutput(text: "grid=c\ngrid=c\n\n" + choice)))
 
         XCTAssertEqual(tall.control, .list([.init(id: "a", title: "A"), .init(id: "b", title: "B")], value: "a"))
         XCTAssertEqual(short.control, .menu([.init(id: "a", title: "A"), .init(id: "b", title: "B")], value: "a"))
-        sheet.take(PluginOutput(text: "grid=c\ngrid=c\n\nchoice=c\noption=a:A\nvalue=a\n"), answering: sheet.generation)
+        sheet.take(PluginOutput(text: "grid=c\ngrid=c\n\nchoice=c\nvalue=a\n\noption=a\ntitle=A\n"), answering: sheet.generation)
         XCTAssertEqual(sheet.parts.first?.control, .list([.init(id: "a", title: "A")], value: "a"))
     }
 
     func testALookOnlyDrawsTheBox() {
         XCTAssertEqual(PluginOutput(text: "text=a\ntitle=A\nlook=large\n").partFaults, ["the part a has an unknown look: large"])
         XCTAssertEqual(PluginOutput(text: "text=a\ntitle=A\nlook=section\n").partFaults, ["the part a has an unknown look: section"])
-        XCTAssertEqual(PluginOutput(text: "choice=a\noption=x:X\nlook=list\n").partFaults, ["the part a has an unknown look: list"])
+        XCTAssertEqual(PluginOutput(text: "choice=a\nlook=list\n\noption=x\ntitle=X\n").partFaults, ["the part a has an unknown look: list"])
     }
 
     func testASwitchWithATickLookKeepsItsValue() throws {
