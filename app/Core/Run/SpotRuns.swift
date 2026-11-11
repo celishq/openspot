@@ -222,9 +222,11 @@ public final class SpotRuns {
         return text
     }
 
-    /// Whether something other than its sheet in view wants this script.
+    /// Whether something other than its sheet in view wants this script. The open panel wants a staying script that answers
+    /// its search.
     func wants(_ command: Spot) -> Bool {
         if isInMenuBar(command) || command.staysAlways { return true }
+        if isPanelOpen, command.stays, command.answers != nil { return true }
         guard let read = command.read else { return false }
         return isPanelOpen && (read.has(.panel) || placed.contains(command.id))
     }

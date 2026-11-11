@@ -14,7 +14,7 @@ final class StayLink: ScriptLink {
     private var script: ScriptProcess?
     /// Each read and search that the script has not ended yet, by its call number.
     private var asks: [Int: SpotRun.Ask] = [:]
-    /// The call numbers of searches that a newer search stopped, whose late answers change nothing.
+    /// The call numbers of searches and texts of the main search that a newer one stopped, whose late answers change nothing.
     private var dropped: Set<Int> = []
     /// The call numbers of reads and searches that a picture came after, which a frame of only a head then answers.
     private var pictured: Set<Int> = []
@@ -38,7 +38,7 @@ final class StayLink: ScriptLink {
     nonisolated deinit {}
 
     var isAsking: Bool {
-        !asks.isEmpty
+        asks.values.contains { !$0.isAnswer }
     }
 
     var holdsScript: Bool {
@@ -63,10 +63,11 @@ final class StayLink: ScriptLink {
             asks[id] = .read(generation: generation, reports: reports)
             script.send(.read, values: call.input, id: id, reason: call.reason)
         case .ask(.search(let query)):
-            stopSearches()
+            stop { if case .search = $0 { true } else { false } }
             if let id = send(.items(query: query), values: nil, reason: .search) { asks[id] = .search(query) }
-        case .ask(.answer):
-            return false
+        case .ask(.answer(let text)):
+            stop(\.isAnswer)
+            if let id = send(call.action, values: nil, reason: .search) { asks[id] = .answer(text) }
         case .work:
             send(call.action, values: call.input, key: call.key)
         }
@@ -163,10 +164,10 @@ final class StayLink: ScriptLink {
         return id
     }
 
-    /// Stops each search that runs, and drops its answer when it comes (Y7).
-    private func stopSearches() {
+    /// Stops each ask of this kind that runs, and drops its answer when it comes (Y7).
+    private func stop(_ kind: (SpotRun.Ask) -> Bool) {
         for (id, ask) in asks {
-            guard case .search = ask else { continue }
+            guard kind(ask) else { continue }
             asks[id] = nil
             dropped.insert(id)
             script?.send(text: SpotAction.stopEvent(id: id))

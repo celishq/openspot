@@ -49,12 +49,13 @@ ends each call with `end=<n>` in the head of a frame (Y7), so a frame can end a 
 alone.
 
 A call shows as running until its `end`, and a second press sends the block `stop=<n>`. A call that never ends runs until
-the script ends. A newer search sends `stop=<n>` for the search before it, whose answer then changes nothing.
+the script ends. A newer search, or a newer text of the main search for a spot with `answers`, sends `stop=<n>` for the one before it,
+whose answer then changes nothing (I2).
 
 ## Its life
 
 With `mode=stay`, it runs while something wants it: its open sheet, a widget or the menu bar that shows it, the open panel
-with `panel` in its `read`, or a call that waits for its `end` (Y3). With `mode=always`, it runs from the start of the app
+with `panel` in its `read` or with `answers`, or a call that waits for its `end` (Y3). With `mode=always`, it runs from the start of the app
 to its quit. When nothing wants it, Openspot closes its stdin. The script must end then, and so must each process that it
 started. After 2 seconds its process group gets the terminate signal, and 2 seconds later the kill signal.
 

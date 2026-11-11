@@ -230,6 +230,39 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(log().count, 1)
     }
 
+    /// A staying script that answers each text of the main search with one row of that text, and a stop with nothing.
+    private var answering: String {
+        """
+        while IFS= read -r line; do
+          printf '%s\\n' "$line" >> '\(path("blocks"))'
+          case "$line" in
+            call=*) call=${line#call=}; n=0; text= ;;
+            stop=*) call= ;;
+            arg=*) n=$((n + 1)); [ $n = 2 ] && text=${line#arg=} ;;
+          esac
+          [ -n "$line" ] || [ -z "$call" ] || {
+            if [ -n "$text" ]; then printf 'end=%s\\n\\nrow=%s\\ntitle=%s\\n---\\n' "$call" "$text" "$text"; else printf 'end=%s\\n---\\n' "$call"; fi
+          }
+        done
+        """
+    }
+
+    func testAStayingScriptAnswersTheMainSearchWithOnlyTheNewestOfFiveFastTexts() async throws {
+        try script(header: "mode=stay\nanswers=^[0-9]", answering)
+        let sheet = try sheet()
+        runs.panelOpened()
+        var shown: [[String]] = []
+        sheet.onReport = { if case .listChange = $0 { shown.append(sheet.answers.map(\.run)) } }
+
+        for text in ["1", "12", "123", "1234", "12345"] { sheet.answer(text) }
+
+        try await wait("the newest answer") { sheet.answers.map(\.run) == ["12345"] }
+        try await wait("each older text stopped") { self.blocks().filter { $0.hasPrefix("stop=") }.count == 4 }
+        try await pause()
+        XCTAssertEqual(shown, [["12345"]])
+        XCTAssertEqual(log().count, 1)
+    }
+
     func testACardCallOfAStayingScriptReachesIt() async throws {
         try staying()
         let sheet = try sheet()
