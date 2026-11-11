@@ -100,7 +100,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     }
 
     func testEachReadKnowsWhyItRuns() async throws {
-        try script(header: "read=launch,wake,panel,sheet\nshortcut=r", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'row=a\\ntitle=A\\n'")
+        try script(header: "read=panel,sheet\nshortcut=r", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'row=a\\ntitle=A\\n'")
         let sheet = try sheet()
         var expected: [String] = []
         func step(_ reason: String, _ act: () -> Void) async throws {
@@ -111,8 +111,6 @@ final class SpotRunsReadTests: SpotRunsCase {
             try await wait("the end of the \(reason) read") { !self.runs.isReading }
         }
 
-        try await step("launch") { runs.arrive(.launch) }
-        try await step("wake") { runs.arrive(.wake) }
         try await step("panel") { runs.panelOpened() }
         try await step("sheet") { sheet.open(onReady: {}) }
         try await step("change") { sheet.read(need: .change) }
@@ -310,15 +308,18 @@ final class SpotRunsReadTests: SpotRunsCase {
         try await wait("the second read") { self.log().count == 2 }
     }
 
-    func testALaunchOrAWakeReadAlwaysRuns() async throws {
-        try script(header: "read=launch,wake\nshortcut=a", "printf 'row=a\\ntitle=A\\n'")
-        let sheet = try sheet()
+    func testAWakeReadsAWantedScriptWithANumberAtOnceAsATimerRead() async throws {
+        try script(header: "read=600\ntray=true", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'text=a\\ntitle=A\\n'")
+        try script("idle", header: "read=600", log: "idle", "printf 'text=b\\ntitle=B\\n'")
+        _ = try scanned()
+        try await wait("the first read") { self.log("reasons") == ["timer"] && !self.runs.isReading }
 
-        runs.arrive(.launch)
-        try await wait("the first read") { sheet.list.shown.count == 1 && sheet.calls.isEmpty }
-        runs.arrive(.wake)
+        time += 10
+        runs.woke()
 
-        try await wait("the second read") { self.log().count == 2 }
+        try await wait("the wake read") { self.log("reasons") == ["timer", "timer"] }
+        try await pause(0.1)
+        XCTAssertEqual(log("idle"), [])
     }
 
     func testANumberInReadReadsAnOpenSheetOnItsTimerWithAYoungAnswer() async throws {

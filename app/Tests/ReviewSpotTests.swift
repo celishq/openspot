@@ -147,11 +147,11 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testItSaysWhatRunsByItself() throws {
-        let review = try review("title=Weather\nread=panel,wake,launch,30")
+        let review = try review("title=Weather\nread=panel,30")
 
         XCTAssertEqual(review.subtitle, "Runs by itself")
         let text = try shown(review)
-        XCTAssertTrue(text.hasPrefix("Runs by itself\nWeather: when the panel opens, when the Mac wakes, when Openspot starts, every 30 seconds\n"), text)
+        XCTAssertTrue(text.hasPrefix("Runs by itself\nWeather: when the panel opens, every 30 seconds\n"), text)
     }
 
     func testAStayingScriptSaysSo() throws {
@@ -159,6 +159,13 @@ final class ReviewSpotTests: XCTestCase {
 
         let text = try shown(review)
         XCTAssertTrue(text.contains("Weather: keeps running while it is in use"), text)
+    }
+
+    func testAScriptThatAlwaysStaysSaysSo() throws {
+        let review = try review("title=Relay\nstay=always")
+
+        let text = try shown(review)
+        XCTAssertTrue(text.contains("Relay: keeps running while Openspot runs"), text)
     }
 
     func testAMetricThatAWidgetPlacesRunsWhenThePanelOpens() throws {
@@ -212,7 +219,7 @@ final class ReviewSpotTests: XCTestCase {
 
     func testNoScriptRunsForAReviewOrForAdd() throws {
         let mark = folder.appendingPathComponent("ran")
-        let review = try review("read=panel,launch", body: "touch \"\(mark.path)\"\n")
+        let review = try review("read=panel", body: "touch \"\(mark.path)\"\n")
         _ = try review.answer(["read"])
 
         _ = try review.answer(["install"])

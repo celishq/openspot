@@ -4,7 +4,7 @@
 # detail=Today and tomorrow, with your reminders
 # shortcut=d
 # size=large
-# read=panel,60,wake
+# read=panel,60
 # settings=calendars:Calendars:calendar
 . "$OPENSPOT_SH"
 

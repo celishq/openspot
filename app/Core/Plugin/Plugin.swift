@@ -33,12 +33,16 @@ public struct Plugin: Equatable, Sendable {
         var read: SpotRead?
         if let text = header.value("read") {
             guard let parsed = SpotRead(text: text) else {
-                throw PluginError.fault("\(name) has an unknown read: \(text). Use panel, sheet, launch, wake or a number of seconds")
+                throw PluginError.fault("\(name) has an unknown read: \(text). Use sheet, panel or a number of seconds")
             }
             read = parsed
         }
         let isTray = header.flag("tray") ?? false
-        let stays = header.flag("stay") ?? false
+        let stay = header.value("stay")
+        guard stay == nil || ["true", "false", "always"].contains(stay) else {
+            throw PluginError.fault("\(name) has an unknown stay: \(stay!). Use true or always")
+        }
+        let stays = stay == "true" || stay == "always"
         let hasKey = header.value("shortcut") != nil
         if read?.seconds == nil, isTray, !stays {
             throw PluginError.fault("\(name) needs a number in its read, or stay=true, to show in the menu bar")
@@ -47,8 +51,8 @@ public struct Plugin: Equatable, Sendable {
         guard let size = SpotSize(name: sizeName) else { throw PluginError.fault("\(name) has an unknown size: \(sizeName)") }
         let isGlobal = header.value("global") == "rows" || header.flag("global") == true
         if isGlobal {
-            guard read?.has(.panel) == true || read?.has(.launch) == true || read?.seconds != nil else {
-                throw PluginError.fault("\(name) needs panel, launch or a number in its read to join the main search")
+            guard read?.has(.panel) == true || read?.seconds != nil else {
+                throw PluginError.fault("\(name) needs panel or a number in its read to join the main search")
             }
             guard read?.seconds == nil || hasKey else {
                 throw PluginError.fault("\(name) needs a shortcut to join the main search, because a number in its read and no shortcut gives it no spot")
@@ -80,6 +84,7 @@ public struct Plugin: Equatable, Sendable {
             isGlobal: isGlobal,
             isFound: header.value("global") != "rows",
             stays: stays,
+            staysAlways: stay == "always",
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             isTray: isTray,
             offersFloat: (header.flag("float") ?? false) && (read?.seconds == nil || hasKey),

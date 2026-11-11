@@ -325,28 +325,27 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(log().count, 1)
     }
 
-    func testAStayingScriptWithLaunchRunsAtAllTimesAndEachMomentReachesIt() async throws {
-        try staying(header: "stay=true\nread=launch,wake")
+    func testAStayingScriptWithAlwaysRunsFromTheStartWithNothingThatWantsIt() async throws {
+        try staying(header: "stay=always")
         let sheet = try sheet()
 
-        runs.arrive(.launch)
         try await wait("the frame") { sheet.list.shown.count == 1 }
-        XCTAssertEqual(blocks(ids: true), ["call=1\nreason=launch\narg=read"])
+        XCTAssertEqual(blocks(ids: true), ["call=1\nreason=panel\narg=read"])
 
         runs.panelOpened()
         runs.panelClosed()
-        runs.arrive(.wake)
+        runs.woke()
+        try await pause(0.15)
 
-        try await wait("the read of the wake") { self.blocks(ids: true).last == "call=2\nreason=wake\narg=read" }
         XCTAssertFalse(exists("ended"))
         XCTAssertEqual(log().count, 1)
     }
 
-    func testAStayingScriptWithOnlyWakeDoesNotStartAtItsMoment() async throws {
-        try staying(header: "stay=true\nread=wake")
+    func testAStayingScriptThatNothingWantsDoesNotStartOnAWake() async throws {
+        try staying(header: "stay=true\nread=600")
         _ = try scanned()
 
-        runs.arrive(.wake)
+        runs.woke()
         try await pause(0.15)
 
         XCTAssertEqual(log(), [])
@@ -378,7 +377,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(sheet.reading.value?.title, "1")
         XCTAssertEqual(log().count, 1)
 
-        runs.arrive(.wake)
+        runs.woke()
 
         try await wait("the second run") { sheet.reading.value?.title == "2" }
         XCTAssertFalse(sheet.reading.isStale)
@@ -411,20 +410,20 @@ final class SpotRunsStayTests: SpotRunsCase {
     private static let givenUp = "Script failed 3 times in one minute. Openspot will not start it again until its file changes."
 
     func testThreeQuickFailuresStopNewStartsAndTellThePersonOnce() async throws {
-        try script(header: "stay=true\ntray=true\nread=wake", "echo broken >&2\nexit 1")
+        try script(header: "stay=true\ntray=true", "echo broken >&2\nexit 1")
         let (sheet, told) = try toldSheet()
 
         _ = try scanned()
         try await wait("the first failure") { told().count == 1 }
-        runs.arrive(.wake)
+        runs.woke()
         try await wait("the second failure") { told().count == 2 }
         XCTAssertEqual(told(), ["broken", "broken"])
-        runs.arrive(.wake)
+        runs.woke()
         try await wait("the third failure") { told().count == 3 }
         XCTAssertEqual(told().last, Self.givenUp)
         XCTAssertEqual(log().count, 3)
 
-        runs.arrive(.wake)
+        runs.woke()
         runs.panelOpened()
         runs.panelClosed()
         _ = try scanned()
@@ -444,7 +443,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         for count in 1...4 {
             try await wait("failure \(count)") { told().count == count }
             time += 31
-            runs.arrive(.wake)
+            runs.woke()
         }
 
         try await wait("the fifth start") { self.log().count == 5 }
@@ -456,9 +455,9 @@ final class SpotRunsStayTests: SpotRunsCase {
         let (_, told) = try toldSheet()
         _ = try scanned()
         try await wait("the first failure") { told().count == 1 }
-        runs.arrive(.wake)
+        runs.woke()
         try await wait("the second failure") { told().count == 2 }
-        runs.arrive(.wake)
+        runs.woke()
         try await wait("the third failure") { told().count == 3 }
 
         _ = try scanned()
@@ -477,9 +476,9 @@ final class SpotRunsStayTests: SpotRunsCase {
         let (sheet, told) = try toldSheet()
         _ = try scanned()
         try await wait("the first failure") { told().count == 1 }
-        runs.arrive(.wake)
+        runs.woke()
         try await wait("the second failure") { told().count == 2 }
-        runs.arrive(.wake)
+        runs.woke()
         try await wait("the third failure") { told().count == 3 }
         var isReady = false
 

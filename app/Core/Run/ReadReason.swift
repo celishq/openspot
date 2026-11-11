@@ -5,8 +5,6 @@ public enum ReadReason: String, Sendable {
     case panel
     case sheet
     case timer
-    case launch
-    case wake
     case search
     case change
 

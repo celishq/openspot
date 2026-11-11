@@ -169,22 +169,34 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testReadIsAListOfMoments() throws {
-        try write("a.sh", header: "read=panel, sheet,launch,wake,30\nshortcut=a")
+        try write("a.sh", header: "read=panel, sheet,30\nshortcut=a")
 
         let read = try XCTUnwrap(try scan.commands.first?.read)
 
-        XCTAssertEqual(read.moments, [.panel, .sheet, .launch, .wake, .every(30)])
+        XCTAssertEqual(read.moments, [.panel, .sheet, .every(30)])
         XCTAssertEqual(read.seconds, 30)
     }
 
-    func testAMomentThatOnlyALaterPhaseActsOnReadsNothingOnAPanelOpen() throws {
+    func testRefusesTheLaunchAndWakeMoments() throws {
         try write("a.sh", header: "read=launch")
-        try write("b.sh", header: "read=wake")
+        try write("b.sh", header: "read=panel,wake")
 
-        let commands = try scan.commands
+        XCTAssertEqual(try scan.plugins, [])
+        XCTAssertEqual(try scan.refused, [
+            ScanResult.Refusal(file: "a", reason: "A has an unknown read: launch. Use sheet, panel or a number of seconds"),
+            ScanResult.Refusal(file: "b", reason: "B has an unknown read: panel,wake. Use sheet, panel or a number of seconds")
+        ])
+    }
 
-        XCTAssertEqual(commands.map(\.kind), [.launch, .launch])
-        XCTAssertEqual(commands.map(\.readsState), [false, false])
+    func testStayIsTrueOrAlways() throws {
+        try write("a.sh", header: "stay=true")
+        try write("b.sh", header: "stay=always")
+        try write("c.sh", header: "stay=sometimes")
+
+        let scan = try scan
+        XCTAssertEqual(scan.commands.map(\.stays), [true, true])
+        XCTAssertEqual(scan.commands.map(\.staysAlways), [false, true])
+        XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "c", reason: "C has an unknown stay: sometimes. Use true or always")])
     }
 
     func testAHeaderKeepsTheFilesItsCardTakes() throws {
@@ -218,12 +230,11 @@ final class PluginFolderTests: XCTestCase {
 
     func testTheMainSearchNeedsAMomentOutsideTheSheet() throws {
         try write("a.sh", header: "read=panel\nglobal=true")
-        try write("b.sh", header: "read=launch\nglobal=true")
         try write("c.sh", header: "read=30\nglobal=true\nshortcut=c")
 
         XCTAssertEqual(try scan.refused, [])
-        XCTAssertEqual(try scan.commands.map(\.isGlobal), [true, true, true])
-        XCTAssertEqual(try scan.commands.map(\.kind), [.list, .list, .list])
+        XCTAssertEqual(try scan.commands.map(\.isGlobal), [true, true])
+        XCTAssertEqual(try scan.commands.map(\.kind), [.list, .list])
     }
 
     func testANumberAsTheReadIsAMetricWithNoSpot() throws {
@@ -283,14 +294,14 @@ final class PluginFolderTests: XCTestCase {
 
         XCTAssertEqual(try scan.plugins, [])
         XCTAssertEqual(try scan.refused, [
-            ScanResult.Refusal(file: "a", reason: "A has an unknown read: sometimes. Use panel, sheet, launch, wake or a number of seconds"),
+            ScanResult.Refusal(file: "a", reason: "A has an unknown read: sometimes. Use sheet, panel or a number of seconds"),
             ScanResult.Refusal(file: "b", reason: "B has an unknown size: huge"),
             ScanResult.Refusal(file: "c", reason: "C has an unknown shortcut: ctrl+d"),
-            ScanResult.Refusal(file: "f", reason: "F needs panel, launch or a number in its read to join the main search"),
-            ScanResult.Refusal(file: "h", reason: "H needs panel, launch or a number in its read to join the main search"),
-            ScanResult.Refusal(file: "j", reason: "J has an unknown read: open. Use panel, sheet, launch, wake or a number of seconds"),
-            ScanResult.Refusal(file: "k", reason: "K has an unknown read: click. Use panel, sheet, launch, wake or a number of seconds"),
-            ScanResult.Refusal(file: "l", reason: "L has an unknown read: panel,later. Use panel, sheet, launch, wake or a number of seconds")
+            ScanResult.Refusal(file: "f", reason: "F needs panel or a number in its read to join the main search"),
+            ScanResult.Refusal(file: "h", reason: "H needs panel or a number in its read to join the main search"),
+            ScanResult.Refusal(file: "j", reason: "J has an unknown read: open. Use sheet, panel or a number of seconds"),
+            ScanResult.Refusal(file: "k", reason: "K has an unknown read: click. Use sheet, panel or a number of seconds"),
+            ScanResult.Refusal(file: "l", reason: "L has an unknown read: panel,later. Use sheet, panel or a number of seconds")
         ])
     }
 

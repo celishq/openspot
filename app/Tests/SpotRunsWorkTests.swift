@@ -540,7 +540,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAQuitChangesNothingOnAStayingScriptThatFailsAsItEnds() async throws {
-        try script(header: "stay=true\nread=launch", """
+        try script(header: "stay=always", """
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
           [ -n "$line" ] || printf 'end=%s\\n\\ntext=n\\ntitle=A\\n---\\n' "$call"
@@ -548,7 +548,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         exit 3
         """)
         let (sheet, told) = try toldSheet()
-        runs.arrive(.launch)
+        _ = try scanned()
         try await wait("the value") { sheet.reading.value?.title == "A" }
 
         runs.quit()

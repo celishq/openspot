@@ -135,7 +135,7 @@ public final class SpotRuns {
         isPanelOpen = true
         if !wasOpen { sheets.values.forEach { $0.panelOpened() } }
         tick()
-        arrive(.panel)
+        readPanel()
         for id in placed {
             if let sheet = sheets[id], sheet.command.read?.seconds == nil { sheet.read() }
         }
@@ -154,17 +154,22 @@ public final class SpotRuns {
         updateClock()
     }
 
-    /// A moment arrived: reads each script whose `read` lists it, all at the same time. Only `panel` can use a young answer.
-    /// A staying script that something wants and that ended starts again.
-    public func arrive(_ moment: SpotRead.Moment) {
-        let reason: ReadReason = switch moment {
-        case .launch: .launch
-        case .wake: .wake
-        case .sheet: .sheet
-        case .panel, .every: .panel
+    /// Reads each script with `panel` in its `read`, all at the same time, each of which can use a young answer. A staying
+    /// script that something wants and that ended starts again.
+    private func readPanel() {
+        for sheet in sheets.values where sheet.command.read?.has(.panel) == true {
+            sheet.read(need: .moment, reason: .panel)
         }
-        for sheet in sheets.values where sheet.command.read?.has(moment) == true {
-            sheet.read(need: moment == .panel ? .moment : .clock, reason: reason)
+        sheets.values.forEach { $0.settleScript() }
+    }
+
+    /// The Mac woke: each wanted script with a number in its `read` reads at once, and its clock starts again from now. A
+    /// staying script that something wants and that ended starts again.
+    public func woke() {
+        let time = now()
+        for sheet in sheets.values where sheet.isWanted && sheet.command.read?.seconds != nil {
+            asked[sheet.command.id] = time
+            sheet.read(need: .clock, reason: .timer)
         }
         sheets.values.forEach { $0.settleScript() }
     }
@@ -234,8 +239,9 @@ public final class SpotRuns {
 
     /// Whether something other than its sheet in view wants this script.
     func wants(_ command: Spot) -> Bool {
-        guard let read = command.read else { return command.isTray }
-        return command.isTray || read.has(.launch) || (isPanelOpen && (read.has(.panel) || placed.contains(command.id)))
+        if command.isTray || command.staysAlways { return true }
+        guard let read = command.read else { return false }
+        return isPanelOpen && (read.has(.panel) || placed.contains(command.id))
     }
 
     /// Reads a frame of a script on another thread, and waits while the open motion of its sheet runs. The

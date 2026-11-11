@@ -108,26 +108,20 @@ final class SpotRunsWantTests: SpotRunsCase {
     // MARK: L3, moments
 
     func testEachMomentReadsOnlyTheScriptsThatListIt() async throws {
-        try script("onlaunch", header: "read=launch", log: "onlaunch", "printf 'title=L\\n'")
-        try script("onwake", header: "read=wake", log: "onwake", "printf 'title=W\\n'")
+        try script("onsheet", header: "read=sheet", log: "onsheet", "printf 'row=s\\ntitle=S\\n'")
+        try script("ontimer", header: "read=600", log: "ontimer", "printf 'text=t\\ntitle=T\\n'")
         try script("onpanel", header: "read=panel", log: "onpanel", "printf 'text=m\\ntitle=P\\n'")
         _ = try scanned()
         try await pause(0.1)
-        XCTAssertEqual(log("onlaunch") + log("onwake") + log("onpanel"), [])
+        XCTAssertEqual(log("onsheet") + log("ontimer") + log("onpanel"), [])
 
-        runs.arrive(.launch)
-        try await wait("the launch read") { self.log("onlaunch") == ["read"] }
-        XCTAssertEqual(log("onwake"), [])
+        runs.woke()
+        try await pause(0.1)
+        XCTAssertEqual(log("onsheet") + log("ontimer") + log("onpanel"), [])
 
-        runs.arrive(.wake)
-        try await wait("the wake read") { self.log("onwake") == ["read"] }
-        XCTAssertEqual(log("onlaunch"), ["read"])
-        XCTAssertEqual(log("onpanel"), [])
-
-        runs.arrive(.panel)
+        runs.panelOpened()
         try await wait("the panel read") { self.log("onpanel") == ["read"] }
-        XCTAssertEqual(log("onlaunch"), ["read"])
-        XCTAssertEqual(log("onwake"), ["read"])
+        XCTAssertEqual(log("onsheet") + log("ontimer"), [])
     }
 
     func testAnOpenSheetOfRowsIsNotReadWithThePanelClosedAndIsReadWhenThePanelOpens() async throws {
@@ -170,8 +164,8 @@ final class SpotRunsWantTests: SpotRunsCase {
         try await wait("the new read") { self.log() == ["read", "read"] }
     }
 
-    func testAScriptWithLaunchAndANumberIsReadWithThePanelClosed() async throws {
-        try script(header: "read=launch,1\nshortcut=a", "printf 'title=1\\n'")
+    func testAScriptInTheMenuBarIsReadOnItsClockWithThePanelClosed() async throws {
+        try script(header: "read=1\ntray=true", "printf 'text=t\\ntitle=1\\n'")
         _ = try scanned()
         try await wait("the first read") { self.log().count == 1 }
 

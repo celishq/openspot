@@ -375,9 +375,9 @@ public final class SpotsModel {
         }
     }
 
-    /// A moment of the Mac arrived, such as a wake.
-    public func arrive(_ moment: SpotRead.Moment) {
-        runs.arrive(moment)
+    /// The Mac woke, so each wanted script with a number in its `read` reads at once.
+    public func woke() {
+        runs.woke()
     }
 
     /// A downloaded update waits, so the Updates spot reads now and is on the grid before the panel next opens.

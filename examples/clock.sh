@@ -1,8 +1,7 @@
 #!/bin/sh
 # title=World clock
 # icon=globe
-# stay=true
-# read=launch
+# stay=always
 # tray=true
 . "$OPENSPOT_SH"
 zone=Asia/Tokyo

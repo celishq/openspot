@@ -77,7 +77,6 @@ The specs above are the contract. Until each row below is done, the app still do
 
 | Phase | Rule                                                                                         | Where the code differs today                                   |
 | ----- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| 1     | `read` takes `sheet`, `panel` and a number; a timer also reads on wake; `stay=always`.       | `SpotRead`, `Plugin`, `SpotRuns`; `launch` and `wake` moments. |
 | 2     | A card with no sheet calls `open` with no row.                                               | `SpotAction`, and the plugins call `run`.                      |
 | 3     | Each kind keeps its data in `value`.                                                         | `SpotPart`, `SpotState`, `MetricValue`; `point`, `on`, `level`, `text`. |
 | 4     | No `card=`, `pad=`, `template`, slots, `as`, or `spot` block.                                | `PluginOutput`, `RowTemplate`, `SheetLayout`, `PartCatalog`.   |
