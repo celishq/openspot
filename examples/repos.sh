@@ -3,7 +3,11 @@
 # detail=Open a git repo
 # size=small
 # read=sheet
-# settings=folder,editor:Default app
+#
+# setting=folder
+#
+# setting=editor
+# title=Default app
 export LC_ALL=en_US.UTF-8
 . "$OPENSPOT_SH"
 editors='Visual Studio Code

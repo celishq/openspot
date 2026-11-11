@@ -4,7 +4,9 @@
 # detail=Today and tomorrow, with your reminders
 # size=large
 # read=panel,60
-# settings=calendars:Calendars:calendar
+#
+# setting=calendars
+# icon=calendar
 . "$OPENSPOT_SH"
 
 hidden=$(openspot setting get calendars </dev/null)

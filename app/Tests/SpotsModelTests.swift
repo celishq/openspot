@@ -37,7 +37,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     private func script(_ name: String, header: String, _ body: String) throws {
-        let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
+        let lines = header.split(separator: "\n", omittingEmptySubsequences: false).map { "# \($0)" }.joined(separator: "\n")
         try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: plugins.appendingPathComponent("\(name).sh"))
     }
 
@@ -417,7 +417,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testTheFormOfASettingMovesWithTheArrowsAndSearchesItsRows() async throws {
-        try script("list", header: "read=sheet\nsettings=pick", """
+        try script("list", header: "read=sheet\n\nsetting=pick", """
         case "$1" in
           pick) printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n\noption=c\ntitle=Cherry\n' ;;
           *) printf 'row=a\ntitle=Apple\n' ;;
@@ -440,7 +440,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAFormTakesThePlaceOfThePartsOfTheSheetItOpensOn() async throws {
-        try script("agenda", header: "read=sheet\nsettings=pick", """
+        try script("agenda", header: "read=sheet\n\nsetting=pick", """
         case "$1" in
           pick) printf 'title=Pick\n\nchoice=shown\ntitle=Shown\ntype=multiple\nvalue=a\n\noption=a\ntitle=Apple\n\noption=b\ntitle=Banana\n' ;;
           *) printf 'grid=items\ngrid.wide=next\n\nnumber=next\nvalue=09:30\n\nrepeat=items\n\nrow=e\ntitle=Standup\n' ;;
@@ -590,7 +590,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAKeyShowsTheSymbolOfItsCommandOrElseOfItsScriptForAMoment() async throws {
-        try script("move", header: "icon=macwindow\ncommand=left:Left side:rectangle.lefthalf.inset.filled\ncommand=plain:Plain", "true")
+        try script("move", header: "icon=macwindow\n\ncommand=left\ntitle=Left side\nicon=rectangle.lefthalf.inset.filled\n\ncommand=plain\ntitle=Plain", "true")
         model.reload()
         model.flashPause = .milliseconds(50)
         let shortcut = try XCTUnwrap(Shortcut(text: "ctrl+left"))

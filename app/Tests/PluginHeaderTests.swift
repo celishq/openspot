@@ -4,7 +4,7 @@ import XCTest
 final class PluginHeaderTests: XCTestCase {
     func testAScriptWithCommandsHasNoCardOnTheGridAndStaysInTheScan() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-grid-\(UUID().uuidString)")
-        try Data("#!/bin/sh\n# command=left:Left side\n".utf8).write(to: url)
+        try Data("#!/bin/sh\n#\n# command=left\n# title=Left side\n".utf8).write(to: url)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
         defer { try? FileManager.default.removeItem(at: url) }
 

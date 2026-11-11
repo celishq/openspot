@@ -44,7 +44,8 @@ These rules come from the way Nostr writes its NIPs.
 
 | Word                                                                                                     | Kind                 | Spec |
 | -------------------------------------------------------------------------------------------------------- | -------------------- | ---- |
-| `title`, `icon`, `detail`, `size`, `read`, `drop`, `command`, `settings`, `offers`                       | Header key           | 01   |
+| `title`, `icon`, `detail`, `size`, `read`, `drop`, `offers`                                              | Header key           | 01   |
+| `command`, `setting`                                                                                     | Header block         | 01   |
 | `view`                                                                                                   | Header key           | 03   |
 | `stay`                                                                                                   | Header key           | 05   |
 | `sheet`, `panel`, a number                                                                               | Moment               | 01   |

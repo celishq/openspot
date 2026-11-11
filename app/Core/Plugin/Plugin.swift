@@ -53,9 +53,9 @@ public struct Plugin: Equatable, Sendable {
                 throw PluginError.fault("\(name) needs panel or a number in its read to join the main search")
             }
         }
-        let offers = try header.values("command").map { text in
-            guard let offer = CommandOffer(text: text) else {
-                throw PluginError.fault("\(name) has an unknown command: \(text). Write an ID and a title, such as left:Left side")
+        let offers = try header.children.filter { $0.fields.first?.key == "command" }.map { block in
+            guard let offer = CommandOffer(block: block) else {
+                throw PluginError.fault("\(name) cannot read the command \(block.value("command") ?? ""). Give it an ID with no space and a title, such as command=left with title=Left side")
             }
             return offer
         }
@@ -85,7 +85,7 @@ public struct Plugin: Equatable, Sendable {
             isOnGrid: offers.isEmpty && !isRowsOnly && read?.seconds == nil,
             headerSymbol: symbol,
             offers: offers,
-            settings: header.value("settings")?.split(separator: ",").compactMap { CommandOffer(setting: String($0)) } ?? [],
+            settings: header.children.filter { $0.fields.first?.key == "setting" }.compactMap { CommandOffer(setting: $0) },
             file: icon?.file.map { Self.path($0, beside: url) },
             image: icon?.image.map { Self.path($0, beside: url) },
             glyph: icon?.glyph,
@@ -109,6 +109,13 @@ public struct Plugin: Equatable, Sendable {
 
     /// Refuses a header that still has `global`, `float`, `tray`, `data` or `shortcut`, and names the new way.
     private static func refuseOldKeys(_ header: TextBlock, of name: String) throws {
+        let commands = header.values("command") + header.children.compactMap { $0.value("command") }.filter { $0.contains(":") }
+        if let command = commands.first {
+            throw PluginError.fault("\(name) has command=\(command), which Openspot no longer reads. Write each command as a block after a blank comment line, such as command=left with title=Left side")
+        }
+        if header.value("settings") != nil {
+            throw PluginError.fault("\(name) has settings, which Openspot no longer reads. Write each setting as a block after a blank comment line, such as setting=folder with title=Folder")
+        }
         if let global = header.value("global") {
             let place = global == "rows" ? "rows" : "search"
             throw PluginError.fault("\(name) has global=\(global), which Openspot no longer reads. Use offers=\(place)")

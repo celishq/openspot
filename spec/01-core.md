@@ -37,8 +37,9 @@ no kind is the head, which holds the drawing and the effects of the frame. A lin
 
 ## The header
 
-Comment lines right under the first line say what a script is, one `key=value` on each line. They start with `#`, `//` or
-`--`, and the first other line ends them. A scan reads them and never runs a script. A header key that is not valid
+Comment lines right under the first line say what a script is. They start with `#`, `//` or `--`, and the first other
+line ends them. They are a frame in comments: the keys of the spot, one `key=value` on each line, and after each blank
+comment line a `command` or a `setting` block. A scan reads them and never runs a script. A header key that is not valid
 refuses that plugin, and the others still load.
 
 ```sh
@@ -56,13 +57,34 @@ open -a Calendar
 | `size`     | The size it prefers: `wide` (the default), `small`, `square`, `strip` or `large`. The grid can change it, and the person's choice wins (F9). |
 | `read`     | When a read is safe: `sheet`, `panel` or a number of seconds, split by commas.                                           |
 | `drop`     | The files that its card takes: extensions such as `mov,mkv`, `folder`, or `*`.                                          |
-| `command`  | `<id>:<title>[:<icon>]`, a command that the person can give a key. One line for each.                                    |
-| `settings` | The values that the person chooses for it, each as `<key>[:<title>[:<icon>]]`, such as `folder,editor:Default app`.      |
 | `offers`   | The places that it is made for, split by commas: `search`, `rows` or `float`.                                           |
 | `view`     | A SwiftUI file beside the script, such as `view=cups.swift` (03).                                                        |
 | `stay`     | `true` keeps one process that takes each call on stdin, and `always` keeps it from the start of the app to its quit (05). |
 
-A script with `command` lines has no card on the grid, because its commands are what it gives.
+| Block           | Meaning                                                                                              |
+| --------------- | ---------------------------------------------------------------------------------------------------- |
+| `command=<id>`  | A command that the person can give a key, with its `title` and its `icon`.                           |
+| `setting=<key>` | A value that the person chooses for it, with its `title`, which is its key by default, and its `icon`. |
+
+```sh
+#!/bin/sh
+# title=Windows
+# icon=macwindow
+#
+# command=full
+# title=Full screen
+# icon=rectangle.inset.filled
+#
+# command=left
+# title=Left side
+# icon=rectangle.lefthalf.inset.filled
+case "$1" in
+  full) openspot window move "0 0 1 1" ;;
+  left) openspot window move "0 0 1/2 1" ;;
+esac
+```
+
+A script with `command` blocks has no card on the grid, because its commands are what it gives.
 
 ## Places
 
@@ -436,7 +458,9 @@ the spot selected.
 ### Settings
 
 ```sh
-# settings=folder
+# title=Repos
+#
+# setting=folder
 case "$1" in
   folder)
     picked=$(openspot folder pick)
@@ -445,8 +469,8 @@ case "$1" in
 esac
 ```
 
-`settings` in the header names the values that the person chooses for the spot. The Settings spot lists each one, set or
-not. Enter on it runs the action of the same name with no row, such as `folder`, and closes the panel when the action is
+A `setting` block in the header names a value that the person chooses for the spot. The Settings spot lists each one, set
+or not. Enter on it runs the action of the same name with no row, such as `folder`, and closes the panel when the action is
 done. The action can answer with a form, and the person can remove a value with `⌘⌫`.
 
 `openspot setting get <key>` prints a value that the person chose for the spot, or nothing when there is none.
@@ -479,6 +503,7 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | Escape codes report and never act.                                                                          | OSC 8 as `link`.                             |
 | `openspot guide` is the one text of the contract, and a part takes only the keys that it names.             | A catalog of parts beside the guide.         |
 | A value is whole, and a thing with its own title or picture is a block.                                     | `<id>:<title>:<icon>` in one value, which a URL or a time such as 09:30 breaks. |
+| The header is a frame in comments, so a command or a setting is a block, as in the output.                  | A `command` line and a `settings` list of colon fields.                     |
 | A person can see and stop each call, so a call has no time limit.                                           | A `job` key.                                 |
 | A script runs once for each call, unless its header says `stay` (05).                                       | A process that stays by default.             |
 | The header is in each file, and a scan runs nothing.                                                        | A manifest.                                  |

@@ -78,7 +78,7 @@ final class SettingsSpotTests: XCTestCase {
 
     func testTheSheetListsEachCommandOfAScriptAndGivesItAKey() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# command=left:Left side\n# command=right:Right side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# title=Move\n# icon=macwindow\n#\n# command=left\n# title=Left side\n#\n# command=right\n# title=Right side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
         let runs = SpotRuns()
 
         let before = try await spot.items(timeout: 1).items
@@ -104,7 +104,7 @@ final class SettingsSpotTests: XCTestCase {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         try "#!/bin/sh\n# title=Shelf\n# icon=tray.full\n# offers=float\n".writeScript(to: folder.appendingPathComponent("shelf.sh"))
         try "#!/bin/sh\n# title=Notes\n".writeScript(to: folder.appendingPathComponent("notes.sh"))
-        try "#!/bin/sh\n# title=Move\n# command=left:Left side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# title=Move\n#\n# command=left\n# title=Left side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
         let runs = SpotRuns()
 
         let before = try await spot.items(timeout: 1).items
@@ -151,7 +151,7 @@ final class SettingsSpotTests: XCTestCase {
 
     func testTheSheetListsEachSettingThatAScriptNamesOrKeepsAndRemovesIt() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# title=Repos\n# icon=folder\n# settings=folder, editor:Default app:app.badge\n".writeScript(to: folder.appendingPathComponent("repos.sh"))
+        try "#!/bin/sh\n# title=Repos\n# icon=folder\n#\n# setting=folder\n#\n# setting=editor\n# title=Default app\n# icon=app.badge\n".writeScript(to: folder.appendingPathComponent("repos.sh"))
         try file.set(setting: "folder", of: "repos", to: "~/Code")
         try file.set(setting: "editor", of: "gone", to: "Zed")
 
@@ -179,7 +179,7 @@ final class SettingsSpotTests: XCTestCase {
 
     func testARowShowsTheIconOfItsCommandOrElseOfItsScript() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# command=left:Left side:rectangle.lefthalf.filled\n# command=right:Right side\n# command=fun:Fun:🎉\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# title=Move\n# icon=macwindow\n#\n# command=left\n# title=Left side\n# icon=rectangle.lefthalf.filled\n#\n# command=right\n# title=Right side\n#\n# command=fun\n# title=Fun\n# icon=🎉\n".writeScript(to: folder.appendingPathComponent("move.sh"))
 
         let items = try await spot.items(timeout: 1).items
 
@@ -192,8 +192,8 @@ final class SettingsSpotTests: XCTestCase {
 
     func testAScriptWithCommandsAndNoReadOpensToTheKeysOfItsOwnCommands() async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try "#!/bin/sh\n# title=Move\n# offers=float\n# command=left:Left side\n[ \"$1\" = left ] && printf 'toast=Left\\n'\n".writeScript(to: folder.appendingPathComponent("move.sh"))
-        try "#!/bin/sh\n# title=Other\n# command=up:Up\n".writeScript(to: folder.appendingPathComponent("other.sh"))
+        try "#!/bin/sh\n# title=Move\n# offers=float\n#\n# command=left\n# title=Left side\n[ \"$1\" = left ] && printf 'toast=Left\\n'\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# title=Other\n#\n# command=up\n# title=Up\n".writeScript(to: folder.appendingPathComponent("other.sh"))
         let scan = try PluginFolder(url: folder).scan(shipped: ShippedSpot.commands(folder: folder, guide: folder, app: "", config: file))
         let move = try XCTUnwrap(scan.commands.first { $0.id == "move" })
         let runs = SpotRuns()
