@@ -21,6 +21,8 @@ public struct Spot: Equatable, Sendable {
     public let isGlobal: Bool
     /// Whether the main search finds the spot itself. A header with `global=rows` offers only its rows.
     public let isFound: Bool
+    /// The text of the main search that its script answers with rows (A1).
+    public let answers: AnswerPattern?
     /// Its place in the grid before the person's choice: a lower number first. The person's newest file comes first.
     public private(set) var order: Int
     public private(set) var keepsRecent = true
@@ -93,6 +95,7 @@ public struct Spot: Equatable, Sendable {
         pick: ItemPick = .close,
         isGlobal: Bool = false,
         isFound: Bool = true,
+        answers: AnswerPattern? = nil,
         order: Int = 0,
         primary: String? = nil,
         actions: [CommandAction] = [],
@@ -145,6 +148,7 @@ public struct Spot: Equatable, Sendable {
         self.pick = pick
         self.isGlobal = isGlobal
         self.isFound = isFound
+        self.answers = answers
         self.order = order
         self.primary = primary
         self.actions = actions

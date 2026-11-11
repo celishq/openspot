@@ -604,6 +604,107 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.visible.map(\.id), ["settings\nsound"])
     }
 
+    /// Shows the panel with a spot that answers the main search for text that starts with a digit.
+    private func showAnswers(slow: String = "none") throws {
+        let body = #"case "$2" in \#(slow)) sleep 0.5 ;; esac; case "$1" in read) [ -n "$2" ] && printf 'row=%s\ntitle=Is %s\ndetail=Read %s\n' "$2" "$2" "$2" ;; open) printf 'toast=Picked %s\n' "$2" ;; esac"#
+        try script("calc", header: "title=Calc\nanswers=^[0-9]", body)
+        try script("notes", header: "title=Notes 2\nread=sheet", "printf 'row=a\\ntitle=A\\n'")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+    }
+
+    func testASpotAnswersTheMainSearchFirstWhileItsPatternMatchesTheText() async throws {
+        try showAnswers()
+
+        model.searchText = "2"
+        try await wait("the answer") { model.visible.first?.id == "calc\n2" }
+        XCTAssertEqual(model.visible.map(\.id), ["calc\n2", "notes"])
+        XCTAssertEqual(model.visible.first?.state.title, "Is 2")
+        XCTAssertEqual(model.visible.first?.state.subtitle, "Read 2")
+
+        model.searchText = "notes"
+        XCTAssertEqual(model.visible.map(\.id), ["notes"])
+
+        model.searchText = ""
+        XCTAssertFalse(model.visible.contains { $0.id.hasPrefix("calc") })
+    }
+
+    func testTheLastAnswerStaysUntilTheNewestTextIsAnswered() async throws {
+        try showAnswers(slow: "12")
+
+        model.searchText = "1"
+        try await wait("the first answer") { model.visible.first?.id == "calc\n1" }
+        model.searchText = "12"
+        XCTAssertEqual(model.visible.first?.id, "calc\n1")
+        try await wait("the newer answer") { model.visible.first?.id == "calc\n12" }
+    }
+
+    func testAPickOfAnAnswerCallsItsSpotWithTheRow() async throws {
+        try showAnswers()
+
+        model.searchText = "7"
+        try await wait("the answer") { model.visible.first?.id == "calc\n7" }
+        model.runSelected()
+
+        try await wait("the toast of the pick") { host.confirms.contains("Picked 7") }
+    }
+
+    func testAnAnswerIsAskedAgainWhenThePanelShowsAgain() async throws {
+        let calls = folder.appendingPathComponent("calls").path
+        let body = #"[ "$1" = read ] && [ -n "$2" ] && echo x >> '\#(calls)' && printf 'row=%s\ntitle=Call %s\n' "$2" "$(wc -l < '\#(calls)' | tr -d ' ')""#
+        try script("calc", header: "title=Calc\nanswers=^[0-9]", body)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.searchText = "2"
+        try await wait("the first answer") { model.visible.first?.state.title == "Call 1" }
+
+        model.panelDidHide()
+        XCTAssertFalse(model.visible.contains { $0.id == "calc\n2" })
+        model.panelWillShow(holding: [])
+
+        try await wait("the answer asked again") { model.visible.first?.state.title == "Call 2" }
+    }
+
+    func testReturnOnAnAnswerThatIsNotYetNewWaitsForTheNewest() async throws {
+        try showAnswers(slow: "12")
+        model.searchText = "1"
+        try await wait("the first answer") { model.visible.first?.id == "calc\n1" }
+
+        model.searchText = "12"
+        model.runSelected()
+
+        try await wait("the pick of the newest answer") { host.confirms.contains("Picked 12") }
+        XCTAssertFalse(host.confirms.contains("Picked 1"))
+    }
+
+    func testAnAnswerAndARowOfItsSpotWithOneIdShowOnce() async throws {
+        try script("both", header: "title=Both\nread=panel\nglobal=rows\nanswers=^[0-9]", "printf 'row=7\\ntitle=7 days\\n'")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+
+        model.searchText = "7"
+
+        try await wait("the row and the answer") { model.sheets["both"]?.answers.count == 1 && model.sheets["both"]?.list.all.count == 1 }
+        XCTAssertEqual(model.visible.map(\.id), ["both\n7"])
+    }
+
+    func testAnAnswerLeavesTheFailureOfTheSpotsRead() async throws {
+        let body = #"[ -n "$2" ] || { echo 'Openspot cannot read.' >&2; exit 1; }; printf 'row=%s\ntitle=%s\n' "$2" "$2""#
+        try script("calc", header: "title=Calc\nread=panel\nanswers=^[0-9]", body)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        try await wait("the failure of the read") { model.sheets["calc"]?.failure != nil }
+
+        model.searchText = "2"
+
+        try await wait("the answer") { model.visible.first?.id == "calc\n2" }
+        XCTAssertNotNil(model.sheets["calc"]?.failure)
+    }
+
     func testAKeyShowsTheSymbolOfItsCommandOrElseOfItsScriptForAMoment() async throws {
         try script("move", header: "icon=macwindow\ncommand=left:Left side:rectangle.lefthalf.inset.filled\ncommand=plain:Plain", "true")
         model.reload()

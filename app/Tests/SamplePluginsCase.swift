@@ -99,11 +99,13 @@ class SamplePluginsCase: XCTestCase {
         try await body(folder)
     }
 
-    /// The openspot command: a copy writes the file `clipboard`, and a paste copies it to `pasted`. A setting is the file
+    /// The openspot command: a sum prints the file `calc-answer` and adds its words to `calc-asked`, a copy writes the file
+    /// `clipboard`, and a paste copies it to `pasted`. A setting is the file
     /// `setting-<key>`, and a folder pick prints the file `picked`.
     static func fakeOpenspot(in folder: URL) -> String {
         """
         case "$1 $2" in
+          'calc solve') printf '%s\\n' "$3" >> '\(folder.path)/calc-asked'; cat '\(folder.path)/calc-answer' 2>/dev/null ;;
           'clipboard copy') cat > '\(folder.path)/clipboard' ;;
           'clipboard paste') cp '\(folder.path)/clipboard' '\(folder.path)/pasted' ;;
           'setting get') cat "\(folder.path)/setting-$3" 2>/dev/null ;;
