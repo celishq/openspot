@@ -776,11 +776,11 @@ final class SpotsModelTests: XCTestCase {
         // title=Calc
         // mode=inline
         // answers=^[0-9]
-        function read(reason, text) {
+        function main([id, text]) {
+          if (id === "open") return `toast=Picked ${text}\\n`
           if (text === "12") { const end = Date.now() + 300; while (Date.now() < end) {} }
           return `row=${text}\\ntitle=Is ${text}\\n`
         }
-        function open(id) { return `toast=Picked ${id}\\n` }
         """.write(to: plugins.appendingPathComponent("calc.js"), atomically: true, encoding: .utf8)
         model.reload()
         model.isShown = true

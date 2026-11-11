@@ -114,20 +114,23 @@ final class SamplePluginsTests: SamplePluginsCase {
         var frames = relay.start().makeAsyncIterator()
 
         relay.send(.read, id: 1)
-        let sheet = try await frames.next()
+        var sheet = try await frames.next()
+        while SpotOutput(text: sheet ?? "").isMark { sheet = try await frames.next() }
         XCTAssertTrue(sheet?.contains("title=No message yet") == true, sheet ?? "")
 
         var call = 2
         var seen: [String] = []
         while !seen.contains(where: { $0.contains("title=hello") }), call < 40 {
-            relay.send(SpotAction(arguments: ["send"]), values: "peer=127.0.0.1:\(port)\nmessage=hello\n", id: call)
-            let frame = try await frames.next() ?? ""
-            seen.append(frame)
-            if frame.contains("toast=Sent") { seen.append(try await frames.next() ?? "") }
+            relay.send(SpotAction(arguments: ["send"]), input: "peer=127.0.0.1:\(port)\nmessage=hello\n", id: call)
+            while let frame = try await frames.next() {
+                seen.append(frame)
+                if SpotOutput(text: frame).ends == [String(call)] { break }
+            }
+            if seen.contains(where: { $0.hasPrefix("toast=Sent") }) { seen.append(try await frames.next() ?? "") }
             call += 1
         }
 
-        XCTAssertTrue(seen.contains("toast=Sent\nend=\(call - 1)\n"), "\(seen)")
+        XCTAssertTrue(seen.contains("toast=Sent\n\n"), "\(seen)")
         XCTAssertTrue(seen.contains { $0.contains("text=last\ntitle=hello\ndetail=From a peer") }, "\(seen)")
     }
 

@@ -8,13 +8,13 @@
 # mode=always
 # read=panel
 . "$OPENSPOT_SH"
-while next; do
-  case "$(arg 1)" in
-    read) printf 'end=%s\n\ntext=peer\ntitle=Waiting\n---\n' "$call" ;;
-    ping) printf 'toast=Pong\nend=%s\n---\n' "$call" ;;
-    *) printf 'end=%s\n---\n' "$call" ;;
+main() {
+  case "$1" in
+    read) printf 'text=peer\ntitle=Waiting\n' ;;
+    ping) printf 'toast=Pong\n' ;;
   esac
-done
+}
+openspot_serve main "$@"
 ```
 
 A script with `mode=stay` or `mode=always` in its header is one process that talks both ways over stdio (Y1). Use it to keep a connection,
@@ -38,16 +38,16 @@ A value of the sheet lives inside `input`, so no id that an author picks can cla
 open while the script runs.
 
 The shell helper of 01 reads the calls. `openspot_serve main "$@"` reads each block, runs `main` with its arguments, its
-variables and its stdin, as a script that runs once gets them, and then prints `end=<n>` (Y9). So one `main` runs unchanged
-with each mode. It runs one call at a time.
+variables and its stdin, as a script that runs once gets them, and prints `call=<n>` before its output and `end=<n>` after it
+(Y9). So one `main` runs unchanged with each mode. It runs one call at a time, and `exit` in `main` ends the script.
 
 ## Frames on stdout
 
 The script prints frames at any time, also with no call, such as when a message comes from another process. Each frame
 follows the rule of 01: a frame with a block is the whole picture, and a frame of only a head carries effects. The script
 ends each call with `end=<n>` in the head of a frame (Y7), so a frame can end a call with a new picture, or with effects
-alone. A frame belongs to the oldest call that has not ended, and with no such call to none, so a frame of only `end=<n>`
-ends a call with the frames that it printed before (Y8).
+alone. A frame of only `call=<n>` starts the output of that call: each frame after it, up to the one with `end=<n>`, answers
+the call as a frame of a once script answers it, and a frame of only `end=<n>` ends the call with what it printed (Y8).
 
 A call shows as running until its `end`, and a second press sends the block `stop=<n>`. A call that never ends runs until
 the script ends. A newer search, or a newer text of the main search for a spot with `answers`, sends `stop=<n>` for the one before it,

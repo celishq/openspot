@@ -1,6 +1,6 @@
 import Foundation
 
-/// One call of a JavaScript spot: its function, its arguments and its stdin, and the frame that its thread gives back. The
+/// One call of a JavaScript spot: its arguments, its variables and its stdin (C7), and the frame that its thread gives back. The
 /// main thread waits a short time for the frame, and a frame that comes later goes to `later`. A stopped call that has not
 /// run never runs. Only its first outcome counts.
 final class InlineCall: @unchecked Sendable {
@@ -12,7 +12,7 @@ final class InlineCall: @unchecked Sendable {
     }
 
     let arguments: [String]
-    let reason: ReadReason?
+    let variables: [String: String]
     let input: String?
     private let lock = NSLock()
     private let arrival = DispatchSemaphore(value: 0)
@@ -21,9 +21,9 @@ final class InlineCall: @unchecked Sendable {
     private var stopped = false
     private var isFinished = false
 
-    init(arguments: [String], reason: ReadReason? = nil, input: String? = nil) {
+    init(arguments: [String], variables: [String: String] = [:], input: String? = nil) {
         self.arguments = arguments
-        self.reason = reason
+        self.variables = variables
         self.input = input
     }
 

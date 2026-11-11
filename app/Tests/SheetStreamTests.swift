@@ -129,20 +129,20 @@ final class SheetStreamTests: XCTestCase {
         XCTAssertEqual(panel.parts.first?.value, "typed")
     }
 
-    func testEventsAreBlocks() {
-        XCTAssertEqual(SpotAction.read.event(id: 1), "call=1\narg=read\n\n")
-        XCTAssertEqual(SpotAction.read.event(id: 5, reason: .timer), "call=5\nreason=timer\narg=read\n\n")
-        XCTAssertEqual(SpotAction.press("swap").event(id: 2), "call=2\narg=swap\n\n")
-        XCTAssertEqual(SpotAction.set("input", to: "one\ntwo").event(id: 3), "call=3\narg=input\narg=one\\ntwo\n\n")
-        XCTAssertEqual(SpotAction.drop(paths: ["/a b.mov", "-rf.mov"]).event(id: 4), "call=4\narg=drop\narg=/a b.mov\narg=-rf.mov\n\n")
+    func testACallOfAStayingScriptIsOneBlock() {
+        XCTAssertEqual(SpotAction.read.block(id: 1), "call=1\narg=read\n\n")
+        XCTAssertEqual(SpotAction.read.block(variables: ReadReason.timer.variables, id: 5), "call=5\narg=read\nenv.OPENSPOT_REASON=timer\n\n")
+        XCTAssertEqual(SpotAction.press("swap").block(id: 2), "call=2\narg=swap\n\n")
+        XCTAssertEqual(SpotAction.set("input", to: "one\ntwo").block(id: 3), "call=3\narg=input\narg=one\\ntwo\n\n")
+        XCTAssertEqual(SpotAction.drop(paths: ["/a b.mov", "-rf.mov"]).block(id: 4), "call=4\narg=drop\narg=/a b.mov\narg=-rf.mov\n\n")
     }
 
-    func testAnEventHoldsEachValueOfTheSheet() {
+    func testTheBlockHoldsTheStdinOfTheCallAsOneInput() {
         let values = "input=one\\ntwo\nsource=auto\n"
 
         XCTAssertEqual(
-            SpotAction.set("source", to: "auto").event(values: values, id: 7),
-            "call=7\narg=source\narg=auto\ninput=one\\ntwo\nsource=auto\n\n"
+            SpotAction.set("source", to: "auto").block(input: values, id: 7),
+            "call=7\narg=source\narg=auto\ninput=input=one\\\\ntwo\\nsource=auto\\n\n\n"
         )
     }
 

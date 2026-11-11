@@ -249,8 +249,8 @@ final class SpotFolderTests: XCTestCase {
     }
 
     func testAJavaScriptFileWithModeInlineRunsInlineAndAnotherIsLeft() throws {
-        try "// title=Sum\n// mode=inline\nfunction read() { return '' }\n".write(to: folder.appendingPathComponent("sum.js"), atomically: true, encoding: .utf8)
-        try "// title=Plain\nfunction read() { return '' }\n".write(to: folder.appendingPathComponent("plain.js"), atomically: true, encoding: .utf8)
+        try "// title=Sum\n// mode=inline\nfunction main() { return '' }\n".write(to: folder.appendingPathComponent("sum.js"), atomically: true, encoding: .utf8)
+        try "// title=Plain\nfunction main() { return '' }\n".write(to: folder.appendingPathComponent("plain.js"), atomically: true, encoding: .utf8)
         try write("a.sh", header: "mode=inline")
 
         let scan = try scan

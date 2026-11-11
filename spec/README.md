@@ -59,7 +59,7 @@ These rules come from the way Nostr writes its NIPs.
 | `title`, `detail`, `icon`, `tone`, `value`, `color`, `look`, `align`                                     | Block key            | 01   |
 | `parent`, `hides`, `keyword`, `shortcut`, `file`                                                         | Row key              | 01   |
 | `grid`, `grid.<size>`, `main`, `title`, `detail`, `search`, `recents`, `toast`, `link`, `progress`, `select` | Head key | 01 |
-| `end`                                                                                                    | Head key             | 05   |
+| `call`, `end`                                                                                            | Head key             | 05   |
 | `call`, `arg`, `env.<name>`, `input`, `stop`                                                             | Stdin key            | 05   |
 | `title`, `detail`, `size`, `grid`, `opens`                                                               | Widget key           | 01   |
 
@@ -78,7 +78,6 @@ Where the code still differs from the rules of 11-11-2026. Each fix removes its 
 
 | Rule              | Module that differs                                                                                  |
 | ----------------- | ---------------------------------------------------------------------------------------------------- |
-| C7, Y8, Y9, I6    | `StayLink`, `SpotAction.event`, `openspot.sh`, `InlineScript`, the staying and inline spots.          |
 | I7, A26           | `InlineScript` and `InlineLink`: no time limit, a context at scan, no log, no CPU time, no review.    |
 | K7, K8, A25, A27  | `CommandAPI`, `settings.sh`, `spots.sh`, `updates.sh`, `SpotsModel.configChanged`.                    |
 | C8                | `openspot.sh`, `InlineScript`, `SpotCheck`, each spot that prints a value from data.                 |

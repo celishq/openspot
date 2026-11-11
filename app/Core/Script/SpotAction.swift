@@ -50,14 +50,13 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: ["drag"] + runs)
     }
 
-    /// This call as one block for a script that stays: `call=<id>`, the `reason` of a read and the `value` of its event, one
-    /// `arg` for each argument of a normal call, and each value that stdin holds in a normal call.
-    public func event(values: String? = nil, id: Int, reason: ReadReason? = nil) -> String {
-        let why = reason.map { [TextBlock.Field(key: "reason", value: $0.rawValue)] + ($0.value.map { [TextBlock.Field(key: "value", value: $0)] } ?? []) } ?? []
-        let head = [TextBlock.Field(key: "call", value: String(id))] + why
-        let call = head + arguments.map { TextBlock.Field(key: "arg", value: $0) }
-        let held = values.flatMap { TextBlock.blocks(in: $0).first }?.fields ?? []
-        return TextBlock(fields: call + held).text + "\n"
+    /// This call as one block for a script that stays (Y8): `call=<id>`, an `arg` for each argument, an `env.<name>` for each
+    /// variable, and its stdin as one `input` value.
+    public func block(input: String? = nil, variables: [String: String] = [:], id: Int) -> String {
+        let call = [TextBlock.Field(key: "call", value: String(id))] + arguments.map { TextBlock.Field(key: "arg", value: $0) }
+        let env = variables.sorted { $0.key < $1.key }.map { TextBlock.Field(key: "env.\($0.key)", value: $0.value) }
+        let stdin = input.flatMap { $0.isEmpty ? nil : [TextBlock.Field(key: "input", value: $0)] } ?? []
+        return TextBlock(fields: call + env + stdin).text + "\n"
     }
 
     /// The block that asks a staying script to stop the call with this `id`.

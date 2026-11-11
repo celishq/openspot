@@ -242,9 +242,9 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(SpotOutput(text: "button=read\ntitle=A\n").partFaults, ["an action cannot be called read"])
     }
 
-    func testAPartCalledCallOrArgIsAFaultBecauseAStayingScriptReadsThoseKeys() {
-        for id in ["call", "reason", "arg"] {
-            XCTAssertEqual(SpotOutput(text: "field=\(id)\nvalue=A\n").partFaults, ["a part cannot be called \(id)"])
+    func testAPartCanBeCalledCallOrArgBecauseAValueRidesInsideTheInputOfACall() {
+        for id in ["call", "reason", "arg", "input"] {
+            XCTAssertEqual(SpotOutput(text: "field=\(id)\nvalue=A\n").partFaults, [])
         }
     }
 

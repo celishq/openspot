@@ -1,4 +1,4 @@
-# The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc` and `value`, and `next` and `arg` in a staying script.
+# The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc`, `value` and `openspot_serve`.
 # Loading starts `cat` once, and each function starts `sed`, `tr` or `awk` only above 1 KB, where a shell loop is too slow.
 
 # Whether the header of the script says `mode=stay` or `mode=always`: the comment lines at its top, read with no process.
@@ -15,7 +15,7 @@ while IFS= read -r _openspot_line; do
 done < "$0" 2>/dev/null
 
 # All of stdin, read once now, because each `$(value id)` runs in a subshell that would lose it. A staying script keeps
-# its stdin for its calls, so this leaves it alone there, and `next` fills it with the values of each call.
+# its stdin for its calls, so this leaves it alone there, and `openspot_serve` fills it with the stdin of each call.
 _openspot_stdin=
 if [ -z "$_openspot_stays" ]; then
   _openspot_stdin=$(/bin/cat; printf x)
@@ -92,41 +92,104 @@ $_openspot_stdin
 EOF_OPENSPOT
 )
 
-# Reads the next call of a staying script from stdin, and fails at the end of stdin. It sets `call` to its number, `reason`
-# to why a read came, `OPENSPOT_VALUE` to the value of its event, and `stop` to the number of a call that a stop block
-# names. `arg <n>` and `value <id>` then give the arguments and the values of that call.
-next() {
-  call= reason= stop= OPENSPOT_VALUE= _openspot_args= _openspot_stdin=
+_openspot_nl='
+'
+
+# Sets `_openspot_text` to the real text of a value: `\n` as a new line and `\\` as a backslash. It starts `sed` and `tr`
+# only above 1 KB.
+_openspot_decode() {
+  if [ "${#1}" -gt 1024 ]; then
+    _openspot_text=$(printf %s "$1" | LC_ALL=C /usr/bin/sed -e 's/\\\\/\
+/g' -e 's/\\\([^n]\)/\
+\1/g' -e 's/\\$/\
+/' -e 's/\\n/\\/g' | LC_ALL=C /usr/bin/tr '\n\\' '\\\n'; printf x)
+    _openspot_text=${_openspot_text%x}
+    return
+  fi
+  _openspot_text=
+  _openspot_rest=$1
+  while :; do
+    case $_openspot_rest in
+      *\\*)
+        _openspot_text=$_openspot_text${_openspot_rest%%\\*}
+        _openspot_rest=${_openspot_rest#*\\}
+        case $_openspot_rest in
+          n*) _openspot_text=$_openspot_text$_openspot_nl _openspot_rest=${_openspot_rest#n} ;;
+          \\*) _openspot_text=$_openspot_text\\ _openspot_rest=${_openspot_rest#\\} ;;
+          *) _openspot_text=$_openspot_text\\ ;;
+        esac
+        ;;
+      *)
+        _openspot_text=$_openspot_text$_openspot_rest
+        return
+        ;;
+    esac
+  done
+}
+
+# Reads the next call block of a staying script from stdin, and fails at the end of stdin (Y8). It sets `_openspot_call`,
+# `_openspot_args` with one written argument on each line, and `_openspot_stdin`, and exports each variable of the call in
+# place of those of the call before. A stop block gives no call.
+_openspot_next() {
+  _openspot_call= _openspot_args= _openspot_stdin=
+  for _openspot_name in $_openspot_env; do unset "$_openspot_name"; done
+  _openspot_env=
   while IFS= read -r _openspot_line; do
     case $_openspot_line in
-      '') [ -z "$call$stop" ] || return 0 ;;
-      call=*) [ -n "$call$_openspot_args$_openspot_stdin" ] || call=${_openspot_line#call=} ;;
-      stop=*) [ -n "$call" ] && _openspot_stdin="$_openspot_stdin$_openspot_line
-" || stop=${_openspot_line#stop=} ;;
-      reason=*) [ -n "$_openspot_args" ] && _openspot_stdin="$_openspot_stdin$_openspot_line
-" || reason=${_openspot_line#reason=} ;;
-      value=*) [ -n "$_openspot_args" ] && _openspot_stdin="$_openspot_stdin$_openspot_line
-" || OPENSPOT_VALUE=${_openspot_line#value=} ;;
-      arg=*) _openspot_args="$_openspot_args$_openspot_line
-" ;;
-      *) _openspot_stdin="$_openspot_stdin$_openspot_line
-" ;;
+      '') [ -z "$_openspot_call" ] || return 0 ;;
+      call=*) _openspot_call=${_openspot_line#call=} ;;
+      arg=*) _openspot_args="${_openspot_args:+$_openspot_args$_openspot_nl}${_openspot_line#arg=}" ;;
+      env.OPENSPOT_*=*)
+        _openspot_name=${_openspot_line%%=*}
+        _openspot_name=${_openspot_name#env.}
+        case $_openspot_name in *[!A-Z0-9_]*) continue ;; esac
+        _openspot_decode "${_openspot_line#*=}"
+        export "$_openspot_name=$_openspot_text"
+        _openspot_env="$_openspot_env $_openspot_name"
+        ;;
+      input=*)
+        _openspot_decode "${_openspot_line#input=}"
+        _openspot_stdin=$_openspot_text
+        ;;
     esac
   done
   return 1
 }
 
-# Prints the real text of argument `n` of the call that `next` read, counting from 1, as `value` prints a value.
-arg() (
-  _openspot_count=0
-  while IFS= read -r _openspot_line; do
-    _openspot_count=$((_openspot_count + 1))
-    if [ "$_openspot_count" = "${1-}" ]; then
-      _openspot_stdin=$_openspot_line
-      value arg
-      return
-    fi
-  done <<EOF_OPENSPOT
+# Runs the function in `_openspot_main` with these arguments, and with `_openspot_stdin` as its stdin.
+_openspot_run() {
+  if [ -z "$_openspot_stdin" ]; then
+    "$_openspot_main" "$@" </dev/null
+    return
+  fi
+  _openspot_feed=${_openspot_stdin%"$_openspot_nl"}
+  "$_openspot_main" "$@" <<EOF_OPENSPOT
+$_openspot_feed
+EOF_OPENSPOT
+}
+
+# Runs a function with the three parts of each call: its arguments, its variables and its stdin (Y9). A script that runs
+# once runs it once, with the arguments after its name, and returns its code. A staying script runs it for each call block
+# on stdin, one at a time, and prints `call=<n>` before its output and `end=<n>` after it.
+openspot_serve() {
+  _openspot_main=$1
+  shift
+  if [ -z "$_openspot_stays" ]; then
+    _openspot_run "$@"
+    return
+  fi
+  while _openspot_next; do
+    set --
+    if [ -n "$_openspot_args" ]; then
+      while IFS= read -r _openspot_line; do
+        _openspot_decode "$_openspot_line"
+        set -- "$@" "$_openspot_text"
+      done <<EOF_OPENSPOT
 $_openspot_args
 EOF_OPENSPOT
-)
+    fi
+    printf 'call=%s\n---\n' "$_openspot_call"
+    _openspot_run "$@"
+    printf '\n---\nend=%s\n---\n' "$_openspot_call"
+  done
+}

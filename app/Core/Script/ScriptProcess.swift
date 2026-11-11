@@ -137,10 +137,9 @@ public final class ScriptProcess: @unchecked Sendable {
         follow(output: output, errors: errors)
     }
 
-    /// Sends one call to the script as a block, with its `id`, the `reason` of a read and the values of its sheet, in the
-    /// order of the calls.
-    public func send(_ action: SpotAction, values: String? = nil, id: Int, reason: ReadReason? = nil) {
-        send(text: action.event(values: values, id: id, reason: reason))
+    /// Sends one call to the script as a block with its `id`, its stdin and its variables, in the order of the calls (Y8).
+    public func send(_ action: SpotAction, input: String? = nil, variables: [String: String] = [:], id: Int) {
+        send(text: action.block(input: input, variables: variables, id: id))
     }
 
     /// Sends a block as it is, in the order of the calls.

@@ -53,7 +53,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         sheet.pick(try XCTUnwrap(sheet.list.selectedItem))
 
-        try await wait("the call") { self.blocks(ids: true) == ["call=1\nreason=sheet\narg=read", "call=2\narg=open\narg=a"] }
+        try await wait("the call") { self.blocks(ids: true) == ["call=1\narg=read\nenv.OPENSPOT_REASON=sheet", "call=2\narg=open\narg=a"] }
     }
 
     func testACallRunsUntilItsEndOnceTheScriptPrintsEnds() async throws {
@@ -161,7 +161,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         let answer = try await sheet.submit(action, item: nil, draft: draft)
 
         XCTAssertEqual(answer, .done)
-        try await wait("the blocks") { self.blocks() == ["arg=read", "arg=new", "arg=new\na=one"] }
+        try await wait("the blocks") { self.blocks() == ["arg=read", "arg=new", "arg=new\ninput=a=one\\n"] }
         XCTAssertEqual(log().count, 1)
     }
 
@@ -290,6 +290,31 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(sheet.answers, [])
     }
 
+    func testAServedStayingScriptAnswersItsSheetAndTheMainSearchApart() async throws {
+        try """
+        #!/bin/sh
+        # mode=stay
+        # read=sheet
+        # answers=^[0-9]
+        . "$OPENSPOT_SH"
+        main() {
+          case "$1" in
+            read) if [ -n "$2" ]; then printf 'row=%s\\ntitle=Is %s\\n' "$2" "$2"; else printf 'row=a\\ntitle=A\\n'; fi ;;
+          esac
+        }
+        openspot_serve main "$@"
+        """.writeScript(to: folder.appendingPathComponent("script.sh"))
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the row of the sheet") { sheet.list.shown.map(\.run) == ["a"] }
+
+        sheet.answer("12")
+
+        try await wait("the answer") { sheet.answers.map(\.run) == ["12"] }
+        XCTAssertEqual(sheet.list.shown.map(\.run), ["a"])
+    }
+
     func testACardCallOfAStayingScriptReachesIt() async throws {
         try staying()
         let sheet = try sheet()
@@ -392,7 +417,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         let sheet = try sheet()
 
         try await wait("the frame") { sheet.list.shown.count == 1 }
-        XCTAssertEqual(blocks(ids: true), ["call=1\nreason=panel\narg=read"])
+        XCTAssertEqual(blocks(ids: true), ["call=1\narg=read\nenv.OPENSPOT_REASON=panel"])
 
         runs.panelOpened()
         runs.panelClosed()

@@ -398,15 +398,12 @@ final class SpotRunTests: XCTestCase {
         try await wait("the copy") { exists("copied") }
     }
 
-    func testAStayingScriptGetsEachValueOfTheSheetInItsBlock() async throws {
+    func testAStayingScriptGetsTheValuesOfTheSheetAsTheStdinOfItsCall() async throws {
         let sheet = try make("""
-        while IFS= read -r line; do
-          case "$line" in
-            call=*) call=${line#call=} ;;
-            input=*) seen=${line#input=} ;;
-            '') printf 'end=%s\\n\\nfield=input\\nvalue=x\\n\\ntext=seen\\ntitle=%s\\n---\\n' "$call" "$seen" ;;
-          esac
-        done
+        # mode=stay
+        . "$OPENSPOT_SH"
+        main() { printf 'field=input\\nvalue=x\\n\\ntext=seen\\ntitle=%s\\n' "$(value input)"; }
+        openspot_serve main "$@"
         """, mode: .stay)
         runs.last?.panelOpened()
         sheet.open {}

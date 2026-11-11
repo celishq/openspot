@@ -172,49 +172,76 @@ final class ShellHelperTests: XCTestCase {
         }
     }
 
-    func testNextGivesTheValueOfAnEventAsOpenspotValue() async throws {
-        let url = try script("""
-        while next; do
-          printf 'got=%s|%s|%s\\n---\\n' "$reason" "$OPENSPOT_VALUE" "$(value value)"
-        done
-        """, header: "# mode=stay\n")
-        let live = ScriptProcess(url: url, mode: .stays, limit: 5)
-        var frames = live.start().makeAsyncIterator()
+    /// The body of a spot that prints the three parts of its call: its arguments, a variable, a value of stdin and all of
+    /// stdin.
+    private static let shownCall = """
+    main() {
+      printf 'text=t\\ntitle=%s\\n' "$(esc "$#|$1|$2|${OPENSPOT_REASON-}|$(value note)|$(cat)")"
+    }
+    openspot_serve main "$@"
+    """
 
-        live.send(.read, values: "value=held\n", id: 1, reason: ReadReason(event: "music.track", value: "Song"))
-        let first = try await frames.next()
-        live.send(.read, id: 2, reason: .panel)
-        let second = try await frames.next()
-        live.end()
-
-        XCTAssertEqual(first, "got=music.track|Song|held\n")
-        XCTAssertEqual(second, "got=panel||\n")
+    /// The frames of a staying script that hold a block, which are what the app draws.
+    private static func pictures(_ frames: [String]) -> [[TextBlock]] {
+        frames.map { TextBlock.blocks(in: $0) }.filter { blocks in blocks.contains { !["call", "end"].contains($0.fields.first?.key ?? "") } }
     }
 
-    func testNextReadsEachCallOfAStayingScriptWithItsArgumentsAndValues() async throws {
+    func testOneMainRunsUnchangedOnceAndStaying() async throws {
+        let action = SpotAction(arguments: ["read", "a b"])
+        let input = "note=x\\ny\n"
+        let variables = ["OPENSPOT_REASON": "panel"]
+        let once = try script(Self.shownCall)
+        let stays = try script(Self.shownCall, header: "# mode=stay\n")
+
+        var onceText = ""
+        for try await frame in ScriptProcess(url: once, arguments: action.arguments, mode: .once(input: input), limit: 10, variables: variables).start() {
+            onceText += frame
+        }
+        let live = ScriptProcess(url: stays, mode: .stays, limit: 10)
+        var frames = live.start().makeAsyncIterator()
+        live.send(action, input: input, variables: variables, id: 1)
+        var stayFrames: [String] = []
+        while let frame = try await frames.next() {
+            stayFrames.append(frame)
+            if TextBlock.blocks(in: frame).first?.value("end") == "1" { break }
+        }
+        live.end()
+
+        XCTAssertEqual(TextBlock.blocks(in: onceText).first?.value("title"), "2|read|a b|panel|x\ny|note=x\\ny")
+        XCTAssertEqual(Self.pictures(stayFrames), [TextBlock.blocks(in: onceText)])
+        XCTAssertEqual(TextBlock.blocks(in: stayFrames.first ?? "").first?.value("call"), "1")
+    }
+
+    func testServeGivesEachCallOnlyItsOwnVariablesAndSkipsAStop() async throws {
         let url = try script("""
-        while next; do
-          if [ -n "$stop" ]; then printf 'stopped=%s\\n---\\n' "$stop"; continue; fi
-          printf 'got=%s|%s|%s|%s|%s\\n---\\n' "$call" "$reason" "$(arg 1)" "$(arg 2)" "$(value note)"
-        done
+        main() { printf 'got=%s|%s|%s\\n' "$1" "${OPENSPOT_VALUE-none}" "$(value a)"; }
+        openspot_serve main "$@"
         printf 'over=1\\n'
         """, header: "# mode=stay\n")
         let live = ScriptProcess(url: url, mode: .stays, limit: 5)
         var frames = live.start().makeAsyncIterator()
 
-        live.send(.read, values: "note=a\\\\b\n", id: 1, reason: .panel)
-        let first = try await frames.next()
-        live.send(.set("input", to: "one\ntwo"), id: 2)
-        let second = try await frames.next()
-        live.send(text: SpotAction.stopEvent(id: 2))
-        let third = try await frames.next()
+        live.send(.read, input: "a=held\n", variables: ReadReason(event: "music.track", value: "Song").variables, id: 1)
+        live.send(text: SpotAction.stopEvent(id: 1))
+        live.send(.press("go"), id: 2)
         live.end()
-        let last = try await frames.next()
+        var printed: [String] = []
+        while let frame = try await frames.next() { printed.append(frame) }
 
-        XCTAssertEqual(first, "got=1|panel|read||a\\b\n")
-        XCTAssertEqual(second, "got=2||input|one\ntwo|\n")
-        XCTAssertEqual(third, "stopped=2\n")
-        XCTAssertEqual(last, "over=1\n")
+        XCTAssertEqual(printed.filter { $0.hasPrefix("got=") || $0.hasPrefix("over=") }, ["got=read|Song|held\n\n", "got=go|none|\n\n", "over=1\n"])
+        XCTAssertEqual(printed.filter { $0.hasPrefix("end=") }, ["end=1\n", "end=2\n"])
+    }
+
+    func testOnceServeReturnsTheCodeOfMain() async throws {
+        let url = try script("main() { echo 'No sky' >&2; return 3; }\nopenspot_serve main \"$@\"")
+        let process = ScriptProcess(url: url, arguments: ["read"], limit: 5)
+
+        do {
+            for try await _ in process.start() {}
+            XCTFail("the call did not fail")
+        } catch {
+            XCTAssertEqual(error as? SpotError, .failed(3, "No sky"))
+        }
     }
 
     func testAStayingScriptIsNotBlockedAndKeepsItsCallsOnStdin() async throws {

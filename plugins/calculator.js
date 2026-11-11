@@ -10,16 +10,14 @@ const noRates = {
   "status=unavailable": "detail=The source of the rates does not answer. Sums, units and dates still work. Try again later.\nicon=exclamationmark.triangle\n",
 }
 
-/** The row of the answer of a sum, a conversion or a date, or nothing for words that are none. */
-function read(reason, text) {
+/** The row of the answer of a sum, a conversion or a date for a read, or the copy of the plain value of a picked row. */
+function main([id, text]) {
+  if (id === "open") {
+    if (text === "offline" || openspot.call(["clipboard", "copy"], text).code !== 0) return ""
+    return `toast=Copied ${text}\n`
+  }
   if (!text) return ""
   const answer = openspot.call(["calc", "solve", text]).stdout
   const why = noRates[answer.trim()]
   return why ? "row=offline\ntitle=No exchange rates\n" + why : answer
-}
-
-/** Copies the plain value of a row. */
-function open(id) {
-  if (id === "offline" || openspot.call(["clipboard", "copy"], id).code !== 0) return ""
-  return `toast=Copied ${id}\n`
 }

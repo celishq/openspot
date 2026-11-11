@@ -2,9 +2,9 @@ import Foundation
 import JavaScriptCore
 
 /// A JavaScript spot that runs inside the app, in a context of its own on a thread of its own (I3). It loads its file as
-/// it starts. Each call runs the function of its name and returns the text of a frame. `openspot.input` holds the stdin of
-/// the call and `openspot.value` the value of its event, and `openspot.call(argv, input)` asks the API and returns
-/// `{ stdout, code }` (I4). A loop that never returns keeps its thread.
+/// it starts. Each call runs `main(args, env, input)` with the three parts of the call and returns the text of a frame
+/// (I6). `openspot.call(argv, input)` asks the API and returns `{ stdout, code }` (I4). A loop that never returns keeps its
+/// thread.
 final class InlineScript: @unchecked Sendable {
     private final class Box: @unchecked Sendable {
         var answer = CommandAnswer()
@@ -19,8 +19,8 @@ final class InlineScript: @unchecked Sendable {
     /// The context of the script, which only its thread touches.
     private var context: JSContext?
     private var thrown: JSValue?
-    /// The reason of the call that runs, which `openspot.call` passes on.
-    private var reason: ReadReason?
+    /// The variables of the call that runs, which `openspot.call` passes on.
+    private var variables: [String: String] = [:]
 
     init(spot: Spot, api: CommandAPI?) {
         url = spot.url
@@ -81,21 +81,16 @@ final class InlineScript: @unchecked Sendable {
         }
     }
 
-    /// Runs the function that the call names, with the reason first for a read. A name that the script does not define
-    /// gives an empty frame.
+    /// Runs `main` with the arguments, the variables and the stdin of the call (I6). A script with no `main` gives an empty
+    /// frame.
     private func run(_ call: InlineCall) throws -> String {
         let context = try loaded()
-        guard let name = call.arguments.first else { return "" }
-        let function = context.objectForKeyedSubscript(name)
+        let function = context.objectForKeyedSubscript("main")
         guard let function, let type = context.objectForKeyedSubscript("Function"), function.isInstance(of: type) else { return "" }
-        let isRead = name == SpotAction.read.arguments.first
-        let arguments = (isRead ? [(call.reason ?? .sheet).rawValue] : []) + call.arguments.dropFirst()
-        reason = call.reason
-        defer { reason = nil }
-        let openspot = context.objectForKeyedSubscript("openspot")
-        openspot?.setObject(call.input ?? "", forKeyedSubscript: "input" as NSString)
-        openspot?.setObject(call.reason?.value ?? "", forKeyedSubscript: "value" as NSString)
-        let result = function.call(withArguments: arguments)
+        let env = environment.filter { ["OPENSPOT_ID"].contains($0.key) }.merging(call.variables) { _, new in new }
+        variables = call.variables
+        defer { variables = [:] }
+        let result = function.call(withArguments: [call.arguments, env, call.input ?? ""])
         try rethrow()
         guard let result, !result.isUndefined, !result.isNull else { return "" }
         return result.toString() ?? ""
@@ -132,7 +127,7 @@ final class InlineScript: @unchecked Sendable {
 
     /// Asks the API in the app, or the `openspot` command for a call that runs in a process of its own.
     private func ask(_ arguments: [String], input: String?) -> CommandAnswer {
-        let environment = environment.merging(reason?.variables ?? [:]) { _, new in new }
+        let environment = environment.merging(variables) { _, new in new }
         guard let call = CommandLineCall(arguments: arguments, environment: environment) else {
             return CommandAnswer(errors: "openspot needs a call, such as calc solve 2+2.\n", code: 2)
         }

@@ -9,9 +9,10 @@ port=${RELAY_PORT:-47800}
 state=$(mktemp -d "${TMPDIR:-/tmp}/relay.XXXXXX") || exit 1
 printf '127.0.0.1:%s' "$port" > "$state/peer"
 
-# Prints the whole sheet with one line of head first, since each frame with a block is the whole picture.
+# Prints the whole sheet, with a line of head first when it is given, since each frame with a block is the whole picture.
 sheet() {
-  printf '%s\ngrid=last last last\ngrid=last last last\ngrid=peer peer peer\ngrid=- - -\n' "$1"
+  [ -z "${1-}" ] || printf '%s\n' "$1"
+  printf 'grid=last last last\ngrid=last last last\ngrid=peer peer peer\ngrid=- - -\n'
   printf 'grid=message message message\ngrid=message message message\ngrid=. . send\n\n'
   if [ -s "$state/last" ]; then
     printf 'text=last\ntitle=%s\ndetail=From a peer\n\n' "$(esc "$(cat "$state/last")")"
@@ -20,7 +21,7 @@ sheet() {
   fi
   printf 'field=peer\ntitle=To\nvalue=%s\n\n' "$(esc "$(cat "$state/peer")")"
   printf 'field=message\ntype=multiline\nplaceholder=Hello\n\n'
-  printf 'button=send\ntitle=Send\nshortcut=cmd+return\n---\n'
+  printf 'button=send\ntitle=Send\nshortcut=cmd+return\n'
 }
 
 listen() {
@@ -28,27 +29,28 @@ listen() {
     nc -l 127.0.0.1 "$port" 2>/dev/null | while IFS= read -r line; do
       printf '%s' "$line" > "$state/last.new" && mv "$state/last.new" "$state/last"
       sheet "toast=$(esc "$line")"
+      printf -- '---\n'
     done
     sleep 1
   done
+}
+
+main() {
+  case "$1" in
+    read) sheet ;;
+    send)
+      peer=$(value peer)
+      printf '%s' "$peer" > "$state/peer.new" && mv "$state/peer.new" "$state/peer"
+      if { value message; echo; } | nc -w 1 "${peer%:*}" "${peer##*:}" 2>/dev/null; then
+        printf 'toast=Sent\n'
+      else
+        printf 'toast=Nothing listens on %s. Start Relay there first.\n' "$(esc "$peer")"
+      fi ;;
+  esac
 }
 
 listen &
 listener=$!
 trap 'pkill -P "$listener"; kill "$listener"; rm -rf "$state"' EXIT
 trap 'exit' TERM
-while next; do
-  [ -z "$stop" ] || continue
-  case "$(arg 1)" in
-    read) sheet "end=$call" ;;
-    send)
-      peer=$(value peer)
-      printf '%s' "$peer" > "$state/peer.new" && mv "$state/peer.new" "$state/peer"
-      if { value message; echo; } | nc -w 1 "${peer%:*}" "${peer##*:}" 2>/dev/null; then
-        printf 'toast=Sent\nend=%s\n---\n' "$call"
-      else
-        printf 'toast=Nothing listens on %s. Start Relay there first.\nend=%s\n---\n' "$(esc "$peer")" "$call"
-      fi ;;
-    *) printf 'end=%s\n---\n' "$call" ;;
-  esac
-done
+openspot_serve main "$@"

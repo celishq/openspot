@@ -32,6 +32,8 @@ public struct SpotOutput: Equatable, Sendable {
     public private(set) var link: String?
     /// The ids of the calls of a staying script that this frame ends.
     public private(set) var ends: [String] = []
+    /// The id of the call of a staying script whose output starts after this frame, from `call=<n>` in its head (Y8).
+    public private(set) var start: String?
     /// The blocks it was read from, which a check of its parts reads again.
     private var blocks: [TextBlock]
     /// Whether this reading checks each part, which only a check asks for, so that a frame on screen costs no check.
@@ -43,8 +45,6 @@ public struct SpotOutput: Equatable, Sendable {
     public let isPicture: Bool
 
     private static let reserved = "read"
-    /// The keys of a call block for a staying script, which a value of the sheet would take the place of.
-    private static let callKeys = ["call", "reason", "arg"]
     /// The app's own events. A part cannot take one, and a button can take only `open`, to change the pick.
     private static let defaults = ["open", "drop"]
 
@@ -184,7 +184,7 @@ public struct SpotOutput: Equatable, Sendable {
     /// Finds what is wrong with the names of the parts and the sheet they make. A part that only a card drawing places is
     /// drawn only on the card, so the sheet's drawing need not place it.
     private mutating func check(layout: SheetLayout?) {
-        for id in [Self.reserved] + Self.callKeys + Self.defaults + takenDefaults where parts.contains(where: { $0.id == id }) {
+        for id in [Self.reserved] + Self.defaults + takenDefaults where parts.contains(where: { $0.id == id }) {
             checkedFaults.append("a part cannot be called \(id)")
         }
         for row in rows {
@@ -216,6 +216,12 @@ public struct SpotOutput: Equatable, Sendable {
         summary?.number("progress").map { min(max($0, 0), 1) }
     }
 
+    /// Whether this frame only marks the start or the end of a call of a staying script, or holds nothing, so that a person
+    /// who reads the frames needs not see it (Y8).
+    public var isMark: Bool {
+        !isPicture && blocks.allSatisfy { $0.fields.allSatisfy { ["call", "end"].contains($0.key) } }
+    }
+
     /// This frame with no effects, so that a head that is taken again acts none of them twice.
     public func withoutEffects() -> SpotOutput {
         var output = self
@@ -223,6 +229,7 @@ public struct SpotOutput: Equatable, Sendable {
         output.link = nil
         output.select = nil
         output.ends = []
+        output.start = nil
         return output
     }
 
@@ -262,6 +269,7 @@ public struct SpotOutput: Equatable, Sendable {
         link = block.value("link") ?? link
         select = block.value("select") ?? select
         if let end = block.value("end") { ends.append(end) }
+        start = block.value("call") ?? start
     }
 
     /// Keeps an action. The `open` action sets the word for Enter, and whether a pick stays in the panel.

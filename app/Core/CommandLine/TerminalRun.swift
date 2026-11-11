@@ -45,9 +45,9 @@ public struct TerminalRun {
         var code: Int32 = 0
         do {
             let frames = process.start()
-            if spot.mode.stays { process.send(action, values: input, id: Self.callID, reason: isRead ? .sheet : nil) }
+            if spot.mode.stays { process.send(action, input: input, variables: isRead ? ReadReason.sheet.variables : [:], id: Self.callID) }
             for try await text in frames {
-                frame(text)
+                if !spot.mode.stays || !SpotOutput(text: text).isMark { frame(text) }
                 if spot.mode.stays, SpotOutput(text: text).summary?.value("end") == String(Self.callID) { process.end() }
             }
         } catch {
@@ -70,7 +70,7 @@ public struct TerminalRun {
     private func inline(isRead: Bool, frame: (String) -> Void) async -> End {
         let script = InlineScript(spot: spot, api: nil)
         defer { script.end() }
-        let call = InlineCall(arguments: action.arguments, reason: isRead ? .sheet : nil, input: input)
+        let call = InlineCall(arguments: action.arguments, variables: ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }, input: input)
         script.send(call)
         switch await call.outcome(limit: isRead ? Self.readLimit : nil) {
         case .frame(let text):

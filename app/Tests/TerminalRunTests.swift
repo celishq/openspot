@@ -56,16 +56,14 @@ final class TerminalRunTests: XCTestCase {
     func testARunOfAStayingScriptEndsWithTheFrameThatEndsItsCall() async throws {
         let spot = try spot("relay", header: "mode=stay", """
         . "$OPENSPOT_SH"
-        while next; do
-          printf 'text=peer\\ntitle=%s\\n---\\n' "$(arg 1)"
-          printf 'end=%s\\n---\\n' "$call"
-        done
+        main() { printf 'text=peer\\ntitle=%s\\n' "$1"; }
+        openspot_serve main "$@"
         """)
         var frames: [String] = []
 
         let end = await TerminalRun(spot: spot, arguments: ["ping"], input: nil).start { frames.append($0) }
 
-        XCTAssertEqual(frames.first, "text=peer\ntitle=ping\n")
+        XCTAssertEqual(frames, ["text=peer\ntitle=ping\n\n"])
         XCTAssertEqual(end.code, 0)
     }
 }

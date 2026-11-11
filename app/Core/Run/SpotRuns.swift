@@ -212,8 +212,8 @@ public final class SpotRuns {
         if spot.mode.stays, action == .read {
             let (script, frames) = stay(spot, limit: limit)
             defer { script.end() }
-            script.send(.read, id: 1, reason: .panel)
-            for try await frame in frames { return frame }
+            script.send(.read, variables: ReadReason.panel.variables, id: 1)
+            for try await frame in frames where !SpotOutput(text: frame).isMark || SpotOutput(text: frame).ends.contains("1") { return frame }
             return ""
         }
         let (stream, halt, _) = frames(of: spot, action, input: input, limit: limit)

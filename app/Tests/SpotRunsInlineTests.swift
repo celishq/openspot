@@ -22,9 +22,9 @@ final class SpotRunsInlineTests: SpotRunsCase {
     /// A spot that answers each text with one row of it, and works for 300 ms first on the text `slow`.
     private func answering() throws {
         try inline(header: "mode=inline\nanswers=^[0-9]", """
-        function read(reason, text) {
+        function main([id, text], env) {
           if (text === "12") { const end = Date.now() + 300; while (Date.now() < end) {} }
-          return `row=${text}\\ntitle=Is ${text}\\ndetail=${reason}\\n`
+          return `row=${text}\\ntitle=Is ${text}\\ndetail=${env.OPENSPOT_REASON}\\n`
         }
         """)
     }
@@ -70,7 +70,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     func testOpenspotCallAsksTheAPIInTheApp() async throws {
         runs.api = CommandAPI(mac: Host())
         try inline(header: "mode=inline\nanswers=^[0-9]", """
-        function read(reason, text) {
+        function main([id, text]) {
           const answer = openspot.call(["calc", "solve", text])
           return answer.stdout.replace(/detail=.*/, `detail=${answer.code}`)
         }
@@ -85,8 +85,10 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
     func testAPickRunsItsOpenFunctionWithTheRow() async throws {
         try inline(header: "mode=inline\nanswers=^[0-9]", """
-        function read(reason, text) { return `row=${text}\\ntitle=${text}\\n` }
-        function open(id) { return `toast=Picked ${id}\\n` }
+        function main([id, text]) {
+          if (id === "open") return `toast=Picked ${text}\\n`
+          return `row=${text}\\ntitle=${text}\\n`
+        }
         """)
         let sheet = try sheet()
         var toasts: [String] = []
@@ -98,7 +100,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testAThrownErrorIsTheFailureOfTheCall() async throws {
-        try inline(header: "mode=inline\nread=sheet", "function read() { throw new Error('No sky today') }")
+        try inline(header: "mode=inline\nread=sheet", "function main() { throw new Error('No sky today') }")
         let (sheet, told) = try toldSheet()
 
         sheet.open {}
@@ -119,8 +121,20 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try await wait("the end of the dropped answer") { !sheet.isAnswering }
     }
 
-    func testAFunctionReadsItsStdinAsOpenspotInput() async throws {
-        try inline(header: "mode=inline", "function save() { return `toast=Saved ${openspot.input}` }")
+    func testMainGetsTheArgumentsTheVariablesAndTheStdinOfACall() async throws {
+        try inline(header: "mode=inline", "function main(args, env, input) { return `text=t\\ntitle=${args.length}|${args[0]}|${args[1]}|${env.OPENSPOT_REASON}|${env.OPENSPOT_ID}|${input}` }")
+        let script = InlineScript(spot: try XCTUnwrap(try scanned().scripts.first), api: nil)
+        defer { script.end() }
+        let call = InlineCall(arguments: ["read", "a b"], variables: ["OPENSPOT_REASON": "panel"], input: "note=x\\ny")
+
+        script.send(call)
+
+        guard case .frame(let text) = await call.outcome(limit: 10) else { return XCTFail("the call gave no frame") }
+        XCTAssertEqual(TextBlock.blocks(in: text).first?.value("title"), "2|read|a b|panel|script|note=x\ny")
+    }
+
+    func testMainReadsItsStdinAsItsInput() async throws {
+        try inline(header: "mode=inline", "function main(args, env, input) { return `toast=Saved ${input}` }")
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
         let text = try await runs.answer(of: spot, SpotAction(arguments: ["save"]), input: "a=1", limit: 5)
@@ -129,7 +143,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
     }
 
     func testARunWithALimitStopsWaitingForAFunctionThatRunsTooLong() async throws {
-        try inline(header: "mode=inline\nread=sheet", "function read() { const end = Date.now() + 2000; while (Date.now() < end) {} }")
+        try inline(header: "mode=inline\nread=sheet", "function main() { const end = Date.now() + 2000; while (Date.now() < end) {} }")
         let spot = try XCTUnwrap(try scanned().scripts.first)
 
         do {
