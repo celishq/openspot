@@ -43,7 +43,7 @@ struct MainSearch {
                 let among = before?.matches(of: query, in: list)
                 let offsets = among ?? Array(list.all.indices)
                 ranked += offsets.count
-                let matches = query.ranked(texts, items: list.all, among: offsets, recent: list.recent)
+                let matches = query.ranked(texts, items: list.all, among: offsets, weights: list.weights)
                 kept.append(Kept(query: query, items: list.all, texts: texts, search: list.search, recent: list.recent, matches: matches.map(\.offset)))
                 return SearchQuery.best(matches, count: count).map { (list: index, match: $0) }
             }

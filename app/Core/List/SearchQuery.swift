@@ -44,15 +44,14 @@ public struct SearchQuery: Equatable, Sendable {
     }
 
     public func matching(_ items: [SpotItem], recent: [String] = []) -> [SpotItem] {
-        ranking(SearchIndex(items), items: items, among: Array(items.indices), recent: recent).map { items[$0] }
+        ranking(SearchIndex(items), items: items, among: Array(items.indices), weights: PickWeights(recent)).map { items[$0] }
     }
 
     /// The indices of the items among the given ones that match, best first. The index holds the texts of the items.
-    func ranking(_ index: SearchIndex, items: [SpotItem], among indices: [Int], recent: [String]) -> [Int] {
-        let weights = Self.weights(of: recent)
-        return index.withItems { folded in
+    func ranking(_ index: SearchIndex, items: [SpotItem], among indices: [Int], weights: PickWeights) -> [Int] {
+        index.withItems { folded in
             indices.compactMap { index in
-                match(folded[index]).map { (rank: $0, weight: weights[items[index].run] ?? 0, index: index) }
+                match(folded[index]).map { (rank: $0, weight: weights.weight(of: items[index].run), index: index) }
             }
         }
         .sorted { ($0.rank, -$0.weight, $0.index) < ($1.rank, -$1.weight, $1.index) }
@@ -83,11 +82,10 @@ public struct SearchQuery: Equatable, Sendable {
     typealias Ranked = (rank: Int, weight: Double, offset: Int)
 
     /// The items among the given offsets that match, in the order of the offsets.
-    func ranked(_ index: SearchIndex, items: [SpotItem], among offsets: [Int], recent: [String]) -> [Ranked] {
-        let weights = Self.weights(of: recent)
-        return index.withItems { folded in
+    func ranked(_ index: SearchIndex, items: [SpotItem], among offsets: [Int], weights: PickWeights) -> [Ranked] {
+        index.withItems { folded in
             offsets.compactMap { offset in
-                match(folded[offset]).map { (rank: $0, weight: weights[items[offset].run] ?? 0, offset: offset) }
+                match(folded[offset]).map { (rank: $0, weight: weights.weight(of: items[offset].run), offset: offset) }
             }
         }
     }
@@ -103,17 +101,6 @@ public struct SearchQuery: Equatable, Sendable {
             if kept.count > count { kept.removeLast() }
         }
         return kept
-    }
-
-    /// The weight of each picked run, from the latest pick first: each pick weighs 0.9 of the one after it.
-    private static func weights(of picks: [String]) -> [String: Double] {
-        var weights: [String: Double] = [:]
-        var weight = 1.0
-        for run in picks {
-            weights[run, default: 0] += weight
-            weight *= 0.9
-        }
-        return weights
     }
 
     private func match(_ item: FoldedItem) -> Int? {

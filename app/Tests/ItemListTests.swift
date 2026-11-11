@@ -341,6 +341,22 @@ final class ItemListTests: XCTestCase {
         XCTAssertEqual(list.recent.first, "149")
     }
 
+    func testTypingMakesNoPickWeightsAndAPickMakesThemOnce() {
+        var list = ItemList(items: items("Safari", "Slack", "Notes"), recent: ["Slack"])
+        var search = MainSearch()
+        let before = PickWeights.builds
+
+        for text in ["s", "sa", "saf", "sl", "s"] {
+            list.search(text)
+            _ = search.matching(SearchQuery(text: text), in: [list])
+        }
+        XCTAssertEqual(PickWeights.builds - before, 0)
+        list.remember(list.all[0])
+
+        XCTAssertEqual(PickWeights.builds - before, 1)
+        XCTAssertEqual(list.shown.map(\.title), ["Safari", "Slack", "Notes"])
+    }
+
     func testEachKeystrokeInALargeListAnswersQuickly() {
         let rows = (0..<5_096).map { SpotItem(title: "rightwards arrow with hook \($0)", subtitle: "Rightwards Arrows", run: "\($0)") }
         var list = ItemList(items: rows)
