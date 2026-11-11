@@ -137,4 +137,55 @@ final class WindowMoveTests: XCTestCase {
         XCTAssertEqual(size.height, 900)
         XCTAssertEqual(window.shown, 1)
     }
+
+    func testAnAppThatRefusesASmallerSizeWholeGetsThePickedHeightExactlyWhenOnlyTheWidthIsTooSmall() {
+        let window = FakeWindow(size: CGSize(width: 500, height: 500), smallest: CGSize(width: 400, height: 300), refuses: true)
+
+        let size = WindowMove.fit(CGSize(width: 288, height: 400), from: window.size, ask: window.ask)
+
+        XCTAssertTrue((400...404).contains(size.width), "\(size)")
+        XCTAssertEqual(size.height, 400)
+        XCTAssertEqual(window.size, size)
+        XCTAssertEqual(window.shown, 1)
+    }
+
+    func testAnAppThatRefusesASmallerSizeWholeGetsNearlyItsSmallestSizeWhenBothAxesAreTooSmall() {
+        let window = FakeWindow(size: CGSize(width: 500, height: 500), smallest: CGSize(width: 400, height: 300), refuses: true)
+
+        let size = WindowMove.fit(CGSize(width: 288, height: 181), from: window.size, ask: window.ask)
+
+        XCTAssertTrue((400...404).contains(size.width), "\(size)")
+        XCTAssertTrue((300...304).contains(size.height), "\(size)")
+        XCTAssertEqual(window.size, size)
+    }
+
+    func testAnAppAtItsSmallestWidthGetsATallerPickInOneChange() {
+        for refuses in [true, false] {
+            let window = FakeWindow(size: CGSize(width: 400, height: 500), smallest: CGSize(width: 400, height: 300), refuses: refuses)
+
+            let size = WindowMove.fit(CGSize(width: 288, height: 900), from: window.size, ask: window.ask)
+
+            XCTAssertEqual(size, CGSize(width: 400, height: 900))
+            XCTAssertEqual(window.size, size)
+            XCTAssertEqual(window.shown, 1)
+        }
+    }
+
+    func testAWindowStartsFromThePlaceWhereItsNewSizeFitsItsScreen() {
+        let tall = WindowMove.start(of: CGSize(width: 400, height: 800), from: CGPoint(x: 100, y: 600), home: area, area: area)
+        let wide = WindowMove.start(of: CGSize(width: 1000, height: 300), from: CGPoint(x: 700, y: 100), home: area, area: area)
+        let fits = WindowMove.start(of: CGSize(width: 400, height: 300), from: CGPoint(x: 100, y: 100), home: area, area: area)
+
+        XCTAssertEqual(tall, CGPoint(x: 100, y: 125))
+        XCTAssertEqual(wide, CGPoint(x: 200, y: 100))
+        XCTAssertEqual(fits, CGPoint(x: 100, y: 100))
+    }
+
+    func testAWindowWhoseScreenIsTooSmallForItsNewSizeStartsOnTheScreenOfItsTarget() {
+        let small = CGRect(x: 1200, y: 25, width: 800, height: 600)
+
+        let start = WindowMove.start(of: CGSize(width: 1000, height: 900), from: CGPoint(x: 1300, y: 100), home: small, area: area)
+
+        XCTAssertEqual(start, CGPoint(x: 200, y: 25))
+    }
 }

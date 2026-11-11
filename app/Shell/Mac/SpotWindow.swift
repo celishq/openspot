@@ -42,18 +42,16 @@ struct SpotWindow {
     }
 
     /// Gives the window its new size in one change, as near the pick as the app allows, then glides only its place,
-    /// as a size on the way makes the app lay itself out at each step. The end holds the target's edges by the size
-    /// the app gave, and moves again only when the app changes that size late.
+    /// as a size on the way makes the app lay itself out at each step. It first stands where the size fits its
+    /// screen. The end holds the target's edges by the size the app gave, and asks again for a length that came short.
     func move(_ move: WindowMove) throws {
         let window = frame
-        let centre = CGPoint(x: window.midX, y: window.midY)
-        let area = move.needsArea ? Self.area(holding: centre) : .zero
-        let target = move.target(window: window, area: area)
-        let bounds = move.needsArea ? area : Self.area(holding: CGPoint(x: target.midX, y: target.midY))
-        _ = WindowMove.fit(target.size, from: window.size) { wanted in
-            try? set(kAXSizeAttribute, .cgSize, wanted)
-            return frame.size
-        }
+        let home = Self.area(holding: CGPoint(x: window.midX, y: window.midY))
+        let target = move.target(window: window, area: move.needsArea ? home : .zero)
+        let bounds = move.needsArea ? home : Self.area(holding: CGPoint(x: target.midX, y: target.midY))
+        let start = WindowMove.start(of: target.size, from: window.origin, home: home, area: bounds)
+        if start != window.origin { try? set(kAXPositionAttribute, .cgPoint, start) }
+        resize(to: target.size)
         let size = frame.size
         let end = WindowMove.origin(of: size, target: target, area: bounds)
         let duration = 0.2
@@ -61,16 +59,25 @@ struct SpotWindow {
         var time = 0.0
         while time < 1 {
             let step = 1 - pow(1 - time, 3)
-            let x = window.minX + (end.x - window.minX) * step
-            let y = window.minY + (end.y - window.minY) * step
+            let x = start.x + (end.x - start.x) * step
+            let y = start.y + (end.y - start.y) * step
             try? set(kAXPositionAttribute, .cgPoint, CGPoint(x: x.rounded(), y: y.rounded()))
             usleep(4_000)
             time = Date().timeIntervalSince(begin) / duration
         }
         try set(kAXPositionAttribute, .cgPoint, end)
         settle(at: size)
+        let shown = frame.size
+        if shown.width < target.width - 1 || shown.height < target.height - 1 { resize(to: target.size) }
         let last = WindowMove.origin(of: frame.size, target: target, area: bounds)
         if last != end { try set(kAXPositionAttribute, .cgPoint, last) }
+    }
+
+    private func resize(to size: CGSize) {
+        _ = WindowMove.fit(size, from: frame.size) { wanted in
+            try? set(kAXSizeAttribute, .cgSize, wanted)
+            return frame.size
+        }
     }
 
     /// Waits, for a second at most, until the window server shows the window at this size.
