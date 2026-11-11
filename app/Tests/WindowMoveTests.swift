@@ -72,13 +72,4 @@ final class WindowMoveTests: XCTestCase {
         XCTAssertEqual(overflowsRight, CGPoint(x: 0, y: 25))
         XCTAssertEqual(taller, CGPoint(x: 0, y: 25))
     }
-
-    func testAStepOfAGlideHoldsTheEdgesThatItsTargetHolds() {
-        let target = CGRect(x: 1000, y: 775, width: 200, height: 150)
-        let step = CGRect(x: 800, y: 600, width: 300, height: 200)
-
-        let origin = WindowMove.origin(of: CGSize(width: 400, height: 300), target: step, holding: target, area: area)
-
-        XCTAssertEqual(origin, CGPoint(x: 700, y: 500))
-    }
 }
