@@ -529,7 +529,7 @@ kinds (S12):
   starts it in the background and waits up to 10 seconds for it. After that it fails, and says to open Openspot.
 
 Ctrl-C stops a call: the command closes its connection, and the app stops the work of that call, which then changes
-nothing (S13). `openspot help` lists each capability, and `openspot help <noun>` prints the guide of a noun, such as
+nothing (S13). `spot run` and `check` stop each script that they started, and exit with 130. `openspot help` lists each capability, and `openspot help <noun>` prints the guide of a noun, such as
 `screen` or `calendar`. A capability that cannot answer prints `status=<word>`. One that keeps state keeps it in its own
 helper, which a script never starts or stops (K3). When macOS already has a command, such as `open`, use it. For the screen
 and the clipboard, use `openspot screen` and `openspot clipboard`, so that the person sees each use (Z5).

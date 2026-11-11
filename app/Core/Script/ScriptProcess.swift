@@ -124,6 +124,7 @@ public final class ScriptProcess: @unchecked Sendable {
         if hasInput { try? input.fileHandleForReading.close() }
         try? output.fileHandleForWriting.close()
         try? errors.fileHandleForWriting.close()
+        TerminalStop.enter(started)
         let wasStopped = lock.withLock {
             id = started
             return stopped
@@ -424,6 +425,7 @@ public final class ScriptProcess: @unchecked Sendable {
         repeat { result = wait4(started, &code, 0, &usage) } while result == -1 && errno == EINTR
         if result == -1 { code = 1 << 8 }
         let time = read ?? ProcessTime(usage)
+        if kill(-started, 0) != 0 { TerminalStop.leave(started) }
         let handlers = lock.withLock {
             status = code
             endTime = time

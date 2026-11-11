@@ -40,7 +40,7 @@ public enum SpotSource: Equatable, Sendable {
     /// Puts the spot in the folder, a git source at `commit` or else at its newest commit, and returns the commit and the
     /// paths at the top of the folder that it took. A path that is there already is a fault, unless `replacing` names it:
     /// then `discard` takes each replaced path, and each one the new version lacks, as the Trash does. `check` sees the whole
-    /// spot in a work folder first, and a throw from it, as any fault, leaves the folder as it was.
+    /// spot in a work folder first, and a throw from it, as any fault or a stop of the task, leaves the folder as it was.
     func add(
         to folder: URL,
         at commit: String?,
@@ -53,6 +53,7 @@ public enum SpotSource: Equatable, Sendable {
         defer { try? FileManager.default.removeItem(at: work) }
         let (commit, paths) = try await stage(in: work, from: folder, at: commit, replacing: replacing)
         try check(work, paths)
+        try Task.checkCancellation()
         for path in replacing where FileManager.default.fileExists(atPath: folder.appendingPathComponent(path).path) {
             try discard(folder.appendingPathComponent(path))
         }
@@ -116,7 +117,8 @@ public enum SpotSource: Equatable, Sendable {
         }
     }
 
-    /// Runs git with no input and no prompt for a password, and returns what it prints, which must fit in a pipe. A failure throws its last line on stderr.
+    /// Runs git with no input and no prompt for a password, and returns what it prints, which must fit in a pipe. A failure
+    /// throws its last line on stderr, and a stop of the task ends git and throws.
     @discardableResult
     private static func run(_ arguments: [String]) async throws -> String {
         let process = Process()
@@ -128,23 +130,30 @@ public enum SpotSource: Equatable, Sendable {
         let errors = Pipe()
         process.standardOutput = output
         process.standardError = errors
-        return try await withCheckedThrowingContinuation { continuation in
-            let ended = DispatchSemaphore(value: 0)
-            process.terminationHandler = { _ in ended.signal() }
-            do {
-                try process.run()
-            } catch {
-                continuation.resume(throwing: SpotError.fault("Openspot cannot start git. Run `xcode-select --install`, then try again."))
-                return
+        let printed: String = try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                let ended = DispatchSemaphore(value: 0)
+                process.terminationHandler = { _ in ended.signal() }
+                do {
+                    try process.run()
+                } catch {
+                    continuation.resume(throwing: SpotError.fault("Openspot cannot start git. Run `xcode-select --install`, then try again."))
+                    return
+                }
+                if Task.isCancelled { process.terminate() }
+                DispatchQueue.global().async {
+                    let failure = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+                    let printed = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+                    ended.wait()
+                    guard process.terminationStatus != 0 else { return continuation.resume(returning: printed) }
+                    let line = failure.split(separator: "\n").last.map(String.init) ?? "git stopped with code \(process.terminationStatus)."
+                    continuation.resume(throwing: SpotError.fault(line))
+                }
             }
-            DispatchQueue.global().async {
-                let failure = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-                let printed = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-                ended.wait()
-                guard process.terminationStatus != 0 else { return continuation.resume(returning: printed) }
-                let line = failure.split(separator: "\n").last.map(String.init) ?? "git stopped with code \(process.terminationStatus)."
-                continuation.resume(throwing: SpotError.fault(line))
-            }
+        } onCancel: {
+            if process.isRunning { process.terminate() }
         }
+        try Task.checkCancellation()
+        return printed
     }
 }

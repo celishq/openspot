@@ -56,6 +56,17 @@ final class CommandAPITests: XCTestCase {
         XCTAssertTrue(answer.output.hasPrefix("row=4\n"), answer.output)
     }
 
+    func testAStoppedBatchRunsNoMoreLines() async throws {
+        let work = try XCTUnwrap(CommandAPI(mac: host).work(for: .batch, input: {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return "calc solve 2+2\ncalc solve 3+3\n"
+        }, environment: environment))
+
+        let answer = await Task { await work() }.value
+
+        XCTAssertEqual(answer.output, "")
+    }
+
     func testABatchStopsAtACallThatPrintsNoData() async throws {
         let answer = try await answer(["batch"], input: "calc solve 2+2\ncolor pick\ncalc solve 3+3\n")
 

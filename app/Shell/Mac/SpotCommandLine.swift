@@ -30,10 +30,13 @@ enum SpotCommandLine {
         case .clipboardRead:
             SpotClipboard.read()
         case .check(let path):
+            TerminalStop.watch()
             check(path)
         case .checkJSON(let path):
+            TerminalStop.watch()
             check(path, json: true)
         case .spotRun(let id, let arguments):
+            TerminalStop.watch()
             spotRun(id, arguments)
         case .spotShow(let id):
             SpotShowLink.send(id)

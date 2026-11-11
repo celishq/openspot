@@ -122,6 +122,52 @@ final class SpotAddTests: XCTestCase {
         return (entry.name, discarded)
     }
 
+    func testAStopEndsTheGitOfAnAddAndLeavesNothing() async throws {
+        let listener = socket(AF_INET, SOCK_STREAM, 0)
+        defer { close(listener) }
+        var address = sockaddr_in(sin_len: UInt8(MemoryLayout<sockaddr_in>.size), sin_family: sa_family_t(AF_INET), sin_port: 0, sin_addr: in_addr(s_addr: inet_addr("127.0.0.1")), sin_zero: (0, 0, 0, 0, 0, 0, 0, 0))
+        var size = socklen_t(MemoryLayout<sockaddr_in>.size)
+        withUnsafeMutablePointer(to: &address) { pointer in
+            pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                _ = Darwin.bind(listener, $0, size)
+                _ = Darwin.listen(listener, 8)
+                _ = getsockname(listener, $0, &size)
+            }
+        }
+        let port = UInt16(bigEndian: address.sin_port)
+        let lock = SpotLock(url: root.appendingPathComponent("spots.lock"))
+        let adding = Task { [plugins] in try await lock.add(.git("git://127.0.0.1:\(port)/coffee"), to: plugins!) }
+        let connection = await Task.detached { Self.accepted(on: listener) }.value
+        XCTAssertGreaterThanOrEqual(connection, 0, "git reached the fake server")
+
+        adding.cancel()
+
+        let isClosed = await Task.detached { Self.closes(connection) }.value
+        close(connection)
+        XCTAssertTrue(isClosed, "git ended")
+        _ = try? await adding.value
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: plugins.path), [])
+    }
+
+    /// The first connection to a listener within 10 seconds, or -1.
+    private static func accepted(on listener: Int32) -> Int32 {
+        var watch = pollfd(fd: listener, events: Int16(POLLIN), revents: 0)
+        guard poll(&watch, 1, 10_000) == 1 else { return -1 }
+        return accept(listener, nil, nil)
+    }
+
+    /// Whether the other end closes a connection within 5 seconds, after all that it sends.
+    private static func closes(_ connection: Int32) -> Bool {
+        var buffer = [UInt8](repeating: 0, count: 4096)
+        var watch = pollfd(fd: connection, events: Int16(POLLIN), revents: 0)
+        let end = Date().addingTimeInterval(5)
+        while Date() < end {
+            guard poll(&watch, 1, 100) == 1 else { continue }
+            if read(connection, &buffer, buffer.count) <= 0 { return true }
+        }
+        return false
+    }
+
     func testRemoveMovesTheWholeFolderOfAnAddedSpotToTheTrash() async throws {
         let repo = try repo()
         _ = try await answer(["spot", "add", repo.url.path])

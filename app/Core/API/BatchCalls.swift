@@ -1,7 +1,8 @@
 import Foundation
 
 /// The call of `openspot batch`: one call for each line of stdin, with its words split at spaces, run in turn in one
-/// process (K7). It prints the output of each call and then a line `---`, and stops at the first call that fails.
+/// process (K7). It prints the output of each call and then a line `---`, and stops at the first call that fails, or once
+/// its caller stops it.
 struct BatchCalls {
     let api: CommandAPI
     let environment: [String: String]
@@ -10,6 +11,7 @@ struct BatchCalls {
         { [api, environment] in
             var output = ""
             for line in await input().split(separator: "\n") {
+                guard !Task.isCancelled else { return CommandAnswer(output: output, code: 130) }
                 let words = line.split { $0 == " " || $0 == "\t" }.map(String.init)
                 guard !words.isEmpty else { continue }
                 guard let call = CommandLineCall(arguments: words, environment: environment), call != .batch,

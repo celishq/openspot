@@ -270,6 +270,19 @@ final class ScriptProcessTests: XCTestCase {
         XCTFail("waited too long")
     }
 
+    func testATerminalStopEndsTheGroupOfEachScriptThatRuns() async throws {
+        let plugin = try writePlugin("long.sh", "#!/bin/sh\n\(writesPid("script"))\n\(deafChild())printf 'a=1\\n---\\n'\n\(String.longLoop)\n")
+        let process = ScriptProcess(url: plugin.url, stopPause: 30)
+        var frames = process.start().makeAsyncIterator()
+        _ = try await frames.next()
+        let script = try await pid("script")
+        let child = try await pid("child")
+
+        await Task.detached { TerminalStop.stopEach(pause: Self.stopPause) }.value
+
+        try await wait { !self.runs(script) && !self.runs(child) }
+    }
+
     func testAScriptAndAChildThatIgnoreTheTerminateSignalAreGoneOnePauseAfterAStop() async throws {
         let plugin = try writePlugin("deaf.sh", "#!/bin/sh\ntrap '' TERM\n\(writesPid("script"))\n\(deafChild())printf 'a=1\\n---\\n'\n\(String.longLoop)\n")
         let process = ScriptProcess(url: plugin.url, stopPause: Self.stopPause)
