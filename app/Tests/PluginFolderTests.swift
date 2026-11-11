@@ -118,10 +118,29 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(try scan.commands.map(\.id), ["home/two"])
     }
 
-    func testAShippedSpotCannotBeRemoved() throws {
-        let shipped = Spot(id: "openspot/plugins", name: "Plugins", url: folder, shipped: .quit(QuitSpot {}))
+    func testASpotOfTheAppIsAlwaysOnAndCannotBeRemoved() throws {
+        let core = folder.appendingPathComponent("core")
+        _ = try write("core/openspot/plugins.sh", header: "title=Plugins")
+        _ = try write("core/apps.sh")
+        let place = PluginFolder(url: folder.appendingPathComponent("mine"), core: core)
 
-        XCTAssertThrowsError(try PluginFolder(url: folder).remove(shipped) { _ in XCTFail("It must not be discarded.") })
+        let spot = try XCTUnwrap(try place.scan().commands.first)
+
+        XCTAssertEqual(try place.scan().commands.map(\.id), ["openspot/plugins"])
+        XCTAssertTrue(spot.isBuiltIn)
+        XCTAssertFalse(place.isCore(spot))
+        XCTAssertEqual(place.coreChoices().map(\.id), ["apps"])
+        XCTAssertThrowsError(try place.remove(spot) { _ in XCTFail("It must not be discarded.") })
+    }
+
+    func testAFileOfThePersonHidesASpotOfTheApp() throws {
+        _ = try write("core/openspot/plugins.sh", header: "title=Plugins")
+        _ = try write("mine/openspot/plugins.sh", header: "title=Mine")
+
+        let scan = try PluginFolder(url: folder.appendingPathComponent("mine"), core: folder.appendingPathComponent("core")).scan()
+
+        XCTAssertEqual(scan.commands.map(\.name), ["Mine"])
+        XCTAssertEqual(scan.commands.map(\.isBuiltIn), [false])
     }
 
     func testAnExecutableIsASpotWithItsHeader() throws {

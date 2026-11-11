@@ -122,9 +122,9 @@ final class SharedSpotTests: XCTestCase {
         opens = "openspot/plugins"
 
         """.utf8))
-        let folder = PluginFolder(url: plugins)
-        let shipped = Spot(id: "openspot/plugins", name: "Plugins", url: plugins, kind: .list, shipped: .quit(QuitSpot {}))
-        let scan = try folder.scan(shipped: [shipped])
+        let core = plugins.deletingLastPathComponent().appendingPathComponent("core")
+        _ = try script("openspot/plugins.sh", "#!/bin/sh\n# read=sheet\n", in: core)
+        let scan = try PluginFolder(url: plugins, core: core).scan()
         let widget = try XCTUnwrap(scan.commands.first { $0.id == "board/Desk" })
 
         let spot = try SharedSpot(sharing: widget, from: scan)
@@ -144,8 +144,8 @@ final class SharedSpotTests: XCTestCase {
         XCTAssertTrue(FileManager.default.isExecutableFile(atPath: added.path))
     }
 
-    func testAShippedSpotDoesNotTravel() throws {
-        let shipped = Spot(id: "openspot/plugins", name: "Plugins", url: plugins, shipped: .quit(QuitSpot {}))
+    func testASpotOfTheAppDoesNotTravel() throws {
+        let shipped = Spot(id: "openspot/plugins", name: "Plugins", url: plugins).builtIn()
 
         XCTAssertThrowsError(try SharedSpot(sharing: shipped, from: ScanResult(plugins: [], refused: [])))
     }

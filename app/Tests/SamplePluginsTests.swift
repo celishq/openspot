@@ -41,7 +41,7 @@ final class SamplePluginsTests: SamplePluginsCase {
         let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("plugins")
         let all = Set(try FileManager.default.contentsOfDirectory(atPath: plugins.path).map { ($0 as NSString).deletingPathExtension })
         let core = try PluginFolder(url: plugins.appendingPathComponent("none"), core: plugins, enabled: all).scan()
-        let placements = SpotGrid().place(core.commands.filter(\.isOnGrid).map(\.size))
+        let placements = SpotGrid().place(core.commands.filter { $0.isOnGrid && !$0.isBuiltIn }.map(\.size))
         let rows = placements.map { $0.row + $0.size.rows }.max()
 
         XCTAssertLessThanOrEqual(rows ?? 0, 6)

@@ -9,10 +9,9 @@ public enum ShippedSpot: Equatable, Sendable {
     case review(ReviewSpot)
     /// The sheet of a file that does not load.
     case fault(FaultSpot)
-    case quit(QuitSpot)
 
     /// The commands of the shipped spots, in the order of the grid.
-    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil, core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil, offersLogin: Bool = false, quit: QuitSpot? = nil) -> [Spot] {
+    public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), update: UpdateSpot? = nil, core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil, offersLogin: Bool = false) -> [Spot] {
         let prompt = AgentPrompt(folder: folder, guide: guide, app: app)
         var commands = [
             Spot(
@@ -77,9 +76,6 @@ public enum ShippedSpot: Equatable, Sendable {
                 at: 0
             )
         }
-        if let quit {
-            commands.append(Spot(id: quitID, name: "Quit", url: folder, symbol: "power", subtitle: "Openspot", shipped: .quit(quit), isOnGrid: false))
-        }
         return commands
     }
 
@@ -92,9 +88,6 @@ public enum ShippedSpot: Equatable, Sendable {
 
     /// The ID of the plugin that holds the cards of the files that do not load.
     public static let faultsID = "openspot/faults"
-
-    /// The ID of the command that ends the app.
-    public static let quitID = "openspot/quit"
 
     /// The ID of the sheet that shows a shared spot, which has no card in the grid.
     public static let installID = "openspot/install"
@@ -134,7 +127,6 @@ public enum ShippedSpot: Equatable, Sendable {
         case .updates(let update): try await update.answer(arguments)
         case .review(let review): try review.answer(arguments)
         case .fault(let fault): try await fault.answer(arguments)
-        case .quit(let quit): await quit.answer()
         }
     }
 }

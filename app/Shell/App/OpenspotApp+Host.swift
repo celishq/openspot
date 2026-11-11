@@ -107,8 +107,7 @@ extension OpenspotApp: SpotsHost {
             core: folder.core,
             login: AppLogin.item,
             link: AppCommandLink.item,
-            offersLogin: offersLogin,
-            quit: QuitSpot { await NSApp.terminate(nil) }
+            offersLogin: offersLogin
         )
     }
 

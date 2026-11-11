@@ -17,64 +17,10 @@ final class SpotAPITests: XCTestCase {
         func open(_ link: URL) -> Bool { true }
     }
 
-    /// The running app of a test, which counts each change of the config that the API reports and each act it asks for.
-    private actor App: RunningApp {
-        var changes = 0
-        var checks = 0
-        var installs = 0
-        var quits = 0
-        var update: String?
-        var calls = 0
-
-        func configChanged() {
-            changes += 1
-        }
-
-        func status() -> (update: String?, calls: Int, isFirstLaunch: Bool) {
-            (update, calls, true)
-        }
-
-        func checkUpdate() -> Bool {
-            checks += 1
-            return true
-        }
-
-        func installUpdate() -> Bool {
-            installs += 1
-            return update != nil
-        }
-
-        func quit() {
-            quits += 1
-        }
-
-        var opened: [String] = []
-
-        func open(_ id: String) -> Bool {
-            opened.append("open \(id)")
-            return id != "gone"
-        }
-
-        func review(_ id: String) -> Bool {
-            opened.append("review \(id)")
-            return id != "gone"
-        }
-
-        func changeSetting(_ key: String, of spot: String) -> Bool {
-            opened.append("change \(spot) \(key)")
-            return spot != "gone"
-        }
-
-        func set(update: String?, calls: Int) {
-            self.update = update
-            self.calls = calls
-        }
-    }
-
     private var root: URL!
     private var plugins: URL!
     private var core: URL!
-    private let app = App()
+    private let app = FakeRunningApp()
 
     private var file: ConfigFile {
         ConfigFile(url: root.appendingPathComponent("config.toml"))
@@ -267,7 +213,7 @@ final class SpotAPITests: XCTestCase {
 
     func testTheStatusOfTheAppNamesItsKeysAndWhatOnlyTheRunningAppKnows() async throws {
         try file.set("panel_key", to: "option+space")
-        await app.set(update: "0.3.0", calls: 2)
+        await app.set(update: "0.3.0", calls: 2, isFirstLaunch: true)
 
         let running = try await answer(["app", "status"])
         let alone = try await XCTUnwrap(appWork(["app", "status"]))()

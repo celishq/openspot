@@ -13,6 +13,8 @@ public struct PluginFolder: Sendable {
     }
 
     private static let coreName = "spots"
+    /// The folder of the core that holds the spots of the app itself, which are always on.
+    private static let appName = "openspot"
     /// The core spots that start on: each reads only local data, and only at a person's act or when the panel opens.
     private static let startingIDs: Set<String> = ["apps", "caffeinate", "color-picker", "emoji", "files", "links", "paste-screenshot", "settings", "snippets", "translate"]
 
@@ -63,9 +65,9 @@ public struct PluginFolder: Sendable {
     }
 
     /// Reads each executable and widget file that is not off, at the top of the folder or one folder down, after the shipped
-    /// commands. Then it reads each core spot that is on, and each core file that a spot needs. A file in the folder hides a
-    /// core file with the same ID. With Settings among the shipped commands, a script that lists commands and has no read
-    /// opens to their keys.
+    /// commands. Then it reads each core spot that is on, each core file that a spot needs, and each spot of the app. A file
+    /// in the folder hides a core file with the same ID. With Settings among the shipped commands, a script that lists
+    /// commands and has no read opens to their keys.
     public func scan(shipped: [Spot] = []) throws -> ScanResult {
         var result = ScanResult(plugins: shipped.isEmpty ? [] : [Plugin(id: "openspot", commands: shipped)], refused: [])
         let entries = core == nil ? try Self.sorted(in: url) : (try? Self.sorted(in: url)) ?? []
@@ -84,6 +86,9 @@ public struct PluginFolder: Sendable {
         }
         for (file, id) in wantedCoreFiles(after: result, hiding: ownIDs) {
             Self.read(file, id: id, into: &result)
+        }
+        for (file, id) in appFiles() where !ownIDs.contains(id) {
+            Self.read(file, id: id, into: &result, isBuiltIn: true)
         }
         result.removeWidgetsWithLostParts()
         result.keepOpenedOffTheGrid()
@@ -177,14 +182,14 @@ public struct PluginFolder: Sendable {
 
     /// Whether a command runs from the core folder of the app.
     public func isCore(_ command: Spot) -> Bool {
-        guard let core, command.shipped == nil else { return false }
+        guard let core, command.shipped == nil, !command.isBuiltIn else { return false }
         return command.url.standardizedFileURL.path.hasPrefix(core.standardizedFileURL.path + "/")
     }
 
     /// Takes the file of a spot, its program, and its view with the view's library out of the folder. They go to the Trash,
     /// and the other files of its folder stay.
     public func remove(_ command: Spot, discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws {
-        guard command.shipped == nil, !isCore(command) else { throw PluginError.fault("\(command.name) comes with Openspot, so it cannot be removed.") }
+        guard command.shipped == nil, !command.isBuiltIn, !isCore(command) else { throw PluginError.fault("\(command.name) comes with Openspot, so it cannot be removed.") }
         try discard(command.url)
         if let program = SwiftProgram.file(beside: command.url) { try discard(program) }
         guard let view = command.view.map(URL.init(fileURLWithPath:)), view.deletingLastPathComponent() == command.url.deletingLastPathComponent() else { return }
@@ -194,11 +199,14 @@ public struct PluginFolder: Sendable {
     }
 
     /// Adds what one file gives, and reports its fault. A dated file takes its place in the grid by the date it was added.
-    private static func read(_ file: URL, id: String, into result: inout ScanResult, isDated: Bool = false) {
+    private static func read(_ file: URL, id: String, into result: inout ScanResult, isDated: Bool = false, isBuiltIn: Bool = false) {
         do {
             guard let plugin = try Plugin(file: file, id: id) else { return }
             let added = isDated ? (try? file.resourceValues(forKeys: [.creationDateKey]).creationDate) : nil
-            let commands = plugin.commands.map { command in added.map(command.added(at:)) ?? command }
+            let commands = plugin.commands.map { command in
+                let dated = added.map(command.added(at:)) ?? command
+                return isBuiltIn ? dated.builtIn() : dated
+            }
             result.plugins.append(Plugin(id: id, commands: commands))
         } catch {
             let reason = (error as? PluginError)?.reason ?? String(describing: error)
@@ -225,9 +233,17 @@ public struct PluginFolder: Sendable {
         ((try? Plugin(file: file.file, id: file.id)) ?? nil)?.commands ?? []
     }
 
+    /// The files at the top of the core folder, each a spot that the person turns on or off.
     private func coreFiles() -> [(file: URL, id: String)] {
         guard let core, let files = try? Self.sorted(in: core) else { return [] }
-        return files.map { ($0, $0.deletingPathExtension().lastPathComponent) }
+        return files.filter { !$0.hasDirectoryPath && (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) != true }
+            .map { ($0, $0.deletingPathExtension().lastPathComponent) }
+    }
+
+    /// The files of the spots of the app, in the `openspot` folder of the core, by their IDs in that folder.
+    private func appFiles() -> [(file: URL, id: String)] {
+        guard let core, let files = try? Self.sorted(in: core.appendingPathComponent(Self.appName, isDirectory: true)) else { return [] }
+        return files.map { ($0, "\(Self.appName)/\($0.deletingPathExtension().lastPathComponent)") }
     }
 
     private static func entries(of folder: String) -> [String] {

@@ -1,0 +1,57 @@
+@testable import OpenspotCore
+
+/// The running app of a test. It counts each change of the config that the API reports, records each act that the API
+/// asks for, and answers the status that the test sets. A spot called `gone` does not exist.
+actor FakeRunningApp: RunningApp {
+    private(set) var changes = 0
+    private(set) var checks = 0
+    private(set) var installs = 0
+    private(set) var quits = 0
+    private(set) var opened: [String] = []
+    private var update: String?
+    private var calls = 0
+    private var isFirstLaunch = false
+
+    func configChanged() {
+        changes += 1
+    }
+
+    func status() -> (update: String?, calls: Int, isFirstLaunch: Bool) {
+        (update, calls, isFirstLaunch)
+    }
+
+    func checkUpdate() -> Bool {
+        checks += 1
+        return true
+    }
+
+    func installUpdate() -> Bool {
+        installs += 1
+        return update != nil
+    }
+
+    func quit() {
+        quits += 1
+    }
+
+    func open(_ id: String) -> Bool {
+        opened.append("open \(id)")
+        return id != "gone"
+    }
+
+    func review(_ id: String) -> Bool {
+        opened.append("review \(id)")
+        return id != "gone"
+    }
+
+    func changeSetting(_ key: String, of spot: String) -> Bool {
+        opened.append("change \(spot) \(key)")
+        return spot != "gone"
+    }
+
+    func set(update: String?, calls: Int, isFirstLaunch: Bool = false) {
+        self.update = update
+        self.calls = calls
+        self.isFirstLaunch = isFirstLaunch
+    }
+}

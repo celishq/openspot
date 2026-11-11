@@ -78,6 +78,9 @@ public struct Spot: Equatable, Sendable {
     public let opensWithSettingsKey: Bool
     /// Whether ⌘N on the grid opens its sheet.
     public let opensWithNewKey: Bool
+    /// Whether it comes with the app as a part of it: always on, and never edited, removed or shared as a file of the
+    /// person's.
+    public private(set) var isBuiltIn = false
 
     public init(
         id: String,
@@ -202,6 +205,13 @@ public struct Spot: Equatable, Sendable {
         return spot
     }
 
+    /// The same spot, as a part of the app.
+    func builtIn() -> Spot {
+        var spot = self
+        spot.isBuiltIn = true
+        return spot
+    }
+
     /// The same spot, off the grid.
     func offTheGrid() -> Spot {
         var spot = self
@@ -287,7 +297,7 @@ public struct Spot: Equatable, Sendable {
         guard output.summary != nil || output.errors.isEmpty else { throw PluginError.badState }
         var state = SpotState(output: output, header: headerState)
         if view != nil { state = state.holding(output.view) }
-        guard shipped != nil, let isOnGrid = output.summary?.flag("grid") else { return state }
+        guard shipped != nil || isBuiltIn, let isOnGrid = output.summary?.flag("grid") else { return state }
         return state.onGrid(isOnGrid)
     }
 

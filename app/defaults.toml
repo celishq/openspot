@@ -45,3 +45,7 @@ grid = false
 [[spots]]
 id = "translate"
 letter = "t"
+
+[[spots]]
+id = "openspot/quit"
+grid = false
