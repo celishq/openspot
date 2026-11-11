@@ -2,6 +2,22 @@ import Foundation
 
 /// The main search: the cards that its text finds, with the rows and the answers that join them.
 extension SpotsModel {
+    /// Where the cards hidden from the grid start in the order of Edit Spots, after the cards on the grid and a card that
+    /// arrives from the dock. A dragged card counts in the group of its target. It is nil out of Edit Spots and while the
+    /// search has text.
+    var hiddenStart: Int? {
+        guard isEditing, query.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+        let hidden = cards.filter { !$0.isOnGrid && $0.id != drag?.id }.count + (drag?.target.isOnGrid == false ? 1 : 0)
+        return visible.count - hidden
+    }
+
+    /// The grid of the cards shown: in the groups of Edit Spots, with the size of each card whose size the person chose, and
+    /// of a card that arrives from the dock.
+    var grid: SpotGrid {
+        let arriving = carry?.tile == nil ? nil : carry?.entry.id
+        return SpotGrid(split: hiddenStart, kept: Set(visible.indices.filter { visible[$0].isSizeChosen || visible[$0].id == arriving }))
+    }
+
     /// The entries that have a card. A sheet that grows out of the field, such as the install screen, has none.
     public var cards: [Entry] {
         entries.filter { $0.id != fieldSheet }
@@ -10,14 +26,18 @@ extension SpotsModel {
     /// The most rows that the main search shows from a list that the person never picked from.
     private static let unpickedRows = 3
 
-    /// Shows the spots that the search finds and the items it finds in the lists that offer them, in one ranking.
+    /// Shows the spots that the search finds and the items it finds in the lists that offer them, in one ranking. While the
+    /// search has text, each one is a full-width row.
     public func updateVisible() {
         let next = found()
         if next != visible { visible = next }
-        let sizes = visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size }
-        if sizes != laidOutSizes {
+        let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { _ in SpotSize.strip }
+        let index = visible.firstIndex { $0.id == resize?.id }
+        let grid = index.map(self.grid.keeping) ?? self.grid
+        if sizes != laidOutSizes || grid != laidOutGrid {
             laidOutSizes = sizes
-            placements = SpotGrid().place(sizes)
+            laidOutGrid = grid
+            placements = grid.place(sizes)
         }
         if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
     }

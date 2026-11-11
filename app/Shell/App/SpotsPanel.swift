@@ -82,8 +82,7 @@ final class SpotsPanel: NSPanel {
     /// Whether a point on the screen lies on the part of the panel that takes a drop. The window is taller than that.
     func showsDrop(at point: NSPoint) -> Bool {
         guard let model, model.isShown else { return false }
-        let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
-        let height = SpotTokens.backdropHeight(rows: rows)
+        let height = SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: model.placements))
         return NSRect(x: frame.minX, y: frame.maxY - height, width: frame.width, height: height).contains(point)
     }
 
@@ -97,8 +96,7 @@ final class SpotsPanel: NSPanel {
         }
         if isEditing, restFrame == nil, let area = screen?.visibleFrame {
             let panel = frame
-            let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
-            let content = SpotTokens.backdropHeight(rows: rows) - SpotTokens.halo
+            let content = SpotTokens.backdropHeight(gridHeight: SpotGrid.height(of: model.placements)) - SpotTokens.halo
             let dock = ScreenPlace.dock(under: NSRect(x: panel.minX, y: panel.maxY - content, width: panel.width, height: content), in: area)
             let whole = panel.union(dock)
             restFrame = panel
@@ -106,7 +104,7 @@ final class SpotsPanel: NSPanel {
             place.dock = CGRect(x: dock.minX - whole.minX, y: whole.maxY - dock.maxY, width: dock.width, height: dock.height)
             place.isOut = false
             model.dockFrame = place.dock?.offsetBy(dx: -place.panel.x, dy: -place.panel.y)
-            setFrame(whole, display: true)
+            resize(to: whole)
             DispatchQueue.main.async { [weak self] in
                 guard let self, self.model?.isEditing == true else { return }
                 withAnimation(SpotMotion.edit) { self.place.isOut = true }
@@ -128,7 +126,18 @@ final class SpotsPanel: NSPanel {
         place.dock = nil
         place.panel = .zero
         model?.dockFrame = nil
-        setFrame(rest, display: true)
+        resize(to: rest)
+    }
+
+    /// Gives the window this frame and lays its content out at the new places in the same commit, so that no frame shows the
+    /// content at its old place in the new frame.
+    private func resize(to frame: NSRect) {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        setFrame(frame, display: false)
+        contentView?.layoutSubtreeIfNeeded()
+        displayIfNeeded()
+        CATransaction.commit()
     }
 
     /// Starts the close motion, and takes the panel off the screen when it ends. Then it runs the given work.

@@ -2,11 +2,14 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// One blur of what lies behind the window, with a dark tint. The tint grows from nothing at its edge across the whole margin,
-/// and the blur grows only close to the content.
+/// One blur of what lies behind the window, with the theme's shade. The shade grows from nothing at its edge across the
+/// whole margin. The blur is full at the content and falls along `blurFalloff` to nothing at the window's edge.
 struct SpotSoftBlur: NSViewRepresentable {
-    private static let blurInset: CGFloat = SpotTokens.halo - 5
-    private static let blurSoftness: CGFloat = 20
+    /// The strength that the blur loses with the distance from the content, as a share of the margin.
+    private static let blurFalloff = UnitCurve.bezier(
+        startControlPoint: SpotTheme.backdropFalloff.start,
+        endControlPoint: SpotTheme.backdropFalloff.end
+    )
     private static let tintInset: CGFloat = SpotTokens.halo * 0.58
     private static let tintSoftness: CGFloat = SpotTokens.halo / 4.7
 
@@ -31,6 +34,11 @@ struct SpotSoftBlur: NSViewRepresentable {
                 filter = Self.filter(mask: masks?.blur, radius: SpotTheme.backdropBlur)
                 applyBlur()
             }
+        }
+
+        /// Whether the panel is in the dark theme, which picks the shade of the tint.
+        var isDark = true {
+            didSet { if isDark != oldValue { applyShade() } }
         }
 
         private let tint = CALayer()
@@ -62,8 +70,16 @@ struct SpotSoftBlur: NSViewRepresentable {
             }
             tint.frame = bounds
             tintMask.frame = bounds
-            tint.backgroundColor = SpotTheme.tint.cgColor
+            applyShade()
             applyBlur()
+        }
+
+        /// Gives the tint the shade of the theme that the panel is in.
+        private func applyShade() {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            defer { CATransaction.commit() }
+            tint.backgroundColor = (isDark ? SpotTheme.dark : SpotTheme.light).shade.cgColor
         }
 
         override func updateLayer() {
@@ -107,11 +123,13 @@ struct SpotSoftBlur: NSViewRepresentable {
         surface.blendingMode = .behindWindow
         surface.state = .active
         surface.appearance = NSAppearance(named: .darkAqua)
+        surface.isDark = context.environment.colorScheme == .dark
         surface.masks = Self.masks(height: height)
         return surface
     }
 
     func updateNSView(_ surface: Surface, context: Context) {
+        surface.isDark = context.environment.colorScheme == .dark
         surface.masks = Self.masks(height: height)
     }
 
@@ -129,11 +147,44 @@ struct SpotSoftBlur: NSViewRepresentable {
     private static func masks(height: CGFloat) -> Masks {
         if let masks = kept[height] { return masks }
         let masks = Masks(
-            blur: mask(height: height, inset: blurInset, softness: blurSoftness),
+            blur: falloff(height: height),
             tint: mask(height: height, inset: tintInset, softness: tintSoftness)
         )
         kept[height] = masks
         return masks
+    }
+
+    /// The blur's mask: full inside the content, whose corners are those of the panel, and weaker by `blurFalloff` with the
+    /// distance out from it, to nothing at the window's edge. It works out one quarter and mirrors it into the others.
+    private static func falloff(height: CGFloat) -> CGImage? {
+        let width = Int(SpotTokens.panelWidth)
+        let rows = Int(height)
+        guard width > 0, rows > 0,
+              let context = CGContext(data: nil, width: width, height: rows, bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.alphaOnly.rawValue),
+              let data = context.data
+        else { return nil }
+        let levels = (0...255).map { UInt8((255 * min(max(1 - blurFalloff.value(at: Double($0) / 255), 0), 1)).rounded()) }
+        let margin = SpotTokens.halo
+        let corner = SpotTokens.radius
+        let reach = CGSize(width: max(CGFloat(width) / 2 - margin - corner, 0), height: max(CGFloat(rows) / 2 - margin - corner, 0))
+        let line = context.bytesPerRow
+        let bytes = data.bindMemory(to: UInt8.self, capacity: line * rows)
+        for y in 0..<(rows + 1) / 2 {
+            let along = abs(CGFloat(y) + 0.5 - CGFloat(rows) / 2) - reach.height
+            for x in 0..<(width + 1) / 2 {
+                let across = abs(CGFloat(x) + 0.5 - CGFloat(width) / 2) - reach.width
+                let distance = hypot(max(across, 0), max(along, 0)) + min(max(across, along), 0) - corner
+                let level = levels[Int(min(max(distance / margin, 0), 1) * 255)]
+                let top = y * line
+                let bottom = (rows - 1 - y) * line
+                bytes[top + x] = level
+                bytes[top + width - 1 - x] = level
+                bytes[bottom + x] = level
+                bytes[bottom + width - 1 - x] = level
+            }
+        }
+        return context.makeImage()
     }
 
     /// Draws a soft rounded shape and keeps only its alpha, a quarter of the bytes of the drawing.

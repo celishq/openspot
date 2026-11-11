@@ -99,6 +99,7 @@ extension SpotsModel {
         stopDragWait()
         change(moving ? .edit : nil) {
             isEditing = false
+            tip = nil
             drag = nil
             landing = nil
             carry = nil
@@ -145,7 +146,7 @@ extension SpotsModel {
 
     private func moveSelectedSpot(by step: Int, in order: [String]) {
         guard order.indices.contains(selected),
-              let place = SpotGrid().nextPlace(of: selected, in: visible.map(\.size), step: step) else { return }
+              let place = grid.nextPlace(of: selected, in: visible.map(\.size), step: step) else { return }
         moveSpot(order[selected], to: place)
     }
 
@@ -162,7 +163,7 @@ extension SpotsModel {
     private func stepSelectedSize() {
         guard let entry = selectedEntry else { return }
         let sizes = visible.map(\.size)
-        if let next = SpotGrid().nextSize(of: selected, in: sizes, among: self.sizes(of: entry)) { prefer(next, for: entry.id) }
+        if let next = grid.nextSize(of: selected, in: sizes, among: self.sizes(of: entry)) { prefer(next, for: entry.id) }
     }
 
     private func toggleSelectedOnGrid() {
@@ -178,6 +179,7 @@ extension SpotsModel {
     }
 
     public func setOnGrid(_ isOn: Bool, for id: String) {
+        tip = nil
         arrangement.arrange((cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id))
         arrangement.set(isOnGrid: isOn, of: id)
         saveArrangement(selecting: id)

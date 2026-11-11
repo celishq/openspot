@@ -1,6 +1,7 @@
 import OpenspotCore
 import AppKit
 import QuartzCore
+import ScreenCaptureKit
 
 /// A run that opens and closes the sheet of one spot again and again, or with `OPENSPOT_ACTION` moves down its rows, types
 /// in its search, picks the row `OPENSPOT_ROW`, types `OPENSPOT_TEXT` in the main search, opens the panel itself after
@@ -73,6 +74,7 @@ final class SpotMotionProbe: NSObject {
         if action == "search" { return beginSearch() }
         if action == "drag" || action == "mouse" { return beginDrag() }
         if action == "edit" { return beginEdit() }
+        if action == "jump" { return beginJump() }
         if action == "tile" {
             model.beginEditing()
             return DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.pullTile() }
@@ -97,6 +99,22 @@ final class SpotMotionProbe: NSObject {
         }
     }
 
+    /// Starts Edit Spots under a capture of the display that holds only the panel's window, and writes how far the search
+    /// field's row lies on the screen from where it lay before, in pixels, for each frame of the next second.
+    private func beginJump() {
+        Task { @MainActor in
+            guard let watch = await SpotJumpWatch(panel: panel, row: SpotTokens.halo + SpotTokens.rowHeight / 2) else {
+                return finish(with: "no capture\n")
+            }
+            try? await Task.sleep(for: .milliseconds(500))
+            model.beginEditing()
+            try? await Task.sleep(for: .seconds(1))
+            let shifts = await watch.stop()
+            let worst = shifts.map(abs).max() ?? 0
+            finish(with: "worst shift \(worst) px in \(shifts.count) frames, contrast \(watch.contrast)\n" + shifts.map(String.init).joined(separator: " ") + "\n")
+        }
+    }
+
     /// Starts Edit Spots, and ends it as Done does, again and again.
     private func beginEdit() {
         guard let view = panel.contentView else { return finish(with: "no panel\n") }
@@ -114,29 +132,44 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.edit(left: left - 1) }
     }
 
-    /// Saves a picture of Edit Spots with its dock a second after it starts and, with `OPENSPOT_SPOT`, of that card carried
-    /// over the dock, a second after its release there, then carried from the dock over the grid's first card, a second
-    /// after its release there, and of the dock's first spot pulled a column wider and a row taller.
+    /// Saves a picture of Edit Spots with its dock a second after it starts, then of the tip of the first card's eye, then of
+    /// the tip of the first dock card's delete control, then the pictures of a carried card.
     private func shootEdit(into folder: String) {
         model.beginEditing()
         try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.save(to: "\(folder)/dock.png")
-            guard let id = self.spot, let index = self.model.visible.firstIndex(where: { $0.id == id }), let dock = self.model.dockFrame else {
-                return self.finish(with: "shots\n")
-            }
-            let rect = self.model.placements[index].rect
-            let origin = SpotTokens.gridOrigin(scrollOffset: self.model.gridScroll)
-            let move = CGSize(width: dock.midX - origin.x - rect.midX, height: dock.midY - origin.y - rect.midY)
-            self.model.dragSpot(id, by: CGSize(width: 1, height: 1))
-            self.model.dragSpot(id, by: move)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                self.save(to: "\(folder)/carried.png")
-                self.model.dropSpot(by: move)
+            self.model.tip = self.model.visible.first.map { SpotTip(id: $0.id, anchor: .trailingCorner, text: "Hide from grid") }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                self.save(to: "\(folder)/tip.png")
+                self.model.tip = self.model.dock.shown.first.map { SpotTip(id: $0.id, anchor: .dockCorner, text: "Delete") }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    self.save(to: "\(folder)/dropped.png")
-                    self.shootArrival(of: id, into: folder)
+                    self.save(to: "\(folder)/tip-dock.png")
+                    self.model.tip = nil
+                    self.shootCarry(into: folder)
                 }
+            }
+        }
+    }
+
+    /// Saves pictures of `OPENSPOT_SPOT` carried over the dock, a second after its release there, then carried from the dock
+    /// over the grid's first card, a second after its release there, and of the dock's first spot pulled a column wider and
+    /// a row taller.
+    private func shootCarry(into folder: String) {
+        guard let id = spot, let index = model.visible.firstIndex(where: { $0.id == id }), let dock = model.dockFrame else {
+            return finish(with: "shots\n")
+        }
+        let rect = model.placements[index].rect
+        let origin = SpotTokens.gridOrigin(scrollOffset: model.gridScroll)
+        let move = CGSize(width: dock.midX - origin.x - rect.midX, height: dock.midY - origin.y - rect.midY)
+        model.dragSpot(id, by: CGSize(width: 1, height: 1))
+        model.dragSpot(id, by: move)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.save(to: "\(folder)/carried.png")
+            self.model.dropSpot(by: move)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                self.save(to: "\(folder)/dropped.png")
+                self.shootArrival(of: id, into: folder)
             }
         }
     }
@@ -357,11 +390,10 @@ final class SpotMotionProbe: NSObject {
         guard let id = spot ?? model.visible.last(where: \.isOnGrid)?.id, let index = model.visible.firstIndex(where: { $0.id == id }),
               let view = panel.contentView else { return finish(with: "no card to drag\n") }
         let rect = model.placements[index].rect
-        let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
         let stops = [
             CGPoint(x: rect.midX, y: rect.midY),
             CGPoint(x: SpotTokens.cell / 2, y: SpotTokens.rowHeight / 2),
-            CGPoint(x: SpotTokens.gridWidth / 2, y: SpotTokens.height(rows: rows) / 2),
+            CGPoint(x: SpotTokens.gridWidth / 2, y: SpotGrid.height(of: model.placements) / 2),
             CGPoint(x: rect.midX, y: rect.midY)
         ].map { CGSize(width: $0.x - rect.midX, height: $0.y - rect.midY) }
         if let shots { return shoot(id, stops: stops, into: shots) }
@@ -525,5 +557,72 @@ final class SpotMotionProbe: NSObject {
         link?.invalidate()
         FileManager.default.createFile(atPath: output, contents: Data(text.utf8))
         exit(0)
+    }
+}
+
+/// A capture of the display that holds only the panel's window. For each frame it finds how far one row of the panel lies
+/// from where it lay in the first frame.
+private final class SpotJumpWatch: NSObject, SCStreamOutput, @unchecked Sendable {
+    private let stream: SCStream
+    private let rowY: Int
+    private let lock = NSLock()
+    private var first: [Double]?
+    private var shifts: [Int] = []
+
+    @MainActor init?(panel: NSPanel, row: CGFloat) async {
+        guard let content = try? await SCShareableContent.current,
+              let window = content.windows.first(where: { $0.windowID == CGWindowID(panel.windowNumber) }),
+              let screen = panel.screen,
+              let display = content.displays.first(where: { $0.frame.width == screen.frame.width && $0.frame.height == screen.frame.height }) else { return nil }
+        let scale = screen.backingScaleFactor
+        let config = SCStreamConfiguration()
+        config.width = Int(screen.frame.width * scale)
+        config.height = Int(screen.frame.height * scale)
+        config.minimumFrameInterval = CMTime(value: 1, timescale: 240)
+        config.showsCursor = false
+        rowY = Int((screen.frame.maxY - panel.frame.maxY + row) * scale)
+        stream = SCStream(filter: SCContentFilter(display: display, including: [window]), configuration: config, delegate: nil)
+        super.init()
+        try? stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: DispatchQueue(label: "jump"))
+        do { try await stream.startCapture() } catch { return nil }
+    }
+
+    func stop() async -> [Int] {
+        try? await stream.stopCapture()
+        return lock.withLock { shifts }
+    }
+
+    /// The range of brightness along the first row, which is 0 when the capture holds nothing of the panel.
+    var contrast: Double {
+        lock.withLock { (first?.max() ?? 0) - (first?.min() ?? 0) }
+    }
+
+    func stream(_ stream: SCStream, didOutputSampleBuffer buffer: CMSampleBuffer, of type: SCStreamOutputType) {
+        guard let attachments = CMSampleBufferGetSampleAttachmentsArray(buffer, createIfNecessary: false) as? [[SCStreamFrameInfo: Any]],
+              (attachments.first?[.status] as? Int).flatMap(SCFrameStatus.init) == .complete,
+              let pixels = CMSampleBufferGetImageBuffer(buffer) else { return }
+        CVPixelBufferLockBaseAddress(pixels, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(pixels, .readOnly) }
+        guard let base = CVPixelBufferGetBaseAddress(pixels), rowY < CVPixelBufferGetHeight(pixels) else { return }
+        let width = CVPixelBufferGetWidth(pixels)
+        let line = base.advanced(by: rowY * CVPixelBufferGetBytesPerRow(pixels)).assumingMemoryBound(to: UInt8.self)
+        let row = (0..<width).map { x in Double(Int(line[4 * x]) + Int(line[4 * x + 1]) + Int(line[4 * x + 2])) / 765 }
+        lock.lock()
+        defer { lock.unlock() }
+        guard let first else { return self.first = row }
+        shifts.append(Self.shift(of: row, from: first))
+    }
+
+    /// The shift of a row against the first row, within 600 pixels, that makes the two most alike.
+    private static func shift(of row: [Double], from first: [Double]) -> Int {
+        let count = min(row.count, first.count)
+        func cost(_ shift: Int) -> Double {
+            stride(from: 0, to: count, by: 2).reduce(0) { sum, x in
+                let moved = x + shift
+                guard moved >= 0, moved < count else { return sum }
+                return sum + abs(row[moved] - first[x])
+            }
+        }
+        return stride(from: -600, through: 600, by: 1).min { cost($0) < cost($1) } ?? 0
     }
 }

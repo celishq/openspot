@@ -120,6 +120,20 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertNil(model.card(at: CGPoint(x: -1, y: -1)))
     }
 
+    func testATypedSearchShowsEachResultAsAFullWidthRowAndAnEmptyOneKeepsTheGrid() throws {
+        try script("one", header: "title=One", "")
+        try script("two", header: "title=Two", "")
+        model.reload()
+        let grid = model.placements
+
+        model.searchText = "o"
+        XCTAssertEqual(model.placements.map(\.size), [.strip, .strip])
+        XCTAssertEqual(model.placements.map(\.row), [0, 1])
+
+        model.searchText = ""
+        XCTAssertEqual(model.placements, grid)
+    }
+
     func testAnOpenFindsAScriptMadeExecutableSinceTheOpenBefore() throws {
         let late = plugins.appendingPathComponent("late.sh")
         try "#!/bin/sh\n# title=Late\n".write(to: late, atomically: false, encoding: .utf8)

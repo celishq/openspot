@@ -45,6 +45,7 @@ public final class SpotsModel {
     public internal(set) var visible: [Entry] = []
     /// The sizes that `placements` were laid out from.
     @ObservationIgnored var laidOutSizes: [SpotSize] = []
+    @ObservationIgnored var laidOutGrid = SpotGrid()
     /// The cards as the items that the main search finds. It folds them again only when they change.
     @ObservationIgnored var spotList = ItemList()
     /// Whether a card changed since `spotList` was built: its entry, or the state or the command that its run reports.
@@ -112,6 +113,8 @@ public final class SpotsModel {
     @ObservationIgnored var formAsk: UUID?
     /// Whether the grid is in Edit Spots, where it also shows the spots that are off the grid, and a press only selects.
     public var isEditing = false
+    /// The tip of the corner control that the pointer lies over in Edit Spots.
+    public var tip: SpotTip?
     /// The card that the person drags in Edit Spots, and where a release puts it.
     public internal(set) var drag: SpotDrag?
     public let lift = SpotLift()
@@ -133,7 +136,7 @@ public final class SpotsModel {
     /// How long the pointer stays near a new place before the other cards make room there.
     @ObservationIgnored public var dragRest: Duration = .milliseconds(100)
     /// The place that the cards make room at when the pointer has rested near it for `dragRest`.
-    @ObservationIgnored var dragTarget: Int?
+    @ObservationIgnored var dragTarget: SpotDrag.Target?
     @ObservationIgnored var dragWait: Task<Void, Never>?
     /// How far the grid has scrolled, how far it had when the pointer pressed a card to drag or resize it, and the
     /// pointer's last move since, so that a scroll with no move of the pointer moves the card with the grid.

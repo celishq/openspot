@@ -48,6 +48,11 @@ extension SpotsModel {
             run?.spot ?? fixedSpot
         }
 
+        /// Whether the person chose the size of its card, which the grid then keeps.
+        public var isSizeChosen: Bool {
+            sizeChoice != nil
+        }
+
         /// The size of its card: the person's choice, or else its header (F9). A card of a fault is never small, so that its
         /// words show.
         @MainActor public var size: SpotSize {

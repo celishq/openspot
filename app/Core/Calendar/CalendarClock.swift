@@ -34,21 +34,20 @@ struct CalendarClock {
     }
 
     /// The name of the day of a time: nil for today, the word for the day before or after, and else its weekday and date.
-    /// The day before or after counts from `now`, while the formatter's words count from the system date.
     func day(_ date: Date) -> String? {
         let distance = calendar.dateComponents([.day], from: startOfToday, to: calendar.startOfDay(for: date)).day ?? 0
         guard distance != 0 else { return nil }
+        if abs(distance) == 1 {
+            let word = RelativeDateTimeFormatter()
+            word.locale = locale
+            word.dateTimeStyle = .named
+            word.formattingContext = .beginningOfSentence
+            return word.localizedString(from: DateComponents(day: distance))
+        }
         let format = DateFormatter()
         format.locale = locale
         format.timeZone = calendar.timeZone
-        guard abs(distance) == 1 else {
-            format.setLocalizedDateFormatFromTemplate("EEEdMMM")
-            return format.string(from: date)
-        }
-        format.dateStyle = .medium
-        format.timeStyle = .none
-        format.doesRelativeDateFormatting = true
-        let today = calendar.startOfDay(for: Date())
-        return format.string(from: calendar.date(byAdding: .day, value: distance, to: today) ?? date)
+        format.setLocalizedDateFormatFromTemplate("EEEdMMM")
+        return format.string(from: date)
     }
 }

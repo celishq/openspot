@@ -1,8 +1,7 @@
 import Foundation
 
-/// What the person chose for the spots: a preferred size, whether the grid shows a spot, whether its rows join the main
-/// search, whether the menu bar shows it, its letter, and the order. The grid can still change a preferred size to fill a
-/// row.
+/// What the person chose for the spots: a size, which the grid keeps, whether the grid shows a spot, whether its rows join
+/// the main search, whether the menu bar shows it, its letter, and the order.
 public struct SpotArrangement: Equatable, Sendable {
     public struct Choice: Equatable, Sendable {
         public let id: String

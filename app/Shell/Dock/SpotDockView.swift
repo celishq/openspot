@@ -1,9 +1,10 @@
 import OpenspotCore
 import SwiftUI
 
-/// The dock of Edit Spots, on the glass of the panel's surfaces: its title with the number of spots that are off, its
-/// search, and those spots as their cards in rows that scroll down and fade at each end they pass. The scroll reaches the
-/// dock's edges, and its margin lies inside it. A card dragged out of the dock leaves its place empty until it lands.
+/// The dock of Edit Spots, on the glass of the panel's surfaces: the title All with the number of spots that are off, its
+/// search, and those spots as their cards in rows that scroll under the title and fade at each end they pass. The scroll
+/// reaches the dock's edges, and its margins lie inside it. A card dragged out of the dock leaves its place empty until it
+/// lands.
 struct SpotDockView: View {
     let model: SpotsModel
     let size: CGSize
@@ -14,10 +15,34 @@ struct SpotDockView: View {
         let dock = model.dock
         let columns = SpotTokens.dockColumns(width: size.width)
         let rects = dock.rects(columns: columns)
-        VStack(alignment: .leading, spacing: 0) {
+        ZStack(alignment: .topLeading) {
+            ScrollView(.vertical, showsIndicators: false) {
+                ZStack(alignment: .topLeading) {
+                    ForEach(Array(zip(dock.shown, rects)), id: \.0.id) { item, rect in
+                        SpotDockTile(item: item, model: model)
+                            .simultaneousGesture(carry(item))
+                            .animation(nil) { $0.opacity(model.carry?.entry.id == item.id ? 0.001 : 1) }
+                            .offset(x: rect.minX, y: rect.minY)
+                    }
+                }
+                .frame(width: size.width - 2 * SpotTokens.padding, height: dock.height(columns: columns), alignment: .topLeading)
+                .padding(.horizontal, SpotTokens.padding)
+                .padding(.top, SpotTokens.dockRowsTop)
+                .padding(.bottom, SpotTokens.padding)
+            }
+            .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in model.dockScrolled(to: offset) })
+            .modifier(SpotScrollEdgeTracker(edges: $edges))
+            .mask(edgeFade)
+            if dock.shown.isEmpty {
+                Text(dock.query.isEmpty ? "Each spot is on." : "No spot has these words.")
+                    .font(SpotType.body)
+                    .modifier(SpotSecondaryText())
+                    .padding(.horizontal, SpotTokens.padding)
+                    .offset(y: SpotTokens.dockRowsTop)
+            }
             HStack(spacing: SpotTokens.padding) {
                 HStack(spacing: 6) {
-                    Text("Off")
+                    Text("All")
                         .font(SpotType.title)
                         .foregroundStyle(SpotTheme.ink)
                     Text("\(dock.shown.count)")
@@ -30,31 +55,6 @@ struct SpotDockView: View {
             }
             .frame(height: SpotTokens.menuRowHeight)
             .padding([.horizontal, .top], SpotTokens.padding)
-            .padding(.bottom, SpotTokens.rowGap)
-            ScrollView(.vertical, showsIndicators: false) {
-                ZStack(alignment: .topLeading) {
-                    ForEach(Array(zip(dock.shown, rects)), id: \.0.id) { item, rect in
-                        SpotDockTile(item: item, model: model)
-                            .simultaneousGesture(carry(item))
-                            .animation(nil) { $0.opacity(model.carry?.entry.id == item.id ? 0.001 : 1) }
-                            .offset(x: rect.minX, y: rect.minY)
-                    }
-                }
-                .frame(width: size.width - 2 * SpotTokens.padding, height: dock.height(columns: columns), alignment: .topLeading)
-                .padding(.horizontal, SpotTokens.padding)
-                .padding(.bottom, SpotTokens.padding)
-            }
-            .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in model.dockScrolled(to: offset) })
-            .modifier(SpotScrollEdgeTracker(edges: $edges))
-            .mask(edgeFade)
-            .overlay(alignment: .topLeading) {
-                if dock.shown.isEmpty {
-                    Text(dock.query.isEmpty ? "Each spot is on." : "No spot has these words.")
-                        .font(SpotType.body)
-                        .modifier(SpotSecondaryText())
-                        .padding(.horizontal, SpotTokens.padding)
-                }
-            }
         }
         .frame(width: size.width, height: size.height, alignment: .topLeading)
         .background { DropMark(model: model) }
@@ -63,9 +63,12 @@ struct SpotDockView: View {
         .onChange(of: model.isSearchingDock) { _, isOn in if !isOn { isSearching = false } }
     }
 
-    /// The fade at each end of the dock's rows, as strong as the rows have scrolled past that end, as on the panel's grid.
+    /// The fade of the dock's rows under its title and at its bottom edge, as strong as the rows have scrolled past that end,
+    /// as on the panel's grid. At rest a card's controls show over the gap under the title.
     private var edgeFade: some View {
         VStack(spacing: 0) {
+            Color.black.opacity(1 - edges.top)
+                .frame(height: SpotTokens.padding + SpotTokens.menuRowHeight)
             SpotScrollEdges.end(fading: edges.top, from: .top)
                 .frame(height: SpotScrollEdges.fadeLength)
             Color.black

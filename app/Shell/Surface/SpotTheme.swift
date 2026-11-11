@@ -14,6 +14,10 @@ struct SpotTheme {
     let glyphOnSolid: NSColor
     /// The shade of a surface over its blur.
     let glass: NSColor
+    /// Whether a surface's blur keeps the system material's own fill, tone and saturation under `glass`.
+    let isMaterialTinted: Bool
+    /// The shade around the panel, at its full strength.
+    let shade: NSColor
     let keycap: NSColor
     /// The fill of a sandbox window or a rendered picture.
     let window: NSColor
@@ -36,7 +40,9 @@ struct SpotTheme {
         solid: .white,
         onSolid: .black,
         glyphOnSolid: .controlAccentColor,
-        glass: .black.withAlphaComponent(0.3),
+        glass: .clear,
+        isMaterialTinted: true,
+        shade: .black.withAlphaComponent(0.2),
         keycap: NSColor(white: 0.2, alpha: 1),
         window: NSColor(white: 0.16, alpha: 1),
         preview: NSColor(white: 0.3, alpha: 1),
@@ -57,6 +63,8 @@ struct SpotTheme {
         onSolid: .white,
         glyphOnSolid: .white,
         glass: .white.withAlphaComponent(0.5),
+        isMaterialTinted: false,
+        shade: NSColor(srgbRed: 0.8, green: 0.8, blue: 0.8, alpha: 0.2),
         keycap: NSColor(white: 0.98, alpha: 1),
         window: NSColor(white: 0.93, alpha: 1),
         preview: NSColor(white: 0.98, alpha: 1),
@@ -75,6 +83,10 @@ struct SpotTheme {
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
     }
 
+    static func palette(for scheme: ColorScheme) -> SpotTheme {
+        scheme == .dark ? dark : light
+    }
+
     /// The theme of the app's appearance now, chosen once for each appearance.
     @MainActor private static var current: SpotTheme {
         let appearance = NSApp?.effectiveAppearance ?? NSAppearance.currentDrawing()
@@ -86,11 +98,12 @@ struct SpotTheme {
 
     @MainActor private static var chosen: (appearance: NSAppearance, theme: SpotTheme)?
 
-    /// The shade around the panel, at its full strength.
-    static let tint = NSColor.black.withAlphaComponent(0.08)
-    /// The radius of the blur behind a surface, and of the blur around the panel.
+    /// The radius of the blur behind a surface, and of the blur around the panel at its strongest.
     static let blur: CGFloat = 24
-    static let backdropBlur: CGFloat = 3
+    static let backdropBlur: CGFloat = 8
+    /// The control points of the curve by which the blur around the panel loses its strength from the content to the
+    /// window's edge.
+    static let backdropFalloff = (start: UnitPoint(x: 0, y: 0.25), end: UnitPoint(x: 0.25, y: 1))
     /// The thin dark line down the sides of a surface's rim, at its top, its middle and its foot.
     static let rimSides = NSColor.black
     static let rimSideStrengths: [CGFloat] = [0, 0.3, 0.3, 0]

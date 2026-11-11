@@ -158,14 +158,14 @@ final class SpotArrangementTests: XCTestCase {
         XCTAssertEqual(config.arrangement.choices, arrangement.choices.reversed())
     }
 
-    func testASizeStepSkipsEachSizeThatChangesNothing() {
+    func testASizeStepTakesTheNextSizeSinceTheGridKeepsIt() {
         let sizes: [SpotSize] = [.small, .small]
 
-        XCTAssertEqual(SpotGrid().nextSize(of: 0, in: sizes, among: [.small, .wide, .strip]), .strip)
+        XCTAssertEqual(SpotGrid().nextSize(of: 0, in: sizes, among: [.small, .wide, .strip]), .wide)
     }
 
-    func testASizeStepTurnsBackToTheFirstSizeOrFindsNone() {
-        XCTAssertNil(SpotGrid().nextSize(of: 0, in: [.strip], among: [.small, .wide, .strip]))
+    func testASizeStepTurnsBackToTheFirstSize() {
+        XCTAssertEqual(SpotGrid().nextSize(of: 0, in: [.strip], among: [.small, .wide, .strip]), .small)
         XCTAssertEqual(SpotGrid().nextSize(of: 0, in: [.large, .large], among: [.strip, .large]), .strip)
     }
 

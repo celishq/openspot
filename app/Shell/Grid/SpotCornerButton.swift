@@ -12,6 +12,8 @@ struct SpotCornerButton: View {
     let label: String
     let corner: Corner
     let size: SpotSize
+    /// Takes whether the pointer lies over the button. A button with it shows the panel's tip, and no tip of the system.
+    var onHover: ((Bool) -> Void)?
     let action: () -> Void
 
     var body: some View {
@@ -26,7 +28,9 @@ struct SpotCornerButton: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .help(label)
+        .help(onHover == nil ? label : "")
+        .accessibilityLabel(label)
+        .onHover { onHover?($0) }
         .offset(x: corner == .leading ? inset : -inset, y: inset)
     }
 }

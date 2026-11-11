@@ -1,8 +1,8 @@
 import OpenspotCore
 import SwiftUI
 
-/// A spot in the dock: its card as the grid draws it, at its size, on the fill of a row, and the name under a 1x1 card,
-/// which shows no words. Its frame is the card's, drawn in a layer of its own, so that a move of the dock's tiles redraws
+/// A spot in the dock: its card as the grid draws it, at its size, on the fill of a row. A 1x1 card, which shows no words,
+/// shows its name as a tip. Its frame is the card's, drawn in a layer of its own, so that a move of the dock's tiles redraws
 /// none. A spot of the plugins folder shows a cross that deletes it, and its corner handle resizes it as on the grid. A
 /// right click turns the spot on.
 struct SpotDockTile: View {
@@ -41,23 +41,31 @@ struct SpotDockTile: View {
         ))
         .overlay(alignment: .topLeading) {
             if item.isOwn {
-                SpotCornerButton(symbol: "xmark", label: "Delete", corner: .leading, size: size) { model.delete(item.id) }
+                SpotCornerButton(symbol: "xmark", label: "Delete", corner: .leading, size: size, onHover: deleteTip) { model.delete(item.id) }
             }
         }
         .contextMenu {
             Button("Turn On") { model.turnOn(item.id) }
             if item.isOwn { Button("Delete") { model.delete(item.id) } }
         }
-        .overlay(alignment: .top) {
-            if size == .small {
-                Text(item.spot.name)
-                    .font(SpotType.detail)
-                    .foregroundStyle(SpotTheme.ink)
-                    .lineLimit(1)
-                    .frame(width: SpotTokens.cell + SpotTokens.columnGap, height: SpotTokens.dockNameHeight)
-                    .offset(y: SpotTokens.rowHeight + SpotTokens.dockNameGap)
-                    .allowsHitTesting(false)
+        .onHover { isOver in
+            let tip = SpotTip(id: item.id, anchor: .dockCard, text: item.spot.name)
+            guard size == .small else { return }
+            if isOver {
+                model.tip = tip
+            } else if model.tip == tip {
+                model.tip = nil
             }
+        }
+    }
+
+    /// Shows the tip of the delete control while the pointer lies over it.
+    private func deleteTip(_ isOver: Bool) {
+        let tip = SpotTip(id: item.id, anchor: .dockCorner, text: "Delete")
+        if isOver {
+            model.tip = tip
+        } else if model.tip == tip {
+            model.tip = nil
         }
     }
 }

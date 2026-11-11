@@ -9,7 +9,7 @@ extension SpotsModel {
         if dock.items.contains(where: { $0.id == id }) { return resizeTile(id, by: translation, grip: grip) }
         if resize?.id != id {
             guard let index = visible.firstIndex(where: { $0.id == id }) else { return }
-            resize = SpotResize(id: id, index: index, sizes: visible.map(\.size), choices: sizes(of: visible[index]))
+            resize = SpotResize(id: id, index: index, sizes: visible.map(\.size), choices: sizes(of: visible[index]), grid: grid)
             resizeGrip = grip
             scrollAtPress = gridScroll
             selected = index
