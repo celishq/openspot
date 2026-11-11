@@ -65,29 +65,20 @@ public struct SpotFolder: Sendable {
     }
 
     /// Reads each executable and widget file that is not off, at the top of the folder or one folder down, after the sheets
-    /// of the app. Then it reads each core spot that is on, each core file that a spot needs, and each spot of the app. A file
-    /// in the folder hides a core file with the same ID.
+    /// of the app. Then it reads each core spot that is on, each core file that a spot needs, and the spots of the app, a
+    /// source that a person cannot change. A file in the folder hides a core file or a spot of the app with the same ID.
     public func scan(hosted: [Spot] = []) throws -> ScanResult {
         var result = ScanResult(files: hosted.isEmpty ? [] : [SpotFile(id: "openspot", spots: hosted)], refused: [])
-        let entries = core == nil ? try Self.sorted(in: url) : (try? Self.sorted(in: url)) ?? []
-        var ownIDs = Set<String>()
-        for entry in entries {
-            var isFolder: ObjCBool = false
-            FileManager.default.fileExists(atPath: entry.path, isDirectory: &isFolder)
-            let files = isFolder.boolValue ? (try? Self.sorted(in: entry)) ?? [] : [entry]
-            for file in files {
-                let stem = file.deletingPathExtension().lastPathComponent
-                let id = isFolder.boolValue ? "\(entry.lastPathComponent)/\(stem)" : stem
-                ownIDs.insert(id)
-                guard !disabled.contains(id) else { continue }
-                Self.read(file, id: id, into: &result, isDated: true)
-            }
+        let own = Self.files(in: core == nil ? try Self.sorted(in: url) : (try? Self.sorted(in: url)) ?? [])
+        let ownIDs = Set(own.map(\.id))
+        for (file, id) in own where !disabled.contains(id) {
+            Self.read(file, id: id, into: &result, isDated: true)
         }
         for (file, id) in wantedCoreFiles(after: result, hiding: ownIDs) {
             Self.read(file, id: id, into: &result)
         }
         for (file, id) in appFiles() where !ownIDs.contains(id) {
-            Self.read(file, id: id, into: &result, isBuiltIn: true)
+            Self.read(file, id: id, into: &result, isReadOnly: true)
         }
         result.removeWidgetsWithLostParts()
         result.keepOpenedOffTheGrid()
@@ -194,14 +185,15 @@ public struct SpotFolder: Sendable {
         }
     }
 
-    /// Adds what one file gives, and reports its fault. A dated file takes its place in the grid by the date it was added.
-    private static func read(_ file: URL, id: String, into result: inout ScanResult, isDated: Bool = false, isBuiltIn: Bool = false) {
+    /// Adds what one file gives, and reports its fault. A dated file takes its place in the grid by the date it was added,
+    /// and a read-only one comes with the app.
+    private static func read(_ file: URL, id: String, into result: inout ScanResult, isDated: Bool = false, isReadOnly: Bool = false) {
         do {
             guard let plugin = try SpotFile(file: file, id: id) else { return }
             let added = isDated ? (try? file.resourceValues(forKeys: [.creationDateKey]).creationDate) : nil
             let spots = plugin.spots.map { command in
                 let dated = added.map(command.added(at:)) ?? command
-                return isBuiltIn ? dated.builtIn() : dated
+                return isReadOnly ? dated.builtIn() : dated
             }
             result.files.append(SpotFile(id: id, spots: spots))
         } catch {
@@ -236,10 +228,27 @@ public struct SpotFolder: Sendable {
             .map { ($0, $0.deletingPathExtension().lastPathComponent) }
     }
 
-    /// The files of the spots of the app, in the `openspot` folder of the core, by their IDs in that folder.
+    /// The files of the spots of the app, in the `openspot` folder of the core, by their IDs as the folder of a person gives
+    /// them.
     private func appFiles() -> [(file: URL, id: String)] {
-        guard let core, let files = try? Self.sorted(in: core.appendingPathComponent(Self.appName, isDirectory: true)) else { return [] }
-        return files.map { ($0, "\(Self.appName)/\($0.deletingPathExtension().lastPathComponent)") }
+        var isFolder: ObjCBool = false
+        guard let folder = core?.appendingPathComponent(Self.appName, isDirectory: true),
+              FileManager.default.fileExists(atPath: folder.path, isDirectory: &isFolder), isFolder.boolValue else { return [] }
+        return Self.files(in: [folder])
+    }
+
+    /// The files of these entries of a folder, each at the top or one folder down, by their IDs: the name with no extension,
+    /// after the name of its folder one down.
+    private static func files(in entries: [URL]) -> [(file: URL, id: String)] {
+        entries.flatMap { entry in
+            var isFolder: ObjCBool = false
+            FileManager.default.fileExists(atPath: entry.path, isDirectory: &isFolder)
+            let files = isFolder.boolValue ? (try? sorted(in: entry)) ?? [] : [entry]
+            return files.map { file in
+                let stem = file.deletingPathExtension().lastPathComponent
+                return (file, isFolder.boolValue ? "\(entry.lastPathComponent)/\(stem)" : stem)
+            }
+        }
     }
 
     private static func entries(of folder: String) -> [String] {
