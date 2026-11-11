@@ -116,6 +116,15 @@ final class Shade {
     func hide() {
         window.orderOut(nil)
     }
+
+    /// Fades the block out, then hides its window.
+    func fade() {
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(0.15)
+        CATransaction.setCompletionBlock { [window] in window.orderOut(nil) }
+        block.opacity = 0
+        CATransaction.commit()
+    }
 }
 
 /// The cells of the grid, which the person hovers, presses and drags over.
@@ -245,6 +254,7 @@ final class Grid: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var shownApp: pid_t?
     private var pending: Pending?
     private var pendingEnd = Date()
+    private var landing: Shade?
 
     init(stays: Bool, host: pid_t?) {
         self.stays = stays
@@ -361,7 +371,7 @@ final class Grid: NSObject, NSApplicationDelegate, NSWindowDelegate {
         self.board = nil
         board.delegate = nil
         board.orderOut(nil)
-        shade?.hide()
+        if stays, pick != nil { landing = shade } else { shade?.hide() }
         shade = nil
         if let monitor { NSEvent.removeMonitor(monitor) }
         monitor = nil
@@ -392,6 +402,8 @@ final class Grid: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func moved(_ pick: Pick, in app: pid_t?, status: Int32, text: String) {
+        landing?.fade()
+        landing = nil
         let waited = pending != nil
         pending = nil
         guard status != 0 else { return }

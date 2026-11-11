@@ -41,23 +41,33 @@ struct SpotWindow {
             .map { String(Int($0.rounded())) }.joined(separator: " ")) + "\n"
     }
 
-    /// Sizes the window, waits until the screen shows that size, then moves it. An app that draws a web page shows a
-    /// new size only once it has drawn it, so a move first would show the old size at the new place. A second size
-    /// takes back what the edge of the screen cut from the first, and the last move holds each edge the target touches.
+    /// Puts the window at its target in one change. An app that draws a web page shows a new size only once it has
+    /// drawn it, but a new place at once. So a window that changes size waits out of sight until the screen shows its
+    /// new size, then comes to its target. A last move holds each edge the target touches when the app keeps another size.
     func move(_ move: WindowMove) throws {
         let window = frame
         let centre = CGPoint(x: window.midX, y: window.midY)
         let area = move.needsArea ? Self.area(holding: centre) : .zero
         let target = move.target(window: window, area: area)
-        try set(kAXSizeAttribute, .cgSize, target.size)
-        settle(at: target.size)
+        if target.size != window.size {
+            try set(kAXPositionAttribute, .cgPoint, Self.aside)
+            try set(kAXSizeAttribute, .cgSize, target.size)
+            settle(at: target.size)
+        }
         try set(kAXPositionAttribute, .cgPoint, target.origin)
-        if frame.size != target.size { try set(kAXSizeAttribute, .cgSize, target.size) }
         let size = frame.size
         guard size != target.size else { return }
         let bounds = move.needsArea ? area : Self.area(holding: CGPoint(x: target.midX, y: target.midY))
         let origin = WindowMove.origin(of: size, target: target, area: bounds)
         if origin != target.origin { try set(kAXPositionAttribute, .cgPoint, origin) }
+    }
+
+    /// The bottom right corner of all screens, where a window lies out of sight.
+    private static var aside: CGPoint {
+        let screens = NSScreen.screens
+        let top = screens.first?.frame.height ?? 0
+        let all = screens.reduce(CGRect.null) { $0.union(CGRect(x: $1.frame.minX, y: top - $1.frame.maxY, width: $1.frame.width, height: $1.frame.height)) }
+        return CGPoint(x: all.maxX, y: all.maxY)
     }
 
     /// Waits, for a second at most, until the window server shows the window at this size.
