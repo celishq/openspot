@@ -1,0 +1,19 @@
+# Checks the exchange rates file that the Calculator reads, each day and on demand. A failed run emails the person who last
+# changed the schedule below. scripts/rates-check.sh says what it checks.
+name: Exchange rates
+
+on:
+  schedule:
+    - cron: "17 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh scripts/rates-check.sh
