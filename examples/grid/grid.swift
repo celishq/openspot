@@ -295,10 +295,7 @@ final class Grid: NSObject, NSApplicationDelegate, NSWindowDelegate {
         glass.material = .hudWindow
         glass.blendingMode = .behindWindow
         glass.state = .active
-        glass.wantsLayer = true
-        glass.layer?.cornerRadius = 22
-        glass.layer?.cornerCurve = .continuous
-        glass.layer?.masksToBounds = true
+        glass.maskImage = Self.mask(radius: 22)
 
         let icon = NSImageView(frame: CGRect(x: (size.width - 32) / 2, y: size.height - 14 - 32, width: 32, height: 32))
         icon.image = front.app?.icon
@@ -336,6 +333,19 @@ final class Grid: NSObject, NSApplicationDelegate, NSWindowDelegate {
         board.delegate = self
         board.makeKeyAndOrderFront(nil)
         monitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [unowned self] _ in finish(nil) }
+    }
+
+    /// A stretchable rounded shape, so the blur, the window's shape and its shadow all keep the same corners.
+    private static func mask(radius: CGFloat) -> NSImage {
+        let side = radius * 2 + 1
+        let image = NSImage(size: CGSize(width: side, height: side), flipped: false) { rect in
+            NSColor.black.setFill()
+            NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius).fill()
+            return true
+        }
+        image.capInsets = NSEdgeInsets(top: radius, left: radius, bottom: radius, right: radius)
+        image.resizingMode = .stretch
+        return image
     }
 
     @objc private func closeGrid() { finish(nil) }

@@ -6,6 +6,7 @@ import OpenspotCore
 /// Frames are in points from the top left of the main screen, as Accessibility gives them.
 @MainActor
 struct SpotWindow {
+    private let owner: AXUIElement
     private let element: AXUIElement
 
     /// The focused window of the front app. It fails without Accessibility, or when that app shows no window.
@@ -22,7 +23,7 @@ struct SpotWindow {
             }
             throw PluginError.fault("Openspot cannot find a window of \(app.localizedName ?? "the front app").")
         }
-        return SpotWindow(element: window as! AXUIElement)
+        return SpotWindow(owner: owner, element: window as! AXUIElement)
     }
 
     var frame: CGRect {
@@ -38,7 +39,12 @@ struct SpotWindow {
     }
 
     /// Moves the window to its target first and sizes it there, so the edge of the screen never cuts the new size.
+    /// An app with enhanced accessibility animates each change, so it stops at the old size on the way. The move turns
+    /// that off for its length.
     func move(_ move: WindowMove) throws {
+        let enhanced = Self.attribute(owner, Self.enhanced) as? Bool == true
+        if enhanced { AXUIElementSetAttributeValue(owner, Self.enhanced as CFString, kCFBooleanFalse) }
+        defer { if enhanced { AXUIElementSetAttributeValue(owner, Self.enhanced as CFString, kCFBooleanTrue) } }
         let window = frame
         let centre = CGPoint(x: window.midX, y: window.midY)
         let area = move.needsArea ? Self.area(holding: centre) : .zero
@@ -51,6 +57,8 @@ struct SpotWindow {
         let origin = WindowMove.origin(of: size, target: target, area: bounds)
         if origin != target.origin { try set(kAXPositionAttribute, .cgPoint, origin) }
     }
+
+    private static let enhanced = "AXEnhancedUserInterface"
 
     /// The usable area of the screen that holds this point, or of the main screen.
     private static func area(holding point: CGPoint) -> CGRect {
