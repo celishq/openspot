@@ -19,8 +19,8 @@ enum SpotScreen {
                 print(try await work(), terminator: "")
                 exit(0)
             } catch {
-                if case PluginError.failedWithFix(_, _, let link) = error { print("link=\(link.absoluteString)") }
-                FileHandle.standardError.write(Data("\((error as? PluginError)?.reason ?? error.localizedDescription)\n".utf8))
+                if case SpotError.failedWithFix(_, _, let link) = error { print("link=\(link.absoluteString)") }
+                FileHandle.standardError.write(Data("\((error as? SpotError)?.reason ?? error.localizedDescription)\n".utf8))
                 exit(1)
             }
         }
@@ -70,7 +70,7 @@ enum SpotScreen {
         } catch {
             guard !CGPreflightScreenCaptureAccess() else { throw error }
             CGRequestScreenCaptureAccess()
-            throw PluginError.failedWithFix(1, "Openspot cannot see the screen. Allow Openspot in Screen Recording, then try again.", URL(string: screenRecording)!)
+            throw SpotError.failedWithFix(1, "Openspot cannot see the screen. Allow Openspot in Screen Recording, then try again.", URL(string: screenRecording)!)
         }
     }
 
@@ -103,12 +103,12 @@ enum SpotScreen {
         let properties = [kCGImagePropertyDPIWidth: 72 * scale, kCGImagePropertyDPIHeight: 72 * scale] as CFDictionary
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         guard let destination = CGImageDestinationCreateWithURL(partial as CFURL, type.identifier as CFString, 1, nil) else {
-            throw PluginError.fault("Openspot cannot write to \(folder.path). Name a file in a folder that you can write to.")
+            throw SpotError.fault("Openspot cannot write to \(folder.path). Name a file in a folder that you can write to.")
         }
         CGImageDestinationAddImage(destination, image, properties)
         guard CGImageDestinationFinalize(destination), rename(partial.path, url.path) == 0 else {
             try? FileManager.default.removeItem(at: partial)
-            throw PluginError.fault("Openspot cannot write to \(folder.path). Name a file in a folder that you can write to.")
+            throw SpotError.fault("Openspot cannot write to \(folder.path). Name a file in a folder that you can write to.")
         }
     }
 }

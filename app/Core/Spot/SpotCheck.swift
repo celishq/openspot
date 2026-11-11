@@ -1,12 +1,12 @@
 import Foundation
 
 /// A run of each plugin in a folder that reports all faults, so that a person or an agent can fix them.
-public struct PluginCheck: Sendable {
-    public let folder: PluginFolder
+public struct SpotCheck: Sendable {
+    public let folder: SpotFolder
     public let timeout: TimeInterval
     public let views: ViewLibrary
 
-    public init(folder: PluginFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard()) {
+    public init(folder: SpotFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard()) {
         self.folder = folder
         self.timeout = timeout
         self.views = views
@@ -50,9 +50,9 @@ public struct PluginCheck: Sendable {
         for script in scan.scripts where script.read != nil {
             func found(_ fault: String) -> Finding { Finding(spot: script.id, file: script.url.path, fault: fault) }
             do {
-                let output = PluginOutput(text: try await runs.answer(of: script, .read, limit: timeout))
+                let output = SpotOutput(text: try await runs.answer(of: script, .read, limit: timeout))
                 _ = try script.state(of: output)
-                if script.read?.seconds != nil, MetricValue(output: output) == nil { throw PluginError.badMetric }
+                if script.read?.seconds != nil, MetricValue(output: output) == nil { throw SpotError.badMetric }
                 findings += output.errors.map { found("cannot read the item \($0)") }
                 findings += output.partFaults.map(found)
             } catch {
@@ -78,6 +78,6 @@ public struct PluginCheck: Sendable {
     }
 
     private static func reason(_ error: Error) -> String {
-        (error as? PluginError)?.reason ?? String(describing: error)
+        (error as? SpotError)?.reason ?? String(describing: error)
     }
 }

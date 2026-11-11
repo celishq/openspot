@@ -38,7 +38,7 @@ public struct SwiftProgram: Sendable {
         do {
             _ = try await ScriptProcess.output(url: tool("xcode-select"), arguments: ["-p"])
         } catch {
-            throw PluginError.fault("To share a Swift spot, install the Command Line Tools: xcode-select --install")
+            throw SpotError.fault("To share a Swift spot, install the Command Line Tools: xcode-select --install")
         }
         let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-build-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
@@ -53,7 +53,7 @@ public struct SwiftProgram: Sendable {
                 let arguments = ["-O", "-module-name", "Spot", "-target", "\(kind)-\(Self.platform)", file.path, "-o", part]
                 _ = try await ScriptProcess.output(url: tool("swiftc"), arguments: arguments)
             } catch {
-                throw PluginError.fault("This Swift spot does not compile. \((error as? PluginError)?.reason ?? String(describing: error))")
+                throw SpotError.fault("This Swift spot does not compile. \((error as? SpotError)?.reason ?? String(describing: error))")
             }
         }
         let program = place.appendingPathComponent("program")

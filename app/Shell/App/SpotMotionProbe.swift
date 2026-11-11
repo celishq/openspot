@@ -77,7 +77,7 @@ final class SpotMotionProbe: NSObject {
             model.beginEditing()
             return DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.pullTile() }
         }
-        let target = model.entries.first { spot == nil ? $0.kind == .widget && $0.command.opens != nil : $0.id == spot }
+        let target = model.entries.first { spot == nil ? $0.kind == .widget && $0.spot.opens != nil : $0.id == spot }
         guard let target, let view = panel.contentView else { return finish(with: "no spot to open\n") }
         let link = view.displayLink(target: self, selector: #selector(tick))
         link.add(to: .main, forMode: .common)
@@ -181,7 +181,7 @@ final class SpotMotionProbe: NSObject {
     /// pulls it two columns right and a row down and back, once for every four presses, with a mouse event on each frame.
     /// The app takes the focus, as the events reach only the key window.
     private func pullTile() {
-        let index = model.dock.shown.firstIndex { model.sizes(of: SpotsModel.Entry(command: $0.command, run: nil)).count > 1 }
+        let index = model.dock.shown.firstIndex { model.sizes(of: SpotsModel.Entry(spot: $0.spot, run: nil)).count > 1 }
         guard let window = panel as? SpotsPanel, let view = panel.contentView, let dock = model.dockFrame, let index else {
             return finish(with: "no spot in the dock\n")
         }

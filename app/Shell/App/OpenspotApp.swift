@@ -79,7 +79,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         folderWatch = SpotFolderWatch(folder: model.files.folder.url) { [weak self] in self?.model.folderChanged() }
         try? AgentNote(command: Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/openspot").path).write(in: model.files.folder.url)
         showListener = SpotShowLink.listen { [weak self] id in self?.model.reveal(id) ?? false }
-        let isFirstLaunch = PluginFolder.standard().isFirstLaunch(config: .standard())
+        let isFirstLaunch = SpotFolder.standard().isFirstLaunch(config: .standard())
         panel?.warm { [weak self] in
             guard let self else { return }
             SpotSheetWarmth.draw()
@@ -240,12 +240,12 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     /// Closes the panel and asks the person for files. Afterwards the app that was in front comes back.
-    func chooseFiles(for command: Spot, then take: @escaping ([String]) -> Void) {
+    func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {
         guard fileChooser == nil else { return }
         let previous = model.isShown && !model.isWarming ? previousApp : NSWorkspace.shared.frontmostApplication
         if model.isShown { panel?.hide() }
         NSApp.activate(ignoringOtherApps: true)
-        let chooser = SpotFileChooser(command: command)
+        let chooser = SpotFileChooser(spot: spot)
         fileChooser = chooser
         chooser.show { [weak self] paths in
             self?.fileChooser = nil

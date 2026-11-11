@@ -17,7 +17,7 @@ public struct TomlDocument: Equatable, Sendable {
         var array: String?
         for (index, raw) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
             let line = raw.trimmingCharacters(in: .whitespaces)
-            let fault = { (reason: String) in PluginError.fault("line \(index + 1): \(reason)") }
+            let fault = { (reason: String) in SpotError.fault("line \(index + 1): \(reason)") }
             if line.isEmpty || line.hasPrefix("#") { continue }
             if line.hasPrefix("[") {
                 guard line.hasPrefix("[["), let end = line.range(of: "]]") else {

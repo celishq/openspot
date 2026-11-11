@@ -24,7 +24,7 @@ final class CoreSpotsTests: XCTestCase {
     }
 
     private func names(enabled: Set<String>) throws -> [String] {
-        try PluginFolder(url: folder, core: core, enabled: enabled).scan().commands.map(\.name)
+        try SpotFolder(url: folder, core: core, enabled: enabled).scan().spots.map(\.name)
     }
 
     func testACoreSpotIsOffUntilItIsTurnedOn() throws {
@@ -47,11 +47,11 @@ final class CoreSpotsTests: XCTestCase {
         try write("cpu.sh", in: core, header: "read=5")
         try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
 
-        let off = try PluginFolder(url: folder, core: core, enabled: []).scan()
+        let off = try SpotFolder(url: folder, core: core, enabled: []).scan()
         XCTAssertEqual(off.scripts.map(\.id), [])
 
-        let on = try PluginFolder(url: folder, core: core, enabled: ["overview"]).scan()
-        XCTAssertEqual(on.commands.filter(\.headerState.isOnGrid).map(\.name), ["Overview"])
+        let on = try SpotFolder(url: folder, core: core, enabled: ["overview"]).scan()
+        XCTAssertEqual(on.spots.filter(\.headerState.isOnGrid).map(\.name), ["Overview"])
         XCTAssertEqual(on.scripts.map(\.id), ["cpu"])
         XCTAssertEqual(on.refused, [])
     }
@@ -60,9 +60,9 @@ final class CoreSpotsTests: XCTestCase {
         try write("cpu.sh", in: core, header: "read=5")
         try "[[widgets]]\ntitle = \"Mine\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: folder.appendingPathComponent("mine.toml"), atomically: true, encoding: .utf8)
 
-        let scan = try PluginFolder(url: folder, core: core, enabled: []).scan()
+        let scan = try SpotFolder(url: folder, core: core, enabled: []).scan()
 
-        XCTAssertEqual(scan.commands.filter(\.headerState.isOnGrid).map(\.name), ["Mine"])
+        XCTAssertEqual(scan.spots.filter(\.headerState.isOnGrid).map(\.name), ["Mine"])
         XCTAssertEqual(scan.refused, [])
     }
 
@@ -70,7 +70,7 @@ final class CoreSpotsTests: XCTestCase {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let config = Config(text: try String(contentsOf: repo.appendingPathComponent("app/defaults.toml"), encoding: .utf8))
         let plugins = try FileManager.default.contentsOfDirectory(atPath: repo.appendingPathComponent("plugins").path)
-        let app = try PluginFolder(url: folder, core: repo.appendingPathComponent("plugins")).scan().commands.filter(\.isBuiltIn).map(\.id)
+        let app = try SpotFolder(url: folder, core: repo.appendingPathComponent("plugins")).scan().spots.filter(\.isBuiltIn).map(\.id)
 
         XCTAssertEqual(config.faults, [])
         for choice in config.arrangement.choices {
@@ -83,28 +83,28 @@ final class CoreSpotsTests: XCTestCase {
     func testAFaultInACoreSpotThatIsOffStaysQuiet() throws {
         try write("bad.sh", in: core, header: "read=never")
 
-        XCTAssertEqual(try PluginFolder(url: folder, core: core, enabled: []).scan().refused, [])
+        XCTAssertEqual(try SpotFolder(url: folder, core: core, enabled: []).scan().refused, [])
     }
 
     func testWithNoCoreFolderAScanGivesTheFolder() throws {
         try write("mine.sh", in: folder)
         let gone = root.appendingPathComponent("gone")
 
-        XCTAssertEqual(try PluginFolder(url: folder, core: gone, enabled: ["apps"]).scan().commands.map(\.name), ["Mine"])
+        XCTAssertEqual(try SpotFolder(url: folder, core: gone, enabled: ["apps"]).scan().spots.map(\.name), ["Mine"])
     }
 
     func testAMissingPluginsFolderStillGivesTheCoreSpots() throws {
         try write("apps.sh", in: core)
         let gone = root.appendingPathComponent("gone")
 
-        XCTAssertEqual(try PluginFolder(url: gone, core: core, enabled: ["apps"]).scan().commands.map(\.name), ["Apps"])
+        XCTAssertEqual(try SpotFolder(url: gone, core: core, enabled: ["apps"]).scan().spots.map(\.name), ["Apps"])
     }
 
     func testAScanRunsNoCoreSpot() throws {
         let mark = root.appendingPathComponent("ran")
         try "#!/bin/sh\ntouch \"\(mark.path)\"\n".writeScript(to: core.appendingPathComponent("apps.sh"))
 
-        _ = try PluginFolder(url: folder, core: core, enabled: ["apps"]).scan()
+        _ = try SpotFolder(url: folder, core: core, enabled: ["apps"]).scan()
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: mark.path))
     }
@@ -114,13 +114,13 @@ final class CoreSpotsTests: XCTestCase {
         try write("apps.sh", in: core)
         try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
 
-        XCTAssertEqual(PluginFolder(url: folder, core: core).coreChoices().map(\.name), ["Apps", "Overview"])
+        XCTAssertEqual(SpotFolder(url: folder, core: core).coreChoices().map(\.name), ["Apps", "Overview"])
     }
 
     func testACoreSpotCannotBeRemovedAndStaysOnTheDisk() throws {
         try write("apps.sh", in: core)
-        let place = PluginFolder(url: folder, core: core, enabled: ["apps"])
-        let apps = try XCTUnwrap(place.scan().commands.first)
+        let place = SpotFolder(url: folder, core: core, enabled: ["apps"])
+        let apps = try XCTUnwrap(place.scan().spots.first)
 
         XCTAssertTrue(place.isCore(apps))
         XCTAssertThrowsError(try place.remove(apps, discard: { _ in XCTFail("It discarded a core file.") }))
@@ -128,8 +128,8 @@ final class CoreSpotsTests: XCTestCase {
 
     func testAFolderFileIsNotCore() throws {
         try write("mine.sh", in: folder)
-        let place = PluginFolder(url: folder, core: core)
-        let mine = try XCTUnwrap(place.scan().commands.first)
+        let place = SpotFolder(url: folder, core: core)
+        let mine = try XCTUnwrap(place.scan().spots.first)
 
         XCTAssertFalse(place.isCore(mine))
     }
@@ -137,9 +137,9 @@ final class CoreSpotsTests: XCTestCase {
     func testACoreWidgetSharesWithItsPartsFromTheCoreFolder() throws {
         try write("cpu.sh", in: core, header: "read=5")
         try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
-        let scan = try PluginFolder(url: folder, core: core, enabled: ["overview"]).scan()
+        let scan = try SpotFolder(url: folder, core: core, enabled: ["overview"]).scan()
 
-        let spot = try SharedSpot(sharing: XCTUnwrap(scan.commands.first { $0.name == "Overview" }), from: scan)
+        let spot = try SharedSpot(sharing: XCTUnwrap(scan.spots.first { $0.name == "Overview" }), from: scan)
 
         XCTAssertEqual(spot.files.map(\.path), ["overview.toml", "cpu.sh"])
         XCTAssertEqual(spot.files.last?.isExecutable, true)
@@ -163,12 +163,12 @@ final class CoreSpotsTests: XCTestCase {
         try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
         try "[[spots]]\nid = \"apps\"\nenabled = true\n".write(to: home.appendingPathComponent("config.toml"), atomically: true, encoding: .utf8)
 
-        XCTAssertEqual(PluginFolder.standard(environment: ["OPENSPOT_CONFIG": home.path], home: root).enabled, ["apps"])
+        XCTAssertEqual(SpotFolder.standard(environment: ["OPENSPOT_CONFIG": home.path], home: root).enabled, ["apps"])
     }
 
     func testEachRepoSpotHasASubtitle() throws {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let place = PluginFolder(url: folder, core: repo.appendingPathComponent("plugins"))
+        let place = SpotFolder(url: folder, core: repo.appendingPathComponent("plugins"))
 
         XCTAssertEqual(place.coreChoices().filter { $0.subtitle == nil }.map(\.name), [])
     }

@@ -8,21 +8,21 @@ extension SpotRuns {
     public func tick() -> TimeInterval? {
         let time = now()
         var next: TimeInterval?
-        for sheet in sheets.values where sheet.command.read?.waitsForEvents == true {
+        for sheet in sheets.values where sheet.spot.read?.waitsForEvents == true {
             if !sheet.isWanted {
-                asked[sheet.command.id] = nil
-            } else if asked[sheet.command.id] == nil {
-                asked[sheet.command.id] = time
+                asked[sheet.spot.id] = nil
+            } else if asked[sheet.spot.id] == nil {
+                asked[sheet.spot.id] = time
                 sheet.read(need: .clock, reason: .timer)
             }
         }
         for sheet in sheets.values where sheet.isWanted {
-            guard let seconds = sheet.command.read?.seconds else { continue }
+            guard let seconds = sheet.spot.read?.seconds else { continue }
             var left = seconds
-            if let last = asked[sheet.command.id], time.timeIntervalSince(last) < seconds {
+            if let last = asked[sheet.spot.id], time.timeIntervalSince(last) < seconds {
                 left = seconds - time.timeIntervalSince(last)
             } else {
-                asked[sheet.command.id] = time
+                asked[sheet.spot.id] = time
                 sheet.read(need: .clock, reason: .timer)
             }
             next = min(next ?? left, left)

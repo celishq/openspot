@@ -54,7 +54,7 @@ public enum SpotSource: Equatable, Sendable {
     private func stage(in work: URL, from folder: URL, at commit: String?) async throws -> (commit: String?, paths: [String]) {
         switch self {
         case .git(let text):
-            if text.hasPrefix("/"), !FileManager.default.fileExists(atPath: text) { throw PluginError.fault("Openspot cannot find \(text).") }
+            if text.hasPrefix("/"), !FileManager.default.fileExists(atPath: text) { throw SpotError.fault("Openspot cannot find \(text).") }
             let name = try Self.name(of: text)
             try Self.checkFree([name], in: folder)
             let clone = work.appendingPathComponent(name)
@@ -64,8 +64,8 @@ public enum SpotSource: Equatable, Sendable {
                 let head = try await Self.run(["-C", clone.path, "rev-parse", "HEAD"]).trimmingCharacters(in: .whitespacesAndNewlines)
                 try FileManager.default.removeItem(at: clone.appendingPathComponent(".git"))
                 return (head, [name])
-            } catch let error as PluginError {
-                throw PluginError.fault("Openspot cannot add \(text). \(error.reason)")
+            } catch let error as SpotError {
+                throw SpotError.fault("Openspot cannot add \(text). \(error.reason)")
             }
         case .folder(let url):
             let name = url.lastPathComponent
@@ -92,7 +92,7 @@ public enum SpotSource: Equatable, Sendable {
         if path.hasSuffix("/.git") { path.removeLast(5) }
         if path.hasSuffix(".git") { path.removeLast(4) }
         guard let name = path.split(whereSeparator: { $0 == "/" || $0 == ":" }).last.map(String.init), !name.hasPrefix(".") else {
-            throw PluginError.fault("Openspot cannot name a folder for \(text). Give the URL of a git repository.")
+            throw SpotError.fault("Openspot cannot name a folder for \(text). Give the URL of a git repository.")
         }
         return name
     }
@@ -100,7 +100,7 @@ public enum SpotSource: Equatable, Sendable {
     private static func checkFree(_ paths: [String], in folder: URL) throws {
         for path in paths where FileManager.default.fileExists(atPath: folder.appendingPathComponent(path).path) {
             let name = URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
-            throw PluginError.fault("The plugins folder has \(path) already. Run `openspot spot remove \(name)` first, or move it away.")
+            throw SpotError.fault("The plugins folder has \(path) already. Run `openspot spot remove \(name)` first, or move it away.")
         }
     }
 
@@ -122,7 +122,7 @@ public enum SpotSource: Equatable, Sendable {
             do {
                 try process.run()
             } catch {
-                continuation.resume(throwing: PluginError.fault("Openspot cannot start git. Run `xcode-select --install`, then try again."))
+                continuation.resume(throwing: SpotError.fault("Openspot cannot start git. Run `xcode-select --install`, then try again."))
                 return
             }
             DispatchQueue.global().async {
@@ -131,7 +131,7 @@ public enum SpotSource: Equatable, Sendable {
                 ended.wait()
                 guard process.terminationStatus != 0 else { return continuation.resume(returning: printed) }
                 let line = failure.split(separator: "\n").last.map(String.init) ?? "git stopped with code \(process.terminationStatus)."
-                continuation.resume(throwing: PluginError.fault(line))
+                continuation.resume(throwing: SpotError.fault(line))
             }
         }
     }

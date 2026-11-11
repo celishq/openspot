@@ -3,7 +3,7 @@ import XCTest
 
 final class SpotDockTests: XCTestCase {
     private func item(_ name: String, size: SpotSize = .wide) -> SpotDock.Item {
-        SpotDock.Item(command: Spot(id: name.lowercased(), name: name, url: URL(fileURLWithPath: "/\(name).sh"), size: size))
+        SpotDock.Item(spot: Spot(id: name.lowercased(), name: name, url: URL(fileURLWithPath: "/\(name).sh"), size: size))
     }
 
     private var dock: SpotDock {
@@ -11,18 +11,18 @@ final class SpotDockTests: XCTestCase {
     }
 
     func testTheDockShowsEachSpotByName() {
-        XCTAssertEqual(dock.shown.map(\.command.name), ["Coin", "Disk", "Timer"])
+        XCTAssertEqual(dock.shown.map(\.spot.name), ["Coin", "Disk", "Timer"])
     }
 
     func testTheSearchKeepsTheSpotsWhoseNameHoldsIt() {
         var dock = dock
         dock.query = "ti"
 
-        XCTAssertEqual(dock.shown.map(\.command.name), ["Timer"])
+        XCTAssertEqual(dock.shown.map(\.spot.name), ["Timer"])
     }
 
     func testTheSearchFindsTheWordsUnderASpotsName() {
-        var dock = SpotDock(items: [SpotDock.Item(command: Spot(id: "system", name: "System", url: URL(fileURLWithPath: "/system.toml"), subtitle: "Battery, CPU"))])
+        var dock = SpotDock(items: [SpotDock.Item(spot: Spot(id: "system", name: "System", url: URL(fileURLWithPath: "/system.toml"), subtitle: "Battery, CPU"))])
         dock.query = "cpu"
 
         XCTAssertEqual(dock.shown.map(\.id), ["system"])
@@ -45,7 +45,7 @@ final class SpotDockTests: XCTestCase {
     }
 
     func testASpotInTheDockTakesThePreferredSizeOverItsOwn() {
-        XCTAssertEqual(SpotDock.Item(command: Spot(id: "lamp", name: "Lamp", url: URL(fileURLWithPath: "/lamp.sh"), size: .small), size: .square).size, .square)
+        XCTAssertEqual(SpotDock.Item(spot: Spot(id: "lamp", name: "Lamp", url: URL(fileURLWithPath: "/lamp.sh"), size: .small), size: .square).size, .square)
         XCTAssertEqual(item("Lamp", size: .small).size, .small)
     }
 

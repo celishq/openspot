@@ -25,14 +25,14 @@ final class SamplePluginsTests: SamplePluginsCase {
     }
 
     func testConfettiSourceTypeChecks() async throws {
-        let confetti = try XCTUnwrap(try scan.commands.first { $0.id == "confetti" })
+        let confetti = try XCTUnwrap(try scan.spots.first { $0.id == "confetti" })
         XCTAssertEqual(confetti.symbol, "party.popper")
 
         _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-typecheck", confetti.url.path])
     }
 
     func testNoMetricShowsTwiceInTheGrid() throws {
-        let places = try scan.commands.flatMap(\.places)
+        let places = try scan.spots.flatMap(\.places)
 
         XCTAssertEqual(places.count, Set(places).count)
     }
@@ -40,8 +40,8 @@ final class SamplePluginsTests: SamplePluginsCase {
     func testTheSpotsFitThePanelWithNoScrolling() throws {
         let plugins = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("plugins")
         let all = Set(try FileManager.default.contentsOfDirectory(atPath: plugins.path).map { ($0 as NSString).deletingPathExtension })
-        let core = try PluginFolder(url: plugins.appendingPathComponent("none"), core: plugins, enabled: all).scan()
-        let placements = SpotGrid().place(core.commands.filter { $0.isOnGrid && !$0.isBuiltIn }.map(\.size))
+        let core = try SpotFolder(url: plugins.appendingPathComponent("none"), core: plugins, enabled: all).scan()
+        let placements = SpotGrid().place(core.spots.filter { $0.isOnGrid && !$0.isBuiltIn }.map(\.size))
         let rows = placements.map { $0.row + $0.size.rows }.max()
 
         XCTAssertLessThanOrEqual(rows ?? 0, 6)
@@ -63,7 +63,7 @@ final class SamplePluginsTests: SamplePluginsCase {
 
         try await withPrivateHome { _ in
             let first = try await cpu.read(timeout: 10).points?.count ?? 0
-            let look = MetricValue(output: PluginOutput(text: try await ScriptProcess.output(url: cpu.url, arguments: ["show"], limit: 10)))
+            let look = MetricValue(output: SpotOutput(text: try await ScriptProcess.output(url: cpu.url, arguments: ["show"], limit: 10)))
             let second = try await cpu.read(timeout: 10).points?.count ?? 0
 
             XCTAssertEqual(look?.points?.count, first + 1)
@@ -99,7 +99,7 @@ final class SamplePluginsTests: SamplePluginsCase {
             try "#!/bin/sh\ncase \"$1 $2\" in 'app status') echo '{}' ;; 'spot list'|'setting list') echo '[]' ;; esac\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
             let views = ViewLibrary(cache: folder.appendingPathComponent("views"))
             for name in ["plugins", "examples"] {
-                let faults = await PluginCheck(folder: PluginFolder(url: root.appendingPathComponent(name)), views: views).faults()
+                let faults = await SpotCheck(folder: SpotFolder(url: root.appendingPathComponent(name)), views: views).faults()
 
                 XCTAssertEqual(faults, [], name)
             }
@@ -139,13 +139,13 @@ final class SamplePluginsTests: SamplePluginsCase {
     }
 
     func testEveryCommandCanBeRun() throws {
-        for command in try scan.commands where command.kind != .widget && command.host == nil && command.mode != .inline {
+        for command in try scan.spots where command.kind != .widget && command.host == nil && command.mode != .inline {
             XCTAssertTrue(FileManager.default.isExecutableFile(atPath: command.url.path), command.name)
         }
     }
 
     func testCaffeinateReportsIfItIsOnAndOffersItsDurations() async throws {
-        let caffeinate = try XCTUnwrap(try scan.commands.first { $0.name == "Caffeinate" })
+        let caffeinate = try XCTUnwrap(try scan.spots.first { $0.name == "Caffeinate" })
 
         try await withPrivateHome { _ in
             let state = try await caffeinate.state(timeout: 5)
@@ -165,7 +165,7 @@ final class SamplePluginsTests: SamplePluginsCase {
     }
 
     func testCaffeinatesSwitchTurnsItOnUntilOffAndOff() async throws {
-        let caffeinate = try XCTUnwrap(try scan.commands.first { $0.name == "Caffeinate" })
+        let caffeinate = try XCTUnwrap(try scan.spots.first { $0.name == "Caffeinate" })
         try await withPrivateHome { _ in
             let on = try await caffeinate.perform(.set("awake", to: "true"), timeout: 5)
             var started = try await caffeinate.state(timeout: 5)
@@ -184,14 +184,14 @@ final class SamplePluginsTests: SamplePluginsCase {
     }
 
     func testCaffeinateOffersTurnOffFirstAndStopsOnIt() async throws {
-        let caffeinate = try XCTUnwrap(try scan.commands.first { $0.name == "Caffeinate" })
+        let caffeinate = try XCTUnwrap(try scan.spots.first { $0.name == "Caffeinate" })
         try await withPrivateHome { _ in
             try await self.turnCaffeinateOnAndOff(caffeinate)
         }
     }
 
     func testAppsListsEachAppWithItsPathAndNoBadLine() async throws {
-        let apps = try XCTUnwrap(try scan.commands.first { $0.name == "Apps" })
+        let apps = try XCTUnwrap(try scan.spots.first { $0.name == "Apps" })
 
         try await withPrivateHome { folder in
             let found = ["/Applications/Zed.app", "/System/Applications/Notes.app", "/Applications/Back\\slash.app"]
@@ -248,7 +248,7 @@ final class SamplePluginsTests: SamplePluginsCase {
     }
 
     func testFilesSearchesItselfAndGivesNothingForATooShortSearch() async throws {
-        let files = try XCTUnwrap(try scan.commands.first { $0.name == "Files" })
+        let files = try XCTUnwrap(try scan.spots.first { $0.name == "Files" })
 
         let lines = try await files.items(query: "a", timeout: 5)
 
@@ -259,7 +259,7 @@ final class SamplePluginsTests: SamplePluginsCase {
     func testPullRequestsCountEachStateAndOfferEachOne() async throws {
         let scan = try exampleScan
         let metric = try XCTUnwrap(scan.metrics.first { $0.id == "pulls" })
-        let list = try XCTUnwrap(scan.commands.first { $0.id == "pulls" })
+        let list = try XCTUnwrap(scan.spots.first { $0.id == "pulls" })
         try await withPrivateHome { folder in
             let value = try await metric.read(timeout: 5)
             let lines = try await list.items(timeout: 5)
@@ -414,7 +414,7 @@ final class SamplePluginsTests: SamplePluginsCase {
     }
 
     func testAppsAndFilesOfferToShowInFinder() async throws {
-        let commands = try ["Apps", "Files"].map { name in try XCTUnwrap(try scan.commands.first { $0.name == name }) }
+        let commands = try ["Apps", "Files"].map { name in try XCTUnwrap(try scan.spots.first { $0.name == name }) }
         try await withPrivateHome { _ in
             for command in commands {
                 let actions = try await command.items(timeout: 10).actions

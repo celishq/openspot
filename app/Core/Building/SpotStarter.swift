@@ -27,8 +27,8 @@ public enum SpotStarter: String, CaseIterable, Sendable {
     /// Writes a new script with the text that its title gives, under the name's words in lowercase with dashes.
     static func write(name: String, in folder: URL, text: (String) -> String) throws -> URL {
         let slug = slug(of: name)
-        guard !slug.isEmpty else { throw PluginError.fault("Use letters or digits in the name.") }
-        guard !isTaken(slug, in: folder) else { throw PluginError.fault("A spot called \(slug) already exists. Choose another name.") }
+        guard !slug.isEmpty else { throw SpotError.fault("Use letters or digits in the name.") }
+        guard !isTaken(slug, in: folder) else { throw SpotError.fault("A spot called \(slug) already exists. Choose another name.") }
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let file = folder.appendingPathComponent("\(slug).sh")
         let title = name.components(separatedBy: .newlines).joined(separator: " ").trimmingCharacters(in: .whitespaces)
@@ -38,7 +38,7 @@ public enum SpotStarter: String, CaseIterable, Sendable {
     }
 
     private static func isTaken(_ slug: String, in folder: URL) -> Bool {
-        PluginFolder(url: folder).file(of: slug) != nil || FileManager.default.fileExists(atPath: folder.appendingPathComponent(slug).path)
+        SpotFolder(url: folder).file(of: slug) != nil || FileManager.default.fileExists(atPath: folder.appendingPathComponent(slug).path)
     }
 
     /// The words of a name in lowercase, joined by dashes, with only Latin letters and digits.

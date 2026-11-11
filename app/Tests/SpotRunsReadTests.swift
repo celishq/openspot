@@ -23,7 +23,7 @@ final class SpotRunsReadTests: SpotRunsCase {
 
     func testEachCallKnowsTheIDOfItsSpot() async throws {
         try script("coffee", header: "read=sheet", "printf 'row=%s\\n' \"$OPENSPOT_ID\"")
-        let command = try XCTUnwrap(try scanned().commands.first { $0.id == "coffee" })
+        let command = try XCTUnwrap(try scanned().spots.first { $0.id == "coffee" })
 
         let items = try await command.items(timeout: 5).items
 
@@ -160,8 +160,8 @@ final class SpotRunsReadTests: SpotRunsCase {
         let scan = try scanned()
 
         XCTAssertEqual(Set(runs.sheets.keys), ["cups", "tool", "once"])
-        XCTAssertEqual(Set(scan.commands.map(\.id)), ["cups", "tool", "once", "w/W"])
-        XCTAssertEqual(scan.commands.first { $0.id == "cups" }?.headerState.isOnGrid, false)
+        XCTAssertEqual(Set(scan.spots.map(\.id)), ["cups", "tool", "once", "w/W"])
+        XCTAssertEqual(scan.spots.first { $0.id == "cups" }?.headerState.isOnGrid, false)
     }
 
     func testASheetReportsItsFrameAndKeepsItsRowsPartsAndValue() async throws {
@@ -434,21 +434,21 @@ final class SpotRunsReadTests: SpotRunsCase {
 
         runs.panelOpened()
         XCTAssertEqual(sheet.state.subtitle, "Header")
-        XCTAssertEqual(sheet.command.kind, .launch)
+        XCTAssertEqual(sheet.spot.kind, .launch)
 
         try await wait("the answer") { sheet.state.subtitle == "Answer" }
-        XCTAssertEqual(sheet.command.kind, .toggle)
+        XCTAssertEqual(sheet.spot.kind, .toggle)
     }
 
     func testAKindThatARunTaughtStaysAfterANewScan() async throws {
         try script(header: "read=panel", "printf 'switch=power\\nvalue=true\\n'")
         let sheet = try sheet()
         runs.panelOpened()
-        try await wait("the kind") { sheet.command.kind == .toggle }
+        try await wait("the kind") { sheet.spot.kind == .toggle }
 
         _ = try scanned()
 
-        XCTAssertEqual(sheet.command.kind, .toggle)
+        XCTAssertEqual(sheet.spot.kind, .toggle)
         XCTAssertEqual(sheet.state.on, true)
     }
 
@@ -458,7 +458,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertTrue(sheet.awaitsAnswer)
         var kind: SpotKind?
 
-        sheet.afterAnswer { kind = sheet.command.kind }
+        sheet.afterAnswer { kind = sheet.spot.kind }
 
         try await wait("the answer") { kind != nil }
         XCTAssertEqual(kind, .list)
@@ -469,7 +469,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script(header: "read=panel", "[ \"$1\" = read ] && printf 'switch=power\\nvalue=false\\n'\nexit 0")
         let sheet = try sheet()
         runs.panelOpened()
-        try await wait("the kind") { sheet.command.kind == .toggle }
+        try await wait("the kind") { sheet.spot.kind == .toggle }
 
         sheet.pressCard()
 
@@ -496,7 +496,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script(header: "read=panel", "[ \"$1\" = read ] && printf 'switch=power\\nvalue=false\\n'\n[ \"$1\" = power ] && printf 'switch=power\\nvalue=true\\n'\nexit 0")
         let sheet = try sheet()
         runs.panelOpened()
-        try await wait("the kind") { sheet.command.kind == .toggle }
+        try await wait("the kind") { sheet.spot.kind == .toggle }
 
         sheet.pressCard()
         try await wait("the call") { self.log() == ["read", "power true"] }

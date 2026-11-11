@@ -38,7 +38,7 @@ extension SpotRuns {
     /// Looks at the count of the clipboard after each pause while something wants a spot that lists `clipboard`, and raises
     /// `clipboard` when it changes. Each change of what is wanted calls it, through `updateClock`. After a quit nothing looks.
     func watchClipboard() {
-        let isWanted = sheets.values.contains { $0.isWanted && $0.command.read?.has(.event(SpotEvent.clipboard)) == true }
+        let isWanted = sheets.values.contains { $0.isWanted && $0.spot.read?.has(.event(SpotEvent.clipboard)) == true }
         guard let source, isWanted, !hasQuit else {
             clipboardWatch?.cancel()
             clipboardWatch = nil
@@ -65,7 +65,7 @@ extension SpotRuns {
         tick()
         readPanel()
         for id in placed {
-            if let sheet = sheets[id], sheet.command.read?.seconds == nil { sheet.read() }
+            if let sheet = sheets[id], sheet.spot.read?.seconds == nil { sheet.read() }
         }
         updateClock()
     }
@@ -73,7 +73,7 @@ extension SpotRuns {
     /// Reads each script with `panel` in its `read`, all at the same time, each of which can use a young answer. A staying
     /// script that something wants and that ended starts again.
     private func readPanel() {
-        for sheet in sheets.values where sheet.command.read?.has(.panel) == true {
+        for sheet in sheets.values where sheet.spot.read?.has(.panel) == true {
             sheet.read(need: .moment, reason: .panel)
         }
         sheets.values.forEach { $0.settleScript() }
@@ -81,8 +81,8 @@ extension SpotRuns {
 
     private func wake() {
         let time = now()
-        for sheet in sheets.values where sheet.isWanted && sheet.command.read?.seconds != nil {
-            asked[sheet.command.id] = time
+        for sheet in sheets.values where sheet.isWanted && sheet.spot.read?.seconds != nil {
+            asked[sheet.spot.id] = time
             sheet.read(need: .clock, reason: .timer)
         }
         sheets.values.forEach { $0.settleScript() }
@@ -90,7 +90,7 @@ extension SpotRuns {
 
     /// Reads each wanted script that lists the event, at once and with no young answer, as the clock does (B1, B5).
     private func read(_ name: String, _ value: String?) {
-        for sheet in sheets.values where sheet.isWanted && sheet.command.read?.has(.event(name)) == true {
+        for sheet in sheets.values where sheet.isWanted && sheet.spot.read?.has(.event(name)) == true {
             sheet.read(need: .clock, reason: ReadReason(event: name, value: value))
         }
     }
@@ -100,7 +100,7 @@ extension SpotRuns {
     private func ask(_ query: String) {
         let text = query.trimmingCharacters(in: .whitespaces)
         for sheet in sheets.values {
-            guard let pattern = sheet.command.answers else { continue }
+            guard let pattern = sheet.spot.answers else { continue }
             sheet.answer(!text.isEmpty && answerMatches.matches(pattern, text) ? text : "")
         }
     }

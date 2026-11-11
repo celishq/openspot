@@ -30,9 +30,9 @@ final class CatalogSpotTests: BuiltInCase {
     }
 
     func testTheSpotsSpotShowsWithAnEmptyFolder() throws {
-        let scan = try PluginFolder(url: plugins, core: repoPlugins).scan()
+        let scan = try SpotFolder(url: plugins, core: repoPlugins).scan()
 
-        XCTAssertTrue(scan.commands.contains { $0.id == "openspot/spots" })
+        XCTAssertTrue(scan.spots.contains { $0.id == "openspot/spots" })
         XCTAssertEqual(scan.refused, [])
     }
 
@@ -103,8 +103,8 @@ final class CatalogSpotTests: BuiltInCase {
 
         try await spot.perform(.item(row), timeout: 5)
 
-        let scan = try PluginFolder(url: plugins, core: core, enabled: file.read().arrangement.enabled).scan()
-        XCTAssertEqual(scan.commands.filter(\.headerState.isOnGrid).map(\.name), ["Overview"])
+        let scan = try SpotFolder(url: plugins, core: core, enabled: file.read().arrangement.enabled).scan()
+        XCTAssertEqual(scan.spots.filter(\.headerState.isOnGrid).map(\.name), ["Overview"])
     }
 
     func testAReadAfterAPickIsNotAFirstAnswer() async throws {
@@ -157,7 +157,7 @@ final class CatalogSpotTests: BuiltInCase {
             _ = try await catalog.perform(.item(SpotItem(title: "Gone", run: "gone")), timeout: 5)
             XCTFail("It took a spot that does not exist.")
         } catch {
-            XCTAssertEqual((error as? PluginError)?.reason, "Spots has no such spot.")
+            XCTAssertEqual((error as? SpotError)?.reason, "Spots has no such spot.")
         }
         XCTAssertEqual(file.read().arrangement.enabled, [])
     }
@@ -190,8 +190,8 @@ final class CatalogSpotTests: BuiltInCase {
     }
 
     func testAReviewThatCannotAddShowsTheTextWithNoAddPart() throws {
-        let scan = try PluginFolder(url: plugins, core: core, enabled: ["apps"]).scan()
-        let shared = try SharedSpot(sharing: XCTUnwrap(scan.commands.first { $0.id == "apps" }), from: scan)
+        let scan = try SpotFolder(url: plugins, core: core, enabled: ["apps"]).scan()
+        let shared = try SharedSpot(sharing: XCTUnwrap(scan.spots.first { $0.id == "apps" }), from: scan)
 
         let review = try ReviewSpot(spot: shared, folder: plugins, canAdd: false)
         let sheet = try review.answer(["read"])
@@ -257,7 +257,7 @@ final class CatalogSpotTests: BuiltInCase {
             _ = try await spot.perform(.action(add, item: nil), input: "source=\(root.path)/gone\n", timeout: 50)
             XCTFail("It added a spot from nothing.")
         } catch {
-            XCTAssertEqual((error as? PluginError)?.reason, "Openspot cannot find \(root.path)/gone.")
+            XCTAssertEqual((error as? SpotError)?.reason, "Openspot cannot find \(root.path)/gone.")
         }
     }
 

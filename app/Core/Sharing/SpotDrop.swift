@@ -24,7 +24,7 @@ public struct SpotDrop: Equatable, Sendable {
         } catch {
             symbol = "exclamationmark.triangle"
             title = "Cannot install \(url.deletingPathExtension().lastPathComponent)"
-            detail = (error as? PluginError)?.reason ?? "Openspot cannot read this file."
+            detail = (error as? SpotError)?.reason ?? "Openspot cannot read this file."
         }
     }
 }

@@ -120,7 +120,7 @@ final class SpotFloatTests: XCTestCase {
 
     func testAnActionThatAsksWithAFormOpensTheSpotInThePanel() async throws {
         try await floatList()
-        let rename = try XCTUnwrap(model.sheets["list"]?.command.actions.first { $0.id == "rename" })
+        let rename = try XCTUnwrap(model.sheets["list"]?.spot.actions.first { $0.id == "rename" })
         let entry = try XCTUnwrap(model.cards.first { $0.id == "list" })
 
         model.run(rename, on: (entry, model.sheets["list"]?.list.selectedItem), in: .float)

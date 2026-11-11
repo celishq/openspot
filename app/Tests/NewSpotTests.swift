@@ -66,7 +66,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertTrue(prompt.contains("Build an Openspot spot that does this: Show the weather here"))
         XCTAssertTrue(prompt.contains(plugins.path))
         XCTAssertTrue(prompt.contains("guide"))
-        XCTAssertEqual(try PluginFolder(url: plugins).scan().commands, [])
+        XCTAssertEqual(try SpotFolder(url: plugins).scan().spots, [])
         XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("opened").path))
     }
 
@@ -75,7 +75,7 @@ final class NewSpotTests: BuiltInCase {
             _ = try await newSpot().perform(.item(SpotItem(title: "Copy prompt for AI", run: "ask")), timeout: 5)
             XCTFail("expected a fault")
         } catch {
-            XCTAssertEqual((error as? PluginError)?.reason, "Type what the spot should do, then press `⏎`.")
+            XCTAssertEqual((error as? SpotError)?.reason, "Type what the spot should do, then press `⏎`.")
         }
     }
 
@@ -104,10 +104,10 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(first, "Made Untitled. Change the file that opened to make it yours.")
         XCTAssertEqual(second, "Made Untitled 2. Change the file that opened to make it yours.")
 
-        let names = try PluginFolder(url: plugins).scan().commands.map(\.id).sorted()
+        let names = try SpotFolder(url: plugins).scan().spots.map(\.id).sorted()
         XCTAssertEqual(names, ["untitled", "untitled-2"])
         XCTAssertEqual(try saved("opened"), "-t \(plugins.appendingPathComponent("untitled-2.sh").path)\n")
-        XCTAssertEqual(try PluginFolder(url: plugins).scan().commands.map(\.name).sorted(), ["Untitled", "Untitled 2"])
+        XCTAssertEqual(try SpotFolder(url: plugins).scan().spots.map(\.name).sorted(), ["Untitled", "Untitled 2"])
     }
 
     func testTheActionsOpenTheGuideAndTheFolder() async throws {
@@ -125,7 +125,7 @@ final class NewSpotTests: BuiltInCase {
             _ = try await newSpot().perform(SpotAction(arguments: ["gone"]), timeout: 5)
             XCTFail("expected a fault")
         } catch {
-            XCTAssertEqual((error as? PluginError)?.reason, "New spot cannot do that.")
+            XCTAssertEqual((error as? SpotError)?.reason, "New spot cannot do that.")
         }
     }
 
@@ -142,7 +142,7 @@ final class NewSpotTests: BuiltInCase {
             try script.writeScript(to: url)
         }
 
-        let faults = await PluginCheck(folder: PluginFolder(url: plugins)).faults()
+        let faults = await SpotCheck(folder: SpotFolder(url: plugins)).faults()
 
         XCTAssertEqual(faults, [])
     }

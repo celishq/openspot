@@ -4,7 +4,7 @@ import Foundation
 /// the head, which says how the spot itself looks and holds the effects `toast`, `link`, `select`, `progress` and `end`. A
 /// frame with a block is the whole picture, and a frame of only a head carries effects (01). A button that the drawing does
 /// not place is an action (U6). Each `run` value appears once.
-public struct PluginOutput: Equatable, Sendable {
+public struct SpotOutput: Equatable, Sendable {
     public private(set) var summary: TextBlock?
     public private(set) var rows: [TextBlock] = []
     public private(set) var items: [SpotItem] = []
@@ -95,8 +95,8 @@ public struct PluginOutput: Equatable, Sendable {
     }
 
     /// Reads a frame on another thread, so that a panel or a sheet in motion keeps its frames.
-    static func reading(_ text: String) async -> PluginOutput {
-        await Task.detached(priority: .userInitiated) { PluginOutput(text: text) }.value
+    static func reading(_ text: String) async -> SpotOutput {
+        await Task.detached(priority: .userInitiated) { SpotOutput(text: text) }.value
     }
 
     private init(blocks: [TextBlock], checks: Bool) {
@@ -157,7 +157,7 @@ public struct PluginOutput: Equatable, Sendable {
 
     /// This output without the blocks it was read from, so that an answer that is kept holds its rows once, as its items.
     /// It has no rows for a metric and no part faults.
-    public func withoutBlocks() -> PluginOutput {
+    public func withoutBlocks() -> SpotOutput {
         var output = self
         output.blocks = []
         output.rows = []
@@ -166,7 +166,7 @@ public struct PluginOutput: Equatable, Sendable {
 
     /// What is wrong with its parts, found by a reading of the same blocks that checks each part.
     public var partFaults: [String] {
-        checks ? checkedFaults : PluginOutput(blocks: blocks, checks: true).checkedFaults
+        checks ? checkedFaults : SpotOutput(blocks: blocks, checks: true).checkedFaults
     }
 
     /// Finds what is wrong with the places of the head and the card drawings.
@@ -217,7 +217,7 @@ public struct PluginOutput: Equatable, Sendable {
     }
 
     /// This frame with no effects, so that a head that is taken again acts none of them twice.
-    public func withoutEffects() -> PluginOutput {
+    public func withoutEffects() -> SpotOutput {
         var output = self
         output.toast = nil
         output.link = nil

@@ -13,7 +13,7 @@ struct SpotDockTile: View {
         let size = item.size
         let shape = RoundedRectangle(cornerRadius: SpotTokens.corner(for: size), style: .continuous)
         SpotCardView(
-            entry: SpotsModel.Entry(command: item.command, run: nil),
+            entry: SpotsModel.Entry(spot: item.spot, run: nil),
             size: size,
             index: -1,
             isPressed: false,
@@ -35,7 +35,7 @@ struct SpotDockTile: View {
             turnsOff: false,
             showsEye: false,
             isHidden: false,
-            sizes: model.carry == nil ? model.sizes(of: SpotsModel.Entry(command: item.command, run: nil)) : [],
+            sizes: model.carry == nil ? model.sizes(of: SpotsModel.Entry(spot: item.spot, run: nil)) : [],
             isResizing: model.dockResize?.id == item.id,
             isDragging: model.carry != nil
         ))
@@ -50,7 +50,7 @@ struct SpotDockTile: View {
         }
         .overlay(alignment: .top) {
             if size == .small {
-                Text(item.command.name)
+                Text(item.spot.name)
                     .font(SpotType.detail)
                     .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)

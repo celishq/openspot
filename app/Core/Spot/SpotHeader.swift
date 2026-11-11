@@ -2,7 +2,7 @@ import Foundation
 
 /// The `key=value` comment lines at the top of a script, which say what it is without running it. They are a frame in
 /// comments: a blank comment line ends a block, and a `command` or `setting` block follows the keys of the spot.
-public struct PluginHeader: Equatable, Sendable {
+public struct SpotHeader: Equatable, Sendable {
     private static let limit = 4096
     private static let marks = ["//", "--", "#"]
     private static let kinds: Set<String> = ["command", "setting"]

@@ -48,17 +48,17 @@ public struct TerminalRun {
             if spot.mode.stays { process.send(action, values: input, id: Self.callID, reason: isRead ? .sheet : nil) }
             for try await text in frames {
                 frame(text)
-                if spot.mode.stays, PluginOutput(text: text).summary?.value("end") == String(Self.callID) { process.end() }
+                if spot.mode.stays, SpotOutput(text: text).summary?.value("end") == String(Self.callID) { process.end() }
             }
         } catch {
             if let last = process.failedFrame { frame(last) }
-            code = switch error as? PluginError {
+            code = switch error as? SpotError {
             case .failed(let status, _)?, .failedWithFix(let status, _, _)?: status
             case .timedOut?: 124
             default: 1
             }
-            if case .timedOut? = error as? PluginError { return End(code: code, errors: process.errors + "\(spot.name) took too long, so Openspot stopped it.\n") }
-            if process.errors.isEmpty, let reason = (error as? PluginError)?.reason ?? Optional(error.localizedDescription) {
+            if case .timedOut? = error as? SpotError { return End(code: code, errors: process.errors + "\(spot.name) took too long, so Openspot stopped it.\n") }
+            if process.errors.isEmpty, let reason = (error as? SpotError)?.reason ?? Optional(error.localizedDescription) {
                 return End(code: code, errors: reason + "\n")
             }
         }
@@ -76,10 +76,10 @@ public struct TerminalRun {
         case .frame(let text):
             if !text.isEmpty { frame(text) }
             return End(code: 0, errors: "")
-        case .failed(PluginError.timedOut):
+        case .failed(SpotError.timedOut):
             return End(code: 124, errors: "\(spot.name) took too long, so Openspot stopped it.\n")
         case .failed(let error):
-            return End(code: 1, errors: ((error as? PluginError)?.reason ?? error.localizedDescription) + "\n")
+            return End(code: 1, errors: ((error as? SpotError)?.reason ?? error.localizedDescription) + "\n")
         case .dropped:
             return End(code: 1, errors: "\(spot.name) ended before it answered.\n")
         }

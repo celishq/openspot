@@ -19,7 +19,7 @@ final class StayLink: ScriptLink {
     /// The call numbers of reads and searches that a picture came after, which a frame of only a head then answers.
     private var pictured: Set<Int> = []
     /// The last frame with a block, which answers a read that ends with only a head.
-    private var lastPicture: PluginOutput?
+    private var lastPicture: SpotOutput?
     private var count = 0
     /// When each call that has not ended was sent, by its number.
     private var sent: [Int: Date] = [:]
@@ -139,7 +139,7 @@ final class StayLink: ScriptLink {
     /// Starts the script and asks it for what it shows, with no values. A script that failed too often does not start.
     private func start(reason: ReadReason? = nil) {
         guard let run, givenUp == nil else { return }
-        let (script, frames) = runs.stay(run.command, limit: runs.readLimit)
+        let (script, frames) = runs.stay(run.spot, limit: runs.readLimit)
         self.script = script
         let id = next()
         asks[id] = .read(generation: nil, reports: true)
@@ -212,7 +212,7 @@ final class StayLink: ScriptLink {
     private func follow(_ script: ScriptProcess, _ frames: AsyncThrowingStream<String, Error>) async {
         do {
             for try await text in frames {
-                let lines = await runs.intake(text, of: run?.command.id)
+                let lines = await runs.intake(text, of: run?.spot.id)
                 if self.script === script { counted(lines.ends) }
                 if self.script === script, !lines.ends.isEmpty {
                     endCalls(lines.ends)
@@ -265,7 +265,7 @@ final class StayLink: ScriptLink {
         guard let run else { return }
         for id in ends.compactMap(Int.init) {
             guard let date = sent.removeValue(forKey: id) else { continue }
-            runs.usage.called(run.command.id, name: run.command.name, seconds: Date().timeIntervalSince(date))
+            runs.usage.called(run.spot.id, name: run.spot.name, seconds: Date().timeIntervalSince(date))
         }
     }
 
@@ -276,13 +276,13 @@ final class StayLink: ScriptLink {
         failures = failures.filter { time.timeIntervalSince($0) < Self.failureWindow } + [time]
         guard failures.count >= Self.failureLimit else { return run.fail(error) }
         givenUp = .some(fileDate)
-        let text = "\(run.command.name) failed \(Self.failureLimit) times in one minute. Openspot will not start it again until its file changes."
-        runs.usage.failed(run.command.id, name: run.command.name, fault: text)
+        let text = "\(run.spot.name) failed \(Self.failureLimit) times in one minute. Openspot will not start it again until its file changes."
+        runs.usage.failed(run.spot.id, name: run.spot.name, fault: text)
         run.onReport(.failure(text))
     }
 
     private var fileDate: Date? {
         guard let run else { return nil }
-        return (try? FileManager.default.attributesOfItem(atPath: run.command.url.path))?[.modificationDate] as? Date
+        return (try? FileManager.default.attributesOfItem(atPath: run.spot.url.path))?[.modificationDate] as? Date
     }
 }

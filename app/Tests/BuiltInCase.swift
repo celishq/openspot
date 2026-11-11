@@ -108,7 +108,7 @@ class BuiltInCase: XCTestCase {
 
     /// The spot of the app in this file of `plugins/openspot`, as a scan of the core folder gives it.
     func spot(_ name: String) throws -> Spot {
-        let place = PluginFolder(url: root.appendingPathComponent("none"), core: repoPlugins)
+        let place = SpotFolder(url: root.appendingPathComponent("none"), core: repoPlugins)
         return try XCTUnwrap(try place.scan().scripts.first { $0.id == "openspot/\(name)" })
     }
 

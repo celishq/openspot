@@ -49,7 +49,7 @@ class SpotRunsCase: XCTestCase {
     }
 
     func scanned() throws -> ScanResult {
-        let scan = try PluginFolder(url: folder).scan()
+        let scan = try SpotFolder(url: folder).scan()
         XCTAssertEqual(scan.refused, [])
         runs.take(scan, menuBar: menuBar)
         return scan
@@ -122,7 +122,7 @@ class SpotRunsCase: XCTestCase {
 
     /// The first scanned script's sheet, with each failure that it tells the person, before the script can start.
     func toldSheet() throws -> (sheet: SpotRun, told: () -> [String]) {
-        let sheet = runs.sheet(for: try XCTUnwrap(PluginFolder(url: folder).scan().scripts.first))
+        let sheet = runs.sheet(for: try XCTUnwrap(SpotFolder(url: folder).scan().scripts.first))
         var failures: [String] = []
         sheet.onReport = { if case .failure(let text) = $0 { failures.append(text) } }
         return (sheet, { failures })

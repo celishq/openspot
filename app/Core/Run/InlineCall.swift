@@ -63,7 +63,7 @@ final class InlineCall: @unchecked Sendable {
     /// Waits for the outcome. Past the limit, the call fails as too slow, and the outcome that comes later counts no more.
     func outcome(limit: TimeInterval? = nil) async -> Outcome {
         if let limit {
-            DispatchQueue.global().asyncAfter(deadline: .now() + limit) { [self] in finish(.failed(PluginError.timedOut)) }
+            DispatchQueue.global().asyncAfter(deadline: .now() + limit) { [self] in finish(.failed(SpotError.timedOut)) }
         }
         return await withCheckedContinuation { continuation in
             if let outcome = wait(.seconds(0), later: { continuation.resume(returning: $0) }) { continuation.resume(returning: outcome) }

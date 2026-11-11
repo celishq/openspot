@@ -64,7 +64,7 @@ public final class ScriptProcess: @unchecked Sendable {
         let contents = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent()
         let helpers = contents.appendingPathComponent("Helpers").path
         let home = base["HOME"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? FileManager.default.homeDirectoryForCurrentUser
-        let config = PluginFolder.config(environment: base, home: home)
+        let config = SpotFolder.config(environment: base, home: home)
         var data = config.appendingPathComponent("data", isDirectory: true)
         if let dataName { data.appendPathComponent(URL(fileURLWithPath: dataName).lastPathComponent, isDirectory: true) }
         try? FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
@@ -131,7 +131,7 @@ public final class ScriptProcess: @unchecked Sendable {
         if let limit {
             DispatchQueue.global().asyncAfter(deadline: .now() + limit) { [weak self] in
                 guard let self, !lock.withLock({ hasFrame }) else { return }
-                stop(because: PluginError.timedOut)
+                stop(because: SpotError.timedOut)
             }
         }
         follow(output: output, errors: errors)
@@ -311,8 +311,8 @@ public final class ScriptProcess: @unchecked Sendable {
             let line = lastErrors.text
             let last = reader.finish()
             lock.withLock { unended = last }
-            let fix = last.flatMap { PluginOutput(text: $0).link }.flatMap(URL.init(string:))
-            finish(throwing: fix.map { PluginError.failedWithFix(exitCode, line, $0) } ?? PluginError.failed(exitCode, line))
+            let fix = last.flatMap { SpotOutput(text: $0).link }.flatMap(URL.init(string:))
+            finish(throwing: fix.map { SpotError.failedWithFix(exitCode, line, $0) } ?? SpotError.failed(exitCode, line))
             return
         }
         if let frame = reader.finish() { yield(frame) }

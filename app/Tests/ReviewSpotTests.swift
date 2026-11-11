@@ -22,13 +22,13 @@ final class ReviewSpotTests: XCTestCase {
         return try ReviewSpot(spot: spot([(path, text, true)]), folder: folder)
     }
 
-    private func sheet(_ review: ReviewSpot) throws -> PluginOutput {
-        PluginOutput(text: try review.answer(["read"]))
+    private func sheet(_ review: ReviewSpot) throws -> SpotOutput {
+        SpotOutput(text: try review.answer(["read"]))
     }
 
     private func shown(_ review: ReviewSpot) throws -> String {
         let part = try XCTUnwrap(sheet(review).parts.first { $0.id == "review" })
-        guard case .text(let text, _, let isReadOnly) = part.control else { throw PluginError.badForm }
+        guard case .text(let text, _, let isReadOnly) = part.control else { throw SpotError.badForm }
         XCTAssertTrue(isReadOnly)
         return text
     }
@@ -86,7 +86,7 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(review.name, "Weather now")
         XCTAssertEqual(review.symbol, "sun.max")
         XCTAssertEqual(review.subtitle, "Today and tomorrow")
-        let command = review.command
+        let command = review.spot
         XCTAssertEqual(command.name, "Weather now")
         XCTAssertEqual(command.symbol, "sun.max")
     }
@@ -197,7 +197,7 @@ final class ReviewSpotTests: XCTestCase {
 
     func testAFileThatGivesNoSpotIsRefused() throws {
         XCTAssertThrowsError(try ReviewSpot(spot: spot([("notes.txt", "hello", false)]), folder: folder)) { error in
-            XCTAssertEqual((error as? PluginError)?.reason, "This file holds no spot.")
+            XCTAssertEqual((error as? SpotError)?.reason, "This file holds no spot.")
         }
     }
 
@@ -230,15 +230,15 @@ final class ReviewSpotTests: XCTestCase {
     func testAddPutsItInTheFolderThatTheNextScanReads() throws {
         let answer = try review("title=Weather\nicon=sun.max").answer(["install"])
 
-        XCTAssertEqual(PluginOutput(text: answer).summary?.value("toast"), "Weather added")
-        let scan = try PluginFolder(url: folder).scan()
-        XCTAssertEqual(scan.commands.map(\.name), ["Weather"])
+        XCTAssertEqual(SpotOutput(text: answer).summary?.value("toast"), "Weather added")
+        let scan = try SpotFolder(url: folder).scan()
+        XCTAssertEqual(scan.spots.map(\.name), ["Weather"])
         XCTAssertEqual(scan.refused, [])
     }
 
     func testTheAppOffersTheReviewAsASheetThatGrowsOutOfTheField() async throws {
         let review = try review("title=Weather")
-        let command = review.command
+        let command = review.spot
 
         XCTAssertEqual(command.name, "Weather")
         XCTAssertEqual(command.subtitle, "Runs only when you use it")

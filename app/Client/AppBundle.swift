@@ -22,7 +22,7 @@ struct AppBundle {
         contents + "/MacOS/Openspot"
     }
 
-    /// The config folder of the app, as `PluginFolder.config` finds it: `OPENSPOT_CONFIG`, then the folder of a Debug build
+    /// The config folder of the app, as `SpotFolder.config` finds it: `OPENSPOT_CONFIG`, then the folder of a Debug build
     /// in its Info.plist, then `~/.config/openspot`.
     var config: String? {
         if let named = getenv("OPENSPOT_CONFIG").map({ String(cString: $0) }), !named.isEmpty { return named }

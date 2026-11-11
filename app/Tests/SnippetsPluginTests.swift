@@ -4,7 +4,7 @@ import XCTest
 /// Proves the Snippets plugin with its real script in a private home.
 final class SnippetsPluginTests: SamplePluginsCase {
     func testAConfigPathHoldsTheDataOfAPlugin() async throws {
-        let snippets = try XCTUnwrap(try scan.commands.first { $0.name == "Snippets" })
+        let snippets = try XCTUnwrap(try scan.spots.first { $0.name == "Snippets" })
         try await withPrivateHome { folder in
             let config = folder.appendingPathComponent("debug-config")
             setenv("OPENSPOT_CONFIG", config.path, 1)
@@ -22,7 +22,7 @@ final class SnippetsPluginTests: SamplePluginsCase {
     }
 
     func testSnippetsKeepsExactTextThroughNewCopyEditPasteAndDelete() async throws {
-        let snippets = try XCTUnwrap(try scan.commands.first { $0.name == "Snippets" })
+        let snippets = try XCTUnwrap(try scan.spots.first { $0.name == "Snippets" })
         let text = "Say \"héllo\" \\ now\n\tthen $HOME\n"
         try await withPrivateHome { folder in
             let empty = try await snippets.items(timeout: 5)
@@ -66,12 +66,12 @@ final class SnippetsPluginTests: SamplePluginsCase {
     }
 
     func testACopyOfAMissingSnippetFails() async throws {
-        let snippets = try XCTUnwrap(try scan.commands.first { $0.name == "Snippets" })
+        let snippets = try XCTUnwrap(try scan.spots.first { $0.name == "Snippets" })
         try await withPrivateHome { _ in
             do {
                 try await snippets.perform(.item(SpotItem(title: "Gone", run: "gone")), timeout: 5)
                 XCTFail("expected a failure")
-            } catch let error as PluginError {
+            } catch let error as SpotError {
                 XCTAssertEqual(error.reason, "This snippet is gone.")
             }
         }

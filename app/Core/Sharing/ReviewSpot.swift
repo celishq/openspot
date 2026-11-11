@@ -8,7 +8,7 @@ public struct ReviewSpot: Equatable, Sendable {
     static let textLimit = 256_000
     private static let installPart = "install"
 
-    public let spot: SharedSpot
+    public let shared: SharedSpot
     public let name: String
     public let symbol: String
     public let description: String?
@@ -20,13 +20,13 @@ public struct ReviewSpot: Equatable, Sendable {
     /// Reads a spot for a plugins folder. Throws a fault when it gives no spot or cannot go into that folder. With `canAdd`
     /// false it only shows the text.
     public init(spot: SharedSpot, folder: URL, canAdd: Bool = true) throws {
-        if let clash = spot.clash(in: folder) { throw PluginError.fault(clash) }
+        if let clash = spot.clash(in: folder) { throw SpotError.fault(clash) }
         let scan = try Self.scan(of: spot)
-        let commands = scan.plugins.flatMap(\.commands)
-        let primary = spot.files.lazy.compactMap { file in commands.first { $0.url.path.hasSuffix("/\(file.path)") } }.first
-        guard let primary else { throw PluginError.fault("This file holds no spot.") }
+        let spots = scan.files.flatMap(\.spots)
+        let primary = spot.files.lazy.compactMap { file in spots.first { $0.url.path.hasSuffix("/\(file.path)") } }.first
+        guard let primary else { throw SpotError.fault("This file holds no spot.") }
         let runs = Self.selfRuns(in: scan)
-        self.spot = spot
+        self.shared = spot
         self.canAdd = canAdd
         name = primary.name
         symbol = primary.symbol
@@ -48,7 +48,7 @@ public struct ReviewSpot: Equatable, Sendable {
     }
 
     /// Its sheet, which grows out of the search field.
-    public var command: Spot {
+    public var spot: Spot {
         Spot(id: Self.id, name: name, url: folder, kind: .list, symbol: symbol, subtitle: subtitle, read: .sheet, order: .max, host: .review(self), growsFromField: true)
     }
 
@@ -58,10 +58,10 @@ public struct ReviewSpot: Equatable, Sendable {
         case "read":
             return sheet
         case Self.installPart where canAdd:
-            try spot.add(to: folder)
+            try shared.add(to: folder)
             return TextBlock(fields: [.init(key: "toast", value: "\(name) added")]).text
         default:
-            throw PluginError.failed(1, "This sheet cannot do that.")
+            throw SpotError.failed(1, "This sheet cannot do that.")
         }
     }
 
@@ -93,12 +93,12 @@ public struct ReviewSpot: Equatable, Sendable {
         let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-review-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: place) }
         try spot.add(to: place)
-        return try PluginFolder(url: place).scan()
+        return try SpotFolder(url: place).scan()
     }
 
     /// A line for each script that runs with no act of a person, which says when.
     private static func selfRuns(in scan: ScanResult) -> [String] {
-        let placed = Set(scan.plugins.flatMap(\.commands).flatMap(\.places))
+        let placed = Set(scan.files.flatMap(\.spots).flatMap(\.places))
         return scan.scripts.compactMap { script in
             var moments: [String] = switch script.mode {
             case .always: ["keeps running while Openspot runs"]

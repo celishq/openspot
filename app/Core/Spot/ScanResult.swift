@@ -10,23 +10,23 @@ public struct ScanResult: Equatable, Sendable {
         }
     }
 
-    public var plugins: [Plugin]
+    public var files: [SpotFile]
     public var refused: [Refusal]
 
-    public init(plugins: [Plugin], refused: [Refusal]) {
-        self.plugins = plugins
+    public init(files: [SpotFile], refused: [Refusal]) {
+        self.files = files
         self.refused = refused
     }
 
     /// The commands, each with a card, in their grid order: a lower `order` first, and otherwise as the folder sorts them.
-    public var commands: [Spot] {
-        plugins.flatMap(\.commands).enumerated()
+    public var spots: [Spot] {
+        files.flatMap(\.spots).enumerated()
             .sorted { ($0.element.order, $0.offset) < ($1.element.order, $1.offset) }.map(\.element)
     }
 
     /// Each script, with a card or not. A widget is not a script.
     public var scripts: [Spot] {
-        plugins.flatMap(\.commands).filter { $0.kind != .widget }
+        files.flatMap(\.spots).filter { $0.kind != .widget }
     }
 
     /// The assigned keys whose script still lists their command, or still offers a float (W1, T1).
@@ -41,30 +41,30 @@ public struct ScanResult: Equatable, Sendable {
 
     /// Makes each script that lists commands and has no read open to the keys of its commands in this config.
     public mutating func listKeys(in config: ConfigFile) {
-        plugins = plugins.map { Plugin(id: $0.id, commands: $0.commands.map { $0.listingKeys(in: config) }) }
+        files = files.map { SpotFile(id: $0.id, spots: $0.spots.map { $0.listingKeys(in: config) }) }
     }
 
     /// Leaves out each widget that names a script with no `read` or a command no plugin has, and reports why.
     /// Takes each script that a widget opens off the grid.
     mutating func keepOpenedOffTheGrid() {
-        let opened = Set(plugins.flatMap(\.commands).compactMap(\.opens))
-        plugins = plugins.map { Plugin(id: $0.id, commands: $0.commands.map { opened.contains($0.id) ? $0.offTheGrid() : $0 }) }
+        let opened = Set(files.flatMap(\.spots).compactMap(\.opens))
+        files = files.map { SpotFile(id: $0.id, spots: $0.spots.map { opened.contains($0.id) ? $0.offTheGrid() : $0 }) }
     }
 
     mutating func removeWidgetsWithLostParts() {
         let metrics = Set(scripts.filter { $0.read != nil }.map(\.id))
-        let commands = Set(commands.map(\.id))
-        plugins = plugins.map { plugin in
-            let kept = plugin.commands.filter { command in
+        let ids = Set(spots.map(\.id))
+        files = files.map { plugin in
+            let kept = plugin.spots.filter { command in
                 guard command.kind == .widget else { return true }
                 var reason = command.places.first { !metrics.contains($0) }.map { "\(command.name) names no metric called \($0)" }
-                if reason == nil, let opens = command.opens, !commands.contains(opens) {
+                if reason == nil, let opens = command.opens, !ids.contains(opens) {
                     reason = "\(command.name) opens no command called \(opens)"
                 }
                 if let reason { refused.append(Refusal(file: plugin.id, reason: reason)) }
                 return reason == nil
             }
-            return Plugin(id: plugin.id, commands: kept)
+            return SpotFile(id: plugin.id, spots: kept)
         }
     }
 }

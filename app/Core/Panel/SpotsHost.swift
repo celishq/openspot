@@ -17,7 +17,7 @@ public protocol SpotsHost: AnyObject {
     func applyConfig(_ config: Config)
     func setEntryKey(on isOn: Bool)
     func hold(_ keys: [GlobalKey])
-    func chooseFiles(for command: Spot, then take: @escaping ([String]) -> Void)
+    func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void)
     /// Shows the float of a spot at the pointer, or brings its float there when it shows (W4, W6). During a drag it takes no
     /// focus, so that the drag goes on (W5).
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool)

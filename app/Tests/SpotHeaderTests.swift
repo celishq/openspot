@@ -1,14 +1,14 @@
 import XCTest
 @testable import OpenspotCore
 
-final class PluginHeaderTests: XCTestCase {
+final class SpotHeaderTests: XCTestCase {
     func testAScriptWithCommandsHasNoCardOnTheGridAndStaysInTheScan() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-grid-\(UUID().uuidString)")
         try Data("#!/bin/sh\n#\n# command=left\n# title=Left side\n".utf8).write(to: url)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
         defer { try? FileManager.default.removeItem(at: url) }
 
-        let command = try XCTUnwrap(try Plugin(file: url, id: "script")?.commands.first)
+        let command = try XCTUnwrap(try SpotFile(file: url, id: "script")?.spots.first)
 
         XCTAssertFalse(command.headerState.isOnGrid)
     }
@@ -23,9 +23,9 @@ final class PluginHeaderTests: XCTestCase {
         try "#!/bin/sh\n# read=panel\n# offers=rows\n".writeScript(to: rowsOnly)
         try "#!/bin/sh\n# read=sheet\n# offers=float\n".writeScript(to: floating)
 
-        let search = try XCTUnwrap(try Plugin(file: searchOnly, id: "search")?.commands.first)
-        let rows = try XCTUnwrap(try Plugin(file: rowsOnly, id: "rows")?.commands.first)
-        let float = try XCTUnwrap(try Plugin(file: floating, id: "float")?.commands.first)
+        let search = try XCTUnwrap(try SpotFile(file: searchOnly, id: "search")?.spots.first)
+        let rows = try XCTUnwrap(try SpotFile(file: rowsOnly, id: "rows")?.spots.first)
+        let float = try XCTUnwrap(try SpotFile(file: floating, id: "float")?.spots.first)
         XCTAssertTrue(search.headerState.isOnGrid)
         XCTAssertTrue(search.isGlobal)
         XCTAssertTrue(search.isFound)
@@ -42,8 +42,8 @@ final class PluginHeaderTests: XCTestCase {
         try "#!/bin/sh\n# read=panel\n# offers=dock\n".writeScript(to: url)
         defer { try? FileManager.default.removeItem(at: url) }
 
-        XCTAssertThrowsError(try Plugin(file: url, id: "script")) { error in
-            XCTAssertTrue((error as? PluginError)?.reason.contains("search, rows or float") == true, "\(error)")
+        XCTAssertThrowsError(try SpotFile(file: url, id: "script")) { error in
+            XCTAssertTrue((error as? SpotError)?.reason.contains("search, rows or float") == true, "\(error)")
         }
     }
 
@@ -59,14 +59,14 @@ final class PluginHeaderTests: XCTestCase {
             try "#!/bin/sh\n# \(header)\n".writeScript(to: url)
             defer { try? FileManager.default.removeItem(at: url) }
 
-            XCTAssertThrowsError(try Plugin(file: url, id: "script"), header) { error in
-                XCTAssertTrue((error as? PluginError)?.reason.contains(hint) == true, "\(header): \(error)")
+            XCTAssertThrowsError(try SpotFile(file: url, id: "script"), header) { error in
+                XCTAssertTrue((error as? SpotError)?.reason.contains(hint) == true, "\(header): \(error)")
             }
         }
     }
 
     func testReadsTheCommentLinesUnderTheFirstLine() {
-        let header = PluginHeader(text: "#!/bin/sh\n# title=Morning\n#\n# Prose has no key.\n#icon=sun.max\nsay hello\n# shortcut=m\n")
+        let header = SpotHeader(text: "#!/bin/sh\n# title=Morning\n#\n# Prose has no key.\n#icon=sun.max\nsay hello\n# shortcut=m\n")
 
         XCTAssertEqual(header.block.value("title"), "Morning")
         XCTAssertEqual(header.block.value("icon"), "sun.max")
@@ -74,57 +74,57 @@ final class PluginHeaderTests: XCTestCase {
     }
 
     func testReadsTheCommentsOfOtherLanguages() {
-        XCTAssertEqual(PluginHeader(text: "#!/usr/bin/env lua\n-- read=5\nprint(1)").block.value("read"), "5")
-        XCTAssertEqual(PluginHeader(text: "#!/usr/bin/env bun\n// read=5\nconsole.log(1)").block.value("read"), "5")
+        XCTAssertEqual(SpotHeader(text: "#!/usr/bin/env lua\n-- read=5\nprint(1)").block.value("read"), "5")
+        XCTAssertEqual(SpotHeader(text: "#!/usr/bin/env bun\n// read=5\nconsole.log(1)").block.value("read"), "5")
     }
 
     func testAProgramHasNoHeader() {
-        XCTAssertEqual(PluginHeader(text: "\u{7F}ELF\u{0}\u{0}\n# title=Lost").block.fields, [])
+        XCTAssertEqual(SpotHeader(text: "\u{7F}ELF\u{0}\u{0}\n# title=Lost").block.fields, [])
     }
 
     func testABlankLineEndsTheHeader() {
-        XCTAssertNil(PluginHeader(text: "#!/bin/sh\n\n# title=Late\n").block.value("title"))
+        XCTAssertNil(SpotHeader(text: "#!/bin/sh\n\n# title=Late\n").block.value("title"))
     }
 
     func testAViewIsASwiftFileBesideTheScript() throws {
         let folder = URL(fileURLWithPath: "/plugins/home")
-        let header = PluginHeader(text: "#!/bin/sh\n# view=cups.swift\n").block
+        let header = SpotHeader(text: "#!/bin/sh\n# view=cups.swift\n").block
 
-        let spot = try XCTUnwrap(try Plugin(script: folder.appendingPathComponent("cups.sh"), header: header, id: "home/cups").commands.first)
+        let spot = try XCTUnwrap(try SpotFile(script: folder.appendingPathComponent("cups.sh"), header: header, id: "home/cups").spots.first)
 
         XCTAssertEqual(spot.view, "/plugins/home/cups.swift")
     }
 
     func testAnAnswersPatternIsTheWholeRestOfItsLine() throws {
-        let header = PluginHeader(text: "#!/bin/sh\n# answers=^\\s*([0-9,.]|(?i:today|now)\\b)\n").block
+        let header = SpotHeader(text: "#!/bin/sh\n# answers=^\\s*([0-9,.]|(?i:today|now)\\b)\n").block
 
-        let spot = try XCTUnwrap(try Plugin(script: URL(fileURLWithPath: "/plugins/calc.sh"), header: header, id: "calc").commands.first)
+        let spot = try XCTUnwrap(try SpotFile(script: URL(fileURLWithPath: "/plugins/calc.sh"), header: header, id: "calc").spots.first)
 
         XCTAssertEqual(spot.answers?.text, #"^\s*([0-9,.]|(?i:today|now)\b)"#)
         XCTAssertEqual(["1,5", "Today", "notes"].map { spot.answers?.matches($0) }, [true, true, false])
     }
 
     func testAHeaderPictureOnTheWebKeepsItsURL() throws {
-        let header = PluginHeader(text: "#!/bin/sh\n# icon=https://example.com/cups.png\n").block
+        let header = SpotHeader(text: "#!/bin/sh\n# icon=https://example.com/cups.png\n").block
 
-        let spot = try XCTUnwrap(try Plugin(script: URL(fileURLWithPath: "/plugins/home/cups.sh"), header: header, id: "home/cups").commands.first)
+        let spot = try XCTUnwrap(try SpotFile(script: URL(fileURLWithPath: "/plugins/home/cups.sh"), header: header, id: "home/cups").spots.first)
 
         XCTAssertEqual(spot.icon, .image("https://example.com/cups.png"))
     }
 
     func testAViewThatIsNoSwiftFileIsRefused() {
-        let header = PluginHeader(text: "#!/bin/sh\n# title=Cups\n# view=cups.txt\n").block
+        let header = SpotHeader(text: "#!/bin/sh\n# title=Cups\n# view=cups.txt\n").block
 
-        XCTAssertThrowsError(try Plugin(script: URL(fileURLWithPath: "/plugins/cups.sh"), header: header, id: "cups")) { error in
-            XCTAssertEqual((error as? PluginError)?.reason, "Cups needs a Swift file for its view, such as view=cups.swift")
+        XCTAssertThrowsError(try SpotFile(script: URL(fileURLWithPath: "/plugins/cups.sh"), header: header, id: "cups")) { error in
+            XCTAssertEqual((error as? SpotError)?.reason, "Cups needs a Swift file for its view, such as view=cups.swift")
         }
     }
 
     func testAViewInATopLevelScriptIsRefusedWithTheFolderToMoveTo() {
-        let header = PluginHeader(text: "#!/bin/sh\n# title=Cups\n# view=cups.swift\n").block
+        let header = SpotHeader(text: "#!/bin/sh\n# title=Cups\n# view=cups.swift\n").block
 
-        XCTAssertThrowsError(try Plugin(script: URL(fileURLWithPath: "/plugins/cups.sh"), header: header, id: "cups")) { error in
-            XCTAssertEqual((error as? PluginError)?.reason, "Cups has a view, so it needs a folder of its own. Move cups.sh and cups.swift into a folder such as cups/")
+        XCTAssertThrowsError(try SpotFile(script: URL(fileURLWithPath: "/plugins/cups.sh"), header: header, id: "cups")) { error in
+            XCTAssertEqual((error as? SpotError)?.reason, "Cups has a view, so it needs a folder of its own. Move cups.sh and cups.swift into a folder such as cups/")
         }
     }
 }

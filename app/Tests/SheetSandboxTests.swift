@@ -4,7 +4,7 @@ import XCTest
 final class SheetSandboxTests: XCTestCase {
     func testEachExampleHasNoFaults() {
         for example in SheetExamples.all {
-            XCTAssertEqual(PluginOutput(text: example.text).sheetFaults, [], example.name)
+            XCTAssertEqual(SpotOutput(text: example.text).sheetFaults, [], example.name)
         }
     }
 

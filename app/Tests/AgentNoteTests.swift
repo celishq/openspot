@@ -40,6 +40,6 @@ final class AgentNoteTests: XCTestCase {
     func testTheNoteGivesNoSpot() throws {
         try AgentNote(command: "/Apps/openspot").write(in: folder)
 
-        XCTAssertEqual(try PluginFolder(url: folder).scan().commands, [])
+        XCTAssertEqual(try SpotFolder(url: folder).scan().spots, [])
     }
 }

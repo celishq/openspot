@@ -244,7 +244,7 @@ final class SettingsSpotTests: BuiltInCase {
             try await call(["gone"])
             XCTFail("took an unknown call")
         } catch {
-            XCTAssertEqual((error as? PluginError)?.reason, "Settings cannot do that.")
+            XCTAssertEqual((error as? SpotError)?.reason, "Settings cannot do that.")
         }
     }
 
@@ -286,7 +286,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testARowCarriesItsKeyAndWhetherAShakeCanBeIt() {
-        let items = PluginOutput(text: "row=open\ntitle=Open\nshortcut=ctrl+k\nshake=true\n\nrow=other\ntitle=Other\n").items
+        let items = SpotOutput(text: "row=open\ntitle=Open\nshortcut=ctrl+k\nshake=true\n\nrow=other\ntitle=Other\n").items
 
         XCTAssertEqual(items.map(\.shortcut), ["ctrl+k", nil])
         XCTAssertEqual(items.map(\.takesShake), [true, false])
@@ -303,7 +303,7 @@ final class SettingsSpotTests: BuiltInCase {
     }
 
     func testTheCheckFindsABadHotkey() {
-        XCTAssertEqual(PluginOutput(text: "hotkey=a\nvalue=k\n").partFaults, ["the part a needs a shortcut that holds cmd, ctrl or option: k"])
-        XCTAssertEqual(PluginOutput(text: "hotkey=a\nvalue=ctrl+k\n").partFaults, [])
+        XCTAssertEqual(SpotOutput(text: "hotkey=a\nvalue=k\n").partFaults, ["the part a needs a shortcut that holds cmd, ctrl or option: k"])
+        XCTAssertEqual(SpotOutput(text: "hotkey=a\nvalue=ctrl+k\n").partFaults, [])
     }
 }

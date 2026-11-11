@@ -1,7 +1,7 @@
 import Foundation
 import Synchronization
 
-public struct PluginFolder: Sendable {
+public struct SpotFolder: Sendable {
     /// What a scan reads: the identity, mode, size and times of each file through its links, the spots that are on or off
     /// and the sheets of the app. An equal stamp gives an equal scan, because a write, a change of mode and a move each change
     /// the change time of a file.
@@ -38,17 +38,17 @@ public struct PluginFolder: Sendable {
         home: URL = FileManager.default.homeDirectoryForCurrentUser,
         enabled: Set<String>? = nil,
         disabled: Set<String>? = nil
-    ) -> PluginFolder {
+    ) -> SpotFolder {
         let core = environment["OPENSPOT_CORE"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0, isDirectory: true) }
             ?? Bundle.main.resourceURL?.appendingPathComponent(coreName, isDirectory: true)
         let arrangement = enabled == nil || disabled == nil ? ConfigFile.standard(environment: environment, home: home).read().arrangement : nil
         let enabled = enabled ?? arrangement?.enabled ?? []
         let disabled = disabled ?? arrangement?.disabled ?? []
         if let path = environment["OPENSPOT_PLUGINS"], !path.isEmpty {
-            return PluginFolder(url: URL(fileURLWithPath: path, isDirectory: true), core: core, enabled: enabled, disabled: disabled)
+            return SpotFolder(url: URL(fileURLWithPath: path, isDirectory: true), core: core, enabled: enabled, disabled: disabled)
         }
         let url = config(environment: environment, home: home).appendingPathComponent("plugins", isDirectory: true)
-        return PluginFolder(url: url, core: core, enabled: enabled, disabled: disabled)
+        return SpotFolder(url: url, core: core, enabled: enabled, disabled: disabled)
     }
 
     /// The folder that holds the plugins folder and the data of plugins.
@@ -68,7 +68,7 @@ public struct PluginFolder: Sendable {
     /// of the app. Then it reads each core spot that is on, each core file that a spot needs, and each spot of the app. A file
     /// in the folder hides a core file with the same ID.
     public func scan(hosted: [Spot] = []) throws -> ScanResult {
-        var result = ScanResult(plugins: hosted.isEmpty ? [] : [Plugin(id: "openspot", commands: hosted)], refused: [])
+        var result = ScanResult(files: hosted.isEmpty ? [] : [SpotFile(id: "openspot", spots: hosted)], refused: [])
         let entries = core == nil ? try Self.sorted(in: url) : (try? Self.sorted(in: url)) ?? []
         var ownIDs = Set<String>()
         for entry in entries {
@@ -136,7 +136,7 @@ public struct PluginFolder: Sendable {
     /// The core choices, kept from the last look while no file of the core folder changed.
     public func keptCoreChoices() -> [Spot] {
         guard let core else { return [] }
-        let stamp = PluginFolder(url: core).stamp()
+        let stamp = SpotFolder(url: core).stamp()
         if let kept = Self.choices.withLock({ $0[core.path] }), kept.stamp == stamp { return kept.result }
         let result = coreChoices()
         Self.choices.withLock { $0[core.path] = (stamp, result) }
@@ -146,29 +146,29 @@ public struct PluginFolder: Sendable {
     /// The core spots that a person can turn on. A part of a widget, such as a metric that it places or a sheet off the grid
     /// that it opens, is not one: it comes with its widget.
     public func coreChoices() -> [Spot] {
-        let commands = ScanResult(plugins: coreFiles().compactMap { try? Plugin(file: $0.file, id: $0.id) }, refused: []).commands
+        let commands = ScanResult(files: coreFiles().compactMap { try? SpotFile(file: $0.file, id: $0.id) }, refused: []).spots
         let opened = Set(commands.compactMap(\.opens))
         return commands.filter { !opened.contains($0.id) && $0.read?.seconds == nil }
     }
 
     /// The ID that turns a core command on: the name of its file, which a widget shares with the others in that file.
-    public static func coreID(of command: Spot) -> String {
-        command.url.deletingPathExtension().lastPathComponent
+    public static func coreID(of spot: Spot) -> String {
+        spot.url.deletingPathExtension().lastPathComponent
     }
 
     /// The ID that turns a spot on or off: the core ID of a core spot, or the place of its file in the folder, with no
     /// extension.
-    public func fileID(of command: Spot) -> String {
-        guard !isCore(command) else { return Self.coreID(of: command) }
-        let parent = command.url.deletingLastPathComponent().standardizedFileURL
-        let stem = command.url.deletingPathExtension().lastPathComponent
+    public func fileID(of spot: Spot) -> String {
+        guard !isCore(spot) else { return Self.coreID(of: spot) }
+        let parent = spot.url.deletingLastPathComponent().standardizedFileURL
+        let stem = spot.url.deletingPathExtension().lastPathComponent
         return parent.path == url.standardizedFileURL.path ? stem : "\(parent.lastPathComponent)/\(stem)"
     }
 
     /// Whether the app runs for the first time here: no config file, and no spot in the folder.
     public func isFirstLaunch(config: ConfigFile) -> Bool {
         guard !FileManager.default.fileExists(atPath: config.url.path) else { return false }
-        return ((try? PluginFolder(url: url).scan())?.commands ?? []).isEmpty
+        return ((try? SpotFolder(url: url).scan())?.spots ?? []).isEmpty
     }
 
     /// The IDs of the core spots that a first launch turns on, in the order of the grid.
@@ -177,18 +177,18 @@ public struct PluginFolder: Sendable {
     }
 
     /// Whether a command runs from the core folder of the app.
-    public func isCore(_ command: Spot) -> Bool {
-        guard let core, command.host == nil, !command.isBuiltIn else { return false }
-        return command.url.standardizedFileURL.path.hasPrefix(core.standardizedFileURL.path + "/")
+    public func isCore(_ spot: Spot) -> Bool {
+        guard let core, spot.host == nil, !spot.isBuiltIn else { return false }
+        return spot.url.standardizedFileURL.path.hasPrefix(core.standardizedFileURL.path + "/")
     }
 
     /// Takes the file of a spot, its program, and its view with the view's library out of the folder. They go to the Trash,
     /// and the other files of its folder stay.
-    public func remove(_ command: Spot, discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws {
-        guard command.host == nil, !command.isBuiltIn, !isCore(command) else { throw PluginError.fault("\(command.name) comes with Openspot, so it cannot be removed.") }
-        try discard(command.url)
-        if let program = SwiftProgram.file(beside: command.url) { try discard(program) }
-        guard let view = command.view.map(URL.init(fileURLWithPath:)), view.deletingLastPathComponent() == command.url.deletingLastPathComponent() else { return }
+    public func remove(_ spot: Spot, discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws {
+        guard spot.host == nil, !spot.isBuiltIn, !isCore(spot) else { throw SpotError.fault("\(spot.name) comes with Openspot, so it cannot be removed.") }
+        try discard(spot.url)
+        if let program = SwiftProgram.file(beside: spot.url) { try discard(program) }
+        guard let view = spot.view.map(URL.init(fileURLWithPath:)), view.deletingLastPathComponent() == spot.url.deletingLastPathComponent() else { return }
         for file in [view, URL(fileURLWithPath: ViewLibrary.path(beside: view.path))] where FileManager.default.fileExists(atPath: file.path) {
             try discard(file)
         }
@@ -197,15 +197,15 @@ public struct PluginFolder: Sendable {
     /// Adds what one file gives, and reports its fault. A dated file takes its place in the grid by the date it was added.
     private static func read(_ file: URL, id: String, into result: inout ScanResult, isDated: Bool = false, isBuiltIn: Bool = false) {
         do {
-            guard let plugin = try Plugin(file: file, id: id) else { return }
+            guard let plugin = try SpotFile(file: file, id: id) else { return }
             let added = isDated ? (try? file.resourceValues(forKeys: [.creationDateKey]).creationDate) : nil
-            let commands = plugin.commands.map { command in
+            let spots = plugin.spots.map { command in
                 let dated = added.map(command.added(at:)) ?? command
                 return isBuiltIn ? dated.builtIn() : dated
             }
-            result.plugins.append(Plugin(id: id, commands: commands))
+            result.files.append(SpotFile(id: id, spots: spots))
         } catch {
-            let reason = (error as? PluginError)?.reason ?? String(describing: error)
+            let reason = (error as? SpotError)?.reason ?? String(describing: error)
             result.refused.append(ScanResult.Refusal(file: id, reason: reason))
         }
     }
@@ -214,19 +214,19 @@ public struct PluginFolder: Sendable {
     private func wantedCoreFiles(after result: ScanResult, hiding ownIDs: Set<String>) -> [(file: URL, id: String)] {
         let files = coreFiles().filter { !ownIDs.contains($0.id) }
         var wanted = Set(files.map(\.id).filter(enabled.contains))
-        var waiting = result.plugins.flatMap(\.commands) + files.filter { wanted.contains($0.id) }.flatMap { Self.commands(of: $0) }
+        var waiting = result.files.flatMap(\.spots) + files.filter { wanted.contains($0.id) }.flatMap { Self.spots(of: $0) }
         while let command = waiting.popLast() {
             for id in command.places + (command.opens.map { [$0] } ?? []) where !wanted.contains(id) {
                 guard let file = files.first(where: { $0.id == id }) else { continue }
                 wanted.insert(id)
-                waiting += Self.commands(of: file)
+                waiting += Self.spots(of: file)
             }
         }
         return files.filter { wanted.contains($0.id) }
     }
 
-    private static func commands(of file: (file: URL, id: String)) -> [Spot] {
-        ((try? Plugin(file: file.file, id: file.id)) ?? nil)?.commands ?? []
+    private static func spots(of file: (file: URL, id: String)) -> [Spot] {
+        ((try? SpotFile(file: file.file, id: file.id)) ?? nil)?.spots ?? []
     }
 
     /// The files at the top of the core folder, each a spot that the person turns on or off.

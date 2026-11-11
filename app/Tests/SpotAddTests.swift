@@ -42,7 +42,7 @@ final class SpotAddTests: XCTestCase {
     }
 
     private func ids() throws -> [String] {
-        try PluginFolder(url: plugins).scan().commands.map(\.id)
+        try SpotFolder(url: plugins).scan().spots.map(\.id)
     }
 
     func testAGitRepositoryIsClonedIntoAFolderOfItsOwnWithNoGitFolder() async throws {

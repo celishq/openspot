@@ -143,7 +143,7 @@ final class EventsTests: XCTestCase {
             do {
                 _ = try await calendar(store, isRead: false).events(days: 1, hiding: [])
                 XCTFail("a refusal printed a list")
-            } catch PluginError.failedWithFix(1, let message, let link) {
+            } catch SpotError.failedWithFix(1, let message, let link) {
                 XCTAssertEqual(message, "Openspot has no access to your calendars. Allow Openspot in Privacy & Security › Calendars, then try again.")
                 XCTAssertEqual(link.absoluteString, "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars")
             }

@@ -138,7 +138,7 @@ final class SpotsModelTests: XCTestCase {
         model.panelWillHide()
         nonisolated(unsafe) var changed = false
         withObservationTracking { _ = model.entries } onChange: { changed = true }
-        withObservationTracking { _ = model.sheets["one"]?.command } onChange: { changed = true }
+        withObservationTracking { _ = model.sheets["one"]?.spot } onChange: { changed = true }
 
         model.panelWillShow(holding: [])
 
@@ -349,10 +349,10 @@ final class SpotsModelTests: XCTestCase {
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("list")
-        try await wait("the open list") { model.openList == "list" && model.openEntry?.command.actions.contains(where: \.isForm) == true }
+        try await wait("the open list") { model.openList == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
         let entry = try XCTUnwrap(model.openEntry)
-        let action = try XCTUnwrap(entry.command.actions.first { $0.id == "new" })
-        let edit = try XCTUnwrap(entry.command.actions.first { $0.id == "edit" })
+        let action = try XCTUnwrap(entry.spot.actions.first { $0.id == "new" })
+        let edit = try XCTUnwrap(entry.spot.actions.first { $0.id == "edit" })
         model.openForm(action, on: (entry, nil))
         try await wait("the form") { model.form != nil }
         model.setFormValue("x", for: "a")
@@ -406,9 +406,9 @@ final class SpotsModelTests: XCTestCase {
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("list")
-        try await wait("the open list") { model.openList == "list" && model.openEntry?.command.actions.contains(where: \.isForm) == true }
+        try await wait("the open list") { model.openList == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
         let entry = try XCTUnwrap(model.openEntry)
-        let action = try XCTUnwrap(entry.command.actions.first { $0.id == "pick" })
+        let action = try XCTUnwrap(entry.spot.actions.first { $0.id == "pick" })
         model.openForm(action, on: (entry, nil))
         try await wait("the form") { model.form != nil }
         XCTAssertEqual(model.form?.draft.choices?.shown.map(\.isOn), [true, false, false])
@@ -443,9 +443,9 @@ final class SpotsModelTests: XCTestCase {
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("list")
-        try await wait("the open list") { model.openList == "list" && model.openEntry?.command.actions.contains(where: \.isForm) == true }
+        try await wait("the open list") { model.openList == "list" && model.openEntry?.spot.actions.contains(where: \.isForm) == true }
         let entry = try XCTUnwrap(model.openEntry)
-        model.openForm(try XCTUnwrap(entry.command.actions.first { $0.id == "pick" }), on: (entry, nil))
+        model.openForm(try XCTUnwrap(entry.spot.actions.first { $0.id == "pick" }), on: (entry, nil))
         try await wait("the form") { model.form != nil }
 
         XCTAssertTrue(model.showsSearch)
@@ -523,9 +523,9 @@ final class SpotsModelTests: XCTestCase {
         model.isShown = true
         model.panelWillShow(holding: [])
         model.press("list")
-        try await wait("the open list") { model.openList == "list" && model.openEntry?.command.actions.isEmpty == false }
+        try await wait("the open list") { model.openList == "list" && model.openEntry?.spot.actions.isEmpty == false }
         let entry = try XCTUnwrap(model.openEntry)
-        let action = try XCTUnwrap(entry.command.actions.first { $0.id == "new" })
+        let action = try XCTUnwrap(entry.spot.actions.first { $0.id == "new" })
         model.openForm(action, on: (entry, nil))
         try await wait("the form call") { model.sheets["list"]?.calls.isEmpty == false }
 

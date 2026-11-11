@@ -29,7 +29,7 @@ enum CalendarItemID: Equatable {
     }
 
     /// The failure of a verb that got an id that names no row of its kind.
-    static func missing(_ text: String) -> PluginError {
-        PluginError.failed(1, "Openspot cannot find \(text). Read the list again, and use the id of one of its rows.")
+    static func missing(_ text: String) -> SpotError {
+        SpotError.failed(1, "Openspot cannot find \(text). Read the list again, and use the id of one of its rows.")
     }
 }

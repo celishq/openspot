@@ -369,7 +369,7 @@ final class ScriptProcessTests: XCTestCase {
             _ = try await ScriptProcess.output(url: plugin.url, limit: 5)
             XCTFail("expected a failure")
         } catch {
-            XCTAssertEqual(error as? PluginError, .failed(3, "cut short"))
+            XCTAssertEqual(error as? SpotError, .failed(3, "cut short"))
         }
     }
 
@@ -380,7 +380,7 @@ final class ScriptProcessTests: XCTestCase {
             _ = try await ScriptProcess.output(url: plugin.url, limit: 10)
             XCTFail("expected a failure")
         } catch {
-            XCTAssertEqual(error as? PluginError, .failed(3, "boom"))
+            XCTAssertEqual(error as? SpotError, .failed(3, "boom"))
         }
     }
 
@@ -391,7 +391,7 @@ final class ScriptProcessTests: XCTestCase {
             _ = try await ScriptProcess.output(url: plugin.url, limit: 10)
             XCTFail("expected a failure")
         } catch {
-            XCTAssertEqual(error as? PluginError, .failed(3, "boom"))
+            XCTAssertEqual(error as? SpotError, .failed(3, "boom"))
         }
     }
 
@@ -402,7 +402,7 @@ final class ScriptProcessTests: XCTestCase {
             _ = try await ScriptProcess.output(url: plugin.url, limit: 5)
             XCTFail("expected a failure")
         } catch {
-            XCTAssertEqual(error as? PluginError, .failed(9, ""))
+            XCTAssertEqual(error as? SpotError, .failed(9, ""))
         }
     }
 
@@ -412,7 +412,7 @@ final class ScriptProcessTests: XCTestCase {
         do {
             _ = try await ScriptProcess.output(url: plugin.url, limit: 1)
             XCTFail("expected a timeout")
-        } catch PluginError.timedOut {
+        } catch SpotError.timedOut {
         }
         let script = try await pid("script")
         try await wait { !self.runs(script) }

@@ -4,8 +4,8 @@ import Foundation
 /// One call of a script through the owner of all runs, for a test that proves what a script answers.
 @MainActor
 extension Spot {
-    private func output(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> PluginOutput {
-        PluginOutput(text: try await SpotRuns().answer(of: self, action, input: input, limit: timeout))
+    private func output(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
+        SpotOutput(text: try await SpotRuns().answer(of: self, action, input: input, limit: timeout))
     }
 
     func state(timeout: TimeInterval) async throws -> SpotState {
@@ -13,18 +13,18 @@ extension Spot {
         return try state(of: try await output(.read, timeout: timeout))
     }
 
-    func opened(timeout: TimeInterval) async throws -> (command: Spot, state: SpotState) {
+    func opened(timeout: TimeInterval) async throws -> (spot: Spot, state: SpotState) {
         guard readsState else { return (self, headerState) }
         let output = try await output(.read, timeout: timeout)
         return (taking(output), try state(of: output))
     }
 
-    func items(query: String = "", input: String? = nil, timeout: TimeInterval) async throws -> PluginOutput {
+    func items(query: String = "", input: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
         try await output(.items(query: query), input: input, timeout: timeout)
     }
 
     func form(_ action: CommandAction, item: SpotItem?, timeout: TimeInterval) async throws -> ItemForm {
-        guard let form = ItemForm(output: try await output(.action(action, item: item), timeout: timeout)) else { throw PluginError.badForm }
+        guard let form = ItemForm(output: try await output(.action(action, item: item), timeout: timeout)) else { throw SpotError.badForm }
         return form
     }
 
@@ -39,7 +39,7 @@ extension Spot {
     }
 
     func read(timeout: TimeInterval) async throws -> MetricValue {
-        guard let value = MetricValue(output: try await output(.read, timeout: timeout)) else { throw PluginError.badMetric }
+        guard let value = MetricValue(output: try await output(.read, timeout: timeout)) else { throw SpotError.badMetric }
         return value
     }
 }

@@ -47,33 +47,33 @@ public struct SharedSpot: Equatable, Sendable {
 
     /// Checks files that came from anywhere, and throws a fault that says what is wrong.
     public init(files: [File]) throws {
-        guard !files.isEmpty else { throw PluginError.fault("This file holds no files.") }
+        guard !files.isEmpty else { throw SpotError.fault("This file holds no files.") }
         var total = 0
         var taken = Set<String>()
         for file in files {
-            guard Self.isSafe(path: file.path) else { throw PluginError.fault("Openspot cannot use the path \(file.path).") }
-            if let text = file.text, Self.hidesOrder(text) { throw PluginError.fault("\(file.path) has hidden characters that change what the text shows.") }
-            guard taken.insert(Self.folded(file.path)).inserted else { throw PluginError.fault("This file holds \(file.path) twice.") }
+            guard Self.isSafe(path: file.path) else { throw SpotError.fault("Openspot cannot use the path \(file.path).") }
+            if let text = file.text, Self.hidesOrder(text) { throw SpotError.fault("\(file.path) has hidden characters that change what the text shows.") }
+            guard taken.insert(Self.folded(file.path)).inserted else { throw SpotError.fault("This file holds \(file.path) twice.") }
             total += file.contents.count
         }
         guard total <= Self.sizeLimit else { throw Self.tooLarge }
         for file in files where Self.parents(of: file.path).contains(where: { taken.contains(Self.folded($0)) }) {
-            throw PluginError.fault("This file holds \(file.path) twice.")
+            throw SpotError.fault("This file holds \(file.path) twice.")
         }
         self.files = files
     }
 
     /// Reads what a `.spot` file holds.
     public init(data: Data) throws {
-        guard let head = try? JSONDecoder().decode(Head.self, from: data) else { throw PluginError.fault("This file is not a spot.") }
-        guard head.format <= Self.format else { throw PluginError.fault("This spot needs a newer Openspot.") }
-        guard let document = try? JSONDecoder().decode(Document.self, from: data) else { throw PluginError.fault("This file is not a spot.") }
+        guard let head = try? JSONDecoder().decode(Head.self, from: data) else { throw SpotError.fault("This file is not a spot.") }
+        guard head.format <= Self.format else { throw SpotError.fault("This spot needs a newer Openspot.") }
+        guard let document = try? JSONDecoder().decode(Document.self, from: data) else { throw SpotError.fault("This file is not a spot.") }
         try self.init(files: try document.files.map { entry in
             let contents: Data
             switch (entry.text, entry.data) {
             case (let text?, nil): contents = Data(text.utf8)
             case (nil, let data?): contents = data
-            default: throw PluginError.fault("This file is not a spot.")
+            default: throw SpotError.fault("This file is not a spot.")
             }
             return File(path: entry.path, isExecutable: entry.executable ?? false, contents: contents)
         })
@@ -85,20 +85,20 @@ public struct SharedSpot: Equatable, Sendable {
         guard size <= 2 * Self.sizeLimit else { throw Self.tooLarge }
         do {
             try self.init(data: try Data(contentsOf: url))
-        } catch let error as PluginError {
+        } catch let error as SpotError {
             throw error
         } catch {
-            throw PluginError.fault("Openspot cannot read this file.")
+            throw SpotError.fault("Openspot cannot read this file.")
         }
     }
 
     /// Collects a spot from the plugins folder, with what it needs: the whole folder of a script in a folder, and each
     /// script that a widget places or opens. Hidden files stay behind.
-    public init(sharing command: Spot, from scan: ScanResult) throws {
-        guard command.host == nil, !command.isBuiltIn else { throw PluginError.fault("\(command.name) comes with Openspot, so it cannot be shared.") }
+    public init(sharing spot: Spot, from scan: ScanResult) throws {
+        guard spot.host == nil, !spot.isBuiltIn else { throw SpotError.fault("\(spot.name) comes with Openspot, so it cannot be shared.") }
         var total = 0
         var files: [File] = []
-        for root in Self.roots(of: command, in: scan) {
+        for root in Self.roots(of: spot, in: scan) {
             files += try Self.files(at: root.url, path: root.path, total: &total)
         }
         try self.init(files: files)
@@ -133,7 +133,7 @@ public struct SharedSpot: Equatable, Sendable {
     /// Each view that a script's header names, with the path of the library that it lacks.
     private var unbuiltViews: [(file: File, path: String)] {
         files.compactMap { script in
-            guard script.isExecutable, let text = script.text, let name = PluginHeader(text: text).block.value("view"), !name.hasPrefix("/") else { return nil }
+            guard script.isExecutable, let text = script.text, let name = SpotHeader(text: text).block.value("view"), !name.hasPrefix("/") else { return nil }
             let folder = (script.path as NSString).deletingLastPathComponent
             let source = folder.isEmpty ? name : "\(folder)/\(name)"
             let path = ViewLibrary.path(beside: source)
@@ -217,7 +217,7 @@ public struct SharedSpot: Equatable, Sendable {
 
     /// Writes each file into a folder. A file it replaces goes to the Trash, and an equal file stays. It runs nothing.
     public func add(to folder: URL, discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws {
-        if let clash = clash(in: folder) { throw PluginError.fault(clash) }
+        if let clash = clash(in: folder) { throw SpotError.fault(clash) }
         let replaced = replaced(in: folder)
         for file in files {
             let url = folder.appendingPathComponent(file.path)
@@ -230,26 +230,26 @@ public struct SharedSpot: Equatable, Sendable {
         }
     }
 
-    private static var tooLarge: PluginError {
+    private static var tooLarge: SpotError {
         .fault("This spot is over the \(sizeLimit / 1_000_000) MB limit.")
     }
 
     /// The files and folders at the top of the plugins folder that a command needs, with its own first.
-    private static func roots(of command: Spot, in scan: ScanResult) -> [(path: String, url: URL)] {
+    private static func roots(of spot: Spot, in scan: ScanResult) -> [(path: String, url: URL)] {
         var roots: [(path: String, url: URL)] = []
-        var waiting = [command.id]
+        var waiting = [spot.id]
         while !waiting.isEmpty {
             let id = waiting.removeFirst()
-            guard let plugin = scan.plugins.first(where: { $0.commands.contains { $0.id == id } }),
-                  let first = plugin.commands.first, first.host == nil, !first.isBuiltIn
+            guard let plugin = scan.files.first(where: { $0.spots.contains { $0.id == id } }),
+                  let first = plugin.spots.first, first.host == nil, !first.isBuiltIn
             else { continue }
             let folder = plugin.id.split(separator: "/", maxSplits: 1).count > 1 ? plugin.id.split(separator: "/")[0] : nil
             let root = folder.map(String.init) ?? first.url.lastPathComponent
             guard !roots.contains(where: { $0.path == root }) else { continue }
             roots.append((root, folder == nil ? first.url : first.url.deletingLastPathComponent()))
             if folder == nil, let program = SwiftProgram.file(beside: first.url) { roots.append((program.lastPathComponent, program)) }
-            let neighbours = folder == nil ? [plugin] : scan.plugins.filter { $0.id.hasPrefix("\(root)/") }
-            waiting += neighbours.flatMap(\.commands).flatMap { $0.places + ($0.opens.map { [$0] } ?? []) }
+            let neighbours = folder == nil ? [plugin] : scan.files.filter { $0.id.hasPrefix("\(root)/") }
+            waiting += neighbours.flatMap(\.spots).flatMap { $0.places + ($0.opens.map { [$0] } ?? []) }
         }
         return roots
     }

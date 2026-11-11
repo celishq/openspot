@@ -33,7 +33,7 @@ enum SpotCalendarApp {
         try process.run()
         process.waitUntilExit()
         guard process.terminationStatus == 0 else {
-            throw PluginError.failedWithFix(1, "Openspot cannot open Calendar. Allow Openspot to control Calendar in Privacy & Security › Automation, then try again.", automation)
+            throw SpotError.failedWithFix(1, "Openspot cannot open Calendar. Allow Openspot to control Calendar in Privacy & Security › Automation, then try again.", automation)
         }
         return ""
     }

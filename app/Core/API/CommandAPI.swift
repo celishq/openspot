@@ -45,40 +45,40 @@ public final class CommandAPI: @unchecked Sendable {
                 return ""
             }
         case .settingList:
-            return Self.answer { try SpotList(folder: PluginFolder.standard(environment: environment), config: ConfigFile.standard(environment: environment).read()).values() }
+            return Self.answer { try SpotList(folder: SpotFolder.standard(environment: environment), config: ConfigFile.standard(environment: environment).read()).values() }
         case .spotList(let core):
             return Self.answer {
-                let list = SpotList(folder: PluginFolder.standard(environment: environment), config: ConfigFile.standard(environment: environment).read())
+                let list = SpotList(folder: SpotFolder.standard(environment: environment), config: ConfigFile.standard(environment: environment).read())
                 return try core ? list.core() : list.loaded()
             }
         case .spotTurn(let ids, let isOn):
             return Self.answer {
-                try PluginFolder.standard(environment: environment).turn(ids, on: isOn, in: ConfigFile.standard(environment: environment))
+                try SpotFolder.standard(environment: environment).turn(ids, on: isOn, in: ConfigFile.standard(environment: environment))
                 await self.app?.configChanged()
                 return ""
             }
         case .spotAdd(let source?):
             return Self.answer {
                 let place = URL(fileURLWithPath: environment["PWD"] ?? FileManager.default.currentDirectoryPath, isDirectory: true)
-                let folder = PluginFolder.standard(environment: environment, enabled: [], disabled: [])
+                let folder = SpotFolder.standard(environment: environment, enabled: [], disabled: [])
                 return try await SpotLock.standard(environment: environment).add(SpotSource(text: source, place: place), to: folder.url).added
             }
         case .spotAdd(nil):
             return {
                 do {
-                    return try await SpotLock.standard(environment: environment).restore(to: PluginFolder.standard(environment: environment, enabled: [], disabled: []).url)
+                    return try await SpotLock.standard(environment: environment).restore(to: SpotFolder.standard(environment: environment, enabled: [], disabled: []).url)
                 } catch {
                     return CommandAnswer(failure: error)
                 }
             }
         case .spotRemove(let id):
             return Self.answer {
-                let folder = PluginFolder.standard(environment: environment, enabled: [], disabled: [])
+                let folder = SpotFolder.standard(environment: environment, enabled: [], disabled: [])
                 return "Removed \(try SpotLock.standard(environment: environment).remove(id, from: folder.url).name).\n"
             }
         case .appKeySet(let name, let key):
             return Self.answer {
-                guard let shortcut = Shortcut(text: key) else { throw PluginError.failed(1, "Openspot cannot use `\(key)`. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.") }
+                guard let shortcut = Shortcut(text: key) else { throw SpotError.failed(1, "Openspot cannot use `\(key)`. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.") }
                 try ConfigFile.standard(environment: environment).set(name, to: shortcut.text)
                 await self.app?.configChanged()
                 return ""
@@ -86,7 +86,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .keySet(let spot, let act, let key):
             return Self.answer {
                 let trigger = try key.map { key in
-                    guard let trigger = Trigger(text: key) else { throw PluginError.failed(1, "Openspot cannot use `\(key)`. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab, or use shake.") }
+                    guard let trigger = Trigger(text: key) else { throw SpotError.failed(1, "Openspot cannot use `\(key)`. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab, or use shake.") }
                     return trigger
                 }
                 try ConfigFile.standard(environment: environment).assign(trigger, to: spot, act: act)
@@ -116,13 +116,13 @@ public final class CommandAPI: @unchecked Sendable {
             }
         case .appLogin(let isOn):
             return Self.answer {
-                guard let login = self.host.login else { throw PluginError.failed(1, "This copy of Openspot cannot open at login. Move it to Applications, then try again.") }
+                guard let login = self.host.login else { throw SpotError.failed(1, "This copy of Openspot cannot open at login. Move it to Applications, then try again.") }
                 try login.set(isOn)
                 return ""
             }
         case .appLink(let isOn):
             return Self.answer {
-                guard let link = self.host.link else { throw PluginError.failed(1, "This copy of Openspot cannot put openspot in Terminal.") }
+                guard let link = self.host.link else { throw SpotError.failed(1, "This copy of Openspot cannot put openspot in Terminal.") }
                 try link.set(isOn)
                 return ""
             }
@@ -135,52 +135,52 @@ public final class CommandAPI: @unchecked Sendable {
         case .updateCheck:
             guard let app else { return Self.notRunning }
             return Self.answer {
-                guard await app.checkUpdate() else { throw PluginError.failed(1, "This copy of Openspot does not update itself.") }
+                guard await app.checkUpdate() else { throw SpotError.failed(1, "This copy of Openspot does not update itself.") }
                 return ""
             }
         case .updateInstall:
             guard let app else { return Self.notRunning }
             return Self.answer {
-                guard await app.installUpdate() else { throw PluginError.failed(1, "No update is ready. Run `openspot update check` first.") }
+                guard await app.installUpdate() else { throw SpotError.failed(1, "No update is ready. Run `openspot update check` first.") }
                 return ""
             }
         case .spotOpen(let id):
             guard let app else { return Self.notRunning }
             return Self.answer {
-                guard await app.open(id) else { throw PluginError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
+                guard await app.open(id) else { throw SpotError.failed(1, "Openspot has no spot `\(id)`. Run `openspot spot list` to see each one.") }
                 return ""
             }
         case .spotReview(let id):
             guard let app else { return Self.notRunning }
             return Self.answer {
-                guard await app.review(id) else { throw PluginError.failed(1, "`\(id)` is not a spot that comes with Openspot. Run `openspot spot list --core` to see each one.") }
+                guard await app.review(id) else { throw SpotError.failed(1, "`\(id)` is not a spot that comes with Openspot. Run `openspot spot list --core` to see each one.") }
                 return ""
             }
         case .settingChange(let spot, let key):
             guard let app else { return Self.notRunning }
             return Self.answer {
-                guard await app.changeSetting(key, of: spot) else { throw PluginError.failed(1, "Openspot cannot find \(spot). Turn it on in Spots, then try again.") }
+                guard await app.changeSetting(key, of: spot) else { throw SpotError.failed(1, "Openspot cannot find \(spot). Turn it on in Spots, then try again.") }
                 return ""
             }
         case .promptNew(let words):
             return Self.answer {
-                let folder = PluginFolder.standard(environment: environment).url
+                let folder = SpotFolder.standard(environment: environment).url
                 let guide = self.host.guide ?? folder
                 return AgentPrompt(folder: folder, guide: guide, app: Bundle.main.executablePath ?? "openspot").building(words)
             }
         case .guide:
             return Self.answer {
-                guard let guide = self.host.guide else { throw PluginError.fault("This copy of Openspot has no guide. Install Openspot again.") }
+                guard let guide = self.host.guide else { throw SpotError.fault("This copy of Openspot has no guide. Install Openspot again.") }
                 return try String(contentsOf: guide, encoding: .utf8)
             }
         case .guideOf(let noun):
             return Self.answer {
-                guard let folder = Bundle.main.url(forResource: "Help", withExtension: nil) else { throw PluginError.fault("This copy of Openspot has no guides. Install Openspot again.") }
+                guard let folder = Bundle.main.url(forResource: "Help", withExtension: nil) else { throw SpotError.fault("This copy of Openspot has no guides. Install Openspot again.") }
                 return try CommandGuide(folder: folder).text(of: noun)
             }
         case .spotNew(let name, let starter):
             return Self.answer {
-                let file = try starter.write(name: name, in: PluginFolder.standard(environment: environment).url)
+                let file = try starter.write(name: name, in: SpotFolder.standard(environment: environment).url)
                 return "Wrote \(file.path). Its ID is \(file.deletingPathExtension().lastPathComponent).\n"
             }
         case .spotLog(let id):
@@ -195,7 +195,7 @@ public final class CommandAPI: @unchecked Sendable {
             return { CommandAnswer(output: stats()) }
         case .checkSheet:
             return {
-                let faults = PluginOutput(text: await input()).sheetFaults
+                let faults = SpotOutput(text: await input()).sheetFaults
                 let text = faults.map { $0 + "\n" }.joined() + (faults.isEmpty ? "No faults.\n" : "\(faults.count) faults.\n")
                 return CommandAnswer(output: text, code: faults.isEmpty ? 0 : 1)
             }
@@ -235,7 +235,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .remindersShow(let id):
             return Self.answer {
                 let link = try await self.reminders(isRead).link(of: id)
-                guard self.host.open(link) else { throw PluginError.failed(1, "Openspot cannot open Reminders, so it cannot show \(id).") }
+                guard self.host.open(link) else { throw SpotError.failed(1, "Openspot cannot open Reminders, so it cannot show \(id).") }
                 return ""
             }
         case .check, .checkJSON, .spotRun, .spotShow, .renderSpot, .render, .renderCard, .sandbox, .colorPick, .folderPick,

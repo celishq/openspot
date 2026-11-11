@@ -65,7 +65,7 @@ final class SpotRunsWantTests: SpotRunsCase {
         try script("once")
         try "[[widgets]]\ntitle = \"W\"\ngrid = [\"once\"]\nsize = \"square\"\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
 
-        let scan = try PluginFolder(url: folder).scan()
+        let scan = try SpotFolder(url: folder).scan()
 
         XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "w", reason: "W names no metric called once")])
     }
@@ -268,11 +268,11 @@ final class SpotRunsWantTests: SpotRunsCase {
         try script("a", header: "read=30\noffers=search")
         try script("b", header: "read=panel,30\noffers=search")
 
-        let scan = try PluginFolder(url: folder).scan()
+        let scan = try SpotFolder(url: folder).scan()
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.isGlobal), [true, true])
-        XCTAssertEqual(scan.commands.map(\.headerState.isOnGrid), [false, false])
+        XCTAssertEqual(scan.spots.map(\.isGlobal), [true, true])
+        XCTAssertEqual(scan.spots.map(\.headerState.isOnGrid), [false, false])
     }
 
     func testTheSandboxClicksAFileWithNoRead() async throws {

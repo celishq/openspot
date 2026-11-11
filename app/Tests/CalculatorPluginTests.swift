@@ -13,7 +13,7 @@ final class CalculatorPluginTests: SamplePluginsCase {
     }
 
     private var calculator: Spot {
-        get throws { try XCTUnwrap(try scan.commands.first { $0.name == "Calculator" }) }
+        get throws { try XCTUnwrap(try scan.spots.first { $0.name == "Calculator" }) }
     }
 
     func testThePatternTakesSumsUnitsCurrenciesAndDatesAndLeavesNames() throws {

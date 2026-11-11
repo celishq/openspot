@@ -79,7 +79,7 @@ struct SpotSheetLayer: View {
     }
 
     private var isInstall: Bool {
-        entry.command.growsFromField
+        entry.spot.growsFromField
     }
 
     private var cardIsSelected: Bool {
@@ -94,13 +94,13 @@ struct SpotSheetLayer: View {
         let reading: (String) -> MetricReading? = card.kind == .widget ? { [model] in model.reading(of: $0) } : { _ in nil }
         if card.item == nil, let layout = card.state.face.layout(for: size) {
             SpotCardDrawing(layout: layout, face: card.state.face, card: size, view: { room in
-                card.command.view.map { SpotCustomView(source: $0, values: card.state.values, card: size, room: room, views: SpotViews.shared) }
+                card.spot.view.map { SpotCustomView(source: $0, values: card.state.values, card: size, room: room, views: SpotViews.shared) }
             }, onSlot: { _, _ in })
             .padding(SpotTokens.cardPadding(for: size, isWidget: true))
-        } else if card.item == nil, card.state.face.hasView, let view = card.command.view {
+        } else if card.item == nil, card.state.face.hasView, let view = card.spot.view {
             SpotCustomView(source: view, values: card.state.values, card: size, views: SpotViews.shared)
-        } else if let layout = card.command.layout {
-            SpotWidgetView(layout: layout, places: card.command.places, reading: reading, card: size)
+        } else if let layout = card.spot.layout {
+            SpotWidgetView(layout: layout, places: card.spot.places, reading: reading, card: size)
                 .padding(SpotTokens.cardPadding(for: size, isWidget: true))
         }
     }

@@ -95,7 +95,7 @@ public struct ViewLibrary: Sendable {
         let carried = URL(fileURLWithPath: Self.path(beside: source.path))
         if FileManager.default.fileExists(atPath: carried.path) { return carried }
         guard let text = try? Data(contentsOf: source) else {
-            throw PluginError.fault("Openspot cannot find the view \(source.lastPathComponent).")
+            throw SpotError.fault("Openspot cannot find the view \(source.lastPathComponent).")
         }
         let name = Self.name(of: text)
         let built = cache.appendingPathComponent("\(name).dylib")
@@ -112,7 +112,7 @@ public struct ViewLibrary: Sendable {
     /// its file, which an error line shows.
     public func build(source: Data, named name: String, kinds: [String]) async throws -> Data {
         guard (try? await run("xcode-select", ["-p"])) != nil else {
-            throw PluginError.fault("To draw a view, install the Command Line Tools: xcode-select --install")
+            throw SpotError.fault("To draw a view, install the Command Line Tools: xcode-select --install")
         }
         let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-view-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
@@ -129,8 +129,8 @@ public struct ViewLibrary: Sendable {
             let arguments = ["-emit-library", "-parse-as-library", "-O", "-module-name", module, "-Xfrontend", "-import-module", "-Xfrontend", "SwiftUI", "-target", "\(kind)-\(Self.platform)", prelude.path, file.path, "-o", part]
             do {
                 try await run("swiftc", arguments)
-            } catch let error as PluginError {
-                throw PluginError.fault("This view does not compile. \(error.reason)")
+            } catch let error as SpotError {
+                throw SpotError.fault("This view does not compile. \(error.reason)")
             }
         }
         guard parts.count > 1 else { return try Data(contentsOf: URL(fileURLWithPath: parts[0])) }
@@ -175,7 +175,7 @@ public struct ViewLibrary: Sendable {
                 guard process.terminationStatus != 0 else { return continuation.resume() }
                 let lines = text.split(separator: "\n").map(String.init)
                 let line = lines.first { $0.contains("error:") } ?? lines.last ?? "\(name) failed."
-                continuation.resume(throwing: PluginError.fault(Self.withoutFolders(line)))
+                continuation.resume(throwing: SpotError.fault(Self.withoutFolders(line)))
             }
         }
     }

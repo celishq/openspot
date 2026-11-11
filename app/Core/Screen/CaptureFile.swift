@@ -37,7 +37,7 @@ public struct CaptureFile: Sendable {
             return
         }
         let url = path.hasPrefix("/") ? URL(fileURLWithPath: path) : current.appendingPathComponent(path)
-        guard kind.extensions.contains(url.pathExtension.lowercased()) else { throw PluginError.fault(kind.fault(url.lastPathComponent)) }
+        guard kind.extensions.contains(url.pathExtension.lowercased()) else { throw SpotError.fault(kind.fault(url.lastPathComponent)) }
         self.url = url
     }
 

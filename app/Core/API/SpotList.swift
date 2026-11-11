@@ -33,7 +33,7 @@ struct SpotList {
         let own: Bool
     }
 
-    let folder: PluginFolder
+    let folder: SpotFolder
     let config: Config
 
     /// Each script of the scan, in its order.
@@ -64,7 +64,7 @@ struct SpotList {
         let enabled = config.arrangement.enabled
         let choices = folder.keptCoreChoices().sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         return try Self.json(choices.map { command in
-            let id = PluginFolder.coreID(of: command)
+            let id = SpotFolder.coreID(of: command)
             return Choice(id: id, name: command.name, icon: Self.picture(of: command), detail: command.subtitle, on: own.contains(id) || enabled.contains(id), own: own.contains(id))
         })
     }

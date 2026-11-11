@@ -24,12 +24,12 @@ public struct ActionMenu: Equatable, Sendable {
 
     /// Lists what Enter does, the actions that fit, the rows that the app adds, then Edit Spots. Returns nil when there is
     /// nothing to list.
-    public init?(command: Spot, item: SpotItem?, showsPrimary: Bool = true, extras: [CommandAction] = [], showsEdit: Bool = false) {
+    public init?(spot: Spot, item: SpotItem?, showsPrimary: Bool = true, extras: [CommandAction] = [], showsEdit: Bool = false) {
         var rows: [Row] = []
-        if showsPrimary, let title = command.primaryTitle(hasItem: item != nil) {
+        if showsPrimary, let title = spot.primaryTitle(hasItem: item != nil) {
             rows.append(Row(title: title, keyLabel: "⏎", action: nil))
         }
-        rows += command.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
+        rows += spot.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
         rows += extras.map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0, isQuiet: true) }
         if showsEdit { rows.append(Row(title: "Edit Spots", keyLabel: "", action: nil, opensEdit: true)) }
         guard !rows.isEmpty else { return nil }

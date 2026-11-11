@@ -14,7 +14,7 @@ extension SpotsModel {
 
     /// The file that the card stands for: the file of a spot, or the file of a card of faults.
     private func file(of entry: Entry) -> URL {
-        entry.command.fault?.file ?? entry.command.url
+        entry.spot.fault?.file ?? entry.spot.url
     }
 
     /// Opens the file of a spot in the text editor.
@@ -37,7 +37,7 @@ extension SpotsModel {
             do {
                 host.confirm(try await prompt.copy(text))
             } catch {
-                host.notify("The prompt for \(entry.command.name) was not copied. \(Self.reason(error))")
+                host.notify("The prompt for \(entry.spot.name) was not copied. \(Self.reason(error))")
             }
         }
     }
@@ -46,8 +46,8 @@ extension SpotsModel {
     /// card of faults takes its file. What the spot keeps in `$OPENSPOT_DATA` stays, and its log goes.
     func remove(_ entry: Entry) {
         closeList(moving: isShown)
-        let command = entry.command.fault.map { Spot(id: entry.id, name: $0.name, url: $0.file) } ?? entry.command
-        let count = entry.kind == .widget ? entries.filter { $0.command.url == entry.command.url }.count : 1
+        let command = entry.spot.fault.map { Spot(id: entry.id, name: $0.name, url: $0.file) } ?? entry.spot
+        let count = entry.kind == .widget ? entries.filter { $0.spot.url == entry.spot.url }.count : 1
         let words = count > 1 ? "\(count) widgets" : command.name
         var moves: [(from: URL, to: URL)] = []
         do {

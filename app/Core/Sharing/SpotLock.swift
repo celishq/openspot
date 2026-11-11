@@ -35,14 +35,14 @@ public struct SpotLock: Sendable {
     }
 
     public static func standard(environment: [String: String], home: URL = FileManager.default.homeDirectoryForCurrentUser) -> SpotLock {
-        SpotLock(url: PluginFolder.config(environment: environment, home: home).appendingPathComponent(name))
+        SpotLock(url: SpotFolder.config(environment: environment, home: home).appendingPathComponent(name))
     }
 
     /// Each entry, in the order that the spots came in. No file has none.
     public func entries() throws -> [Entry] {
         guard let data = try? Data(contentsOf: url) else { return [] }
         guard let entries = try? JSONDecoder().decode([Entry].self, from: data) else {
-            throw PluginError.fault("Openspot cannot read \(url.path). Fix it or delete it, then try again.")
+            throw SpotError.fault("Openspot cannot read \(url.path). Fix it or delete it, then try again.")
         }
         return entries
     }
@@ -67,7 +67,7 @@ public struct SpotLock: Sendable {
                 _ = try await SpotSource(text: entry.source, place: place).add(to: folder, at: entry.commit)
                 added += entry.added
             } catch {
-                faults += "\(entry.name): \((error as? PluginError)?.reason ?? error.localizedDescription)\n"
+                faults += "\(entry.name): \((error as? SpotError)?.reason ?? error.localizedDescription)\n"
             }
         }
         if added.isEmpty, faults.isEmpty { added = "Each spot of spots.lock is in the plugins folder.\n" }
@@ -79,7 +79,7 @@ public struct SpotLock: Sendable {
     public func remove(_ id: String, from folder: URL, discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws -> Entry {
         var entries = try entries()
         guard let index = entries.firstIndex(where: { $0.holds(id) }) else {
-            throw PluginError.fault("`openspot spot add` did not add \(id), so Openspot leaves it. Move its file to the Trash to remove it.")
+            throw SpotError.fault("`openspot spot add` did not add \(id), so Openspot leaves it. Move its file to the Trash to remove it.")
         }
         let entry = entries.remove(at: index)
         for path in entry.paths {

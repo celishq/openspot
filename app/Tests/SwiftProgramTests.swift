@@ -50,7 +50,7 @@ final class SwiftProgramTests: XCTestCase {
             _ = try await program.build(source: source)
             XCTFail("It must not build.")
         } catch {
-            XCTAssertEqual((error as? PluginError)?.reason, "To share a Swift spot, install the Command Line Tools: xcode-select --install")
+            XCTAssertEqual((error as? SpotError)?.reason, "To share a Swift spot, install the Command Line Tools: xcode-select --install")
         }
     }
 
@@ -61,7 +61,7 @@ final class SwiftProgramTests: XCTestCase {
             _ = try await program.build(source: source)
             XCTFail("It must not build.")
         } catch {
-            XCTAssertEqual((error as? PluginError)?.reason, "This Swift spot does not compile. a.swift:1: bad line")
+            XCTAssertEqual((error as? SpotError)?.reason, "This Swift spot does not compile. a.swift:1: bad line")
         }
     }
 
@@ -97,10 +97,10 @@ final class SwiftProgramTests: XCTestCase {
     func testSharingTakesTheProgramBesideATopLevelScript() throws {
         try script("hello.swift", "#!/bin/sh\n# title=Hello\n")
         try script("hello.program", "#!/bin/sh\n")
-        let place = PluginFolder(url: folder)
+        let place = SpotFolder(url: folder)
         let scan = try place.scan()
 
-        let spot = try SharedSpot(sharing: try XCTUnwrap(scan.commands.first), from: scan)
+        let spot = try SharedSpot(sharing: try XCTUnwrap(scan.spots.first), from: scan)
 
         XCTAssertEqual(spot.files.map(\.path), ["hello.swift", "hello.program"])
     }
@@ -109,16 +109,16 @@ final class SwiftProgramTests: XCTestCase {
         try script("hello.swift", "#!/bin/sh\n# title=Hello\n")
         try script("hello.program", "#!/bin/sh\n")
 
-        let scan = try PluginFolder(url: folder).scan()
+        let scan = try SpotFolder(url: folder).scan()
 
-        XCTAssertEqual(scan.commands.map(\.name), ["Hello"])
+        XCTAssertEqual(scan.spots.map(\.name), ["Hello"])
         XCTAssertEqual(scan.refused, [])
     }
 
     func testAProgramRunsInPlaceOfItsSource() async throws {
         try script("hello.swift", "#!/bin/sh\necho source\n")
         try script("hello.program", "#!/bin/sh\necho program\n")
-        let command = try XCTUnwrap(try PluginFolder(url: folder).scan().commands.first)
+        let command = try XCTUnwrap(try SpotFolder(url: folder).scan().spots.first)
 
         let answer = try await SpotRuns().answer(of: command, .open)
 
@@ -127,7 +127,7 @@ final class SwiftProgramTests: XCTestCase {
 
     func testASourceWithNoProgramRunsAsAScript() async throws {
         try script("hello.swift", "#!/bin/sh\necho source\n")
-        let command = try XCTUnwrap(try PluginFolder(url: folder).scan().commands.first)
+        let command = try XCTUnwrap(try SpotFolder(url: folder).scan().spots.first)
 
         let answer = try await SpotRuns().answer(of: command, .open)
 
@@ -138,8 +138,8 @@ final class SwiftProgramTests: XCTestCase {
         try script("hello.swift", "#!/bin/sh\n")
         try script("hello.program", "#!/bin/sh\n")
         try script("other.sh", "#!/bin/sh\n")
-        let place = PluginFolder(url: folder)
-        let command = try XCTUnwrap(try place.scan().commands.first { $0.id == "hello" })
+        let place = SpotFolder(url: folder)
+        let command = try XCTUnwrap(try place.scan().spots.first { $0.id == "hello" })
         var discarded: [String] = []
 
         try place.remove(command) { discarded.append($0.lastPathComponent) }
@@ -157,8 +157,8 @@ final class SwiftProgramTests: XCTestCase {
 
         XCTAssertEqual(review.name, "Hello")
         XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
-        let part = try XCTUnwrap(PluginOutput(text: try review.answer(["read"])).parts.first { $0.id == "review" })
-        guard case .text(let text, _, _) = part.control else { throw PluginError.badForm }
+        let part = try XCTUnwrap(SpotOutput(text: try review.answer(["read"])).parts.first { $0.id == "review" })
+        guard case .text(let text, _, _) = part.control else { throw SpotError.badForm }
         XCTAssertTrue(text.hasPrefix("Program that Openspot cannot show\nhello.program\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
     }
 }

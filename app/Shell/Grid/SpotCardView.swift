@@ -61,8 +61,8 @@ struct SpotCardView: View, Equatable {
             }) { model.setCardPart(entry.id, $0, to: $1) }
         } else if let view = drawnView {
             SpotCustomView(source: view, values: entry.state.values, card: size, views: SpotViews.shared)
-        } else if let layout = entry.command.layout {
-            SpotWidgetView(layout: layout, places: entry.command.places, reading: reading, card: size)
+        } else if let layout = entry.spot.layout {
+            SpotWidgetView(layout: layout, places: entry.spot.places, reading: reading, card: size)
         } else if size == .small {
             glyph.frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if size.rows > 1 {
@@ -79,7 +79,7 @@ struct SpotCardView: View, Equatable {
 
     /// The source of the plugin's own view, which fills the whole card in place of its glyph and words (V3).
     private var ownView: String? {
-        entry.item == nil && entry.state.face.hasView ? entry.command.view : nil
+        entry.item == nil && entry.state.face.hasView ? entry.spot.view : nil
     }
 
     /// The source of the plugin's own view once it is built or has failed. While it builds, the card is drawn as any card
@@ -109,7 +109,7 @@ struct SpotCardView: View, Equatable {
 
     /// Whether a press shows on a card: a slider takes its own drags, and a widget that opens nothing has no press.
     static func showsPress(of entry: SpotsModel.Entry) -> Bool {
-        entry.kind != .slider && (entry.kind != .widget || entry.command.opens != nil)
+        entry.kind != .slider && (entry.kind != .widget || entry.spot.opens != nil)
     }
 
     /// How strong the fill is: part of the way on a card that takes the drag, and full on the card that takes the drop.
@@ -220,7 +220,7 @@ struct SpotCardView: View, Equatable {
         } else if let item = entry.item, item.icon != nil {
             SpotItemIcon(item: item, size: SpotTokens.glyphSize)
         } else if entry.showsHeaderPicture {
-            SpotItemIcon(icon: entry.command.icon, glyph: entry.command.glyph, symbol: nil, size: SpotTokens.glyphSize)
+            SpotItemIcon(icon: entry.spot.icon, glyph: entry.spot.glyph, symbol: nil, size: SpotTokens.glyphSize)
         } else {
             symbolGlyph
         }

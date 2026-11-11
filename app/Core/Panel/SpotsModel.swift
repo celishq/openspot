@@ -14,47 +14,47 @@ public final class SpotsModel {
         public let isAnswer: Bool
         private let sizeChoice: SpotSize?
         private let run: SpotRun?
-        private let fixedCommand: Spot
+        private let fixedSpot: Spot
         private let fixedState: SpotState
         private let gridChoice: Bool?
         /// The letter that runs it from the panel, which the person or the default config gives it.
         public let letter: CommandKey?
 
-        public init(command: Spot, run: SpotRun?, choice: SpotArrangement = SpotArrangement(), defaults: SpotArrangement = SpotArrangement(), letter: CommandKey? = nil) {
-            id = command.id
-            sizeChoice = choice.size(of: command.id)
-            gridChoice = choice.isOnGrid(of: command.id) ?? defaults.isOnGrid(of: command.id)
+        public init(spot: Spot, run: SpotRun?, choice: SpotArrangement = SpotArrangement(), defaults: SpotArrangement = SpotArrangement(), letter: CommandKey? = nil) {
+            id = spot.id
+            sizeChoice = choice.size(of: spot.id)
+            gridChoice = choice.isOnGrid(of: spot.id) ?? defaults.isOnGrid(of: spot.id)
             self.letter = letter
             item = nil
             isAnswer = false
             self.run = run
-            fixedCommand = command
-            fixedState = command.headerState
+            fixedSpot = spot
+            fixedState = spot.headerState
         }
 
         /// A card of a full row for an item that the main search found in a list. A row that answers the text shows its own
         /// detail, which says how the spot read the text (A3).
-        public init(command: Spot, item: SpotItem, isAnswer: Bool = false) {
-            id = "\(command.id)\n\(item.run)"
+        public init(spot: Spot, item: SpotItem, isAnswer: Bool = false) {
+            id = "\(spot.id)\n\(item.run)"
             sizeChoice = .strip
             gridChoice = nil
             letter = nil
             self.item = item
             self.isAnswer = isAnswer
             run = nil
-            fixedCommand = command
-            fixedState = SpotState(title: item.title, subtitle: isAnswer ? item.subtitle ?? command.name : item.path(in: command))
+            fixedSpot = spot
+            fixedState = SpotState(title: item.title, subtitle: isAnswer ? item.subtitle ?? spot.name : item.path(in: spot))
         }
 
-        @MainActor public var command: Spot {
-            run?.command ?? fixedCommand
+        @MainActor public var spot: Spot {
+            run?.spot ?? fixedSpot
         }
 
         /// The size of its card: the person's choice, or else its header (F9). A card of a fault is never small, so that its
         /// words show.
         @MainActor public var size: SpotSize {
-            let size = sizeChoice ?? command.size
-            return command.fault != nil && size == .small ? .wide : size
+            let size = sizeChoice ?? spot.size
+            return spot.fault != nil && size == .small ? .wide : size
         }
 
         /// The words of its last failed call, until a call ends well.
@@ -68,16 +68,16 @@ public final class SpotsModel {
         }
 
         @MainActor public var kind: SpotKind {
-            item == nil ? command.kind : .launch
+            item == nil ? spot.kind : .launch
         }
 
         @MainActor public var symbol: String {
-            item?.symbol ?? command.symbol
+            item?.symbol ?? spot.symbol
         }
 
         /// Whether the card draws the image, the file icon or the glyph that its header names, in place of a symbol.
         @MainActor public var showsHeaderPicture: Bool {
-            item?.symbol == nil && (command.icon != nil || command.glyph != nil)
+            item?.symbol == nil && (spot.icon != nil || spot.glyph != nil)
         }
 
         @MainActor public var state: SpotState {
@@ -107,7 +107,7 @@ public final class SpotsModel {
         /// Whether two entries are one card: the same spot or row, the same choices and the same run.
         public static func == (lhs: Entry, rhs: Entry) -> Bool {
             lhs.id == rhs.id && lhs.item == rhs.item && lhs.sizeChoice == rhs.sizeChoice && lhs.gridChoice == rhs.gridChoice
-                && lhs.run === rhs.run && lhs.fixedCommand == rhs.fixedCommand && lhs.fixedState == rhs.fixedState
+                && lhs.run === rhs.run && lhs.fixedSpot == rhs.fixedSpot && lhs.fixedState == rhs.fixedState
         }
     }
 
@@ -261,10 +261,10 @@ public final class SpotsModel {
     @ObservationIgnored public var flashPause: Duration = .milliseconds(1500)
     @ObservationIgnored private var flashWatch: Task<Void, Never>?
     private var scanned: [Spot] = []
-    private var pluginScan = PluginScan()
-    private var lastScan = ScanResult(plugins: [], refused: [])
+    private var spotScan = SpotScan()
+    private var lastScan = ScanResult(files: [], refused: [])
     /// The stamp of the folder and the config that the cards were last built from.
-    @ObservationIgnored private var loadedStamp: PluginFolder.Stamp?
+    @ObservationIgnored private var loadedStamp: SpotFolder.Stamp?
     @ObservationIgnored private var loadedConfig: Config?
     /// The files of the last spot that Delete moved to the Trash, which `⌘Z` puts back.
     @ObservationIgnored var removal: Removal?
@@ -323,21 +323,21 @@ public final class SpotsModel {
         let config = files.config.read()
         host.applyConfig(config)
         let folder = files.folder(config)
-        var scan = pluginScan.look(at: folder, hosted: reviewed.map { [$0.command] } ?? [])
+        var scan = spotScan.look(at: folder, hosted: reviewed.map { [$0.spot] } ?? [])
         let faults = folder.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
-        if !faults.isEmpty { scan.plugins.append(Plugin(id: FaultSpot.pluginID, commands: faults)) }
-        guard pluginScan.stamp != loadedStamp || config != loadedConfig else { return holdAssignedKeys(config) }
+        if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
+        guard spotScan.stamp != loadedStamp || config != loadedConfig else { return holdAssignedKeys(config) }
         scan.listKeys(in: files.config)
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
         runs.take(scan, menuBar: config.arrangement.menuBar)
         lastScan = scan
-        loadedStamp = pluginScan.stamp
+        loadedStamp = spotScan.stamp
         loadedConfig = config
         fileStamps = Self.stamps(of: scan)
         holdAssignedKeys(config)
         arrangement = config.arrangement
-        scanned = scan.commands
+        scanned = scan.spots
         rebuildEntries()
         if isEditing { refreshDock(in: folder) }
         if problems != self.problems, !problems.isEmpty {
@@ -354,7 +354,7 @@ public final class SpotsModel {
         reload()
         if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
         guard isShown else { return }
-        for entry in entries where entry.command.read?.has(.panel) == true && fileStamps[entry.id] != stamps[entry.id] {
+        for entry in entries where entry.spot.read?.has(.panel) == true && fileStamps[entry.id] != stamps[entry.id] {
             sheets[entry.id]?.read(need: .change)
         }
     }
@@ -401,8 +401,8 @@ public final class SpotsModel {
 
     public func rebuildEntries() {
         let letters = arrangement.letters(over: defaultArrangement)
-        let next = ordered().map { Entry(command: $0, run: runs.sheets[$0.id], choice: arrangement, defaults: defaultArrangement, letter: letters[$0.id]) }
-        let field = next.first { $0.command.growsFromField }?.id
+        let next = ordered().map { Entry(spot: $0, run: runs.sheets[$0.id], choice: arrangement, defaults: defaultArrangement, letter: letters[$0.id]) }
+        let field = next.first { $0.spot.growsFromField }?.id
         if field != fieldSheet { fieldSheet = field }
         entries = next
     }
@@ -448,7 +448,7 @@ public final class SpotsModel {
     /// A downloaded update waits, so each spot that lists `app.update` in its read reads now, wanted or not, and is on the
     /// grid before the panel next opens.
     public func updateIsReady(_ version: String) {
-        for sheet in sheets.values where sheet.command.read?.has(.event(SpotEvent.appUpdate)) == true {
+        for sheet in sheets.values where sheet.spot.read?.has(.event(SpotEvent.appUpdate)) == true {
             sheet.read(need: .change, reason: ReadReason(event: SpotEvent.appUpdate, value: version))
         }
     }
@@ -467,7 +467,7 @@ public final class SpotsModel {
         guard case .command(let command) = key.act else { return float(key.spot) }
         guard let sheet = sheets[key.spot] else { return }
         sheet.pressKey(command)
-        flashSymbol = sheet.command.symbol(of: command)
+        flashSymbol = sheet.spot.symbol(of: command)
         flashWatch?.cancel()
         flashWatch = Task { [weak self, flashPause] in
             try? await Task.sleep(for: flashPause)
@@ -485,7 +485,7 @@ public final class SpotsModel {
             updateVisible()
         case .frame:
             spotListIsStale = true
-            if sheets[id]?.command.setsKeys == true {
+            if sheets[id]?.spot.setsKeys == true {
                 let config = files.config.read()
                 host.applyConfig(config)
                 holdAssignedKeys(config)
@@ -495,12 +495,12 @@ public final class SpotsModel {
         case .closed:
             if let shown = openList, runs.sheets[shown]?.isOpen != true { showSheet(nil, moving: false) }
         case .chooseFiles:
-            if let sheet = sheets[id] { host.chooseFiles(for: sheet.command) { sheet.drop($0) } }
+            if let sheet = sheets[id] { host.chooseFiles(for: sheet.spot) { sheet.drop($0) } }
         }
     }
 
     public static func reason(_ error: Error) -> String {
-        (error as? PluginError)?.reason ?? error.localizedDescription
+        (error as? SpotError)?.reason ?? error.localizedDescription
     }
 
     /// The entries that have a card. A sheet that grows out of the field, such as the install screen, has none.
@@ -537,20 +537,20 @@ public final class SpotsModel {
             return dragged(cards.filter(\.isOnGrid) + arriving + (isEditing ? cards.filter { !$0.isOnGrid } : []))
         }
         var ids = Set<String>()
-        let answers = entries.filter { $0.command.answers.map { runs.answerMatches.matches($0, text) } == true }
-            .flatMap { entry in (sheets[entry.id]?.answers ?? []).map { Entry(command: entry.command, item: $0, isAnswer: true) } }
+        let answers = entries.filter { $0.spot.answers.map { runs.answerMatches.matches($0, text) } == true }
+            .flatMap { entry in (sheets[entry.id]?.answers ?? []).map { Entry(spot: entry.spot, item: $0, isAnswer: true) } }
             .filter { ids.insert($0.id).inserted }
             .prefix(Self.searchLimit)
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         if spotListIsStale {
             spotListIsStale = false
             spotListBuilds += 1
-            spotList.replace(cards.filter(\.command.isFound).map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.command.name].compactMap { $0 }.joined(separator: " "), run: $0.id) })
+            spotList.replace(cards.filter(\.spot.isFound).map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.spot.name].compactMap { $0 }.joined(separator: " "), run: $0.id) })
         }
-        let sources = entries.filter { $0.command.isGlobal && arrangement.isGlobal(of: $0.id) != false }
+        let sources = entries.filter { $0.spot.isGlobal && arrangement.isGlobal(of: $0.id) != false }
         let found = mainSearch.matching(SearchQuery(text: text), in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() }, unpickedLimit: Self.unpickedRows, limit: Self.searchLimit - answers.count)
         return answers + found.compactMap { match in
-            match.list == 0 ? spots[match.item.run] : Entry(command: sources[match.list - 1].command, item: match.item)
+            match.list == 0 ? spots[match.item.run] : Entry(spot: sources[match.list - 1].spot, item: match.item)
         }.filter { !ids.contains($0.id) }
     }
 
@@ -591,9 +591,9 @@ public final class SpotsModel {
             return
         }
         guard let entry = selectedEntry else { return }
-        if entry.isAnswer, let sheet = sheets[entry.command.id], sheet.isAnswering {
+        if entry.isAnswer, let sheet = sheets[entry.spot.id], sheet.isAnswering {
             sheet.afterAnswers { [weak self] in
-                guard let self, let next = selectedEntry, next.isAnswer, next.command.id == entry.command.id else { return }
+                guard let self, let next = selectedEntry, next.isAnswer, next.spot.id == entry.spot.id else { return }
                 run(next)
             }
             return
@@ -657,7 +657,7 @@ public final class SpotsModel {
     }
 
     public func run(_ entry: Entry) {
-        if let item = entry.item, let list = entries.first(where: { $0.id == entry.command.id }) {
+        if let item = entry.item, let list = entries.first(where: { $0.id == entry.spot.id }) {
             if item.shortcut != nil, openList != list.id {
                 open(list.id, moving: true)
             }
@@ -672,7 +672,7 @@ public final class SpotsModel {
         case .toggle:
             sheets[entry.id]?.pressCard()
         case .launch:
-            if isShown, sheets[entry.id]?.isCardRunning != true, !entry.command.takesDrops { host.dismiss() }
+            if isShown, sheets[entry.id]?.isCardRunning != true, !entry.spot.takesDrops { host.dismiss() }
             sheets[entry.id]?.pressCard()
         case .list:
             if openList == entry.id {
@@ -683,7 +683,7 @@ public final class SpotsModel {
         case .slider:
             break
         case .widget:
-            if let opens = entry.command.opens { press(opens) }
+            if let opens = entry.spot.opens { press(opens) }
         }
     }
 
@@ -701,7 +701,7 @@ public final class SpotsModel {
     /// stays, so a spot that it hides is not selected. Returns false when no work shows.
     public func openWork() -> Bool {
         guard let id = runs.workSpot else { return false }
-        let spot = { self.visible.firstIndex { $0.id == id || $0.command.places.contains(id) } }
+        let spot = { self.visible.firstIndex { $0.id == id || $0.spot.places.contains(id) } }
         if isShown, openList == nil, spot() == selected {
             host.dismiss()
             return true
@@ -734,7 +734,7 @@ public final class SpotsModel {
         } else {
             closeList(moving: isShown)
             host.show()
-            selected = visible.firstIndex { $0.command.places.contains(id) } ?? 0
+            selected = visible.firstIndex { $0.spot.places.contains(id) } ?? 0
         }
     }
 
@@ -846,7 +846,7 @@ public final class SpotsModel {
     /// to the main search, which the next show asks again. A sheet of rows stays open.
     public func panelDidHide() {
         finishPick()
-        for entry in entries where entry.command.answers != nil { sheets[entry.id]?.answer("") }
+        for entry in entries where entry.spot.answers != nil { sheets[entry.id]?.answer("") }
         runs.panelClosed()
         if isFirstLaunch, !isWarming {
             isFirstLaunch = false
@@ -982,7 +982,7 @@ public final class SpotsModel {
     /// The action that makes a new item from what the search did not find.
     public var createAction: CommandAction? {
         guard let list = openItems, !list.query.isEmpty, list.shown.isEmpty, list.search == .local else { return nil }
-        return openEntry?.command.actions.first { $0.scope == .command && $0.isForm }
+        return openEntry?.spot.actions.first { $0.scope == .command && $0.isForm }
     }
 
     public func createFromSearch() {
@@ -1005,7 +1005,7 @@ public final class SpotsModel {
 
     /// Records a pick as recent, for a spot that keeps its recent picks.
     private func remember(_ item: SpotItem, of entry: Entry) {
-        guard entry.command.keepsRecent, let sheet = sheets[entry.id] else { return }
+        guard entry.spot.keepsRecent, let sheet = sheets[entry.id] else { return }
         sheet.list.remember(item)
         files.remember(sheet.list.recent, of: entry.id)
     }
@@ -1014,7 +1014,7 @@ public final class SpotsModel {
     /// with the picked row selected, and a pick that asks with a form or records a key opens the spot in the panel (W8).
     public func pick(_ item: SpotItem, of entry: Entry, action: CommandAction? = nil, in place: SheetPlace = .panel) {
         if place == .float {
-            if action == nil, entry.command.pickForm != nil || item.shortcut != nil { return press(entry.id) }
+            if action == nil, entry.spot.pickForm != nil || item.shortcut != nil { return press(entry.id) }
             remember(item, of: entry)
             sheets[entry.id]?.list.select(run: item.run)
         } else {
@@ -1022,11 +1022,11 @@ public final class SpotsModel {
                 toggleRecording(id: item.run)
                 return
             }
-            if action == nil, let form = entry.command.pickForm {
+            if action == nil, let form = entry.spot.pickForm {
                 openForm(form, on: (entry, item))
                 return
             }
-            if action != nil || entry.command.pick == .close {
+            if action != nil || entry.spot.pick == .close {
                 closingPick = (item, entry)
                 if isShown {
                     host.dismiss()

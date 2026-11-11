@@ -21,7 +21,7 @@ final class KeyListTests: XCTestCase {
     }
 
     private func scan() throws -> ScanResult {
-        var scan = try PluginFolder(url: folder).scan()
+        var scan = try SpotFolder(url: folder).scan()
         scan.listKeys(in: file)
         return scan
     }
@@ -29,7 +29,7 @@ final class KeyListTests: XCTestCase {
     func testAScriptWithCommandsAndNoReadOpensToTheKeysOfItsOwnCommands() async throws {
         try "#!/bin/sh\n# title=Move\n# offers=float\n#\n# command=left\n# title=Left side\n[ \"$1\" = left ] && printf 'toast=Left\\n'\n".writeScript(to: folder.appendingPathComponent("move.sh"))
         try "#!/bin/sh\n# title=Other\n#\n# command=up\n# title=Up\n".writeScript(to: folder.appendingPathComponent("other.sh"))
-        let move = try XCTUnwrap(try scan().commands.first { $0.id == "move" })
+        let move = try XCTUnwrap(try scan().spots.first { $0.id == "move" })
         let runs = SpotRuns()
 
         XCTAssertEqual(move.kind, .list)
@@ -48,7 +48,7 @@ final class KeyListTests: XCTestCase {
 
     func testItTakesNoKeyOfAnotherSpotAndNoKeyItCannotUse() async throws {
         try "#!/bin/sh\n# title=Move\n#\n# command=left\n# title=Left side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
-        let move = try XCTUnwrap(try scan().commands.first { $0.id == "move" })
+        let move = try XCTUnwrap(try scan().spots.first { $0.id == "move" })
         let runs = SpotRuns()
 
         do {
@@ -63,7 +63,7 @@ final class KeyListTests: XCTestCase {
     func testAScriptWithAReadDrawsItsOwnSheet() throws {
         try "#!/bin/sh\n# title=Move\n# read=sheet\n#\n# command=left\n# title=Left side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
 
-        let move = try XCTUnwrap(try scan().commands.first { $0.id == "move" })
+        let move = try XCTUnwrap(try scan().spots.first { $0.id == "move" })
 
         XCTAssertNil(move.keyList)
         XCTAssertFalse(move.setsKeys)

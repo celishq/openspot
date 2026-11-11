@@ -245,7 +245,7 @@ public struct Spot: Equatable, Sendable {
 
     /// This command with the actions, the word for Enter, the pick and the recents that its script printed, and the kind it
     /// makes when the panel asks it how it looks.
-    public func taking(_ output: PluginOutput) -> Spot {
+    public func taking(_ output: SpotOutput) -> Spot {
         var command = self
         command.actions = output.actions
         command.primary = output.primary
@@ -258,9 +258,9 @@ public struct Spot: Equatable, Sendable {
 
     /// The state that an output gives, with each value of its head for a view. A command with no state to read keeps its
     /// header.
-    public func state(of output: PluginOutput) throws -> SpotState {
+    public func state(of output: SpotOutput) throws -> SpotState {
         guard readsState else { return headerState }
-        guard output.summary != nil || output.errors.isEmpty else { throw PluginError.badState }
+        guard output.summary != nil || output.errors.isEmpty else { throw SpotError.badState }
         var state = SpotState(output: output, header: headerState)
         if view != nil { state = state.holding(output.view) }
         guard isBuiltIn, let isOnGrid = output.summary?.flag("grid") else { return state }

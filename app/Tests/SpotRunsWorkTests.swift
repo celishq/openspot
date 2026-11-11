@@ -116,7 +116,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         let live = SpotRuns()
         defer { live.quit() }
         try script(body: "sleep 30")
-        live.take(try PluginFolder(url: folder).scan())
+        live.take(try SpotFolder(url: folder).scan())
         let sheet = try XCTUnwrap(live.sheets["script"])
         sheet.pressCard()
         let changes = expectation(description: "the second has passed")
@@ -282,7 +282,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
         let item = try XCTUnwrap(sheet.list.selectedItem)
-        let menu = try XCTUnwrap(ActionMenu(command: sheet.command, item: item))
+        let menu = try XCTUnwrap(ActionMenu(spot: sheet.spot, item: item))
         let primary = try XCTUnwrap(menu.rows.first { $0.action == nil })
         let go = try XCTUnwrap(menu.rows.first { $0.action?.id == "go" })
         let copy = try XCTUnwrap(menu.rows.first { $0.action?.id == "copy" })
@@ -302,7 +302,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     func testARunningCardSaysThatAPressStopsItAndAPressDoes() async throws {
         try script(body: "sleep 5\ntouch '\(path("went-on"))'")
         let sheet = try sheet()
-        let menu = try XCTUnwrap(ActionMenu(command: sheet.command, item: nil))
+        let menu = try XCTUnwrap(ActionMenu(spot: sheet.spot, item: nil))
         let row = try XCTUnwrap(menu.rows.first)
 
         sheet.pressCard()
@@ -354,7 +354,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         let sheet = try sheet()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
-        let action = try XCTUnwrap(sheet.command.actions.first)
+        let action = try XCTUnwrap(sheet.spot.actions.first)
         let item = try XCTUnwrap(sheet.list.selectedItem)
 
         sheet.run(action, item: nil)
@@ -370,7 +370,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(header: "read=panel", "[ \"$1\" = read ] && { printf 'switch=power\\nvalue=false\\n'; exit 0; }\nsleep 0.3\ntouch '\(path("done"))'\nprintf 'switch=power\\nvalue=true\\n'")
         let sheet = try sheet()
         runs.panelOpened()
-        try await wait("the kind") { sheet.command.kind == .toggle }
+        try await wait("the kind") { sheet.spot.kind == .toggle }
 
         sheet.pressCard()
         sheet.pressCard()
@@ -390,8 +390,8 @@ final class SpotRunsWorkTests: SpotRunsCase {
         """)
         let sheet = try sheet()
         sheet.open {}
-        try await wait("the action") { sheet.command.actions.count == 1 }
-        let action = try XCTUnwrap(sheet.command.actions.first)
+        try await wait("the action") { sheet.spot.actions.count == 1 }
+        let action = try XCTUnwrap(sheet.spot.actions.first)
 
         async let first = sheet.form(action, item: nil)
         try await wait("the call") { sheet.calls.contains(where: \.doesWork) }
@@ -412,8 +412,8 @@ final class SpotRunsWorkTests: SpotRunsCase {
         """)
         let sheet = try sheet()
         sheet.open {}
-        try await wait("the read") { sheet.command.pickForm != nil }
-        let action = try XCTUnwrap(sheet.command.pickForm)
+        try await wait("the read") { sheet.spot.pickForm != nil }
+        let action = try XCTUnwrap(sheet.spot.pickForm)
         let item = SpotItem(title: "A", run: "a")
 
         let asked = try await sheet.form(action, item: item)
@@ -514,7 +514,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(header: "read=panel", "[ \"$1\" = read ] && printf 'switch=power\\nvalue=false\\n'\n[ \"$1\" = power ] && sleep 30\nexit 0")
         let sheet = try sheet()
         runs.panelOpened()
-        try await wait("the kind") { sheet.command.kind == .toggle && sheet.calls.isEmpty }
+        try await wait("the kind") { sheet.spot.kind == .toggle && sheet.calls.isEmpty }
         sheet.pressCard()
         XCTAssertEqual(sheet.state.on, true)
         try await wait("the call") { self.log() == ["read", "power true"] }

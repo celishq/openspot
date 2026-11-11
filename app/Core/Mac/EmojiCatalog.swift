@@ -67,7 +67,7 @@ public struct EmojiCatalog: Sendable {
             guard let data = try? Data(contentsOf: url) else { continue }
             if let names = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: String] { return names }
         }
-        throw PluginError.fault(Self.missing)
+        throw SpotError.fault(Self.missing)
     }
 
     /// Each form that the Mac can draw, in its order: the text runs of a binary file.

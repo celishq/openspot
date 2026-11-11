@@ -1,9 +1,9 @@
 import Foundation
 
-extension PluginFolder {
+extension SpotFolder {
     /// The IDs of the files in the folder itself, which are always on.
     public var ownIDs: Set<String> {
-        Set(((try? PluginFolder(url: url).keptScan())?.plugins ?? []).map(\.id))
+        Set(((try? SpotFolder(url: url).keptScan())?.files ?? []).map(\.id))
     }
 
     /// Turns core spots on or off in the config, in one write. It refuses all for an ID that no core spot has, and for a
@@ -11,11 +11,11 @@ extension PluginFolder {
     public func turn(_ ids: [String], on isOn: Bool, in config: ConfigFile) throws {
         let choices = Set(keptCoreChoices().map(Self.coreID(of:)))
         if let id = ids.first(where: { !choices.contains($0) }) {
-            throw PluginError.failed(1, "`\(id)` is not a spot that comes with Openspot. Run `openspot spot list --core` to see each one.")
+            throw SpotError.failed(1, "`\(id)` is not a spot that comes with Openspot. Run `openspot spot list --core` to see each one.")
         }
         let own = ownIDs
         if let id = ids.first(where: own.contains) {
-            throw PluginError.failed(1, "`\(id)` is a file in your plugins folder, so it is always on.")
+            throw SpotError.failed(1, "`\(id)` is a file in your plugins folder, so it is always on.")
         }
         var arrangement = config.read().arrangement
         ids.forEach { arrangement.set(isEnabled: isOn, of: $0) }

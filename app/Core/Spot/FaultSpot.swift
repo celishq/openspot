@@ -4,7 +4,7 @@ import Foundation
 /// file.
 public struct FaultSpot: Equatable, Sendable {
     /// The ID of the plugin that holds the cards of the files that do not load.
-    public static let pluginID = "openspot/faults"
+    public static let fileID = "openspot/faults"
     static let fixPart = "fix"
     static let editPart = "edit"
 
@@ -33,7 +33,7 @@ public struct FaultSpot: Equatable, Sendable {
             _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/env"), arguments: ["open", "-t", file.path])
             return ""
         default:
-            throw PluginError.failed(1, "This sheet cannot do that.")
+            throw SpotError.failed(1, "This sheet cannot do that.")
         }
     }
 

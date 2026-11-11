@@ -28,12 +28,12 @@ public struct KeyList: Equatable, Sendable {
             return ""
         case let run? where command(of: run) != nil:
             guard let trigger = arguments.dropFirst().first.flatMap(Trigger.init(text:)) else {
-                throw PluginError.failed(1, "Openspot cannot use this key.")
+                throw SpotError.failed(1, "Openspot cannot use this key.")
             }
             try file.assign(trigger, to: spot, act: .command(command(of: run)!))
             return ""
         default:
-            throw PluginError.failed(1, "This sheet cannot do that.")
+            throw SpotError.failed(1, "This sheet cannot do that.")
         }
     }
 

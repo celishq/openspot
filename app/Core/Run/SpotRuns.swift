@@ -81,7 +81,7 @@ public final class SpotRuns {
     /// and a sheet whose script is gone stops its reads. A staying script that something wants starts.
     public func take(_ scan: ScanResult, menuBar: Set<String> = []) {
         let scripts = scan.scripts
-        placed = Set(scan.commands.flatMap(\.places))
+        placed = Set(scan.spots.flatMap(\.places))
         self.menuBar = menuBar
         order = scripts.map(\.id)
         for (id, sheet) in sheets where !order.contains(id) {
@@ -95,14 +95,14 @@ public final class SpotRuns {
         updateClock()
     }
 
-    /// The sheet of a script, with the command as the folder last gave it.
-    public func sheet(for command: Spot) -> SpotRun {
-        if let sheet = sheets[command.id] {
-            sheet.update(command)
+    /// The sheet of a script, with the spot as the folder last gave it.
+    public func sheet(for spot: Spot) -> SpotRun {
+        if let sheet = sheets[spot.id] {
+            sheet.update(spot)
             return sheet
         }
-        let id = command.id
-        let sheet = SpotRun(command: command, runs: self, recent: recent(id), prepare: prepare)
+        let id = spot.id
+        let sheet = SpotRun(spot: spot, runs: self, recent: recent(id), prepare: prepare)
         sheet.onReport = { [weak self] in self?.onReport(id, $0) }
         sheet.partsArrival = { [weak self] bring in
             guard let self else { return bring() }
@@ -114,13 +114,13 @@ public final class SpotRuns {
 
     /// Records the sheet that opens, and closes the one before.
     func willOpen(_ sheet: SpotRun) {
-        let id = sheet.command.id
+        let id = sheet.spot.id
         if let open = openID, open != id { sheets[open]?.close() }
         openID = id
     }
 
     func didClose(_ sheet: SpotRun) {
-        if openID == sheet.command.id { openID = nil }
+        if openID == sheet.spot.id { openID = nil }
     }
 
     /// Shows a script in a float, where its sheet reads as an open sheet does (W7).
@@ -171,14 +171,14 @@ public final class SpotRuns {
     /// The marks of the scripts that show in the menu bar, in the order of the folder.
     public var trayMarks: [(id: String, mark: TrayMark)] {
         order.compactMap { id in
-            guard let sheet = sheets[id], isInMenuBar(sheet.command), let mark = TrayMark(reading: sheet.reading) else { return nil }
+            guard let sheet = sheets[id], isInMenuBar(sheet.spot), let mark = TrayMark(reading: sheet.reading) else { return nil }
             return (id, mark)
         }
     }
 
     /// Whether the menu bar shows this script: the person put it there, and it can show there.
-    private func isInMenuBar(_ command: Spot) -> Bool {
-        menuBar.contains(command.id) && command.canShowInMenuBar
+    private func isInMenuBar(_ spot: Spot) -> Bool {
+        menuBar.contains(spot.id) && spot.canShowInMenuBar
     }
 
     /// The running work of all scripts, the oldest first, with the ID of each script.
@@ -190,7 +190,7 @@ public final class SpotRuns {
     public var workMark: TrayMark? {
         let work = work
         guard let oldest = work.first else { return nil }
-        return TrayMark(workFill: oldest.call.fill, count: work.count, name: sheets[oldest.id]?.command.name ?? oldest.id)
+        return TrayMark(workFill: oldest.call.fill, count: work.count, name: sheets[oldest.id]?.spot.name ?? oldest.id)
     }
 
     /// The ID of the script of the oldest running work, whose spot a click on the Openspot item selects.
@@ -200,20 +200,20 @@ public final class SpotRuns {
 
     /// Whether the card of this script takes all the files of the drag in progress.
     public func takesDrag(_ id: String) -> Bool {
-        sheets[id]?.command.accepts(draggedPaths) == true
+        sheets[id]?.spot.accepts(draggedPaths) == true
     }
 
     /// Runs one call with no sheet, and returns all that it prints. A `read` runs until it gives its first frame, which is what
     /// a sheet takes as its answer.
-    public func answer(of command: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil) async throws -> String {
-        if command.mode.stays, action == .read {
-            let (script, frames) = stay(command, limit: limit)
+    public func answer(of spot: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil) async throws -> String {
+        if spot.mode.stays, action == .read {
+            let (script, frames) = stay(spot, limit: limit)
             defer { script.end() }
             script.send(.read, id: 1, reason: .panel)
             for try await frame in frames { return frame }
             return ""
         }
-        let (stream, halt, _) = frames(of: command, action, input: input, limit: limit)
+        let (stream, halt, _) = frames(of: spot, action, input: input, limit: limit)
         if action == .read {
             defer { halt() }
             for try await frame in stream { return frame }
@@ -226,17 +226,17 @@ public final class SpotRuns {
 
     /// Whether something other than its sheet in view wants this script. The open panel wants a staying script that answers
     /// its search.
-    func wants(_ command: Spot) -> Bool {
-        if isInMenuBar(command) || command.mode == .always { return true }
-        if isPanelOpen, command.mode.stays, command.answers != nil { return true }
-        guard let read = command.read else { return false }
-        return isPanelOpen && (read.has(.panel) || placed.contains(command.id))
+    func wants(_ spot: Spot) -> Bool {
+        if isInMenuBar(spot) || spot.mode == .always { return true }
+        if isPanelOpen, spot.mode.stays, spot.answers != nil { return true }
+        guard let read = spot.read else { return false }
+        return isPanelOpen && (read.has(.panel) || placed.contains(spot.id))
     }
 
     /// Reads a frame of a script on another thread, and waits while the open motion of its sheet runs. The
     /// sheet hears the frame while it waits, so that it can say its kind before the frame shows or its call drops it.
-    func intake(_ frame: String, of id: String?) async -> PluginOutput {
-        let lines = await PluginOutput.reading(frame)
+    func intake(_ frame: String, of id: String?) async -> SpotOutput {
+        let lines = await SpotOutput.reading(frame)
         guard let id, opening.moving == id else { return lines }
         sheets[id]?.hear(lines)
         await opening.waitForMotion(of: id)
@@ -255,20 +255,20 @@ public final class SpotRuns {
     /// Starts one call. It gives each frame, as text and sorted by what each block is, and then its end, on the main actor. A
     /// frame waits for the open motion of its sheet, and one that its call stopped meanwhile changes nothing.
     func call(
-        _ command: Spot,
+        _ spot: Spot,
         _ action: SpotAction,
         key: String,
         input: String?,
         limit: TimeInterval?,
         reason: ReadReason? = nil,
         variables: [String: String] = [:],
-        onFrame: @escaping @MainActor (ScriptCall, String, PluginOutput) async -> Void,
+        onFrame: @escaping @MainActor (ScriptCall, String, SpotOutput) async -> Void,
         onEnd: @escaping @MainActor (ScriptCall, ScriptCall.End) async -> Void
     ) -> ScriptCall {
         let call = ScriptCall(action: action, key: key, started: now())
-        let (stream, halt, process) = frames(of: command, action, input: input, limit: limit, variables: variables)
+        let (stream, halt, process) = frames(of: spot, action, input: input, limit: limit, variables: variables)
         call.halt = halt
-        let id = command.id
+        let id = spot.id
         let begin = Date()
         Task { [weak self, log] in
             var end = ScriptCall.End.ended
@@ -285,10 +285,10 @@ public final class SpotRuns {
                 end = .failed(error)
             }
             let ending: ScriptCall.End = call.isStopped ? .stopped : end
-            self?.usage.called(id, name: command.name, seconds: Date().timeIntervalSince(begin))
+            self?.usage.called(id, name: spot.name, seconds: Date().timeIntervalSince(begin))
             if let log, let process, !Self.isQuiet(reason, ending) {
                 log.write(CallLog.Record(
-                    spot: command.id,
+                    spot: spot.id,
                     arguments: action.arguments,
                     input: input,
                     frames: printed + (process.failedFrame.map { [$0] } ?? []),
@@ -304,25 +304,25 @@ public final class SpotRuns {
     }
 
     /// Starts a script that stays, and returns it with its frames.
-    func stay(_ command: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>) {
-        let script = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, mode: .stays, limit: limit, stopPause: stopPause, dataName: command.dataName, variables: ["OPENSPOT_ID": command.id])
-        usage.track(script, of: command.id)
+    func stay(_ spot: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>) {
+        let script = ScriptProcess(url: SwiftProgram.file(beside: spot.url) ?? spot.url, mode: .stays, limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: ["OPENSPOT_ID": spot.id])
+        usage.track(script, of: spot.id)
         let frames = script.start()
         keep(script)
         return (script, frames)
     }
 
-    private func frames(of command: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String] = [:]) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void, process: ScriptProcess?) {
-        if let keyList = command.keyList, keyList.answers(action.arguments) {
+    private func frames(of spot: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String] = [:]) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void, process: ScriptProcess?) {
+        if let keyList = spot.keyList, keyList.answers(action.arguments) {
             let (stream, halt) = answered { try keyList.answer(action.arguments) }
             return (stream, halt, nil)
         }
-        if let sheet = command.host {
+        if let sheet = spot.host {
             let (stream, halt) = answered { try await sheet.answer(action.arguments) }
             return (stream, halt, nil)
         }
-        if command.mode == .inline {
-            let script = InlineScript(spot: command, api: api)
+        if spot.mode == .inline {
+            let script = InlineScript(spot: spot, api: api)
             let call = InlineCall(arguments: action.arguments, input: input)
             script.send(call)
             let (stream, halt) = answered {
@@ -339,8 +339,8 @@ public final class SpotRuns {
             }, nil)
         }
         let sent = action.sent(input: input)
-        let process = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: command.dataName, variables: variables.merging(["OPENSPOT_ID": command.id]) { given, _ in given })
-        usage.track(process, of: command.id)
+        let process = ScriptProcess(url: SwiftProgram.file(beside: spot.url) ?? spot.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given })
+        usage.track(process, of: spot.id)
         let stream = process.start()
         keep(process)
         return (stream, { process.stop() }, process)

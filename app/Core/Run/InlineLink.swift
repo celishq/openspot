@@ -76,7 +76,7 @@ final class InlineLink: ScriptLink {
     /// The script, which starts to load at once.
     private func current(for run: SpotRun) -> InlineScript {
         if let script { return script }
-        let script = InlineScript(spot: run.command, api: runs.api)
+        let script = InlineScript(spot: run.spot, api: runs.api)
         self.script = script
         loaded = fileDate
         return script
@@ -84,7 +84,7 @@ final class InlineLink: ScriptLink {
 
     private var fileDate: Date? {
         guard let run else { return nil }
-        return (try? FileManager.default.attributesOfItem(atPath: run.command.url.path))?[.modificationDate] as? Date
+        return (try? FileManager.default.attributesOfItem(atPath: run.spot.url.path))?[.modificationDate] as? Date
     }
 
     /// Takes the outcome of a call. The rows of a text of the main search show at once, and a text with no frame ends with
@@ -95,7 +95,7 @@ final class InlineLink: ScriptLink {
             asking.removeAll { $0 === made }
             return
         }
-        runs.usage.called(run.command.id, name: run.command.name, seconds: Date().timeIntervalSince(begin))
+        runs.usage.called(run.spot.id, name: run.spot.name, seconds: Date().timeIntervalSince(begin))
         var text: String?
         let end: ScriptCall.End
         switch outcome {
@@ -108,14 +108,14 @@ final class InlineLink: ScriptLink {
             end = .stopped
         }
         if case .ask(.answer(let query)) = call.purpose {
-            run.takeAnswers(text.map { PluginOutput(text: $0).items } ?? [], to: query)
+            run.takeAnswers(text.map { SpotOutput(text: $0).items } ?? [], to: query)
             return run.ended(made, call.purpose, end, hadAnswer: text != nil, showedPicture: false, selected: nil)
         }
         Task { [weak run, runs] in
             defer { self.asking.removeAll { $0 === made } }
             guard let run else { return }
             var end = end
-            var lines = if let text { await runs.intake(text, of: run.command.id) } else { PluginOutput?.none }
+            var lines = if let text { await runs.intake(text, of: run.spot.id) } else { SpotOutput?.none }
             if made.isStopped {
                 lines = nil
                 end = .stopped
@@ -136,7 +136,7 @@ final class InlineLink: ScriptLink {
             }
             if case .ended = end, !hasAnswer, case .ask(let ask) = call.purpose {
                 hasAnswer = true
-                await run.takeAnswer(lines?.withoutEffects() ?? PluginOutput(text: ""), frame: "", to: ask)
+                await run.takeAnswer(lines?.withoutEffects() ?? SpotOutput(text: ""), frame: "", to: ask)
             }
             run.ended(made, call.purpose, end, hadAnswer: hasAnswer, showedPicture: showedPicture, selected: lines?.select)
         }
@@ -154,7 +154,7 @@ final class InlineLink: ScriptLink {
         run.callEnded(made)
         switch outcome {
         case .frame(let text) where !made.isStopped:
-            run.report(toastOf: PluginOutput(text: text))
+            run.report(toastOf: SpotOutput(text: text))
             return text
         case .failed(let error) where !made.isStopped:
             throw error

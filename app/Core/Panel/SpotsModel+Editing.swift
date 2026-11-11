@@ -8,7 +8,7 @@ extension SpotsModel {
 
     /// The sizes that a person can prefer for a spot, in words for its menu.
     public func sizes(of entry: Entry) -> [SpotSize] {
-        entry.item == nil ? entry.command.sizes : []
+        entry.item == nil ? entry.spot.sizes : []
     }
 
     /// Starts Edit Spots on the grid, with the search cleared.
@@ -35,55 +35,55 @@ extension SpotsModel {
     }
 
     /// Makes the dock from the spots of this folder that are off, and keeps its search.
-    func refreshDock(in folder: PluginFolder) {
+    func refreshDock(in folder: SpotFolder) {
         let choice = arrangement
-        var next = SpotDock(items: Self.offSpots(in: folder).map { SpotDock.Item(command: $0.command, isOwn: $0.isOwn, size: choice.size(of: $0.id)) })
+        var next = SpotDock(items: Self.offSpots(in: folder).map { SpotDock.Item(spot: $0.spot, isOwn: $0.isOwn, size: choice.size(of: $0.id)) })
         next.query = dock.query
         if next != dock { dock = next }
     }
 
     /// The core spots of this folder that are not on, and the spots of its files that the person turned off. A sheet that
     /// another spot opens is not one.
-    private static func offSpots(in folder: PluginFolder) -> [SpotDock.Item] {
-        let own = (try? PluginFolder(url: folder.url).keptScan())?.plugins ?? []
+    private static func offSpots(in folder: SpotFolder) -> [SpotDock.Item] {
+        let own = (try? SpotFolder(url: folder.url).keptScan())?.files ?? []
         let ownIDs = Set(own.map(\.id))
         let core = folder.keptCoreChoices()
-            .filter { !folder.enabled.contains(PluginFolder.coreID(of: $0)) && !ownIDs.contains(PluginFolder.coreID(of: $0)) }
-        let turnedOff = own.filter { folder.disabled.contains($0.id) }.flatMap(\.commands)
+            .filter { !folder.enabled.contains(SpotFolder.coreID(of: $0)) && !ownIDs.contains(SpotFolder.coreID(of: $0)) }
+        let turnedOff = own.filter { folder.disabled.contains($0.id) }.flatMap(\.spots)
         let opened = Set(turnedOff.compactMap(\.opens))
-        return core.map { SpotDock.Item(command: $0) } + turnedOff.filter { !opened.contains($0.id) }.map { SpotDock.Item(command: $0, isOwn: true) }
+        return core.map { SpotDock.Item(spot: $0) } + turnedOff.filter { !opened.contains($0.id) }.map { SpotDock.Item(spot: $0, isOwn: true) }
     }
 
     /// Whether the minus of Edit Spots can turn this spot off. A built-in and a card of faults stay on.
     public func turnsOff(_ entry: Entry) -> Bool {
-        entry.item == nil && entry.command.host == nil && !entry.command.isBuiltIn && entry.command.fault == nil
+        entry.item == nil && entry.spot.host == nil && !entry.spot.isBuiltIn && entry.spot.fault == nil
     }
 
     /// Turns a spot off from Edit Spots: its card leaves the panel, and the dock shows it.
     public func turnOff(_ id: String) {
         guard let entry = visible.first(where: { $0.id == id }), turnsOff(entry) else { return }
-        turn(entry.command, on: false)
+        turn(entry.spot, on: false)
     }
 
     /// Turns a spot of the dock on: its card takes a place in the panel.
     public func turnOn(_ id: String) {
         guard let item = dock.items.first(where: { $0.id == id }) else { return }
-        turn(item.command, on: true)
+        turn(item.spot, on: true)
     }
 
     /// Moves the file of a spot of the dock to the Trash, as Delete does in the action menu, so `⌘Z` puts it back.
     public func delete(_ id: String) {
         guard let item = dock.items.first(where: { $0.id == id }), item.isOwn else { return }
-        remove(Entry(command: item.command, run: nil))
+        remove(Entry(spot: item.spot, run: nil))
     }
 
     /// Turns a spot on or off in the config, and loads the spots again on the edit motion, after `ending` runs in it.
     @discardableResult
-    private func turn(_ command: Spot, on isOn: Bool, ending: () -> Void = {}) -> Bool {
+    private func turn(_ spot: Spot, on isOn: Bool, ending: () -> Void = {}) -> Bool {
         do {
-            try files.config.turn(files.folder.fileID(of: command), on: isOn)
+            try files.config.turn(files.folder.fileID(of: spot), on: isOn)
         } catch {
-            host.notify("\(command.name) was not turned \(isOn ? "on" : "off"). \(Self.reason(error))")
+            host.notify("\(spot.name) was not turned \(isOn ? "on" : "off"). \(Self.reason(error))")
             return false
         }
         change(.edit) {
@@ -224,7 +224,7 @@ extension SpotsModel {
         guard isEditing, query.isEmpty, resize == nil, dockResize == nil else { return }
         if carry?.entry.id != id {
             guard carry == nil, drag == nil, let item = dock.shown.first(where: { $0.id == id }), let tile = tileRect(of: id) else { return }
-            let entry = Entry(command: item.command, run: nil, choice: arrangement)
+            let entry = Entry(spot: item.spot, run: nil, choice: arrangement)
             let start = visible.filter(\.isOnGrid).count
             var sizes = visible.map(\.size)
             sizes.insert(entry.size, at: start)
@@ -285,11 +285,11 @@ extension SpotsModel {
         order.insert(entry.id, at: min(place, order.count))
         var next = arrangement
         next.arrange(order)
-        next.set(isEnabled: true, of: files.folder.fileID(of: entry.command))
+        next.set(isEnabled: true, of: files.folder.fileID(of: entry.spot))
         do {
             try files.config.write(next)
         } catch {
-            host.notify("\(entry.command.name) was not turned on. \(Self.reason(error))")
+            host.notify("\(entry.spot.name) was not turned on. \(Self.reason(error))")
             return sendBack()
         }
         change(.edit, {
@@ -350,7 +350,7 @@ extension SpotsModel {
     private func turnOffDropped(_ entry: Entry) {
         stopDragWait()
         pointerMove = nil
-        let isOff = turn(entry.command, on: false) {
+        let isOff = turn(entry.spot, on: false) {
             drag = nil
             carry = nil
         }
@@ -412,7 +412,7 @@ extension SpotsModel {
         let reach = { (size: SpotSize) in
             hypot(tile.origin.x + SpotTokens.width(columns: min(size.columns, self.dockColumns)) - corner.x, tile.origin.y + SpotTokens.height(rows: size.rows) - corner.y)
         }
-        guard let target = sizes(of: Entry(command: item.command, run: nil)).min(by: { reach($0) < reach($1) }), target != item.size else { return }
+        guard let target = sizes(of: Entry(spot: item.spot, run: nil)).min(by: { reach($0) < reach($1) }), target != item.size else { return }
         change(.edit) { dock = dock.resized(id, to: target) }
     }
 
@@ -616,7 +616,7 @@ extension SpotsModel {
         arrangement.arrange(visible.map(\.id))
         let holder = arrangement.give(code == Self.deleteCode ? nil : letter, to: id, over: defaultArrangement)
         if let holder, let letter {
-            let name = { (spot: String) in self.entries.first { $0.id == spot }?.command.name ?? spot }
+            let name = { (spot: String) in self.entries.first { $0.id == spot }?.spot.name ?? spot }
             host.notify("\(letter.name.uppercased()) now runs \(name(id)), so \(name(holder)) has no letter.")
         }
         saveArrangement(selecting: id)

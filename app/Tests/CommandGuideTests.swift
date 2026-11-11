@@ -26,7 +26,7 @@ final class CommandGuideTests: XCTestCase {
     func testAnUnknownNounFailsAndNamesTheNounsThatHaveAGuide() {
         XCTAssertThrowsError(try CommandGuide(folder: folder).text(of: "window")) { error in
             XCTAssertEqual(
-                (error as? PluginError)?.reason,
+                (error as? SpotError)?.reason,
                 "openspot has no guide for window. Run openspot help calendar, openspot help reminders or openspot help screen."
             )
         }

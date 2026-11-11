@@ -4,8 +4,8 @@ import XCTest
 /// Proves the Links plugin with its real script and fake tools.
 final class LinksPluginTests: SamplePluginsCase {
     func testLinksAndAppsJoinTheMainSearch() throws {
-        let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
-        let apps = try XCTUnwrap(try scan.commands.first { $0.name == "Apps" })
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
+        let apps = try XCTUnwrap(try scan.spots.first { $0.name == "Apps" })
 
         XCTAssertTrue(links.isGlobal)
         XCTAssertTrue(apps.isGlobal)
@@ -44,7 +44,7 @@ final class LinksPluginTests: SamplePluginsCase {
     }
 
     func testLinksShowsTheIconASiteNamesOnItsPage() async throws {
-        let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         try await withPrivateHome { folder in
             try await self.savedLink("https://icons.test/deep/page", in: links)
             let expected = folder.appendingPathComponent(".config/openspot/data/links/icons/icons.test.png").path
@@ -61,7 +61,7 @@ final class LinksPluginTests: SamplePluginsCase {
     }
 
     func testLinksKeepsItsGlyphAndDoesNotAskAgainWhenASiteHasNoIcon() async throws {
-        let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         try await withPrivateHome { folder in
             try await self.savedLink("https://none.test", in: links)
             let marker = folder.appendingPathComponent(".config/openspot/data/links/icons/none.test.none").path
@@ -81,7 +81,7 @@ final class LinksPluginTests: SamplePluginsCase {
     }
 
     func testLinksCompletesALinkAndOpensAndCopiesIt() async throws {
-        let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         try await withPrivateHome { folder in
             let new = try await action("new", of: links)
             var draft = FormDraft(form: try await links.form(new, item: nil, timeout: 5))
@@ -103,7 +103,7 @@ final class LinksPluginTests: SamplePluginsCase {
     }
 
     func testLinksRefusesALinkWithSpaces() async throws {
-        let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         try await withPrivateHome { _ in
             let new = try await action("new", of: links)
             var draft = FormDraft(form: try await links.form(new, item: nil, timeout: 5))
@@ -112,14 +112,14 @@ final class LinksPluginTests: SamplePluginsCase {
             do {
                 _ = try await links.submit(new, item: nil, draft: draft, timeout: 5)
                 XCTFail("expected a failure")
-            } catch let error as PluginError {
+            } catch let error as SpotError {
                 XCTAssertEqual(error.reason, "Enter a link with no spaces, or a path.")
             }
         }
     }
 
     func testLinksStartWithTheFolderShortcuts() async throws {
-        let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         try await withPrivateHome { folder in
             let items = try await links.items(timeout: 5).items
 
@@ -131,7 +131,7 @@ final class LinksPluginTests: SamplePluginsCase {
     }
 
     func testLinksKeepsItsListAfterEachShortcutIsDeleted() async throws {
-        let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         try await withPrivateHome { _ in
             let delete = try await self.action("delete", of: links)
             for item in try await links.items(timeout: 5).items {
@@ -145,7 +145,7 @@ final class LinksPluginTests: SamplePluginsCase {
     }
 
     func testSavedQuicklinksMoveToLinks() async throws {
-        let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         try await withPrivateHome { folder in
             let data = folder.appendingPathComponent(".config/openspot/data/links")
             try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
@@ -160,7 +160,7 @@ final class LinksPluginTests: SamplePluginsCase {
     }
 
     func testLinksOpensAFolderAndKeepsSpacesInItsPath() async throws {
-        let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         try await withPrivateHome { folder in
             let place = folder.appendingPathComponent("My Work")
             try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
@@ -180,20 +180,20 @@ final class LinksPluginTests: SamplePluginsCase {
     }
 
     func testLinksSaysWhenAFolderIsGone() async throws {
-        let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         try await withPrivateHome { folder in
             let downloads = try await links.items(timeout: 5).items.first { $0.title == "Downloads" }
             do {
                 try await links.perform(.item(try XCTUnwrap(downloads)), timeout: 5)
                 XCTFail("expected a failure")
-            } catch let error as PluginError {
+            } catch let error as SpotError {
                 XCTAssertEqual(error.reason, "Openspot cannot find \(folder.path)/Downloads.")
             }
         }
     }
 
     func testLinksShowsAFolderInFinder() async throws {
-        let links = try XCTUnwrap(try scan.commands.first { $0.name == "Links" })
+        let links = try XCTUnwrap(try scan.spots.first { $0.name == "Links" })
         try await withPrivateHome { folder in
             try FileManager.default.createDirectory(at: folder.appendingPathComponent("Downloads"), withIntermediateDirectories: true)
             let downloads = try await links.items(timeout: 5).items.first { $0.title == "Downloads" }

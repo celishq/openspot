@@ -5,21 +5,21 @@ import Foundation
 public struct SpotDock: Equatable, Sendable {
     /// One spot in the dock.
     public struct Item: Identifiable, Equatable, Sendable {
-        public let command: Spot
+        public let spot: Spot
         /// Whether the spot is a file of the plugins folder, which the dock can delete.
         public let isOwn: Bool
         /// The size of its card, as the panel gives it: the preferred size, or else its own. A fault is never 1x1.
         public let size: SpotSize
 
         public var id: String {
-            command.id
+            spot.id
         }
 
-        public init(command: Spot, isOwn: Bool = false, size: SpotSize? = nil) {
-            self.command = command
+        public init(spot: Spot, isOwn: Bool = false, size: SpotSize? = nil) {
+            self.spot = spot
             self.isOwn = isOwn
-            let own = size ?? command.size
-            self.size = command.fault != nil && own == .small ? .wide : own
+            let own = size ?? spot.size
+            self.size = spot.fault != nil && own == .small ? .wide : own
         }
     }
 
@@ -27,12 +27,12 @@ public struct SpotDock: Equatable, Sendable {
     public var query = ""
 
     public init(items: [Item]) {
-        self.items = items.sorted { $0.command.name.localizedCaseInsensitiveCompare($1.command.name) == .orderedAscending }
+        self.items = items.sorted { $0.spot.name.localizedCaseInsensitiveCompare($1.spot.name) == .orderedAscending }
     }
 
     /// The dock with this spot at this size.
     public func resized(_ id: String, to size: SpotSize) -> SpotDock {
-        var next = SpotDock(items: items.map { $0.id == id ? Item(command: $0.command, isOwn: $0.isOwn, size: size) : $0 })
+        var next = SpotDock(items: items.map { $0.id == id ? Item(spot: $0.spot, isOwn: $0.isOwn, size: size) : $0 })
         next.query = query
         return next
     }
@@ -40,7 +40,7 @@ public struct SpotDock: Equatable, Sendable {
     /// The spots whose name, or the words under it, hold the search, by name.
     public var shown: [Item] {
         query.isEmpty ? items : items.filter { item in
-            [item.command.name, item.command.subtitle ?? ""].contains { $0.localizedStandardContains(query) }
+            [item.spot.name, item.spot.subtitle ?? ""].contains { $0.localizedStandardContains(query) }
         }
     }
 

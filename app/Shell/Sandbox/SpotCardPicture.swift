@@ -12,7 +12,7 @@ enum SpotCardPicture {
     /// output with no drawing that fits the size exits with 1.
     static func run(text: String, size: SpotSize, path: String) -> Never {
         NSApplication.shared.setActivationPolicy(.prohibited)
-        let output = PluginOutput(text: text)
+        let output = SpotOutput(text: text)
         let face = output.face
         guard let layout = face.layout(for: size) else {
             FileHandle.standardError.write(Data("The card has no drawing for the size \(size.name). Print grid.\(size.name)= lines.\n".utf8))
@@ -77,7 +77,7 @@ enum SpotCardPicture {
                 }
             }
         }
-        if entry.command.readsState { sheet.afterAnswer(draw) } else { draw() }
+        if entry.spot.readsState { sheet.afterAnswer(draw) } else { draw() }
         NSApplication.shared.run()
         exit(0)
     }

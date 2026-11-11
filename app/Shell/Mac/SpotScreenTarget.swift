@@ -31,7 +31,7 @@ struct SpotScreenTarget {
         case .window(.id(let id)): return .window(id)
         case .window(.front):
             guard let id = windows().first.flatMap({ $0[kCGWindowNumber as String] as? UInt32 }) else {
-                throw PluginError.fault("Openspot cannot find a window in front. Open one, then try again.")
+                throw SpotError.fault("Openspot cannot find a window in front. Open one, then try again.")
             }
             return .window(id)
         case .area(let frame?):
@@ -48,17 +48,17 @@ struct SpotScreenTarget {
         switch target {
         case .display(let id):
             guard let display = content.displays.first(where: { $0.displayID == id }) else {
-                throw PluginError.fault("Openspot cannot find display \(id). Run `openspot screen sources` to see each display.")
+                throw SpotError.fault("Openspot cannot find display \(id). Run `openspot screen sources` to see each display.")
             }
             return SpotScreenTarget(filter: SCContentFilter(display: display, excludingApplications: own, exceptingWindows: []), area: nil, frame: display.frame)
         case .window(let id):
             guard let window = content.windows.first(where: { $0.windowID == id }) else {
-                throw PluginError.fault("Openspot cannot find window \(id). Run `openspot screen sources` to see each window.")
+                throw SpotError.fault("Openspot cannot find window \(id). Run `openspot screen sources` to see each window.")
             }
             return SpotScreenTarget(filter: SCContentFilter(desktopIndependentWindow: window), area: nil, frame: window.frame)
         case .area(let frame):
             guard let display = content.displays.first(where: { $0.frame.contains(frame) }) else {
-                throw PluginError.fault("The area does not lie on one display. Pick an area inside one display.")
+                throw SpotError.fault("The area does not lie on one display. Pick an area inside one display.")
             }
             let filter = SCContentFilter(display: display, excludingApplications: own, exceptingWindows: [])
             return SpotScreenTarget(filter: filter, area: frame.offsetBy(dx: -display.frame.minX, dy: -display.frame.minY), frame: frame)

@@ -11,7 +11,7 @@ final class TranslatePluginTests: SamplePluginsCase {
             let release = folder.appendingPathComponent("release")
             let wait = "n=0; while [ ! -f '\(release.path)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done"
             try fake.replacingOccurrences(of: "if [ \"$2\" = languages ]; then", with: "if [ \"$2\" = languages ]; then\n  \(wait)").writeScript(to: tool)
-            let translate = try XCTUnwrap(try self.scan.commands.first { $0.name == "Translate" })
+            let translate = try XCTUnwrap(try self.scan.spots.first { $0.name == "Translate" })
 
             let options = try await Self.targetOptions(of: translate, release: release)
 

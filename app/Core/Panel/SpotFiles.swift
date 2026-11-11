@@ -47,18 +47,18 @@ public struct SpotFiles {
     }
 
     /// The plugin folder, with the core spots that this config turns on.
-    public func folder(_ config: Config) -> PluginFolder {
+    public func folder(_ config: Config) -> SpotFolder {
         .standard(environment: environment, home: home, enabled: config.arrangement.enabled, disabled: config.arrangement.disabled)
     }
 
     /// The plugin folder, with the core spots that the config file turns on now.
-    public var folder: PluginFolder {
+    public var folder: SpotFolder {
         folder(config.read())
     }
 
     /// The record of the calls of each spot, beside the plugins folder.
     public var log: CallLog {
-        CallLog(folder: PluginFolder.config(environment: environment, home: home).appendingPathComponent("logs", isDirectory: true))
+        CallLog(folder: SpotFolder.config(environment: environment, home: home).appendingPathComponent("logs", isDirectory: true))
     }
 
     /// The rows that a person picked last in a list, the newest first.

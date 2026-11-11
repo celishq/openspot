@@ -41,7 +41,7 @@ public struct SymbolCatalog: Sendable {
                 }
             }
         }
-        guard found else { throw PluginError.fault(Self.missing) }
+        guard found else { throw SpotError.fault(Self.missing) }
         return text
     }
 

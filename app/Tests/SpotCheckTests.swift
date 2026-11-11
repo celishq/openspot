@@ -3,7 +3,7 @@ import XCTest
 
 /// Proves that a check names the spot and the file of each fault, in words and in JSON for an agent.
 @MainActor
-final class PluginCheckTests: XCTestCase {
+final class SpotCheckTests: XCTestCase {
     private var folder: URL!
 
     override func setUp() async throws {
@@ -19,10 +19,10 @@ final class PluginCheckTests: XCTestCase {
         let file = folder.appendingPathComponent("weather.sh")
         try "#!/bin/sh\n# size=huge\necho\n".writeScript(to: file)
 
-        let findings = await PluginCheck(folder: PluginFolder(url: folder)).findings()
+        let findings = await SpotCheck(folder: SpotFolder(url: folder)).findings()
 
-        XCTAssertEqual(findings, [PluginCheck.Finding(spot: "weather", file: file.path, fault: "Weather has an unknown size: huge")])
-        let json = try JSONSerialization.jsonObject(with: Data(PluginCheck.json(findings).utf8)) as? [[String: String]]
+        XCTAssertEqual(findings, [SpotCheck.Finding(spot: "weather", file: file.path, fault: "Weather has an unknown size: huge")])
+        let json = try JSONSerialization.jsonObject(with: Data(SpotCheck.json(findings).utf8)) as? [[String: String]]
         XCTAssertEqual(json, [["spot": "weather", "file": file.path, "fault": "Weather has an unknown size: huge"]])
     }
 
@@ -30,7 +30,7 @@ final class PluginCheckTests: XCTestCase {
         let file = folder.appendingPathComponent("relay.sh")
         try "#!/bin/sh\n# stay=true\necho\n".writeScript(to: file)
 
-        let findings = await PluginCheck(folder: PluginFolder(url: folder)).findings()
+        let findings = await SpotCheck(folder: SpotFolder(url: folder)).findings()
 
         XCTAssertEqual(findings.map(\.fault), ["Relay has stay, which Openspot no longer reads. Use mode=stay or mode=always"])
     }
@@ -38,8 +38,8 @@ final class PluginCheckTests: XCTestCase {
     func testNoFaultIsAnEmptyList() async throws {
         try "#!/bin/sh\necho\n".writeScript(to: folder.appendingPathComponent("hello.sh"))
 
-        let findings = await PluginCheck(folder: PluginFolder(url: folder)).findings()
+        let findings = await SpotCheck(folder: SpotFolder(url: folder)).findings()
 
-        XCTAssertEqual(PluginCheck.json(findings), "[]\n")
+        XCTAssertEqual(SpotCheck.json(findings), "[]\n")
     }
 }

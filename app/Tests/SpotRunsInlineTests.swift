@@ -125,7 +125,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
         let text = try await runs.answer(of: spot, SpotAction(arguments: ["save"]), input: "a=1", limit: 5)
 
-        XCTAssertEqual(PluginOutput(text: text).toast, "Saved a=1")
+        XCTAssertEqual(SpotOutput(text: text).toast, "Saved a=1")
     }
 
     func testARunWithALimitStopsWaitingForAFunctionThatRunsTooLong() async throws {
@@ -136,7 +136,7 @@ final class SpotRunsInlineTests: SpotRunsCase {
             _ = try await runs.answer(of: spot, .read, limit: 0.2)
             XCTFail("the run returned")
         } catch {
-            XCTAssertEqual(error as? PluginError, .timedOut)
+            XCTAssertEqual(error as? SpotError, .timedOut)
         }
     }
 }

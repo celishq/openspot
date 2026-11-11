@@ -120,7 +120,7 @@ final class SpotEventsTests: SpotRunsCase {
 
     func testASpotThatListsAnEventCanShowInTheMenuBar() throws {
         try script(header: "read=app.front", "printf 'text=t\\ntitle=T\\n'")
-        XCTAssertTrue(try sheet().command.canShowInMenuBar)
+        XCTAssertTrue(try sheet().spot.canShowInMenuBar)
     }
 
     // MARK: B2, the events of the Mac

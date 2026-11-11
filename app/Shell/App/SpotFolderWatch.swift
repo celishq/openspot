@@ -10,12 +10,12 @@ final class SpotFolderWatch {
 
     private var stream: FSEventStreamRef?
     private let onChange: @MainActor () -> Void
-    private let plugins: PluginFolder
+    private let folder: SpotFolder
 
     /// Starts to watch the folder, and makes it when it does not exist yet.
     init(folder: URL, onChange: @escaping @MainActor () -> Void) {
         self.onChange = onChange
-        plugins = PluginFolder(url: folder)
+        self.folder = SpotFolder(url: folder)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         var context = FSEventStreamContext(version: 0, info: Unmanaged.passUnretained(self).toOpaque(), retain: nil, release: nil, copyDescription: nil)
         let callback: FSEventStreamCallback = { _, info, _, paths, _, _ in
@@ -23,7 +23,7 @@ final class SpotFolderWatch {
             let watch = Unmanaged<SpotFolderWatch>.fromOpaque(info).takeUnretainedValue()
             let changed = (Unmanaged<CFArray>.fromOpaque(paths).takeUnretainedValue() as? [String]) ?? []
             MainActor.assumeIsolated {
-                if changed.contains(where: watch.plugins.reads) { watch.onChange() }
+                if changed.contains(where: watch.folder.reads) { watch.onChange() }
             }
         }
         let flags = UInt32(kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagUseCFTypes)

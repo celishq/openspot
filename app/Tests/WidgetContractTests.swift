@@ -32,7 +32,7 @@ final class WidgetContractTests: XCTestCase {
     }
 
     private var scan: ScanResult {
-        get throws { try PluginFolder(url: folder).scan() }
+        get throws { try SpotFolder(url: folder).scan() }
     }
 
     private func single(size: String?) throws {
@@ -49,7 +49,7 @@ final class WidgetContractTests: XCTestCase {
             .write(to: folder.appendingPathComponent("morning/widgets.toml"), atomically: true, encoding: .utf8)
 
         let result = try scan
-        let widget = try XCTUnwrap(result.commands.first { $0.kind == .widget })
+        let widget = try XCTUnwrap(result.spots.first { $0.kind == .widget })
 
         XCTAssertEqual(widget.places, ["morning/power", "morning/power"])
         XCTAssertEqual(widget.opens, "morning/notes")
@@ -58,12 +58,12 @@ final class WidgetContractTests: XCTestCase {
 
     func testAOneLineDrawingIsAStripUnlessItAsksForAnotherSize() throws {
         try single(size: nil)
-        XCTAssertEqual(try scan.commands.first?.size, .strip)
+        XCTAssertEqual(try scan.spots.first?.size, .strip)
     }
 
     func testASingleWidgetCanAskToBeSmall() throws {
         try single(size: "small")
-        XCTAssertEqual(try scan.commands.first?.size, .small)
+        XCTAssertEqual(try scan.spots.first?.size, .small)
     }
 
     func testASingleWidgetRefusesAnUnknownSize() throws {
@@ -101,7 +101,7 @@ final class WidgetContractTests: XCTestCase {
         grid = ["heat heat power", "heat heat power"]
         """)
 
-        let command = try XCTUnwrap(try scan.commands.first { $0.kind == .widget })
+        let command = try XCTUnwrap(try scan.spots.first { $0.kind == .widget })
 
         XCTAssertEqual(command.places, ["heat", "power"])
         XCTAssertEqual(command.size, .large)
@@ -114,7 +114,7 @@ final class WidgetContractTests: XCTestCase {
         try power()
         try widgets("[[widgets]]\ntitle = \"Mine\"\ngrid = [\"power power\"]\nsize = \"wide\"\n")
 
-        XCTAssertEqual(try scan.commands.first { $0.kind == .widget }?.size, .wide)
+        XCTAssertEqual(try scan.spots.first { $0.kind == .widget }?.size, .wide)
     }
 
     func testAOneLineDrawingIsAStrip() {
@@ -168,7 +168,7 @@ final class WidgetContractTests: XCTestCase {
             _ = try await metric.read(timeout: 5)
             XCTFail("expected a fault")
         } catch {
-            XCTAssertEqual(error as? PluginError, .badMetric)
+            XCTAssertEqual(error as? SpotError, .badMetric)
         }
     }
 
@@ -196,11 +196,11 @@ final class WidgetContractTests: XCTestCase {
         """)
 
         let scan = try scan
-        let widget = try XCTUnwrap(scan.commands.first)
+        let widget = try XCTUnwrap(scan.spots.first)
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.commands.map(\.id), ["mine/Now", "mine/Then", "power"])
-        XCTAssertEqual(scan.commands.map(\.headerState.isOnGrid), [true, true, false])
+        XCTAssertEqual(scan.spots.map(\.id), ["mine/Now", "mine/Then", "power"])
+        XCTAssertEqual(scan.spots.map(\.headerState.isOnGrid), [true, true, false])
         XCTAssertEqual(widget.kind, .widget)
         XCTAssertEqual(widget.size, .strip)
         XCTAssertEqual(widget.layout, WidgetLayout(drawing: ["power power"]))
@@ -225,7 +225,7 @@ final class WidgetContractTests: XCTestCase {
 
         let scan = try scan
 
-        XCTAssertEqual(scan.commands, [])
+        XCTAssertEqual(scan.spots, [])
         XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "mine", reason: "Now names no metric called power")])
     }
 
@@ -235,7 +235,7 @@ final class WidgetContractTests: XCTestCase {
 
         let scan = try scan
 
-        XCTAssertEqual(scan.commands.map(\.id), ["power"])
+        XCTAssertEqual(scan.spots.map(\.id), ["power"])
         XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "mine", reason: "Now opens no command called nothing")])
     }
 
@@ -303,7 +303,7 @@ final class WidgetContractTests: XCTestCase {
     func testTheCheckReportsNoFaultsForAGoodFolder() async throws {
         try power()
 
-        let faults = await PluginCheck(folder: PluginFolder(url: folder)).faults()
+        let faults = await SpotCheck(folder: SpotFolder(url: folder)).faults()
 
         XCTAssertEqual(faults, [])
     }
@@ -318,7 +318,7 @@ final class WidgetContractTests: XCTestCase {
         try power("echo nonsense")
         try script("broken.sh", "#!/bin/sh\n# size=huge\n")
 
-        let faults = await PluginCheck(folder: PluginFolder(url: folder)).faults()
+        let faults = await SpotCheck(folder: SpotFolder(url: folder)).faults()
 
         XCTAssertEqual(faults, ["broken: Broken has an unknown size: huge", "power: It sent a metric Openspot cannot read."])
     }
@@ -326,7 +326,7 @@ final class WidgetContractTests: XCTestCase {
     func testTheCheckReportsAListThatFails() async throws {
         try script("tools.sh", "#!/bin/sh\n# read=sheet\necho gone >&2\nexit 1\n")
 
-        let faults = await PluginCheck(folder: PluginFolder(url: folder)).faults()
+        let faults = await SpotCheck(folder: SpotFolder(url: folder)).faults()
 
         XCTAssertEqual(faults, ["tools: gone"])
     }
@@ -334,7 +334,7 @@ final class WidgetContractTests: XCTestCase {
     func testTheCheckFaultsAPartOrAnActionCalledRead() async throws {
         try script("tools.sh", "#!/bin/sh\n# read=sheet\nprintf 'button=read\\ntitle=A\\n\\nrow=a\\ntitle=A\\n\\ntext=read\\ntitle=B\\n'\n")
 
-        let faults = await PluginCheck(folder: PluginFolder(url: folder)).faults()
+        let faults = await SpotCheck(folder: SpotFolder(url: folder)).faults()
 
         XCTAssertEqual(faults, ["tools: an action cannot be called read", "tools: a part cannot be called read"])
     }
@@ -343,7 +343,7 @@ final class WidgetContractTests: XCTestCase {
         let marker = folder.appendingPathComponent("marker")
         try script("once.sh", "#!/bin/sh\ntouch '\(marker.path)'\n")
 
-        let faults = await PluginCheck(folder: PluginFolder(url: folder)).faults()
+        let faults = await SpotCheck(folder: SpotFolder(url: folder)).faults()
 
         XCTAssertEqual(faults, [])
         XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))

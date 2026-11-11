@@ -64,7 +64,7 @@ final class TestHost: SpotsHost {
 
     func hold(_ keys: [GlobalKey]) {}
 
-    func chooseFiles(for command: Spot, then take: @escaping ([String]) -> Void) {}
+    func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {}
 
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {
         floats.append(entry.id)

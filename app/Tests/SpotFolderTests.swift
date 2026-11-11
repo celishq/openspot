@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-final class PluginFolderTests: XCTestCase {
+final class SpotFolderTests: XCTestCase {
     private var folder: URL!
 
     override func setUpWithError() throws {
@@ -25,13 +25,13 @@ final class PluginFolderTests: XCTestCase {
     }
 
     private var scan: ScanResult {
-        get throws { try PluginFolder(url: folder).scan() }
+        get throws { try SpotFolder(url: folder).scan() }
     }
 
     func testTheStampStaysWhileNothingThatAScanReadsChanges() throws {
         try write("a.sh", header: "title=A")
         try write("home/b.sh", header: "title=B")
-        let plugins = PluginFolder(url: folder)
+        let plugins = SpotFolder(url: folder)
 
         XCTAssertEqual(plugins.stamp(), plugins.stamp())
     }
@@ -43,7 +43,7 @@ final class PluginFolderTests: XCTestCase {
         let a = try write("a.sh", header: "title=A")
         try write("home/b.sh", header: "title=B")
         try FileManager.default.createSymbolicLink(at: folder.appendingPathComponent("linked.sh"), withDestinationURL: outside)
-        let plugins = PluginFolder(url: folder)
+        let plugins = SpotFolder(url: folder)
         let changes: [(String, () throws -> Void)] = [
             ("an edit of the same size", { try "#!/bin/sh\n# title=Z\n\n".write(to: a, atomically: false, encoding: .utf8) }),
             ("a mode", { try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: a.path) }),
@@ -58,23 +58,23 @@ final class PluginFolderTests: XCTestCase {
             try make()
             XCTAssertNotEqual(plugins.stamp(), before, change)
         }
-        XCTAssertNotEqual(PluginFolder(url: folder, core: folder, enabled: ["a"]).stamp(), PluginFolder(url: folder, core: folder).stamp())
+        XCTAssertNotEqual(SpotFolder(url: folder, core: folder, enabled: ["a"]).stamp(), SpotFolder(url: folder, core: folder).stamp())
         XCTAssertNotEqual(plugins.stamp(hosted: [Spot(id: "x", name: "X", url: folder)]), plugins.stamp())
     }
 
     func testAKeptScanEqualsAScanAndSeesANewFile() throws {
         try write("a.sh", header: "title=A")
-        let plugins = PluginFolder(url: folder)
+        let plugins = SpotFolder(url: folder)
 
         XCTAssertEqual(try plugins.keptScan(), try scan)
         try write("home/b.sh", header: "title=B")
 
-        XCTAssertEqual(try plugins.keptScan().commands.map(\.name), ["A", "B"])
+        XCTAssertEqual(try plugins.keptScan().spots.map(\.name), ["A", "B"])
     }
 
     func testKeptCoreChoicesSeeANewCoreFile() throws {
         try write("a.sh", header: "title=A")
-        let plugins = PluginFolder(url: folder.appendingPathComponent("own"), core: folder)
+        let plugins = SpotFolder(url: folder.appendingPathComponent("own"), core: folder)
 
         XCTAssertEqual(plugins.keptCoreChoices().map(\.name), ["A"])
         try write("b.sh", header: "title=B")
@@ -83,7 +83,7 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testAScanReadsEachEntryUpToOneFolderDownThatIsNotHidden() {
-        let plugins = PluginFolder(url: folder)
+        let plugins = SpotFolder(url: folder)
 
         XCTAssertTrue(plugins.reads(folder.path))
         XCTAssertTrue(plugins.reads(folder.appendingPathComponent("tool.sh").path))
@@ -97,36 +97,36 @@ final class PluginFolderTests: XCTestCase {
     func testADebugBuildKeepsItsStateInItsOwnFolder() {
         let home = URL(fileURLWithPath: "/Users/a")
 
-        XCTAssertEqual(PluginFolder.config(environment: [:], home: home, devState: "/repo/app/../.temp/openspot").path, "/repo/.temp/openspot")
-        XCTAssertEqual(PluginFolder.config(environment: [:], home: home, devState: "").path, "/Users/a/.config/openspot")
-        XCTAssertEqual(PluginFolder.config(environment: [:], home: home, devState: nil).path, "/Users/a/.config/openspot")
-        XCTAssertEqual(PluginFolder.config(environment: ["OPENSPOT_CONFIG": "/x"], home: home, devState: "/repo").path, "/x")
+        XCTAssertEqual(SpotFolder.config(environment: [:], home: home, devState: "/repo/app/../.temp/openspot").path, "/repo/.temp/openspot")
+        XCTAssertEqual(SpotFolder.config(environment: [:], home: home, devState: "").path, "/Users/a/.config/openspot")
+        XCTAssertEqual(SpotFolder.config(environment: [:], home: home, devState: nil).path, "/Users/a/.config/openspot")
+        XCTAssertEqual(SpotFolder.config(environment: ["OPENSPOT_CONFIG": "/x"], home: home, devState: "/repo").path, "/x")
     }
 
     func testRemoveTakesOnlyTheFileOfTheSpot() throws {
         try write("home/one.sh")
         try write("home/two.sh")
         var discarded: [String] = []
-        let command = try XCTUnwrap(try scan.commands.first { $0.id == "home/one" })
+        let command = try XCTUnwrap(try scan.spots.first { $0.id == "home/one" })
 
-        try PluginFolder(url: folder).remove(command) { url in
+        try SpotFolder(url: folder).remove(command) { url in
             discarded.append(url.lastPathComponent)
             try FileManager.default.removeItem(at: url)
         }
 
         XCTAssertEqual(discarded, ["one.sh"])
-        XCTAssertEqual(try scan.commands.map(\.id), ["home/two"])
+        XCTAssertEqual(try scan.spots.map(\.id), ["home/two"])
     }
 
     func testASpotOfTheAppIsAlwaysOnAndCannotBeRemoved() throws {
         let core = folder.appendingPathComponent("core")
         _ = try write("core/openspot/plugins.sh", header: "title=Plugins")
         _ = try write("core/apps.sh")
-        let place = PluginFolder(url: folder.appendingPathComponent("mine"), core: core)
+        let place = SpotFolder(url: folder.appendingPathComponent("mine"), core: core)
 
-        let spot = try XCTUnwrap(try place.scan().commands.first)
+        let spot = try XCTUnwrap(try place.scan().spots.first)
 
-        XCTAssertEqual(try place.scan().commands.map(\.id), ["openspot/plugins"])
+        XCTAssertEqual(try place.scan().spots.map(\.id), ["openspot/plugins"])
         XCTAssertTrue(spot.isBuiltIn)
         XCTAssertFalse(place.isCore(spot))
         XCTAssertEqual(place.coreChoices().map(\.id), ["apps"])
@@ -137,17 +137,17 @@ final class PluginFolderTests: XCTestCase {
         _ = try write("core/openspot/plugins.sh", header: "title=Plugins")
         _ = try write("mine/openspot/plugins.sh", header: "title=Mine")
 
-        let scan = try PluginFolder(url: folder.appendingPathComponent("mine"), core: folder.appendingPathComponent("core")).scan()
+        let scan = try SpotFolder(url: folder.appendingPathComponent("mine"), core: folder.appendingPathComponent("core")).scan()
 
-        XCTAssertEqual(scan.commands.map(\.name), ["Mine"])
-        XCTAssertEqual(scan.commands.map(\.isBuiltIn), [false])
+        XCTAssertEqual(scan.spots.map(\.name), ["Mine"])
+        XCTAssertEqual(scan.spots.map(\.isBuiltIn), [false])
     }
 
     func testAnExecutableIsASpotWithItsHeader() throws {
         try write("one.sh", header: "title=First\nsize=square\nicon=moon\ndetail=Off")
 
         XCTAssertEqual(try scan.refused, [])
-        let one = try XCTUnwrap(try scan.commands.first)
+        let one = try XCTUnwrap(try scan.spots.first)
         XCTAssertEqual(one.id, "one")
         XCTAssertEqual(one.name, "First")
         XCTAssertEqual(one.size, .square)
@@ -161,7 +161,7 @@ final class PluginFolderTests: XCTestCase {
         try write("safari.sh", header: "icon=/Applications/Safari.app")
         try write("tea.sh", header: "icon=🍵")
 
-        let commands = try scan.commands
+        let commands = try scan.spots
         let cup = try XCTUnwrap(commands.first { $0.id == "cup" })
         let safari = try XCTUnwrap(commands.first { $0.id == "safari" })
         let tea = try XCTUnwrap(commands.first { $0.id == "tea" })
@@ -175,7 +175,7 @@ final class PluginFolderTests: XCTestCase {
     func testAScriptWithNoHeaderIsAWideLaunchSpotNamedAfterItsFile() throws {
         try write("say-hello_now.sh")
 
-        let command = try XCTUnwrap(try scan.commands.first)
+        let command = try XCTUnwrap(try scan.spots.first)
 
         XCTAssertEqual(command.name, "Say hello now")
         XCTAssertEqual(command.kind, .launch)
@@ -194,14 +194,14 @@ final class PluginFolderTests: XCTestCase {
         try write("tools/one.sh")
         try "shared code".write(to: folder.appendingPathComponent("tools/shared.sh"), atomically: true, encoding: .utf8)
 
-        XCTAssertEqual(try scan.commands.map(\.id), ["tools/one", "tools/two"])
+        XCTAssertEqual(try scan.spots.map(\.id), ["tools/one", "tools/two"])
     }
 
     func testSkipsAnEmptyFolderAndAFileThatIsNotExecutable() throws {
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("empty"), withIntermediateDirectories: true)
         try "text".write(to: folder.appendingPathComponent("notes.txt"), atomically: true, encoding: .utf8)
 
-        XCTAssertEqual(try scan.plugins, [])
+        XCTAssertEqual(try scan.files, [])
         XCTAssertEqual(try scan.refused, [])
     }
 
@@ -210,7 +210,7 @@ final class PluginFolderTests: XCTestCase {
         try write("b.sh", header: "read=panel")
         try write("c.sh", header: "read=panel\noffers=search")
 
-        let commands = try scan.commands
+        let commands = try scan.spots
 
         XCTAssertEqual(commands.map(\.kind), [.list, .launch, .list])
         XCTAssertEqual(commands.map(\.readsState), [false, true, false])
@@ -220,7 +220,7 @@ final class PluginFolderTests: XCTestCase {
     func testReadIsAListOfMoments() throws {
         try write("a.sh", header: "read=panel, sheet,30")
 
-        let read = try XCTUnwrap(try scan.commands.first?.read)
+        let read = try XCTUnwrap(try scan.spots.first?.read)
 
         XCTAssertEqual(read.moments, [.panel, .sheet, .every(30)])
         XCTAssertEqual(read.seconds, 30)
@@ -230,7 +230,7 @@ final class PluginFolderTests: XCTestCase {
         try write("a.sh", header: "read=launch")
         try write("b.sh", header: "read=panel,wake")
 
-        XCTAssertEqual(try scan.plugins, [])
+        XCTAssertEqual(try scan.files, [])
         XCTAssertEqual(try scan.refused, [
             ScanResult.Refusal(file: "a", reason: "A has an unknown read: launch. Use sheet, panel, a number of seconds or an event, such as clipboard or music.track"),
             ScanResult.Refusal(file: "b", reason: "B has an unknown read: panel,wake. Use sheet, panel, a number of seconds or an event, such as clipboard or music.track")
@@ -244,7 +244,7 @@ final class PluginFolderTests: XCTestCase {
         try write("d.sh", header: "mode=sometimes")
 
         let scan = try scan
-        XCTAssertEqual(scan.commands.map(\.mode), [.stay, .always, .once])
+        XCTAssertEqual(scan.spots.map(\.mode), [.stay, .always, .once])
         XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "d", reason: "D has an unknown mode: sometimes. Use once, stay, always or inline")])
     }
 
@@ -254,8 +254,8 @@ final class PluginFolderTests: XCTestCase {
         try write("a.sh", header: "mode=inline")
 
         let scan = try scan
-        XCTAssertEqual(scan.commands.map(\.id), ["sum"])
-        XCTAssertEqual(scan.commands.map(\.mode), [.inline])
+        XCTAssertEqual(scan.spots.map(\.id), ["sum"])
+        XCTAssertEqual(scan.spots.map(\.mode), [.inline])
         XCTAssertEqual(scan.refused, [
             ScanResult.Refusal(file: "a", reason: "A runs inline, so it needs a .js file with its header in // lines"),
         ])
@@ -275,7 +275,7 @@ final class PluginFolderTests: XCTestCase {
         try write("a.sh", header: "drop=mov, mkv,folder")
         try write("b.sh")
 
-        XCTAssertEqual(try scan.commands.map(\.drop), [["mov", "mkv", "folder"], []])
+        XCTAssertEqual(try scan.spots.map(\.drop), [["mov", "mkv", "folder"], []])
     }
 
     func testANumberInAListOfMomentsStartsTheSpotOffTheGrid() throws {
@@ -283,15 +283,15 @@ final class PluginFolderTests: XCTestCase {
 
         let scan = try scan
 
-        XCTAssertEqual(scan.commands.map(\.id), ["a"])
-        XCTAssertEqual(scan.commands.map(\.headerState.isOnGrid), [false])
+        XCTAssertEqual(scan.spots.map(\.id), ["a"])
+        XCTAssertEqual(scan.spots.map(\.headerState.isOnGrid), [false])
         XCTAssertEqual(scan.metrics.map(\.read?.seconds), [30])
     }
 
     func testOldHeaderKeysHaveNoEffect() throws {
         try write("a.sh", header: "live=true\nsearch=live\nrecents=false\norder=last\ngrid=false\nrank=1")
 
-        let command = try XCTUnwrap(try scan.commands.first)
+        let command = try XCTUnwrap(try scan.spots.first)
 
         XCTAssertEqual(try scan.refused, [])
         XCTAssertEqual(command.mode, .once)
@@ -305,7 +305,7 @@ final class PluginFolderTests: XCTestCase {
         try write("a.sh", header: "read=panel\noffers=search")
         try write("b.sh", header: "read=panel\noffers=rows")
 
-        XCTAssertEqual(try scan.commands.map(\.headerState.isOnGrid), [true, false])
+        XCTAssertEqual(try scan.spots.map(\.headerState.isOnGrid), [true, false])
     }
 
     func testTheMainSearchNeedsAMomentOutsideTheSheet() throws {
@@ -313,8 +313,8 @@ final class PluginFolderTests: XCTestCase {
         try write("c.sh", header: "read=30\noffers=search")
 
         XCTAssertEqual(try scan.refused, [])
-        XCTAssertEqual(try scan.commands.map(\.isGlobal), [true, true])
-        XCTAssertEqual(try scan.commands.map(\.kind), [.list, .list])
+        XCTAssertEqual(try scan.spots.map(\.isGlobal), [true, true])
+        XCTAssertEqual(try scan.spots.map(\.kind), [.list, .list])
     }
 
     func testANumberAsTheReadIsAMetricWhoseCardStartsOffTheGrid() throws {
@@ -323,7 +323,7 @@ final class PluginFolderTests: XCTestCase {
         let scan = try scan
         let metric = try XCTUnwrap(scan.metrics.first)
 
-        XCTAssertEqual(scan.commands.map(\.id), ["cups"])
+        XCTAssertEqual(scan.spots.map(\.id), ["cups"])
         XCTAssertFalse(metric.headerState.isOnGrid)
         XCTAssertEqual(metric.id, "cups")
         XCTAssertEqual(metric.name, "Cups")
@@ -337,9 +337,9 @@ final class PluginFolderTests: XCTestCase {
         let scan = try scan
 
         XCTAssertEqual(scan.metrics.map(\.id), ["pulls"])
-        XCTAssertEqual(scan.commands.map(\.id), ["pulls"])
-        XCTAssertEqual(scan.commands.first?.kind, .list)
-        XCTAssertEqual(scan.commands.first?.readsState, false)
+        XCTAssertEqual(scan.spots.map(\.id), ["pulls"])
+        XCTAssertEqual(scan.spots.first?.kind, .list)
+        XCTAssertEqual(scan.spots.first?.readsState, false)
     }
 
     func testTheNewestFileComesFirstAndTheFolderSetsTheRest() throws {
@@ -348,7 +348,7 @@ final class PluginFolderTests: XCTestCase {
             try FileManager.default.setAttributes([.creationDate: Date(timeIntervalSince1970: day * 86_400)], ofItemAtPath: url.path)
         }
 
-        XCTAssertEqual(try scan.commands.map(\.id), ["c", "b", "d", "a"])
+        XCTAssertEqual(try scan.spots.map(\.id), ["c", "b", "d", "a"])
     }
 
     func testAScriptThatAWidgetOpensHasNoCardOnTheGrid() throws {
@@ -357,7 +357,7 @@ final class PluginFolderTests: XCTestCase {
         try write("cpu.sh", header: "read=60")
         try "[[widgets]]\ntitle = \"Box\"\ngrid = [\"cpu\"]\nsize = \"square\"\nopens = \"details\"\n".write(to: folder.appendingPathComponent("box.toml"), atomically: true, encoding: .utf8)
 
-        let commands = try scan.commands
+        let commands = try scan.spots
 
         XCTAssertEqual(commands.first { $0.id == "details" }?.isOnGrid, false)
         XCTAssertEqual(commands.first { $0.id == "other" }?.isOnGrid, true)
@@ -373,7 +373,7 @@ final class PluginFolderTests: XCTestCase {
         try write("k.sh", header: "read=click")
         try write("l.sh", header: "read=panel,later")
 
-        XCTAssertEqual(try scan.plugins, [])
+        XCTAssertEqual(try scan.files, [])
         XCTAssertEqual(try scan.refused, [
             ScanResult.Refusal(file: "a", reason: "A has an unknown read: sometimes. Use sheet, panel, a number of seconds or an event, such as clipboard or music.track"),
             ScanResult.Refusal(file: "b", reason: "B has an unknown size: huge"),
@@ -391,7 +391,7 @@ final class PluginFolderTests: XCTestCase {
         try write("n.sh", header: "answers=^[0-9]\nmode=stay")
         try write("o.sh", header: "answers=^[0-9]\nmode=always")
 
-        XCTAssertEqual(try scan.commands.map(\.id), ["n", "o"])
+        XCTAssertEqual(try scan.spots.map(\.id), ["n", "o"])
         XCTAssertEqual(try scan.refused, [
             ScanResult.Refusal(file: "m", reason: "M has an unknown answers pattern: [0-9. Write a regular expression, such as answers=^[0-9]"),
         ])
@@ -401,7 +401,7 @@ final class PluginFolderTests: XCTestCase {
         try write("calc.sh", header: "answers=^[0-9]")
         try write("dict.sh", header: "read=sheet\nanswers=^define ")
 
-        let commands = try scan.commands
+        let commands = try scan.spots
         let calc = commands.first { $0.id == "calc" }
         let dict = commands.first { $0.id == "dict" }
 
@@ -425,19 +425,19 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testAConfigPathHoldsThePluginFolder() {
-        let folder = PluginFolder.standard(environment: ["OPENSPOT_CONFIG": "/tmp/debug"], home: URL(fileURLWithPath: "/home"))
+        let folder = SpotFolder.standard(environment: ["OPENSPOT_CONFIG": "/tmp/debug"], home: URL(fileURLWithPath: "/home"))
 
         XCTAssertEqual(folder.url.path, "/tmp/debug/plugins")
     }
 
     func testAPluginPathBeatsAConfigPath() {
-        let folder = PluginFolder.standard(environment: ["OPENSPOT_CONFIG": "/tmp/debug", "OPENSPOT_PLUGINS": "/tmp/own"], home: URL(fileURLWithPath: "/home"))
+        let folder = SpotFolder.standard(environment: ["OPENSPOT_CONFIG": "/tmp/debug", "OPENSPOT_PLUGINS": "/tmp/own"], home: URL(fileURLWithPath: "/home"))
 
         XCTAssertEqual(folder.url.path, "/tmp/own")
     }
 
     func testWithNoPathTheHomeHoldsThePluginFolder() {
-        let folder = PluginFolder.standard(environment: [:], home: URL(fileURLWithPath: "/home"))
+        let folder = SpotFolder.standard(environment: [:], home: URL(fileURLWithPath: "/home"))
 
         XCTAssertEqual(folder.url.path, "/home/.config/openspot/plugins")
     }
@@ -445,7 +445,7 @@ final class PluginFolderTests: XCTestCase {
     func testAShortcutInTheHeaderIsRefusedBecauseThePersonGivesTheLetter() throws {
         try write("a.sh", header: "title=One\nshortcut=d")
 
-        XCTAssertEqual(try scan.commands.map(\.id), [])
+        XCTAssertEqual(try scan.spots.map(\.id), [])
         XCTAssertEqual(try scan.refused, [ScanResult.Refusal(file: "a", reason: "One has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots")])
     }
 }

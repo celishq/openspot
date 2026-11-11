@@ -388,8 +388,8 @@ final class SpotRunsCallTests: SpotRunsCase {
         """)
         let sheet = try sheet()
         sheet.open {}
-        try await wait("the action") { sheet.command.actions.count == 1 }
-        let action = try XCTUnwrap(sheet.command.actions.first)
+        try await wait("the action") { sheet.spot.actions.count == 1 }
+        let action = try XCTUnwrap(sheet.spot.actions.first)
 
         sheet.run(action, item: nil)
         try await wait("the call") { self.log() == ["read", "go"] }
@@ -405,7 +405,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(header: "read=panel", "[ \"$1\" = read ] && { printf 'switch=power\\nvalue=false\\n'; exit 0; }\nsleep 5")
         let sheet = try sheet()
         runs.panelOpened()
-        try await wait("the kind") { sheet.command.kind == .toggle }
+        try await wait("the kind") { sheet.spot.kind == .toggle }
 
         sheet.pressCard()
         XCTAssertEqual(sheet.state.on, true)

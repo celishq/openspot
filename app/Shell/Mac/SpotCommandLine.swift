@@ -99,11 +99,11 @@ enum SpotCommandLine {
     /// Reports the faults of a plugins folder, or of the standard one, in lines or as JSON, and exits with 1 when there are
     /// any.
     private static func check(_ path: String?, json: Bool = false) -> Never {
-        let folder = path.map { PluginFolder(url: URL(fileURLWithPath: $0, isDirectory: true)) } ?? .standard()
+        let folder = path.map { SpotFolder(url: URL(fileURLWithPath: $0, isDirectory: true)) } ?? .standard()
         Task {
-            let findings = await PluginCheck(folder: folder).findings()
+            let findings = await SpotCheck(folder: folder).findings()
             if json {
-                print(PluginCheck.json(findings), terminator: "")
+                print(SpotCheck.json(findings), terminator: "")
             } else {
                 findings.forEach { print($0.line) }
                 print(findings.isEmpty ? "No faults in \(folder.url.path)." : "\(findings.count) faults in \(folder.url.path).")
@@ -115,9 +115,9 @@ enum SpotCommandLine {
 
     /// The installed spot with this ID, which a scan of the standard folder finds.
     private static func spot(_ id: String) throws -> Spot {
-        let folder = PluginFolder.standard()
+        let folder = SpotFolder.standard()
         guard let spot = try folder.scan().scripts.first(where: { $0.id == id }) else {
-            throw PluginError.fault("Openspot has no spot \(id) in \(folder.url.path). Run `openspot check` to see each file that does not load.")
+            throw SpotError.fault("Openspot has no spot \(id) in \(folder.url.path). Run `openspot check` to see each file that does not load.")
         }
         return spot
     }
@@ -149,7 +149,7 @@ enum SpotCommandLine {
     private static func renderSheet(of id: String, to path: String) -> Never {
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
         model.reload()
-        guard let spot = model.entries.first(where: { $0.id == id })?.command else {
+        guard let spot = model.entries.first(where: { $0.id == id })?.spot else {
             FileHandle.standardError.write(Data("Openspot has no spot \(id). Run `openspot check` to see each file that does not load.\n".utf8))
             exit(1)
         }
@@ -163,7 +163,7 @@ enum SpotCommandLine {
             FileHandle.standardError.write(Data("\(reason)\n".utf8))
             exit(1)
         }
-        guard !PluginOutput(text: text).parts.isEmpty else {
+        guard !SpotOutput(text: text).parts.isEmpty else {
             FileHandle.standardError.write(Data("\(spot.name) shows rows, and `openspot render` draws only a sheet of parts. Run `openspot spot run \(id)` to see its rows, or add `--card wide` to draw its card.\n".utf8))
             exit(1)
         }
@@ -176,7 +176,7 @@ enum SpotCommandLine {
             print(try work(), terminator: "")
             exit(0)
         } catch {
-            FileHandle.standardError.write(Data("\((error as? PluginError)?.reason ?? error.localizedDescription)\n".utf8))
+            FileHandle.standardError.write(Data("\((error as? SpotError)?.reason ?? error.localizedDescription)\n".utf8))
             exit(1)
         }
     }
@@ -188,8 +188,8 @@ enum SpotCommandLine {
                 print(try await work(), terminator: "")
                 exit(0)
             } catch {
-                if case PluginError.failedWithFix(_, _, let link) = error { print("link=\(link.absoluteString)") }
-                FileHandle.standardError.write(Data("\((error as? PluginError)?.reason ?? error.localizedDescription)\n".utf8))
+                if case SpotError.failedWithFix(_, _, let link) = error { print("link=\(link.absoluteString)") }
+                FileHandle.standardError.write(Data("\((error as? SpotError)?.reason ?? error.localizedDescription)\n".utf8))
                 exit(1)
             }
         }

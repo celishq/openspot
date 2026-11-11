@@ -19,7 +19,7 @@ public struct Config: Equatable, Sendable {
             document = try TomlDocument(text: text)
         } catch {
             panelKey = nil
-            faults = ["config.toml: \((error as? PluginError)?.reason ?? String(describing: error))"]
+            faults = ["config.toml: \((error as? SpotError)?.reason ?? String(describing: error))"]
             return
         }
         for key in (Array(document.values.keys) + Array(document.arrays.keys)).sorted() where !["panel_key", "fix_key", "spots", "keys", "settings"].contains(key) {

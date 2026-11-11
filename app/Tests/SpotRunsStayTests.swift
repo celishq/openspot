@@ -61,9 +61,9 @@ final class SpotRunsStayTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
-        try await wait("the action") { sheet.command.actions.count == 1 }
+        try await wait("the action") { sheet.spot.actions.count == 1 }
 
-        sheet.run(try XCTUnwrap(sheet.command.actions.first), item: nil)
+        sheet.run(try XCTUnwrap(sheet.spot.actions.first), item: nil)
         try await wait("the running call") { sheet.calls.count == 1 }
         try "".write(toFile: path("done"), atomically: true, encoding: .utf8)
 
@@ -75,8 +75,8 @@ final class SpotRunsStayTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
-        try await wait("the action") { sheet.command.actions.count == 1 }
-        let action = try XCTUnwrap(sheet.command.actions.first)
+        try await wait("the action") { sheet.spot.actions.count == 1 }
+        let action = try XCTUnwrap(sheet.spot.actions.first)
         sheet.run(action, item: nil)
         try await wait("the running call") { sheet.calls.count == 1 }
         time += 2
@@ -135,7 +135,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         runs.panelOpened()
         sheet.open {}
         try await wait("the row") { sheet.list.shown.count == 1 }
-        let action = try XCTUnwrap(sheet.command.actions.first)
+        let action = try XCTUnwrap(sheet.spot.actions.first)
 
         sheet.run(action, item: sheet.list.selectedItem)
         sheet.run(action, item: nil)
@@ -149,13 +149,13 @@ final class SpotRunsStayTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
-        try await wait("the action") { sheet.command.actions.count == 1 }
-        let action = try XCTUnwrap(sheet.command.actions.first)
+        try await wait("the action") { sheet.spot.actions.count == 1 }
+        let action = try XCTUnwrap(sheet.spot.actions.first)
 
         let asked = try await sheet.form(action, item: nil)
         let form = try XCTUnwrap(asked)
         XCTAssertEqual(form.fields.map(\.name), ["a"])
-        XCTAssertEqual(sheet.command.actions.count, 1)
+        XCTAssertEqual(sheet.spot.actions.count, 1)
         var draft = FormDraft(form: form, prefill: "")
         draft.set("one", for: "a")
         let answer = try await sheet.submit(action, item: nil, draft: draft)
@@ -179,8 +179,8 @@ final class SpotRunsStayTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
-        try await wait("the action") { sheet.command.actions.count == 1 }
-        let action = try XCTUnwrap(sheet.command.actions.first)
+        try await wait("the action") { sheet.spot.actions.count == 1 }
+        let action = try XCTUnwrap(sheet.spot.actions.first)
 
         async let first = sheet.form(action, item: nil)
         try await wait("the first ask") { self.log("asked").contains("arg=new") }
@@ -205,14 +205,14 @@ final class SpotRunsStayTests: SpotRunsCase {
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}
-        try await wait("the action") { sheet.command.actions.count == 1 }
-        let action = try XCTUnwrap(sheet.command.actions.first)
+        try await wait("the action") { sheet.spot.actions.count == 1 }
+        let action = try XCTUnwrap(sheet.spot.actions.first)
 
         do {
             _ = try await sheet.form(action, item: nil)
             XCTFail("It should have no form.")
         } catch {
-            XCTAssertEqual(error as? PluginError, .badForm)
+            XCTAssertEqual(error as? SpotError, .badForm)
         }
     }
 

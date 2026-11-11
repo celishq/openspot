@@ -19,7 +19,7 @@ final class SpotQuietHost: SpotsHost {
     func applyConfig(_ config: Config) {}
     func setEntryKey(on isOn: Bool) {}
     func hold(_ keys: [GlobalKey]) {}
-    func chooseFiles(for command: Spot, then take: @escaping ([String]) -> Void) {}
+    func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {}
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {}
     func land(_ id: String) {}
     var isPointerOverDrop: Bool { false }

@@ -104,7 +104,7 @@ final class SheetStreamTests: XCTestCase {
             for try await _ in ScriptProcess(url: silent, limit: 1.5).start() {}
             XCTFail("It should time out.")
         } catch {
-            XCTAssertEqual(error as? PluginError, .timedOut)
+            XCTAssertEqual(error as? SpotError, .timedOut)
         }
         FileManager.default.createFile(atPath: release, contents: Data())
         let second = try await frames.next()
@@ -113,18 +113,18 @@ final class SheetStreamTests: XCTestCase {
     }
 
     func testAFrameReplacesTheWholeSheet() throws {
-        var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "grid=a b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")))
+        var panel = try XCTUnwrap(SheetParts(output: SpotOutput(text: "grid=a b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")))
 
-        panel.take(PluginOutput(text: "text=c\ntitle=C\n"), answering: panel.generation)
+        panel.take(SpotOutput(text: "text=c\ntitle=C\n"), answering: panel.generation)
 
         XCTAssertEqual(panel.parts.map(\.id), ["c"])
         XCTAssertNil(panel.layout)
     }
 
     func testAFrameKeepsTheTextThePersonIsTyping() throws {
-        var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "field=a\nvalue=typed\n")))
+        var panel = try XCTUnwrap(SheetParts(output: SpotOutput(text: "field=a\nvalue=typed\n")))
 
-        panel.take(PluginOutput(text: "field=a\nvalue=old\n"), answering: panel.generation, keeping: "a")
+        panel.take(SpotOutput(text: "field=a\nvalue=old\n"), answering: panel.generation, keeping: "a")
 
         XCTAssertEqual(panel.parts.first?.value, "typed")
     }
@@ -177,7 +177,7 @@ final class SheetStreamTests: XCTestCase {
 
     func testAScriptThatStaysIsAList() throws {
         let url = try script("# mode=stay\n# read=panel")
-        let command = try XCTUnwrap(try Plugin(file: url, id: "script")).commands.first
+        let command = try XCTUnwrap(try SpotFile(file: url, id: "script")).spots.first
 
         XCTAssertEqual(command?.mode, .stay)
         XCTAssertEqual(command?.kind, .list)

@@ -10,13 +10,13 @@ class SamplePluginsCase: XCTestCase {
 
     var exampleScan: ScanResult {
         get throws {
-            try PluginFolder(url: examples).scan()
+            try SpotFolder(url: examples).scan()
         }
     }
 
     /// The example spot with this name.
     func example(_ name: String) throws -> Spot {
-        try XCTUnwrap(try exampleScan.commands.first { $0.name == name })
+        try XCTUnwrap(try exampleScan.spots.first { $0.name == name })
     }
 
     var scan: ScanResult {
@@ -24,7 +24,7 @@ class SamplePluginsCase: XCTestCase {
             let root = URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             let folder = root.appendingPathComponent("plugins")
-            var scan = try PluginFolder(url: folder).scan()
+            var scan = try SpotFolder(url: folder).scan()
             scan.listKeys(in: ConfigFile(url: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/config.toml")))
             return scan
         }
@@ -170,8 +170,8 @@ class SamplePluginsCase: XCTestCase {
     }
 
     /// Reads a script to find the action that it prints.
-    func action(_ id: String, of command: Spot) async throws -> CommandAction {
-        let actions = try await command.items(timeout: 5).actions
+    func action(_ id: String, of spot: Spot) async throws -> CommandAction {
+        let actions = try await spot.items(timeout: 5).actions
         return try XCTUnwrap(actions.first { $0.id == id })
     }
 
@@ -182,7 +182,7 @@ class SamplePluginsCase: XCTestCase {
     /// Runs the color picker with a stand-in for the openspot command, which prints this answer.
     func pickColor(answer: String, in folder: URL) async throws -> String? {
         try "#!/bin/sh\n[ \"$1 $2\" = 'color pick' ] && printf '%s' '\(answer)'\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
-        let picker = try XCTUnwrap(try scan.commands.first { $0.name == "Color picker" })
+        let picker = try XCTUnwrap(try scan.spots.first { $0.name == "Color picker" })
         return try await picker.perform(picker.click, timeout: 5)
     }
 
@@ -208,22 +208,22 @@ class SamplePluginsCase: XCTestCase {
         """
         let tool = folder.appendingPathComponent("tools/openspot")
         try script.writeScript(to: tool)
-        return try XCTUnwrap(try scan.commands.first { $0.name == "Translate" })
+        return try XCTUnwrap(try scan.spots.first { $0.name == "Translate" })
     }
 
-    func text(of id: String, in output: PluginOutput) -> String? {
+    func text(of id: String, in output: SpotOutput) -> String? {
         output.parts.first { $0.id == id }?.value
     }
 
     /// Runs a handler through the calls as an open sheet does: one run for each, with the values of the sheet on stdin.
     /// Returns the answer to the last one.
     @MainActor
-    static func drive(_ command: Spot, _ actions: [SpotAction]) async throws -> PluginOutput {
-        var last = try await command.items(timeout: 10)
+    static func drive(_ spot: Spot, _ actions: [SpotAction]) async throws -> SpotOutput {
+        var last = try await spot.items(timeout: 10)
         var panel = try XCTUnwrap(SheetParts(output: last))
         for action in actions {
             if action.arguments.count == 2 { panel.set(action.arguments[1], of: action.arguments[0]) }
-            last = PluginOutput(text: try await SpotRuns().answer(of: command, action, input: panel.values, limit: 30))
+            last = SpotOutput(text: try await SpotRuns().answer(of: spot, action, input: panel.values, limit: 30))
             panel.take(last, answering: panel.generation)
         }
         return last
@@ -240,15 +240,15 @@ class SamplePluginsCase: XCTestCase {
 
         """
         try script.writeScript(to: folder.appendingPathComponent("tools/openspot"))
-        return try XCTUnwrap(try scan.commands.first { $0.name == "Emojis & Symbols" })
+        return try XCTUnwrap(try scan.spots.first { $0.name == "Emojis & Symbols" })
     }
 
     /// Reads a sheet, and returns the options of its target menu with its first parts, and after `release` appears.
     @MainActor
-    static func targetOptions(of command: Spot, release: URL) async throws -> (first: Int, last: Int) {
+    static func targetOptions(of spot: Spot, release: URL) async throws -> (first: Int, last: Int) {
         let runs = SpotRuns()
         defer { runs.quit() }
-        let sheet = runs.sheet(for: command)
+        let sheet = runs.sheet(for: spot)
         let options: () -> Int = {
             guard case .menu(let options, _)? = sheet.panel?.parts.first(where: { $0.id == "target" })?.control else { return 0 }
             return options.count

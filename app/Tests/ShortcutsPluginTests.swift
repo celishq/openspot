@@ -4,7 +4,7 @@ import XCTest
 /// Proves the Shortcuts spot with its real script in a private home and a fake `shortcuts` command.
 final class ShortcutsPluginTests: SamplePluginsCase {
     private func shortcuts() throws -> Spot {
-        try XCTUnwrap(try scan.commands.first { $0.name == "Shortcuts" })
+        try XCTUnwrap(try scan.spots.first { $0.name == "Shortcuts" })
     }
 
     /// Puts a fake `shortcuts` on the path. It lists one folder, and a run or a view writes its arguments to `shortcuts-args`,
@@ -78,7 +78,7 @@ final class ShortcutsPluginTests: SamplePluginsCase {
             XCTAssertEqual(same, first)
             XCTAssertEqual(changed.count, 2)
             XCTAssertEqual(changed.first, first.first)
-            XCTAssertEqual(PluginOutput(text: changed.last ?? "").items.map(\.title), ["Make a GIF", "Video to audio"])
+            XCTAssertEqual(SpotOutput(text: changed.last ?? "").items.map(\.title), ["Make a GIF", "Video to audio"])
         }
     }
 
@@ -237,7 +237,7 @@ final class ShortcutsPluginTests: SamplePluginsCase {
             do {
                 try await shortcuts.perform(.item(row), timeout: 10)
                 XCTFail("A failed run passed")
-            } catch PluginError.failedWithFix(_, let message, let link) {
+            } catch SpotError.failedWithFix(_, let message, let link) {
                 XCTAssertEqual(message, "Take a break stopped before it finished. Open it in Shortcuts to see which step failed.")
                 XCTAssertEqual(link.absoluteString, "shortcuts://open-shortcut?name=Take%20a%20break")
             }

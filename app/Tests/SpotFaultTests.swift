@@ -137,7 +137,7 @@ final class SpotFaultTests: XCTestCase {
         model.folderChanged()
 
         XCTAssertEqual(entry("weather")?.state.title, "Weather")
-        XCTAssertNil(entry("weather")?.command.fault)
+        XCTAssertNil(entry("weather")?.spot.fault)
     }
 
     func testAFailedRunMarksItsCardUntilARunSucceeds() async throws {

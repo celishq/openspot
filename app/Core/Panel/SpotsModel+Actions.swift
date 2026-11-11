@@ -7,7 +7,7 @@ extension SpotsModel {
     private var target: Target? {
         if let entry = openEntry { return (entry, openSheet?.selectedItem) }
         guard let entry = selectedEntry else { return nil }
-        if let item = entry.item, let list = entries.first(where: { $0.id == entry.command.id }) { return (list, item) }
+        if let item = entry.item, let list = entries.first(where: { $0.id == entry.spot.id }) { return (list, item) }
         return (entry, nil)
     }
 
@@ -42,7 +42,7 @@ extension SpotsModel {
             pressPart(part)
             return true
         }
-        if key == ActionKey(name: "escape"), let target, let action = target.entry.command.actions(for: target.item).first(where: { $0.key == key }) {
+        if key == ActionKey(name: "escape"), let target, let action = target.entry.spot.actions(for: target.item).first(where: { $0.key == key }) {
             run(action, on: target)
             return true
         }
@@ -56,7 +56,7 @@ extension SpotsModel {
             return menu != nil
         }
         let quiet = searchText.isEmpty ? extras(on: target) : []
-        guard let action = (target.entry.command.actions(for: target.item) + quiet).first(where: { $0.key == key }) else { return openSheet(on: key) }
+        guard let action = (target.entry.spot.actions(for: target.item) + quiet).first(where: { $0.key == key }) else { return openSheet(on: key) }
         if action.confirm != nil {
             openMenu(on: target)
             menu?.select(action)
@@ -227,7 +227,7 @@ extension SpotsModel {
     private func actionMenu(on target: Target) -> ActionMenu? {
         let isOpenList = openList == target.entry.id
         return ActionMenu(
-            command: target.entry.command,
+            spot: target.entry.spot,
             item: target.item,
             showsPrimary: !isOpenList || target.item != nil,
             extras: extras(on: target),
@@ -240,7 +240,7 @@ extension SpotsModel {
     /// own Delete.
     private func extras(on target: Target) -> [CommandAction] {
         guard openList == nil, target.item == nil else { return [] }
-        let command = target.entry.command
+        let command = target.entry.spot
         if command.fault != nil { return [.edit, .remove()] }
         guard command.host == nil, !command.isBuiltIn else { return [] }
         guard !files.folder(Config(text: "")).isCore(command) else { return [.share, .turnOff] }
@@ -249,7 +249,7 @@ extension SpotsModel {
 
     /// How many widgets the file of a widget holds, which go together when it is removed.
     private func widgets(sharingFileWith entry: Entry) -> Int {
-        entry.kind == .widget ? entries.filter { $0.command.url == entry.command.url }.count : 1
+        entry.kind == .widget ? entries.filter { $0.spot.url == entry.spot.url }.count : 1
     }
 
     /// The keys that work on the selected row or card, in words for the bottom of the panel.

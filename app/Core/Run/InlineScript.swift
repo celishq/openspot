@@ -104,7 +104,7 @@ final class InlineScript: @unchecked Sendable {
     /// The context with the file run in it, which it makes at the first call.
     private func loaded() throws -> JSContext {
         if let context { return context }
-        guard let context = JSContext() else { throw PluginError.failed(1, "Openspot cannot start JavaScript.") }
+        guard let context = JSContext() else { throw SpotError.failed(1, "Openspot cannot start JavaScript.") }
         context.exceptionHandler = { [weak self] _, value in self?.thrown = value }
         let ask: @convention(block) (JSValue, JSValue) -> [String: Any] = { [weak self] argv, input in
             let arguments = (argv.toArray() ?? []).map { "\($0)" }
@@ -127,7 +127,7 @@ final class InlineScript: @unchecked Sendable {
         guard let value = thrown else { return }
         thrown = nil
         let message = value.objectForKeyedSubscript("message").flatMap { $0.isUndefined ? nil : $0.toString() } ?? value.toString() ?? ""
-        throw PluginError.failed(1, message)
+        throw SpotError.failed(1, message)
     }
 
     /// Asks the API in the app, or the `openspot` command for a call that runs in a process of its own.
