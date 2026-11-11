@@ -27,15 +27,13 @@ struct Pick: Equatable {
         return [part(left, columns), part(top, rows), part(width, columns), part(height, rows)].joined(separator: " ")
     }
 
-    /// The block inside this rectangle, whose origin is its bottom left, as AppKit draws.
+    /// The frame that `openspot window move` gives a window for this block, inside an area whose origin is its bottom
+    /// left, as AppKit draws. It rounds each edge from the top left of the area, as the move does.
     func rect(in area: CGRect) -> CGRect {
-        let cell = CGSize(width: area.width / CGFloat(columns), height: area.height / CGFloat(rows))
-        return CGRect(
-            x: area.minX + CGFloat(left) * cell.width,
-            y: area.maxY - CGFloat(top + height) * cell.height,
-            width: CGFloat(width) * cell.width,
-            height: CGFloat(height) * cell.height
-        ).integral
+        func edge(_ count: Int, _ whole: Int, _ size: CGFloat) -> CGFloat { (size * (CGFloat(count) / CGFloat(whole))).rounded() }
+        let left = edge(self.left, columns, area.width), right = edge(self.left + width, columns, area.width)
+        let top = edge(self.top, rows, area.height), bottom = edge(self.top + height, rows, area.height)
+        return CGRect(x: area.minX + left, y: area.maxY - bottom, width: right - left, height: bottom - top)
     }
 }
 
@@ -82,7 +80,7 @@ final class Shade {
         block.backgroundColor = NSColor(white: 0.85, alpha: 0.28).cgColor
         block.borderColor = NSColor(white: 1, alpha: 0.45).cgColor
         block.borderWidth = 1
-        block.cornerRadius = 12
+        block.cornerRadius = 10
         block.cornerCurve = .continuous
         block.opacity = 0
         content.layer?.addSublayer(block)
@@ -95,7 +93,7 @@ final class Shade {
             block.opacity = 0
             return
         }
-        let target = pick.rect(in: CGRect(origin: .zero, size: area.size)).insetBy(dx: 6, dy: 6)
+        let target = pick.rect(in: CGRect(origin: .zero, size: area.size))
         CATransaction.begin()
         if block.opacity == 0 {
             CATransaction.setDisableActions(true)
@@ -115,6 +113,20 @@ final class Shade {
 
     func hide() {
         window.orderOut(nil)
+    }
+
+    /// Moves the block onto the frame that the window really took, given in points from the top left of the main
+    /// screen, as Openspot prints it. An app that keeps a larger size then still lies under the block.
+    func follow(_ frame: CGRect) {
+        let top = NSScreen.screens.first?.frame.maxY ?? 0
+        let target = CGRect(x: frame.minX - area.minX, y: top - frame.maxY - area.minY, width: frame.width, height: frame.height)
+        guard abs(target.minX - block.frame.minX) > 1 || abs(target.minY - block.frame.minY) > 1
+            || abs(target.width - block.frame.width) > 1 || abs(target.height - block.frame.height) > 1 else { return }
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(0.12)
+        CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeOut))
+        block.frame = target
+        CATransaction.commit()
     }
 
     /// Fades the block out, then hides its window.
@@ -402,8 +414,14 @@ final class Grid: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func moved(_ pick: Pick, in app: pid_t?, status: Int32, text: String) {
-        landing?.fade()
-        landing = nil
+        if let landing {
+            self.landing = nil
+            guard status == 0 else { return landing.fade() }
+            Self.frame { frame in
+                if let frame { landing.follow(frame) }
+                DispatchQueue.main.asyncAfter(deadline: .now() + (frame == nil ? 0 : 0.12)) { landing.fade() }
+            }
+        }
         let waited = pending != nil
         pending = nil
         guard status != 0 else { return }
@@ -413,6 +431,23 @@ final class Grid: NSObject, NSApplicationDelegate, NSWindowDelegate {
         pending = Pending(pick: pick, app: app, end: waited ? pendingEnd : Date().addingTimeInterval(180))
         pendingEnd = pending!.end
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.retry() }
+    }
+
+    /// Reads the frame of the front window from Openspot, and gives it on the main thread, or nil.
+    private static func frame(_ done: @escaping (CGRect?) -> Void) {
+        let read = Process()
+        let output = Pipe()
+        read.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        read.arguments = ["openspot", "window", "frame"]
+        read.standardOutput = output
+        read.standardError = FileHandle.nullDevice
+        read.terminationHandler = { _ in
+            let numbers = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+                .split(separator: " ").compactMap { Double($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+            let frame = numbers.count >= 4 ? CGRect(x: numbers[0], y: numbers[1], width: numbers[2], height: numbers[3]) : nil
+            DispatchQueue.main.async { done(frame) }
+        }
+        do { try read.run() } catch { done(nil) }
     }
 
     /// Tries the kept pick again while its app is in front, until it moves or three minutes pass.
