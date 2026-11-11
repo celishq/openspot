@@ -6,7 +6,7 @@ import SwiftUI
 
 final class SpotsPanel: NSPanel {
     private var model: SpotsModel?
-    private let place = SpotsWindowPlace()
+    let place = SpotsWindowPlace()
     /// The frame that the window had before Edit Spots grew it.
     private var restFrame: NSRect?
     private var pressWatch: Task<Void, Never>?

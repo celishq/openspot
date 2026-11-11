@@ -11,7 +11,8 @@ import QuartzCore
 /// `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`. The panel stays almost clear, takes no focus and no clicks,
 /// unless `OPENSPOT_SEEN` asks for a picture. With `OPENSPOT_SHOTS`, a drag saves a picture of each state to that folder
 /// from a panel off every screen, `edit` saves Edit Spots with its dock from the panel at its place, and a card carried to
-/// the dock, and neither times anything.
+/// the dock, and neither times anything. `tile` pulls the corner of a spot of the dock, or with `OPENSPOT_ROW=grid` of a
+/// card, with mouse events on each frame, and writes how often its size changed.
 @MainActor
 final class SpotMotionProbe: NSObject {
     private let model: SpotsModel
@@ -60,6 +61,10 @@ final class SpotMotionProbe: NSObject {
     private func begin() {
         if action == "drag" || action == "mouse" { return beginDrag() }
         if action == "edit" { return beginEdit() }
+        if action == "tile" {
+            model.beginEditing()
+            return DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.pullTile() }
+        }
         let target = model.entries.first { spot == nil ? $0.kind == .widget && $0.command.opens != nil : $0.id == spot }
         guard let target, let view = panel.contentView else { return finish(with: "no spot to open\n") }
         let link = view.displayLink(target: self, selector: #selector(tick))
@@ -157,6 +162,69 @@ final class SpotMotionProbe: NSObject {
             self.save(to: "\(folder)/tile-resized.png")
             self.model.cancelResize()
             self.finish(with: "shots\n")
+        }
+    }
+
+    /// Presses the corner handle of the dock's first spot with more than one size, or of the grid's smallest such card, and
+    /// pulls it two columns right and a row down and back, once for every four presses, with a mouse event on each frame.
+    /// The app takes the focus, as the events reach only the key window.
+    private func pullTile() {
+        let index = model.dock.shown.firstIndex { model.sizes(of: SpotsModel.Entry(command: $0.command, run: nil)).count > 1 }
+        guard let window = panel as? SpotsPanel, let view = panel.contentView, let dock = model.dockFrame, let index else {
+            return finish(with: "no spot in the dock\n")
+        }
+        let cards = model.visible.indices.filter { model.visible[$0].isOnGrid && model.sizes(of: model.visible[$0]).count > 1 }
+        let card = row == "grid" ? cards.min { model.visible[$0].size.columns * model.visible[$0].size.rows < model.visible[$1].size.columns * model.visible[$1].size.rows } : nil
+        let id = card.map { model.visible[$0].id } ?? model.dock.shown[index].id
+        let tile = model.dock.rects(columns: SpotTokens.dockColumns(width: dock.width))[index]
+        let grid = SpotTokens.gridOrigin(scrollOffset: model.gridScroll)
+        let end = card.map { CGPoint(x: grid.x + model.placements[$0].rect.maxX, y: grid.y + model.placements[$0].rect.maxY) }
+            ?? CGPoint(x: dock.minX + SpotTokens.padding + tile.maxX, y: dock.minY + SpotTokens.dockRowsTop + tile.maxY - model.dockScroll)
+        panel.ignoresMouseEvents = false
+        NSApp.activate(ignoringOtherApps: true)
+        panel.makeKey()
+        let inset = SpotTokens.keycap / 2
+        let corner = CGPoint(x: window.place.panel.x + end.x - inset, y: window.place.panel.y + end.y - inset)
+        let reach = CGSize(width: 2 * (SpotTokens.cell + SpotTokens.columnGap), height: SpotTokens.rowHeight + SpotTokens.rowGap)
+        func post(_ type: NSEvent.EventType, _ share: CGFloat) {
+            let point = NSPoint(x: corner.x + reach.width * share, y: view.bounds.height - corner.y - reach.height * share)
+            guard let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: panel.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1) else { return }
+            NSApp.postEvent(event, atStart: false)
+        }
+        let size = { self.model.dock.items.first { $0.id == id }?.size ?? self.model.visible.first { $0.id == id }?.size }
+        var last = size()
+        var changes = 0
+        var steps: [String] = []
+        var resized = false
+        let leg = 0.5
+        let tours = Double(max(presses / 4, 1))
+        var begun: CFTimeInterval?
+        let link = view.displayLink(target: self, selector: #selector(tick))
+        link.add(to: .main, forMode: .common)
+        self.link = link
+        dragStep = { [weak self] now in
+            guard let self else { return }
+            guard let first = begun else {
+                begun = now
+                start = CACurrentMediaTime()
+                return post(.leftMouseDown, 0)
+            }
+            let time = now - first
+            resized = resized || model.dockResize != nil || model.resize != nil
+            if size() != last {
+                changes += 1
+                last = size()
+                steps.append(String(format: "%.2f %@", time, last?.name ?? "none"))
+            }
+            guard time < tours * 2 * leg else {
+                post(.leftMouseUp, 0)
+                dragStep = nil
+                return DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.finish(with: self.report() + "\(id) resized \(resized), size changes \(changes)\n" + steps.joined(separator: "\n") + "\n")
+                }
+            }
+            let phase = time.truncatingRemainder(dividingBy: 2 * leg) / leg
+            post(.leftMouseDragged, CGFloat(phase < 1 ? phase : 2 - phase))
         }
     }
 

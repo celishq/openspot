@@ -28,7 +28,7 @@ struct SpotHandleArea: View {
     }
 
     private var resize: some Gesture {
-        DragGesture(minimumDistance: 0, coordinateSpace: .named(SpotsView.panelSpace))
+        DragGesture(minimumDistance: 0, coordinateSpace: .global)
             .onChanged {
                 model.resizeSpot(id, by: $0.translation, grip: grip)
                 guard let point = model.resizePointer, let size = model.resizeSize, let angle = SpotTokens.handleAngle(of: size, at: point) else { return }
