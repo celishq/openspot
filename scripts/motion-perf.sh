@@ -1,7 +1,7 @@
 #!/bin/sh
 # Builds a Release app and times the frames while a sheet opens and closes again and again.
 # The panel stays almost clear and takes no focus, so the Mac stays usable. Each run prints one line.
-# Usage: scripts/motion-perf.sh [runs]. SPOT, ACTION (arrows, typing, pick, search with TEXT, or panel with a PAUSE over 5 s), CYCLES, PAUSE and TEXT pass to the probe. It fails when the median of dropped
+# Usage: scripts/motion-perf.sh [runs]. SPOT, ACTION (arrows, typing, pick, drag, edit, search with TEXT, or panel with a PAUSE over 5 s), CYCLES, PAUSE and TEXT pass to the probe. It fails when the median of dropped
 # frames is over BUDGET (140 for the 40 motions of a run), and keeps the display awake while it runs.
 set -e
 cd "$(dirname "$0")/.."

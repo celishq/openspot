@@ -1,7 +1,8 @@
 import Foundation
 
 /// Packs spots into full rows of four columns. Each spot takes the next shelf, a smaller spot moves up to fill
-/// a gap, and spots grow until their shelf has no hole.
+/// a gap, and spots grow until their shelf has no hole. A square lies on the left of its shelf, or on the right when small
+/// spots that fit on half a line come before it.
 public struct SpotGrid: Sendable {
     private typealias Slot = (index: Int, size: SpotSize)
 
@@ -21,6 +22,11 @@ public struct SpotGrid: Sendable {
                 row += 2
             } else if first.size.rows > 1 {
                 row += placeSquare(first, in: &queue, row: row, placements: &placements)
+            } else if let position = squarePosition(after: first, in: queue) {
+                let leading = [first] + queue[..<position]
+                let square = queue[position]
+                queue.removeSubrange(...position)
+                row += placeSquare(square, after: leading, in: &queue, row: row, placements: &placements)
             } else {
                 placeRow(taking(first, from: &queue, room: 4), row: row, placements: &placements)
                 row += 1
@@ -87,28 +93,43 @@ public struct SpotGrid: Sendable {
         return nil
     }
 
-    /// Places a square with the spots beside it, and returns the number of rows it used.
-    private func placeSquare(_ square: Slot, in queue: inout [Slot], row: Int, placements: inout [SpotPlacement]) -> Int {
-        if let next = queue.first, next.size == .square {
+    /// Where the next square lies in the queue, when the one-row spots before it, from `first` on, fit on half a line.
+    private func squarePosition(after first: Slot, in queue: [Slot]) -> Int? {
+        var width = first.size.columns
+        for (position, next) in queue.enumerated() {
+            guard width <= 2 else { return nil }
+            if next.size == .square { return position }
+            guard next.size.rows == 1 else { return nil }
+            width += next.size.columns
+        }
+        return nil
+    }
+
+    /// Places a square with the spots beside it, and returns the number of rows it used. Spots that come before the square
+    /// put it on the right.
+    private func placeSquare(_ square: Slot, after leading: [Slot] = [], in queue: inout [Slot], row: Int, placements: inout [SpotPlacement]) -> Int {
+        if leading.isEmpty, let next = queue.first, next.size == .square {
             queue.removeFirst()
             placements.append(SpotPlacement(index: square.index, row: row, column: 0, size: .square))
             placements.append(SpotPlacement(index: next.index, row: row, column: 2, size: .square))
             return 2
         }
-        let side = taking(nil, from: &queue, room: 4, widest: 2)
+        let side = leading + taking(nil, from: &queue, room: 4 - leading.reduce(0) { $0 + $1.size.columns }, widest: 2)
         guard !side.isEmpty else {
             placements.append(SpotPlacement(index: square.index, row: row, column: 0, size: .strip))
             return 1
         }
-        placements.append(SpotPlacement(index: square.index, row: row, column: 0, size: .square))
+        let squareColumn = leading.isEmpty ? 0 : 2
+        let sideColumn = 2 - squareColumn
+        placements.append(SpotPlacement(index: square.index, row: row, column: squareColumn, size: .square))
         if side.count == 1 {
-            placements.append(SpotPlacement(index: side[0].index, row: row, column: 2, size: .square))
+            placements.append(SpotPlacement(index: side[0].index, row: row, column: sideColumn, size: .square))
             return 2
         }
         var used = [0, 0]
         for spot in justified(side) {
             let line = used[0] + spot.size.columns <= 2 ? 0 : 1
-            placements.append(SpotPlacement(index: spot.index, row: row + line, column: 2 + used[line], size: spot.size))
+            placements.append(SpotPlacement(index: spot.index, row: row + line, column: sideColumn + used[line], size: spot.size))
             used[line] += spot.size.columns
         }
         return 2

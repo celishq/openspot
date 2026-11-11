@@ -24,6 +24,24 @@ final class ScrollWindowTests: XCTestCase {
         XCTAssertEqual(window.offset(showing: 900...1000, from: 0), 500)
     }
 
+    func testAPointInTheClearPartDoesNotScroll() {
+        XCTAssertEqual(window.offset(scrolling: 300, from: 200, by: 10, over: 50), 200)
+    }
+
+    func testAPointPastTheBottomScrollsDownFasterTheDeeperItLies() {
+        XCTAssertEqual(window.offset(scrolling: 425, from: 0, by: 10, over: 50), 5)
+        XCTAssertEqual(window.offset(scrolling: 480, from: 0, by: 10, over: 50), 10)
+    }
+
+    func testAPointPastTheTopScrollsUpAndStopsAtTheTop() {
+        XCTAssertEqual(window.offset(scrolling: 275, from: 200, by: 10, over: 50), 195)
+        XCTAssertEqual(window.offset(scrolling: 50, from: 4, by: 10, over: 50), 0)
+    }
+
+    func testAPointPastTheBottomStopsAtTheEndOfTheContent() {
+        XCTAssertEqual(window.offset(scrolling: 990, from: 498, by: 10, over: 50), 500)
+    }
+
     func testContentThatFitsNeverScrolls() {
         let short = ScrollWindow(top: 100, bottom: 400, viewHeight: 500, contentHeight: 300)
         XCTAssertEqual(short.offset(showing: 450...480, from: 0), 0)

@@ -37,6 +37,17 @@ public struct ScreenPlace: Sendable {
         return CGPoint(x: x.rounded(.down), y: y.rounded(.down))
     }
 
+    /// Where the dock of Edit Spots lies: along the bottom of the free area, centred under the panel's content and whole on
+    /// the screen, with as many rows as fit under that content, up to `dockRows`, and one at least.
+    public static func dock(under panel: CGRect, in area: CGRect) -> CGRect {
+        let margin = SpotTokens.dockMargin
+        let width = min(SpotTokens.dockWidth, area.width - 2 * margin)
+        let x = min(max(panel.midX - width / 2, area.minX + margin), area.maxX - margin - width).rounded(.down)
+        let room = panel.minY - area.minY - 2 * margin
+        let rows = (1...SpotTokens.dockRows).last { SpotTokens.dockHeight(rows: $0) <= room } ?? 1
+        return CGRect(x: x, y: area.minY + margin, width: width, height: SpotTokens.dockHeight(rows: rows))
+    }
+
     private func screen(window: CGRect?, pointer: CGPoint) -> Screen? {
         if let window, let holding = screens.max(by: { Self.share(of: window, on: $0) < Self.share(of: window, on: $1) }),
            Self.share(of: window, on: holding) > 0 {

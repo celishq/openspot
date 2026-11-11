@@ -17,6 +17,7 @@ extension SpotsModel {
             return handleMenuKey(key)
         }
         if isEditing {
+            if isSearchingDock, key.name != "escape" { return false }
             handleEditKey(key)
             return true
         }
@@ -66,12 +67,12 @@ extension SpotsModel {
         return true
     }
 
-    /// Opens the New spot sheet for `⌘N` on the grid, when no action of the selected card takes the key. Returns false for
-    /// any other key.
+    /// Opens the sheet that `⌘N` opens, when no action of the selected card takes the key. Returns false for any other
+    /// key.
     func openNewSpot(on key: ActionKey) -> Bool {
-        guard key == Self.newSpotKey, openList == nil, entries.contains(where: { $0.id == ShippedSpot.newID }) else { return false }
+        guard key == Self.newSpotKey, openList == nil, let id = entries.first(where: { $0.command.opensWithNewKey })?.id else { return false }
         endEditing(moving: false)
-        open(ShippedSpot.newID, moving: true)
+        open(id, moving: true)
         return true
     }
 
@@ -170,8 +171,8 @@ extension SpotsModel {
 
     /// Whether the row that records takes a shake too: a row of Settings that gives a key to a command or a float (W3).
     public var takesShake: Bool {
-        guard let recording, case .settings? = openEntry?.command.shipped else { return false }
-        return SettingsSpot.takesShake(recording)
+        guard let recording else { return false }
+        return openEntry?.command.shipped?.takesShake(recording) ?? false
     }
 
     /// The words of the key that records.
@@ -249,7 +250,7 @@ extension SpotsModel {
     /// The keys that work on the selected row or card, in words for the bottom of the panel.
     public var hint: String {
         if recording != nil { return "Esc Cancel" }
-        if isEditing { return "S Size   H Hide   ⇧ Arrows Move   Esc Done" }
+        if isEditing { return "S Size   H \(selectedEntry?.isOnGrid == false ? "Show" : "Hide")   ⇧ Arrows Move   Esc Done" }
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
         if let panel = openPanel, !panel.showsRows || panel.drawsKeys { return panel.hint { work(of: $0) != nil } }
         let keys = target.flatMap { target in
@@ -307,7 +308,7 @@ extension SpotsModel {
             }
         } else if action == .share {
             share(target.entry)
-        } else if action.id == CatalogSpot.reviewID, let item = target.item {
+        } else if action.id == target.entry.command.reviewAction, let item = target.item {
             reviewCore(item)
         } else if action.id == CommandAction.removeID {
             remove(target.entry)
@@ -321,7 +322,7 @@ extension SpotsModel {
         } else if action.isForm {
             openForm(action, on: target)
         } else if action.after == .stay {
-            if action.id == CatalogSpot.selectAllID { spotsChanged = true }
+            if target.entry.command.changesSpots { spotsChanged = true }
             sheets[target.entry.id]?.run(action, item: target.item)
         } else if let item = target.item {
             pick(item, of: target.entry, action: action)

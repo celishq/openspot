@@ -15,6 +15,10 @@ struct SpotGridGlass: View {
         let isCovered: Bool
         /// Whether the person presses the card, which grows it and shows the stronger blur through it.
         let isPressed: Bool
+        /// Whether the person drags the card in Edit Spots, which grows it and moves it with the pointer.
+        let isLifted: Bool
+        /// Whether the card is lifted or still lands, when it shows no press.
+        let isHeld: Bool
     }
 
     let cards: [Card]
@@ -22,6 +26,7 @@ struct SpotGridGlass: View {
     /// moves no shape of the stronger blur.
     let pressable: [Card]
     let size: CGSize
+    let lift: SpotLift
     @Environment(\.spotIsShown) private var isShown
 
     /// How far the blur reaches past the grid on each side, so that a pushed card keeps its blur.
@@ -60,7 +65,8 @@ struct SpotGridGlass: View {
             .scaleEffect(isPress && card.isPressed ? SpotMotion.pressedScale : 1)
             .animation(SpotMotion.press, value: isPress && card.isPressed)
             .scaleEffect(isShown ? 1 : SpotMotion.hiddenScale)
-            .modifier(card.motion)
+            .scaleEffect(card.isLifted ? SpotMotion.liftedScale : 1)
+            .modifier(SpotCardPlace(motion: card.motion, lift: card.isLifted ? lift : nil))
             .opacity(card.isCovered || (isPress && !card.isPressed) ? 0 : 1)
     }
 }

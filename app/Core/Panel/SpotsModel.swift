@@ -204,6 +204,40 @@ public final class SpotsModel {
     @ObservationIgnored var formAsk: UUID?
     /// Whether the grid is in Edit Spots, where it also shows the spots that are off the grid, and a press only selects.
     public var isEditing = false
+    /// The card that the person drags in Edit Spots, and where a release puts it.
+    public internal(set) var drag: SpotDrag?
+    public let lift = SpotLift()
+    /// The card that a release or a cancel of a drag puts in place, until its motion ends.
+    public internal(set) var landing: String?
+    /// The card that the window draws over the panel and the dock while the person carries it, until it lands.
+    public internal(set) var carry: SpotCarry?
+    /// Where the dock lies in the panel's space while Edit Spots shows it, and how far it has scrolled.
+    @ObservationIgnored public var dockFrame: CGRect?
+    @ObservationIgnored public internal(set) var dockScroll: CGFloat = 0
+    /// The layouts of the grid for each place that a carried spot of the dock can take. Its card is on the grid while the
+    /// drag holds it there.
+    @ObservationIgnored var arrival: SpotDrag?
+    /// The spot of the dock that the person resizes by its corner, the size it had, and where its card lay in the dock's
+    /// rows when the drag started.
+    public internal(set) var dockResize: (id: String, start: SpotSize, origin: CGPoint)?
+    /// The card that the person resizes by its corner in Edit Spots, and the size that a release keeps.
+    public internal(set) var resize: SpotResize?
+    /// How long the pointer stays near a new place before the other cards make room there.
+    @ObservationIgnored public var dragRest: Duration = .milliseconds(100)
+    /// The place that the cards make room at when the pointer has rested near it for `dragRest`.
+    @ObservationIgnored var dragTarget: Int?
+    @ObservationIgnored var dragWait: Task<Void, Never>?
+    /// How far the grid has scrolled, how far it had when the pointer pressed a card to drag or resize it, and the
+    /// pointer's last move since, so that a scroll with no move of the pointer moves the card with the grid.
+    @ObservationIgnored public internal(set) var gridScroll: CGFloat = 0
+    @ObservationIgnored var scrollAtPress: CGFloat = 0
+    @ObservationIgnored var pointerMove: CGSize?
+    /// The spots of Edit Spots' dock.
+    public internal(set) var dock = SpotDock(items: [])
+    /// Whether the person types in the dock's search, which then takes each key but Esc.
+    public internal(set) var isSearchingDock = false
+    /// Where the person pressed a card's resize handle, in the handle's square.
+    @ObservationIgnored var resizeGrip = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)
     public var arrangement = SpotArrangement()
     /// The symbol of the command whose key a person pressed last, which the Openspot item shows for `flashPause`.
     public private(set) var flashSymbol: String?
@@ -274,8 +308,8 @@ public final class SpotsModel {
         let shipped = host.shippedSpots(folder: folder, config: files.config, update: updateSpot, offersLogin: isFirstLaunch)
             + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
         var scan = pluginScan.look(at: folder, shipped: shipped)
-        let new = shipped.lazy.compactMap { if case .new(let new)? = $0.shipped { new } else { nil } }.first
-        let faults = new.map { folder.faultSpots(of: scan, new: $0) } ?? []
+        let prompt = shipped.lazy.compactMap(\.agentPrompt).first
+        let faults = prompt.map { folder.faultSpots(of: scan, prompt: $0) } ?? []
         if !faults.isEmpty { scan.plugins.append(Plugin(id: ShippedSpot.faultsID, commands: faults)) }
         guard pluginScan.stamp != loadedStamp || config != loadedConfig else { return holdAssignedKeys(config) }
         let carded = Set(faults.map(\.id))
@@ -289,6 +323,7 @@ public final class SpotsModel {
         arrangement = config.arrangement
         scanned = scan.commands
         rebuildEntries()
+        if isEditing { refreshDock(in: folder) }
         if problems != self.problems, !problems.isEmpty {
             host.notify(problems.joined(separator: " "))
         }
@@ -390,9 +425,10 @@ public final class SpotsModel {
         runs.arrive(moment)
     }
 
-    /// A downloaded update waits, so the Updates spot reads now and is on the grid before the panel next opens.
+    /// A downloaded update waits, so the spot that reads on an update reads now and is on the grid before the panel next
+    /// opens.
     public func updateIsReady() {
-        sheets.values.first { if case .updates? = $0.command.shipped { true } else { false } }?.read(need: .change)
+        sheets.values.first { $0.command.readsOnUpdate }?.read(need: .change)
     }
 
     /// Stops each call as the app quits.
@@ -429,7 +465,7 @@ public final class SpotsModel {
                 host.applyConfig()
                 holdAssignedKeys(files.config.read())
             }
-            if spotsChanged, id == ShippedSpot.spotsID { reloadUnderSheet() }
+            if spotsChanged, sheets[id]?.command.changesSpots == true { reloadUnderSheet() }
         case .landed:
             host.land(id)
         case .closed:
@@ -455,7 +491,7 @@ public final class SpotsModel {
     public func updateVisible() {
         let next = found()
         if next != visible { visible = next }
-        let sizes = visible.map(\.size)
+        let sizes = visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size }
         if sizes != laidOutSizes {
             laidOutSizes = sizes
             placements = SpotGrid().place(sizes)
@@ -478,7 +514,8 @@ public final class SpotsModel {
     private func found() -> [Entry] {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
-            return cards.filter(\.isOnGrid) + (isEditing ? cards.filter { !$0.isOnGrid } : [])
+            let arriving = carry.flatMap { $0.tile != nil && drag?.id == $0.entry.id ? [$0.entry] : nil } ?? []
+            return dragged(cards.filter(\.isOnGrid) + arriving + (isEditing ? cards.filter { !$0.isOnGrid } : []))
         }
         var ids = Set<String>()
         let answers = entries.filter { $0.command.answers?.matches(text) == true }
@@ -748,8 +785,10 @@ public final class SpotsModel {
         return true
     }
 
+    /// Opens the sheet that the settings key of the Mac opens.
     public func openSettings() {
-        open(ShippedSpot.settingsID, moving: true)
+        guard let id = entries.first(where: { $0.command.opensWithSettingsKey })?.id else { return }
+        open(id, moving: true)
     }
 
     /// Opens a sheet, which closes the run of the sheet before and stops a recording in it, and shows it once it is ready: at
@@ -949,16 +988,16 @@ public final class SpotsModel {
             remember(item, of: entry)
             sheets[entry.id]?.list.select(run: item.run)
         } else {
-            if action == nil, item.run == CatalogSpot.buildRun {
-                open(ShippedSpot.newID, moving: true)
+            if action == nil, let id = entry.command.rowOpens[item.run] {
+                open(id, moving: true)
                 return
             }
-            if entry.id == ShippedSpot.spotsID, action == nil { spotsChanged = true }
+            if entry.command.changesSpots, action == nil { spotsChanged = true }
             if action == nil, item.shortcut != nil {
                 toggleRecording(id: item.run)
                 return
             }
-            if action == nil, case .settings? = entry.command.shipped, let change = SettingsSpot.change(of: item.run) {
+            if action == nil, let change = entry.command.shipped?.settingChange(of: item.run) {
                 changeSetting(of: change.spot, with: change.action)
                 return
             }

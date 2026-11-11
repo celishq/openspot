@@ -26,6 +26,8 @@ final class TestHost: SpotsHost {
     var prepared: [SpotItem] = []
     /// The glyphs of each whole list whose pictures the model asked for.
     var glyphLists: [[String]] = []
+    /// The ends of the motions that a test holds, to run them later. With none held, each motion ends at once.
+    var heldEnds: [@MainActor () -> Void]?
     /// The model whose show and hide steps the panel runs, as the app's window does.
     weak var model: SpotsModel?
 
@@ -88,6 +90,6 @@ final class TestHost: SpotsHost {
         body()
         if let phase = model?.transition.phase { phases.append(phase) }
         openings.append(model?.runs.opening.moving)
-        completion()
+        if heldEnds != nil { heldEnds?.append(completion) } else { completion() }
     }
 }

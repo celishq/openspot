@@ -15,6 +15,7 @@ enum SpotMotion {
     static let hiddenScale = 1.04
     static let backdropHiddenScale = 1.02
     static let pressedScale = 1.04
+    static let liftedScale = 1.05
     static let pushedScale = 0.4
     static let pressedGlass = 1.5
     static let press = Animation.spring(duration: 0.2, bounce: 0.2)
@@ -23,6 +24,10 @@ enum SpotMotion {
     static let keycap = Animation.easeOut(duration: 0.12)
     static let edit = Animation.spring(duration: 0.3, bounce: 0)
     static let hintFade = Animation.easeOut(duration: 0.15)
+    static let liftFade = Animation.easeOut(duration: 0.15)
+    static let handleFade = Animation.easeOut(duration: 0.12)
+    /// How fast the grid scrolls, in points a second, under a lifted card that lies deep in the fade at one of its ends.
+    static let edgeScrollSpeed = 500.0
     /// How strong a card stays under an open sheet: too faint to see, but drawn, so its return redraws nothing.
     static let coveredCardOpacity = 0.001
 
