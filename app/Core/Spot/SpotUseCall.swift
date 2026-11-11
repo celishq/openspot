@@ -1,8 +1,8 @@
 import Foundation
 
-/// A call of `openspot` that uses a power, with the use that a spot's header names for it (Z3). It reads the words of the
+/// A call of `openspot` that needs a use, with the use that a spot's header names for it (Z3). It reads the words of the
 /// call, so that the API and a review of a text that runs nothing know it the same way.
-public struct SpotPower: Equatable, Sendable {
+public struct SpotUseCall: Equatable, Sendable {
     private static let spotWord = "--spot"
 
     public let use: SpotUse
@@ -11,16 +11,16 @@ public struct SpotPower: Equatable, Sendable {
     /// What the call did, as words after the name of a spot, such as `took a screenshot`.
     public let words: String
 
-    /// The power that a call of this spot with these words uses, or nil for a call that needs none, such as a setting of
-    /// its own plugin.
+    /// The use that a call of this spot with these words needs, or nil for a call that needs none, such as a setting of its
+    /// own plugin.
     public init?(arguments: [String], of spot: String) {
-        guard arguments.count >= 2, let (use, words) = Self.power(arguments, spot: spot) else { return nil }
+        guard arguments.count >= 2, let (use, words) = Self.use(arguments, spot: spot) else { return nil }
         self.use = use
         name = "\(arguments[0]).\(arguments[1])"
         self.words = words
     }
 
-    private static func power(_ arguments: [String], spot: String) -> (SpotUse, String)? {
+    private static func use(_ arguments: [String], spot: String) -> (SpotUse, String)? {
         let other = arguments.firstIndex(of: spotWord).flatMap { arguments.indices.contains($0 + 1) ? arguments[$0 + 1] : nil }
         let isOther = other.map { !isOwn($0, of: spot) } ?? false
         return switch (arguments[0], arguments[1]) {

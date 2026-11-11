@@ -406,10 +406,10 @@ public final class SpotRuns {
         })
     }
 
-    /// Takes a spot's call that uses a power, and shows a toast at its first use of the day that its header does not name (Z4).
-    func used(_ power: SpotPower, by caller: CallerTokens.Caller) {
-        guard usage.used(power, by: caller, at: now()) else { return }
-        onReport(caller.id, .toast("\(caller.name) \(power.words) without `uses=\(power.use.rawValue)` in its header. Add it to stop this note."))
+    /// Takes a spot's call that needs a use, and shows a toast at its first use of the day that its header does not name (Z4).
+    func used(_ call: SpotUseCall, by caller: CallerTokens.Caller) {
+        guard usage.used(call, by: caller, at: now()) else { return }
+        onReport(caller.id, .toast("\(caller.name) \(call.words) without `uses=\(call.use.rawValue)` in its header. Add it to stop this note."))
     }
 
     /// Counts the time of a process of a spot, ties its token to its process group, and lets go of the token once the group

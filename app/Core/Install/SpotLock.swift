@@ -3,7 +3,7 @@ import Foundation
 
 /// `spots.lock` in the config folder: the source of each spot that `openspot spot add` put in the plugins folder, the
 /// commit of a git source, the paths that the spot took, a hash of its files, its uses and the lines of what it can also
-/// do and of what runs by itself (N1, N2, Z7). A first add of a spot that uses a power, can do more or runs by itself, and an update that adds a use, change
+/// do and of what runs by itself (N1, N2, Z7). A first add of a spot that has a use, can do more or runs by itself, and an update that adds a use, change
 /// nothing until the person confirms them. Each read, change and write holds a lock beside the file, in the app and in
 /// the command alike.
 public struct SpotLock: Equatable, Sendable {

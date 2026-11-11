@@ -43,11 +43,11 @@ public final class CommandAPI: @unchecked Sendable {
         if case .appCareful = call, !caller.isBuiltIn {
             return .refused("\(caller.name) cannot change Careful mode. Only you can, in Settings or with `openspot app careful on|off` in Terminal.")
         }
-        guard let power = SpotPower(arguments: arguments, of: caller.id) else { return call }
-        if runs.tokens.isCareful, !caller.uses.contains(power.use) {
-            return .refused("Careful mode stopped \(caller.name), because it \(power.words) without `uses=\(power.use.rawValue)` in its header. Add it, or turn Careful mode off.")
+        guard let needed = SpotUseCall(arguments: arguments, of: caller.id) else { return call }
+        if runs.tokens.isCareful, !caller.uses.contains(needed.use) {
+            return .refused("Careful mode stopped \(caller.name), because it \(needed.words) without `uses=\(needed.use.rawValue)` in its header. Add it, or turn Careful mode off.")
         }
-        Task { @MainActor in runs.used(power, by: caller) }
+        Task { @MainActor in runs.used(needed, by: caller) }
         return call
     }
 

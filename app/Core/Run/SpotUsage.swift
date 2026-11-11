@@ -1,8 +1,8 @@
 import Foundation
 
 /// What each spot cost and used, one day at a time (G1, Z10): its runs and failures, their time, the CPU time, the disk
-/// bytes and the wakeups of its processes, each use of a power and its last fault, with a short log of the uses of a
-/// power. Today lives in memory and goes to `<day>.json` in its folder at most once a pause, never on each call (G5). A
+/// bytes and the wakeups of its processes, the count of each call that needs a use and its last fault, with a short log of
+/// those calls. Today lives in memory and goes to `<day>.json` in its folder at most once a pause, never on each call (G5). A
 /// process that runs counts its time since the last reading at each change of day and each flush, so that each day gets
 /// the time spent on it. A start reads today's file again, and drops each file older than 90 days.
 public final class SpotUsage: @unchecked Sendable {
@@ -18,8 +18,8 @@ public final class SpotUsage: @unchecked Sendable {
         public var read: UInt64 = 0
         public var written: UInt64 = 0
         public var wakeups: UInt64 = 0
-        /// The count of each use of a power, by its name, such as `screen.shot`.
-        public var uses: [String: Int] = [:]
+        /// The count of each call that needs a use, by its noun and verb, such as `screen.shot`.
+        public var calls: [String: Int] = [:]
         /// Whether its header names `network`, which no count can show.
         public var network = false
         public var fault: String?
@@ -42,15 +42,15 @@ public final class SpotUsage: @unchecked Sendable {
             sum.read += older.read
             sum.written += older.written
             sum.wakeups += older.wakeups
-            sum.uses.merge(older.uses, uniquingKeysWith: +)
+            sum.calls.merge(older.calls, uniquingKeysWith: +)
             sum.network = network || older.network
             sum.fault = fault ?? older.fault
             return sum
         }
     }
 
-    /// One use of a power by a spot.
-    public struct Power: Codable, Equatable, Sendable {
+    /// One call of a spot that needs a use.
+    public struct Use: Codable, Equatable, Sendable {
         public let time: Date
         public let spot: String
         /// The noun and the verb of the call, such as `app.quit`.
@@ -64,14 +64,14 @@ public final class SpotUsage: @unchecked Sendable {
         /// The day, such as `2026-11-11`.
         public let day: String
         public var spots: [String: Count] = [:]
-        /// The newest uses of a power, the oldest first.
-        public var powers: [Power] = []
+        /// The newest calls that need a use, the oldest first.
+        public var uses: [Use] = []
         /// Each spot and use that the person was told of this day, as `<spot> <use>` (Z4).
         var told: [String] = []
     }
 
     static let keptDays = 90
-    private static let powerLimit = 100
+    private static let useLimit = 100
 
     private let folder: URL?
     private let pause: TimeInterval
@@ -161,17 +161,17 @@ public final class SpotUsage: @unchecked Sendable {
         }
     }
 
-    /// Counts and logs a use of a power by a spot, and returns whether to tell the person: its first use of the day that its
-    /// header does not name (Z4).
-    func used(_ power: SpotPower, by caller: CallerTokens.Caller, at date: Date) -> Bool {
-        let declared = caller.uses.contains(power.use)
+    /// Counts and logs a spot's call that needs a use, and returns whether to tell the person: its first such call of the
+    /// day whose use its header does not name (Z4).
+    func used(_ call: SpotUseCall, by caller: CallerTokens.Caller, at date: Date) -> Bool {
+        let declared = caller.uses.contains(call.use)
         var tells = false
         change(at: date) { day in
             day.spots[caller.id, default: Count()].name = caller.name
-            day.spots[caller.id, default: Count()].uses[power.name, default: 0] += 1
+            day.spots[caller.id, default: Count()].calls[call.name, default: 0] += 1
             day.spots[caller.id, default: Count()].network = caller.uses.contains(.network)
-            day.powers = Array((day.powers + [Power(time: date, spot: caller.id, call: power.name, declared: declared)]).suffix(Self.powerLimit))
-            let told = "\(caller.id) \(power.use.rawValue)"
+            day.uses = Array((day.uses + [Use(time: date, spot: caller.id, call: call.name, declared: declared)]).suffix(Self.useLimit))
+            let told = "\(caller.id) \(call.use.rawValue)"
             if !declared, !day.told.contains(told) {
                 day.told.append(told)
                 tells = true
@@ -284,5 +284,34 @@ public final class SpotUsage: @unchecked Sendable {
         for name in (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [] where name.hasSuffix(".json") && name < "\(first).json" {
             try? FileManager.default.removeItem(at: folder.appendingPathComponent(name))
         }
+    }
+}
+
+extension SpotUsage.Count {
+    /// Reads a count, with each key that a file of an older form lacks at its default.
+    public init(from decoder: any Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        name = try values.decodeIfPresent(String.self, forKey: .name)
+        runs = try values.decodeIfPresent(Int.self, forKey: .runs) ?? 0
+        failures = try values.decodeIfPresent(Int.self, forKey: .failures) ?? 0
+        seconds = try values.decodeIfPresent(TimeInterval.self, forKey: .seconds) ?? 0
+        cpu = try values.decodeIfPresent(TimeInterval.self, forKey: .cpu) ?? 0
+        read = try values.decodeIfPresent(UInt64.self, forKey: .read) ?? 0
+        written = try values.decodeIfPresent(UInt64.self, forKey: .written) ?? 0
+        wakeups = try values.decodeIfPresent(UInt64.self, forKey: .wakeups) ?? 0
+        calls = try values.decodeIfPresent([String: Int].self, forKey: .calls) ?? [:]
+        network = try values.decodeIfPresent(Bool.self, forKey: .network) ?? false
+        fault = try values.decodeIfPresent(String.self, forKey: .fault)
+    }
+}
+
+extension SpotUsage.Day {
+    /// Reads a day, with each key that a file of an older form lacks at its default.
+    public init(from decoder: any Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        day = try values.decode(String.self, forKey: .day)
+        spots = try values.decodeIfPresent([String: SpotUsage.Count].self, forKey: .spots) ?? [:]
+        uses = try values.decodeIfPresent([SpotUsage.Use].self, forKey: .uses) ?? []
+        told = try values.decodeIfPresent([String].self, forKey: .told) ?? []
     }
 }

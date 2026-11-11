@@ -273,7 +273,7 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(answer.output, "Each spot of spots.lock is in the plugins folder.\n")
     }
 
-    func testAFirstAddPrintsTheReviewAndNeedsYesWhenItUsesAPower() async throws {
+    func testAFirstAddPrintsTheReviewAndNeedsYesWhenItHasAUse() async throws {
         let repo = try repo()
         try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n# uses=network\n# every=60\ncurl -s https://example.com\n"])
 

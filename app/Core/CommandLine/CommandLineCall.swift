@@ -128,9 +128,9 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot spot log <id>                       Prints the last calls that the app made to a spot.
     openspot spot stats [--days n] [--spot id] [--frame|--json]
                                                  Prints what each spot cost and used today, or over the last n days:
-                                                 its runs, failures, CPU time, disk bytes, wakeups, each use of a power
-                                                 and its last fault, then each use of a power. --frame prints a row for
-                                                 each spot and a power block for each use; --json prints the days.
+                                                 its runs, failures, CPU time, disk bytes, wakeups, each call that needs
+                                                 a use and its last fault, then each such call. --frame prints a row for
+                                                 each spot and a use block for each call; --json prints the days.
     openspot spot show <id>                      Opens the panel with the spot selected.
     openspot spot list [--core] [--frame]        Prints each spot that the app loads as JSON, with its commands, its
                                                  settings and their keys. --core prints each spot that comes with the

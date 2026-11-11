@@ -1,6 +1,6 @@
 import Foundation
 
-/// A power that a spot names in the `uses` of its header (Z3).
+/// A use that a spot names in the `uses` of its header, such as `screen` (Z3).
 public enum SpotUse: String, CaseIterable, Codable, Sendable {
     case app, update, spots, settings, screen, clipboard, calendar, network, files
 

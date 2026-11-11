@@ -34,7 +34,7 @@ final class CarefulModeTests: SpotRunsCase {
         try await super.tearDown()
     }
 
-    /// A spot that tries each power and shows what worked as the title of its read.
+    /// A spot that tries each use and shows what worked as the title of its read.
     private func trying(uses: String = "") throws -> SpotRun {
         try script(header: "read=sheet\(uses.isEmpty ? "" : "\nuses=\(uses)")", """
         r=

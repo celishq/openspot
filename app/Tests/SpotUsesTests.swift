@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves that a spot's call of a power that its header does not name still runs, and shows one toast for each spot, use
+/// Proves that a spot's call of a use that its header does not name still runs, and shows one toast for each spot, use
 /// and day, while a named use and the person's call show none (Z3, Z4).
 @MainActor
 final class SpotUsesTests: SpotRunsCase {
@@ -187,9 +187,9 @@ final class SpotUsesTests: SpotRunsCase {
             (["spot", "stats"], nil), (["spot", "list"], nil), (["event", "emit", "a.b"], nil)
         ]
         for (arguments, use) in cases {
-            XCTAssertEqual(SpotPower(arguments: arguments, of: "own")?.use.rawValue, use, arguments.joined(separator: " "))
+            XCTAssertEqual(SpotUseCall(arguments: arguments, of: "own")?.use.rawValue, use, arguments.joined(separator: " "))
         }
-        XCTAssertNil(SpotPower(arguments: ["setting", "get", "--spot", "record/inputs", "k"], of: "record/record"), "a script of the same folder is the same plugin")
-        XCTAssertNotNil(SpotPower(arguments: ["setting", "get", "--spot", "notes", "k"], of: "record/record"))
+        XCTAssertNil(SpotUseCall(arguments: ["setting", "get", "--spot", "record/inputs", "k"], of: "record/record"), "a script of the same folder is the same plugin")
+        XCTAssertNotNil(SpotUseCall(arguments: ["setting", "get", "--spot", "notes", "k"], of: "record/record"))
     }
 }

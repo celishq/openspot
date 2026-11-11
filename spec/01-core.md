@@ -65,7 +65,7 @@ open -a Calendar
 | `answers`  | A regular expression of the texts of the main search that it answers, such as `^[0-9(]` (A1). See Places.               |
 | `view`     | A SwiftUI file beside the script, such as `view=cups.swift` (03).                                                        |
 | `mode`     | How it runs: `once` (the default), `stay`, `always` or `inline` (I1).                                                    |
-| `uses`     | The powers that it uses, split by commas: `app`, `update`, `spots`, `settings`, `screen`, `clipboard`, `calendar`, `network` and `files` (Z3). |
+| `uses`     | What it uses, split by commas: `app`, `update`, `spots`, `settings`, `screen`, `clipboard`, `calendar`, `network` and `files` (Z3). |
 
 | Block           | Meaning                                                                                              |
 | --------------- | ---------------------------------------------------------------------------------------------------- |
@@ -611,7 +611,7 @@ folder window of macOS and prints the folder that the person picks, or nothing a
 
 A spot runs with the person's rights, as any program that they start (Z1). Openspot asks nothing during daily use, and
 blocks a call only in Careful mode. It shows what a spot can do at the moment of trust, which is an add or an update, and it shows each use of
-a power after it happens, so that the person can undo it.
+a use after it happens, so that the person can undo it.
 
 ```sh
 #!/bin/sh
@@ -628,7 +628,7 @@ call from outside its group, such as a process that an inline spot starts. A cal
 known token is the person's call. The socket of the API is a file with mode `0600`, so only the person's own processes
 reach it.
 
-`uses` names the powers that a spot uses (Z3). It is a closed set, and an unknown word is a fault that names the key.
+`uses` names what a spot uses (Z3). It is a closed set, and an unknown word is a fault that names the key.
 
 | Use         | The calls that need it                                                                                 |
 | ----------- | ------------------------------------------------------------------------------------------------------ |
@@ -679,15 +679,15 @@ openspot spot stats [--days N] [--spot id] [--frame|--json]
 ```
 
 Openspot keeps what each spot cost and used, one file for each day, for 90 days (Z10). For each spot and day it counts the
-runs, the failures, the CPU seconds, the bytes read from and written to the disk, the wakeups, and each use, such as
-`screen.shot` or `clipboard.copy`. A process that stays counts its time on the day that it spent it. It keeps the last fault of each spot, and a short log of the uses of a power: the time,
-the spot, the call and whether its header names the use. It does not count the network: a spot's `network` shows as
-declared.
+runs, the failures, the CPU seconds, the bytes read from and written to the disk, the wakeups, and each call that needs a
+use, such as `screen.shot` or `clipboard.copy`. A process that stays counts its time on the day that it spent it. It keeps
+the last fault of each spot, and a short log of each call that needs a use: the time, the spot, the call and whether its
+header names the use. It does not count the network: a spot's `network` shows as declared.
 
 `--days N` sums the last N days, today included, and 1 is the default. `--spot <id>` keeps one spot. The plain output is
 for a person. `--frame` prints a `row=<id>` block for each spot, the most CPU time first, which a sheet can draw as it is,
-then a `power=<n>` block for each use of a power, the newest first. `--json` prints the days as JSON. Today's numbers are
-live in the running app, and the command reads the files when the app is closed (Z11).
+then a `use=<n>` block for each call that needs a use, the newest first. `--json` prints the days as JSON. Today's numbers
+are live in the running app, and the command reads the files when the app is closed (Z11).
 
 | Row key              | Meaning                                                              |
 | -------------------- | -------------------------------------------------------------------- |
@@ -696,11 +696,11 @@ live in the running app, and the command reads the files when the app is closed 
 | `cpu`, `seconds`     | The CPU seconds of its processes, and the wall time of its calls.    |
 | `read`, `written`    | The bytes that its processes read from and wrote to the disk.        |
 | `wakeups`            | The times its processes woke the CPU.                                |
-| `use.<name>`         | The count of one use, such as `use.screen.shot=2`.                   |
+| `call.<noun>.<verb>` | The count of one call that needs a use, such as `call.screen.shot=2`. |
 | `network`            | `declared` when its header names `network`.                          |
 | `fault`, `tone`      | Its last fault, with `tone=bad`.                                     |
 
-A `power` block holds `time`, `spot`, `call`, such as `app.quit`, and `declared`, `true` or `false`.
+A `use` block holds `time`, `spot`, `call`, such as `app.quit`, and `declared`, `true` or `false`.
 
 ## Messages
 
@@ -741,7 +741,7 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | A pattern in the header says which text a spot answers, so a scan learns it with no run, and a key starts no other script. | Each script asked at each key. |
 | An answer is the call of a search that the script does, so a script has one shape for both.                 | A new call, such as `answer <text>`.         |
 | Answers show first, because they are about the whole text that the person typed.                            | A rank that each spot gives its rows.        |
-| A plugin runs with the full access of the person, names its powers in `uses`, and each use shows after it happens (Z1, Z4). | A prompt at each use, a refused call, or a sandbox by default. |
+| A plugin runs with the full access of the person, names what it uses in `uses`, and each use shows after it happens (Z1, Z4). | A prompt at each use, a refused call, or a sandbox by default. |
 | A spot's call is known by the process group that Openspot made for it, and a token only names the rest (Z2). | `OPENSPOT_ID` or a token alone, which a process can set or drop. |
 | A missing use shows when a run makes it, and `openspot check` does not guess it (Z4).                      | A check that reads the text for calls.       |
 | The person decides at an add or an update, which shows the uses and what grew (Z6, Z7).                     | A review of each call.                       |

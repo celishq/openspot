@@ -1,7 +1,8 @@
 import Foundation
 
 /// What `openspot spot stats` prints from the days of the counts (Z10, Z11): their sum for a person, a `row` block for each
-/// spot with the most CPU time first and a `power` block for each use of a power, the newest first, or the days as JSON.
+/// spot with the most CPU time first and a `use` block for each call that needs a use, the newest first, or the days as
+/// JSON.
 public struct StatsReport: Sendable {
     public enum Format: Equatable, Sendable {
         case text, frame, json
@@ -35,9 +36,9 @@ public struct StatsReport: Sendable {
         return sums.sorted { ($0.value.cpu, $1.key) > ($1.value.cpu, $0.key) }.map { ($0.key, $0.value) }
     }
 
-    /// Each use of a power over the days, the newest first.
-    private var powers: [SpotUsage.Power] {
-        days.flatMap(\.powers).filter { spot == nil || $0.spot == spot }.sorted { $0.time > $1.time }
+    /// Each call that needs a use over the days, the newest first.
+    private var uses: [SpotUsage.Use] {
+        days.flatMap(\.uses).filter { spot == nil || $0.spot == spot }.sorted { $0.time > $1.time }
     }
 
     private var words: String {
@@ -49,18 +50,18 @@ public struct StatsReport: Sendable {
             var parts = ["\(count.runs) \(count.runs == 1 ? "run" : "runs")"]
             if count.failures > 0 { parts.append("\(count.failures) failed") }
             parts += ["\(Self.time(count.cpu)) CPU", "\(Self.bytes(count.read)) read", "\(Self.bytes(count.written)) written", "\(count.wakeups) wakeups"]
-            parts += count.uses.sorted { $0.key < $1.key }.map { "\($0.key) \($0.value)" }
+            parts += count.calls.sorted { $0.key < $1.key }.map { "\($0.key) \($0.value)" }
             if count.network { parts.append("network declared") }
             lines.append("\(count.name ?? id): \(parts.joined(separator: " · "))")
             if let fault = count.fault { lines.append("  Last fault: \(fault.replacingOccurrences(of: "\n", with: " "))") }
         }
-        let powers = powers
-        if !powers.isEmpty {
+        let uses = uses
+        if !uses.isEmpty {
             let names = Dictionary(counts.map { ($0.id, $0.count.name ?? $0.id) }) { first, _ in first }
             let clock = DateFormatter()
             clock.dateFormat = days.count == 1 ? "HH:mm" : "yyyy-MM-dd HH:mm"
-            lines += ["", "Uses of a power"]
-            lines += powers.map { "\(clock.string(from: $0.time)) \(names[$0.spot] ?? $0.spot) \($0.call)\($0.declared ? "" : ", not in its uses")" }
+            lines += ["", "Uses"]
+            lines += uses.map { "\(clock.string(from: $0.time)) \(names[$0.spot] ?? $0.spot) \($0.call)\($0.declared ? "" : ", not in its uses")" }
         }
         return lines.joined(separator: "\n") + "\n"
     }
@@ -79,22 +80,22 @@ public struct StatsReport: Sendable {
                 .init(key: "written", value: String(count.written)),
                 .init(key: "wakeups", value: String(count.wakeups))
             ]
-            fields += count.uses.sorted { $0.key < $1.key }.map { .init(key: "use.\($0.key)", value: String($0.value)) }
+            fields += count.calls.sorted { $0.key < $1.key }.map { .init(key: "call.\($0.key)", value: String($0.value)) }
             if count.network { fields.append(.init(key: "network", value: "declared")) }
             if let fault = count.fault { fields += [.init(key: "fault", value: fault), .init(key: "tone", value: "bad")] }
             return TextBlock(fields: fields).text
         }
         let stamp = ISO8601DateFormatter()
-        let powers = powers.enumerated().map { index, power in
+        let uses = uses.enumerated().map { index, use in
             TextBlock(fields: [
-                .init(key: "power", value: String(index + 1)),
-                .init(key: "time", value: stamp.string(from: power.time)),
-                .init(key: "spot", value: power.spot),
-                .init(key: "call", value: power.call),
-                .init(key: "declared", value: String(power.declared))
+                .init(key: "use", value: String(index + 1)),
+                .init(key: "time", value: stamp.string(from: use.time)),
+                .init(key: "spot", value: use.spot),
+                .init(key: "call", value: use.call),
+                .init(key: "declared", value: String(use.declared))
             ]).text
         }
-        return (rows + powers).map { $0 + "\n" }.joined()
+        return (rows + uses).map { $0 + "\n" }.joined()
     }
 
     private var json: String {
@@ -105,10 +106,10 @@ public struct StatsReport: Sendable {
             struct Shown: Encodable {
                 let day: String
                 let spots: [String: SpotUsage.Count]
-                let powers: [SpotUsage.Power]
+                let uses: [SpotUsage.Use]
             }
             let kept = days.map { day in
-                Shown(day: day.day, spots: day.spots.filter { spot == nil || $0.key == spot }, powers: day.powers.filter { spot == nil || $0.spot == spot })
+                Shown(day: day.day, spots: day.spots.filter { spot == nil || $0.key == spot }, uses: day.uses.filter { spot == nil || $0.spot == spot })
             }
             return String(decoding: try encoder.encode(kept), as: UTF8.self) + "\n"
         }

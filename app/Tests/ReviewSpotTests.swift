@@ -163,7 +163,7 @@ final class ReviewSpotTests: XCTestCase {
 
         XCTAssertEqual(review.subtitle, "Runs only when you use it")
         let text = try shown(review)
-        XCTAssertTrue(text.hasPrefix("Weather\n\nUses no power\n\nRuns only when you use it\n\n"), text)
+        XCTAssertTrue(text.hasPrefix("Weather\n\nUses nothing\n\nRuns only when you use it\n\n"), text)
         XCTAssertFalse(text.contains("Runs by itself"))
     }
 
@@ -172,7 +172,7 @@ final class ReviewSpotTests: XCTestCase {
 
         XCTAssertEqual(review.subtitle, "Runs by itself")
         let text = try shown(review)
-        XCTAssertTrue(text.hasPrefix("Weather\n\nUses no power\n\nRuns by itself\nWeather: when the panel opens, every 30 seconds\n"), text)
+        XCTAssertTrue(text.hasPrefix("Weather\n\nUses nothing\n\nRuns by itself\nWeather: when the panel opens, every 30 seconds\n"), text)
     }
 
     func testItShowsTheUsesThatTheHeaderNames() throws {

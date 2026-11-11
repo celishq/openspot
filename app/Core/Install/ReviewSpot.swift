@@ -62,7 +62,7 @@ public struct ReviewSpot: Equatable, Sendable {
                 programs + ["It can do all that you can. Add it only if you trust the sender."]
                     + (programs.contains { Self.hasSource($0, in: spot) } ? ["The source beside it may not match the program."] : [])
             ),
-            uses.isEmpty ? "Uses no power\n\n" : Self.section("Uses", [uses.map(\.rawValue).joined(separator: ", ")]),
+            uses.isEmpty ? "Uses nothing\n\n" : Self.section("Uses", [uses.map(\.rawValue).joined(separator: ", ")]),
             Self.section("Can also", canAlso),
             runs.isEmpty ? "\(quiet)\n\n" : Self.section("Runs by itself", runs),
             Self.section("Replaces, and moves the old file to the Trash", spot.replaced(in: folder)),
@@ -173,8 +173,8 @@ public struct ReviewSpot: Equatable, Sendable {
         if !found(["pbcopy"]).isEmpty { lines.append("Copy with pbcopy in place of openspot clipboard") }
         if !found(["pbpaste"]).isEmpty { lines.append("Read the clipboard with pbpaste in place of openspot clipboard") }
         for arguments in texts.flatMap(calls) {
-            guard let power = SpotPower(arguments: arguments, of: id), !uses.contains(power.use) else { continue }
-            let line = "Call openspot \(arguments[0]) \(arguments[1]) without uses=\(power.use.rawValue)"
+            guard let needed = SpotUseCall(arguments: arguments, of: id), !uses.contains(needed.use) else { continue }
+            let line = "Call openspot \(arguments[0]) \(arguments[1]) without uses=\(needed.use.rawValue)"
             if !lines.contains(line) { lines.append(line) }
         }
         return lines
