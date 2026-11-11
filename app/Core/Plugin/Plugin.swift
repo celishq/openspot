@@ -37,7 +37,7 @@ public struct Plugin: Equatable, Sendable {
             }
             read = parsed
         }
-        try Self.refuseOldPlaces(header, of: name)
+        try Self.refuseOldKeys(header, of: name)
         let stay = header.value("stay")
         guard stay == nil || ["true", "false", "always"].contains(stay) else {
             throw PluginError.fault("\(name) has an unknown stay: \(stay!). Use true or always")
@@ -81,7 +81,7 @@ public struct Plugin: Equatable, Sendable {
             staysAlways: stay == "always",
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             offersFloat: places.contains("float"),
-            dataName: header.value("data") ?? id.split(separator: "/").first.map(String.init),
+            dataName: id.split(separator: "/").first.map(String.init),
             isOnGrid: offers.isEmpty && !isRowsOnly && read?.seconds == nil,
             headerSymbol: symbol,
             offers: offers,
@@ -107,8 +107,8 @@ public struct Plugin: Equatable, Sendable {
         return Set(words)
     }
 
-    /// Refuses a header that still places the spot with `global`, `float` or `tray`, and names the new way.
-    private static func refuseOldPlaces(_ header: TextBlock, of name: String) throws {
+    /// Refuses a header that still has `global`, `float`, `tray`, `data` or `shortcut`, and names the new way.
+    private static func refuseOldKeys(_ header: TextBlock, of name: String) throws {
         if let global = header.value("global") {
             let place = global == "rows" ? "rows" : "search"
             throw PluginError.fault("\(name) has global=\(global), which Openspot no longer reads. Use offers=\(place)")
@@ -118,6 +118,9 @@ public struct Plugin: Equatable, Sendable {
         }
         if header.value("tray") != nil {
             throw PluginError.fault("\(name) has tray, which Openspot no longer reads. The person puts a spot in the menu bar in Settings")
+        }
+        if header.value("data") != nil {
+            throw PluginError.fault("\(name) has data, which Openspot no longer reads. The scripts of one folder share OPENSPOT_DATA, so move them into one folder")
         }
         try refuseLetter(header.value("shortcut"), of: name)
     }

@@ -14,8 +14,10 @@ final class SpotTests: XCTestCase {
         XCTAssertEqual(try dataName(id: "home/coffee"), "home")
     }
 
-    func testAHeaderCanShareADataFolder() throws {
-        XCTAssertEqual(try dataName(id: "links", header: [.init(key: "data", value: "notes")]), "notes")
+    func testADataKeyRefusesThePluginAndSaysThatAFolderSharesItsData() throws {
+        XCTAssertThrowsError(try dataName(id: "links", header: [.init(key: "data", value: "notes")])) { error in
+            XCTAssertTrue((error as? PluginError)?.reason.contains("OPENSPOT_DATA") == true, "\(error)")
+        }
     }
 
     private var folder: URL!

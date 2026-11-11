@@ -1,10 +1,23 @@
 # The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc` and `value`, and `next` and `arg` in a staying script.
 # Loading starts `cat` once, and each function starts `sed`, `tr` or `awk` only above 1 KB, where a shell loop is too slow.
 
+# Whether the header of the script says `stay=true` or `stay=always`: the comment lines at its top, read with no process.
+_openspot_stays=
+while IFS= read -r _openspot_line; do
+  case $_openspot_line in
+    '#'*) _openspot_line=${_openspot_line#\#} ;;
+    *) break ;;
+  esac
+  _openspot_line=${_openspot_line#"${_openspot_line%%[! ]*}"}
+  case $_openspot_line in
+    stay=true | stay=always) _openspot_stays=1 ;;
+  esac
+done < "$0" 2>/dev/null
+
 # All of stdin, read once now, because each `$(value id)` runs in a subshell that would lose it. A staying script keeps
 # its stdin for its calls, so this leaves it alone there, and `next` fills it with the values of each call.
 _openspot_stdin=
-if [ -z "${OPENSPOT_STAY:-}" ]; then
+if [ -z "$_openspot_stays" ]; then
   _openspot_stdin=$(/bin/cat; printf x)
   _openspot_stdin=${_openspot_stdin%x}
 fi
