@@ -151,6 +151,8 @@ public final class SpotsModel {
     @ObservationIgnored private var laidOutSizes: [SpotSize] = []
     /// The cards as the items that the main search finds. It folds them again only when they change.
     @ObservationIgnored private var spotList = ItemList()
+    /// The search of the cards and the lists that offer their rows, which keeps the matches of the last text.
+    @ObservationIgnored private var mainSearch = MainSearch()
     /// Where each visible spot lies on the grid, in the order of `visible`.
     public private(set) var placements: [SpotPlacement] = []
     public var selected = 0
@@ -534,7 +536,7 @@ public final class SpotsModel {
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         spotList.replace(cards.filter(\.command.isFound).map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.command.name].compactMap { $0 }.joined(separator: " "), run: $0.id) })
         let sources = entries.filter { $0.command.isGlobal && arrangement.isGlobal(of: $0.id) != false }
-        let found = SearchQuery(text: text).matching(in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() }, unpickedLimit: Self.unpickedRows, limit: Self.searchLimit - answers.count)
+        let found = mainSearch.matching(SearchQuery(text: text), in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() }, unpickedLimit: Self.unpickedRows, limit: Self.searchLimit - answers.count)
         return answers + found.compactMap { match in
             match.list == 0 ? spots[match.item.run] : Entry(command: sources[match.list - 1].command, item: match.item)
         }.filter { !ids.contains($0.id) }
