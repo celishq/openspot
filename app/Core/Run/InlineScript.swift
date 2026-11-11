@@ -1,44 +1,71 @@
 import Foundation
 import JavaScriptCore
 
-/// A JavaScript spot that runs inside the app, in a context of its own on a thread of its own (I3). It loads its file as
-/// it starts. Each call runs `main(args, env, input)` with the three parts of the call and returns the text of a frame
-/// (I6). `openspot.call(argv, input)` asks the API and returns `{ stdout, code }` (I4). A loop that never returns keeps its
-/// thread.
+/// A JavaScript spot that runs inside the app, in a context of its own on a thread of its own (I3). It makes the thread
+/// and loads its file at its first call, and lets go of both after `idle` seconds with no call (A26). Each call runs
+/// `main(args, env, input)` with the three parts of the call and returns the text of a frame (I6), and fails as too slow
+/// past `limit` (I7). `openspot.call(argv, input)` asks the API and returns `{ stdout, code }` (I4).
 final class InlineScript: @unchecked Sendable {
     private final class Box: @unchecked Sendable {
         var answer = CommandAnswer()
     }
 
+    private typealias Termination = @convention(c) (OpaquePointer?, UnsafeMutableRawPointer?) -> Bool
+    private typealias TimeLimit = @convention(c) (OpaquePointer?, Double, Termination?, UnsafeMutableRawPointer?) -> Void
+
+    /// `JSContextGroupSetExecutionTimeLimit`, which JavaScriptCore exports with no public header.
+    private static let timeLimit: TimeLimit? = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "JSContextGroupSetExecutionTimeLimit")
+        .map { unsafeBitCast($0, to: TimeLimit.self) }
+
     private let url: URL
+    private let name: String
     private let environment: [String: String]
     private let api: CommandAPI?
+    private let limit: TimeInterval
+    private let idle: TimeInterval
+    /// Takes the CPU time of each call on the thread.
+    private let spent: @Sendable (TimeInterval) -> Void
     private let condition = NSCondition()
     private var calls: [InlineCall] = []
     private var isEnded = false
+    private var hasThread = false
+    /// Whether the time limit stopped the call that runs.
+    private var isOverTime = false
     /// The context of the script, which only its thread touches.
     private var context: JSContext?
     private var thrown: JSValue?
     /// The variables of the call that runs, which `openspot.call` passes on.
     private var variables: [String: String] = [:]
 
-    init(spot: Spot, api: CommandAPI?) {
+    init(spot: Spot, api: CommandAPI?, limit: TimeInterval = 10, idle: TimeInterval = 30, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
         url = spot.url
+        name = spot.id
         self.api = api
+        self.limit = limit
+        self.idle = idle
+        self.spent = spent
         environment = ScriptProcess.environment(base: ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", dataName: spot.dataName)
             .merging(["OPENSPOT_ID": spot.id]) { _, new in new }
-        let thread = Thread { [self] in follow() }
-        thread.name = "openspot.inline.\(spot.id)"
-        thread.stackSize = 8 << 20
-        thread.qualityOfService = .userInitiated
-        thread.start()
     }
 
-    /// Puts a call in line on the thread of the script.
+    /// Whether its thread runs, with its context.
+    var isRunning: Bool {
+        condition.withLock { hasThread }
+    }
+
+    /// Puts a call in line on the thread of the script, and starts the thread when none runs.
     func send(_ call: InlineCall) {
         condition.withLock {
             guard !isEnded else { return call.finish(.dropped) }
             calls.append(call)
+            if !hasThread {
+                hasThread = true
+                let thread = Thread { [self] in follow() }
+                thread.name = "openspot.inline.\(name)"
+                thread.stackSize = 8 << 20
+                thread.qualityOfService = .userInitiated
+                thread.start()
+            }
             condition.signal()
         }
     }
@@ -51,18 +78,19 @@ final class InlineScript: @unchecked Sendable {
         }
     }
 
-    /// Loads the file, then runs each call in turn until the end.
+    /// Runs each call in turn until the end, or until no call comes for `idle` seconds, and then lets go of the context.
     private func follow() {
-        _ = try? loaded()
         while true {
             condition.lock()
-            while calls.isEmpty, !isEnded { condition.wait() }
-            if isEnded {
+            let deadline = Date().addingTimeInterval(idle)
+            while calls.isEmpty, !isEnded, condition.wait(until: deadline) {}
+            if isEnded || calls.isEmpty {
                 let dropped = calls
                 calls = []
+                context = nil
+                hasThread = false
                 condition.unlock()
                 dropped.forEach { $0.finish(.dropped) }
-                context = nil
                 return
             }
             let call = calls.removeFirst()
@@ -71,6 +99,7 @@ final class InlineScript: @unchecked Sendable {
                 call.finish(.dropped)
                 continue
             }
+            let start = Self.threadTime()
             autoreleasepool {
                 do {
                     call.finish(.frame(try run(call)))
@@ -78,7 +107,20 @@ final class InlineScript: @unchecked Sendable {
                     call.finish(.failed(error))
                 }
             }
+            spent(Self.threadTime() - start)
         }
+    }
+
+    /// The CPU time, user and system, of the thread that asks.
+    private static func threadTime() -> TimeInterval {
+        var info = thread_basic_info()
+        var count = mach_msg_type_number_t(MemoryLayout<thread_basic_info_data_t>.size / MemoryLayout<natural_t>.size)
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { thread_info(pthread_mach_thread_np(pthread_self()), thread_flavor_t(THREAD_BASIC_INFO), $0, &count) }
+        }
+        guard result == KERN_SUCCESS else { return 0 }
+        let user = Double(info.user_time.seconds) + Double(info.user_time.microseconds) / 1_000_000
+        return user + Double(info.system_time.seconds) + Double(info.system_time.microseconds) / 1_000_000
     }
 
     /// Runs `main` with the arguments, the variables and the stdin of the call (I6). A script with no `main` gives an empty
@@ -101,6 +143,11 @@ final class InlineScript: @unchecked Sendable {
         if let context { return context }
         guard let context = JSContext() else { throw SpotError.failed(1, "Openspot cannot start JavaScript.") }
         context.exceptionHandler = { [weak self] _, value in self?.thrown = value }
+        Self.timeLimit?(JSContextGetGroup(context.jsGlobalContextRef), limit, { _, script in
+            guard let script else { return true }
+            Unmanaged<InlineScript>.fromOpaque(script).takeUnretainedValue().isOverTime = true
+            return true
+        }, Unmanaged.passUnretained(self).toOpaque())
         let ask: @convention(block) (JSValue, JSValue) -> [String: Any] = { [weak self] argv, input in
             let arguments = (argv.toArray() ?? []).map { "\($0)" }
             let text = input.isUndefined || input.isNull ? nil : input.toString()
@@ -117,8 +164,15 @@ final class InlineScript: @unchecked Sendable {
         return context
     }
 
-    /// Throws what the script threw, as the failure of its call.
+    /// Throws what the script threw, as the failure of its call. A call that the time limit stopped fails as too slow, and
+    /// the next call starts from a new context.
     private func rethrow() throws {
+        if isOverTime {
+            isOverTime = false
+            thrown = nil
+            context = nil
+            throw SpotError.timedOut
+        }
         guard let value = thrown else { return }
         thrown = nil
         let message = value.objectForKeyedSubscript("message").flatMap { $0.isUndefined ? nil : $0.toString() } ?? value.toString() ?? ""

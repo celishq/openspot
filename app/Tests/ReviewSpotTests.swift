@@ -45,6 +45,27 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertTrue(text.contains("home/lib.sh\nlib code\n"), text)
     }
 
+    func testTheReviewOfTheInlineCalculatorShowsItsText() throws {
+        let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let place = SpotFolder(url: folder, core: repo.appendingPathComponent("plugins"), enabled: ["calculator"])
+        let scan = try place.scan()
+        let calculator = try XCTUnwrap(scan.spots.first { SpotFolder.coreID(of: $0) == "calculator" })
+
+        let text = try shown(ReviewSpot(spot: SharedSpot(sharing: calculator, from: scan), folder: folder, canAdd: false))
+
+        XCTAssertTrue(text.contains("calculator.js\n// title=Calculator"), text)
+        XCTAssertTrue(text.contains("function main("), text)
+    }
+
+    func testAnInlineSpotShowsItsTextAndRunsOnlyWhenItIsUsed() throws {
+        let review = try ReviewSpot(spot: spot([("sum.js", "// title=Sum\n// mode=inline\n// read=panel\nfunction main() { return '' }\n", false)]), folder: folder)
+
+        let text = try shown(review)
+
+        XCTAssertTrue(text.contains("sum.js\n// title=Sum"), text)
+        XCTAssertEqual(review.name, "Sum")
+    }
+
     func testAFileThatIsNotTextIsNamedWithItsSize() throws {
         let files = [
             SharedSpot.File(path: "home/a.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8)),

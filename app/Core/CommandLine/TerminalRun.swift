@@ -68,7 +68,7 @@ public struct TerminalRun {
     /// Runs the call in a JavaScript spot, and gives its frame.
     @MainActor
     private func inline(isRead: Bool, frame: (String) -> Void) async -> End {
-        let script = InlineScript(spot: spot, api: nil)
+        let script = InlineScript(spot: spot, api: nil, limit: Self.readLimit)
         defer { script.end() }
         let call = InlineCall(arguments: action.arguments, variables: ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }, input: input)
         script.send(call)

@@ -167,7 +167,7 @@ and a second argument gives its stdin (I4). `openspot.frame(object)` writes an o
 `mode=inline` is no spot. An inline spot has no files, no network and no process of its own. It runs on a thread of its
 own, one call at a time, and a call that a newer one stopped before it ran does not run. Openspot waits 2 ms for its frame
 in the turn of the key, and shows a later frame in the next turn, with the last rows kept until then (I5). A call has 10
-seconds. After that it fails with `It took too long.`, and the spot answers its next call (I7).
+seconds. After that it stops and fails as a slow read fails, and the spot answers its next call (I7).
 
 ```js
 // title=Hello

@@ -1,16 +1,14 @@
 import Foundation
 
-/// The link to a JavaScript spot that runs inside the app (I3). Each call runs on the thread of the script. The main thread
-/// waits 2 ms for its frame, and a later frame lands in a later turn (I5). A stopped call that has not run never runs, and
-/// one that ran changes nothing. A change of the file loads it again.
+/// The link to a JavaScript spot that runs inside the app (I3). Each call runs on the thread of the script, which loads at
+/// the first call (A26). The main thread waits 2 ms for its frame, and a later frame lands in a later turn (I5). A stopped
+/// call that has not run never runs, and one that ran changes nothing. Each call goes in the call log. A change of the
+/// file loads it again.
 @MainActor
 final class InlineLink: ScriptLink {
     private static let frameWait: DispatchTimeInterval = .milliseconds(2)
 
-    /// The run of the script, which loads the script ahead of its first call.
-    weak var run: SpotRun? {
-        didSet { if let run { _ = current(for: run) } }
-    }
+    weak var run: SpotRun?
     let holdsScript = false
     let keepsState = false
     let isReachable = true
@@ -25,6 +23,11 @@ final class InlineLink: ScriptLink {
     }
 
     nonisolated deinit {}
+
+    /// Whether the script holds its context and its thread now.
+    var isLoaded: Bool {
+        script?.isRunning == true
+    }
 
     var isAsking: Bool {
         asking.contains { !$0.isStopped }
@@ -69,15 +72,14 @@ final class InlineLink: ScriptLink {
     }
 
     func scanned() {
-        guard let loaded, loaded != fileDate, let run else { return }
+        guard let loaded, loaded != fileDate else { return }
         end()
-        _ = current(for: run)
     }
 
-    /// The script, which starts to load at once.
+    /// The script, which loads at its first call.
     private func current(for run: SpotRun) -> InlineScript {
         if let script { return script }
-        let script = InlineScript(spot: run.spot, api: runs.api)
+        let script = runs.inline(run.spot)
         self.script = script
         loaded = fileDate
         return script
@@ -108,6 +110,7 @@ final class InlineLink: ScriptLink {
         default:
             end = .stopped
         }
+        runs.record(run.spot, call.action, input: call.input, frames: text.map { [$0] } ?? [], errors: Self.errors(of: end), end: end, reason: call.reason, started: made.started, begin: begin)
         if case .ask(.answer(let query)) = call.purpose {
             run.takeAnswers(text.map { SpotOutput(text: $0).items } ?? [], to: query)
             return run.ended(made, call.purpose, end, hadAnswer: text != nil, showedPicture: false, selected: nil)
@@ -143,6 +146,12 @@ final class InlineLink: ScriptLink {
         }
     }
 
+    /// What a call that failed says, as a script says it on stderr.
+    private static func errors(of end: ScriptCall.End) -> String {
+        guard case .failed(let error) = end else { return "" }
+        return ((error as? SpotError)?.reason ?? error.localizedDescription) + "\n"
+    }
+
     /// Runs a call to its end, and returns its frame, or nil when it was stopped.
     private func text(of action: SpotAction, key: String, input: String?) async throws -> String? {
         guard let run else { return nil }
@@ -150,9 +159,17 @@ final class InlineLink: ScriptLink {
         let inline = InlineCall(arguments: action.arguments, input: input)
         made.halt = { inline.stop() }
         run.track(made)
+        let begin = Date()
         current(for: run).send(inline)
         let outcome = await inline.outcome()
         run.callEnded(made)
+        let text: String? = if case .frame(let frame) = outcome { frame } else { nil }
+        let end: ScriptCall.End = switch outcome {
+        case _ where made.isStopped, .dropped: .stopped
+        case .frame: .ended
+        case .failed(let error): .failed(error)
+        }
+        runs.record(run.spot, action, input: input, frames: text.map { [$0] } ?? [], errors: Self.errors(of: end), end: end, reason: nil, started: made.started, begin: begin)
         switch outcome {
         case .frame(let text) where !made.isStopped:
             run.report(toastOf: SpotOutput(text: text))

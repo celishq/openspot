@@ -19,8 +19,10 @@ public final class SpotRuns {
     @ObservationIgnored public var partsArrival: (String, () -> Void) -> Void = { _, bring in bring() }
     /// The open of a sheet: its motion waits for its first answer, and what its script prints waits for its motion.
     @ObservationIgnored public let opening: SheetOpening
-    /// The time a `read` has to its first frame or its end.
+    /// The time a `read` has to its first frame or its end, and a call of an inline spot has to its end (I7).
     public let readLimit: TimeInterval
+    /// The time with no call after which an inline spot lets go of its context and its thread (A26).
+    let inlineIdle: TimeInterval
     /// What each spot cost since the app started (G1).
     public nonisolated let usage = SpotUsage()
     @ObservationIgnored let now: () -> Date
@@ -65,9 +67,11 @@ public final class SpotRuns {
         clipboardPause: Duration = .milliseconds(500),
         recent: @escaping (String) -> [String] = { _ in [] },
         prepare: @escaping ([SpotItem], [String]) async -> Void = { _, _ in },
+        inlineIdle: TimeInterval = 30,
         log: CallLog? = nil
     ) {
         self.log = log
+        self.inlineIdle = inlineIdle
         self.readLimit = readLimit
         self.opening = opening
         self.now = now
@@ -289,21 +293,35 @@ public final class SpotRuns {
             }
             let ending: ScriptCall.End = call.isStopped ? .stopped : end
             self?.usage.called(id, name: spot.name, seconds: Date().timeIntervalSince(begin))
-            if let log, let process, !Self.isQuiet(reason, ending) {
-                log.write(CallLog.Record(
-                    spot: spot.id,
-                    arguments: action.arguments,
-                    input: input,
-                    frames: printed + (process.failedFrame.map { [$0] } ?? []),
-                    errors: process.errors,
-                    end: CallLog.End(ending),
-                    started: call.started,
-                    seconds: Date().timeIntervalSince(begin)
-                ))
+            if let process {
+                self?.record(spot, action, input: input, frames: printed + (process.failedFrame.map { [$0] } ?? []), errors: process.errors, end: ending, reason: reason, started: call.started, begin: begin)
             }
             await onEnd(call, ending)
         }
         return call
+    }
+
+    /// Keeps the record of a call that ended in the call log, unless it is a quiet one.
+    func record(_ spot: Spot, _ action: SpotAction, input: String?, frames: [String], errors: String, end: ScriptCall.End, reason: ReadReason?, started: Date, begin: Date) {
+        guard let log, !Self.isQuiet(reason, end) else { return }
+        log.write(CallLog.Record(
+            spot: spot.id,
+            arguments: action.arguments,
+            input: input,
+            frames: frames,
+            errors: errors,
+            end: CallLog.End(end),
+            started: started,
+            seconds: Date().timeIntervalSince(begin)
+        ))
+    }
+
+    /// A JavaScript spot of these runs, which loads at its first call and counts the CPU time of its thread (A26).
+    func inline(_ spot: Spot, limit: TimeInterval? = nil) -> InlineScript {
+        let id = spot.id
+        return InlineScript(spot: spot, api: api, limit: limit ?? readLimit, idle: inlineIdle) { [usage] seconds in
+            usage.add(ProcessTime(cpu: seconds, wakeups: 0), to: id)
+        }
     }
 
     /// Starts a script that stays, and returns it with its frames.
@@ -325,7 +343,7 @@ public final class SpotRuns {
             return (stream, halt, nil)
         }
         if spot.mode == .inline {
-            let script = InlineScript(spot: spot, api: api)
+            let script = inline(spot, limit: limit)
             let call = InlineCall(arguments: action.arguments, input: input)
             script.send(call)
             let (stream, halt) = answered {
