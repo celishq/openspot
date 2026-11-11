@@ -115,20 +115,6 @@ final class Shade {
         window.orderOut(nil)
     }
 
-    /// Moves the block onto the frame that the window really took, given in points from the top left of the main
-    /// screen, as Openspot prints it. An app that keeps a larger size then still lies under the block.
-    func follow(_ frame: CGRect) {
-        let top = NSScreen.screens.first?.frame.maxY ?? 0
-        let target = CGRect(x: frame.minX - area.minX, y: top - frame.maxY - area.minY, width: frame.width, height: frame.height)
-        guard abs(target.minX - block.frame.minX) > 1 || abs(target.minY - block.frame.minY) > 1
-            || abs(target.width - block.frame.width) > 1 || abs(target.height - block.frame.height) > 1 else { return }
-        CATransaction.begin()
-        CATransaction.setAnimationDuration(0.12)
-        CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeOut))
-        block.frame = target
-        CATransaction.commit()
-    }
-
     /// Fades the block out, then hides its window.
     func fade() {
         CATransaction.begin()
@@ -414,14 +400,8 @@ final class Grid: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func moved(_ pick: Pick, in app: pid_t?, status: Int32, text: String) {
-        if let landing {
-            self.landing = nil
-            guard status == 0 else { return landing.fade() }
-            Self.frame { frame in
-                if let frame { landing.follow(frame) }
-                DispatchQueue.main.asyncAfter(deadline: .now() + (frame == nil ? 0 : 0.12)) { landing.fade() }
-            }
-        }
+        landing?.fade()
+        landing = nil
         let waited = pending != nil
         pending = nil
         guard status != 0 else { return }
@@ -431,23 +411,6 @@ final class Grid: NSObject, NSApplicationDelegate, NSWindowDelegate {
         pending = Pending(pick: pick, app: app, end: waited ? pendingEnd : Date().addingTimeInterval(180))
         pendingEnd = pending!.end
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.retry() }
-    }
-
-    /// Reads the frame of the front window from Openspot, and gives it on the main thread, or nil.
-    private static func frame(_ done: @escaping (CGRect?) -> Void) {
-        let read = Process()
-        let output = Pipe()
-        read.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        read.arguments = ["openspot", "window", "frame"]
-        read.standardOutput = output
-        read.standardError = FileHandle.nullDevice
-        read.terminationHandler = { _ in
-            let numbers = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-                .split(separator: " ").compactMap { Double($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
-            let frame = numbers.count >= 4 ? CGRect(x: numbers[0], y: numbers[1], width: numbers[2], height: numbers[3]) : nil
-            DispatchQueue.main.async { done(frame) }
-        }
-        do { try read.run() } catch { done(nil) }
     }
 
     /// Tries the kept pick again while its app is in front, until it moves or three minutes pass.
