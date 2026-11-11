@@ -45,6 +45,26 @@ extension SpotsModel {
         return .published
     }
 
+    /// Copies the store's package of a spot as one `.spot` file, a zip that a chat can carry, and returns the file. A spot
+    /// with no package copies nothing.
+    @discardableResult
+    public func sharePackage(_ id: String) -> URL? {
+        guard let item = dock.items.first(where: { $0.id == id }), item.publication != nil else { return nil }
+        let package = SpotPackage(url: SpotPackage.url(for: files.folder.fileID(of: item.command), in: files.store))
+        let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
+        let file = place.appendingPathComponent(SharedSpot.fileName(for: item.command.name))
+        do {
+            try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
+            try package.zip(to: file)
+        } catch {
+            host.notify("\(item.command.name) was not copied. \(Self.reason(error))")
+            return nil
+        }
+        host.copy(file)
+        host.confirm("Copied \(item.command.name) as a file. Paste it into a chat or a mail. Its files travel as they are.")
+        return file
+    }
+
     /// Copies a prompt that asks the person's agent to write the listing of a spot of the plugins folder.
     public func copyListingWritePrompt(_ id: String) {
         guard let item = dock.items.first(where: { $0.id == id }), item.isOwn, let prompt = agentPrompt else { return }

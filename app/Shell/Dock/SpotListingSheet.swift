@@ -2,8 +2,8 @@ import OpenspotCore
 import SwiftUI
 
 /// The listing of a spot in the store, in a sheet under the shelf of its card: its name and description, where it stands in
-/// the store, its readme, the rows of its preview, and buttons that copy a prompt for the person's agent or publish it. It
-/// grows out of the bottom of its card.
+/// the store, its readme, the rows of its preview, and buttons that copy a prompt for the person's agent, publish it or
+/// share its package. It grows out of the bottom of its card.
 struct SpotListingSheet: View {
     let item: SpotDock.Item
     let listing: SpotListing
@@ -35,6 +35,9 @@ struct SpotListingSheet: View {
                 } else {
                     if item.isOwn, item.publication != .current {
                         ListingButton(title: "Publish") { Task { await model.publish(item.id) } }
+                    }
+                    if item.publication != nil {
+                        ListingButton(title: "Share") { model.sharePackage(item.id) }
                     }
                     ListingButton(title: item.isOwn ? "Copy prompt to change" : "Copy prompt to review") { model.copyListingPrompt(item.id) }
                 }

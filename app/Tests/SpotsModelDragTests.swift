@@ -684,6 +684,17 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(publication(of: "a"), .current)
     }
 
+    func testShareCopiesTheStoresPackageAsOneFileThatOpensWithItsListing() async throws {
+        try "Does a.".write(to: plugins.appendingPathComponent("a.md"), atomically: true, encoding: .utf8)
+        XCTAssertNil(model.sharePackage("a"))
+        _ = await model.publish("a")
+
+        let file = try XCTUnwrap(model.sharePackage("a"))
+
+        XCTAssertEqual(file.pathExtension, "spot")
+        XCTAssertEqual(try SpotPackage.open(at: file).readme, "Does a.")
+    }
+
     func testASpotWithNoReadmeOpensItsListingAndIsNotPublished() async {
         let result = await model.publish("a")
 

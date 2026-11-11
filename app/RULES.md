@@ -54,6 +54,11 @@ A spot travels as a `.spot` file: JSON with `"format": 1` and `files`, a list of
 opens. Hidden files and `$OPENSPOT_DATA` stay behind. A file of the same path replaces the old one, which goes to the
 Trash.
 
+Share in the store copies a published package as one `.spot` file that is a zip of its folder. Openspot opens a package
+folder, a zip of one, and a JSON file of format 1. A zip with a path that leaves its folder, a link, or more than the
+size limit when unpacked is refused, the last before it unpacks. The install keeps the readme and the preview beside the
+spot's file.
+
 | ID | Rule |
 |---|---|
 | P4 | Before a person installs a shared spot, Openspot shows all the text it can, says what runs by itself and names each file that it cannot show. Only a modified key installs it. |

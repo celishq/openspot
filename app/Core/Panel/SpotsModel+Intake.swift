@@ -100,7 +100,7 @@ extension SpotsModel {
         closeList(moving: isShown)
         endReview()
         do {
-            show(try ReviewSpot(spot: SharedSpot(contentsOf: url), folder: files.folder.url))
+            show(try ReviewSpot(contents: SpotPackage.open(at: url), folder: files.folder.url))
             if urls.count > 1 { host.notify("Openspot installs one spot at a time.") }
         } catch {
             host.notify(Self.reason(error))

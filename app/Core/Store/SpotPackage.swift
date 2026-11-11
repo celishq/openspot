@@ -4,6 +4,21 @@ import Foundation
 /// A published spot in the store: a folder `<id>.spot` with `listing.toml` (its title, description and the hash of its
 /// files), `readme.md`, `preview.txt`, and the spot's files under `files`. Finder shows it as one file.
 public struct SpotPackage: Equatable, Sendable {
+    /// What a person installs from a package, a zip of one, or a `.spot` file of the first format, which has no listing.
+    public struct Contents: Equatable, Sendable {
+        public let spot: SharedSpot
+        public let description: String?
+        public let readme: String?
+        public let preview: String?
+
+        public init(spot: SharedSpot, description: String? = nil, readme: String? = nil, preview: String? = nil) {
+            self.spot = spot
+            self.description = description
+            self.readme = readme
+            self.preview = preview
+        }
+    }
+
     public static let fileExtension = SharedSpot.fileExtension
     private static let listingName = "listing.toml"
     private static let readmeName = "readme.md"
@@ -87,6 +102,66 @@ public struct SpotPackage: Equatable, Sendable {
             files.append(SharedSpot.File(path: path, isExecutable: FileManager.default.isExecutableFile(atPath: file.path), contents: try Data(contentsOf: file)))
         }
         return try SharedSpot(files: files.sorted { $0.path < $1.path })
+    }
+
+    /// Writes the package as one zip file, which travels where a folder cannot, such as in a chat.
+    public func zip(to file: URL) throws {
+        try? FileManager.default.removeItem(at: file)
+        _ = try Self.run("/usr/bin/ditto", ["-c", "-k", "--sequesterRsrc", "--keepParent", url.path, file.path])
+    }
+
+    /// Reads what a package folder, a zip of one, or a `.spot` file of the first format holds, and runs none of it. A zip
+    /// with a path that leaves its folder, a link, or more bytes in all than `limit` or the limit of shared spots is refused, the last before it unpacks.
+    public static func open(at url: URL, limit: Int? = nil) throws -> Contents {
+        let limit = limit ?? SharedSpot.sizeLimit
+        var isFolder: ObjCBool = false
+        if FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder), isFolder.boolValue {
+            return try SpotPackage(url: url).contents()
+        }
+        let head = (try? FileHandle(forReadingFrom: url)).flatMap { try? $0.read(upToCount: 4) }
+        guard head == Data([0x50, 0x4B, 0x03, 0x04]) else { return Contents(spot: try SharedSpot(contentsOf: url)) }
+        let names = try run("/usr/bin/zipinfo", ["-1", url.path]).split(separator: "\n").map(String.init)
+        guard names.allSatisfy(isSafe(entry:)) else { throw PluginError.fault("This file holds a path that leaves its folder, so Openspot does not open it.") }
+        let total = try run("/usr/bin/zipinfo", ["-t", url.path]).components(separatedBy: " bytes uncompressed").first?
+            .split(separator: " ").last.flatMap { Int($0) } ?? .max
+        guard total <= limit else { throw PluginError.fault("This spot is over the \(limit / 1_000_000) MB limit.") }
+        let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-open-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: place) }
+        _ = try run("/usr/bin/ditto", ["-x", "-k", url.path, place.path])
+        for case let file as URL in FileManager.default.enumerator(at: place, includingPropertiesForKeys: [.isSymbolicLinkKey]) ?? FileManager.DirectoryEnumerator() {
+            if try file.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink == true {
+                throw PluginError.fault("This file holds a link, \(file.lastPathComponent), so Openspot does not open it.")
+            }
+        }
+        let packages = try FileManager.default.contentsOfDirectory(at: place, includingPropertiesForKeys: nil).filter { $0.pathExtension == fileExtension }
+        guard packages.count == 1, let package = packages.first else { throw PluginError.fault("This file holds no spot.") }
+        return try SpotPackage(url: package).contents()
+    }
+
+    /// Whether a path in a zip stays inside the folder that it unpacks into.
+    static func isSafe(entry: String) -> Bool {
+        !entry.hasPrefix("/") && !entry.split(separator: "/").contains("..")
+    }
+
+    private func contents() throws -> Contents {
+        let texts = texts
+        return Contents(spot: try spot(), description: value("description"), readme: texts.readme?.trimmingCharacters(in: .whitespacesAndNewlines), preview: texts.preview)
+    }
+
+    /// Runs a tool of macOS to its end, and gives its output. A tool that fails throws its words.
+    private static func run(_ tool: String, _ arguments: [String]) throws -> String {
+        let process = Process()
+        let output = Pipe()
+        process.executableURL = URL(fileURLWithPath: tool)
+        process.arguments = arguments
+        process.standardOutput = output
+        process.standardError = output
+        try process.run()
+        let data = output.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        let text = String(decoding: data, as: UTF8.self)
+        guard process.terminationStatus == 0 else { throw PluginError.fault("Openspot cannot read this file. \(text)") }
+        return text
     }
 
     private func value(_ key: String) -> String? {
