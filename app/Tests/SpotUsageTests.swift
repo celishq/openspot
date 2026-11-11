@@ -50,4 +50,36 @@ final class SpotUsageTests: SpotRunsCase {
 
         XCTAssertEqual(runs.usage.counts["script"]?.fault, "No network.")
     }
+
+    func testTheStatsAreARowForEachSpotWithTheMostCPUTimeFirst() {
+        let usage = SpotUsage()
+        usage.called("a", name: "Alpha", seconds: 2)
+        usage.add(ProcessTime(cpu: 0.04, wakeups: 0), to: "a")
+        usage.failed("a", name: "Alpha", fault: "Alpha failed.\nIt stopped.")
+        usage.called("b", name: "Beta", seconds: 0.25)
+        usage.called("b", name: "Beta", seconds: 0.25)
+        usage.add(ProcessTime(cpu: 1.5, wakeups: 7), to: "b")
+
+        XCTAssertEqual(usage.text, """
+        row=b
+        title=Beta
+        detail=1.5 s CPU · 2 calls · 250 ms each
+        cpu=1.500
+        calls=2
+        seconds=0.500
+        wakeups=7
+
+        row=a
+        title=Alpha
+        detail=40 ms CPU · 1 call · 2.0 s each
+        cpu=0.040
+        calls=1
+        seconds=2.000
+        wakeups=0
+        fault=Alpha failed.\\nIt stopped.
+        tone=bad
+
+
+        """)
+    }
 }

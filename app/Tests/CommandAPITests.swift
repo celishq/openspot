@@ -131,6 +131,22 @@ final class CommandAPITests: XCTestCase {
         XCTAssertEqual(answer.code, 1)
     }
 
+    func testStatsComeFromTheRunningApp() async throws {
+        let call = try XCTUnwrap(CommandLineCall(arguments: ["spot", "stats"], environment: [:]))
+        let work = try XCTUnwrap(CommandAPI(host: host, stats: { "row=a\n" }).work(for: call, input: { "" }, environment: [:]))
+
+        let answer = await work()
+
+        XCTAssertEqual(answer, CommandAnswer(output: "row=a\n"))
+    }
+
+    func testStatsWithNoAppToReachFail() async throws {
+        let answer = try await answer(["spot", "stats"])
+
+        XCTAssertEqual(answer.errors, "Openspot is not running, so it has counted no calls. Open Openspot, then run this again.\n")
+        XCTAssertEqual(answer.code, 1)
+    }
+
     func testACallThatTheShellDoesHasNoWorkInCore() throws {
         for arguments in [["color", "pick"], ["render", "a.png"], ["spot", "run", "notes"], ["clipboard", "paste"], ["helper", "calc"], ["check"]] {
             let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: [:]))

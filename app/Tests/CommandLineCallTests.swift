@@ -68,6 +68,9 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "run", "weather", "open", "today"]), .spotRun(id: "weather", arguments: ["open", "today"]))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "show", "weather"]), .spotShow("weather"))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "log", "weather"]), .spotLog("weather"))
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "stats"]), .spotStats)
+        XCTAssertEqual(CommandLineCall(arguments: ["spot", "stats", "weather"]), .unknown("spot stats weather"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot spot stats"))
         XCTAssertEqual(CommandLineCall(arguments: ["spot", "show"]), .unknown("spot show"))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot spot run"))
     }

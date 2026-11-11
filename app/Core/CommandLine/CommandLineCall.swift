@@ -14,6 +14,7 @@ public enum CommandLineCall: Equatable, Sendable {
     case spotShow(String)
     /// Prints the record of the last calls of a spot.
     case spotLog(String)
+    case spotStats
     /// Draws the sheet of an installed spot, or its card at a size.
     case renderSpot(id: String, size: SpotSize?, path: String)
     case checkSheet
@@ -82,6 +83,8 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot spot new <name> [--from kind]       Writes a working spot to change. A kind is button, list, number or form.
     openspot spot run <id> [call] [value]...     Makes one call of a spot as the app does, and prints all that it prints.
     openspot spot log <id>                       Prints the last calls that the app made to a spot.
+    openspot spot stats                          Prints a row for each spot: its calls, their time, its CPU time and
+                                                 its last fault, since the app started.
     openspot spot show <id>                      Opens the panel with the spot selected.
     openspot check [--json] [folder]             Reports the faults of a plugins folder.
     openspot check --sheet                       Reports the faults of a sheet on stdin.
@@ -178,6 +181,7 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("spot", "run") where rest.count >= 2: self = .spotRun(id: rest[1], arguments: Array(rest.dropFirst(2)))
         case ("spot", "show") where rest.count == 2: self = .spotShow(rest[1])
         case ("spot", "log") where rest.count == 2: self = .spotLog(rest[1])
+        case ("spot", "stats") where rest.count == 1: self = .spotStats
         case ("render", "--spot") where rest.count == 3: self = .renderSpot(id: rest[1], size: nil, path: rest[2])
         case ("render", "--spot") where rest.count == 5 && rest[2] == "--card":
             guard let size = SpotSize(name: rest[3]) else { self = .unknown(arguments.joined(separator: " ")); return }

@@ -9,15 +9,18 @@ public final class CommandAPI: @unchecked Sendable {
     private let host: any CommandHost
     /// Raises an event in the running app, or nil in a process with no app to reach.
     private let raise: (@Sendable (SpotEvent) async -> Void)?
+    /// The rows of `openspot spot stats` in the running app, or nil in a process with no app to reach.
+    private let stats: (@Sendable () -> String)?
     private let lock = NSLock()
     /// The stores kept warm across calls, each one only once the person gave it leave.
     private var eventStore: (any EventStore)?
     private var reminderStore: (any ReminderStore)?
     private var glyphKeywords: GlyphKeywords?
 
-    public init(host: any CommandHost, raise: (@Sendable (SpotEvent) async -> Void)? = nil) {
+    public init(host: any CommandHost, raise: (@Sendable (SpotEvent) async -> Void)? = nil, stats: (@Sendable () -> String)? = nil) {
         self.host = host
         self.raise = raise
+        self.stats = stats
     }
 
     /// The work that answers a call, or nil for a call that runs in a process of its own: one that draws, waits for the
@@ -59,6 +62,11 @@ public final class CommandAPI: @unchecked Sendable {
                 let text = SpotFiles(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard).log.text(of: id)
                 return text.isEmpty ? "Openspot has made no call to \(id) yet. Use it in the panel, then run this again.\n" : text
             }
+        case .spotStats:
+            guard let stats else {
+                return { CommandAnswer(errors: "Openspot is not running, so it has counted no calls. Open Openspot, then run this again.\n", code: 1) }
+            }
+            return { CommandAnswer(output: stats()) }
         case .checkSheet:
             return {
                 let faults = PluginOutput(text: await input()).sheetFaults

@@ -16,6 +16,17 @@ public final class SpotUsage: @unchecked Sendable {
         public var cpu: TimeInterval {
             time.cpu
         }
+
+        /// Its CPU time, its calls and the time of each call on average, in words.
+        var detail: String {
+            let cpu = "\(Self.words(time.cpu)) CPU"
+            guard calls > 0 else { return cpu }
+            return "\(cpu) · \(calls) \(calls == 1 ? "call" : "calls") · \(Self.words(seconds / Double(calls))) each"
+        }
+
+        private static func words(_ seconds: TimeInterval) -> String {
+            seconds < 1 ? "\(Int((seconds * 1000).rounded())) ms" : String(format: "%.1f s", seconds)
+        }
     }
 
     private let lock = NSLock()
@@ -41,12 +52,14 @@ public final class SpotUsage: @unchecked Sendable {
         let key = ObjectIdentifier(process)
         lock.withLock { live[key] = (spot, process) }
         process.onExit { [weak self] time in
-            guard let self else { return }
-            lock.withLock {
-                guard let spot = live.removeValue(forKey: key)?.spot else { return }
-                ended[spot, default: Count()].time = ended[spot, default: Count()].time + time
-            }
+            guard let self, let spot = lock.withLock({ live.removeValue(forKey: key)?.spot }) else { return }
+            add(time, to: spot)
         }
+    }
+
+    /// Adds the time of an ended process to a spot.
+    func add(_ time: ProcessTime, to spot: String) {
+        lock.withLock { ended[spot, default: Count()].time = ended[spot, default: Count()].time + time }
     }
 
     /// Counts a call that ended after this many seconds.
@@ -58,11 +71,32 @@ public final class SpotUsage: @unchecked Sendable {
         }
     }
 
+    /// What `openspot spot stats` prints: a row for each spot, the most CPU time first, with its numbers as fields.
+    public var text: String {
+        counts.sorted { ($0.value.cpu, $1.key) > ($1.value.cpu, $0.key) }.map { id, count in
+            var lines = [
+                "row=\(id)",
+                "title=\(Self.escaped(count.name ?? id))",
+                "detail=\(count.detail)",
+                "cpu=\(String(format: "%.3f", count.cpu))",
+                "calls=\(count.calls)",
+                "seconds=\(String(format: "%.3f", count.seconds))",
+                "wakeups=\(count.time.wakeups)",
+            ]
+            if let fault = count.fault { lines += ["fault=\(Self.escaped(fault))", "tone=bad"] }
+            return lines.map { $0 + "\n" }.joined() + "\n"
+        }.joined()
+    }
+
     /// Keeps the fault that the person was told, as the last of this spot.
     func failed(_ spot: String, name: String, fault: String) {
         lock.withLock {
             ended[spot, default: Count()].name = name
             ended[spot, default: Count()].fault = fault
         }
+    }
+
+    private static func escaped(_ value: String) -> String {
+        value.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\n", with: "\\n")
     }
 }
