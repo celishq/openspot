@@ -1,10 +1,9 @@
 #!/bin/sh
 # icon=text.quote
 # detail=Copy text
-# shortcut=n
 # size=small
 # read=panel
-# global=true
+# offers=search
 export LC_ALL=en_US.UTF-8
 data="$OPENSPOT_DATA/snippets.json"
 . "$OPENSPOT_SH"
@@ -33,13 +32,13 @@ form() {
 
 field=title
 title=Name
-text=\($v.title | esc)
+value=\($v.title | esc)
 required=true
 
 field=content
 title=Text
 type=multiline
-text=\($v.content | esc)
+value=\($v.content | esc)
 required=true"'
 }
 

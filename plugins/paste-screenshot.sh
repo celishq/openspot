@@ -2,7 +2,6 @@
 # title=Paste latest screenshot
 # icon=doc.on.clipboard.fill
 # detail=From the screenshot folder
-# shortcut=v
 # size=small
 folder() {
   dir=$(defaults read com.apple.screencapture "$1" 2>/dev/null || defaults read com.apple.screencapture location 2>/dev/null || echo "$HOME/Desktop")

@@ -166,7 +166,7 @@ final class AgendaExampleTests: SamplePluginsCase {
         }
     }
 
-    func testTheRowsGiveEachReminderATickAndEachEventTheActionsThatFitIt() async throws {
+    func testTheRowsShowEachReminderAsItIsAndGiveEachRowTheActionsThatFitIt() async throws {
         let agenda = try example("Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
@@ -178,11 +178,9 @@ final class AgendaExampleTests: SamplePluginsCase {
             XCTAssertEqual(items["event:B/2"]?.hides, ["tick"])
             XCTAssertEqual(items["event:C/3"]?.hides, ["tick", "join"])
             XCTAssertEqual(items["reminder:R1"]?.hides, ["join"])
-            XCTAssertEqual(items["reminder:R1"]?.template, "reminder")
-            let tick = try XCTUnwrap(output.template(of: try XCTUnwrap(items["reminder:R2"]))?.parts(of: try XCTUnwrap(items["reminder:R2"])).first)
-            XCTAssertEqual(tick.look, .tick)
-            XCTAssertEqual(tick.control, .toggle(true))
-            XCTAssertEqual(tick.title, "Take pills")
+            XCTAssertEqual(items["reminder:R2"]?.symbol, "checkmark.circle.fill")
+            XCTAssertEqual(items["reminder:R2"]?.title, "Take pills")
+            XCTAssertEqual(output.errors, [])
             XCTAssertEqual(output.actions.map(\.id), ["join", "tick", "calendars"])
             XCTAssertEqual(output.primary, "Open")
         }
@@ -255,7 +253,7 @@ final class AgendaExampleTests: SamplePluginsCase {
         }
     }
 
-    func testATickInARowOrOnTheCardMarksTheReminderWhoseIdTheListPrinted() async throws {
+    func testTheTickActionOfARowOrATickOnTheCardMarksTheReminderWhoseIdTheListPrinted() async throws {
         let agenda = try example("Agenda")
         try await withPrivateHome { folder in
             try self.fakeOpenspot(in: folder)
@@ -264,7 +262,7 @@ final class AgendaExampleTests: SamplePluginsCase {
             let card = try XCTUnwrap(output.parts.first { $0.title == "Water the plants" }?.id)
             let done = try XCTUnwrap(output.items.first { $0.title == "Take pills" }?.run)
 
-            try await agenda.perform(.slot("done", run: row, value: "true"), timeout: 30)
+            try await agenda.perform(.action(CommandAction(id: "tick", title: "Mark as done"), item: SpotItem(title: "Call mom", run: row)), timeout: 30)
             try await agenda.perform(.set(card, to: "true"), timeout: 30)
             try await agenda.perform(.action(CommandAction(id: "tick", title: "Mark as done"), item: SpotItem(title: "Take pills", run: done)), timeout: 30)
 

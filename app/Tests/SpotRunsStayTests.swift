@@ -87,7 +87,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the stop") { self.blocks(ids: true).last == "stop=2" }
     }
 
-    func testOnlyTheFrameThatEndsAReadReplacesWhatTheSpotShows() async throws {
+    func testEachFrameWithABlockReplacesAllAndOnlyTheFrameThatEndsAReadAnswersIt() async throws {
         try script(header: "stay=true", """
         while IFS= read -r line; do
           case "$line" in
@@ -112,7 +112,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         try await wait("the late frame") { frames.last?.contains("Late") == true }
         XCTAssertTrue(isReady)
-        XCTAssertEqual(sheet.list.shown.map(\.run), ["a"])
+        XCTAssertEqual(sheet.list.shown.map(\.run), [])
     }
 
     func testAPickReachesTheRunningStayingScript() async throws {
@@ -245,7 +245,8 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testAStayingTrayScriptRunsWithThePanelClosedAndItsFrameReachesTheMenuBar() async throws {
-        try staying(header: "stay=true\ntray=true", frame: "text=n\\ntitle=3\\n")
+        menuBar.insert("script")
+        try staying(header: "stay=true", frame: "text=n\\ntitle=3\\n")
         _ = try scanned()
 
         try await wait("the mark") { self.runs.trayMarks.first?.mark.summary == "Script: 3" }
@@ -256,7 +257,8 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testAStayingTrayScriptGoesOnWhenItsSheetAndThePanelCloseAndAScanComes() async throws {
-        try staying(header: "stay=true\ntray=true", frame: "text=n\\ntitle=3\\n\\nrow=a\\ntitle=A\\n")
+        menuBar.insert("script")
+        try staying(header: "stay=true", frame: "text=n\\ntitle=3\\n\\nrow=a\\ntitle=A\\n")
         let sheet = try sheet()
         try await wait("the row") { sheet.list.shown.count == 1 }
         runs.panelOpened()
@@ -275,13 +277,14 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(log().count, 1)
     }
 
-    func testAFrameOfPartsChangesNoMarkOfAStayingTrayScript() async throws {
-        try script(header: "stay=true\ntray=true", """
+    func testAFrameOfAStayingTrayScriptIsItsWholePictureAndChangesItsMark() async throws {
+        menuBar.insert("script")
+        try script(header: "stay=true", """
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;
             arg=read) printf 'end=%s\\n\\ntext=n\\ntitle=3\\n---\\n' "$call" ;;
-            arg=open) printf 'text=a\\ntitle=A\\n---\\n'; touch '\(path("printed"))' ;;
+            arg=open) printf 'text=n\\ntitle=4\\n---\\n' ;;
           esac
         done
         """)
@@ -289,15 +292,14 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the mark") { !self.runs.trayMarks.isEmpty }
 
         sheet.pick(SpotItem(title: "A", run: "a"))
-        try await wait("the frame") { self.exists("printed") }
-        try await pause(0.1)
 
-        XCTAssertEqual(runs.trayMarks.first?.mark.summary, "Script: 3")
+        try await wait("the new mark") { self.runs.trayMarks.first?.mark.summary == "Script: 4" }
         XCTAssertEqual(runs.trayMarks.first?.mark.isStale, false)
     }
 
     func testASheetOfARunningStayingScriptOpensAtOnceWithItsLastFrame() async throws {
-        try staying(header: "stay=true\ntray=true", head: "main=n\\n", frame: "text=n\\ntitle=3\\n\\ntext=a\\ntitle=A\\n")
+        menuBar.insert("script")
+        try staying(header: "stay=true", head: "main=n\\n", frame: "text=n\\ntitle=3\\n\\ntext=a\\ntitle=A\\n")
         let sheet = try sheet()
         try await wait("the mark") { !self.runs.trayMarks.isEmpty }
         XCTAssertNil(sheet.panel)
@@ -325,35 +327,35 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(log().count, 1)
     }
 
-    func testAStayingScriptWithLaunchRunsAtAllTimesAndEachMomentReachesIt() async throws {
-        try staying(header: "stay=true\nread=launch,wake")
+    func testAStayingScriptWithAlwaysRunsFromTheStartWithNothingThatWantsIt() async throws {
+        try staying(header: "stay=always")
         let sheet = try sheet()
 
-        runs.arrive(.launch)
         try await wait("the frame") { sheet.list.shown.count == 1 }
-        XCTAssertEqual(blocks(ids: true), ["call=1\nreason=launch\narg=read"])
+        XCTAssertEqual(blocks(ids: true), ["call=1\nreason=panel\narg=read"])
 
         runs.panelOpened()
         runs.panelClosed()
-        runs.arrive(.wake)
+        runs.woke()
+        try await pause(0.15)
 
-        try await wait("the read of the wake") { self.blocks(ids: true).last == "call=2\nreason=wake\narg=read" }
         XCTAssertFalse(exists("ended"))
         XCTAssertEqual(log().count, 1)
     }
 
-    func testAStayingScriptWithOnlyWakeDoesNotStartAtItsMoment() async throws {
-        try staying(header: "stay=true\nread=wake")
+    func testAStayingScriptThatNothingWantsDoesNotStartOnAWake() async throws {
+        try staying(header: "stay=true\nread=600")
         _ = try scanned()
 
-        runs.arrive(.wake)
+        runs.woke()
         try await pause(0.15)
 
         XCTAssertEqual(log(), [])
     }
 
     func testAStayingScriptWithANumberGetsAReadOnItsTimer() async throws {
-        try staying(header: "stay=true\ntray=true\nread=5", frame: "text=n\\ntitle=3\\n")
+        menuBar.insert("script")
+        try staying(header: "stay=true\nread=5", frame: "text=n\\ntitle=3\\n")
         _ = try scanned()
         try await wait("the mark") { !self.runs.trayMarks.isEmpty }
         XCTAssertEqual(blocks(), ["arg=read"])
@@ -366,7 +368,8 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testAStayingScriptThatEndedStartsAgainAtTheNextMoment() async throws {
-        try script(header: "stay=true\ntray=true", """
+        menuBar.insert("script")
+        try script(header: "stay=true", """
         [ -f '\(path("second"))' ] || { touch '\(path("second"))'; printf 'end=1\\n\\ntext=n\\ntitle=1\\n'; exit 0; }
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
@@ -378,7 +381,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(sheet.reading.value?.title, "1")
         XCTAssertEqual(log().count, 1)
 
-        runs.arrive(.wake)
+        runs.woke()
 
         try await wait("the second run") { sheet.reading.value?.title == "2" }
         XCTAssertFalse(sheet.reading.isStale)
@@ -398,7 +401,8 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testAStayingScriptThatLeavesTheFolderEnds() async throws {
-        let url = try staying(header: "stay=true\ntray=true", frame: "text=n\\ntitle=3\\n")
+        menuBar.insert("script")
+        let url = try staying(header: "stay=true", frame: "text=n\\ntitle=3\\n")
         _ = try scanned()
         try await wait("the mark") { !self.runs.trayMarks.isEmpty }
 
@@ -411,20 +415,21 @@ final class SpotRunsStayTests: SpotRunsCase {
     private static let givenUp = "Script failed 3 times in one minute. Openspot will not start it again until its file changes."
 
     func testThreeQuickFailuresStopNewStartsAndTellThePersonOnce() async throws {
-        try script(header: "stay=true\ntray=true\nread=wake", "echo broken >&2\nexit 1")
+        menuBar.insert("script")
+        try script(header: "stay=true", "echo broken >&2\nexit 1")
         let (sheet, told) = try toldSheet()
 
         _ = try scanned()
         try await wait("the first failure") { told().count == 1 }
-        runs.arrive(.wake)
+        runs.woke()
         try await wait("the second failure") { told().count == 2 }
         XCTAssertEqual(told(), ["broken", "broken"])
-        runs.arrive(.wake)
+        runs.woke()
         try await wait("the third failure") { told().count == 3 }
         XCTAssertEqual(told().last, Self.givenUp)
         XCTAssertEqual(log().count, 3)
 
-        runs.arrive(.wake)
+        runs.woke()
         runs.panelOpened()
         runs.panelClosed()
         _ = try scanned()
@@ -437,14 +442,15 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testFailuresMoreThanAMinuteApartDoNotStopNewStarts() async throws {
-        try script(header: "stay=true\ntray=true", "echo broken >&2\nexit 1")
+        menuBar.insert("script")
+        try script(header: "stay=true", "echo broken >&2\nexit 1")
         let (_, told) = try toldSheet()
         _ = try scanned()
 
         for count in 1...4 {
             try await wait("failure \(count)") { told().count == count }
             time += 31
-            runs.arrive(.wake)
+            runs.woke()
         }
 
         try await wait("the fifth start") { self.log().count == 5 }
@@ -452,20 +458,22 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testAChangedFileStartsAStoppedScriptAgainAndAnUnchangedOneStaysStopped() async throws {
-        try script(header: "stay=true\ntray=true", "echo broken >&2\nexit 1")
+        menuBar.insert("script")
+        try script(header: "stay=true", "echo broken >&2\nexit 1")
         let (_, told) = try toldSheet()
         _ = try scanned()
         try await wait("the first failure") { told().count == 1 }
-        runs.arrive(.wake)
+        runs.woke()
         try await wait("the second failure") { told().count == 2 }
-        runs.arrive(.wake)
+        runs.woke()
         try await wait("the third failure") { told().count == 3 }
 
         _ = try scanned()
         try await pause(0.1)
         XCTAssertEqual(log().count, 3)
 
-        try staying(header: "stay=true\ntray=true", frame: "text=n\\ntitle=3\\n")
+        menuBar.insert("script")
+        try staying(header: "stay=true", frame: "text=n\\ntitle=3\\n")
         _ = try scanned()
 
         try await wait("the mark") { self.runs.trayMarks.first?.mark.summary == "Script: 3" }
@@ -473,13 +481,14 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testASheetOfAStoppedScriptDoesNotOpen() async throws {
-        try script(header: "stay=true\ntray=true", "exit 1")
+        menuBar.insert("script")
+        try script(header: "stay=true", "exit 1")
         let (sheet, told) = try toldSheet()
         _ = try scanned()
         try await wait("the first failure") { told().count == 1 }
-        runs.arrive(.wake)
+        runs.woke()
         try await wait("the second failure") { told().count == 2 }
-        runs.arrive(.wake)
+        runs.woke()
         try await wait("the third failure") { told().count == 3 }
         var isReady = false
 
@@ -536,7 +545,7 @@ final class SpotRunsStayTests: SpotRunsCase {
             stop=*) touch '\(path("stopped"))'; args=stop ;;
             '')
               case "$args" in
-                ' read a') ( \(untilRelease); printf 'search=script\\nend=%s\\n\\nrow=o\\ntitle=Old\\n---\\n' "$call"; printf 'text=d\\ntitle=Done\\n---\\n' ) & ;;
+                ' read a') ( \(untilRelease); printf 'search=script\\nend=%s\\n\\nrow=o\\ntitle=Old\\n---\\n' "$call"; printf 'toast=Done\\n---\\n' ) & ;;
                 ' read ab') printf 'search=script\\nend=%s\\n\\nrow=n\\ntitle=New\\n---\\n' "$call" ;;
                 ' read') printf 'search=script\\nend=%s\\n\\nrow=x\\ntitle=X\\n---\\n' "$call" ;;
               esac ;;
@@ -559,18 +568,6 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the frame after the late answer") { frames.last?.contains("Done") == true }
         XCTAssertEqual(sheet.list.shown.map(\.run), ["n"])
     }
-
-    func testTheAnswerOfAStayingScriptTakesTheTemplatesOfItsRows() async throws {
-        try staying(frame: "template=row\\ngrid=name\\ntext=name\\n\\nrow=a\\ntitle=A\\n")
-        let sheet = try sheet()
-
-        runs.panelOpened()
-        sheet.open {}
-
-        try await wait("the row") { sheet.list.shown.count == 1 }
-        XCTAssertNotNil(sheet.list.template(of: try XCTUnwrap(sheet.list.shown.first)))
-    }
-
     func testTheFirstPartsOfAStayingScriptArriveThroughTheArrival() async throws {
         try staying(frame: "text=a\\ntitle=A\\n")
         let sheet = try sheet()

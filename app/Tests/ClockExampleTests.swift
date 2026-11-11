@@ -27,7 +27,7 @@ final class ClockExampleTests: SamplePluginsCase {
             if frame.hasPrefix("end=1\n") { answer = frame } else { tick = frame }
         }
 
-        XCTAssertTrue(clock.isTray)
+        XCTAssertTrue(clock.canShowInMenuBar)
         XCTAssertEqual(answer, "end=1\n\ntext=time\ntitle=22:15\ndetail=Tokyo\n")
         XCTAssertEqual(tick, "text=time\ntitle=22:15\ndetail=Tokyo\n")
     }

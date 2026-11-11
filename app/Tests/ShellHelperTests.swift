@@ -14,9 +14,9 @@ final class ShellHelperTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func script(_ body: String, shell: String = "/bin/sh") throws -> URL {
+    private func script(_ body: String, shell: String = "/bin/sh", header: String = "") throws -> URL {
         let url = folder.appendingPathComponent(UUID().uuidString)
-        try "#!\(shell)\n. \"$OPENSPOT_SH\"\n\(body)\n".writeScript(to: url)
+        try "#!\(shell)\n\(header). \"$OPENSPOT_SH\"\n\(body)\n".writeScript(to: url)
         return url
     }
 
@@ -179,7 +179,7 @@ final class ShellHelperTests: XCTestCase {
           printf 'got=%s|%s|%s|%s|%s\\n---\\n' "$call" "$reason" "$(arg 1)" "$(arg 2)" "$(value note)"
         done
         printf 'over=1\\n'
-        """)
+        """, header: "# stay=true\n")
         let live = ScriptProcess(url: url, mode: .stays, limit: 5)
         var frames = live.start().makeAsyncIterator()
 
@@ -204,7 +204,7 @@ final class ShellHelperTests: XCTestCase {
         while IFS= read -r line; do
           [ -z "$line" ] || printf 'got=%s\\n---\\n' "$line"
         done
-        """)
+        """, header: "# stay=true\n")
         let live = ScriptProcess(url: url, mode: .stays, limit: 3)
         defer { live.end() }
         var frames = live.start().makeAsyncIterator()
@@ -217,11 +217,23 @@ final class ShellHelperTests: XCTestCase {
         XCTAssertEqual(second, "got=call=1\n")
     }
 
-    func testAStayingRunSaysSoAndAnyOtherRunDoesNot() {
-        let base = ["HOME": folder.path, "OPENSPOT_STAY": "true"]
+    func testAStayingRunHasNoVariableThatNamesItsLife() async throws {
+        let url = try script("printf 'stay=%s\\n---\\n' \"${OPENSPOT_STAY-}\"", header: "# stay=true\n")
+        let live = ScriptProcess(url: url, mode: .stays, limit: 3)
+        defer { live.end() }
+        var frames = live.start().makeAsyncIterator()
 
-        XCTAssertEqual(ScriptProcess.environment(base: base, app: "", stays: true)["OPENSPOT_STAY"], "true")
-        XCTAssertNil(ScriptProcess.environment(base: base, app: "")["OPENSPOT_STAY"])
+        let first = try await frames.next()
+
+        XCTAssertEqual(first, "stay=\n")
+    }
+
+    func testTheHelperReadsAllOfStdinInAScriptThatSaysStayFalse() async throws {
+        let url = try script("printf '%s' \"$(value a)\"", header: "# title=Once\n# stay=false\n")
+
+        let output = try await ScriptProcess.output(url: url, input: "a=one\n", limit: 5)
+
+        XCTAssertEqual(output, "one")
     }
 
     func testTheFileInTheBundleOfTheAppComesFirst() throws {

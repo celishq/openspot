@@ -2,7 +2,6 @@
 # title=Emojis & Symbols
 # icon=face.smiling
 # detail=Copy an emoji or a symbol
-# shortcut=e
 # size=small
 # read=sheet
 export LC_ALL=en_US.UTF-8
@@ -53,9 +52,9 @@ case "$1" in
     printf 'button=open\ntitle=Copy\n\n'
     printf 'button=paste\ntitle=Paste\nshortcut=cmd+return\nclose=true\n\n'
     printf 'button=next-tone\ntitle=Next skin tone\nshortcut=cmd+t\nscope=command\n\n'
-    printf 'choice=tone\ntitle=Skin tone\n'
-    printf 'option=none:Yellow\noption=light:Light\noption=medium-light:Medium light\noption=medium:Medium\noption=medium-dark:Medium dark\noption=dark:Dark\n'
-    printf 'value=%s\n\n' "$tone"
+    printf 'choice=tone\ntitle=Skin tone\nvalue=%s\n\n' "$tone"
+    printf 'option=none\ntitle=Yellow\n\noption=light\ntitle=Light\n\noption=medium-light\ntitle=Medium light\n\n'
+    printf 'option=medium\ntitle=Medium\n\noption=medium-dark\ntitle=Medium dark\n\noption=dark\ntitle=Dark\n\n'
     glyph_rows
     ;;
   tone)

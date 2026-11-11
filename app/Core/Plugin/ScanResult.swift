@@ -18,9 +18,9 @@ public struct ScanResult: Equatable, Sendable {
         self.refused = refused
     }
 
-    /// The commands with a card, in their grid order: a lower `order` first, and otherwise as the folder sorts them.
+    /// The commands, each with a card, in their grid order: a lower `order` first, and otherwise as the folder sorts them.
     public var commands: [Spot] {
-        plugins.flatMap(\.commands).filter(\.hasSpot).enumerated()
+        plugins.flatMap(\.commands).enumerated()
             .sorted { ($0.element.order, $0.offset) < ($1.element.order, $1.offset) }.map(\.element)
     }
 

@@ -1,6 +1,6 @@
 import Foundation
 
-/// A working sheet for each kind of drawing, for a person to start from in the sandbox and a model to read in the catalog.
+/// A working sheet for each kind of drawing, for a person to start from in the sandbox.
 public enum SheetExamples {
     public struct Example: Equatable, Sendable {
         public let name: String
@@ -16,24 +16,31 @@ public enum SheetExamples {
         grid=target target . swap
         grid=output output output output
         grid=output output output copy
-        card=source input target output
 
         choice=source
-        option=auto:Automatic
-        option=en:English
         value=auto
 
+        option=auto
+        title=Automatic
+
+        option=en
+        title=English
+
         field=input
-        text=Good morning
+        value=Good morning
         placeholder=Type or paste text
 
         choice=target
-        option=fr:French
-        option=de:German
         value=fr
 
+        option=fr
+        title=French
+
+        option=de
+        title=German
+
         field=output
-        text=Bonjour
+        value=Bonjour
         readonly=true
 
         button=swap
@@ -70,7 +77,7 @@ public enum SheetExamples {
         detail=2:14 / 3:40
 
         slider=position
-        level=60
+        value=60
 
         button=previous
         look=bare
@@ -88,21 +95,26 @@ public enum SheetExamples {
         grid=status status status status
         grid=log log log log
         grid=log log log stop
-        card=file quality format
 
         text=file
         title=Demo.mov
         detail=1.2 GB
 
         choice=quality
-        option=high:High quality
-        option=low:Low quality
         value=high
+
+        option=high
+        title=High quality
+
+        option=low
+        title=Low quality
 
         choice=format
         align=right
-        option=mp4:MP4
         value=mp4
+
+        option=mp4
+        title=MP4
 
         gauge=status
         title=Converting
@@ -110,7 +122,7 @@ public enum SheetExamples {
         value=0.62
 
         field=log
-        text=frame= 4120 fps= 96\\nframe= 4216 fps= 97
+        value=frame= 4120 fps= 96\\nframe= 4216 fps= 97
         readonly=true
 
         button=stop
@@ -126,18 +138,22 @@ public enum SheetExamples {
         grid=model question question ask
 
         field=messages
-        text=Why do the checks fail?\\n\\nThe build step cannot find the module.
+        value=Why do the checks fail?\\n\\nThe build step cannot find the module.
         readonly=true
 
         field=question
-        text=
+        value=
         placeholder=Ask
 
         choice=model
         align=left
-        option=fast:Fast
-        option=deep:Deep
         value=fast
+
+        option=fast
+        title=Fast
+
+        option=deep
+        title=Deep
 
         button=ask
         look=strong
@@ -163,12 +179,12 @@ public enum SheetExamples {
         title=Memory
 
         graph=history
-        point=2
-        point=4
-        point=3
-        point=6
-        point=8
-        point=5
+        value=2
+        value=4
+        value=3
+        value=6
+        value=8
+        value=5
 
         button=refresh
         icon=arrow.clockwise
@@ -189,13 +205,19 @@ public enum SheetExamples {
         grid=paste paste paste paste
 
         choice=items
-        option=address:Address
-        option=signature:Signature
-        option=link:Meeting link
         value=address
 
+        option=address
+        title=Address
+
+        option=signature
+        title=Signature
+
+        option=link
+        title=Meeting link
+
         field=preview
-        text=Rosenthaler Str. 40\\n10178 Berlin
+        value=Rosenthaler Str. 40\\n10178 Berlin
         readonly=true
 
         button=copy
@@ -215,7 +237,7 @@ public enum SheetExamples {
         grid=note note note save
 
         field=note
-        text=Buy milk\\nCall the bank
+        value=Buy milk\\nCall the bank
 
         button=save
         look=strong
@@ -235,7 +257,7 @@ public enum SheetExamples {
 
         switch=heating
         title=Heating
-        on=true
+        value=true
 
         text=room
         title=Room
@@ -243,7 +265,7 @@ public enum SheetExamples {
 
         slider=target
         title=Target
-        level=40
+        value=40
 
         choice=colors
         color=#e8c07d
@@ -275,19 +297,6 @@ public enum SheetExamples {
         shortcut=cmd+q
 
         """),
-        Example(name: "a drawing with keys", text: """
-        grid=value value value value
-        pad=7 8 9 ÷
-        pad=4 5 6 ×
-        pad=1 2 3 −
-        pad=0 0 . +
-        pad=C C C =
-
-        number=value
-        value=1,284
-        look=bare
-
-        """),
         tiles
     ]
 
@@ -304,9 +313,13 @@ public enum SheetExamples {
 
     choice=tone
     title=Skin tone
-    option=none:Yellow
-    option=light:Light
     value=none
+
+    option=none
+    title=Yellow
+
+    option=light
+    title=Light
 
     row=grin
     title=Grinning face

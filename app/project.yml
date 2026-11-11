@@ -84,17 +84,20 @@ targets:
         script: |
           mkdir -p "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers"
           ln -sfn ../MacOS/Openspot "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers/openspot"
-      - name: Join the guide
+      - name: Join the guide, and copy the guides of the nouns
         basedOnDependencyAnalysis: false
         script: |
           sh "$SRCROOT/../scripts/guide.sh" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/GUIDE.md"
-      - name: Copy the core spots
+          rm -rf "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Help"
+          cp -R "$SRCROOT/Help" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Help"
+      - name: Copy the core spots and their defaults
         basedOnDependencyAnalysis: false
         script: |
           core="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/spots"
           rm -rf "$core"
           mkdir -p "$(dirname "$core")"
           cp -RL "$SRCROOT/../plugins" "$core"
+          cp "$SRCROOT/defaults.toml" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/defaults.toml"
       - name: Copy the emoji keywords
         basedOnDependencyAnalysis: false
         script: |

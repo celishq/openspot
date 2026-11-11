@@ -4,33 +4,87 @@ import XCTest
 final class PluginHeaderTests: XCTestCase {
     func testAScriptWithCommandsHasNoCardOnTheGridAndStaysInTheScan() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-grid-\(UUID().uuidString)")
-        try Data("#!/bin/sh\n# command=left:Left side\n".utf8).write(to: url)
+        try Data("#!/bin/sh\n#\n# command=left\n# title=Left side\n".utf8).write(to: url)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
         defer { try? FileManager.default.removeItem(at: url) }
 
         let command = try XCTUnwrap(try Plugin(file: url, id: "script")?.commands.first)
 
         XCTAssertFalse(command.headerState.isOnGrid)
-        XCTAssertTrue(command.hasSpot)
     }
 
-    func testAGlobalScriptWithNoKeyHasNoCardOnTheGridAndGlobalRowsKeepsItOutOfTheMainSearch() throws {
+    func testOffersNamesThePlacesThatASpotIsMadeFor() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-grid-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        let searchOnly = folder.appendingPathComponent("search.sh"), keyed = folder.appendingPathComponent("keyed.sh")
-        let rowsOnly = folder.appendingPathComponent("rows.sh")
-        try "#!/bin/sh\n# read=panel\n# global=true\n".writeScript(to: searchOnly)
-        try "#!/bin/sh\n# read=panel\n# global=true\n# shortcut=k\n".writeScript(to: keyed)
-        try "#!/bin/sh\n# read=panel\n# global=rows\n".writeScript(to: rowsOnly)
+        let searchOnly = folder.appendingPathComponent("search.sh")
+        let rowsOnly = folder.appendingPathComponent("rows.sh"), floating = folder.appendingPathComponent("float.sh")
+        try "#!/bin/sh\n# read=panel\n# offers=search\n".writeScript(to: searchOnly)
+        try "#!/bin/sh\n# read=panel\n# offers=rows\n".writeScript(to: rowsOnly)
+        try "#!/bin/sh\n# read=sheet\n# offers=float\n".writeScript(to: floating)
 
         let search = try XCTUnwrap(try Plugin(file: searchOnly, id: "search")?.commands.first)
         let rows = try XCTUnwrap(try Plugin(file: rowsOnly, id: "rows")?.commands.first)
-        XCTAssertFalse(search.headerState.isOnGrid)
-        XCTAssertTrue(try XCTUnwrap(try Plugin(file: keyed, id: "keyed")?.commands.first).headerState.isOnGrid)
+        let float = try XCTUnwrap(try Plugin(file: floating, id: "float")?.commands.first)
+        XCTAssertTrue(search.headerState.isOnGrid)
+        XCTAssertTrue(search.isGlobal)
         XCTAssertTrue(search.isFound)
         XCTAssertTrue(rows.isGlobal)
         XCTAssertFalse(rows.isFound)
+        XCTAssertFalse(rows.headerState.isOnGrid)
+        XCTAssertTrue(float.offersFloat)
+        XCTAssertFalse(float.isGlobal)
+        XCTAssertFalse(search.offersFloat)
+    }
+
+    func testPressRunMakesAPressOfASpotWithASheetRunIt() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-press-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let runs = folder.appendingPathComponent("runs.sh"), opens = folder.appendingPathComponent("opens.sh")
+        let unknown = folder.appendingPathComponent("unknown.sh")
+        try "#!/bin/sh\n# read=sheet\n# press=run\n".writeScript(to: runs)
+        try "#!/bin/sh\n# read=sheet\n".writeScript(to: opens)
+        try "#!/bin/sh\n# read=sheet\n# press=jump\n".writeScript(to: unknown)
+
+        let run = try XCTUnwrap(try Plugin(file: runs, id: "runs")?.commands.first)
+        let open = try XCTUnwrap(try Plugin(file: opens, id: "opens")?.commands.first)
+
+        XCTAssertTrue(run.pressRuns)
+        XCTAssertEqual(run.primaryTitle(hasItem: false), "Run")
+        XCTAssertFalse(open.pressRuns)
+        XCTAssertEqual(open.primaryTitle(hasItem: false), "Open")
+        XCTAssertThrowsError(try Plugin(file: unknown, id: "unknown")) { error in
+            XCTAssertTrue((error as? PluginError)?.reason.contains("Use run or sheet") == true, "\(error)")
+        }
+    }
+
+    func testAnUnknownPlaceRefusesThePlugin() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-place-\(UUID().uuidString)")
+        try "#!/bin/sh\n# read=panel\n# offers=dock\n".writeScript(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        XCTAssertThrowsError(try Plugin(file: url, id: "script")) { error in
+            XCTAssertTrue((error as? PluginError)?.reason.contains("search, rows or float") == true, "\(error)")
+        }
+    }
+
+    func testGlobalFloatAndTrayRefuseThePluginAndNameTheirNewWay() throws {
+        let cases = [
+            ("read=panel\n# global=true", "offers=search"),
+            ("read=panel\n# global=rows", "offers=rows"),
+            ("read=sheet\n# float=true", "offers=float"),
+            ("read=60\n# tray=true", "menu bar")
+        ]
+        for (header, hint) in cases {
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-old-\(UUID().uuidString)")
+            try "#!/bin/sh\n# \(header)\n".writeScript(to: url)
+            defer { try? FileManager.default.removeItem(at: url) }
+
+            XCTAssertThrowsError(try Plugin(file: url, id: "script"), header) { error in
+                XCTAssertTrue((error as? PluginError)?.reason.contains(hint) == true, "\(header): \(error)")
+            }
+        }
     }
 
     func testReadsTheCommentLinesUnderTheFirstLine() {
@@ -61,6 +115,23 @@ final class PluginHeaderTests: XCTestCase {
         let spot = try XCTUnwrap(try Plugin(script: folder.appendingPathComponent("cups.sh"), header: header, id: "home/cups").commands.first)
 
         XCTAssertEqual(spot.view, "/plugins/home/cups.swift")
+    }
+
+    func testAnAnswersPatternIsTheWholeRestOfItsLine() throws {
+        let header = PluginHeader(text: "#!/bin/sh\n# answers=^\\s*([0-9,.]|(?i:today|now)\\b)\n").block
+
+        let spot = try XCTUnwrap(try Plugin(script: URL(fileURLWithPath: "/plugins/calc.sh"), header: header, id: "calc").commands.first)
+
+        XCTAssertEqual(spot.answers?.text, #"^\s*([0-9,.]|(?i:today|now)\b)"#)
+        XCTAssertEqual(["1,5", "Today", "notes"].map { spot.answers?.matches($0) }, [true, true, false])
+    }
+
+    func testAHeaderPictureOnTheWebKeepsItsURL() throws {
+        let header = PluginHeader(text: "#!/bin/sh\n# icon=https://example.com/cups.png\n").block
+
+        let spot = try XCTUnwrap(try Plugin(script: URL(fileURLWithPath: "/plugins/home/cups.sh"), header: header, id: "home/cups").commands.first)
+
+        XCTAssertEqual(spot.icon, .image("https://example.com/cups.png"))
     }
 
     func testAViewThatIsNoSwiftFileIsRefused() {

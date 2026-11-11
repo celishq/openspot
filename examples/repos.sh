@@ -1,10 +1,13 @@
 #!/bin/sh
 # icon=arrow.triangle.branch
 # detail=Open a git repo
-# shortcut=r
 # size=small
 # read=sheet
-# settings=folder,editor:Default app
+#
+# setting=folder
+#
+# setting=editor
+# title=Default app
 export LC_ALL=en_US.UTF-8
 . "$OPENSPOT_SH"
 editors='Visual Studio Code
@@ -79,7 +82,7 @@ branch() {
 form() {
   printf 'title=%s\n\nchoice=editor\ntitle=Default app\nvalue=%s\n' "$1" "$(esc "$editor")"
   installed | while IFS= read -r app; do
-    printf 'option=%s:%s\n' "$(esc "$app")" "$(esc "$(name "$app")")"
+    printf '\noption=%s\ntitle=%s\n' "$(esc "$app")" "$(esc "$(name "$app")")"
   done
 }
 

@@ -34,7 +34,7 @@ progress() {
   share=$(awk -v part="$2" -v all="$3" 'BEGIN { v = all > 0 ? part / all : 0; if (v > 1) v = 1; printf "%.2f %d", v, v * 100 + 0.5 }')
   [ "$1 $share" = "$shown" ] && return
   shown="$1 $share"
-  printf 'gauge=progress\ntitle=%s\nvalue=%s\ndetail=%s%%\n---\n' "$1" "${share% *}" "${share#* }"
+  printf 'title=%s\nprogress=%s\ndetail=%s%%\n---\n' "$1" "${share% *}" "${share#* }"
 }
 
 watch() {
@@ -96,7 +96,7 @@ get_game() {
 }
 
 play() {
-  printf 'gauge=progress\ntitle=Playing\ndetail=Press to quit\n---\n'
+  printf 'title=Playing\ndetail=Press to quit\n---\n'
   rm -rf "$temp"
   trap - EXIT TERM
   "$engine" -iwad "$game" > doom.log
@@ -104,7 +104,7 @@ play() {
 
 case "$1" in
   read) card; exit 0 ;;
-  run | play) ;;
+  open | play) ;;
   *) exit 0 ;;
 esac
 temp=$(mktemp -d "${TMPDIR:-/tmp}/doom.XXXXXX") || exit 1

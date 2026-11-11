@@ -4,7 +4,7 @@
 # detail=Keeps files at hand
 # drop=*
 # read=sheet
-# float=true
+# offers=float
 list="$OPENSPOT_DATA/files"
 
 esc() {

@@ -96,6 +96,16 @@ public struct ConfigFile: Equatable, Sendable {
         }
     }
 
+    /// Puts a spot in the menu bar or takes it out, and keeps each other choice.
+    public func showInMenuBar(_ id: String, _ isShown: Bool) throws {
+        try locked {
+            let config = read()
+            var arrangement = config.arrangement
+            arrangement.set(isInMenuBar: isShown, of: id)
+            try writeTables(arrangement, keys: config.keys, settings: config.settings)
+        }
+    }
+
     private func save(_ text: String) throws {
         try text.write(to: url, atomically: true, encoding: .utf8)
     }

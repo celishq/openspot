@@ -130,7 +130,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatOfPartsKeepsItsValuesWhenThePanelClosesAndDropsThemWhenItCloses() async throws {
-        try script("note", header: "read=sheet", "printf 'field=note\\ntext=hi\\n'")
+        try script("note", header: "read=sheet", "printf 'field=note\\nvalue=hi\\n'")
         model.reload()
         model.press(try key("note"))
         try await wait("the parts") { model.sheets["note"]?.panel != nil }
@@ -184,7 +184,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAShakeWhileAFloatRowOfSettingsRecordsGivesItTheShake() async throws {
-        try script("shelf", header: "title=Shelf\nshortcut=s\nfloat=true", "true")
+        try script("shelf", header: "title=Shelf\noffers=float", "true")
         host.shipped = ShippedSpot.commands(folder: plugins, guide: folder.appendingPathComponent("GUIDE.md"), app: "", config: model.files.config)
         model.reload()
         model.isShown = true
@@ -206,7 +206,7 @@ final class SpotFloatTests: XCTestCase {
     }
 
     func testAFloatOfACardWithNoReadRunsNothingUntilItsCardIsPressed() async throws {
-        try script("go", header: "title=Go\nshortcut=g", "printf 'toast=Went\\n'")
+        try script("go", header: "title=Go", "printf 'toast=Went\\n'")
         model.reload()
 
         model.press(try key("go"))

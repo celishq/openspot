@@ -44,14 +44,13 @@ public struct SpotDock: Equatable, Sendable {
         }
     }
 
-    /// Where the card of each shown spot lies, in the order of `shown`, from the top left of the first row. Each spot, at
-    /// its size, takes the first place from the top left where it fits in rows of this many columns, so a smaller spot
-    /// moves up into a gap that a larger one left.
+    /// Where the card of each shown spot lies, in the order of `shown`, from the top left of the first row, with the grid's
+    /// gaps.
     public func rects(columns: Int) -> [CGRect] {
         places(columns: columns).map { place in
             CGRect(
                 x: CGFloat(place.column) * (SpotTokens.cell + SpotTokens.columnGap),
-                y: CGFloat(place.row) * (SpotTokens.dockTileHeight + SpotTokens.rowGap),
+                y: CGFloat(place.row) * (SpotTokens.rowHeight + SpotTokens.rowGap),
                 width: SpotTokens.width(columns: place.size.columns),
                 height: SpotTokens.height(rows: place.size.rows)
             )
@@ -61,27 +60,38 @@ public struct SpotDock: Equatable, Sendable {
     /// The height of the rows that hold the shown spots.
     public func height(columns: Int) -> CGFloat {
         let rows = places(columns: columns).map { $0.row + $0.size.rows }.max() ?? 0
-        return rows == 0 ? 0 : CGFloat(rows) * SpotTokens.dockTileHeight + CGFloat(rows - 1) * SpotTokens.rowGap
+        return rows == 0 ? 0 : SpotTokens.height(rows: rows)
     }
 
-    /// The row and column of each shown spot, and its size, no wider than the rows.
+    /// The row and column of each shown spot, and its size, no wider than the rows. The spots fill shelves in their order:
+    /// a shelf is as tall as its first spot, and a later spot no taller moves up into the first place where it fits in
+    /// that shelf. No spot grows, and none moves into an earlier shelf.
     private func places(columns: Int) -> [(row: Int, column: Int, size: SpotSize)] {
-        var taken = Set<[Int]>()
-        return shown.map { item in
-            let size = SpotSize(columns: min(item.size.columns, columns), rows: item.size.rows)
-            var row = 0
-            while true {
-                let fit = (0...(columns - size.columns)).first { column in
-                    (0..<size.rows).allSatisfy { down in (0..<size.columns).allSatisfy { !taken.contains([row + down, column + $0]) } }
+        var queue = shown.enumerated().map { (index: $0.offset, size: SpotSize(columns: min($0.element.size.columns, columns), rows: $0.element.size.rows)) }
+        var places = [(row: Int, column: Int, size: SpotSize)?](repeating: nil, count: queue.count)
+        var row = 0
+        while let first = queue.first {
+            var taken = Set<[Int]>()
+            var position = 0
+            while position < queue.count {
+                let spot = queue[position]
+                let fit = spot.size.rows > first.size.rows ? nil : (0...(columns - spot.size.columns)).lazy.flatMap { column in
+                    (0...(first.size.rows - spot.size.rows)).lazy.map { down in [down, column] }
+                }.first { cell in
+                    (0..<spot.size.rows).allSatisfy { down in (0..<spot.size.columns).allSatisfy { !taken.contains([cell[0] + down, cell[1] + $0]) } }
                 }
-                if let column = fit {
-                    for down in 0..<size.rows {
-                        for across in 0..<size.columns { taken.insert([row + down, column + across]) }
-                    }
-                    return (row, column, size)
+                guard let cell = fit else {
+                    position += 1
+                    continue
                 }
-                row += 1
+                for down in 0..<spot.size.rows {
+                    for across in 0..<spot.size.columns { taken.insert([cell[0] + down, cell[1] + across]) }
+                }
+                places[spot.index] = (row + cell[0], cell[1], spot.size)
+                queue.remove(at: position)
             }
+            row += first.size.rows
         }
+        return places.compactMap { $0 }
     }
 }

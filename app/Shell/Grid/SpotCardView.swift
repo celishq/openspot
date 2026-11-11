@@ -46,7 +46,7 @@ struct SpotCardView: View, Equatable {
             .overlay(alignment: .topTrailing) { keycap }
             .overlay(alignment: .topTrailing) { if !isHiddenFromGrid { FailureMark(entry: entry, size: size) } }
             .contentShape(shape)
-            .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id) } }
+            .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id, opening: NSEvent.modifierFlags.contains(.command)) } }
             .animation(.easeInOut(duration: 0.2), value: isOn)
             .scaleEffect(showsPress ? SpotMotion.pressedScale : 1)
             .animation(SpotMotion.press, value: showsPress)
@@ -56,7 +56,7 @@ struct SpotCardView: View, Equatable {
     @ViewBuilder
     private var content: some View {
         if entry.item == nil, let layout = entry.state.face.layout(for: size) {
-            SpotCardDrawing(layout: layout, face: entry.state.face, card: size, reading: reading, view: { room in
+            SpotCardDrawing(layout: layout, face: entry.state.face, card: size, view: { room in
                 drawnView.map { SpotCustomView(source: $0, values: entry.state.values, card: size, room: room, views: SpotViews.shared) }
             }) { model.setCardPart(entry.id, $0, to: $1) }
         } else if let view = drawnView {
@@ -226,7 +226,7 @@ struct SpotCardView: View, Equatable {
         }
     }
 
-    /// The letter of the spot, on the rim of its top right corner.
+    /// The letter of the spot, on the rim of its top right corner. The mark of a hidden card takes its place in Edit Spots.
     @ViewBuilder
     private var keycap: some View {
         if let chainLetter {
@@ -238,7 +238,7 @@ struct SpotCardView: View, Equatable {
                 .background(SpotTheme.keycap, in: RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
                 .offset(x: -inset, y: inset)
-                .opacity(showsChain ? 1 : 0)
+                .opacity(showsChain && !isHiddenFromGrid ? 1 : 0)
                 .animation(SpotMotion.keycap, value: showsChain)
                 .allowsHitTesting(false)
         }

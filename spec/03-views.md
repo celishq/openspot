@@ -1,13 +1,13 @@
 # 03 Views
 
-`draft` `optional` · Needs 01 and 02.
+`draft` `optional` · Needs 01.
 
 ```text
 #!/bin/sh
 # title=Cups today
 # read=panel
 # view=cups.swift
-printf 'view=cups\ntitle=3\npoint=1\npoint=0\npoint=2\n'
+printf 'view=cups\ntitle=3\nvalue=1\nvalue=0\nvalue=2\n'
 ```
 
 ```swift
@@ -19,13 +19,13 @@ struct SpotView: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text(spot["title"] ?? "–").font(.largeTitle.bold())
-            Text("\(spot.all("point").count) days").foregroundStyle(.secondary)
+            Text("\(spot.all("value").count) days").foregroundStyle(.secondary)
         }
     }
 }
 ```
 
-`view=<file>` in the header names a SwiftUI view, and a `view=<id>` component (02) draws it in the area of that id (V1). The script and its view lie in a
+`view=<file>` in the header names a SwiftUI view, and a `view=<id>` block (01) draws it in the area of that id (V1). The script and its view lie in a
 folder of their own, such as `cups/cups.sh` and `cups/cups.swift` (F10). The path starts at the folder of the script, and
 the file ends in `.swift`. The file is not executable, so it is not a spot of its own.
 
@@ -50,7 +50,7 @@ The view fills its area of a card drawing, such as `grid.large=cups cups chart c
 card drawing it fills the whole card and is clipped to the card's shape (V3). In a sheet, its lines share the free height,
 as a graph's do. Put `.padding(spot.inset)` on words so that they line up with other
 cards. The area's size comes from the drawing, the card's `size` and the person, and the view cannot change it. The view
-gets the keys of its own block in each frame, and a frame that does not print it keeps the last ones (V4). A new frame
+gets the keys of its own block in each frame that prints it (V4). A new frame
 draws the same view again, so its `@State` stays.
 
 The view only draws. A press on the card works as on any card (V5).

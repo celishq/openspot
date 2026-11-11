@@ -16,9 +16,8 @@ public final class ScriptCall: Identifiable {
     public let id = UUID()
     public let action: SpotAction
     public let started: Date
-    /// The last frame, sorted by what each block is, read once as it arrives. A frame of progress holds the values that a
-    /// metric prints.
-    public private(set) var output: PluginOutput?
+    /// The head of its last frame that held no block, whose `progress`, `title` and `detail` show while it runs (G4).
+    public private(set) var status: TextBlock?
     public private(set) var isStopped = false
     @ObservationIgnored let key: String
     @ObservationIgnored var halt: () -> Void = {}
@@ -36,25 +35,23 @@ public final class ScriptCall: Identifiable {
         action.arguments.first != SpotAction.read.arguments.first
     }
 
-    /// The part of its ring that is full, from 0 to 1, from the `value` of the gauge of its last frame (R12). With no value,
-    /// a spinner shows.
+    /// The part of its ring that is full, from 0 to 1, from `progress` in its status (R12). With none, a spinner shows.
     public var fill: Double? {
-        output?.progress?.number("value").map { min(max($0, 0), 1) }
+        status?.number("progress").map { min(max($0, 0), 1) }
     }
 
-    /// The `title` of the gauge of its last frame.
     public var title: String? {
-        output?.progress?.value("title")
+        status?.value("title")
     }
 
-    /// The `detail` of the gauge of its last frame.
     public var detail: String? {
-        output?.progress?.value("detail")
+        status?.value("detail")
     }
 
-    /// Takes a frame, sorted by what each block is.
+    /// Takes a frame. Only a frame of only a head changes its status.
     func take(_ output: PluginOutput) {
-        self.output = output
+        guard !output.isPicture else { return }
+        status = output.summary
     }
 
     func stop() {

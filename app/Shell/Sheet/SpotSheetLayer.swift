@@ -93,7 +93,7 @@ struct SpotSheetLayer: View {
     private func cardLook(_ card: SpotsModel.Entry, size: SpotSize) -> some View {
         let reading: (String) -> MetricReading? = card.kind == .widget ? { [model] in model.reading(of: $0) } : { _ in nil }
         if card.item == nil, let layout = card.state.face.layout(for: size) {
-            SpotCardDrawing(layout: layout, face: card.state.face, card: size, reading: reading, view: { room in
+            SpotCardDrawing(layout: layout, face: card.state.face, card: size, view: { room in
                 card.command.view.map { SpotCustomView(source: $0, values: card.state.values, card: size, room: room, views: SpotViews.shared) }
             }, onSlot: { _, _ in })
             .padding(SpotTokens.cardPadding(for: size, isWidget: true))

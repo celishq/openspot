@@ -1,8 +1,7 @@
 import Foundation
 
-/// What the person chose for the spots: a preferred size, whether the grid shows a spot, whether its rows join the main
-/// search, and the order. The grid can still
-/// change a preferred size to fill a row.
+/// What the person chose for the spots: a size, which the grid keeps, whether the grid shows a spot, whether its rows join
+/// the main search, whether the menu bar shows it, its letter, and the order.
 public struct SpotArrangement: Equatable, Sendable {
     public struct Choice: Equatable, Sendable {
         public let id: String
@@ -10,13 +9,18 @@ public struct SpotArrangement: Equatable, Sendable {
         public var isOnGrid: Bool?
         public var isEnabled: Bool?
         public var isGlobal: Bool?
+        public var isInMenuBar: Bool?
+        /// The letter that runs the spot from the panel. An empty letter takes away the letter of the default config.
+        public var letter: String?
 
-        public init(id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil, isEnabled: Bool? = nil, isGlobal: Bool? = nil) {
+        public init(id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil, isEnabled: Bool? = nil, isGlobal: Bool? = nil, isInMenuBar: Bool? = nil, letter: String? = nil) {
             self.id = id
             self.size = size
             self.isOnGrid = isOnGrid
             self.isEnabled = isEnabled
             self.isGlobal = isGlobal
+            self.isInMenuBar = isInMenuBar
+            self.letter = letter
         }
     }
 
@@ -36,6 +40,35 @@ public struct SpotArrangement: Equatable, Sendable {
 
     public func isGlobal(of id: String) -> Bool? {
         choices.first { $0.id == id }?.isGlobal
+    }
+
+    /// The letter of each spot: each letter of these choices first, then each letter of the defaults for a spot that these
+    /// choices give no letter, while no spot holds it. Of two spots with one letter, the first keeps it.
+    public func letters(over defaults: SpotArrangement) -> [String: CommandKey] {
+        var letters: [String: CommandKey] = [:]
+        var taken = Set<String>()
+        for choice in choices where letters[choice.id] == nil {
+            guard let key = choice.letter.flatMap(CommandKey.init(name:)), taken.insert(key.name).inserted else { continue }
+            letters[choice.id] = key
+        }
+        for choice in defaults.choices where letters[choice.id] == nil && self.choices.first(where: { $0.id == choice.id })?.letter == nil {
+            guard let key = choice.letter.flatMap(CommandKey.init(name:)), taken.insert(key.name).inserted else { continue }
+            letters[choice.id] = key
+        }
+        return letters
+    }
+
+    /// Gives a spot this letter, or takes its letter away with nil. Returns the spot that held the letter, which loses it.
+    public mutating func give(_ letter: CommandKey?, to id: String, over defaults: SpotArrangement) -> String? {
+        let holder = letter.flatMap { key in letters(over: defaults).first { $0.value == key && $0.key != id }?.key }
+        if let holder { change(holder) { $0.letter = "" } }
+        change(id) { $0.letter = letter?.name ?? "" }
+        return holder
+    }
+
+    /// The IDs of the spots that the person put in the menu bar.
+    public var menuBar: Set<String> {
+        Set(choices.filter { $0.isInMenuBar == true }.map(\.id))
     }
 
     /// The IDs of the core spots that the person turned on.
@@ -74,6 +107,10 @@ public struct SpotArrangement: Equatable, Sendable {
         change(id) { $0.isEnabled = isEnabled }
     }
 
+    public mutating func set(isInMenuBar: Bool, of id: String) {
+        change(id) { $0.isInMenuBar = isInMenuBar }
+    }
+
     private mutating func change(_ id: String, _ work: (inout Choice) -> Void) {
         if !choices.contains(where: { $0.id == id }) { choices.append(Choice(id: id)) }
         choices.indices.filter { choices[$0].id == id }.forEach { work(&choices[$0]) }
@@ -87,6 +124,8 @@ public struct SpotArrangement: Equatable, Sendable {
             if let isOnGrid = choice.isOnGrid { lines.append("grid = \(isOnGrid)") }
             if let isEnabled = choice.isEnabled { lines.append("enabled = \(isEnabled)") }
             if let isGlobal = choice.isGlobal { lines.append("global = \(isGlobal)") }
+            if let isInMenuBar = choice.isInMenuBar { lines.append("tray = \(isInMenuBar)") }
+            if let letter = choice.letter { lines.append("letter = \"\(letter)\"") }
             return lines.joined(separator: "\n")
         }.joined(separator: "\n\n")
     }

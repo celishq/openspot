@@ -2,10 +2,11 @@
 # title=Agenda
 # icon=calendar
 # detail=Today and tomorrow, with your reminders
-# shortcut=d
 # size=large
-# read=panel,60,wake
-# settings=calendars:Calendars:calendar
+# read=panel,60
+#
+# setting=calendars
+# icon=calendar
 . "$OPENSPOT_SH"
 
 hidden=$(openspot setting get calendars </dev/null)
@@ -45,9 +46,10 @@ calendars_form() {
           if ($i ~ /^title=/) title = substr($i, 7)
           if ($i ~ /^detail=/) account = substr($i, 8)
         }
-        printf "option=%s:%s · %s:%s\n", head[2], title, account, head[1]
+        options = options sprintf("\noption=%s\ntitle=%s · %s\nicon=%s\n", head[2], title, account, head[1])
         if (!index(hidden, " " head[2] " ")) printf "value=%s\n", head[2]
-      }'
+      }
+      END { printf "%s", options }'
 }
 
 events() { openspot calendar events --days 2 $(hides) </dev/null; }
@@ -125,13 +127,13 @@ card() {
         if ($i ~ /^detail=/) { due = substr($i, 8); sub(/ · .*/, "", due) }
         if ($i ~ /^tone=/) tone = $i
       }
-      printf "switch=%s\nlook=tick\ntitle=%s\non=false\n\ntext=due-%s\ndetail=%s\n", id, title, id, due
+      printf "switch=%s\nlook=tick\ntitle=%s\nvalue=false\n\ntext=due-%s\ndetail=%s\n", id, title, id, due
       if (tone != "") print tone
       print ""
     }'
 }
 
-# Prints the rows of the sheet: the events, and the reminders with a tick, each with the actions that fit it. With texts,
+# Prints the rows of the sheet: the events and the reminders, each with the actions that fit it. With texts,
 # such as the typed text and each other form of it, it keeps the rows whose title or detail holds any of them.
 rows() {
   printf '%s\n\n%s\n' "$events" "$reminders" | TEXTS=$(printf '%s\n' "$@") awk '
@@ -148,7 +150,7 @@ rows() {
       for (t = 1; t <= count; t++) if (texts[t] != "" && index(shown, texts[t])) found = 1
       if (!found) next
       print
-      if ($1 ~ /^row=reminder:/) printf "as=reminder\ndone.title=%s\ndone.detail=%s\nhides=join\n", title, detail
+      if ($1 ~ /^row=reminder:/) print "hides=join"
       else { print "hides=tick"; if (!meeting) print "hides=join" }
       print ""
     }'
@@ -173,7 +175,7 @@ case "$1" in
     events=$(events) || { printf '%s\n' "$events"; exit 1; }
     reminders=$(reminders) || { printf '%s\n' "$reminders"; exit 1; }
     card
-    printf 'repeat=items\n\ntemplate=reminder\ngrid=done\nswitch=done\ndone.look=tick\n\n'
+    printf 'repeat=items\n\n'
     printf 'button=open\ntitle=Open\n\nbutton=join\ntitle=Join call\nshortcut=cmd+j\nclose=true\n\n'
     printf 'button=tick\ntitle=Mark as done\nshortcut=cmd+shift+c\n\nbutton=calendars\ntitle=Choose calendars\nform=true\nscope=command\n\n'
     if [ -n "$2" ]; then
@@ -199,7 +201,6 @@ case "$1" in
       *) openspot calendar show "$2" </dev/null ;;
     esac
     ;;
-  done) openspot reminders done "$2" "$3" </dev/null ;;
   calendars)
     picked=$(value calendars)
     [ -z "$picked" ] || toggle $picked

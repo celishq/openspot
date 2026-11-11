@@ -45,36 +45,39 @@ final class CoreSpotsTests: XCTestCase {
 
     func testASpotThatIsOnLoadsThePartsItPlaces() throws {
         try write("cpu.sh", in: core, header: "read=5")
-        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
 
         let off = try PluginFolder(url: folder, core: core, enabled: []).scan()
         XCTAssertEqual(off.scripts.map(\.id), [])
 
         let on = try PluginFolder(url: folder, core: core, enabled: ["overview"]).scan()
-        XCTAssertEqual(on.commands.map(\.name), ["Overview"])
+        XCTAssertEqual(on.commands.filter(\.headerState.isOnGrid).map(\.name), ["Overview"])
         XCTAssertEqual(on.scripts.map(\.id), ["cpu"])
         XCTAssertEqual(on.refused, [])
     }
 
     func testAWidgetInThePluginsFolderCanPlaceACorePart() throws {
         try write("cpu.sh", in: core, header: "read=5")
-        try "[[widgets]]\ntitle = \"Mine\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\n".write(to: folder.appendingPathComponent("mine.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"Mine\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: folder.appendingPathComponent("mine.toml"), atomically: true, encoding: .utf8)
 
         let scan = try PluginFolder(url: folder, core: core, enabled: []).scan()
 
-        XCTAssertEqual(scan.commands.map(\.name), ["Mine"])
+        XCTAssertEqual(scan.commands.filter(\.headerState.isOnGrid).map(\.name), ["Mine"])
         XCTAssertEqual(scan.refused, [])
     }
 
-    func testAKeyOfAFolderFileWinsOverACoreSpot() throws {
-        try write("mine.sh", in: folder, header: "shortcut=a")
-        try write("apps.sh", in: core, header: "shortcut=a")
+    func testEachLetterOfTheDefaultConfigIsALetterOfOneSpotThatShips() throws {
+        let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let config = Config(text: try String(contentsOf: repo.appendingPathComponent("app/defaults.toml"), encoding: .utf8))
+        let plugins = try FileManager.default.contentsOfDirectory(atPath: repo.appendingPathComponent("plugins").path)
+        let shipped = ShippedSpot.commands(folder: repo, guide: repo, app: "").map(\.id)
 
-        let scan = try PluginFolder(url: folder, core: core, enabled: ["apps"]).scan()
-
-        XCTAssertEqual(scan.commands.first { $0.name == "Mine" }?.key?.name, "a")
-        XCTAssertNil(scan.commands.first { $0.name == "Apps" }?.key)
-        XCTAssertEqual(scan.refused.map(\.file), ["apps"])
+        XCTAssertEqual(config.faults, [])
+        for choice in config.arrangement.choices {
+            XCTAssertTrue(shipped.contains(choice.id) || plugins.contains { $0.hasPrefix("\(choice.id).") }, choice.id)
+            if let letter = choice.letter { XCTAssertNotNil(CommandKey(name: letter), choice.id) }
+        }
+        XCTAssertEqual(config.arrangement.letters(over: SpotArrangement()).count, config.arrangement.choices.filter { $0.letter?.isEmpty == false }.count)
     }
 
     func testAFaultInACoreSpotThatIsOffStaysQuiet() throws {
@@ -109,7 +112,7 @@ final class CoreSpotsTests: XCTestCase {
     func testTheChoicesLeaveOutPartsWithNoCard() throws {
         try write("cpu.sh", in: core, header: "read=5")
         try write("apps.sh", in: core)
-        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
 
         XCTAssertEqual(PluginFolder(url: folder, core: core).coreChoices().map(\.name), ["Apps", "Overview"])
     }
@@ -133,10 +136,10 @@ final class CoreSpotsTests: XCTestCase {
 
     func testACoreWidgetSharesWithItsPartsFromTheCoreFolder() throws {
         try write("cpu.sh", in: core, header: "read=5")
-        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
         let scan = try PluginFolder(url: folder, core: core, enabled: ["overview"]).scan()
 
-        let spot = try SharedSpot(sharing: XCTUnwrap(scan.commands.first), from: scan)
+        let spot = try SharedSpot(sharing: XCTUnwrap(scan.commands.first { $0.name == "Overview" }), from: scan)
 
         XCTAssertEqual(spot.files.map(\.path), ["overview.toml", "cpu.sh"])
         XCTAssertEqual(spot.files.last?.isExecutable, true)

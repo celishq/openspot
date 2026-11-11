@@ -203,13 +203,13 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testTheHintNamesWhatTheHKeyDoesToTheSelectedSpot() {
-        XCTAssertEqual(model.hint, "S Size   H Hide   ⇧ Arrows Move   Esc Done")
+        XCTAssertEqual(model.hint, "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done")
 
         model.handleEditKey(ActionKey(name: "h"))
-        XCTAssertEqual(model.hint, "S Size   H Show   ⇧ Arrows Move   Esc Done")
+        XCTAssertEqual(model.hint, "S Size   H Show   L Letter   ⇧ Arrows Move   Esc Done")
 
         model.handleEditKey(ActionKey(name: "h"))
-        XCTAssertEqual(model.hint, "S Size   H Hide   ⇧ Arrows Move   Esc Done")
+        XCTAssertEqual(model.hint, "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done")
     }
 
     func testEscapePutsTheCardsBackAndKeepsEditSpots() {
@@ -236,16 +236,85 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(savedOrder(), ["a", "b", "c", "d"])
     }
 
-    func testAHiddenCardMovesOnlyAmongTheHiddenCards() {
+    func testAHiddenCardDroppedAmongTheHiddenCardsStaysHidden() {
         model.setOnGrid(false, for: "b")
         model.setOnGrid(false, for: "a")
         XCTAssertEqual(order, ["c", "d", "a", "b"])
 
-        let translation = move("b", to: CGPoint(x: 1, y: 1))
+        let translation = move("b", to: leftHalf(of: "a"))
         model.dragSpot("b", by: translation)
         model.dropSpot(by: translation)
 
         XCTAssertEqual(order, ["c", "d", "b", "a"])
+        XCTAssertEqual(model.visible.map(\.isOnGrid), [true, true, false, false])
+    }
+
+    func testHiddenCardsLieInAGroupOfTheirOwnUnderATitleBand() {
+        XCTAssertEqual(model.placements.map(\.top), [0, 0, 0, 0])
+
+        model.setOnGrid(false, for: "a")
+
+        let band = SpotTokens.groupTitleBand
+        XCTAssertEqual(order, ["b", "c", "d", "a"])
+        XCTAssertEqual(model.placements.map(\.top), [band, band, band, 2 * band])
+        XCTAssertGreaterThan(model.placements[3].rect.minY, model.placements[2].rect.maxY + band)
+    }
+
+    func testTheGroupsEndWithEditSpots() {
+        model.setOnGrid(false, for: "a")
+
+        model.endEditing()
+
+        XCTAssertEqual(model.placements.map(\.top), [0, 0, 0])
+    }
+
+    func testATipGoesWhenItsControlActsOrEditSpotsEnds() {
+        model.tip = SpotTip(id: "a", anchor: .trailingCorner, text: "Hide from grid")
+        model.setOnGrid(false, for: "a")
+        XCTAssertNil(model.tip)
+
+        model.tip = SpotTip(id: "d", anchor: .leadingCorner, text: "Turn off")
+        model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
+        XCTAssertNil(model.tip)
+        model.cancelDrag()
+
+        model.tip = SpotTip(id: "b", anchor: .leadingCorner, text: "Turn off")
+        model.endEditing()
+        XCTAssertNil(model.tip)
+    }
+
+    func testAScrollEndsTheTip() {
+        model.tip = SpotTip(id: "a", anchor: .trailingCorner, text: "Hide from grid")
+        model.gridScrolled(to: 40)
+        XCTAssertNil(model.tip)
+
+        model.tip = SpotTip(id: "a", anchor: .dockCard, text: "A")
+        model.dockScrolled(to: 40)
+        XCTAssertNil(model.tip)
+    }
+
+    func testAHiddenCardDroppedAmongTheCardsOnTheGridGoesOnTheGrid() {
+        model.setOnGrid(false, for: "a")
+        XCTAssertEqual(order, ["b", "c", "d", "a"])
+
+        let translation = move("a", to: leftHalf(of: "b"))
+        model.dragSpot("a", by: translation)
+        model.dropSpot(by: translation)
+
+        XCTAssertEqual(order, ["a", "b", "c", "d"])
+        XCTAssertEqual(model.visible.map(\.isOnGrid), [true, true, true, true])
+        XCTAssertEqual(savedOrder(), ["a", "b", "c", "d"])
+    }
+
+    func testACardDroppedAmongTheHiddenCardsLeavesTheGrid() {
+        model.setOnGrid(false, for: "a")
+
+        let translation = move("b", to: leftHalf(of: "a"))
+        model.dragSpot("b", by: translation)
+        model.dropSpot(by: translation)
+
+        XCTAssertEqual(order, ["c", "d", "b", "a"])
+        XCTAssertEqual(model.visible.map(\.isOnGrid), [true, true, false, false])
     }
 
     func testAPanelThatHidesEndsTheDrag() {
@@ -263,7 +332,7 @@ final class SpotsModelDragTests: XCTestCase {
 
     /// The pointer's move, since the drag started, that takes the centre of the lifted card to this point of the grid.
     private func dragMove(to point: CGPoint) -> CGSize {
-        let rect = model.drag.map { $0.rect(at: $0.start) } ?? .zero
+        let rect = model.drag.map { $0.rect(at: $0.home) } ?? .zero
         return CGSize(width: point.x - rect.midX, height: point.y - rect.midY)
     }
 
@@ -292,7 +361,7 @@ final class SpotsModelDragTests: XCTestCase {
         model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
         XCTAssertEqual(order, ["a", "b", "d", "c"])
 
-        let start = model.drag.map { $0.rect(at: $0.start) } ?? .zero
+        let start = model.drag.map { $0.rect(at: $0.home) } ?? .zero
         model.dragSpot("d", by: dragMove(to: CGPoint(x: SpotTokens.gridWidth + SpotTokens.rowHeight, y: start.midY)))
 
         XCTAssertEqual(order, ["a", "b", "c", "d"])
@@ -354,6 +423,23 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(order, ["a", "timer", "b", "c", "d"])
         XCTAssertEqual(model.dock.items.map(\.id), [])
         XCTAssertEqual(savedOrder(), ["a", "timer", "b", "c", "d"])
+    }
+
+    func testASpotDroppedFromTheDockKeepsItsSizeOnTheGrid() throws {
+        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        model.reload()
+        model.dockFrame = dock
+        model.setOnGrid(false, for: "d")
+        let translation = dockMove("timer", to: leftHalf(of: "c"))
+        let size = { self.model.placements[self.model.visible.firstIndex { $0.id == "timer" } ?? 0].size }
+
+        model.dragDockSpot("timer", by: translation)
+        XCTAssertEqual(model.carry?.size, .small)
+        XCTAssertEqual(size(), .small)
+
+        model.dropDockSpot(by: translation)
+        XCTAssertEqual(order, ["a", "b", "timer", "c", "d"])
+        XCTAssertEqual(size(), .small)
     }
 
     func testASpotOfTheDockReleasedOffTheGridGlidesBackToItsTileAndStaysOff() throws {

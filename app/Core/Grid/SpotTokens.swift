@@ -10,6 +10,9 @@ public enum SpotTokens {
     public static let columns = 4
     public static let cell: CGFloat = (gridWidth - columnGap * CGFloat(columns - 1)) / CGFloat(columns)
     public static let rowHeight: CGFloat = 64
+    /// The height of a group's title in Edit Spots, and of its band over the group's cards.
+    public static let groupTitleHeight: CGFloat = 16
+    public static let groupTitleBand: CGFloat = groupTitleHeight + placeGap
     public static let glyphSize: CGFloat = 36
     public static let workMark: CGFloat = 16
     public static let keycap: CGFloat = 20
@@ -17,12 +20,8 @@ public enum SpotTokens {
     /// The side of the square that takes a drag of a card's resize handle, and the width of its line on the rim.
     public static let resizeHandle: CGFloat = 28
     public static let resizeHandleLine: CGFloat = 5
-    /// The widest the dock of Edit Spots grows, the height of a spot in it, a card with the room for a name under it, and
-    /// the dock's gap to the edges of the screen.
+    /// The widest the dock of Edit Spots grows, and its gap to the edges of the screen.
     public static let dockWidth: CGFloat = 1220
-    public static let dockNameGap: CGFloat = 4
-    public static let dockNameHeight: CGFloat = 14
-    public static let dockTileHeight: CGFloat = rowHeight + dockNameGap + dockNameHeight
     public static let dockMargin: CGFloat = 20
     /// The most rows of spots that the dock shows before it scrolls.
     public static let dockRows = 3
@@ -73,7 +72,7 @@ public enum SpotTokens {
 
     /// The height of the dock when it shows this many rows of spots.
     public static func dockHeight(rows: Int) -> CGFloat {
-        dockRowsTop + CGFloat(rows) * dockTileHeight + CGFloat(rows - 1) * rowGap + padding
+        dockRowsTop + height(rows: rows) + padding
     }
 
     /// How many columns of spots a dock this wide holds, two at least.
@@ -90,11 +89,6 @@ public enum SpotTokens {
     public static func pictureSide(in room: CGSize) -> CGFloat {
         let fit = min(room.width, room.height)
         return min(fit, room.height <= listRowHeight ? listIconSize : fit * 0.6)
-    }
-
-    /// The height of a list row that takes this many list row heights, with the gaps between them.
-    public static func listRowHeight(span: Int) -> CGFloat {
-        CGFloat(span) * listRowHeight + CGFloat(span - 1) * listRowGap
     }
 
     /// How far a sheet's rows start below its top edge.
@@ -168,9 +162,9 @@ public enum SpotTokens {
         CGFloat(rows) * menuRowHeight + CGFloat(max(rows - 1, 0)) * menuRowGap + 2 * menuPadding
     }
 
-    /// The height of the blur around the search field and these card rows. It stops at the height of the panel.
-    public static func backdropHeight(rows: Int) -> CGFloat {
-        let cards = rows > 0 ? rowGap + height(rows: rows) : 0
+    /// The height of the blur around the search field and a grid this tall. It stops at the height of the panel.
+    public static func backdropHeight(gridHeight: CGFloat) -> CGFloat {
+        let cards = gridHeight > 0 ? rowGap + gridHeight : 0
         return min(2 * halo + rowHeight + cards + hintBlock, panelHeight)
     }
 

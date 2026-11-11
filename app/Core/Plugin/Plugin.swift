@@ -25,7 +25,7 @@ public struct Plugin: Equatable, Sendable {
         }
     }
 
-    /// A script with a number in its `read` has a spot, a list, only when it has a key.
+    /// A script with a number in its `read` starts off the grid until the person shows it (F7).
     public init(script url: URL, header: TextBlock, id: String) throws {
         let name = header.value("title") ?? Self.name(of: url)
         let icon = Icon(text: header.value("icon"))
@@ -33,25 +33,24 @@ public struct Plugin: Equatable, Sendable {
         var read: SpotRead?
         if let text = header.value("read") {
             guard let parsed = SpotRead(text: text) else {
-                throw PluginError.fault("\(name) has an unknown read: \(text). Use panel, sheet, launch, wake or a number of seconds")
+                throw PluginError.fault("\(name) has an unknown read: \(text). Use sheet, panel or a number of seconds")
             }
             read = parsed
         }
-        let isTray = header.flag("tray") ?? false
-        let stays = header.flag("stay") ?? false
-        let hasKey = header.value("shortcut") != nil
-        if read?.seconds == nil, isTray, !stays {
-            throw PluginError.fault("\(name) needs a number in its read, or stay=true, to show in the menu bar")
+        try Self.refuseOldKeys(header, of: name)
+        let stay = header.value("stay")
+        guard stay == nil || ["true", "false", "always"].contains(stay) else {
+            throw PluginError.fault("\(name) has an unknown stay: \(stay!). Use true or always")
         }
+        let stays = stay == "true" || stay == "always"
         let sizeName = header.value("size") ?? "wide"
         guard let size = SpotSize(name: sizeName) else { throw PluginError.fault("\(name) has an unknown size: \(sizeName)") }
-        let isGlobal = header.value("global") == "rows" || header.flag("global") == true
+        let places = try Self.places(header.value("offers"), of: name)
+        let isRowsOnly = places.contains("rows")
+        let isGlobal = isRowsOnly || places.contains("search")
         if isGlobal {
-            guard read?.has(.panel) == true || read?.has(.launch) == true || read?.seconds != nil else {
-                throw PluginError.fault("\(name) needs panel, launch or a number in its read to join the main search")
-            }
-            guard read?.seconds == nil || hasKey else {
-                throw PluginError.fault("\(name) needs a shortcut to join the main search, because a number in its read and no shortcut gives it no spot")
+            guard read?.has(.panel) == true || read?.seconds != nil else {
+                throw PluginError.fault("\(name) needs panel or a number in its read to join the main search")
             }
         }
         var answers: AnswerPattern?
@@ -59,16 +58,18 @@ public struct Plugin: Equatable, Sendable {
             guard let pattern = AnswerPattern(text) else {
                 throw PluginError.fault("\(name) has an unknown answers pattern: \(text). Write a regular expression, such as answers=^[0-9]")
             }
-            guard !stays else { throw PluginError.fault("\(name) answers the main search, so it runs once for each call. Remove stay=true or answers") }
+            guard !stays else { throw PluginError.fault("\(name) answers the main search, so it runs once for each call. Remove stay or answers") }
             answers = pattern
         }
         let answersOnly = answers != nil && read == nil
-        let offers = try header.values("command").map { text in
-            guard let offer = CommandOffer(text: text) else {
-                throw PluginError.fault("\(name) has an unknown command: \(text). Write an ID and a title, such as left:Left side")
+        let offers = try header.children.filter { $0.fields.first?.key == "command" }.map { block in
+            guard let offer = CommandOffer(block: block) else {
+                throw PluginError.fault("\(name) cannot read the command \(block.value("command") ?? ""). Give it an ID with no space and a title, such as command=left with title=Left side")
             }
             return offer
         }
+        let press = header.value("press") ?? "sheet"
+        guard ["sheet", "run"].contains(press) else { throw PluginError.fault("\(name) has an unknown press: \(press). Use run or sheet") }
         let view = header.value("view")
         if let view, URL(fileURLWithPath: view).pathExtension != SwiftProgram.sourceExtension {
             throw PluginError.fault("\(name) needs a Swift file for its view, such as view=\(url.deletingPathExtension().lastPathComponent).swift")
@@ -84,21 +85,20 @@ public struct Plugin: Equatable, Sendable {
             size: size,
             symbol: symbol ?? "app",
             subtitle: header.value("detail"),
-            key: try Self.key(header.value("shortcut"), of: name),
             read: read,
             isGlobal: isGlobal,
-            isFound: header.value("global") != "rows" && !answersOnly,
+            isFound: !isRowsOnly && !answersOnly,
             answers: answers,
             stays: stays,
+            staysAlways: stay == "always",
+            pressRuns: press == "run",
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
-            isTray: isTray,
-            offersFloat: (header.flag("float") ?? false) && (read?.seconds == nil || hasKey),
-            dataName: header.value("data") ?? id.split(separator: "/").first.map(String.init),
-            hasSpot: read?.seconds == nil || hasKey,
-            isOnGrid: offers.isEmpty && (hasKey || !isGlobal) && !answersOnly,
+            offersFloat: places.contains("float"),
+            dataName: id.split(separator: "/").first.map(String.init),
+            isOnGrid: offers.isEmpty && !isRowsOnly && read?.seconds == nil && !answersOnly,
             headerSymbol: symbol,
             offers: offers,
-            settings: header.value("settings")?.split(separator: ",").compactMap { CommandOffer(setting: String($0)) } ?? [],
+            settings: header.children.filter { $0.fields.first?.key == "setting" }.compactMap { CommandOffer(setting: $0) },
             file: icon?.file.map { Self.path($0, beside: url) },
             image: icon?.image.map { Self.path($0, beside: url) },
             glyph: icon?.glyph,
@@ -107,9 +107,53 @@ public struct Plugin: Equatable, Sendable {
         self.init(id: id, commands: [command])
     }
 
-    /// A path that the header names: a full path stays, and any other starts at the folder of the script.
+    /// The places that `offers` names. An unknown place, or `search` with `rows`, is a fault.
+    private static func places(_ text: String?, of name: String) throws -> Set<String> {
+        guard let text else { return [] }
+        let words = text.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+        if let word = words.first(where: { !["search", "rows", "float"].contains($0) }) {
+            throw PluginError.fault("\(name) offers an unknown place: \(word). Use search, rows or float")
+        }
+        if words.contains("search"), words.contains("rows") {
+            throw PluginError.fault("\(name) offers both search and rows. Use search for the spot and its rows, or rows for its rows alone")
+        }
+        return Set(words)
+    }
+
+    /// Refuses a header that still has `global`, `float`, `tray`, `data` or `shortcut`, and names the new way.
+    private static func refuseOldKeys(_ header: TextBlock, of name: String) throws {
+        let commands = header.values("command") + header.children.compactMap { $0.value("command") }.filter { $0.contains(":") }
+        if let command = commands.first {
+            throw PluginError.fault("\(name) has command=\(command), which Openspot no longer reads. Write each command as a block after a blank comment line, such as command=left with title=Left side")
+        }
+        if header.value("settings") != nil {
+            throw PluginError.fault("\(name) has settings, which Openspot no longer reads. Write each setting as a block after a blank comment line, such as setting=folder with title=Folder")
+        }
+        if let global = header.value("global") {
+            let place = global == "rows" ? "rows" : "search"
+            throw PluginError.fault("\(name) has global=\(global), which Openspot no longer reads. Use offers=\(place)")
+        }
+        if header.value("float") != nil {
+            throw PluginError.fault("\(name) has float, which Openspot no longer reads. Use offers=float")
+        }
+        if header.value("tray") != nil {
+            throw PluginError.fault("\(name) has tray, which Openspot no longer reads. The person puts a spot in the menu bar in Settings")
+        }
+        if header.value("data") != nil {
+            throw PluginError.fault("\(name) has data, which Openspot no longer reads. The scripts of one folder share OPENSPOT_DATA, so move them into one folder")
+        }
+        try refuseLetter(header.value("shortcut"), of: name)
+    }
+
+    /// Refuses a letter that a file names, because the person gives each spot its letter.
+    private static func refuseLetter(_ text: String?, of name: String) throws {
+        guard text != nil else { return }
+        throw PluginError.fault("\(name) has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots")
+    }
+
+    /// A path that the header names: a full path or an https URL stays, and any other starts at the folder of the script.
     private static func path(_ text: String, beside url: URL) -> String {
-        text.hasPrefix("/") ? text : url.deletingLastPathComponent().appendingPathComponent(text).path
+        text.hasPrefix("/") || WebPictures.isWeb(text) ? text : url.deletingLastPathComponent().appendingPathComponent(text).path
     }
 
     /// The name a file gives when it has no `name` line: its words with a capital first letter.
@@ -120,11 +164,6 @@ public struct Plugin: Equatable, Sendable {
         return words.prefix(1).uppercased() + words.dropFirst()
     }
 
-    private static func key(_ text: String?, of name: String) throws -> CommandKey? {
-        guard let text else { return nil }
-        guard let key = CommandKey(name: text) else { throw PluginError.fault("\(name) has an unknown shortcut: \(text)") }
-        return key
-    }
 
     private static func widget(_ table: [String: TomlDocument.Value], id: String, url: URL) throws -> Spot {
         func text(_ key: String) -> String? {
@@ -132,13 +171,14 @@ public struct Plugin: Equatable, Sendable {
             return nil
         }
         guard let name = text("title") else { throw PluginError.fault("a widget needs a title") }
+        try refuseLetter(text("shortcut"), of: name)
         if case .strings(let drawing)? = table["grid"] {
             return try drawn(drawing, table, name: name, id: id, url: url)
         }
-        throw PluginError.fault("\(name) needs a grid, such as grid = [\"a a b b\"]")
+        throw PluginError.fault("\(name) needs a grid that names its metrics, such as grid = [\"cpu cpu memory\"]")
     }
 
-    /// A widget with a drawing of its own, whose `places` names a metric for each letter.
+    /// A widget with a drawing of its own, whose words name its metrics.
     private static func drawn(_ drawing: [String], _ table: [String: TomlDocument.Value], name: String, id: String, url: URL) throws -> Spot {
         func text(_ key: String) -> String? {
             if case .string(let value)? = table[key] { return value }
@@ -150,16 +190,10 @@ public struct Plugin: Equatable, Sendable {
             guard let asked = SpotSize(name: sizeName) else { throw PluginError.fault("\(name) has an unknown size: \(sizeName)") }
             size = asked
         }
+        if table["places"] != nil {
+            throw PluginError.fault("\(name) has places, which Openspot no longer reads. Its grid names each metric, such as grid = [\"cpu cpu memory\"]")
+        }
         let layout = WidgetLayout(drawing: drawing, size: size)
-        guard case .table(let places)? = table["places"] else {
-            throw PluginError.fault("\(name) needs places, with a metric for each letter of its grid")
-        }
-        if let letter = layout.letters.first(where: { places[$0] == nil }) {
-            throw PluginError.fault("\(name) needs a metric for the letter \(letter)")
-        }
-        if let letter = places.keys.sorted().first(where: { !layout.letters.contains($0) }) {
-            throw PluginError.fault("\(name) names the letter \(letter), which its grid does not have")
-        }
         return Spot(
             id: "\(id)/\(name)",
             name: name,
@@ -167,9 +201,8 @@ public struct Plugin: Equatable, Sendable {
             kind: .widget,
             size: layout.size,
             subtitle: text("detail"),
-            key: try key(text("shortcut"), of: name),
             layout: layout,
-            places: layout.letters.compactMap { places[$0] }.map { tool($0, beside: url, id: id) },
+            places: layout.names.map { tool($0, beside: url, id: id) },
             opens: text("opens").map { tool($0, beside: url, id: id) }
         )
     }

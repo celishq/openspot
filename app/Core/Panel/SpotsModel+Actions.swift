@@ -37,6 +37,7 @@ extension SpotsModel {
             return true
         }
         if key == Self.undoKey, openList == nil, searchText.isEmpty, undoRemoval() { return true }
+        if key == ActionKey(name: "return", isCommand: true), openSelected() { return true }
         if let panel = openPanel, !panel.showsRows { return handlePanelKey(key, panel) }
         if let part = openPanel?.parts.first(where: { $0.key == key }) {
             pressPart(part)
@@ -77,6 +78,9 @@ extension SpotsModel {
     }
 
     static let newSpotKey = ActionKey(name: "n", isCommand: true)
+
+    /// The footer label of ⌘ Return, which opens the sheet of a spot that Return runs.
+    static let openLabel = "⌘⏎"
 
     /// Does what the key of a footer label does, as if it were pressed: Return runs the selected row.
     public func pressHint(_ label: String) {
@@ -148,8 +152,9 @@ extension SpotsModel {
     }
 
     /// Takes the key for the part or the row that records. A key it cannot use leaves it recording, and says why. A row
-    /// closes the panel, as a pick of any row does.
+    /// closes the panel, as a pick of any row does. In Edit Spots it takes the letter of the selected spot.
     public func record(code: UInt32, modifiers: Shortcut.Modifiers) {
+        if isEditing { return recordLetter(code: code, modifiers: modifiers) }
         guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
             host.notify("Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.")
             return
@@ -249,12 +254,17 @@ extension SpotsModel {
 
     /// The keys that work on the selected row or card, in words for the bottom of the panel.
     public var hint: String {
+        if recording != nil, isEditing { return "Press a letter   ⌫ Remove   Esc Cancel" }
         if recording != nil { return "Esc Cancel" }
-        if isEditing { return "S Size   H \(selectedEntry?.isOnGrid == false ? "Show" : "Hide")   ⇧ Arrows Move   Esc Done" }
+        if isEditing { return "S Size   H \(selectedEntry?.isOnGrid == false ? "Show" : "Hide")   L Letter   ⇧ Arrows Move   Esc Done" }
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
         if let panel = openPanel, !panel.showsRows || panel.drawsKeys { return panel.hint { work(of: $0) != nil } }
         let keys = target.flatMap { target in
-            actionMenu(on: target)?.hint { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil }
+            let opens = openList == nil && target.item == nil && target.entry.command.pressRuns && target.entry.kind.opensSheet
+            return actionMenu(on: target)?.hint(
+                stopping: { sheets[target.entry.id]?.work(of: $0, item: target.item) != nil },
+                second: opens ? "\(Self.openLabel) Settings" : nil
+            )
         } ?? "Esc Close"
         return selectedGlyphTitle.map { "\($0)  \(keys)" } ?? keys
     }

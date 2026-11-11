@@ -17,11 +17,14 @@ public final class SpotsModel {
         private let fixedCommand: Spot
         private let fixedState: SpotState
         private let gridChoice: Bool?
+        /// The letter that runs it from the panel, which the person or the default config gives it.
+        public let letter: CommandKey?
 
-        public init(command: Spot, run: SpotRun?, choice: SpotArrangement = SpotArrangement()) {
+        public init(command: Spot, run: SpotRun?, choice: SpotArrangement = SpotArrangement(), defaults: SpotArrangement = SpotArrangement(), letter: CommandKey? = nil) {
             id = command.id
             sizeChoice = choice.size(of: command.id)
-            gridChoice = choice.isOnGrid(of: command.id)
+            gridChoice = choice.isOnGrid(of: command.id) ?? defaults.isOnGrid(of: command.id)
+            self.letter = letter
             item = nil
             isAnswer = false
             self.run = run
@@ -35,6 +38,7 @@ public final class SpotsModel {
             id = "\(command.id)\n\(item.run)"
             sizeChoice = .strip
             gridChoice = nil
+            letter = nil
             self.item = item
             self.isAnswer = isAnswer
             run = nil
@@ -46,10 +50,15 @@ public final class SpotsModel {
             run?.command ?? fixedCommand
         }
 
-        /// The size of its card: the person's choice, or else what its last read says, or else its header (F9). A card of a
-        /// fault is never small, so that its words show.
+        /// Whether the person chose the size of its card, which the grid then keeps.
+        public var isSizeChosen: Bool {
+            sizeChoice != nil
+        }
+
+        /// The size of its card: the person's choice, or else its header (F9). A card of a fault is never small, so that its
+        /// words show.
         @MainActor public var size: SpotSize {
-            let size = sizeChoice ?? state.size ?? command.size
+            let size = sizeChoice ?? command.size
             return command.fault != nil && size == .small ? .wide : size
         }
 
@@ -145,6 +154,7 @@ public final class SpotsModel {
     public private(set) var visible: [Entry] = []
     /// The sizes that `placements` were laid out from.
     @ObservationIgnored private var laidOutSizes: [SpotSize] = []
+    @ObservationIgnored private var laidOutGrid = SpotGrid()
     /// The cards as the items that the main search finds. It folds them again only when they change.
     @ObservationIgnored private var spotList = ItemList()
     /// Where each visible spot lies on the grid, in the order of `visible`.
@@ -204,6 +214,8 @@ public final class SpotsModel {
     @ObservationIgnored var formAsk: UUID?
     /// Whether the grid is in Edit Spots, where it also shows the spots that are off the grid, and a press only selects.
     public var isEditing = false
+    /// The tip of the corner control that the pointer lies over in Edit Spots.
+    public var tip: SpotTip?
     /// The card that the person drags in Edit Spots, and where a release puts it.
     public internal(set) var drag: SpotDrag?
     public let lift = SpotLift()
@@ -225,7 +237,7 @@ public final class SpotsModel {
     /// How long the pointer stays near a new place before the other cards make room there.
     @ObservationIgnored public var dragRest: Duration = .milliseconds(100)
     /// The place that the cards make room at when the pointer has rested near it for `dragRest`.
-    @ObservationIgnored var dragTarget: Int?
+    @ObservationIgnored var dragTarget: SpotDrag.Target?
     @ObservationIgnored var dragWait: Task<Void, Never>?
     /// How far the grid has scrolled, how far it had when the pointer pressed a card to drag or resize it, and the
     /// pointer's last move since, so that a scroll with no move of the pointer moves the card with the grid.
@@ -239,6 +251,8 @@ public final class SpotsModel {
     /// Where the person pressed a card's resize handle, in the handle's square.
     @ObservationIgnored var resizeGrip = CGPoint(x: SpotTokens.resizeHandle, y: SpotTokens.resizeHandle)
     public var arrangement = SpotArrangement()
+    /// The choices of the config that ships with the app, which count where the person's config makes none.
+    @ObservationIgnored public private(set) var defaultArrangement = SpotArrangement()
     /// The symbol of the command whose key a person pressed last, which the Openspot item shows for `flashPause`.
     public private(set) var flashSymbol: String?
     @ObservationIgnored public var flashPause: Duration = .milliseconds(1500)
@@ -262,6 +276,7 @@ public final class SpotsModel {
     public init(host: SpotsHost, files: SpotFiles = .standard, runs: SpotRuns? = nil) {
         self.host = host
         self.files = files
+        defaultArrangement = files.defaultArrangement
         self.runs = runs ?? SpotRuns(
             recent: { files.recent(of: $0) },
             prepare: { [unowned host] in await host.prepare($0, glyphs: $1) },
@@ -314,7 +329,7 @@ public final class SpotsModel {
         guard pluginScan.stamp != loadedStamp || config != loadedConfig else { return holdAssignedKeys(config) }
         let carded = Set(faults.map(\.id))
         let problems = scan.refused.filter { !carded.contains($0.file) }.map { "\($0.file) was not loaded: \($0.reason)" }
-        runs.take(scan)
+        runs.take(scan, menuBar: config.arrangement.menuBar)
         lastScan = scan
         loadedStamp = pluginScan.stamp
         loadedConfig = config
@@ -379,7 +394,8 @@ public final class SpotsModel {
     }
 
     public func rebuildEntries() {
-        entries = ordered().map { Entry(command: $0, run: runs.sheets[$0.id], choice: arrangement) }
+        let letters = arrangement.letters(over: defaultArrangement)
+        entries = ordered().map { Entry(command: $0, run: runs.sheets[$0.id], choice: arrangement, defaults: defaultArrangement, letter: letters[$0.id]) }
     }
 
     /// The scanned spots in their grid order, and the person's order in the config over it.
@@ -420,9 +436,9 @@ public final class SpotsModel {
         }
     }
 
-    /// A moment of the Mac arrived, such as a wake.
-    public func arrive(_ moment: SpotRead.Moment) {
-        runs.arrive(moment)
+    /// The Mac woke, so each wanted script with a number in its `read` reads at once.
+    public func woke() {
+        runs.woke()
     }
 
     /// A downloaded update waits, so the spot that reads on an update reads now and is on the grid before the panel next
@@ -479,6 +495,22 @@ public final class SpotsModel {
         (error as? PluginError)?.reason ?? error.localizedDescription
     }
 
+    /// Where the cards hidden from the grid start in the order of Edit Spots, after the cards on the grid and a card that
+    /// arrives from the dock. A dragged card counts in the group of its target. It is nil out of Edit Spots and while the
+    /// search has text.
+    var hiddenStart: Int? {
+        guard isEditing, query.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+        let hidden = cards.filter { !$0.isOnGrid && $0.id != drag?.id }.count + (drag?.target.isOnGrid == false ? 1 : 0)
+        return visible.count - hidden
+    }
+
+    /// The grid of the cards shown: in the groups of Edit Spots, with the size of each card whose size the person chose, and
+    /// of a card that arrives from the dock.
+    var grid: SpotGrid {
+        let arriving = carry?.tile == nil ? nil : carry?.entry.id
+        return SpotGrid(split: hiddenStart, kept: Set(visible.indices.filter { visible[$0].isSizeChosen || visible[$0].id == arriving }))
+    }
+
     /// The entries that have a card. The install screen has none.
     public var cards: [Entry] {
         entries.filter { $0.id != ShippedSpot.installID }
@@ -487,14 +519,18 @@ public final class SpotsModel {
     /// The most rows that the main search shows from a list that the person never picked from.
     private static let unpickedRows = 3
 
-    /// Shows the spots that the search finds and the items it finds in the lists that offer them, in one ranking.
+    /// Shows the spots that the search finds and the items it finds in the lists that offer them, in one ranking. While the
+    /// search has text, each one is a full-width row.
     public func updateVisible() {
         let next = found()
         if next != visible { visible = next }
-        let sizes = visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size }
-        if sizes != laidOutSizes {
+        let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { _ in SpotSize.strip }
+        let index = visible.firstIndex { $0.id == resize?.id }
+        let grid = index.map(self.grid.keeping) ?? self.grid
+        if sizes != laidOutSizes || grid != laidOutGrid {
             laidOutSizes = sizes
-            placements = SpotGrid().place(sizes)
+            laidOutGrid = grid
+            placements = grid.place(sizes)
         }
         if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
     }
@@ -546,10 +582,11 @@ public final class SpotsModel {
         sheets[entry.id]?.setLevel((entry.state.level ?? 0) + delta)
     }
 
-    public func tap(_ id: String) {
+    /// Takes a click on a card. A click with ⌘ opens the sheet of a spot whose press runs it (`press=run`).
+    public func tap(_ id: String, opening: Bool = false) {
         guard let position = visible.firstIndex(where: { $0.id == id }) else { return }
         selected = position
-        runSelected()
+        if !opening || !openSelected() { runSelected() }
     }
 
     public func setLevel(_ id: String, to value: Double) {
@@ -578,6 +615,15 @@ public final class SpotsModel {
         run(entry)
     }
 
+    /// Takes ⌘ with Enter. On the grid, it opens the sheet of the selected spot whose Enter runs it (`press=run`). Returns
+    /// false for any other spot, or away from the grid, so that the key goes on to the actions and the forms.
+    @discardableResult
+    public func openSelected() -> Bool {
+        guard isOnGrid, let entry = selectedEntry, entry.item == nil, entry.command.pressRuns, entry.kind.opensSheet else { return false }
+        open(entry.id, moving: true)
+        return true
+    }
+
     /// Runs a command by its key, with the panel open only when its spot needs it.
     public func press(_ id: String) {
         guard let entry = entries.first(where: { $0.id == id }) else { return }
@@ -585,7 +631,7 @@ public final class SpotsModel {
             sheet.afterAnswer { [weak self] in self?.press(id) }
             return
         }
-        guard entry.kind.opensSheet else {
+        guard entry.kind.opensSheet, !entry.command.pressRuns else {
             run(entry)
             return
         }
@@ -608,14 +654,15 @@ public final class SpotsModel {
         }
     }
 
-    /// Whether the spots show their letters.
+    /// Whether the spots show their letters: while the person holds the key that opens the panel, and in Edit Spots, where
+    /// `L` gives them.
     public var showsChain: Bool {
-        isChainHeld && isOnGrid
+        (isChainHeld && isOnGrid) || isEditing
     }
 
     /// The letter of a spot that has a key.
     public func chainLetter(of entry: Entry) -> String? {
-        entry.item == nil ? entry.command.key?.name.uppercased() : nil
+        entry.letter?.name.uppercased()
     }
 
     private var isOnGrid: Bool {
@@ -625,7 +672,7 @@ public final class SpotsModel {
     /// Runs the spot whose letter this press holds, whatever the search shows. A spot with no sheet closes the panel.
     public func handleChain(code: UInt32, modifiers: Shortcut.Modifiers) -> Bool {
         guard isOnGrid, let entry = entries.first(where: { entry in
-            entry.command.key.map { entryKey.chains(to: $0, code: code, modifiers: modifiers) } ?? false
+            entry.letter.map { entryKey.chains(to: $0, code: code, modifiers: modifiers) } ?? false
         }) else { return false }
         press(entry.id)
         if entry.kind == .toggle { host.dismiss() }
@@ -649,6 +696,9 @@ public final class SpotsModel {
             sheets[entry.id]?.pressCard()
         case .launch:
             if isShown, sheets[entry.id]?.isCardRunning != true, !entry.command.takesDrops { host.dismiss() }
+            sheets[entry.id]?.pressCard()
+        case .list where entry.command.pressRuns:
+            if isShown, sheets[entry.id]?.isCardRunning != true { host.dismiss() }
             sheets[entry.id]?.pressCard()
         case .list:
             if openList == entry.id {
@@ -953,11 +1003,6 @@ public final class SpotsModel {
     public func createFromSearch() {
         guard let action = createAction, let entry = openEntry else { return }
         openForm(action, on: (entry, nil), prefill: openItems?.query ?? "")
-    }
-
-    /// Sends a change of a slot of a row of a spot, or a press of one when it has no value (U9).
-    public func slot(_ slot: String, of item: SpotItem, in id: String, to value: String?) {
-        if let value { sheets[id]?.set(slot: slot, of: item, to: value) } else { sheets[id]?.press(slot: slot, of: item) }
     }
 
     public func runItem(_ item: SpotItem) {

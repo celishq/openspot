@@ -37,7 +37,7 @@ final class BigPasteTests: XCTestCase {
         #!/bin/sh
         # read=sheet
         case "$1" in
-          read) printf 'field=input\\ntext=\\n\\nfield=output\\ntext=\\nreadonly=true\\n' ;;
+          read) printf 'field=input\\nvalue=\\n\\nfield=output\\nvalue=\\nreadonly=true\\n' ;;
           input) \(answer) ;;
         esac
         """.writeScript(to: url)
@@ -73,7 +73,7 @@ final class BigPasteTests: XCTestCase {
     }
 
     func testAPasteOfOneMegabyteAnswersInUnderTenSeconds() async throws {
-        let sheet = try sheet(answer: "printf 'field=output\\ntext='; sed -n 's/^input=//p'")
+        let sheet = try sheet(answer: "printf 'field=output\\nvalue='; sed -n 's/^input=//p'")
         for (name, text) in Self.texts {
             let best = try await bestTime(of: sheet, for: text, under: 10)
             print("TIMING \(name) paste to answer: \(Int(best * 1000)) ms")
@@ -82,7 +82,7 @@ final class BigPasteTests: XCTestCase {
     }
 
     func testAPasteOfOneMegabyteThroughTheShellHelperAnswers() async throws {
-        let sheet = try sheet(answer: #". "$OPENSPOT_SH"; input=$(value input; printf x); printf 'field=output\ntext=%s\n' "$(esc "${input%x}")""#)
+        let sheet = try sheet(answer: #". "$OPENSPOT_SH"; input=$(value input; printf x); printf 'field=output\nvalue=%s\n' "$(esc "${input%x}")""#)
         for (name, text) in Self.texts {
             let best = try await bestTime(of: sheet, for: text, under: 30)
             print("TIMING \(name) paste to answer through the helper: \(Int(best * 1000)) ms")
