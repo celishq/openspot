@@ -38,11 +38,39 @@ extension SpotsModel {
         dock.query = text
     }
 
-    /// Shows the spots of the store that this filter keeps, and closes the listing.
-    public func filterDock(_ filter: SpotDock.Filter) {
+    /// Shows the spots of this section of the store, and closes the listing.
+    public func showStoreSection(_ section: SpotDock.Section) {
+        guard section != dock.section else { return }
         change(.edit) {
             dock.opened = nil
-            dock.filter = filter
+            dock.section = section
+        }
+    }
+
+    /// Takes the next step of a spot of the store: opens it, adds it, puts it on the grid, or publishes it.
+    public func takeStep(of id: String) {
+        guard let item = dock.items.first(where: { $0.id == id }) else { return }
+        switch item.step {
+        case .open: choose(.open, for: id)
+        case .add: setState(.searchOnly, of: id)
+        case .addToGrid: setState(.onGrid, of: id)
+        case .publish: choose(.publish, for: id)
+        }
+    }
+
+    /// Does a choice of the menu of a spot of the store.
+    public func choose(_ action: SpotDock.Action, for id: String) {
+        guard let item = dock.items.first(where: { $0.id == id }) else { return }
+        switch action {
+        case .place(let state): setState(state, of: id)
+        case .open:
+            endEditing()
+            press(id)
+        case .publish: Task { await publish(id) }
+        case .share: sharePackage(id)
+        case .copyPrompt: copyListingPrompt(id)
+        case .edit: edit(Entry(command: item.command, run: nil))
+        case .moveToTrash: delete(id)
         }
     }
 
@@ -114,7 +142,7 @@ extension SpotsModel {
         let off = dockOff.map { SpotDock.Item(command: $0.command, origin: $0.origin, size: choice.size(of: $0.id), publication: dockPublications[$0.id]) }
         var next = SpotDock(items: on + off)
         next.query = dock.query
-        next.filter = dock.filter
+        next.section = dock.section
         next.opened = dock.opened
         if next != dock { dock = next }
     }
@@ -160,7 +188,7 @@ extension SpotsModel {
         if cards.first(where: { $0.id == id })?.isOnGrid != (state == .onGrid) { setOnGrid(state == .onGrid, for: id) }
     }
 
-    /// Turns on each spot of the store that is off, and loads the spots again on the edit motion.
+    /// Adds each spot of the store that is not added, and loads the spots again on the edit motion.
     public func turnOnAll() {
         let off = dock.items.filter { $0.state == .off }
         guard !off.isEmpty else { return }
@@ -441,8 +469,7 @@ extension SpotsModel {
     /// Where the card of a spot of the dock lies in the panel's space, as the dock shows it now.
     private func tileRect(of id: String) -> CGRect? {
         guard let dockFrame, let index = dock.shown.firstIndex(where: { $0.id == id }) else { return nil }
-        let rect = dock.rects(columns: SpotTokens.dockColumns(width: dockFrame.width))[index]
-        return rect.offsetBy(dx: dockFrame.minX + SpotTokens.padding, dy: dockFrame.minY + SpotTokens.dockRowsTop - dockScroll)
+        return dock.rects[index].offsetBy(dx: dockFrame.minX + SpotDock.rowsOrigin.x, dy: dockFrame.minY + SpotDock.rowsOrigin.y - dockScroll)
     }
 
     /// Takes how far the dock has scrolled. A scroll ends the tip.
