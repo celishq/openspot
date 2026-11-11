@@ -41,16 +41,19 @@ struct SpotWindow {
             .map { String(Int($0.rounded())) }.joined(separator: " ")) + "\n"
     }
 
-    /// Gives the window its new size in one change, then glides its place there over a fifth of a second. A size on
-    /// the way would make the app lay itself out again at each step, so only the place moves. The end holds the edges
-    /// of the target by the size the app really gave, and moves again only when the app changes that size late.
+    /// Gives the window its new size in one change, as near the pick as the app allows, then glides only its place,
+    /// as a size on the way makes the app lay itself out at each step. The end holds the target's edges by the size
+    /// the app gave, and moves again only when the app changes that size late.
     func move(_ move: WindowMove) throws {
         let window = frame
         let centre = CGPoint(x: window.midX, y: window.midY)
         let area = move.needsArea ? Self.area(holding: centre) : .zero
         let target = move.target(window: window, area: area)
         let bounds = move.needsArea ? area : Self.area(holding: CGPoint(x: target.midX, y: target.midY))
-        try set(kAXSizeAttribute, .cgSize, target.size)
+        _ = WindowMove.fit(target.size, from: window.size) { wanted in
+            try? set(kAXSizeAttribute, .cgSize, wanted)
+            return frame.size
+        }
         let size = frame.size
         let end = WindowMove.origin(of: size, target: target, area: bounds)
         let duration = 0.2

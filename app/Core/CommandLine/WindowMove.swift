@@ -45,6 +45,35 @@ public struct WindowMove: Equatable, Sendable {
         )
     }
 
+    /// The size a window takes for a wanted size, given the size it has and a way to ask the app for a size, which
+    /// returns the size the app then gives. An app that refuses a whole size smaller than its own smallest keeps its
+    /// old size, so each axis it kept is asked again from the wanted length upward, with the other axis wanted, until
+    /// the app takes it. A refused size shows nothing, so the window changes once.
+    public static func fit(_ wanted: CGSize, from old: CGSize, ask: (CGSize) -> CGSize) -> CGSize {
+        var size = ask(wanted)
+        func near(_ first: CGFloat, _ second: CGFloat) -> Bool { abs(first - second) <= 1 }
+        guard !near(size.width, wanted.width) || !near(size.height, wanted.height) else { return size }
+        let keptWidth = wanted.width < old.width && near(size.width, old.width)
+        let keptHeight = wanted.height < old.height && near(size.height, old.height)
+        var asked = wanted
+        if keptWidth { asked.width = rise(wanted.width, to: old.width) { ask(CGSize(width: $0, height: asked.height)).width } }
+        if keptHeight { asked.height = rise(wanted.height, to: old.height) { ask(CGSize(width: asked.width, height: $0)).height } }
+        if keptWidth || keptHeight { size = CGSize(width: asked.width, height: asked.height) }
+        return size
+    }
+
+    /// The first length from `low` upward, by small steps, that `taken` gives back, or `high`.
+    private static func rise(_ low: CGFloat, to high: CGFloat, taken: (CGFloat) -> CGFloat) -> CGFloat {
+        let step = max(4, ((high - low) / 100).rounded(.up))
+        var length = low + step
+        while length < high {
+            if abs(taken(length) - length) <= 1 { return length }
+            length += step
+        }
+        _ = taken(high)
+        return high
+    }
+
     private static func value(_ word: String) -> Value? {
         if word.hasSuffix("%") { return Double(word.dropLast()).map { Value(number: CGFloat($0) / 100, isPart: true) } }
         let parts = word.split(separator: "/", omittingEmptySubsequences: false)

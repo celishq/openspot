@@ -72,4 +72,69 @@ final class WindowMoveTests: XCTestCase {
         XCTAssertEqual(overflowsRight, CGPoint(x: 0, y: 25))
         XCTAssertEqual(taller, CGPoint(x: 0, y: 25))
     }
+
+    /// A window of an app with a smallest size, which either takes each axis down to that size or refuses a size
+    /// that is smaller on either axis, and counts the sizes it shows.
+    private final class FakeWindow {
+        var size: CGSize
+        let smallest: CGSize
+        let refuses: Bool
+        var shown = 0
+
+        init(size: CGSize, smallest: CGSize, refuses: Bool) {
+            self.size = size
+            self.smallest = smallest
+            self.refuses = refuses
+        }
+
+        func ask(_ wanted: CGSize) -> CGSize {
+            let next: CGSize
+            if refuses {
+                next = wanted.width >= smallest.width && wanted.height >= smallest.height ? wanted : size
+            } else {
+                next = CGSize(width: max(wanted.width, smallest.width), height: max(wanted.height, smallest.height))
+            }
+            if next != size { shown += 1 }
+            size = next
+            return size
+        }
+    }
+
+    func testAWindowTakesThePickedSizeInOneChange() {
+        let window = FakeWindow(size: CGSize(width: 500, height: 500), smallest: CGSize(width: 400, height: 300), refuses: true)
+
+        let size = WindowMove.fit(CGSize(width: 900, height: 600), from: window.size, ask: window.ask)
+
+        XCTAssertEqual(size, CGSize(width: 900, height: 600))
+        XCTAssertEqual(window.shown, 1)
+    }
+
+    func testAnAppThatTakesEachAxisToItsSmallestSizeGetsThePickedWidthAndItsSmallestHeight() {
+        let window = FakeWindow(size: CGSize(width: 500, height: 500), smallest: CGSize(width: 400, height: 300), refuses: false)
+
+        let size = WindowMove.fit(CGSize(width: 900, height: 181), from: window.size, ask: window.ask)
+
+        XCTAssertEqual(size, CGSize(width: 900, height: 300))
+        XCTAssertEqual(window.shown, 1)
+    }
+
+    func testAnAppThatRefusesASmallerSizeWholeGetsThePickedWidthAndNearlyItsSmallestHeightInOneChange() {
+        let window = FakeWindow(size: CGSize(width: 500, height: 500), smallest: CGSize(width: 400, height: 300), refuses: true)
+
+        let size = WindowMove.fit(CGSize(width: 900, height: 181), from: window.size, ask: window.ask)
+
+        XCTAssertEqual(size.width, 900)
+        XCTAssertTrue((300...304).contains(size.height), "\(size)")
+        XCTAssertEqual(window.shown, 1)
+    }
+
+    func testAnAppThatRefusesASmallerSizeWholeGetsThePickedHeightAndNearlyItsSmallestWidthInOneChange() {
+        let window = FakeWindow(size: CGSize(width: 500, height: 500), smallest: CGSize(width: 400, height: 300), refuses: true)
+
+        let size = WindowMove.fit(CGSize(width: 288, height: 900), from: window.size, ask: window.ask)
+
+        XCTAssertTrue((400...404).contains(size.width), "\(size)")
+        XCTAssertEqual(size.height, 900)
+        XCTAssertEqual(window.shown, 1)
+    }
 }
