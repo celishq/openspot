@@ -5,7 +5,7 @@ public struct SpotAction: Equatable, Sendable {
 
     public let arguments: [String]
 
-    public static let run = SpotAction(arguments: ["run"])
+    public static let open = SpotAction(arguments: ["open"])
     public static let read = SpotAction(arguments: ["read"])
 
     public init(arguments: [String]) {

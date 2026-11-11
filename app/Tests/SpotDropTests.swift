@@ -482,7 +482,7 @@ final class SpotDropTests: XCTestCase {
         sheet.pressCard()
 
         XCTAssertEqual(choices(), 0)
-        try await wait("the call") { self.log() == ["run"] }
+        try await wait("the call") { self.log() == ["open"] }
     }
 
     func testAPressOnARunningDropStopsItAndAsksForNoChoice() async throws {

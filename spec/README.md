@@ -77,7 +77,6 @@ The specs above are the contract. Until each row below is done, the app still do
 
 | Phase | Rule                                                                                         | Where the code differs today                                   |
 | ----- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| 2     | A card with no sheet calls `open` with no row.                                               | `SpotAction`, and the plugins call `run`.                      |
 | 3     | Each kind keeps its data in `value`.                                                         | `SpotPart`, `SpotState`, `MetricValue`; `point`, `on`, `level`, `text`. |
 | 4     | No `card=`, `pad=`, `template`, slots, `as`, or `spot` block.                                | `PluginOutput`, `RowTemplate`, `SheetLayout`, `PartCatalog`.   |
 | 5     | A frame with a block is the whole picture; a head alone carries effects; `progress=`.        | `SpotRun.takeUpdate` merges; a main gauge shows progress.      |

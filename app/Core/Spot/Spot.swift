@@ -200,7 +200,7 @@ public struct Spot: Equatable, Sendable {
 
     /// The call that a click on its card makes.
     public var click: SpotAction {
-        .run
+        .open
     }
 
     /// Whether its `drop` takes files that are not folders.

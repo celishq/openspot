@@ -45,7 +45,7 @@ public struct PluginOutput: Equatable, Sendable {
     /// The keys of a call block for a staying script, which a value of the sheet would take the place of.
     private static let callKeys = ["call", "reason", "arg"]
     /// The app's own events. A part cannot take one, and a button can take only `open`, to change the pick.
-    private static let defaults = ["run", "open", "drop"]
+    private static let defaults = ["open", "drop"]
 
     /// The newer events that this output asks for: `drag` when a row names a file (O2).
     private var takenDefaults: [String] {

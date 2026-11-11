@@ -505,9 +505,9 @@ final class SpotRunsReadTests: SpotRunsCase {
         let sheet = try sheet()
 
         sheet.pressCard()
-        try await wait("the call") { self.log() == ["run"] }
+        try await wait("the call") { self.log() == ["open"] }
         try await pause(0.1)
 
-        XCTAssertEqual(log(), ["run"])
+        XCTAssertEqual(log(), ["open"])
     }
 }

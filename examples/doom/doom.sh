@@ -104,7 +104,7 @@ play() {
 
 case "$1" in
   read) card; exit 0 ;;
-  run | play) ;;
+  open | play) ;;
   *) exit 0 ;;
 esac
 temp=$(mktemp -d "${TMPDIR:-/tmp}/doom.XXXXXX") || exit 1

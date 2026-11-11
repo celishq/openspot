@@ -197,7 +197,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         XCTAssertNil(runs.workMark)
         XCTAssertNil(runs.workSpot)
         try await pause()
-        XCTAssertEqual(log(), ["run"])
+        XCTAssertEqual(log(), ["open"])
     }
 
     func testTheMenuBarShowsTheOldestCallOfAllScriptsAndHowManyRun() async throws {
@@ -312,7 +312,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
         XCTAssertNotNil(sheet.cardWork)
         XCTAssertNotNil(sheet.work(of: row, item: nil))
-        try await wait("the call") { self.log() == ["run"] }
+        try await wait("the call") { self.log() == ["open"] }
         sheet.pressCard()
         XCTAssertNil(sheet.cardWork)
         XCTAssertFalse(sheet.isCardRunning)

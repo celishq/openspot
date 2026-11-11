@@ -1,7 +1,7 @@
 import Foundation
 
 /// A call of one spot that `openspot spot run` makes, with the environment, the arguments and the stdin that a call of the
-/// app gets. With no call, it reads a spot that has a `read`, and runs one that has none. A staying script gets the call as
+/// app gets. With no call, it reads a spot that has a `read`, and opens one that has none. A staying script gets the call as
 /// a block, and the run ends with the frame that ends that call.
 public struct TerminalRun {
     /// How the call ended: the exit code of the script, and all that it printed on stderr.
@@ -25,7 +25,7 @@ public struct TerminalRun {
 
     /// The call that this run makes.
     var action: SpotAction {
-        SpotAction(arguments: arguments.isEmpty ? (spot.read == nil ? SpotAction.run : SpotAction.read).arguments : arguments)
+        SpotAction(arguments: arguments.isEmpty ? (spot.read == nil ? SpotAction.open : SpotAction.read).arguments : arguments)
     }
 
     /// Makes the call, gives each frame as it comes, and returns how the call ended.

@@ -133,7 +133,7 @@ public enum PartCatalog {
     ## Rules
 
     - Every id in a drawing needs one component, and each component that is not a button needs its id in the drawing.
-    - A component cannot be called `read`, `run`, `open` or `drop`.
+    - A component cannot be called `read`, `open` or `drop`.
     - Do not use a key that this page does not name.
     - Use at most one `look=strong`.
     - Keep titles short: about 7 letters fit in one column of four, with a control in the same cell.

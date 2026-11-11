@@ -35,11 +35,11 @@ final class ScreenExamplesTests: SamplePluginsCase {
             try self.fakeScreen(in: folder)
             try "mic:B2 system".write(to: folder.appendingPathComponent("setting-inputs"), atomically: true, encoding: .utf8)
 
-            let started = try await record.perform(.run, timeout: 5)
+            let started = try await record.perform(.open, timeout: 5)
             XCTAssertEqual(started, "Recording the screen. Run Record again to stop it.")
             XCTAssertTrue(try self.read("calls", in: folder).contains("screen record start mic:B2 system\n"))
 
-            let stopped = try await record.perform(.run, timeout: 5)
+            let stopped = try await record.perform(.open, timeout: 5)
             XCTAssertEqual(stopped, "Copied the recording.")
             XCTAssertEqual(try self.read("clipboard", in: folder), folder.path + "/talk.mp4")
         }
@@ -80,7 +80,7 @@ final class ScreenExamplesTests: SamplePluginsCase {
         try await withPrivateHome { folder in
             try self.fakeScreen(in: folder)
 
-            let toast = try await shot.perform(.run, timeout: 5)
+            let toast = try await shot.perform(.open, timeout: 5)
 
             XCTAssertNil(toast)
             XCTAssertEqual(try self.read("calls", in: folder), "screen shot\n")

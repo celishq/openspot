@@ -130,20 +130,20 @@ final class SpotTests: XCTestCase {
         XCTAssertEqual(form.title, "Edit")
     }
 
-    func testAClickOnAFileWithNoReadRunsRun() async throws {
+    func testAClickOnAFileWithNoReadSendsOpen() async throws {
         let command = try writeCommand(kind: .launch, "echo \"$1\" > '\(marker.path)'")
 
         try await command.perform(command.click, timeout: 5)
 
-        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "run\n")
+        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "open\n")
     }
 
-    func testAClickOnACardWithAReadRunsRun() async throws {
+    func testAClickOnACardWithAReadSendsOpen() async throws {
         let command = try writeCommand(kind: .launch, read: .panel, "echo \"$1\" > '\(marker.path)'")
 
         try await command.perform(command.click, timeout: 5)
 
-        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "run\n")
+        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "open\n")
     }
 
     func testAFormThatCannotBeReadFails() async throws {
