@@ -47,6 +47,12 @@ struct SpotDockView: View {
                     }
                 }
                 Spacer(minLength: 0)
+                if dock.filter == .off, !dock.shown.isEmpty {
+                    Button("Turn On All") { model.turnOnAll() }
+                        .buttonStyle(.plain)
+                        .font(SpotType.body)
+                        .foregroundStyle(SpotTheme.ink)
+                }
                 SpotSearchField(prompt: "Search spots", text: dock.query, onSearch: { model.searchDock($0) }, isFocused: $isSearching)
                     .frame(width: SpotTokens.gridWidth)
             }

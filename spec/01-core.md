@@ -54,6 +54,7 @@ open -a Calendar
 | `title`    | The title. The default comes from the file name.                                                                         |
 | `icon`     | Its picture, as for a block. A path that does not start with `/` starts at the folder of the script.                     |
 | `detail`   | The second line.                                                                                                         |
+| `keyword`  | One more word that finds it in the main search. A header can have more than one.                                         |
 | `size`     | The size it prefers: `wide` (the default), `small`, `square`, `strip` or `large`. The grid can change it, and the person's choice wins (F9). |
 | `read`     | When a read is safe: `sheet`, `panel` or a number of seconds, split by commas.                                           |
 | `drop`     | The files that its card takes: extensions such as `mov,mkv`, `folder`, or `*`.                                          |

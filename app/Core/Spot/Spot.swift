@@ -68,10 +68,10 @@ public struct Spot: Equatable, Sendable {
     public let readsOnUpdate: Bool
     /// The spot whose sheet a pick of each of these rows opens, by the row's ID.
     public let rowOpens: [String: String]
-    /// The action that shows the code of the core spot that a row names.
-    public let reviewAction: String?
-    /// Whether its sheet turns spots on or off, so that the grid loads again under it.
-    public let changesSpots: Bool
+    /// More words that find it in the main search, beside its name and the words under it.
+    public let keywords: [String]
+    /// Whether a press starts Edit Spots with the store, in place of a sheet.
+    public let opensStore: Bool
     /// The prompt that asks an agent to write or fix a spot, which a card that does not load and Copy prompt use.
     public let agentPrompt: AgentPrompt?
     /// Whether the settings key of the Mac opens its sheet.
@@ -116,8 +116,8 @@ public struct Spot: Equatable, Sendable {
         setsKeys: Bool = false,
         readsOnUpdate: Bool = false,
         rowOpens: [String: String] = [:],
-        reviewAction: String? = nil,
-        changesSpots: Bool = false,
+        keywords: [String] = [],
+        opensStore: Bool = false,
         agentPrompt: AgentPrompt? = nil,
         opensWithSettingsKey: Bool = false,
         opensWithNewKey: Bool = false
@@ -126,8 +126,8 @@ public struct Spot: Equatable, Sendable {
         self.agentPrompt = agentPrompt
         self.opensWithSettingsKey = opensWithSettingsKey
         self.rowOpens = rowOpens
-        self.reviewAction = reviewAction
-        self.changesSpots = changesSpots
+        self.keywords = keywords
+        self.opensStore = opensStore
         sizeChoices = sizes
         changesKeys = setsKeys
         self.readsOnUpdate = readsOnUpdate

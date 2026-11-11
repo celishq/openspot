@@ -310,8 +310,6 @@ extension SpotsModel {
             }
         } else if action == .share {
             share(target.entry)
-        } else if action.id == target.entry.command.reviewAction, let item = target.item {
-            reviewCore(item)
         } else if action.id == CommandAction.removeID {
             remove(target.entry)
         } else if action == .edit {
@@ -324,7 +322,6 @@ extension SpotsModel {
         } else if action.isForm {
             openForm(action, on: target)
         } else if action.after == .stay {
-            if target.entry.command.changesSpots { spotsChanged = true }
             sheets[target.entry.id]?.run(action, item: target.item)
         } else if let item = target.item {
             pick(item, of: target.entry, action: action)

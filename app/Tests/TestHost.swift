@@ -81,7 +81,7 @@ final class TestHost: SpotsHost {
         if !glyphs.isEmpty { glyphLists.append(glyphs) }
     }
 
-    func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?, offersLogin: Bool) -> [Spot] {
+    func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?) -> [Spot] {
         shipped
     }
 

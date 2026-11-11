@@ -65,6 +65,16 @@ final class PluginHeaderTests: XCTestCase {
         }
     }
 
+    func testEachKeywordOfTheHeaderFindsTheSpot() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keyword-\(UUID().uuidString)")
+        try "#!/bin/sh\n# title=Timer\n# keyword=countdown\n# keyword=pomodoro\n".writeScript(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let command = try XCTUnwrap(try Plugin(file: url, id: "timer")?.commands.first)
+
+        XCTAssertEqual(command.keywords, ["countdown", "pomodoro"])
+    }
+
     func testReadsTheCommentLinesUnderTheFirstLine() {
         let header = PluginHeader(text: "#!/bin/sh\n# title=Morning\n#\n# Prose has no key.\n#icon=sun.max\nsay hello\n# shortcut=m\n")
 

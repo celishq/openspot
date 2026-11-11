@@ -629,6 +629,17 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(shown(.all), ["a", "b", "c", "d", "timer"])
     }
 
+    func testTurnOnAllTurnsOnEachSpotThatIsOff() throws {
+        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        model.turnOff("a")
+
+        model.turnOnAll()
+
+        XCTAssertEqual(offInStore, [])
+        XCTAssertTrue(order.contains("a"))
+        XCTAssertTrue(order.contains("timer"))
+    }
+
     func testTheStoreFollowsTheEyeOfACard() {
         model.setOnGrid(false, for: "b")
 

@@ -191,7 +191,6 @@ public final class SpotsModel {
     /// The shared spot that the open review shows, which exists only as long as that sheet.
     public var reviewed: ReviewSpot?
     public var isFirstLaunch = false
-    public var spotsChanged = false
     public var isShown = false
     /// Whether the app is opening the panel unseen as it starts, which a press of the key ends.
     public var isWarming = false
@@ -322,7 +321,7 @@ public final class SpotsModel {
         host.applyConfig()
         let config = files.config.read()
         let folder = files.folder(config)
-        let shipped = host.shippedSpots(folder: folder, config: files.config, update: updateSpot, offersLogin: isFirstLaunch)
+        let shipped = host.shippedSpots(folder: folder, config: files.config, update: updateSpot)
             + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
         var scan = pluginScan.look(at: folder, shipped: shipped)
         let prompt = shipped.lazy.compactMap(\.agentPrompt).first
@@ -386,14 +385,6 @@ public final class SpotsModel {
         return true
     }
 
-    /// Brings the grid up to date while a sheet covers it, so that the sheet closes onto the card's real place. The selected
-    /// card stays selected.
-    private func reloadUnderSheet() {
-        spotsChanged = false
-        let id = selectedEntry?.id
-        reload()
-        if let position = visible.firstIndex(where: { $0.id == id }) { selected = position }
-    }
 
     public func rebuildEntries() {
         let letters = arrangement.letters(over: defaultArrangement)
@@ -483,7 +474,6 @@ public final class SpotsModel {
                 host.applyConfig()
                 holdAssignedKeys(files.config.read())
             }
-            if spotsChanged, sheets[id]?.command.changesSpots == true { reloadUnderSheet() }
         case .landed:
             host.land(id)
         case .closed:
@@ -561,7 +551,7 @@ public final class SpotsModel {
             .filter { ids.insert($0.id).inserted }
             .prefix(Self.searchLimit)
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        spotList.replace(cards.filter(\.command.isFound).map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.command.name].compactMap { $0 }.joined(separator: " "), run: $0.id) })
+        spotList.replace(cards.filter(\.command.isFound).map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.command.name].compactMap { $0 }.joined(separator: " "), run: $0.id, keywords: $0.command.keywords) })
         let sources = entries.filter { $0.command.isGlobal && arrangement.isGlobal(of: $0.id) != false }
         let found = SearchQuery(text: text).matching(in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() }, unpickedLimit: Self.unpickedRows, limit: Self.searchLimit - answers.count)
         return answers + found.compactMap { match in
@@ -619,6 +609,7 @@ public final class SpotsModel {
     /// Runs a command by its key, with the panel open only when its spot needs it.
     public func press(_ id: String) {
         guard let entry = entries.first(where: { $0.id == id }) else { return }
+        guard !entry.command.opensStore else { return openStore() }
         if let sheet = sheets[id], sheet.awaitsAnswer {
             sheet.afterAnswer { [weak self] in self?.press(id) }
             return
@@ -672,6 +663,7 @@ public final class SpotsModel {
     }
 
     public func run(_ entry: Entry) {
+        guard !entry.command.opensStore else { return openStore() }
         if let item = entry.item, let list = entries.first(where: { $0.id == entry.command.id }) {
             if item.shortcut != nil, openList != list.id {
                 open(list.id, moving: true)
@@ -1026,7 +1018,6 @@ public final class SpotsModel {
                 open(id, moving: true)
                 return
             }
-            if entry.command.changesSpots, action == nil { spotsChanged = true }
             if action == nil, item.shortcut != nil {
                 toggleRecording(id: item.run)
                 return

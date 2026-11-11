@@ -99,7 +99,8 @@ public struct Plugin: Equatable, Sendable {
             file: icon?.file.map { Self.path($0, beside: url) },
             image: icon?.image.map { Self.path($0, beside: url) },
             glyph: icon?.glyph,
-            view: view.map { Self.path($0, beside: url) }
+            view: view.map { Self.path($0, beside: url) },
+            keywords: header.values("keyword")
         )
         self.init(id: id, commands: [command])
     }

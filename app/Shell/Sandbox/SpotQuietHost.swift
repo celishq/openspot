@@ -29,7 +29,7 @@ final class SpotQuietHost: SpotsHost {
     func copy(_ file: URL) {}
     func prepare(_ items: [SpotItem], glyphs: [String]) async {}
 
-    func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?, offersLogin: Bool) -> [Spot] {
+    func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?) -> [Spot] {
         ShippedSpot.commands(
             folder: folder.url,
             guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder.url,

@@ -24,6 +24,13 @@ extension SpotsModel {
         }
     }
 
+    /// Shows the panel in Edit Spots with the store, from the grid, a search or a sheet.
+    func openStore() {
+        if openList != nil { closeList(moving: false) }
+        host.show()
+        beginEditing()
+    }
+
     /// Shows the spots of the dock whose name holds this text.
     public func searchDock(_ text: String) {
         dock.query = text
@@ -90,6 +97,18 @@ extension SpotsModel {
     public func turnOn(_ id: String) {
         guard let item = dock.items.first(where: { $0.id == id && $0.state == .off }) else { return }
         turn(item.command, on: true)
+    }
+
+    /// Turns on each spot of the store that is off, and loads the spots again on the edit motion.
+    public func turnOnAll() {
+        let off = dock.items.filter { $0.state == .off }
+        guard !off.isEmpty else { return }
+        do {
+            for item in off { try files.config.turn(files.folder.fileID(of: item.command), on: true) }
+        } catch {
+            host.notify("Some spots were not turned on. \(Self.reason(error))")
+        }
+        change(.edit) { reload() }
     }
 
     /// Moves the file of a spot of the store that is off to the Trash, as Delete does in the action menu, so `⌘Z` puts it

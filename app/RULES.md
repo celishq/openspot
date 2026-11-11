@@ -18,7 +18,7 @@ Code and tests name a rule by its ID.
 | A10 | A dragged `.spot` file shows in the search field, and a drop, a paste or a double-click opens the install screen from there. |
 | A11 | The core spots are the scripts in `plugins/` of this repo. They run in place from the app, so an update updates them. Nothing downloads. |
 | A12 | A first launch turns on each core spot that reads only local data. Each other core spot is off until the person turns it on. A file in the plugins folder with the same ID wins over a core spot, and is always on. |
-| A13 | Enter on a row of Spots turns that spot on or off, and keeps the panel open. |
+| A13 | Spots opens Edit Spots with the store, which shows every spot with its state. A search for "edit spots" finds Spots. |
 | A14 | A first launch has no config and no plugin, opens the panel on the grid once, and does not open at login. |
 | A15 | A toast takes no input, except a failure with a fix (R9). One fix key, which the person chooses, opens it, and only while the toast shows. |
 | A16 | The main search ranks the best match first. Then the most weight of picks, where each pick weighs 0.9 of the one after it, then the spots, then each list in the order of the grid. A list that the person never picked from shows at most 3 rows. |
@@ -28,7 +28,7 @@ Code and tests name a rule by its ID.
 | A20 | The app watches the plugins folder. A change shows on the cards at once, with no motion, and a changed script that the open panel reads at `panel` reads again. |
 | A21 | A spot whose last call failed shows a mark on its card until a call ends well. |
 | A24 | Each spot of the person offers Edit, Copy prompt for AI, Share and Delete. A card of a file that does not load offers Edit and Delete. Delete asks no question and keeps the panel open, and `⌘Z` puts the files back until the next Delete. |
-| A22 | New spot has a small card on the grid after Settings, and the first row of Spots opens it too. `⌘N` on the grid or in Edit Spots opens it, unless an action of the selected card takes the key. |
+| A22 | New spot has a small card on the grid after Settings. `⌘N` on the grid or in Edit Spots opens it, unless an action of the selected card takes the key. |
 | A23 | New spot is a list that the search field fills. Its first row, Copy prompt for AI, copies a prompt that asks an agent to build what the person typed as a new file in the plugins folder, and its toast says so. Openspot starts no agent and writes no file for it. A row for each starter writes a working spot called Untitled and opens its file in the text editor. `⌘K` opens the guide and the plugins folder. |
 | M2 | A `panel` or `sheet` moment takes an answer younger than 5 seconds. A change, a number and a wake always read. |
 | M3 | Reads run at the same time. The panel never waits for one script. A spot shows its header until its answer arrives. |
