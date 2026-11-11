@@ -1,0 +1,96 @@
+import XCTest
+@testable import OpenspotCore
+
+/// Proves the work of `openspot <noun> <verb>` that Core does, the same for the app and for a process of its own.
+final class CommandAPITests: XCTestCase {
+    private final class Host: CommandHost, @unchecked Sendable {
+        var made = 0
+        var opened: [URL] = []
+
+        func eventStore() -> any EventStore {
+            made += 1
+            return FakeEventStore(calendars: [CalendarList(id: "A8E2", title: "Work", account: "iCloud", color: "#1BADF8")])
+        }
+
+        func reminderStore() -> any ReminderStore {
+            FakeReminderStore()
+        }
+
+        func showCalendar(at time: Date) throws {}
+
+        func open(_ link: URL) -> Bool {
+            opened.append(link)
+            return true
+        }
+    }
+
+    private var folder: URL!
+    private let host = Host()
+
+    override func setUpWithError() throws {
+        folder = FileManager.default.temporaryDirectory.appendingPathComponent("api-\(UUID().uuidString.prefix(8))")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    }
+
+    override func tearDownWithError() throws {
+        try? FileManager.default.removeItem(at: folder)
+    }
+
+    private var environment: [String: String] {
+        ["OPENSPOT_CONFIG": folder.path]
+    }
+
+    private func answer(_ arguments: [String], input: String = "", environment: [String: String]? = nil) async throws -> CommandAnswer {
+        let environment = environment ?? self.environment
+        let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment))
+        let work = try XCTUnwrap(CommandAPI(host: host).work(for: call, input: { input }, environment: environment))
+        return await work()
+    }
+
+    func testCalcSolvesASum() async throws {
+        let answer = try await answer(["calc", "solve", "2+2"])
+
+        XCTAssertEqual(TextBlock.blocks(in: answer.output).first?.value("title"), "4")
+        XCTAssertEqual(answer.errors, "")
+        XCTAssertEqual(answer.code, 0)
+    }
+
+    func testAnUnknownCallPrintsTheUsageWithCode2() async throws {
+        let answer = try await answer(["calc", "2+2"])
+
+        XCTAssertEqual(answer.output, "")
+        XCTAssertTrue(answer.errors.hasPrefix("openspot cannot do this: calc 2+2\n\n"))
+        XCTAssertEqual(answer.code, 2)
+    }
+
+    func testASettingThatASpotKeepsIsReadBack() async throws {
+        let spot = environment.merging(["OPENSPOT_ID": "notes"]) { _, new in new }
+
+        let set = try await answer(["setting", "set", "tone", "warm"], environment: spot)
+        let get = try await answer(["setting", "get", "tone"], environment: spot)
+
+        XCTAssertEqual(set, CommandAnswer(output: "", errors: "", code: 0))
+        XCTAssertEqual(get.output, "warm\n")
+    }
+
+    func testASheetOnStdinIsChecked() async throws {
+        let answer = try await answer(["check", "--sheet"], input: "title=Hi\n")
+
+        XCTAssertEqual(answer.output, "the sheet has no parts\n1 faults.\n")
+        XCTAssertEqual(answer.code, 1)
+    }
+
+    func testCalendarsComeFromTheStoreOfTheHost() async throws {
+        let answer = try await answer(["calendar", "calendars"])
+
+        XCTAssertEqual(TextBlock.blocks(in: answer.output).first?.value("title"), "Work")
+        XCTAssertEqual(host.made, 1)
+    }
+
+    func testACallThatTheShellDoesHasNoWorkInCore() throws {
+        for arguments in [["color", "pick"], ["render", "a.png"], ["spot", "run", "notes"], ["clipboard", "paste"], ["helper", "calc"], ["check"]] {
+            let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: [:]))
+            XCTAssertNil(CommandAPI(host: host).work(for: call, input: { "" }, environment: [:]), arguments.joined(separator: " "))
+        }
+    }
+}

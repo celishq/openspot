@@ -4,29 +4,23 @@ import OpenspotCore
 /// The `openspot` command. It does one call, prints plain text and exits, with no window of its own.
 @MainActor
 enum SpotCommandLine {
+    /// Does the call: the work of the API when Core has it, or the work of the Shell, and exits.
     static func run(_ call: CommandLineCall) -> Never {
         enterBundle()
+        if let work = CommandAPI(host: SpotCommandHost()).work(for: call, input: { standardInput }, environment: ProcessInfo.processInfo.environment) {
+            Task {
+                let answer = await work()
+                FileHandle.standardOutput.write(Data(answer.output.utf8))
+                FileHandle.standardError.write(Data(answer.errors.utf8))
+                exit(answer.code)
+            }
+            dispatchMain()
+        }
         switch call {
-        case .help:
-            print(CommandLineCall.usage, terminator: "")
-            exit(0)
-        case .unknown(let words):
-            FileHandle.standardError.write(Data("openspot cannot do this: \(words)\n\n\(CommandLineCall.usage)".utf8))
-            exit(2)
         case .colorPick:
             SpotColorPick.run()
         case .folderPick:
             SpotFolderPick.run()
-        case .settingGet(let spot, let key):
-            answer { ConfigFile.standard().read().setting(key, of: spot).map { $0 + "\n" } ?? "" }
-        case .settingSet(let spot, let key, let value):
-            answer {
-                try ConfigFile.standard().set(setting: key, of: spot, to: value)
-                return ""
-            }
-        case .refused(let line):
-            FileHandle.standardError.write(Data("\(line)\n".utf8))
-            exit(1)
         case .clipboardCopy(let path?):
             SpotClipboard.copy(path)
         case .clipboardCopy(nil):
@@ -37,30 +31,10 @@ enum SpotCommandLine {
             check(path)
         case .checkJSON(let path):
             check(path, json: true)
-        case .guide:
-            answer {
-                guard let guide = Bundle.main.url(forResource: "GUIDE", withExtension: "md") else { throw PluginError.fault("This copy of Openspot has no guide. Install Openspot again.") }
-                return try String(contentsOf: guide, encoding: .utf8)
-            }
-        case .guideOf(let noun):
-            answer {
-                guard let folder = Bundle.main.url(forResource: "Help", withExtension: nil) else { throw PluginError.fault("This copy of Openspot has no guides. Install Openspot again.") }
-                return try CommandGuide(folder: folder).text(of: noun)
-            }
-        case .spotNew(let name, let starter):
-            answer {
-                let file = try starter.write(name: name, in: PluginFolder.standard().url)
-                return "Wrote \(file.path). Its ID is \(file.deletingPathExtension().lastPathComponent).\n"
-            }
         case .spotRun(let id, let arguments):
             spotRun(id, arguments)
         case .spotShow(let id):
             SpotShowLink.send(id)
-        case .spotLog(let id):
-            answer {
-                let text = SpotFiles.standard.log.text(of: id)
-                return text.isEmpty ? "Openspot has made no call to \(id) yet. Use it in the panel, then run this again.\n" : text
-            }
         case .renderSpot(let id, let size?, let path):
             SpotCardPicture.run(spot: id, size: size, path: path)
         case .renderSpot(let id, nil, let path):
@@ -71,8 +45,6 @@ enum SpotCommandLine {
             SpotSheetPicture.run(text: standardInput, path: path, view: view)
         case .renderCard(let size, let path):
             SpotCardPicture.run(text: standardInput, size: size, path: path)
-        case .checkSheet:
-            checkSheet()
         case .translate(let from, let to):
             let text = standardInput
             finish { try SpotTranslation.call(text: text, from: from, to: to) }
@@ -89,12 +61,6 @@ enum SpotCommandLine {
             exit(SpotGlyphBook.write(GlyphBook(glyphs: glyphs, side: side, fontSize: fontSize), to: path) ? 0 : 1)
         case .translateLanguages:
             finish { await SpotTranslation.languages() }
-        case .calcSolve(let words):
-            answer { CalcAnswer(text: words, rates: CalcRateCache.ask)?.text ?? "" }
-        case .emoji(let tone):
-            finish { try EmojiCatalog().rows(tone: tone) }
-        case .symbols:
-            finish { try SymbolCatalog().rows() }
         case .windowFrame:
             answer { try SpotWindow.front().frameText }
         case .windowMove(let move):
@@ -109,28 +75,8 @@ enum SpotCommandLine {
             SpotScreen.run { try SpotRecording.stop() }
         case .screenRecordStatus:
             SpotScreen.run { try SpotRecording.status() }
-        case .calendarEvents(let days, let hidden):
-            finish { try await SpotEventStore.events().events(days: days, hiding: hidden) }
-        case .calendarCalendars:
-            finish { try await SpotEventStore.events().calendars() }
-        case .remindersDue(let days, let hidden):
-            finish { try await SpotReminderStore.reminders().due(days: days, hiding: hidden) }
-        case .remindersLists:
-            finish { try await SpotReminderStore.reminders().lists() }
-        case .calendarAdd(let words, let isDry):
-            finish { try await SpotEventStore.events().add(words, isDry: isDry) }
-        case .remindersAdd(let words, let isDry):
-            finish { try await SpotReminderStore.reminders().add(words, isDry: isDry) }
-        case .calendarShow(let id):
-            finish { try SpotCalendarApp.show(try await SpotEventStore.events().day(of: id)) }
-        case .remindersDone(let id, let isDone):
-            finish { try await SpotReminderStore.reminders().done(id, isDone) }
-        case .remindersShow(let id):
-            finish {
-                let link = try await SpotReminderStore.reminders().link(of: id)
-                guard NSWorkspace.shared.open(link) else { throw PluginError.failed(1, "Openspot cannot open Reminders, so it cannot show \(id).") }
-                return ""
-            }
+        default:
+            preconditionFailure("CommandAPI answers \(call).")
         }
     }
 
@@ -146,7 +92,7 @@ enum SpotCommandLine {
         execv(real, CommandLine.unsafeArgv)
     }
 
-    private static var standardInput: String {
+    nonisolated private static var standardInput: String {
         String(decoding: FileHandle.standardInput.readDataToEndOfFile(), as: UTF8.self)
     }
 
@@ -222,14 +168,6 @@ enum SpotCommandLine {
             exit(1)
         }
         SpotSheetPicture.run(text: text, path: path, view: spot.view, spot: spot)
-    }
-
-    /// Reports the faults of a sheet on standard input, and exits with 1 when there are any.
-    private static func checkSheet() -> Never {
-        let faults = PluginOutput(text: standardInput).sheetFaults
-        faults.forEach { print($0) }
-        print(faults.isEmpty ? "No faults." : "\(faults.count) faults.")
-        exit(faults.isEmpty ? 0 : 1)
     }
 
     /// Prints what the work returns on the main thread and exits. A failure goes to stderr, with exit code 1.
