@@ -2,6 +2,7 @@
 # icon=doc.text.magnifyingglass
 # detail=Find a file
 # read=sheet
+# uses=clipboard
 . "$OPENSPOT_SH"
 case "$1" in
   read)

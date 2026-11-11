@@ -4,6 +4,7 @@
 # detail=Copy an emoji or a symbol
 # size=small
 # read=sheet
+# uses=clipboard
 export LC_ALL=en_US.UTF-8
 saved="$OPENSPOT_DATA/tone"
 tones="none light medium-light medium medium-dark dark"

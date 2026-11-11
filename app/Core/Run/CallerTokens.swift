@@ -7,6 +7,7 @@ public final class CallerTokens: @unchecked Sendable {
     public struct Caller: Equatable, Sendable {
         public let id: String
         public let name: String
+        public let uses: Set<SpotUse>
     }
 
     public static let variable = "OPENSPOT_TOKEN"
@@ -20,7 +21,7 @@ public final class CallerTokens: @unchecked Sendable {
     func issue(for spot: Spot) -> String {
         var random = SystemRandomNumberGenerator()
         let token = String(format: "%016llx%016llx", random.next() as UInt64, random.next() as UInt64)
-        lock.withLock { callers[token] = Caller(id: spot.id, name: spot.name) }
+        lock.withLock { callers[token] = Caller(id: spot.id, name: spot.name, uses: spot.uses) }
         return token
     }
 

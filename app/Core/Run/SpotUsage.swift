@@ -31,6 +31,8 @@ public final class SpotUsage: @unchecked Sendable {
 
     private let lock = NSLock()
     private var ended: [String: Count] = [:]
+    /// Each use that the person was told of, as the day, the spot and the use.
+    private var told: Set<String> = []
     /// Each process that has not ended, with the ID of its spot.
     private var live: [ObjectIdentifier: (spot: String, process: ScriptProcess)] = [:]
 
@@ -86,6 +88,20 @@ public final class SpotUsage: @unchecked Sendable {
             if let fault = count.fault { lines += ["fault=\(Self.escaped(fault))", "tone=bad"] }
             return lines.map { $0 + "\n" }.joined() + "\n"
         }.joined()
+    }
+
+    /// Counts a use of a power by a spot on a date, and returns whether to tell the person: its first use of the day that
+    /// its header does not name (Z4).
+    func used(_ power: SpotPower, by caller: CallerTokens.Caller, at date: Date) -> Bool {
+        guard !caller.uses.contains(power.use) else { return false }
+        let key = "\(Self.day(of: date)) \(caller.id) \(power.use.rawValue)"
+        return lock.withLock { told.insert(key).inserted }
+    }
+
+    /// The day of a date in the time zone of the Mac, such as `2026-11-11`.
+    static func day(of date: Date) -> String {
+        let parts = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }
 
     /// Keeps the fault that the person was told, as the last of this spot.

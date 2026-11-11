@@ -88,6 +88,13 @@ final class CommandSocketTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("own/config.toml").path))
     }
 
+    func testAVariableThatIsNoPathPassesAsItIs() throws {
+        let request: [String: Any] = ["jsonrpc": "2.0", "id": 1, "method": "ask", "params": ["argv": ["setting", "set", "tone", "warm"], "cwd": folder.path, "env": ["OPENSPOT_CONFIG": folder.path, "OPENSPOT_ID": "home/coffee"]]]
+        _ = try send(String(decoding: JSONSerialization.data(withJSONObject: request), as: UTF8.self))
+
+        XCTAssertEqual(ConfigFile(url: folder.appendingPathComponent("config.toml")).read().setting("tone", of: "home/coffee"), "warm")
+    }
+
     func testARelativeSourceOfSpotAddIsReadFromTheWorkingFolderOfTheCaller() throws {
         let source = folder.appendingPathComponent("sources/tea")
         try FileManager.default.createDirectory(at: source, withIntermediateDirectories: true)

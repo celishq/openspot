@@ -36,6 +36,7 @@ public struct SpotFile: Equatable, Sendable {
         if let word = emits.first(where: { !SpotEvent.isName($0) }) {
             throw SpotError.fault("\(name) has an unknown event in its emits: \(word). Write a word with a dot, such as emits=music.track")
         }
+        let uses = try SpotUse.set(header.value("uses"), of: name)
         try Self.refuseOldKeys(header, of: name)
         let modeName = header.value("mode") ?? SpotMode.once.rawValue
         guard let mode = SpotMode(rawValue: modeName) else {
@@ -99,7 +100,8 @@ public struct SpotFile: Equatable, Sendable {
             image: icon?.image.map { Self.path($0, beside: url) },
             glyph: icon?.glyph,
             view: view.map { Self.path($0, beside: url) },
-            emits: emits
+            emits: emits,
+            uses: uses
         )
         self.init(id: id, spots: [command])
     }

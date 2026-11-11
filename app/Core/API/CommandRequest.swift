@@ -2,7 +2,8 @@ import Foundation
 
 /// One `openspot` call that reaches the app: a JSON-RPC 2.0 request on one line, with the method `ask` and the params
 /// `argv`, `cwd` and `env`, the arguments, the working folder and the `OPENSPOT_*` variables of the calling process. A
-/// variable that is a relative path is read from the working folder, as the process of the caller reads it.
+/// variable of a folder or a file that is a relative path is read from the working folder, as the process of the caller
+/// reads it, and any other variable, such as `OPENSPOT_ID`, passes as it is.
 struct CommandRequest: Equatable {
     private struct Line: Decodable {
         struct Params: Decodable {
@@ -18,6 +19,7 @@ struct CommandRequest: Equatable {
     }
 
     static let method = "ask"
+    private static let paths: Set<String> = ["OPENSPOT_CONFIG", "OPENSPOT_DATA", "OPENSPOT_SH", "OPENSPOT_PLUGINS", "OPENSPOT_CORE"]
 
     let id: Int?
     let arguments: [String]
@@ -31,9 +33,10 @@ struct CommandRequest: Equatable {
         arguments = line.params.argv
         folder = line.params.cwd
         let folder = URL(fileURLWithPath: line.params.cwd, isDirectory: true)
-        environment = line.params.env.filter { $0.key.hasPrefix("OPENSPOT_") }.mapValues { value in
-            ["/", ""].contains(value.first.map(String.init) ?? "") ? value : URL(fileURLWithPath: value, relativeTo: folder).standardizedFileURL.path
-        }
+        environment = Dictionary(uniqueKeysWithValues: line.params.env.filter { $0.key.hasPrefix("OPENSPOT_") }.map { key, value in
+            guard Self.paths.contains(key), !["/", ""].contains(value.first.map(String.init) ?? "") else { return (key, value) }
+            return (key, URL(fileURLWithPath: value, relativeTo: folder).standardizedFileURL.path)
+        })
     }
 
     /// The environment of the call: that of the app, with the `OPENSPOT_*` variables of the caller in place of its own, and

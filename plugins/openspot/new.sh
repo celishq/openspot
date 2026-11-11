@@ -4,6 +4,7 @@
 # detail=Make your own
 # size=small
 # read=sheet
+# uses=spots,clipboard
 folder="${OPENSPOT_PLUGINS:-$OPENSPOT_CONFIG/plugins}"
 
 # Prints a row with an id, a title, a detail and an icon.

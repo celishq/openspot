@@ -72,7 +72,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         let usage = model.runs.usage
         let api = CommandAPI(mac: mac, raise: { [model] event in
             await MainActor.run { model.runs.raise(event) }
-        }, stats: { usage.text }, app: SpotRunningApp(model: model, update: update))
+        }, stats: { usage.text }, app: SpotRunningApp(model: model, update: update), runs: model.runs)
         model.runs.api = api
         commandSocket = CommandSocket(folder: ConfigFile.standard().url.deletingLastPathComponent(), api: api)
         model.reload()

@@ -87,8 +87,9 @@ public final class CommandSocket: @unchecked Sendable {
             return
         }
         let environment = request.environment(over: ProcessInfo.processInfo.environment)
-        guard let call = CommandLineCall(arguments: request.arguments, environment: environment),
-              let work = api.work(for: call, input: { await Self.text(of: input) }, environment: environment) else {
+        let call = CommandLineCall(arguments: request.arguments, environment: environment)
+        if let call { api.note(call, environment: environment) }
+        guard let call, let work = api.work(for: call, input: { await Self.text(of: input) }, environment: environment) else {
             send(Reply(id: request.id, error: .init(code: alone, message: "Run this call in a process of its own.")), to: connection, input: input)
             return
         }

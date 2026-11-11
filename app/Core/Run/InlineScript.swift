@@ -212,6 +212,7 @@ final class InlineScript: @unchecked Sendable {
             return CommandAnswer(errors: "openspot needs a call, such as calc solve 2+2.\n", code: 2)
         }
         if let api, let work = api.work(for: call, input: { input ?? "" }, environment: environment) {
+            api.note(call, environment: environment)
             let box = Box()
             let done = DispatchSemaphore(value: 0)
             Task.detached(priority: .userInitiated) {

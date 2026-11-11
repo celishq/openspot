@@ -4,6 +4,7 @@
 # detail=Turn on
 # size=small
 # read=sheet
+# uses=app,spots
 nl='
 '
 

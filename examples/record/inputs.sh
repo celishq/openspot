@@ -3,6 +3,7 @@
 # icon=mic
 # detail=The sound and the camera of Record
 # read=sheet
+# uses=screen
 kept=$(openspot setting get inputs)
 
 case "$1" in

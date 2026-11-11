@@ -3,6 +3,7 @@
 # detail=Open a git repo
 # size=small
 # read=sheet
+# uses=clipboard
 #
 # setting=folder
 #

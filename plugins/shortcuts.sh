@@ -5,6 +5,7 @@
 # read=panel
 # offers=search
 # drop=*
+# uses=clipboard
 . "$OPENSPOT_SH"
 input="$OPENSPOT_DATA/input"
 kept="$OPENSPOT_DATA/rows"

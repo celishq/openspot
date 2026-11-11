@@ -5,6 +5,7 @@
 # size=small
 # read=panel,sheet
 # offers=search
+# uses=app,settings
 
 # The spot and the key of a setting row, from setting:<spot>:<key>.
 setting() {

@@ -57,6 +57,8 @@ public struct Spot: Equatable, Sendable {
     public let view: String?
     /// The events that it raises with `openspot event emit`, which its header names in `emits` (B7).
     public let emits: [String]
+    /// The powers that its header names in `uses` (Z3).
+    public let uses: Set<SpotUse>
     /// The commands its header lists, which a person can give keys.
     public let offers: [CommandOffer]
     /// The values that it keeps with `openspot setting`, each with its title, which Settings lists.
@@ -100,9 +102,11 @@ public struct Spot: Equatable, Sendable {
         image: String? = nil,
         glyph: String? = nil,
         view: String? = nil,
-        emits: [String] = []
+        emits: [String] = [],
+        uses: Set<SpotUse> = []
     ) {
         self.emits = emits
+        self.uses = uses
         self.id = id
         self.name = name
         self.url = url

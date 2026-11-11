@@ -3,6 +3,7 @@
 # detail=Between languages
 # size=small
 # read=sheet
+# uses=clipboard
 . "$OPENSPOT_SH"
 export LC_ALL=en_US.UTF-8
 

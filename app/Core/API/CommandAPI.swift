@@ -12,17 +12,27 @@ public final class CommandAPI: @unchecked Sendable {
     /// The rows of `openspot spot stats` in the running app, or nil in a process with no app to reach.
     private let stats: (@Sendable () -> String)?
     private let app: (any RunningApp)?
+    /// The runs of the app, which know each spot's call by its token, or nil in a process with no app to reach (Z2).
+    private weak var runs: SpotRuns?
     private let calendar: CalendarCalls
     private let reminders: RemindersCalls
     private let keywords = GlyphKeywordCache()
 
-    public init(mac: any Mac, raise: (@Sendable (SpotEvent) async -> Void)? = nil, stats: (@Sendable () -> String)? = nil, app: (any RunningApp)? = nil) {
+    public init(mac: any Mac, raise: (@Sendable (SpotEvent) async -> Void)? = nil, stats: (@Sendable () -> String)? = nil, app: (any RunningApp)? = nil, runs: SpotRuns? = nil) {
         self.mac = mac
+        self.runs = runs
         self.raise = raise
         self.stats = stats
         self.app = app
         calendar = CalendarCalls(mac: mac)
         reminders = RemindersCalls(mac: mac)
+    }
+
+    /// Tells the runs of a spot's call that uses a power, so that a use that its header does not name shows (Z4). It does
+    /// nothing for the person's call, or for a call that needs no use.
+    public func note(_ call: CommandLineCall, environment: [String: String]) {
+        guard let runs, let caller = runs.tokens.caller(of: environment), let power = SpotPower(call, of: caller.id) else { return }
+        Task { @MainActor in runs.used(power, by: caller) }
     }
 
     /// The work that answers a call, or nil for a call that runs in a process of its own: one that draws, waits for the

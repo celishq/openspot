@@ -4,6 +4,7 @@
 # size=small
 # read=panel
 # offers=search
+# uses=clipboard
 export LC_ALL=en_US.UTF-8
 data="$OPENSPOT_DATA/snippets.json"
 . "$OPENSPOT_SH"

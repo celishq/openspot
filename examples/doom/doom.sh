@@ -5,6 +5,7 @@
 # read=panel
 # size=square
 # view=screen.swift
+# uses=network
 . "$OPENSPOT_SH"
 engine_commit=e257a09527062bfb986b6e5e0780839b6cbd5b71
 engine_sha=26f8f60daa6c6e4d3c01e5eac9fb700d592dede803d13ac848154ff356b2a2e7

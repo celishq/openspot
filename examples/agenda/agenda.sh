@@ -5,6 +5,7 @@
 # size=large
 # read=panel
 # every=60
+# uses=calendar
 #
 # setting=calendars
 # icon=calendar

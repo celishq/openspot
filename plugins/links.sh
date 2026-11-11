@@ -3,6 +3,7 @@
 # detail=Open a link
 # read=panel
 # offers=search
+# uses=network,clipboard
 export LC_ALL=en_US.UTF-8
 data="$OPENSPOT_DATA/links.json"
 icons="$OPENSPOT_DATA/icons"

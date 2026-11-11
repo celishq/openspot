@@ -75,6 +75,7 @@ open -a Calendar
 #!/bin/sh
 # title=Windows
 # icon=macwindow
+# uses=screen
 #
 # command=full
 # title=Full screen
@@ -111,9 +112,10 @@ place.
 # title=Calculator
 # icon=equal.square
 # answers=^[0-9(]
+# uses=clipboard
 case "$1" in
   read) [ -n "$2" ] && openspot calc solve "$2" ;;
-  open) printf %s "$2" | pbcopy && printf 'toast=Copied %s\n' "$2" ;;
+  open) printf %s "$2" | openspot clipboard copy && printf 'toast=Copied %s\n' "$2" ;;
 esac
 ```
 
@@ -624,7 +626,7 @@ socket of the API is a file with mode `0600`, so only the person's own processes
 | `app`       | `app login`, `app link`, `app quit`, `key set` and `menubar`                                           |
 | `update`    | `update check` and `update install`                                                                    |
 | `spots`     | `spot add`, `spot remove`, `spot on`, `spot off`, `spot new`, `spot run` and `spot log`                |
-| `settings`  | `setting list`, `setting change`, and `setting get` or `setting set` of another spot                   |
+| `settings`  | `setting list`, and `setting get`, `setting set` or `setting change` of another spot                   |
 | `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`       |
 | `clipboard` | `clipboard copy` and `clipboard paste`                                                                 |
 | `calendar`  | each call of `calendar` and `reminders`                                                                |

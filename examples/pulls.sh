@@ -3,6 +3,7 @@
 # icon=arrow.triangle.pull
 # detail=On GitHub
 # every=120
+# uses=network,clipboard
 export LC_ALL=en_US.UTF-8
 export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
 
