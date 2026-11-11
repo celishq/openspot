@@ -195,15 +195,14 @@ public struct ItemList: Equatable, Sendable {
     /// Takes a value that the person set in a slot of a row, so that it shows before the script answers (U10).
     public mutating func set(_ value: String, of slot: String, in run: String) {
         func changed(_ item: SpotItem) -> SpotItem {
-            guard item.run == run else { return item }
-            return SpotItem(
+            SpotItem(
                 title: item.title, subtitle: item.subtitle, run: item.run, picture: item.picture, parent: item.parent, hides: item.hides, keywords: item.keywords, shortcut: item.shortcut, isOn: item.isOn, tone: item.tone,
                 template: item.template, fields: item.fields.filter { $0.key != slot } + [.init(key: slot, value: value)],
                 file: item.file
             )
         }
-        all = all.map(changed)
-        shown = shown.map(changed)
+        for index in all.indices where all[index].run == run { all[index] = changed(all[index]) }
+        for index in shown.indices where shown[index].run == run { shown[index] = changed(shown[index]) }
     }
 
     /// Moves to another line and keeps the place in the line. A shorter last line takes its last item, and the first and the
