@@ -28,10 +28,11 @@ struct BatchCalls {
         }
     }
 
-    /// Whether a call reads stdin, which a batch holds, or can wait for the person, such as a pick of a colour.
+    /// Whether a call reads stdin, which a batch holds, can wait for the person, such as a pick of a colour, or runs a spot, a
+    /// check or a window.
     private static func isRefused(_ call: CommandLineCall) -> Bool {
         switch call {
-        case .clipboardCopy(nil), .translate, .colorPick, .folderPick, .screenShot, .screenRecordStart: true
+        case .clipboardCopy(nil), .translate, .colorPick, .folderPick, .screenShot, .screenRecordStart, .check, .checkJSON, .spotRun, .sandbox: true
         default: false
         }
     }

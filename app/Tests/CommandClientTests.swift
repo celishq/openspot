@@ -24,6 +24,8 @@ final class CommandClientTests: XCTestCase {
         func quit() async {}
         func open(_ id: String) async -> Bool { true }
         func review(_ id: String) async -> Bool { true }
+        func reveal(_ id: String) async -> Bool { true }
+        func sandbox(_ file: URL?, isCareful: Bool) async {}
 
         func changeSetting(_ key: String, of spot: String) async -> Bool {
             FileManager.default.createFile(atPath: folder.appendingPathComponent("started").path, contents: nil)

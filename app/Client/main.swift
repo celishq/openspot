@@ -79,7 +79,8 @@ func reach(_ config: String) -> Int32 {
     return descriptor
 }
 
-/// The request of this call as one JSON-RPC 2.0 line: its arguments, its working folder and its `OPENSPOT_*` variables.
+/// The request of this call as one JSON-RPC 2.0 line: its arguments, its working folder, its variables, and whether its
+/// stdin is a pipe or a file.
 func request() -> [UInt8] {
     let argv = CommandLine.arguments.dropFirst().map(JSON.quoted).joined(separator: ",")
     var folder = [CChar](repeating: 0, count: Int(PATH_MAX))
@@ -88,12 +89,14 @@ func request() -> [UInt8] {
     var entry = environ
     while let pair = entry.pointee {
         let text = String(cString: pair)
-        if text.hasPrefix("OPENSPOT_"), let mark = text.firstIndex(of: "=") {
+        if let mark = text.firstIndex(of: "=") {
             variables.append(JSON.quoted(String(text[..<mark])) + ":" + JSON.quoted(String(text[text.index(after: mark)...])))
         }
         entry = entry.advanced(by: 1)
     }
-    let line = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ask\",\"params\":{\"argv\":[\(argv)],\"cwd\":\(JSON.quoted(cwd)),\"env\":{\(variables.joined(separator: ","))}}}\n"
+    var info = stat()
+    let isPiped = fstat(STDIN_FILENO, &info) == 0 && (info.st_mode & S_IFMT == S_IFIFO || info.st_mode & S_IFMT == S_IFREG)
+    let line = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ask\",\"params\":{\"argv\":[\(argv)],\"cwd\":\(JSON.quoted(cwd)),\"env\":{\(variables.joined(separator: ","))},\"piped\":\(isPiped)}}\n"
     return Array(line.utf8)
 }
 

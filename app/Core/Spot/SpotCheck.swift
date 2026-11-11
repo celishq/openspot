@@ -5,11 +5,18 @@ public struct SpotCheck: Sendable {
     public let folder: SpotFolder
     public let timeout: TimeInterval
     public let views: ViewLibrary
+    /// The most uses that Careful mode leaves each read, or nil to run each one as the person (Z8).
+    let careful: Set<SpotUse>?
 
     public init(folder: SpotFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard()) {
+        self.init(folder: folder, timeout: timeout, views: views, careful: nil)
+    }
+
+    init(folder: SpotFolder, timeout: TimeInterval = 10, views: ViewLibrary = .standard(), careful: Set<SpotUse>?) {
         self.folder = folder
         self.timeout = timeout
         self.views = views
+        self.careful = careful
     }
 
     /// One fault, with the spot and the file that it is in when it has them.
@@ -31,13 +38,12 @@ public struct SpotCheck: Sendable {
     }
 
     /// Returns one line for each fault. No lines means that all plugins load and answer, and each view compiles.
-    @MainActor
     public func faults() async -> [String] {
         await findings().map(\.line)
     }
 
     /// Returns each fault with its spot and its file. None means that all plugins load and answer, and each view compiles.
-    @MainActor
+    /// Only the start of each read runs on the main thread.
     public func findings() async -> [Finding] {
         let scan: ScanResult
         do {
@@ -57,8 +63,10 @@ public struct SpotCheck: Sendable {
                 findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
             }
         }
-        let runs = SpotRuns()
-        for script in scan.scripts where script.read != nil {
+        let runs = await SpotRuns()
+        if careful != nil { await MainActor.run { runs.isCareful = true } }
+        for var script in scan.scripts where script.read != nil {
+            if let careful { script.uses.formIntersection(careful) }
             func found(_ fault: String) -> Finding { Finding(spot: script.id, file: script.url.path, fault: fault) }
             do {
                 let text = try await runs.answer(of: script, .read, limit: timeout)

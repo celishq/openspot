@@ -197,8 +197,8 @@ final class CommandAPITests: XCTestCase {
         XCTAssertTrue(answer.output.contains("Alpha"), answer.output)
     }
 
-    func testACallThatTheShellDoesHasNoWorkInCore() throws {
-        for arguments in [["render", "a.png"], ["spot", "run", "notes"], ["helper", "calc"], ["check"]] {
+    func testACallThatTheShellDoesOrThatNeedsTheAppHasNoWorkInCoreWithNoApp() throws {
+        for arguments in [["render", "a.png"], ["helper", "calc"], ["spot", "show", "notes"], ["sandbox"]] {
             let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: [:]))
             XCTAssertNil(CommandAPI(mac: host).work(for: call, input: { "" }, environment: [:]), arguments.joined(separator: " "))
         }

@@ -1,3 +1,4 @@
+import Foundation
 @testable import OpenspotCore
 
 /// The running app of a test. It counts each change of the config that the API reports, records each act that the API
@@ -46,6 +47,15 @@ actor FakeRunningApp: RunningApp {
     func review(_ id: String) -> Bool {
         opened.append("review \(id)")
         return id != "gone"
+    }
+
+    func reveal(_ id: String) -> Bool {
+        opened.append("reveal \(id)")
+        return id != "gone"
+    }
+
+    func sandbox(_ file: URL?, isCareful: Bool) {
+        opened.append("sandbox \(file?.path ?? "") careful=\(isCareful)")
     }
 
     func changeSetting(_ key: String, of spot: String) -> Bool {

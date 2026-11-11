@@ -61,6 +61,44 @@ struct SpotCalls {
         }
     }
 
+    /// Opens the panel with the spot selected, or returns nil when no app runs, so that a process of its own asks for it.
+    func show(_ id: String) -> CommandAPI.Work? {
+        guard let app else { return nil }
+        return CommandAnswer.work {
+            guard await app.reveal(id) else { throw SpotError.failed(1, "Openspot has no spot \(id). Run `openspot check` to see each file that does not load.") }
+            return "Openspot shows \(id).\n"
+        }
+    }
+
+    /// Makes one call of an installed spot, prints each frame as it comes with a `---` line between frames and its stderr
+    /// at its end, and exits with the code of the script. It runs with the working folder and the variables of the caller,
+    /// and `input` is its stdin, or nil when the caller's stdin is no pipe or file. `careful` is the most uses that Careful
+    /// mode leaves the script, or nil to run it as the person (Z8).
+    func run(_ id: String, _ arguments: [String], input: (@Sendable () async -> String)?, careful: Set<SpotUse>?, output: CommandOutput) -> CommandAPI.Work {
+        { [environment, runs] in
+            let folder = SpotFolder.standard(environment: environment)
+            let found: Spot?
+            do {
+                found = try folder.scan().scripts.first { $0.id == id }
+            } catch {
+                return CommandAnswer(errors: "\((error as? SpotError)?.reason ?? error.localizedDescription)\n", code: 1)
+            }
+            guard var spot = found else {
+                return CommandAnswer(errors: "Openspot has no spot \(id) in \(folder.url.path). Run `openspot check` to see each file that does not load.\n", code: 1)
+            }
+            if let careful { spot.uses.formIntersection(careful) }
+            let text = await input?()
+            let place = environment["PWD"].map { URL(fileURLWithPath: $0, isDirectory: true) }
+            let run = TerminalRun(spot: spot, arguments: arguments, input: text, careful: careful == nil ? nil : spot.uses, tokens: runs?.tokens, environment: environment, folder: place)
+            var first = true
+            let end = await run.start { frame in
+                output.print((first ? "" : "---\n") + frame)
+                first = false
+            }
+            return CommandAnswer(errors: end.errors, code: end.code)
+        }
+    }
+
     func review(_ id: String) -> CommandAPI.Work {
         guard let app else { return CommandAnswer.notRunning }
         return CommandAnswer.work {

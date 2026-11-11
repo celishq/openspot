@@ -22,6 +22,10 @@ public final class ScriptProcess: @unchecked Sendable {
     /// The sandbox of Careful mode, or nil to run as the person.
     private let careful: CarefulMode?
     private let variables: [String: String]
+    /// The environment that the script starts from in place of the app's, such as that of a caller of `spot run`.
+    private let base: [String: String]?
+    /// The working folder of the script in place of the app's.
+    private let folder: URL?
     private let stopPause: TimeInterval
     private let input = Pipe()
     private let output = Pipe()
@@ -51,9 +55,13 @@ public final class ScriptProcess: @unchecked Sendable {
     /// `limit` is the time the script has to its first frame or its end. With none, it has no limit. `stopPause` is the time
     /// between each step of a stop. `variables` add to its environment. `errorLimit` is how many of the last bytes of stderr
     /// it keeps, and nil keeps all. `careful` runs it in Careful mode with these uses (Z8), and nil runs it as the person.
-    /// `name` is its first argument in place of its path, which `sandbox-exec` in Careful mode does not pass on.
-    public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil) {
+    /// `name` is its first argument in place of its path, which `sandbox-exec` in Careful mode does not pass on. `base` and
+    /// `folder` start it with another environment and working folder than the app's, and Careful mode still takes its
+    /// folders from the app's.
+    public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil) {
         self.name = name
+        self.base = base
+        self.folder = folder
         self.careful = careful.map(CarefulMode.init)
         errorText = ErrorTail(limit: errorLimit)
         self.dataName = dataName
@@ -112,7 +120,10 @@ public final class ScriptProcess: @unchecked Sendable {
             text = given
             hasInput = given != nil
         }
-        let environment = Self.environment(base: ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", dataName: dataName).merging(variables) { _, new in new }
+        let app = Bundle.main.executablePath ?? ""
+        let own = Self.environment(base: ProcessInfo.processInfo.environment, app: app, dataName: dataName).merging(variables) { _, new in new }
+        let environment = base.map { Self.environment(base: $0, app: app, dataName: dataName).merging(variables) { _, new in new } } ?? own
+        let fence = careful?.words(in: own) ?? []
         let errors = errorOutput
         signal(SIGPIPE, SIG_IGN)
         guard !isStopped else {
@@ -121,7 +132,7 @@ public final class ScriptProcess: @unchecked Sendable {
         }
         let started: pid_t
         do {
-            started = try spawn(input: hasInput ? input.fileHandleForReading : nil, output: output.fileHandleForWriting, errors: errors.fileHandleForWriting, environment: environment)
+            started = try spawn(input: hasInput ? input.fileHandleForReading : nil, output: output.fileHandleForWriting, errors: errors.fileHandleForWriting, environment: environment, fence: fence)
         } catch {
             abandon()
             return finish(throwing: error)
@@ -373,8 +384,8 @@ public final class ScriptProcess: @unchecked Sendable {
     }
 
     /// Starts the program in a process group of its own, with these ends of pipes as its stdin, stdout and stderr, and with
-    /// no other open file and no signal that the app ignores.
-    private func spawn(input: FileHandle?, output: FileHandle, errors: FileHandle, environment: [String: String]) throws -> pid_t {
+    /// no other open file and no signal that the app ignores. `fence` holds the words of Careful mode before the program.
+    private func spawn(input: FileHandle?, output: FileHandle, errors: FileHandle, environment: [String: String], fence wrapper: [String]) throws -> pid_t {
         var actions: posix_spawn_file_actions_t?
         posix_spawn_file_actions_init(&actions)
         defer { posix_spawn_file_actions_destroy(&actions) }
@@ -385,6 +396,7 @@ public final class ScriptProcess: @unchecked Sendable {
         }
         posix_spawn_file_actions_adddup2(&actions, output.fileDescriptor, STDOUT_FILENO)
         posix_spawn_file_actions_adddup2(&actions, errors.fileDescriptor, STDERR_FILENO)
+        if let folder { posix_spawn_file_actions_addchdir_np(&actions, folder.path) }
         var attributes: posix_spawnattr_t?
         posix_spawnattr_init(&attributes)
         defer { posix_spawnattr_destroy(&attributes) }
@@ -396,7 +408,6 @@ public final class ScriptProcess: @unchecked Sendable {
         var none = sigset_t()
         sigemptyset(&none)
         posix_spawnattr_setsigmask(&attributes, &none)
-        let wrapper = careful?.words(in: environment) ?? []
         let words = (wrapper.isEmpty ? [name ?? url.path] + arguments : wrapper + [url.path] + arguments).map { strdup($0) } + [nil]
         let pairs = environment.map { strdup("\($0.key)=\($0.value)") } + [nil]
         defer { (words + pairs).forEach { free($0) } }

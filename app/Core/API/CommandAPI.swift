@@ -51,14 +51,15 @@ public final class CommandAPI: @unchecked Sendable {
         return call
     }
 
-    /// The work that answers a call, or nil for a call that runs in a process of its own: one that draws, or runs a helper,
-    /// a spot or a check of a folder, and in Careful mode a spot's capture into a file that it
-    /// names, which only its sandbox can fence (Z8). `input` reads stdin, and only a call that takes stdin reads it. A call
-    /// prints to `output` as it runs, and with none, its answer holds all that it printed.
-    public func work(for call: CommandLineCall, input: @escaping @Sendable () async -> String, environment: [String: String], output: CommandOutput? = nil) -> Work? {
+    /// The work that answers a call, or nil for a call that runs in a process of its own: one that draws a picture or runs
+    /// a helper, a show or a sandbox with no app to reach, and in Careful mode a spot's capture into a file that it names,
+    /// which only its sandbox can fence (Z8). `input` reads stdin, and only a call that takes stdin reads it. `isPiped` says
+    /// whether stdin is a pipe or a file, which `spot run` passes on. A call prints to `output` as it runs, and with none,
+    /// its answer holds all that it printed.
+    public func work(for call: CommandLineCall, input: @escaping @Sendable () async -> String, environment: [String: String], isPiped: Bool = true, output: CommandOutput? = nil) -> Work? {
         guard let output else {
             let kept = CommandOutput()
-            guard let work = work(for: call, input: input, environment: environment, output: kept) else { return nil }
+            guard let work = work(for: call, input: input, environment: environment, isPiped: isPiped, output: kept) else { return nil }
             return { kept.answer(ending: await work()) }
         }
         let isRead = environment["OPENSPOT_REASON"] != nil
@@ -75,7 +76,12 @@ public final class CommandAPI: @unchecked Sendable {
         case .refused(let line): return { CommandAnswer(errors: "\(line)\n", code: 1) }
         case .guide: return GuideCalls(mac: mac).text()
         case .promptNew(let words): return PromptCalls(mac: mac, environment: environment).new(words)
-        case .checkSheet: return CheckCalls(input: input).sheet()
+        case .checkSheet: return CheckCalls(input: input, environment: environment).sheet()
+        case .check(let path): return CheckCalls(input: input, environment: environment).folder(path, json: false, careful: fence(environment))
+        case .checkJSON(let path): return CheckCalls(input: input, environment: environment).folder(path, json: true, careful: fence(environment))
+        case .spotRun(let id, let arguments): return spots.run(id, arguments, input: isPiped ? input : nil, careful: fence(environment), output: output)
+        case .spotShow(let id): return spots.show(id)
+        case .sandbox(let path): return SandboxCalls(environment: environment, app: app).open(path, isCareful: runs?.tokens.isCareful == true)
         case .settingGet(let spot, let key): return settings.get(key, of: spot)
         case .settingSet(let spot, let key, let value): return settings.set(key, of: spot, to: value)
         case .settingList(let frame): return settings.list(frame: frame)
@@ -131,9 +137,16 @@ public final class CommandAPI: @unchecked Sendable {
         case .translateLanguages: return { [mac] in CommandAnswer(output: await mac.translationLanguages()) }
         case .colorPick: return { [mac] in CommandAnswer(output: await mac.pickColor()) }
         case .folderPick: return { [mac] in CommandAnswer(output: await mac.pickFolder()) }
-        case .check, .checkJSON, .spotRun, .spotShow, .renderSpot, .render, .renderCard, .sandbox, .helper, .glyphBook:
+        case .renderSpot, .render, .renderCard, .helper, .glyphBook:
             return nil
         }
+    }
+
+    /// The most uses that Careful mode leaves the scripts that a call starts: those of the spot that calls, or all for the
+    /// person. Nil when Careful mode is off (Z8).
+    private func fence(_ environment: [String: String]) -> Set<SpotUse>? {
+        guard let runs, runs.tokens.isCareful else { return nil }
+        return runs.tokens.caller(of: environment)?.uses ?? Set(SpotUse.allCases)
     }
 
     /// Whether the call comes from a spot that Careful mode keeps from writing outside its own folders (Z8).

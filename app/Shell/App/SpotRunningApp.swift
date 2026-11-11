@@ -38,6 +38,14 @@ struct SpotRunningApp: RunningApp {
         await model.reviewCore(id)
     }
 
+    func reveal(_ id: String) async -> Bool {
+        await model.reveal(id)
+    }
+
+    func sandbox(_ file: URL?, isCareful: Bool) async {
+        await SpotSandbox.show(path: file?.path, isCareful: isCareful)
+    }
+
     func changeSetting(_ key: String, of spot: String) async -> Bool {
         await model.changeSetting(key, of: spot)
     }

@@ -58,7 +58,7 @@ public struct Spot: Equatable, Sendable {
     /// The events that it raises with `openspot event emit`, which its header names in `emits` (B7).
     public let emits: [String]
     /// The uses that its header names in `uses` (Z3).
-    public let uses: Set<SpotUse>
+    public internal(set) var uses: Set<SpotUse>
     /// The commands its header lists, which a person can give keys.
     public let offers: [CommandOffer]
     /// The values that it keeps with `openspot setting`, each with its title, which Settings lists.

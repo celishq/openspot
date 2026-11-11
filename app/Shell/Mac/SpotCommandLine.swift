@@ -12,7 +12,10 @@ enum SpotCommandLine {
         enterBundle()
         let environment = ProcessInfo.processInfo.environment.merging(["PWD": FileManager.default.currentDirectoryPath]) { _, real in real }
         let output = CommandOutput { text, isError in (isError ? FileHandle.standardError : FileHandle.standardOutput).write(Data(text.utf8)) }
-        if let work = CommandAPI(mac: SpotMac()).work(for: call, input: { standardInput }, environment: environment, output: output) {
+        if runsScripts(call) { TerminalStop.watch() }
+        var info = stat()
+        let isPiped = fstat(0, &info) == 0 && (info.st_mode & S_IFMT == S_IFIFO || info.st_mode & S_IFMT == S_IFREG)
+        if let work = CommandAPI(mac: SpotMac()).work(for: call, input: { standardInput }, environment: environment, isPiped: isPiped, output: output) {
             Task {
                 let answer = await work()
                 output.print(answer.output)
@@ -27,15 +30,6 @@ enum SpotCommandLine {
             dispatchMain()
         }
         switch call {
-        case .check(let path):
-            TerminalStop.watch()
-            check(path)
-        case .checkJSON(let path):
-            TerminalStop.watch()
-            check(path, json: true)
-        case .spotRun(let id, let arguments):
-            TerminalStop.watch()
-            spotRun(id, arguments)
         case .spotShow(let id):
             SpotShowLink.send(id)
         case .renderSpot(let id, let size?, let path):
@@ -80,54 +74,6 @@ enum SpotCommandLine {
         String(decoding: FileHandle.standardInput.readDataToEndOfFile(), as: UTF8.self)
     }
 
-    /// Reports the faults of a plugins folder, or of the standard one, in lines or as JSON, and exits with 1 when there are
-    /// any.
-    private static func check(_ path: String?, json: Bool = false) -> Never {
-        let folder = path.map { SpotFolder(url: URL(fileURLWithPath: $0, isDirectory: true)) } ?? .standard()
-        Task {
-            let findings = await SpotCheck(folder: folder).findings()
-            if json {
-                print(SpotCheck.json(findings), terminator: "")
-            } else {
-                findings.forEach { print($0.line) }
-                print(findings.isEmpty ? "No faults in \(folder.url.path)." : "\(findings.count) faults in \(folder.url.path).")
-            }
-            exit(findings.isEmpty ? 0 : 1)
-        }
-        dispatchMain()
-    }
-
-    /// The installed spot with this ID, which a scan of the standard folder finds.
-    private static func spot(_ id: String) throws -> Spot {
-        let folder = SpotFolder.standard()
-        guard let spot = try folder.scan().scripts.first(where: { $0.id == id }) else {
-            throw SpotError.fault("Openspot has no spot \(id) in \(folder.url.path). Run `openspot check` to see each file that does not load.")
-        }
-        return spot
-    }
-
-    /// Makes one call of a spot, prints each frame with a `---` line between frames and its stderr as it was, and exits with
-    /// the code of the script. Stdin goes to the script when it is a file or a pipe.
-    private static func spotRun(_ id: String, _ arguments: [String]) -> Never {
-        var info = stat()
-        let input = fstat(0, &info) == 0 && (info.st_mode & S_IFMT == S_IFIFO || info.st_mode & S_IFMT == S_IFREG) ? standardInput : nil
-        Task {
-            do {
-                var first = true
-                let end = await TerminalRun(spot: try spot(id), arguments: arguments, input: input).start { text in
-                    FileHandle.standardOutput.write(Data(((first ? "" : "---\n") + text).utf8))
-                    first = false
-                }
-                FileHandle.standardError.write(Data(end.errors.utf8))
-                exit(end.code)
-            } catch {
-                FileHandle.standardError.write(Data("\(SpotsModel.reason(error))\n".utf8))
-                exit(1)
-            }
-        }
-        dispatchMain()
-    }
-
     /// Draws the sheet of a spot that the panel shows, such as an installed spot or one that ships with the app, from its
     /// read, with its view. It waits for the read on the main thread, which the window of the picture needs.
     private static func renderSheet(of id: String, to path: String) -> Never {
@@ -152,6 +98,14 @@ enum SpotCommandLine {
             exit(1)
         }
         SpotSheetPicture.run(text: text, path: path, view: spot.view, spot: spot)
+    }
+
+    /// Whether a call runs scripts, which Ctrl-C stops before the command exits with 130 (S13).
+    private static func runsScripts(_ call: CommandLineCall) -> Bool {
+        switch call {
+        case .check, .checkJSON, .spotRun: true
+        default: false
+        }
     }
 
     /// Whether a call needs the event loop of an app, for a pick or for an overlay over the screens.
