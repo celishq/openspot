@@ -76,7 +76,7 @@ final class GridExampleTests: SamplePluginsCase {
         try await withPrivateHome { folder in
             _ = try self.fakeGrid("echo '0 0 1/2 1'", in: folder)
 
-            _ = try await grid.perform(.run, timeout: 5)
+            _ = try await grid.perform(.open, timeout: 5)
 
             XCTAssertEqual(self.calls(in: folder), "window move 0 0 1/2 1\n")
         }
@@ -87,7 +87,7 @@ final class GridExampleTests: SamplePluginsCase {
         try await withPrivateHome { folder in
             _ = try self.fakeGrid("true", in: folder)
 
-            _ = try await grid.perform(.run, timeout: 5)
+            _ = try await grid.perform(.open, timeout: 5)
 
             XCTAssertEqual(self.calls(in: folder), "")
         }
@@ -105,7 +105,7 @@ final class GridExampleTests: SamplePluginsCase {
             defer { waiting.terminate(); waiting.waitUntilExit() }
             try String(waiting.processIdentifier).write(to: data.appendingPathComponent("grid.pid"), atomically: true, encoding: .utf8)
 
-            _ = try await grid.perform(.run, timeout: 5)
+            _ = try await grid.perform(.open, timeout: 5)
             for _ in 0..<100 where !FileManager.default.fileExists(atPath: shown.path) {
                 try await Task.sleep(for: .milliseconds(50))
             }

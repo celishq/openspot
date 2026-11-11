@@ -2,8 +2,7 @@
 # title=Grid
 # icon=square.grid.3x3
 # detail=Drag over a grid to place the front window
-# shortcut=w
-# read=launch,panel
+# read=panel
 helper="$OPENSPOT_DATA/grid"
 pidfile="$OPENSPOT_DATA/grid.pid"
 source="$(dirname "$0")/grid.swift"
@@ -29,7 +28,7 @@ case "$1" in
   read)
     [ -z "${OPENSPOT_REASON-}" ] || waiting || (wait_here "$PPID" > /dev/null 2>&1 &)
     ;;
-  run)
+  open)
     if waiting; then
       kill -USR1 "$pid"
       exit 0
