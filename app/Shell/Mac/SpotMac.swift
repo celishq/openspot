@@ -2,8 +2,8 @@ import AppKit
 import OpenspotCore
 
 /// What the API and the runs reach through the Mac: EventKit, Calendar, the app that opens a link, the settings of the app,
-/// and the events of NSWorkspace and the general pasteboard: the wake of the Mac, another app that comes to the front,
-/// with its bundle ID, and the wake of the screen (B2).
+/// the events of NSWorkspace and the general pasteboard: the wake of the Mac, another app that comes to the front, with its
+/// bundle ID, and the wake of the screen (B2), and the clipboard.
 @MainActor
 final class SpotMac: Mac {
     private var observers: [NSObjectProtocol] = []
@@ -30,6 +30,22 @@ final class SpotMac: Mac {
 
     nonisolated var link: CommandLink? {
         AppCommandLink.item
+    }
+
+    nonisolated func copy(text: String) throws {
+        try SpotClipboard.copy(text: text)
+    }
+
+    nonisolated func copy(file: URL) throws {
+        try SpotClipboard.copy(file)
+    }
+
+    nonisolated func clipboardText() -> String {
+        SpotClipboard.text()
+    }
+
+    nonisolated func paste() throws {
+        try SpotClipboard.paste()
     }
 
     var clipboardCount: Int {

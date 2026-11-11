@@ -52,14 +52,15 @@ public final class CommandAPI: @unchecked Sendable {
     }
 
     /// The work that answers a call, or nil for a call that runs in a process of its own: one that draws, waits for the
-    /// person, reaches the screen, a window or the clipboard, or runs a helper, a spot or a check of a folder. `input`
-    /// reads stdin, and only a call that takes stdin reads it.
+    /// person, reaches the screen or a window, or runs a helper, a spot or a check of a folder. `input` reads stdin, and
+    /// only a call that takes stdin reads it.
     public func work(for call: CommandLineCall, input: @escaping @Sendable () async -> String, environment: [String: String]) -> Work? {
         let isRead = environment["OPENSPOT_REASON"] != nil
         let spots = SpotCalls(environment: environment, app: app, runs: runs)
         let settings = SettingCalls(environment: environment, app: app)
         let keys = KeyCalls(environment: environment, app: app)
         let apps = AppCalls(mac: mac, environment: environment, app: app)
+        let clipboard = ClipboardCalls(mac: mac, environment: environment)
         switch call {
         case .help: return HelpCalls().list()
         case .guideOf(let noun): return HelpCalls().guide(of: noun)
@@ -106,8 +107,11 @@ public final class CommandAPI: @unchecked Sendable {
         case .remindersAdd(let words, let isDry): return reminders.add(words, isDry: isDry, isRead: isRead)
         case .remindersDone(let id, let isDone): return reminders.done(id, isDone, isRead: isRead)
         case .remindersShow(let id): return reminders.show(id, isRead: isRead)
+        case .clipboardCopy(let path): return clipboard.copy(path, input: input)
+        case .clipboardRead: return clipboard.read()
+        case .clipboardPaste: return clipboard.paste()
         case .check, .checkJSON, .spotRun, .spotShow, .renderSpot, .render, .renderCard, .sandbox, .colorPick, .folderPick,
-             .clipboardCopy, .clipboardPaste, .clipboardRead, .translate, .translateLanguages, .windowFrame, .windowMove, .screenSources,
+             .translate, .translateLanguages, .windowFrame, .windowMove, .screenSources,
              .screenShot, .screenRecordStart, .screenRecordStop, .screenRecordStatus, .helper, .glyphBook:
             return nil
         }

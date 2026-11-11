@@ -4,6 +4,9 @@ import OpenspotCore
 /// The `openspot` command. It does one call, prints plain text and exits, with no window of its own.
 @MainActor
 enum SpotCommandLine {
+    /// The time that posted key events need to leave the process. An exit before it drops them.
+    private static let postPause: Duration = .milliseconds(100)
+
     /// Does the call: the work of the API when Core has it, or the work of the Shell, and exits.
     static func run(_ call: CommandLineCall) -> Never {
         enterBundle()
@@ -12,6 +15,7 @@ enum SpotCommandLine {
                 let answer = await work()
                 FileHandle.standardOutput.write(Data(answer.output.utf8))
                 FileHandle.standardError.write(Data(answer.errors.utf8))
+                if call == .clipboardPaste { try? await Task.sleep(for: postPause) }
                 exit(answer.code)
             }
             dispatchMain()
@@ -21,14 +25,6 @@ enum SpotCommandLine {
             SpotColorPick.run()
         case .folderPick:
             SpotFolderPick.run()
-        case .clipboardCopy(let path?):
-            SpotClipboard.copy(path)
-        case .clipboardCopy(nil):
-            SpotClipboard.copy(text: standardInput)
-        case .clipboardPaste:
-            SpotClipboard.paste()
-        case .clipboardRead:
-            SpotClipboard.read()
         case .check(let path):
             TerminalStop.watch()
             check(path)

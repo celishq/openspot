@@ -1,7 +1,8 @@
 import Foundation
 
 /// What the Mac gives through the frameworks that Core does not import: EventKit, the apps that open, the settings of the
-/// app, and the events of the Mac with the count of changes of the clipboard (B2). A test gives a Mac of its own.
+/// app, the events of the Mac with the count of changes of the clipboard (B2), and the clipboard. A test gives a Mac of its
+/// own. A member with no `@MainActor` runs on the thread of its call, never on the main thread of the app.
 public protocol Mac: AnyObject, Sendable {
     func eventStore() -> any EventStore
     func reminderStore() -> any ReminderStore
@@ -19,6 +20,14 @@ public protocol Mac: AnyObject, Sendable {
     @MainActor func listen(_ heard: @escaping @MainActor (SpotEvent) -> Void)
     /// The count of changes of the clipboard, which each copy makes larger.
     @MainActor var clipboardCount: Int { get }
+    /// Puts the text on the clipboard.
+    func copy(text: String) throws
+    /// Puts the file on the clipboard as Finder copies it, with the picture of an image.
+    func copy(file: URL) throws
+    /// The text on the clipboard, or nothing when it holds none.
+    func clipboardText() -> String
+    /// Presses `⌘V` in the front app.
+    func paste() throws
 }
 
 extension Mac {
@@ -28,4 +37,8 @@ extension Mac {
     /// A Mac with no events hears none.
     @MainActor public func listen(_ heard: @escaping @MainActor (SpotEvent) -> Void) {}
     @MainActor public var clipboardCount: Int { 0 }
+    public func copy(text: String) throws { throw SpotError.fault("This Mac has no clipboard.") }
+    public func copy(file: URL) throws { throw SpotError.fault("This Mac has no clipboard.") }
+    public func clipboardText() -> String { "" }
+    public func paste() throws { throw SpotError.fault("This Mac has no clipboard.") }
 }

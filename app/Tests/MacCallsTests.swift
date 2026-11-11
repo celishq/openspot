@@ -1,0 +1,89 @@
+import XCTest
+@testable import OpenspotCore
+
+/// Proves that the running app answers the calls of the clipboard, the windows, the screen, translation and the picks
+/// through its socket, with its own Mac, so that the command starts no second app for them (S1).
+final class MacCallsTests: XCTestCase {
+    /// A Mac that keeps each act that a call asks of it, as a line.
+    private final class Host: Mac, @unchecked Sendable {
+        private let lock = NSLock()
+        private var kept: [String] = []
+
+        var acts: [String] { lock.withLock { kept } }
+
+        func keep(_ act: String) {
+            lock.withLock { kept.append(act) }
+        }
+
+        func eventStore() -> any EventStore { FakeEventStore() }
+        func reminderStore() -> any ReminderStore { FakeReminderStore() }
+        func showCalendar(at time: Date) throws {}
+        func open(_ link: URL) -> Bool { true }
+
+        func copy(text: String) throws { keep("copy \(text)") }
+        func copy(file: URL) throws { keep("copy file \(file.path)") }
+        func clipboardText() -> String { "kept text" }
+        func paste() throws { keep("paste") }
+    }
+
+    private var folder: URL!
+    private var socket: CommandSocket?
+    private let host = Host()
+
+    private var config: URL { folder.appendingPathComponent("config") }
+    private var client: URL { folder.appendingPathComponent("A.app/Contents/Helpers/openspot") }
+
+    override func setUpWithError() throws {
+        let temp = try XCTUnwrap(realpath(FileManager.default.temporaryDirectory.path, nil))
+        defer { free(temp) }
+        folder = URL(fileURLWithPath: String(cString: temp), isDirectory: true).appendingPathComponent("mc-\(UUID().uuidString.prefix(8))", isDirectory: true)
+        try FileManager.default.createDirectory(at: client.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("A.app/Contents/MacOS"), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: config, withIntermediateDirectories: true)
+        let built = Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot")
+        try FileManager.default.copyItem(at: built, to: client)
+        try "#!/bin/sh\necho \"alone: $*\"\n".writeScript(to: folder.appendingPathComponent("A.app/Contents/MacOS/Openspot"))
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: host))
+    }
+
+    override func tearDownWithError() throws {
+        socket?.close()
+        try? FileManager.default.removeItem(at: folder)
+    }
+
+    /// Runs the command with the arguments and stdin in a folder, and returns what it prints and its exit code.
+    private func run(_ arguments: [String], input: String = "", in place: URL? = nil) throws -> (output: String, errors: String, code: Int32) {
+        let process = Process()
+        let output = Pipe()
+        let errors = Pipe()
+        let stdin = Pipe()
+        process.executableURL = client
+        process.arguments = arguments
+        process.environment = ["OPENSPOT_CONFIG": config.path, "PATH": "/usr/bin:/bin"]
+        process.currentDirectoryURL = place ?? folder
+        process.standardOutput = output
+        process.standardError = errors
+        process.standardInput = stdin
+        try process.run()
+        stdin.fileHandleForWriting.write(Data(input.utf8))
+        try stdin.fileHandleForWriting.close()
+        let printed = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        let said = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        process.waitUntilExit()
+        return (printed, said, process.terminationStatus)
+    }
+
+    func testTheAppCopiesStdinAndAFileOfTheCallersFolderReadsAndPastes() throws {
+        let place = folder.appendingPathComponent("notes", isDirectory: true)
+        try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
+
+        let copied = try run(["clipboard", "copy"], input: "hello")
+        let file = try run(["clipboard", "copy", "list.txt"], in: place)
+        let read = try run(["clipboard", "read"])
+        let pasted = try run(["clipboard", "paste"])
+
+        XCTAssertEqual([copied.code, file.code, read.code, pasted.code], [0, 0, 0, 0], copied.output + file.output + pasted.output)
+        XCTAssertEqual(read.output, "kept text")
+        XCTAssertEqual(host.acts, ["copy hello", "copy file \(place.path)/list.txt", "paste"])
+    }
+}

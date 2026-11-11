@@ -182,7 +182,7 @@ final class CommandAPITests: XCTestCase {
     }
 
     func testACallThatTheShellDoesHasNoWorkInCore() throws {
-        for arguments in [["color", "pick"], ["render", "a.png"], ["spot", "run", "notes"], ["clipboard", "paste"], ["clipboard", "read"], ["helper", "calc"], ["check"]] {
+        for arguments in [["color", "pick"], ["render", "a.png"], ["spot", "run", "notes"], ["helper", "calc"], ["check"]] {
             let call = try XCTUnwrap(CommandLineCall(arguments: arguments, environment: [:]))
             XCTAssertNil(CommandAPI(mac: host).work(for: call, input: { "" }, environment: [:]), arguments.joined(separator: " "))
         }
