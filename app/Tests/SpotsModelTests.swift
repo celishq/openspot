@@ -757,6 +757,31 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(host.confirms.contains("Picked 1"))
     }
 
+    func testReturnOnAKeptRowOfASlowInlineSpotWaitsForTheNewestAnswer() async throws {
+        try """
+        // title=Calc
+        // mode=inline
+        // answers=^[0-9]
+        function read(reason, text) {
+          if (text === "12") { const end = Date.now() + 300; while (Date.now() < end) {} }
+          return `row=${text}\\ntitle=Is ${text}\\n`
+        }
+        function open(id) { return `toast=Picked ${id}\\n` }
+        """.write(to: plugins.appendingPathComponent("calc.js"), atomically: true, encoding: .utf8)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.searchText = "1"
+        try await wait("the first answer") { model.visible.first?.id == "calc\n1" }
+
+        model.searchText = "12"
+        XCTAssertEqual(model.visible.first?.id, "calc\n1")
+        model.runSelected()
+
+        try await wait("the pick of the newest answer") { host.confirms.contains("Picked 12") }
+        XCTAssertFalse(host.confirms.contains("Picked 1"))
+    }
+
     func testAnAnswerAndARowOfItsSpotWithOneIdShowOnce() async throws {
         try script("both", header: "title=Both\nread=panel\noffers=rows\nanswers=^[0-9]", "printf 'row=7\\ntitle=7 days\\n'")
         model.reload()

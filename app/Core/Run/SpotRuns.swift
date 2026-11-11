@@ -48,6 +48,8 @@ public final class SpotRuns {
     /// Which `answers` patterns match the text of the main search.
     @ObservationIgnored var answerMatches = AnswerMatches()
     @ObservationIgnored private var processes: [ScriptProcess] = []
+    /// The API in the app, which `openspot.call` of a JavaScript spot asks, or nil to run the `openspot` command.
+    @ObservationIgnored public var api: CommandAPI?
     /// The record of each call that runs once, or nil to keep none.
     @ObservationIgnored private let log: CallLog?
 
@@ -318,6 +320,23 @@ public final class SpotRuns {
         if let sheet = command.host {
             let (stream, halt) = answered { try await sheet.answer(action.arguments) }
             return (stream, halt, nil)
+        }
+        if command.isInline {
+            let script = InlineScript(spot: command, api: api)
+            let call = InlineCall(arguments: action.arguments, input: input)
+            script.send(call)
+            let (stream, halt) = answered {
+                defer { script.end() }
+                switch await call.outcome() {
+                case .frame(let text): return text
+                case .failed(let error): throw error
+                case .dropped: return ""
+                }
+            }
+            return (stream, {
+                call.stop()
+                halt()
+            }, nil)
         }
         let sent = action.sent(input: input)
         let process = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: command.dataName, variables: variables.merging(["OPENSPOT_ID": command.id]) { given, _ in given })

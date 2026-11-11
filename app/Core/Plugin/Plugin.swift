@@ -3,6 +3,7 @@ import Foundation
 /// What one file in the plugin folder gives: an executable, or a TOML file of widgets.
 public struct Plugin: Equatable, Sendable {
     public static let widgetExtension = "toml"
+    public static let inlineExtension = "js"
 
     public let id: String
     public let commands: [Spot]
@@ -18,7 +19,7 @@ public struct Plugin: Equatable, Sendable {
         if url.pathExtension == Self.widgetExtension {
             let document = try TomlDocument(text: try String(contentsOf: url, encoding: .utf8))
             self.init(id: id, commands: try (document.arrays["widgets"] ?? []).map { try Self.widget($0, id: id, url: url) })
-        } else if FileManager.default.isExecutableFile(atPath: url.path) {
+        } else if url.pathExtension == Self.inlineExtension || FileManager.default.isExecutableFile(atPath: url.path) {
             try self.init(script: url, header: PluginHeader(url: url).block, id: id)
         } else {
             return nil
@@ -39,8 +40,15 @@ public struct Plugin: Equatable, Sendable {
         }
         try Self.refuseOldKeys(header, of: name)
         let mode = header.value("mode") ?? "once"
-        guard ["once", "stay", "always"].contains(mode) else {
-            throw PluginError.fault("\(name) has an unknown mode: \(mode). Use once, stay or always")
+        guard ["once", "stay", "always", "inline"].contains(mode) else {
+            throw PluginError.fault("\(name) has an unknown mode: \(mode). Use once, stay, always or inline")
+        }
+        let isInline = mode == "inline"
+        if isInline, url.pathExtension != Self.inlineExtension {
+            throw PluginError.fault("\(name) runs inline, so it needs a .js file with its header in // lines")
+        }
+        if !isInline, url.pathExtension == Self.inlineExtension, !FileManager.default.isExecutableFile(atPath: url.path) {
+            throw PluginError.fault("\(name) needs mode=inline to run inside Openspot")
         }
         let stays = mode == "stay" || mode == "always"
         let sizeName = header.value("size") ?? "wide"
@@ -88,6 +96,7 @@ public struct Plugin: Equatable, Sendable {
             answers: answers,
             stays: stays,
             staysAlways: mode == "always",
+            isInline: isInline,
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             offersFloat: places.contains("float"),
             dataName: id.split(separator: "/").first.map(String.init),

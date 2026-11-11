@@ -251,15 +251,16 @@ public final class SpotRun {
     nonisolated deinit {}
 
     private static func link(for command: Spot, runs: SpotRuns) -> ScriptLink {
-        command.stays ? StayLink(runs: runs) : OnceLink(runs: runs)
+        if command.isInline { return InlineLink(runs: runs) }
+        return command.stays ? StayLink(runs: runs) : OnceLink(runs: runs)
     }
 
     /// Takes the command again after a new look at the plugin folder, with what its script last printed. A script that starts
-    /// or stops staying gets a new link.
+    /// or stops staying, or that starts or stops running inline, gets a new link.
     public func update(_ new: Spot) {
         let header = command.headerState
         if new.answers != command.answers { answer("") }
-        if new.stays != command.stays {
+        if new.stays != command.stays || new.isInline != command.isInline {
             let old = link
             link = Self.link(for: new, runs: runs)
             link.run = self
@@ -507,7 +508,7 @@ public final class SpotRun {
     }
 
     /// Takes the rows that answer a text, and runs the work that waited for them when the text is the newest.
-    private func takeAnswers(_ rows: [SpotItem], to query: String? = nil) {
+    func takeAnswers(_ rows: [SpotItem], to query: String? = nil) {
         if let query {
             guard query == answerQuery else { return }
             answeredQuery = query

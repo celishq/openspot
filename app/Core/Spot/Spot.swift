@@ -38,6 +38,8 @@ public struct Spot: Equatable, Sendable {
     public let stays: Bool
     /// Whether the script stays running from the start of the app to its quit.
     public let staysAlways: Bool
+    /// Whether it is a JavaScript file that runs inside the app (I3).
+    public let isInline: Bool
     /// The file extensions that its card takes, with `folder` and `*`.
     public let drop: [String]
     /// Whether its header offers it as a float, which the person can give a key or a shake (T1).
@@ -90,6 +92,7 @@ public struct Spot: Equatable, Sendable {
         growsFromField: Bool = false,
         stays: Bool = false,
         staysAlways: Bool = false,
+        isInline: Bool = false,
         drop: [String] = [],
         offersFloat: Bool = false,
         dataName: String? = nil,
@@ -124,6 +127,7 @@ public struct Spot: Equatable, Sendable {
         self.growsFromField = growsFromField
         self.stays = stays
         self.staysAlways = staysAlways
+        self.isInline = isInline
         self.drop = drop
         self.offersFloat = offersFloat
         self.dataName = dataName

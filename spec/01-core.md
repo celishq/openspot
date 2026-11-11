@@ -154,9 +154,11 @@ search: each text is a call with its own id, and only the answer to the newest o
 
 `mode=inline` runs a JavaScript file inside the app, such as `calc.js`, with its header in `//` lines (I3). The file
 defines `read(reason, text)`, and may define `open(id)` and the other calls, and each one returns the text of a frame.
-`openspot.call(["calc", "solve", "2+2"])` asks the openspot command and returns `{ stdout, code }` (I4). An inline spot
-has no files, no network and no process of its own. Openspot waits 2 ms for its frame in the turn of the key, and shows a
-later frame in the next turn (I5).
+`openspot.call(["calc", "solve", "2+2"])` asks the openspot command and returns `{ stdout, code }`, and a second argument
+gives its stdin (I4). An inline spot has no files, no network and no process of its own. It runs on a thread of its own,
+one call at a time, and a call that a newer one stopped before it ran does not run. Openspot waits 2 ms for its frame in
+the turn of the key, and shows a later frame in the next turn, with the last rows kept until then (I5). A function that
+never returns keeps that thread until the app quits, and the spot then answers no more.
 
 A read must be safe at each moment that its header lists, and only its author can promise this. A script has one read
 at a time (M1). `OPENSPOT_REASON` gives the reason: `panel`, `sheet`, `timer`, `search` or `change` (M6). Something wants

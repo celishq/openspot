@@ -32,6 +32,7 @@ public struct TerminalRun {
     @MainActor
     public func start(frame: (String) -> Void) async -> End {
         let isRead = action == .read
+        if spot.isInline { return await inline(isRead: isRead, frame: frame) }
         let program = SwiftProgram.file(beside: spot.url) ?? spot.url
         let variables = ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }
         let process: ScriptProcess
@@ -62,5 +63,23 @@ public struct TerminalRun {
             }
         }
         return End(code: code, errors: process.errors)
+    }
+
+    /// Runs the call in a JavaScript spot, and gives its frame.
+    @MainActor
+    private func inline(isRead: Bool, frame: (String) -> Void) async -> End {
+        let script = InlineScript(spot: spot, api: nil)
+        defer { script.end() }
+        let call = InlineCall(arguments: action.arguments, reason: isRead ? .sheet : nil, input: input)
+        script.send(call)
+        switch await call.outcome() {
+        case .frame(let text):
+            if !text.isEmpty { frame(text) }
+            return End(code: 0, errors: "")
+        case .failed(let error):
+            return End(code: 1, errors: ((error as? PluginError)?.reason ?? error.localizedDescription) + "\n")
+        case .dropped:
+            return End(code: 1, errors: "")
+        }
     }
 }

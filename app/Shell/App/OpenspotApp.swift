@@ -70,9 +70,11 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         let update = AppUpdate { [model] in model.updateIsReady($0) }
         self.update = update
         let usage = model.runs.usage
-        commandSocket = CommandSocket(folder: ConfigFile.standard().url.deletingLastPathComponent(), api: CommandAPI(host: SpotCommandHost(), raise: { [model] event in
+        let api = CommandAPI(host: SpotCommandHost(), raise: { [model] event in
             await MainActor.run { model.runs.raise(event) }
-        }, stats: { usage.text }, app: SpotRunningApp(model: model, update: update)))
+        }, stats: { usage.text }, app: SpotRunningApp(model: model, update: update))
+        model.runs.api = api
+        commandSocket = CommandSocket(folder: ConfigFile.standard().url.deletingLastPathComponent(), api: api)
         model.reload()
         folderWatch = SpotFolderWatch(folder: model.files.folder.url) { [weak self] in self?.model.folderChanged() }
         try? AgentNote(command: Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/openspot").path).write(in: model.files.folder.url)
