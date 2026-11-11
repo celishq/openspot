@@ -155,10 +155,10 @@ public struct Plugin: Equatable, Sendable {
         if case .strings(let drawing)? = table["grid"] {
             return try drawn(drawing, table, name: name, id: id, url: url)
         }
-        throw PluginError.fault("\(name) needs a grid, such as grid = [\"a a b b\"]")
+        throw PluginError.fault("\(name) needs a grid that names its metrics, such as grid = [\"cpu cpu memory\"]")
     }
 
-    /// A widget with a drawing of its own, whose `places` names a metric for each letter.
+    /// A widget with a drawing of its own, whose words name its metrics.
     private static func drawn(_ drawing: [String], _ table: [String: TomlDocument.Value], name: String, id: String, url: URL) throws -> Spot {
         func text(_ key: String) -> String? {
             if case .string(let value)? = table[key] { return value }
@@ -170,16 +170,10 @@ public struct Plugin: Equatable, Sendable {
             guard let asked = SpotSize(name: sizeName) else { throw PluginError.fault("\(name) has an unknown size: \(sizeName)") }
             size = asked
         }
+        if table["places"] != nil {
+            throw PluginError.fault("\(name) has places, which Openspot no longer reads. Its grid names each metric, such as grid = [\"cpu cpu memory\"]")
+        }
         let layout = WidgetLayout(drawing: drawing, size: size)
-        guard case .table(let places)? = table["places"] else {
-            throw PluginError.fault("\(name) needs places, with a metric for each letter of its grid")
-        }
-        if let letter = layout.letters.first(where: { places[$0] == nil }) {
-            throw PluginError.fault("\(name) needs a metric for the letter \(letter)")
-        }
-        if let letter = places.keys.sorted().first(where: { !layout.letters.contains($0) }) {
-            throw PluginError.fault("\(name) names the letter \(letter), which its grid does not have")
-        }
         return Spot(
             id: "\(id)/\(name)",
             name: name,
@@ -188,7 +182,7 @@ public struct Plugin: Equatable, Sendable {
             size: layout.size,
             subtitle: text("detail"),
             layout: layout,
-            places: layout.letters.compactMap { places[$0] }.map { tool($0, beside: url, id: id) },
+            places: layout.names.map { tool($0, beside: url, id: id) },
             opens: text("opens").map { tool($0, beside: url, id: id) }
         )
     }

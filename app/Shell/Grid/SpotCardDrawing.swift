@@ -19,7 +19,7 @@ struct SpotCardDrawing: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            ForEach(Array(zip(layout.letters, layout.slots)), id: \.0) { id, slot in
+            ForEach(Array(zip(layout.names, layout.slots)), id: \.0) { id, slot in
                 if let part = face.parts.first(where: { $0.id == id }) {
                     let rect = layout.rect(of: slot, in: room, gap: SpotTokens.placeGap, sideGap: SpotTokens.sideGap)
                     Group {

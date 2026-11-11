@@ -92,7 +92,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAWidgetNamesItselfBeforeTheMetricsItPlaces() throws {
-        let widget = "[[widgets]]\ntitle = \"Desk\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\n"
+        let widget = "[[widgets]]\ntitle = \"Desk\"\ngrid = [\"cpu\"]\nsize = \"square\"\n"
         let review = try ReviewSpot(spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# read=5\n", true)]), folder: folder)
 
         XCTAssertEqual(review.name, "Desk")
@@ -169,7 +169,7 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAMetricThatAWidgetPlacesRunsWhenThePanelOpens() throws {
-        let widget = "[[widgets]]\ntitle = \"Desk\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\n"
+        let widget = "[[widgets]]\ntitle = \"Desk\"\ngrid = [\"cpu\"]\nsize = \"square\"\n"
         let review = try ReviewSpot(
             spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# read=sheet\n", true)]),
             folder: folder

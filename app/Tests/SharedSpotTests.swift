@@ -101,8 +101,7 @@ final class SharedSpotTests: XCTestCase {
         try plain("board.toml", Data("""
         [[widgets]]
         title = "Desk"
-        grid = ["a a b b"]
-        places = { a = "cpu", b = "home/disk" }
+        grid = ["cpu cpu home/disk home/disk"]
         opens = "links"
 
         """.utf8))
@@ -118,8 +117,7 @@ final class SharedSpotTests: XCTestCase {
         try plain("board.toml", Data("""
         [[widgets]]
         title = "Desk"
-        grid = ["a"]
-        places = { a = "cpu" }
+        grid = ["cpu"]
         size = "square"
         opens = "openspot/plugins"
 

@@ -60,7 +60,7 @@ These rules come from the way Nostr writes its NIPs.
 | `grid`, `grid.<size>`, `main`, `title`, `detail`, `size`, `search`, `recents`, `toast`, `link`, `progress`, `select` | Head key | 01 |
 | `end`                                                                                                    | Head key             | 05   |
 | `call`, `reason`, `arg`, `stop`                                                                          | Stdin key            | 05   |
-| `title`, `detail`, `size`, `grid`, `places`, `opens`                                                     | Widget key           | 01   |
+| `title`, `detail`, `size`, `grid`, `opens`                                                               | Widget key           | 01   |
 
 The verbs and the row keys of each `openspot` noun, such as `screen` or `calendar`, are in `openspot help <noun>`.
 

@@ -45,7 +45,7 @@ final class CoreSpotsTests: XCTestCase {
 
     func testASpotThatIsOnLoadsThePartsItPlaces() throws {
         try write("cpu.sh", in: core, header: "read=5")
-        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
 
         let off = try PluginFolder(url: folder, core: core, enabled: []).scan()
         XCTAssertEqual(off.scripts.map(\.id), [])
@@ -58,7 +58,7 @@ final class CoreSpotsTests: XCTestCase {
 
     func testAWidgetInThePluginsFolderCanPlaceACorePart() throws {
         try write("cpu.sh", in: core, header: "read=5")
-        try "[[widgets]]\ntitle = \"Mine\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\n".write(to: folder.appendingPathComponent("mine.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"Mine\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: folder.appendingPathComponent("mine.toml"), atomically: true, encoding: .utf8)
 
         let scan = try PluginFolder(url: folder, core: core, enabled: []).scan()
 
@@ -112,7 +112,7 @@ final class CoreSpotsTests: XCTestCase {
     func testTheChoicesLeaveOutPartsWithNoCard() throws {
         try write("cpu.sh", in: core, header: "read=5")
         try write("apps.sh", in: core)
-        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
 
         XCTAssertEqual(PluginFolder(url: folder, core: core).coreChoices().map(\.name), ["Apps", "Overview"])
     }
@@ -136,7 +136,7 @@ final class CoreSpotsTests: XCTestCase {
 
     func testACoreWidgetSharesWithItsPartsFromTheCoreFolder() throws {
         try write("cpu.sh", in: core, header: "read=5")
-        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
         let scan = try PluginFolder(url: folder, core: core, enabled: ["overview"]).scan()
 
         let spot = try SharedSpot(sharing: XCTUnwrap(scan.commands.first { $0.name == "Overview" }), from: scan)

@@ -86,7 +86,7 @@ final class CatalogSpotTests: XCTestCase {
     }
 
     func testTurningOnACoreWidgetLoadsItInAScan() async throws {
-        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
         let spot = try spot
         let items = try await spot.items(timeout: 1).items
         let row = try XCTUnwrap(items.first { $0.title == "Overview" })

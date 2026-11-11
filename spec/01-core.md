@@ -363,14 +363,12 @@ A TOML file in the plugins folder holds widgets, each of which shows several met
 [[widgets]]
 title = "System"
 detail = "Battery, CPU, memory and devices"
-grid = ["b b c c", "b b m m", "b b d d"]
-places = { b = "battery", c = "cpu", m = "memory", d = "devices" }
+grid = ["battery battery cpu cpu", "battery battery memory memory", "battery battery devices devices"]
 opens = "system-info"
 ```
 
-`grid` is a drawing of letters, as a card drawing is, and its lines set the size of the widget, or `size` sets it.
-`places` names the metric of each letter, and each letter needs one. `opens` names the spot that a press of the widget
-opens. A name is the file name of a script in the widget's own folder first, and else the ID of a spot (F10).
+`grid` is a drawing of the names of metrics, as a card drawing is of ids, and its lines set the size of the widget, or
+`size` sets it. `opens` names the spot that a press of the widget opens. A name is the file name of a script in the widget's own folder first, and else the ID of a spot (F10).
 
 ## Files out
 
@@ -497,6 +495,7 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | A look only draws a box, and a kind or a drawing says the rest.                                             | `look=large`, `look=list` and `look=section`. |
 | A complex view is a `view` of the plugin in an area, so the text language stays small.                      | More words for each new look.                |
 | A widget of several metrics is a TOML file, which a person writes by hand.                                  | A `spot` block in a script's output.         |
+| A widget's grid names its metrics, as a card drawing names its blocks.                                      | Letters, and a `places` table that names a metric for each. |
 | `file` names the file of a row, apart from its id and its picture.                                          | A row id that is a path, which makes the id say two things. |
 | `drag` tells the script after the drop, and the script says what stays.                                     | A key that removes a row after a drag.       |
 | Openspot drags the file itself, and the other app copies or moves it.                                       | A file promise that the script writes on request. |

@@ -281,7 +281,7 @@ final class PluginFolderTests: XCTestCase {
         try write("details.sh", header: "read=panel")
         try write("other.sh", header: "read=panel")
         try write("cpu.sh", header: "read=60")
-        try "[[widgets]]\ntitle = \"Box\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\nopens = \"details\"\n".write(to: folder.appendingPathComponent("box.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"Box\"\ngrid = [\"cpu\"]\nsize = \"square\"\nopens = \"details\"\n".write(to: folder.appendingPathComponent("box.toml"), atomically: true, encoding: .utf8)
 
         let commands = try scan.commands
 

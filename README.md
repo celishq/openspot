@@ -79,14 +79,13 @@ A widget shows the live values of several tools on one card. Write it in a `.tom
 ```toml
 [[widgets]]
 title = "Morning"
-grid = ["a a b b", "a a c c", "a a d d"]
-places = { a = "memory", b = "battery", c = "cpu", d = "disk" }
+grid = ["memory memory battery battery", "memory memory cpu cpu", "memory memory disk disk"]
 opens = "links"
 ```
 
-`grid` draws the card in letters, one line for each row, and each letter is one place. `places` names one tool for each
-letter, by its ID: its path with no extension, such as `cpu` or `home/coffee`. A widget in a folder with its tools names
-them by file name alone, and the whole folder is shared as one. `opens` names the tool that a click opens, and that tool
+`grid` draws the card, one line for each row. Each word names a tool by its ID, its path with no extension, such as `cpu`
+or `home/coffee`, and the tool fills the rectangle that its word covers. A widget in a folder with its tools names them by
+file name alone, and the whole folder is shared as one. `opens` names the tool that a click opens, and that tool
 has no card of its own.
 
 Each tool can have a letter: hold the key that opens the panel and press the letter to run it. Press `L` in Edit Spots,

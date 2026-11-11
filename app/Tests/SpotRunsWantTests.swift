@@ -40,7 +40,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     func testAWidgetCanPlaceAnyScriptWithARead() async throws {
         try script("onpanel", header: "read=panel", log: "onpanel", "printf 'text=m\\ntitle=P\\n'")
         try script("onsheet", header: "read=sheet", log: "onsheet", "printf 'text=m\\ntitle=S\\n'")
-        try "[[widgets]]\ntitle = \"W\"\ngrid = [\"a a b b\"]\nplaces = { a = \"onpanel\", b = \"onsheet\" }\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"W\"\ngrid = [\"onpanel onpanel onsheet onsheet\"]\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
         _ = try scanned()
         XCTAssertEqual(log("onsheet"), [])
 
@@ -56,14 +56,14 @@ final class SpotRunsWantTests: SpotRunsCase {
         try await pause(0.2)
         XCTAssertFalse(exists("pids"))
 
-        try "[[widgets]]\ntitle = \"W\"\ngrid = [\"a a a a\"]\nplaces = { a = \"stayer\" }\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"W\"\ngrid = [\"stayer stayer stayer stayer\"]\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
         _ = try scanned()
 
         try await wait("the start of the placed script") { self.exists("pids") }
     }
     func testAWidgetCannotPlaceAScriptWithNoRead() throws {
         try script("once")
-        try "[[widgets]]\ntitle = \"W\"\ngrid = [\"a\"]\nplaces = { a = \"once\" }\nsize = \"square\"\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"W\"\ngrid = [\"once\"]\nsize = \"square\"\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
 
         let scan = try PluginFolder(url: folder).scan()
 
