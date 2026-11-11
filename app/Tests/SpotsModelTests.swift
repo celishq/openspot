@@ -199,6 +199,25 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(host.glyphLists, [Array(repeating: "😀", count: 100)])
     }
 
+    func testAReadOfTheSameRowsGivesTheGlyphsItCollectedBefore() async throws {
+        let calls = folder.appendingPathComponent("calls").path
+        try script("faces", header: "read=sheet", "echo x >> '\(calls)'; for i in $(seq 1 100); do printf 'row=f%s\\ntitle=Face %s\\nicon=😀\\n\\n' $i $i; done")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.press("faces")
+        try await wait("the glyphs") { !host.glyphLists.isEmpty }
+        let sheet = try XCTUnwrap(model.sheets["faces"])
+        try await wait("the end of the first read") { sheet.calls.isEmpty }
+
+        sheet.read(need: .change)
+        try await wait("the second read") { (try? String(contentsOfFile: calls, encoding: .utf8))?.count == 4 }
+        try await wait("the end of the second read") { sheet.calls.isEmpty }
+
+        XCTAssertEqual(host.glyphLists.count, 2)
+        XCTAssertTrue(host.glyphLists[0].withUnsafeBufferPointer { first in host.glyphLists[1].withUnsafeBufferPointer { $0.baseAddress == first.baseAddress } })
+    }
+
     func testAStepBackClearsTheSearchBeforeItClosesTheList() async throws {
         try await openList()
         model.searchText = "ban"

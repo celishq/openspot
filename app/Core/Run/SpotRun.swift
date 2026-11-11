@@ -222,6 +222,8 @@ public final class SpotRun {
     @ObservationIgnored private let runs: SpotRuns
     /// Makes the pictures of these rows ready ahead of their first frame, with the colour glyphs of the whole list.
     @ObservationIgnored private let prepare: ([SpotItem], [String]) async -> Void
+    /// The glyphs of the rows that were made ready last.
+    @ObservationIgnored private var glyphs: (rows: [SpotItem], glyphs: [String]) = ([], [])
     @ObservationIgnored private var link: ScriptLink
     @ObservationIgnored private var answered: Date? {
         didSet { settle() }
@@ -939,9 +941,12 @@ public final class SpotRun {
         return await Task.detached(priority: .userInitiated) { list.ready(items, search: search) }.value
     }
 
-    /// Makes the pictures of the list ready: the first screen of its rows, and the colour glyphs of all of them.
+    /// Makes the pictures of the list ready: the first screen of its rows, and the colour glyphs of all of them, which it
+    /// collects again only when the rows changed.
     private func preparePictures() async {
-        await prepare(firstScreen(of: list.shown), list.all.compactMap(\.glyph))
+        let rows = list.all
+        if rows != glyphs.rows { glyphs = (rows, rows.compactMap(\.glyph)) }
+        await prepare(firstScreen(of: list.shown), glyphs.glyphs)
     }
 
     /// The first of these rows, as many as the sheet shows before it scrolls. A later row draws its picture when it shows.
