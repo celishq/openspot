@@ -15,8 +15,8 @@ struct SpotResizeHandle: View {
             .allowsHitTesting(false)
     }
 
-    /// The stretch of a card's rim at its bottom right corner, between 12° and 78° around the centre of that corner, in the
-    /// square on that corner. It is found once for each size.
+    /// The stretch of a card's rim at its bottom right corner, between 10° and 53° around the centre of that corner, nearer
+    /// the right edge than the bottom, in the square on that corner. It is found once for each size.
     private static func rim(of size: SpotSize) -> Path {
         if let rim = rims[size.name] { return rim }
         let radius = SpotTokens.corner(for: size)
@@ -27,7 +27,7 @@ struct SpotResizeHandle: View {
         let corner = (0...steps).map { Double($0) / Double(steps) }.filter { share in
             let point = edge.trimmedPath(from: 0, to: share).currentPoint ?? .zero
             let angle = atan2(point.y - centre.y, point.x - centre.x) * 180 / .pi
-            return point.x >= centre.x && point.y >= centre.y && (12...78).contains(angle)
+            return point.x >= centre.x && point.y >= centre.y && (10...53).contains(angle)
         }
         let side = SpotTokens.resizeHandle
         let rim = edge.trimmedPath(from: corner.first ?? 0, to: corner.last ?? 0)
