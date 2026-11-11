@@ -654,6 +654,69 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertTrue(model.isEditing)
     }
 
+    private var store: URL {
+        folder.appendingPathComponent("config/store", isDirectory: true)
+    }
+
+    private func publication(of id: String) -> SpotDock.Publication? {
+        model.dock.items.first { $0.id == id }?.publication
+    }
+
+    func testPublishWritesAPackageOnceAndAgainOnlyWhenTheFilesChange() async throws {
+        try "Does a.".write(to: plugins.appendingPathComponent("a.md"), atomically: true, encoding: .utf8)
+        XCTAssertNil(publication(of: "a"))
+
+        let first = await model.publish("a")
+        XCTAssertEqual(first, .published)
+        XCTAssertEqual(SpotPackage(url: store.appendingPathComponent("a.spot")).listing.readme, "Does a.")
+        XCTAssertEqual(publication(of: "a"), .current)
+        let again = await model.publish("a")
+        XCTAssertEqual(again, .unchanged)
+
+        let script = try FileHandle(forWritingTo: plugins.appendingPathComponent("a.sh"))
+        try script.seekToEnd()
+        try script.write(contentsOf: Data("echo changed\n".utf8))
+        try script.close()
+        model.folderChanged()
+        XCTAssertEqual(publication(of: "a"), .changed)
+        let third = await model.publish("a")
+        XCTAssertEqual(third, .published)
+        XCTAssertEqual(publication(of: "a"), .current)
+    }
+
+    func testASpotWithNoReadmeOpensItsListingAndIsNotPublished() async {
+        let result = await model.publish("a")
+
+        XCTAssertEqual(result, .needsReadme)
+        XCTAssertEqual(model.dock.opened, "a")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
+    }
+
+    func testACoreSpotIsNotPublished() async throws {
+        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        model.reload()
+
+        let result = await model.publish("timer")
+        XCTAssertEqual(result, .notOwn)
+    }
+
+    func testACardOfThePluginsFolderReleasedOnTheStoreIsPublished() async throws {
+        try "Does b.".write(to: plugins.appendingPathComponent("b.md"), atomically: true, encoding: .utf8)
+        model.dockFrame = dock
+        let translation = move("b", to: inGrid(CGPoint(x: dock.midX, y: dock.midY)))
+
+        model.dragSpot("b", by: translation)
+        model.dropSpot(by: translation)
+
+        let package = store.appendingPathComponent("b.spot")
+        for _ in 0..<500 where !FileManager.default.fileExists(atPath: package.path) {
+            await Task.yield()
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: package.path))
+        XCTAssertEqual(order, ["a", "b", "c", "d"])
+    }
+
     func testTheStoreFollowsTheEyeOfACard() {
         model.setOnGrid(false, for: "b")
 

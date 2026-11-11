@@ -247,8 +247,9 @@ public final class SpotsModel {
     public internal(set) var dock = SpotDock(items: [])
     /// The listing of the spot that the store opened.
     public internal(set) var dockListing: SpotListing?
-    /// The spots that are off, as the last read of the folder found them.
+    /// The spots that are off, and the packages of the spots of the plugins folder, as the last read of the folder found them.
     @ObservationIgnored var dockOff: [SpotDock.Item] = []
+    @ObservationIgnored var dockPublications: [String: SpotDock.Publication] = [:]
     /// Whether the person types in the dock's search, which then takes each key but Esc.
     public internal(set) var isSearchingDock = false
     /// Where the person pressed a card's resize handle, in the handle's square.

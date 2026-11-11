@@ -56,6 +56,18 @@ public struct AgentPrompt: Equatable, Sendable {
         """
     }
 
+    /// Asks for the store listing of a spot: a readme beside it, a description, and a preview mode with fake data.
+    public func listing(_ file: URL) -> String {
+        let readme = SpotListing.readme(of: file).lastPathComponent
+        return """
+        Write the store listing of the Openspot spot in \(file.path). Do not change what it does.
+        1. Write \(readme) beside it: what the spot does and how to use it, in two or three short paragraphs, then what it runs on my computer, which files it reads or writes, and whether it uses the network.
+        2. Give its header a detail= line of one short sentence, if it has none.
+        3. Add preview=sample to its header, and make its read print fake rows, with no data of mine, while OPENSPOT_PREVIEW is 1.
+        \(steps(for: file.deletingPathExtension().lastPathComponent))
+        """
+    }
+
     /// The steps of each build: the guide, a try, a look, the check and a show.
     private func steps(for id: String) -> String {
         """

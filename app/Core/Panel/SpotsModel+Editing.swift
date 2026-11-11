@@ -73,9 +73,11 @@ extension SpotsModel {
         if isSearchingDock != isOn { isSearchingDock = isOn }
     }
 
-    /// Reads the spots of this folder that are off, and makes the store again.
+    /// Reads the spots of this folder that are off and the packages of its files in the store, and makes the store again.
     func refreshDock(in folder: PluginFolder) {
-        dockOff = Self.offSpots(in: folder)
+        let own = (try? PluginFolder(url: folder.url).scan()) ?? ScanResult(plugins: [], refused: [])
+        dockOff = Self.offSpots(in: folder, own: own.plugins)
+        dockPublications = Self.publications(of: own, in: folder, store: files.store)
         composeDock()
     }
 
@@ -88,9 +90,9 @@ extension SpotsModel {
         let parts = Set(spots.flatMap { $0.command.places + ($0.command.opens.map { [$0] } ?? []) })
         let on = spots.filter { !parts.contains($0.id) }.map { entry in
             let origin: SpotDock.Origin = entry.command.shipped != nil ? .builtIn : folder.isCore(entry.command) ? .core : .mine
-            return SpotDock.Item(command: entry.command, origin: origin, state: entry.isOnGrid ? .onGrid : .searchOnly, size: entry.size)
+            return SpotDock.Item(command: entry.command, origin: origin, state: entry.isOnGrid ? .onGrid : .searchOnly, size: entry.size, publication: dockPublications[entry.id])
         }
-        let off = dockOff.map { SpotDock.Item(command: $0.command, origin: $0.origin, size: choice.size(of: $0.id)) }
+        let off = dockOff.map { SpotDock.Item(command: $0.command, origin: $0.origin, size: choice.size(of: $0.id), publication: dockPublications[$0.id]) }
         var next = SpotDock(items: on + off)
         next.query = dock.query
         next.filter = dock.filter
@@ -100,8 +102,7 @@ extension SpotsModel {
 
     /// The core spots of this folder that are not on, and the spots of its files that the person turned off. A sheet that
     /// another spot opens is not one.
-    private static func offSpots(in folder: PluginFolder) -> [SpotDock.Item] {
-        let own = (try? PluginFolder(url: folder.url).scan())?.plugins ?? []
+    private static func offSpots(in folder: PluginFolder, own: [Plugin]) -> [SpotDock.Item] {
         let ownIDs = Set(own.map(\.id))
         let core = folder.coreChoices()
             .filter { !folder.enabled.contains(PluginFolder.coreID(of: $0)) && !ownIDs.contains(PluginFolder.coreID(of: $0)) }
@@ -266,13 +267,20 @@ extension SpotsModel {
         }
     }
 
-    /// Ends the drag: the card lands at the place nearest the lifted card, and the order is saved. A release on the store,
-    /// with the pointer off the grid, or where the card started, puts every card back.
+    /// Ends the drag: the card lands at the place nearest the lifted card, and the order is saved. A release on the store
+    /// puts the card back and publishes a spot of the plugins folder. A release with the pointer off the grid, or where the
+    /// card started, puts every card back.
     public func dropSpot(by translation: CGSize) {
         guard let drag else { return }
         let move = inGrid(translation)
         let centre = drag.centre(movedBy: move)
-        guard dockInGrid?.contains(centre) != true else { return cancelDrag() }
+        if dockInGrid?.contains(centre) == true {
+            if dock.items.first(where: { $0.id == drag.id })?.isOwn == true {
+                let id = drag.id
+                Task { await publish(id) }
+            }
+            return cancelDrag()
+        }
         let target = drag.nearest(to: drag.centre(movedBy: drag.capped(move, within: windowInGrid)))
         guard drag.holds(centre), target != drag.home else { return cancelDrag() }
         stopDragWait()

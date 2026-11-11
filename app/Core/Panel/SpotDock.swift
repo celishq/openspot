@@ -13,6 +13,11 @@ public struct SpotDock: Equatable, Sendable {
         case core, mine, builtIn
     }
 
+    /// Whether the store's package of a spot of the plugins folder holds its files as they are, or older ones.
+    public enum Publication: Equatable, Sendable {
+        case current, changed
+    }
+
     /// The spots that the store shows: all, those that are on or off, or those of one origin.
     public enum Filter: CaseIterable, Equatable, Sendable {
         case all, on, off, core, mine
@@ -43,6 +48,8 @@ public struct SpotDock: Equatable, Sendable {
         public let command: Spot
         public let origin: Origin
         public let state: State
+        /// Its package in the store, for a spot of the plugins folder that the person published.
+        public let publication: Publication?
         /// The size of its card, as the panel gives it: the preferred size, or else its own. A fault is never 1x1.
         public let size: SpotSize
 
@@ -55,10 +62,11 @@ public struct SpotDock: Equatable, Sendable {
             origin == .mine
         }
 
-        public init(command: Spot, origin: Origin = .core, state: State = .off, size: SpotSize? = nil) {
+        public init(command: Spot, origin: Origin = .core, state: State = .off, size: SpotSize? = nil, publication: Publication? = nil) {
             self.command = command
             self.origin = origin
             self.state = state
+            self.publication = publication
             let own = size ?? command.size
             self.size = command.fault != nil && own == .small ? .wide : own
         }
@@ -76,7 +84,7 @@ public struct SpotDock: Equatable, Sendable {
 
     /// The dock with this spot at this size.
     public func resized(_ id: String, to size: SpotSize) -> SpotDock {
-        var next = SpotDock(items: items.map { $0.id == id ? Item(command: $0.command, origin: $0.origin, state: $0.state, size: size) : $0 })
+        var next = SpotDock(items: items.map { $0.id == id ? Item(command: $0.command, origin: $0.origin, state: $0.state, size: size, publication: $0.publication) : $0 })
         next.query = query
         next.filter = filter
         next.opened = opened

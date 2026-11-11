@@ -55,7 +55,8 @@ struct SpotDockTile: View {
             if item.isOwn, item.state == .off { Button("Delete") { model.delete(item.id) } }
         }
         .onHover { isOver in
-            let words = size == .small ? [item.command.name, item.command.subtitle].compactMap { $0 } : [item.command.subtitle].compactMap { $0 }
+            let changed = item.publication == .changed ? "Changes not published" : nil
+            let words = (size == .small ? [item.command.name, item.command.subtitle] : [item.command.subtitle]).compactMap { $0 } + [changed].compactMap { $0 }
             guard !words.isEmpty else { return }
             let tip = SpotTip(id: item.id, anchor: .dockCard, text: words.joined(separator: " · "))
             if isOver {
