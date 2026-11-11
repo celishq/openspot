@@ -1,10 +1,12 @@
 import Foundation
 
-/// A moment that selects the spots to read (B1): the open of the panel, the wake of the Mac, a text of the main search,
-/// which each spot whose `answers` pattern matches it answers (A2), or an event with a name and a value (B2-B4).
+/// A moment that selects the spots to read (B1): the open of the panel, the wake of the Mac, a tick of the clock of timed
+/// reads, a text of the main search, which each spot whose `answers` pattern matches it answers (A2), or an event with a
+/// name and a value (B2-B4).
 public enum SpotEvent: Equatable, Sendable {
     case panel
     case wake
+    case clock
     case query(String)
     case named(String, value: String?)
 

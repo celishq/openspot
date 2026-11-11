@@ -421,7 +421,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(blocks(), ["arg=read"])
 
         time += 5
-        runs.tick()
+        runs.raise(.clock)
 
         try await wait("the read") { self.blocks() == ["arg=read", "arg=read"] }
         XCTAssertEqual(log().count, 1)

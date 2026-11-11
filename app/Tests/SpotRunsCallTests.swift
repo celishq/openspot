@@ -50,7 +50,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         XCTAssertEqual(runs.trayMarks.first?.mark.isStale, false)
 
         time += 5
-        runs.tick()
+        runs.raise(.clock)
 
         try await wait("the dim") { sheet.reading.isStale }
         XCTAssertEqual(sheet.reading.value?.title, "3")

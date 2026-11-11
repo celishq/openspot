@@ -7,6 +7,7 @@ extension SpotRuns {
         switch event {
         case .panel: openPanel()
         case .wake: wake()
+        case .clock: tick()
         case .query(let text): ask(text)
         case .named(let name, let value): read(name, value)
         }
@@ -62,7 +63,7 @@ extension SpotRuns {
         let wasOpen = isPanelOpen
         isPanelOpen = true
         if !wasOpen { sheets.values.forEach { $0.panelOpened() } }
-        tick()
+        raise(.clock)
         readPanel()
         for id in placed {
             if let sheet = sheets[id], sheet.spot.read?.seconds == nil { sheet.read() }

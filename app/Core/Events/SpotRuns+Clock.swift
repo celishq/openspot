@@ -1,13 +1,12 @@
 import Foundation
 
-/// The clock of timed reads: it reads each wanted script with a number in its `read` when that many seconds have passed.
+/// The clock of timed reads: it raises `clock`, which reads each wanted script with a number in its `read` when that many
+/// seconds have passed.
 extension SpotRuns {
     /// Reads each wanted script whose number of seconds has passed, and once each script that waits only for events as it
-    /// becomes wanted. Returns the seconds until the next read is due, or nil when no wanted script has a number.
-    @discardableResult
-    public func tick() -> TimeInterval? {
+    /// becomes wanted.
+    func tick() {
         let time = now()
-        var next: TimeInterval?
         for sheet in sheets.values where sheet.spot.read?.waitsForEvents == true {
             if !sheet.isWanted {
                 asked[sheet.spot.id] = nil
@@ -18,16 +17,18 @@ extension SpotRuns {
         }
         for sheet in sheets.values where sheet.isWanted {
             guard let seconds = sheet.spot.read?.seconds else { continue }
-            var left = seconds
-            if let last = asked[sheet.spot.id], time.timeIntervalSince(last) < seconds {
-                left = seconds - time.timeIntervalSince(last)
-            } else {
-                asked[sheet.spot.id] = time
-                sheet.read(need: .clock, reason: .timer)
-            }
-            next = min(next ?? left, left)
+            if let last = asked[sheet.spot.id], time.timeIntervalSince(last) < seconds { continue }
+            asked[sheet.spot.id] = time
+            sheet.read(need: .clock, reason: .timer)
         }
-        return next
+    }
+
+    /// The seconds until the next read of a wanted script with a number in its `read` is due, or nil when it has none.
+    func nextRead() -> TimeInterval? {
+        let time = now()
+        return sheets.values.filter(\.isWanted).compactMap { sheet in
+            sheet.spot.read?.seconds.map { $0 - time.timeIntervalSince(asked[sheet.spot.id] ?? time) }
+        }.min()
     }
 
     /// Keeps the timers going while the panel is open, or while something wants a script with a number in its `read`. With
@@ -37,14 +38,16 @@ extension SpotRuns {
         watchClipboard()
         clock?.cancel()
         clock = nil
-        var next = tick()
+        raise(.clock)
+        var next = nextRead()
         guard isPanelOpen || next != nil else { return }
         clock = Task { [weak self, tickPause] in
             while !Task.isCancelled {
                 let isPanelOpen = self?.isPanelOpen ?? false
                 try? await Task.sleep(for: isPanelOpen ? tickPause : max(tickPause, .seconds(next ?? 0)))
                 guard !Task.isCancelled, let self else { return }
-                next = tick()
+                raise(.clock)
+                next = nextRead()
                 guard self.isPanelOpen || next != nil else { return }
             }
         }

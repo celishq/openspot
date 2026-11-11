@@ -124,7 +124,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try await wait("the sheet read") { self.log("reasons") == ["sheet"] && !self.runs.isReading }
 
         time += 61
-        runs.tick()
+        runs.raise(.clock)
 
         try await wait("the timer read") { self.log("reasons") == ["sheet", "timer"] }
     }
@@ -305,7 +305,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try await pause(0.1)
 
         time += 1
-        runs.tick()
+        runs.raise(.clock)
 
         try await wait("the second read") { self.log().count == 2 }
     }
@@ -366,12 +366,12 @@ final class SpotRunsReadTests: SpotRunsCase {
         try await wait("the first reads") { self.log("fast").count == 1 && self.log("slow").count == 1 }
 
         time += 4
-        runs.tick()
+        runs.raise(.clock)
         try await pause(0.1)
         XCTAssertEqual(log("fast").count, 1)
 
         time += 1
-        runs.tick()
+        runs.raise(.clock)
         try await wait("the next read") { self.log("fast").count == 2 }
         XCTAssertEqual(log("slow").count, 1)
     }

@@ -133,13 +133,13 @@ final class SpotRunsWantTests: SpotRunsCase {
         try await wait("the row") { sheet.list.shown.count == 1 && sheet.calls.isEmpty }
         XCTAssertEqual(log(), ["read"])
         time += 5
-        runs.tick()
+        runs.raise(.clock)
         try await wait("the read from the number") { self.log() == ["read", "read"] && sheet.calls.isEmpty }
 
         runs.panelClosed()
         XCTAssertTrue(sheet.isOpen)
         time += 5
-        runs.tick()
+        runs.raise(.clock)
         try await pause(0.15)
         XCTAssertEqual(log(), ["read", "read"])
 
