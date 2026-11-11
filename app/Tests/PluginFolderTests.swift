@@ -237,15 +237,26 @@ final class PluginFolderTests: XCTestCase {
         ])
     }
 
-    func testStayIsTrueOrAlways() throws {
-        try write("a.sh", header: "stay=true")
-        try write("b.sh", header: "stay=always")
-        try write("c.sh", header: "stay=sometimes")
+    func testModeIsOnceStayOrAlways() throws {
+        try write("a.sh", header: "mode=stay")
+        try write("b.sh", header: "mode=always")
+        try write("c.sh", header: "mode=once")
+        try write("d.sh", header: "mode=sometimes")
 
         let scan = try scan
-        XCTAssertEqual(scan.commands.map(\.stays), [true, true])
-        XCTAssertEqual(scan.commands.map(\.staysAlways), [false, true])
-        XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "c", reason: "C has an unknown stay: sometimes. Use true or always")])
+        XCTAssertEqual(scan.commands.map(\.stays), [true, true, false])
+        XCTAssertEqual(scan.commands.map(\.staysAlways), [false, true, false])
+        XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "d", reason: "D has an unknown mode: sometimes. Use once, stay or always")])
+    }
+
+    func testRefusesStayAndNamesTheMode() throws {
+        try write("a.sh", header: "stay=true")
+        try write("b.sh", header: "stay=always")
+
+        XCTAssertEqual(try scan.refused, [
+            ScanResult.Refusal(file: "a", reason: "A has stay, which Openspot no longer reads. Use mode=stay or mode=always"),
+            ScanResult.Refusal(file: "b", reason: "B has stay, which Openspot no longer reads. Use mode=stay or mode=always"),
+        ])
     }
 
     func testAHeaderKeepsTheFilesItsCardTakes() throws {
@@ -365,14 +376,14 @@ final class PluginFolderTests: XCTestCase {
 
     func testRefusesAnAnswersPatternThatIsNoneOrThatStays() throws {
         try write("m.sh", header: "answers=[0-9")
-        try write("n.sh", header: "answers=^[0-9]\nstay=true")
-        try write("o.sh", header: "answers=^[0-9]\nstay=always")
+        try write("n.sh", header: "answers=^[0-9]\nmode=stay")
+        try write("o.sh", header: "answers=^[0-9]\nmode=always")
 
         XCTAssertEqual(try scan.plugins, [])
         XCTAssertEqual(try scan.refused, [
             ScanResult.Refusal(file: "m", reason: "M has an unknown answers pattern: [0-9. Write a regular expression, such as answers=^[0-9]"),
-            ScanResult.Refusal(file: "n", reason: "N answers the main search, so it runs once for each call. Remove stay or answers"),
-            ScanResult.Refusal(file: "o", reason: "O answers the main search, so it runs once for each call. Remove stay or answers"),
+            ScanResult.Refusal(file: "n", reason: "N answers the main search, so it runs once for each call. Remove mode or answers"),
+            ScanResult.Refusal(file: "o", reason: "O answers the main search, so it runs once for each call. Remove mode or answers"),
         ])
     }
 

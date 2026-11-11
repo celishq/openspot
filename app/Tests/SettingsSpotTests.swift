@@ -36,7 +36,7 @@ final class SettingsSpotTests: BuiltInCase {
 
     func testTheSheetListsAMenuBarRowForEachSpotThatCanShowThereAndEnterTurnsItOnAndOff() async throws {
         try script("cups.sh", "title=Cups\nread=60")
-        try script("relay.sh", "title=Relay\nstay=true")
+        try script("relay.sh", "title=Relay\nmode=stay")
         try script("notes.sh", "title=Notes\nread=panel")
 
         let before = try await items()

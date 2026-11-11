@@ -2,7 +2,7 @@
 # title=Relay
 # icon=antenna.radiowaves.left.and.right
 # detail=Send a line to another process, and see each line it sends back
-# stay=always
+# mode=always
 # read=panel
 . "$OPENSPOT_SH"
 port=${RELAY_PORT:-47800}

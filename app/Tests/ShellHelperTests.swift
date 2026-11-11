@@ -177,7 +177,7 @@ final class ShellHelperTests: XCTestCase {
         while next; do
           printf 'got=%s|%s|%s\\n---\\n' "$reason" "$OPENSPOT_VALUE" "$(value value)"
         done
-        """, header: "# stay=true\n")
+        """, header: "# mode=stay\n")
         let live = ScriptProcess(url: url, mode: .stays, limit: 5)
         var frames = live.start().makeAsyncIterator()
 
@@ -198,7 +198,7 @@ final class ShellHelperTests: XCTestCase {
           printf 'got=%s|%s|%s|%s|%s\\n---\\n' "$call" "$reason" "$(arg 1)" "$(arg 2)" "$(value note)"
         done
         printf 'over=1\\n'
-        """, header: "# stay=true\n")
+        """, header: "# mode=stay\n")
         let live = ScriptProcess(url: url, mode: .stays, limit: 5)
         var frames = live.start().makeAsyncIterator()
 
@@ -223,7 +223,7 @@ final class ShellHelperTests: XCTestCase {
         while IFS= read -r line; do
           [ -z "$line" ] || printf 'got=%s\\n---\\n' "$line"
         done
-        """, header: "# stay=true\n")
+        """, header: "# mode=stay\n")
         let live = ScriptProcess(url: url, mode: .stays, limit: 3)
         defer { live.end() }
         var frames = live.start().makeAsyncIterator()
@@ -237,7 +237,7 @@ final class ShellHelperTests: XCTestCase {
     }
 
     func testAStayingRunHasNoVariableThatNamesItsLife() async throws {
-        let url = try script("printf 'stay=%s\\n---\\n' \"${OPENSPOT_STAY-}\"", header: "# stay=true\n")
+        let url = try script("printf 'stay=%s\\n---\\n' \"${OPENSPOT_STAY-}\"", header: "# mode=stay\n")
         let live = ScriptProcess(url: url, mode: .stays, limit: 3)
         defer { live.end() }
         var frames = live.start().makeAsyncIterator()
@@ -248,7 +248,7 @@ final class ShellHelperTests: XCTestCase {
     }
 
     func testTheHelperReadsAllOfStdinInAScriptThatSaysStayFalse() async throws {
-        let url = try script("printf '%s' \"$(value a)\"", header: "# title=Once\n# stay=false\n")
+        let url = try script("printf '%s' \"$(value a)\"", header: "# title=Once\n# mode=once\n")
 
         let output = try await ScriptProcess.output(url: url, input: "a=one\n", limit: 5)
 

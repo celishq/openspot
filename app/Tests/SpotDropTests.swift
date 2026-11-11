@@ -386,7 +386,7 @@ final class SpotDropTests: XCTestCase {
 
     /// The sheet of a staying script that takes `mov` files. It logs each line of its stdin, and prints a frame after each block.
     private func stayingSheet(header: String = "") throws -> SpotRun {
-        try sheet(header: "stay=true\ndrop=mov\n\(header)", """
+        try sheet(header: "mode=stay\ndrop=mov\n\(header)", """
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("blocks"))'
           case "$line" in call=*) call=${line#call=} ;; esac

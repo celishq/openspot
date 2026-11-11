@@ -540,7 +540,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAQuitChangesNothingOnAStayingScriptThatFailsAsItEnds() async throws {
-        try script(header: "stay=always", """
+        try script(header: "mode=always", """
         while IFS= read -r line; do
           case "$line" in call=*) call=${line#call=} ;; esac
           [ -n "$line" ] || printf 'end=%s\\n\\ntext=n\\ntitle=A\\n---\\n' "$call"

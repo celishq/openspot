@@ -1,7 +1,7 @@
 # The shell helper of Openspot. `. "$OPENSPOT_SH"` gives `esc` and `value`, and `next` and `arg` in a staying script.
 # Loading starts `cat` once, and each function starts `sed`, `tr` or `awk` only above 1 KB, where a shell loop is too slow.
 
-# Whether the header of the script says `stay=true` or `stay=always`: the comment lines at its top, read with no process.
+# Whether the header of the script says `mode=stay` or `mode=always`: the comment lines at its top, read with no process.
 _openspot_stays=
 while IFS= read -r _openspot_line; do
   case $_openspot_line in
@@ -10,7 +10,7 @@ while IFS= read -r _openspot_line; do
   esac
   _openspot_line=${_openspot_line#"${_openspot_line%%[! ]*}"}
   case $_openspot_line in
-    stay=true | stay=always) _openspot_stays=1 ;;
+    mode=stay | mode=always) _openspot_stays=1 ;;
   esac
 done < "$0" 2>/dev/null
 

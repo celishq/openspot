@@ -20,7 +20,7 @@ final class SpotUsageTests: SpotRunsCase {
     }
 
     func testAStayingScriptCountsItsCPUTimeWhileItRuns() async throws {
-        try script(header: "stay=true\nread=sheet", """
+        try script(header: "mode=stay\nread=sheet", """
         \(Self.busyLoop)
         touch '\(path("busy"))'
         while IFS= read -r line; do

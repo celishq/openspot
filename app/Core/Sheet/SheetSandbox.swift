@@ -21,7 +21,7 @@ public struct SheetSandbox: Equatable, Sendable {
             url: file,
             kind: .list,
             read: header.value("read").flatMap(SpotRead.init(text:)),
-            stays: header.flag("stay") ?? false
+            stays: ["stay", "always"].contains(header.value("mode"))
         )
     }
 

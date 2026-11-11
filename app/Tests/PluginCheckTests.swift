@@ -26,6 +26,15 @@ final class PluginCheckTests: XCTestCase {
         XCTAssertEqual(json, [["spot": "weather", "file": file.path, "fault": "Weather has an unknown size: huge"]])
     }
 
+    func testStayIsAFaultThatNamesTheMode() async throws {
+        let file = folder.appendingPathComponent("relay.sh")
+        try "#!/bin/sh\n# stay=true\necho\n".writeScript(to: file)
+
+        let findings = await PluginCheck(folder: PluginFolder(url: folder)).findings()
+
+        XCTAssertEqual(findings.map(\.fault), ["Relay has stay, which Openspot no longer reads. Use mode=stay or mode=always"])
+    }
+
     func testNoFaultIsAnEmptyList() async throws {
         try "#!/bin/sh\necho\n".writeScript(to: folder.appendingPathComponent("hello.sh"))
 

@@ -54,7 +54,7 @@ final class TerminalRunTests: XCTestCase {
     }
 
     func testARunOfAStayingScriptEndsWithTheFrameThatEndsItsCall() async throws {
-        let spot = try spot("relay", header: "stay=true", """
+        let spot = try spot("relay", header: "mode=stay", """
         . "$OPENSPOT_SH"
         while next; do
           printf 'text=peer\\ntitle=%s\\n---\\n' "$(arg 1)"

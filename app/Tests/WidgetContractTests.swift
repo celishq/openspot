@@ -175,7 +175,7 @@ final class WidgetContractTests: XCTestCase {
     func testOnlyAMetricOrAStayingScriptCanShowInTheMenuBar() throws {
         try script("one.sh", "#!/bin/sh\n")
         try script("two.sh", "#!/bin/sh\n# read=panel\n")
-        try script("three.sh", "#!/bin/sh\n# stay=true\n")
+        try script("three.sh", "#!/bin/sh\n# mode=stay\n")
         try script("four.sh", "#!/bin/sh\n# read=5\n")
 
         XCTAssertEqual(try scan.refused, [])

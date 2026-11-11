@@ -38,11 +38,11 @@ public struct Plugin: Equatable, Sendable {
             read = parsed
         }
         try Self.refuseOldKeys(header, of: name)
-        let stay = header.value("stay")
-        guard stay == nil || ["true", "false", "always"].contains(stay) else {
-            throw PluginError.fault("\(name) has an unknown stay: \(stay!). Use true or always")
+        let mode = header.value("mode") ?? "once"
+        guard ["once", "stay", "always"].contains(mode) else {
+            throw PluginError.fault("\(name) has an unknown mode: \(mode). Use once, stay or always")
         }
-        let stays = stay == "true" || stay == "always"
+        let stays = mode == "stay" || mode == "always"
         let sizeName = header.value("size") ?? "wide"
         guard let size = SpotSize(name: sizeName) else { throw PluginError.fault("\(name) has an unknown size: \(sizeName)") }
         let places = try Self.places(header.value("offers"), of: name)
@@ -58,7 +58,7 @@ public struct Plugin: Equatable, Sendable {
             guard let pattern = AnswerPattern(text) else {
                 throw PluginError.fault("\(name) has an unknown answers pattern: \(text). Write a regular expression, such as answers=^[0-9]")
             }
-            guard !stays else { throw PluginError.fault("\(name) answers the main search, so it runs once for each call. Remove stay or answers") }
+            guard !stays else { throw PluginError.fault("\(name) answers the main search, so it runs once for each call. Remove mode or answers") }
             answers = pattern
         }
         let answersOnly = answers != nil && read == nil
@@ -88,7 +88,7 @@ public struct Plugin: Equatable, Sendable {
             isFound: !isRowsOnly && !answersOnly,
             answers: answers,
             stays: stays,
-            staysAlways: stay == "always",
+            staysAlways: mode == "always",
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             offersFloat: places.contains("float"),
             dataName: id.split(separator: "/").first.map(String.init),
@@ -117,8 +117,11 @@ public struct Plugin: Equatable, Sendable {
         return Set(words)
     }
 
-    /// Refuses a header that still has `global`, `float`, `tray`, `data` or `shortcut`, and names the new way.
+    /// Refuses a header that still has `global`, `float`, `tray`, `data`, `stay` or `shortcut`, and names the new way.
     private static func refuseOldKeys(_ header: TextBlock, of name: String) throws {
+        if header.value("stay") != nil {
+            throw PluginError.fault("\(name) has stay, which Openspot no longer reads. Use mode=stay or mode=always")
+        }
         let commands = header.values("command") + header.children.compactMap { $0.value("command") }.filter { $0.contains(":") }
         if let command = commands.first {
             throw PluginError.fault("\(name) has command=\(command), which Openspot no longer reads. Write each command as a block after a blank comment line, such as command=left with title=Left side")

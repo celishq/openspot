@@ -101,7 +101,7 @@ class SpotRunsCase: XCTestCase {
     /// Writes a staying script. It logs each line of its stdin, and after each block prints the frame with `head` and the
     /// `end` of that call in its head.
     @discardableResult
-    func staying(header: String = "stay=true", head: String = "", frame: String = "row=a\\ntitle=A\\n") throws -> URL {
+    func staying(header: String = "mode=stay", head: String = "", frame: String = "row=a\\ntitle=A\\n") throws -> URL {
         try script(header: header, """
         trap 'touch "\(path("ended"))"' EXIT
         while IFS= read -r line; do

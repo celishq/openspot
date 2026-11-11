@@ -155,14 +155,14 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAStayingScriptSaysSo() throws {
-        let review = try review("title=Weather\nstay=true\nread=sheet")
+        let review = try review("title=Weather\nmode=stay\nread=sheet")
 
         let text = try shown(review)
         XCTAssertTrue(text.contains("Weather: keeps running while it is in use"), text)
     }
 
     func testAScriptThatAlwaysStaysSaysSo() throws {
-        let review = try review("title=Relay\nstay=always")
+        let review = try review("title=Relay\nmode=always")
 
         let text = try shown(review)
         XCTAssertTrue(text.contains("Relay: keeps running while Openspot runs"), text)

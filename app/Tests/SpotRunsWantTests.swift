@@ -50,7 +50,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     }
 
     func testAWidgetThatAScanAddsWhileThePanelIsOpenStartsTheStayingScriptItPlaces() async throws {
-        try script("stayer", header: "stay=true\nread=sheet", "while IFS= read -r line; do :; done")
+        try script("stayer", header: "mode=stay\nread=sheet", "while IFS= read -r line; do :; done")
         _ = try scanned()
         runs.panelOpened()
         try await pause(0.2)
@@ -211,7 +211,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     func testAStayingScriptThatACallHoldsIsReadOnItsOwnTimeWhileTheClockWaitsForALaterRead() async throws {
         menuBar.insert("pulls")
         try script("pulls", header: "read=120", log: "pulls", "printf 'text=t\\ntitle=1\\n'")
-        try script("stayer", header: "stay=true\nread=1", """
+        try script("stayer", header: "mode=stay\nread=1", """
         while IFS= read -r line; do
           printf '%s\\n' "$line" >> '\(path("blocks"))'
           case "$line" in call=*) call=${line#call=}; args= ;; arg=*) args="$args ${line#arg=}" ;; esac
