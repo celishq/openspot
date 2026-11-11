@@ -72,12 +72,6 @@ or a block kind, add one word to one spec and to the registry. A new `openspot` 
 it does not know, and skips and reports a block that it does not know. A new default id reaches only a script that asks
 for it.
 
-## Gaps
+## Open
 
-Where the code still differs from the rules of 11-11-2026. Each fix removes its row.
-
-| Rule              | Module that differs                                                                                  |
-| ----------------- | ---------------------------------------------------------------------------------------------------- |
-| S12, S13          | `Client/main.swift`, `CommandSocket`.                                                                 |
-
-Open: a stop of a call that `openspot_serve` runs does not end it early, so a slow staying call runs to its end.
+A stop of a call that `openspot_serve` runs does not end it early, so a slow staying call runs to its end.

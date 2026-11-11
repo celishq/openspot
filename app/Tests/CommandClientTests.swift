@@ -1,14 +1,39 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves `Contents/Helpers/openspot`: it asks the socket of the running app, and starts the program of its app with the
-/// same arguments when no socket answers or the call runs in a process of its own.
+/// Proves `Contents/Helpers/openspot`: it asks the socket of the running app, and runs the program of its app with the same
+/// arguments for a call of files when no socket answers or the call runs in a process of its own. A live call starts the
+/// app and waits for its socket, and Ctrl-C stops its work in the app (S12, S13).
 final class CommandClientTests: XCTestCase {
     private final class Host: Mac {
         func eventStore() -> any EventStore { FakeEventStore() }
         func reminderStore() -> any ReminderStore { FakeReminderStore() }
         func showCalendar(at time: Date) throws {}
         func open(_ link: URL) -> Bool { true }
+    }
+
+    /// A running app whose change of a setting takes 30 seconds and then writes a far-off file, unless its call stops first.
+    /// It writes `started` as it begins and `ended` as it ends.
+    private struct SlowApp: RunningApp {
+        let folder: URL
+
+        func configChanged(_ change: ConfigChange) async {}
+        func status() async -> (update: String?, calls: Int, isFirstLaunch: Bool) { (nil, 0, false) }
+        func checkUpdate() async -> Bool { true }
+        func installUpdate() async -> Bool { true }
+        func quit() async {}
+        func open(_ id: String) async -> Bool { true }
+        func review(_ id: String) async -> Bool { true }
+
+        func changeSetting(_ key: String, of spot: String) async -> Bool {
+            FileManager.default.createFile(atPath: folder.appendingPathComponent("started").path, contents: nil)
+            defer { FileManager.default.createFile(atPath: folder.appendingPathComponent("ended").path, contents: nil) }
+            do {
+                try await Task.sleep(for: .seconds(30))
+                FileManager.default.createFile(atPath: folder.appendingPathComponent("far").path, contents: nil)
+            } catch {}
+            return true
+        }
     }
 
     private var folder: URL!
@@ -84,6 +109,80 @@ final class CommandClientTests: XCTestCase {
         listen()
 
         XCTAssertEqual(try run(client, ["color", "pick"]).output, "app: color pick\n")
+    }
+
+    /// Starts the program with the arguments and these more variables, and returns it as it runs.
+    private func start(_ arguments: [String], variables: [String: String] = [:]) throws -> (process: Process, output: Pipe, errors: Pipe) {
+        let process = Process()
+        let output = Pipe()
+        let errors = Pipe()
+        process.executableURL = client
+        process.arguments = arguments
+        process.environment = ["OPENSPOT_CONFIG": config.path, "PATH": "/usr/bin:/bin"].merging(variables) { _, new in new }
+        process.standardOutput = output
+        process.standardError = errors
+        process.standardInput = FileHandle.nullDevice
+        try process.run()
+        return (process, output, errors)
+    }
+
+    /// Waits for a fact, for 10 seconds at most.
+    private func wait(_ what: String, until fact: () -> Bool) async throws {
+        for _ in 0..<1000 {
+            if fact() { return }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTFail("waited for \(what)")
+    }
+
+    private func exists(_ name: String) -> Bool {
+        FileManager.default.fileExists(atPath: folder.appendingPathComponent(name).path)
+    }
+
+    func testALiveCallWithNoAppStartsItInTheBackgroundAndAsksItsSocket() async throws {
+        try "#!/bin/sh\nif [ $# -gt 0 ]; then echo \"app: $*\"; else touch '\(folder.appendingPathComponent("started").path)'; fi\n".writeScript(to: folder.appendingPathComponent("A.app/Contents/MacOS/Openspot"))
+        let run = try start(["app", "status"])
+
+        try await wait("the start of the app") { exists("started") }
+        listen()
+        try await wait("the end of the call") { !run.process.isRunning }
+
+        let printed = String(decoding: run.output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        XCTAssertTrue(printed.hasPrefix("{"), printed)
+        XCTAssertEqual(run.process.terminationStatus, 0)
+    }
+
+    func testALiveCallFailsAndSaysSoWhenTheAppDoesNotStartInTime() async throws {
+        let run = try start(["event", "emit", "music.track"], variables: ["OPENSPOT_START_WAIT": "0.3"])
+
+        try await wait("the end of the call") { !run.process.isRunning }
+
+        let said = String(decoding: run.errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        XCTAssertEqual(said, "Openspot did not start within 0.3 seconds, so this call did not run. Open Openspot, then run it again.\n")
+        XCTAssertEqual(String(decoding: run.output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self), "")
+        XCTAssertEqual(run.process.terminationStatus, 1)
+    }
+
+    func testCtrlCStopsTheWorkOfTheCallInTheAppAndItChangesNothing() async throws {
+        socket = CommandSocket(folder: config, api: CommandAPI(mac: Host(), app: SlowApp(folder: folder)))
+        let run = try start(["setting", "change", "--spot", "repos", "folder"])
+        try await wait("the start of the work") { exists("started") }
+
+        run.process.interrupt()
+
+        try await wait("the end of the work") { exists("ended") }
+        try await wait("the end of the command") { !run.process.isRunning }
+        XCTAssertFalse(exists("far"))
+        XCTAssertEqual(run.process.terminationStatus, 130)
+    }
+
+    func testOnlyACallThatNeedsTheStateOfTheAppIsLive() {
+        for live in [["app", "status"], ["app", "quit"], ["spot", "open", "x"], ["setting", "change", "k"], ["event", "emit", "a.b"], ["update", "check"], ["batch"]] {
+            XCTAssertTrue(CommandKind.needsApp(live), live.joined(separator: " "))
+        }
+        for files in [["spot", "list"], ["setting", "get", "k"], ["calc", "solve", "1"], ["app", "login", "on"], ["guide"], ["screen", "shot"], []] {
+            XCTAssertFalse(CommandKind.needsApp(files), files.joined(separator: " "))
+        }
     }
 
     func testThroughALinkItStartsTheAppOfItsResolvedPath() throws {

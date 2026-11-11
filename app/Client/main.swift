@@ -1,7 +1,12 @@
 import Darwin
 
-/// Starts the program of the app with the same arguments, which does the call itself.
-func startApp(_ app: AppBundle) -> Never {
+/// The time a live call waits for the app that it starts, in seconds, unless `OPENSPOT_START_WAIT` gives another.
+let startWait = getenv("OPENSPOT_START_WAIT").flatMap { Double(String(cString: $0)) } ?? 10
+/// The connection to the app, which Ctrl-C closes so that the app stops the work of the call (S13).
+nonisolated(unsafe) var connection: Int32 = -1
+
+/// Runs the program of the app with the same arguments, which does a call of files itself (S2).
+func runAlone(_ app: AppBundle) -> Never {
     let program = app.program
     var argv: [UnsafeMutablePointer<CChar>?] = ([program] + CommandLine.arguments.dropFirst()).map { strdup($0) }
     argv.append(nil)
@@ -13,6 +18,42 @@ func fail(_ line: String) -> Never {
     let bytes = Array((line + "\n").utf8)
     _ = write(STDERR_FILENO, bytes, bytes.count)
     exit(1)
+}
+
+/// Starts the app in the background with no arguments: through `open` for a bundle with an Info.plist, so that it runs as
+/// it does from the Finder with the config folder of this call, and else as its program in a session of its own.
+func startInBackground(_ app: AppBundle, config: String) {
+    let bundle = String(app.contents[..<(app.contents.lastIndex(of: "/") ?? app.contents.endIndex)])
+    var arguments = access(app.contents + "/Info.plist", F_OK) == 0 ? ["/usr/bin/open", "-g", "-j", bundle] : [app.program]
+    if arguments.count > 1, getenv("OPENSPOT_CONFIG") != nil { arguments += ["--env", "OPENSPOT_CONFIG=" + config] }
+    var actions: posix_spawn_file_actions_t?
+    posix_spawn_file_actions_init(&actions)
+    defer { posix_spawn_file_actions_destroy(&actions) }
+    for descriptor in [STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO] {
+        posix_spawn_file_actions_addopen(&actions, descriptor, "/dev/null", descriptor == STDIN_FILENO ? O_RDONLY : O_WRONLY, 0)
+    }
+    var attributes: posix_spawnattr_t?
+    posix_spawnattr_init(&attributes)
+    defer { posix_spawnattr_destroy(&attributes) }
+    posix_spawnattr_setflags(&attributes, Int16(POSIX_SPAWN_SETSID))
+    let words = arguments.map { strdup($0) } + [nil]
+    defer { words.forEach { free($0) } }
+    var started: pid_t = 0
+    _ = posix_spawn(&started, arguments[0], &actions, &attributes, words, environ)
+}
+
+/// Starts the app and waits for its socket, for `startWait` seconds at most, or fails and says so (S12).
+func reachStarted(_ app: AppBundle, config: String) -> Int32 {
+    startInBackground(app, config: config)
+    var waited = 0.0
+    while waited < startWait {
+        let reached = reach(config)
+        if reached >= 0 { return reached }
+        usleep(50_000)
+        waited += 0.05
+    }
+    let seconds = startWait == startWait.rounded() ? String(Int(startWait)) : String(startWait)
+    fail("Openspot did not start within \(seconds) seconds, so this call did not run. Open Openspot, then run it again.")
 }
 
 /// Connects to the socket of the API in the config folder, or returns -1 when nothing listens there.
@@ -112,10 +153,26 @@ func put(_ bytes: [UInt8], to descriptor: Int32) {
 }
 
 guard let app = AppBundle() else { fail("openspot cannot find the path of its own program.") }
-let connection = app.config.map(reach) ?? -1
-guard connection >= 0, deliver(request(), on: connection) else { startApp(app) }
+let arguments = Array(CommandLine.arguments.dropFirst())
+let isLive = CommandKind.needsApp(arguments)
+connection = app.config.map(reach) ?? -1
+if connection < 0 {
+    guard isLive, let config = app.config else { runAlone(app) }
+    connection = reachStarted(app, config: config)
+}
+signal(SIGINT) { _ in
+    close(connection)
+    _exit(130)
+}
+guard deliver(request(), on: connection) else {
+    guard !isLive else { fail("Openspot stopped before it took the call. Run the call again.") }
+    runAlone(app)
+}
 guard let answer = JSON(receive(on: connection)) else { fail("Openspot stopped before it answered. Run the call again.") }
-guard let result = answer["result"] else { startApp(app) }
+guard let result = answer["result"] else {
+    guard !isLive else { fail("Openspot cannot run this call. Run `openspot help` to see each call.") }
+    runAlone(app)
+}
 if case .text(let output)? = result["stdout"] { put(output, to: STDOUT_FILENO) }
 if case .text(let errors)? = result["stderr"] { put(errors, to: STDERR_FILENO) }
 if case .number(let code)? = result["code"] { exit(Int32(code)) }

@@ -24,6 +24,7 @@ targets:
     platform: macOS
     sources:
       - path: Core
+      - path: Client/CommandKind.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.core

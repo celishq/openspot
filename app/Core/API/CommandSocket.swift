@@ -3,7 +3,8 @@ import Foundation
 /// The socket of the API in the config folder, which answers each `openspot` call while the app runs (S1). A call is a
 /// JSON-RPC 2.0 request on one line (`CommandRequest`), with the descriptor of its stdin beside the line as `SCM_RIGHTS`.
 /// The answer is one line: a result with `stdout`, `stderr` and `code`, or an error for a call that the API leaves to a
-/// process of its own, which the caller then starts.
+/// process of its own, which the caller then starts. A caller that closes its connection first stops the work of its call
+/// (S13).
 public final class CommandSocket: @unchecked Sendable {
     private struct Reply: Encodable {
         struct Result: Encodable {
@@ -91,9 +92,26 @@ public final class CommandSocket: @unchecked Sendable {
             send(Reply(id: request.id, error: .init(code: alone, message: "Run this call in a process of its own.")), to: connection, input: input)
             return
         }
+        let task = Task.detached { await work() }
+        let watch = DispatchSource.makeReadSource(fileDescriptor: connection, queue: DispatchQueue(label: "dev.openspot.api.call"))
+        let ends = DispatchGroup()
+        ends.enter()
+        ends.enter()
+        watch.setEventHandler {
+            var byte: UInt8 = 0
+            guard recv(connection, &byte, 1, MSG_PEEK | MSG_DONTWAIT) == 0 else { return }
+            task.cancel()
+            watch.cancel()
+        }
+        watch.setCancelHandler { ends.leave() }
+        watch.resume()
         Task.detached {
-            let answer = await work()
-            send(Reply(id: request.id, result: .init(stdout: answer.output, stderr: answer.errors, code: answer.code)), to: connection, input: input)
+            let answer = await task.value
+            watch.cancel()
+            ends.leave()
+            ends.notify(queue: .global()) {
+                send(Reply(id: request.id, result: .init(stdout: answer.output, stderr: answer.errors, code: answer.code)), to: connection, input: input)
+            }
         }
     }
 

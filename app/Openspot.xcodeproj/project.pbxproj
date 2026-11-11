@@ -234,6 +234,7 @@
 		80C922DE277B506BCF779D36 /* WindowMoveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E72E8505BE81F5754E18EE4 /* WindowMoveTests.swift */; };
 		81C73CBBAC90071FE0DBE1DB /* SpotCardArrow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22868BC546570091C47C9DE4 /* SpotCardArrow.swift */; };
 		82923318384D398E9B7FC7DC /* CaptureFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C4F749FF5E92621742CB71 /* CaptureFile.swift */; };
+		82F560A5A6DF585C0F2BFC2A /* CommandKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2719A0D59283365D2CFF2F3 /* CommandKind.swift */; };
 		83A0DF5D9F1516256D255F2D /* SheetFrameReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D966C009208F239C65FE779 /* SheetFrameReader.swift */; };
 		845F7EABD41A2C0118D18D86 /* SpotRecording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AFFAE1292EF44932A4115BD /* SpotRecording.swift */; };
 		847EA1D90BC1D0206DC52409 /* Spot+Answers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A70BFBE84119FD64BFFD21C /* Spot+Answers.swift */; };
@@ -322,6 +323,7 @@
 		A977216BA7B3236678E4F84C /* CommandAnswer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60E4ED4839DF3376656D7F58 /* CommandAnswer.swift */; };
 		A9F5582B88F7FEA8BE8F0308 /* SpotWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CFA6717BC498DBE732137A5 /* SpotWindow.swift */; };
 		AA0BB273067D625C24342E67 /* SpotShakeWatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CD6B476248666E82D089A11 /* SpotShakeWatch.swift */; };
+		AA9FE6ABD0E15CAABE58D838 /* CommandKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2719A0D59283365D2CFF2F3 /* CommandKind.swift */; };
 		AAC46201AE86DE77B4BAC609 /* CommandGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5838435FDD760DA84BE10471 /* CommandGuide.swift */; };
 		AB2E84CC3D2D7627555DC134 /* SpotRoundButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB3C463D807C5294C4367A9 /* SpotRoundButton.swift */; };
 		AB371E421B7AD912D259B7AB /* OpenspotApp+Host.swift in Sources */ = {isa = PBXBuildFile; fileRef = 552F81E4432F2F7D939CDE9E /* OpenspotApp+Host.swift */; };
@@ -973,6 +975,7 @@
 		E0B87D3D102FAE184B447819 /* CapabilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapabilityTests.swift; sourceTree = "<group>"; };
 		E0C64B6E575F3F26834BE0CB /* SpotWorkMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotWorkMark.swift; sourceTree = "<group>"; };
 		E1EF05F0F16A6B031F1B3487 /* ViewLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewLibrary.swift; sourceTree = "<group>"; };
+		E2719A0D59283365D2CFF2F3 /* CommandKind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandKind.swift; sourceTree = "<group>"; };
 		E276C8F85F05037930431894 /* SpotSandbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotSandbox.swift; sourceTree = "<group>"; };
 		E3CD13ED5DE95AB2AAE0FB33 /* SpotsModel+Grid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Grid.swift"; sourceTree = "<group>"; };
 		E50E6719EBEC724AB88E711A /* CaptureFileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureFileTests.swift; sourceTree = "<group>"; };
@@ -1114,6 +1117,7 @@
 			isa = PBXGroup;
 			children = (
 				5DC651707DE92731CA6FCBC2 /* AppBundle.swift */,
+				E2719A0D59283365D2CFF2F3 /* CommandKind.swift */,
 				1E39E3FC10AF70508116905D /* JSON.swift */,
 				906DB6D154A3163E39180C24 /* main.swift */,
 			);
@@ -2219,6 +2223,7 @@
 				A977216BA7B3236678E4F84C /* CommandAnswer.swift in Sources */,
 				AAC46201AE86DE77B4BAC609 /* CommandGuide.swift in Sources */,
 				939FE0E4820E06879EE4A38E /* CommandKey.swift in Sources */,
+				AA9FE6ABD0E15CAABE58D838 /* CommandKind.swift in Sources */,
 				71702FDE7671AFF3814ED1DB /* CommandLineCall.swift in Sources */,
 				0E2781CA4A1FFE0C49CFE3E4 /* CommandLink.swift in Sources */,
 				D2D8086288E34A0ACB948C0B /* CommandOffer.swift in Sources */,
@@ -2679,6 +2684,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5BC633F06A1C1F4B6F326DB9 /* AppBundle.swift in Sources */,
+				82F560A5A6DF585C0F2BFC2A /* CommandKind.swift in Sources */,
 				9B377311E89DE118F81937B0 /* JSON.swift in Sources */,
 				549DB7DA5F3CFA012C677BA4 /* main.swift in Sources */,
 			);
