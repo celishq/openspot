@@ -59,6 +59,7 @@ public final class CommandSocket: @unchecked Sendable {
         source = DispatchSource.makeReadSource(fileDescriptor: listener, queue: DispatchQueue(label: "dev.openspot.api"))
         source.setEventHandler {
             while case let connection = accept(listener, nil, nil), connection >= 0 {
+                _ = fcntl(connection, F_SETFD, FD_CLOEXEC)
                 DispatchQueue.global().async { Self.answer(connection, api) }
             }
         }
@@ -75,7 +76,6 @@ public final class CommandSocket: @unchecked Sendable {
     /// Reads the request on a connection, answers it, and closes the connection and the stdin that came with it.
     private static func answer(_ connection: Int32, _ api: CommandAPI) {
         _ = fcntl(connection, F_SETFL, fcntl(connection, F_GETFL) & ~O_NONBLOCK)
-        _ = fcntl(connection, F_SETFD, FD_CLOEXEC)
         var on: Int32 = 1
         setsockopt(connection, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
         var time = timeval(tv_sec: callerLimit, tv_usec: 0)

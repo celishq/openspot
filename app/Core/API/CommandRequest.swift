@@ -1,7 +1,8 @@
 import Foundation
 
 /// One `openspot` call that reaches the app: a JSON-RPC 2.0 request on one line, with the method `ask` and the params
-/// `argv`, `cwd` and `env`, the arguments, the working folder and the `OPENSPOT_*` variables of the calling process.
+/// `argv`, `cwd` and `env`, the arguments, the working folder and the `OPENSPOT_*` variables of the calling process. A
+/// variable that is a relative path is read from the working folder, as the process of the caller reads it.
 struct CommandRequest: Equatable {
     private struct Line: Decodable {
         struct Params: Decodable {
@@ -29,7 +30,10 @@ struct CommandRequest: Equatable {
         id = line.id
         arguments = line.params.argv
         folder = line.params.cwd
-        environment = line.params.env.filter { $0.key.hasPrefix("OPENSPOT_") }
+        let folder = URL(fileURLWithPath: line.params.cwd, isDirectory: true)
+        environment = line.params.env.filter { $0.key.hasPrefix("OPENSPOT_") }.mapValues { value in
+            ["/", ""].contains(value.first.map(String.init) ?? "") ? value : URL(fileURLWithPath: value, relativeTo: folder).standardizedFileURL.path
+        }
     }
 
     /// The environment of the call: that of the app, with the `OPENSPOT_*` variables of the caller in place of its own.

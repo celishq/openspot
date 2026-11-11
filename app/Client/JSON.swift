@@ -120,7 +120,7 @@ enum JSON {
                     high = code
                     continue
                 }
-                let value = high.map { 0x10000 + (($0 - 0xD800) << 10) + (code - 0xDC00) } ?? code
+                let value = high.flatMap { (0xDC00...0xDFFF).contains(code) ? 0x10000 + (($0 - 0xD800) << 10) + (code - 0xDC00) : nil } ?? code
                 high = nil
                 text += Array(String(Unicode.Scalar(value).map(Character.init) ?? "\u{FFFD}").utf8)
             default: text.append(mark)

@@ -75,6 +75,13 @@ final class CommandSocketTests: XCTestCase {
         XCTAssertNotNil((answer["error"] as? [String: Any])?["code"] as? Int)
     }
 
+    func testARelativeFolderOfTheCallerIsReadFromItsWorkingFolder() throws {
+        let request: [String: Any] = ["jsonrpc": "2.0", "id": 1, "method": "ask", "params": ["argv": ["setting", "set", "--spot", "notes", "tone", "warm"], "cwd": folder.path, "env": ["OPENSPOT_CONFIG": "own"]]]
+        _ = try send(String(decoding: JSONSerialization.data(withJSONObject: request), as: UTF8.self))
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("own/config.toml").path))
+    }
+
     func testALineThatIsNoRequestGetsAnError() throws {
         XCTAssertEqual((try send("hello")["error"] as? [String: Any])?["code"] as? Int, -32700)
     }
