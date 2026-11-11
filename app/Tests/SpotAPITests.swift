@@ -143,4 +143,68 @@ final class SpotAPITests: XCTestCase {
         XCTAssertEqual(values.map { $0["key"] as? String }, ["folder", "editor"])
         XCTAssertEqual(values.map { $0["value"] as? String }, ["~/Code", "Zed"])
     }
+
+    func testKeySetGivesACommandAKeyAndTakesItAway() async throws {
+        _ = try await answer(["key", "set", "move", "left", "ctrl+option+left"])
+        _ = try await answer(["key", "set", "move", "left", "ctrl+option+up"])
+        _ = try await answer(["key", "set", "move", "right", "ctrl+option+right"])
+
+        XCTAssertEqual(file.read().keys.map(\.act), [.command("left"), .command("right")])
+        XCTAssertEqual(file.read().keys.map(\.trigger.text), ["ctrl+option+up", "ctrl+option+right"])
+
+        _ = try await answer(["key", "set", "move", "left"])
+
+        XCTAssertEqual(file.read().keys.map(\.act), [.command("right")])
+        let changes = await app.changes
+        XCTAssertEqual(changes, 4)
+    }
+
+    func testAShakeTakesTheShakeFromTheKeyThatHadIt() async throws {
+        _ = try await answer(["key", "set", "shelf", "--float", "shake"])
+        XCTAssertEqual(file.read().keys, [GlobalKey(spot: "shelf", act: .float, trigger: .shake)])
+
+        _ = try await answer(["key", "set", "notes", "--float", "shake"])
+
+        XCTAssertEqual(file.read().keys, [GlobalKey(spot: "notes", act: .float, trigger: .shake)])
+    }
+
+    func testTheKeysOfTheAppTakeAKeyAndRefuseAShake() async throws {
+        let panel = try await answer(["key", "set", "--panel", "option+space"])
+        let fix = try await answer(["key", "set", "--fix", "ctrl+option+f"])
+        let shake = try await answer(["key", "set", "--panel", "shake"])
+        let bad = try await answer(["key", "set", "move", "left", "k"])
+
+        XCTAssertEqual(panel, CommandAnswer())
+        XCTAssertEqual(fix, CommandAnswer())
+        XCTAssertEqual(file.read().panelKey, Shortcut(text: "option+space"))
+        XCTAssertEqual(file.read().fixKey, Shortcut(text: "ctrl+option+f"))
+        XCTAssertEqual(shake.code, 1)
+        XCTAssertEqual(shake.errors, "Openspot cannot use `shake`. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.\n")
+        XCTAssertEqual(bad.code, 1)
+        XCTAssertEqual(file.read().keys, [])
+    }
+
+    func testAKeyItCannotUseLeavesTheFile() async throws {
+        _ = try await answer(["key", "set", "--panel", "k"])
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.url.path))
+    }
+
+    func testKeySetReadsItsWords() {
+        XCTAssertEqual(CommandLineCall(arguments: ["key", "set", "a", "--float"], environment: [:]), .keySet(spot: "a", act: .float, key: nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["key", "set", "a", "go", "cmd+k"], environment: [:]), .keySet(spot: "a", act: .command("go"), key: "cmd+k"))
+        XCTAssertEqual(CommandLineCall(arguments: ["key", "set", "--panel"], environment: [:]), .unknown("key set --panel"))
+        XCTAssertEqual(CommandLineCall(arguments: ["key", "set", "a", "--b", "cmd+k"], environment: [:]), .unknown("key set a --b cmd+k"))
+    }
+
+    func testMenuBarPutsASpotInAndTakesItOut() async throws {
+        _ = try await answer(["menubar", "on", "cups"])
+        XCTAssertEqual(file.read().arrangement.menuBar, ["cups"])
+
+        _ = try await answer(["menubar", "off", "cups"])
+
+        XCTAssertEqual(file.read().arrangement.menuBar, [])
+        let changes = await app.changes
+        XCTAssertEqual(changes, 2)
+    }
 }

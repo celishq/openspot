@@ -35,6 +35,12 @@ public enum CommandLineCall: Equatable, Sendable {
     case settingSet(spot: String, key: String, value: String?)
     /// Prints each value that a spot keeps, as JSON.
     case settingList
+    /// Gives the app a key of its own: `panel_key` opens the panel, and `fix_key` opens the fix of a failure.
+    case appKeySet(name: String, key: String)
+    /// Gives a command, or the float of a spot, a key or the shake, or takes its key away with none (W1, W2).
+    case keySet(spot: String, act: GlobalKey.Act, key: String?)
+    /// Puts a spot in the menu bar, or takes it out.
+    case menuBar(id: String, isShown: Bool)
     /// A call that cannot run here, with the line that says why and how to fix it.
     case refused(String)
     /// Copies a file, or the text on stdin with no file.
@@ -108,6 +114,11 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot setting get [--spot id] <key>       Prints the value the person chose for the spot, or nothing.
     openspot setting set [--spot id] <key> [v]   Keeps a value for the spot, or removes it with no value.
     openspot setting list                        Prints each value that a spot keeps as JSON, with its spot and key.
+    openspot key set --panel|--fix <key>         Gives the key that opens the panel, or the one that opens a fix.
+    openspot key set <id> <command>|--float [key]
+                                                 Gives a command of a spot, or its float, a key such as ctrl+option+k,
+                                                 or shake. With no key, it takes the key away.
+    openspot menubar on|off <id>                 Puts a spot in the menu bar, or takes it out.
     openspot clipboard copy [file]               Copies the file as Finder does, or the text on stdin.
     openspot clipboard paste                     Pastes the clipboard into the front app.
     openspot event emit <name> [value]           Raises an event in the running app, such as music.track. Each spot
@@ -198,6 +209,9 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("spot", "on") where rest.count > 1, ("spot", "off") where rest.count > 1:
             self = .spotTurn(ids: Array(rest.dropFirst()), on: rest[0] == "on")
         case ("setting", "list") where rest.count == 1: self = .settingList
+        case ("key", "set"): self = Self.key(Array(rest.dropFirst())) ?? .unknown(arguments.joined(separator: " "))
+        case ("menubar", "on") where rest.count == 2, ("menubar", "off") where rest.count == 2:
+            self = .menuBar(id: rest[1], isShown: rest[0] == "on")
         case ("render", "--spot") where rest.count == 3: self = .renderSpot(id: rest[1], size: nil, path: rest[2])
         case ("render", "--spot") where rest.count == 5 && rest[2] == "--card":
             guard let size = SpotSize(name: rest[3]) else { self = .unknown(arguments.joined(separator: " ")); return }
@@ -338,6 +352,19 @@ public enum CommandLineCall: Equatable, Sendable {
         guard let key = words.first, !key.isEmpty, !key.hasPrefix("-"), words.count <= (sets ? 2 : 1) else { return nil }
         guard let spot else { return .refused("`openspot setting` needs a spot. Run it from a spot, or name one with `--spot <id>`.") }
         return sets ? .settingSet(spot: spot, key: key, value: words.dropFirst().first) : .settingGet(spot: spot, key: key)
+    }
+
+    /// Reads `--panel <key>`, `--fix <key>`, `<id> <command> [key]` or `<id> --float [key]`, or returns nil for anything else.
+    private static func key(_ words: [String]) -> CommandLineCall? {
+        switch words.first {
+        case "--panel" where words.count == 2: return .appKeySet(name: "panel_key", key: words[1])
+        case "--fix" where words.count == 2: return .appKeySet(name: "fix_key", key: words[1])
+        case let spot? where !spot.hasPrefix("-") && (words.count == 2 || words.count == 3):
+            let act: GlobalKey.Act = words[1] == "--float" ? .float : .command(words[1])
+            guard words[1] == "--float" || !words[1].hasPrefix("-") else { return nil }
+            return .keySet(spot: spot, act: act, key: words.count == 3 ? words[2] : nil)
+        default: return nil
+        }
     }
 
     /// Reads `[--days n]` and `--hide <id>`, which can repeat, or returns nil for anything else. Day 1 is today.

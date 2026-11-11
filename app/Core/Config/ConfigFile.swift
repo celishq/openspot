@@ -65,6 +65,25 @@ public struct ConfigFile: Equatable, Sendable {
         }
     }
 
+    /// Gives a command, or the float of a spot, this key or the shake, or takes its key away with none, and keeps the place
+    /// of each other key. One key at most holds the shake, so a new shake takes it from the one before (W2).
+    public func assign(_ trigger: Trigger?, to spot: String, act: GlobalKey.Act) throws {
+        try locked {
+            let config = read()
+            var keys = config.keys
+            if trigger == .shake { keys.removeAll { $0.trigger == .shake && ($0.spot != spot || $0.act != act) } }
+            let place = keys.firstIndex { $0.spot == spot && $0.act == act }
+            let key = trigger.map { GlobalKey(spot: spot, act: act, trigger: $0) }
+            switch (place, key) {
+            case (let place?, let key?): keys[place] = key
+            case (let place?, nil): keys.remove(at: place)
+            case (nil, let key?): keys.append(key)
+            case (nil, nil): break
+            }
+            try writeTables(config.arrangement, keys: keys, settings: config.settings)
+        }
+    }
+
     /// Writes all the tables under the settings. It throws for a file that it cannot read, so that its tables stay.
     private func writeTables(_ arrangement: SpotArrangement, keys: [GlobalKey], settings values: [SpotSetting]) throws {
         let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""

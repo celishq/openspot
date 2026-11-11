@@ -171,19 +171,7 @@ public struct SettingsSpot: Equatable, Sendable {
         return (String(run[run.index(run.startIndex, offsetBy: Self.keyPrefix.count)..<split]), .command(String(run[run.index(after: split)...])))
     }
 
-    /// Gives a command, or the float of a spot, this key or the shake in the file, or takes its key away, and keeps the place
-    /// of each other key. One key at most holds the shake, so a new shake takes it from the one before (W2).
     private func assign(_ trigger: Trigger?, to target: (spot: String, act: GlobalKey.Act)) throws {
-        var keys = file.read().keys
-        if trigger == .shake { keys.removeAll { $0.trigger == .shake && ($0.spot != target.spot || $0.act != target.act) } }
-        let place = keys.firstIndex { $0.spot == target.spot && $0.act == target.act }
-        let key = trigger.map { GlobalKey(spot: target.spot, act: target.act, trigger: $0) }
-        switch (place, key) {
-        case (let place?, let key?): keys[place] = key
-        case (let place?, nil): keys.remove(at: place)
-        case (nil, let key?): keys.append(key)
-        case (nil, nil): break
-        }
-        try file.write(keys: keys)
+        try file.assign(trigger, to: target.spot, act: target.act)
     }
 }

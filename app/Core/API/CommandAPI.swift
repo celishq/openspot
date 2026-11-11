@@ -57,6 +57,29 @@ public final class CommandAPI: @unchecked Sendable {
                 await self.app?.configChanged()
                 return ""
             }
+        case .appKeySet(let name, let key):
+            return Self.answer {
+                guard let shortcut = Shortcut(text: key) else { throw PluginError.failed(1, "Openspot cannot use `\(key)`. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.") }
+                try ConfigFile.standard(environment: environment).set(name, to: shortcut.text)
+                await self.app?.configChanged()
+                return ""
+            }
+        case .keySet(let spot, let act, let key):
+            return Self.answer {
+                let trigger = try key.map { key in
+                    guard let trigger = Trigger(text: key) else { throw PluginError.failed(1, "Openspot cannot use `\(key)`. Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab, or use shake.") }
+                    return trigger
+                }
+                try ConfigFile.standard(environment: environment).assign(trigger, to: spot, act: act)
+                await self.app?.configChanged()
+                return ""
+            }
+        case .menuBar(let id, let isShown):
+            return Self.answer {
+                try ConfigFile.standard(environment: environment).showInMenuBar(id, isShown)
+                await self.app?.configChanged()
+                return ""
+            }
         case .guide:
             return Self.answer {
                 guard let guide = Bundle.main.url(forResource: "GUIDE", withExtension: "md") else { throw PluginError.fault("This copy of Openspot has no guide. Install Openspot again.") }
