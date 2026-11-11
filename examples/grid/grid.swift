@@ -256,6 +256,14 @@ final class Board: NSPanel {
     }
 
     override func cancelOperation(_ sender: Any?) { cancel() }
+
+    /// Keeps the arrow over the panel, as the front app stays active and would show its own cursor, such as a caret.
+    override func sendEvent(_ event: NSEvent) {
+        if [.mouseMoved, .mouseEntered, .leftMouseDown, .leftMouseDragged, .leftMouseUp].contains(event.type) { NSCursor.arrow.set() }
+        super.sendEvent(event)
+    }
+
+    override func mouseMoved(with event: NSEvent) {}
 }
 
 /// The grid at the centre of the screen of the front window, with the shade behind it on the desktop.
@@ -351,6 +359,7 @@ final class Grid: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
         glass.addSubview(cells)
         board.contentView = glass
+        glass.addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: board))
 
         self.board = board
         self.shade = shade
@@ -362,6 +371,7 @@ final class Grid: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
         board.delegate = self
         board.makeKeyAndOrderFront(nil)
+        NSCursor.arrow.set()
         monitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [unowned self] _ in finish(nil) }
     }
 
