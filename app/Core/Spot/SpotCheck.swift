@@ -52,6 +52,10 @@ public struct SpotCheck: Sendable {
                 let fault = "\(script.name) reads on \(event), which Openspot does not raise and no spot names in its emits. Add emits=\(event) to the spot that raises it, or fix the name"
                 findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
             }
+            for event in script.read?.events ?? [] where script.emits.contains(event) {
+                let fault = "\(script.name) reads on \(event) and raises it, so a raise from its read would read it again without end. Raise it from an action, or rename one of them"
+                findings.append(Finding(spot: script.id, file: script.url.path, fault: fault))
+            }
         }
         let runs = SpotRuns()
         for script in scan.scripts where script.read != nil {

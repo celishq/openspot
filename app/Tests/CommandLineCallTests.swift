@@ -19,6 +19,8 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.track"]), .eventEmit(name: "music.track", value: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.track", "Blue in Green"]), .eventEmit(name: "music.track", value: "Blue in Green"))
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "clipboard"], environment: ["OPENSPOT_REASON": "panel"]), .eventEmit(name: "clipboard", value: nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.track"], environment: ["OPENSPOT_REASON": "music.track"]), .refused("`openspot event emit music.track` runs in a read of `music.track`, so it would read that spot again without end, and Openspot did not raise it. Raise it from an action, or raise another event."))
+        XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music.next"], environment: ["OPENSPOT_REASON": "music.track"]), .eventEmit(name: "music.next", value: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "music"]), .refused("`music` is not an event. Name one with a dot, such as `music.track`, or `clipboard`."))
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit"]), .unknown("event emit"))
         XCTAssertEqual(CommandLineCall(arguments: ["event", "emit", "a.b", "c", "d"]), .unknown("event emit a.b c d"))

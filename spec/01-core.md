@@ -155,7 +155,9 @@ lists it in `on` reads (B3). With the app closed, the command starts it first (S
 at once, wanted or not.
 
 A spot that raises its own event names it in `emits`, such as `emits=music.track`. `openspot check` reports each name in an
-`on` that Openspot does not raise and that no spot in the folder names in its `emits`, and says how to fix it (B7).
+`on` that Openspot does not raise and that no spot in the folder names in its `emits`, and says how to fix it (B7). A read
+cannot raise the event that caused it, which would read again without end, and `openspot check` warns of a spot whose
+`on` and `emits` share a name.
 
 ## Modes
 

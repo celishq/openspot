@@ -58,6 +58,14 @@ final class SpotCheckTests: XCTestCase {
         XCTAssertEqual(named, [])
     }
 
+    func testASpotThatReadsOnTheEventItRaisesIsWarned() async throws {
+        try "#!/bin/sh\n# title=Song\n# on=music.track\n# emits=music.track\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.appendingPathComponent("song.sh"))
+
+        let findings = await SpotCheck(folder: SpotFolder(url: folder)).findings()
+
+        XCTAssertEqual(findings.map(\.fault), ["Song reads on music.track and raises it, so a raise from its read would read it again without end. Raise it from an action, or rename one of them"])
+    }
+
     func testNoFaultIsAnEmptyList() async throws {
         try "#!/bin/sh\necho\n".writeScript(to: folder.appendingPathComponent("hello.sh"))
 

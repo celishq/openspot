@@ -326,9 +326,13 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("clipboard", "paste") where rest.count == 1: self = .clipboardPaste
         case ("clipboard", "read") where rest.count == 1: self = .clipboardRead
         case ("event", "emit") where rest.count == 2 || rest.count == 3:
-            self = SpotEvent.isName(rest[1])
-                ? .eventEmit(name: rest[1], value: rest.count == 3 ? rest[2] : nil)
-                : .refused("`\(rest[1])` is not an event. Name one with a dot, such as `music.track`, or `clipboard`.")
+            if !SpotEvent.isName(rest[1]) {
+                self = .refused("`\(rest[1])` is not an event. Name one with a dot, such as `music.track`, or `clipboard`.")
+            } else if environment["OPENSPOT_REASON"] == rest[1] {
+                self = .refused("`openspot event emit \(rest[1])` runs in a read of `\(rest[1])`, so it would read that spot again without end, and Openspot did not raise it. Raise it from an action, or raise another event.")
+            } else {
+                self = .eventEmit(name: rest[1], value: rest.count == 3 ? rest[2] : nil)
+            }
         case ("translate", "languages") where rest.count == 1: self = .translateLanguages
         case ("calc", "solve") where rest.count > 1: self = .calcSolve(rest.dropFirst().joined(separator: " "))
         case ("helper", let name?) where rest.count == 1: self = .helper(name)
