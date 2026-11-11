@@ -425,6 +425,23 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(savedOrder(), ["a", "timer", "b", "c", "d"])
     }
 
+    func testASpotDroppedFromTheDockKeepsItsSizeOnTheGrid() throws {
+        try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        model.reload()
+        model.dockFrame = dock
+        model.setOnGrid(false, for: "d")
+        let translation = dockMove("timer", to: leftHalf(of: "c"))
+        let size = { self.model.placements[self.model.visible.firstIndex { $0.id == "timer" } ?? 0].size }
+
+        model.dragDockSpot("timer", by: translation)
+        XCTAssertEqual(model.carry?.size, .small)
+        XCTAssertEqual(size(), .small)
+
+        model.dropDockSpot(by: translation)
+        XCTAssertEqual(order, ["a", "b", "timer", "c", "d"])
+        XCTAssertEqual(size(), .small)
+    }
+
     func testASpotOfTheDockReleasedOffTheGridGlidesBackToItsTileAndStaysOff() throws {
         host.heldEnds = []
         try "#!/bin/sh\n# size=small\n".writeScript(to: core.appendingPathComponent("timer.sh"))

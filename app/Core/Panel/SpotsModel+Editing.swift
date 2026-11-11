@@ -156,7 +156,7 @@ extension SpotsModel {
             let others = visible.filter(\.isOnGrid).count - (entry.isOnGrid ? 1 : 0)
             let hasHidden = !entry.isOnGrid || others < visible.count - 1
             let targets = (0...others).map(SpotDrag.Target.onGrid) + (hasHidden ? (others...(visible.count - 1)).map(SpotDrag.Target.hidden) : [])
-            let lifted = SpotDrag(id: id, home: SpotDrag.Target(place: start, isOnGrid: entry.isOnGrid), sizes: visible.map(\.size), targets: targets, split: hiddenStart)
+            let lifted = SpotDrag(id: id, home: SpotDrag.Target(place: start, isOnGrid: entry.isOnGrid), sizes: visible.map(\.size), targets: targets, grid: grid)
             stopDragWait()
             scrollAtPress = gridScroll
             tip = nil
@@ -231,8 +231,9 @@ extension SpotsModel {
             let entry = Entry(command: item.command, run: nil, choice: arrangement)
             let start = visible.filter(\.isOnGrid).count
             var sizes = visible.map(\.size)
-            sizes.insert(entry.size, at: start)
-            arrival = SpotDrag(id: id, start: start, sizes: sizes, places: 0...start, split: hiddenStart.map { $0 + 1 })
+            sizes.insert(item.size, at: start)
+            let kept = Set(grid.kept.map { $0 >= start ? $0 + 1 : $0 }).union([start])
+            arrival = SpotDrag(id: id, start: start, sizes: sizes, places: 0...start, grid: SpotGrid(split: hiddenStart.map { $0 + 1 }, kept: kept))
             stopDragWait()
             lift.origin = tile.origin
             change(.edit) { carry = SpotCarry(entry: entry, size: item.size, turnsOff: false, tile: tile) }
@@ -280,7 +281,8 @@ extension SpotsModel {
         turnOnDropped(carry.entry, at: drag.nearest(to: drag.centre(movedBy: lift.offset)).place)
     }
 
-    /// Turns on a spot of the dock that the person dropped on the grid, at this place, and lands its card there.
+    /// Turns on a spot of the dock that the person dropped on the grid, at this place, and lands its card there, on the grid
+    /// at the size that the dock gave it.
     private func turnOnDropped(_ entry: Entry, at place: Int) {
         stopDragWait()
         pointerMove = nil
@@ -290,6 +292,8 @@ extension SpotsModel {
         var next = arrangement
         next.arrange(order)
         next.set(isEnabled: true, of: files.folder.fileID(of: entry.command))
+        next.set(isOnGrid: true, of: entry.id)
+        if let size = dock.items.first(where: { $0.id == entry.id })?.size { next.set(size: size, of: entry.id) }
         do {
             try files.config.write(next)
         } catch {
@@ -387,7 +391,7 @@ extension SpotsModel {
         if dock.items.contains(where: { $0.id == id }) { return resizeTile(id, by: translation, grip: grip) }
         if resize?.id != id {
             guard let index = visible.firstIndex(where: { $0.id == id }) else { return }
-            resize = SpotResize(id: id, index: index, sizes: visible.map(\.size), choices: sizes(of: visible[index]))
+            resize = SpotResize(id: id, index: index, sizes: visible.map(\.size), choices: sizes(of: visible[index]), grid: grid)
             resizeGrip = grip
             scrollAtPress = gridScroll
             selected = index
@@ -570,7 +574,7 @@ extension SpotsModel {
 
     private func moveSelectedSpot(by step: Int, in order: [String]) {
         guard order.indices.contains(selected),
-              let place = SpotGrid().nextPlace(of: selected, in: visible.map(\.size), step: step) else { return }
+              let place = grid.nextPlace(of: selected, in: visible.map(\.size), step: step) else { return }
         moveSpot(order[selected], to: place)
     }
 
@@ -587,7 +591,7 @@ extension SpotsModel {
     private func stepSelectedSize() {
         guard let entry = selectedEntry else { return }
         let sizes = visible.map(\.size)
-        if let next = SpotGrid().nextSize(of: selected, in: sizes, among: self.sizes(of: entry)) { prefer(next, for: entry.id) }
+        if let next = grid.nextSize(of: selected, in: sizes, among: self.sizes(of: entry)) { prefer(next, for: entry.id) }
     }
 
     private func toggleSelectedOnGrid() {

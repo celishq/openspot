@@ -50,6 +50,11 @@ public final class SpotsModel {
             run?.command ?? fixedCommand
         }
 
+        /// Whether the person chose the size of its card, which the grid then keeps.
+        public var isSizeChosen: Bool {
+            sizeChoice != nil
+        }
+
         /// The size of its card: the person's choice, or else its header (F9). A card of a fault is never small, so that its
         /// words show.
         @MainActor public var size: SpotSize {
@@ -149,7 +154,7 @@ public final class SpotsModel {
     public private(set) var visible: [Entry] = []
     /// The sizes that `placements` were laid out from.
     @ObservationIgnored private var laidOutSizes: [SpotSize] = []
-    @ObservationIgnored private var laidOutSplit: Int?
+    @ObservationIgnored private var laidOutGrid = SpotGrid()
     /// The cards as the items that the main search finds. It folds them again only when they change.
     @ObservationIgnored private var spotList = ItemList()
     /// Where each visible spot lies on the grid, in the order of `visible`.
@@ -499,6 +504,13 @@ public final class SpotsModel {
         return visible.count - hidden
     }
 
+    /// The grid of the cards shown: in the groups of Edit Spots, with the size of each card whose size the person chose, and
+    /// of a card that arrives from the dock.
+    var grid: SpotGrid {
+        let arriving = carry?.tile == nil ? nil : carry?.entry.id
+        return SpotGrid(split: hiddenStart, kept: Set(visible.indices.filter { visible[$0].isSizeChosen || visible[$0].id == arriving }))
+    }
+
     /// The entries that have a card. The install screen has none.
     public var cards: [Entry] {
         entries.filter { $0.id != ShippedSpot.installID }
@@ -513,11 +525,12 @@ public final class SpotsModel {
         let next = found()
         if next != visible { visible = next }
         let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { _ in SpotSize.strip }
-        let split = hiddenStart
-        if sizes != laidOutSizes || split != laidOutSplit {
+        let index = visible.firstIndex { $0.id == resize?.id }
+        let grid = index.map(self.grid.keeping) ?? self.grid
+        if sizes != laidOutSizes || grid != laidOutGrid {
             laidOutSizes = sizes
-            laidOutSplit = split
-            placements = SpotGrid().place(sizes, split: split)
+            laidOutGrid = grid
+            placements = grid.place(sizes)
         }
         if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
     }

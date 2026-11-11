@@ -177,7 +177,7 @@ final class SpotGridTests: XCTestCase {
     }
 
     func testTwoGroupsLieEachUnderItsTitleBand() {
-        let placements = SpotGrid().place([.small, .small, .small, .small, .small], split: 2)
+        let placements = SpotGrid(split: 2).place([.small, .small, .small, .small, .small])
         let band = SpotTokens.groupTitleBand
         XCTAssertEqual(placements.map(\.index), [0, 1, 2, 3, 4])
         XCTAssertEqual(placements[0].rect.minY, band)
@@ -189,12 +189,24 @@ final class SpotGridTests: XCTestCase {
 
     func testOneGroupHasNoTitleBand() {
         let sizes: [SpotSize] = [.small, .wide, .small]
-        XCTAssertEqual(SpotGrid().place(sizes, split: 3), SpotGrid().place(sizes))
-        XCTAssertEqual(SpotGrid().place(sizes, split: 0), SpotGrid().place(sizes))
-        XCTAssertEqual(SpotGrid().place(sizes, split: nil), SpotGrid().place(sizes))
+        XCTAssertEqual(SpotGrid(split: 3).place(sizes), SpotGrid().place(sizes))
+        XCTAssertEqual(SpotGrid(split: 0).place(sizes), SpotGrid().place(sizes))
+        XCTAssertEqual(SpotGrid(split: nil).place(sizes), SpotGrid().place(sizes))
     }
 
     func testAnEmptyGridHasNoHeight() {
         XCTAssertEqual(SpotGrid.height(of: []), 0)
+    }
+
+    func testAKeptSpotNeverGrowsToFillItsRow() {
+        XCTAssertEqual(SpotGrid(kept: [0]).place([.small]).map(\.size), [.small])
+        XCTAssertEqual(SpotGrid(kept: [0]).place([.square]).map(\.size), [.square])
+        XCTAssertEqual(SpotGrid(kept: [0]).place([.small, .small]).map(\.size), [.small, .wide])
+        XCTAssertEqual(SpotGrid(kept: [0]).place([.small, .small, .small]).map(\.size), [.small, .wide, .small])
+    }
+
+    func testAKeptSpotKeepsItsSizeInEachGroup() {
+        let placements = SpotGrid(split: 2, kept: [2]).place([.small, .wide, .small])
+        XCTAssertEqual(placements.map(\.size), [.wide, .wide, .small])
     }
 }

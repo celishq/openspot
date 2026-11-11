@@ -1,21 +1,43 @@
 import Foundation
 
 /// Packs spots into full rows of four columns. Each spot takes the next shelf, a smaller spot moves up to fill
-/// a gap, and spots grow until their shelf has no hole. A square lies on the left of its shelf, or on the right when small
-/// spots that fit on half a line come before it.
-public struct SpotGrid: Sendable {
-    private typealias Slot = (index: Int, size: SpotSize)
+/// a gap, and spots grow until their shelf has no hole, save a kept spot, which keeps its size and may leave one. A square
+/// lies on the left of its shelf, or on the right when small spots that fit on half a line come before it.
+public struct SpotGrid: Equatable, Sendable {
+    private typealias Slot = (index: Int, size: SpotSize, keeps: Bool)
 
-    public init() {}
+    /// Where the second group starts, when the spots lie in two groups, each under a title band.
+    public let split: Int?
+    /// The indexes of the spots that keep their size.
+    public let kept: Set<Int>
 
-    /// Lays out the spots before `split` and the spots from it as two groups, each under a title band, when both groups have
-    /// spots. The rows count on through both groups.
-    public func place(_ sizes: [SpotSize], split: Int?) -> [SpotPlacement] {
-        guard let split, split > 0, split < sizes.count else { return place(sizes) }
+    public init(split: Int? = nil, kept: Set<Int> = []) {
+        self.split = split
+        self.kept = kept
+    }
+
+    /// This grid with the spot at `from` moved to `to` in the order, and the second group starting at `split`.
+    public func moving(_ from: Int, to: Int, split: Int?) -> SpotGrid {
+        var flags = (0...max(from, to, kept.max() ?? 0)).map { kept.contains($0) }
+        flags.insert(flags.remove(at: from), at: to)
+        return SpotGrid(split: split, kept: Set(flags.indices.filter { flags[$0] }))
+    }
+
+    /// This grid with the spot at this index kept too.
+    public func keeping(_ index: Int) -> SpotGrid {
+        SpotGrid(split: split, kept: kept.union([index]))
+    }
+
+    /// Lays out the spots in shelves, as one group, or as two groups when both have spots. The rows count on through both
+    /// groups.
+    public func place(_ sizes: [SpotSize]) -> [SpotPlacement] {
+        guard let split, split > 0, split < sizes.count else { return shelves(sizes, kept: kept) }
         let band = SpotTokens.groupTitleBand
-        let first = place(Array(sizes[..<split])).map { SpotPlacement(index: $0.index, row: $0.row, column: $0.column, size: $0.size, top: band) }
+        let first = shelves(Array(sizes[..<split]), kept: kept.filter { $0 < split }).map {
+            SpotPlacement(index: $0.index, row: $0.row, column: $0.column, size: $0.size, top: band)
+        }
         let rows = first.map { $0.row + $0.size.rows }.max() ?? 0
-        let second = place(Array(sizes[split...])).map {
+        let second = shelves(Array(sizes[split...]), kept: Set(kept.filter { $0 >= split }.map { $0 - split })).map {
             SpotPlacement(index: $0.index + split, row: $0.row + rows, column: $0.column, size: $0.size, top: 2 * band)
         }
         return first + second
@@ -26,8 +48,9 @@ public struct SpotGrid: Sendable {
         placements.map(\.rect.maxY).max() ?? 0
     }
 
-    public func place(_ sizes: [SpotSize]) -> [SpotPlacement] {
-        var queue: [Slot] = sizes.enumerated().map { (index: $0.offset, size: $0.element) }
+    /// Lays out the spots of one group. A spot at an index of `kept` never grows.
+    private func shelves(_ sizes: [SpotSize], kept: Set<Int>) -> [SpotPlacement] {
+        var queue: [Slot] = sizes.enumerated().map { (index: $0.offset, size: $0.element, keeps: kept.contains($0.offset)) }
         var placements: [SpotPlacement] = []
         var row = 0
         while let first = queue.first {
@@ -80,18 +103,19 @@ public struct SpotGrid: Sendable {
             .index
     }
 
-    /// The next size in this list that changes how the grid looks, or nil when none does. The grid can grow a spot to fill
-    /// its row, so a step can pass over a size.
+    /// The next size in this list that changes how the grid looks, or nil when none does. The grid keeps the spot at the size
+    /// it takes.
     public func nextSize(of index: Int, in sizes: [SpotSize], among choices: [SpotSize]) -> SpotSize? {
         guard sizes.indices.contains(index), !choices.isEmpty else { return nil }
-        let now = place(sizes)
+        let grid = keeping(index)
+        let now = grid.place(sizes)
         let start = choices.firstIndex(of: sizes[index]) ?? -1
         return (1...choices.count).lazy
             .map { choices[(start + $0 + choices.count) % choices.count] }
             .first { size in
                 var next = sizes
                 next[index] = size
-                return place(next) != now
+                return grid.place(next) != now
             }
     }
 
@@ -104,7 +128,7 @@ public struct SpotGrid: Sendable {
         while sizes.indices.contains(candidate) {
             var next = sizes
             next.insert(next.remove(at: index), at: candidate)
-            let there = place(next)[candidate]
+            let there = moving(index, to: candidate, split: split).place(next)[candidate]
             if (there.row, there.column, there.size) != (now.row, now.column, now.size) { return candidate }
             candidate += step
         }
@@ -134,14 +158,14 @@ public struct SpotGrid: Sendable {
         }
         let side = leading + taking(nil, from: &queue, room: 4 - leading.reduce(0) { $0 + $1.size.columns }, widest: 2)
         guard !side.isEmpty else {
-            placements.append(SpotPlacement(index: square.index, row: row, column: 0, size: .strip))
-            return 1
+            placements.append(SpotPlacement(index: square.index, row: row, column: 0, size: square.keeps ? .square : .strip))
+            return square.keeps ? 2 : 1
         }
         let squareColumn = leading.isEmpty ? 0 : 2
         let sideColumn = 2 - squareColumn
         placements.append(SpotPlacement(index: square.index, row: row, column: squareColumn, size: .square))
         if side.count == 1 {
-            placements.append(SpotPlacement(index: side[0].index, row: row, column: sideColumn, size: .square))
+            placements.append(SpotPlacement(index: side[0].index, row: row, column: sideColumn, size: side[0].keeps ? side[0].size : .square))
             return 2
         }
         var used = [0, 0]
@@ -179,15 +203,19 @@ public struct SpotGrid: Sendable {
         return taken
     }
 
-    /// Grows spots until they fill the room of four cells.
+    /// Grows spots that are not kept until they fill the room of four cells, or as near as the kept spots let them.
     private func justified(_ spots: [Slot]) -> [Slot] {
+        let grown = { (spot: Slot, size: SpotSize) in spot.keeps ? spot : (index: spot.index, size: size, keeps: false) }
         switch spots.count {
         case 1:
-            return [(index: spots[0].index, size: .strip)]
+            return [grown(spots[0], .strip)]
         case 2:
-            return spots.map { (index: $0.index, size: .wide) }
+            return spots.map { grown($0, .wide) }
         case 3 where spots.allSatisfy({ $0.size == .small }):
-            return [(index: spots[0].index, size: .wide)] + spots.dropFirst()
+            guard let first = spots.firstIndex(where: { !$0.keeps }) else { return spots }
+            var spots = spots
+            spots[first] = grown(spots[first], .wide)
+            return spots
         default:
             return spots
         }

@@ -35,24 +35,23 @@ public struct SpotDrag: Equatable, Sendable {
     }
 
     /// Lays out the grid once for each place in `places` on the grid, with the card moved there from `start` among cards of
-    /// these sizes, in two groups from `split` on.
-    public init(id: String, start: Int, sizes: [SpotSize], places: ClosedRange<Int>, split: Int? = nil) {
-        self.init(id: id, home: .onGrid(start), sizes: sizes, targets: places.map(Target.onGrid), split: split)
+    /// these sizes.
+    public init(id: String, start: Int, sizes: [SpotSize], places: ClosedRange<Int>, grid: SpotGrid = SpotGrid()) {
+        self.init(id: id, home: .onGrid(start), sizes: sizes, targets: places.map(Target.onGrid), grid: grid)
     }
 
     /// Lays out the grid once for each target, with the card moved there from `home` among cards of these sizes. The cards
-    /// on the grid come before `split`, the card among them when its home is on the grid; a target moves the split by the
-    /// card's change of group.
-    public init(id: String, home: Target, sizes: [SpotSize], targets: [Target], split: Int?) {
+    /// on the grid come before the grid's split, the card among them when its home is on the grid; a target moves the split
+    /// by the card's change of group.
+    public init(id: String, home: Target, sizes: [SpotSize], targets: [Target], grid: SpotGrid) {
         self.id = id
         self.home = home
         target = home
-        let grid = SpotGrid()
         layouts = Dictionary(uniqueKeysWithValues: targets.map { target in
             var moved = sizes
             moved.insert(moved.remove(at: home.place), at: target.place)
             let shift = (target.isOnGrid ? 1 : 0) - (home.isOnGrid ? 1 : 0)
-            return (target, grid.place(moved, split: split.map { $0 + shift }))
+            return (target, grid.moving(home.place, to: target.place, split: grid.split.map { $0 + shift }).place(moved))
         })
     }
 
