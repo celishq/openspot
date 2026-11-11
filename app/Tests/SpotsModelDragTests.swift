@@ -640,6 +640,20 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertTrue(order.contains("timer"))
     }
 
+    func testAClickOnAStoreCardOpensItsListingAndEscapeClosesIt() throws {
+        try "#!/bin/sh\n# size=small\n# detail=Counts down\n".writeScript(to: core.appendingPathComponent("timer.sh"))
+        try "Counts down.".write(to: core.appendingPathComponent("timer.md"), atomically: true, encoding: .utf8)
+        model.reload()
+
+        model.openListing("timer")
+        XCTAssertEqual(model.dock.opened, "timer")
+        XCTAssertEqual(model.dockListing?.readme, "Counts down.")
+
+        model.handleEditKey(ActionKey(name: "escape"))
+        XCTAssertNil(model.dock.opened)
+        XCTAssertTrue(model.isEditing)
+    }
+
     func testTheStoreFollowsTheEyeOfACard() {
         model.setOnGrid(false, for: "b")
 

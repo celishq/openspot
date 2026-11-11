@@ -69,4 +69,28 @@ final class SpotDockTests: XCTestCase {
         XCTAssertEqual(SpotTokens.dockColumns(width: 1220), 16)
         XCTAssertEqual(SpotTokens.dockColumns(width: 2 * SpotTokens.padding + SpotTokens.width(columns: 5)), 5)
     }
+
+    func testAnOpenedSpotShowsItsSheetUnderItsShelfAndPushesTheLaterShelvesDown() {
+        var dock = SpotDock(items: [item("Apple"), item("Bell"), item("Coin"), item("Disk")])
+        let closed = dock.rects(columns: 4)
+        dock.opened = "apple"
+
+        let open = dock.rects(columns: 4)
+        let sheet = SpotTokens.storeSheetHeight + SpotTokens.rowGap
+        XCTAssertEqual(open[0], closed[0])
+        XCTAssertEqual(open[1], closed[1])
+        XCTAssertEqual(open[2], closed[2].offsetBy(dx: 0, dy: sheet))
+        XCTAssertEqual(open[3], closed[3].offsetBy(dx: 0, dy: sheet))
+        XCTAssertEqual(dock.sheetRect(columns: 4), CGRect(x: 0, y: closed[0].maxY + SpotTokens.rowGap, width: SpotTokens.width(columns: 4), height: SpotTokens.storeSheetHeight))
+        XCTAssertEqual(dock.height(columns: 4), SpotTokens.height(rows: 2) + sheet)
+    }
+
+    func testASpotThatTheStoreDoesNotShowOpensNoSheet() {
+        var dock = SpotDock(items: [item("Apple"), item("Bell")])
+        dock.opened = "apple"
+        dock.query = "bell"
+
+        XCTAssertNil(dock.sheetRect(columns: 4))
+        XCTAssertEqual(dock.rects(columns: 4).first?.minY, 0)
+    }
 }

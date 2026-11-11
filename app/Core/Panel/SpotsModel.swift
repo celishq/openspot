@@ -245,6 +245,8 @@ public final class SpotsModel {
     @ObservationIgnored var pointerMove: CGSize?
     /// The spots of Edit Spots' store.
     public internal(set) var dock = SpotDock(items: [])
+    /// The listing of the spot that the store opened.
+    public internal(set) var dockListing: SpotListing?
     /// The spots that are off, as the last read of the folder found them.
     @ObservationIgnored var dockOff: [SpotDock.Item] = []
     /// Whether the person types in the dock's search, which then takes each key but Esc.

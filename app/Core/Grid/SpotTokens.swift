@@ -25,6 +25,8 @@ public enum SpotTokens {
     public static let dockMargin: CGFloat = 20
     /// The most rows of spots that the dock shows before it scrolls.
     public static let dockRows = 3
+    /// The height of the sheet that shows a listing in the store.
+    public static let storeSheetHeight: CGFloat = height(rows: 3)
     /// Where the dock's first row of spots starts, under its title and its search.
     public static let dockRowsTop: CGFloat = padding + menuRowHeight + rowGap
     /// How far from each edge the rim of a round corner passes through its diagonal, as a part of the radius.

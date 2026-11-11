@@ -33,12 +33,39 @@ extension SpotsModel {
 
     /// Shows the spots of the dock whose name holds this text.
     public func searchDock(_ text: String) {
+        dock.opened = nil
         dock.query = text
     }
 
-    /// Shows the spots of the store that this filter keeps.
+    /// Shows the spots of the store that this filter keeps, and closes the listing.
     public func filterDock(_ filter: SpotDock.Filter) {
-        dock.filter = filter
+        change(.edit) {
+            dock.opened = nil
+            dock.filter = filter
+        }
+    }
+
+    /// Opens the listing of a spot of the store in a sheet under its shelf, or closes it when it is open.
+    public func openListing(_ id: String) {
+        guard let item = dock.shown.first(where: { $0.id == id }) else { return }
+        tip = nil
+        let isOpen = dock.opened == id
+        if !isOpen { dockListing = SpotListing(beside: item.command) }
+        change(.edit) { dock.opened = isOpen ? nil : id }
+    }
+
+    /// Copies a prompt for the person's agent: to change a spot of the plugins folder, or to review any other spot.
+    public func copyListingPrompt(_ id: String) {
+        guard let item = dock.items.first(where: { $0.id == id }) else { return }
+        guard !item.isOwn else { return copyPrompt(changing: Entry(command: item.command, run: nil)) }
+        guard let prompt = agentPrompt else { return }
+        Task {
+            do {
+                host.confirm(try await prompt.copy(prompt.reviewing(item.command.url)))
+            } catch {
+                host.notify("The prompt for \(item.command.name) was not copied. \(Self.reason(error))")
+            }
+        }
     }
 
     /// Takes whether the person types in the dock's search.
@@ -67,6 +94,7 @@ extension SpotsModel {
         var next = SpotDock(items: on + off)
         next.query = dock.query
         next.filter = dock.filter
+        next.opened = dock.opened
         if next != dock { dock = next }
     }
 
@@ -151,6 +179,7 @@ extension SpotsModel {
             if lift.offset != .zero { lift.offset = .zero }
             selected = 0
             isSearchingDock = false
+            dock.opened = nil
             updateVisible()
         }
     }
@@ -169,6 +198,7 @@ extension SpotsModel {
             return
         }
         if openNewSpot(on: key) { return }
+        if key.name == "escape", let id = dock.opened { return openListing(id) }
         let order = visible.map(\.id)
         switch (key.name, key.isShift) {
         case ("escape", _): endEditing()

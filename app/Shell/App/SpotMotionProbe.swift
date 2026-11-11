@@ -133,7 +133,8 @@ final class SpotMotionProbe: NSObject {
     }
 
     /// Saves a picture of Edit Spots with its dock a second after it starts, then of the tip of the first card's eye, then of
-    /// the tip of the first dock card's delete control, then the pictures of a carried card.
+    /// the tip of the first dock card's corner control, then of the first dock card's listing, then the pictures of a
+    /// carried card.
     private func shootEdit(into folder: String) {
         model.beginEditing()
         try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
@@ -146,7 +147,12 @@ final class SpotMotionProbe: NSObject {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     self.save(to: "\(folder)/tip-dock.png")
                     self.model.tip = nil
-                    self.shootCarry(into: folder)
+                    if let id = self.model.dock.shown.first?.id { self.model.openListing(id) }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        self.save(to: "\(folder)/listing.png")
+                        if let id = self.model.dock.opened { self.model.openListing(id) }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.shootCarry(into: folder) }
+                    }
                 }
             }
         }

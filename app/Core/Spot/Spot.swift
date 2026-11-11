@@ -72,6 +72,8 @@ public struct Spot: Equatable, Sendable {
     public let keywords: [String]
     /// Whether a press starts Edit Spots with the store, in place of a sheet.
     public let opensStore: Bool
+    /// Whether its read prints fake data while `OPENSPOT_PREVIEW` is 1, for the preview of its listing.
+    public let previewsSample: Bool
     /// The prompt that asks an agent to write or fix a spot, which a card that does not load and Copy prompt use.
     public let agentPrompt: AgentPrompt?
     /// Whether the settings key of the Mac opens its sheet.
@@ -118,6 +120,7 @@ public struct Spot: Equatable, Sendable {
         rowOpens: [String: String] = [:],
         keywords: [String] = [],
         opensStore: Bool = false,
+        previewsSample: Bool = false,
         agentPrompt: AgentPrompt? = nil,
         opensWithSettingsKey: Bool = false,
         opensWithNewKey: Bool = false
@@ -128,6 +131,7 @@ public struct Spot: Equatable, Sendable {
         self.rowOpens = rowOpens
         self.keywords = keywords
         self.opensStore = opensStore
+        self.previewsSample = previewsSample
         sizeChoices = sizes
         changesKeys = setsKeys
         self.readsOnUpdate = readsOnUpdate

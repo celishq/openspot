@@ -3,7 +3,7 @@ import SwiftUI
 
 /// A spot in the store: its card as the grid draws it, at its size, on the fill of a row, with a mark of its state on its
 /// top left corner: a plus that turns it on, a check that selects its card on the grid, or a slashed eye for search only.
-/// A 1x1 card shows its name as a tip. A spot of the plugins folder that is off shows a cross that deletes it, and its
+/// The pointer over a card shows its description as a tip, with its name on a 1x1 card. A click opens its listing. A spot of the plugins folder that is off shows a cross that deletes it, and its
 /// corner handle resizes it as on the grid.
 struct SpotDockTile: View {
     let item: SpotDock.Item
@@ -49,13 +49,15 @@ struct SpotDockTile: View {
                 SpotCornerButton(symbol: "xmark", label: "Delete", corner: .trailing, size: size, onHover: tip(.dockCard, text: "Delete")) { model.delete(item.id) }
             }
         }
+        .onTapGesture { model.openListing(item.id) }
         .contextMenu {
             if item.state == .off { Button("Turn On") { model.turnOn(item.id) } }
             if item.isOwn, item.state == .off { Button("Delete") { model.delete(item.id) } }
         }
         .onHover { isOver in
-            let tip = SpotTip(id: item.id, anchor: .dockCard, text: item.command.name)
-            guard size == .small else { return }
+            let words = size == .small ? [item.command.name, item.command.subtitle].compactMap { $0 } : [item.command.subtitle].compactMap { $0 }
+            guard !words.isEmpty else { return }
+            let tip = SpotTip(id: item.id, anchor: .dockCard, text: words.joined(separator: " · "))
             if isOver {
                 model.tip = tip
             } else if model.tip == tip {

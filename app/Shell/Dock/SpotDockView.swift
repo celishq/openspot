@@ -24,6 +24,18 @@ struct SpotDockView: View {
                             .animation(nil) { $0.opacity(model.carry?.entry.id == item.id ? 0.001 : 1) }
                             .offset(x: rect.minX, y: rect.minY)
                     }
+                    if let sheet = dock.sheetRect(columns: columns), let index = dock.shown.firstIndex(where: { $0.id == dock.opened }),
+                       let listing = model.dockListing {
+                        let card = dock.rects(columns: columns)[index]
+                        SpotListingSheet(item: dock.shown[index], listing: listing, model: model)
+                            .frame(width: sheet.width, height: sheet.height)
+                            .transition(.modifier(
+                                active: SheetGrowth(rect: CGRect(x: card.minX, y: 0, width: card.width, height: 0)),
+                                identity: SheetGrowth(rect: CGRect(origin: .zero, size: sheet.size))
+                            ))
+                            .offset(x: sheet.minX, y: sheet.minY)
+                            .id(dock.opened)
+                    }
                 }
                 .frame(width: size.width - 2 * SpotTokens.padding, height: dock.height(columns: columns), alignment: .topLeading)
                 .padding(.horizontal, SpotTokens.padding)
@@ -89,6 +101,15 @@ struct SpotDockView: View {
                 withTransaction(still) { model.dragDockSpot(item.id, by: value.translation) }
             }
             .onEnded { model.dropDockSpot(by: $0.translation) }
+    }
+}
+
+/// The clip of a listing sheet, from a sliver under its card to its whole size.
+private struct SheetGrowth: ViewModifier {
+    let rect: CGRect
+
+    func body(content: Content) -> some View {
+        content.clipShape(SpotSheetClip(rect: rect))
     }
 }
 

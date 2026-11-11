@@ -30,7 +30,7 @@ extension SpotsModel {
     }
 
     /// The prompt that asks an agent to write or fix a spot.
-    private var agentPrompt: AgentPrompt? {
+    var agentPrompt: AgentPrompt? {
         entries.lazy.compactMap(\.command.agentPrompt).first
     }
 

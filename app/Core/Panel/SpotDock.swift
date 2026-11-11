@@ -67,6 +67,8 @@ public struct SpotDock: Equatable, Sendable {
     public let items: [Item]
     public var query = ""
     public var filter = Filter.all
+    /// The spot whose listing shows in a sheet under its shelf.
+    public var opened: String?
 
     public init(items: [Item]) {
         self.items = items.sorted { $0.command.name.localizedCaseInsensitiveCompare($1.command.name) == .orderedAscending }
@@ -77,6 +79,7 @@ public struct SpotDock: Equatable, Sendable {
         var next = SpotDock(items: items.map { $0.id == id ? Item(command: $0.command, origin: $0.origin, state: $0.state, size: size) : $0 })
         next.query = query
         next.filter = filter
+        next.opened = opened
         return next
     }
 
@@ -88,8 +91,26 @@ public struct SpotDock: Equatable, Sendable {
     }
 
     /// Where the card of each shown spot lies, in the order of `shown`, from the top left of the first row, with the grid's
-    /// gaps.
+    /// gaps. The cards under the sheet of an opened spot lie lower by the sheet and a gap.
     public func rects(columns: Int) -> [CGRect] {
+        let rects = closedRects(columns: columns)
+        guard let top = sheetTop(in: rects) else { return rects }
+        return rects.map { $0.minY < top ? $0 : $0.offsetBy(dx: 0, dy: SpotTokens.storeSheetHeight + SpotTokens.rowGap) }
+    }
+
+    /// Where the sheet of the opened spot lies: under the shelf of its card, as wide as the rows.
+    public func sheetRect(columns: Int) -> CGRect? {
+        sheetTop(in: closedRects(columns: columns)).map { CGRect(x: 0, y: $0, width: SpotTokens.width(columns: columns), height: SpotTokens.storeSheetHeight) }
+    }
+
+    /// The height of the rows that hold the shown spots, and of the sheet of the opened spot.
+    public func height(columns: Int) -> CGFloat {
+        let rows = places(columns: columns).map { $0.row + $0.size.rows }.max() ?? 0
+        let sheet = sheetRect(columns: columns) == nil ? 0 : SpotTokens.storeSheetHeight + SpotTokens.rowGap
+        return rows == 0 ? 0 : SpotTokens.height(rows: rows) + sheet
+    }
+
+    private func closedRects(columns: Int) -> [CGRect] {
         places(columns: columns).map { place in
             CGRect(
                 x: CGFloat(place.column) * (SpotTokens.cell + SpotTokens.columnGap),
@@ -100,10 +121,11 @@ public struct SpotDock: Equatable, Sendable {
         }
     }
 
-    /// The height of the rows that hold the shown spots.
-    public func height(columns: Int) -> CGFloat {
-        let rows = places(columns: columns).map { $0.row + $0.size.rows }.max() ?? 0
-        return rows == 0 ? 0 : SpotTokens.height(rows: rows)
+    /// The top of the sheet: a gap under the lowest card that starts no lower than the opened card.
+    private func sheetTop(in rects: [CGRect]) -> CGFloat? {
+        guard let opened, let index = shown.firstIndex(where: { $0.id == opened }) else { return nil }
+        let start = rects[index].minY
+        return rects.filter { $0.minY <= start }.map(\.maxY).max().map { $0 + SpotTokens.rowGap }
     }
 
     /// The row and column of each shown spot, and its size, no wider than the rows. The spots fill shelves in their order:

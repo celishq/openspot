@@ -47,6 +47,15 @@ public struct AgentPrompt: Equatable, Sendable {
         """
     }
 
+    /// Asks to read a spot and tell what it does and what it runs on the person's computer, with no change.
+    public func reviewing(_ file: URL) -> String {
+        """
+        Read the Openspot spot in \(file.path), and change nothing.
+        Tell me what it does, what it runs on my computer, which files it reads or writes, and whether it uses the network.
+        First run "\(app)" guide, so that you know how a spot works.
+        """
+    }
+
     /// The steps of each build: the guide, a try, a look, the check and a show.
     private func steps(for id: String) -> String {
         """
