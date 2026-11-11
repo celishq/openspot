@@ -3,8 +3,6 @@ import Foundation
 /// The moments when Openspot calls `read`, which the `read` header line lists. A script with none of these is never read.
 public struct SpotRead: Equatable, Sendable {
     public enum Moment: Equatable, Sendable {
-        case launch
-        case wake
         case panel
         case sheet
         case every(TimeInterval)
@@ -24,8 +22,6 @@ public struct SpotRead: Equatable, Sendable {
         var moments: [Moment] = []
         for word in text.split(separator: ",", omittingEmptySubsequences: false).map({ $0.trimmingCharacters(in: .whitespaces) }) {
             switch word {
-            case "launch": moments.append(.launch)
-            case "wake": moments.append(.wake)
             case "panel": moments.append(.panel)
             case "sheet": moments.append(.sheet)
             default:

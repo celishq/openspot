@@ -92,7 +92,7 @@ final class DoomExampleTests: SamplePluginsCase {
 
     /// Runs the script once with the host's process, as a press of its card or of its Play button does, and returns each
     /// frame that it printed and the line that its failure shows, if it failed.
-    private func press(_ spot: Spot, _ call: String = "run") async -> (frames: [String], failure: String?) {
+    private func press(_ spot: Spot, _ call: String = "open") async -> (frames: [String], failure: String?) {
         var frames: [String] = []
         do {
             for try await frame in ScriptProcess(url: spot.url, arguments: [call], limit: 30, dataName: spot.dataName).start() {
@@ -290,8 +290,8 @@ final class DoomExampleTests: SamplePluginsCase {
 
             let run = await self.press(doom)
 
-            XCTAssertTrue(run.frames.contains { $0.contains("title=Downloading the Doom engine\nvalue=0.50\ndetail=50%") }, "\(run.frames)")
-            XCTAssertTrue(run.frames.contains { $0.contains("title=Downloading the Doom engine\nvalue=1.00\ndetail=100%") }, "\(run.frames)")
+            XCTAssertTrue(run.frames.contains { $0.contains("title=Downloading the Doom engine\nprogress=0.50\ndetail=50%") }, "\(run.frames)")
+            XCTAssertTrue(run.frames.contains { $0.contains("title=Downloading the Doom engine\nprogress=1.00\ndetail=100%") }, "\(run.frames)")
         }
     }
 
@@ -305,8 +305,8 @@ final class DoomExampleTests: SamplePluginsCase {
 
             let run = await self.press(doom)
 
-            XCTAssertTrue(run.frames.contains { $0.contains("title=Building the Doom engine\nvalue=0.50\ndetail=50%") }, "\(run.frames)")
-            XCTAssertTrue(run.frames.contains { $0.contains("title=Building the Doom engine\nvalue=1.00\ndetail=100%") }, "\(run.frames)")
+            XCTAssertTrue(run.frames.contains { $0.contains("title=Building the Doom engine\nprogress=0.50\ndetail=50%") }, "\(run.frames)")
+            XCTAssertTrue(run.frames.contains { $0.contains("title=Building the Doom engine\nprogress=1.00\ndetail=100%") }, "\(run.frames)")
         }
     }
 

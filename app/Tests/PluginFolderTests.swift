@@ -93,7 +93,7 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testAnExecutableIsASpotWithItsHeader() throws {
-        try write("one.sh", header: "title=First\nsize=square\nicon=moon\ndetail=Off\nshortcut=o")
+        try write("one.sh", header: "title=First\nsize=square\nicon=moon\ndetail=Off")
 
         XCTAssertEqual(try scan.refused, [])
         let one = try XCTUnwrap(try scan.commands.first)
@@ -102,7 +102,6 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(one.size, .square)
         XCTAssertEqual(one.symbol, "moon")
         XCTAssertEqual(one.subtitle, "Off")
-        XCTAssertEqual(one.key?.name, "o")
         XCTAssertEqual(one.url.lastPathComponent, "one.sh")
     }
 
@@ -131,13 +130,12 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(command.kind, .launch)
         XCTAssertEqual(command.size, .wide)
         XCTAssertEqual(command.symbol, "app")
-        XCTAssertNil(command.key)
         XCTAssertNil(command.read)
         XCTAssertFalse(command.readsState)
         XCTAssertEqual(command.pick, .close)
         XCTAssertFalse(command.isGlobal)
         XCTAssertFalse(command.stays)
-        XCTAssertEqual(command.click.arguments, ["run"])
+        XCTAssertEqual(command.click.arguments, ["open"])
     }
 
     func testEachExecutableInAFolderIsASpot() throws {
@@ -159,7 +157,7 @@ final class PluginFolderTests: XCTestCase {
     func testReadSaysWhatKindOfSpotItIsBeforeAnyRun() throws {
         try write("a.sh", header: "read=sheet")
         try write("b.sh", header: "read=panel")
-        try write("c.sh", header: "read=panel\nglobal=true")
+        try write("c.sh", header: "read=panel\noffers=search")
 
         let commands = try scan.commands
 
@@ -169,22 +167,34 @@ final class PluginFolderTests: XCTestCase {
     }
 
     func testReadIsAListOfMoments() throws {
-        try write("a.sh", header: "read=panel, sheet,launch,wake,30\nshortcut=a")
+        try write("a.sh", header: "read=panel, sheet,30")
 
         let read = try XCTUnwrap(try scan.commands.first?.read)
 
-        XCTAssertEqual(read.moments, [.panel, .sheet, .launch, .wake, .every(30)])
+        XCTAssertEqual(read.moments, [.panel, .sheet, .every(30)])
         XCTAssertEqual(read.seconds, 30)
     }
 
-    func testAMomentThatOnlyALaterPhaseActsOnReadsNothingOnAPanelOpen() throws {
+    func testRefusesTheLaunchAndWakeMoments() throws {
         try write("a.sh", header: "read=launch")
-        try write("b.sh", header: "read=wake")
+        try write("b.sh", header: "read=panel,wake")
 
-        let commands = try scan.commands
+        XCTAssertEqual(try scan.plugins, [])
+        XCTAssertEqual(try scan.refused, [
+            ScanResult.Refusal(file: "a", reason: "A has an unknown read: launch. Use sheet, panel or a number of seconds"),
+            ScanResult.Refusal(file: "b", reason: "B has an unknown read: panel,wake. Use sheet, panel or a number of seconds")
+        ])
+    }
 
-        XCTAssertEqual(commands.map(\.kind), [.launch, .launch])
-        XCTAssertEqual(commands.map(\.readsState), [false, false])
+    func testStayIsTrueOrAlways() throws {
+        try write("a.sh", header: "stay=true")
+        try write("b.sh", header: "stay=always")
+        try write("c.sh", header: "stay=sometimes")
+
+        let scan = try scan
+        XCTAssertEqual(scan.commands.map(\.stays), [true, true])
+        XCTAssertEqual(scan.commands.map(\.staysAlways), [false, true])
+        XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "c", reason: "C has an unknown stay: sometimes. Use true or always")])
     }
 
     func testAHeaderKeepsTheFilesItsCardTakes() throws {
@@ -194,12 +204,13 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(try scan.commands.map(\.drop), [["mov", "mkv", "folder"], []])
     }
 
-    func testANumberInAListOfMomentsWithNoKeyHasNoSpot() throws {
+    func testANumberInAListOfMomentsStartsTheSpotOffTheGrid() throws {
         try write("a.sh", header: "read=panel,30")
 
         let scan = try scan
 
-        XCTAssertEqual(scan.commands, [])
+        XCTAssertEqual(scan.commands.map(\.id), ["a"])
+        XCTAssertEqual(scan.commands.map(\.headerState.isOnGrid), [false])
         XCTAssertEqual(scan.metrics.map(\.read?.seconds), [30])
     }
 
@@ -216,31 +227,38 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertFalse(command.isGlobal)
     }
 
-    func testTheMainSearchNeedsAMomentOutsideTheSheet() throws {
-        try write("a.sh", header: "read=panel\nglobal=true")
-        try write("b.sh", header: "read=launch\nglobal=true")
-        try write("c.sh", header: "read=30\nglobal=true\nshortcut=c")
+    func testASpotThatOffersSearchHasACardAndOneThatOffersRowsHasNone() throws {
+        try write("a.sh", header: "read=panel\noffers=search")
+        try write("b.sh", header: "read=panel\noffers=rows")
 
-        XCTAssertEqual(try scan.refused, [])
-        XCTAssertEqual(try scan.commands.map(\.isGlobal), [true, true, true])
-        XCTAssertEqual(try scan.commands.map(\.kind), [.list, .list, .list])
+        XCTAssertEqual(try scan.commands.map(\.headerState.isOnGrid), [true, false])
     }
 
-    func testANumberAsTheReadIsAMetricWithNoSpot() throws {
+    func testTheMainSearchNeedsAMomentOutsideTheSheet() throws {
+        try write("a.sh", header: "read=panel\noffers=search")
+        try write("c.sh", header: "read=30\noffers=search")
+
+        XCTAssertEqual(try scan.refused, [])
+        XCTAssertEqual(try scan.commands.map(\.isGlobal), [true, true])
+        XCTAssertEqual(try scan.commands.map(\.kind), [.list, .list])
+    }
+
+    func testANumberAsTheReadIsAMetricWhoseCardStartsOffTheGrid() throws {
         try write("cups.sh", header: "title=Cups\nicon=cup.and.saucer\nread=30")
 
         let scan = try scan
         let metric = try XCTUnwrap(scan.metrics.first)
 
-        XCTAssertEqual(scan.commands, [])
+        XCTAssertEqual(scan.commands.map(\.id), ["cups"])
+        XCTAssertFalse(metric.headerState.isOnGrid)
         XCTAssertEqual(metric.id, "cups")
         XCTAssertEqual(metric.name, "Cups")
         XCTAssertEqual(metric.symbol, "cup.and.saucer")
         XCTAssertEqual(metric.read?.seconds, 30)
     }
 
-    func testAMetricWithAKeyIsAlsoAList() throws {
-        try write("pulls.sh", header: "read=120\nshortcut=g")
+    func testAMetricIsAlsoAList() throws {
+        try write("pulls.sh", header: "read=120")
 
         let scan = try scan
 
@@ -263,7 +281,7 @@ final class PluginFolderTests: XCTestCase {
         try write("details.sh", header: "read=panel")
         try write("other.sh", header: "read=panel")
         try write("cpu.sh", header: "read=60")
-        try "[[widgets]]\ntitle = \"Box\"\ngrid = [\"a\"]\nplaces = { a = \"cpu\" }\nsize = \"square\"\nopens = \"details\"\n".write(to: folder.appendingPathComponent("box.toml"), atomically: true, encoding: .utf8)
+        try "[[widgets]]\ntitle = \"Box\"\ngrid = [\"cpu\"]\nsize = \"square\"\nopens = \"details\"\n".write(to: folder.appendingPathComponent("box.toml"), atomically: true, encoding: .utf8)
 
         let commands = try scan.commands
 
@@ -275,33 +293,35 @@ final class PluginFolderTests: XCTestCase {
         try write("a.sh", header: "read=sometimes")
         try write("b.sh", header: "size=huge")
         try write("c.sh", header: "shortcut=ctrl+d")
-        try write("f.sh", header: "global=true")
-        try write("h.sh", header: "read=sheet\nglobal=true")
+        try write("f.sh", header: "offers=search")
+        try write("h.sh", header: "read=sheet\noffers=search")
         try write("j.sh", header: "read=open")
         try write("k.sh", header: "read=click")
         try write("l.sh", header: "read=panel,later")
 
         XCTAssertEqual(try scan.plugins, [])
         XCTAssertEqual(try scan.refused, [
-            ScanResult.Refusal(file: "a", reason: "A has an unknown read: sometimes. Use panel, sheet, launch, wake or a number of seconds"),
+            ScanResult.Refusal(file: "a", reason: "A has an unknown read: sometimes. Use sheet, panel or a number of seconds"),
             ScanResult.Refusal(file: "b", reason: "B has an unknown size: huge"),
-            ScanResult.Refusal(file: "c", reason: "C has an unknown shortcut: ctrl+d"),
-            ScanResult.Refusal(file: "f", reason: "F needs panel, launch or a number in its read to join the main search"),
-            ScanResult.Refusal(file: "h", reason: "H needs panel, launch or a number in its read to join the main search"),
-            ScanResult.Refusal(file: "j", reason: "J has an unknown read: open. Use panel, sheet, launch, wake or a number of seconds"),
-            ScanResult.Refusal(file: "k", reason: "K has an unknown read: click. Use panel, sheet, launch, wake or a number of seconds"),
-            ScanResult.Refusal(file: "l", reason: "L has an unknown read: panel,later. Use panel, sheet, launch, wake or a number of seconds")
+            ScanResult.Refusal(file: "c", reason: "C has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots"),
+            ScanResult.Refusal(file: "f", reason: "F needs panel or a number in its read to join the main search"),
+            ScanResult.Refusal(file: "h", reason: "H needs panel or a number in its read to join the main search"),
+            ScanResult.Refusal(file: "j", reason: "J has an unknown read: open. Use sheet, panel or a number of seconds"),
+            ScanResult.Refusal(file: "k", reason: "K has an unknown read: click. Use sheet, panel or a number of seconds"),
+            ScanResult.Refusal(file: "l", reason: "L has an unknown read: panel,later. Use sheet, panel or a number of seconds")
         ])
     }
 
     func testRefusesAnAnswersPatternThatIsNoneOrThatStays() throws {
         try write("m.sh", header: "answers=[0-9")
         try write("n.sh", header: "answers=^[0-9]\nstay=true")
+        try write("o.sh", header: "answers=^[0-9]\nstay=always")
 
         XCTAssertEqual(try scan.plugins, [])
         XCTAssertEqual(try scan.refused, [
             ScanResult.Refusal(file: "m", reason: "M has an unknown answers pattern: [0-9. Write a regular expression, such as answers=^[0-9]"),
-            ScanResult.Refusal(file: "n", reason: "N answers the main search, so it runs once for each call. Remove stay=true or answers"),
+            ScanResult.Refusal(file: "n", reason: "N answers the main search, so it runs once for each call. Remove stay or answers"),
+            ScanResult.Refusal(file: "o", reason: "O answers the main search, so it runs once for each call. Remove stay or answers"),
         ])
     }
 
@@ -350,11 +370,10 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(folder.url.path, "/home/.config/openspot/plugins")
     }
 
-    func testTheFirstCommandKeepsATakenKey() throws {
+    func testAShortcutInTheHeaderIsRefusedBecauseThePersonGivesTheLetter() throws {
         try write("a.sh", header: "title=One\nshortcut=d")
-        try write("b.sh", header: "title=Two\nshortcut=D")
 
-        XCTAssertEqual(try scan.commands.map(\.key?.name), ["d", nil])
-        XCTAssertEqual(try scan.refused, [ScanResult.Refusal(file: "b", reason: "Two cannot use key d, because another command has it")])
+        XCTAssertEqual(try scan.commands.map(\.id), [])
+        XCTAssertEqual(try scan.refused, [ScanResult.Refusal(file: "a", reason: "One has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots")])
     }
 }

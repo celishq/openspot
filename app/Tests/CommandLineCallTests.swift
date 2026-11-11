@@ -82,7 +82,6 @@ final class CommandLineCallTests: XCTestCase {
     func testReadsEachCall() {
         XCTAssertEqual(CommandLineCall(arguments: ["check"]), .check(nil))
         XCTAssertEqual(CommandLineCall(arguments: ["check", "/a"]), .check("/a"))
-        XCTAssertEqual(CommandLineCall(arguments: ["catalog"]), .catalog)
         XCTAssertEqual(CommandLineCall(arguments: ["color", "pick"]), .colorPick)
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "copy", "/a b.mov"]), .clipboardCopy("/a b.mov"))
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "paste"]), .clipboardPaste)
@@ -92,6 +91,14 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["translate", "--from", "ru", "--to", "en"]), .translate(from: "ru", to: "en"))
         XCTAssertEqual(CommandLineCall(arguments: ["translate", "--from", "auto", "--to", "en"]), .translate(from: nil, to: "en"))
         XCTAssertEqual(CommandLineCall(arguments: ["--help"]), .help)
+    }
+
+    func testHelpCanNameTheNounWhoseGuideItPrints() {
+        XCTAssertEqual(CommandLineCall(arguments: ["help"]), .help)
+        XCTAssertEqual(CommandLineCall(arguments: ["help", "screen"]), .guideOf("screen"))
+        XCTAssertEqual(CommandLineCall(arguments: ["help", "reminders"]), .guideOf("reminders"))
+        XCTAssertEqual(CommandLineCall(arguments: ["help", "screen", "shot"]), .unknown("help screen shot"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot help [noun]"))
     }
 
     func testASettingBelongsToTheSpotThatRunsTheCommand() {

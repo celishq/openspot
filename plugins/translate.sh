@@ -1,7 +1,6 @@
 #!/bin/sh
 # icon=translate
 # detail=Between languages
-# shortcut=t
 # size=small
 # read=sheet
 . "$OPENSPOT_SH"
@@ -30,12 +29,12 @@ name() {
   [ -s "$known" ] && awk -v code="$1" -F= '$1 == "language" { found = $2 == code } $1 == "name" && found { print $2; exit }' "$known"
 }
 
-# Prints the options of a language menu.
+# Prints the options of a language menu, each as a block.
 options() {
   if [ -s "$known" ]; then
-    awk -F= '$1 == "language" { code = $2 } $1 == "name" { print "option=" code ":" $2 }' "$known"
+    awk -F= '$1 == "language" { code = $2 } $1 == "name" { print ""; print "option=" code; print "title=" $2 }' "$known"
   else
-    printf 'option=en:English\n'
+    printf '\noption=en\ntitle=English\n'
   fi
 }
 
@@ -96,19 +95,19 @@ show() {
 
   printf 'grid=source source . .\ngrid=input input input input\ngrid=input input input swap\ngrid=- - - swap\n'
   printf 'grid=target target . swap\ngrid=output output output output\ngrid=output output output %s\n' "$corner"
-  printf 'card=source input target output\n\n'
+  printf '\n'
 
-  printf 'choice=source\noption=auto:%s\n' "$auto"
+  printf 'choice=source\nvalue=%s\n\noption=auto\ntitle=%s\n' "$source" "$auto"
   options
-  printf 'value=%s\n\n' "$source"
+  printf '\n'
 
-  printf 'field=input\ntext=%s\nplaceholder=Type or paste text\n\n' "$(esc "$input")"
+  printf 'field=input\nvalue=%s\nplaceholder=Type or paste text\n\n' "$(esc "$input")"
 
-  printf 'choice=target\n'
+  printf 'choice=target\nvalue=%s\n' "$target"
   options
-  printf 'value=%s\n\n' "$target"
+  printf '\n'
 
-  printf 'field=output\ntext=%s\nplaceholder=Translation\nreadonly=true\n\n' "$output"
+  printf 'field=output\nvalue=%s\nplaceholder=Translation\nreadonly=true\n\n' "$output"
 
   printf 'button=swap\nicon=arrow.up.arrow.down\nshortcut=cmd+shift+s\n\n'
 

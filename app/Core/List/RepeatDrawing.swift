@@ -55,10 +55,4 @@ public struct RepeatDrawing: Equatable, Sendable {
         let last = places.prefix((rows - 1) % places.count + 1).map(\.y1).max() ?? 0
         return full * lines + last + 1
     }
-
-    /// The size of the place of a row, as the name of a template drawing, such as `2x2`.
-    public func size(of index: Int) -> String {
-        let area = places[index % places.count]
-        return "\(area.x1 - area.x0 + 1)x\(area.y1 - area.y0 + 1)"
-    }
 }

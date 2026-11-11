@@ -16,16 +16,16 @@ final class SpotActionTests: XCTestCase {
         XCTAssertEqual(SpotAction.level(69.6, of: "volume").arguments, ["volume", "70"])
     }
 
-    func testAClickOnACardWithAReadKeySendsRun() {
+    func testAClickOnACardWithAReadKeySendsOpenWithNoRow() {
         let url = URL(fileURLWithPath: "/x")
 
-        XCTAssertEqual(Spot(id: "a", name: "A", url: url, read: .panel).click.arguments, ["run"])
+        XCTAssertEqual(Spot(id: "a", name: "A", url: url, read: .panel).click.arguments, ["open"])
     }
 
-    func testAClickOnAFileWithNoReadSendsRun() {
+    func testAClickOnAFileWithNoReadSendsOpenWithNoRow() {
         let url = URL(fileURLWithPath: "/x")
 
-        XCTAssertEqual(Spot(id: "a", name: "A", url: url).click.arguments, ["run"])
+        XCTAssertEqual(Spot(id: "a", name: "A", url: url).click.arguments, ["open"])
     }
 
     func testAListItemSendsItsRunValue() {

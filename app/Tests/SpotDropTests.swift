@@ -360,7 +360,7 @@ final class SpotDropTests: XCTestCase {
 
     func testARunningReadDoesNotHoldADrop() async throws {
         let sheet = try sheet(header: "read=panel\ndrop=mov", """
-        [ "$1" = read ] && { printf 'switch=power\\non=false\\n---\\n'; sleep 30; }
+        [ "$1" = read ] && { printf 'switch=power\\nvalue=false\\n---\\n'; sleep 30; }
         exit 0
         """)
         runs.panelOpened()
@@ -482,7 +482,7 @@ final class SpotDropTests: XCTestCase {
         sheet.pressCard()
 
         XCTAssertEqual(choices(), 0)
-        try await wait("the call") { self.log() == ["run"] }
+        try await wait("the call") { self.log() == ["open"] }
     }
 
     func testAPressOnARunningDropStopsItAndAsksForNoChoice() async throws {
@@ -514,7 +514,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testAToggleWithDropKeepsItsClick() async throws {
-        let sheet = try sheet(header: "read=panel\ndrop=mov", "[ \"$1\" = read ] && printf 'switch=power\\non=false\\n'\nexit 0")
+        let sheet = try sheet(header: "read=panel\ndrop=mov", "[ \"$1\" = read ] && printf 'switch=power\\nvalue=false\\n'\nexit 0")
         let choices = choiceCount(of: sheet)
         runs.panelOpened()
         try await wait("the kind") { sheet.command.kind == .toggle }
@@ -543,14 +543,14 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testADropShowsItsFramesAndItsToastAndKeepsItsLastFrame() async throws {
-        let sheet = try sheet(header: "drop=mov", "printf 'gauge=progress\\ntitle=42%%\\nvalue=0.42\\n---\\n'\n\(untilRelease)\nprintf 'toast=Done\\n'")
+        let sheet = try sheet(header: "drop=mov", "printf 'title=42%%\\nprogress=0.42\\n---\\n'\n\(untilRelease)\nprintf 'toast=Done\\n'")
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
         let frames = FrameLog(sheet)
 
         XCTAssertTrue(sheet.drop([file("a.mov")]))
 
-        try await wait("the frame") { sheet.calls.first?.output != nil }
+        try await wait("the frame") { sheet.calls.first?.status != nil }
         XCTAssertEqual(sheet.calls.first?.action.arguments.first, "drop")
         XCTAssertEqual(sheet.calls.first?.title, "42%")
         XCTAssertEqual(sheet.calls.first?.fill, 0.42)

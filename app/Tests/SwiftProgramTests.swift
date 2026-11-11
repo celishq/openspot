@@ -120,7 +120,7 @@ final class SwiftProgramTests: XCTestCase {
         try script("hello.program", "#!/bin/sh\necho program\n")
         let command = try XCTUnwrap(try PluginFolder(url: folder).scan().commands.first)
 
-        let answer = try await SpotRuns().answer(of: command, .run)
+        let answer = try await SpotRuns().answer(of: command, .open)
 
         XCTAssertEqual(answer.trimmingCharacters(in: .newlines), "program")
     }
@@ -129,7 +129,7 @@ final class SwiftProgramTests: XCTestCase {
         try script("hello.swift", "#!/bin/sh\necho source\n")
         let command = try XCTUnwrap(try PluginFolder(url: folder).scan().commands.first)
 
-        let answer = try await SpotRuns().answer(of: command, .run)
+        let answer = try await SpotRuns().answer(of: command, .open)
 
         XCTAssertEqual(answer.trimmingCharacters(in: .newlines), "source")
     }

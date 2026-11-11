@@ -48,7 +48,7 @@ public struct Event: Equatable, Sendable {
             .init(key: "title", value: title),
             .init(key: "detail", value: "\(when(clock)) · \(calendar.title)"),
             .init(key: "icon", value: meeting == nil ? "calendar" : "video"),
-            .init(key: "tone", value: isOn ? "on" : ""),
+            .init(key: "value", value: isOn ? "true" : ""),
             .init(key: "start", value: clock.iso(start)),
             .init(key: "end", value: clock.iso(end)),
             .init(key: "allday", value: isAllDay ? "true" : ""),

@@ -12,7 +12,7 @@ case "$1" in
       BEGIN { RS = ""; FS = "\n" }
       $1 ~ /^row=(system|mic:.+|camera:.+)$/ {
         print
-        if (index(kept, " " substr($1, 5) " ")) print "tone=on"
+        if (index(kept, " " substr($1, 5) " ")) print "value=true"
         print ""
       }'
     ;;

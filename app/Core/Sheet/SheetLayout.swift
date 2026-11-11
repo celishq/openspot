@@ -6,44 +6,27 @@ public struct SheetLayout: Equatable, Sendable {
     public static let divider = "-"
 
     public let rows: [[String]]
-    public let cards: [[String]]
     public let isDrawn: Bool
-    public let keyParts: [SpotPart]
     public let areas: [String: SheetArea]
     /// The area that the rows of a script flow through, with how many rows go on one line.
     public let repeated: (area: String, perLine: Int)?
     let repeatCount: Int
 
     public static func == (first: SheetLayout, second: SheetLayout) -> Bool {
-        first.rows == second.rows && first.cards == second.cards && first.isDrawn == second.isDrawn
-            && first.keyParts == second.keyParts && first.repeated?.area == second.repeated?.area
+        first.rows == second.rows && first.isDrawn == second.isDrawn && first.repeated?.area == second.repeated?.area
             && first.repeated?.perLine == second.repeated?.perLine
     }
 
     /// Reads the layout block of a sheet, with the area of its repeat and how many rows go on its line. Returns nil when
-    /// there is no `grid` or `keys`.
+    /// there is no `grid`.
     public init?(block: TextBlock?, repeating: (area: String, perLine: Int)? = nil, repeats: Int = 0) {
         let block = block ?? TextBlock(fields: [])
-        var rows: [[String]] = []
-        var keys: [SpotPart] = []
-        let cards = block.values("card").map(Self.words)
-        for field in block.fields where !field.value.isEmpty {
-            if field.key == "grid" { rows.append(Self.words(field.value)) }
-            if field.key == "pad" {
-                let words = Self.words(field.value)
-                rows.append(words.map(Self.keyCell))
-                for word in words where !keys.contains(where: { $0.id == word }) {
-                    if let part = Self.keyPart(word) { keys.append(part) }
-                }
-            }
-        }
+        let rows = block.values("grid").filter { !$0.isEmpty }.map(Self.words)
         repeated = repeating
         repeatCount = repeats
         guard !rows.isEmpty else { return nil }
         self.rows = rows
-        self.cards = cards
         isDrawn = true
-        keyParts = keys
         areas = Self.areas(in: rows)
     }
 
@@ -58,17 +41,15 @@ public struct SheetLayout: Equatable, Sendable {
         }
         if let repeating { rows.append([repeating.area]) }
         self.rows = rows
-        cards = []
         isDrawn = false
-        keyParts = []
         areas = Self.areas(in: rows)
         repeated = repeating
         repeatCount = 0
     }
 
-    /// The area a part fills, which its id names (U4). A key of a keypad fills the cell of its word.
+    /// The area a part fills, which its id names (U4).
     public func letter(of part: SpotPart) -> String? {
-        part.look == .pad ? Self.keyCell(part.id) : part.id
+        part.id
     }
 
     public func hasDivider(inRow y: Int) -> Bool {
@@ -77,19 +58,6 @@ public struct SheetLayout: Equatable, Sendable {
 
     private static func words(_ line: String) -> [String] {
         line.split(whereSeparator: \.isWhitespace).map(String.init)
-    }
-
-    /// The cell of a key. The two marks of a drawing are also keys of a keypad, so they take a cell of their own.
-    private static func keyCell(_ word: String) -> String {
-        word == empty || word == divider ? "key\(word)" : word
-    }
-
-    private static func keyPart(_ word: String) -> SpotPart? {
-        SpotPart(block: TextBlock(fields: [
-            .init(key: "button", value: word),
-            .init(key: "title", value: word),
-            .init(key: "look", value: "pad")
-        ]))
     }
 
     private static func areas(in rows: [[String]]) -> [String: SheetArea] {

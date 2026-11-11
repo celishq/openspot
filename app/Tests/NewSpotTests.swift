@@ -50,14 +50,13 @@ final class NewSpotTests: XCTestCase {
         return try XCTUnwrap(SheetParts(output: output))
     }
 
-    func testTheSpotsSpotShowsWithAnEmptyFolderAndKeepsItsKey() throws {
-        try "#!/bin/sh\n# shortcut=p\n".writeScript(to: plugins.appendingPathComponent("mine.sh"))
+    func testTheSpotsSpotShowsWithAnEmptyFolder() throws {
         let shipped = ShippedSpot.commands(folder: plugins, guide: guideURL, app: "")
 
         let scan = try PluginFolder(url: plugins).scan(shipped: shipped)
 
-        XCTAssertEqual(scan.commands.first { $0.key?.name == "p" }?.name, "Spots")
-        XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "mine", reason: "Mine cannot use key p, because another command has it")])
+        XCTAssertTrue(scan.commands.contains { $0.id == ShippedSpot.spotsID })
+        XCTAssertEqual(scan.refused, [])
     }
 
     func testTheSheetIsAListThatSearchesByScriptWithCopyPromptForAIFirstThenEachStarter() async throws {
@@ -168,10 +167,26 @@ final class NewSpotTests: XCTestCase {
         XCTAssertTrue(guideText.hasPrefix("# 01 Core"))
     }
 
-    func testTheGuideAndTheCatalogTeachNoOldKeyOrCall() {
-        for old in ["read=open", "read=click", "live=true", "search=live", "form <action>", "search <text>", "set <id>", "press <id>", "press <word>", "event=", "OPENSPOT_CONFIG"] {
+    func testTheGuideTeachesNoOldKeyOrCall() {
+        for old in ["read=open", "read=click", "live=true", "search=live", "form <action>", "search <text>", "set <id>", "press <id>", "press <word>", "event=", "OPENSPOT_CONFIG", "openspot catalog"] {
             XCTAssertFalse(guideText.contains(old), old)
-            XCTAssertFalse(PartCatalog.text.contains(old), old)
+        }
+    }
+
+    /// The guide names each key that a part takes, and a part takes each key that the kinds table of the guide gives it.
+    func testTheGuideAndThePartsTakeTheSameKeys() {
+        let blocks = guideText.components(separatedBy: "## Blocks").dropFirst().first?.components(separatedBy: "## Drawings").first ?? ""
+        for key in PartCatalog.keys {
+            XCTAssertTrue(blocks.contains("`\(key)"), key)
+        }
+        for line in blocks.split(separator: "\n") where line.hasPrefix("| `") {
+            let cells = line.split(separator: "|").map { $0.trimmingCharacters(in: .whitespaces) }
+            let kind = cells[0].trimmingCharacters(in: CharacterSet(charactersIn: "`"))
+            guard cells.count > 2, SpotPart.kinds.contains(kind) else { continue }
+            for item in cells[2].components(separatedBy: ", ") {
+                guard let word = item.split(separator: "`", omittingEmptySubsequences: false).dropFirst().first else { continue }
+                XCTAssertTrue(PartCatalog.keys.contains(String(word.split(separator: "=").first ?? word)), "\(kind): \(word)")
+            }
         }
     }
 

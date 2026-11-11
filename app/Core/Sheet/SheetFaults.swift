@@ -16,6 +16,8 @@ public enum SheetFaults {
     public static func of(layout: SheetLayout?, summary: TextBlock?, parts: [SpotPart]) -> [String] {
         var faults: [String] = []
         if summary?.value("layout") != nil { faults.append("a sheet has no layout key, so draw it with grid= lines") }
+        if summary?.value("card") != nil { faults.append("a sheet has no card key, so leave it out: each part draws its own box") }
+        if summary?.value("pad") != nil { faults.append("a sheet has no pad key, so print a button for each key") }
         guard let layout, layout.isDrawn else {
             let flat = SheetPlacement(parts: parts, layout: SheetLayout(flat: parts))
             if flat.overflows, parts.contains(where: \.scrollsItself) {
@@ -28,11 +30,6 @@ public enum SheetFaults {
         faults += repeatFaults(layout, parts)
         for (index, row) in layout.rows.enumerated() where row.contains(SheetLayout.divider) {
             if row.filter({ $0 != SheetLayout.divider }).count > 1 { faults.append("the divider in row \(index + 1) is not whole") }
-        }
-        for letters in layout.cards {
-            for letter in letters where layout.areas[letter] == nil {
-                faults.append("the card names \(letter), which the drawing does not have")
-            }
         }
         if parts.filter({ $0.look == .strong }).count > 1 { faults.append("only one part can use look=strong") }
         let letters = layout.areas.keys.sorted()
@@ -90,7 +87,7 @@ public enum SheetFaults {
             default:
                 break
             }
-            if let title = part.title, part.look != .pad, !part.fillsHeight {
+            if let title = part.title, !part.fillsHeight {
                 var control = part.control == .none && part.press != .line ? 0 : controlWidth
                 if case .swatches = part.control { control = smallSwatchWidth }
                 let detail = part.detail.map { CGFloat($0.count) * detailLetterWidth + 2 * SheetPlacement.gap } ?? 0

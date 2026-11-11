@@ -12,7 +12,6 @@ public struct SheetPlacement: Equatable, Sendable {
     public struct Frame: Equatable, Sendable {
         public let rect: CGRect
         public let isOnTop: Bool
-        public let isInCard: Bool
         public let horizontal: Side
         public let vertical: Side
         public let roundSize: CGFloat
@@ -23,7 +22,6 @@ public struct SheetPlacement: Equatable, Sendable {
     public static let width: CGFloat = 263
     public static let maxHeight: CGFloat = 442
     public static let gap: CGFloat = 6
-    public static let edge: CGFloat = 13
     public static let rowHeight: CGFloat = 40
     public static let maxRound: CGFloat = 44
     public static let dividerHeight: CGFloat = 1
@@ -34,7 +32,6 @@ public struct SheetPlacement: Equatable, Sendable {
 
     public let frames: [String: Frame]
     public let lines: [CGRect]
-    public let cards: [CGRect]
     public let height: CGFloat
     /// Where the rows of the script flow.
     public let repeatFrame: CGRect?
@@ -51,20 +48,7 @@ public struct SheetPlacement: Equatable, Sendable {
         let cell = (Self.width - gap * CGFloat(columns - 1)) / CGFloat(columns)
         let columnX = { (x: Int) in CGFloat(x) * (cell + gap) }
 
-        var cardAreas: [SheetArea] = []
-        var cardOf: [String: Int] = [:]
-        for letters in layout.cards {
-            let areas = letters.compactMap { layout.areas[$0] }
-            guard let first = areas.first else { continue }
-            cardAreas.append(areas.dropFirst().reduce(first) { $0.joined($1) })
-            for letter in letters { cardOf[letter] = cardAreas.count - 1 }
-        }
-
         var heights = rows.indices.map { layout.hasDivider(inRow: $0) ? Self.dividerHeight : Self.rowHeight }
-        for card in cardAreas {
-            heights[card.y0] += Self.edge
-            heights[card.y1] += Self.edge
-        }
         var fillRows = Set<Int>()
         for part in parts {
             guard let letter = layout.letter(of: part), let area = layout.areas[letter] else { continue }
@@ -108,7 +92,6 @@ public struct SheetPlacement: Equatable, Sendable {
             let raw = rect(area)
             let under = placed.filter { $0.area.hits(area) && $0.area.size > area.size }
             let round = min(raw.width, raw.height, Self.maxRound)
-            let cardIndex = cardOf[item.letter]
             var place = raw
             var horizontal = Self.side(item.part.align, default: item.part.fillsWidth ? .fill : .center)
             var vertical = item.part.fillsHeight ? Side.fill : .center
@@ -116,7 +99,7 @@ public struct SheetPlacement: Equatable, Sendable {
             var clearBottom: CGFloat = 0
 
             if !under.isEmpty {
-                let inset = cardAreas.contains { $0.hits(area) } ? Self.edge : Self.gap
+                let inset = Self.gap
                 let side = { (isStart: Bool, isEnd: Bool) -> Side in isEnd ? .end : isStart ? .start : .center }
                 horizontal = item.part.align.map { Self.side($0, default: .center) }
                     ?? side(under.contains { $0.area.x0 == area.x0 }, under.contains { $0.area.x1 == area.x1 })
@@ -129,12 +112,6 @@ public struct SheetPlacement: Equatable, Sendable {
                 if horizontal == .end { place = Self.moved(place, right: inset) }
                 if vertical == .start { place = Self.moved(place, top: inset) }
                 if vertical == .end { place = Self.moved(place, bottom: inset) }
-            } else if let cardIndex {
-                let card = cardAreas[cardIndex]
-                if area.x0 == card.x0 { place = Self.moved(place, left: Self.edge) }
-                if area.x1 == card.x1 { place = Self.moved(place, right: Self.edge) }
-                if area.y0 == card.y0 { place = Self.moved(place, top: Self.edge) }
-                if area.y1 == card.y1 { place = Self.moved(place, bottom: Self.edge) }
             }
 
             if case .text = item.part.control {
@@ -152,7 +129,6 @@ public struct SheetPlacement: Equatable, Sendable {
             frames[item.part.id] = Frame(
                 rect: place,
                 isOnTop: !under.isEmpty,
-                isInCard: cardIndex != nil,
                 horizontal: horizontal,
                 vertical: vertical,
                 roundSize: round,
@@ -165,7 +141,6 @@ public struct SheetPlacement: Equatable, Sendable {
         lines = rows.indices.filter(layout.hasDivider(inRow:)).map {
             CGRect(x: 0, y: rowY[$0], width: Self.width, height: Self.dividerHeight)
         }
-        cards = cardAreas.map(rect)
         repeatFrame = repeatArea.map(rect)
         height = rows.isEmpty ? 0 : heights.reduce(0, +) + gaps
     }

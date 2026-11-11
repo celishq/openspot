@@ -14,8 +14,10 @@ final class SpotTests: XCTestCase {
         XCTAssertEqual(try dataName(id: "home/coffee"), "home")
     }
 
-    func testAHeaderCanShareADataFolder() throws {
-        XCTAssertEqual(try dataName(id: "links", header: [.init(key: "data", value: "notes")]), "notes")
+    func testADataKeyRefusesThePluginAndSaysThatAFolderSharesItsData() throws {
+        XCTAssertThrowsError(try dataName(id: "links", header: [.init(key: "data", value: "notes")])) { error in
+            XCTAssertTrue((error as? PluginError)?.reason.contains("OPENSPOT_DATA") == true, "\(error)")
+        }
     }
 
     private var folder: URL!
@@ -42,7 +44,7 @@ final class SpotTests: XCTestCase {
 
     func testReadsTheStateACommandPrintsForRead() async throws {
         let command = try writeCommand(kind: .toggle, read: .panel, """
-        [ "$1" = read ] && [ -z "$2" ] && printf 'switch=focus\\ntitle=Focus\\ndetail=On\\non=true\\n'
+        [ "$1" = read ] && [ -z "$2" ] && printf 'switch=focus\\ntitle=Focus\\ndetail=On\\nvalue=true\\n'
         """)
 
         let state = try await command.state(timeout: 5)
@@ -61,7 +63,7 @@ final class SpotTests: XCTestCase {
     }
 
     func testAStateKeepsWhatItLeavesOutFromTheHeader() async throws {
-        let command = try writeCommand(kind: .toggle, subtitle: "Header", read: .panel, "printf 'switch=power\\non=true\\n'")
+        let command = try writeCommand(kind: .toggle, subtitle: "Header", read: .panel, "printf 'switch=power\\nvalue=true\\n'")
 
         let state = try await command.state(timeout: 5)
 
@@ -79,7 +81,7 @@ final class SpotTests: XCTestCase {
 
     func testOpeningGivesTheKindAndTheActionsThatItPrints() async throws {
         let command = try writeCommand(kind: .launch, read: .panel, """
-        printf 'switch=power\\non=true\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=a\\ntitle=A\\n'
+        printf 'switch=power\\nvalue=true\\n\\nbutton=open\\ntitle=Select\\n\\nbutton=copy\\ntitle=Copy\\n\\nrow=a\\ntitle=A\\n'
         """)
 
         let opened = try await command.opened(timeout: 5)
@@ -130,20 +132,20 @@ final class SpotTests: XCTestCase {
         XCTAssertEqual(form.title, "Edit")
     }
 
-    func testAClickOnAFileWithNoReadRunsRun() async throws {
+    func testAClickOnAFileWithNoReadSendsOpen() async throws {
         let command = try writeCommand(kind: .launch, "echo \"$1\" > '\(marker.path)'")
 
         try await command.perform(command.click, timeout: 5)
 
-        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "run\n")
+        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "open\n")
     }
 
-    func testAClickOnACardWithAReadRunsRun() async throws {
+    func testAClickOnACardWithAReadSendsOpen() async throws {
         let command = try writeCommand(kind: .launch, read: .panel, "echo \"$1\" > '\(marker.path)'")
 
         try await command.perform(command.click, timeout: 5)
 
-        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "run\n")
+        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "open\n")
     }
 
     func testAFormThatCannotBeReadFails() async throws {

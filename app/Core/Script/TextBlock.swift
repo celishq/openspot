@@ -22,10 +22,18 @@ public struct TextBlock: Equatable, Sendable {
     public let fields: [Field]
     /// The first line as a script printed it, which names a block that cannot be read.
     public let firstLine: String
+    /// The blocks that belong to this one, such as the options after a choice.
+    public let children: [TextBlock]
 
-    public init(fields: [Field], firstLine: String = "") {
+    public init(fields: [Field], firstLine: String = "", children: [TextBlock] = []) {
         self.fields = fields
         self.firstLine = firstLine
+        self.children = children
+    }
+
+    /// This block with one more block that belongs to it.
+    func adding(child: TextBlock) -> TextBlock {
+        TextBlock(fields: fields, firstLine: firstLine, children: children + [child])
     }
 
     /// The blocks in what a script prints. A line with no key is skipped.

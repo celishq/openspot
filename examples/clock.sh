@@ -1,9 +1,7 @@
 #!/bin/sh
 # title=World clock
 # icon=globe
-# stay=true
-# read=launch
-# tray=true
+# stay=always
 . "$OPENSPOT_SH"
 zone=Asia/Tokyo
 city=$(printf '%s' "${zone##*/}" | tr _ ' ')

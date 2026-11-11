@@ -46,12 +46,6 @@ public final class SpotRun {
         }
     }
 
-    /// Where a frame that answers nothing comes from: a later frame of a read, or a frame of any other call.
-    enum Source {
-        case read
-        case call(generation: Int?, keeping: String?)
-    }
-
     /// A call of work: the parts it answers, the part whose text the person owns, whether a read follows it, and the state
     /// that a stop brings back.
     struct Work {
@@ -202,7 +196,6 @@ public final class SpotRun {
         didSet {
             guard state != oldValue else { return }
             if (state.on == true) != isOn { isOn = state.on == true }
-            if state.face != oldValue.face { runs.updatePlaced() }
             onReport(.listChange)
         }
     }
@@ -295,7 +288,7 @@ public final class SpotRun {
     private func settle() {
         let next = rows.isBento
             ? Shape(rows: rows.drawing.lineCount(rows: rows.shown.count) * rows.drawing.columns, perLine: rows.drawing.columns)
-            : Shape(rows: rows.perLine == 1 ? rows.spans : rows.shown.count, perLine: rows.perLine)
+            : Shape(rows: rows.shown.count, perLine: rows.perLine)
         if next != shape { shape = next }
         let waits = showsSheet && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
         let nextKind = heardKind ?? (waits ? .waiting : panel?.kind ?? .rows)
@@ -456,7 +449,6 @@ public final class SpotRun {
         }
         if need == .moment, let answered, runs.now().timeIntervalSince(answered) < Self.answerAge {
             selectKept()
-            showRunning()
             return
         }
         let query = list.search == .script && !command.stays ? list.query : ""
@@ -669,17 +661,6 @@ public final class SpotRun {
         press(.set(item.run, to: value))
     }
 
-    /// Takes a value that the person set in a slot of a row, shows it at once, and tells the script (U9, U10).
-    public func set(slot: String, of item: SpotItem, to value: String) {
-        list.set(value, of: slot, in: item.run)
-        press(.slot(slot, run: item.run, value: value))
-    }
-
-    /// Runs a press of a button in a slot of a row (U9). A second press of a running one stops its call.
-    public func press(slot: String, of item: SpotItem) {
-        press(.slot(slot, run: item.run))
-    }
-
     /// Runs an action. A second press of a running action stops its call.
     public func run(_ action: CommandAction, item: SpotItem?) {
         press(.action(action, item: item))
@@ -806,8 +787,8 @@ public final class SpotRun {
 
     /// Takes the end of a call. A read or a search that ended with no answer changes nothing when it was stopped, and tells
     /// of its failure. A call of work that ended is followed by a read: with the row that a `select` effect named selected
-    /// (D8), or else when it showed nothing (M4). A stopped toggle goes back.
-    func ended(_ call: ScriptCall, _ purpose: Purpose, _ end: ScriptCall.End, hadAnswer: Bool, showedParts: Bool, selected: String?) {
+    /// (D8), or else when it showed no picture (M4). A stopped toggle goes back.
+    func ended(_ call: ScriptCall, _ purpose: Purpose, _ end: ScriptCall.End, hadAnswer: Bool, showedPicture: Bool, selected: String?) {
         let isAnswer = if case .ask(let ask) = purpose { ask.isAnswer } else { false }
         if case .ended = end, failure != nil, !isAnswer { failure = nil }
         switch (purpose, end) {
@@ -835,7 +816,7 @@ public final class SpotRun {
             answered = nil
             if let selected, command.read != nil {
                 read(selecting: selected, need: .change)
-            } else if !showedParts, work.readsAfter {
+            } else if !showedPicture, work.readsAfter {
                 readOnce()
             }
         case (.work(let work), .failed(let error)):
@@ -864,10 +845,12 @@ public final class SpotRun {
         list.stopLoading()
     }
 
-    /// Takes the answer of a read or of a search: the first frame of a read that runs once or a later one with a head, the
-    /// silence of one that ended by itself, or the frame that ends a call of a staying script. A read's answer replaces all
-    /// that the spot shows, and a search's answer replaces its rows (02, Y7).
-    func takeAnswer(_ lines: PluginOutput, frame: String, to ask: Ask) async {
+    /// Takes the answer of a read or of a search: a frame of it with a block, the head of one that ended with no picture, or
+    /// the frame that ends a call of a staying script. A read's answer replaces all that the spot shows, and a search's
+    /// answer replaces its rows (01, Y7). `keeping` names a part whose text the person owns while they type. A picture that
+    /// answers no read, such as the frame of an action, leaves the age of the answer and a sheet that waits for a read. The
+    /// rows that answer a text of the main search leave all else as it is (A2).
+    func takeAnswer(_ lines: PluginOutput, frame: String, to ask: Ask, keeping: String? = nil, answers: Bool = true) async {
         if case .answer(let query) = ask { return takeAnswers(lines.items, to: query) }
         let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: lines.search) } else { nil }
         lastAnswer = lines.withoutBlocks()
@@ -875,20 +858,19 @@ public final class SpotRun {
         command = command.taking(lines)
         switch ask {
         case .read(let generation, _, let query):
-            answered = runs.now()
+            if answers { answered = runs.now() }
             if command.readsState { takeState(lines) }
             takeValue(lines)
             let kept = selecting
             selecting = nil
             changeList {
                 $0.take(search: lines.search)
-                $0.take(drawing: lines.drawing, templates: lines.templates)
+                $0.take(drawing: lines.drawing)
                 if let next { $0.replace(next) }
                 if let kept { $0.select(run: kept) }
             }
-            if showsSheet || panel != nil { takePanel(lines, generation: generation) }
+            if showsSheet || panel != nil { takePanel(lines, generation: generation, keeping: keeping) }
             if list.search == .script, !list.query.isEmpty, list.query != query { self.ask() }
-            showRunning()
         case .answer:
             return
         case .search(let query):
@@ -896,40 +878,43 @@ public final class SpotRun {
             guard query == list.query else { return }
             changeList {
                 $0.take(search: lines.search)
-                $0.take(drawing: lines.drawing, templates: lines.templates)
+                $0.take(drawing: lines.drawing)
                 $0.answer(lines.items, to: query)
             }
         }
-        answerArrived()
+        if answers { answerArrived() }
         readAgainIfAsked()
         onReport(.frame(frame))
         guard case .read = ask else { return }
         await preparePictures()
-        if command.hasSpot, !lines.errors.isEmpty {
+        if !lines.errors.isEmpty {
             onReport(.failure("\(command.name) sent \(lines.errors.count) items Openspot cannot read."))
         }
     }
 
-    /// Takes a frame that answers nothing: a later frame of a read with no head, a frame of another call, or a frame that a
-    /// staying script printed by itself. It changes only what it prints (02, Y7): the value when it prints the main
-    /// component, the rows, the parts, and the control of the card.
-    func takeUpdate(_ lines: PluginOutput, frame: String, from source: Source) async {
-        let next = lines.items.isEmpty ? nil : await newRows(lines.items, search: rows.search)
+    /// Takes a frame with a block of a call that is not a read or a search, or of a staying script by itself: the whole
+    /// picture, unless a newer change has outdated its call (U10). Returns whether it showed. The state of a spot that reads
+    /// no state of its own takes the value of its control from it.
+    @discardableResult
+    func takePicture(_ lines: PluginOutput, frame: String, of work: Work?) async -> Bool {
+        if let generation = work?.generation, let current = panel?.generation, generation != current {
+            takeEffects(lines, frame: frame)
+            return false
+        }
+        await takeAnswer(lines, frame: frame, to: .read(generation: nil, reports: false, query: list.query), keeping: work?.keeping ?? editing, answers: false)
+        if !command.readsState { state = keepingLevel(state.taking(lines)) }
+        return true
+    }
+
+    /// Takes a frame of only a head: its effects act, and the picture stays (01).
+    func takeEffects(_ lines: PluginOutput, frame: String) {
         report(toastOf: lines)
-        if let main = lastAnswer?.value?.fields.first?.value, lines.value?.fields.first?.value == main, let value = MetricValue(output: lines) {
-            changeReading { $0.take(value) }
-        }
-        state = keepingLevel(state.taking(lines))
-        if let next { list.replace(next) }
-        if showsSheet {
-            switch source {
-            case .read: panel?.merge(lines, keeping: editing)
-            case .call(let generation, let keeping): panel?.merge(lines, answering: generation, keeping: keeping ?? editing)
-            }
-        }
         onReport(.frame(frame))
-        guard !lines.items.isEmpty else { return }
-        await preparePictures()
+    }
+
+    /// The part that the person is typing in, whose text a later frame of a read keeps.
+    var typedPart: String? {
+        editing
     }
 
     /// Fresh rows compared with the rows of the list and indexed off the main thread, so that the main thread takes them in
@@ -1019,21 +1004,13 @@ public final class SpotRun {
     }
 
     /// Shows the parts a script printed. An answer that a newer change outdated does not show.
-    private func takePanel(_ lines: PluginOutput, generation: Int?) {
+    private func takePanel(_ lines: PluginOutput, generation: Int?, keeping: String?) {
         if lines.parts.isEmpty {
             panel = nil
         } else if let current = panel?.generation {
-            panel?.take(lines, answering: generation ?? current)
+            panel?.take(lines, answering: generation ?? current, keeping: keeping)
         } else {
             partsArrival { panel = SheetParts(output: lines) }
-        }
-    }
-
-    /// Adds the last frame of each running call to an open sheet (L7).
-    private func showRunning() {
-        guard showsSheet else { return }
-        for call in calls where call.doesWork {
-            if let lines = call.output { panel?.merge(lines, keeping: editing) }
         }
     }
 
@@ -1068,7 +1045,7 @@ public final class SpotRun {
     }
 
     /// Runs a call that does work. It has no time limit, and it goes on with the sheet and the panel closed. A stopped call
-    /// changes nothing. After one that ended with no parts to show, a script that runs once is read once (M4).
+    /// changes nothing. After one that ended with no picture shown, a script that runs once is read once (M4).
     private func work(_ action: SpotAction, key: String, input: String? = nil, as work: Work = Work()) {
         answered = nil
         link.send(Call(action: action, key: key, input: input, purpose: .work(work)))

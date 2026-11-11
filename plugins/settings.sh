@@ -2,8 +2,8 @@
 # title=System Settings
 # icon=gearshape
 # detail=Open a setting
-# read=launch,wake
-# global=rows
+# read=panel
+# offers=rows
 export LC_ALL=en_US.UTF-8
 panes="${SETTINGS_PANES:-/System/Library/ExtensionKit/Extensions}"
 link='x-apple.systempreferences:'
