@@ -42,8 +42,7 @@ final class CallLogTests: SpotRunsCase {
         let sheet = try sheet()
 
         sheet.read(reason: .timer)
-        try await wait("the timed read") { self.log().count == 1 }
-        try await allEnded()
+        try await wait("the end of the timed read") { self.log().count == 1 && sheet.calls.isEmpty }
         time += 10
         sheet.read(reason: .panel)
         try await wait("the record of the panel read") { self.log.text(of: "script").contains("title=panel") }
