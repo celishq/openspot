@@ -31,8 +31,9 @@ enum SpotMotion {
     /// How strong a card stays under an open sheet: too faint to see, but drawn, so its return redraws nothing.
     static let coveredCardOpacity = 0.001
 
+    /// The motion of the sheet. The close lies on its card at the moment it completes, when the card takes its place.
     static func sheet(isOpen: Bool) -> Animation {
-        .spring(duration: isOpen ? openDuration : closeDuration, bounce: 0)
+        isOpen ? .spring(duration: openDuration, bounce: 0) : .timingCurve(0.2, 0.1, 0.2, 1, duration: closeDuration)
     }
 
     /// The spring of a motion that the model starts.
