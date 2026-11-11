@@ -18,3 +18,17 @@ public struct CommandAnswer: Equatable, Sendable {
         self.init(output: link, errors: "\((error as? SpotError)?.reason ?? error.localizedDescription)\n", code: 1)
     }
 }
+
+extension CommandAnswer {
+    /// The work of a call that only the running app can answer, when no app runs.
+    static let notRunning: CommandAPI.Work = {
+        CommandAnswer(errors: "Openspot is not running. Open Openspot, then run this again.\n", code: 1)
+    }
+
+    /// The work that prints what the text work returns, and fails as `init(failure:)` says.
+    static func work(_ text: @escaping @Sendable () async throws -> String) -> CommandAPI.Work {
+        {
+            do { return CommandAnswer(output: try await text()) } catch { return CommandAnswer(failure: error) }
+        }
+    }
+}
