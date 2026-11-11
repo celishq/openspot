@@ -19,7 +19,7 @@ public struct Plugin: Equatable, Sendable {
         if url.pathExtension == Self.widgetExtension {
             let document = try TomlDocument(text: try String(contentsOf: url, encoding: .utf8))
             self.init(id: id, commands: try (document.arrays["widgets"] ?? []).map { try Self.widget($0, id: id, url: url) })
-        } else if url.pathExtension == Self.inlineExtension || FileManager.default.isExecutableFile(atPath: url.path) {
+        } else if Self.runs(url) {
             try self.init(script: url, header: PluginHeader(url: url).block, id: id)
         } else {
             return nil
@@ -46,9 +46,6 @@ public struct Plugin: Equatable, Sendable {
         let isInline = mode == "inline"
         if isInline, url.pathExtension != Self.inlineExtension {
             throw PluginError.fault("\(name) runs inline, so it needs a .js file with its header in // lines")
-        }
-        if !isInline, url.pathExtension == Self.inlineExtension, !FileManager.default.isExecutableFile(atPath: url.path) {
-            throw PluginError.fault("\(name) needs mode=inline to run inside Openspot")
         }
         let stays = mode == "stay" || mode == "always"
         let sizeName = header.value("size") ?? "wide"
@@ -110,6 +107,12 @@ public struct Plugin: Equatable, Sendable {
             view: view.map { Self.path($0, beside: url) }
         )
         self.init(id: id, commands: [command])
+    }
+
+    /// Whether a file is a spot that runs: an executable, or a JavaScript file with `mode=inline`.
+    private static func runs(_ url: URL) -> Bool {
+        if FileManager.default.isExecutableFile(atPath: url.path) { return true }
+        return url.pathExtension == inlineExtension && PluginHeader(url: url).block.value("mode") == "inline"
     }
 
     /// The places that `offers` names. An unknown place, or `search` with `rows`, is a fault.
@@ -220,7 +223,7 @@ public struct Plugin: Equatable, Sendable {
     private static func tool(_ name: String, beside url: URL, id: String) -> String {
         guard !name.contains("/"), let folder = id.split(separator: "/").first, id.contains("/") else { return name }
         let files = (try? FileManager.default.contentsOfDirectory(at: url.deletingLastPathComponent(), includingPropertiesForKeys: nil)) ?? []
-        let isOwn = files.contains { $0.deletingPathExtension().lastPathComponent == name && FileManager.default.isExecutableFile(atPath: $0.path) }
+        let isOwn = files.contains { $0.deletingPathExtension().lastPathComponent == name && runs($0) }
         return isOwn ? "\(folder)/\(name)" : name
     }
 }

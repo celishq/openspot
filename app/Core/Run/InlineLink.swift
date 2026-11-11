@@ -39,7 +39,7 @@ final class InlineLink: ScriptLink {
         let begin = Date()
         current(for: run).send(inline)
         let outcome = inline.wait(Self.frameWait) { outcome in
-            Task { @MainActor [weak self] in self?.take(outcome, of: call, made, begin: begin) }
+            Task { @MainActor in self.take(outcome, of: call, made, begin: begin) }
         }
         if let outcome { take(outcome, of: call, made, begin: begin) }
         return true
@@ -87,11 +87,14 @@ final class InlineLink: ScriptLink {
         return (try? FileManager.default.attributesOfItem(atPath: run.command.url.path))?[.modificationDate] as? Date
     }
 
-    /// Takes the outcome of a call. The rows of a text of the main search show at once. Any other frame takes the path of
-    /// a frame of a script that runs once.
+    /// Takes the outcome of a call. The rows of a text of the main search show at once, and a text with no frame ends with
+    /// no rows. Any other frame takes the path of a frame of a script that runs once, and a call stopped meanwhile changes
+    /// nothing.
     private func take(_ outcome: InlineCall.Outcome, of call: SpotRun.Call, _ made: ScriptCall, begin: Date) {
-        asking.removeAll { $0 === made }
-        guard let run else { return }
+        guard let run else {
+            asking.removeAll { $0 === made }
+            return
+        }
         runs.usage.called(run.command.id, name: run.command.name, seconds: Date().timeIntervalSince(begin))
         var text: String?
         let end: ScriptCall.End
@@ -105,15 +108,21 @@ final class InlineLink: ScriptLink {
             end = .stopped
         }
         if case .ask(.answer(let query)) = call.purpose {
-            if let text { run.takeAnswers(PluginOutput(text: text).items, to: query) }
+            run.takeAnswers(text.map { PluginOutput(text: $0).items } ?? [], to: query)
             return run.ended(made, call.purpose, end, hadAnswer: text != nil, showedPicture: false, selected: nil)
         }
         Task { [weak run, runs] in
+            defer { self.asking.removeAll { $0 === made } }
             guard let run else { return }
-            let lines = if let text { await runs.intake(text, of: run.command.id) } else { PluginOutput?.none }
+            var end = end
+            var lines = if let text { await runs.intake(text, of: run.command.id) } else { PluginOutput?.none }
+            if made.isStopped {
+                lines = nil
+                end = .stopped
+            }
             var hasAnswer = false
             var showedPicture = false
-            if let lines, let text {
+            if let lines, let text, !made.isStopped {
                 made.take(lines)
                 switch call.purpose {
                 case .ask(let ask) where lines.isPicture:

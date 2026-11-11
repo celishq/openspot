@@ -105,4 +105,38 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
         try await wait("the failure") { told().contains { $0.contains("No sky today") } }
     }
+
+    func testAnAnswerThatARescanDropsEndsSoAPickNeedNotWait() async throws {
+        try answering()
+        let sheet = try sheet()
+        sheet.answer("12")
+        sheet.answer("123")
+
+        try answering()
+        try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(60)], ofItemAtPath: path("script.js"))
+        _ = try scanned()
+
+        try await wait("the end of the dropped answer") { !sheet.isAnswering }
+    }
+
+    func testAFunctionReadsItsStdinAsOpenspotInput() async throws {
+        try inline(header: "mode=inline", "function save() { return `toast=Saved ${openspot.input}` }")
+        let spot = try XCTUnwrap(try scanned().scripts.first)
+
+        let text = try await runs.answer(of: spot, SpotAction(arguments: ["save"]), input: "a=1", limit: 5)
+
+        XCTAssertEqual(PluginOutput(text: text).toast, "Saved a=1")
+    }
+
+    func testARunWithALimitStopsWaitingForAFunctionThatRunsTooLong() async throws {
+        try inline(header: "mode=inline\nread=sheet", "function read() { const end = Date.now() + 2000; while (Date.now() < end) {} }")
+        let spot = try XCTUnwrap(try scanned().scripts.first)
+
+        do {
+            _ = try await runs.answer(of: spot, .read, limit: 0.2)
+            XCTFail("the run returned")
+        } catch {
+            XCTAssertEqual(error as? PluginError, .timedOut)
+        }
+    }
 }

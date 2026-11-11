@@ -782,6 +782,26 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(host.confirms.contains("Picked 1"))
     }
 
+    func testAStayingSpotAnswersTheKeptTextWhenThePanelShowsAgain() async throws {
+        try script("calc", header: "title=Calc\nmode=stay\nanswers=^[0-9]", """
+        while IFS= read -r line; do
+          case "$line" in call=*) call=${line#call=}; text= ;; arg=read) ;; arg=*) text=${line#arg=} ;; esac
+          [ -n "$line" ] || { [ -n "$text" ] && printf 'end=%s\\n\\nrow=%s\\ntitle=%s\\n---\\n' "$call" "$text" "$text" || printf 'end=%s\\n---\\n' "$call"; }
+        done
+        """)
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        model.searchText = "5"
+        try await wait("the answer") { model.visible.first?.id == "calc\n5" }
+
+        model.panelWillHide()
+        model.panelDidHide()
+        model.panelWillShow(holding: [])
+
+        try await wait("the answer again") { model.visible.first?.id == "calc\n5" }
+    }
+
     func testAnAnswerAndARowOfItsSpotWithOneIdShowOnce() async throws {
         try script("both", header: "title=Both\nread=panel\noffers=rows\nanswers=^[0-9]", "printf 'row=7\\ntitle=7 days\\n'")
         model.reload()

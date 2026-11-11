@@ -263,6 +263,33 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(log().count, 1)
     }
 
+    func testAnAnswerOfAStayingScriptThatEndsIsNoLongerAwaited() async throws {
+        try script(header: "mode=stay\nanswers=^[0-9]", "while IFS= read -r line; do [ \"$line\" = arg=12 ] && exit 1; done")
+        let sheet = try sheet()
+        runs.panelOpened()
+
+        sheet.answer("12")
+
+        try await wait("the end of the answer") { !sheet.isAnswering }
+        XCTAssertEqual(sheet.answers, [])
+    }
+
+    func testThePictureOfAStayingScriptIsNoAnswerOfTheSearch() async throws {
+        try script(header: "mode=always\nanswers=^[0-9]\nread=panel", """
+        while IFS= read -r line; do
+          case "$line" in call=*) call=${line#call=} ;; arg=12) printf 'row=clock\\ntitle=Clock\\n---\\n' ;; esac
+          [ -n "$line" ] || printf 'end=%s\\n---\\n' "$call"
+        done
+        """)
+        let sheet = try sheet()
+        runs.panelOpened()
+
+        sheet.answer("12")
+
+        try await wait("the end of the answer") { !sheet.isAnswering }
+        XCTAssertEqual(sheet.answers, [])
+    }
+
     func testACardCallOfAStayingScriptReachesIt() async throws {
         try staying()
         let sheet = try sheet()

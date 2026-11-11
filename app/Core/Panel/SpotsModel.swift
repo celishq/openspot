@@ -421,8 +421,8 @@ public final class SpotsModel {
         selected = 0
         takeHeld(modifiers)
         reload()
-        askAnswers()
         runs.panelOpened()
+        askAnswers()
         DispatchQueue.main.async { [weak self] in self?.isShown = true }
     }
 

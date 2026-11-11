@@ -327,7 +327,7 @@ public final class SpotRuns {
             script.send(call)
             let (stream, halt) = answered {
                 defer { script.end() }
-                switch await call.outcome() {
+                switch await call.outcome(limit: limit) {
                 case .frame(let text): return text
                 case .failed(let error): throw error
                 case .dropped: return ""

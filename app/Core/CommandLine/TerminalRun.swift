@@ -72,14 +72,16 @@ public struct TerminalRun {
         defer { script.end() }
         let call = InlineCall(arguments: action.arguments, reason: isRead ? .sheet : nil, input: input)
         script.send(call)
-        switch await call.outcome() {
+        switch await call.outcome(limit: isRead ? Self.readLimit : nil) {
         case .frame(let text):
             if !text.isEmpty { frame(text) }
             return End(code: 0, errors: "")
+        case .failed(PluginError.timedOut):
+            return End(code: 124, errors: "\(spot.name) took too long, so Openspot stopped it.\n")
         case .failed(let error):
             return End(code: 1, errors: ((error as? PluginError)?.reason ?? error.localizedDescription) + "\n")
         case .dropped:
-            return End(code: 1, errors: "")
+            return End(code: 1, errors: "\(spot.name) ended before it answered.\n")
         }
     }
 }

@@ -67,7 +67,11 @@ final class StayLink: ScriptLink {
             if let id = send(.items(query: query), values: nil, reason: .search) { asks[id] = .search(query) }
         case .ask(.answer(let text)):
             stop(\.isAnswer)
-            if let id = send(call.action, values: nil, reason: .search) { asks[id] = .answer(text) }
+            if let id = send(call.action, values: nil, reason: .search) {
+                asks[id] = .answer(text)
+            } else {
+                run?.takeAnswers([], to: text)
+            }
         case .work:
             send(call.action, values: call.input, key: call.key)
         }
@@ -138,7 +142,7 @@ final class StayLink: ScriptLink {
         let (script, frames) = runs.stay(run.command, limit: runs.readLimit)
         self.script = script
         let id = next()
-        asks = [id: .read(generation: nil, reports: true)]
+        asks[id] = .read(generation: nil, reports: true)
         script.send(.read, id: id, reason: reason ?? startReason)
         Task { await follow(script, frames) }
     }
@@ -174,7 +178,9 @@ final class StayLink: ScriptLink {
         }
     }
 
+    /// Drops each ask, and ends each text of the main search with no rows, so that nothing waits for it.
     private func forgetAsks() {
+        for case .answer(let text) in asks.values { run?.takeAnswers([], to: text) }
         sent = [:]
         asks = [:]
         dropped = []
@@ -233,7 +239,7 @@ final class StayLink: ScriptLink {
                 } else if ends.contains(where: { dropped.remove($0) != nil }) {
                     continue
                 } else if lines.isPicture {
-                    pictured.formUnion(asks.keys)
+                    pictured.formUnion(asks.filter { !$0.value.isAnswer }.keys)
                     lastPicture = lines
                     await run.takePicture(lines, frame: text, of: nil)
                 } else {

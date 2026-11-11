@@ -2,8 +2,9 @@ import Foundation
 import JavaScriptCore
 
 /// A JavaScript spot that runs inside the app, in a context of its own on a thread of its own (I3). It loads its file as
-/// it starts. Each call runs the function of its name and returns the text of a frame, and `openspot.call(argv,
-/// input)` asks the API and returns `{ stdout, code }` (I4). A loop that never returns keeps its thread.
+/// it starts. Each call runs the function of its name and returns the text of a frame. `openspot.input` holds the stdin of
+/// the call and `openspot.value` the value of its event, and `openspot.call(argv, input)` asks the API and returns
+/// `{ stdout, code }` (I4). A loop that never returns keeps its thread.
 final class InlineScript: @unchecked Sendable {
     private final class Box: @unchecked Sendable {
         var answer = CommandAnswer()
@@ -91,6 +92,9 @@ final class InlineScript: @unchecked Sendable {
         let arguments = (isRead ? [(call.reason ?? .sheet).rawValue] : []) + call.arguments.dropFirst()
         reason = call.reason
         defer { reason = nil }
+        let openspot = context.objectForKeyedSubscript("openspot")
+        openspot?.setObject(call.input ?? "", forKeyedSubscript: "input" as NSString)
+        openspot?.setObject(call.reason?.value ?? "", forKeyedSubscript: "value" as NSString)
         let result = function.call(withArguments: arguments)
         try rethrow()
         guard let result, !result.isUndefined, !result.isNull else { return "" }
@@ -161,8 +165,11 @@ final class InlineScript: @unchecked Sendable {
         } catch {
             return CommandAnswer(errors: error.localizedDescription, code: 127)
         }
-        if let input { stdin.fileHandleForWriting.write(Data(input.utf8)) }
-        try? stdin.fileHandleForWriting.close()
+        let writer = stdin.fileHandleForWriting
+        DispatchQueue.global().async {
+            if let input { writer.write(Data(input.utf8)) }
+            try? writer.close()
+        }
         let data = output.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
         return CommandAnswer(output: String(decoding: data, as: UTF8.self), code: process.terminationStatus)

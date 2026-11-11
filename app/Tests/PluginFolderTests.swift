@@ -249,7 +249,7 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "d", reason: "D has an unknown mode: sometimes. Use once, stay, always or inline")])
     }
 
-    func testAJavaScriptFileRunsInlineAndOnlyItDoes() throws {
+    func testAJavaScriptFileWithModeInlineRunsInlineAndAnotherIsLeft() throws {
         try "// title=Sum\n// mode=inline\nfunction read() { return '' }\n".write(to: folder.appendingPathComponent("sum.js"), atomically: true, encoding: .utf8)
         try "// title=Plain\nfunction read() { return '' }\n".write(to: folder.appendingPathComponent("plain.js"), atomically: true, encoding: .utf8)
         try write("a.sh", header: "mode=inline")
@@ -259,7 +259,6 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertEqual(scan.commands.map(\.isInline), [true])
         XCTAssertEqual(scan.refused, [
             ScanResult.Refusal(file: "a", reason: "A runs inline, so it needs a .js file with its header in // lines"),
-            ScanResult.Refusal(file: "plain", reason: "Plain needs mode=inline to run inside Openspot"),
         ])
     }
 
