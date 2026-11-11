@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 
 struct SpotsView: View {
     let model: SpotsModel
-    @State private var edges = SpotScrollEdges()
+    @State private var fade = SpotScrollFade()
     @State private var scroll = ScrollPosition()
     @State private var scrollOffset: CGFloat = 0
     @State private var dropTarget: String?
@@ -46,8 +46,8 @@ struct SpotsView: View {
                 model.gridScrolled(to: offset)
             })
             .modifier(GridEdgeScroll(model: model, scroll: $scroll))
-            .modifier(SpotScrollEdgeTracker(edges: $edges))
-            .mask(edges.gradient(height: cardHeight))
+            .modifier(SpotScrollEdgeTracker(edges: Binding(get: { fade.edges }, set: { fade.edges = $0 })))
+            .modifier(GridFadeMask(fade: fade, height: cardHeight))
             .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: !coversGrid)) { $0.opacity(coversGrid ? 0 : 1) }
             SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: gridHeight, sheetHeight: sheetID == nil ? gridHeight : sheetHeight)
                 .opacity(model.isShown ? 1 : 0)
@@ -60,8 +60,8 @@ struct SpotsView: View {
                     frame: frame,
                     sheetRect: sheetRect,
                     isOpen: sheetOpen,
-                    panel: shownPanel,
-                    cardMask: edges.gradient(height: cardHeight)
+                    fade: fade,
+                    fadeHeight: cardHeight
                 )
             }
             SpotFieldView(
@@ -127,23 +127,36 @@ struct SpotsView: View {
         return rect(of: sheetID)
     }
 
-    /// The rect of a sheet from its parts, or else from the shape of its rows.
     private func rect(of id: String?) -> CGRect {
-        if let panel = model.sheets[id ?? ""]?.panel { return SpotTokens.panelRect(panel) }
+        Self.rect(of: id, in: model)
+    }
+
+    /// The rect of a sheet from its parts, or else from the shape of its rows.
+    private static func rect(of id: String?, in model: SpotsModel) -> CGRect {
+        if let rect = model.sheets[id ?? ""]?.partsRect { return rect }
         let shape = model.sheets[id ?? ""]?.shape
         return SpotTokens.sheetRect(rows: shape?.rows ?? 0, perLine: shape?.perLine ?? 1)
+    }
+
+    /// The heights of blur that the grid, each sheet as it is now and the tallest sheet ask for.
+    static func blurHeights(of model: SpotsModel) -> [CGFloat] {
+        let sheets = model.sheets.keys.map { blurHeight(of: rect(of: $0, in: model)) }
+        return [gridHeight(of: model), blurHeight(of: SpotTokens.sheetRect(rows: 0)), SpotTokens.panelHeight] + sheets
+    }
+
+    private static func blurHeight(of sheet: CGRect) -> CGFloat {
+        sheet.height + 2 * SpotTokens.halo + SpotTokens.hintBlock
+    }
+
+    private static func gridHeight(of model: SpotsModel) -> CGFloat {
+        SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0)
     }
 
     /// The height of the sheet that the open one took the place of, so that the blur stays under both until the change
     /// settles.
     private var replacedHeight: CGFloat {
         guard let replaced = model.transition.replaced else { return 0 }
-        return rect(of: replaced).height + 2 * SpotTokens.halo + SpotTokens.hintBlock
-    }
-
-    /// The parts of the open sheet.
-    private var shownPanel: SheetParts? {
-        model.shownParts(of: sheetID)
+        return Self.blurHeight(of: rect(of: replaced))
     }
 
     /// How far the install screen pushes the grid: as far as its lower edge moves.
@@ -166,11 +179,11 @@ struct SpotsView: View {
     }
 
     private var sheetHeight: CGFloat {
-        sheetRect.height + 2 * SpotTokens.halo + SpotTokens.hintBlock
+        Self.blurHeight(of: sheetRect)
     }
 
     private var gridHeight: CGFloat {
-        SpotTokens.backdropHeight(rows: model.placements.map { $0.row + $0.size.rows }.max() ?? 0)
+        Self.gridHeight(of: model)
     }
 
     /// The height of the shape that ends the cards. It follows only the grid, so that a sheet's motion swaps no image.
@@ -248,6 +261,17 @@ private struct GridEdgeScroll: ViewModifier {
         guard point - model.gridScroll < SpotTokens.panelHeight else { return }
         let next = window.offset(scrolling: point, from: model.gridScroll, by: SpotMotion.edgeScrollSpeed * seconds, over: SpotScrollEdges.fadeLength)
         if next != model.gridScroll { scroll.scrollTo(y: next) }
+    }
+}
+
+/// The fade of the grid's cards at the ends of the scroll. It alone reads the fade, so that a scroll near an end reruns no
+/// other view.
+private struct GridFadeMask: ViewModifier {
+    let fade: SpotScrollFade
+    let height: CGFloat
+
+    func body(content: Content) -> some View {
+        content.mask(fade.edges.gradient(height: height))
     }
 }
 

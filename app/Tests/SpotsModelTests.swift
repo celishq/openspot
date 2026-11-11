@@ -59,6 +59,22 @@ final class SpotsModelTests: XCTestCase {
         try await wait("the open list") { model.openList == "list" && model.openItems?.shown.count == 2 }
     }
 
+    func testASheetTakesTheLookOfItsCardOnlyWhenItsScriptDrawsTheCard() async throws {
+        try script("agenda", header: "read=panel", "printf 'grid.small=next\\n\\nnumber=next\\nvalue=09:30\\n\\nrow=e\\ntitle=Standup\\n'")
+        try FileManager.default.createDirectory(at: plugins.appendingPathComponent("year"), withIntermediateDirectories: true)
+        try script("year/year", header: "read=panel\nview=year.swift", "printf 'view=year\\ntitle=2026\\n\\nrow=e\\ntitle=Standup\\n'")
+        try script("list", header: "read=panel", "printf 'row=a\\ntitle=Apple\\n'")
+        model.reload()
+        model.panelWillShow(holding: [])
+
+        try await wait("the drawn cards") {
+            SpotSheetCard.of("agenda", in: model)?.look?.id == "agenda" && SpotSheetCard.of("year/year", in: model)?.look?.id == "year/year"
+        }
+        try await wait("the list") { model.sheets["list"]?.list.shown.count == 1 }
+        XCTAssertNotNil(SpotSheetCard.of("list", in: model))
+        XCTAssertNil(SpotSheetCard.of("list", in: model)?.look)
+    }
+
     func testAPointOfTheGridFindsTheCardWhosePlaceHoldsIt() throws {
         try script("one", header: "title=One", "")
         try script("two", header: "title=Two", "")
@@ -83,6 +99,45 @@ final class SpotsModelTests: XCTestCase {
         model.panelWillShow(holding: [])
 
         XCTAssertTrue(model.entries.contains { $0.id == "late" })
+    }
+
+    func testAnOpenWithNoChangeTellsNoReaderOfTheCards() throws {
+        try script("one", header: "title=One", "")
+        model.panelWillShow(holding: [])
+        model.panelWillHide()
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = model.entries } onChange: { changed = true }
+        withObservationTracking { _ = model.sheets["one"]?.command } onChange: { changed = true }
+
+        model.panelWillShow(holding: [])
+
+        XCTAssertFalse(changed)
+    }
+
+    func testAnOpenTakesAChangeOfTheConfigFile() throws {
+        try script("one", header: "title=One", "")
+        try script("two", header: "title=Two", "")
+        model.panelWillShow(holding: [])
+        model.panelWillHide()
+        var arrangement = SpotArrangement()
+        arrangement.set(isOnGrid: false, of: "two")
+
+        try model.files.config.write(arrangement)
+        model.panelWillShow(holding: [])
+
+        XCTAssertEqual(model.visible.map(\.id), ["one"])
+    }
+
+    func testAnOpenPanelReadsAgainAScriptWhoseBodyAloneChanged() async throws {
+        try script("cups", header: "read=panel", "printf 'title=One cup\\n'")
+        model.isShown = true
+        model.panelWillShow(holding: [])
+        try await wait("the first read") { model.entries.first { $0.id == "cups" }?.state.title == "One cup" }
+
+        try "#!/bin/sh\n# read=panel\nprintf 'title=Two cups\\n'\n".write(to: plugins.appendingPathComponent("cups.sh"), atomically: false, encoding: .utf8)
+        model.folderChanged()
+
+        try await wait("the read of the changed body") { model.entries.first { $0.id == "cups" }?.state.title == "Two cups" }
     }
 
     func testAPressOfAListOpensItsSheetAndAStepBackClosesIt() async throws {

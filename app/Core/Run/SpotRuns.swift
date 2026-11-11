@@ -30,9 +30,7 @@ public final class SpotRuns {
     @ObservationIgnored private var placedByFiles: Set<String> = []
 
     /// Each script that a widget file or a `spot` component of a card places, which the open panel reads.
-    private var placed: Set<String> {
-        placedByFiles.union(sheets.values.flatMap { $0.state.face.parts.filter { $0.kind == "spot" }.map(\.id) })
-    }
+    @ObservationIgnored private var placed: Set<String> = []
     /// When the clock last read each script with a number in its `read`.
     @ObservationIgnored var asked: [String: Date] = [:]
     @ObservationIgnored var clock: Task<Void, Never>?
@@ -75,8 +73,14 @@ public final class SpotRuns {
             sheet.close()
             sheet.stopReads()
         }
+        updatePlaced()
         scripts.forEach { sheet(for: $0).scanned() }
         updateClock()
+    }
+
+    /// Works out again which scripts the widget files and the cards place, after a scan or a change of a card's components.
+    func updatePlaced() {
+        placed = placedByFiles.union(sheets.values.flatMap { $0.state.face.parts.filter { $0.kind == "spot" }.map(\.id) })
     }
 
     /// The sheet of a script, with the command as the folder last gave it.
@@ -211,7 +215,7 @@ public final class SpotRuns {
     /// a sheet takes as its answer.
     public func answer(of command: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil) async throws -> String {
         if command.stays, action == .read {
-            let (script, frames) = try stay(command, limit: limit)
+            let (script, frames) = stay(command, limit: limit)
             defer { script.end() }
             script.send(.read, id: 1, reason: .panel)
             for try await frame in frames { return frame }
@@ -234,7 +238,7 @@ public final class SpotRuns {
         return command.isTray || read.has(.launch) || (isPanelOpen && (read.has(.panel) || placed.contains(command.id)))
     }
 
-    /// Reads a frame of a script, on another thread when it is big, and waits while the open motion of its sheet runs. The
+    /// Reads a frame of a script on another thread, and waits while the open motion of its sheet runs. The
     /// sheet hears the frame while it waits, so that it can say its kind before the frame shows or its call drops it.
     func intake(_ frame: String, of id: String?) async -> PluginOutput {
         let lines = await PluginOutput.reading(frame)
@@ -268,7 +272,7 @@ public final class SpotRuns {
             do {
                 for try await frame in stream {
                     guard !call.isStopped else { break }
-                    printed.append(frame)
+                    log?.add(frame, to: &printed)
                     guard let output = await self?.intake(frame, of: id), !call.isStopped else { break }
                     call.take(output)
                     await onFrame(call, frame, output)
@@ -295,9 +299,9 @@ public final class SpotRuns {
     }
 
     /// Starts a script that stays, and returns it with its frames.
-    func stay(_ command: Spot, limit: TimeInterval?) throws -> (ScriptProcess, AsyncThrowingStream<String, Error>) {
+    func stay(_ command: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>) {
         let script = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, mode: .stays, limit: limit, stopPause: stopPause, dataName: command.dataName, variables: ["OPENSPOT_ID": command.id])
-        let frames = try script.start()
+        let frames = script.start()
         keep(script)
         return (script, frames)
     }
@@ -309,13 +313,9 @@ public final class SpotRuns {
         }
         let sent = action.sent(input: input)
         let process = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: command.dataName, variables: variables.merging(["OPENSPOT_ID": command.id]) { given, _ in given })
-        do {
-            let stream = try process.start()
-            keep(process)
-            return (stream, { process.stop() }, process)
-        } catch {
-            return (AsyncThrowingStream { $0.finish(throwing: error) }, {}, nil)
-        }
+        let stream = process.start()
+        keep(process)
+        return (stream, { process.stop() }, process)
     }
 
     /// The frames of an answer that Swift gives in the app: one frame with all its text.

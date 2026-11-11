@@ -16,9 +16,8 @@ public struct FormDraft: Equatable, Sendable {
         self.values = values
         if let choice = form.soleChoice {
             choices = ItemList(items: choice.options.map { option in
-                let icon = Icon(text: option.icon)
-                return SpotItem(
-                    title: option.title, run: option.id, symbol: icon?.symbol, iconFile: icon?.file, image: icon?.image, glyph: icon?.glyph,
+                SpotItem(
+                    title: option.title, run: option.id, picture: Icon(text: option.icon),
                     isOn: choice.picks?.contains(option.id) ?? false
                 )
             })

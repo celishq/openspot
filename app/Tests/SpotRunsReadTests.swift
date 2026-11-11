@@ -44,6 +44,44 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(sheet.reading.value?.title, "3")
     }
 
+    func testALaterFrameWithAHeadReplacesThePartsOfTheRead() async throws {
+        try script(header: "read=sheet", "printf 'title=S\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\n'\nsleep 0.05\nprintf 'title=S\\n\\ntext=a\\ntitle=A2\\n---\\n'")
+        let sheet = try sheet()
+        let frames = FrameLog(sheet)
+
+        runs.panelOpened()
+        sheet.open {}
+
+        try await wait("the later frame") { frames.frames.count == 2 }
+        XCTAssertEqual(sheet.panel?.parts.map(\.id), ["a"])
+        XCTAssertEqual(sheet.panel?.parts.first?.title, "A2")
+    }
+
+    func testALaterFrameWithAHeadAndNoRowsEmptiesTheList() async throws {
+        try script(header: "read=sheet", "printf 'title=L\\n\\nrow=a\\ntitle=A\\n---\\n'\nsleep 0.05\nprintf 'title=L\\n---\\n'")
+        let sheet = try sheet()
+        let frames = FrameLog(sheet)
+
+        runs.panelOpened()
+        sheet.open {}
+
+        try await wait("the later frame") { frames.frames.count == 2 }
+        XCTAssertEqual(sheet.list.shown.map(\.run), [])
+    }
+
+    func testALaterFrameWithNoHeadKeepsThePartsItDoesNotPrint() async throws {
+        try script(header: "read=sheet", "printf 'title=S\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\n'\nsleep 0.05\nprintf 'text=a\\ntitle=A2\\n---\\n'")
+        let sheet = try sheet()
+        let frames = FrameLog(sheet)
+
+        runs.panelOpened()
+        sheet.open {}
+
+        try await wait("the later frame") { frames.frames.count == 2 }
+        XCTAssertEqual(sheet.panel?.parts.map(\.id), ["a", "b"])
+        XCTAssertEqual(sheet.panel?.parts.first?.title, "A2")
+    }
+
     func testABigFrameAndASmallFrameAfterItShowInTheirOrder() async throws {
         try script(header: "read=sheet", """
         i=0

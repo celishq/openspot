@@ -3,8 +3,8 @@ import AppKit
 import QuartzCore
 
 /// A run that opens and closes the sheet of one spot again and again, or with `OPENSPOT_ACTION` moves down its rows, types
-/// in its search, picks the row `OPENSPOT_ROW`, drags a card in Edit Spots or with `edit` starts and ends Edit Spots, and
-/// writes the time of each frame to a file.
+/// in its search, picks the row `OPENSPOT_ROW`, opens the panel itself after `OPENSPOT_PAUSE`, drags a card in Edit Spots
+/// or with `edit` starts and ends Edit Spots, and writes the time of each frame to a file.
 /// `OPENSPOT_ACTION=mouse` drags a card with mouse events instead, or with `OPENSPOT_ROW` holds it at the bottom `edge`,
 /// pulls its `corner` handle or presses its `minus`, and writes whether it lifted or resized, the order, its size and
 /// whether it is on the grid after.
@@ -15,6 +15,8 @@ import QuartzCore
 /// card, with mouse events on each frame, and writes how often its size changed.
 @MainActor
 final class SpotMotionProbe: NSObject {
+    /// How long each open of the panel is timed: its fade and the reads that land in it.
+    private static let openWindow: CFTimeInterval = 1
     private let model: SpotsModel
     private let panel: NSPanel
     private let output: String
@@ -33,6 +35,10 @@ final class SpotMotionProbe: NSObject {
     private var link: CADisplayLink?
     private var frames: [CFTimeInterval] = []
     private var start: CFTimeInterval = 0
+    /// The times that the `panel` action counts frames in, one from each open, so that the hidden panel counts for nothing.
+    private var windows: [ClosedRange<CFTimeInterval>] = []
+    /// The milliseconds of each open press of the `panel` action, on the main thread.
+    private var pressTimes: [Double] = []
 
     init?(model: SpotsModel, panel: NSPanel, environment: [String: String] = ProcessInfo.processInfo.environment) {
         guard let output = environment["OPENSPOT_PROBE"] else { return nil }
@@ -59,6 +65,7 @@ final class SpotMotionProbe: NSObject {
     }
 
     private func begin() {
+        if action == "panel" { return beginOpens() }
         if action == "drag" || action == "mouse" { return beginDrag() }
         if action == "edit" { return beginEdit() }
         if action == "tile" {
@@ -225,6 +232,37 @@ final class SpotMotionProbe: NSObject {
             }
             let phase = time.truncatingRemainder(dividingBy: 2 * leg) / leg
             post(.leftMouseDragged, CGFloat(phase < 1 ? phase : 2 - phase))
+        }
+    }
+
+    /// Opens the panel again and again, once its first reads have ended, each after the pause, so that each open reads its
+    /// scripts as an open of a person does.
+    private func beginOpens() {
+        guard !model.runs.isReading else {
+            return DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { self.beginOpens() }
+        }
+        guard let view = panel.contentView, let panel = panel as? SpotsPanel else { return finish(with: "no panel\n") }
+        let link = view.displayLink(target: self, selector: #selector(tick))
+        link.add(to: .main, forMode: .common)
+        self.link = link
+        panel.hide()
+        DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.open(panel, left: self.presses / 2) }
+    }
+
+    /// Opens the panel as the key does, but with no focus, and times the press. It hides the panel when its window ends.
+    private func open(_ panel: SpotsPanel, left: Int) {
+        guard left > 0 else { return finish(with: report()) }
+        panel.alphaValue = 0.02
+        let pressed = CACurrentMediaTime()
+        panel.place(over: NSWorkspace.shared.frontmostApplication)
+        model.panelWillShow(holding: [])
+        panel.orderFrontRegardless()
+        pressTimes.append((CACurrentMediaTime() - pressed) * 1000)
+        frames.append(pressed)
+        windows.append(pressed...(pressed + Self.openWindow))
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.openWindow) {
+            panel.hide()
+            DispatchQueue.main.asyncAfter(deadline: .now() + self.pause) { self.open(panel, left: left - 1) }
         }
     }
 
@@ -431,9 +469,10 @@ final class SpotMotionProbe: NSObject {
         FileManager.default.createFile(atPath: path, contents: data)
     }
 
-    /// The frame times from the first press, in milliseconds: their spread, then each one.
+    /// The frame times from the first press, or in the windows of the opens, in milliseconds: their spread, then each one.
     private func report() -> String {
-        let gaps = zip(frames.dropFirst(), frames).filter { $0.1 >= start }.map { ($0.0 - $0.1) * 1000 }
+        let counted = { (time: CFTimeInterval) in self.windows.isEmpty ? time >= self.start : self.windows.contains { $0.contains(time) } }
+        let gaps = zip(frames.dropFirst(), frames).filter { counted($0.1) }.map { ($0.0 - $0.1) * 1000 }
         let sorted = gaps.sorted()
         guard !sorted.isEmpty else { return "no frames\n" }
         let budget = 1000 / Double(NSScreen.main?.maximumFramesPerSecond ?? 120)
@@ -441,9 +480,11 @@ final class SpotMotionProbe: NSObject {
         let late = gaps.filter { $0 > budget * 1.05 }
         let dropped = gaps.map { max(Int(($0 / budget).rounded()) - 1, 0) }.reduce(0, +)
         let seconds = gaps.reduce(0, +) / 1000
+        let presses = pressTimes.sorted()
+        let press = presses.isEmpty ? "" : String(format: ", press p50 %.2f ms, worst %.2f ms", presses[presses.count / 2], presses.last ?? 0)
         let head = String(
-            format: "fps %.0f, p50 %.1f ms, p90 %.1f ms, p99 %.1f ms, worst %.1f ms, late %d of %d, dropped %d\n",
-            Double(gaps.count) / seconds, at(0.5), at(0.9), at(0.99), sorted.last ?? 0, late.count, gaps.count, dropped
+            format: "fps %.0f, p50 %.1f ms, p90 %.1f ms, p99 %.1f ms, worst %.1f ms, late %d of %d, dropped %d%@\n",
+            Double(gaps.count) / seconds, at(0.5), at(0.9), at(0.99), sorted.last ?? 0, late.count, gaps.count, dropped, press
         )
         return head + gaps.map { String(format: "%.1f", $0) }.joined(separator: " ") + "\n"
     }

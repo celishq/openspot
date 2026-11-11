@@ -86,6 +86,42 @@ final class SpotRunTests: XCTestCase {
         sheet.close()
     }
 
+    func testAnAnswerThatKeepsTheCardOnTellsNoReaderOfWhetherItIsOn() async throws {
+        let sheet = try make("n=$(cat '\(path("n"))' 2>/dev/null); echo $((n + 1)) > '\(path("n"))'; printf 'on=true\\ndetail=Read %s\\n' \"$n\"", read: .panel)
+        sheet.read()
+        try await wait("the card on") { sheet.isOn }
+        let detail = sheet.state.subtitle
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = sheet.isOn } onChange: { changed = true }
+
+        sheet.read(need: .change)
+        try await wait("the next answer") { sheet.state.subtitle != detail }
+
+        XCTAssertFalse(changed)
+    }
+
+    func testANewValueOfAPartTellsNoReaderOfTheRectOrTheKindOfTheParts() async throws {
+        let sheet = try make("printf 'field=a\\ntitle=Name\\ntext=%s\\n\\ntext=b\\ntitle=B\\n' \"$2\"")
+        sheet.open {}
+        try await wait("the parts") { sheet.panel != nil }
+        let part = try XCTUnwrap(sheet.panel?.parts.first)
+        XCTAssertEqual(sheet.partsRect, sheet.panel.map(SpotTokens.panelRect))
+        XCTAssertEqual(sheet.partsKind, .parts)
+        nonisolated(unsafe) var changed = false
+        withObservationTracking {
+            _ = sheet.partsRect
+            _ = sheet.partsKind
+        } onChange: {
+            changed = true
+        }
+
+        sheet.set(part, to: "new")
+
+        XCTAssertEqual(sheet.panel?.parts.first?.value, "new")
+        XCTAssertFalse(changed)
+        sheet.close()
+    }
+
     func testACloseWithNoSelectionTellsNoReaderOfTheParts() async throws {
         let sheet = try holding("printf 'text=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n'", pause: 0.02)
         sheet.open(waits: true) {}
@@ -109,6 +145,25 @@ final class SpotRunTests: XCTestCase {
         sheet.close()
 
         XCTAssertEqual(sheet.panel?.selectedPart?.id, first)
+    }
+
+    func testAMoveOfThePartSelectionTellsOnlyTheReadersOfTheSelectedPart() async throws {
+        let sheet = try holding("printf 'hotkey=k\\nvalue=ctrl+space\\n\\nswitch=w\\non=true\\n'", pause: 0.02)
+        sheet.open(waits: true) {}
+        try await wait("the parts") { sheet.panel != nil }
+        let first = sheet.selectedPart?.id
+        nonisolated(unsafe) var partsChanged = false
+        nonisolated(unsafe) var selectionChanged = false
+        withObservationTracking { _ = sheet.panel } onChange: { partsChanged = true }
+        withObservationTracking { _ = sheet.selectedPart } onChange: { selectionChanged = true }
+
+        sheet.movePart(by: 1)
+
+        XCTAssertFalse(partsChanged)
+        XCTAssertTrue(selectionChanged)
+        XCTAssertNotEqual(sheet.selectedPart?.id, first)
+        XCTAssertEqual(sheet.selectedPart?.id, sheet.panel?.selectedPart?.id)
+        sheet.close()
     }
 
     func testOnlyTheFirstPartsOfASheetArriveThroughTheArrival() async throws {

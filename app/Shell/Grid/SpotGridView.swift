@@ -69,7 +69,7 @@ struct SpotGridView: View {
                 .modifier(SpotLiftedCard(isLifted: card.isLifted, isSolid: card.isHeld, size: card.size))
                 .modifier(SpotCardPlace(motion: card.motion, lift: card.isLifted ? model.lift : nil))
                 .zIndex(card.isHeld ? 1 : 0)
-                .contextMenu { spotMenu(of: entry) }
+                .contextMenu { SpotCardMenu(model: model, entry: entry) }
                 .opacity(entry.id == openID ? 0.001 : 1)
                 .animation(nil) { $0.opacity(model.carry?.entry.id == entry.id ? 0.001 : 1) }
                 .allowsHitTesting(entry.id != openID)
@@ -102,23 +102,6 @@ struct SpotGridView: View {
         return away.columns < 0 ? .trailing : away.columns > 0 ? .leading : away.rows < 0 ? .bottom : away.rows > 0 ? .top : .center
     }
 
-    /// What a card offers on a right click: its preferred size, its place on the grid and Edit Spots.
-    @ViewBuilder
-    private func spotMenu(of entry: SpotsModel.Entry) -> some View {
-        let sizes = model.sizes(of: entry)
-        if !sizes.isEmpty {
-            Picker("Size", selection: Binding(get: { entry.size.name }, set: { name in
-                if let size = SpotSize(name: name) { model.prefer(size, for: entry.id) }
-            })) {
-                ForEach(sizes.map(\.name), id: \.self) { Text($0.capitalized).tag($0) }
-            }
-        }
-        if entry.item == nil {
-            Button(entry.isOnGrid ? "Hide from Grid" : "Show on Grid") { model.setOnGrid(!entry.isOnGrid, for: entry.id) }
-            Button("Edit Spots") { model.beginEditing() }
-        }
-    }
-
     /// The faint shape where a release puts the lifted card. With no card lifted it lies under the selected card, unseen, so
     /// that it shows in place when a drag starts.
     private func landing(of drag: SpotDrag?, in placements: [SpotPlacement]) -> some View {
@@ -139,5 +122,27 @@ struct SpotGridView: View {
                 withTransaction(still) { model.dragSpot(entry.id, by: value.translation) }
             }
             .onEnded { model.dropSpot(by: $0.translation) }
+    }
+}
+
+/// What a card offers on a right click: its preferred size, its place on the grid and Edit Spots. It reads the card's state
+/// itself, so that a change of a card's value reruns this menu and not the grid.
+private struct SpotCardMenu: View {
+    let model: SpotsModel
+    let entry: SpotsModel.Entry
+
+    var body: some View {
+        let sizes = model.sizes(of: entry)
+        if !sizes.isEmpty {
+            Picker("Size", selection: Binding(get: { entry.size.name }, set: { name in
+                if let size = SpotSize(name: name) { model.prefer(size, for: entry.id) }
+            })) {
+                ForEach(sizes.map(\.name), id: \.self) { Text($0.capitalized).tag($0) }
+            }
+        }
+        if entry.item == nil {
+            Button(entry.isOnGrid ? "Hide from Grid" : "Show on Grid") { model.setOnGrid(!entry.isOnGrid, for: entry.id) }
+            Button("Edit Spots") { model.beginEditing() }
+        }
     }
 }

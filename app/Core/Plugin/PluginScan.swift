@@ -4,7 +4,8 @@ import Foundation
 /// reads no file.
 public struct PluginScan {
     private var result = ScanResult(plugins: [], refused: [])
-    private var stamp: PluginFolder.Stamp?
+    /// The stamp of all that the last scan read, which changes with each file that it reads.
+    public private(set) var stamp: PluginFolder.Stamp?
 
     public init() {}
 

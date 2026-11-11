@@ -16,6 +16,30 @@ remember() {
   printf '%s\n' "$1" > "$saved.$$" && mv "$saved.$$" "$saved"
 }
 
+# Prints the rows of the emoji in the tone and of the symbols. It keeps them for each tone, with the times of change of
+# the app, of macOS and of the Mac's preferences, which hold its languages, and makes them again when one of these differs.
+glyph_rows() {
+  rows="$OPENSPOT_DATA/rows-$tone"
+  stamp=$(stat -n -L -f '%Fc ' "$(command -v openspot)" /System/Library/CoreServices/SystemVersion.plist "$HOME/Library/Preferences/.GlobalPreferences.plist" 2>/dev/null)
+  kept=''
+  [ -f "$rows.stamp" ] && IFS= read -r kept <"$rows.stamp"
+  if [ -s "$rows" ] && [ "$stamp" = "$kept" ]; then
+    cat "$rows"
+    return
+  fi
+  rm -f "$OPENSPOT_DATA"/rows-*.[0-9]*
+  whole=true
+  openspot emoji --tone "$tone" >"$rows.$$" || whole=false
+  openspot symbols >>"$rows.$$" || whole=false
+  cat "$rows.$$"
+  if [ "$whole" = true ]; then
+    mv "$rows.$$" "$rows"
+    printf '%s\n' "$stamp" >"$rows.stamp"
+  else
+    rm -f "$rows.$$"
+  fi
+}
+
 # Prints the tone after this one, and the first after the last.
 next_tone() {
   set -- $tones $tones
@@ -32,8 +56,7 @@ case "$1" in
     printf 'choice=tone\ntitle=Skin tone\n'
     printf 'option=none:Yellow\noption=light:Light\noption=medium-light:Medium light\noption=medium:Medium\noption=medium-dark:Medium dark\noption=dark:Dark\n'
     printf 'value=%s\n\n' "$tone"
-    openspot emoji --tone "$tone"
-    openspot symbols
+    glyph_rows
     ;;
   tone)
     remember "$2"

@@ -125,16 +125,12 @@ final class StayLink: ScriptLink {
     /// Starts the script and asks it for what it shows, with no values. A script that failed too often does not start.
     private func start(reason: ReadReason? = nil) {
         guard let run, givenUp == nil else { return }
-        do {
-            let (script, frames) = try runs.stay(run.command, limit: runs.readLimit)
-            self.script = script
-            let id = next()
-            asks = [id: .read(generation: nil, reports: true)]
-            script.send(.read, id: id, reason: reason ?? startReason)
-            Task { await follow(script, frames) }
-        } catch {
-            failed(error)
-        }
+        let (script, frames) = runs.stay(run.command, limit: runs.readLimit)
+        self.script = script
+        let id = next()
+        asks = [id: .read(generation: nil, reports: true)]
+        script.send(.read, id: id, reason: reason ?? startReason)
+        Task { await follow(script, frames) }
     }
 
     /// Sends a call to the script, starts it if it does not run, and returns its number. With nothing that wants it, it ends

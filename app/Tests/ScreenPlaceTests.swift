@@ -23,6 +23,14 @@ final class ScreenPlaceTests: XCTestCase {
         XCTAssertEqual(ScreenPlace(screens: [main]).origin(of: size, window: nil, pointer: CGPoint(x: 10, y: 10)), CGPoint(x: 428, y: 185))
     }
 
+    func testWithOneScreenThePanelOpensThereWhereverTheWindowIs() {
+        let one = ScreenPlace(screens: [main])
+        let alone = one.origin(of: size, window: nil, pointer: CGPoint(x: 10, y: 10))
+
+        XCTAssertEqual(one.origin(of: size, window: CGRect(x: 100, y: 100, width: 800, height: 600), pointer: CGPoint(x: 10, y: 10)), alone)
+        XCTAssertEqual(one.origin(of: size, window: CGRect(x: -2000, y: 100, width: 800, height: 600), pointer: CGPoint(x: 9000, y: 9000)), alone)
+    }
+
     func testThePanelOpensOnTheScreenOfTheFrontWindow() {
         let window = CGRect(x: -2000, y: 100, width: 800, height: 600)
 

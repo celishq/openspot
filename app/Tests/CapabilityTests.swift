@@ -153,7 +153,7 @@ final class CapabilityTests: XCTestCase {
     func testAStopOfAScriptLeavesTheHelper() async throws {
         let url = try script(after: "printf -- '---\\n'\nsleep 30")
         let process = ScriptProcess(url: url, limit: 30)
-        var frames = try process.start().makeAsyncIterator()
+        var frames = process.start().makeAsyncIterator()
         let first = try await frames.next()
         let id = pid_t(try field("pid", in: try XCTUnwrap(first)))
 
@@ -169,7 +169,7 @@ final class CapabilityTests: XCTestCase {
     func testACallerStoppedDuringACallLeavesTheHelperAlive() async throws {
         let id = pid_t(try field("pid", in: try await call()))
         let process = ScriptProcess(url: tool, arguments: ["call", label], mode: .once(input: "slow"))
-        _ = try process.start()
+        _ = process.start()
         try await Task.sleep(for: .milliseconds(500))
 
         process.stop()

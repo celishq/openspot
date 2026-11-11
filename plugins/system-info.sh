@@ -1,7 +1,7 @@
 #!/bin/sh
 # title=System details
 # icon=gauge.with.dots.needle.50percent
-# read=panel
+# read=sheet
 here=$(dirname "$0")
 
 # Prints what a metric script in this folder shows as the value and the mark of a line. It looks, and does not read, so
