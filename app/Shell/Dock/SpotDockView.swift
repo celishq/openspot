@@ -1,7 +1,7 @@
 import OpenspotCore
 import SwiftUI
 
-/// The dock of Edit Spots, on the glass of the panel's surfaces: its title with the number of spots that are off, its
+/// The dock of Edit Spots, on the glass of the panel's surfaces: its title with the number of spots that are off, under All, its
 /// search, and those spots as their cards in rows that scroll down and fade at each end they pass. The scroll reaches the
 /// dock's edges, and its margin lies inside it. A card dragged out of the dock leaves its place empty until it lands.
 struct SpotDockView: View {
@@ -17,7 +17,7 @@ struct SpotDockView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: SpotTokens.padding) {
                 HStack(spacing: 6) {
-                    Text("Off")
+                    Text("All")
                         .font(SpotType.title)
                         .foregroundStyle(SpotTheme.ink)
                     Text("\(dock.shown.count)")

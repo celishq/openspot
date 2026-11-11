@@ -20,12 +20,8 @@ public enum SpotTokens {
     /// The side of the square that takes a drag of a card's resize handle, and the width of its line on the rim.
     public static let resizeHandle: CGFloat = 28
     public static let resizeHandleLine: CGFloat = 5
-    /// The widest the dock of Edit Spots grows, the height of a spot in it, a card with the room for a name under it, and
-    /// the dock's gap to the edges of the screen.
+    /// The widest the dock of Edit Spots grows, and its gap to the edges of the screen.
     public static let dockWidth: CGFloat = 1220
-    public static let dockNameGap: CGFloat = 4
-    public static let dockNameHeight: CGFloat = 14
-    public static let dockTileHeight: CGFloat = rowHeight + dockNameGap + dockNameHeight
     public static let dockMargin: CGFloat = 20
     /// The most rows of spots that the dock shows before it scrolls.
     public static let dockRows = 3
@@ -76,7 +72,7 @@ public enum SpotTokens {
 
     /// The height of the dock when it shows this many rows of spots.
     public static func dockHeight(rows: Int) -> CGFloat {
-        dockRowsTop + CGFloat(rows) * dockTileHeight + CGFloat(rows - 1) * rowGap + padding
+        dockRowsTop + height(rows: rows) + padding
     }
 
     /// How many columns of spots a dock this wide holds, two at least.

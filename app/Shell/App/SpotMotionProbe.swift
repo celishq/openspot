@@ -139,7 +139,7 @@ final class SpotMotionProbe: NSObject {
         try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.save(to: "\(folder)/dock.png")
-            self.model.tip = self.model.visible.first.map { SpotTip(id: $0.id, isTrailing: true, text: "Hide from grid") }
+            self.model.tip = self.model.visible.first.map { SpotTip(id: $0.id, anchor: .trailingCorner, text: "Hide from grid") }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 self.save(to: "\(folder)/tip.png")
                 self.model.tip = nil

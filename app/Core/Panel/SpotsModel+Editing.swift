@@ -327,8 +327,9 @@ extension SpotsModel {
         return rect.offsetBy(dx: dockFrame.minX + SpotTokens.padding, dy: dockFrame.minY + SpotTokens.dockRowsTop - dockScroll)
     }
 
-    /// Takes how far the dock has scrolled.
+    /// Takes how far the dock has scrolled. A scroll ends the tip.
     public func dockScrolled(to offset: CGFloat) {
+        if dockScroll != offset, tip != nil { tip = nil }
         dockScroll = offset
     }
 
@@ -489,11 +490,12 @@ extension SpotsModel {
         }
     }
 
-    /// Takes how far the grid has scrolled. A card that the person drags or resizes moves with the grid, as if the pointer
-    /// moved as far.
+    /// Takes how far the grid has scrolled, and ends the tip. A card that the person drags or resizes moves with the grid, as
+    /// if the pointer moved as far.
     public func gridScrolled(to offset: CGFloat) {
         guard gridScroll != offset else { return }
         gridScroll = offset
+        if tip != nil { tip = nil }
         guard let move = pointerMove else { return }
         if let carry, carry.tile != nil {
             dragDockSpot(carry.entry.id, by: move)

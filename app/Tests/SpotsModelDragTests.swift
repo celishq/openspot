@@ -268,17 +268,27 @@ final class SpotsModelDragTests: XCTestCase {
     }
 
     func testATipGoesWhenItsControlActsOrEditSpotsEnds() {
-        model.tip = SpotTip(id: "a", isTrailing: true, text: "Hide from grid")
+        model.tip = SpotTip(id: "a", anchor: .trailingCorner, text: "Hide from grid")
         model.setOnGrid(false, for: "a")
         XCTAssertNil(model.tip)
 
-        model.tip = SpotTip(id: "d", isTrailing: false, text: "Turn off")
+        model.tip = SpotTip(id: "d", anchor: .leadingCorner, text: "Turn off")
         model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
         XCTAssertNil(model.tip)
         model.cancelDrag()
 
-        model.tip = SpotTip(id: "b", isTrailing: false, text: "Turn off")
+        model.tip = SpotTip(id: "b", anchor: .leadingCorner, text: "Turn off")
         model.endEditing()
+        XCTAssertNil(model.tip)
+    }
+
+    func testAScrollEndsTheTip() {
+        model.tip = SpotTip(id: "a", anchor: .trailingCorner, text: "Hide from grid")
+        model.gridScrolled(to: 40)
+        XCTAssertNil(model.tip)
+
+        model.tip = SpotTip(id: "a", anchor: .dockCard, text: "A")
+        model.dockScrolled(to: 40)
         XCTAssertNil(model.tip)
     }
 

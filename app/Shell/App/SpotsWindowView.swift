@@ -2,7 +2,7 @@ import OpenspotCore
 import SwiftUI
 
 /// What the panel's window shows: the panel, and in Edit Spots the dock under it, which fades in, and the card that the
-/// person carries over both. The window's frame changes at once, so the places in it never animate.
+/// person carries over both, and the tip over all of them. The window's frame changes at once, so the places in it never animate.
 struct SpotsWindowView: View {
     let model: SpotsModel
     let place: SpotsWindowPlace
@@ -19,6 +19,7 @@ struct SpotsWindowView: View {
             }
             SpotCarriedCard(model: model, panel: place.panel)
                 .environment(\.spotIsShown, model.isShown)
+            SpotTipView(model: model, panel: place.panel)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
