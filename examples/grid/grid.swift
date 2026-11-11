@@ -144,6 +144,7 @@ final class Cells: NSView {
     var change: (Pick?, Bool) -> Void = { _, _ in }
     private let gap: CGFloat = 5
     private var layers: [CALayer] = []
+    private let block = CALayer()
     private var anchor: (Int, Int)?
     private var hover: (Int, Int)?
 
@@ -152,15 +153,18 @@ final class Cells: NSView {
         self.rows = rows
         super.init(frame: frame)
         wantsLayer = true
+        block.cornerRadius = 9
+        block.cornerCurve = .continuous
+        block.backgroundColor = NSColor(white: 1, alpha: 0.16).cgColor
+        block.actions = ["frame": NSNull(), "bounds": NSNull(), "position": NSNull(), "hidden": NSNull()]
+        layer?.addSublayer(block)
         for row in 0..<rows {
             for column in 0..<columns {
-                let cell = CALayer()
-                cell.frame = rect(column, row)
-                cell.cornerRadius = 6
-                cell.cornerCurve = .continuous
-                cell.actions = ["backgroundColor": NSNull()]
-                layer?.addSublayer(cell)
-                layers.append(cell)
+                let dot = CALayer()
+                dot.actions = ["backgroundColor": NSNull(), "bounds": NSNull(), "cornerRadius": NSNull()]
+                dot.position = CGPoint(x: rect(column, row).midX, y: rect(column, row).midY)
+                layer?.addSublayer(dot)
+                layers.append(dot)
             }
         }
         paint(nil)
@@ -186,11 +190,17 @@ final class Cells: NSView {
     }
 
     private func paint(_ pick: Pick?) {
-        for (index, cell) in layers.enumerated() {
+        for (index, dot) in layers.enumerated() {
             let column = index % columns, row = index / columns
             let inside = pick.map { column >= $0.left && column < $0.left + $0.width && row >= $0.top && row < $0.top + $0.height } ?? false
-            cell.backgroundColor = NSColor(white: 1, alpha: inside ? 0.72 : 0.14).cgColor
+            let side: CGFloat = inside ? 7 : 5
+            dot.bounds = CGRect(x: 0, y: 0, width: side, height: side)
+            dot.cornerRadius = side / 2
+            dot.backgroundColor = NSColor(white: 1, alpha: inside ? 0.95 : 0.32).cgColor
         }
+        block.isHidden = pick == nil
+        guard let pick else { return }
+        block.frame = rect(pick.left, pick.top).union(rect(pick.left + pick.width - 1, pick.top + pick.height - 1))
     }
 
     private func show(_ pick: Pick?, final: Bool = false) {
