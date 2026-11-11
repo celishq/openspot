@@ -40,7 +40,7 @@ enum SpotScreen {
     /// Takes a picture of the source and writes it, and returns its path on a line. A cancel of the pick returns nothing. A
     /// relative file starts in `folder`.
     static func shot(_ capture: ScreenCapture, in folder: URL) async throws -> String {
-        guard let found = try await SpotScreenTarget.target(of: capture.source) else { return "" }
+        guard let found = try await SpotScreenTarget.target(of: capture.source), !Task.isCancelled else { return "" }
         let file = try CaptureFile(path: capture.file, kind: .picture, folder: screenshots, current: folder).url
         let (image, scale) = try await picture(of: found, cursor: capture.cursor)
         try write(image, scale: scale, to: file)
@@ -48,7 +48,6 @@ enum SpotScreen {
     }
 
     /// The picture of a target, with its pixels for each point.
-    @MainActor
     private static func picture(of found: ScreenTarget, cursor: Bool) async throws -> (CGImage, CGFloat) {
         let target = try await SpotScreenTarget.find(found)
         let image = try await allowed { try await SCScreenshotManager.captureImage(contentFilter: target.filter, configuration: target.configuration(cursor: cursor)) }
@@ -57,8 +56,7 @@ enum SpotScreen {
 
     /// Runs a call to ScreenCaptureKit. When macOS does not allow it, this asks macOS for the permission and fails with the
     /// fix and the link to its pane (S11).
-    @MainActor
-    static func allowed<Value>(_ work: () async throws -> Value) async throws -> Value {
+    static func allowed<Value>(isolation: isolated (any Actor)? = #isolation, _ work: () async throws -> Value) async throws -> Value {
         do {
             return try await work()
         } catch {

@@ -49,11 +49,11 @@ final class SpotMac: Mac {
     }
 
     nonisolated func windowFrame() async throws -> String {
-        try await SpotWindow.front().frameText()
+        try await SpotBlocking.run { try SpotWindow.front().frameText }
     }
 
     nonisolated func moveWindow(_ move: WindowMove) async throws {
-        try await SpotWindow.front().move(move)
+        try await SpotBlocking.run { try SpotWindow.front().move(move) }
     }
 
     nonisolated func screenSources() async -> String {
@@ -69,15 +69,15 @@ final class SpotMac: Mac {
     }
 
     nonisolated func stopRecording() async throws -> String {
-        try SpotRecording.stop()
+        try await SpotBlocking.run { try SpotRecording.stop() }
     }
 
     nonisolated func recordingStatus() async throws -> String {
-        try SpotRecording.status()
+        try await SpotBlocking.run { try SpotRecording.status() }
     }
 
     nonisolated func translate(_ text: String, from: String?, to: String?) async throws -> String {
-        try SpotTranslation.call(text: text, from: from, to: to)
+        try await SpotBlocking.run { try SpotTranslation.call(text: text, from: from, to: to) }
     }
 
     nonisolated func translationLanguages() async -> String {

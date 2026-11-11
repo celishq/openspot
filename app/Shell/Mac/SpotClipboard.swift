@@ -11,7 +11,7 @@ enum SpotClipboard {
     /// Copies the file, and fails when it is missing or the pasteboard does not take it.
     static func copy(_ url: URL) throws {
         guard FileManager.default.fileExists(atPath: url.path) else { throw SpotError.fault("Openspot cannot find \(url.lastPathComponent).") }
-        guard copy(url, to: .general) else { throw SpotError.fault("Openspot could not copy \(url.lastPathComponent). Copy it from Finder instead.") }
+        guard autoreleasepool(invoking: { copy(url, to: .general) }) else { throw SpotError.fault("Openspot could not copy \(url.lastPathComponent). Copy it from Finder instead.") }
     }
 
     static func copy(text: String) throws {

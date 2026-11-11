@@ -27,7 +27,9 @@ enum SpotRecording {
             }
         }
         let events = capture.events.map { $0.hasPrefix("/") ? $0 : folder.appendingPathComponent($0).path }
-        _ = try ask(.start(RecordingRequest.Plan(target: target, inputs: capture.inputs, cursor: capture.cursor, file: file.path, camera: camera, events: events)))
+        guard !Task.isCancelled else { return "" }
+        let plan = RecordingRequest.Plan(target: target, inputs: capture.inputs, cursor: capture.cursor, file: file.path, camera: camera, events: events)
+        _ = try await SpotBlocking.run { try ask(.start(plan)) }
         return ""
     }
 

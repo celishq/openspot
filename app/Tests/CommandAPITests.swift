@@ -75,6 +75,14 @@ final class CommandAPITests: XCTestCase {
         XCTAssertFalse(answer.output.contains("row=6"))
     }
 
+    func testABatchRunsNoCallThatReadsStdin() async throws {
+        for line in ["clipboard copy", "translate --to en"] {
+            let answer = try await answer(["batch"], input: line + "\n")
+
+            XCTAssertEqual(answer.errors, "openspot batch cannot run `\(line)`, because it does not print data. Run it on its own.\n")
+        }
+    }
+
     func testABatchRunsNoCallThatCanWaitForThePerson() async throws {
         for line in ["color pick", "folder pick", "screen shot", "screen record start"] {
             let answer = try await answer(["batch"], input: line + "\n")
