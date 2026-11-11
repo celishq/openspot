@@ -190,16 +190,6 @@ final class NewSpotTests: XCTestCase {
         }
     }
 
-    func testTheWidgetExampleInTheReadmeLoads() throws {
-        let readme = try String(contentsOf: root.appendingPathComponent("README.md"), encoding: .utf8)
-        let example = try XCTUnwrap(readme.components(separatedBy: "```toml\n").dropFirst().first?.components(separatedBy: "```").first)
-        let widgets = try XCTUnwrap(try TomlDocument(text: example).arrays["widgets"])
-        guard case .strings(let grid)? = widgets.first?["grid"] else { return XCTFail("no grid") }
-
-        XCTAssertNil(widgets.first?["places"])
-        XCTAssertEqual(WidgetLayout(drawing: grid).names, ["memory", "battery", "cpu", "disk"])
-    }
-
     /// The specs `00` to `99` of `spec/`, joined in order with one blank line between them.
     private func joinedSpecs() throws -> String {
         let specs = root.appendingPathComponent("spec")

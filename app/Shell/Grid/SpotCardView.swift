@@ -44,7 +44,6 @@ struct SpotCardView: View, Equatable {
             .modifier(CardHover(shape: shape, isFilled: isFilled, showsPress: showsPress))
             .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).modifier(CardReveal()).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { keycap }
-            .overlay(alignment: .topTrailing) { hiddenMark }
             .overlay(alignment: .topTrailing) { if !isHiddenFromGrid { FailureMark(entry: entry, size: size) } }
             .contentShape(shape)
             .onTapGesture { if let onTap { onTap() } else { model.tap(entry.id) } }
@@ -241,22 +240,6 @@ struct SpotCardView: View, Equatable {
                 .offset(x: -inset, y: inset)
                 .opacity(showsChain && !isHiddenFromGrid ? 1 : 0)
                 .animation(SpotMotion.keycap, value: showsChain)
-                .allowsHitTesting(false)
-        }
-    }
-
-    /// The mark that says Edit Spots shows this card and the grid does not.
-    @ViewBuilder
-    private var hiddenMark: some View {
-        if isHiddenFromGrid {
-            let inset = SpotTokens.corner(for: size) * SpotTokens.rimPoint - SpotTokens.keycap / 2
-            Image(systemName: "eye.slash")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(SpotTheme.ink)
-                .frame(width: SpotTokens.keycap, height: SpotTokens.keycap)
-                .background(SpotTheme.keycap, in: RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: SpotTokens.keycapRadius, style: .continuous).strokeBorder(SpotTheme.ink.opacity(SpotTheme.track)))
-                .offset(x: -inset, y: inset)
                 .allowsHitTesting(false)
         }
     }

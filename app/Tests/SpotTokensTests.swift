@@ -14,4 +14,14 @@ final class SpotTokensTests: XCTestCase {
     func testAPictureNeverOutgrowsItsRoom() {
         XCTAssertEqual(SpotTokens.pictureSide(in: CGSize(width: 16, height: 30)), 16)
     }
+
+    func testTheArrowsHeadsShowWhetherTheCardCanGrowOrShrink() {
+        let sizes: [SpotSize] = [.small, .wide, .square]
+        XCTAssertEqual(SpotSize.small.reach(among: sizes).grows, true)
+        XCTAssertEqual(SpotSize.small.reach(among: sizes).shrinks, false)
+        XCTAssertEqual(SpotSize.wide.reach(among: sizes).grows, true)
+        XCTAssertEqual(SpotSize.wide.reach(among: sizes).shrinks, true)
+        XCTAssertEqual(SpotSize.square.reach(among: sizes).grows, false)
+        XCTAssertEqual(SpotSize.square.reach(among: sizes).shrinks, true)
+    }
 }

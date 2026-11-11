@@ -77,6 +77,11 @@ public struct SpotArrangement: Equatable, Sendable {
         Set(choices.filter { $0.isEnabled == true }.map(\.id))
     }
 
+    /// The IDs of the spots that the person turned off. A spot of the plugins folder loads unless it is here.
+    public var disabled: Set<String> {
+        Set(choices.filter { $0.isEnabled == false }.map(\.id))
+    }
+
     /// The commands in the order of the grid: each listed one takes a place that a listed one holds, in the order of the
     /// list, and each other one stays where it is.
     public func ordered(_ commands: [Spot]) -> [Spot] {

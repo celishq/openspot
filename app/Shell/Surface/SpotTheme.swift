@@ -56,7 +56,7 @@ struct SpotTheme {
         solid: NSColor(white: 0.12, alpha: 1),
         onSolid: .white,
         glyphOnSolid: .white,
-        glass: .white.withAlphaComponent(0.85),
+        glass: .white.withAlphaComponent(0.5),
         keycap: NSColor(white: 0.98, alpha: 1),
         window: NSColor(white: 0.93, alpha: 1),
         preview: NSColor(white: 0.98, alpha: 1),
@@ -98,6 +98,9 @@ struct SpotTheme {
     static let accent = Color.accentColor
     static let secondaryLight = 0.7
     static let dragFill = 0.4
+    /// The shadow under a card that the person lifts in Edit Spots: its blur radius and its strength.
+    static let liftShadow: CGFloat = 14
+    static let liftShadowStrength = 0.25
     @MainActor static var fill: Double { current.fillStrength }
     @MainActor static var disc: Double { current.discStrength }
     @MainActor static var chip: Double { current.chipStrength }

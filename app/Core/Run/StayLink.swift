@@ -63,6 +63,8 @@ final class StayLink: ScriptLink {
         case .ask(.search(let query)):
             stopSearches()
             if let id = send(.items(query: query), values: nil, reason: .search) { asks[id] = .search(query) }
+        case .ask(.answer):
+            return false
         case .work:
             send(call.action, values: call.input, key: call.key)
         }

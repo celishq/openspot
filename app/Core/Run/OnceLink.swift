@@ -57,7 +57,7 @@ final class OnceLink: ScriptLink {
             }
             run.ended(made, call.purpose, end, hadAnswer: hasAnswer, showedPicture: showedPicture, selected: selected)
         }
-        if case .ask = call.purpose { asking.append(made) }
+        if case .ask(let ask) = call.purpose, !ask.isAnswer { asking.append(made) }
         run.track(made)
         return true
     }

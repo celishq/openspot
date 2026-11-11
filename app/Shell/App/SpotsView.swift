@@ -8,7 +8,6 @@ struct SpotsView: View {
     @State private var scroll = ScrollPosition()
     @State private var scrollOffset: CGFloat = 0
     @State private var dropTarget: String?
-    @State private var dragged: (id: String, offset: CGSize)?
 
     /// The sheet that is built, from its first frame on its card to the end of its close.
     private var sheetID: String? {
@@ -33,9 +32,7 @@ struct SpotsView: View {
                     isSheetOpen: sheetOpen,
                     openID: card?.id,
                     push: card.map(push(from:)),
-                    scrollOffset: $scrollOffset,
-                    dropTarget: $dropTarget,
-                    dragged: $dragged
+                    dropTarget: $dropTarget
                 )
                     .offset(y: gridPush)
                     .padding(.horizontal, SpotTokens.halo)
@@ -46,7 +43,9 @@ struct SpotsView: View {
             .modifier(GridSelectionFollow(model: model, scroll: $scroll, scrollOffset: $scrollOffset))
             .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in
                 scrollOffset = offset
+                model.gridScrolled(to: offset)
             })
+            .modifier(GridEdgeScroll(model: model, scroll: $scroll))
             .modifier(SpotScrollEdgeTracker(edges: Binding(get: { fade.edges }, set: { fade.edges = $0 })))
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
             .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: !coversGrid)) { $0.opacity(coversGrid ? 0 : 1) }
@@ -222,11 +221,46 @@ struct SpotsView: View {
                 .font(SpotType.input)
                 .foregroundStyle(SpotTheme.ink)
             Spacer()
-            SpotRoundButton(symbol: "checkmark", label: "Done") { model.endEditing() }
+            SpotRoundButton(symbol: "checkmark", label: "Done", look: .strong) { model.endEditing() }
         }
         .padding(.horizontal, SpotTokens.padding)
         .frame(width: SpotTokens.gridWidth, height: SpotTokens.rowHeight)
         .offset(x: SpotTokens.halo, y: SpotTokens.halo)
+    }
+}
+
+/// Scrolls the grid while a lifted card lies in the fade at either end of the grid's clear part, faster the deeper it lies,
+/// once a frame until the drag ends. A card past the panel's bottom or over the dock scrolls nothing.
+private struct GridEdgeScroll: ViewModifier {
+    let model: SpotsModel
+    @Binding var scroll: ScrollPosition
+
+    func body(content: Content) -> some View {
+        content.task(id: model.drag?.id) {
+            var last = ContinuousClock.now
+            while !Task.isCancelled, model.drag != nil {
+                try? await Task.sleep(for: .milliseconds(8))
+                let now = ContinuousClock.now
+                let seconds = (now - last) / .seconds(1)
+                last = now
+                step(seconds: seconds)
+            }
+        }
+    }
+
+    private func step(seconds: Double) {
+        guard let drag = model.drag, model.carry?.isOverDock != true else { return }
+        let rows = model.placements.map { $0.row + $0.size.rows }.max() ?? 0
+        let window = ScrollWindow(
+            top: SpotTokens.halo + SpotTokens.rowHeight + SpotScrollEdges.fadeLength,
+            bottom: SpotTokens.panelHeight - SpotsView.gridBottom - SpotScrollEdges.fadeLength,
+            viewHeight: SpotTokens.panelHeight,
+            contentHeight: SpotTokens.gridTop + SpotTokens.height(rows: rows) + SpotsView.gridBottom
+        )
+        let point = SpotTokens.gridTop + drag.centre(movedBy: model.lift.offset).y
+        guard point - model.gridScroll < SpotTokens.panelHeight else { return }
+        let next = window.offset(scrolling: point, from: model.gridScroll, by: SpotMotion.edgeScrollSpeed * seconds, over: SpotScrollEdges.fadeLength)
+        if next != model.gridScroll { scroll.scrollTo(y: next) }
     }
 }
 
@@ -242,7 +276,7 @@ private struct GridFadeMask: ViewModifier {
 }
 
 /// Scrolls the grid until the selected spot lies clear of the fades at its two ends. It alone reads the selection, so that an
-/// arrow press on the grid reruns this modifier and not the panel.
+/// arrow press on the grid reruns this modifier and not the panel. The grid holds still under a drag.
 private struct GridSelectionFollow: ViewModifier {
     let model: SpotsModel
     @Binding var scroll: ScrollPosition
@@ -254,7 +288,7 @@ private struct GridSelectionFollow: ViewModifier {
 
     private func show() {
         let placements = model.placements
-        guard model.openList == nil, let spot = placements.first(where: { $0.index == model.selected }) else { return }
+        guard model.openList == nil, model.drag == nil, let spot = placements.first(where: { $0.index == model.selected }) else { return }
         let rows = placements.map { $0.row + $0.size.rows }.max() ?? 0
         let top = SpotTokens.gridTop + spot.rect.minY
         let window = ScrollWindow(

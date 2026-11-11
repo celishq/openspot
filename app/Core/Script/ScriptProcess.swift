@@ -237,13 +237,13 @@ public final class ScriptProcess: @unchecked Sendable {
 
     /// Whether a process of its group still runs.
     private var hasGroup: Bool {
-        let id = lock.withLock { id }
+        let id = lock.withLock { self.id }
         return id > 0 && kill(-id, 0) == 0
     }
 
     /// Sends a signal to the process group of the script, which holds the children it started.
     private func deliver(_ number: Int32) {
-        let id = lock.withLock { id }
+        let id = lock.withLock { self.id }
         if id > 0 { kill(-id, number) }
     }
 

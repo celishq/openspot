@@ -48,7 +48,7 @@ public struct SpotFiles {
 
     /// The plugin folder, with the core spots that this config turns on.
     public func folder(_ config: Config) -> PluginFolder {
-        .standard(environment: environment, home: home, enabled: config.arrangement.enabled)
+        .standard(environment: environment, home: home, enabled: config.arrangement.enabled, disabled: config.arrangement.disabled)
     }
 
     /// The plugin folder, with the core spots that the config file turns on now.

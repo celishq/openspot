@@ -53,6 +53,15 @@ public struct Plugin: Equatable, Sendable {
                 throw PluginError.fault("\(name) needs panel or a number in its read to join the main search")
             }
         }
+        var answers: AnswerPattern?
+        if let text = header.value("answers") {
+            guard let pattern = AnswerPattern(text) else {
+                throw PluginError.fault("\(name) has an unknown answers pattern: \(text). Write a regular expression, such as answers=^[0-9]")
+            }
+            guard !stays else { throw PluginError.fault("\(name) answers the main search, so it runs once for each call. Remove stay=true or answers") }
+            answers = pattern
+        }
+        let answersOnly = answers != nil && read == nil
         let offers = try header.children.filter { $0.fields.first?.key == "command" }.map { block in
             guard let offer = CommandOffer(block: block) else {
                 throw PluginError.fault("\(name) cannot read the command \(block.value("command") ?? ""). Give it an ID with no space and a title, such as command=left with title=Left side")
@@ -76,13 +85,14 @@ public struct Plugin: Equatable, Sendable {
             subtitle: header.value("detail"),
             read: read,
             isGlobal: isGlobal,
-            isFound: !isRowsOnly,
+            isFound: !isRowsOnly && !answersOnly,
+            answers: answers,
             stays: stays,
             staysAlways: stay == "always",
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             offersFloat: places.contains("float"),
             dataName: id.split(separator: "/").first.map(String.init),
-            isOnGrid: offers.isEmpty && !isRowsOnly && read?.seconds == nil,
+            isOnGrid: offers.isEmpty && !isRowsOnly && read?.seconds == nil && !answersOnly,
             headerSymbol: symbol,
             offers: offers,
             settings: header.children.filter { $0.fields.first?.key == "setting" }.compactMap { CommandOffer(setting: $0) },
