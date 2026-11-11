@@ -176,17 +176,6 @@ final class CatalogSpotTests: XCTestCase {
         XCTAssertTrue(sheet.contains("apps.sh"))
     }
 
-    func testNewSpotHasASmallCardOnTheGridAfterSettings() async throws {
-        let commands = ShippedSpot.commands(folder: folder, guide: folder, app: "", config: file)
-        let new = try XCTUnwrap(commands.first { $0.id == ShippedSpot.newID })
-
-        XCTAssertTrue(new.isOnGrid)
-        XCTAssertEqual(new.size, .small)
-        XCTAssertEqual(commands.map(\.name), ["Spots", "Settings", "New spot"])
-        let output = try await new.items(timeout: 1)
-        XCTAssertFalse(output.items.isEmpty)
-    }
-
     func testARowIsOnByItsValue() throws {
         let on = try XCTUnwrap(TextBlock.blocks(in: "row=apps\ntitle=Apps\nvalue=true\n").first)
         let old = try XCTUnwrap(TextBlock.blocks(in: "row=apps\ntitle=Apps\non=true\n").first)

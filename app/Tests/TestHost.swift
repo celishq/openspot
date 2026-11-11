@@ -20,6 +20,8 @@ final class TestHost: SpotsHost {
     var phases: [SheetTransition.Phase] = []
     /// The sheet whose open motion runs, after each change.
     var openings: [String?] = []
+    /// The program of the app that the prompt for an agent names.
+    var app = "/Apps/Openspot"
     /// The spots that ship with the app in this test.
     var shipped: [Spot] = []
     /// The rows whose pictures the model asked to draw ahead.
@@ -79,6 +81,10 @@ final class TestHost: SpotsHost {
     func prepare(_ items: [SpotItem], glyphs: [String]) async {
         prepared += items
         if !glyphs.isEmpty { glyphLists.append(glyphs) }
+    }
+
+    func agentPrompt(for folder: URL) -> AgentPrompt {
+        AgentPrompt(folder: folder, guide: folder.appendingPathComponent("GUIDE.md"), app: app)
     }
 
     func shippedSpots(folder: PluginFolder, config: ConfigFile, offersLogin: Bool) -> [Spot] {

@@ -802,20 +802,21 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(model.reveal("three"))
     }
 
-    func testCommandNOpensTheNewSpotSheetFromTheGridAndFromEditSpots() async throws {
+    func testAKeyOfTheConfigOpensTheSheetOfItsSpotFromTheGridAndFromEditSpots() async throws {
         let new = plugins.appendingPathComponent("new.sh")
-        try "#!/bin/sh\nprintf 'row=g\\ntitle=Guide\\n'\n".writeScript(to: new)
-        host.shipped = [Spot(id: ShippedSpot.newID, name: "New spot", url: new, kind: .list, read: .sheet, isOnGrid: false, opensWithNewKey: true)]
+        try "#!/bin/sh\n# read=sheet\nprintf 'row=g\\ntitle=Guide\\n'\n".writeScript(to: new)
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("config"), withIntermediateDirectories: true)
+        try "[[spots]]\nid = \"new\"\ngrid = false\nkey = \"cmd+n\"\n".write(to: folder.appendingPathComponent("config/config.toml"), atomically: true, encoding: .utf8)
         model.reload()
         model.isShown = true
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "n", isCommand: true)))
-        try await wait("the New spot sheet") { model.openList == ShippedSpot.newID }
+        try await wait("the New spot sheet") { model.openList == "new" }
 
         model.closeList(moving: false)
         model.beginEditing()
         XCTAssertTrue(model.handleKey(ActionKey(name: "n", isCommand: true)))
         XCTAssertFalse(model.isEditing)
-        try await wait("the New spot sheet from Edit Spots") { model.openList == ShippedSpot.newID }
+        try await wait("the New spot sheet from Edit Spots") { model.openList == "new" }
     }
 }

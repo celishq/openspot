@@ -325,8 +325,7 @@ public final class SpotsModel {
         let shipped = host.shippedSpots(folder: folder, config: files.config, offersLogin: isFirstLaunch)
             + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
         var scan = pluginScan.look(at: folder, shipped: shipped)
-        let prompt = shipped.lazy.compactMap(\.agentPrompt).first
-        let faults = prompt.map { folder.faultSpots(of: scan, prompt: $0) } ?? []
+        let faults = folder.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.plugins.append(Plugin(id: ShippedSpot.faultsID, commands: faults)) }
         guard pluginScan.stamp != loadedStamp || config != loadedConfig else { return holdAssignedKeys(config) }
         let carded = Set(faults.map(\.id))

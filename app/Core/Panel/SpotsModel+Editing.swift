@@ -126,7 +126,7 @@ extension SpotsModel {
             }
             return
         }
-        if openNewSpot(on: key) { return }
+        if openSheet(on: key) { return }
         let order = visible.map(\.id)
         switch (key.name, key.isShift) {
         case ("escape", _): endEditing()

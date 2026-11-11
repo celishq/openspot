@@ -85,11 +85,15 @@ public struct Config: Equatable, Sendable {
         if case .boolean(let isEnabled)? = table["enabled"] { choice.isEnabled = isEnabled }
         if case .boolean(let isGlobal)? = table["global"] { choice.isGlobal = isGlobal }
         if case .boolean(let isInMenuBar)? = table["tray"] { choice.isInMenuBar = isInMenuBar }
+        if case .string(let text)? = table["key"] {
+            choice.key = ActionKey(text: text)
+            if choice.key == nil { faults.append("config.toml: \(id) cannot use the key \(text).") }
+        }
         if case .string(let letter)? = table["letter"] {
             choice.letter = letter.isEmpty ? "" : CommandKey(name: letter)?.name
             if choice.letter == nil { faults.append("config.toml: \(id) cannot use the letter \(letter).") }
         }
-        for key in table.keys.sorted() where !["id", "size", "grid", "enabled", "global", "tray", "letter"].contains(key) {
+        for key in table.keys.sorted() where !["id", "size", "grid", "enabled", "global", "tray", "letter", "key"].contains(key) {
             faults.append("config.toml: \(key) is not a setting of a spot.")
         }
         return choice

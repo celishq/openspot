@@ -50,13 +50,13 @@ extension SpotsModel {
             if !stepBack() { host.dismiss() }
             return true
         }
-        guard let target else { return openNewSpot(on: key) }
+        guard let target else { return openSheet(on: key) }
         if key == ActionKey(name: "k", isCommand: true) {
             openMenu(on: target)
             return menu != nil
         }
         let quiet = searchText.isEmpty ? extras(on: target) : []
-        guard let action = (target.entry.command.actions(for: target.item) + quiet).first(where: { $0.key == key }) else { return openNewSpot(on: key) }
+        guard let action = (target.entry.command.actions(for: target.item) + quiet).first(where: { $0.key == key }) else { return openSheet(on: key) }
         if action.confirm != nil {
             openMenu(on: target)
             menu?.select(action)
@@ -67,16 +67,19 @@ extension SpotsModel {
         return true
     }
 
-    /// Opens the sheet that `⌘N` opens, when no action of the selected card takes the key. Returns false for any other
-    /// key.
-    func openNewSpot(on key: ActionKey) -> Bool {
-        guard key == Self.newSpotKey, openList == nil, let id = entries.first(where: { $0.command.opensWithNewKey })?.id else { return false }
+    /// Opens the sheet of the spot that the config gives this key of the panel, such as `⌘N`, when no action of the selected
+    /// card takes the key and no sheet shows. Returns false for any other key.
+    func openSheet(on key: ActionKey) -> Bool {
+        guard openList == nil, let id = spot(openedBy: key) else { return false }
         endEditing(moving: false)
         open(id, moving: true)
         return true
     }
 
-    static let newSpotKey = ActionKey(name: "n", isCommand: true)
+    /// The spot that the config gives a key of the panel, when it has a card.
+    func spot(openedBy key: ActionKey) -> String? {
+        arrangement.spot(openedBy: key, over: defaultArrangement).flatMap { id in entries.contains { $0.id == id } ? id : nil }
+    }
 
     /// Does what the key of a footer label does, as if it were pressed: Return runs the selected row.
     public func pressHint(_ label: String) {

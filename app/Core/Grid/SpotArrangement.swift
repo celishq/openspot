@@ -13,8 +13,10 @@ public struct SpotArrangement: Equatable, Sendable {
         public var isInMenuBar: Bool?
         /// The letter that runs the spot from the panel. An empty letter takes away the letter of the default config.
         public var letter: String?
+        /// A key of the panel that opens the sheet of the spot, such as cmd+n.
+        public var key: ActionKey?
 
-        public init(id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil, isEnabled: Bool? = nil, isGlobal: Bool? = nil, isInMenuBar: Bool? = nil, letter: String? = nil) {
+        public init(id: String, size: SpotSize? = nil, isOnGrid: Bool? = nil, isEnabled: Bool? = nil, isGlobal: Bool? = nil, isInMenuBar: Bool? = nil, letter: String? = nil, key: ActionKey? = nil) {
             self.id = id
             self.size = size
             self.isOnGrid = isOnGrid
@@ -22,6 +24,7 @@ public struct SpotArrangement: Equatable, Sendable {
             self.isGlobal = isGlobal
             self.isInMenuBar = isInMenuBar
             self.letter = letter
+            self.key = key
         }
     }
 
@@ -29,6 +32,12 @@ public struct SpotArrangement: Equatable, Sendable {
 
     public init(choices: [Choice] = []) {
         self.choices = choices
+    }
+
+    /// The spot whose sheet a key of the panel opens: the person's choice, or else the default config's.
+    public func spot(openedBy key: ActionKey, over defaults: SpotArrangement) -> String? {
+        if let own = choices.first(where: { $0.key == key }) { return own.id }
+        return defaults.choices.first { choice in choice.key == key && choices.first { $0.id == choice.id }?.key == nil }?.id
     }
 
     public func size(of id: String) -> SpotSize? {
@@ -127,6 +136,7 @@ public struct SpotArrangement: Equatable, Sendable {
             if let isGlobal = choice.isGlobal { lines.append("global = \(isGlobal)") }
             if let isInMenuBar = choice.isInMenuBar { lines.append("tray = \(isInMenuBar)") }
             if let letter = choice.letter { lines.append("letter = \"\(letter)\"") }
+            if let key = choice.key { lines.append("key = \"\(key.text)\"") }
             return lines.joined(separator: "\n")
         }.joined(separator: "\n\n")
     }

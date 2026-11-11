@@ -12,9 +12,12 @@ public protocol CommandHost: Sendable {
     var login: LoginItem? { get }
     /// The link that puts `openspot` on the path of a terminal.
     var link: CommandLink? { get }
+    /// The guide to building a spot, which `openspot guide` prints.
+    var guide: URL? { get }
 }
 
 extension CommandHost {
     public var login: LoginItem? { nil }
     public var link: CommandLink? { nil }
+    public var guide: URL? { Bundle.main.url(forResource: "GUIDE", withExtension: "md") }
 }

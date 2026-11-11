@@ -7,6 +7,7 @@ import XCTest
 class BuiltInCase: XCTestCase {
     private struct Host: CommandHost {
         let login: LoginItem?
+        let guide: URL?
 
         func eventStore() -> any EventStore { FakeEventStore() }
         func reminderStore() -> any ReminderStore { FakeReminderStore() }
@@ -23,6 +24,8 @@ class BuiltInCase: XCTestCase {
     var root: URL!
     var plugins: URL!
     var core: URL!
+    /// The folder of the tools on the path, with `openspot` in it.
+    var tools: URL!
     let app = FakeRunningApp()
     private let login = Login()
     private var socket: CommandSocket?
@@ -37,6 +40,16 @@ class BuiltInCase: XCTestCase {
         URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("plugins")
     }
 
+    /// The guide that `openspot guide` prints, which a test writes when it needs one.
+    var guide: URL {
+        root.appendingPathComponent("GUIDE.md")
+    }
+
+    /// Writes a tool of this name on the path, with this body after its first line.
+    func fake(_ name: String, _ body: String) throws {
+        try "#!/bin/sh\n\(body)\n".writeScript(to: tools.appendingPathComponent(name))
+    }
+
     /// Whether the app opens at login, as the API sees it.
     var opensAtLogin: Bool {
         get { login.isOn }
@@ -47,8 +60,8 @@ class BuiltInCase: XCTestCase {
         root = FileManager.default.temporaryDirectory.appendingPathComponent("bi-\(UUID().uuidString.prefix(8))")
         plugins = root.appendingPathComponent("plugins")
         core = root.appendingPathComponent("core")
-        let tools = root.appendingPathComponent("tools")
-        for folder in [plugins!, core!, tools] {
+        tools = root.appendingPathComponent("tools")
+        for folder in [plugins!, core!, tools!] {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }
         let built = Bundle(for: Self.self).bundleURL.deletingLastPathComponent().appendingPathComponent("openspot")
@@ -61,7 +74,7 @@ class BuiltInCase: XCTestCase {
         setenv("OPENSPOT_CORE", core.path, 1)
         let login = login
         let item = LoginItem(isOn: { login.isOn }, set: { login.isOn = $0 })
-        socket = CommandSocket(folder: root, api: CommandAPI(host: Host(login: item), app: app))
+        socket = CommandSocket(folder: root, api: CommandAPI(host: Host(login: item, guide: guide), app: app))
     }
 
     override func tearDown() async throws {

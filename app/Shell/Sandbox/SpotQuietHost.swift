@@ -29,6 +29,10 @@ final class SpotQuietHost: SpotsHost {
     func copy(_ file: URL) {}
     func prepare(_ items: [SpotItem], glyphs: [String]) async {}
 
+    func agentPrompt(for folder: URL) -> AgentPrompt {
+        AgentPrompt(folder: folder, guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder, app: Bundle.main.executablePath ?? "")
+    }
+
     func shippedSpots(folder: PluginFolder, config: ConfigFile, offersLogin: Bool) -> [Spot] {
         ShippedSpot.commands(
             folder: folder.url,

@@ -24,10 +24,10 @@ final class SettingsSpotTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    func testThreeSpotsShip() throws {
+    func testTwoSpotsShip() throws {
         let commands = ShippedSpot.commands(folder: folder, guide: folder, app: "", config: file)
 
-        XCTAssertEqual(commands.map(\.name), ["Spots", "Settings", "New spot"])
+        XCTAssertEqual(commands.map(\.name), ["Spots", "Settings"])
     }
 
     func testTheMainSearchFindsItsRows() throws {

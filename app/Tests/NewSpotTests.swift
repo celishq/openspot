@@ -3,69 +3,50 @@ import XCTest
 
 /// Proves the New spot sheet: it copies a prompt for an agent or makes a working starter, and the guide that it opens
 /// teaches a spot that works.
-final class NewSpotTests: XCTestCase {
-    private var folder: URL!
-    private var plugins: URL!
-    private var tools: URL!
+final class NewSpotTests: BuiltInCase {
     private var guideText = ""
-    private var guideURL: URL!
-    private var root: URL!
-    private let path = ProcessInfo.processInfo.environment["PATH"]
+    private var repo: URL {
+        repoPlugins.deletingLastPathComponent()
+    }
 
-    override func setUpWithError() throws {
-        root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-new-\(UUID().uuidString)")
-        plugins = folder.appendingPathComponent("plugins")
-        tools = folder.appendingPathComponent("tools")
-        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
-        try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
-        guideURL = folder.appendingPathComponent("GUIDE.md")
+    override func setUp() async throws {
+        try await super.setUp()
         guideText = try joinedSpecs()
-        try guideText.write(to: guideURL, atomically: true, encoding: .utf8)
-        for (name, script) in [("pbcopy", "cat > '\(folder.path)/clipboard'"), ("open", "echo \"$@\" > '\(folder.path)/opened'")] {
-            try "#!/bin/sh\n\(script)\n".writeScript(to: tools.appendingPathComponent(name))
-        }
-        setenv("PATH", "\(tools.path):/usr/bin:/bin", 1)
+        try guideText.write(to: guide, atomically: true, encoding: .utf8)
+        try fake("pbcopy", "cat > '\(root.path)/clipboard'")
+        try fake("open", "echo \"$@\" > '\(root.path)/opened'")
     }
 
-    override func tearDownWithError() throws {
-        if let path { setenv("PATH", path, 1) }
-        try FileManager.default.removeItem(at: folder)
-    }
-
-    /// The New spot sheet of this test's plugins folder.
+    /// The New spot sheet of the app.
     private func newSpot() throws -> Spot {
-        let config = ConfigFile(url: folder.appendingPathComponent("config.toml"))
-        let spots = ShippedSpot.commands(folder: plugins, guide: guideURL, app: "/Apps/Openspot.app/Contents/MacOS/Openspot", config: config)
-        return try XCTUnwrap(spots.first { $0.id == ShippedSpot.newID })
+        try spot("new")
     }
 
     private func saved(_ name: String) throws -> String {
-        try String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8)
+        try String(contentsOf: root.appendingPathComponent(name), encoding: .utf8)
     }
 
-    private func sheet(of spot: Spot) async throws -> SheetParts {
-        let output = try await spot.items(timeout: 5)
-        return try XCTUnwrap(SheetParts(output: output))
-    }
+    func testItIsASmallListThatTheConfigOpensWithCommandN() throws {
+        let spot = try newSpot()
+        let defaults = Config(text: try String(contentsOf: repo.appendingPathComponent("app/defaults.toml"), encoding: .utf8))
 
-    func testTheSpotsSpotShowsWithAnEmptyFolder() throws {
-        let shipped = ShippedSpot.commands(folder: plugins, guide: guideURL, app: "")
-
-        let scan = try PluginFolder(url: plugins).scan(shipped: shipped)
-
-        XCTAssertTrue(scan.commands.contains { $0.id == ShippedSpot.spotsID })
-        XCTAssertEqual(scan.refused, [])
+        XCTAssertEqual(spot.name, "New spot")
+        XCTAssertEqual(spot.kind, .list)
+        XCTAssertEqual(spot.size, .small)
+        XCTAssertTrue(spot.isOnGrid)
+        XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: "n", isCommand: true), over: defaults.arrangement), spot.id)
     }
 
     func testTheSheetIsAListThatSearchesByScriptWithCopyPromptForAIFirstThenEachStarter() async throws {
         let output = try await newSpot().items(timeout: 5)
 
         XCTAssertEqual(output.search, .script)
-        XCTAssertEqual(output.items.map(\.title), ["Copy prompt for AI"] + SpotStarter.allCases.map(\.title))
+        XCTAssertEqual(output.items.map(\.title), ["Copy prompt for AI", "Button", "List", "Live value", "Form"])
+        XCTAssertEqual(output.items.dropFirst().map(\.run), SpotStarter.allCases.map(\.rawValue))
+        XCTAssertFalse(output.keepsRecent)
         XCTAssertEqual(output.items.first?.subtitle, "Type what the spot should do")
         XCTAssertTrue(Set(output.actions.map(\.id)).isSuperset(of: ["guide", "folder"]))
+        XCTAssertEqual(output.primary, "Choose")
     }
 
     func testTheFirstRowShowsTheTextOfTheSearch() async throws {
@@ -86,7 +67,7 @@ final class NewSpotTests: XCTestCase {
         XCTAssertTrue(prompt.contains(plugins.path))
         XCTAssertTrue(prompt.contains("guide"))
         XCTAssertEqual(try PluginFolder(url: plugins).scan().commands, [])
-        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("opened").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("opened").path))
     }
 
     func testCopyPromptForAINeedsADescription() async throws {
@@ -98,7 +79,6 @@ final class NewSpotTests: XCTestCase {
         }
     }
 
-    @MainActor
     func testWordsTypedJustBeforeEnterReachThePrompt() async throws {
         let runs = SpotRuns()
         defer { runs.quit() }
@@ -118,12 +98,16 @@ final class NewSpotTests: XCTestCase {
     func testAStarterMakesAWorkingSpotCalledUntitledAndOpensItsFile() async throws {
         let spot = try newSpot()
 
-        _ = try await spot.perform(.item(SpotItem(title: "List", run: "list")), timeout: 5)
-        _ = try await spot.perform(.item(SpotItem(title: "Button", run: "button")), timeout: 5)
+        let first = try await spot.perform(.item(SpotItem(title: "List", run: "list")), timeout: 5)
+        let second = try await spot.perform(.item(SpotItem(title: "Button", run: "button")), timeout: 5)
+
+        XCTAssertEqual(first, "Made Untitled. Change the file that opened to make it yours.")
+        XCTAssertEqual(second, "Made Untitled 2. Change the file that opened to make it yours.")
 
         let names = try PluginFolder(url: plugins).scan().commands.map(\.id).sorted()
         XCTAssertEqual(names, ["untitled", "untitled-2"])
         XCTAssertEqual(try saved("opened"), "-t \(plugins.appendingPathComponent("untitled-2.sh").path)\n")
+        XCTAssertEqual(try PluginFolder(url: plugins).scan().commands.map(\.name).sorted(), ["Untitled", "Untitled 2"])
     }
 
     func testTheActionsOpenTheGuideAndTheFolder() async throws {
@@ -134,6 +118,15 @@ final class NewSpotTests: XCTestCase {
 
         _ = try await spot.perform(SpotAction(arguments: ["folder"]), timeout: 5)
         XCTAssertTrue(try saved("opened").contains(plugins.path))
+    }
+
+    func testAnUnknownCallFails() async throws {
+        do {
+            _ = try await newSpot().perform(SpotAction(arguments: ["gone"]), timeout: 5)
+            XCTFail("expected a fault")
+        } catch {
+            XCTAssertEqual((error as? PluginError)?.reason, "New spot cannot do that.")
+        }
     }
 
     /// The text of each block in the guide with this fence.
@@ -155,10 +148,10 @@ final class NewSpotTests: XCTestCase {
     }
 
     func testTheGuideIsTheSpecsJoinedInOrder() throws {
-        let out = folder.appendingPathComponent("built.md")
+        let out = root.appendingPathComponent("built.md")
         let script = Process()
         script.executableURL = URL(fileURLWithPath: "/bin/sh")
-        script.arguments = [root.appendingPathComponent("scripts/guide.sh").path, out.path]
+        script.arguments = [repo.appendingPathComponent("scripts/guide.sh").path, out.path]
         try script.run()
         script.waitUntilExit()
 
@@ -192,7 +185,7 @@ final class NewSpotTests: XCTestCase {
 
     /// The specs `00` to `99` of `spec/`, joined in order with one blank line between them.
     private func joinedSpecs() throws -> String {
-        let specs = root.appendingPathComponent("spec")
+        let specs = repo.appendingPathComponent("spec")
         let names = try FileManager.default.contentsOfDirectory(atPath: specs.path).filter { $0.first?.isNumber == true && $0.hasSuffix(".md") }.sorted()
         return try names.map { try String(contentsOf: specs.appendingPathComponent($0), encoding: .utf8) }.joined(separator: "\n")
     }

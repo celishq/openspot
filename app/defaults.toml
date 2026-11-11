@@ -49,3 +49,7 @@ letter = "t"
 [[spots]]
 id = "openspot/quit"
 grid = false
+
+[[spots]]
+id = "openspot/new"
+key = "cmd+n"

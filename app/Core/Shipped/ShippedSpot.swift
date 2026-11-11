@@ -3,7 +3,6 @@ import Foundation
 /// A spot that ships with the app, so that it shows whatever the plugins folder holds.
 public enum ShippedSpot: Equatable, Sendable {
     case spots(CatalogSpot)
-    case new(NewSpot)
     case settings(SettingsSpot)
     case review(ReviewSpot)
     /// The sheet of a file that does not load.
@@ -11,8 +10,7 @@ public enum ShippedSpot: Equatable, Sendable {
 
     /// The commands of the shipped spots, in the order of the grid.
     public static func commands(folder: URL, guide: URL, app: String, config: ConfigFile = .standard(), core: URL? = nil, login: LoginItem? = nil, link: CommandLink? = nil, offersLogin: Bool = false) -> [Spot] {
-        let prompt = AgentPrompt(folder: folder, guide: guide, app: app)
-        return [
+        [
             Spot(
                 id: spotsID,
                 name: "Spots",
@@ -42,20 +40,6 @@ public enum ShippedSpot: Equatable, Sendable {
                 shipped: .settings(SettingsSpot(file: config, folder: folder, core: core, login: login, link: link)),
                 setsKeys: true,
                 opensWithSettingsKey: true
-            ),
-            Spot(
-                id: newID,
-                name: "New spot",
-                url: folder,
-                kind: .list,
-                size: .small,
-                symbol: "plus",
-                subtitle: "Make your own",
-                read: .sheet,
-                order: 3,
-                shipped: .new(NewSpot(folder: folder, guide: guide, prompt: prompt)),
-                agentPrompt: prompt,
-                opensWithNewKey: true
             )
         ]
     }
@@ -103,7 +87,6 @@ public enum ShippedSpot: Equatable, Sendable {
     func answer(_ arguments: [String], input: String?) async throws -> String {
         switch self {
         case .spots(let catalog): try catalog.answer(arguments)
-        case .new(let new): try await new.answer(arguments, input: input)
         case .settings(let settings): try settings.answer(arguments)
         case .review(let review): try review.answer(arguments)
         case .fault(let fault): try await fault.answer(arguments)

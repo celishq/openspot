@@ -219,7 +219,6 @@
 		89CFADC4A1F253EF5E0E6372 /* SpotGlyphBook.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD1AC7D9B3184F44CFB1FE3E /* SpotGlyphBook.swift */; };
 		8A095CEF6571FB8B78568CD2 /* PluginFolderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0782EF217E4751597CC6415 /* PluginFolderTests.swift */; };
 		8B0D9F677EEDF36D2E7A4EBE /* SpotMetricView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDE1E784B8464206231EDC52 /* SpotMetricView.swift */; };
-		8B36B8D8B12C3C18E4985B16 /* NewSpot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A06AFEB86283CC644D0F6DAB /* NewSpot.swift */; };
 		8B6635540FC6FCB2458D9E5F /* ReviewSpot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94AFA591AD3DD2DD52772CD5 /* ReviewSpot.swift */; };
 		8BB52178DFB873CEDF8BCABE /* PickWeights.swift in Sources */ = {isa = PBXBuildFile; fileRef = A54CCBDE1513418AE4C6C8CF /* PickWeights.swift */; };
 		8BC2542BE56DF3F52A3FD5F7 /* AnswerPattern.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB1EBC8A775417C83BACD740 /* AnswerPattern.swift */; };
@@ -776,7 +775,6 @@
 		9E2BBBB5CFD3D9C12B7A7857 /* PartCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PartCatalog.swift; sourceTree = "<group>"; };
 		9E425E0AA75F091617B3AA67 /* SpotsModel+Verbs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Verbs.swift"; sourceTree = "<group>"; };
 		9FA2E6CC7436778D0F50D325 /* SpotToneDot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotToneDot.swift; sourceTree = "<group>"; };
-		A06AFEB86283CC644D0F6DAB /* NewSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewSpot.swift; sourceTree = "<group>"; };
 		A0A85D5ADA5EAB16264E70F9 /* FakeEventStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeEventStore.swift; sourceTree = "<group>"; };
 		A16D81BC1C192B2BA575CD34 /* SpotBlur.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotBlur.swift; sourceTree = "<group>"; };
 		A19AD00D49BBCD936BA0EF5A /* GlobalKeyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalKeyTests.swift; sourceTree = "<group>"; };
@@ -1233,7 +1231,6 @@
 			children = (
 				F01BD70512CEEF85889FE063 /* CatalogSpot.swift */,
 				A2087D52A9DEB79057B8E43F /* FaultSpot.swift */,
-				A06AFEB86283CC644D0F6DAB /* NewSpot.swift */,
 				94AFA591AD3DD2DD52772CD5 /* ReviewSpot.swift */,
 				2E33ABE75E6FCEDB42A2AF12 /* SettingsSpot.swift */,
 				4445E9C9CAE642C6C65B5BAB /* ShippedSpot.swift */,
@@ -2155,7 +2152,6 @@
 				B1DF39E3F91226E7A117D160 /* MetricKind.swift in Sources */,
 				D5AE4DC5DC48D88986CB8A60 /* MetricReading.swift in Sources */,
 				7F3083C79B1BD4666E33BA46 /* MetricValue.swift in Sources */,
-				8B36B8D8B12C3C18E4985B16 /* NewSpot.swift in Sources */,
 				B8676F4AC37D3BDC56CEA2C7 /* OnceLink.swift in Sources */,
 				2AA3FBC09252C22BB0B9D56D /* PanelMotion.swift in Sources */,
 				CF4DF2850057B528C8AFBB61 /* PartCatalog.swift in Sources */,

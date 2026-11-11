@@ -25,7 +25,7 @@ final class SpotVerbTests: XCTestCase {
         suite = "openspot-verb-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         host = TestHost()
-        host.shipped = ShippedSpot.commands(folder: plugins, guide: folder.appendingPathComponent("GUIDE.md"), app: "/Apps/Openspot.app/Contents/MacOS/Openspot")
+        host.app = "/Apps/Openspot.app/Contents/MacOS/Openspot"
         let trash = trash!
         let files = SpotFiles(
             environment: ["OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],

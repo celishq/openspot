@@ -146,12 +146,12 @@ public final class CommandAPI: @unchecked Sendable {
         case .promptNew(let words):
             return Self.answer {
                 let folder = PluginFolder.standard(environment: environment).url
-                let guide = Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder
+                let guide = self.host.guide ?? folder
                 return AgentPrompt(folder: folder, guide: guide, app: Bundle.main.executablePath ?? "openspot").building(words)
             }
         case .guide:
             return Self.answer {
-                guard let guide = Bundle.main.url(forResource: "GUIDE", withExtension: "md") else { throw PluginError.fault("This copy of Openspot has no guide. Install Openspot again.") }
+                guard let guide = self.host.guide else { throw PluginError.fault("This copy of Openspot has no guide. Install Openspot again.") }
                 return try String(contentsOf: guide, encoding: .utf8)
             }
         case .guideOf(let noun):

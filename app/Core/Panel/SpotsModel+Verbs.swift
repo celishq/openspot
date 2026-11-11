@@ -29,17 +29,9 @@ extension SpotsModel {
         }
     }
 
-    /// The prompt that asks an agent to write or fix a spot.
-    private var agentPrompt: AgentPrompt? {
-        entries.lazy.compactMap(\.command.agentPrompt).first
-    }
-
     /// Copies a prompt that asks an agent to change the file of a spot, with the words of its last failed call.
     func copyPrompt(changing entry: Entry) {
-        guard let prompt = agentPrompt else {
-            host.notify("Openspot cannot write the prompt, because New spot is missing. Quit and open Openspot again.")
-            return
-        }
+        let prompt = host.agentPrompt(for: files.folder.url)
         let text = prompt.changing(file(of: entry), failure: entry.failure)
         Task {
             do {

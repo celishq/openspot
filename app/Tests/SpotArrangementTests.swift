@@ -218,12 +218,25 @@ final class SpotArrangementTests: XCTestCase {
         XCTAssertNil(spots?.shipped?.settingChange(of: "setting:apps:size"))
     }
 
-    func testNewSpotGivesTheAgentPromptAndSettingsOpensWithTheSettingsKey() {
+    func testSettingsOpensWithTheSettingsKey() {
         let url = URL(fileURLWithPath: "/bin/true")
         let commands = ShippedSpot.commands(folder: url, guide: url, app: "")
 
-        XCTAssertEqual(commands.filter { $0.agentPrompt != nil }.map(\.id), [ShippedSpot.newID])
         XCTAssertEqual(commands.filter(\.opensWithSettingsKey).map(\.id), [ShippedSpot.settingsID])
-        XCTAssertEqual(commands.filter(\.opensWithNewKey).map(\.id), [ShippedSpot.newID])
+    }
+
+    func testAKeyOfThePanelOpensTheSpotOfThePersonsChoiceOrElseOfTheDefaults() throws {
+        let n = ActionKey(name: "n", isCommand: true)
+        let defaults = Config(text: "[[spots]]\nid = \"new\"\nkey = \"cmd+n\"\n\n[[spots]]\nid = \"set\"\nkey = \"cmd+,\"\n").arrangement
+        let mine = Config(text: "[[spots]]\nid = \"mine\"\nkey = \"cmd+n\"\n").arrangement
+        let moved = Config(text: "[[spots]]\nid = \"new\"\nkey = \"cmd+j\"\n").arrangement
+
+        XCTAssertEqual(SpotArrangement().spot(openedBy: n, over: defaults), "new")
+        XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: ",", isCommand: true), over: defaults), "set")
+        XCTAssertEqual(mine.spot(openedBy: n, over: defaults), "mine")
+        XCTAssertNil(moved.spot(openedBy: n, over: defaults))
+        XCTAssertNil(SpotArrangement().spot(openedBy: ActionKey(name: "m", isCommand: true), over: defaults))
+        XCTAssertEqual(Config(text: "[[spots]]\nid = \"a\"\nkey = \"cmd+space+\"\n").faults, ["config.toml: a cannot use the key cmd+space+."])
+        XCTAssertTrue(mine.text.contains("key = \"cmd+n\""))
     }
 }
