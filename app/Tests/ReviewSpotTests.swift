@@ -315,23 +315,45 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertThrowsError(try review(""))
     }
 
-    func testNoScriptRunsForAReviewOrForAdd() throws {
+    /// A review of a `.spot` file with one script, which adds to the folder `plugins` and records in a lock beside it.
+    private func filed(_ header: String, body: String = "") throws -> ReviewSpot {
+        let text = "#!/bin/sh\n\(header.split(separator: "\n").map { "# \($0)\n" }.joined())\(body)"
+        let file = folder.appendingPathComponent("Weather.spot")
+        try spot([("weather.sh", text, true)]).data.write(to: file)
+        return try ReviewSpot(file: file, folder: folder.appendingPathComponent("plugins"), lock: SpotLock(url: folder.appendingPathComponent("spots.lock")))
+    }
+
+    func testNoScriptRunsForAReviewOrForAdd() async throws {
         let mark = folder.appendingPathComponent("ran")
-        let review = try review("read=panel", body: "touch \"\(mark.path)\"\n")
+        let review = try filed("read=panel", body: "touch \"\(mark.path)\"\n")
         _ = try review.answer(["read"])
 
-        _ = try review.answer(["install"])
+        _ = try await review.add()
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: mark.path))
     }
 
-    func testAddPutsItInTheFolderThatTheNextScanReads() throws {
-        let answer = try review("title=Weather\nicon=sun.max").answer(["install"])
+    func testAddPutsItInTheFolderThatTheNextScanReads() async throws {
+        let answer = try await filed("title=Weather\nicon=sun.max").add()
 
         XCTAssertEqual(SpotOutput(text: answer).summary?.value("toast"), "Weather added")
-        let scan = try SpotFolder(url: folder).scan()
+        let scan = try SpotFolder(url: folder.appendingPathComponent("plugins")).scan()
         XCTAssertEqual(scan.spots.map(\.name), ["Weather"])
         XCTAssertEqual(scan.refused, [])
+    }
+
+    func testAddKeepsTheSpotInTheLockAsSpotAddDoes() async throws {
+        let file = folder.appendingPathComponent("Weather.spot")
+        try spot([("weather.sh", "#!/bin/sh\n# title=Weather\n", true)]).data.write(to: file)
+        let plugins = folder.appendingPathComponent("plugins")
+        let lock = SpotLock(url: folder.appendingPathComponent("spots.lock"))
+        let review = try ReviewSpot(file: file, folder: plugins, lock: lock)
+
+        _ = try await review.add()
+
+        XCTAssertEqual(try lock.entries().map(\.source), [file.path])
+        XCTAssertEqual(try lock.entries().map(\.paths), [["weather.sh"]])
+        XCTAssertEqual(try SpotFolder(url: plugins).scan().spots.map(\.name), ["Weather"])
     }
 
     func testTheAppOffersTheReviewAsASheetThatGrowsOutOfTheField() async throws {

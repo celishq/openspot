@@ -7,7 +7,7 @@ public struct ReviewSpot: Equatable, Sendable {
     /// The ID of its sheet, which has no card in the grid.
     public static let id = "openspot/install"
     static let textLimit = 256_000
-    private static let installPart = "install"
+    static let installPart = "install"
 
     public let shared: SharedSpot
     public let name: String
@@ -15,8 +15,13 @@ public struct ReviewSpot: Equatable, Sendable {
     public let description: String?
     public let folder: URL
     public let subtitle: String
+    /// The lines of what it uses, what it can also do and what runs by itself, as the review shows them, or nothing.
+    public let trust: String
     private let text: String
     private let canAdd: Bool
+    /// The `.spot` file that its Add reads again, and the lock that records it.
+    private var source: URL?
+    private var lock: SpotLock?
 
     /// Reads a spot for a plugins folder. Throws a fault when it gives no spot or cannot go into that folder. With `canAdd`
     /// false it only shows the text.
@@ -40,6 +45,12 @@ public struct ReviewSpot: Equatable, Sendable {
         let present = spot.files.map(\.path).filter { FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path) }
         let installed = Set(present.flatMap { (try? SpotUse.set(SpotHeader(url: folder.appendingPathComponent($0)).block.value("uses"), of: $0)) ?? [] })
         let grown = spot.replaced(in: folder).isEmpty ? [] : uses.filter { !installed.contains($0) }
+        let canAlso = Self.canAlso(spot, uses: Set(uses), id: primary.id)
+        trust = [
+            Self.section("Uses", uses.isEmpty ? [] : [uses.map(\.rawValue).joined(separator: ", ")]),
+            Self.section("Can also", canAlso),
+            Self.section("Runs by itself", runs)
+        ].compactMap { $0 }.joined()
         text = [
             grown.isEmpty ? "\(primary.name)\n\n" : "\(primary.name)\nThis version adds: \(grown.map(\.rawValue).joined(separator: ", "))\n\n",
             programs.isEmpty ? nil : Self.section(
@@ -48,11 +59,26 @@ public struct ReviewSpot: Equatable, Sendable {
                     + (programs.contains { Self.hasSource($0, in: spot) } ? ["The source beside it may not match the program."] : [])
             ),
             uses.isEmpty ? "Uses no power\n\n" : Self.section("Uses", [uses.map(\.rawValue).joined(separator: ", ")]),
-            Self.section("Can also", Self.canAlso(spot, uses: Set(uses), id: primary.id)),
+            Self.section("Can also", canAlso),
             runs.isEmpty ? "\(quiet)\n\n" : Self.section("Runs by itself", runs),
             Self.section("Replaces, and moves the old file to the Trash", spot.replaced(in: folder)),
             Self.section("Will not load", scan.refused.map { "\($0.file): \($0.reason)" })
         ].compactMap { $0 }.joined() + spot.files.map(Self.shown).joined(separator: "\n")
+    }
+
+    /// Reads a `.spot` file for a plugins folder, which its Add puts in that folder and records in the lock (N1).
+    public init(file: URL, folder: URL, lock: SpotLock) throws {
+        try self.init(spot: SharedSpot(contentsOf: file), folder: folder)
+        source = file
+        self.lock = lock
+    }
+
+    /// Adds the spot as `openspot spot add` adds its file, with each file that the review names as replaced, and returns the
+    /// toast. A file that changed after the review adds nothing.
+    func add() async throws -> String {
+        guard canAdd, let source, let lock else { throw SpotError.failed(1, "This sheet cannot do that.") }
+        _ = try await lock.add(.file(source), to: folder, isConfirmed: true, replaces: shared.replaced(in: folder), expecting: shared)
+        return TextBlock(fields: [.init(key: "toast", value: "\(name) added")]).text
     }
 
     /// Its sheet, which grows out of the search field.
@@ -65,9 +91,6 @@ public struct ReviewSpot: Equatable, Sendable {
         switch arguments.first {
         case "read":
             return sheet
-        case Self.installPart where canAdd:
-            try shared.add(to: folder)
-            return TextBlock(fields: [.init(key: "toast", value: "\(name) added")]).text
         default:
             throw SpotError.failed(1, "This sheet cannot do that.")
         }

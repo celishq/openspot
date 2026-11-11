@@ -566,9 +566,10 @@ the default config gives `cmd+n` to New spot and `cmd+,` to Settings.
 
 `openspot spot add <git url | folder | file.spot> [--yes]` puts a spot in the plugins folder, and `openspot spot remove <id>` takes
 it out (N1). A git repository goes into a folder named after it, at its newest commit and with no `.git`. A folder is
-copied, and a `.spot` file is written as a drop writes it. A name that the plugins folder has already is a fault.
-`spots.lock` in the config folder lists the source, the commit, the paths, a hash of the files and the `uses` of each added
-spot. `openspot spot add` with no source adds each spot of `spots.lock` that is missing, a git one at its commit (N2), and
+copied, and each file of a `.spot` file is written at its path, where an equal file stays. A name that the plugins folder
+has already is a fault. The first add of a spot prints the lines of its review, `Uses`, `Can also` and `Runs by itself`,
+and changes nothing until it runs again with `--yes` when there is any. `spots.lock` in the config folder lists the
+source, the commit, the paths, a hash of the files and the `uses` of each added spot, also of one that a review adds. `openspot spot add` with no source adds each spot of `spots.lock` that is missing, a git one at its commit (N2), and
 `spot add` of a source that `spots.lock` has already updates its spot, a git one to its newest commit (Z7). `spot remove`
 moves to the Trash only a spot that `spot add` added, with all of its paths, and drops its line in `spots.lock`.
 

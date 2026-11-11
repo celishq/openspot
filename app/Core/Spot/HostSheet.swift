@@ -9,7 +9,7 @@ public enum HostSheet: Equatable, Sendable {
     /// Answers one call with the text a script would print.
     func answer(_ arguments: [String]) async throws -> String {
         switch self {
-        case .review(let review): try review.answer(arguments)
+        case .review(let review): arguments.first == ReviewSpot.installPart ? try await review.add() : try review.answer(arguments)
         case .fault(let fault): try await fault.answer(arguments)
         }
     }

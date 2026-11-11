@@ -273,11 +273,44 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(answer.output, "Each spot of spots.lock is in the plugins folder.\n")
     }
 
+    func testAFirstAddPrintsTheReviewAndNeedsYesWhenItUsesAPower() async throws {
+        let repo = try repo()
+        try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n# uses=network\n# every=60\ncurl -s https://example.com\n"])
+
+        let first = try await answer(["spot", "add", repo.url.path])
+
+        XCTAssertEqual(first.code, 1)
+        XCTAssertEqual(first.errors, "Coffee\n\nUses\nnetwork\n\nRuns by itself\nCoffee: every 60 seconds\n\nOpenspot added nothing. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to add it.\n")
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: plugins.path), [])
+        XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries(), [])
+        let confirmed = try await answer(["spot", "add", repo.url.path, "--yes"])
+        XCTAssertEqual(confirmed.code, 0, confirmed.errors)
+        XCTAssertEqual(try ids(), ["coffee/coffee"])
+    }
+
+    func testAddsAtTheSameTimeLoseNoEntryOfTheLock() async throws {
+        let sources = try (0..<12).map { index in
+            let folder = root.appendingPathComponent("sources/s\(index)")
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("a.sh"))
+            return folder
+        }
+        let lock = SpotLock(url: root.appendingPathComponent("spots.lock"))
+
+        await withTaskGroup(of: Void.self) { group in
+            for source in sources {
+                group.addTask { [plugins] in _ = try? await lock.add(.folder(source), to: plugins!) }
+            }
+        }
+
+        XCTAssertEqual(Set(try lock.entries().map(\.source)), Set(sources.map(\.path)))
+    }
+
     func testTheLockKeepsAHashOfTheFilesAndTheUses() async throws {
         let repo = try repo()
         try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n# uses=network,app\necho one\n"])
 
-        _ = try await answer(["spot", "add", repo.url.path])
+        _ = try await answer(["spot", "add", repo.url.path, "--yes"])
 
         let entry = try XCTUnwrap(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries().first)
         XCTAssertEqual(entry.hash?.count, 64)

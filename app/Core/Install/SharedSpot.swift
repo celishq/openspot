@@ -104,6 +104,12 @@ public struct SharedSpot: Equatable, Sendable {
         try self.init(files: files)
     }
 
+    /// Reads the files under these paths at the top of a folder, each folder in name order with its hidden files left out.
+    init(paths: [String], in folder: URL) throws {
+        var total = 0
+        try self.init(files: try paths.flatMap { try Self.files(at: folder.appendingPathComponent($0), path: $0, total: &total) })
+    }
+
     /// Whether a Swift script or a view of this spot has no program beside it.
     public var needsCompile: Bool {
         !uncompiled.isEmpty || !unbuiltViews.isEmpty

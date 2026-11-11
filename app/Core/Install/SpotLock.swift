@@ -3,8 +3,10 @@ import Foundation
 
 /// `spots.lock` in the config folder: the source of each spot that `openspot spot add` put in the plugins folder, the
 /// commit of a git source, the paths at the top of the folder that the spot took, a hash of its files and its uses (N1,
-/// N2, Z7). An update that adds a use changes nothing until the person confirms it.
-public struct SpotLock: Sendable {
+/// N2, Z7). A first add of a spot that uses a power, can do more or runs by itself, and an update that adds a use, change
+/// nothing until the person confirms them. Each read, change and write holds a lock beside the file, in the app and in
+/// the command alike.
+public struct SpotLock: Equatable, Sendable {
     public struct Entry: Codable, Equatable, Sendable {
         public let source: String
         public let commit: String?
@@ -22,7 +24,8 @@ public struct SpotLock: Sendable {
         /// Whether a spot of this ID came from this entry: a script at the top of the folder, or any script in its folder.
         func holds(_ id: String) -> Bool {
             paths.contains { path in
-                id == path || id == URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent || id.hasPrefix(path + "/")
+                id == path || id == (path as NSString).deletingPathExtension || id == URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
+                    || id.hasPrefix(path + "/")
             }
         }
 
@@ -44,6 +47,7 @@ public struct SpotLock: Sendable {
     }
 
     private static let name = "spots.lock"
+    private static let lockPause: Duration = .milliseconds(20)
 
     public let url: URL
 
@@ -64,33 +68,50 @@ public struct SpotLock: Sendable {
         return entries
     }
 
-    /// Puts a spot from a source in the folder, and records it in place of each entry that shared a path with it. A source
-    /// that the lock has already is an update of its spot, which applies only when it adds no use, or when `isConfirmed`
-    /// (Z7). The old copy goes to `discard`, as the Trash. Returns the line that tells the person what changed.
+    /// Puts a spot from a source in the folder, and records it in place of each entry that shared a path with it. A first
+    /// add of a spot that the review would show with lines of uses, of what it can also do or of what runs by itself
+    /// throws those lines, and a source that the lock has already is an update of its spot, which applies only when it adds
+    /// no use; `isConfirmed` lets either through (Z6, Z7). `replaces` names more paths that the new spot may replace, and
+    /// `expecting` the files that the source must still hold, such as those a review showed. The old copy goes to `discard`,
+    /// as the Trash. Returns the line that tells the person what changed.
     public func add(
         _ source: SpotSource,
         to folder: URL,
         isConfirmed: Bool = false,
+        replaces: [String] = [],
+        expecting: SharedSpot? = nil,
         discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }
     ) async throws -> String {
-        let old = try entries().first { $0.source == source.text }
-        var facts: Facts?
-        let (commit, paths) = try await source.add(to: folder, at: nil, replacing: old?.paths ?? [], discard: discard) { work, paths in
-            let new = try Self.facts(of: paths, in: work)
-            if let old, !isConfirmed {
-                try Self.refuseGrowth(from: old.uses ?? Self.facts(of: old.paths, in: folder).uses, to: new.uses, confirm: "openspot spot add \(source.text) --yes")
+        try await locked {
+            let old = try entries().first { $0.source == source.text }
+            var facts: Facts?
+            let (commit, paths) = try await source.add(to: folder, at: nil, replacing: (old?.paths ?? []) + replaces, discard: discard) { work, paths in
+                if let expecting, try SharedSpot(paths: paths, in: work) != expecting {
+                    throw SpotError.fault("The file changed after you looked at it, so Openspot added nothing. Open it again to see it.")
+                }
+                let new = try Self.facts(of: paths, in: work)
+                if old == nil, !isConfirmed, let review = try? ReviewSpot(spot: SharedSpot(paths: paths, in: work), folder: folder), !review.trust.isEmpty {
+                    throw SpotError.fault("\(review.name)\n\n\(review.trust)Openspot added nothing. Run `openspot spot add \(source.text) --yes` to add it.")
+                }
+                if let old, !isConfirmed {
+                    try Self.refuseGrowth(from: old.uses ?? Self.facts(of: old.paths, in: folder).uses, to: new.uses, confirm: "openspot spot add \(source.text) --yes")
+                }
+                facts = new
             }
-            facts = new
+            let entry = Entry(source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses)
+            try write(try entries().filter { Set($0.paths).isDisjoint(with: paths) && $0.source != source.text } + [entry])
+            return old == nil ? entry.added : entry.updated
         }
-        let entry = Entry(source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses)
-        try write(try entries().filter { Set($0.paths).isDisjoint(with: paths) && $0.source != source.text } + [entry])
-        return old == nil ? entry.added : entry.updated
     }
 
     /// Adds each spot of the lockfile whose first path the folder lacks, a git one at its commit. One whose files no longer
     /// match the hash comes back only when it adds no use, or when `isConfirmed` (Z7). A spot that cannot come back is a
     /// fault line, and the others still come.
     public func restore(to folder: URL, isConfirmed: Bool = false) async throws -> CommandAnswer {
+        try await locked { try await restoring(to: folder, isConfirmed: isConfirmed) }
+    }
+
+    private func restoring(to folder: URL, isConfirmed: Bool) async throws -> CommandAnswer {
         var added = ""
         var faults = ""
         var entries = try entries()
@@ -156,6 +177,9 @@ public struct SpotLock: Sendable {
     /// Moves each path of the entry that holds this ID to the Trash, and drops the entry. A spot that `spot add` did not add
     /// stays, with a fault.
     public func remove(_ id: String, from folder: URL, discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws -> Entry {
+        let lock = try lockFile()
+        defer { close(lock) }
+        flock(lock, LOCK_EX)
         var entries = try entries()
         guard let index = entries.firstIndex(where: { $0.holds(id) }) else {
             throw SpotError.fault("`openspot spot add` did not add \(id), so Openspot leaves it. Move its file to the Trash to remove it.")
@@ -167,6 +191,23 @@ public struct SpotLock: Sendable {
         }
         try write(entries)
         return entry
+    }
+
+    /// Runs a read, change and write of the file while it holds the lock beside it, which another caller waits for.
+    private func locked<T>(_ work: () async throws -> T) async throws -> T {
+        let lock = try lockFile()
+        defer { close(lock) }
+        while flock(lock, LOCK_EX | LOCK_NB) != 0 { try await Task.sleep(for: Self.lockPause) }
+        return try await work()
+    }
+
+    /// The open file of the lock beside the file, which a close lets go of.
+    private func lockFile() throws -> Int32 {
+        let folder = url.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let lock = open(folder.appendingPathComponent(".\(url.lastPathComponent).lock").path, O_RDWR | O_CREAT | O_CLOEXEC, 0o644)
+        guard lock >= 0 else { throw CocoaError(.fileWriteNoPermission, userInfo: [NSFilePathErrorKey: folder.path]) }
+        return lock
     }
 
     private func write(_ entries: [Entry]) throws {
