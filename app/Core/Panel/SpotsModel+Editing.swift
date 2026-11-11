@@ -310,6 +310,7 @@ extension SpotsModel {
             drag = nil
             updateVisible()
             lift.origin = home.origin
+            self.carry?.isLanding = true
         }, completion: { self.endLanding(of: id) })
     }
 
@@ -358,6 +359,7 @@ extension SpotsModel {
         guard let id = carry?.entry.id, let index = visible.firstIndex(where: { $0.id == id }), placements.indices.contains(index) else { return }
         lift.origin = inPanel(placements[index].rect.origin)
         carry?.isOverDock = false
+        carry?.isLanding = true
     }
 
     /// Ends the landing of a card, and clears the pointer's move, which no card reads once the drag ends, and the carried

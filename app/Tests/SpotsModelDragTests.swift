@@ -308,17 +308,19 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.lift.origin, CGPoint(x: SpotTokens.halo + rect.minX, y: dock.maxY - SpotTokens.padding - rect.height))
     }
 
-    func testTheCarriedCardGlidesToItsPlaceAndGoesWhenItLands() {
+    func testTheCarriedCardGlidesToItsPlaceSettlingFromItsLiftAndGoesWhenItLands() {
         host.heldEnds = []
         let translation = move("d", to: leftHalf(of: "c"))
         model.dragSpot("d", by: translation)
         XCTAssertEqual(model.carry?.entry.id, "d")
+        XCTAssertEqual(model.carry?.isLanding, false)
 
         model.dropSpot(by: translation)
 
         let place = model.placements[model.visible.firstIndex { $0.id == "d" } ?? 0].rect
         XCTAssertEqual(model.lift.origin, CGPoint(x: SpotTokens.halo + place.minX, y: SpotTokens.gridTop + place.minY))
         XCTAssertEqual(model.carry?.entry.id, "d")
+        XCTAssertEqual(model.carry?.isLanding, true)
         host.heldEnds?.forEach { $0() }
         XCTAssertNil(model.carry)
     }
@@ -368,6 +370,7 @@ final class SpotsModelDragTests: XCTestCase {
 
         model.dropDockSpot(by: away)
         XCTAssertEqual(model.lift.origin, tile("timer").origin)
+        XCTAssertEqual(model.carry?.isLanding, true)
         host.heldEnds?.forEach { $0() }
         XCTAssertNil(model.carry)
         XCTAssertEqual(model.dock.items.map(\.id), ["timer"])
