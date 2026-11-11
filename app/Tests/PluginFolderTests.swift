@@ -294,6 +294,34 @@ final class PluginFolderTests: XCTestCase {
         ])
     }
 
+    func testRefusesAnAnswersPatternThatIsNoneOrThatStays() throws {
+        try write("m.sh", header: "answers=[0-9")
+        try write("n.sh", header: "answers=^[0-9]\nstay=true")
+
+        XCTAssertEqual(try scan.plugins, [])
+        XCTAssertEqual(try scan.refused, [
+            ScanResult.Refusal(file: "m", reason: "M has an unknown answers pattern: [0-9. Write a regular expression, such as answers=^[0-9]"),
+            ScanResult.Refusal(file: "n", reason: "N answers the main search, so it runs once for each call. Remove stay=true or answers"),
+        ])
+    }
+
+    func testASpotThatOnlyAnswersTheSearchHasNoCardAndIsNotFound() throws {
+        try write("calc.sh", header: "answers=^[0-9]")
+        try write("dict.sh", header: "read=sheet\nanswers=^define ")
+
+        let commands = try scan.commands
+        let calc = commands.first { $0.id == "calc" }
+        let dict = commands.first { $0.id == "dict" }
+
+        XCTAssertEqual(calc?.answers?.text, "^[0-9]")
+        XCTAssertEqual(calc?.answers?.matches("2+2"), true)
+        XCTAssertEqual(calc?.answers?.matches("safari"), false)
+        XCTAssertEqual(calc?.isOnGrid, false)
+        XCTAssertEqual(calc?.isFound, false)
+        XCTAssertEqual(dict?.isOnGrid, true)
+        XCTAssertEqual(dict?.isFound, true)
+    }
+
     func testAScanDoesNotRunAScript() throws {
         let marker = folder.appendingPathComponent("marker")
         try write("one.sh", header: "read=panel", body: "touch '\(marker.path)'")

@@ -3,9 +3,9 @@ import AppKit
 import QuartzCore
 
 /// A run that opens and closes the sheet of one spot again and again, or with `OPENSPOT_ACTION` moves down its rows, types
-/// in its search, picks the row `OPENSPOT_ROW`, or opens the panel itself after `OPENSPOT_PAUSE`, and writes the time of each
-/// frame to a file. `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`. The panel stays almost clear, takes no focus
-/// and no clicks, unless `OPENSPOT_SEEN` asks for a picture.
+/// in its search, picks the row `OPENSPOT_ROW`, types `OPENSPOT_TEXT` in the main search, or opens the panel itself after
+/// `OPENSPOT_PAUSE`, and writes the time of each frame to a file. `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`.
+/// The panel stays almost clear, takes no focus and no clicks, unless `OPENSPOT_SEEN` asks for a picture.
 @MainActor
 final class SpotMotionProbe: NSObject {
     /// How long each open of the panel is timed: its fade and the reads that land in it.
@@ -21,6 +21,8 @@ final class SpotMotionProbe: NSObject {
     private let action: String?
     /// The row that the `pick` action picks.
     private let row: String?
+    /// The text that the `search` action types in the main search.
+    private let text: String
     private var link: CADisplayLink?
     private var frames: [CFTimeInterval] = []
     private var start: CFTimeInterval = 0
@@ -40,6 +42,7 @@ final class SpotMotionProbe: NSObject {
         isSeen = environment["OPENSPOT_SEEN"] != nil
         action = environment["OPENSPOT_ACTION"].flatMap { $0.isEmpty ? nil : $0 }
         row = environment["OPENSPOT_ROW"]
+        text = environment["OPENSPOT_TEXT"].flatMap { $0.isEmpty ? nil : $0 } ?? "2*(3+4)"
     }
 
     /// Shows the panel, waits for its reads, then starts the presses.
@@ -54,6 +57,7 @@ final class SpotMotionProbe: NSObject {
 
     private func begin() {
         if action == "panel" { return beginOpens() }
+        if action == "search" { return beginSearch() }
         let target = model.entries.first { spot == nil ? $0.kind == .widget && $0.command.opens != nil : $0.id == spot }
         guard let target, let view = panel.contentView else { return finish(with: "no spot to open\n") }
         let link = view.displayLink(target: self, selector: #selector(tick))
@@ -103,6 +107,33 @@ final class SpotMotionProbe: NSObject {
             panel.hide()
             DispatchQueue.main.asyncAfter(deadline: .now() + self.pause) { self.open(panel, left: left - 1) }
         }
+    }
+
+    /// Types the text in the main search once the first reads have ended.
+    private func beginSearch() {
+        guard !model.runs.isReading else {
+            return DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { self.beginSearch() }
+        }
+        guard let view = panel.contentView else { return finish(with: "no panel\n") }
+        let link = view.displayLink(target: self, selector: #selector(tick))
+        link.add(to: .main, forMode: .common)
+        self.link = link
+        start = CACurrentMediaTime()
+        search(left: presses)
+    }
+
+    /// Types the text a letter at a time from an empty search, again and again, then types it whole and adds the title and
+    /// the detail of each card that shows to the report.
+    private func search(left: Int) {
+        guard left > 0 else {
+            model.searchText = text
+            return DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                let shown = self.model.visible.map { "\($0.state.title) · \($0.state.subtitle ?? "")" }
+                self.finish(with: self.report() + "shows:\n" + shown.joined(separator: "\n") + "\n")
+            }
+        }
+        model.searchText = String(text.prefix((presses - left) % (text.count + 1)))
+        DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.search(left: left - 1) }
     }
 
     /// Runs the work a second after the open sheet holds its rows.

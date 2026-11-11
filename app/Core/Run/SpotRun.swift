@@ -37,6 +37,13 @@ public final class SpotRun {
     enum Ask {
         case read(generation: Int?, reports: Bool, query: String = "")
         case search(String)
+        /// The rows that answer a text of the main search, which leave the spot and its sheet as they are (A2).
+        case answer(String)
+
+        var isAnswer: Bool {
+            if case .answer = self { return true }
+            return false
+        }
     }
 
     /// Where a frame that answers nothing comes from: a later frame of a read, or a frame of any other call.
@@ -78,11 +85,16 @@ public final class SpotRun {
     private static let workPause: TimeInterval = 1
     private static let readKey = "read"
     private static let searchKey = "search"
+    private static let answerKey = "answer"
     private static let cardKey = "card"
     private static let levelKey = "level"
     private static let globalKey = "global"
 
     public private(set) var command: Spot
+    /// The rows that the script gave for the text of the main search, which stay until the newest text is answered (A3).
+    public private(set) var answers: [SpotItem] = []
+    /// The text of the main search that the script was last asked to answer.
+    private var answerQuery = ""
     @ObservationIgnored private var rows: ItemList
 
     /// The rows of the sheet. A move of the selection alone tells only the readers of `selection` and reports nothing, so
@@ -459,6 +471,32 @@ public final class SpotRun {
         after(Self.textPause, key: Self.searchKey) { [weak self] in self?.ask() }
     }
 
+    /// Asks the script for the rows that answer a text of the main search, at once, and stops the older ask. An empty text
+    /// drops the answers (A2, A3).
+    public func answer(_ text: String) {
+        guard text != answerQuery else { return }
+        answerQuery = text
+        if let older = running(Self.answerKey) { stop(older) }
+        guard !text.isEmpty else {
+            takeAnswers([])
+            return
+        }
+        link.send(Call(
+            action: .items(query: text, forms: SearchQuery(text: text).forms),
+            key: Self.answerKey,
+            limit: runs.readLimit,
+            reason: .search,
+            variables: ReadReason.search.variables,
+            purpose: .ask(.answer(text))
+        ))
+    }
+
+    private func takeAnswers(_ rows: [SpotItem]) {
+        guard rows != answers else { return }
+        answers = rows
+        onReport(.listChange)
+    }
+
     /// Takes a value the person set, so that it shows at once, and tells the script after a pause that fits the control. It
     /// stops the older call of this part.
     public func set(_ part: SpotPart, to value: String) {
@@ -757,6 +795,8 @@ public final class SpotRun {
             changeReading { $0.markStale() }
             answerArrived()
             if reports { fail(error) }
+        case (.ask(.answer(let query)), .failed):
+            if query == answerQuery { takeAnswers([]) }
         case (.ask(.search(let query)), .failed(let error)):
             list.stopWaiting(for: query)
             answerArrived()
@@ -800,6 +840,10 @@ public final class SpotRun {
     /// silence of one that ended by itself, or the frame that ends a call of a staying script. A read's answer replaces all
     /// that the spot shows, and a search's answer replaces its rows (02, Y7).
     func takeAnswer(_ lines: PluginOutput, frame: String, to ask: Ask) async {
+        if case .answer(let query) = ask {
+            if query == answerQuery { takeAnswers(lines.items) }
+            return
+        }
         let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: lines.search) } else { nil }
         lastAnswer = lines.withoutBlocks()
         report(toastOf: lines)
@@ -820,6 +864,8 @@ public final class SpotRun {
             if showsSheet || panel != nil { takePanel(lines, generation: generation) }
             if list.search == .script, !list.query.isEmpty, list.query != query { self.ask() }
             showRunning()
+        case .answer:
+            return
         case .search(let query):
             await prepare(firstScreen(of: lines.items), [])
             guard query == list.query else { return }

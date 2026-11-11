@@ -26,15 +26,16 @@ public final class SpotsModel {
             fixedState = command.headerState
         }
 
-        /// A card of a full row for an item that the main search found in a list.
-        public init(command: Spot, item: SpotItem) {
+        /// A card of a full row for an item that the main search found in a list. A row that answers the text shows its own
+        /// detail, which says how the spot read the text (A3).
+        public init(command: Spot, item: SpotItem, isAnswer: Bool = false) {
             id = "\(command.id)\n\(item.run)"
             sizeChoice = .strip
             gridChoice = nil
             self.item = item
             run = nil
             fixedCommand = command
-            fixedState = SpotState(title: item.title, subtitle: item.path(in: command))
+            fixedState = SpotState(title: item.title, subtitle: isAnswer ? item.subtitle ?? command.name : item.path(in: command))
         }
 
         @MainActor public var command: Spot {
@@ -128,6 +129,7 @@ public final class SpotsModel {
     public var query = "" {
         didSet {
             if query != oldValue { selected = 0 }
+            askAnswers()
             updateVisible()
         }
     }
@@ -453,17 +455,31 @@ public final class SpotsModel {
         if transition.phase == .closing, !hasPlace(transition.id) { cutSheet(to: nil) }
     }
 
-    /// The cards that the search finds, or each card on the grid when there is no search.
+    /// Sends the text of the main search to each spot whose `answers` pattern matches it, and an empty text to the others,
+    /// which drops their answers (A2).
+    private func askAnswers() {
+        let text = query.trimmingCharacters(in: .whitespaces)
+        for entry in entries {
+            guard let pattern = entry.command.answers else { continue }
+            sheets[entry.id]?.answer(!text.isEmpty && pattern.matches(text) ? text : "")
+        }
+    }
+
+    /// The cards that the search finds, or each card on the grid when there is no search. The rows that spots give as
+    /// answers to the text come first (A3).
     private func found() -> [Entry] {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
             return cards.filter(\.isOnGrid) + (isEditing ? cards.filter { !$0.isOnGrid } : [])
         }
+        let answers = entries.filter { $0.command.answers?.matches(text) == true }
+            .flatMap { entry in (sheets[entry.id]?.answers ?? []).map { Entry(command: entry.command, item: $0, isAnswer: true) } }
+            .prefix(Self.searchLimit)
         let spots = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         spotList.replace(cards.filter(\.command.isFound).map { SpotItem(title: $0.state.title, subtitle: [$0.state.subtitle, $0.command.name].compactMap { $0 }.joined(separator: " "), run: $0.id) })
         let sources = entries.filter { $0.command.isGlobal && arrangement.isGlobal(of: $0.id) != false }
-        let found = SearchQuery(text: text).matching(in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() }, unpickedLimit: Self.unpickedRows, limit: Self.searchLimit)
-        return found.compactMap { match in
+        let found = SearchQuery(text: text).matching(in: [spotList] + sources.map { sheets[$0.id]?.list ?? ItemList() }, unpickedLimit: Self.unpickedRows, limit: Self.searchLimit - answers.count)
+        return answers + found.compactMap { match in
             match.list == 0 ? spots[match.item.run] : Entry(command: sources[match.list - 1].command, item: match.item)
         }
     }
