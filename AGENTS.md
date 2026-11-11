@@ -10,6 +10,8 @@
   - `Tests/` — XCTest, through `@testable import OpenspotCore`.
 - `app/Keywords/` holds the CLDR keywords of emoji and symbols, one xz file per language. `scripts/emoji-keywords.py` writes
   it from a pinned CLDR version, and the build copies it into the app.
+- `app/Help/` holds the guide of each `openspot` noun that has one, which `openspot help <noun>` prints. The build copies it
+  into the app.
 - `plugins/` holds the source of the core spots. The build copies it into the app, and they run from there.
 - `examples/` holds plugins that show a feature, such as a view. The app does not ship them, and a test checks them.
   `make examples` copies them into the plugins of a Debug build.

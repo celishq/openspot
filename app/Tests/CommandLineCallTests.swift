@@ -85,6 +85,14 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["--help"]), .help)
     }
 
+    func testHelpCanNameTheNounWhoseGuideItPrints() {
+        XCTAssertEqual(CommandLineCall(arguments: ["help"]), .help)
+        XCTAssertEqual(CommandLineCall(arguments: ["help", "screen"]), .guideOf("screen"))
+        XCTAssertEqual(CommandLineCall(arguments: ["help", "reminders"]), .guideOf("reminders"))
+        XCTAssertEqual(CommandLineCall(arguments: ["help", "screen", "shot"]), .unknown("help screen shot"))
+        XCTAssertTrue(CommandLineCall.usage.contains("openspot help [noun]"))
+    }
+
     func testASettingBelongsToTheSpotThatRunsTheCommand() {
         let spot = ["OPENSPOT_ID": "repos"]
 

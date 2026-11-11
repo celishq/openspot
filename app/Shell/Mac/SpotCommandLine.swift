@@ -45,6 +45,11 @@ enum SpotCommandLine {
                 guard let guide = Bundle.main.url(forResource: "GUIDE", withExtension: "md") else { throw PluginError.fault("This copy of Openspot has no guide. Install Openspot again.") }
                 return try String(contentsOf: guide, encoding: .utf8)
             }
+        case .guideOf(let noun):
+            answer {
+                guard let folder = Bundle.main.url(forResource: "Help", withExtension: nil) else { throw PluginError.fault("This copy of Openspot has no guides. Install Openspot again.") }
+                return try CommandGuide(folder: folder).text(of: noun)
+            }
         case .spotNew(let name, let starter):
             answer {
                 let file = try starter.write(name: name, in: PluginFolder.standard().url)

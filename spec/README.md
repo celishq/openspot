@@ -8,8 +8,6 @@ app, which the New spot sheet opens and `openspot guide` prints for an AI. How t
 | [01 Core](01-core.md)           | draft  |       | The file, the header, the places, the calls, the frames, the blocks, rows, widgets and files out. |
 | [03 Views](03-views.md)         | draft  | 01    | A plugin's own SwiftUI view in an area.                                                          |
 | [05 Stay](05-stay.md)           | draft  | 01    | One process that stays and talks both ways over stdio, such as a local server.                   |
-| [06 Screen](06-screen.md)       | draft  | 01    | Pictures and recordings of the screen. It moves to `openspot help screen`.                       |
-| [09 Calendar](09-calendar.md)   | draft  | 01    | Events and reminders. It moves to `openspot help calendar`.                                      |
 
 A number that a spec gave up is not used again.
 
@@ -64,17 +62,11 @@ These rules come from the way Nostr writes its NIPs.
 | `call`, `reason`, `arg`, `stop`                                                                          | Stdin key            | 05   |
 | `title`, `detail`, `size`, `grid`, `places`, `opens`                                                     | Widget key           | 01   |
 
+The verbs and the row keys of each `openspot` noun, such as `screen` or `calendar`, are in `openspot help <noun>`.
+
 ## How to extend
 
-An old script never sees a word that it did not ask for. To add a default id, a moment, a place, an environment variable,
-an `openspot` noun or a block kind, add one word to one spec and to the registry. An old app skips a key that
+An old script never sees a word that it did not ask for. To add a default id, a moment, a place, an environment variable
+or a block kind, add one word to one spec and to the registry. A new `openspot` noun gets its guide in `app/Help`. An old app skips a key that
 it does not know, and skips and reports a block that it does not know. A new default id reaches only a script that asks
 for it.
-
-## Open work
-
-The specs above are the contract. Until each row below is done, the app still does what the row names.
-
-| Phase | Rule                                                                                         | Where the code differs today                                   |
-| ----- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| 8     | `openspot help <noun>` prints the guides of 06 and 09.                                       | `CommandLineCall`; 06 and 09 are in the guide.                 |

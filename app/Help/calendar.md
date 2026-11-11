@@ -1,6 +1,7 @@
-# 09 Calendar
+# openspot calendar and openspot reminders
 
-`draft` `optional` · Needs 01.
+`draft` · `openspot help calendar` and `openspot help reminders` print this guide. It builds on `openspot guide`, whose
+rules it names by their IDs.
 
 ```text
 #!/bin/sh

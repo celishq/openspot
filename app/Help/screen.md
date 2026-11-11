@@ -1,6 +1,6 @@
-# 06 Screen
+# openspot screen
 
-`draft` `optional` · Needs 01.
+`draft` · `openspot help screen` prints this guide. It builds on `openspot guide`, whose rules it names by their IDs.
 
 ```sh
 #!/bin/sh

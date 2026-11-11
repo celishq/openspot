@@ -69,10 +69,13 @@ public enum CommandLineCall: Equatable, Sendable {
     /// Draws the colour glyphs on stdin, one on each line, into a picture book at a path. Only the app makes this call.
     case glyphBook(side: Double, fontSize: Double, path: String)
     case help
+    /// Prints the guide of a noun, such as `screen`.
+    case guideOf(String)
     case unknown(String)
 
     public static let usage = """
     openspot guide                               Prints the guide to building a spot. Read it before you write one.
+    openspot help [noun]                         Prints this list, or the guide of a noun: calendar, reminders or screen.
     openspot spot new <name> [--from kind]       Writes a working spot to change. A kind is button, list, number or form.
     openspot spot run <id> [call] [value]...     Makes one call of a spot as the app does, and prints all that it prints.
     openspot spot log <id>                       Prints the last calls that the app made to a spot.
@@ -139,7 +142,11 @@ public enum CommandLineCall: Equatable, Sendable {
     public init?(arguments: [String], environment: [String: String] = ProcessInfo.processInfo.environment) {
         guard let noun = arguments.first else { return nil }
         if noun == "--help" || noun == "help" {
-            self = .help
+            switch arguments.count {
+            case 1: self = .help
+            case 2 where noun == "help": self = .guideOf(arguments[1])
+            default: self = .unknown(arguments.joined(separator: " "))
+            }
             return
         }
         guard !noun.hasPrefix("-") else { return nil }
