@@ -75,7 +75,7 @@ public struct CalcAnswer: Equatable, Sendable {
             plain.locale = Locale(identifier: "en_US_POSIX")
             plain.usesGroupingSeparator = false
             plain.maximumFractionDigits = formatter.maximumFractionDigits
-            let detail = "\(split.amount.detail) \(from) in \(to) · Coinbase, \(time(of: rates, clock: clock, now: now, locale: locale))"
+            let detail = "\(split.amount.detail) \(from) in \(to) · rates of \(day(of: rates, clock: clock, now: now, locale: locale))"
             return CalcAnswer(
                 value: plain.string(from: NSNumber(value: value)) ?? Self.plain(value, digits: 15),
                 title: formatter.string(from: NSNumber(value: value)) ?? "",
@@ -98,15 +98,19 @@ public struct CalcAnswer: Equatable, Sendable {
         return CalcAnswer(value: plain(value, digits: 6), title: title, detail: "\(amount.detail) \(from) in \(to)")
     }
 
-    /// When the rates were taken: the time alone today, and the day with it before.
-    private static func time(of rates: CalcRates, clock: Calendar, now: Date, locale: Locale) -> String {
+    /// The day that the rates are of, such as `Nov 10`, with its year when it is not the year of now.
+    private static func day(of rates: CalcRates, clock: Calendar, now: Date, locale: Locale) -> String {
+        let parser = DateFormatter()
+        parser.locale = Locale(identifier: "en_US_POSIX")
+        parser.timeZone = clock.timeZone
+        parser.dateFormat = "yyyy-MM-dd"
+        guard let date = parser.date(from: rates.day) else { return rates.day }
         let formatter = DateFormatter()
         formatter.locale = locale
         formatter.calendar = clock
         formatter.timeZone = clock.timeZone
-        formatter.timeStyle = .short
-        formatter.dateStyle = clock.isDate(rates.time, inSameDayAs: now) ? .none : .medium
-        return formatter.string(from: rates.time)
+        formatter.setLocalizedDateFormatFromTemplate(clock.isDate(date, equalTo: now, toGranularity: .year) ? "MMMd" : "yMMMd")
+        return formatter.string(from: date)
     }
 
     /// A value with a dot, no grouping and at most `digits` significant digits, such as `5280000` or `0.000001`, and in

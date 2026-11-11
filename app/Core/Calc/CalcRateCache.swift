@@ -5,10 +5,10 @@ import Foundation
 /// older than `staleness` wait a moment for new ones, and with none kept an ask waits for them. A fetch that fails waits
 /// `retry` before the next one.
 public actor CalcRateCache {
-    public static let freshness: TimeInterval = 300
+    public static let freshness: TimeInterval = 6 * 3600
     static let retry: TimeInterval = 60
     /// The age of rates for which an ask waits up to `patience` for new ones before it answers with them.
-    static let staleness: TimeInterval = 3600
+    static let staleness: TimeInterval = 24 * 3600
     static let patience: Duration = .seconds(1)
 
     /// The helper that keeps the cache, which `openspot calc solve` asks for the rates (K2).
@@ -66,7 +66,7 @@ public actor CalcRateCache {
         if let failedAt, now().timeIntervalSince(failedAt) < Self.retry { return nil }
         let task = Task { () -> CalcRates? in
             defer { refresh = nil }
-            guard let data = try? await fetch(), let rates = CalcRates(coinbase: data, time: now()) else {
+            guard let data = try? await fetch(), let rates = CalcRates(exchangeAPI: data, time: now()) else {
                 failedAt = now()
                 return nil
             }
@@ -80,13 +80,15 @@ public actor CalcRateCache {
         return task
     }
 
-    /// The cache of the helper: its file in the caches folder of the person, and its rates from `CalcRates.source`.
+    /// The cache of the helper: its file in the caches folder of the person, and its rates from `CalcRates.sources`.
     public static var standard: CalcRateCache {
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first ?? FileManager.default.temporaryDirectory
         return CalcRateCache(file: caches.appendingPathComponent("openspot/calc-rates.json"), now: { Date() }) {
-            var request = URLRequest(url: CalcRates.source, timeoutInterval: 5)
-            request.cachePolicy = .reloadIgnoringLocalCacheData
-            return try await URLSession.shared.data(for: request).0
+            try await CalcRates.download { url in
+                var request = URLRequest(url: url, timeoutInterval: 5)
+                request.cachePolicy = .reloadIgnoringLocalCacheData
+                return try await URLSession.shared.data(for: request).0
+            }
         }
     }
 

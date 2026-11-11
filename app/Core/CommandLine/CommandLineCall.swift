@@ -99,7 +99,8 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  such as 5 km in mi or 15 usd in eur, or a date, such as today + 3 weeks,
                                                  days until 25 dec or 3pm tokyo in kyiv, as a row. It prints nothing for
                                                  words that are none, and status=offline for a currency with no rates.
-                                                 The row's id is the plain value. Rates come from Coinbase.
+                                                 The row's id is the plain value. Rates come from exchange-api,
+                                                 a public-domain file that changes once a day.
     openspot emoji [--tone name]                 Prints each emoji as a row, with its name in the language of the Mac.
                                                  A tone is none, light, medium-light, medium, medium-dark or dark.
     openspot symbols                             Prints each symbol of the Character Viewer as a row, with its name and section.

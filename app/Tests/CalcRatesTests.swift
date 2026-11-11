@@ -2,7 +2,7 @@ import XCTest
 @testable import OpenspotCore
 
 final class CalcRatesTests: XCTestCase {
-    static let coinbase = Data(#"{"data":{"currency":"USD","rates":{"USD":"1.0","EUR":"0.8973","UAH":"45.4772","JPY":"153.2","GBP":"0.76","APR":"29.15","BTC":"0.0000135794951796"}}}"#.utf8)
+    static let file = Data(#"{"date":"2026-11-10","usd":{"usd":1,"eur":0.8973,"uah":45.4772,"jpy":153.2,"gbp":0.76,"apr":29.15,"btc":0.0000135794951796}}"#.utf8)
     private let time = Date(timeIntervalSince1970: 1_800_000_000)
     private var folder: URL!
 
@@ -14,8 +14,9 @@ final class CalcRatesTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    func testCoinbaseGivesTheRateOfEachCurrencyInEachOther() throws {
-        let rates = try XCTUnwrap(CalcRates(coinbase: Self.coinbase, time: time))
+    func testTheFileGivesTheRateOfEachCurrencyInEachOtherAndItsDay() throws {
+        let rates = try XCTUnwrap(CalcRates(exchangeAPI: Self.file, time: time))
+        XCTAssertEqual(rates.day, "2026-11-10")
         XCTAssertEqual(rates.rate(from: "USD", to: "EUR"), 0.8973)
         XCTAssertEqual(try XCTUnwrap(rates.rate(from: "eur", to: "uah")), 45.4772 / 0.8973, accuracy: 1e-9)
         XCTAssertEqual(try XCTUnwrap(rates.rate(from: "BTC", to: "USD")), 1 / 0.0000135794951796, accuracy: 1e-6)
@@ -23,14 +24,34 @@ final class CalcRatesTests: XCTestCase {
         XCTAssertEqual(rates.time, time)
     }
 
-    func testAnAnswerThatIsCutOrEmptyGivesNoRates() {
-        XCTAssertNil(CalcRates(coinbase: Data(#"{"data":{"currency":"USD","rates":{"EUR":"0.9"#.utf8), time: time))
-        XCTAssertNil(CalcRates(coinbase: Data(#"{"data":{"currency":"USD","rates":{}}}"#.utf8), time: time))
+    func testAFileThatIsCutOrEmptyGivesNoRates() {
+        XCTAssertNil(CalcRates(exchangeAPI: Data(#"{"date":"2026-11-10","usd":{"eur":0.9"#.utf8), time: time))
+        XCTAssertNil(CalcRates(exchangeAPI: Data(#"{"date":"2026-11-10","usd":{}}"#.utf8), time: time))
+        XCTAssertNil(CalcRates(exchangeAPI: Data(#"{"usd":{"eur":0.9}}"#.utf8), time: time))
         XCTAssertNil(CalcRates(file: Data("{".utf8)))
     }
 
+    func testADownloadFallsToTheBackupAddressWhenTheFirstFailsOrIsBroken() async throws {
+        let first = try XCTUnwrap(URL(string: "https://first.example/usd.json"))
+        let backup = try XCTUnwrap(URL(string: "https://backup.example/usd.json"))
+        let failing: @Sendable (URL) async throws -> Data = { url in
+            guard url == backup else { throw URLError(.cannotFindHost) }
+            return Self.file
+        }
+        let broken: @Sendable (URL) async throws -> Data = { url in url == backup ? Self.file : Data("<html>".utf8) }
+
+        let fromFailing = try await CalcRates.download(from: [first, backup], using: failing)
+        let fromBroken = try await CalcRates.download(from: [first, backup], using: broken)
+        XCTAssertEqual(fromFailing, Self.file)
+        XCTAssertEqual(fromBroken, Self.file)
+        do {
+            _ = try await CalcRates.download(from: [first], using: failing)
+            XCTFail("a download with no source that answers gives no file")
+        } catch {}
+    }
+
     func testRatesKeptInAFileReadBackTheSame() throws {
-        let rates = try XCTUnwrap(CalcRates(coinbase: Self.coinbase, time: time))
+        let rates = try XCTUnwrap(CalcRates(exchangeAPI: Self.file, time: time))
         XCTAssertEqual(CalcRates(file: rates.file), rates)
     }
 
@@ -42,7 +63,7 @@ final class CalcRatesTests: XCTestCase {
         func fetch() throws -> Data {
             count += 1
             if fails { throw URLError(.notConnectedToInternet) }
-            return CalcRatesTests.coinbase
+            return CalcRatesTests.file
         }
 
         func setFails(_ value: Bool) { fails = value }
@@ -117,17 +138,17 @@ final class CalcRatesTests: XCTestCase {
         XCTAssertEqual(count, 3)
     }
 
-    func testRatesAnHourOldWaitForNewOnesAndKeepTheOldWhenNoneCome() async throws {
+    func testRatesADayOldWaitForNewOnesAndKeepTheOldWhenNoneCome() async throws {
         let clock = Clock()
         _ = await cache(Source(), clock).rates()
-        clock.now += 2 * 3600
+        clock.now += CalcRateCache.staleness + 1
         let fresh = await cache(Source(), clock).rates()
         XCTAssertEqual(fresh?.time, clock.now)
-        clock.now += 2 * 3600
+        clock.now += CalcRateCache.staleness + 1
         let source = Source()
         await source.setFails(true)
         let kept = await cache(source, clock).rates()
-        XCTAssertEqual(kept?.time, clock.now - 2 * 3600)
+        XCTAssertEqual(kept?.time, clock.now - CalcRateCache.staleness - 1)
     }
 
     func testACutFileCountsAsNone() async throws {

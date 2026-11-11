@@ -46,7 +46,7 @@ final class CalculatorPluginTests: SamplePluginsCase {
             let rows = try await self.calculator.items(query: "15 usd in eur", timeout: 5).items
 
             XCTAssertEqual(rows.map(\.title), ["No exchange rates"])
-            XCTAssertEqual(rows.first?.subtitle, "Openspot cannot reach Coinbase. Connect to the internet, then type again.")
+            XCTAssertEqual(rows.first?.subtitle, "Openspot cannot get exchange rates. Connect to the internet, then type again.")
         }
     }
 

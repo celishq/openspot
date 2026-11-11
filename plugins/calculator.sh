@@ -8,7 +8,7 @@ case "$1" in
     [ -n "$2" ] || exit 0
     answer=$(openspot calc solve "$2")
     if [ "$answer" = "status=offline" ]; then
-      printf 'row=offline\ntitle=No exchange rates\ndetail=Openspot cannot reach Coinbase. Connect to the internet, then type again.\nicon=wifi.slash\n'
+      printf 'row=offline\ntitle=No exchange rates\ndetail=Openspot cannot get exchange rates. Connect to the internet, then type again.\nicon=wifi.slash\n'
     else
       printf '%s\n' "$answer"
     fi

@@ -1,24 +1,31 @@
 import Foundation
 
-/// The exchange rates of currencies and crypto at one time, from Coinbase: how many of each one US dollar buys.
+/// The exchange rates of currencies and crypto for one day, from exchange-api, a public-domain file that changes once a day:
+/// how many of each one US dollar buys, the day that they are of, and when they were fetched.
 public struct CalcRates: Equatable, Sendable, Codable {
-    /// Where the rates come from. It needs no key, and its answer changes about each minute.
-    public static let source = URL(string: "https://api.coinbase.com/v2/exchange-rates?currency=USD")!
+    /// The file and its backup address, tried in order. Neither needs a key or has a limit.
+    public static let sources = [
+        URL(string: "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json")!,
+        URL(string: "https://latest.currency-api.pages.dev/v1/currencies/usd.json")!,
+    ]
 
     public let time: Date
+    /// The day that the rates are of, as the file writes it, such as `2026-11-10`.
+    public let day: String
     private let perDollar: [String: Double]
 
-    /// Reads the answer of `source`, taken at a time. Returns nil for an answer that is cut or holds no rates.
-    public init?(coinbase: Data, time: Date) {
-        struct Answer: Decodable {
-            struct Body: Decodable { let rates: [String: String] }
-            let data: Body
+    /// Reads the file of `sources`, fetched at a time. Returns nil for a file that is cut, or holds no day or no rates.
+    public init?(exchangeAPI: Data, time: Date) {
+        struct File: Decodable {
+            let date: String
+            let usd: [String: Double]
         }
-        guard let answer = try? JSONDecoder().decode(Answer.self, from: coinbase) else { return nil }
-        var perDollar = answer.data.rates.compactMapValues { Double($0) }.filter { $0.value > 0 }
+        guard let file = try? JSONDecoder().decode(File.self, from: exchangeAPI) else { return nil }
+        var perDollar = Dictionary(file.usd.filter { $0.value > 0 }.map { ($0.key.uppercased(), $0.value) }, uniquingKeysWith: { first, _ in first })
         guard !perDollar.isEmpty else { return nil }
         perDollar["USD"] = 1
         self.time = time
+        day = file.date
         self.perDollar = perDollar
     }
 
@@ -36,5 +43,13 @@ public struct CalcRates: Equatable, Sendable, Codable {
     public func rate(from: String, to: String) -> Double? {
         guard let from = perDollar[from.uppercased()], let to = perDollar[to.uppercased()] else { return nil }
         return to / from
+    }
+
+    /// The first file of the sources that loads and reads as rates, so that a dead or broken address falls to the next.
+    public static func download(from sources: [URL] = sources, using load: @Sendable (URL) async throws -> Data) async throws -> Data {
+        for source in sources {
+            if let data = try? await load(source), CalcRates(exchangeAPI: data, time: Date()) != nil { return data }
+        }
+        throw URLError(.cannotLoadFromNetwork)
     }
 }

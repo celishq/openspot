@@ -22,8 +22,8 @@ final class CalcAnswerTests: XCTestCase {
         text?.replacingOccurrences(of: "\u{202F}", with: " ").replacingOccurrences(of: "\u{00A0}", with: " ")
     }
 
-    private func rates(at time: Date? = nil) -> CalcRates? {
-        CalcRates(coinbase: CalcRatesTests.coinbase, time: time ?? now)
+    private func rates() -> CalcRates? {
+        CalcRates(exchangeAPI: CalcRatesTests.file, time: now)
     }
 
     func testASumPrintsOneRowWithItsPlainValueItsAnswerAndHowItWasRead() {
@@ -87,10 +87,9 @@ final class CalcAnswerTests: XCTestCase {
         for text in ["5 km in kg", "5 apples in pears", "5 km in", "in mi", "5 km"] { XCTAssertNil(answer(text), text) }
     }
 
-    func testACurrencyConvertsWithTheRatesAndNamesThemAndTheirTime() {
-        XCTAssertEqual(spaced(answer("15 usd in eur", rates: rates())?.text), "row=13.46\ntitle=€13.46\ndetail=15 USD in EUR · Coinbase, 2:05 PM\n")
+    func testACurrencyConvertsWithTheRatesAndNamesTheirDay() {
+        XCTAssertEqual(answer("15 usd in eur", rates: rates())?.text, "row=13.46\ntitle=€13.46\ndetail=15 USD in EUR · rates of Nov 10\n")
         XCTAssertEqual(spaced(answer("15 usd in eur", in: ukrainian, rates: rates())?.title), "13,46 EUR")
-        XCTAssertEqual(spaced(answer("15 usd in eur", rates: rates(at: now - 2 * 86_400))?.detail), "15 USD in EUR · Coinbase, Nov 9, 2026 at 2:05 PM")
         let cases: [(String, String)] = [
             ("$15 in eur", "13.46"), ("15$ to €", "13.46"), ("15 dollars in euros", "13.46"), ("100 eur in uah", "5068.23"),
             ("1 btc in usd", "73640.44"), ("100 usd in btc", "0.00135795"), ("1000 jpy in usd", "6.53"), ("(10+5) usd in eur", "13.46"),
@@ -121,7 +120,7 @@ final class CalcAnswerTests: XCTestCase {
 
     func testOnlyAConversionWithAKnownCurrencyUsesTheRates() {
         XCTAssertEqual(answer("15 apr in usd", rates: rates())?.value, "0.51")
-        XCTAssertFalse(answer("15 apr", rates: rates())?.detail.contains("Coinbase") ?? false)
+        XCTAssertFalse(answer("15 apr", rates: rates())?.detail.contains("rates of") ?? false)
         XCTAssertEqual(answer("0.5 eth in btc", rates: rates()), nil, "the rates of the test know no ETH")
     }
 
