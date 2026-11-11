@@ -51,6 +51,12 @@ final class CommandSocketTests: XCTestCase {
         return try send(String(decoding: JSONSerialization.data(withJSONObject: request), as: UTF8.self))
     }
 
+    func testOnlyThePersonCanReachTheSocket() throws {
+        let mode = try XCTUnwrap(FileManager.default.attributesOfItem(atPath: folder.appendingPathComponent(CommandSocket.name).path)[.posixPermissions] as? Int)
+
+        XCTAssertEqual(mode & 0o777, 0o600)
+    }
+
     func testACalcSumIsAnswered() throws {
         let answer = try ask(["calc", "solve", "2+2"])
         let result = try XCTUnwrap(answer["result"] as? [String: Any])

@@ -25,6 +25,8 @@ public final class SpotRuns {
     let inlineIdle: TimeInterval
     /// What each spot cost since the app started (G1).
     public nonisolated let usage = SpotUsage()
+    /// The token of each process and inline link that runs, by which the API knows a spot's call (Z2).
+    public nonisolated let tokens = CallerTokens()
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored private let stopPause: TimeInterval
     @ObservationIgnored let tickPause: Duration
@@ -319,15 +321,16 @@ public final class SpotRuns {
     /// A JavaScript spot of these runs, which loads at its first call and counts the CPU time of its thread (A26).
     func inline(_ spot: Spot, limit: TimeInterval? = nil) -> InlineScript {
         let id = spot.id
-        return InlineScript(spot: spot, api: api, limit: limit ?? readLimit, idle: inlineIdle) { [usage] seconds in
+        return InlineScript(spot: spot, api: api, tokens: tokens, limit: limit ?? readLimit, idle: inlineIdle) { [usage] seconds in
             usage.add(ProcessTime(cpu: seconds, wakeups: 0), to: id)
         }
     }
 
     /// Starts a script that stays, and returns it with its frames.
     func stay(_ spot: Spot, limit: TimeInterval?) -> (ScriptProcess, AsyncThrowingStream<String, Error>) {
-        let script = ScriptProcess(url: SwiftProgram.file(beside: spot.url) ?? spot.url, mode: .stays, limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: ["OPENSPOT_ID": spot.id])
-        usage.track(script, of: spot.id)
+        let token = tokens.issue(for: spot)
+        let script = ScriptProcess(url: SwiftProgram.file(beside: spot.url) ?? spot.url, mode: .stays, limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: ["OPENSPOT_ID": spot.id, CallerTokens.variable: token])
+        track(script, of: spot.id, token: token)
         let frames = script.start()
         keep(script)
         return (script, frames)
@@ -360,8 +363,9 @@ public final class SpotRuns {
             }, nil)
         }
         let sent = action.sent(input: input)
-        let process = ScriptProcess(url: SwiftProgram.file(beside: spot.url) ?? spot.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given })
-        usage.track(process, of: spot.id)
+        let token = tokens.issue(for: spot)
+        let process = ScriptProcess(url: SwiftProgram.file(beside: spot.url) ?? spot.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: spot.dataName, variables: variables.merging(["OPENSPOT_ID": spot.id]) { given, _ in given }.merging([CallerTokens.variable: token]) { _, own in own })
+        track(process, of: spot.id, token: token)
         let stream = process.start()
         keep(process)
         return (stream, { process.stop() }, process)
@@ -383,6 +387,12 @@ public final class SpotRuns {
             task.cancel()
             continuation.finish()
         })
+    }
+
+    /// Counts the time of a process of a spot, and lets go of its token once it ends.
+    private func track(_ process: ScriptProcess, of spot: String, token: String) {
+        usage.track(process, of: spot)
+        process.onExit { [tokens] _ in tokens.release(token) }
     }
 
     private func keep(_ process: ScriptProcess) {

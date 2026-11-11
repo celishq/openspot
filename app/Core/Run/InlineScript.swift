@@ -36,6 +36,8 @@ final class InlineScript: @unchecked Sendable {
     private let name: String
     private let environment: [String: String]
     private let api: CommandAPI?
+    private let tokens: CallerTokens?
+    private let token: String?
     private let limit: TimeInterval
     private let idle: TimeInterval
     /// Takes the CPU time of each call on the thread.
@@ -52,15 +54,23 @@ final class InlineScript: @unchecked Sendable {
     /// The variables of the call that runs, which `openspot.call` passes on.
     private var variables: [String: String] = [:]
 
-    init(spot: Spot, api: CommandAPI?, limit: TimeInterval = 10, idle: TimeInterval = 30, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
+    /// `tokens` gives the script a token of its spot for as long as it lives (Z2).
+    init(spot: Spot, api: CommandAPI?, tokens: CallerTokens? = nil, limit: TimeInterval = 10, idle: TimeInterval = 30, spent: @escaping @Sendable (TimeInterval) -> Void = { _ in }) {
         url = spot.url
         name = spot.id
         self.api = api
         self.limit = limit
         self.idle = idle
         self.spent = spent
+        self.tokens = tokens
+        token = tokens?.issue(for: spot)
         environment = ScriptProcess.environment(base: ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", dataName: spot.dataName)
             .merging(["OPENSPOT_ID": spot.id]) { _, new in new }
+            .merging(token.map { [CallerTokens.variable: $0] } ?? [:]) { _, new in new }
+    }
+
+    deinit {
+        if let token { tokens?.release(token) }
     }
 
     /// Whether its thread runs, with its context.
@@ -144,7 +154,7 @@ final class InlineScript: @unchecked Sendable {
         let context = try loaded()
         let function = context.objectForKeyedSubscript("main")
         guard let function, let type = context.objectForKeyedSubscript("Function"), function.isInstance(of: type) else { return "" }
-        let env = environment.filter { ["OPENSPOT_ID"].contains($0.key) }.merging(call.variables) { _, new in new }
+        let env = environment.filter { ["OPENSPOT_ID", CallerTokens.variable].contains($0.key) }.merging(call.variables) { _, new in new }
         variables = call.variables
         defer { variables = [:] }
         let result = function.call(withArguments: [call.arguments, env, call.input ?? ""])

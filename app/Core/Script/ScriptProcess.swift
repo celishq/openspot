@@ -37,7 +37,7 @@ public final class ScriptProcess: @unchecked Sendable {
     /// Its time once it ended.
     private var endTime: ProcessTime?
     private var exitWatch: DispatchSourceProcess?
-    private var exitHandler: (@Sendable (ProcessTime) -> Void)?
+    private var exitHandlers: [@Sendable (ProcessTime) -> Void] = []
     private let errorText: ErrorTail
     private var unended: String?
     /// The frames of the output so far, which only the output's handler reads, one read at a time.
@@ -194,9 +194,9 @@ public final class ScriptProcess: @unchecked Sendable {
         return ProcessTime(of: id) ?? .zero
     }
 
-    /// Takes the time of the process once it ends. Set it before `start`.
+    /// Adds a handler that takes the time of the process once it ends. Add it before `start`.
     func onExit(_ handler: @escaping @Sendable (ProcessTime) -> Void) {
-        lock.withLock { exitHandler = handler }
+        lock.withLock { exitHandlers.append(handler) }
     }
 
     /// Whether its output is still open, so that the call has not ended.
@@ -348,12 +348,12 @@ public final class ScriptProcess: @unchecked Sendable {
             try? handle.close()
         }
         closeInput()
-        let handler = lock.withLock {
+        let handlers = lock.withLock {
             endTime = .zero
-            defer { exitHandler = nil }
-            return exitHandler
+            defer { exitHandlers = [] }
+            return exitHandlers
         }
-        handler?(.zero)
+        handlers.forEach { $0(.zero) }
     }
 
     /// Starts the program in a process group of its own, with these ends of pipes as its stdin, stdout and stderr, and with
@@ -420,13 +420,13 @@ public final class ScriptProcess: @unchecked Sendable {
         repeat { result = wait4(started, &code, 0, &usage) } while result == -1 && errno == EINTR
         if result == -1 { code = 1 << 8 }
         let time = read ?? ProcessTime(usage)
-        let handler = lock.withLock {
+        let handlers = lock.withLock {
             status = code
             endTime = time
-            defer { exitHandler = nil }
-            return exitHandler
+            defer { exitHandlers = [] }
+            return exitHandlers
         }
-        handler?(time)
+        handlers.forEach { $0(time) }
         exit.signal()
     }
 
