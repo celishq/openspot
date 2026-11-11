@@ -37,16 +37,17 @@ struct CalendarClock {
     func day(_ date: Date) -> String? {
         let distance = calendar.dateComponents([.day], from: startOfToday, to: calendar.startOfDay(for: date)).day ?? 0
         guard distance != 0 else { return nil }
+        if abs(distance) == 1 {
+            let word = RelativeDateTimeFormatter()
+            word.locale = locale
+            word.dateTimeStyle = .named
+            word.formattingContext = .beginningOfSentence
+            return word.localizedString(from: DateComponents(day: distance))
+        }
         let format = DateFormatter()
         format.locale = locale
         format.timeZone = calendar.timeZone
-        if abs(distance) == 1 {
-            format.dateStyle = .medium
-            format.timeStyle = .none
-            format.doesRelativeDateFormatting = true
-        } else {
-            format.setLocalizedDateFormatFromTemplate("EEEdMMM")
-        }
+        format.setLocalizedDateFormatFromTemplate("EEEdMMM")
         return format.string(from: date)
     }
 }
