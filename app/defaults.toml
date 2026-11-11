@@ -5,7 +5,6 @@ letter = "p"
 [[spots]]
 id = "apps"
 letter = "a"
-grid = true
 
 [[spots]]
 id = "caffeinate"
@@ -30,7 +29,6 @@ letter = "f"
 [[spots]]
 id = "links"
 letter = "l"
-grid = true
 
 [[spots]]
 id = "paste-screenshot"
@@ -39,7 +37,10 @@ letter = "v"
 [[spots]]
 id = "snippets"
 letter = "n"
-grid = true
+
+[[spots]]
+id = "shortcuts"
+grid = false
 
 [[spots]]
 id = "translate"

@@ -227,6 +227,13 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertFalse(command.isGlobal)
     }
 
+    func testASpotThatOffersSearchHasACardAndOneThatOffersRowsHasNone() throws {
+        try write("a.sh", header: "read=panel\noffers=search")
+        try write("b.sh", header: "read=panel\noffers=rows")
+
+        XCTAssertEqual(try scan.commands.map(\.headerState.isOnGrid), [true, false])
+    }
+
     func testTheMainSearchNeedsAMomentOutsideTheSheet() throws {
         try write("a.sh", header: "read=panel\noffers=search")
         try write("c.sh", header: "read=30\noffers=search")

@@ -26,7 +26,7 @@ final class PluginHeaderTests: XCTestCase {
         let search = try XCTUnwrap(try Plugin(file: searchOnly, id: "search")?.commands.first)
         let rows = try XCTUnwrap(try Plugin(file: rowsOnly, id: "rows")?.commands.first)
         let float = try XCTUnwrap(try Plugin(file: floating, id: "float")?.commands.first)
-        XCTAssertFalse(search.headerState.isOnGrid)
+        XCTAssertTrue(search.headerState.isOnGrid)
         XCTAssertTrue(search.isGlobal)
         XCTAssertTrue(search.isFound)
         XCTAssertTrue(rows.isGlobal)

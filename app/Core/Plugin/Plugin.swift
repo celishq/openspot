@@ -82,7 +82,7 @@ public struct Plugin: Equatable, Sendable {
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             offersFloat: places.contains("float"),
             dataName: header.value("data") ?? id.split(separator: "/").first.map(String.init),
-            isOnGrid: offers.isEmpty && !isGlobal && read?.seconds == nil,
+            isOnGrid: offers.isEmpty && !isRowsOnly && read?.seconds == nil,
             headerSymbol: symbol,
             offers: offers,
             settings: header.value("settings")?.split(separator: ",").compactMap { CommandOffer(setting: String($0)) } ?? [],
