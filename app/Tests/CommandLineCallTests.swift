@@ -73,7 +73,6 @@ final class CommandLineCallTests: XCTestCase {
     func testReadsEachCall() {
         XCTAssertEqual(CommandLineCall(arguments: ["check"]), .check(nil))
         XCTAssertEqual(CommandLineCall(arguments: ["check", "/a"]), .check("/a"))
-        XCTAssertEqual(CommandLineCall(arguments: ["catalog"]), .catalog)
         XCTAssertEqual(CommandLineCall(arguments: ["color", "pick"]), .colorPick)
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "copy", "/a b.mov"]), .clipboardCopy("/a b.mov"))
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "paste"]), .clipboardPaste)

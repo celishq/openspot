@@ -1,6 +1,6 @@
 import Foundation
 
-/// A working sheet for each kind of drawing, for a person to start from in the sandbox and a model to read in the catalog.
+/// A working sheet for each kind of drawing, for a person to start from in the sandbox.
 public enum SheetExamples {
     public struct Example: Equatable, Sendable {
         public let name: String

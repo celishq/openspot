@@ -214,7 +214,7 @@ when it changes. Ids are unique in one output. Each kind keeps its data in `valu
 | `picture` | A picture that fills its area.                          | `icon`                                                          |                        |
 | `view`    | The SwiftUI view that the header names (03).            | any key that the view reads                                     |                        |
 | `switch`  | A switch.                                               | `value`: `true` or `false`                                      | `<id> true` or `false` |
-| `slider`  | A slider. It sends when the person lets go.             | `value`, `min`, `max`                                           | `<id> <number>`        |
+| `slider`  | A slider. It sends when the person lets go.             | `value`, `min` and `max`, from 0 to 100 by default              | `<id> <number>`        |
 | `field`   | A text field.                                           | `value`, `placeholder`, `type=multiline`, `required`, `readonly` | `<id> <text>`          |
 | `choice`  | A menu of `option` lines, a list when it covers two lines or more, or swatches of `color` lines. | `option=<id>:<title>`, `color`, `value` | `<id> <option id>` |
 | `hotkey`  | A key combination that a press records.                 | `value`                                                         | `<id> <shortcut>`      |
@@ -230,7 +230,8 @@ letters, digits and dots, such as `wifi`, is an SF Symbol; and any other text, s
 text, `good`, `warn` and `bad` colour its detail, or its title when it has no detail, such as a `Late` in red. On a text or
 a number, `color=#RRGGBB` draws a thin bar of that colour at its leading edge, such as the colour of a calendar. `look` is
 the box of a text, a number or a button: `tile`, `bare`, and on a button also `chip` or `strong`. On a switch, `look=tick`
-draws a round tick before its words, for a thing to do. A key that a kind does not take is skipped.
+draws a round tick before its words, for a thing to do. `align=left`, `right` or `center` places a block that is smaller
+than its cell, such as a `chip` button. A key that a kind does not take is skipped.
 
 ## Drawings
 
@@ -475,6 +476,7 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | Each kind keeps its data in `value`.                                                                        | `point`, `on`, `level` and `text` by kind.   |
 | A frame with a block is the whole picture, and a head alone carries effects.                                | A later frame that merges what it prints.    |
 | Escape codes report and never act.                                                                          | OSC 8 as `link`.                             |
+| `openspot guide` is the one text of the contract, and a part takes only the keys that it names.             | A catalog of parts beside the guide.         |
 | A person can see and stop each call, so a call has no time limit.                                           | A `job` key.                                 |
 | A script runs once for each call, unless its header says `stay` (05).                                       | A process that stays by default.             |
 | The header is in each file, and a scan runs nothing.                                                        | A manifest.                                  |

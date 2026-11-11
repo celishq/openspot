@@ -260,8 +260,7 @@ final class SettingsSpotTests: XCTestCase {
         XCTAssertEqual(part.control, .shortcut("cmd+j"))
     }
 
-    func testTheCatalogTeachesThePartAndFindsABadKey() {
-        XCTAssertTrue(PartCatalog.text.contains("`hotkey`"))
+    func testTheCheckFindsABadHotkey() {
         XCTAssertEqual(PluginOutput(text: "hotkey=a\nvalue=k\n").partFaults, ["the part a needs a shortcut that holds cmd, ctrl or option: k"])
         XCTAssertEqual(PluginOutput(text: "hotkey=a\nvalue=ctrl+k\n").partFaults, [])
     }

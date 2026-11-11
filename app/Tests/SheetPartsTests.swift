@@ -219,12 +219,6 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(PluginOutput(text: "text=a\ntitle=A\ndetail=9%\nvalue=0.09\ntone=red\n").partFaults, ["the part a has an unknown tone: red"])
     }
 
-    func testTheCatalogNamesEachControl() {
-        for word in ["`switch`", "`slider`", "`choice`", "`field`", "`hotkey`", "`button`", "`text`", "`number`", "`graph`", "`picture`", "`gauge`", "`repeat=", "`icon="] {
-            XCTAssertTrue(PartCatalog.text.contains(word), word)
-        }
-    }
-
     func testTheCallsOfAPanel() {
         XCTAssertEqual(SpotAction.set("left", to: "true").arguments, ["left", "true"])
         XCTAssertEqual(SpotAction.press("quit").arguments, ["quit"])
@@ -405,9 +399,6 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(part.look, .tick)
         XCTAssertEqual(part.control, .toggle(true))
         XCTAssertEqual(PluginOutput(text: "switch=done\nvalue=true\nlook=tick\n").partFaults, [])
-        XCTAssertTrue(PartCatalog.text.contains("`look=tick`"))
-        XCTAssertTrue(PartCatalog.text.contains("`color=#1BADF8`"))
-        XCTAssertTrue(PartCatalog.text.contains("`tone=good`, `warn` or `bad` on a text"))
     }
 
 }

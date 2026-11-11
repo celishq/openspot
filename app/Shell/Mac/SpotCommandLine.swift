@@ -13,9 +13,6 @@ enum SpotCommandLine {
         case .unknown(let words):
             FileHandle.standardError.write(Data("openspot cannot do this: \(words)\n\n\(CommandLineCall.usage)".utf8))
             exit(2)
-        case .catalog:
-            print(PartCatalog.text, terminator: "")
-            exit(0)
         case .colorPick:
             SpotColorPick.run()
         case .folderPick:

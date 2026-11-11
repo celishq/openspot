@@ -200,7 +200,6 @@
 		8CFDAFCF8C35AC48C12366C1 /* SpotSandboxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59EDF908ED34B64E30744CFB /* SpotSandboxView.swift */; };
 		8D194C4535986E8DFFB8D5C2 /* SpotKeyLayouts.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAA4FB00AE08161E54BA06D5 /* SpotKeyLayouts.swift */; };
 		8D639351C6AE0146DDFDE645 /* CallLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A24B017BE3E9498BE963068 /* CallLogTests.swift */; };
-		8E08DF775A632ADEC78A440A /* MetricTint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B76181274C0E0D4A32DFC1B /* MetricTint.swift */; };
 		8E52FD6E40B42AAFC8C74F1F /* QuitSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA09C84349C2BE5E07A3084B /* QuitSpotTests.swift */; };
 		8F30A9EF38737A67528EAE03 /* ShellHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1676F1A9C3F0901AD19016D /* ShellHelperTests.swift */; };
 		8F40A3896808C0D3A47B86FE /* PluginOutput.swift in Sources */ = {isa = PBXBuildFile; fileRef = F74A353DA77D1A3DE0924E84 /* PluginOutput.swift */; };
@@ -436,7 +435,6 @@
 		096ABE1561629A883A3D83E3 /* AppsPluginTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppsPluginTests.swift; sourceTree = "<group>"; };
 		0A327692287C96D447A56249 /* KeyLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyLayoutTests.swift; sourceTree = "<group>"; };
 		0AAD2548261E9745E8A6B77A /* SpotLineMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotLineMark.swift; sourceTree = "<group>"; };
-		0B76181274C0E0D4A32DFC1B /* MetricTint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricTint.swift; sourceTree = "<group>"; };
 		0D3DFB561F6DEBAEA0F0B95A /* SheetOpening.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetOpening.swift; sourceTree = "<group>"; };
 		0D50478A53DB8348510EBFE6 /* CardPush.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardPush.swift; sourceTree = "<group>"; };
 		0F7D8339A70284F520E87CFE /* MetricReading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricReading.swift; sourceTree = "<group>"; };
@@ -1489,7 +1487,6 @@
 			children = (
 				F15937AFC37067A8AB8D0330 /* MetricKind.swift */,
 				0F7D8339A70284F520E87CFE /* MetricReading.swift */,
-				0B76181274C0E0D4A32DFC1B /* MetricTint.swift */,
 				BE044775BF504A7396DAB63B /* MetricValue.swift */,
 				9812F1BA02128234368525EC /* TrayMark.swift */,
 				C42B624FB5546EC0D1B8381B /* WidgetLayout.swift */,
@@ -1853,7 +1850,6 @@
 				37D3ED187CFDF0411531B406 /* LoginItem.swift in Sources */,
 				B1DF39E3F91226E7A117D160 /* MetricKind.swift in Sources */,
 				D5AE4DC5DC48D88986CB8A60 /* MetricReading.swift in Sources */,
-				8E08DF775A632ADEC78A440A /* MetricTint.swift in Sources */,
 				7F3083C79B1BD4666E33BA46 /* MetricValue.swift in Sources */,
 				8B36B8D8B12C3C18E4985B16 /* NewSpot.swift in Sources */,
 				B8676F4AC37D3BDC56CEA2C7 /* OnceLink.swift in Sources */,

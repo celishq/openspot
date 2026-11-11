@@ -55,7 +55,7 @@ These rules come from the way Nostr writes its NIPs.
 | `openspot <noun> <verb>`, `openspot help <noun>`                                                         | Command              | 01   |
 | `text`, `number`, `gauge`, `graph`, `picture`, `switch`, `slider`, `field`, `choice`, `hotkey`, `button`, `section`, `repeat`, `row` | Block kind | 01 |
 | `view`                                                                                                   | Block kind           | 03   |
-| `title`, `detail`, `icon`, `tone`, `value`, `color`, `look`                                              | Block key            | 01   |
+| `title`, `detail`, `icon`, `tone`, `value`, `color`, `look`, `align`                                     | Block key            | 01   |
 | `parent`, `on`, `hides`, `keyword`, `shortcut`, `file`                                                   | Row key              | 01   |
 | `grid`, `grid.<size>`, `main`, `title`, `detail`, `size`, `on`, `search`, `recents`, `toast`, `link`, `progress`, `select` | Head key | 01 |
 | `end`                                                                                                    | Head key             | 05   |

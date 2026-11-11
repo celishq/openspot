@@ -187,9 +187,8 @@ final class PluginOutputTests: XCTestCase {
         XCTAssertEqual(titled.title, "Many")
     }
 
-    func testAMetricCanSetATintAndAnUnknownOneIsSkipped() {
-        XCTAssertEqual(MetricValue(output: PluginOutput(text: "text=m\ntitle=1\ntint=green\n"))?.tint, .green)
-        XCTAssertNil(MetricValue(output: PluginOutput(text: "text=m\ntitle=1\ntint=beige\n"))?.tint)
+    func testATintIsAnUnknownKey() {
+        XCTAssertEqual(PluginOutput(text: "text=m\ntitle=1\ntint=green\n").partFaults, ["the part m has an unknown key: tint"])
     }
 
     func testPrintingNothingHidesAMetric() {

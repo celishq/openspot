@@ -32,7 +32,6 @@ public struct MetricValue: Equatable, Sendable {
     public let points: [Double]?
     public let max: Double?
     public let rows: [Row]?
-    public let tint: MetricTint?
     public let isHidden: Bool
 
     public init(
@@ -44,7 +43,6 @@ public struct MetricValue: Equatable, Sendable {
         points: [Double]? = nil,
         max: Double? = nil,
         rows: [Row]? = nil,
-        tint: MetricTint? = nil,
         isHidden: Bool = false
     ) {
         self.title = title
@@ -55,7 +53,6 @@ public struct MetricValue: Equatable, Sendable {
         self.points = points
         self.max = max
         self.rows = rows
-        self.tint = tint
         self.isHidden = isHidden
     }
 
@@ -81,8 +78,7 @@ public struct MetricValue: Equatable, Sendable {
             value: data.value,
             points: data.points,
             max: block.number("max"),
-            rows: rows.isEmpty ? nil : rows,
-            tint: block.value("tint").flatMap(MetricTint.init)
+            rows: rows.isEmpty ? nil : rows
         )
     }
 

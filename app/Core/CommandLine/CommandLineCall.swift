@@ -22,7 +22,6 @@ public enum CommandLineCall: Equatable, Sendable {
     /// Draws the card of the output on stdin at a size, from its drawing for that size.
     case renderCard(SpotSize, String)
     case sandbox(String?)
-    case catalog
     case colorPick
     case folderPick
     /// Prints the value of a spot's setting, or nothing when it has none (K6).
@@ -87,7 +86,6 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot render --spot <id> [--card <size>] <file.png>
                                                  Draws the sheet of an installed spot, or its card at a size.
     openspot sandbox [file]                      Opens a window to try a sheet from text, a file or a script.
-    openspot catalog                             Prints each part that a script can print.
     openspot color pick                          Prints the colour the person picks.
     openspot folder pick                         Prints the folder the person picks, or nothing after Cancel.
     openspot setting get [--spot id] <key>       Prints the value the person chose for the spot, or nothing.
@@ -170,7 +168,6 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("render", "--spot") where rest.count == 5 && rest[2] == "--card":
             guard let size = SpotSize(name: rest[3]) else { self = .unknown(arguments.joined(separator: " ")); return }
             self = .renderSpot(id: rest[1], size: size, path: rest[4])
-        case ("catalog", nil): self = .catalog
         case ("sandbox", _) where rest.count <= 1: self = .sandbox(rest.first)
         case ("render", "--card") where rest.count == 3:
             guard let size = SpotSize(name: rest[1]) else { self = .unknown(arguments.joined(separator: " ")); return }
