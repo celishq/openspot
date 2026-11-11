@@ -39,7 +39,7 @@ public enum SpotSource: Equatable, Sendable {
 
     /// Puts the spot in the folder, a git source at `commit` or else at its newest commit, and returns the commit and the
     /// paths that it took: the folder of a git source or a folder, and each file of a `.spot` file, of which an equal one
-    /// stays as it is. A path that is there already is a fault, unless `replacing` names it:
+    /// stays as it is. A replaced folder that holds files of the new spot keeps its other files, and only those files go. A path that is there already is a fault, unless `replacing` names it:
     /// then `discard` takes each replaced path, and each one the new version lacks, as the Trash does. `check` sees the whole
     /// spot in a work folder first, and a throw from it, as any fault or a stop of the task, leaves the folder as it was.
     func add(
@@ -56,7 +56,9 @@ public enum SpotSource: Equatable, Sendable {
         try check(work, paths)
         try Task.checkCancellation()
         let kept = paths.filter { Self.isSame(work.appendingPathComponent($0), folder.appendingPathComponent($0)) }
-        for path in replacing where !kept.contains(path) && FileManager.default.fileExists(atPath: folder.appendingPathComponent(path).path) {
+        let wholes = replacing.filter { old in !paths.contains { $0.hasPrefix(old + "/") } }
+        let parts = paths.filter { path in replacing.contains { path.hasPrefix($0 + "/") } }
+        for path in wholes + parts where !kept.contains(path) && FileManager.default.fileExists(atPath: folder.appendingPathComponent(path).path) {
             try discard(folder.appendingPathComponent(path))
         }
         for path in paths where !kept.contains(path) {
@@ -93,7 +95,8 @@ public enum SpotSource: Equatable, Sendable {
             let spot = try SharedSpot(contentsOf: url)
             let paths = spot.files.map(\.path)
             try spot.add(to: work)
-            try Self.checkFree(paths.filter { !Self.isSame(work.appendingPathComponent($0), folder.appendingPathComponent($0)) }, in: folder, replacing: replacing)
+            let changed = paths.filter { !Self.isSame(work.appendingPathComponent($0), folder.appendingPathComponent($0)) }
+            try Self.checkFree(changed.filter { path in !replacing.contains { path.hasPrefix($0 + "/") } }, in: folder, replacing: replacing)
             return (nil, paths)
         }
     }

@@ -666,6 +666,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           if [ -z "$line" ] && [ -n "$call" ]; then
             if [ -n "$first" ] && [ -f '\(path("slow"))' ]; then end=$(($(date +%s) + 5)); while [ "$(date +%s)" -lt "$end" ]; do :; done; fi
             printf 'end=%s\\n\\ntext=t\\ntitle=%s\\n---\\n' "$call" "$call"
+            echo "$call" >> '\(path("answered"))'
           fi
         done
         """)
@@ -705,6 +706,28 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the second failure") { told().count == 2 }
         try await wait("a new process") { self.log("pids").count == 2 }
         try await wait("the answer of the new process") { sheet.reading.value?.title == "4" }
+    }
+
+    func testAReadInTimeBetweenTwoSlowReadsKeepsTheStayingScript() async throws {
+        let (sheet, told) = try slowStaying()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the first answer") { sheet.reading.value?.title == "1" }
+        FileManager.default.createFile(atPath: path("slow"), contents: Data())
+        sheet.read(need: .change)
+        try await wait("the first failure") { told().count == 1 }
+        try FileManager.default.removeItem(atPath: path("slow"))
+        try await wait("the late answer of the slow read") { self.log("answered").contains("2") }
+        sheet.read(need: .change)
+        try await wait("the answer in time") { sheet.reading.value?.title == "3" }
+        FileManager.default.createFile(atPath: path("slow"), contents: Data())
+
+        sheet.read(need: .change)
+
+        try await wait("the second failure") { told().count == 2 }
+        try await wait("the late answer from the same process") { self.log("answered").contains("4") || self.log("pids").count > 1 }
+        try await wait("the late answer from the same process") { self.log("answered").contains("4") }
+        XCTAssertEqual(log("pids").count, 1)
     }
 
     func testTheFirstPartsOfAStayingScriptArriveThroughTheArrival() async throws {

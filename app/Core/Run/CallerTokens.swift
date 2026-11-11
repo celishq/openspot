@@ -32,7 +32,15 @@ public final class CallerTokens: @unchecked Sendable {
     private var groups: [pid_t: String] = [:]
     private var careful = false
 
-    public init() {}
+    /// The token that stands for a process in a sandbox that no spot's group or token names, while Careful mode is on.
+    private static let sandboxed = "sandboxed"
+    /// `sandbox_check`, which the system exports with no public header, and which says whether a process runs in a sandbox.
+    private static let sandboxCheck: (@convention(c) (pid_t, UnsafePointer<CChar>?, Int32) -> Int32)? =
+        dlsym(UnsafeMutableRawPointer(bitPattern: -2), "sandbox_check").map { unsafeBitCast($0, to: (@convention(c) (pid_t, UnsafePointer<CChar>?, Int32) -> Int32).self) }
+
+    public init() {
+        records[Self.sandboxed] = Record(caller: Caller(id: "", name: "A sandboxed process", uses: []))
+    }
 
     /// A new random token that stands for the spot until its release, with the reason of its call.
     func issue(for spot: Spot, reason: String? = nil) -> String {
@@ -87,7 +95,8 @@ public final class CallerTokens: @unchecked Sendable {
     }
 
     /// The environment of a call from a process: with the token, the ID and the reason of the spot whose group holds the
-    /// process, or as it is for a process of no known group, whose token alone can name its spot.
+    /// process, or as it is for a process of no known group, whose token alone can name its spot. In Careful mode, a process
+    /// in a sandbox that neither names is a caller with no use, such as a spot's child that left its group.
     public func environment(of peer: pid_t, over environment: [String: String]) -> [String: String] {
         let group = getpgid(peer)
         guard group > 0 else { return environment }
@@ -99,7 +108,10 @@ public final class CallerTokens: @unchecked Sendable {
             }
             return (token, record)
         }
-        guard let (token, record) = known else { return environment }
+        guard let (token, record) = known else {
+            guard isCareful, caller(of: environment) == nil, Self.sandboxCheck?(peer, nil, 0) == 1 else { return environment }
+            return environment.merging([Self.variable: Self.sandboxed]) { _, new in new }
+        }
         var environment = environment
         environment[Self.variable] = token
         environment["OPENSPOT_ID"] = record.caller.id

@@ -111,6 +111,15 @@ final class SpotEventsTests: SpotRunsCase {
         try await wait("the read of the unwanted spot") { self.log("unwanted") == ["read"] }
     }
 
+    func testAFailedReadOfAnEventForEachSpotIsTold() async throws {
+        try script("unwanted", header: "on=app.update", log: "unwanted", "echo 'No news.' >&2\nexit 1")
+        let (_, told) = try toldSheet()
+
+        runs.raise(.named("app.update", value: "2.0", readsEachSpot: true))
+
+        try await wait("the failure") { told() == ["No news."] }
+    }
+
     func testASpotThatWaitsForEventsReadsOnceAsItBecomesWanted() async throws {
         try script(header: "on=screen.wake", "\(reasons)\nprintf 'text=t\\ntitle=T\\n'")
         _ = try scanned()

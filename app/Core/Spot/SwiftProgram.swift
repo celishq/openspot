@@ -13,6 +13,8 @@ public struct SwiftProgram: Sendable {
     /// The programs that build now, or that failed to build in this run of the app.
     private static let lock = NSLock()
     nonisolated(unsafe) private static var started: Set<String> = []
+    /// The hash of each source by its path, with the stamp of the file it was read from.
+    nonisolated(unsafe) private static var hashes: [String: (stamp: [Int], hash: String)] = [:]
     /// The first bytes of a program for one kind of Mac, and of a universal one.
     private static let magics: Set<[UInt8]> = [[0xcf, 0xfa, 0xed, 0xfe], [0xca, 0xfe, 0xba, 0xbe]]
 
@@ -31,15 +33,26 @@ public struct SwiftProgram: Sendable {
     /// itself. With `builds`, a Swift source with no whole program in the cache starts its build, and runs itself meanwhile.
     func runnable(for script: URL, builds: Bool = true) -> URL {
         if let program = Self.file(beside: script) { return program }
-        guard script.pathExtension == Self.sourceExtension, let source = try? Data(contentsOf: script) else { return script }
-        let name = SHA256.hash(data: source).map { String(format: "%02x", $0) }.joined()
+        guard script.pathExtension == Self.sourceExtension, let name = Self.hash(of: script) else { return script }
         let program = cache.appendingPathComponent(name)
         if Self.isWhole(program) { return program }
         guard builds, Self.lock.withLock({ Self.started.insert(program.path).inserted }) else { return script }
         Task.detached(priority: .utility) { [self] in
-            if (try? await cached(source, at: program)) != nil { Self.lock.withLock { _ = Self.started.remove(program.path) } }
+            if let source = try? Data(contentsOf: script), (try? await cached(source, at: program)) != nil { Self.lock.withLock { _ = Self.started.remove(program.path) } }
         }
         return script
+    }
+
+    /// The SHA-256 of a source, read again only when its size, its file number or its date of change moved.
+    private static func hash(of script: URL) -> String? {
+        var info = stat()
+        guard stat(script.path, &info) == 0 else { return nil }
+        let stamp = [Int(info.st_size), Int(info.st_ino), info.st_mtimespec.tv_sec, info.st_mtimespec.tv_nsec]
+        if let known = lock.withLock({ hashes[script.path] }), known.stamp == stamp { return known.hash }
+        guard let source = try? Data(contentsOf: script) else { return nil }
+        let hash = SHA256.hash(data: source).map { String(format: "%02x", $0) }.joined()
+        lock.withLock { hashes[script.path] = (stamp, hash) }
+        return hash
     }
 
     /// Whether a file is an executable program, which a build cut short or a stray write is not.
@@ -49,10 +62,11 @@ public struct SwiftProgram: Sendable {
         return (try? handle.read(upToCount: 4)).map { magics.contains(Array($0)) } ?? false
     }
 
-    /// Builds a source for this Mac into a work file, and puts it at its place in the cache over any file there.
+    /// Builds a source for this Mac in a work folder of the temp folder, and puts it at its place in the cache over any file
+    /// there.
     private func cached(_ source: Data, at program: URL) async throws {
         try FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
-        let work = cache.appendingPathComponent(".build-\(UUID().uuidString)", isDirectory: true)
+        let work = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-swift-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: work) }
         let file = work.appendingPathComponent("main.swift")
@@ -60,7 +74,12 @@ public struct SwiftProgram: Sendable {
         let built = work.appendingPathComponent("program")
         _ = try await ScriptProcess.output(url: tool("swiftc"), arguments: ["-O", "-module-name", "Spot", file.path, "-o", built.path])
         guard Self.isWhole(built) else { throw SpotError.fault("swiftc wrote no program.") }
-        guard rename(built.path, program.path) == 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
+        let placed = cache.appendingPathComponent(".\(program.lastPathComponent)-\(UUID().uuidString)")
+        try FileManager.default.moveItem(at: built, to: placed)
+        guard rename(placed.path, program.path) == 0 else {
+            try? FileManager.default.removeItem(at: placed)
+            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
     }
 
     /// Whether a file of this name is a compiled program, which only its source runs.

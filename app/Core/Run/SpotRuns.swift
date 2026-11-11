@@ -26,12 +26,12 @@ public final class SpotRuns {
     /// What each spot cost and used, day by day (G1, Z10).
     public nonisolated let usage: SpotUsage
     /// Whether each process of a spot runs in Careful mode, with only what its uses name (Z8). A change starts each staying
-    /// script again in the new mode.
+    /// script again in the new mode, and each inline script at its next call.
     @ObservationIgnored public var isCareful = false {
         didSet {
             tokens.isCareful = isCareful
             guard isCareful != oldValue else { return }
-            sheets.values.forEach { $0.restartStaying() }
+            sheets.values.forEach { $0.restartScript() }
         }
     }
     /// The token of each process and inline link that runs, by which the API knows a spot's call (Z2).

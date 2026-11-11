@@ -287,10 +287,16 @@ public final class SpotUsage: @unchecked Sendable {
     }
 }
 
+/// The keys of a day file of an older form, which named a call that needs a use a power.
+private enum OlderKeys: String, CodingKey {
+    case uses, powers
+}
+
 extension SpotUsage.Count {
-    /// Reads a count, with each key that a file of an older form lacks at its default.
+    /// Reads a count, with each key that a file of an older form lacks at its default, and its calls under their older key.
     public init(from decoder: any Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
+        let older = try decoder.container(keyedBy: OlderKeys.self)
         name = try values.decodeIfPresent(String.self, forKey: .name)
         runs = try values.decodeIfPresent(Int.self, forKey: .runs) ?? 0
         failures = try values.decodeIfPresent(Int.self, forKey: .failures) ?? 0
@@ -299,19 +305,20 @@ extension SpotUsage.Count {
         read = try values.decodeIfPresent(UInt64.self, forKey: .read) ?? 0
         written = try values.decodeIfPresent(UInt64.self, forKey: .written) ?? 0
         wakeups = try values.decodeIfPresent(UInt64.self, forKey: .wakeups) ?? 0
-        calls = try values.decodeIfPresent([String: Int].self, forKey: .calls) ?? [:]
+        calls = try values.decodeIfPresent([String: Int].self, forKey: .calls) ?? older.decodeIfPresent([String: Int].self, forKey: .uses) ?? [:]
         network = try values.decodeIfPresent(Bool.self, forKey: .network) ?? false
         fault = try values.decodeIfPresent(String.self, forKey: .fault)
     }
 }
 
 extension SpotUsage.Day {
-    /// Reads a day, with each key that a file of an older form lacks at its default.
+    /// Reads a day, with each key that a file of an older form lacks at its default, and its uses under their older key.
     public init(from decoder: any Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
+        let older = try decoder.container(keyedBy: OlderKeys.self)
         day = try values.decode(String.self, forKey: .day)
         spots = try values.decodeIfPresent([String: SpotUsage.Count].self, forKey: .spots) ?? [:]
-        uses = try values.decodeIfPresent([SpotUsage.Use].self, forKey: .uses) ?? []
+        uses = try values.decodeIfPresent([SpotUsage.Use].self, forKey: .uses) ?? older.decodeIfPresent([SpotUsage.Use].self, forKey: .powers) ?? []
         told = try values.decodeIfPresent([String].self, forKey: .told) ?? []
     }
 }

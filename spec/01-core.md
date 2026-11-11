@@ -264,9 +264,9 @@ head show on the spot only while the call runs. Openspot reads the codes `ESC ] 
 
 ## The life of a call
 
-- A `read` has 10 seconds until its first frame or its end. In a staying script, a read or a search has 10 seconds until
-  the frame that ends it: after that, the script gets `stop=<n>`, the call fails as a slow read, and its late answer
-  changes nothing. A second slow call starts the script again. Any other call has no time limit.
+- A `read` has 10 seconds until its first frame or its end. In a staying script, a read or a search after the first has 10
+  seconds until the frame that ends it: after that, the script gets `stop=<n>`, the call fails as a slow read, and its
+  late answer changes nothing. A second slow call with no call in time between starts the script again. Any other call has no time limit.
 - A new value for a block stops the older call of that block. A second press of a running call stops it: its process
   group gets the terminate signal, and then the kill signal. Quitting Openspot stops each call.
 - A call ends when its output closes. A stopped call changes nothing.
@@ -666,7 +666,8 @@ Careful mode is a setting of the person, off by default, which Settings and `ope
 and which `app status` shows as `careful` (Z8). No other spot can change it. It runs each process of a spot, and each
 process that an inline spot starts with `openspot.call`, under `sandbox-exec`: no network unless `uses=network`, writes
 only to its data folder, the temp folder, `/private/tmp`, `/dev` and the cache folder unless `uses=files`, also to the
-folder of screenshots, the Desktop and Movies with `uses=screen`, no Apple Event, and reads everywhere. A spot's call that
+folder of screenshots, the Desktop and Movies with `uses=screen`, no Apple Event, and reads everywhere. A process in a
+sandbox that is no spot's known process, such as a child that left its group, has no use. A spot's call that
 needs a use that its header does not name fails, such as ``Careful mode stopped Coffee, because it quit Openspot without
 `uses=app` in its header. Add it, or turn Careful mode off.`` A change of the mode starts each staying process again. An
 inline spot has no files and no network in either mode. Without Careful mode, the data folder alone is no boundary: a spot

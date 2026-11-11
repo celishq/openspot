@@ -135,10 +135,14 @@ final class CarefulModeTests: SpotRunsCase {
         defer { setenv("PATH", path, 1) }
         try "// mode=inline\n// read=sheet\nfunction main() { return `text=t\\ntitle=${openspot.call([\"color\", \"pick\"]).stdout.trim()}\\n` }\n"
             .write(to: folder.appendingPathComponent("script.js"), atomically: true, encoding: .utf8)
+        let sheet = try sheet()
+        let before = try await result(of: sheet)
+        XCTAssertEqual(before, "files", "the helper ran as the person")
+        try FileManager.default.removeItem(at: outside.appendingPathComponent("written"))
+
         runs.isCareful = true
+        sheet.read(need: .change)
 
-        let result = try await result(of: try sheet())
-
-        XCTAssertEqual(result, "kept")
+        try await wait("the read in Careful mode") { sheet.reading.value?.title == "kept" }
     }
 }

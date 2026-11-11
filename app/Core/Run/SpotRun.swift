@@ -276,9 +276,10 @@ public final class SpotRun {
         if new.headerState != header { takeState(lastAnswer) }
     }
 
-    /// Ends a staying script that runs, so that it starts again with the mode of the runs while something wants it (Z8).
-    func restartStaying() {
-        guard spot.mode.stays, link.isReachable else { return }
+    /// Ends a staying script that runs, so that it starts again with the mode of the runs while something wants it, and
+    /// lets an inline script load again at its next call (Z8).
+    func restartScript() {
+        guard spot.mode.stays || spot.mode == .inline, link.isReachable else { return }
         link.end()
         link.settle()
     }

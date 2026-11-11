@@ -89,11 +89,11 @@ extension SpotRuns {
         sheets.values.forEach { $0.settleScript() }
     }
 
-    /// Reads each wanted script that lists the event, or with `readsEachSpot` each one, at once and with no young answer, as
-    /// the clock does (B1, B5).
+    /// Reads each wanted script that lists the event at once and with no young answer, as the clock does (B1, B5). With
+    /// `readsEachSpot` it reads each one as a change does, which tells its failure.
     private func read(_ name: String, _ value: String?, readsEachSpot: Bool) {
         for sheet in sheets.values where (readsEachSpot || sheet.isWanted) && sheet.spot.read?.has(.event(name)) == true {
-            sheet.read(need: .clock, reason: ReadReason(event: name, value: value))
+            sheet.read(need: readsEachSpot ? .change : .clock, reason: ReadReason(event: name, value: value))
         }
     }
 

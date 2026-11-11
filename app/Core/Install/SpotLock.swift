@@ -26,8 +26,8 @@ public struct SpotLock: Equatable, Sendable {
         /// Whether a spot of this ID came from this entry: a script at the top of the folder, or any script in its folder.
         func holds(_ id: String) -> Bool {
             paths.contains { path in
-                id == path || id == (path as NSString).deletingPathExtension || id == URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
-                    || id.hasPrefix(path + "/")
+                id == path || id == (path as NSString).deletingPathExtension || id.hasPrefix(path + "/")
+                    || (!path.contains("/") && id == URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent)
             }
         }
 
@@ -93,8 +93,15 @@ public struct SpotLock: Equatable, Sendable {
                     throw SpotError.fault("The file changed after you looked at it, so Openspot added nothing. Open it again to see it.")
                 }
                 let new = try Self.facts(of: paths, in: work)
-                if old == nil, !isConfirmed, let review = try? ReviewSpot(spot: SharedSpot(paths: paths, in: work), folder: folder), !review.trust.isEmpty {
-                    throw SpotError.fault("\(review.name)\n\n\(review.trust)Openspot added nothing. Run `openspot spot add \(source.text) --yes` to add it.")
+                if old == nil, !isConfirmed {
+                    let confirm = "Openspot added nothing. Run `openspot spot add \(source.text) --yes` to add it."
+                    let review: ReviewSpot
+                    do {
+                        review = try ReviewSpot(spot: SharedSpot(paths: paths, in: work), folder: folder)
+                    } catch {
+                        throw SpotError.fault("Openspot cannot review it: \((error as? SpotError)?.reason ?? error.localizedDescription)\n\(confirm)")
+                    }
+                    if !review.trust.isEmpty { throw SpotError.fault("\(review.name)\n\n\(review.trust)\(confirm)") }
                 }
                 if let old, !isConfirmed {
                     let before = old.uses == nil || old.canDo == nil ? try Self.facts(of: old.paths, in: folder) : nil
@@ -178,8 +185,13 @@ public struct SpotLock: Equatable, Sendable {
         let scan = try SpotFolder(url: folder).scan()
         let scripts = scan.scripts.filter { script in paths.contains { script.id == ($0 as NSString).deletingPathExtension || script.id.hasPrefix($0 + "/") } }
         let uses = SpotUse.allCases.filter { use in scripts.contains { $0.uses.contains(use) } }
-        let review = try? ReviewSpot(spot: SharedSpot(paths: paths, in: folder), folder: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-none", isDirectory: true))
-        return Facts(hash: hash.finalize().map { String(format: "%02x", $0) }.joined(), uses: uses, canDo: review?.canDo ?? [])
+        let canDo: [String]
+        do {
+            canDo = try ReviewSpot(spot: SharedSpot(paths: paths, in: folder), folder: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-none", isDirectory: true)).canDo
+        } catch {
+            canDo = ["Cannot review it: \((error as? SpotError)?.reason ?? error.localizedDescription)"]
+        }
+        return Facts(hash: hash.finalize().map { String(format: "%02x", $0) }.joined(), uses: uses, canDo: canDo)
     }
 
     /// Moves each path of the entry that holds this ID to the Trash, and drops the entry. A spot that `spot add` did not add

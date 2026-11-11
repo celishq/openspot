@@ -4,8 +4,8 @@ import Foundation
 /// time. A frame with a block is the whole picture, and the frame that ends the read or the search that runs is its answer
 /// (Y7). The frames after `call=<n>` are the output of that call, as the frames of a once script are (Y8). It runs while
 /// something wants it (Y3), and after 3 failures in one minute it starts again only when its file changes (Y5). A read or a
-/// search that the script does not end within the read limit stops, fails as a slow read, and its late answer changes
-/// nothing; a second such stop starts the script again.
+/// search after the first that the script does not end within the read limit stops, fails as a slow read, and its late
+/// answer changes nothing; a second such stop with no answer in time between starts the script again, as a failure.
 @MainActor
 final class StayLink: ScriptLink {
     private static let failureLimit = 3
@@ -20,8 +20,13 @@ final class StayLink: ScriptLink {
     private var token: String?
     /// Each read and search that the script has not ended yet, by its call number.
     private var asks: [Int: SpotRun.Ask] = [:] {
-        didSet { noteReason() }
+        didSet {
+            noteReason()
+            for id in timers.keys where asks[id] == nil { timers.removeValue(forKey: id)?.cancel() }
+        }
     }
+    /// The timer of each ask that waits, which a frame that ends the ask cancels.
+    private var timers: [Int: Task<Void, Never>] = [:]
     /// The reason of the newest read or search that was sent.
     private var askReason: String?
     /// The call numbers of searches and texts of the main search that a newer one stopped, whose late answers change nothing.
@@ -197,8 +202,9 @@ final class StayLink: ScriptLink {
         asks[id] = ask
         guard let script else { return }
         let limit = runs.readLimit
-        Task { [weak self] in
+        timers[id] = Task { [weak self, weak script] in
             try? await Task.sleep(for: .seconds(limit))
+            guard !Task.isCancelled, let script else { return }
             self?.timeOut(id, of: script)
         }
     }
@@ -221,6 +227,7 @@ final class StayLink: ScriptLink {
         run?.askFailed(ask, SpotError.timedOut)
         guard slowAsks >= Self.slowLimit else { return }
         end()
+        failed(SpotError.timedOut, telling: false)
         settle()
     }
 
@@ -288,6 +295,7 @@ final class StayLink: ScriptLink {
                 if let start = lines.start.flatMap(Int.init) { current = start }
                 defer { if let current, ends.contains(current) { self.current = nil } }
                 if let id = ends.first(where: { asks[$0] != nil }), let ask = asks.removeValue(forKey: id) {
+                    slowAsks = 0
                     if lines.isPicture || !pictured.contains(id) {
                         await run.takeAnswer(lines, frame: text, to: ask)
                     } else {
@@ -332,13 +340,14 @@ final class StayLink: ScriptLink {
         }
     }
 
-    /// Counts a failure. It tells the person each one, and the third in one minute stops new starts (Y5).
-    private func failed(_ error: Error) {
+    /// Counts a failure. It tells the person each one that `telling` allows, and the third in one minute stops new starts
+    /// (Y5).
+    private func failed(_ error: Error, telling: Bool = true) {
         guard let run else { return }
         let time = runs.now()
         runs.usage.failedRun(run.spot, at: time)
         failures = failures.filter { time.timeIntervalSince($0) < Self.failureWindow } + [time]
-        guard failures.count >= Self.failureLimit else { return run.fail(error) }
+        guard failures.count >= Self.failureLimit else { return telling ? run.fail(error) : () }
         givenUp = .some(fileDate)
         let text = "\(run.spot.name) failed \(Self.failureLimit) times in one minute. Openspot will not start it again until its file changes."
         runs.usage.failed(run.spot, fault: text, at: time)

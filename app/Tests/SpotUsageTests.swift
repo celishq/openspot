@@ -214,13 +214,15 @@ final class SpotUsageTests: SpotRunsCase {
 
     func testADayFileOfAnOlderFormKeepsItsCounts() throws {
         try FileManager.default.createDirectory(at: stats, withIntermediateDirectories: true)
-        try #"{"day":"2026-11-11","powers":[],"spots":{"a":{"cpu":1.5,"failures":0,"network":false,"read":0,"runs":3,"seconds":1,"uses":{"screen.shot":2},"wakeups":0,"written":0}},"told":[]}"#
+        try #"{"day":"2026-11-11","powers":[{"call":"screen.shot","declared":true,"spot":"a","time":"2026-11-11T10:00:00Z"}],"spots":{"a":{"cpu":1.5,"failures":0,"network":false,"read":0,"runs":3,"seconds":1,"uses":{"screen.shot":2},"wakeups":0,"written":0}},"told":[]}"#
             .write(to: stats.appendingPathComponent("2026-11-11.json"), atomically: true, encoding: .utf8)
 
         let usage = SpotUsage(folder: stats, at: day, pause: 60)
 
         XCTAssertEqual(usage.counts["a"]?.runs, 3)
         XCTAssertEqual(usage.counts["a"]?.cpu, 1.5)
+        XCTAssertEqual(usage.counts["a"]?.calls, ["screen.shot": 2])
+        XCTAssertEqual(usage.days(1, at: day).first?.uses.map(\.call), ["screen.shot"])
     }
 
     func testTheDaysSumAndOneSpotCanBeKept() throws {
