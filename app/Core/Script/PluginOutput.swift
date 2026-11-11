@@ -69,6 +69,11 @@ public struct PluginOutput: Equatable, Sendable {
         key == "row" || key == repeatKind || key == optionKind || retiredKinds.contains(key) || SpotPart.kinds.contains(key)
     }
 
+    /// The pictures on the web that its blocks name, which a render fetches before it draws.
+    public var webPictures: [String] {
+        blocks.flatMap { [$0] + $0.children }.compactMap { $0.value("icon") }.filter(WebPictures.isWeb)
+    }
+
     /// Folds the `option` blocks right after a choice into it. An option with no choice before it stays, and is reported.
     private static func grouping(_ blocks: [TextBlock]) -> [TextBlock] {
         var grouped: [TextBlock] = []

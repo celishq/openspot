@@ -95,6 +95,14 @@ final class PluginHeaderTests: XCTestCase {
         XCTAssertEqual(spot.view, "/plugins/home/cups.swift")
     }
 
+    func testAHeaderPictureOnTheWebKeepsItsURL() throws {
+        let header = PluginHeader(text: "#!/bin/sh\n# icon=https://example.com/cups.png\n").block
+
+        let spot = try XCTUnwrap(try Plugin(script: URL(fileURLWithPath: "/plugins/home/cups.sh"), header: header, id: "home/cups").commands.first)
+
+        XCTAssertEqual(spot.icon, .image("https://example.com/cups.png"))
+    }
+
     func testAViewThatIsNoSwiftFileIsRefused() {
         let header = PluginHeader(text: "#!/bin/sh\n# title=Cups\n# view=cups.txt\n").block
 

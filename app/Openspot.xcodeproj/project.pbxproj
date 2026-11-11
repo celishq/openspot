@@ -136,6 +136,7 @@
 		57F4C983F926CD8DB5DEF569 /* SwiftProgramTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D880CE78C17279A773F315C7 /* SwiftProgramTests.swift */; };
 		588F35D7533A33CE2F8AA40A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 5D46E63C968896AC610529D8 /* Sparkle */; };
 		5CF04DBE423BD492B3009DFD /* SpotRuns+Clock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00AFB548878A378AC3FC3904 /* SpotRuns+Clock.swift */; };
+		5D3211CD74922CFB71119F05 /* WebPicturesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D88281ECA8907B0A5F708B0 /* WebPicturesTests.swift */; };
 		5D8A80E9F7685D375860E11D /* Spot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FA8009A9A17D22296C068AE /* Spot.swift */; };
 		5F5088AAC216D2195A19EC65 /* Reminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56D434310F89086FEC10833 /* Reminder.swift */; };
 		632932B0C674B0386A896951 /* RepeatDrawing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8907E98F00C0A89599F148E6 /* RepeatDrawing.swift */; };
@@ -372,6 +373,7 @@
 		EE028419E9629C6AEF4E1986 /* SpotPlacementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 318EF34C019A7228CFC97E67 /* SpotPlacementTests.swift */; };
 		EE3D1EC910670C2F2294F419 /* SharedSpotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA00FCD0964900924989734 /* SharedSpotTests.swift */; };
 		EE4C023E9E7E9F9FFFB3A7F5 /* FilesOutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFA79A70AAB0FAA5BF6E22F3 /* FilesOutTests.swift */; };
+		EEFBF73A2822550481590F70 /* WebPictures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 707C10DDC002262A1C0850BD /* WebPictures.swift */; };
 		EF393DA11A14F1D9138F4A71 /* ScrollWindowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDB7CA4DF0E0220924943676 /* ScrollWindowTests.swift */; };
 		EF519994E70B2D7EE1C77D75 /* SpotFolderWatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = A916C9C5FF3AFD12240E93F9 /* SpotFolderWatch.swift */; };
 		EF7545C360042BFA78773A83 /* EventStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E752A90DA65B5DF7A5315AF1 /* EventStore.swift */; };
@@ -572,6 +574,7 @@
 		6F93916DDD4E4ED935810BFC /* SpotHintLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotHintLine.swift; sourceTree = "<group>"; };
 		6FA8009A9A17D22296C068AE /* Spot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spot.swift; sourceTree = "<group>"; };
 		70703B1BFAD84794E4BDC0F9 /* SpotGridTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotGridTests.swift; sourceTree = "<group>"; };
+		707C10DDC002262A1C0850BD /* WebPictures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebPictures.swift; sourceTree = "<group>"; };
 		70A41B43814742034E568CF4 /* SpotRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotRing.swift; sourceTree = "<group>"; };
 		712611AA6131BCF6BEF84A88 /* Capability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Capability.swift; sourceTree = "<group>"; };
 		7164C83353CE9C48A4E9329E /* CommandAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandAction.swift; sourceTree = "<group>"; };
@@ -647,6 +650,7 @@
 		9C462005019A07CDCB802C03 /* LanguageCodes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageCodes.swift; sourceTree = "<group>"; };
 		9CD6B476248666E82D089A11 /* SpotShakeWatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotShakeWatch.swift; sourceTree = "<group>"; };
 		9CEECBE98988EBFFB54496A0 /* LinksPluginTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinksPluginTests.swift; sourceTree = "<group>"; };
+		9D88281ECA8907B0A5F708B0 /* WebPicturesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebPicturesTests.swift; sourceTree = "<group>"; };
 		9E2BBBB5CFD3D9C12B7A7857 /* PartCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PartCatalog.swift; sourceTree = "<group>"; };
 		9E425E0AA75F091617B3AA67 /* SpotsModel+Verbs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Verbs.swift"; sourceTree = "<group>"; };
 		9FA2E6CC7436778D0F50D325 /* SpotToneDot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotToneDot.swift; sourceTree = "<group>"; };
@@ -915,6 +919,7 @@
 				6D966C009208F239C65FE779 /* SheetFrameReader.swift */,
 				E6AD21E62E3935AAA7245C95 /* SpotAction.swift */,
 				8FB9239E84C07B0125DB7DE6 /* TextBlock.swift */,
+				707C10DDC002262A1C0850BD /* WebPictures.swift */,
 			);
 			path = Script;
 			sourceTree = "<group>";
@@ -1175,6 +1180,7 @@
 				4C8871F0DEA0292B7C5FCC70 /* TrayMarkTests.swift */,
 				B25CD98CC5588AFF0409B9BF /* UpdateSpotTests.swift */,
 				8212EFF0E6981177B955332C /* ViewLibraryTests.swift */,
+				9D88281ECA8907B0A5F708B0 /* WebPicturesTests.swift */,
 				A4012FD215365D288F1795BF /* WidgetContractTests.swift */,
 				7E72E8505BE81F5754E18EE4 /* WindowMoveTests.swift */,
 			);
@@ -1941,6 +1947,7 @@
 				C525744A6A8CBD437CB370C0 /* Trigger.swift in Sources */,
 				009A6FB82516AC3C5042B23F /* UpdateSpot.swift in Sources */,
 				0D342E9009880BDDBBB53ADD /* ViewLibrary.swift in Sources */,
+				EEFBF73A2822550481590F70 /* WebPictures.swift in Sources */,
 				168369EC270DEE5510DCAEA7 /* WidgetLayout.swift in Sources */,
 				88D4ACC719FF078293329240 /* WindowMove.swift in Sources */,
 			);
@@ -2184,6 +2191,7 @@
 				A67FB54C403612762B1C5185 /* TrayMarkTests.swift in Sources */,
 				34E7E6F8F0C4E12F5D459468 /* UpdateSpotTests.swift in Sources */,
 				70AE36CF167ECD5985F9714C /* ViewLibraryTests.swift in Sources */,
+				5D3211CD74922CFB71119F05 /* WebPicturesTests.swift in Sources */,
 				CFE9BE7D1CDECFAA81B2707A /* WidgetContractTests.swift in Sources */,
 				80C922DE277B506BCF779D36 /* WindowMoveTests.swift in Sources */,
 			);

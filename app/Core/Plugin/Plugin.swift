@@ -138,9 +138,9 @@ public struct Plugin: Equatable, Sendable {
         throw PluginError.fault("\(name) has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots")
     }
 
-    /// A path that the header names: a full path stays, and any other starts at the folder of the script.
+    /// A path that the header names: a full path or an https URL stays, and any other starts at the folder of the script.
     private static func path(_ text: String, beside url: URL) -> String {
-        text.hasPrefix("/") ? text : url.deletingLastPathComponent().appendingPathComponent(text).path
+        text.hasPrefix("/") || WebPictures.isWeb(text) ? text : url.deletingLastPathComponent().appendingPathComponent(text).path
     }
 
     /// The name a file gives when it has no `name` line: its words with a capital first letter.

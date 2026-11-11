@@ -9,6 +9,7 @@ final class IconTests: XCTestCase {
         XCTAssertEqual(Icon(text: "~/Notes"), .file("~/Notes"))
         XCTAssertEqual(Icon(text: "/tmp/photo.JPG"), .image("/tmp/photo.JPG"))
         XCTAssertEqual(Icon(text: "cups.png"), .image("cups.png"))
+        XCTAssertEqual(Icon(text: "https://avatars.example.com/u/1?s=64"), .image("https://avatars.example.com/u/1?s=64"))
         XCTAssertEqual(Icon(text: "😀"), .glyph("😀"))
         XCTAssertEqual(Icon(text: "→"), .glyph("→"))
         XCTAssertEqual(Icon(text: "A"), .glyph("A"))

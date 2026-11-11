@@ -249,8 +249,9 @@ when it changes. Ids are unique in one output. Each kind keeps its data in `valu
 | `row`     | One item of a list (see Rows).                          | the keys of Rows                                                | `open <id>`            |
 
 Each kind also takes `title`, `detail`, `tone` and `icon`. The value of `icon` says what the picture is: a path
-of a picture file, such as `cups.png`, draws the picture; any other path draws the file's Finder icon; a name of lowercase
-letters, digits and dots, such as `wifi`, is an SF Symbol; and any other text, such as `😀`, is drawn as it is. `tone` is
+of a picture file, such as `cups.png`, draws the picture; an `https://` URL draws a picture on the web, which Openspot
+fetches the first time it draws it and keeps; any other path draws the file's Finder icon; a name of lowercase letters,
+digits and dots, such as `wifi`, is an SF Symbol; and any other text, such as `😀`, is drawn as it is. `tone` is
 `good`, `warn` or `bad`, a colour that means something. On a
 text, `good`, `warn` and `bad` colour its detail, or its title when it has no detail, such as a `Late` in red. On a text or
 a number, `color=#RRGGBB` draws a thin bar of that colour at its leading edge, such as the colour of a calendar. `look` is
@@ -520,6 +521,7 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | A form is the same call twice, so each call has one shape.                                                  | A `form` word.                               |
 | One `main=` names what stands for a spot, so moving a block changes nothing.                                | The first `text`, `gauge` or `switch` of the output, and a `grid.tray` drawing. |
 | One `icon` key, whose value says what the picture is.                                                       | `symbol`, `file`, `image` and `glyph`.       |
+| A picture on the web is an `icon` URL, which Openspot fetches once and keeps.                               | A script that downloads each picture into `OPENSPOT_DATA`. |
 | A look only draws a box, and a kind or a drawing says the rest.                                             | `look=large`, `look=list` and `look=section`. |
 | A complex view is a `view` of the plugin in an area, so the text language stays small.                      | More words for each new look.                |
 | A widget of several metrics is a TOML file, which a person writes by hand.                                  | A `spot` block in a script's output.         |
