@@ -1,6 +1,7 @@
 import OpenspotCore
 import AppKit
 import QuartzCore
+import ScreenCaptureKit
 
 /// A run that opens and closes the sheet of one spot again and again, or with `OPENSPOT_ACTION` moves down its rows, types
 /// in its search, picks the row `OPENSPOT_ROW`, types `OPENSPOT_TEXT` in the main search, opens the panel itself after
@@ -73,6 +74,7 @@ final class SpotMotionProbe: NSObject {
         if action == "search" { return beginSearch() }
         if action == "drag" || action == "mouse" { return beginDrag() }
         if action == "edit" { return beginEdit() }
+        if action == "jump" { return beginJump() }
         if action == "tile" {
             model.beginEditing()
             return DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.pullTile() }
@@ -94,6 +96,22 @@ final class SpotMotionProbe: NSObject {
             case "pick": self.pick()
             default: self.arrow(left: self.presses)
             }
+        }
+    }
+
+    /// Starts Edit Spots under a capture of the display that holds only the panel's window, and writes how far the search
+    /// field's row lies on the screen from where it lay before, in pixels, for each frame of the next second.
+    private func beginJump() {
+        Task { @MainActor in
+            guard let watch = await SpotJumpWatch(panel: panel, row: SpotTokens.halo + SpotTokens.rowHeight / 2) else {
+                return finish(with: "no capture\n")
+            }
+            try? await Task.sleep(for: .milliseconds(500))
+            model.beginEditing()
+            try? await Task.sleep(for: .seconds(1))
+            let shifts = await watch.stop()
+            let worst = shifts.map(abs).max() ?? 0
+            finish(with: "worst shift \(worst) px in \(shifts.count) frames, contrast \(watch.contrast)\n" + shifts.map(String.init).joined(separator: " ") + "\n")
         }
     }
 
@@ -535,5 +553,72 @@ final class SpotMotionProbe: NSObject {
         link?.invalidate()
         FileManager.default.createFile(atPath: output, contents: Data(text.utf8))
         exit(0)
+    }
+}
+
+/// A capture of the display that holds only the panel's window. For each frame it finds how far one row of the panel lies
+/// from where it lay in the first frame.
+private final class SpotJumpWatch: NSObject, SCStreamOutput, @unchecked Sendable {
+    private let stream: SCStream
+    private let rowY: Int
+    private let lock = NSLock()
+    private var first: [Double]?
+    private var shifts: [Int] = []
+
+    @MainActor init?(panel: NSPanel, row: CGFloat) async {
+        guard let content = try? await SCShareableContent.current,
+              let window = content.windows.first(where: { $0.windowID == CGWindowID(panel.windowNumber) }),
+              let screen = panel.screen,
+              let display = content.displays.first(where: { $0.frame.width == screen.frame.width && $0.frame.height == screen.frame.height }) else { return nil }
+        let scale = screen.backingScaleFactor
+        let config = SCStreamConfiguration()
+        config.width = Int(screen.frame.width * scale)
+        config.height = Int(screen.frame.height * scale)
+        config.minimumFrameInterval = CMTime(value: 1, timescale: 240)
+        config.showsCursor = false
+        rowY = Int((screen.frame.maxY - panel.frame.maxY + row) * scale)
+        stream = SCStream(filter: SCContentFilter(display: display, including: [window]), configuration: config, delegate: nil)
+        super.init()
+        try? stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: DispatchQueue(label: "jump"))
+        do { try await stream.startCapture() } catch { return nil }
+    }
+
+    func stop() async -> [Int] {
+        try? await stream.stopCapture()
+        return lock.withLock { shifts }
+    }
+
+    /// The range of brightness along the first row, which is 0 when the capture holds nothing of the panel.
+    var contrast: Double {
+        lock.withLock { (first?.max() ?? 0) - (first?.min() ?? 0) }
+    }
+
+    func stream(_ stream: SCStream, didOutputSampleBuffer buffer: CMSampleBuffer, of type: SCStreamOutputType) {
+        guard let attachments = CMSampleBufferGetSampleAttachmentsArray(buffer, createIfNecessary: false) as? [[SCStreamFrameInfo: Any]],
+              (attachments.first?[.status] as? Int).flatMap(SCFrameStatus.init) == .complete,
+              let pixels = CMSampleBufferGetImageBuffer(buffer) else { return }
+        CVPixelBufferLockBaseAddress(pixels, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(pixels, .readOnly) }
+        guard let base = CVPixelBufferGetBaseAddress(pixels), rowY < CVPixelBufferGetHeight(pixels) else { return }
+        let width = CVPixelBufferGetWidth(pixels)
+        let line = base.advanced(by: rowY * CVPixelBufferGetBytesPerRow(pixels)).assumingMemoryBound(to: UInt8.self)
+        let row = (0..<width).map { x in Double(Int(line[4 * x]) + Int(line[4 * x + 1]) + Int(line[4 * x + 2])) / 765 }
+        lock.lock()
+        defer { lock.unlock() }
+        guard let first else { return self.first = row }
+        shifts.append(Self.shift(of: row, from: first))
+    }
+
+    /// The shift of a row against the first row, within 600 pixels, that makes the two most alike.
+    private static func shift(of row: [Double], from first: [Double]) -> Int {
+        let count = min(row.count, first.count)
+        func cost(_ shift: Int) -> Double {
+            stride(from: 0, to: count, by: 2).reduce(0) { sum, x in
+                let moved = x + shift
+                guard moved >= 0, moved < count else { return sum }
+                return sum + abs(row[moved] - first[x])
+            }
+        }
+        return stride(from: -600, through: 600, by: 1).min { cost($0) < cost($1) } ?? 0
     }
 }

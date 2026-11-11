@@ -104,7 +104,7 @@ final class SpotsPanel: NSPanel {
             place.dock = CGRect(x: dock.minX - whole.minX, y: whole.maxY - dock.maxY, width: dock.width, height: dock.height)
             place.isOut = false
             model.dockFrame = place.dock?.offsetBy(dx: -place.panel.x, dy: -place.panel.y)
-            setFrame(whole, display: true)
+            resize(to: whole)
             DispatchQueue.main.async { [weak self] in
                 guard let self, self.model?.isEditing == true else { return }
                 withAnimation(SpotMotion.edit) { self.place.isOut = true }
@@ -126,7 +126,18 @@ final class SpotsPanel: NSPanel {
         place.dock = nil
         place.panel = .zero
         model?.dockFrame = nil
-        setFrame(rest, display: true)
+        resize(to: rest)
+    }
+
+    /// Gives the window this frame and lays its content out at the new places in the same commit, so that no frame shows the
+    /// content at its old place in the new frame.
+    private func resize(to frame: NSRect) {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        setFrame(frame, display: false)
+        contentView?.layoutSubtreeIfNeeded()
+        displayIfNeeded()
+        CATransaction.commit()
     }
 
     /// Starts the close motion, and takes the panel off the screen when it ends. Then it runs the given work.
