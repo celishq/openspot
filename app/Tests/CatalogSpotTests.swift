@@ -222,6 +222,44 @@ final class CatalogSpotTests: BuiltInCase {
         XCTAssertEqual(rows.map(\.run), ["new", "apps", "zebra"])
     }
 
+    func testAddAsksForASourceAndIsTheFormThatASearchWithNoRowOpens() async throws {
+        let spot = try catalog
+        let actions = try await spot.items(timeout: 5).actions
+        let add = try XCTUnwrap(actions.first { $0.scope == .command && $0.isForm })
+
+        let form = try await spot.form(add, item: nil, timeout: 5)
+
+        XCTAssertEqual(add.id, "add")
+        XCTAssertEqual(add.title, "Add a spot")
+        XCTAssertEqual(form.fields.map(\.name), ["source"])
+    }
+
+    func testAddAddsASpotFromALocalGitRepositoryAndSaysSo() async throws {
+        let repo = try GitRepo(at: root.appendingPathComponent("sources/coffee"))
+        try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n"])
+        let spot = try catalog
+        let actions = try await spot.items(timeout: 5).actions
+        let add = try XCTUnwrap(actions.first { $0.id == "add" })
+
+        let toast = try await spot.perform(.action(add, item: nil), input: "source=\(repo.url.path)\n", timeout: 50)
+
+        XCTAssertEqual(toast?.hasPrefix("Added coffee at "), true, toast ?? "")
+        XCTAssertTrue(FileManager.default.isExecutableFile(atPath: plugins.appendingPathComponent("coffee/coffee.sh").path))
+    }
+
+    func testAddOfASourceThatIsGoneFailsWithItsReason() async throws {
+        let spot = try catalog
+        let actions = try await spot.items(timeout: 5).actions
+        let add = try XCTUnwrap(actions.first { $0.id == "add" })
+
+        do {
+            _ = try await spot.perform(.action(add, item: nil), input: "source=\(root.path)/gone\n", timeout: 50)
+            XCTFail("It added a spot from nothing.")
+        } catch {
+            XCTAssertEqual((error as? PluginError)?.reason, "Openspot cannot find \(root.path)/gone.")
+        }
+    }
+
     func testARowIsOnByItsValue() throws {
         let on = try XCTUnwrap(TextBlock.blocks(in: "row=apps\ntitle=Apps\nvalue=true\n").first)
         let old = try XCTUnwrap(TextBlock.blocks(in: "row=apps\ntitle=Apps\non=true\n").first)

@@ -18,6 +18,7 @@ case "$1" in
     printf '\nbutton=open\ntitle=Select\nclose=false\n'
     printf '\nbutton=select-all\ntitle=Select all\nshortcut=cmd+shift+a\nscope=command\n'
     printf '\nbutton=review\ntitle=Review code\n'
+    printf '\nbutton=add\ntitle=Add a spot\nform=true\nscope=command\n'
     printf '\nrow=new\ntitle=New spot\ndetail=Make your own with AI or a starter\nicon=plus\nhides=review\n'
     printf '%s' "$spots" | jq -r 'def esc: gsub("\\\\"; "\\\\") | gsub("\n"; "\\n");
       .[] | "\nrow=\(.id | esc)\ntitle=\(.name | esc)\nicon=\(.icon | esc)\n"
@@ -55,6 +56,15 @@ case "$1" in
     ;;
   review)
     [ -z "$2" ] || exec openspot spot review "$2"
+    ;;
+  add)
+    source=$(sed -n 's/^source=//p' | head -1 | sed 's/\\\\/\\/g')
+    if [ -z "$source" ]; then
+      printf 'title=Add a spot\n\nfield=source\ntitle=Source\nplaceholder=Git URL, folder or .spot file\nrequired=true\n'
+      exit 0
+    fi
+    added=$(openspot spot add "$source") || exit 1
+    printf 'toast=%s\n' "$added"
     ;;
   *)
     echo 'Spots cannot do that.' >&2
