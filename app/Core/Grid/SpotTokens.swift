@@ -28,8 +28,6 @@ public enum SpotTokens {
     public static let dockRows = 3
     /// Where the dock's first row of spots starts, under its title and its search.
     public static let dockRowsTop: CGFloat = padding + menuRowHeight + rowGap
-    /// How near the card's centre the pointer that resizes it keeps the angle it has.
-    public static let handleStill: CGFloat = 4
     /// How far from each edge the rim of a round corner passes through its diagonal, as a part of the radius.
     public static let rimPoint: CGFloat = 1 - 0.5.squareRoot()
     public static let listRowHeight: CGFloat = 40
@@ -81,15 +79,6 @@ public enum SpotTokens {
     /// How many columns of spots a dock this wide holds, two at least.
     public static func dockColumns(width: CGFloat) -> Int {
         max(Int((width - 2 * padding + columnGap) / (cell + columnGap)), 2)
-    }
-
-    /// The angle in whole degrees of the arrow at this point of a card's corner handle: the line from the card's centre to
-    /// the point. Nil within `handleStill` of the card's centre.
-    public static func handleAngle(of size: SpotSize, at point: CGPoint) -> Int? {
-        let dx = point.x - resizeHandle + width(columns: size.columns) / 2
-        let dy = point.y - resizeHandle + height(rows: size.rows) / 2
-        guard hypot(dx, dy) >= handleStill else { return nil }
-        return Int((atan2(dy, dx) * 180 / .pi).rounded())
     }
 
     /// The space between the edge of a card and what it shows. A 1x1 widget keeps more room for its one mark.
