@@ -59,11 +59,7 @@ public struct Spot: Equatable, Sendable {
     /// The values that it keeps with `openspot setting`, each with its title, which Settings lists.
     public let settings: [CommandOffer]
     /// The Settings rows of its own commands, which its sheet shows. Nil for a spot that draws its own sheet.
-    public private(set) var keyList: SettingsSpot?
-    /// Whether its own sheet changes the keys in the config file.
-    private let changesKeys: Bool
-    /// Whether the settings key of the Mac opens its sheet.
-    public let opensWithSettingsKey: Bool
+    public private(set) var keyList: KeyList?
     /// Whether it comes with the app as a part of it: always on, and never edited, removed or shared as a file of the
     /// person's.
     public private(set) var isBuiltIn = false
@@ -100,12 +96,8 @@ public struct Spot: Equatable, Sendable {
         file: String? = nil,
         image: String? = nil,
         glyph: String? = nil,
-        view: String? = nil,
-        setsKeys: Bool = false,
-        opensWithSettingsKey: Bool = false
+        view: String? = nil
     ) {
-        self.opensWithSettingsKey = opensWithSettingsKey
-        changesKeys = setsKeys
         self.id = id
         self.name = name
         self.url = url
@@ -160,13 +152,14 @@ public struct Spot: Equatable, Sendable {
         Icon(text: offers.first { $0.id == command }?.icon)?.symbol ?? symbol
     }
 
-    /// The same spot, which opens to the keys of its commands when it lists commands and has no read of its own.
-    func listingKeys(with settings: SettingsSpot) -> Spot {
+    /// The same spot, which opens to the keys of its commands in this config when it lists commands and has no read of its
+    /// own.
+    func listingKeys(in config: ConfigFile) -> Spot {
         guard !offers.isEmpty, read == nil, shipped == nil else { return self }
         var spot = self
         spot.kind = .list
         spot.read = .sheet
-        spot.keyList = settings.keys(of: id)
+        spot.keyList = KeyList(file: config, spot: id, offers: offers, picture: image ?? file ?? glyph ?? symbol)
         return spot
     }
 
@@ -191,9 +184,9 @@ public struct Spot: Equatable, Sendable {
         return spot
     }
 
-    /// Whether its sheet changes the keys in the config file.
+    /// Whether its sheet changes the keys in the config file: the sheet of the keys of its commands.
     public var setsKeys: Bool {
-        changesKeys || keyList != nil
+        keyList != nil
     }
 
     /// The state the header gives, shown before the command answers or when it cannot.

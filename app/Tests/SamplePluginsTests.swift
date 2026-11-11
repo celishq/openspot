@@ -96,7 +96,7 @@ final class SamplePluginsTests: SamplePluginsCase {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         try await withPrivateHome { folder in
-            try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
+            try "#!/bin/sh\ncase \"$1 $2\" in 'app status') echo '{}' ;; 'spot list'|'setting list') echo '[]' ;; esac\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
             let views = ViewLibrary(cache: folder.appendingPathComponent("views"))
             for name in ["plugins", "examples"] {
                 let faults = await PluginCheck(folder: PluginFolder(url: root.appendingPathComponent(name)), views: views).faults()

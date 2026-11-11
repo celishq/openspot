@@ -70,12 +70,11 @@ final class CoreSpotsTests: XCTestCase {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let config = Config(text: try String(contentsOf: repo.appendingPathComponent("app/defaults.toml"), encoding: .utf8))
         let plugins = try FileManager.default.contentsOfDirectory(atPath: repo.appendingPathComponent("plugins").path)
-        let shipped = ShippedSpot.commands(folder: repo, guide: repo, app: "").map(\.id)
         let app = try PluginFolder(url: folder, core: repo.appendingPathComponent("plugins")).scan().commands.filter(\.isBuiltIn).map(\.id)
 
         XCTAssertEqual(config.faults, [])
         for choice in config.arrangement.choices {
-            XCTAssertTrue(shipped.contains(choice.id) || app.contains(choice.id) || plugins.contains { $0.hasPrefix("\(choice.id).") }, choice.id)
+            XCTAssertTrue(app.contains(choice.id) || plugins.contains { $0.hasPrefix("\(choice.id).") }, choice.id)
             if let letter = choice.letter { XCTAssertNotNil(CommandKey(name: letter), choice.id) }
         }
         XCTAssertEqual(config.arrangement.letters(over: SpotArrangement()).count, config.arrangement.choices.filter { $0.letter?.isEmpty == false }.count)

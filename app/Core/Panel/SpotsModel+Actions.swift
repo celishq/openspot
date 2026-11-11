@@ -173,10 +173,11 @@ extension SpotsModel {
         }
     }
 
-    /// Whether the row that records takes a shake too: a row of Settings that gives a key to a command or a float (W3).
+    /// Whether the row that records takes a shake too: a row that says `shake=true`, as a row of Settings that gives a key to
+    /// a command or a float does (W3).
     public var takesShake: Bool {
         guard let recording else { return false }
-        return openEntry?.command.shipped?.takesShake(recording) ?? false
+        return openItems?.shown.first { $0.run == recording }?.takesShake ?? false
     }
 
     /// The words of the key that records.
@@ -362,14 +363,11 @@ extension SpotsModel {
         }
     }
 
-    /// Runs the action that changes a setting of a spot. A form that it answers with opens on the sheet of that spot, and
-    /// the panel closes when it is done.
-    @discardableResult
-    public func changeSetting(of id: String, with action: CommandAction) -> Bool {
-        guard let entry = entries.first(where: { $0.id == id }), let sheet = sheets[id] else {
-            host.notify("Openspot cannot find \(id). Turn it on in Spots, then try again.")
-            return false
-        }
+    /// Runs the action of a spot that has the name of its setting, as `openspot setting change` asks. A form that it answers
+    /// with opens on the sheet of that spot, and the panel closes when it is done. Returns false when no spot has the ID.
+    public func changeSetting(_ key: String, of id: String) -> Bool {
+        guard let entry = entries.first(where: { $0.id == id }), let sheet = sheets[id] else { return false }
+        let action = CommandAction(id: key, title: "Change \(key)", scope: .command, after: .close)
         let ask = UUID()
         formAsk = ask
         Task {

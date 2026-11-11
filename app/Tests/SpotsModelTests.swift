@@ -456,9 +456,8 @@ final class SpotsModelTests: XCTestCase {
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
-        let change = try XCTUnwrap(SettingsSpot.change(of: "setting:list:pick"))
-
-        model.changeSetting(of: change.spot, with: change.action)
+        XCTAssertFalse(model.changeSetting("pick", of: "gone"))
+        XCTAssertTrue(model.changeSetting("pick", of: "list"))
         try await wait("the form") { model.form != nil }
         XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
         XCTAssertTrue(model.handleKey(ActionKey(name: "down")))
@@ -481,9 +480,7 @@ final class SpotsModelTests: XCTestCase {
         model.panelWillShow(holding: [])
         model.press("agenda")
         try await wait("the sheet of parts") { model.shownParts(of: "agenda")?.showsRows == true }
-        let change = try XCTUnwrap(SettingsSpot.change(of: "setting:agenda:pick"))
-
-        model.changeSetting(of: change.spot, with: change.action)
+        XCTAssertTrue(model.changeSetting("pick", of: "agenda"))
         try await wait("the form") { model.form != nil }
 
         XCTAssertNil(model.shownParts(of: "agenda"))

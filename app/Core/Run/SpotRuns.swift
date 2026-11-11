@@ -309,7 +309,11 @@ public final class SpotRuns {
     }
 
     private func frames(of command: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String] = [:]) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void, process: ScriptProcess?) {
-        if let shipped = command.keyList.flatMap({ $0.answers(action.arguments) ? ShippedSpot.settings($0) : nil }) ?? command.shipped {
+        if let keyList = command.keyList, keyList.answers(action.arguments) {
+            let (stream, halt) = answered { try keyList.answer(action.arguments) }
+            return (stream, halt, nil)
+        }
+        if let shipped = command.shipped {
             let (stream, halt) = answered { try await shipped.answer(action.arguments, input: input) }
             return (stream, halt, nil)
         }

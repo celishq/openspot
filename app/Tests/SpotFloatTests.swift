@@ -183,14 +183,21 @@ final class SpotFloatTests: XCTestCase {
         XCTAssertNil(model.openList)
     }
 
-    func testAShakeWhileAFloatRowOfSettingsRecordsGivesItTheShake() async throws {
-        try script("shelf", header: "title=Shelf\noffers=float", "true")
-        host.shipped = ShippedSpot.commands(folder: plugins, guide: folder.appendingPathComponent("GUIDE.md"), app: "", config: model.files.config)
+    func testAShakeWhileARowThatTakesOneRecordsGivesItTheShake() async throws {
+        let given = folder.appendingPathComponent("given").path
+        try script("keys", header: "title=Keys\nread=sheet", """
+        case "$1" in
+          read) printf 'button=open\\ntitle=Change\\nclose=false\\n\\nrow=panel_key\\ntitle=Open\\nshortcut=ctrl+space\\n\\nrow=float:shelf\\ntitle=Float\\nshortcut=Record\\nshake=true\\n' ;;
+          *) printf '%s %s' "$1" "$2" > '\(given)' ;;
+        esac
+        """)
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("config"), withIntermediateDirectories: true)
+        try "[[spots]]\nid = \"keys\"\nkey = \"cmd+,\"\n".write(to: folder.appendingPathComponent("config/config.toml"), atomically: true, encoding: .utf8)
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
         model.openSettings()
-        try await wait("the rows of Settings") { model.openItems?.shown.contains { $0.run == "float:shelf" } == true }
+        try await wait("the rows of the keys") { model.openItems?.shown.contains { $0.run == "float:shelf" } == true }
 
         model.toggleRecording(id: "panel_key")
         XCTAssertEqual(model.recordingWords, "Press keys")
@@ -202,7 +209,7 @@ final class SpotFloatTests: XCTestCase {
         model.recordShake()
 
         XCTAssertNil(model.recording)
-        try await wait("the shake in the file") { model.files.config.read().keys == [GlobalKey(spot: "shelf", act: .float, trigger: .shake)] }
+        try await wait("the shake given to the row") { (try? String(contentsOfFile: given, encoding: .utf8)) == "float:shelf shake" }
     }
 
     func testAFloatOfACardWithNoReadRunsNothingUntilItsCardIsPressed() async throws {

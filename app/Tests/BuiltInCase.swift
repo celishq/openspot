@@ -6,8 +6,11 @@ import XCTest
 @MainActor
 class BuiltInCase: XCTestCase {
     private struct Host: CommandHost {
-        let login: LoginItem?
+        let mac: Mac
         let guide: URL?
+
+        var login: LoginItem? { mac.login }
+        var link: CommandLink? { mac.link }
 
         func eventStore() -> any EventStore { FakeEventStore() }
         func reminderStore() -> any ReminderStore { FakeReminderStore() }
@@ -15,8 +18,12 @@ class BuiltInCase: XCTestCase {
         func open(_ link: URL) -> Bool { true }
     }
 
-    private final class Login: @unchecked Sendable {
+    /// The settings of the Mac that a test offers: the login item and the link of the command, and what they did.
+    final class Mac: @unchecked Sendable {
         var isOn = false
+        var login: LoginItem?
+        var link: CommandLink?
+        var elevated: [String] = []
     }
 
     private static let names = ["PATH", "OPENSPOT_CONFIG", "OPENSPOT_PLUGINS", "OPENSPOT_CORE"]
@@ -27,7 +34,7 @@ class BuiltInCase: XCTestCase {
     /// The folder of the tools on the path, with `openspot` in it.
     var tools: URL!
     let app = FakeRunningApp()
-    private let login = Login()
+    let mac = Mac()
     private var socket: CommandSocket?
     private var before: [String: String] = [:]
 
@@ -52,8 +59,24 @@ class BuiltInCase: XCTestCase {
 
     /// Whether the app opens at login, as the API sees it.
     var opensAtLogin: Bool {
-        get { login.isOn }
-        set { login.isOn = newValue }
+        mac.isOn
+    }
+
+    /// The link of the command in a folder of the test.
+    var linkFile: URL {
+        root.appendingPathComponent("bin/openspot")
+    }
+
+    /// Gives the API a login item, which the test's Mac keeps.
+    func offerLogin() {
+        let mac = mac
+        mac.login = LoginItem(isOn: { mac.isOn }, set: { mac.isOn = $0 })
+    }
+
+    /// Gives the API a link of the command in a folder of the test.
+    func offerLink() {
+        let mac = mac
+        mac.link = CommandLink(link: linkFile, target: root.appendingPathComponent("Openspot.app/Contents/Helpers/openspot"), elevated: { mac.elevated.append($0) })
     }
 
     override func setUp() async throws {
@@ -72,9 +95,7 @@ class BuiltInCase: XCTestCase {
         setenv("OPENSPOT_CONFIG", root.path, 1)
         setenv("OPENSPOT_PLUGINS", plugins.path, 1)
         setenv("OPENSPOT_CORE", core.path, 1)
-        let login = login
-        let item = LoginItem(isOn: { login.isOn }, set: { login.isOn = $0 })
-        socket = CommandSocket(folder: root, api: CommandAPI(host: Host(login: item, guide: guide), app: app))
+        socket = CommandSocket(folder: root, api: CommandAPI(host: Host(mac: mac, guide: guide), app: app))
     }
 
     override func tearDown() async throws {

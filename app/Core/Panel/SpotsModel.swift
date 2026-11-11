@@ -321,9 +321,9 @@ public final class SpotsModel {
         let config = files.config.read()
         host.applyConfig(config)
         let folder = files.folder(config)
-        let shipped = host.shippedSpots(folder: folder, config: files.config, offersLogin: isFirstLaunch)
-            + (reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? [])
+        let shipped = reviewed.map { [ShippedSpot.command(reviewing: $0)] } ?? []
         var scan = pluginScan.look(at: folder, shipped: shipped)
+        scan.listKeys(in: files.config)
         let faults = folder.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.plugins.append(Plugin(id: ShippedSpot.faultsID, commands: faults)) }
         guard pluginScan.stamp != loadedStamp || config != loadedConfig else { return holdAssignedKeys(config) }
@@ -816,9 +816,9 @@ public final class SpotsModel {
         return true
     }
 
-    /// Opens the sheet that the settings key of the Mac opens.
+    /// Opens the sheet of the spot that the config gives `⌘,`, the settings key of the Mac.
     public func openSettings() {
-        guard let id = entries.first(where: { $0.command.opensWithSettingsKey })?.id else { return }
+        guard let id = spot(openedBy: ActionKey(name: ",", isCommand: true)) else { return }
         open(id, moving: true)
     }
 
@@ -1016,10 +1016,6 @@ public final class SpotsModel {
         } else {
             if action == nil, item.shortcut != nil {
                 toggleRecording(id: item.run)
-                return
-            }
-            if action == nil, let change = entry.command.shipped?.settingChange(of: item.run) {
-                changeSetting(of: change.spot, with: change.action)
                 return
             }
             if action == nil, let form = entry.command.pickForm {

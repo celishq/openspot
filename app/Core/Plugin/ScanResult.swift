@@ -39,9 +39,9 @@ public struct ScanResult: Equatable, Sendable {
         }
     }
 
-    /// Makes each script that lists commands and has no read open to the keys of its commands.
-    mutating func listKeys(with settings: SettingsSpot) {
-        plugins = plugins.map { Plugin(id: $0.id, commands: $0.commands.map { $0.listingKeys(with: settings) }) }
+    /// Makes each script that lists commands and has no read open to the keys of its commands in this config.
+    public mutating func listKeys(in config: ConfigFile) {
+        plugins = plugins.map { Plugin(id: $0.id, commands: $0.commands.map { $0.listingKeys(in: config) }) }
     }
 
     /// Leaves out each widget that names a script with no `read` or a command no plugin has, and reports why.

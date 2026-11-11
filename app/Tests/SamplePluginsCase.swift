@@ -24,8 +24,9 @@ class SamplePluginsCase: XCTestCase {
             let root = URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             let folder = root.appendingPathComponent("plugins")
-            let shipped = ShippedSpot.commands(folder: folder, guide: root.appendingPathComponent("app/Shell/GUIDE.md"), app: "")
-            return try PluginFolder(url: folder).scan(shipped: shipped)
+            var scan = try PluginFolder(url: folder).scan()
+            scan.listKeys(in: ConfigFile(url: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/config.toml")))
+            return scan
         }
     }
 

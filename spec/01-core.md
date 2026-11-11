@@ -357,6 +357,7 @@ list.
 | `hides`    | The id of an action that this row does not offer. Repeat the line for each one.          |
 | `keyword`  | A word that finds the row in a search, which the row does not show.                      |
 | `shortcut` | A key at the end of the row. A pick records a new key and calls `<id> <shortcut>`.        |
+| `shake`    | `true` lets a shake of the pointer be the key that a pick records, as `<id> shake`.       |
 | `file`     | The file that the row stands for (O1). See Files out.                                    |
 | `to`       | The id of another spot that a pick goes to, as `<spot> open <row id>` with the row's fields on stdin (J1). |
 

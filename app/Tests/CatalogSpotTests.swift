@@ -202,6 +202,7 @@ final class CatalogSpotTests: BuiltInCase {
 
     func testTheFirstLaunchListOffersTheLoginRowAndAPickTurnsItOn() async throws {
         await app.set(update: nil, calls: 0, isFirstLaunch: true)
+        offerLogin()
         let spot = try catalog
 
         let rows = try await spot.items(timeout: 5).items

@@ -39,6 +39,6 @@ struct SpotRunningApp: RunningApp {
     }
 
     func changeSetting(_ key: String, of spot: String) async -> Bool {
-        await model.changeSetting(of: spot, with: CommandAction(id: key, title: "Change \(key)", scope: .command, after: .close))
+        await model.changeSetting(key, of: spot)
     }
 }

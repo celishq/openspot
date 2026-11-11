@@ -101,19 +101,6 @@ extension OpenspotApp: SpotsHost {
         AgentPrompt(folder: folder, guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder, app: Bundle.main.executablePath ?? "")
     }
 
-    func shippedSpots(folder: PluginFolder, config: ConfigFile, offersLogin: Bool) -> [Spot] {
-        ShippedSpot.commands(
-            folder: folder.url,
-            guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder.url,
-            app: Bundle.main.executablePath ?? "",
-            config: config,
-            core: folder.core,
-            login: AppLogin.item,
-            link: AppCommandLink.item,
-            offersLogin: offersLogin
-        )
-    }
-
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {
         var transaction = Transaction(animation: motion.map(SpotMotion.animation))
         transaction.disablesAnimations = motion == nil

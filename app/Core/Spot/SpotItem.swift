@@ -14,6 +14,8 @@ public struct SpotItem: Equatable, Sendable {
     public let keywords: [String]
     /// The key this row shows. A pick records the next key that the person presses.
     public let shortcut: String?
+    /// Whether a shake of the pointer can be its key as well.
+    public let takesShake: Bool
     /// Whether this row shows that its thing is on, from its `value`.
     public let isOn: Bool
     /// The colour of the dot on its picture.
@@ -21,7 +23,7 @@ public struct SpotItem: Equatable, Sendable {
     /// The file that the row stands for, which a drag takes out of the sheet (O1).
     public let file: String?
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, takesShake: Bool = false, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -30,6 +32,7 @@ public struct SpotItem: Equatable, Sendable {
         self.hides = hides
         self.keywords = keywords
         self.shortcut = shortcut
+        self.takesShake = takesShake
         self.isOn = isOn
         self.tone = tone
         self.file = file
@@ -49,6 +52,7 @@ public struct SpotItem: Equatable, Sendable {
             hides: hides.isEmpty ? nil : hides,
             keywords: block.values("keyword"),
             shortcut: block.value("shortcut"),
+            takesShake: block.flag("shake") ?? false,
             isOn: block.flag("value") ?? false,
             tone: block.value("tone").flatMap(MetricValue.Tone.init),
             file: block.value("file").flatMap { $0.hasPrefix("/") ? $0 : nil }

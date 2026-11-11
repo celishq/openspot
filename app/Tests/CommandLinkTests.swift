@@ -27,31 +27,24 @@ final class CommandLinkTests: XCTestCase {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    private func settings(_ link: CommandLink) -> SettingsSpot {
-        SettingsSpot(file: ConfigFile(url: folder.appendingPathComponent("config.toml")), folder: folder, link: link)
-    }
-
-    func testSettingsListsTheRowOffUntilALinkPointsAtTheApp() throws {
-        let off = PluginOutput(text: try settings(link).answer(["read"])).items
-        XCTAssertEqual(off.map(\.run), ["panel_key", "fix_key", CommandLink.run])
-        XCTAssertEqual(off.last?.title, "Use openspot in Terminal")
-        XCTAssertEqual(off.last?.isOn, false)
+    func testItIsOffUntilALinkPointsAtTheApp() throws {
+        XCTAssertFalse(link.isOn)
 
         try FileManager.default.createDirectory(at: bin, withIntermediateDirectories: true)
         try FileManager.default.createSymbolicLink(at: bin.appendingPathComponent("openspot"), withDestinationURL: folder)
-        XCTAssertEqual(PluginOutput(text: try settings(link).answer(["read"])).items.last?.isOn, false)
+        XCTAssertFalse(link.isOn)
     }
 
-    func testAPickLinksTheCommandThenRemovesIt() throws {
-        let on = try settings(link).answer(["open", CommandLink.run])
+    func testSetLinksTheCommandThenRemovesIt() throws {
+        try link.set(true)
+        try link.set(true)
 
         XCTAssertEqual(try FileManager.default.destinationOfSymbolicLink(atPath: bin.appendingPathComponent("openspot").path), target.path)
-        XCTAssertEqual(PluginOutput(text: on).summary?.value("toast"), "Installed openspot")
+        XCTAssertTrue(link.isOn)
 
-        let off = try settings(link).answer(["open", CommandLink.run])
+        try link.set(false)
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: bin.appendingPathComponent("openspot").path))
-        XCTAssertEqual(PluginOutput(text: off).summary?.value("toast"), "Removed openspot")
         XCTAssertEqual(fake.lines, [])
     }
 
@@ -59,7 +52,7 @@ final class CommandLinkTests: XCTestCase {
         try FileManager.default.createDirectory(at: bin, withIntermediateDirectories: true)
         try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: bin.path)
 
-        _ = try settings(link).answer(["open", CommandLink.run])
+        try link.set(true)
 
         XCTAssertEqual(fake.lines, ["/bin/mkdir -p '\(bin.path)' && /bin/ln -sfn '\(target.path)' '\(bin.path)/openspot'"])
     }

@@ -22,8 +22,6 @@ final class TestHost: SpotsHost {
     var openings: [String?] = []
     /// The program of the app that the prompt for an agent names.
     var app = "/Apps/Openspot"
-    /// The spots that ship with the app in this test.
-    var shipped: [Spot] = []
     /// The rows whose pictures the model asked to draw ahead.
     var prepared: [SpotItem] = []
     /// The glyphs of each whole list whose pictures the model asked for.
@@ -85,10 +83,6 @@ final class TestHost: SpotsHost {
 
     func agentPrompt(for folder: URL) -> AgentPrompt {
         AgentPrompt(folder: folder, guide: folder.appendingPathComponent("GUIDE.md"), app: app)
-    }
-
-    func shippedSpots(folder: PluginFolder, config: ConfigFile, offersLogin: Bool) -> [Spot] {
-        shipped
     }
 
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {

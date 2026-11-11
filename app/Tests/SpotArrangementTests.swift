@@ -193,31 +193,6 @@ final class SpotArrangementTests: XCTestCase {
         XCTAssertEqual(Spot(id: "w", name: "W", url: url, kind: .widget).sizes, [])
     }
 
-    func testOnlyTheBuiltInsThatSayItChangeKeysReadOnAnUpdateOrTakeAShake() {
-        let url = URL(fileURLWithPath: "/bin/true")
-        let commands = ShippedSpot.commands(folder: url, guide: url, app: "")
-        let settings = commands.first { $0.id == ShippedSpot.settingsID }
-
-        XCTAssertEqual(commands.filter(\.setsKeys).map(\.id), [ShippedSpot.settingsID])
-        XCTAssertEqual(settings?.shipped?.takesShake("key:apps:open"), true)
-        XCTAssertEqual(settings?.shipped?.takesShake("setting:apps:size"), false)
-    }
-
-    func testSettingsChangesASetting() {
-        let url = URL(fileURLWithPath: "/bin/true")
-        let commands = ShippedSpot.commands(folder: url, guide: url, app: "")
-        let settings = commands.first { $0.id == ShippedSpot.settingsID }
-
-        XCTAssertEqual(settings?.shipped?.settingChange(of: "setting:apps:size")?.spot, "apps")
-    }
-
-    func testSettingsOpensWithTheSettingsKey() {
-        let url = URL(fileURLWithPath: "/bin/true")
-        let commands = ShippedSpot.commands(folder: url, guide: url, app: "")
-
-        XCTAssertEqual(commands.filter(\.opensWithSettingsKey).map(\.id), [ShippedSpot.settingsID])
-    }
-
     func testAKeyOfThePanelOpensTheSpotOfThePersonsChoiceOrElseOfTheDefaults() throws {
         let n = ActionKey(name: "n", isCommand: true)
         let defaults = Config(text: "[[spots]]\nid = \"new\"\nkey = \"cmd+n\"\n\n[[spots]]\nid = \"set\"\nkey = \"cmd+,\"\n").arrangement
