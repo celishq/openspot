@@ -41,7 +41,7 @@ struct SpotDockTile: View {
         ))
         .overlay(alignment: .topLeading) {
             if item.isOwn {
-                SpotCornerButton(symbol: "xmark", label: "Delete", corner: .leading, size: size) { model.delete(item.id) }
+                SpotCornerButton(symbol: "xmark", label: "Delete", corner: .leading, size: size, onHover: deleteTip) { model.delete(item.id) }
             }
         }
         .contextMenu {
@@ -56,6 +56,16 @@ struct SpotDockTile: View {
             } else if model.tip == tip {
                 model.tip = nil
             }
+        }
+    }
+
+    /// Shows the tip of the delete control while the pointer lies over it.
+    private func deleteTip(_ isOver: Bool) {
+        let tip = SpotTip(id: item.id, anchor: .dockCorner, text: "Delete")
+        if isOver {
+            model.tip = tip
+        } else if model.tip == tip {
+            model.tip = nil
         }
     }
 }

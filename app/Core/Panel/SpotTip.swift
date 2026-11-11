@@ -2,9 +2,10 @@ import Foundation
 
 /// A tip that names a control of a card in Edit Spots, or a card of the dock that shows no words.
 public struct SpotTip: Equatable, Sendable {
-    /// Where the tip lies: under a top corner control of a card on the grid, or under a card of the dock.
+    /// Where the tip lies: under a top corner control of a card on the grid, under a card of the dock, or under the top
+    /// left control of a card of the dock.
     public enum Anchor: Equatable, Sendable {
-        case leadingCorner, trailingCorner, dockCard
+        case leadingCorner, trailingCorner, dockCard, dockCorner
     }
 
     /// The card that the tip belongs to.
