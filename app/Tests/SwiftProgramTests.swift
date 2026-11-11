@@ -1,3 +1,4 @@
+import CryptoKit
 import XCTest
 @testable import OpenspotCore
 
@@ -48,7 +49,7 @@ final class SwiftProgramTests: XCTestCase {
 
     /// Stand-ins for the build commands whose compiler logs each build and writes a C program, by default one that prints
     /// `text=program`, with a cache in the test's folder.
-    private func caching(_ program: String = "int main(void) { return puts(\"text=program\") < 0; }") throws -> SwiftProgram {
+    private func caching(_ program: String = "int main(void) { return puts(\"text=program\") < 0; }", cache: URL? = nil) throws -> SwiftProgram {
         let place = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
         let c = place.appendingPathComponent("program.c")
@@ -56,7 +57,7 @@ final class SwiftProgramTests: XCTestCase {
         try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/builds'\nwhile [ $# -gt 1 ]; do [ \"$1\" = -o ] && /usr/bin/cc -x c '\(c.path)' -o \"$2\"; shift; done\n"
             .writeScript(to: place.appendingPathComponent("swiftc"))
         let clock = clock
-        return SwiftProgram(tools: place, cache: cache, now: { clock.now })
+        return SwiftProgram(tools: place, cache: cache ?? self.cache, now: { clock.now })
     }
 
     private var builds: Int {
@@ -332,5 +333,68 @@ final class SwiftProgramTests: XCTestCase {
         await program.prune(keeping: [])?.value
 
         XCTAssertFalse(exists(builds[0]))
+    }
+
+    private var root: URL { folder.appendingPathComponent("swift", isDirectory: true) }
+
+    /// Stand-ins for the build commands, as `caching` gives them, with the cache of a config folder in `root`.
+    private func caching(config: String) throws -> SwiftProgram {
+        try caching(cache: SwiftProgram.folder(of: folder.appendingPathComponent(config), in: root))
+    }
+
+    private func sha(_ file: URL) throws -> String {
+        SHA256.hash(data: try Data(contentsOf: file)).map { String(format: "%02x", $0) }.joined()
+    }
+
+    func testEachConfigFolderKeepsItsBuildsInAFolderOfItsOwn() throws {
+        let home = URL(fileURLWithPath: try XCTUnwrap(ProcessInfo.processInfo.environment["HOME"], "the test scheme gives a private home"), isDirectory: true)
+        let release = SwiftProgram.folder(of: home.appendingPathComponent(".config/openspot"), in: root)
+        let debug = SwiftProgram.folder(of: folder.appendingPathComponent(".temp/openspot"), in: root)
+
+        XCTAssertNotEqual(release, debug)
+        XCTAssertEqual([release.deletingLastPathComponent(), debug.deletingLastPathComponent()], [root, root])
+        XCTAssertEqual(release.lastPathComponent.count, 12)
+        XCTAssertEqual(SwiftProgram().cache, SwiftProgram.folder(of: home.appendingPathComponent(".config/openspot"), in: home.appendingPathComponent("Library/Caches/dev.openspot/swift")))
+    }
+
+    func testAPruneOfOneConfigFolderKeepsTheBuildsOfAnother() async throws {
+        let debug = try caching(config: "debug")
+        let release = try caching(config: "release")
+        let source = try source()
+        let kept = try await built([source], by: release)
+        try age(kept[0], days: 31)
+
+        await debug.prune(keeping: [])?.value
+
+        XCTAssertTrue(exists(kept[0]))
+    }
+
+    func testABuildInTheOldSharedFolderMovesIntoTheFolderOfItsConfig() async throws {
+        let program = try caching(config: "release")
+        let source = try source()
+        let other = try await built([source], by: try caching(config: "other"))
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let old = root.appendingPathComponent(try sha(source))
+        try FileManager.default.moveItem(at: other[0], to: old)
+
+        let runnable = program.runnable(for: source)
+
+        XCTAssertEqual(runnable, SwiftProgram.folder(of: folder.appendingPathComponent("release"), in: root).appendingPathComponent(try sha(source)))
+        XCTAssertFalse(exists(old))
+        XCTAssertEqual(builds, 1)
+    }
+
+    func testAPruneRemovesAnOldSharedBuildThatDidNotRunFor30Days() async throws {
+        let program = try caching(config: "release")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let stale = root.appendingPathComponent(String(repeating: "a", count: 64))
+        let fresh = root.appendingPathComponent(String(repeating: "b", count: 64))
+        try Data("x".utf8).write(to: stale)
+        try Data("x".utf8).write(to: fresh)
+        try age(stale, days: 31)
+
+        await program.prune(keeping: [])?.value
+
+        XCTAssertEqual([exists(stale), exists(fresh)], [false, true])
     }
 }

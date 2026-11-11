@@ -2,8 +2,9 @@ import CryptoKit
 import Foundation
 
 /// The compiled form of a Swift script, which travels beside its source so that a Mac with no Swift tools can run it, or
-/// which a first run builds once into a cache, named by the hash of its source. A prune keeps the cache to the builds of
-/// the sources that are there and that ran in the last 30 days.
+/// which a first run builds once into a cache, named by the hash of its source. Each config folder has a cache of its own,
+/// so that the prune of a Debug build keeps the builds of the installed app. A prune keeps the cache to the builds of the
+/// sources that are there and that ran in the last 30 days.
 public struct SwiftProgram: Sendable {
     static let sourceExtension = "swift"
     private static let programExtension = "program"
@@ -23,18 +24,28 @@ public struct SwiftProgram: Sendable {
     private static let unusedDays: TimeInterval = 30
     /// The file whose date of change is the time of the last prune.
     private static let pruneMark = ".pruned"
+    /// The length of the name of the cache of a config folder, from the hash of its path.
+    private static let folderName = 12
 
     private let tools: URL
-    private let cache: URL
+    let cache: URL
     private let now: @Sendable () -> Date
 
     /// `tools` is the folder that holds `xcode-select`, `swiftc` and `lipo`. `cache` holds the program that a first run of
-    /// each source builds, by default in the caches of the home, where no spot in Careful mode can write.
+    /// each source builds, by default the folder of this config folder in the caches of the home, where no spot in Careful
+    /// mode can write.
     public init(tools: URL = URL(fileURLWithPath: "/usr/bin", isDirectory: true), cache: URL? = nil, now: @escaping @Sendable () -> Date = { Date() }) {
         self.tools = tools
         self.now = now
-        let home = ProcessInfo.processInfo.environment["HOME"] ?? NSHomeDirectory()
-        self.cache = cache ?? URL(fileURLWithPath: home, isDirectory: true).appendingPathComponent("Library/Caches/dev.openspot/swift", isDirectory: true)
+        let environment = ProcessInfo.processInfo.environment
+        let home = URL(fileURLWithPath: environment["HOME"] ?? NSHomeDirectory(), isDirectory: true)
+        self.cache = cache ?? Self.folder(of: SpotFolder.config(environment: environment, home: home), in: home.appendingPathComponent("Library/Caches/dev.openspot/swift", isDirectory: true))
+    }
+
+    /// The cache of the builds of a config folder: a folder in `root` named by a short hash of the folder's path.
+    static func folder(of config: URL, in root: URL) -> URL {
+        let hash = SHA256.hash(data: Data(config.standardizedFileURL.path.utf8)).map { String(format: "%02x", $0) }.joined()
+        return root.appendingPathComponent(String(hash.prefix(folderName)), isDirectory: true)
     }
 
     /// What runs a script: the program beside it, the built program of a Swift source in the cache, or else the file
@@ -43,6 +54,7 @@ public struct SwiftProgram: Sendable {
         if let program = Self.file(beside: script) { return program }
         guard script.pathExtension == Self.sourceExtension, let name = Self.hash(of: script) else { return script }
         let program = cache.appendingPathComponent(name)
+        if !Self.isWhole(program) { adopt(name) }
         if Self.isWhole(program) {
             markUsed(program)
             return program
@@ -55,12 +67,14 @@ public struct SwiftProgram: Sendable {
     }
 
     /// Removes each build whose hash is no source of these scripts, and each build that did not run for 30 days, apart from
-    /// a build that runs now. It runs at most once a day, on a thread of its own, and returns nil when it does not run.
+    /// a build that runs now, and so too each build that an older app kept in the folder that all config folders shared. It
+    /// runs at most once a day, on a thread of its own, and returns nil when it does not run.
     @discardableResult
     func prune(keeping scripts: [URL]) -> Task<Void, Never>? {
         let date = now()
         let mark = cache.appendingPathComponent(Self.pruneMark)
         if let last = Self.changed(mark), date.timeIntervalSince(last) < Self.day { return nil }
+        try? FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
         guard FileManager.default.createFile(atPath: mark.path, contents: nil, attributes: [.modificationDate: date]) else { return nil }
         let sources = scripts.filter { $0.pathExtension == Self.sourceExtension }
         return Task.detached(priority: .utility) { [cache] in
@@ -73,7 +87,28 @@ public struct SwiftProgram: Sendable {
                 guard !kept.contains(name) || isStale, !running.contains(Self.real(program)) else { continue }
                 try? FileManager.default.removeItem(at: program)
             }
+            let shared = cache.deletingLastPathComponent()
+            for name in (try? FileManager.default.contentsOfDirectory(atPath: shared.path)) ?? [] where Self.isBuildName(name) {
+                let program = shared.appendingPathComponent(name)
+                let isStale = date.timeIntervalSince(Self.changed(program) ?? date) > Self.unusedDays * Self.day
+                guard isStale, !running.contains(Self.real(program)) else { continue }
+                try? FileManager.default.removeItem(at: program)
+            }
         }
+    }
+
+    /// Moves the build of this name from the folder that all config folders shared into this cache, when an older app kept
+    /// one there.
+    private func adopt(_ name: String) {
+        let old = cache.deletingLastPathComponent().appendingPathComponent(name)
+        guard Self.isWhole(old) else { return }
+        try? FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
+        _ = rename(old.path, cache.appendingPathComponent(name).path)
+    }
+
+    /// Whether a name is that of a build: the 64 hex digits of the hash of its source.
+    private static func isBuildName(_ name: String) -> Bool {
+        name.count == 64 && name.allSatisfy(\.isHexDigit)
     }
 
     /// Dates a build to now when its last run is more than a day old, so that a prune knows it runs.
