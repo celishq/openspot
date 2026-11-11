@@ -124,16 +124,20 @@ struct SpotFieldView: View {
                 .textFieldStyle(.plain)
                 .focused($isFocused)
                 .onSubmit { model.runSelected() }
-                .onKeyPress(.downArrow) {
-                    if model.openList != nil {
+                .onKeyPress(keys: [.downArrow]) { press in
+                    if model.openList != nil, press.modifiers.contains(.command) {
+                        model.moveItemToEdge(last: true)
+                    } else if model.openList != nil {
                         model.moveItemLine(by: 1)
                     } else {
                         model.moveSelection(dx: 0, dy: 1)
                     }
                     return .handled
                 }
-                .onKeyPress(.upArrow) {
-                    if model.openList != nil {
+                .onKeyPress(keys: [.upArrow]) { press in
+                    if model.openList != nil, press.modifiers.contains(.command) {
+                        model.moveItemToEdge(last: false)
+                    } else if model.openList != nil {
                         model.moveItemLine(by: -1)
                     } else {
                         model.moveSelection(dx: 0, dy: -1)

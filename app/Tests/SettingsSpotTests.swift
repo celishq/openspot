@@ -200,8 +200,8 @@ final class SettingsSpotTests: XCTestCase {
 
         XCTAssertEqual(move.kind, .list)
         let items = try await move.items(timeout: 1).items
-        XCTAssertEqual(items.map(\.title), ["Left side"])
-        XCTAssertEqual(items.map(\.subtitle), [nil])
+        XCTAssertEqual(items.map(\.title), ["Left side shortcut"])
+        XCTAssertEqual(items.map(\.subtitle), ["Press ⏎ to set"])
         _ = try await runs.answer(of: move, .set("key:move:left", to: "ctrl+option+left"), limit: 1)
         XCTAssertEqual(file.read().keys.map(\.act), [.command("left")])
         let press = try await runs.answer(of: move, .press("left"), limit: 5)

@@ -83,7 +83,7 @@ struct SpotSheetView: View {
                         selection: { [model] in model.form?.draft.choices?.selected ?? 0 }
                     )
                 } else {
-                    Color.clear.frame(height: SpotTokens.listRowHeight)
+                    if list.search != .off { Color.clear.frame(height: SpotTokens.listRowHeight) }
                     if let createTitle {
                         Button { model.createFromSearch() } label: {
                             createLabel(createTitle)

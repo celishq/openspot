@@ -38,9 +38,11 @@ final class DictateExampleTests: SamplePluginsCase {
 
         let text = try await ScriptProcess.output(url: URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", "'\(helper.path)' clean < '\(input.path)'"])
         let silence = try await ScriptProcess.output(url: URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", "printf ' [BLANK_AUDIO]\\n' | '\(helper.path)' clean"])
+        let dot = try await ScriptProcess.output(url: URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", "printf ' .\\n' | '\(helper.path)' clean"])
 
         XCTAssertEqual(text, "Привіт, світе. Second line here.\n")
         XCTAssertEqual(silence, "\n")
+        XCTAssertEqual(dot, "\n")
     }
 
     func testTheHelperSendsSixteenBitMonoSoundAtSixteenKilohertz() async throws {
@@ -95,33 +97,176 @@ final class DictateExampleTests: SamplePluginsCase {
         }
     }
 
-    func testAPressWithNoModelDownloadsItAndRecordsNothing() async throws {
+    func testAPressWithNoModelStartsTheHelperThatDownloadsIt() async throws {
         let dictate = try example("Dictate")
         try await withPrivateHome { folder in
             let started = folder.appendingPathComponent("started")
-            let data = try self.fakeHelper("touch '\(started.path)'", model: false, in: folder)
+            _ = try self.fakeHelper("echo \"$1 $4\" > '\(started.path)'", model: false, in: folder)
 
-            let toast = try await dictate.perform(.press("dictate"), timeout: 5)
-            try await self.waitFor(folder.appendingPathComponent("fetched"))
-            for _ in 0..<100 where FileManager.default.fileExists(atPath: data.appendingPathComponent("download.pid").path) {
-                try await Task.sleep(for: .milliseconds(50))
-            }
+            _ = try await dictate.perform(.press("dictate"), timeout: 5)
+            try await self.waitFor(started)
 
-            XCTAssertEqual(toast, "Openspot is downloading the Whisper model, 0% of 1.6 GB. Press the key again once it is done.")
-            XCTAssertEqual(try self.read("fetched", in: folder), "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/\(Self.model)\n")
-            XCTAssertFalse(FileManager.default.fileExists(atPath: started.path))
+            XCTAssertEqual(try self.read("started", in: folder), "stay start\n")
+            XCTAssertNil(try? self.read("fetched", in: folder))
         }
     }
 
-    func testAReadWithNoReasonStartsNoHelper() async throws {
+    func testTheModelLandsWholeOrNotAtAll() async throws {
+        let (folder, helper) = try await helper()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let source = folder.appendingPathComponent("model.bin")
+        let target = folder.appendingPathComponent("data/ggml.bin")
+        try Data((0..<200_000).map { UInt8($0 % 251) }).write(to: source)
+
+        let landed = try await ScriptProcess.output(url: helper, arguments: ["fetch", source.absoluteString, target.path])
+        let failed = try? await ScriptProcess.output(url: helper, arguments: ["fetch", folder.appendingPathComponent("gone.bin").absoluteString, folder.appendingPathComponent("none.bin").path])
+
+        XCTAssertEqual(landed, "from 0\nlanded\n")
+        XCTAssertEqual(try Data(contentsOf: target), try Data(contentsOf: source))
+        XCTAssertNotEqual(failed, "landed\n")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("none.bin").path))
+    }
+
+    func testThePillRidesTheEdgeNearestThePointerAndStandsUpOnTheSides() async throws {
+        let (folder, helper) = try await helper()
+        defer { try? FileManager.default.removeItem(at: folder) }
+
+        func place(_ kept: String, droppedAt x: Int, _ y: Int) async throws -> String {
+            try await ScriptProcess.output(url: helper, arguments: ["place", kept, String(x), String(y)])
+        }
+
+        let standard = try await place("", droppedAt: 500, 20)
+        let side = try await place("bottom 0.5", droppedAt: 5, 300)
+        let corner = try await place("top 0.99", droppedAt: 990, 690)
+        let middle = try await place("left 0.5", droppedAt: 600, 650)
+        let old = try await place("0.49 10", droppedAt: 500, 350)
+
+        XCTAssertEqual(standard, "bottom 0.5000 425 8 150 32 | bottom 0.5000 425 8 150 32\n")
+        XCTAssertEqual(side, "bottom 0.5000 425 8 150 32 | left 0.4286 8 225 32 150\n")
+        XCTAssertEqual(corner, "top 0.9900 842 660 150 32 | top 0.9900 842 660 150 32\n")
+        XCTAssertEqual(middle, "left 0.5000 8 275 32 150 | top 0.6000 525 660 150 32\n")
+        XCTAssertEqual(old, "bottom 0.5000 425 8 150 32 | bottom 0.5000 425 8 150 32\n")
+    }
+
+    func testTheHistoryListsTheNewestTextFirstAndKeepsTheLastTen() async throws {
+        let (folder, helper) = try await helper()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let file = folder.appendingPathComponent("history")
+
+        for index in 0..<13 {
+            _ = try await ScriptProcess.output(url: helper, arguments: ["remember", file.path, String(1_000 + index), "Text \(index)"])
+        }
+        let lines = try String(contentsOf: file, encoding: .utf8).split(separator: "\n")
+
+        XCTAssertEqual(lines.count, 10)
+        XCTAssertEqual(lines.first, "1003000\tText 3")
+        XCTAssertEqual(lines.last, "1012000\tText 12")
+    }
+
+    func testTheSheetListsPastTextsAndCopiesOrDeletesOne() async throws {
         let dictate = try example("Dictate")
         try await withPrivateHome { folder in
-            let data = try self.fakeHelper("touch '\(folder.path)/started'", in: folder)
+            let data = try self.fakeHelper("true", in: folder)
+            try "1000\tFirst words\n2000\tSecond, with a back\\slash\n".write(to: data.appendingPathComponent("history"), atomically: true, encoding: .utf8)
 
-            _ = try await dictate.items(timeout: 5)
+            let rows = try await dictate.items(timeout: 5).items.filter { !$0.run.hasPrefix("key:") }
+            let toast = try await dictate.perform(.item(SpotItem(title: "First words", run: "1000")), timeout: 5)
+            _ = try await dictate.perform(SpotAction(arguments: ["delete", "2000"]), timeout: 5)
 
-            XCTAssertFalse(FileManager.default.fileExists(atPath: data.appendingPathComponent("dictate.pid").path))
-            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("started").path))
+            XCTAssertEqual(rows.map(\.run), ["2000", "1000"])
+            XCTAssertEqual(rows.map(\.title), ["Second, with a back\\slash", "First words"])
+            XCTAssertEqual(toast, "Copied")
+            XCTAssertEqual(try self.read("clipboard", in: folder), "First words")
+            XCTAssertEqual(try String(contentsOf: data.appendingPathComponent("history"), encoding: .utf8), "1000\tFirst words\n")
         }
+    }
+
+    func testWithNoModelTheSheetOffersTheDownloadAndThenShowsItsPercent() async throws {
+        let dictate = try example("Dictate")
+        try await withPrivateHome { folder in
+            let fetched = folder.appendingPathComponent("fetch")
+            let data = try self.fakeHelper("true", model: false, in: folder)
+            let first = try await dictate.items(timeout: 5)
+            let offer = first.items.first { $0.run == "whisper" }
+
+            let waiting = Process()
+            waiting.executableURL = URL(fileURLWithPath: "/bin/sh")
+            waiting.arguments = ["-c", "trap 'touch \(fetched.path)' USR2; while true; do sleep 0.05; done"]
+            try waiting.run()
+            defer { waiting.terminate(); waiting.waitUntilExit() }
+            try String(waiting.processIdentifier).write(to: data.appendingPathComponent("dictate.pid"), atomically: true, encoding: .utf8)
+            try "42".write(to: data.appendingPathComponent("download"), atomically: true, encoding: .utf8)
+            let progress = try await dictate.items(timeout: 5).items.first { $0.run == "whisper" }
+            _ = try await dictate.perform(.item(try XCTUnwrap(offer)), timeout: 5)
+            try await self.waitFor(fetched)
+
+            XCTAssertEqual(offer?.title, "Download speech model")
+            XCTAssertEqual(offer?.pin, .top)
+            XCTAssertEqual(first.search, .off)
+            XCTAssertEqual(offer?.openTitle, "Download")
+            XCTAssertEqual(offer?.staysOnPick, true)
+            XCTAssertEqual(progress?.title, "Downloading speech model")
+            XCTAssertEqual(progress?.subtitle, "42% of 1.6 GB")
+            XCTAssertTrue(FileManager.default.fileExists(atPath: fetched.path))
+        }
+    }
+
+    func testABrokenDownloadGoesOnFromTheBytesItHas() async throws {
+        let (folder, helper) = try await helper()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let source = folder.appendingPathComponent("model.bin")
+        let target = folder.appendingPathComponent("ggml.bin")
+        let bytes = Data((0..<300_000).map { UInt8($0 % 251) })
+        try bytes.write(to: source)
+        try bytes.prefix(100_000).write(to: target.appendingPathExtension("part"))
+        let server = folder.appendingPathComponent("serve.py")
+        try """
+        import http.server, re, sys
+        data = open(sys.argv[1], 'rb').read()
+        class H(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                m = re.match(r'bytes=(\\d+)-', self.headers.get('Range', ''))
+                start = int(m.group(1)) if m else 0
+                open(sys.argv[2], 'a').write(str(start) + '\\n')
+                self.send_response(206 if m else 200)
+                self.send_header('Content-Length', str(len(data) - start))
+                self.end_headers()
+                self.wfile.write(data[start:])
+            def log_message(self, *a): pass
+        s = http.server.HTTPServer(('127.0.0.1', 0), H)
+        print(s.server_address[1], flush=True)
+        s.serve_forever()
+        """.write(to: server, atomically: true, encoding: .utf8)
+        let serving = Process()
+        let out = Pipe()
+        serving.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+        let served = folder.appendingPathComponent("served")
+        serving.arguments = [server.path, source.path, served.path]
+        serving.standardOutput = out
+        try serving.run()
+        defer { serving.terminate(); serving.waitUntilExit() }
+        let port = String(decoding: out.fileHandleForReading.availableData, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let resumed = try await ScriptProcess.output(url: helper, arguments: ["fetch", "http://127.0.0.1:\(port)/model", target.path])
+
+        XCTAssertEqual(resumed, "from 100000\nlanded\n")
+        XCTAssertEqual(try String(contentsOf: served, encoding: .utf8), "100000\n")
+        XCTAssertEqual(try Data(contentsOf: target), bytes)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: target.appendingPathExtension("part").path))
+    }
+
+    func testADownloadThatCannotResumeStartsOver() async throws {
+        let (folder, helper) = try await helper()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let source = folder.appendingPathComponent("model.bin")
+        let target = folder.appendingPathComponent("ggml.bin")
+        let bytes = Data((0..<200_000).map { UInt8($0 % 251) })
+        try bytes.write(to: source)
+        try Data(repeating: 7, count: 50_000).write(to: target.appendingPathExtension("part"))
+
+        let fetched = try await ScriptProcess.output(url: helper, arguments: ["fetch", source.absoluteString, target.path])
+
+        XCTAssertEqual(fetched, "from 50000\nlanded\n")
+        XCTAssertEqual(try Data(contentsOf: target), bytes)
     }
 }

@@ -1,17 +1,18 @@
 #!/bin/sh
 # title=Dictate
 # icon=mic
-# detail=Speak, and the text goes where the cursor is
-# command=dictate:Dictate:mic
-# read=launch
+# detail=Convert speech to text
+# read=sheet,1
+#
+# command=dictate
+# title=Dictate
+# icon=mic
 export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
 helper="$OPENSPOT_DATA/dictate"
 pidfile="$OPENSPOT_DATA/dictate.pid"
 model="$OPENSPOT_DATA/ggml-large-v3-turbo.bin"
-loading="$OPENSPOT_DATA/download.pid"
+history="$OPENSPOT_DATA/history"
 source="$(dirname "$0")/dictate.swift"
-url="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin"
-size=1624555275
 
 build() {
   [ -x "$helper" ] && [ ! "$source" -nt "$helper" ] && return 0
@@ -30,26 +31,47 @@ wait_here() {
   printf %s "$!" > "$pidfile"
 }
 
-download() {
-  mkdir -p "$OPENSPOT_DATA"
-  if ! { busy=$(cat "$loading" 2>/dev/null) && kill -0 "$busy" 2>/dev/null; }; then
-    nohup sh -c 'curl -fsSL -C - -o "$1.part" "$2" && mv "$1.part" "$1"; rm -f "$3"' sh "$model" "$url" "$loading" > /dev/null 2>&1 &
-    printf %s "$!" > "$loading"
+age() {
+  seconds=$(( $(date +%s) - $1 / 1000 ))
+  if [ "$seconds" -lt 60 ]; then echo "Just now"
+  elif [ "$seconds" -lt 3600 ]; then echo "$(( seconds / 60 )) min ago"
+  elif [ "$seconds" -lt 86400 ]; then echo "$(( seconds / 3600 )) h ago"
+  else date -r $(( $1 / 1000 )) "+%-d %b"
   fi
-  got=$(stat -f %z "$model.part" 2>/dev/null || echo 0)
-  echo "toast=Openspot is downloading the Whisper model, $(( got * 100 / size ))% of 1.6 GB. Press the key again once it is done."
 }
 
 case "$1" in
   read)
-    [ -z "${OPENSPOT_REASON-}" ] || waiting || (wait_here "$PPID" > /dev/null 2>&1 &)
+    if [ ! -f "$model" ]; then
+      if [ -f "$OPENSPOT_DATA/download" ] && waiting; then
+        printf 'row=whisper\ntitle=Downloading speech model\ndetail=%s%% of 1.6 GB\nicon=arrow.down.circle\nopen=Show\nclose=false\nhides=delete\npin=top\n\n' "$(cat "$OPENSPOT_DATA/download")"
+      else
+        printf 'row=whisper\ntitle=Download speech model\ndetail=1.6 GB\nicon=arrow.down.circle\nopen=Download\nclose=false\nhides=delete\npin=top\n\n'
+      fi
+    fi
+    [ -s "$history" ] || { echo "search=off"; exit 0; }
+    printf 'button=open\ntitle=Copy\n\nbutton=delete\ntitle=Delete\nshortcut=cmd+backspace\n\n'
+    tail -r "$history" | head -n 10 | while IFS="$(printf '\t')" read -r stamp text; do
+      printf 'row=%s\ntitle=%s\ndetail=%s\n\n' "$stamp" "$(printf %s "$text" | sed 's/\\/\\\\/g')" "$(age "$stamp")"
+    done
+    ;;
+  open)
+    [ -n "$2" ] || exit 0
+    if [ "$2" = whisper ]; then
+      if waiting; then kill -USR2 "$pid"; else wait_here "$PPID" fetch; fi
+      exit 0
+    fi
+    grep "^$2	" "$history" | cut -f2- | tr -d '\n' | pbcopy
+    echo "toast=Copied"
+    ;;
+  delete)
+    grep -v "^$2	" "$history" > "$history.new"; mv "$history.new" "$history"
     ;;
   dictate)
     command -v whisper-server > /dev/null || {
-      echo "Openspot cannot find Whisper. Install it with \`brew install whisper-cpp\`." >&2
+      echo "Openspot cannot find the speech engine. Install it with \`brew install whisper-cpp\`." >&2
       exit 1
     }
-    [ -f "$model" ] || { download; exit 0; }
     if waiting; then
       kill -USR1 "$pid"
       exit 0

@@ -62,6 +62,8 @@ public struct Spot: Equatable, Sendable {
     public let settings: [CommandOffer]
     /// The Settings rows of its own commands, which its sheet shows. Nil for a spot that draws its own sheet.
     public private(set) var keyList: SettingsSpot?
+    /// Whether its sheet shows the keys of its commands above the rows that its own read prints.
+    public private(set) var listsKeysAbove = false
     /// The sizes that a person can prefer for its card, when it offers fewer than all.
     private let sizeChoices: [SpotSize]?
     /// Whether its own sheet changes the keys in the config file.
@@ -189,13 +191,24 @@ public struct Spot: Equatable, Sendable {
         Icon(text: offers.first { $0.id == command }?.icon)?.symbol ?? symbol
     }
 
-    /// The same spot, which opens to the keys of its commands when it lists commands and has no read of its own.
+    /// The one command of a spot that opens to the keys of its commands, which Return runs.
+    public var soleCommand: String? {
+        guard keyList != nil, offers.count == 1 else { return nil }
+        return offers.first?.id
+    }
+
+    /// The same spot, which opens to the keys of its commands when it lists commands. With a read of its own, its sheet
+    /// shows the keys above its own rows.
     func listingKeys(with settings: SettingsSpot) -> Spot {
-        guard !offers.isEmpty, read == nil, shipped == nil else { return self }
+        guard !offers.isEmpty, shipped == nil else { return self }
         var spot = self
+        spot.keyList = settings.keys(of: id)
+        guard read == nil else {
+            spot.listsKeysAbove = true
+            return spot
+        }
         spot.kind = .list
         spot.read = .sheet
-        spot.keyList = settings.keys(of: id)
         return spot
     }
 

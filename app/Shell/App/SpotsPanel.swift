@@ -10,6 +10,7 @@ final class SpotsPanel: NSPanel {
     /// The frame that the window had before Edit Spots grew it.
     private var restFrame: NSRect?
     private var pressWatch: Task<Void, Never>?
+    private var tap = ModifierTap()
 
     override var canBecomeKey: Bool { true }
 
@@ -156,8 +157,14 @@ final class SpotsPanel: NSPanel {
 
     /// Gives each key to the actions first, so that they work whichever field has the focus.
     override func sendEvent(_ event: NSEvent) {
-        if event.type == .flagsChanged { model?.takeHeld(Self.modifiers(of: event.modifierFlags)) }
+        if event.type == .flagsChanged {
+            model?.takeHeld(Self.modifiers(of: event.modifierFlags))
+            if let modifier = tap.take(Self.modifiers(of: event.modifierFlags), at: event.timestamp), model?.recording != nil {
+                model?.recordTap(modifier)
+            }
+        }
         if event.type == .keyDown {
+            tap.spoil()
             if model?.recording != nil {
                 if Int(event.keyCode) == kVK_Escape {
                     model?.stopRecording()
@@ -166,13 +173,14 @@ final class SpotsPanel: NSPanel {
                 }
                 return
             }
+            if Int(event.keyCode) == kVK_Return, event.modifierFlags.contains(.command), model?.openSoleSettings() == true { return }
             if let key = Self.actionKey(of: event), model?.handleKey(key) == true { return }
             if model?.handleChain(code: UInt32(event.keyCode), modifiers: Self.modifiers(of: event.modifierFlags)) == true { return }
         }
         super.sendEvent(event)
     }
 
-    private static func modifiers(of flags: NSEvent.ModifierFlags) -> Shortcut.Modifiers {
+    static func modifiers(of flags: NSEvent.ModifierFlags) -> Shortcut.Modifiers {
         var modifiers: Shortcut.Modifiers = []
         if flags.contains(.command) { modifiers.insert(.command) }
         if flags.contains(.control) { modifiers.insert(.control) }

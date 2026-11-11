@@ -272,6 +272,8 @@ public final class SpotsModel {
     @ObservationIgnored public unowned let host: SpotsHost
     /// Where the plugins, the config and the recent rows live.
     @ObservationIgnored public let files: SpotFiles
+    /// The global keys that the person gave and that a spot still offers, as the app holds them.
+    private(set) var assignedKeys: [GlobalKey] = []
 
     public init(host: SpotsHost, files: SpotFiles = .standard, runs: SpotRuns? = nil) {
         self.host = host
@@ -453,7 +455,8 @@ public final class SpotsModel {
     }
 
     private func holdAssignedKeys(_ config: Config) {
-        host.hold(lastScan.offered(config.keys))
+        assignedKeys = lastScan.offered(config.keys)
+        host.hold(assignedKeys)
     }
 
     /// A person pressed a key that they assigned to a command.
@@ -703,6 +706,8 @@ public final class SpotsModel {
         case .list:
             if openList == entry.id {
                 closeList(moving: true)
+            } else if let command = entry.command.soleCommand {
+                runSole(command, of: entry)
             } else {
                 open(entry.id, moving: true)
             }
@@ -710,6 +715,37 @@ public final class SpotsModel {
             break
         case .widget:
             if let opens = entry.command.opens { press(opens) }
+        }
+    }
+
+    /// Opens the settings of the selected spot that has one command, as ⌘ Return does: the key of its command, and the
+    /// rows of its own read below. It is false for any other spot, so the key goes on to the actions and the forms.
+    public func openSoleSettings() -> Bool {
+        guard openList == nil, let entry = selectedEntry, entry.command.soleCommand != nil else { return false }
+        open(entry.id, moving: true)
+        return true
+    }
+
+    /// The footer of the selected spot that has one command: Return sets its key until it has one, and runs it after, and
+    /// ⌘ Return opens its settings.
+    var soleHint: String? {
+        guard openList == nil, let entry = selectedEntry, let command = entry.command.soleCommand else { return nil }
+        guard assignedKeys.contains(where: { $0.spot == entry.id && $0.act == .command(command) }) else {
+            return "⏎ Set key   ⌘⏎ Settings   ⌘K Actions"
+        }
+        let title = entry.command.offers.first?.title ?? command
+        return "⏎ \(title)   ⌘⏎ Settings   ⌘K Actions"
+    }
+
+    /// Runs the one command of a spot as its key does. With no key yet, it opens the spot's key and records one, so the
+    /// first Return sets up what each later Return runs.
+    private func runSole(_ command: String, of entry: Entry) {
+        if let key = assignedKeys.first(where: { $0.spot == entry.id && $0.act == .command(command) }) {
+            if isShown { host.dismiss() }
+            press(key)
+        } else {
+            open(entry.id, moving: true)
+            toggleRecording(id: SettingsSpot.keyRun(spot: entry.id, command: command))
         }
     }
 
@@ -982,6 +1018,10 @@ public final class SpotsModel {
         openSheet?.list.move(by: step)
     }
 
+    public func moveItemToEdge(last: Bool) {
+        openSheet?.list.moveToEdge(last: last)
+    }
+
     public func moveItemLine(by lines: Int) {
         openSheet?.list.moveLine(by: lines)
     }
@@ -1050,7 +1090,7 @@ public final class SpotsModel {
                 openForm(form, on: (entry, item))
                 return
             }
-            if action != nil || entry.command.pick == .close {
+            if action != nil || (entry.command.pick == .close && !item.staysOnPick) {
                 closingPick = (item, entry)
                 if isShown {
                     host.dismiss()

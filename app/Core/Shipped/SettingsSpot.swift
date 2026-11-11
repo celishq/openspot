@@ -129,17 +129,29 @@ public struct SettingsSpot: Equatable, Sendable {
         return shortcut
     }
 
+    /// The word after the command's title on the key row of a spot's own settings when it has one command.
+    static let soleTitle = "shortcut"
+    /// The value of `shortcut` on a key row that has no key yet, which its chip shows as Not set.
+    public static let unset = "Record"
+
+    /// The run of the row that gives this command of a spot its key.
+    public static func keyRun(spot: String, command: String) -> String {
+        "\(keyPrefix)\(spot):\(command)"
+    }
+
     /// The row that gives a command, or the float of a spot, its key, with Record until it has one. The full list names the
     /// spot of each row.
     private func keyRow(of script: Spot, act: GlobalKey.Act, title: String, icon: String, keys: [GlobalKey]) -> String {
         let key = keys.first { $0.spot == script.id && $0.act == act }
         let run = switch act {
         case .float: "\(Self.floatPrefix)\(script.id)"
-        case .command(let command): "\(Self.keyPrefix)\(script.id):\(command)"
+        case .command(let command): Self.keyRun(spot: script.id, command: command)
         }
         let hides = key == nil ? "hides=\(Self.clear)\n" : ""
-        let detail = only == nil ? "detail=\(script.name)\nparent=\(script.name)\n" : ""
-        return "row=\(run)\ntitle=\(title)\n\(detail)icon=\(icon)\n\(hides)shortcut=\(key?.trigger.text ?? "Record")\n"
+        let isSole = only != nil && script.offers.count == 1
+        let way = key == nil ? "detail=Press ⏎ to set\n" : "detail=Press ⌘↓ to select\nfocus=Press ⏎ to change\n"
+        let detail = only == nil ? "detail=\(script.name)\nparent=\(script.name)\n" : isSole ? way : ""
+        return "row=\(run)\ntitle=\(isSole ? "\(title) \(Self.soleTitle)" : title)\n\(detail)icon=\(icon)\n\(hides)shortcut=\(key?.trigger.text ?? Self.unset)\n"
     }
 
     /// The picture that its header names, or else its symbol.

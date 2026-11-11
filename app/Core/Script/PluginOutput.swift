@@ -65,7 +65,7 @@ public struct PluginOutput: Equatable, Sendable {
     private static let valueKinds: Set<String> = ["text", "number", "gauge", "graph", "switch", "slider"]
 
     /// Whether a first key names a row or a part, so that the block is not the head.
-    private static func isKind(_ key: String) -> Bool {
+    static func isKind(_ key: String) -> Bool {
         key == "row" || key == repeatKind || key == optionKind || retiredKinds.contains(key) || SpotPart.kinds.contains(key)
     }
 
@@ -231,9 +231,9 @@ public struct PluginOutput: Equatable, Sendable {
         value.flatMap { block in parts.first { $0.id == block.fields.first?.value } }
     }
 
-    /// Who searches its rows: the script when it prints `search=script`.
+    /// Who searches its rows: the script when it prints `search=script`, and no one with `search=off`.
     public var search: ItemSearch {
-        summary?.value("search") == ItemSearch.script.rawValue ? .script : .local
+        summary?.value("search").flatMap(ItemSearch.init(rawValue:)) ?? .local
     }
 
     /// How many rows go on one line, when the script prints a repeat.

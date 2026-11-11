@@ -2,7 +2,8 @@ import AppKit
 import AVFoundation
 import Carbon.HIToolbox
 
-/// The words that Whisper heard, without the tags it writes for sounds, such as `[BLANK_AUDIO]` or `(music)`.
+/// The words that Whisper heard, without the tags it writes for sounds, such as `[BLANK_AUDIO]` or `(music)`. A text
+/// with no letter or digit, such as the lone `.` that Whisper writes for silence, is no words.
 struct Transcript: Equatable {
     let text: String
 
@@ -14,7 +15,22 @@ struct Transcript: Equatable {
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !($0.hasPrefix("(") && $0.hasSuffix(")")) && !($0.hasPrefix("*") && $0.hasSuffix("*")) }
             .joined(separator: " ")
-        text = words.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        let joined = words.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        text = joined.contains { $0.isLetter || $0.isNumber } ? joined : ""
+    }
+}
+
+/// The texts that the person dictated, one line each as `<milliseconds>\t<text>`, oldest first. It keeps the last `limit`.
+struct History {
+    static let limit = 10
+    let file: URL
+
+    /// Adds a text with the time it came, and drops the oldest past the limit.
+    func add(_ text: String, at date: Date = Date()) {
+        let old = (try? String(contentsOf: file, encoding: .utf8))?.split(separator: "\n").map(String.init) ?? []
+        let line = "\(Int(date.timeIntervalSince1970 * 1000))\t\(text.replacingOccurrences(of: "\t", with: " "))"
+        let kept = (old + [line]).suffix(Self.limit)
+        try? (kept.joined(separator: "\n") + "\n").write(to: file, atomically: true, encoding: .utf8)
     }
 }
 
@@ -88,6 +104,82 @@ struct Wave {
         data.append(contentsOf: Array("data".utf8)); put(bytes.littleEndian)
         for sample in samples { put(Int16(max(-1, min(1, sample)) * 32_767).littleEndian) }
         self.data = data
+    }
+}
+
+/// The download of the Whisper model into the spot's data folder, with its progress from 0 to 1. The bytes go to a `.part`
+/// file beside the model, so a download that breaks, or a helper that restarts, goes on from the bytes it has. A server
+/// that cannot resume sends the whole file again. The model lands only whole.
+final class ModelDownload: NSObject, URLSessionDataDelegate {
+    static let source = URL(string: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin")!
+    /// The size of the model, for a server that does not say it.
+    static let size: Int64 = 1_624_555_275
+
+    private let target: URL
+    private let part: URL
+    private let progress: (Double) -> Void
+    private let end: (Bool) -> Void
+    private(set) var share: Double = 0
+    private var session: URLSession?
+    private var file: FileHandle?
+    /// The bytes on disk, at the start the bytes that a broken download left.
+    private(set) var have: Int64 = 0
+    private var whole: Int64 = ModelDownload.size
+
+    init(from source: URL = ModelDownload.source, to target: URL, progress: @escaping (Double) -> Void, end: @escaping (Bool) -> Void) {
+        self.target = target
+        part = target.appendingPathExtension("part")
+        self.progress = progress
+        self.end = end
+        super.init()
+        try? FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
+        have = (try? FileManager.default.attributesOfItem(atPath: part.path)[.size] as? Int64) ?? 0
+        share = min(Double(have) / Double(whole), 1)
+        var request = URLRequest(url: source)
+        if have > 0 { request.setValue("bytes=\(have)-", forHTTPHeaderField: "Range") }
+        let session = URLSession(configuration: .default, delegate: self, delegateQueue: .main)
+        self.session = session
+        session.dataTask(with: request).resume()
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 200
+        guard status == 200 || status == 206 else { return completionHandler(.cancel) }
+        if status != 206 {
+            have = 0
+            try? FileManager.default.removeItem(at: part)
+        }
+        if !FileManager.default.fileExists(atPath: part.path) { FileManager.default.createFile(atPath: part.path, contents: nil) }
+        file = try? FileHandle(forWritingTo: part)
+        _ = try? file?.seekToEnd()
+        if response.expectedContentLength > 0 { whole = have + response.expectedContentLength }
+        completionHandler(file == nil ? .cancel : .allow)
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        do {
+            try file?.write(contentsOf: data)
+        } catch {
+            return dataTask.cancel()
+        }
+        have += Int64(data.count)
+        share = min(Double(have) / Double(whole), 1)
+        progress(share)
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        try? file?.close()
+        file = nil
+        session.finishTasksAndInvalidate()
+        self.session = nil
+        let isWhole = error == nil && have > 0 && have == whole
+        if isWhole {
+            try? FileManager.default.removeItem(at: target)
+            try? FileManager.default.moveItem(at: part, to: target)
+        }
+        let landed = isWhole && FileManager.default.fileExists(atPath: target.path)
+        if landed { share = 1 }
+        end(landed)
     }
 }
 
@@ -218,15 +310,28 @@ final class Clipboard {
     }
 }
 
-/// The bars that rise with the voice. Each bar has its own share of the loudness, so they move as a wave and not as one.
+/// The dots that rise into bars with the voice. Each has its own share of the loudness, the middle ones most, and in
+/// silence a soft wave runs through them, so the pill shows that it still listens. `turn` lays them in a row up to 0.5
+/// and in a column after it, drawn in as dots at 0.5, as the pill turns.
 final class Bars: NSView {
-    private let shares: [CGFloat] = [0.45, 0.7, 0.9, 1, 0.85, 1, 0.9, 0.7, 0.45]
+    static let count = 13
+    static let width: CGFloat = 2.5
+    static let gap: CGFloat = 2.5
+    static var length: CGFloat { CGFloat(count) * width + CGFloat(count - 1) * gap }
+
+    private let shares: [CGFloat] = (0..<Bars.count).map { index in
+        let distance = (CGFloat(index) - CGFloat(Bars.count - 1) / 2) / (CGFloat(Bars.count) / 4)
+        return 0.3 + 0.7 * exp(-distance * distance)
+    }
     private var bars: [CALayer] = []
     private var level: CGFloat = 0
     private var target: CGFloat = 0
     private var phase: CGFloat = 0
     private var timer: Timer?
-    private(set) var isWorking = false
+
+    var turn: CGFloat = 0 {
+        didSet { draw() }
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -234,7 +339,7 @@ final class Bars: NSView {
         for _ in shares {
             let bar = CALayer()
             bar.backgroundColor = NSColor.white.cgColor
-            bar.cornerRadius = 1.5
+            bar.cornerRadius = Self.width / 2
             bar.actions = ["bounds": NSNull(), "position": NSNull(), "opacity": NSNull()]
             layer?.addSublayer(bar)
             bars.append(bar)
@@ -249,9 +354,8 @@ final class Bars: NSView {
         target = CGFloat(loudness)
     }
 
-    /// Moves the bars at each frame while the pill shows. `working` makes a slow wave that says Whisper is busy.
-    func run(working: Bool) {
-        isWorking = working
+    /// Moves the bars at each frame while the pill shows.
+    func run() {
         target = 0
         guard timer == nil else { return }
         timer = Timer.scheduledTimer(withTimeInterval: 1 / 60, repeats: true) { [weak self] _ in self?.draw() }
@@ -268,18 +372,96 @@ final class Bars: NSView {
 
     private func draw() {
         level += (target - level) * (target > level ? 0.5 : 0.15)
-        phase += isWorking ? 0.12 : 0.25
-        let width: CGFloat = 3
-        let gap: CGFloat = 3
-        let whole = CGFloat(shares.count) * width + CGFloat(shares.count - 1) * gap
-        let left = (bounds.width - whole) / 2
+        phase += 0.06
+        let isColumn = turn > 0.5
+        let fullness = abs(1 - 2 * turn)
+        let along = isColumn ? bounds.height : bounds.width
+        let side = isColumn ? bounds.width : bounds.height
+        let squeeze = min(max((along - 72) / Self.length, 0), 1)
+        let room = max(side - 12 - Self.width, 0)
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
         for (index, bar) in bars.enumerated() {
-            let wave = (sin(phase + CGFloat(index) * 0.7) + 1) / 2
-            let share = isWorking ? 0.15 + 0.35 * wave : shares[index] * level * (0.75 + 0.25 * wave)
-            let height = max(3, min(bounds.height, 3 + share * (bounds.height - 3)))
-            bar.frame = CGRect(x: left + CGFloat(index) * (width + gap), y: (bounds.height - height) / 2, width: width, height: height)
-            bar.opacity = isWorking ? 0.6 : 0.95
+            let wave = (sin(phase - CGFloat(index) * 0.5) + 1) / 2
+            let share = max(shares[index] * level * (0.8 + 0.2 * wave), 0.14 * wave * (1 - level))
+            let extent = Self.width + share * room * fullness
+            let offset = (CGFloat(index) - CGFloat(Self.count - 1) / 2) * (Self.width + Self.gap) * squeeze
+            let frame = isColumn
+                ? CGRect(x: bounds.midX - extent / 2, y: bounds.midY - offset - Self.width / 2, width: extent, height: Self.width)
+                : CGRect(x: bounds.midX + offset - Self.width / 2, y: bounds.midY - extent / 2, width: Self.width, height: extent)
+            bar.frame = frame
+            bar.opacity = Float(0.55 + 0.45 * min(1, share * 2))
         }
+        CATransaction.commit()
+    }
+}
+
+/// What the pill shows while Whisper reads: the word Transcribing and three dots that blink in turn. In a column there is
+/// no room for the word, so only the dots show, one above the other. The blink runs in Core Animation, off the main thread.
+final class Transcribing: NSView {
+    private let word = NSTextField(labelWithString: "Transcribing")
+    private var dots: [CALayer] = []
+    private let size: CGFloat = 4
+    private let gap: CGFloat = 4
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        word.font = .systemFont(ofSize: 12, weight: .medium)
+        word.textColor = .white
+        word.sizeToFit()
+        addSubview(word)
+        for _ in 0..<3 {
+            let dot = CALayer()
+            dot.backgroundColor = NSColor.white.cgColor
+            dot.cornerRadius = size / 2
+            dot.actions = ["bounds": NSNull(), "position": NSNull()]
+            layer?.addSublayer(dot)
+            dots.append(dot)
+        }
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    /// Starts the blink, each dot a third of a beat after the one before.
+    func blink() {
+        let now = CACurrentMediaTime()
+        for (index, dot) in dots.enumerated() {
+            let fade = CABasicAnimation(keyPath: "opacity")
+            fade.fromValue = 1
+            fade.toValue = 0.2
+            fade.duration = 0.45
+            fade.autoreverses = true
+            fade.repeatCount = .infinity
+            fade.beginTime = now + Double(index) * 0.3
+            fade.fillMode = .backwards
+            dot.add(fade, forKey: "blink")
+        }
+    }
+
+    func rest() {
+        dots.forEach { $0.removeAnimation(forKey: "blink") }
+    }
+
+    /// Lays out the word and the dots in a row, or only the dots in a column.
+    func lay(column: Bool) {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        word.isHidden = column
+        let run = 3 * size + 2 * gap
+        if column {
+            for (index, dot) in dots.enumerated() {
+                dot.frame = CGRect(x: bounds.midX - size / 2, y: bounds.midY + run / 2 - size - CGFloat(index) * (size + gap), width: size, height: size)
+            }
+        } else {
+            let whole = word.frame.width + 3 + run
+            let left = bounds.midX - whole / 2
+            word.frame.origin = CGPoint(x: left, y: bounds.midY - word.frame.height / 2)
+            for (index, dot) in dots.enumerated() {
+                dot.frame = CGRect(x: left + word.frame.width + 3 + CGFloat(index) * (size + gap), y: bounds.midY - size / 2 - 3, width: size, height: size)
+            }
+        }
+        CATransaction.commit()
     }
 }
 
@@ -291,13 +473,13 @@ final class PillButton: NSView {
     init(symbol: String, label: String, action: @escaping () -> Void) {
         self.action = action
         image = NSImageView(image: NSImage(systemSymbolName: symbol, accessibilityDescription: label) ?? NSImage())
-        super.init(frame: CGRect(x: 0, y: 0, width: 28, height: 28))
+        super.init(frame: CGRect(x: 0, y: 0, width: 24, height: 24))
         wantsLayer = true
-        layer?.cornerRadius = 14
+        layer?.cornerRadius = 12
         layer?.backgroundColor = NSColor(white: 1, alpha: 0.14).cgColor
-        image.symbolConfiguration = .init(pointSize: 11, weight: .bold)
+        image.symbolConfiguration = .init(pointSize: 10, weight: .bold)
         image.contentTintColor = .white
-        image.frame = bounds.insetBy(dx: 6, dy: 6)
+        image.frame = bounds.insetBy(dx: 5, dy: 5)
         addSubview(image)
         setAccessibilityRole(.button)
         setAccessibilityLabel(label)
@@ -317,16 +499,116 @@ final class PillButton: NSView {
     }
 }
 
-/// The pill at the bottom of the screen: ✕, the bars, and ✓. It never takes the focus, so the text lands where the cursor was.
+/// The blur of the pill. A drag on it, or on the dots, moves the pill along the edges of the screen.
+final class Ground: NSVisualEffectView {
+    var drag: (CGPoint) -> Void = { _ in }
+    var drop: () -> Void = {}
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    override func mouseDown(with event: NSEvent) {}
+
+    override func mouseDragged(with event: NSEvent) {
+        drag(NSEvent.mouseLocation)
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        drop()
+    }
+}
+
+/// Where the pill rests: an edge of the screen, and the share along that edge where its middle lies. On the left and right
+/// edges it stands as a column. The file keeps it as words, such as `bottom 0.5000`.
+struct PillPlace: Equatable {
+    enum Edge: String, CaseIterable {
+        case bottom, top, left, right
+    }
+
+    static let standard = PillPlace(edge: .bottom, along: 0.5)
+    /// The room between the pill and the edge of the screen.
+    static let gap: CGFloat = 8
+
+    let edge: Edge
+    let along: CGFloat
+
+    init(edge: Edge, along: CGFloat) {
+        self.edge = edge
+        self.along = min(max(along, 0), 1)
+    }
+
+    init?(text: String) {
+        let words = text.split(separator: " ")
+        guard words.count == 2, let edge = Edge(rawValue: String(words[0])), let along = Double(words[1]) else { return nil }
+        self.init(edge: edge, along: CGFloat(along))
+    }
+
+    /// The place at the edge nearest the pointer, with the pill's middle under it.
+    init(pointer: CGPoint, in area: CGRect) {
+        let distances: [(Edge, CGFloat)] = [
+            (.bottom, pointer.y - area.minY), (.top, area.maxY - pointer.y),
+            (.left, pointer.x - area.minX), (.right, area.maxX - pointer.x)
+        ]
+        let edge = distances.min { $0.1 < $1.1 }!.0
+        let along = edge.isUpright ? (pointer.y - area.minY) / max(area.height, 1) : (pointer.x - area.minX) / max(area.width, 1)
+        self.init(edge: edge, along: along)
+    }
+
+    var text: String {
+        String(format: "%@ %.4f", edge.rawValue, along)
+    }
+
+    /// The frame of a pill whose row is `long` by `short` points, at this place in the area and wholly inside it.
+    func frame(long: CGFloat, short: CGFloat, in area: CGRect) -> CGRect {
+        let size = edge.isUpright ? CGSize(width: short, height: long) : CGSize(width: long, height: short)
+        func centred(_ start: CGFloat, _ length: CGFloat, _ own: CGFloat) -> CGFloat {
+            min(max(start + along * length - own / 2, start + Self.gap), start + length - own - Self.gap)
+        }
+        let origin = switch edge {
+        case .bottom: CGPoint(x: centred(area.minX, area.width, size.width), y: area.minY + Self.gap)
+        case .top: CGPoint(x: centred(area.minX, area.width, size.width), y: area.maxY - size.height - Self.gap)
+        case .left: CGPoint(x: area.minX + Self.gap, y: centred(area.minY, area.height, size.height))
+        case .right: CGPoint(x: area.maxX - size.width - Self.gap, y: centred(area.minY, area.height, size.height))
+        }
+        return CGRect(origin: origin, size: size)
+    }
+}
+
+extension PillPlace.Edge {
+    var isUpright: Bool { self == .left || self == .right }
+}
+
+/// The pill on an edge of the screen: ✕, the dots, and ✓, in a row on the top and bottom edges and in a column on the
+/// sides. It never takes the focus, so the text lands where the cursor was. A drag slides it along the edges, and a turn
+/// from row to column is one eased motion of its frame, its buttons and its dots.
 final class Pill {
     let bars: Bars
     private let panel: NSPanel
+    private let ground: Ground
     private let note = NSTextField(labelWithString: "")
-    private let buttons: [NSView]
-    private let size = CGSize(width: 148, height: 40)
+    private let close: PillButton
+    private let done: PillButton
+    private let transcribing = Transcribing(frame: .zero)
+    private let fill = CALayer()
+    private let short: CGFloat = 32
+    private let long = Bars.length + 72
+    private let motionTime: CFTimeInterval = 0.24
+    private let file: URL
+    private var place: PillPlace
+    private var turn: CGFloat = 0
+    private var goal: (frame: CGRect, turn: CGFloat) = (.zero, 0)
+    private var motion: (frame: CGRect, turn: CGFloat, start: CFTimeInterval)?
+    private var motionTimer: Timer?
     private var noteTimer: Timer?
+    /// Counts each show and hide, so a fade that ends after a later show leaves the pill on the screen.
+    private var showing = 0
+    private var bloomTimer: Timer?
+    /// The full frame of a pill that shrinks, so a show that comes during the shrink grows back to it.
+    private var bloomWhole: CGRect?
 
-    init(discard: @escaping () -> Void, finish: @escaping () -> Void) {
+    init(folder: URL, discard: @escaping () -> Void, finish: @escaping () -> Void) {
+        file = folder.appendingPathComponent("place")
+        place = (try? String(contentsOf: file, encoding: .utf8)).flatMap(PillPlace.init(text:)) ?? .standard
+        let size = CGSize(width: long, height: short)
         panel = NSPanel(contentRect: CGRect(origin: .zero, size: size), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.isOpaque = false
         panel.backgroundColor = .clear
@@ -335,28 +617,32 @@ final class Pill {
         panel.hidesOnDeactivate = false
         panel.becomesKeyOnlyIfNeeded = true
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient, .ignoresCycle]
-        let ground = NSVisualEffectView(frame: CGRect(origin: .zero, size: size))
+        ground = Ground(frame: CGRect(origin: .zero, size: size))
         ground.material = .hudWindow
         ground.blendingMode = .behindWindow
         ground.state = .active
         ground.appearance = NSAppearance(named: .darkAqua)
-        ground.maskImage = Self.capsule(size.height / 2)
-        let close = PillButton(symbol: "xmark", label: "Discard", action: discard)
-        let done = PillButton(symbol: "checkmark", label: "Paste", action: finish)
-        close.frame.origin = CGPoint(x: 6, y: 6)
-        done.frame.origin = CGPoint(x: size.width - 34, y: 6)
-        bars = Bars(frame: CGRect(x: 38, y: 8, width: size.width - 76, height: size.height - 16))
-        note.frame = CGRect(x: 12, y: 11, width: size.width - 24, height: 18)
+        ground.maskImage = Self.capsule(short / 2)
+        ground.autoresizingMask = [.width, .height]
+        close = PillButton(symbol: "xmark", label: "Discard", action: discard)
+        done = PillButton(symbol: "checkmark", label: "Paste", action: finish)
+        bars = Bars(frame: ground.bounds)
         note.alignment = .center
         note.font = .systemFont(ofSize: 12, weight: .medium)
         note.textColor = .white
         note.lineBreakMode = .byTruncatingTail
         note.isHidden = true
-        buttons = [close, done]
-        for view in [close, bars, done, note] { ground.addSubview(view) }
+        transcribing.isHidden = true
+        ground.wantsLayer = true
+        fill.backgroundColor = NSColor(white: 1, alpha: 0.18).cgColor
+        fill.isHidden = true
+        ground.layer?.addSublayer(fill)
+        for view in [bars, close, done, transcribing, note] { ground.addSubview(view) }
         panel.contentView = ground
+        ground.drag = { [weak self] pointer in self?.drag(to: pointer) }
+        ground.drop = { [weak self] in self?.keep() }
         panel.alphaValue = 0.001
-        panel.setFrameOrigin(place())
+        rest()
         panel.orderFrontRegardless()
         DispatchQueue.main.async { self.panel.orderOut(nil) }
     }
@@ -365,67 +651,231 @@ final class Pill {
     func record() {
         noteTimer?.invalidate()
         note.isHidden = true
+        fill.isHidden = true
+        transcribing.rest()
+        transcribing.isHidden = true
         bars.isHidden = false
-        buttons.forEach { $0.isHidden = false }
-        bars.run(working: false)
+        close.isHidden = false
+        done.isHidden = false
+        bars.run()
         show()
     }
 
-    /// Shows that Whisper is busy with the words.
+    /// Shows Transcribing with its dots in place of the buttons and the bars, while Whisper reads the words.
     func work() {
-        bars.run(working: true)
-    }
-
-    /// Shows a short line in place of the bars, then hides the pill.
-    func say(_ text: String) {
         bars.rest()
         bars.isHidden = true
-        buttons.forEach { $0.isHidden = true }
+        close.isHidden = true
+        done.isHidden = true
+        transcribing.isHidden = false
+        transcribing.lay(column: turn > 0.5)
+        transcribing.blink()
+    }
+
+    /// Shows a short line in place of the dots, in a row beside the pill's edge, then hides the pill after `time`.
+    func say(_ text: String, for time: TimeInterval = 2.5) {
+        line(text, share: nil, for: time)
+    }
+
+    /// Shows the download of the model: its words, and the pill filling from the left as it comes.
+    func download(_ share: Double) {
+        line(Self.downloadWords(share), share: share, for: 4)
+    }
+
+    /// Moves the fill and the percent of a download that shows, and leaves a hidden pill hidden.
+    func progress(_ share: Double) {
+        guard panel.isVisible, panel.alphaValue > 0.5, !fill.isHidden else { return }
+        note.stringValue = Self.downloadWords(share)
+        lay(fill: share)
+    }
+
+    private static func downloadWords(_ share: Double) -> String {
+        "Downloading speech model · \(Int(share * 100))%"
+    }
+
+    private func lay(fill share: Double) {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        fill.frame = CGRect(x: 0, y: 0, width: ground.bounds.width * share, height: ground.bounds.height)
+        CATransaction.commit()
+    }
+
+    private func line(_ text: String, share: Double?, for time: TimeInterval) {
+        stopMotion()
+        bars.rest()
+        bars.isHidden = true
+        close.isHidden = true
+        done.isHidden = true
+        transcribing.rest()
+        transcribing.isHidden = true
         note.stringValue = text
         note.isHidden = false
-        let width = min(max(note.intrinsicContentSize.width + 32, size.width), 420)
-        var frame = panel.frame
-        frame.origin.x += (frame.width - width) / 2
-        frame.size.width = width
-        panel.setFrame(frame, display: true)
-        panel.contentView?.frame.size = frame.size
-        (panel.contentView as? NSVisualEffectView)?.maskImage = Self.capsule(size.height / 2)
-        note.frame.size.width = width - 24
-        show()
+        note.stringValue = share.map(Self.downloadWords) ?? text
+        let width = min(max(note.intrinsicContentSize.width + 32, long), 420)
+        let area = Self.area(at: CGPoint(x: panel.frame.midX, y: panel.frame.midY))
+        let centre = CGPoint(x: panel.frame.midX, y: panel.frame.midY)
+        var frame = CGRect(x: centre.x - width / 2, y: centre.y - short / 2, width: width, height: short)
+        if place.edge == .left { frame.origin.x = area.minX + PillPlace.gap }
+        if place.edge == .right { frame.origin.x = area.maxX - width - PillPlace.gap }
+        apply(frame, turn: 0)
+        note.frame = CGRect(x: 12, y: (short - 16) / 2, width: width - 24, height: 16)
+        fill.isHidden = share == nil
+        lay(fill: share ?? 0)
+        show(keeping: true)
         noteTimer?.invalidate()
-        noteTimer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: false) { [weak self] _ in self?.hide() }
+        noteTimer = Timer.scheduledTimer(withTimeInterval: time, repeats: false) { [weak self] _ in self?.hide() }
     }
 
     func hide() {
         noteTimer?.invalidate()
         bars.rest()
-        NSAnimationContext.runAnimationGroup({ context in
-            context.duration = 0.15
-            panel.animator().alphaValue = 0.001
-        }, completionHandler: { [panel] in
+        transcribing.rest()
+        showing += 1
+        let hiding = showing
+        guard panel.isVisible else { return }
+        bloom(opening: false) { [weak self] in
+            guard let self, showing == hiding else { return }
             panel.orderOut(nil)
-        })
+        }
     }
 
-    private func show() {
-        if !panel.isVisible || panel.alphaValue < 0.5 {
-            panel.setContentSize(size)
-            panel.contentView?.frame.size = size
-            panel.setFrameOrigin(place())
-            panel.alphaValue = 0.001
-        }
+    private func show(keeping: Bool = false) {
+        let isOut = !panel.isVisible || panel.alphaValue < 0.5
+        if !keeping, isOut { rest() }
+        showing += 1
         panel.orderFrontRegardless()
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.15
-            panel.animator().alphaValue = 1
+        if isOut {
+            bloom(opening: true)
+        } else {
+            panel.alphaValue = 1
         }
     }
 
-    private func place() -> CGPoint {
-        let pointer = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first { $0.frame.contains(pointer) } ?? NSScreen.main
-        let area = screen?.visibleFrame ?? .zero
-        return CGPoint(x: area.midX - size.width / 2, y: area.minY + 28)
+    /// Grows the pill out of a dot at the middle of its frame, or draws it back into one, with no bounce. Its buttons, dots and
+    /// words fade in as it grows and out as it shrinks, and the window's frame clips them all the way.
+    private func bloom(opening: Bool, then end: (() -> Void)? = nil) {
+        stopMotion()
+        bloomTimer?.invalidate()
+        let whole = opening ? panel.frame : (bloomWhole ?? panel.frame)
+        bloomWhole = whole
+        let dot = CGRect(x: whole.midX - short / 2, y: whole.midY - short / 2, width: short, height: short)
+        let start = CACurrentMediaTime()
+        let time: CFTimeInterval = opening ? 0.26 : 0.18
+        let turn = self.turn
+        let timer = Timer(timeInterval: 1 / 120, repeats: true) { [weak self] timer in
+            guard let self else { return timer.invalidate() }
+            let share = min((CACurrentMediaTime() - start) / time, 1)
+            let size = opening ? 1 - pow(1 - share, 3) : 1 - share * share
+            let frame = CGRect(
+                x: dot.minX + (whole.minX - dot.minX) * size, y: dot.minY + (whole.minY - dot.minY) * size,
+                width: dot.width + (whole.width - dot.width) * size, height: dot.height + (whole.height - dot.height) * size
+            )
+            apply(frame, turn: turn)
+            let bounds = ground.bounds
+            bars.frame = CGRect(x: (bounds.width - whole.width) / 2, y: (bounds.height - whole.height) / 2, width: whole.width, height: whole.height)
+            bars.turn = turn
+            let fade = size * size
+            for part in [bars, transcribing, note] as [NSView] { part.alphaValue = fade }
+            close.alphaValue *= fade
+            done.alphaValue *= fade
+            panel.alphaValue = min(1, size * 3)
+            guard share >= 1 else { return }
+            timer.invalidate()
+            bloomTimer = nil
+            if opening { bloomWhole = nil }
+            end?()
+        }
+        bloomTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
+        timer.fire()
+    }
+
+    /// Puts the pill at its place on the screen under the pointer, with no motion.
+    private func rest() {
+        stopMotion()
+        let frame = place.frame(long: long, short: short, in: Self.area(at: NSEvent.mouseLocation))
+        apply(frame, turn: place.edge.isUpright ? 1 : 0)
+    }
+
+    /// Slides the pill to the edge nearest the pointer. A change between a row and a column turns it in one motion.
+    private func drag(to pointer: CGPoint) {
+        let area = Self.area(at: pointer)
+        place = PillPlace(pointer: pointer, in: area)
+        let frame = place.frame(long: long, short: short, in: area)
+        let next: CGFloat = place.edge.isUpright ? 1 : 0
+        if motion == nil, next == turn {
+            apply(frame, turn: turn)
+            return
+        }
+        if motion == nil || next != goal.turn {
+            motion = (panel.frame, turn, CACurrentMediaTime())
+        }
+        goal = (frame, next)
+        guard motionTimer == nil else { return }
+        motionTimer = Timer.scheduledTimer(withTimeInterval: 1 / 120, repeats: true) { [weak self] _ in self?.step() }
+        RunLoop.main.add(motionTimer!, forMode: .common)
+    }
+
+    private func step() {
+        guard let motion else { return stopMotion() }
+        let share = min((CACurrentMediaTime() - motion.start) / motionTime, 1)
+        let eased = 1 - pow(1 - share, 3)
+        let turn = motion.turn + (goal.turn - motion.turn) * eased
+        let centre = CGPoint(
+            x: motion.frame.midX + (goal.frame.midX - motion.frame.midX) * eased,
+            y: motion.frame.midY + (goal.frame.midY - motion.frame.midY) * eased
+        )
+        let size = shape(at: turn)
+        apply(CGRect(x: centre.x - size.width / 2, y: centre.y - size.height / 2, width: size.width, height: size.height), turn: turn)
+        if share >= 1 { stopMotion() }
+    }
+
+    /// The size of the pill as it turns: the row draws in to a circle by 0.5, and the column grows out of it.
+    private func shape(at turn: CGFloat) -> CGSize {
+        turn <= 0.5
+            ? CGSize(width: long - (long - short) * turn * 2, height: short)
+            : CGSize(width: short, height: short + (long - short) * (turn - 0.5) * 2)
+    }
+
+    private func stopMotion() {
+        motionTimer?.invalidate()
+        motionTimer = nil
+        motion = nil
+    }
+
+    /// Sets the frame and lays out the buttons at the ends of its long side and the dots between, for a turn from 0, a
+    /// row, to 1, a column. The buttons fade out as the pill draws in to a circle, and back as it grows.
+    private func apply(_ frame: CGRect, turn: CGFloat) {
+        self.turn = turn
+        panel.setFrame(frame, display: false)
+        let bounds = ground.bounds
+        let edge = short / 2
+        let isColumn = turn > 0.5
+        let first = isColumn ? CGPoint(x: bounds.midX, y: bounds.maxY - edge) : CGPoint(x: edge, y: bounds.midY)
+        let last = isColumn ? CGPoint(x: bounds.midX, y: edge) : CGPoint(x: bounds.maxX - edge, y: bounds.midY)
+        close.frame.origin = CGPoint(x: first.x - close.frame.width / 2, y: first.y - close.frame.height / 2)
+        done.frame.origin = CGPoint(x: last.x - done.frame.width / 2, y: last.y - done.frame.height / 2)
+        let fullness = pow(abs(1 - 2 * turn), 2)
+        close.alphaValue = fullness
+        done.alphaValue = fullness
+        bars.frame = bounds
+        bars.turn = turn
+        transcribing.frame = bounds
+        transcribing.lay(column: turn > 0.5)
+        panel.display()
+    }
+
+    /// Keeps the place where the person let the pill go.
+    private func keep() {
+        try? place.text.write(to: file, atomically: true, encoding: .utf8)
+    }
+
+    /// The screen under a point, below its menu bar.
+    private static func area(at point: CGPoint) -> CGRect {
+        let screen = NSScreen.screens.first { $0.frame.contains(point) } ?? NSScreen.main ?? NSScreen.screens[0]
+        var area = screen.frame
+        area.size.height = screen.visibleFrame.maxY - area.minY
+        return area
     }
 
     private static func capsule(_ radius: CGFloat) -> NSImage {
@@ -467,8 +917,8 @@ final class EscapeKey {
     }
 }
 
-/// One dictation at a time: the key starts it, and the key or ✓ pastes its words, while Escape or ✕ discards it.
-/// Silence never stops it.
+/// One dictation at a time: the key starts it, and the key or ✓ stops it and shows Transcribing until Whisper reads the
+/// words, then hides the pill and pastes them. Escape or ✕ discards it. Silence never stops it.
 final class Dictation {
     enum Phase { case idle, recording, working }
 
@@ -476,13 +926,18 @@ final class Dictation {
     private let recording = Recording()
     private let whisper: Whisper
     private let clipboard = Clipboard()
+    private let history: History
     private var pill: Pill!
     private var escape: EscapeKey!
     private let shortest = 0.3
+    private let model: URL
+    private var download: ModelDownload?
 
     init(model: String, folder: URL) {
+        self.model = URL(fileURLWithPath: model)
         whisper = Whisper(model: model, folder: folder)
-        pill = Pill(discard: { [weak self] in self?.discard() }, finish: { [weak self] in self?.finish() })
+        history = History(file: folder.appendingPathComponent("history"))
+        pill = Pill(folder: folder, discard: { [weak self] in self?.discard() }, finish: { [weak self] in self?.finish() })
         escape = EscapeKey { [weak self] in self?.discard() }
     }
 
@@ -500,6 +955,7 @@ final class Dictation {
     }
 
     private func start() {
+        guard FileManager.default.fileExists(atPath: model.path) else { return fetch() }
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .audio) { granted in
@@ -522,6 +978,33 @@ final class Dictation {
         whisper.start()
         escape.hold()
         pill.record()
+    }
+
+    /// Downloads the model, or shows how far the download has come. The percent goes to a file that the spot's sheet
+    /// reads, and the pill says when Whisper is ready.
+    func fetch() {
+        if let download { return pill.download(download.share) }
+        guard !FileManager.default.fileExists(atPath: model.path) else { return pill.say("Dictate is ready. Press your key to speak.") }
+        let percent = model.deletingLastPathComponent().appendingPathComponent("download")
+        var shown = -1
+        download = ModelDownload(to: model, progress: { [weak self] share in
+            self?.pill.progress(share)
+            if Int(share * 100) != shown {
+                shown = Int(share * 100)
+                try? String(shown).write(to: percent, atomically: true, encoding: .utf8)
+            }
+        }, end: { [weak self] landed in
+            try? FileManager.default.removeItem(at: percent)
+            self?.download = nil
+            if landed {
+                self?.pill.say("Dictate is ready. Press your key to speak.", for: 5)
+            } else {
+                self?.pill.say("Openspot could not download the speech model. Check the internet, then press your key again.", for: 5)
+            }
+        })
+        let start = download?.share ?? 0
+        try? String(Int(start * 100)).write(to: percent, atomically: true, encoding: .utf8)
+        pill.download(start)
     }
 
     private func discard() {
@@ -547,7 +1030,7 @@ final class Dictation {
         Task { @MainActor in
             defer { phase = .idle }
             guard let heard = try? await whisper.transcribe(wave) else {
-                pill.say("Whisper could not read the words. Try again.")
+                pill.say("Openspot could not turn the speech into text. Try again.")
                 return
             }
             let text = Transcript(whisper: heard).text
@@ -555,9 +1038,9 @@ final class Dictation {
                 pill.say("Openspot heard no words.")
                 return
             }
-            if clipboard.paste(text) {
-                pill.hide()
-            } else {
+            history.add(text)
+            pill.hide()
+            if !clipboard.paste(text) {
                 pill.say("Copied, but Openspot cannot paste. Press ⌘V.")
             }
         }
@@ -569,6 +1052,28 @@ switch arguments.dropFirst().first {
 case "clean":
     let input = String(decoding: FileHandle.standardInput.readDataToEndOfFile(), as: UTF8.self)
     print(Transcript(whisper: input).text)
+case "place":
+    guard arguments.count == 5, let x = Double(arguments[3]), let y = Double(arguments[4]) else { exit(2) }
+    let area = CGRect(x: 0, y: 0, width: 1000, height: 700)
+    let kept = PillPlace(text: arguments[2]) ?? .standard
+    let dropped = PillPlace(pointer: CGPoint(x: x, y: y), in: area)
+    func words(_ frame: CGRect) -> String { "\(Int(frame.minX)) \(Int(frame.minY)) \(Int(frame.width)) \(Int(frame.height))" }
+    print("\(kept.text) \(words(kept.frame(long: 150, short: 32, in: area))) | \(dropped.text) \(words(dropped.frame(long: 150, short: 32, in: area)))")
+case "fetch":
+    guard arguments.count == 4, let source = URL(string: arguments[2]) else { exit(2) }
+    var fetching: ModelDownload?
+    var startBytes: Int64 = 0
+    fetching = ModelDownload(from: source, to: URL(fileURLWithPath: arguments[3]), progress: { _ in }, end: { landed in
+        print("from \(startBytes)")
+        print(landed ? "landed" : "failed")
+        _ = fetching
+        exit(landed ? 0 : 1)
+    })
+    startBytes = fetching?.have ?? 0
+    RunLoop.main.run()
+case "remember":
+    guard arguments.count == 5, let time = Double(arguments[3]) else { exit(2) }
+    History(file: URL(fileURLWithPath: arguments[2])).add(arguments[4], at: Date(timeIntervalSince1970: time))
 case "wave":
     let samples = arguments.dropFirst(2).compactMap(Float.init)
     FileHandle.standardOutput.write(Wave(samples: samples, rate: Recording.rate).data)
@@ -583,6 +1088,10 @@ case "stay":
     let press = DispatchSource.makeSignalSource(signal: SIGUSR1, queue: .main)
     press.setEventHandler { dictation.toggle() }
     press.resume()
+    signal(SIGUSR2, SIG_IGN)
+    let fetch = DispatchSource.makeSignalSource(signal: SIGUSR2, queue: .main)
+    fetch.setEventHandler { dictation.fetch() }
+    fetch.resume()
     let end = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
     end.setEventHandler { dictation.stop(); exit(0) }
     end.resume()
@@ -591,6 +1100,7 @@ case "stay":
     watch.resume()
     if kill(parent, 0) != 0 { dictation.stop(); exit(0) }
     if arguments.count > 4, arguments[4] == "start" { DispatchQueue.main.async { dictation.toggle() } }
+    if arguments.count > 4, arguments[4] == "fetch" { DispatchQueue.main.async { dictation.fetch() } }
     app.run()
 default:
     exit(2)

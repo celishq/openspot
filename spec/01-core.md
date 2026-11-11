@@ -86,7 +86,21 @@ case "$1" in
 esac
 ```
 
-A script with `command` blocks has no card on the grid, because its commands are what it gives.
+A script with `command` blocks has no card on the grid, because its commands are what it gives. Return on a spot with one
+command runs it, as its key does. With no key yet, it opens the spot's key and records one, and stays open to show the key it took. ⌘ Return opens its settings:
+the rows of its own `read`, when it has one, and the key of each command pinned under them.
+
+A row with `focus=<text>` shows that text as its second line while it is selected, in place of its `detail`, such as what
+Enter does on it.
+
+A row with `open=<word>` names what Enter does on it, in place of the word of the spot's `open` action, and with `close=false`
+the panel stays open after Enter on it, such as for a row that starts a download and shows its progress.
+
+A row with `pin=bottom` stays at the bottom of its list, under the rows that scroll, and a search never hides it. ⌘↓ selects
+the last row of a list and ⌘↑ the first.
+
+A key for a command or a float is a key with modifiers, a shake, or a tap of one modifier alone, such as Option: pressed
+and let go within 0.5 s, with no other key or click between. Openspot hears a tap only with Accessibility.
 
 ## Places
 

@@ -20,8 +20,24 @@ public struct SpotItem: Equatable, Sendable {
     public let tone: MetricValue.Tone?
     /// The file that the row stands for, which a drag takes out of the sheet (O1).
     public let file: String?
+    /// Where it stays, above or under the rows that scroll, from `pin=top` or `pin=bottom`. A search keeps it.
+    public let pin: Pin?
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil) {
+    public enum Pin: String, Sendable {
+        case top, bottom
+    }
+
+    public var isPinned: Bool {
+        pin != nil
+    }
+    /// The second line while the row is selected, from `focus=`, in place of its `detail`.
+    public let focusSubtitle: String?
+    /// The word for Enter on this row, from `open=`, in place of the word of the spot's `open` action.
+    public let openTitle: String?
+    /// Whether the panel stays open after Enter on this row, from `close=false`.
+    public let staysOnPick: Bool
+
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, focusSubtitle: String? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -33,6 +49,10 @@ public struct SpotItem: Equatable, Sendable {
         self.isOn = isOn
         self.tone = tone
         self.file = file
+        self.pin = pin
+        self.openTitle = openTitle
+        self.focusSubtitle = focusSubtitle
+        self.staysOnPick = staysOnPick
     }
 
     /// Reads the block of one row: `row=<id>`, which a pick sends, and `title`, which is the id when it has none.
@@ -51,7 +71,11 @@ public struct SpotItem: Equatable, Sendable {
             shortcut: block.value("shortcut"),
             isOn: block.flag("value") ?? false,
             tone: block.value("tone").flatMap(MetricValue.Tone.init),
-            file: block.value("file").flatMap { $0.hasPrefix("/") ? $0 : nil }
+            file: block.value("file").flatMap { $0.hasPrefix("/") ? $0 : nil },
+            pin: block.value("pin").flatMap(Pin.init(rawValue:)),
+            openTitle: block.value("open"),
+            staysOnPick: block.flag("close") == false,
+            focusSubtitle: block.value("focus")
         )
     }
 

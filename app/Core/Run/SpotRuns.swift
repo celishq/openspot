@@ -314,15 +314,79 @@ public final class SpotRuns {
     }
 
     private func frames(of command: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String] = [:]) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void, process: ScriptProcess?) {
+        if let keys = command.keyList, command.listsKeysAbove, action.arguments.first == "read" {
+            let own = scriptFrames(of: command, action, input: input, limit: limit, variables: variables)
+            return (Self.prefixed(own.stream) { (try? keys.answer(["read"])) ?? "" }, own.halt, own.process)
+        }
         if let shipped = command.keyList.flatMap({ $0.answers(action.arguments) ? ShippedSpot.settings($0) : nil }) ?? command.shipped {
             let (stream, halt) = answered { try await shipped.answer(action.arguments, input: input) }
             return (stream, halt, nil)
         }
+        return scriptFrames(of: command, action, input: input, limit: limit, variables: variables)
+    }
+
+    private func scriptFrames(of command: Spot, _ action: SpotAction, input: String?, limit: TimeInterval?, variables: [String: String]) -> (stream: AsyncThrowingStream<String, Error>, halt: () -> Void, process: ScriptProcess) {
         let sent = action.sent(input: input)
         let process = ScriptProcess(url: SwiftProgram.file(beside: command.url) ?? command.url, arguments: sent.arguments, mode: .once(input: sent.input), limit: limit, stopPause: stopPause, dataName: command.dataName, variables: variables.merging(["OPENSPOT_ID": command.id]) { given, _ in given })
         let stream = process.start()
         keep(process)
         return (stream, { process.stop() }, process)
+    }
+
+    /// A frame of the script with the key rows after its rows, pinned at the top while they have no key and at the bottom once
+    /// they have one, so a row that the script pins at the top comes first. The two heads become one, and the script's keys
+    /// win, such as `search=off`. Each row keeps only its own actions: a key row hides the
+    /// script's, and a row of the script hides the keys', so a shortcut that both use, such as ⌘⌫, acts on the right row.
+    /// An action of the script wins over a key action of the same id.
+    static func joined(keys: String, own frame: String) -> String {
+        let keyBlocks = TextBlock.blocks(in: keys)
+        let ownBlocks = TextBlock.blocks(in: frame)
+        func ids(_ blocks: [TextBlock]) -> [String] {
+            blocks.compactMap { $0.fields.first?.key == "button" ? $0.fields.first?.value : nil }
+        }
+        let ownActions = ids(ownBlocks)
+        let keyActions = ids(keyBlocks).filter { !ownActions.contains($0) }
+        func hiding(_ actions: [String], pin: Bool) -> (TextBlock) -> TextBlock? {
+            { block in
+                guard let kind = block.fields.first?.key else { return block }
+                if kind == "button", keyBlocks.contains(block), ownActions.contains(block.fields.first?.value ?? "") { return nil }
+                guard kind == "row" else { return block }
+                let place = block.value("shortcut") == SettingsSpot.unset ? SpotItem.Pin.top : .bottom
+                let pinned = pin ? [TextBlock.Field(key: "pin", value: place.rawValue)] : []
+                return TextBlock(fields: block.fields + actions.map { TextBlock.Field(key: "hides", value: $0) } + pinned)
+            }
+        }
+        func isHead(_ block: TextBlock) -> Bool {
+            block.fields.first.map { !PluginOutput.isKind($0.key) && $0.key != "button" } ?? false
+        }
+        let ownHead = ownBlocks.first(where: isHead)
+        let keyHead = keyBlocks.first(where: isHead)
+        let headFields = (ownHead?.fields ?? []) + (keyHead?.fields ?? []).filter { field in ownHead?.value(field.key) == nil }
+        let head = headFields.isEmpty ? [] : [TextBlock(fields: headFields)]
+        let rest = ownBlocks.filter { !isHead($0) }.compactMap(hiding(keyActions, pin: false))
+            + keyBlocks.filter { !isHead($0) }.compactMap(hiding(ownActions, pin: true))
+        return (head + rest).map(\.text).joined(separator: "\n")
+    }
+
+    /// The frames of a script with the rows of `head` above each, and those rows alone when the script prints no frame.
+    private static func prefixed(_ frames: AsyncThrowingStream<String, Error>, head: @escaping @Sendable () -> String) -> AsyncThrowingStream<String, Error> {
+        let (stream, continuation) = AsyncThrowingStream.makeStream(of: String.self)
+        let task = Task {
+            let rows = head()
+            var printed = false
+            do {
+                for try await frame in frames {
+                    printed = true
+                    continuation.yield(rows.isEmpty ? frame : Self.joined(keys: rows, own: frame))
+                }
+                if !printed, !rows.isEmpty { continuation.yield(rows) }
+                continuation.finish()
+            } catch {
+                continuation.finish(throwing: error)
+            }
+        }
+        continuation.onTermination = { _ in task.cancel() }
+        return stream
     }
 
     /// The frames of an answer that Swift gives in the app: one frame with all its text.
