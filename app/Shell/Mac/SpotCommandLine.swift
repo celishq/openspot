@@ -27,6 +27,8 @@ enum SpotCommandLine {
             SpotClipboard.copy(text: standardInput)
         case .clipboardPaste:
             SpotClipboard.paste()
+        case .clipboardRead:
+            SpotClipboard.read()
         case .check(let path):
             check(path)
         case .checkJSON(let path):

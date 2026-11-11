@@ -92,7 +92,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .remindersDone(let id, let isDone): return reminders.done(id, isDone, isRead: isRead)
         case .remindersShow(let id): return reminders.show(id, isRead: isRead)
         case .check, .checkJSON, .spotRun, .spotShow, .renderSpot, .render, .renderCard, .sandbox, .colorPick, .folderPick,
-             .clipboardCopy, .clipboardPaste, .translate, .translateLanguages, .windowFrame, .windowMove, .screenSources,
+             .clipboardCopy, .clipboardPaste, .clipboardRead, .translate, .translateLanguages, .windowFrame, .windowMove, .screenSources,
              .screenShot, .screenRecordStart, .screenRecordStop, .screenRecordStatus, .helper, .glyphBook:
             return nil
         }

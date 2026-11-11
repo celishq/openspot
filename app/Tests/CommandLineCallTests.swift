@@ -104,6 +104,7 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "copy", "/a b.mov"]), .clipboardCopy("/a b.mov"))
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "paste"]), .clipboardPaste)
         XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "copy"]), .clipboardCopy(nil))
+        XCTAssertEqual(CommandLineCall(arguments: ["clipboard", "read"]), .clipboardRead)
         XCTAssertEqual(CommandLineCall(arguments: ["translate", "languages"]), .translateLanguages)
         XCTAssertEqual(CommandLineCall(arguments: ["translate"]), .translate(from: nil, to: nil))
         XCTAssertEqual(CommandLineCall(arguments: ["translate", "--from", "ru", "--to", "en"]), .translate(from: "ru", to: "en"))

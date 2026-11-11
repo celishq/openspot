@@ -164,6 +164,7 @@ final class ShortcutsPluginTests: SamplePluginsCase {
             let arguments = try runArguments(in: folder)
             XCTAssertEqual(Array(arguments.prefix(3)), ["run", "Take a break", "-i"])
             XCTAssertEqual(try String(contentsOfFile: arguments[3], encoding: .utf8), "hello there")
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("direct").path))
         }
     }
 

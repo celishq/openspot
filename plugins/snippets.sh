@@ -78,7 +78,7 @@ case "$1" in
     ;;
   paste)
     text=$(content "$2" && printf x) || exit 1
-    previous=$(pbpaste; printf x)
+    previous=$(openspot clipboard read; printf x)
     printf '%s' "${text%x}" | openspot clipboard copy
     openspot clipboard paste || exit 1
     sleep 0.3

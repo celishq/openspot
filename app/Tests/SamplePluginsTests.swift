@@ -406,6 +406,19 @@ final class SamplePluginsTests: SamplePluginsCase {
         }
     }
 
+    func testEmojiPastesThePickAndPutsBackTheClipboard() async throws {
+        try await withPrivateHome { folder in
+            let emoji = try self.fakeEmoji(in: folder)
+            try "before".write(to: folder.appendingPathComponent("clipboard"), atomically: true, encoding: .utf8)
+
+            _ = try await SpotRuns().answer(of: emoji, SpotAction(arguments: ["paste", "👍"]), input: nil, limit: 30)
+
+            XCTAssertEqual(try self.read("pasted", in: folder), "👍")
+            XCTAssertEqual(try self.read("clipboard", in: folder), "before")
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("direct").path))
+        }
+    }
+
     func testAReadAnswersWithItsFirstFrame() async throws {
         try await withPrivateHome { folder in
             let url = folder.appendingPathComponent("frames.sh")

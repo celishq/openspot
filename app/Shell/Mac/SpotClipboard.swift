@@ -1,8 +1,8 @@
 import AppKit
 import ApplicationServices
 
-/// The clipboard for a script. It copies a file as Finder does, with the picture of an image, and pastes into the front app
-/// with a ⌘V key event, which needs Accessibility.
+/// The clipboard for a script. It copies a file as Finder does, with the picture of an image, reads the text, and pastes into
+/// the front app with a ⌘V key event, which needs Accessibility.
 @MainActor
 enum SpotClipboard {
     static let accessibility = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
@@ -21,6 +21,12 @@ enum SpotClipboard {
     static func copy(text: String) -> Never {
         NSPasteboard.general.clearContents()
         guard NSPasteboard.general.setString(text, forType: .string) else { fail("Openspot could not copy the text. Try again.") }
+        exit(0)
+    }
+
+    /// Prints the text on the clipboard, or nothing when it holds none, and exits.
+    static func read() -> Never {
+        FileHandle.standardOutput.write(Data((NSPasteboard.general.string(forType: .string) ?? "").utf8))
         exit(0)
     }
 

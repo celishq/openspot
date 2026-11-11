@@ -75,6 +75,8 @@ public enum CommandLineCall: Equatable, Sendable {
     /// Copies a file, or the text on stdin with no file.
     case clipboardCopy(String?)
     case clipboardPaste
+    /// Prints the text on the clipboard.
+    case clipboardRead
     /// Raises an event in the running app, with a value, so that each spot that lists it reads (B3).
     case eventEmit(name: String, value: String?)
     case translate(from: String?, to: String?)
@@ -178,6 +180,7 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot update install                      Restarts the app into the update that it downloaded.
     openspot clipboard copy [file]               Copies the file as Finder does, or the text on stdin.
     openspot clipboard paste                     Pastes the clipboard into the front app.
+    openspot clipboard read                      Prints the text on the clipboard, or nothing when it holds none.
     openspot event emit <name> [value]           Raises an event in the running app, such as music.track. Each spot
                                                  that lists it in its read reads, with the value in OPENSPOT_VALUE.
     openspot translate [--from code] [--to code] Translates the text on stdin.
@@ -321,6 +324,7 @@ public enum CommandLineCall: Equatable, Sendable {
             self = Self.setting(Array(rest.dropFirst()), sets: rest.first == "set", environment) ?? .unknown(arguments.joined(separator: " "))
         case ("clipboard", "copy") where rest.count <= 2: self = .clipboardCopy(rest.dropFirst().first)
         case ("clipboard", "paste") where rest.count == 1: self = .clipboardPaste
+        case ("clipboard", "read") where rest.count == 1: self = .clipboardRead
         case ("event", "emit") where rest.count == 2 || rest.count == 3:
             self = SpotEvent.isName(rest[1])
                 ? .eventEmit(name: rest[1], value: rest.count == 3 ? rest[2] : nil)

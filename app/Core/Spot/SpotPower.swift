@@ -50,6 +50,7 @@ public struct SpotPower: Equatable, Sendable {
         case ("color", "pick"): (.screen, "picked a colour on the screen")
         case ("clipboard", "copy"): (.clipboard, "copied to the clipboard")
         case ("clipboard", "paste"): (.clipboard, "pasted the clipboard")
+        case ("clipboard", "read"): (.clipboard, "read the clipboard")
         case ("calendar", "add"): (.calendar, "added an event")
         case ("calendar", "show"): (.calendar, "opened Calendar")
         case ("calendar", _): (.calendar, "read your calendar")

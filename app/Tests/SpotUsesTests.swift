@@ -105,6 +105,7 @@ final class SpotUsesTests: SpotRunsCase {
             (["setting", "list"], "settings"), (["setting", "get", "--spot", "other", "k"], "settings"),
             (["setting", "get", "k"], nil), (["setting", "set", "k", "v"], nil), (["screen", "sources"], "screen"),
             (["window", "move", "0 0 1 1"], "screen"), (["clipboard", "copy"], "clipboard"), (["clipboard", "paste"], "clipboard"),
+            (["clipboard", "read"], "clipboard"),
             (["calendar", "events"], "calendar"), (["reminders", "lists"], "calendar"), (["calc", "solve", "2+2"], nil),
             (["spot", "stats"], nil), (["spot", "list"], nil), (["event", "emit", "a.b"], nil)
         ]

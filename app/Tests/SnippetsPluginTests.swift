@@ -58,6 +58,7 @@ final class SnippetsPluginTests: SamplePluginsCase {
             try await snippets.perform(.action(try await self.action("paste", of: snippets), item: item), timeout: 5)
             XCTAssertEqual(try self.read("pasted", in: folder), text)
             XCTAssertEqual(try self.read("clipboard", in: folder), "before")
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("direct").path))
 
             try await snippets.perform(.action(try await self.action("delete", of: snippets), item: item), timeout: 5)
             let gone = try await snippets.items(timeout: 5).items

@@ -628,7 +628,7 @@ socket of the API is a file with mode `0600`, so only the person's own processes
 | `spots`     | `spot add`, `spot remove`, `spot on`, `spot off`, `spot new`, `spot run` and `spot log`                |
 | `settings`  | `setting list`, and `setting get`, `setting set` or `setting change` of another spot                   |
 | `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`       |
-| `clipboard` | `clipboard copy` and `clipboard paste`                                                                 |
+| `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                              |
 | `calendar`  | each call of `calendar` and `reminders`                                                                |
 | `network`   | No call. It says that the spot reaches the network, which a review shows and Careful mode allows (Z8). |
 | `files`     | No call. It says that the spot writes outside its data folder, which Careful mode allows (Z8).         |

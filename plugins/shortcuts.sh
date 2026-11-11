@@ -105,7 +105,7 @@ case "$1" in
     ;;
   clipboard)
     text="$(mktemp -d)/clipboard.txt"
-    pbpaste >"$text"
+    openspot clipboard read >"$text"
     run "$2" "$text"
     ;;
   edit)

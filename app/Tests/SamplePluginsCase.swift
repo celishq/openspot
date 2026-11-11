@@ -68,14 +68,15 @@ class SamplePluginsCase: XCTestCase {
     }
 
     /// Runs with an empty home and temp folder and with fake clipboard, open and caffeinate tools, so a test touches nothing
-    /// of the person's. The fake caffeinate is a process of that name that only waits.
+    /// of the person's. The fake caffeinate is a process of that name that only waits, and `pbcopy` and `pbpaste` add their
+    /// names to the file `direct`.
     func withPrivateHome(_ body: (URL) async throws -> Void) async throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-home-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
         for (name, script) in [
-            ("pbcopy", "cat > '\(folder.path)/clipboard'"),
-            ("pbpaste", "cat '\(folder.path)/clipboard' 2>/dev/null"),
+            ("pbcopy", "echo pbcopy >> '\(folder.path)/direct'; cat > '\(folder.path)/clipboard'"),
+            ("pbpaste", "echo pbpaste >> '\(folder.path)/direct'; cat '\(folder.path)/clipboard' 2>/dev/null"),
             ("open", "echo \"$1\" > '\(folder.path)/opened'"),
             ("curl", Self.fakeCurl(log: folder.appendingPathComponent("fetched").path)),
             ("gh", Self.fakeGh(answer: folder.appendingPathComponent("gh-answer").path)),
@@ -101,13 +102,14 @@ class SamplePluginsCase: XCTestCase {
     }
 
     /// The openspot command: a sum prints the file `calc-answer` and adds its words to `calc-asked`, a copy writes the file
-    /// `clipboard`, and a paste copies it to `pasted`. A setting is the file
+    /// `clipboard`, a read prints it, and a paste copies it to `pasted`. A setting is the file
     /// `setting-<key>`, and a folder pick prints the file `picked`.
     static func fakeOpenspot(in folder: URL) -> String {
         """
         case "$1 $2" in
           'calc solve') printf '%s\\n' "$3" >> '\(folder.path)/calc-asked'; cat '\(folder.path)/calc-answer' 2>/dev/null ;;
           'clipboard copy') cat > '\(folder.path)/clipboard' ;;
+          'clipboard read') cat '\(folder.path)/clipboard' 2>/dev/null ;;
           'clipboard paste') cp '\(folder.path)/clipboard' '\(folder.path)/pasted' ;;
           'setting get') cat "\(folder.path)/setting-$3" 2>/dev/null ;;
           'setting set') if [ $# -ge 4 ]; then printf '%s' "$4" > "\(folder.path)/setting-$3"; else rm -f "\(folder.path)/setting-$3"; fi ;;
