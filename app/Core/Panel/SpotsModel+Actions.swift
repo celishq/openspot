@@ -226,8 +226,7 @@ extension SpotsModel {
             command: target.entry.command,
             item: target.item,
             showsPrimary: !isOpenList || target.item != nil,
-            extras: extras(on: target),
-            showsEdit: openList == nil && target.item == nil
+            extras: extras(on: target)
         )
     }
 
@@ -288,9 +287,7 @@ extension SpotsModel {
             return
         }
         closeMenu()
-        if row.opensEdit {
-            beginEditing()
-        } else if let action = row.action {
+        if let action = row.action {
             run(action, on: target)
         } else if let item = target.item {
             pick(item, of: target.entry)

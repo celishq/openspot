@@ -160,7 +160,6 @@ private struct SpotCardMenu: View {
         }
         if entry.item == nil {
             Button(entry.isOnGrid ? "Hide from Grid" : "Show on Grid") { model.setOnGrid(!entry.isOnGrid, for: entry.id) }
-            Button("Edit Spots") { model.beginEditing() }
         }
     }
 }

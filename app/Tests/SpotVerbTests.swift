@@ -89,7 +89,7 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
 
         let menu = try XCTUnwrap(model.menu)
-        XCTAssertEqual(menu.rows.count, 6)
+        XCTAssertEqual(menu.rows.count, 5)
         let rows = menu.rows.filter { $0.action != nil }
         XCTAssertEqual(rows.map(\.title), ["Edit", "Copy prompt for AI", "Share", "Delete"])
         XCTAssertEqual(rows.map(\.keyLabel), ["⌘E", "", "⌘⇧C", "⌘⌫"])
