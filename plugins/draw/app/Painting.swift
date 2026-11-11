@@ -9,7 +9,7 @@ struct Painting {
     var wordless: Set<UUID> = []
 
     func draw(in context: CGContext) {
-        for figure in board.figures.filter({ $0.kind != .junction }) + board.figures.filter({ $0.kind == .junction }) {
+        for figure in board.figures.filter({ $0.kind != .tie }) + board.figures.filter({ $0.kind == .tie }) {
             context.saveGState()
             if faint.contains(figure.id) { context.setAlpha(0.25) }
             draw(figure, in: context)
@@ -25,11 +25,9 @@ struct Painting {
         context.setStrokeColor(figure.ink.color.cgColor)
         if figure.dashed { context.setLineDash(phase: 0, lengths: [width * 2.2, width * 2.2]) }
         switch figure.kind {
-        case .rectangle, .ellipse:
+        case .shape:
             let box = figure.frame
-            let path = figure.kind == .rectangle
-                ? CGPath(roundedRect: box, cornerWidth: min(10, box.width / 2), cornerHeight: min(10, box.height / 2), transform: nil)
-                : CGPath(ellipseIn: box, transform: nil)
+            let path = figure.form.path(in: box)
             if figure.filled {
                 context.setFillColor(figure.ink.tint.cgColor)
                 context.addPath(path)
@@ -37,31 +35,34 @@ struct Painting {
             }
             context.addPath(path)
             context.strokePath()
+            if let marks = figure.form.marks(in: box) {
+                context.addPath(marks)
+                context.strokePath()
+            }
             if !wordless.contains(figure.id) { label(figure) }
         case .text:
             if !wordless.contains(figure.id) { figure.words.draw(in: figure.frame) }
         case .pen:
             context.addPath(Painting.smooth(figure.points))
             context.strokePath()
-        case .line:
-            let line = board.path(of: figure)
-            context.addLines(between: line)
-            context.strokePath()
         case .arrow:
             let line = board.path(of: figure)
             context.addLines(between: line)
             context.strokePath()
-            let joined = figure.end.flatMap { board[$0] }?.kind == .junction
-            if !joined, line.count > 1 {
-                context.setLineDash(phase: 0, lengths: [])
+            guard line.count > 1 else { return }
+            context.setLineDash(phase: 0, lengths: [])
+            if figure.heads != .none {
                 head(at: line[line.count - 1], from: line[max(0, line.count - 4)], width: width, in: context)
             }
-        case .junction:
-            junction(figure, in: context)
+            if figure.heads == .both {
+                head(at: line[0], from: line[min(line.count - 1, 3)], width: width, in: context)
+            }
+        case .tie:
+            tie(figure, in: context)
         }
     }
 
-    /// The words inside a box, wrapped and centred.
+    /// The words inside a shape, wrapped and centred.
     private func label(_ figure: Figure) {
         guard !figure.text.isEmpty else { return }
         let box = figure.frame.insetBy(dx: 10, dy: 8)
@@ -82,27 +83,21 @@ struct Painting {
         context.strokePath()
     }
 
-    /// The pill where the arrows of a bundle meet, turned along the arrow that leaves it.
-    private func junction(_ figure: Figure, in context: CGContext) {
+    /// The pill of a tie, laid across the arrows that it holds.
+    private func tie(_ figure: Figure, in context: CGContext) {
         let center = figure.points[0]
-        var angle: CGFloat = 0
-        if let trunk = board.trunk(of: figure.id) {
-            let line = board.path(of: trunk)
-            if line.count > 1 {
-                let way = line[1] - line[0]
-                angle = atan2(way.y, way.x)
-            }
-        }
+        let way = board.direction(of: figure)
+        let reach = board.reach(of: figure)
         context.saveGState()
         context.setLineDash(phase: 0, lengths: [])
         context.translateBy(x: center.x, y: center.y)
-        context.rotate(by: angle)
-        let pill = CGPath(roundedRect: CGRect(x: -6, y: -11, width: 12, height: 22), cornerWidth: 6, cornerHeight: 6, transform: nil)
-        context.setFillColor(NSColor.white.cgColor)
+        context.rotate(by: atan2(way.y, way.x))
+        let pill = CGPath(roundedRect: CGRect(x: -5, y: -reach, width: 10, height: reach * 2), cornerWidth: 5, cornerHeight: 5, transform: nil)
+        context.setFillColor(NSColor.controlAccentColor.blended(withFraction: 0.65, of: .white)?.cgColor ?? NSColor.white.cgColor)
         context.addPath(pill)
         context.fillPath()
         context.setStrokeColor(NSColor.controlAccentColor.cgColor)
-        context.setLineWidth(2.5)
+        context.setLineWidth(2)
         context.addPath(pill)
         context.strokePath()
         context.restoreGState()
@@ -128,7 +123,7 @@ struct Painting {
 
     /// A PNG of the whole board on white, fitted into this size.
     func picture(width: CGFloat, height: CGFloat) -> Data? {
-        let shown = board.figures.filter { $0.kind != .junction }
+        let shown = board.figures.filter { $0.kind != .tie }
         var area = shown.map { board.bounds(of: $0) }.reduce(CGRect.null) { $0.union($1) }
         if area.isNull { area = CGRect(x: 0, y: 0, width: width, height: height) }
         area = area.insetBy(dx: -24, dy: -24)

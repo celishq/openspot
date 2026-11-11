@@ -1,88 +1,51 @@
 import CoreGraphics
 import Foundation
 
-/// Bundling: a stroke drawn across arrows that go to one place merges them at a junction, and one arrow goes on from it.
+/// Bundling: a stroke drawn across two or more arrows ties them where it crossed them, like a cable tie on wires. Each
+/// arrow keeps its own ends, and runs through the tie beside the others.
 extension Board {
-    /// The arrows that a stroke crosses, each with the first point where it crosses.
-    func arrows(crossedBy stroke: [CGPoint]) -> [(arrow: Figure, at: CGPoint)] {
+    /// The arrows that a stroke crosses, each with the first point where it crosses and the index of that point on its path.
+    func arrows(crossedBy stroke: [CGPoint]) -> [(arrow: Figure, at: CGPoint, step: Int)] {
         figures.compactMap { figure in
             guard figure.kind == .arrow else { return nil }
             let line = path(of: figure)
             for (a, b) in zip(stroke, stroke.dropFirst()) {
-                for (c, d) in zip(line, line.dropFirst()) {
-                    if let point = CGPoint.crossing(a, b, c, d) { return (figure, point) }
+                for (step, (c, d)) in zip(line, line.dropFirst()).enumerated() {
+                    if let point = CGPoint.crossing(a, b, c, d) { return (figure, point, step) }
                 }
             }
             return nil
         }
     }
 
-    /// Where an arrow goes: the figure that holds its end, past any junction. A free end goes nowhere.
-    private func destination(of arrow: Figure) -> UUID? {
-        if let start = arrow.start, self[start]?.kind == .junction { return arrow.end }
-        if let end = arrow.end, self[end]?.kind == .junction { return trunk(of: end)?.end }
-        return arrow.end
-    }
-
-    /// The junction that an arrow already belongs to.
-    private func junction(of arrow: Figure) -> UUID? {
-        if let start = arrow.start, self[start]?.kind == .junction { return start }
-        if let end = arrow.end, self[end]?.kind == .junction { return end }
-        return nil
-    }
-
-    /// Merges the arrows that a stroke crosses and that go to one place. Arrows that join a bundle the stroke crosses
-    /// join its junction; else two or more arrows meet at a new junction where the stroke crossed them. Returns the junction,
-    /// or nil when the stroke merged nothing.
+    /// Ties the arrows that a stroke crosses, where it crossed them, side by side in the order the stroke met them across
+    /// their way. Returns the tie, or nil when the stroke crossed fewer than two arrows.
     @discardableResult
     mutating func bundle(along stroke: [CGPoint]) -> UUID? {
         let crossed = arrows(crossedBy: stroke)
-        var groups: [String: [(arrow: Figure, at: CGPoint)]] = [:]
-        var order: [String] = []
+        guard crossed.count > 1 else { return nil }
+        let center = crossed.map(\.at).reduce(CGPoint.zero, +) * (1 / CGFloat(crossed.count))
+        var way = CGPoint.zero
         for hit in crossed {
-            let key = destination(of: hit.arrow)?.uuidString ?? "free"
-            if groups[key] == nil { order.append(key) }
-            groups[key, default: []].append(hit)
+            let line = path(of: hit.arrow)
+            var own = (line[min(hit.step + 1, line.count - 1)] - line[hit.step]).unit
+            if way != .zero, own.x * way.x + own.y * way.y < 0 { own = own * -1 }
+            way = way == .zero ? own : way + own
         }
-        let board = self
-        let candidates = order.compactMap { key -> (existing: UUID?, loose: [(arrow: Figure, at: CGPoint)])? in
-            let hits = groups[key] ?? []
-            let existing = hits.compactMap { board.junction(of: $0.arrow) }.first
-            let loose = hits.filter { board.junction(of: $0.arrow) == nil }
-            if existing != nil ? loose.count >= 1 : loose.count >= 2 { return (existing, loose) }
-            return nil
+        let across = way.unit.normal
+        let order = crossed.sorted { ($0.at - center).x * across.x + ($0.at - center).y * across.y < ($1.at - center).x * across.x + ($1.at - center).y * across.y }
+        var tie = Figure(kind: .tie, points: [center])
+        tie.members = order.map(\.arrow.id)
+        for hit in crossed {
+            let line = path(of: hit.arrow)
+            let before = hit.arrow.ties.filter { id in
+                guard let other = self[id] else { return false }
+                let nearest = line.indices.min { line[$0].distance(to: other.points[0]) < line[$1].distance(to: other.points[0]) } ?? 0
+                return nearest <= hit.step
+            }.count
+            update(hit.arrow.id) { $0.ties.insert(tie.id, at: before) }
         }
-        guard let chosen = candidates.max(by: { $0.loose.count < $1.loose.count }) else { return nil }
-        if let existing = chosen.existing, let center = self[existing]?.points[0] {
-            for hit in chosen.loose {
-                update(hit.arrow.id) { arrow in
-                    arrow.end = existing
-                    arrow.points[arrow.points.count - 1] = center
-                }
-            }
-            return existing
-        }
-        let loose = chosen.loose
-        let center = loose.map(\.at).reduce(CGPoint.zero, +) * (1 / CGFloat(loose.count))
-        let first = loose[0].arrow
-        let target = first.end
-        let ends = loose.map { path(of: $0.arrow).last ?? $0.at }
-        let free = ends.reduce(CGPoint.zero, +) * (1 / CGFloat(ends.count))
-        let junction = Figure(kind: .junction, points: [center], ink: first.ink)
-        var trunk = Figure(kind: .arrow, points: [center, target.flatMap { self[$0] }.map { CGPoint(x: $0.frame.midX, y: $0.frame.midY) } ?? free])
-        trunk.ink = first.ink
-        trunk.weight = first.weight
-        trunk.dashed = first.dashed
-        trunk.start = junction.id
-        trunk.end = target
-        for hit in loose {
-            update(hit.arrow.id) { arrow in
-                arrow.end = junction.id
-                arrow.points[arrow.points.count - 1] = center
-            }
-        }
-        add(junction)
-        add(trunk)
-        return junction.id
+        add(tie)
+        return tie.id
     }
 }

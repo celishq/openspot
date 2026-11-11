@@ -41,3 +41,39 @@ extension Figure {
         return NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: ink.color, .paragraphStyle: style])
     }
 }
+
+extension Figure.Form {
+    /// The symbol of a form in the toolbar and the shape picker.
+    var symbol: String {
+        switch self {
+        case .rectangle: "square"
+        case .ellipse: "circle"
+        case .triangle: "triangle"
+        case .diamond: "diamond"
+        case .hexagon: "hexagon"
+        case .oval: "capsule.portrait"
+        case .parallelogram: "parallelogram"
+        case .star: "star"
+        case .cloud: "cloud"
+        case .heart: "heart"
+        case .xBox: "xmark.square"
+        case .checkBox: "checkmark.square"
+        case .arrowLeft: "arrowshape.left"
+        case .arrowUp: "arrowshape.up"
+        case .arrowDown: "arrowshape.down"
+        case .arrowRight: "arrowshape.right"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .xBox: "Crossed box"
+        case .checkBox: "Checked box"
+        case .arrowLeft: "Arrow left"
+        case .arrowUp: "Arrow up"
+        case .arrowDown: "Arrow down"
+        case .arrowRight: "Arrow right"
+        default: rawValue.capitalized
+        }
+    }
+}

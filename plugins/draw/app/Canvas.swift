@@ -22,6 +22,10 @@ final class Canvas: NSView, NSTextViewDelegate {
         case pen(id: UUID, before: Board)
         case erase(hits: Set<UUID>)
         case grip(Grip, id: UUID, from: CGPoint, original: Figure, before: Board)
+
+        var isIdle: Bool {
+            if case .none = self { true } else { false }
+        }
     }
 
     let studio: Studio
@@ -40,7 +44,13 @@ final class Canvas: NSView, NSTextViewDelegate {
         wantsLayer = true
         layer?.backgroundColor = NSColor.white.cgColor
         watch = studio.objectWillChange.sink { [weak self] _ in
-            DispatchQueue.main.async { self?.needsDisplay = true }
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.needsDisplay = true
+                if self.drag.isIdle, let window = self.window, self.bounds.contains(self.convert(window.mouseLocationOutsideOfEventStream, from: nil)) {
+                    self.pointer.set()
+                }
+            }
         }
         addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseMoved, .activeInKeyWindow, .inVisibleRect, .cursorUpdate], owner: self))
     }
@@ -118,7 +128,6 @@ final class Canvas: NSView, NSTextViewDelegate {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
         NSColor.white.setFill()
         dirtyRect.fill()
-        dots(in: context)
         context.saveGState()
         context.translateBy(x: offset.x, y: offset.y)
         context.scaleBy(x: zoom, y: zoom)
@@ -130,24 +139,6 @@ final class Canvas: NSView, NSTextViewDelegate {
         chrome(in: context)
     }
 
-    /// A light grid of dots that moves with the board.
-    private func dots(in context: CGContext) {
-        var step: CGFloat = 24 * zoom
-        while step < 12 { step *= 2 }
-        context.setFillColor(NSColor(white: 0.86, alpha: 1).cgColor)
-        var x = offset.x.truncatingRemainder(dividingBy: step)
-        if x < 0 { x += step }
-        while x < bounds.width {
-            var y = offset.y.truncatingRemainder(dividingBy: step)
-            if y < 0 { y += step }
-            while y < bounds.height {
-                context.fill(CGRect(x: x - 0.75, y: y - 0.75, width: 1.5, height: 1.5))
-                y += step
-            }
-            x += step
-        }
-    }
-
     /// The selection, its grips, the marquee, the bundle stroke and the box that an arrow end would hold.
     private func chrome(in context: CGContext) {
         let accent = NSColor.controlAccentColor
@@ -157,7 +148,7 @@ final class Canvas: NSView, NSTextViewDelegate {
         let selected = studio.selection.compactMap { studio.board[$0] }
         if editing == nil {
             for figure in selected {
-                if figure.isLink || figure.kind == .pen {
+                if figure.kind == .arrow || figure.kind == .pen {
                     context.setStrokeColor(accent.withAlphaComponent(0.35).cgColor)
                     context.setLineWidth(figure.weight.width * zoom + 4)
                     context.addLines(between: studio.board.path(of: figure).map { view($0) })
@@ -184,11 +175,7 @@ final class Canvas: NSView, NSTextViewDelegate {
         if let held = heldTarget(), let figure = studio.board[held] {
             context.setStrokeColor(accent.withAlphaComponent(0.6).cgColor)
             context.setLineWidth(3)
-            if figure.kind == .junction {
-                context.strokeEllipse(in: CGRect(x: view(figure.points[0]).x - 14, y: view(figure.points[0]).y - 14, width: 28, height: 28))
-            } else {
-                context.stroke(view(figure.frame).insetBy(dx: -3, dy: -3))
-            }
+            context.stroke(view(figure.frame).insetBy(dx: -3, dy: -3))
         }
         if case .marquee(let from, let to, _) = drag {
             let area = CGRect(x: min(from.x, to.x), y: min(from.y, to.y), width: abs(to.x - from.x), height: abs(to.y - from.y))
@@ -223,7 +210,7 @@ final class Canvas: NSView, NSTextViewDelegate {
     private func grips() -> [(Grip, CGPoint)] {
         guard studio.selection.count == 1, let id = studio.selection.first, let figure = studio.board[id] else { return [] }
         switch figure.kind {
-        case .rectangle, .ellipse, .text:
+        case .shape, .text:
             let box = view(figure.frame).insetBy(dx: -4, dy: -4)
             var grips: [(Grip, CGPoint)] = [
                 (.side(left: true, right: false, top: true, bottom: false), CGPoint(x: box.minX, y: box.minY)),
@@ -240,12 +227,10 @@ final class Canvas: NSView, NSTextViewDelegate {
                 ]
             }
             return grips
-        case .arrow, .line:
+        case .arrow:
             let line = studio.board.path(of: figure)
-            var grips: [(Grip, CGPoint)] = []
-            if !(figure.start.flatMap { studio.board[$0] }?.kind == .junction) { grips.append((.start, view(line[0]))) }
-            if !(figure.end.flatMap { studio.board[$0] }?.kind == .junction) { grips.append((.end, view(line[line.count - 1]))) }
-            if figure.kind == .arrow { grips.append((.bend, view(line[line.count / 2]))) }
+            var grips: [(Grip, CGPoint)] = [(.start, view(line[0])), (.end, view(line[line.count - 1]))]
+            if figure.ties.isEmpty { grips.append((.bend, view(line[line.count / 2]))) }
             return grips
         default:
             return []
@@ -310,17 +295,12 @@ final class Canvas: NSView, NSTextViewDelegate {
             studio.selection = [figure.id]
             studio.tool = .select
             beginEditing(figure.id, before: before)
-        case .rectangle, .ellipse, .arrow, .line:
-            let kind: Figure.Kind = switch studio.tool {
-            case .rectangle: .rectangle
-            case .ellipse: .ellipse
-            case .arrow: .arrow
-            default: .line
-            }
-            var figure = Figure(kind: kind, points: [at, at])
+        case .shape, .arrow:
+            var figure = Figure(kind: studio.tool == .shape ? .shape : .arrow, points: [at, at])
+            figure.form = studio.form
             studio.style.dress(&figure)
-            if kind == .arrow {
-                figure.start = studio.board.target(at: at).flatMap { studio.board[$0]?.kind == .junction ? nil : $0 }
+            if figure.kind == .arrow {
+                figure.start = studio.board.target(at: at)
             }
             let before = studio.board
             studio.board.add(figure)
@@ -420,7 +400,7 @@ final class Canvas: NSView, NSTextViewDelegate {
         }
         if studio.board[id]?.kind == .arrow {
             let start = studio.board[id]?.start
-            let held = studio.board.target(at: to, except: [id]).flatMap { $0 == start && studio.board[$0]?.kind != .junction ? nil : $0 }
+            let held = studio.board.target(at: to, except: [id]).flatMap { $0 == start ? nil : $0 }
             studio.board.update(id) { $0.end = held }
         }
     }
@@ -457,12 +437,7 @@ final class Canvas: NSView, NSTextViewDelegate {
             box = box.standardized
             board.update(id) { $0.points = [box.origin, CGPoint(x: box.maxX, y: box.maxY)] }
         case .start, .end:
-            let held = original.kind == .arrow
-                ? board.target(at: at, except: [id]).flatMap { target -> UUID? in
-                    let kind = board[target]?.kind
-                    return grip == .start && kind == .junction ? nil : target
-                }
-                : nil
+            let held = board.target(at: at, except: [id])
             board.update(id) { figure in
                 if grip == .start {
                     figure.points[0] = at
@@ -491,7 +466,7 @@ final class Canvas: NSView, NSTextViewDelegate {
     }
 
     private func doubleClick(_ at: CGPoint) {
-        if let figure = studio.board.figure(at: at, tolerance: 6 / zoom), figure.kind == .rectangle || figure.kind == .ellipse || figure.kind == .text {
+        if let figure = studio.board.figure(at: at, tolerance: 6 / zoom), figure.isBox {
             studio.selection = [figure.id]
             beginEditing(figure.id, before: studio.board)
             return
@@ -641,11 +616,21 @@ final class Canvas: NSView, NSTextViewDelegate {
     }
 
     override func cursorUpdate(with event: NSEvent) {
+        pointer.set()
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        pointer.set()
+    }
+
+    /// The cursor of the tool: a hand to pan, an arrow to select, and a crosshair to draw, write or erase. A text field
+    /// shows its own caret.
+    var pointer: NSCursor {
+        if spaceHeld { return .openHand }
         switch studio.tool {
-        case .hand: NSCursor.openHand.set()
-        case .select: NSCursor.arrow.set()
-        case .text: NSCursor.iBeam.set()
-        default: NSCursor.crosshair.set()
+        case .hand: return .openHand
+        case .select: return .arrow
+        default: return .crosshair
         }
     }
 
@@ -705,22 +690,36 @@ final class Canvas: NSView, NSTextViewDelegate {
         guard !figures.isEmpty else { return }
         var ids: [UUID: UUID] = [:]
         for figure in figures { ids[figure.id] = UUID() }
-        let copies = figures.map { figure -> Figure in
+        let raw = figures.map { figure -> Figure in
             var copy = figure
             copy.id = ids[figure.id]!
             copy.start = figure.start.flatMap { ids[$0] }
             copy.end = figure.end.flatMap { ids[$0] }
             copy.points = figure.points.map { $0 + delta }
-            if figure.isLink {
+            if figure.kind == .arrow {
                 let line = studio.board.path(of: figure)
                 if figure.start != nil, copy.start == nil, let first = line.first { copy.points[0] = first + delta }
                 if figure.end != nil, copy.end == nil, let last = line.last { copy.points[copy.points.count - 1] = last + delta }
             }
             return copy
         }
-        let kept = copies.filter { copy in copy.kind != .junction || copies.contains { $0.start == copy.id } }
+        let kept = raw.compactMap { copy -> Figure? in
+            var copy = copy
+            if copy.kind == .tie {
+                copy.members = copy.members.compactMap { ids[$0] }
+                return copy.members.count > 1 ? copy : nil
+            }
+            copy.ties = copy.ties.compactMap { ids[$0] }
+            return copy
+        }
+        let tied = Set(kept.filter { $0.kind == .tie }.map(\.id))
+        let copies = kept.map { copy -> Figure in
+            var copy = copy
+            copy.ties = copy.ties.filter(tied.contains)
+            return copy
+        }
         studio.change { board in
-            for copy in kept { board.add(copy) }
+            for copy in copies { board.add(copy) }
         }
         studio.selection = Set(copies.map(\.id)).filter { studio.board[$0] != nil }
     }

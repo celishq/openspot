@@ -6,6 +6,7 @@ struct Style: Equatable {
     var weight = Figure.Weight.m
     var dashed = false
     var filled = false
+    var heads = Figure.Heads.end
 
     /// The style of a figure.
     init(of figure: Figure) {
@@ -13,6 +14,7 @@ struct Style: Equatable {
         weight = figure.weight
         dashed = figure.dashed
         filled = figure.filled
+        if figure.kind == .arrow { heads = figure.heads }
     }
 
     init() {}
@@ -22,5 +24,6 @@ struct Style: Equatable {
         figure.weight = weight
         figure.dashed = dashed
         figure.filled = filled
+        if figure.kind == .arrow { figure.heads = heads }
     }
 }

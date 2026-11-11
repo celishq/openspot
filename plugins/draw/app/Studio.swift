@@ -9,15 +9,20 @@ final class Studio: ObservableObject {
     @Published var selection: Set<UUID> = []
     @Published var tool = Tool.select
     @Published var style = Style()
+    @Published var form = Figure.Form.rectangle
     @Published var zoom: CGFloat = 1
     private var past: [Board] = []
     private var future: [Board] = []
     private var pending: DispatchWorkItem?
+    /// The title on disk when this board last read or wrote it, so a rename in Openspot shows here.
+    private var knownTitle: String
     let file: URL
 
     init(file: URL) {
         self.file = file
-        board = (try? Board.load(from: file)) ?? Board()
+        let board = (try? Board.load(from: file)) ?? Board()
+        self.board = board
+        knownTitle = board.title
     }
 
     var canUndo: Bool { !past.isEmpty }
@@ -60,7 +65,7 @@ final class Studio: ObservableObject {
         guard !selection.isEmpty else { return }
         let style = style
         self.change { board in
-            for id in selection where board[id]?.kind != .junction {
+            for id in selection where board[id]?.kind != .tie {
                 board.update(id) { style.dress(&$0) }
             }
         }
@@ -68,7 +73,7 @@ final class Studio: ObservableObject {
 
     /// Shows the style of the selection in the style panel.
     func pickUpStyle() {
-        if let first = selection.lazy.compactMap({ self.board[$0] }).first(where: { $0.kind != .junction }) {
+        if let first = selection.lazy.compactMap({ self.board[$0] }).first(where: { $0.kind != .tie }) {
             style = Style(of: first)
         }
     }
@@ -96,8 +101,9 @@ final class Studio: ObservableObject {
             NSApp.terminate(nil)
             return
         }
-        if let title = try? Board.load(from: file).title { board.title = title }
+        if let title = try? Board.load(from: file).title, title != knownTitle { board.title = title }
         try? board.save(to: file)
+        knownTitle = board.title
         if let picture = Painting(board: board).picture(width: 360, height: 240) {
             try? picture.write(to: file.deletingPathExtension().appendingPathExtension("png"), options: .atomic)
         }
@@ -106,6 +112,28 @@ final class Studio: ObservableObject {
     /// Takes the title that Openspot gave the board, and closes a board that Openspot deleted.
     func reloadTitle() {
         guard FileManager.default.fileExists(atPath: file.path) else { return NSApp.terminate(nil) }
-        if let title = try? Board.load(from: file).title, title != board.title { board.title = title }
+        if let title = try? Board.load(from: file).title, title != knownTitle {
+            board.title = title
+            knownTitle = title
+        }
+    }
+
+    /// Gives the board a new title, and saves it at once so that Openspot lists it so.
+    func rename(_ title: String) {
+        let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty, title != board.title else { return }
+        board.title = title
+        save()
+    }
+
+    /// Picks the form of the shape tool, and gives it to the selected shapes.
+    func pick(_ form: Figure.Form) {
+        self.form = form
+        tool = .shape
+        let shapes = selection.filter { board[$0]?.kind == .shape }
+        guard !shapes.isEmpty else { return }
+        change { board in
+            for id in shapes { board.update(id) { $0.form = form } }
+        }
     }
 }

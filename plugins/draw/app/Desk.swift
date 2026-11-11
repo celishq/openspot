@@ -1,53 +1,89 @@
 import AppKit
 import SwiftUI
 
-/// The app of one board: its window, its canvas, its floating bars and its menu.
+/// The app of the board window: its canvas, its floating bars and its menu. It shows one board at a time, and a pick in
+/// the list of boards shows another in the same window.
 @MainActor
 final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
-    let studio: Studio
+    private(set) var studio: Studio
+    private var lock: Lock
     var window: NSWindow!
     var canvas: Canvas!
 
-    init(file: URL) {
+    init(file: URL, lock: Lock) {
         studio = Studio(file: file)
+        self.lock = lock
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = menu()
         NSApp.applicationIconImage = icon()
+        let screen = NSScreen.main?.visibleFrame ?? CGRect(x: 0, y: 0, width: 1440, height: 900)
+        let size = CGSize(width: min(1280, screen.width * 0.85), height: min(860, screen.height * 0.85))
+        window = NSWindow(contentRect: CGRect(origin: .zero, size: size), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.appearance = NSAppearance(named: .aqua)
+        window.backgroundColor = .white
+        window.delegate = self
+        window.isReleasedWhenClosed = false
+        window.setFrameAutosaveName("Draw board")
+        if window.frame.size == size { window.center() }
+        mount()
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate()
+    }
+
+    /// Lays the canvas and the bars of the current board into the window.
+    private func mount() {
         canvas = Canvas(studio: studio)
         canvas.translatesAutoresizingMaskIntoConstraints = false
         let root = NSView()
         root.addSubview(canvas)
         let canvas = canvas!
+        let shelf = Shelf(folder: studio.file.deletingLastPathComponent())
+        let header = bar(Header(studio: studio, shelf: shelf, open: { [weak self] in self?.show($0) }, make: { [weak self] in self?.make() }, done: { [weak self] in
+            self?.window.makeFirstResponder(self?.canvas)
+        }), in: root)
         let tools = bar(Toolbar(studio: studio), in: root)
         let corner = bar(Corner(studio: studio, zoom: { canvas.zoom(to: $0) }, fit: { canvas.fit() }), in: root)
         let style = bar(StyleSlot(studio: studio), in: root)
         NSLayoutConstraint.activate([
             canvas.leadingAnchor.constraint(equalTo: root.leadingAnchor), canvas.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             canvas.topAnchor.constraint(equalTo: root.topAnchor), canvas.bottomAnchor.constraint(equalTo: root.bottomAnchor),
+            header.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 84), header.topAnchor.constraint(equalTo: root.topAnchor, constant: 8),
             tools.centerXAnchor.constraint(equalTo: root.centerXAnchor), tools.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -14),
             corner.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 14), corner.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -14),
-            style.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -14), style.topAnchor.constraint(equalTo: root.topAnchor, constant: 40)
+            style.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -14), style.topAnchor.constraint(equalTo: root.topAnchor, constant: 52)
         ])
-        let screen = NSScreen.main?.visibleFrame ?? CGRect(x: 0, y: 0, width: 1440, height: 900)
-        let size = CGSize(width: min(1280, screen.width * 0.85), height: min(860, screen.height * 0.85))
-        window = NSWindow(contentRect: CGRect(origin: .zero, size: size), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
-        window.titlebarAppearsTransparent = true
-        window.title = studio.board.title
-        window.appearance = NSAppearance(named: .aqua)
-        window.backgroundColor = .white
         window.contentView = root
-        window.delegate = self
-        window.isReleasedWhenClosed = false
-        window.setFrameAutosaveName("Draw board")
-        if window.frame.size == size { window.center() }
-        window.makeKeyAndOrderFront(nil)
+        window.title = studio.board.title
         window.makeFirstResponder(canvas)
         canvas.layoutSubtreeIfNeeded()
         canvas.fit()
-        NSApp.activate()
-        DistributedNotificationCenter.default().addObserver(self, selector: #selector(show), name: Desk.showName, object: studio.file.path)
+        DistributedNotificationCenter.default().removeObserver(self)
+        DistributedNotificationCenter.default().addObserver(self, selector: #selector(front), name: Desk.showName, object: studio.file.path)
+    }
+
+    /// Shows another board in this window. A board that another window shows comes to the front there instead.
+    func show(_ file: URL) {
+        guard file.standardizedFileURL != studio.file.standardizedFileURL else { return }
+        guard let next = Lock.claim(file) else {
+            DistributedNotificationCenter.default().postNotificationName(Desk.showName, object: file.path, userInfo: nil, deliverImmediately: true)
+            return
+        }
+        canvas.endEditing()
+        studio.save()
+        lock.release()
+        lock = next
+        studio = Studio(file: file)
+        mount()
+    }
+
+    /// Makes a new board beside this one and shows it.
+    func make() {
+        guard let file = try? Shelf(folder: studio.file.deletingLastPathComponent()).make() else { return }
+        show(file)
     }
 
     /// Floats a SwiftUI bar over the canvas at its own size.
@@ -60,16 +96,14 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     nonisolated static let showName = Notification.Name("dev.openspot.draw.show")
 
-    @objc func show() {
+    @objc func front() {
         studio.reloadTitle()
-        window.title = studio.board.title
         window.makeKeyAndOrderFront(nil)
         NSApp.activate()
     }
 
     func windowDidBecomeKey(_ notification: Notification) {
         studio.reloadTitle()
-        window.title = studio.board.title
     }
 
     func windowWillClose(_ notification: Notification) {

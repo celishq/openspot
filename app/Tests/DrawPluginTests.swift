@@ -44,7 +44,7 @@ final class DrawPluginTests: SamplePluginsCase {
         let spot = try draw()
         try await withBoards { _, boards in
             var board = Board(title: "Untitled board")
-            board.add(Figure(kind: .rectangle, points: [.zero, CGPoint(x: 10, y: 10)]))
+            board.add(Figure(kind: .shape, points: [.zero, CGPoint(x: 10, y: 10)]))
             try board.save(to: boards.appendingPathComponent("a.json"))
             let rows = try await spot.items(timeout: 5).items
             let item = try XCTUnwrap(rows.first { $0.run == "a" })

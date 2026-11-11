@@ -2,17 +2,45 @@ import CoreGraphics
 import Foundation
 
 /// A drawing that a person keeps: its title and its figures, from the bottom one to the top one.
-/// An arrow end that holds a figure follows it, so the board works out the path of each arrow when it is drawn.
+/// An arrow end that holds a shape follows it, and an arrow that passes ties runs through each of them beside the other
+/// arrows of that tie, so the board works out the path of each arrow when it is drawn.
 struct Board: Codable, Equatable {
     var title = "Untitled board"
     var figures: [Figure] = []
 
-    /// The gap between the tip of an arrow and the outline of the box that it holds.
+    private enum CodingKeys: String, CodingKey {
+        case title, figures
+    }
+
+    /// The gap between the tip of an arrow and the outline of the shape that it holds.
     static let gap: CGFloat = 8
 
     init(title: String = "Untitled board", figures: [Figure] = []) {
         self.title = title
         self.figures = figures
+    }
+
+    /// Reads a board, and turns each junction of an older board, where arrows merged into one, into a tie.
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        title = try values.decodeIfPresent(String.self, forKey: .title) ?? "Untitled board"
+        figures = try values.decode([Figure].self, forKey: .figures)
+        for junction in figures where junction.kind == .tie && junction.members.isEmpty {
+            let branches = figures.filter { $0.kind == .arrow && $0.end == junction.id }
+            guard let trunk = figures.first(where: { $0.kind == .arrow && $0.start == junction.id }), branches.count > 1 else {
+                figures.removeAll { $0.id == junction.id }
+                continue
+            }
+            for branch in branches {
+                update(branch.id) { arrow in
+                    arrow.end = trunk.end
+                    arrow.points[arrow.points.count - 1] = trunk.points[trunk.points.count - 1]
+                    arrow.ties = [junction.id]
+                }
+            }
+            update(junction.id) { $0.members = branches.map(\.id) }
+            figures.removeAll { $0.id == trunk.id }
+        }
     }
 
     static func load(from url: URL) throws -> Board {
@@ -41,31 +69,49 @@ struct Board: Codable, Equatable {
 
     // MARK: Paths
 
-    /// The anchor of one end of a link: the centre of the figure that holds it, or its own point.
-    private func anchor(_ figure: Figure, start: Bool) -> CGPoint {
+    /// The anchor of one end of an arrow: the centre of the shape that holds it, or its own point.
+    func anchor(_ figure: Figure, start: Bool) -> CGPoint {
         let held = start ? figure.start : figure.end
-        if let held, let other = self[held] {
-            return other.kind == .junction ? other.points[0] : CGPoint(x: other.frame.midX, y: other.frame.midY)
+        if let held, let other = self[held], other.isBox {
+            return CGPoint(x: other.frame.midX, y: other.frame.midY)
         }
         return start ? figure.points[0] : figure.points[figure.points.count - 1]
     }
 
-    /// The arrow that leaves a junction.
-    func trunk(of junction: UUID) -> Figure? {
-        figures.first { $0.kind == .arrow && $0.start == junction }
+    /// The way the arrows run through a tie, as a unit vector.
+    func direction(of tie: Figure) -> CGPoint {
+        var sum = CGPoint.zero
+        var first: CGPoint?
+        for id in tie.members {
+            guard let arrow = self[id], let place = arrow.ties.firstIndex(of: tie.id) else { continue }
+            let before = place == 0 ? anchor(arrow, start: true) : self[arrow.ties[place - 1]]?.points[0] ?? anchor(arrow, start: true)
+            let after = place == arrow.ties.count - 1 ? anchor(arrow, start: false) : self[arrow.ties[place + 1]]?.points[0] ?? anchor(arrow, start: false)
+            var way = (after - before).unit
+            if let first, way.x * first.x + way.y * first.y < 0 { way = way * -1 }
+            if first == nil { first = way }
+            sum = sum + way
+        }
+        return sum.unit == .zero ? CGPoint(x: 1, y: 0) : sum.unit
     }
 
-    /// The arrows that end at a junction.
-    func branches(of junction: UUID) -> [Figure] {
-        figures.filter { $0.kind == .arrow && $0.end == junction }
+    /// The space between two arrows in a tie.
+    func spacing(of tie: Figure) -> CGFloat {
+        (tie.members.compactMap { self[$0]?.weight.width }.max() ?? 3.5) + 4
     }
 
-    /// The points of a figure's line, from its start to its end. A held end stops at the outline of its box.
+    /// The place where an arrow passes a tie: its own lane beside the others.
+    func lane(of arrow: Figure, in tie: Figure) -> CGPoint {
+        let index = CGFloat(tie.members.firstIndex(of: arrow.id) ?? 0)
+        let offset = (index - CGFloat(tie.members.count - 1) / 2) * spacing(of: tie)
+        return tie.points[0] + direction(of: tie).normal * offset
+    }
+
+    /// The points of a figure's line, from its start to its end. A held end stops at the outline of its shape.
     func path(of figure: Figure) -> [CGPoint] {
         switch figure.kind {
         case .pen:
             return figure.points
-        case .line, .arrow:
+        case .arrow:
             break
         default:
             let box = figure.frame
@@ -73,24 +119,36 @@ struct Board: Codable, Equatable {
         }
         let a = anchor(figure, start: true)
         let b = anchor(figure, start: false)
-        guard figure.kind == .arrow else { return [a, b] }
-        let middle = (a + b) * 0.5 + (b - a).unit.normal * (figure.bend * 2)
+        let ties = figure.ties.compactMap { self[$0] }
         var curve: [CGPoint]
-        if let end = figure.end, self[end]?.kind == .junction, let trunk = trunk(of: end), trunk.id != figure.id {
-            let way = (anchor(trunk, start: false) - b).unit
-            let reach = a.distance(to: b) * 0.45
-            let first = a + (middle - a) * 0.6
-            let second = b - way * reach
-            curve = (0...48).map { step in
-                let t = CGFloat(step) / 48
-                let u = 1 - t
-                return a * (u * u * u) + first * (3 * u * u * t) + second * (3 * u * t * t) + b * (t * t * t)
-            }
-        } else {
+        if ties.isEmpty {
+            let middle = (a + b) * 0.5 + (b - a).unit.normal * (figure.bend * 2)
             curve = (0...48).map { step in
                 let t = CGFloat(step) / 48
                 let u = 1 - t
                 return a * (u * u) + middle * (2 * u * t) + b * (t * t)
+            }
+        } else {
+            let stops = [a] + ties.map { lane(of: figure, in: $0) } + [b]
+            var ways = [(stops[1] - a).unit]
+            for (index, tie) in ties.enumerated() {
+                let way = direction(of: tie)
+                let own = stops[index + 2] - stops[index]
+                ways.append(way.x * own.x + way.y * own.y < 0 ? way * -1 : way)
+            }
+            ways.append((b - stops[stops.count - 2]).unit)
+            curve = [a]
+            for index in 0..<(stops.count - 1) {
+                let from = stops[index]
+                let to = stops[index + 1]
+                let reach = from.distance(to: to) / 3
+                let first = from + ways[index] * reach
+                let second = to - ways[index + 1] * reach
+                for step in 1...24 {
+                    let t = CGFloat(step) / 24
+                    let u = 1 - t
+                    curve.append(from * (u * u * u) + first * (3 * u * u * t) + second * (3 * u * t * t) + to * (t * t * t))
+                }
             }
         }
         if let start = figure.start, let box = self[start], box.isBox {
@@ -105,7 +163,7 @@ struct Board: Codable, Equatable {
         return curve
     }
 
-    /// The point where the step from `outside` to `inside` meets the grown outline of a box.
+    /// The point where the step from `outside` to `inside` meets the grown outline of a shape.
     private func edge(of box: Figure, from outside: CGPoint, to inside: CGPoint) -> CGPoint {
         var low: CGFloat = 0
         var high: CGFloat = 1
@@ -116,10 +174,16 @@ struct Board: Codable, Equatable {
         return outside + (inside - outside) * low
     }
 
+    /// Half the length of the pill of a tie, across its arrows.
+    func reach(of tie: Figure) -> CGFloat {
+        CGFloat(max(tie.members.count - 1, 0)) * spacing(of: tie) / 2 + 9
+    }
+
     /// The smallest rectangle around a figure.
     func bounds(of figure: Figure) -> CGRect {
-        if figure.kind == .junction {
-            return CGRect(x: figure.points[0].x - 8, y: figure.points[0].y - 8, width: 16, height: 16)
+        if figure.kind == .tie {
+            let reach = reach(of: figure)
+            return CGRect(x: figure.points[0].x - reach, y: figure.points[0].y - reach, width: reach * 2, height: reach * 2)
         }
         let points = path(of: figure)
         guard let first = points.first else { return .zero }
@@ -128,15 +192,23 @@ struct Board: Codable, Equatable {
 
     // MARK: Finding
 
-    /// The top figure under a point, within `tolerance` of a line.
+    /// The top figure under a point, within `tolerance` of a line. A tie lies above all else.
     func figure(at point: CGPoint, tolerance: CGFloat = 6) -> Figure? {
-        figures.last { figure in
+        let tie = figures.last { figure in
+            guard figure.kind == .tie else { return false }
+            let across = direction(of: figure).normal
+            let reach = reach(of: figure)
+            let center = figure.points[0]
+            return point.distance(toSegment: center - across * reach, center + across * reach) <= 7 + tolerance
+        }
+        if let tie { return tie }
+        return figures.last { figure in
             switch figure.kind {
-            case .junction:
-                return point.distance(to: figure.points[0]) <= 10 + tolerance
-            case .rectangle, .ellipse, .text:
+            case .tie:
+                return false
+            case .shape, .text:
                 return figure.holds(point, pad: tolerance)
-            case .arrow, .line, .pen:
+            case .arrow, .pen:
                 let line = path(of: figure)
                 let reach = tolerance + figure.weight.width / 2
                 if line.count == 1 { return point.distance(to: line[0]) <= reach }
@@ -145,13 +217,9 @@ struct Board: Codable, Equatable {
         }
     }
 
-    /// The box or junction that an arrow end at this point would hold.
+    /// The shape or text that an arrow end at this point would hold.
     func target(at point: CGPoint, except: Set<UUID> = []) -> UUID? {
-        figures.last { figure in
-            guard !except.contains(figure.id) else { return false }
-            if figure.kind == .junction { return point.distance(to: figure.points[0]) <= 14 }
-            return figure.isBox && figure.holds(point)
-        }?.id
+        figures.last { !except.contains($0.id) && $0.isBox && $0.holds(point) }?.id
     }
 
     /// The figures that lie wholly inside a rectangle.
@@ -161,11 +229,11 @@ struct Board: Codable, Equatable {
 
     // MARK: Changing
 
-    /// Moves figures. A link end that holds a figure which stays lets go of it where it is.
+    /// Moves figures. An arrow end that holds a shape which stays lets go of it where it is.
     mutating func move(_ ids: Set<UUID>, by delta: CGPoint) {
         for index in figures.indices where ids.contains(figures[index].id) {
             let figure = figures[index]
-            if figure.isLink {
+            if figure.kind == .arrow {
                 let line = path(of: figure)
                 if let start = figure.start, !ids.contains(start) {
                     figures[index].points[0] = line[0]
@@ -178,71 +246,31 @@ struct Board: Codable, Equatable {
             }
             figures[index].points = figures[index].points.map { $0 + delta }
         }
-        settle()
     }
 
-    /// Removes figures. Removing a junction or the arrow that leaves it splits its bundle back into arrows, and an
-    /// arrow that held a removed figure keeps its end where it was.
+    /// Removes figures. Removing a tie unties its arrows, a tie left with one arrow goes too, and an arrow that held a
+    /// removed shape keeps its end where it was.
     mutating func remove(_ ids: Set<UUID>) {
-        var gone = ids
-        for id in ids {
-            if let figure = self[id], figure.kind == .arrow, let start = figure.start, self[start]?.kind == .junction {
-                gone.remove(id)
-                gone.insert(start)
-            }
-        }
-        for junction in gone where self[junction]?.kind == .junction {
-            split(junction)
-        }
-        for index in figures.indices where figures[index].isLink {
+        for index in figures.indices where figures[index].kind == .arrow {
             let line = path(of: figures[index])
-            if let start = figures[index].start, gone.contains(start) {
+            if let start = figures[index].start, ids.contains(start) {
                 figures[index].points[0] = line[0]
                 figures[index].start = nil
             }
-            if let end = figures[index].end, gone.contains(end) {
+            if let end = figures[index].end, ids.contains(end) {
                 figures[index].points[figures[index].points.count - 1] = line[line.count - 1]
                 figures[index].end = nil
             }
         }
-        figures.removeAll { gone.contains($0.id) }
-        settle()
-    }
-
-    /// Sends each branch of a junction to where its trunk goes, and removes the junction and the trunk.
-    mutating func split(_ junction: UUID) {
-        guard let trunk = trunk(of: junction) else {
-            for branch in branches(of: junction) {
-                update(branch.id) { $0.end = nil }
-            }
-            figures.removeAll { $0.id == junction }
-            return
+        figures.removeAll { ids.contains($0.id) }
+        var gone = ids
+        for index in figures.indices where figures[index].kind == .tie {
+            figures[index].members.removeAll { gone.contains($0) }
+            if figures[index].members.count < 2 { gone.insert(figures[index].id) }
         }
-        for branch in branches(of: junction) {
-            update(branch.id) { arrow in
-                arrow.end = trunk.end
-                arrow.points[arrow.points.count - 1] = trunk.points[trunk.points.count - 1]
-            }
-        }
-        figures.removeAll { $0.id == junction || $0.id == trunk.id }
-    }
-
-    /// Splits each junction that no longer joins two arrows.
-    private mutating func settle() {
-        for junction in figures.filter({ $0.kind == .junction }) {
-            let branches = branches(of: junction.id)
-            let trunk = trunk(of: junction.id)
-            if trunk == nil {
-                for branch in branches {
-                    update(branch.id) { arrow in
-                        arrow.end = nil
-                        arrow.points[arrow.points.count - 1] = junction.points[0]
-                    }
-                }
-                figures.removeAll { $0.id == junction.id }
-            } else if branches.count < 2 {
-                split(junction.id)
-            }
+        figures.removeAll { $0.kind == .tie && gone.contains($0.id) }
+        for index in figures.indices where figures[index].kind == .arrow {
+            figures[index].ties.removeAll { gone.contains($0) }
         }
     }
 }

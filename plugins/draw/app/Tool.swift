@@ -2,10 +2,11 @@ import Foundation
 
 /// What a press on the canvas does, in the order of the toolbar.
 enum Tool: String, CaseIterable, Identifiable {
-    case select, hand, pen, eraser, arrow, text, rectangle, ellipse, line, bundle
+    case select, hand, pen, eraser, arrow, text, shape, bundle
 
     var id: String { rawValue }
 
+    /// The symbol of the tool. The shape tool shows the form it draws instead.
     var symbol: String {
         switch self {
         case .select: "cursorarrow"
@@ -14,9 +15,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .eraser: "eraser"
         case .arrow: "arrow.up.right"
         case .text: "textformat"
-        case .rectangle: "rectangle"
-        case .ellipse: "circle"
-        case .line: "line.diagonal"
+        case .shape: "square"
         case .bundle: "arrow.triangle.merge"
         }
     }
@@ -29,9 +28,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .eraser: "e"
         case .arrow: "a"
         case .text: "t"
-        case .rectangle: "r"
-        case .ellipse: "o"
-        case .line: "l"
+        case .shape: "r"
         case .bundle: "b"
         }
     }
@@ -44,10 +41,8 @@ enum Tool: String, CaseIterable, Identifiable {
         case .eraser: "Eraser"
         case .arrow: "Arrow"
         case .text: "Text"
-        case .rectangle: "Rectangle"
-        case .ellipse: "Ellipse"
-        case .line: "Line"
-        case .bundle: "Bundle arrows, or hold ⌥ and drag"
+        case .shape: "Shape"
+        case .bundle: "Tie arrows, or hold ⌥ and drag"
         }
     }
 
