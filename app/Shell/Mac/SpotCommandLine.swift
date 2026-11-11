@@ -18,6 +18,10 @@ enum SpotCommandLine {
                 if call == .clipboardPaste { try? await Task.sleep(for: postPause) }
                 exit(answer.code)
             }
+            if needsEvents(call) {
+                NSApplication.shared.setActivationPolicy(.accessory)
+                NSApplication.shared.run()
+            }
             dispatchMain()
         }
         switch call {
@@ -62,16 +66,6 @@ enum SpotCommandLine {
             exit(SpotGlyphBook.write(GlyphBook(glyphs: glyphs, side: side, fontSize: fontSize), to: path) ? 0 : 1)
         case .translateLanguages:
             finish { await SpotTranslation.languages() }
-        case .screenSources:
-            answer { SpotScreen.sources() }
-        case .screenShot(let capture):
-            SpotScreen.run { try await SpotScreen.shot(capture) }
-        case .screenRecordStart(let capture):
-            SpotScreen.run { try await SpotRecording.start(capture) }
-        case .screenRecordStop:
-            SpotScreen.run { try SpotRecording.stop() }
-        case .screenRecordStatus:
-            SpotScreen.run { try SpotRecording.status() }
         default:
             preconditionFailure("CommandAPI answers \(call).")
         }
@@ -167,14 +161,11 @@ enum SpotCommandLine {
         SpotSheetPicture.run(text: text, path: path, view: spot.view, spot: spot)
     }
 
-    /// Prints what the work returns on the main thread and exits. A failure goes to stderr, with exit code 1.
-    private static func answer(_ work: () throws -> String) -> Never {
-        do {
-            print(try work(), terminator: "")
-            exit(0)
-        } catch {
-            FileHandle.standardError.write(Data("\((error as? SpotError)?.reason ?? error.localizedDescription)\n".utf8))
-            exit(1)
+    /// Whether a call needs the event loop of an app, for a pick or for an overlay over the screens.
+    private static func needsEvents(_ call: CommandLineCall) -> Bool {
+        switch call {
+        case .screenShot, .screenRecordStart, .screenRecordStop, .screenRecordStatus: true
+        default: false
         }
     }
 

@@ -3,7 +3,7 @@ import OpenspotCore
 
 /// What the API and the runs reach through the Mac: EventKit, Calendar, the app that opens a link, the settings of the app,
 /// the events of NSWorkspace and the general pasteboard: the wake of the Mac, another app that comes to the front, with its
-/// bundle ID, and the wake of the screen (B2), the clipboard and the window in front.
+/// bundle ID, and the wake of the screen (B2), the clipboard, the window in front and the screen.
 @MainActor
 final class SpotMac: Mac {
     private var observers: [NSObjectProtocol] = []
@@ -54,6 +54,26 @@ final class SpotMac: Mac {
 
     nonisolated func moveWindow(_ move: WindowMove) async throws {
         try await SpotWindow.front().move(move)
+    }
+
+    nonisolated func screenSources() async -> String {
+        await SpotScreen.sources()
+    }
+
+    nonisolated func screenShot(_ capture: ScreenCapture, in folder: URL) async throws -> String {
+        try await SpotScreen.shot(capture, in: folder)
+    }
+
+    nonisolated func startRecording(_ capture: ScreenCapture, in folder: URL) async throws -> String {
+        try await SpotRecording.start(capture, in: folder)
+    }
+
+    nonisolated func stopRecording() async throws -> String {
+        try SpotRecording.stop()
+    }
+
+    nonisolated func recordingStatus() async throws -> String {
+        try SpotRecording.status()
     }
 
     var clipboardCount: Int {

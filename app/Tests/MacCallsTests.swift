@@ -29,6 +29,21 @@ final class MacCallsTests: XCTestCase {
         func moveWindow(_ move: WindowMove) async throws {
             keep(move == WindowMove(words: ["0 0 1/2 1", "1/2 0 1/2 1"]) ? "move halves" : "move other")
         }
+
+        func screenSources() async -> String { "row=display:1\n" }
+
+        func screenShot(_ capture: ScreenCapture, in folder: URL) async throws -> String {
+            keep("shot \(capture.file ?? "-") in \(folder.lastPathComponent)")
+            return "/shots/a.png\n"
+        }
+
+        func startRecording(_ capture: ScreenCapture, in folder: URL) async throws -> String {
+            keep("record \(capture.file ?? "-") in \(folder.lastPathComponent)")
+            return ""
+        }
+
+        func stopRecording() async throws -> String { "/shots/a.mp4\n" }
+        func recordingStatus() async throws -> String { "state=idle\n" }
     }
 
     private var folder: URL!
@@ -99,5 +114,40 @@ final class MacCallsTests: XCTestCase {
         XCTAssertEqual(frame.output, "10 20 300 400 0 33 1728 1084\n")
         XCTAssertEqual([frame.code, moved.code], [0, 0], moved.output)
         XCTAssertEqual(host.acts, ["move halves"])
+    }
+
+    func testTheAppListsSourcesTakesAShotAndRecordsInTheCallersFolder() throws {
+        let place = folder.appendingPathComponent("talks", isDirectory: true)
+        try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
+
+        let sources = try run(["screen", "sources"])
+        let shot = try run(["screen", "shot", "display:1", "a.png"], in: place)
+        let start = try run(["screen", "record", "start", "display:1", "b.mp4"], in: place)
+        let stop = try run(["screen", "record", "stop"])
+        let status = try run(["screen", "record", "status"])
+
+        XCTAssertEqual([sources.output, shot.output, stop.output, status.output], ["row=display:1\n", "/shots/a.png\n", "/shots/a.mp4\n", "state=idle\n"])
+        XCTAssertEqual(start.code, 0, start.output)
+        XCTAssertEqual(host.acts, ["shot a.png in talks", "record b.mp4 in talks"])
+    }
+
+    /// In Careful mode, a spot with no `files` use writes only where its sandbox lets it, so the app leaves a capture into a
+    /// file that it names to the spot's own sandboxed process (Z8).
+    @MainActor
+    func testInCarefulModeACaptureOfASpotIntoItsOwnFileRunsInItsSandbox() throws {
+        let runs = SpotRuns()
+        runs.isCareful = true
+        let fenced = runs.tokens.issue(for: Spot(id: "shots", name: "Shots", url: folder.appendingPathComponent("shots.sh"), uses: [.screen]))
+        let free = runs.tokens.issue(for: Spot(id: "files", name: "Files", url: folder.appendingPathComponent("files.sh"), uses: [.screen, .files]))
+        let api = CommandAPI(mac: host, runs: runs)
+        func work(_ arguments: [String], _ token: String) throws -> CommandAPI.Work? {
+            let environment = [CallerTokens.variable: token]
+            return api.work(for: try XCTUnwrap(CommandLineCall(arguments: arguments, environment: environment)), input: { "" }, environment: environment)
+        }
+
+        XCTAssertNil(try work(["screen", "shot", "display:1", "a.png"], fenced))
+        XCTAssertNil(try work(["screen", "record", "start", "display:1", "--events", "e.json"], fenced))
+        XCTAssertNotNil(try work(["screen", "shot", "display:1"], fenced))
+        XCTAssertNotNil(try work(["screen", "shot", "display:1", "a.png"], free))
     }
 }

@@ -52,8 +52,8 @@ public final class CommandAPI: @unchecked Sendable {
     }
 
     /// The work that answers a call, or nil for a call that runs in a process of its own: one that draws, waits for the
-    /// person, reaches the screen, or runs a helper, a spot or a check of a folder. `input` reads stdin, and
-    /// only a call that takes stdin reads it.
+    /// person, or runs a helper, a spot or a check of a folder, and in Careful mode a spot's capture into a file that it
+    /// names, which only its sandbox can fence (Z8). `input` reads stdin, and only a call that takes stdin reads it.
     public func work(for call: CommandLineCall, input: @escaping @Sendable () async -> String, environment: [String: String]) -> Work? {
         let isRead = environment["OPENSPOT_REASON"] != nil
         let spots = SpotCalls(environment: environment, app: app, runs: runs)
@@ -61,6 +61,7 @@ public final class CommandAPI: @unchecked Sendable {
         let keys = KeyCalls(environment: environment, app: app)
         let apps = AppCalls(mac: mac, environment: environment, app: app)
         let clipboard = ClipboardCalls(mac: mac, environment: environment)
+        let screen = ScreenCalls(mac: mac, environment: environment)
         switch call {
         case .help: return HelpCalls().list()
         case .guideOf(let noun): return HelpCalls().guide(of: noun)
@@ -115,10 +116,20 @@ public final class CommandAPI: @unchecked Sendable {
             try await mac.moveWindow(move)
             return ""
         }
+        case .screenSources: return screen.sources()
+        case .screenShot(let capture): return isFenced(environment) && capture.file != nil ? nil : screen.shot(capture)
+        case .screenRecordStart(let capture): return isFenced(environment) && (capture.file ?? capture.events) != nil ? nil : screen.start(capture)
+        case .screenRecordStop: return screen.stop()
+        case .screenRecordStatus: return screen.status()
         case .check, .checkJSON, .spotRun, .spotShow, .renderSpot, .render, .renderCard, .sandbox, .colorPick, .folderPick,
-             .translate, .translateLanguages, .screenSources,
-             .screenShot, .screenRecordStart, .screenRecordStop, .screenRecordStatus, .helper, .glyphBook:
+             .translate, .translateLanguages, .helper, .glyphBook:
             return nil
         }
+    }
+
+    /// Whether the call comes from a spot that Careful mode keeps from writing outside its own folders (Z8).
+    private func isFenced(_ environment: [String: String]) -> Bool {
+        guard let runs, runs.tokens.isCareful, let caller = runs.tokens.caller(of: environment) else { return false }
+        return !caller.uses.contains(.files)
     }
 }

@@ -4,39 +4,15 @@ import OpenspotCore
 import ScreenCaptureKit
 import UniformTypeIdentifiers
 
-/// The `openspot screen` commands that run in the command's own process: the list of sources and a picture.
-@MainActor
+/// The `openspot screen` commands of the list of sources and a picture. They read the screens and draw a pick on the main
+/// thread, and do the rest on the thread of their call.
 enum SpotScreen {
     static let screenRecording = "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
 
-    /// Runs the work with the app's event loop, which an overlay needs, then prints what it returns and exits. A failure
-    /// goes to stderr, with exit code 1.
-    static func run(_ work: @escaping @MainActor () async throws -> String) -> Never {
-        let app = NSApplication.shared
-        app.setActivationPolicy(.accessory)
-        Task { @MainActor in
-            do {
-                print(try await work(), terminator: "")
-                exit(0)
-            } catch {
-                if case SpotError.failedWithFix(_, _, let link) = error { print("link=\(link.absoluteString)") }
-                FileHandle.standardError.write(Data("\((error as? SpotError)?.reason ?? error.localizedDescription)\n".utf8))
-                exit(1)
-            }
-        }
-        app.run()
-        exit(0)
-    }
-
     /// Each display, window, sound, microphone and camera as a row whose id is its source or input word. It needs no
     /// permission, so a window shows its app's name where macOS hides its title.
-    static func sources() -> String {
-        var rows: [TextBlock] = []
-        for screen in NSScreen.screens {
-            guard let id = (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value else { continue }
-            let size = "\(Int(screen.frame.width))×\(Int(screen.frame.height))"
-            rows.append(row("display:\(id)", screen.localizedName, "Display · \(size)", icon: "display"))
-        }
+    static func sources() async -> String {
+        var rows = await displays()
         for window in SpotScreenTarget.windows() {
             let owner = window[kCGWindowOwnerName as String] as? String ?? ""
             let title = (window[kCGWindowName as String] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? owner
@@ -52,18 +28,36 @@ enum SpotScreen {
         return rows.map { $0.text + "\n" }.joined()
     }
 
-    /// Takes a picture of the source and writes it, and returns its path on a line. A cancel of the pick returns nothing.
-    static func shot(_ capture: ScreenCapture) async throws -> String {
+    @MainActor
+    private static func displays() -> [TextBlock] {
+        NSScreen.screens.compactMap { screen in
+            guard let id = (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value else { return nil }
+            let size = "\(Int(screen.frame.width))×\(Int(screen.frame.height))"
+            return row("display:\(id)", screen.localizedName, "Display · \(size)", icon: "display")
+        }
+    }
+
+    /// Takes a picture of the source and writes it, and returns its path on a line. A cancel of the pick returns nothing. A
+    /// relative file starts in `folder`.
+    static func shot(_ capture: ScreenCapture, in folder: URL) async throws -> String {
         guard let found = try await SpotScreenTarget.target(of: capture.source) else { return "" }
-        let file = try CaptureFile(path: capture.file, kind: .picture, folder: screenshots, current: current).url
-        let target = try await SpotScreenTarget.find(found)
-        let image = try await allowed { try await SCScreenshotManager.captureImage(contentFilter: target.filter, configuration: target.configuration(cursor: capture.cursor)) }
-        try write(image, scale: target.scale, to: file)
+        let file = try CaptureFile(path: capture.file, kind: .picture, folder: screenshots, current: folder).url
+        let (image, scale) = try await picture(of: found, cursor: capture.cursor)
+        try write(image, scale: scale, to: file)
         return file.path + "\n"
+    }
+
+    /// The picture of a target, with its pixels for each point.
+    @MainActor
+    private static func picture(of found: ScreenTarget, cursor: Bool) async throws -> (CGImage, CGFloat) {
+        let target = try await SpotScreenTarget.find(found)
+        let image = try await allowed { try await SCScreenshotManager.captureImage(contentFilter: target.filter, configuration: target.configuration(cursor: cursor)) }
+        return (image, target.scale)
     }
 
     /// Runs a call to ScreenCaptureKit. When macOS does not allow it, this asks macOS for the permission and fails with the
     /// fix and the link to its pane (S11).
+    @MainActor
     static func allowed<Value>(_ work: () async throws -> Value) async throws -> Value {
         do {
             return try await work()
@@ -81,10 +75,6 @@ enum SpotScreen {
         let folder = URL(fileURLWithPath: (location as NSString).expandingTildeInPath, isDirectory: true)
         var isFolder: ObjCBool = false
         return FileManager.default.fileExists(atPath: folder.path, isDirectory: &isFolder) && isFolder.boolValue ? folder : desktop
-    }
-
-    static var current: URL {
-        URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true)
     }
 
     private static func row(_ id: String, _ title: String, _ detail: String, icon: String) -> TextBlock {

@@ -2,7 +2,8 @@ import AppKit
 import OpenspotCore
 
 /// The overlay over each screen where the person picks a source with no value (S3). It lights the window or the display
-/// under the pointer, draws the area of a drag, and ends at a pick or at Escape.
+/// under the pointer, draws the area of a drag, and ends at a pick or at Escape, which gives the focus back to the app that
+/// had it.
 @MainActor
 final class SpotScreenPick {
     private let pick: ScreenPick
@@ -11,6 +12,7 @@ final class SpotScreenPick {
     private var views: [Surface] = []
     private var start: CGPoint?
     private var answer: CheckedContinuation<ScreenTarget?, Never>?
+    private var previous: NSRunningApplication?
 
     private init(pick: ScreenPick, mainHeight: CGFloat) {
         self.pick = pick
@@ -51,6 +53,7 @@ final class SpotScreenPick {
             panels.append(panel)
             views.append(view)
         }
+        previous = NSWorkspace.shared.frontmostApplication.flatMap { $0.processIdentifier == ProcessInfo.processInfo.processIdentifier ? nil : $0 }
         NSApp.activate()
         panels.forEach { $0.orderFrontRegardless() }
         let under = panels.first { $0.frame.contains(NSEvent.mouseLocation) } ?? panels.first
@@ -89,6 +92,8 @@ final class SpotScreenPick {
         panels.forEach { $0.orderOut(nil) }
         panels = []
         views = []
+        previous?.activate()
+        previous = nil
         answer?.resume(returning: target)
         answer = nil
     }

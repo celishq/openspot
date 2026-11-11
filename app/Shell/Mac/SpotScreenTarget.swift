@@ -66,7 +66,7 @@ struct SpotScreenTarget {
     }
 
     /// The windows on screen at the level of apps, front first, apart from those of Openspot.
-    static func windows() -> [[String: Any]] {
+    nonisolated static func windows() -> [[String: Any]] {
         let all = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
         return all.filter {
             ($0[kCGWindowLayer as String] as? Int) == 0 && ($0[kCGWindowAlpha as String] as? Double ?? 1) > 0

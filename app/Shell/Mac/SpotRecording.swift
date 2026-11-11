@@ -7,14 +7,15 @@ import OpenspotCore
 @MainActor
 enum SpotRecording {
     nonisolated static let capability = Capability(name: "screen")
-    private static let microphonePane = "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone"
-    private static let cameraPane = "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera"
+    nonisolated private static let microphonePane = "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone"
+    nonisolated private static let cameraPane = "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera"
     private static var session: SpotRecordingSession?
 
-    /// Starts a recording of the source, and returns nothing. A cancel of the pick starts none.
-    static func start(_ capture: ScreenCapture) async throws -> String {
+    /// Starts a recording of the source, and returns nothing. A cancel of the pick starts none. A relative file starts in
+    /// `folder`. It runs on the thread of its call, apart from the pick.
+    nonisolated static func start(_ capture: ScreenCapture, in folder: URL) async throws -> String {
         guard let target = try await SpotScreenTarget.target(of: capture.source) else { return "" }
-        let file = try CaptureFile(path: capture.file, kind: .video, folder: SpotScreen.screenshots, current: SpotScreen.current).url
+        let file = try CaptureFile(path: capture.file, kind: .video, folder: SpotScreen.screenshots, current: folder).url
         var camera: String?
         for input in capture.inputs {
             switch input {
@@ -25,18 +26,18 @@ enum SpotRecording {
                 camera = CaptureFile.camera(beside: file).path
             }
         }
-        let events = capture.events.map { $0.hasPrefix("/") ? $0 : SpotScreen.current.appendingPathComponent($0).path }
+        let events = capture.events.map { $0.hasPrefix("/") ? $0 : folder.appendingPathComponent($0).path }
         _ = try ask(.start(RecordingRequest.Plan(target: target, inputs: capture.inputs, cursor: capture.cursor, file: file.path, camera: camera, events: events)))
         return ""
     }
 
     /// Ends the recording, and returns each file on a line, the video first.
-    static func stop() throws -> String {
+    nonisolated static func stop() throws -> String {
         let block = try ask(.stop)
         return ["file", "camera", "events"].compactMap { block.value($0) }.map { $0 + "\n" }.joined()
     }
 
-    static func status() throws -> String {
+    nonisolated static func status() throws -> String {
         try ask(.status).text
     }
 
@@ -50,7 +51,7 @@ enum SpotRecording {
     }
 
     /// Sends a request to the helper, and turns an answer with a fault into a failure with its fix.
-    private static func ask(_ request: RecordingRequest) throws -> TextBlock {
+    nonisolated private static func ask(_ request: RecordingRequest) throws -> TextBlock {
         let answer = String(decoding: try capability.call(Data(request.text.utf8)), as: UTF8.self)
         let block = TextBlock.blocks(in: answer).first ?? TextBlock(fields: [])
         guard let fault = block.value("fault") else { return block }
@@ -59,7 +60,7 @@ enum SpotRecording {
     }
 
     /// Asks macOS for a device when the person has not answered yet, and fails with the fix when it is not allowed.
-    private static func allow(_ media: AVMediaType, _ fault: String, _ pane: String) async throws {
+    nonisolated private static func allow(_ media: AVMediaType, _ fault: String, _ pane: String) async throws {
         guard AVCaptureDevice.authorizationStatus(for: media) != .authorized else { return }
         guard await AVCaptureDevice.requestAccess(for: media) else { throw SpotError.failedWithFix(1, fault, URL(string: pane)!) }
     }

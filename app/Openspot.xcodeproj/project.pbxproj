@@ -362,6 +362,7 @@
 		B6D177D1457692954AC673FD /* SpotList.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9DF64C4F736CF8CE9348941 /* SpotList.swift */; };
 		B78150E9402429982C071BF7 /* CalcDateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C0B9EE5490BB2E4EA1E7A2 /* CalcDateTests.swift */; };
 		B7846103D56D6C3377A70D40 /* MainSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4FF1CDA08F2F90750760F1A /* MainSearch.swift */; };
+		B81764B288C6F0064B728FA8 /* ScreenCalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51EF9A8CD1B191CADECA85D /* ScreenCalls.swift */; };
 		B8676F4AC37D3BDC56CEA2C7 /* OnceLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F24F0582E0B95BF77DAE274 /* OnceLink.swift */; };
 		B8A49E6BBB851A2B11B29805 /* SheetFaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08BCC0C811343163ADD02A5D /* SheetFaults.swift */; };
 		B8E17CF1F501562EEBE736EC /* Event.swift in Sources */ = {isa = PBXBuildFile; fileRef = F70009486AB59B320D3B9046 /* Event.swift */; };
@@ -869,6 +870,7 @@
 		A487678A61F51E9A87F36128 /* SharedSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSpot.swift; sourceTree = "<group>"; };
 		A4A9335ED3170AEC3B728749 /* CalendarStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarStore.swift; sourceTree = "<group>"; };
 		A4FF1CDA08F2F90750760F1A /* MainSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainSearch.swift; sourceTree = "<group>"; };
+		A51EF9A8CD1B191CADECA85D /* ScreenCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCalls.swift; sourceTree = "<group>"; };
 		A54CCBDE1513418AE4C6C8CF /* PickWeights.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickWeights.swift; sourceTree = "<group>"; };
 		A56D434310F89086FEC10833 /* Reminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reminder.swift; sourceTree = "<group>"; };
 		A578AAC06953DF21FDCF52B1 /* RecordingRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingRequest.swift; sourceTree = "<group>"; };
@@ -1518,6 +1520,7 @@
 				68375DA913593D89F26065DC /* PromptCalls.swift */,
 				19FFFBE2F3AE50C8B1C11018 /* RemindersCalls.swift */,
 				62A4C4EFD328584036A5EE48 /* RunningApp.swift */,
+				A51EF9A8CD1B191CADECA85D /* ScreenCalls.swift */,
 				EF2A28CC53A265E1DDF51328 /* SettingCalls.swift */,
 				98E32D55CDEDB0CB8192C5FC /* SpotCalls.swift */,
 				F9DF64C4F736CF8CE9348941 /* SpotList.swift */,
@@ -2327,6 +2330,7 @@
 				CE8936BBBAA99892F945E97A /* ReviewSpot.swift in Sources */,
 				C1B349168078245A17995A01 /* RunningApp.swift in Sources */,
 				CEA2A90FEFA6815C01372D25 /* ScanResult.swift in Sources */,
+				B81764B288C6F0064B728FA8 /* ScreenCalls.swift in Sources */,
 				6A3AF5954E5869CA883E02B9 /* ScreenCapture.swift in Sources */,
 				47DA4466694B28C3F3ACD4FA /* ScreenInput.swift in Sources */,
 				3DFF7E4752E30213BCD6B523 /* ScreenPick.swift in Sources */,

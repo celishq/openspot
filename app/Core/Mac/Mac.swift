@@ -1,8 +1,8 @@
 import Foundation
 
 /// What the Mac gives through the frameworks that Core does not import: EventKit, the apps that open, the settings of the
-/// app, the events of the Mac with the count of changes of the clipboard (B2), the clipboard and the window in front. A test
-/// gives a Mac of its own. A member with no `@MainActor` runs on the thread of its call, never on the main thread of the app.
+/// app, the events of the Mac with the count of changes of the clipboard (B2), the clipboard, the window in front and the
+/// screen. A test gives a Mac of its own. A member with no `@MainActor` runs on the thread of its call, never on the main thread of the app.
 public protocol Mac: AnyObject, Sendable {
     func eventStore() -> any EventStore
     func reminderStore() -> any ReminderStore
@@ -32,6 +32,16 @@ public protocol Mac: AnyObject, Sendable {
     func windowFrame() async throws -> String
     /// Moves the focused window of the front app.
     func moveWindow(_ move: WindowMove) async throws
+    /// Each display, window, sound, microphone and camera, as a row whose id is its source or input word.
+    func screenSources() async -> String
+    /// Takes a picture of the source, and returns the path of its file on a line, or nothing after a cancel of the pick. A
+    /// relative file starts in `folder`.
+    func screenShot(_ capture: ScreenCapture, in folder: URL) async throws -> String
+    /// Starts a recording of the source, which the screen helper keeps until a stop (S10). A relative file starts in `folder`.
+    func startRecording(_ capture: ScreenCapture, in folder: URL) async throws -> String
+    /// Ends the recording, and returns each of its files on a line, the video first.
+    func stopRecording() async throws -> String
+    func recordingStatus() async throws -> String
 }
 
 extension Mac {
@@ -47,4 +57,9 @@ extension Mac {
     public func paste() throws { throw SpotError.fault("This Mac has no clipboard.") }
     public func windowFrame() async throws -> String { throw SpotError.fault("This Mac has no windows.") }
     public func moveWindow(_ move: WindowMove) async throws { throw SpotError.fault("This Mac has no windows.") }
+    public func screenSources() async -> String { "" }
+    public func screenShot(_ capture: ScreenCapture, in folder: URL) async throws -> String { throw SpotError.fault("This Mac has no screen.") }
+    public func startRecording(_ capture: ScreenCapture, in folder: URL) async throws -> String { throw SpotError.fault("This Mac has no screen.") }
+    public func stopRecording() async throws -> String { throw SpotError.fault("This Mac has no screen.") }
+    public func recordingStatus() async throws -> String { throw SpotError.fault("This Mac has no screen.") }
 }
