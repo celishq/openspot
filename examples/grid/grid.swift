@@ -342,7 +342,7 @@ final class Grid: NSObject, NSApplicationDelegate, NSWindowDelegate {
         close.isBordered = false
         close.font = .systemFont(ofSize: 11, weight: .medium)
         close.contentTintColor = .secondaryLabelColor
-        close.frame = CGRect(x: 10, y: size.height - 30, width: 20, height: 20)
+        close.frame = CGRect(x: size.width - 30, y: size.height - 30, width: 20, height: 20)
         glass.addSubview(close)
 
         let cells = Cells(frame: CGRect(x: pad, y: pad, width: cellsWidth, height: cellsHeight), columns: columns, rows: rows)
