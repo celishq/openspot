@@ -9,8 +9,6 @@ public final class CommandAPI: @unchecked Sendable {
     private let mac: any Mac
     /// Raises an event in the running app, or nil in a process with no app to reach.
     private let raise: (@Sendable (SpotEvent) async -> Void)?
-    /// The rows of `openspot spot stats` in the running app, or nil in a process with no app to reach.
-    private let stats: (@Sendable () -> String)?
     private let app: (any RunningApp)?
     /// The runs of the app, which know each spot's call by its token, or nil in a process with no app to reach (Z2).
     private weak var runs: SpotRuns?
@@ -18,11 +16,10 @@ public final class CommandAPI: @unchecked Sendable {
     private let reminders: RemindersCalls
     private let keywords = GlyphKeywordCache()
 
-    public init(mac: any Mac, raise: (@Sendable (SpotEvent) async -> Void)? = nil, stats: (@Sendable () -> String)? = nil, app: (any RunningApp)? = nil, runs: SpotRuns? = nil) {
+    public init(mac: any Mac, raise: (@Sendable (SpotEvent) async -> Void)? = nil, app: (any RunningApp)? = nil, runs: SpotRuns? = nil) {
         self.mac = mac
         self.runs = runs
         self.raise = raise
-        self.stats = stats
         self.app = app
         calendar = CalendarCalls(mac: mac)
         reminders = RemindersCalls(mac: mac)
@@ -44,7 +41,7 @@ public final class CommandAPI: @unchecked Sendable {
     /// reads stdin, and only a call that takes stdin reads it.
     public func work(for call: CommandLineCall, input: @escaping @Sendable () async -> String, environment: [String: String]) -> Work? {
         let isRead = environment["OPENSPOT_REASON"] != nil
-        let spots = SpotCalls(environment: environment, app: app, stats: stats)
+        let spots = SpotCalls(environment: environment, app: app, runs: runs)
         let settings = SettingCalls(environment: environment, app: app)
         let keys = KeyCalls(environment: environment, app: app)
         let apps = AppCalls(mac: mac, environment: environment, app: app)
@@ -70,7 +67,7 @@ public final class CommandAPI: @unchecked Sendable {
         case .spotReview(let id): return spots.review(id)
         case .spotNew(let name, let starter): return spots.new(name, from: starter)
         case .spotLog(let id): return spots.log(id)
-        case .spotStats: return spots.statsText()
+        case .spotStats(let days, let spot, let format): return spots.stats(days: days, spot: spot, format: format)
         case .appKeySet(let name, let key): return keys.set(app: name, to: key)
         case .keySet(let spot, let act, let key): return keys.set(act, of: spot, to: key)
         case .menuBar(let id, let isShown): return MenuBarCalls(environment: environment, app: app).show(id, isShown)

@@ -181,7 +181,8 @@ public final class SpotsModel {
         self.runs = runs ?? SpotRuns(
             recent: { files.recent(of: $0) },
             prepare: { [unowned host] in await host.prepare($0, glyphs: $1) },
-            log: files.log
+            log: files.log,
+            stats: files.stats
         )
         self.runs.onReport = { [weak self] id, report in self?.take(report, of: id) }
         self.runs.partsArrival = { [weak self] id, bring in

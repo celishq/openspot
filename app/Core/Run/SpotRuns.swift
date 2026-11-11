@@ -23,8 +23,8 @@ public final class SpotRuns {
     public let readLimit: TimeInterval
     /// The time with no call after which an inline spot lets go of its context and its thread (A26).
     let inlineIdle: TimeInterval
-    /// What each spot cost since the app started (G1).
-    public nonisolated let usage = SpotUsage()
+    /// What each spot cost and used, day by day (G1, Z10).
+    public nonisolated let usage: SpotUsage
     /// Whether each new process of a spot runs in Careful mode, with only what its uses name (Z8).
     @ObservationIgnored public var isCareful = false
     /// The token of each process and inline link that runs, by which the API knows a spot's call (Z2).
@@ -72,9 +72,11 @@ public final class SpotRuns {
         recent: @escaping (String) -> [String] = { _ in [] },
         prepare: @escaping ([SpotItem], [String]) async -> Void = { _, _ in },
         inlineIdle: TimeInterval = 30,
-        log: CallLog? = nil
+        log: CallLog? = nil,
+        stats: URL? = nil
     ) {
         self.log = log
+        usage = SpotUsage(folder: stats, at: now())
         self.inlineIdle = inlineIdle
         self.readLimit = readLimit
         self.opening = opening
@@ -177,6 +179,7 @@ public final class SpotRuns {
         live.forEach { $0.leave() }
         let deadline = Date().addingTimeInterval(stopPause)
         live.forEach { $0.finish(by: deadline) }
+        usage.flush()
     }
 
     /// The marks of the scripts that show in the menu bar, in the order of the folder.
@@ -296,7 +299,7 @@ public final class SpotRuns {
                 end = .failed(error)
             }
             let ending: ScriptCall.End = call.isStopped ? .stopped : end
-            self?.usage.called(id, name: spot.name, seconds: Date().timeIntervalSince(begin))
+            if let self { usage.called(spot, seconds: Date().timeIntervalSince(begin), isFailure: { if case .failed = ending { true } else { false } }(), at: now()) }
             if let process {
                 self?.record(spot, action, input: input, frames: printed + (process.failedFrame.map { [$0] } ?? []), errors: process.errors, end: ending, reason: reason, started: call.started, begin: begin)
             }

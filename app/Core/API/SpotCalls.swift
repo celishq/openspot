@@ -5,8 +5,8 @@ import Foundation
 struct SpotCalls {
     let environment: [String: String]
     let app: (any RunningApp)?
-    /// The rows of `openspot spot stats` in the running app, or nil in a process with no app to reach.
-    let stats: (@Sendable () -> String)?
+    /// The runs of the app, whose counts of today are live, or nil in a process with no app to reach.
+    let runs: SpotRuns?
 
     func list(core: Bool, frame: Bool) -> CommandAPI.Work {
         CommandAnswer.work { [environment] in
@@ -83,10 +83,17 @@ struct SpotCalls {
         }
     }
 
-    func statsText() -> CommandAPI.Work {
-        guard let stats else {
-            return { CommandAnswer(errors: "Openspot is not running, so it has counted no calls. Open Openspot, then run this again.\n", code: 1) }
+    /// The counts of the last days: today's live from the running app, or with none each day from its file (Z11).
+    func stats(days: Int, spot: String?, format: StatsReport.Format) -> CommandAPI.Work {
+        CommandAnswer.work { [environment, runs] in
+            let counts: [SpotUsage.Day]
+            if let runs {
+                let now = await MainActor.run { runs.now() }
+                counts = runs.usage.days(days, at: now)
+            } else {
+                counts = SpotUsage.days(days, at: Date(), in: SpotFiles(environment: environment, home: FileManager.default.homeDirectoryForCurrentUser, defaults: .standard).stats)
+            }
+            return try StatsReport(days: counts, spot: spot).text(format)
         }
-        return { CommandAnswer(output: stats()) }
     }
 }

@@ -98,7 +98,8 @@ final class InlineLink: ScriptLink {
             asking.removeAll { $0 === made }
             return
         }
-        runs.usage.called(run.spot.id, name: run.spot.name, seconds: Date().timeIntervalSince(begin))
+        let isFailure = if case .failed = outcome { !made.isStopped } else { false }
+        runs.usage.called(run.spot, seconds: Date().timeIntervalSince(begin), isFailure: isFailure, at: runs.now())
         var text: String?
         let end: ScriptCall.End
         switch outcome {

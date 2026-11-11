@@ -278,7 +278,7 @@ final class StayLink: ScriptLink {
         guard let run else { return }
         for id in ends.compactMap(Int.init) {
             guard let date = sent.removeValue(forKey: id) else { continue }
-            runs.usage.called(run.spot.id, name: run.spot.name, seconds: Date().timeIntervalSince(date))
+            runs.usage.called(run.spot, seconds: Date().timeIntervalSince(date), isFailure: false, at: runs.now())
         }
     }
 
@@ -286,11 +286,12 @@ final class StayLink: ScriptLink {
     private func failed(_ error: Error) {
         guard let run else { return }
         let time = runs.now()
+        runs.usage.called(run.spot, seconds: 0, isFailure: true, at: time)
         failures = failures.filter { time.timeIntervalSince($0) < Self.failureWindow } + [time]
         guard failures.count >= Self.failureLimit else { return run.fail(error) }
         givenUp = .some(fileDate)
         let text = "\(run.spot.name) failed \(Self.failureLimit) times in one minute. Openspot will not start it again until its file changes."
-        runs.usage.failed(run.spot.id, name: run.spot.name, fault: text)
+        runs.usage.failed(run.spot, fault: text, at: time)
         run.onReport(.failure(text))
     }
 

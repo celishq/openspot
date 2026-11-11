@@ -14,7 +14,8 @@ public enum CommandLineCall: Equatable, Sendable {
     case spotShow(String)
     /// Prints the record of the last calls of a spot.
     case spotLog(String)
-    case spotStats
+    /// Prints what each spot cost and used over the last days, for one spot or each one (Z10).
+    case spotStats(days: Int, spot: String?, format: StatsReport.Format)
     /// Prints each script that the app loads as JSON, or with `core` each spot that comes with the app, and with `frame` as
     /// `key=value` blocks (K8).
     case spotList(core: Bool, frame: Bool)
@@ -123,8 +124,11 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot spot new <name> [--from kind]       Writes a working spot to change. A kind is button, list, number or form.
     openspot spot run <id> [call] [value]...     Makes one call of a spot as the app does, and prints all that it prints.
     openspot spot log <id>                       Prints the last calls that the app made to a spot.
-    openspot spot stats                          Prints a row for each spot: its calls, their time, its CPU time and
-                                                 its last fault, since the app started.
+    openspot spot stats [--days n] [--spot id] [--frame|--json]
+                                                 Prints what each spot cost and used today, or over the last n days:
+                                                 its runs, failures, CPU time, disk bytes, wakeups, each use of a power
+                                                 and its last fault, then each use of a power. --frame prints a row for
+                                                 each spot and a power block for each use; --json prints the days.
     openspot spot show <id>                      Opens the panel with the spot selected.
     openspot spot list [--core] [--frame]        Prints each spot that the app loads as JSON, with its commands, its
                                                  settings and their keys. --core prints each spot that comes with the
@@ -261,7 +265,7 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("spot", "run") where rest.count >= 2: self = .spotRun(id: rest[1], arguments: Array(rest.dropFirst(2)))
         case ("spot", "show") where rest.count == 2: self = .spotShow(rest[1])
         case ("spot", "log") where rest.count == 2: self = .spotLog(rest[1])
-        case ("spot", "stats") where rest.count == 1: self = .spotStats
+        case ("spot", "stats"): self = Self.stats(Array(rest.dropFirst())) ?? .unknown(arguments.joined(separator: " "))
         case ("spot", "list") where Self.flags(rest.dropFirst(), within: ["--core", "--frame"]):
             self = .spotList(core: rest.contains("--core"), frame: rest.contains("--frame"))
         case ("spot", "on") where rest.count > 1, ("spot", "off") where rest.count > 1:
@@ -432,6 +436,34 @@ public enum CommandLineCall: Equatable, Sendable {
         guard let key = words.first, !key.isEmpty, !key.hasPrefix("-"), words.count <= (sets ? 2 : 1) else { return nil }
         guard let spot else { return .refused("`openspot setting` needs a spot. Run it from a spot, or name one with `--spot <id>`.") }
         return sets ? .settingSet(spot: spot, key: key, value: words.dropFirst().first) : .settingGet(spot: spot, key: key)
+    }
+
+    /// Reads `[--days n] [--spot id] [--frame|--json]`, each at most once, or returns nil for anything else.
+    private static func stats(_ words: [String]) -> CommandLineCall? {
+        var days = 1
+        var spot: String?
+        var format = StatsReport.Format.text
+        var seen: Set<String> = []
+        var index = 0
+        while index < words.count {
+            let word = words[index]
+            guard seen.insert(["--frame", "--json"].contains(word) ? "format" : word).inserted else { return nil }
+            switch word {
+            case "--days":
+                guard index + 1 < words.count, let number = Int(words[index + 1]), number > 0 else { return nil }
+                days = number
+                index += 1
+            case spotWord:
+                guard index + 1 < words.count else { return nil }
+                spot = words[index + 1]
+                index += 1
+            case "--frame": format = .frame
+            case "--json": format = .json
+            default: return nil
+            }
+            index += 1
+        }
+        return .spotStats(days: days, spot: spot, format: format)
     }
 
     /// Reads `--panel <key>`, `--fix <key>`, `<id> <command> [key]` or `<id> --float [key]`, or returns nil for anything else.

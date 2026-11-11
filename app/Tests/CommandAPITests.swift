@@ -147,20 +147,27 @@ final class CommandAPITests: XCTestCase {
         XCTAssertEqual(answer.code, 1)
     }
 
-    func testStatsComeFromTheRunningApp() async throws {
-        let call = try XCTUnwrap(CommandLineCall(arguments: ["spot", "stats"], environment: [:]))
-        let work = try XCTUnwrap(CommandAPI(mac: host, stats: { "row=a\n" }).work(for: call, input: { "" }, environment: [:]))
+    @MainActor
+    func testStatsComeFromTheLiveCountsOfTheRunningApp() async throws {
+        let runs = SpotRuns()
+        runs.usage.called(Spot(id: "a", name: "Alpha", url: folder), seconds: 1, isFailure: false, at: Date())
+        let call = try XCTUnwrap(CommandLineCall(arguments: ["spot", "stats", "--frame"], environment: environment))
+        let work = try XCTUnwrap(CommandAPI(mac: host, runs: runs).work(for: call, input: { "" }, environment: environment))
 
         let answer = await work()
 
-        XCTAssertEqual(answer, CommandAnswer(output: "row=a\n"))
+        XCTAssertTrue(answer.output.hasPrefix("row=a\ntitle=Alpha\n"), answer.output)
     }
 
-    func testStatsWithNoAppToReachFail() async throws {
+    func testStatsWithNoAppToReachReadTheFiles() async throws {
+        let usage = SpotUsage(folder: folder.appendingPathComponent("stats"), pause: 60)
+        usage.called(Spot(id: "a", name: "Alpha", url: folder), seconds: 1, isFailure: false, at: Date())
+        usage.flush()
+
         let answer = try await answer(["spot", "stats"])
 
-        XCTAssertEqual(answer.errors, "Openspot is not running, so it has counted no calls. Open Openspot, then run this again.\n")
-        XCTAssertEqual(answer.code, 1)
+        XCTAssertEqual(answer.code, 0, answer.errors)
+        XCTAssertTrue(answer.output.contains("Alpha"), answer.output)
     }
 
     func testACallThatTheShellDoesHasNoWorkInCore() throws {

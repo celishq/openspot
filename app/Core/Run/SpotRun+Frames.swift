@@ -238,7 +238,7 @@ extension SpotRun {
         case nil: "\(spot.name) failed. \(error.localizedDescription)"
         }
         failure = text
-        runs.usage.failed(spot.id, name: spot.name, fault: text)
+        runs.usage.failed(spot, fault: text, at: runs.now())
         if case .failedWithFix(_, _, let fix) = error as? SpotError { return onReport(.failureWithFix(text, fix)) }
         onReport(.failure(text))
     }

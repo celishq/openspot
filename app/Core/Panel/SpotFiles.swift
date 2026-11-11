@@ -61,6 +61,11 @@ public struct SpotFiles {
         CallLog(folder: SpotFolder.config(environment: environment, home: home).appendingPathComponent("logs", isDirectory: true))
     }
 
+    /// The folder of the stats of each day, beside the plugins folder (Z10).
+    public var stats: URL {
+        SpotFolder.config(environment: environment, home: home).appendingPathComponent("stats", isDirectory: true)
+    }
+
     /// The rows that a person picked last in a list, the newest first.
     public func recent(of id: String) -> [String] {
         defaults.stringArray(forKey: Self.recentKey(id)) ?? []

@@ -4,7 +4,8 @@
 # detail=What each spot costs
 # size=small
 # read=sheet
-stats=$(openspot spot stats) || exit 1
+frame=$(openspot spot stats --frame) || exit 1
+stats=$(printf '%s\n' "$frame" | awk 'BEGIN { RS = ""; ORS = "\n\n" } /^row=/')
 printf 'grid=spots\ngrid.small=top\n\n'
 printf '%s\n' "$stats" | awk '
   /^row=/ { n++ }
