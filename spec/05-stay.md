@@ -23,8 +23,8 @@ a model or a local server alive between calls. Each call reaches the running pro
 ## Calls on stdin
 
 Openspot writes each call to stdin as one block, then a blank line. `call=<n>` numbers the call, and a read has
-`reason=<word>` with the word that `OPENSPOT_REASON` gives in 01. One `arg` line follows for each argument of the same
-call in 01, in order. The values of the sheet follow, as stdin holds them in 01.
+`reason=<word>` with the word that `OPENSPOT_REASON` gives in 01, and a read of an event with a value has `value=<value>`.
+One `arg` line follows for each argument of the same call in 01, in order. The values of the sheet follow, as stdin holds them in 01.
 
 ```text
 call=4
@@ -37,8 +37,8 @@ wifi=false
 
 `call`, `reason` and `arg` are reserved, so no block can take them as its id. Stdin stays open while the script runs.
 
-The shell helper of 01 reads the calls. `next` reads one call and fails at the end of stdin. It sets `call` and `reason`,
-and `arg <n>` and `value <id>` give the arguments and the values of that call. After a stop block, `stop` holds the number
+The shell helper of 01 reads the calls. `next` reads one call and fails at the end of stdin. It sets `call`, `reason` and
+`OPENSPOT_VALUE`, and `arg <n>` and `value <id>` give the arguments and the values of that call. After a stop block, `stop` holds the number
 of the call to stop.
 
 ## Frames on stdout

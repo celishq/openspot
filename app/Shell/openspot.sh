@@ -93,10 +93,10 @@ EOF_OPENSPOT
 )
 
 # Reads the next call of a staying script from stdin, and fails at the end of stdin. It sets `call` to its number, `reason`
-# to why a read came, and `stop` to the number of a call that a stop block names. `arg <n>` and `value <id>` then give the
-# arguments and the values of that call.
+# to why a read came, `OPENSPOT_VALUE` to the value of its event, and `stop` to the number of a call that a stop block
+# names. `arg <n>` and `value <id>` then give the arguments and the values of that call.
 next() {
-  call= reason= stop= _openspot_args= _openspot_stdin=
+  call= reason= stop= OPENSPOT_VALUE= _openspot_args= _openspot_stdin=
   while IFS= read -r _openspot_line; do
     case $_openspot_line in
       '') [ -z "$call$stop" ] || return 0 ;;
@@ -105,6 +105,8 @@ next() {
 " || stop=${_openspot_line#stop=} ;;
       reason=*) [ -n "$_openspot_args" ] && _openspot_stdin="$_openspot_stdin$_openspot_line
 " || reason=${_openspot_line#reason=} ;;
+      value=*) [ -n "$_openspot_args" ] && _openspot_stdin="$_openspot_stdin$_openspot_line
+" || OPENSPOT_VALUE=${_openspot_line#value=} ;;
       arg=*) _openspot_args="$_openspot_args$_openspot_line
 " ;;
       *) _openspot_stdin="$_openspot_stdin$_openspot_line

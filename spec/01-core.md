@@ -142,7 +142,8 @@ An event is a word with a dot, or `clipboard`. Openspot raises `app.front` when 
 bundle ID as the value, `clipboard` when the clipboard changes and `screen.wake` when the screen wakes (B2). `openspot
 event emit <event> [value]` raises any event in the running app, from a script or from a terminal, and each spot that
 lists it reads (B3). With the app closed, it fails and changes nothing. `OPENSPOT_REASON` gives the event, and
-`OPENSPOT_VALUE` its value (B4). A spot that lists an event reads only while something wants it, as for a number (B5).
+`OPENSPOT_VALUE` its value (B4). A spot that lists an event reads only while something wants it, as for a number, and a spot that lists only events reads
+once when something starts to want it (B5).
 
 ## Modes
 

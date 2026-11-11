@@ -30,6 +30,8 @@ public final class SpotRuns {
     @ObservationIgnored var source: (any EventSource)?
     /// The looks at the clipboard, which run only while a spot lists `clipboard`.
     @ObservationIgnored var clipboardWatch: Task<Void, Never>?
+    /// Whether the app quit, after which nothing starts.
+    @ObservationIgnored private(set) var hasQuit = false
     @ObservationIgnored private let recent: (String) -> [String]
     @ObservationIgnored private let prepare: ([SpotItem], [String]) async -> Void
     private var order: [String] = []
@@ -87,7 +89,6 @@ public final class SpotRuns {
         }
         scripts.forEach { sheet(for: $0).scanned() }
         updateClock()
-        watchClipboard()
     }
 
     /// The sheet of a script, with the command as the folder last gave it.
@@ -150,6 +151,7 @@ public final class SpotRuns {
 
     /// Stops each call, which changes nothing, and waits for the processes to end, for at most 2 seconds.
     public func quit() {
+        hasQuit = true
         clock?.cancel()
         clock = nil
         clipboardWatch?.cancel()

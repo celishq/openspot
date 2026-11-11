@@ -2,12 +2,20 @@ import Foundation
 
 /// The clock of timed reads: it reads each wanted script with a number in its `read` when that many seconds have passed.
 extension SpotRuns {
-    /// Reads each wanted script whose number of seconds has passed. Returns the seconds until the next read is due, or nil
-    /// when no wanted script has a number.
+    /// Reads each wanted script whose number of seconds has passed, and once each script that waits only for events as it
+    /// becomes wanted. Returns the seconds until the next read is due, or nil when no wanted script has a number.
     @discardableResult
     public func tick() -> TimeInterval? {
         let time = now()
         var next: TimeInterval?
+        for sheet in sheets.values where sheet.command.read?.waitsForEvents == true {
+            if !sheet.isWanted {
+                asked[sheet.command.id] = nil
+            } else if asked[sheet.command.id] == nil {
+                asked[sheet.command.id] = time
+                sheet.read(need: .clock, reason: .timer)
+            }
+        }
         for sheet in sheets.values where sheet.isWanted {
             guard let seconds = sheet.command.read?.seconds else { continue }
             var left = seconds
@@ -26,6 +34,7 @@ extension SpotRuns {
     /// the panel open it looks after each pause, since a card can place a script at any time. With the panel closed it sleeps
     /// until the next read is due, and no less than its pause. A change of what is wanted starts it again.
     func updateClock() {
+        watchClipboard()
         clock?.cancel()
         clock = nil
         var next = tick()

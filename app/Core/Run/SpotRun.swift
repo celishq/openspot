@@ -227,6 +227,8 @@ public final class SpotRun {
     @ObservationIgnored private var waiter: (() -> Void)?
     @ObservationIgnored private var selecting: String?
     @ObservationIgnored private var readsAgain = false
+    /// The newest event that came during a read, which reads again once that read ends.
+    @ObservationIgnored private var eventAgain: ReadReason?
     @ObservationIgnored private var pauses: [String: Task<Void, Never>] = [:]
     @ObservationIgnored private var editing: String?
     /// The drops and the drags of files that wait for the running work, each in turn (D4, O2).
@@ -434,6 +436,7 @@ public final class SpotRun {
         waitingFiles = []
         waitingKeys = []
         readsAgain = false
+        eventAgain = nil
         calls.forEach(stop)
         link.leave()
     }
@@ -447,6 +450,7 @@ public final class SpotRun {
         if let run { selecting = run }
         if link.isAsking {
             if need == .change { readsAgain = true }
+            if reason.isEvent { eventAgain = reason }
             return
         }
         if need == .moment, let answered, runs.now().timeIntervalSince(answered) < Self.answerAge {
@@ -799,6 +803,7 @@ public final class SpotRun {
             if !hadAnswer {
                 waiter = nil
                 readsAgain = false
+                eventAgain = nil
             }
         case (.ask(.read(_, let reports, _)), .failed(let error)):
             answered = nil
@@ -992,11 +997,15 @@ public final class SpotRun {
         runs.opening.startMotion(of: command.id)
     }
 
-    /// Reads again when a change came during a read, once no read or search waits.
+    /// Reads again when a change or an event came during a read, once no read or search waits. The newest event gives
+    /// the reason.
     private func readAgainIfAsked() {
-        guard readsAgain, !link.isAsking else { return }
+        guard readsAgain || eventAgain != nil, !link.isAsking else { return }
+        let need: ReadNeed = readsAgain ? .change : .clock
+        let reason = eventAgain
         readsAgain = false
-        read(need: .change)
+        eventAgain = nil
+        read(need: need, reason: reason)
     }
 
     /// Closes a sheet that waits for an answer that will not come.

@@ -172,6 +172,25 @@ final class ShellHelperTests: XCTestCase {
         }
     }
 
+    func testNextGivesTheValueOfAnEventAsOpenspotValue() async throws {
+        let url = try script("""
+        while next; do
+          printf 'got=%s|%s|%s\\n---\\n' "$reason" "$OPENSPOT_VALUE" "$(value value)"
+        done
+        """, header: "# stay=true\n")
+        let live = ScriptProcess(url: url, mode: .stays, limit: 5)
+        var frames = live.start().makeAsyncIterator()
+
+        live.send(.read, values: "value=held\n", id: 1, reason: ReadReason(event: "music.track", value: "Song"))
+        let first = try await frames.next()
+        live.send(.read, id: 2, reason: .panel)
+        let second = try await frames.next()
+        live.end()
+
+        XCTAssertEqual(first, "got=music.track|Song|held\n")
+        XCTAssertEqual(second, "got=panel||\n")
+    }
+
     func testNextReadsEachCallOfAStayingScriptWithItsArgumentsAndValues() async throws {
         let url = try script("""
         while next; do

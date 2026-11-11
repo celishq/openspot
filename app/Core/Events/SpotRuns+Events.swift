@@ -35,11 +35,11 @@ extension SpotRuns {
         clipboardWatch != nil
     }
 
-    /// Looks at the count of the clipboard after each pause while a scanned spot lists `clipboard`, and raises `clipboard`
-    /// when it changes. With no such spot, nothing looks.
+    /// Looks at the count of the clipboard after each pause while something wants a spot that lists `clipboard`, and raises
+    /// `clipboard` when it changes. Each change of what is wanted calls it, through `updateClock`. After a quit nothing looks.
     func watchClipboard() {
-        let isListed = sheets.values.contains { $0.command.read?.has(.event(SpotEvent.clipboard)) == true }
-        guard let source, isListed else {
+        let isWanted = sheets.values.contains { $0.isWanted && $0.command.read?.has(.event(SpotEvent.clipboard)) == true }
+        guard let source, isWanted, !hasQuit else {
             clipboardWatch?.cancel()
             clipboardWatch = nil
             return

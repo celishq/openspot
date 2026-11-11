@@ -44,6 +44,11 @@ public struct SpotRead: Equatable, Sendable {
         moments.contains { if case .event = $0 { true } else { false } }
     }
 
+    /// Whether the list names events and nothing else, so that only an event or its first want reads it.
+    public var waitsForEvents: Bool {
+        hasEvent && moments.allSatisfy { if case .event = $0 { true } else { false } }
+    }
+
     /// The first number in the list.
     public var seconds: TimeInterval? {
         for case .every(let seconds) in moments { return seconds }
