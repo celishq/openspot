@@ -2,8 +2,8 @@ import CryptoKit
 import Foundation
 
 /// `spots.lock` in the config folder: the source of each spot that `openspot spot add` put in the plugins folder, the
-/// commit of a git source, the paths at the top of the folder that the spot took, a hash of its files and its uses (N1,
-/// N2, Z7). A first add of a spot that uses a power, can do more or runs by itself, and an update that adds a use, change
+/// commit of a git source, the paths that the spot took, a hash of its files, its uses and the lines of what it can also
+/// do and of what runs by itself (N1, N2, Z7). A first add of a spot that uses a power, can do more or runs by itself, and an update that adds a use, change
 /// nothing until the person confirms them. Each read, change and write holds a lock beside the file, in the app and in
 /// the command alike.
 public struct SpotLock: Equatable, Sendable {
@@ -15,6 +15,8 @@ public struct SpotLock: Equatable, Sendable {
         public let hash: String?
         /// The uses that its scripts name, in the order of the set.
         public let uses: [SpotUse]?
+        /// The lines of what it can also do and of what runs by itself, as its review shows them.
+        public var canDo: [String]?
 
         /// The name of the spot: its first path with no extension.
         public var name: String {
@@ -40,10 +42,11 @@ public struct SpotLock: Equatable, Sendable {
         }
     }
 
-    /// The hash and the uses of a spot's paths in a folder.
+    /// The hash, the uses and the lines of what it can also do and of what runs by itself, of a spot's paths in a folder.
     private struct Facts {
         let hash: String
         let uses: [SpotUse]
+        let canDo: [String]
     }
 
     private static let name = "spots.lock"
@@ -94,11 +97,12 @@ public struct SpotLock: Equatable, Sendable {
                     throw SpotError.fault("\(review.name)\n\n\(review.trust)Openspot added nothing. Run `openspot spot add \(source.text) --yes` to add it.")
                 }
                 if let old, !isConfirmed {
-                    try Self.refuseGrowth(from: old.uses ?? Self.facts(of: old.paths, in: folder).uses, to: new.uses, confirm: "openspot spot add \(source.text) --yes")
+                    let before = old.uses == nil || old.canDo == nil ? try Self.facts(of: old.paths, in: folder) : nil
+                    try Self.refuseGrowth(from: old.uses ?? before?.uses ?? [], old.canDo ?? before?.canDo ?? [], to: new, confirm: "openspot spot add \(source.text) --yes")
                 }
                 facts = new
             }
-            let entry = Entry(source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses)
+            let entry = Entry(source: source.text, commit: commit, paths: paths, hash: facts?.hash, uses: facts?.uses, canDo: facts?.canDo)
             try write(try entries().filter { Set($0.paths).isDisjoint(with: paths) && $0.source != source.text } + [entry])
             return old == nil ? entry.added : entry.updated
         }
@@ -123,11 +127,11 @@ public struct SpotLock: Equatable, Sendable {
                 _ = try await SpotSource(text: entry.source, place: place).add(to: folder, at: entry.commit, check: { work, paths in
                     let new = try Self.facts(of: paths, in: work)
                     if !isConfirmed, new.hash != entry.hash, let uses = entry.uses {
-                        try Self.refuseGrowth(from: uses, to: new.uses, confirm: "openspot spot add --yes")
+                        try Self.refuseGrowth(from: uses, entry.canDo ?? new.canDo, to: new, confirm: "openspot spot add --yes")
                     }
                     facts = new
                 })
-                entries[index] = Entry(source: entry.source, commit: entry.commit, paths: entry.paths, hash: facts?.hash, uses: facts?.uses)
+                entries[index] = Entry(source: entry.source, commit: entry.commit, paths: entry.paths, hash: facts?.hash, uses: facts?.uses, canDo: facts?.canDo)
                 changed[entry.source] = entries[index]
                 added += entry.added
             } catch {
@@ -139,11 +143,14 @@ public struct SpotLock: Equatable, Sendable {
         return CommandAnswer(output: added, errors: faults, code: faults.isEmpty ? 0 : 1)
     }
 
-    /// Throws the line that names each use that the new version adds, with the command that confirms it, when it adds one.
-    private static func refuseGrowth(from old: [SpotUse], to new: [SpotUse], confirm: String) throws {
-        let added = new.filter { !old.contains($0) }
-        guard !added.isEmpty else { return }
-        throw SpotError.fault("This version adds: \(added.map(\.rawValue).joined(separator: ", ")).\nOpenspot kept the one you have. Run `\(confirm)` to update it.")
+    /// Throws the lines that name each use, and each line of what it can also do or of what runs by itself, that the new
+    /// version adds, with the command that confirms it, when it adds any.
+    private static func refuseGrowth(from uses: [SpotUse], _ canDo: [String], to new: Facts, confirm: String) throws {
+        let added = new.uses.filter { !uses.contains($0) }
+        let more = new.canDo.filter { !canDo.contains($0) }
+        guard !added.isEmpty || !more.isEmpty else { return }
+        let head = added.isEmpty ? "This version can do more." : "This version adds: \(added.map(\.rawValue).joined(separator: ", "))."
+        throw SpotError.fault(([head] + more + ["Openspot kept the one you have. Run `\(confirm)` to update it."]).joined(separator: "\n"))
     }
 
     /// The hash of the files under the paths in a folder, and the uses that their scripts name.
@@ -171,7 +178,8 @@ public struct SpotLock: Equatable, Sendable {
         let scan = try SpotFolder(url: folder).scan()
         let scripts = scan.scripts.filter { script in paths.contains { script.id == ($0 as NSString).deletingPathExtension || script.id.hasPrefix($0 + "/") } }
         let uses = SpotUse.allCases.filter { use in scripts.contains { $0.uses.contains(use) } }
-        return Facts(hash: hash.finalize().map { String(format: "%02x", $0) }.joined(), uses: uses)
+        let review = try? ReviewSpot(spot: SharedSpot(paths: paths, in: folder), folder: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-none", isDirectory: true))
+        return Facts(hash: hash.finalize().map { String(format: "%02x", $0) }.joined(), uses: uses, canDo: review?.canDo ?? [])
     }
 
     /// Moves each path of the entry that holds this ID to the Trash, and drops the entry. A spot that `spot add` did not add

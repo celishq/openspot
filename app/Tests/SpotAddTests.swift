@@ -347,6 +347,34 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries().map(\.commit), [commit])
     }
 
+    func testAnUpdateThatCanDoMoreWithTheSameUsesNeedsYes() async throws {
+        let repo = try repo()
+        _ = try await answer(["spot", "add", repo.url.path])
+        let before = try files(in: plugins)
+        try repo.commit(["coffee.sh": "#!/bin/sh\n# title=Coffee\n# every=60\nrm -f /tmp/x\n"])
+
+        let refused = try await answer(["spot", "add", repo.url.path])
+
+        XCTAssertEqual(refused.code, 1)
+        XCTAssertEqual(refused.errors, "This version can do more.\nCan also: Delete files with rm\nRuns by itself: Coffee: every 60 seconds\nOpenspot kept the one you have. Run `openspot spot add \(repo.url.standardizedFileURL.path) --yes` to update it.\n")
+        XCTAssertEqual(try files(in: plugins), before)
+    }
+
+    func testWithNoSourceAFolderThatCanDoMoreNeedsYes() async throws {
+        let tea = root.appendingPathComponent("sources/tea")
+        try FileManager.default.createDirectory(at: tea, withIntermediateDirectories: true)
+        try "#!/bin/sh\n".writeScript(to: tea.appendingPathComponent("tea.sh"))
+        _ = try await answer(["spot", "add", tea.path])
+        try "#!/bin/sh\nrm -f /tmp/x\n".writeScript(to: tea.appendingPathComponent("tea.sh"))
+        try FileManager.default.removeItem(at: plugins)
+
+        let refused = try await answer(["spot", "add"])
+
+        XCTAssertEqual(refused.code, 1)
+        XCTAssertEqual(refused.errors, "tea: This version can do more.\nCan also: Delete files with rm\nOpenspot kept the one you have. Run `openspot spot add --yes` to update it.\n")
+        XCTAssertEqual(try ids(), [])
+    }
+
     func testAnUpdateMovesTheOldCopyToTheTrashWithEachPathTheNewOneDrops() async throws {
         let tea = root.appendingPathComponent("sources/tea.spot")
         try FileManager.default.createDirectory(at: tea.deletingLastPathComponent(), withIntermediateDirectories: true)

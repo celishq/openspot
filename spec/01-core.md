@@ -655,9 +655,10 @@ seems to do and does not name (Z6): it reaches the network (`curl`, `wget`, `nc`
 `screencapture`, `pbcopy` or `pbpaste` directly, which `openspot screen` and `openspot clipboard` replace, or it calls
 `openspot` for a use that `uses` does not name. The review reads the text and runs none of it. It warns and never refuses.
 
-An update compares the `uses` of the new version with those of the one in place (Z7). When none grew, it applies quietly.
-When one grew, the review of a `.spot` file starts with `This version adds: network`, and `openspot spot add` prints that
-line and changes nothing until it runs again with `--yes`.
+An update compares the `uses` of the new version, and the lines of its review under `Can also` and `Runs by itself`, with
+those of the one in place (Z7). When none grew, it applies quietly. When a use grew, the review of a `.spot` file starts
+with `This version adds: network`. `openspot spot add` prints that line, or `This version can do more.`, with each new
+line, such as `Can also: Delete files with rm`, and changes nothing until it runs again with `--yes`.
 
 Careful mode is a setting of the person, off by default, which Settings and `openspot app careful on|off` turn on and off,
 and which `app status` shows as `careful` (Z8). No other spot can change it. It runs each process of a spot, and each
