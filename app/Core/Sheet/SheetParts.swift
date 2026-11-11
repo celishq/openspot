@@ -25,7 +25,6 @@ public struct SheetParts: Equatable, Sendable {
     /// Where its parts lie, worked out once for each change of its parts.
     public private(set) var placement: SheetPlacement
     private var selected: String?
-    private var changes: [String: Int] = [:]
 
     /// Returns nil when a script prints no parts.
     public init?(output: PluginOutput) {
@@ -194,9 +193,7 @@ public struct SheetParts: Equatable, Sendable {
     @discardableResult
     public mutating func set(_ value: String, of id: String) -> Int {
         parts.firstIndex { $0.id == id }.map { parts[$0].set(value) }
-        let generation = advance()
-        changes[id] = generation
-        return generation
+        return advance()
     }
 
     /// Starts a new generation, which outdates each call under way.
@@ -204,26 +201,6 @@ public struct SheetParts: Equatable, Sendable {
     public mutating func advance() -> Int {
         generation += 1
         return generation
-    }
-
-    /// Takes a frame of a call that runs. A frame with a layout replaces the sheet, and a frame with only parts changes those
-    /// parts. A call older than a change leaves alone each part that changed since, and does not replace the sheet.
-    @discardableResult
-    public mutating func merge(_ output: PluginOutput, answering generation: Int? = nil, keeping id: String? = nil) -> Bool {
-        guard !output.parts.isEmpty else { return false }
-        let isNewest = generation == nil || generation == self.generation
-        if output.layout != nil, isNewest { return take(output, answering: self.generation, keeping: id) }
-        let kept = parts.first { $0.id == id }?.value
-        for part in output.parts.map({ $0.drawn(in: layout) }) where isNewest || (changes[part.id] ?? 0) <= (generation ?? 0) {
-            if let index = parts.firstIndex(where: { $0.id == part.id }) {
-                parts[index] = part
-            } else {
-                parts.append(part)
-            }
-        }
-        if let id, let kept, let index = parts.firstIndex(where: { $0.id == id }) { parts[index].set(kept) }
-        place()
-        return true
     }
 
     /// Takes the answer to a call, unless a newer change has outdated it. `keeping` names a part whose text the person

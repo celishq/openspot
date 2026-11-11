@@ -27,6 +27,5 @@ final class QuitSpotTests: XCTestCase {
 
         XCTAssertEqual(spot.kind, .launch)
         XCTAssertFalse(spot.isOnGrid)
-        XCTAssertTrue(spot.hasSpot)
     }
 }

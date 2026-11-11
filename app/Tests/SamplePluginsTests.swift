@@ -187,11 +187,30 @@ final class SamplePluginsTests: SamplePluginsCase {
             XCTAssertEqual(state.on, false)
             XCTAssertEqual(lines.items.map(\.run), ["1800", "3600", "7200", "14400", "28800", "0"])
             XCTAssertEqual(lines.items.map(\.title), ["30 minutes", "1 hour", "2 hours", "4 hours", "8 hours", "Until turned off"])
-            XCTAssertEqual(lines.parts, [])
+            XCTAssertEqual(lines.parts.map(\.id), ["awake"])
             XCTAssertEqual(lines.errors, [])
             XCTAssertEqual(lines.pick, .close)
             XCTAssertEqual(lines.primary, "Select")
             XCTAssertFalse(lines.keepsRecent)
+        }
+    }
+
+    func testCaffeinatesSwitchTurnsItOnUntilOffAndOff() async throws {
+        let caffeinate = try XCTUnwrap(try scan.commands.first { $0.name == "Caffeinate" })
+        try await withPrivateHome { _ in
+            let on = try await caffeinate.perform(.set("awake", to: "true"), timeout: 5)
+            var started = try await caffeinate.state(timeout: 5)
+            for _ in 0..<100 where started.on != true {
+                try await Task.sleep(for: .milliseconds(50))
+                started = try await caffeinate.state(timeout: 5)
+            }
+            let off = try await caffeinate.perform(.set("awake", to: "false"), timeout: 5)
+            let stopped = try await caffeinate.state(timeout: 5)
+
+            XCTAssertEqual(on, "Caffeinate is on until you turn it off")
+            XCTAssertEqual(started.subtitle, "Until off")
+            XCTAssertEqual(off, "Caffeinate is off")
+            XCTAssertEqual(stopped.on, false)
         }
     }
 
@@ -282,7 +301,7 @@ final class SamplePluginsTests: SamplePluginsCase {
             XCTAssertEqual(lines.errors, [])
             XCTAssertEqual(lines.items.map(\.run), (1...3).map { "https://github.test/a/\($0)" } + ["https://github.test/b/4"])
             XCTAssertEqual(lines.items.last?.subtitle, "No checks · To review · b")
-            XCTAssertTrue(metric.isTray)
+            XCTAssertTrue(metric.canShowInMenuBar)
             XCTAssertEqual(list.id, metric.id)
 
             let item = try XCTUnwrap(lines.items.first)
@@ -304,12 +323,10 @@ final class SamplePluginsTests: SamplePluginsCase {
         }
     }
 
-    func testAgentsPullRequestsAndTheClockShowInTheMenuBar() throws {
-        XCTAssertEqual(try exampleScan.scripts.filter(\.isTray).map(\.id), ["agents", "clock", "pulls"])
-    }
+    func testAgentsPullRequestsAndTheClockCanShowInTheMenuBar() throws {
+        let scripts = try exampleScan.scripts.filter { ["agents", "clock", "pulls"].contains($0.id) }
 
-    func testNoShippedSpotReadsOnATimerInTheMenuBar() throws {
-        XCTAssertEqual(try scan.metrics.filter { $0.isTray && $0.read?.seconds != nil }.map(\.id), [])
+        XCTAssertEqual(scripts.map(\.canShowInMenuBar), [true, true, true])
     }
 
     func testTheColorPickerCopiesAPickAndNothingOnACancel() async throws {

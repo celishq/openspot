@@ -53,7 +53,7 @@ public struct PluginCheck: Sendable {
                 let output = PluginOutput(text: try await runs.answer(of: script, .read, limit: timeout))
                 _ = try script.state(of: output)
                 if script.read?.seconds != nil, MetricValue(output: output) == nil { throw PluginError.badMetric }
-                if script.hasSpot { findings += output.errors.map { found("cannot read the item \($0)") } }
+                findings += output.errors.map { found("cannot read the item \($0)") }
                 findings += output.partFaults.map(found)
             } catch {
                 findings.append(found(Self.reason(error)))

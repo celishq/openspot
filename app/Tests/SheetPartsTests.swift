@@ -13,15 +13,14 @@ final class SheetPartsTests: XCTestCase {
 
     section=lights
     title=Lights
-    on=true
 
     switch=left
     title=Left
     detail=Connecting…
-    on=false
+    value=false
 
     slider=brightness
-    level=80
+    value=80
     max=100
     icon=sun.max
 
@@ -67,6 +66,7 @@ final class SheetPartsTests: XCTestCase {
         let output = PluginOutput(text: "text=due\ndetail=Late\ntone=bad\n\ntext=now\ntitle=Standup\ntone=on\n\ngauge=disk\nvalue=0.9\ntone=bad\n")
 
         XCTAssertEqual(output.parts.map(\.textTone), [.bad, nil, nil])
+        XCTAssertEqual(output.partFaults, ["the part now has an unknown tone: on"])
     }
 
     func testASetValueKeepsThePlacementOfTheParts() throws {
@@ -99,21 +99,50 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertTrue(parts[6].closes)
     }
 
+    func testEachKindKeepsItsDataInValue() throws {
+        let parts = try panel("switch=wifi\nvalue=true\n\nslider=volume\nvalue=40\nmax=100\n\nfield=name\nvalue=Ann\n\ngraph=history\nvalue=2\nvalue=4\n").parts
+
+        XCTAssertEqual(parts.map(\.control), [
+            .toggle(true), .slider(level: 40, min: 0, max: 100), .text("Ann", placeholder: nil, isReadOnly: false), .chart([2, 4])
+        ])
+    }
+
+    func testOnLevelTextAndPointAreNoLongerTheDataOfAKind() throws {
+        let parts = try panel("switch=wifi\non=true\n\nslider=volume\nlevel=40\n\nfield=name\ntext=Ann\n\ngraph=history\npoint=2\n").parts
+
+        XCTAssertEqual(parts.map(\.control), [.toggle(false), .slider(level: 0, min: 0, max: 100), .text("", placeholder: nil, isReadOnly: false), .chart([])])
+        for (kind, key) in [("switch", "on"), ("slider", "level"), ("field", "text"), ("graph", "point")] {
+            XCTAssertEqual(PartCatalog.faults(in: TextBlock(fields: [.init(key: kind, value: "a"), .init(key: key, value: "1")])), ["the part a has an unknown key: \(key)"])
+        }
+    }
+
     func testAMenuAndATextAreaReadTheirOptions() throws {
         let parts = try panel("""
         choice=source
-        option=auto:Auto
-        option=en:English
         value=en
 
+        option=auto
+        title=Auto
+
+        option=en
+        title=English
+
         field=output
-        text=one\\ntwo
+        value=one\\ntwo
         placeholder=Translation
         readonly=true
         """).parts
 
         XCTAssertEqual(parts[0].control, .menu([.init(id: "auto", title: "Auto"), .init(id: "en", title: "English")], value: "en"))
         XCTAssertEqual(parts[1].control, .text("one\ntwo", placeholder: "Translation", isReadOnly: true))
+    }
+
+    func testAChoiceTakesTheOptionBlocksAfterItWithEachTitleAndIconWhole() {
+        let output = PluginOutput(text: "choice=c\nvalue=b\n\noption=a\ntitle=Team: 09:30\nicon=https://example.com/a.png\n\noption=b\n\nfield=f\n\noption=x\n")
+
+        XCTAssertEqual(output.parts.map(\.id), ["c", "f"])
+        XCTAssertEqual(output.parts.first?.control, .menu([.init(id: "a", title: "Team: 09:30", icon: "https://example.com/a.png"), .init(id: "b", title: "b")], value: "b"))
+        XCTAssertEqual(output.errors, ["option=x"])
     }
 
     func testValuesGoToTheScriptAsOneBlock() throws {
@@ -131,30 +160,30 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testAnOlderAnswerIsDropped() throws {
-        var panel = try panel("field=input\ntext=one\n\nfield=output\ntext=old\n")
+        var panel = try panel("field=input\nvalue=one\n\nfield=output\nvalue=old\n")
         let first = panel.set("two", of: "input")
         let second = panel.set("three", of: "input")
 
-        XCTAssertFalse(panel.take(PluginOutput(text: "field=input\ntext=two\n\nfield=output\ntext=stale\n"), answering: first))
+        XCTAssertFalse(panel.take(PluginOutput(text: "field=input\nvalue=two\n\nfield=output\nvalue=stale\n"), answering: first))
         XCTAssertEqual(panel.parts[1].control, .text("old", placeholder: nil, isReadOnly: false))
-        XCTAssertTrue(panel.take(PluginOutput(text: "field=input\ntext=three\n\nfield=output\ntext=new\n"), answering: second))
+        XCTAssertTrue(panel.take(PluginOutput(text: "field=input\nvalue=three\n\nfield=output\nvalue=new\n"), answering: second))
         XCTAssertEqual(panel.parts[1].control, .text("new", placeholder: nil, isReadOnly: false))
     }
 
     func testAnAnswerKeepsTheTextThePersonIsEditing() throws {
-        var panel = try panel("field=input\ntext=one\n")
+        var panel = try panel("field=input\nvalue=one\n")
         let call = panel.set("two ", of: "input")
 
-        panel.take(PluginOutput(text: "field=input\ntext=two\n"), answering: call, keeping: "input")
+        panel.take(PluginOutput(text: "field=input\nvalue=two\n"), answering: call, keeping: "input")
 
         XCTAssertEqual(panel.parts[0].control, .text("two ", placeholder: nil, isReadOnly: false))
     }
 
     func testAPressCanReplaceAnyText() throws {
-        var panel = try panel("field=input\ntext=one\n")
+        var panel = try panel("field=input\nvalue=one\n")
         let call = panel.advance()
 
-        panel.take(PluginOutput(text: "field=input\ntext=swapped\n"), answering: call)
+        panel.take(PluginOutput(text: "field=input\nvalue=swapped\n"), answering: call)
 
         XCTAssertEqual(panel.parts[0].control, .text("swapped", placeholder: nil, isReadOnly: false))
     }
@@ -196,17 +225,11 @@ final class SheetPartsTests: XCTestCase {
     func testTheCatalogReportsWhatAPartCannotHold() {
         XCTAssertEqual(PluginOutput(text: lights).partFaults, [])
         XCTAssertEqual(PluginOutput(text: "text=a\ncolour=red\n").partFaults, ["the part a has an unknown key: colour"])
-        XCTAssertEqual(PluginOutput(text: "choice=a\noption=English\n").partFaults, ["the part a needs an option as id:title: English"])
+        XCTAssertEqual(PluginOutput(text: "choice=a\noption=en:English\n").partFaults, ["the part a has option lines, which Openspot no longer reads. Print each option as a block after its choice, such as option=en with title=English"])
         XCTAssertEqual(PluginOutput(text: "choice=a\ncolor=red\n").partFaults, ["the part a needs a color as #rrggbb: red"])
         XCTAssertEqual(PluginOutput(text: "text=a\nshortcut=nope+a\n").partFaults, ["the part a has an unknown key combination: nope+a"])
         XCTAssertEqual(PluginOutput(text: "text=a\ntitle=A\ndetail=9%\nvalue=0.09\ntone=bad\n").partFaults, [])
         XCTAssertEqual(PluginOutput(text: "text=a\ntitle=A\ndetail=9%\nvalue=0.09\ntone=red\n").partFaults, ["the part a has an unknown tone: red"])
-    }
-
-    func testTheCatalogNamesEachControl() {
-        for word in ["`switch`", "`slider`", "`choice`", "`field`", "`hotkey`", "`button`", "`text`", "`number`", "`graph`", "`picture`", "`gauge`", "`pad=", "`card=", "`repeat=", "`icon="] {
-            XCTAssertTrue(PartCatalog.text.contains(word), word)
-        }
     }
 
     func testTheCallsOfAPanel() {
@@ -216,24 +239,26 @@ final class SheetPartsTests: XCTestCase {
 
     func testAPartOrAnActionCalledReadIsAFault() {
         XCTAssertEqual(PluginOutput(text: "text=read\ntitle=A\n").partFaults, ["a part cannot be called read"])
-        XCTAssertEqual(PluginOutput(text: "pad=read go\n").partFaults, ["a part cannot be called read"])
         XCTAssertEqual(PluginOutput(text: "button=read\ntitle=A\n").partFaults, ["an action cannot be called read"])
     }
 
     func testAPartCalledCallOrArgIsAFaultBecauseAStayingScriptReadsThoseKeys() {
         for id in ["call", "reason", "arg"] {
-            XCTAssertEqual(PluginOutput(text: "field=\(id)\ntext=A\n").partFaults, ["a part cannot be called \(id)"])
+            XCTAssertEqual(PluginOutput(text: "field=\(id)\nvalue=A\n").partFaults, ["a part cannot be called \(id)"])
         }
     }
 
     func testAPartOrAnActionWithADefaultIdIsAFaultButAnOpenActionChangesThePick() {
-        for id in ["run", "open", "drop"] {
+        for id in ["open", "drop"] {
             XCTAssertEqual(PluginOutput(text: "text=\(id)\ntitle=A\n").partFaults, ["a part cannot be called \(id)"])
         }
-        for id in ["run", "drop"] {
-            XCTAssertEqual(PluginOutput(text: "button=\(id)\ntitle=A\n").partFaults, ["an action cannot be called \(id)"])
-        }
+        XCTAssertEqual(PluginOutput(text: "button=drop\ntitle=A\n").partFaults, ["an action cannot be called drop"])
         XCTAssertEqual(PluginOutput(text: "button=open\ntitle=Show\n").partFaults, [])
+    }
+
+    func testRunIsAnIdThatAScriptCanGiveAPartOrAnAction() {
+        XCTAssertEqual(PluginOutput(text: "text=run\ntitle=A\n").partFaults, [])
+        XCTAssertEqual(PluginOutput(text: "button=run\ntitle=A\n").partFaults, [])
     }
 
     func testArrowsSelectThePartsThatReturnCanUse() throws {
@@ -252,7 +277,7 @@ final class SheetPartsTests: XCTestCase {
 
         switch=wifi
         title=Wi-Fi
-        on=true
+        value=true
 
         button=reload
         title=Reload
@@ -269,7 +294,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testASheetOpensWithItsFirstPartSelected() throws {
-        let sheet = try panel("text=note\ntitle=Note\n\nhotkey=key\nvalue=ctrl+space\n\nswitch=wifi\non=true\n")
+        let sheet = try panel("text=note\ntitle=Note\n\nhotkey=key\nvalue=ctrl+space\n\nswitch=wifi\nvalue=true\n")
 
         XCTAssertEqual(sheet.selectedPart?.id, "key")
     }
@@ -284,7 +309,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testALevelRingsItsNumberWithNoPercentSignAndATrendOrAPlainLineDoesNot() throws {
-        let parts = try panel("text=mac\ntitle=Mac\ndetail=80%\nvalue=0.8\n\ntext=cpu\ntitle=CPU\ndetail=30%\npoint=3\n\ntext=swap\ntitle=Swap\ndetail=0 MB\n").parts
+        let parts = try panel("text=mac\ntitle=Mac\ndetail=80%\nvalue=0.8\n\ntext=cpu\ntitle=CPU\ndetail=30%\nmax=100\nvalue=3\n\ntext=swap\ntitle=Swap\ndetail=0 MB\n").parts
 
         XCTAssertEqual(parts.map(\.ringWords), ["80", nil, nil])
     }
@@ -300,7 +325,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testALineWithPointsAndADetailCarriesATrendMark() throws {
-        let part = try XCTUnwrap(try panel("text=cpu\ntitle=All cores\ndetail=30%\nmax=100\npoint=20\npoint=40\n").parts.first)
+        let part = try XCTUnwrap(try panel("text=cpu\ntitle=All cores\ndetail=30%\nmax=100\nvalue=20\nvalue=40\n").parts.first)
 
         XCTAssertEqual(part.control, SpotPart.Control.none)
         XCTAssertEqual(part.mark?.kind, .trend)
@@ -308,7 +333,7 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testPointsWithNoDetailStillDrawAChartTile() throws {
-        let part = try XCTUnwrap(try panel("graph=history\npoint=2\npoint=4\n").parts.first)
+        let part = try XCTUnwrap(try panel("graph=history\nvalue=2\nvalue=4\n").parts.first)
 
         XCTAssertEqual(part.control, .chart([2, 4]))
         XCTAssertNil(part.mark)
@@ -333,12 +358,12 @@ final class SheetPartsTests: XCTestCase {
         sheet.take(PluginOutput(text: "hotkey=key\nvalue=option+space\n"), answering: sheet.generation)
         XCTAssertEqual(sheet.selectedPart?.id, "key")
 
-        sheet.take(PluginOutput(text: "switch=wifi\non=true\n"), answering: sheet.generation)
+        sheet.take(PluginOutput(text: "switch=wifi\nvalue=true\n"), answering: sheet.generation)
         XCTAssertEqual(sheet.selectedPart?.id, "wifi")
     }
 
     func testAClearedSelectionGoesBackToTheFirstPart() throws {
-        var sheet = try panel("hotkey=key\nvalue=ctrl+space\n\nswitch=wifi\non=true\n")
+        var sheet = try panel("hotkey=key\nvalue=ctrl+space\n\nswitch=wifi\nvalue=true\n")
         sheet.moveLine(by: 1)
 
         sheet.clearSelection()
@@ -355,38 +380,29 @@ final class SheetPartsTests: XCTestCase {
     }
 
     func testAChoiceDrawnOverTwoLinesIsAListAndOverOneLineAMenu() throws {
-        let choice = "choice=c\noption=a:A\noption=b:B\nvalue=a\n"
+        let choice = "choice=c\nvalue=a\n\noption=a\ntitle=A\n\noption=b\ntitle=B\n"
         let tall = try XCTUnwrap(PluginOutput(text: "grid=c\ngrid=c\n\n" + choice).parts.first)
         let short = try XCTUnwrap(PluginOutput(text: "grid=c\n\n" + choice).parts.first)
         var sheet = try XCTUnwrap(SheetParts(output: PluginOutput(text: "grid=c\ngrid=c\n\n" + choice)))
 
         XCTAssertEqual(tall.control, .list([.init(id: "a", title: "A"), .init(id: "b", title: "B")], value: "a"))
         XCTAssertEqual(short.control, .menu([.init(id: "a", title: "A"), .init(id: "b", title: "B")], value: "a"))
-        sheet.merge(PluginOutput(text: "choice=c\noption=a:A\nvalue=a\n"))
+        sheet.take(PluginOutput(text: "grid=c\ngrid=c\n\nchoice=c\nvalue=a\n\noption=a\ntitle=A\n"), answering: sheet.generation)
         XCTAssertEqual(sheet.parts.first?.control, .list([.init(id: "a", title: "A")], value: "a"))
     }
 
     func testALookOnlyDrawsTheBox() {
         XCTAssertEqual(PluginOutput(text: "text=a\ntitle=A\nlook=large\n").partFaults, ["the part a has an unknown look: large"])
         XCTAssertEqual(PluginOutput(text: "text=a\ntitle=A\nlook=section\n").partFaults, ["the part a has an unknown look: section"])
-        XCTAssertEqual(PluginOutput(text: "choice=a\noption=x:X\nlook=list\n").partFaults, ["the part a has an unknown look: list"])
+        XCTAssertEqual(PluginOutput(text: "choice=a\nlook=list\n\noption=x\ntitle=X\n").partFaults, ["the part a has an unknown look: list"])
     }
 
-    func testASwitchWithATickLookKeepsItsValueAndATemplateSlotTakesIt() throws {
-        let part = try XCTUnwrap(PluginOutput(text: "switch=done\ntitle=Call mom\non=true\nlook=tick\n").parts.first)
-        let template = try XCTUnwrap(RowTemplate(block: TextBlock(fields: [.init(key: "template", value: "reminder"), .init(key: "switch", value: "done"), .init(key: "done.look", value: "tick")])))
-        let item = try XCTUnwrap(SpotItem(block: try XCTUnwrap(TextBlock.blocks(in: "row=reminder:1\ntitle=Buy milk\ndone=false\ndone.title=Buy milk\n").first)))
-        let slot = try XCTUnwrap(template.parts(of: item).first)
+    func testASwitchWithATickLookKeepsItsValue() throws {
+        let part = try XCTUnwrap(PluginOutput(text: "switch=done\ntitle=Call mom\nvalue=true\nlook=tick\n").parts.first)
 
         XCTAssertEqual(part.look, .tick)
         XCTAssertEqual(part.control, .toggle(true))
-        XCTAssertEqual(PluginOutput(text: "switch=done\non=true\nlook=tick\n").partFaults, [])
-        XCTAssertEqual(slot.look, .tick)
-        XCTAssertEqual(slot.control, .toggle(false))
-        XCTAssertEqual(slot.title, "Buy milk")
-        XCTAssertTrue(PartCatalog.text.contains("`look=tick`"))
-        XCTAssertTrue(PartCatalog.text.contains("`color=#1BADF8`"))
-        XCTAssertTrue(PartCatalog.text.contains("`tone=good`, `warn` or `bad` on a text"))
+        XCTAssertEqual(PluginOutput(text: "switch=done\nvalue=true\nlook=tick\n").partFaults, [])
     }
 
 }

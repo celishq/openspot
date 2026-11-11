@@ -19,10 +19,6 @@ public struct MetricReading: Equatable, Sendable {
         value?.symbol ?? headerSymbol
     }
 
-    public var tint: MetricTint? {
-        value?.tint
-    }
-
     /// Takes a new value. When a metric has nothing to show it keeps its kind, and rows then count zero.
     public mutating func take(_ value: MetricValue) {
         isStale = false

@@ -1,12 +1,12 @@
-# 09 Calendar
+# openspot calendar and openspot reminders
 
-`draft` `optional` · Needs 01 and 02.
+`draft` · `openspot help calendar` and `openspot help reminders` print this guide. It builds on `openspot guide`, whose
+rules it names by their IDs.
 
 ```text
 #!/bin/sh
 # title=Today
 # icon=calendar
-# shortcut=d
 # read=panel
 case "$1" in
   read) openspot calendar events ;;
@@ -15,7 +15,7 @@ esac
 ```
 
 `openspot calendar` reads and adds the events of the person, and `openspot reminders` reads, adds and ticks their
-reminders. Each list prints rows (02), and the id of each row goes to each other verb as it is (E1).
+reminders. Each list prints rows (01), and the id of each row goes to each other verb as it is (E1).
 
 | Command                                                  | Does                                                                                    |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------- |
@@ -39,7 +39,7 @@ row=event:3F2A…                      row=reminder:9C41…
 title=Standup                        title=Call mom
 detail=09:30–09:45 · Work            detail=Late · Yesterday 18:00 · Family
 icon=video                           icon=circle
-tone=on                              tone=bad
+value=true                           tone=bad
 start=2026-11-10T09:30:00+01:00      due=2026-11-09T18:00:00+01:00
 end=2026-11-10T09:45:00+01:00        list=7D10…
 calendar=A8E2…                       color=#FF9500
@@ -48,9 +48,8 @@ location=Room 4
 meeting=https://meet.google.com/abc-defg-hij
 ```
 
-A row has the keys of 02: `title`, a `detail` in the language of the Mac that says when and where, an `icon`, and a
-`tone`: `on` for an event that is on now, and `bad` for a late reminder. Its other keys hold the data, so a template (02) or
-a view (03) can draw them (E2):
+A row has the keys of 01: `title`, a `detail` in the language of the Mac that says when and where, an `icon`,
+`value=true` for an event that is on now, and `tone=bad` for a late reminder. Its other keys hold the data, so a view (03) can draw them (E2):
 
 | Key        | Holds                                                                                       |
 | ---------- | ------------------------------------------------------------------------------------------- |
@@ -106,7 +105,7 @@ A verb never prints an empty list in place of a list that it cannot read.
 
 | Decision                                                                                       | Rejected                                                 |
 | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| A list prints rows of 02, and the id of a row goes to each other verb as it is.                | JSON, or a lookup by title.                              |
+| A list prints rows of 01, and the id of a row goes to each other verb as it is.                | JSON, or a lookup by title.                              |
 | Two nouns, which are the names of the two apps of macOS.                                       | One `agenda` noun.                                       |
 | `add` finds the date in the words, as Calendar's quick event does.                             | A flag for each part of a date.                          |
 | A read never asks for leave, and prints `status=unasked`.                                      | A prompt at the first read, or at the start of the app.  |

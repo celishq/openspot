@@ -1,33 +1,38 @@
 import Foundation
 
-/// A command that a script lists in its header, as `left:Left side`, with an optional icon, as
-/// `left:Left side:rectangle.lefthalf.filled`. A person can give it a key. A setting in the header takes the same words.
+/// A command or a setting that a script offers in its header, as a block: `command=left` or `setting=folder`, with a
+/// `title` and an `icon`. A person can give a command a key, and choose the value of a setting.
 public struct CommandOffer: Equatable, Sendable {
     public let id: String
     public let title: String
     /// The `icon` of its row in Settings. Nil shows the icon of its script.
     public let icon: String?
 
-    /// Reads an ID, a title and an icon. Returns nil for any other words, and for the reserved call `read`.
-    public init?(text: String) {
-        let parts = text.split(separator: ":", maxSplits: 2).map { $0.trimmingCharacters(in: .whitespaces) }
-        guard parts.count >= 2, !parts[1].isEmpty, parts[0] != "read", !parts[0].contains(where: \.isWhitespace) else { return nil }
-        id = parts[0]
-        title = parts[1]
-        icon = parts.count == 3 && !parts[2].isEmpty ? parts[2] : nil
+    /// Reads a `command` block. Returns nil with no `title`, for an ID with a space, and for the reserved call `read`.
+    public init?(block: TextBlock) {
+        guard let id = block.value("command"), let title = block.value("title"), id != "read", !id.contains(where: \.isWhitespace) else {
+            return nil
+        }
+        self.id = id
+        self.title = title
+        icon = block.value("icon")
     }
 
-    /// Reads a setting, as `folder` or `editor:Default app`. With no title, its title is its key with a capital first letter.
-    public init?(setting text: String) {
-        let key = text.split(separator: ":", maxSplits: 1).first.map { $0.trimmingCharacters(in: .whitespaces) } ?? ""
-        guard !key.isEmpty else { return nil }
-        if text.contains(":") {
-            guard let offer = CommandOffer(text: text) else { return nil }
-            self = offer
-        } else {
-            id = key
-            title = key.prefix(1).uppercased() + key.dropFirst()
-            icon = nil
-        }
+    /// Reads a `setting` block. With no `title`, its title is its key with a capital first letter.
+    public init?(setting block: TextBlock) {
+        guard let key = block.value("setting"), let named = CommandOffer(setting: key) else { return nil }
+        self.init(id: key, title: block.value("title") ?? named.title, icon: block.value("icon"))
+    }
+
+    /// A setting of this key, titled with its key with a capital first letter.
+    public init?(setting key: String) {
+        guard !key.isEmpty, !key.contains(where: \.isWhitespace) else { return nil }
+        self.init(id: key, title: key.prefix(1).uppercased() + key.dropFirst(), icon: nil)
+    }
+
+    private init(id: String, title: String, icon: String?) {
+        self.id = id
+        self.title = title
+        self.icon = icon
     }
 }

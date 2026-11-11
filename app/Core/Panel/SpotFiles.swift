@@ -7,12 +7,22 @@ public struct SpotFiles {
     public let defaults: UserDefaults
     /// Moves a file to the Trash, and returns where it went.
     public let trash: (URL) throws -> URL
+    /// The config that ships with the app, whose choices for the core spots, such as their letters, count until the
+    /// person's config makes its own.
+    public let defaultConfig: URL?
 
-    public init(environment: [String: String], home: URL, defaults: UserDefaults, trash: @escaping (URL) throws -> URL = SpotFiles.systemTrash) {
+    public init(
+        environment: [String: String],
+        home: URL,
+        defaults: UserDefaults,
+        trash: @escaping (URL) throws -> URL = SpotFiles.systemTrash,
+        defaultConfig: URL? = Bundle.main.url(forResource: "defaults", withExtension: "toml")
+    ) {
         self.environment = environment
         self.home = home
         self.defaults = defaults
         self.trash = trash
+        self.defaultConfig = defaultConfig
     }
 
     /// Moves a file to the Trash of the Mac.
@@ -28,6 +38,12 @@ public struct SpotFiles {
 
     public var config: ConfigFile {
         .standard(environment: environment, home: home)
+    }
+
+    /// The choices of the config that ships with the app. A file that is missing or that it cannot read gives none.
+    public var defaultArrangement: SpotArrangement {
+        guard let defaultConfig, let text = try? String(contentsOf: defaultConfig, encoding: .utf8) else { return SpotArrangement() }
+        return Config(text: text).arrangement
     }
 
     /// The plugin folder, with the core spots that this config turns on.

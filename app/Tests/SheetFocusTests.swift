@@ -14,9 +14,13 @@ final class SheetFocusTests: XCTestCase {
 
     choice=look
     title=Look
-    option=colorful:Colorful
-    option=gold:Gold
     value=gold
+
+    option=colorful
+    title=Colorful
+
+    option=gold
+    title=Gold
 
     hotkey=key
     title=Shortcut
@@ -69,7 +73,7 @@ final class SheetFocusTests: XCTestCase {
     }
 
     func testAFieldTakesTheFocusFirstAndTheArrowsLeaveIt() throws {
-        var sheet = try panel("grid=reload\ngrid=note\ngrid=level\n\nbutton=reload\ntitle=Reload\n\nfield=note\ntext=Hello\n\nslider=level\nlevel=50\n")
+        var sheet = try panel("grid=reload\ngrid=note\ngrid=level\n\nbutton=reload\ntitle=Reload\n\nfield=note\nvalue=Hello\n\nslider=level\nvalue=50\n")
 
         XCTAssertTrue(sheet.takesArrows)
         XCTAssertEqual(sheet.selectedPart?.id, "note")
@@ -80,13 +84,13 @@ final class SheetFocusTests: XCTestCase {
     }
 
     func testAPartWithNothingToUseTakesNoFocus() throws {
-        let sheet = try panel("text=mac\ntitle=This Mac\n\nfield=log\ntext=Done\nreadonly=true\n\nswitch=wifi\non=true\n")
+        let sheet = try panel("text=mac\ntitle=This Mac\n\nfield=log\nvalue=Done\nreadonly=true\n\nswitch=wifi\nvalue=true\n")
 
         XCTAssertEqual(sheet.focusOrder.map(\.id), ["wifi"])
     }
 
     func testAClickIntoAFieldGivesItTheFocus() throws {
-        var sheet = try panel("grid=reload note\n\nbutton=reload\ntitle=Reload\n\nfield=note\ntext=Hello\n")
+        var sheet = try panel("grid=reload note\n\nbutton=reload\ntitle=Reload\n\nfield=note\nvalue=Hello\n")
 
         sheet.focus("reload")
         XCTAssertEqual(sheet.selectedPart?.id, "reload")

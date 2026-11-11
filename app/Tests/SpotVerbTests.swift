@@ -136,7 +136,7 @@ final class SpotVerbTests: XCTestCase {
     }
 
     func testACardOfAFileThatDoesNotLoadCanBeEditedAndDeleted() throws {
-        try script("broken", header: "shortcut=??")
+        try script("broken", header: "size=huge")
         _ = try select("broken")
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
         XCTAssertEqual(model.menu?.rows.filter { $0.action != nil }.map(\.title), ["Edit", "Delete"])

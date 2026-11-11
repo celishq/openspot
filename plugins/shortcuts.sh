@@ -3,7 +3,7 @@
 # detail=Run a shortcut
 # size=small
 # read=panel
-# global=true
+# offers=search
 # drop=*
 . "$OPENSPOT_SH"
 input="$OPENSPOT_DATA/input"

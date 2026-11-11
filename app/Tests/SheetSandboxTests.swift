@@ -28,7 +28,7 @@ final class SheetSandboxTests: XCTestCase {
 
     func testAChangeShowsAtOnceAndIsLogged() {
         var sandbox = SheetSandbox()
-        sandbox.take(text: "switch=a\non=false\n")
+        sandbox.take(text: "switch=a\nvalue=false\n")
 
         sandbox.set("true", of: "a")
         sandbox.press("a")

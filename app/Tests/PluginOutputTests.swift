@@ -31,7 +31,6 @@ final class PluginOutputTests: XCTestCase {
     func testSortsBlocksByTheKeyThatSaysWhatTheyAre() {
         let output = PluginOutput(text: """
         title=Caffeinate
-        on=true
 
         button=copy
         title=Copy
@@ -149,9 +148,9 @@ final class PluginOutputTests: XCTestCase {
     func testWhatItPrintsDecidesTheKindOfSpot() {
         XCTAssertEqual(PluginOutput(text: "").kind, .launch)
         XCTAssertEqual(PluginOutput(text: "title=Hi\n").kind, .launch)
-        XCTAssertEqual(PluginOutput(text: "switch=power\non=true\n").kind, .toggle)
-        XCTAssertEqual(PluginOutput(text: "slider=volume\nlevel=7\n").kind, .slider)
-        XCTAssertEqual(PluginOutput(text: "switch=power\non=true\n\nrow=a\ntitle=A\n").kind, .list)
+        XCTAssertEqual(PluginOutput(text: "switch=power\nvalue=true\n").kind, .toggle)
+        XCTAssertEqual(PluginOutput(text: "slider=volume\nvalue=7\n").kind, .slider)
+        XCTAssertEqual(PluginOutput(text: "switch=power\nvalue=true\n\nrow=a\ntitle=A\n").kind, .list)
         XCTAssertEqual(PluginOutput(text: "button=new\ntitle=New\n").kind, .list)
     }
 
@@ -164,8 +163,16 @@ final class PluginOutputTests: XCTestCase {
         XCTAssertEqual(try kind("text=m\ntitle=3\nicon=star\ntone=good\n"), .value)
         XCTAssertEqual(try kind("text=m\ntitle=Up\ntone=good\n"), .status)
         XCTAssertEqual(try kind("gauge=m\ntitle=84%\nvalue=0.84\n"), .gauge)
-        XCTAssertEqual(try kind("graph=m\ntitle=2\npoint=1\npoint=2\n"), .trend)
+        XCTAssertEqual(try kind("graph=m\ntitle=2\nvalue=1\nvalue=2\n"), .trend)
         XCTAssertEqual(try kind("row=Build\n"), .rows)
+    }
+
+    func testAGraphReadsItsBarsFromValueLines() throws {
+        let value = try XCTUnwrap(MetricValue(output: PluginOutput(text: "graph=m\ntitle=2\nmax=10\nvalue=1\nvalue=2\n")))
+
+        XCTAssertEqual(value.kind, .trend)
+        XCTAssertEqual(value.points, [1, 2])
+        XCTAssertNil(value.value)
     }
 
     func testRowsCountThemselvesUnlessATitleIsPrinted() throws {
@@ -179,9 +186,8 @@ final class PluginOutputTests: XCTestCase {
         XCTAssertEqual(titled.title, "Many")
     }
 
-    func testAMetricCanSetATintAndAnUnknownOneIsSkipped() {
-        XCTAssertEqual(MetricValue(output: PluginOutput(text: "text=m\ntitle=1\ntint=green\n"))?.tint, .green)
-        XCTAssertNil(MetricValue(output: PluginOutput(text: "text=m\ntitle=1\ntint=beige\n"))?.tint)
+    func testATintIsAnUnknownKey() {
+        XCTAssertEqual(PluginOutput(text: "text=m\ntitle=1\ntint=green\n").partFaults, ["the part m has an unknown key: tint"])
     }
 
     func testPrintingNothingHidesAMetric() {
@@ -234,5 +240,31 @@ final class PluginOutputTests: XCTestCase {
         let output = PluginOutput(text: "row=😀\ntitle=grinning face\nkeyword=happy\nkeyword=smile\n")
 
         XCTAssertEqual(output.items.first?.keywords, ["happy", "smile"])
+    }
+
+    func testATemplateOrASpotBlockIsSkippedAndReportedWhereverItIs() {
+        let output = PluginOutput(text: "template=row\ngrid=pic name\npicture=pic\n\nspot=cpu\n\ntitle=Apps\n\nrow=a\ntitle=A\nname=A\n")
+
+        XCTAssertEqual(output.errors, ["template=row", "spot=cpu"])
+        XCTAssertEqual(output.summary?.value("title"), "Apps")
+        XCTAssertEqual(output.parts.map(\.id), [])
+        XCTAssertEqual(output.items.map(\.run), ["a"])
+    }
+
+    func testCardAndPadLinesDrawNothingAndACheckReportsThem() throws {
+        let output = PluginOutput(text: "grid=a a\ncard=a\npad=7 8 9\n\ntext=a\ntitle=A\n")
+
+        XCTAssertEqual(output.parts.map(\.id), ["a"])
+        XCTAssertEqual(output.layout?.rows, [["a", "a"]])
+        XCTAssertTrue(output.partFaults.contains("a sheet has no card key, so leave it out: each part draws its own box"), "\(output.partFaults)")
+        XCTAssertTrue(output.partFaults.contains("a sheet has no pad key, so print a button for each key"), "\(output.partFaults)")
+    }
+
+    func testARowDrawsItsOwnKeysAndACheckReportsAs() throws {
+        let output = PluginOutput(text: "row=r\ntitle=R\nas=big\nname=Big\n")
+
+        let row = try XCTUnwrap(output.items.first)
+        XCTAssertEqual(row, SpotItem(title: "R", run: "r"))
+        XCTAssertTrue(output.partFaults.contains("the row r has as=, which Openspot no longer reads. A row draws its own keys"), "\(output.partFaults)")
     }
 }

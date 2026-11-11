@@ -13,7 +13,6 @@ struct SheetPartsView: View {
     var onRecord: (SpotPart) -> Void = { _ in }
     var list = ItemList()
     var onRun: (SpotItem) -> Void = { _ in }
-    var onSlot: (SpotItem, String, String?) -> Void = { _, _, _ in }
     var onDragOut: ([SpotItem]) -> Void = { _ in }
     var selection: (() -> Int)?
     /// Reads the id of the selected part where it is called. Nil reads it from the parts.
@@ -35,7 +34,6 @@ struct SheetPartsView: View {
     private static let narrowGap: CGFloat = 2
     private static let markValueWidth: CGFloat = 36
     private static let symbolWidth: CGFloat = 22
-    private static let keyFont = Font.system(size: 18, weight: .medium)
     private static let metricFont = Font.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit()
 
     private var shape: RoundedRectangle {
@@ -62,11 +60,6 @@ struct SheetPartsView: View {
 
     private func canvas(_ sheet: SheetPlacement) -> some View {
         ZStack(alignment: .topLeading) {
-            ForEach(Array(sheet.cards.enumerated()), id: \.offset) { _, card in
-                shape.fill(SpotTheme.ink.opacity(SpotTheme.fill))
-                    .frame(width: card.width, height: card.height)
-                    .offset(x: card.minX, y: card.minY)
-            }
             ForEach(Array(sheet.lines.enumerated()), id: \.offset) { _, line in
                 Rectangle()
                     .fill(SpotTheme.ink.opacity(SpotTheme.fill))
@@ -74,7 +67,7 @@ struct SheetPartsView: View {
                     .offset(x: line.minX, y: line.minY)
             }
             if let area = sheet.repeatFrame {
-                SpotRowsView(list: list, onRun: onRun, selection: selection, onSlot: onSlot, onDragOut: onDragOut)
+                SpotRowsView(list: list, onRun: onRun, selection: selection, onDragOut: onDragOut)
                     .frame(width: area.width, height: area.height)
                     .offset(x: area.minX, y: area.minY)
             }
@@ -192,7 +185,7 @@ struct SheetPartsView: View {
 
     /// The running work of a part that fills its cell, in the corner of that cell.
     private func cornerMark(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
-        mark(part).padding(frame.isInCard ? 0 : SpotTokens.controlPadding)
+        mark(part).padding(SpotTokens.controlPadding)
     }
 
     /// A line with a label, a value, a round button and a switch or a menu.
@@ -264,18 +257,6 @@ struct SheetPartsView: View {
     private func lineButton(_ part: SpotPart, _ frame: SheetPlacement.Frame) -> some View {
         Button { onPress(part) } label: {
             switch part.look {
-            case .pad:
-                Group {
-                    if let call = work(part) {
-                        SpotWorkMark(call: call, side: SpotTokens.workMark, stops: true)
-                    } else {
-                        Text(part.title ?? part.id).font(Self.keyFont)
-                    }
-                }
-                .foregroundStyle(SpotTheme.ink)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(SpotTheme.ink.opacity(SpotTheme.selectedFill), in: shape)
-                    .contentShape(shape)
             case .chip:
                 pressLabel(part, words: part.title ?? part.id, font: SpotType.action)
                     .foregroundStyle(SpotTheme.ink)
@@ -524,7 +505,7 @@ struct SheetPartsView: View {
 
     @ViewBuilder
     private func textArea(_ part: SpotPart, _ frame: SheetPlacement.Frame, text: String, placeholder: String?, isReadOnly: Bool) -> some View {
-        let inset = frame.isInCard ? 0 : SpotTokens.padding
+        let inset = SpotTokens.padding
         let space = EdgeInsets(top: inset + frame.clearTop, leading: inset, bottom: inset + frame.clearBottom, trailing: inset)
         ZStack(alignment: .topLeading) {
             if isReadOnly {
@@ -534,7 +515,7 @@ struct SheetPartsView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(space)
                 }
-                .clipShape(RoundedRectangle(cornerRadius: frame.isInCard ? 0 : SpotTokens.radius - SpotTokens.padding, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous))
             } else {
                 TextEditor(text: Binding(get: { text }, set: { onSet(part, $0) }))
                     .scrollContentBackground(.hidden)
@@ -551,7 +532,7 @@ struct SheetPartsView: View {
         }
         .font(SpotType.body)
         .foregroundStyle(SpotTheme.ink)
-        .background(SpotTheme.ink.opacity(frame.isInCard ? 0 : SpotTheme.fill), in: shape)
+        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: shape)
     }
 }
 

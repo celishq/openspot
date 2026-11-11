@@ -41,7 +41,7 @@ public struct FaultSpot: Equatable, Sendable {
             TextBlock(fields: [
                 .init(key: "field", value: "fault"),
                 .init(key: "readonly", value: "true"),
-                .init(key: "text", value: ([file.path] + faults).joined(separator: "\n\n"))
+                .init(key: "value", value: ([file.path] + faults).joined(separator: "\n\n"))
             ]),
             TextBlock(fields: [
                 .init(key: "button", value: Self.editPart),

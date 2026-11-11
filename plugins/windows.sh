@@ -2,10 +2,22 @@
 # title=Windows
 # icon=macwindow
 # detail=Give each command a key
-# command=full:Full screen:rectangle.inset.filled
-# command=center:Centre:rectangle.center.inset.filled
-# command=left:Left side:rectangle.lefthalf.inset.filled
-# command=right:Right side:rectangle.righthalf.inset.filled
+#
+# command=full
+# title=Full screen
+# icon=rectangle.inset.filled
+#
+# command=center
+# title=Centre
+# icon=rectangle.center.inset.filled
+#
+# command=left
+# title=Left side
+# icon=rectangle.lefthalf.inset.filled
+#
+# command=right
+# title=Right side
+# icon=rectangle.righthalf.inset.filled
 case "$1" in
   full) openspot window move "0 0 1 1" ;;
   center) openspot window move "0.175 0.175 0.65 0.65" ;;

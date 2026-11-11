@@ -10,14 +10,11 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var shown: [SpotItem] = []
     public private(set) var selected = 0
     public private(set) var perLine = 1
-    /// The drawing that the rows flow through, and the templates that draw them.
+    /// The drawing that the rows flow through.
     public private(set) var drawing = RepeatDrawing.list
-    public private(set) var templates: [String: RowTemplate] = [:]
     public private(set) var isWaiting = false
     public private(set) var isLoading = false
     public private(set) var hasFailed = false
-    /// How many list row heights the shown rows take in a list.
-    public private(set) var spans = 0
     private(set) var all: [SpotItem]
     /// The searched texts of the rows, for a list that searches them itself. A list that its script searches keeps none.
     private(set) var searchIndex = SearchIndex()
@@ -168,42 +165,15 @@ public struct ItemList: Equatable, Sendable {
         self.perLine = max(perLine, 1)
     }
 
-    /// Takes the drawing and the templates of the rows, as the script printed them. A bento moves by a whole tile on a
-    /// line move.
-    public mutating func take(drawing: RepeatDrawing, templates: [String: RowTemplate]) {
+    /// Takes the drawing of the rows, as the script printed it. A bento moves by a whole tile on a line move.
+    public mutating func take(drawing: RepeatDrawing) {
         self.drawing = drawing
-        self.templates = templates
         perLine = drawing.perLine ?? drawing.places.count
-        measure()
-    }
-
-    /// The template that draws a row: the one it names, or else `template=row`.
-    public func template(of item: SpotItem) -> RowTemplate? {
-        templates[item.template ?? RowTemplate.defaultName]
-    }
-
-    /// How many list row heights a row takes in a list.
-    public func span(of item: SpotItem) -> Int {
-        template(of: item)?.span ?? 1
     }
 
     /// Whether the rows flow through a drawing of places of more than one size.
     public var isBento: Bool {
         drawing.perLine == nil
-    }
-
-    /// Takes a value that the person set in a slot of a row, so that it shows before the script answers (U10).
-    public mutating func set(_ value: String, of slot: String, in run: String) {
-        func changed(_ item: SpotItem) -> SpotItem {
-            guard item.run == run else { return item }
-            return SpotItem(
-                title: item.title, subtitle: item.subtitle, run: item.run, picture: item.picture, parent: item.parent, hides: item.hides, keywords: item.keywords, shortcut: item.shortcut, isOn: item.isOn, tone: item.tone,
-                template: item.template, fields: item.fields.filter { $0.key != slot } + [.init(key: slot, value: value)],
-                file: item.file
-            )
-        }
-        all = all.map(changed)
-        shown = shown.map(changed)
     }
 
     /// Whether the selection lies on the last line of the shown rows, or no row shows.
@@ -234,7 +204,6 @@ public struct ItemList: Equatable, Sendable {
     }
 
     private mutating func refresh() {
-        defer { measure() }
         guard search == .local else {
             narrowings = []
             shown = all
@@ -247,10 +216,5 @@ public struct ItemList: Equatable, Sendable {
             narrowings.append(Narrowing(query: next, matches: next.ranking(searchIndex, items: all, among: among, recent: recent)))
         }
         shown = narrowings.last?.matches.map { all[$0] } ?? []
-    }
-
-    /// Counts the list row heights of the shown rows, each time the rows or their templates change.
-    private mutating func measure() {
-        spans = shown.reduce(0) { $0 + span(of: $1) }
     }
 }

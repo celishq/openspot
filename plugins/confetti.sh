@@ -2,9 +2,8 @@
 # title=Confetti
 # icon=party.popper
 # detail=Celebrate on each screen
-# shortcut=k
-# read=launch,panel,sheet
-# press=run
+# read=panel,sheet
+# press=open
 dir=$(cd "$(dirname "$0")" && pwd)/confetti
 . "$dir/shared.sh"
 
@@ -60,9 +59,8 @@ case "$1" in
     chosen=$(default_look)
     key=$(play_key)
     printf 'grid=look look look look\ngrid=key key key key\ngrid=make make make make\n\n'
-    printf 'choice=look\ntitle=Look\n'
-    for id in $(look_ids); do printf 'option=%s:%s\n' "$id" "$(esc "$(look_title "$id")")"; done
-    printf 'value=%s\n\n' "$chosen"
+    printf 'choice=look\ntitle=Look\nvalue=%s\n\n' "$chosen"
+    for id in $(look_ids); do printf 'option=%s\ntitle=%s\n\n' "$id" "$(esc "$(look_title "$id")")"; done
     printf 'hotkey=key\ntitle=Shortcut\nvalue=%s\n\n' "$key"
     printf 'button=make\ntitle=Make your own with AI\nalign=center\nshortcut=cmd+n\n\n'
     printf 'button=paste\ntitle=Paste a look from an AI chat\nshortcut=cmd+shift+v\n\n'
@@ -73,7 +71,7 @@ case "$1" in
     printf 'button=mine\ntitle=Show my looks in Finder\nshortcut=cmd+o\n'
     [ -z "${OPENSPOT_REASON-}" ] || (listen > /dev/null 2>&1 &)
     ;;
-  run | play)
+  open | play)
     play "$(default_look)"
     ;;
   look)

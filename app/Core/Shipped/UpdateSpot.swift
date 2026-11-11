@@ -31,7 +31,7 @@ public actor UpdateSpot {
     public func answer(_ arguments: [String]) async throws -> String {
         switch arguments.first {
         case "read": await state()
-        case "run": await press()
+        case "open": await press()
         default: throw PluginError.failed(1, "Updates cannot do that.")
         }
     }

@@ -1,8 +1,9 @@
 import Foundation
 
-/// What a script prints, sorted by the first key of each block: `row` or a kind of part. The one other block is the head,
-/// which says how the spot itself looks and holds the effects `toast`, `link` and `end`. A button that the drawing does not place is an action (U6). Each
-/// `run` value appears once.
+/// One frame of what a script prints, sorted by the first key of each block: `row` or a kind of part. The one other block is
+/// the head, which says how the spot itself looks and holds the effects `toast`, `link`, `select`, `progress` and `end`. A
+/// frame with a block is the whole picture, and a frame of only a head carries effects (01). A button that the drawing does
+/// not place is an action (U6). Each `run` value appears once.
 public struct PluginOutput: Equatable, Sendable {
     public private(set) var summary: TextBlock?
     public private(set) var rows: [TextBlock] = []
@@ -26,8 +27,6 @@ public struct PluginOutput: Equatable, Sendable {
     public private(set) var face = CardFace.none
     /// The drawing that the rows flow through (U7). With no `repeat` block, the rows are a list.
     public private(set) var drawing = RepeatDrawing.list
-    /// Each template that draws rows, by its name (U8).
-    public private(set) var templates: [String: RowTemplate] = [:]
     public private(set) var toast: String?
     /// The URL of a `link` effect, which opens it, such as the fix of a failure.
     public private(set) var link: String?
@@ -40,12 +39,14 @@ public struct PluginOutput: Equatable, Sendable {
     private var checkedFaults: [String] = []
     /// The row that a `select` effect selects when the call ends, such as the row that a drop added (D8).
     public private(set) var select: String?
+    /// Whether it holds a block, so that it is the whole picture of the spot (01).
+    public let isPicture: Bool
 
     private static let reserved = "read"
     /// The keys of a call block for a staying script, which a value of the sheet would take the place of.
     private static let callKeys = ["call", "reason", "arg"]
     /// The app's own events. A part cannot take one, and a button can take only `open`, to change the pick.
-    private static let defaults = ["run", "open", "drop"]
+    private static let defaults = ["open", "drop"]
 
     /// The newer events that this output asks for: `drag` when a row names a file (O2).
     private var takenDefaults: [String] {
@@ -53,7 +54,10 @@ public struct PluginOutput: Equatable, Sendable {
     }
     private static let button = "button"
     private static let repeatKind = "repeat"
-    private static let templateKind = "template"
+    private static let optionKind = "option"
+    /// The kinds of block that Openspot no longer reads. Each one is skipped and reported, so it never takes the place of the
+    /// head.
+    private static let retiredKinds: Set<String> = ["template", "spot"]
     /// The area of the rows in the default drawing of a sheet with no `repeat` block (U13).
     private static let rowsArea = "rows"
     private static let formKinds: Set<String> = ["field", "choice", "switch", "slider"]
@@ -62,7 +66,28 @@ public struct PluginOutput: Equatable, Sendable {
 
     /// Whether a first key names a row or a part, so that the block is not the head.
     private static func isKind(_ key: String) -> Bool {
-        key == "row" || key == repeatKind || key == templateKind || SpotPart.kinds.contains(key)
+        key == "row" || key == repeatKind || key == optionKind || retiredKinds.contains(key) || SpotPart.kinds.contains(key)
+    }
+
+    /// The pictures on the web that its blocks name, which a render fetches before it draws.
+    public var webPictures: [String] {
+        blocks.flatMap { [$0] + $0.children }.compactMap { $0.value("icon") }.filter(WebPictures.isWeb)
+    }
+
+    /// Folds the `option` blocks right after a choice into it. An option with no choice before it stays, and is reported.
+    private static func grouping(_ blocks: [TextBlock]) -> [TextBlock] {
+        var grouped: [TextBlock] = []
+        var choice: Int?
+        for block in blocks {
+            let kind = block.fields.first?.key
+            if kind == optionKind, let index = choice {
+                grouped[index] = grouped[index].adding(child: block)
+            } else {
+                choice = kind == "choice" ? grouped.count : nil
+                grouped.append(block)
+            }
+        }
+        return grouped
     }
 
     public init(text: String) {
@@ -75,8 +100,10 @@ public struct PluginOutput: Equatable, Sendable {
     }
 
     private init(blocks: [TextBlock], checks: Bool) {
+        let blocks = Self.grouping(blocks)
         self.blocks = blocks
         self.checks = checks
+        isPicture = blocks.contains { block in block.fields.first.map { Self.isKind($0.key) } ?? false }
         var runs = Set<String>()
         let head = blocks.first { block in block.fields.first.map { !Self.isKind($0.key) } ?? false }
         let repeats = blocks.filter { $0.fields.first?.key == Self.repeatKind }
@@ -87,13 +114,8 @@ public struct PluginOutput: Equatable, Sendable {
         for block in blocks {
             let kind = block.fields.first?.key
             if kind == Self.repeatKind { continue }
-            if kind == Self.templateKind {
-                if let template = RowTemplate(block: block) {
-                    templates[template.name] = template
-                    if checks { checkedFaults += template.faults }
-                } else {
-                    errors.append(block.firstLine)
-                }
+            if let kind, Self.retiredKinds.contains(kind) {
+                errors.append(block.firstLine)
             } else if kind == Self.button, let id = block.value(Self.button), drawn?.areas[id] == nil, !carded.contains(id) {
                 take(action: id, block)
             } else if kind == "row" {
@@ -130,7 +152,6 @@ public struct PluginOutput: Equatable, Sendable {
             value = values.first
         }
         if checks { check(head: head) }
-        parts += layout?.keyParts ?? []
         if checks { check(layout: layout) }
     }
 
@@ -167,6 +188,9 @@ public struct PluginOutput: Equatable, Sendable {
             checkedFaults.append("a part cannot be called \(id)")
         }
         for row in rows {
+            if row.value("as") != nil {
+                checkedFaults.append("the row \(row.value("row") ?? "") has as=, which Openspot no longer reads. A row draws its own keys")
+            }
             if let file = row.value("file"), !file.hasPrefix("/") {
                 checkedFaults.append("the row \(row.value("row") ?? "") names the file \(file), which does not start with /")
             }
@@ -187,9 +211,19 @@ public struct PluginOutput: Equatable, Sendable {
         ["text", "number", "gauge", "graph"].contains(value?.fields.first?.key ?? "") ? value : nil
     }
 
-    /// The value when it is a `gauge`, which is the progress of a call that runs (R12).
-    public var progress: TextBlock? {
-        value?.fields.first?.key == "gauge" ? value : nil
+    /// The part of a running call that is done, from 0 to 1, from `progress` in the head (R12).
+    public var progress: Double? {
+        summary?.number("progress").map { min(max($0, 0), 1) }
+    }
+
+    /// This frame with no effects, so that a head that is taken again acts none of them twice.
+    public func withoutEffects() -> PluginOutput {
+        var output = self
+        output.toast = nil
+        output.link = nil
+        output.select = nil
+        output.ends = []
+        return output
     }
 
     /// The component of the value.
@@ -205,11 +239,6 @@ public struct PluginOutput: Equatable, Sendable {
     /// How many rows go on one line, when the script prints a repeat.
     public var perLine: Int? {
         layout?.repeated?.perLine
-    }
-
-    /// The template that draws a row: the one it names, or else `template=row`.
-    public func template(of item: SpotItem) -> RowTemplate? {
-        templates[item.template ?? RowTemplate.defaultName]
     }
 
     /// Whether recent picks sort first, unless it prints `recents=false`.
