@@ -179,14 +179,14 @@ final class SheetStreamTests: XCTestCase {
         let url = try script("# mode=stay\n# read=panel")
         let command = try XCTUnwrap(try Plugin(file: url, id: "script")).commands.first
 
-        XCTAssertEqual(command?.stays, true)
+        XCTAssertEqual(command?.mode, .stay)
         XCTAssertEqual(command?.kind, .list)
         XCTAssertEqual(command?.readsState, false)
     }
 
     func testAPlainFirstReadOfAStayingScriptGivesItsFirstFrame() async throws {
         let url = try script("# mode=stay\nwhile IFS= read -r line; do case \"$line\" in call=*) call=${line#call=} ;; esac; [ -n \"$line\" ] || printf 'end=%s\\n\\ntext=a\\ntitle=A\\n---\\n' \"$call\"; done")
-        let command = Spot(id: "a", name: "A", url: url, kind: .list, stays: true)
+        let command = Spot(id: "a", name: "A", url: url, kind: .list, mode: .stay)
 
         let output = try await command.items(timeout: 5)
 

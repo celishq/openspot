@@ -34,12 +34,8 @@ public struct Spot: Equatable, Sendable {
     public let host: HostSheet?
     /// Whether its sheet grows out of the search field in place of a card, as the review of a dropped spot does.
     public let growsFromField: Bool
-    /// Whether the script stays running and takes calls on its standard input.
-    public let stays: Bool
-    /// Whether the script stays running from the start of the app to its quit.
-    public let staysAlways: Bool
-    /// Whether it is a JavaScript file that runs inside the app (I3).
-    public let isInline: Bool
+    /// How its script runs.
+    public let mode: SpotMode
     /// The file extensions that its card takes, with `folder` and `*`.
     public let drop: [String]
     /// Whether its header offers it as a float, which the person can give a key or a shake (T1).
@@ -90,9 +86,7 @@ public struct Spot: Equatable, Sendable {
         opens: String? = nil,
         host: HostSheet? = nil,
         growsFromField: Bool = false,
-        stays: Bool = false,
-        staysAlways: Bool = false,
-        isInline: Bool = false,
+        mode: SpotMode = .once,
         drop: [String] = [],
         offersFloat: Bool = false,
         dataName: String? = nil,
@@ -125,9 +119,7 @@ public struct Spot: Equatable, Sendable {
         self.opens = opens
         self.host = host
         self.growsFromField = growsFromField
-        self.stays = stays
-        self.staysAlways = staysAlways
-        self.isInline = isInline
+        self.mode = mode
         self.drop = drop
         self.offersFloat = offersFloat
         self.dataName = dataName
@@ -205,12 +197,12 @@ public struct Spot: Equatable, Sendable {
 
     /// Whether the panel asks the command how it looks each time it opens.
     public var readsState: Bool {
-        read?.has(.panel) == true && !isGlobal && !stays
+        read?.has(.panel) == true && !isGlobal && !mode.stays
     }
 
     /// Whether the person can put it in the menu bar: it has a number or an event in its `read`, or it stays.
     public var canShowInMenuBar: Bool {
-        read?.seconds != nil || read?.hasEvent == true || stays
+        read?.seconds != nil || read?.hasEvent == true || mode.stays
     }
 
     /// The call that a click on its card makes.

@@ -39,15 +39,13 @@ public struct Plugin: Equatable, Sendable {
             read = parsed
         }
         try Self.refuseOldKeys(header, of: name)
-        let mode = header.value("mode") ?? "once"
-        guard ["once", "stay", "always", "inline"].contains(mode) else {
-            throw PluginError.fault("\(name) has an unknown mode: \(mode). Use once, stay, always or inline")
+        let modeName = header.value("mode") ?? SpotMode.once.rawValue
+        guard let mode = SpotMode(rawValue: modeName) else {
+            throw PluginError.fault("\(name) has an unknown mode: \(modeName). Use once, stay, always or inline")
         }
-        let isInline = mode == "inline"
-        if isInline, url.pathExtension != Self.inlineExtension {
+        if mode == .inline, url.pathExtension != Self.inlineExtension {
             throw PluginError.fault("\(name) runs inline, so it needs a .js file with its header in // lines")
         }
-        let stays = mode == "stay" || mode == "always"
         let sizeName = header.value("size") ?? "wide"
         guard let size = SpotSize(name: sizeName) else { throw PluginError.fault("\(name) has an unknown size: \(sizeName)") }
         let places = try Self.places(header.value("offers"), of: name)
@@ -83,7 +81,7 @@ public struct Plugin: Equatable, Sendable {
             id: id,
             name: name,
             url: url,
-            kind: stays || isGlobal || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch,
+            kind: mode.stays || isGlobal || read?.has(.sheet) == true || read?.seconds != nil ? .list : .launch,
             size: size,
             symbol: symbol ?? "app",
             subtitle: header.value("detail"),
@@ -91,9 +89,7 @@ public struct Plugin: Equatable, Sendable {
             isGlobal: isGlobal,
             isFound: !isRowsOnly && !answersOnly,
             answers: answers,
-            stays: stays,
-            staysAlways: mode == "always",
-            isInline: isInline,
+            mode: mode,
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             offersFloat: places.contains("float"),
             dataName: id.split(separator: "/").first.map(String.init),
@@ -112,7 +108,7 @@ public struct Plugin: Equatable, Sendable {
     /// Whether a file is a spot that runs: an executable, or a JavaScript file with `mode=inline`.
     private static func runs(_ url: URL) -> Bool {
         if FileManager.default.isExecutableFile(atPath: url.path) { return true }
-        return url.pathExtension == inlineExtension && PluginHeader(url: url).block.value("mode") == "inline"
+        return url.pathExtension == inlineExtension && PluginHeader(url: url).block.value("mode") == SpotMode.inline.rawValue
     }
 
     /// The places that `offers` names. An unknown place, or `search` with `rows`, is a fault.

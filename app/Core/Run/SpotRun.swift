@@ -251,8 +251,11 @@ public final class SpotRun {
     nonisolated deinit {}
 
     private static func link(for command: Spot, runs: SpotRuns) -> ScriptLink {
-        if command.isInline { return InlineLink(runs: runs) }
-        return command.stays ? StayLink(runs: runs) : OnceLink(runs: runs)
+        switch command.mode {
+        case .once: OnceLink(runs: runs)
+        case .stay, .always: StayLink(runs: runs)
+        case .inline: InlineLink(runs: runs)
+        }
     }
 
     /// Takes the command again after a new look at the plugin folder, with what its script last printed. A script that starts
@@ -260,7 +263,7 @@ public final class SpotRun {
     public func update(_ new: Spot) {
         let header = command.headerState
         if new.answers != command.answers { answer("") }
-        if new.stays != command.stays || new.isInline != command.isInline {
+        if new.mode.stays != command.mode.stays || (new.mode == .inline) != (command.mode == .inline) {
             let old = link
             link = Self.link(for: new, runs: runs)
             link.run = self
@@ -329,8 +332,8 @@ public final class SpotRun {
         settle()
         list.selectFirst()
         if panel == nil, answered != nil { panel = lastAnswer.flatMap(SheetParts.init(output:)) }
-        if answered == nil, command.stays || (waits && list.search == .local) {
-            runs.opening.holdMotion(of: command.id, limited: !command.stays, start: onReady)
+        if answered == nil, command.mode.stays || (waits && list.search == .local) {
+            runs.opening.holdMotion(of: command.id, limited: !command.mode.stays, start: onReady)
         } else {
             onReady()
         }
@@ -384,10 +387,10 @@ public final class SpotRun {
     /// parts, or of a script that holds its own state, closes. One with a field the person types in, or that holds its own
     /// state, drops its values, so that its next show reads again (K5, W7). A sheet of rows stays.
     func leftPlace() {
-        if !isInView, panel != nil || command.stays {
+        if !isInView, panel != nil || command.mode.stays {
             let wasOpen = isOpen
             close()
-            if command.stays || panel?.parts.contains(where: \.isEditable) == true {
+            if command.mode.stays || panel?.parts.contains(where: \.isEditable) == true {
                 panel = nil
                 answered = nil
             }
@@ -458,7 +461,7 @@ public final class SpotRun {
             selectKept()
             return
         }
-        let query = list.search == .script && !command.stays ? list.query : ""
+        let query = list.search == .script && !command.mode.stays ? list.query : ""
         let read = query.isEmpty ? SpotAction.read : .items(query: query, forms: SearchQuery(text: query).forms)
         let action = command.read == nil ? command.click : read
         let isSent = link.send(Call(
@@ -717,7 +720,7 @@ public final class SpotRun {
             return nil
         }
         guard let text = try await link.submit(call, key: key, values: draft.text) else { return nil }
-        guard !command.stays else { return .done }
+        guard !command.mode.stays else { return .done }
         if let form = ItemForm(output: PluginOutput(text: text)), !form.fields.isEmpty {
             if draft.isMultiple { read(need: .change) }
             return .form(form)

@@ -185,7 +185,7 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertFalse(command.readsState)
         XCTAssertEqual(command.pick, .close)
         XCTAssertFalse(command.isGlobal)
-        XCTAssertFalse(command.stays)
+        XCTAssertEqual(command.mode, .once)
         XCTAssertEqual(command.click.arguments, ["open"])
     }
 
@@ -244,8 +244,7 @@ final class PluginFolderTests: XCTestCase {
         try write("d.sh", header: "mode=sometimes")
 
         let scan = try scan
-        XCTAssertEqual(scan.commands.map(\.stays), [true, true, false])
-        XCTAssertEqual(scan.commands.map(\.staysAlways), [false, true, false])
+        XCTAssertEqual(scan.commands.map(\.mode), [.stay, .always, .once])
         XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "d", reason: "D has an unknown mode: sometimes. Use once, stay, always or inline")])
     }
 
@@ -256,7 +255,7 @@ final class PluginFolderTests: XCTestCase {
 
         let scan = try scan
         XCTAssertEqual(scan.commands.map(\.id), ["sum"])
-        XCTAssertEqual(scan.commands.map(\.isInline), [true])
+        XCTAssertEqual(scan.commands.map(\.mode), [.inline])
         XCTAssertEqual(scan.refused, [
             ScanResult.Refusal(file: "a", reason: "A runs inline, so it needs a .js file with its header in // lines"),
         ])
@@ -295,7 +294,7 @@ final class PluginFolderTests: XCTestCase {
         let command = try XCTUnwrap(try scan.commands.first)
 
         XCTAssertEqual(try scan.refused, [])
-        XCTAssertFalse(command.stays)
+        XCTAssertEqual(command.mode, .once)
         XCTAssertEqual(command.kind, .launch)
         XCTAssertTrue(command.keepsRecent)
         XCTAssertTrue(command.isOnGrid)

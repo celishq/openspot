@@ -80,7 +80,7 @@ final class CalculatorPluginTests: SamplePluginsCase {
     }
 
     func testTheCalculatorRunsInline() throws {
-        XCTAssertTrue(try calculator.isInline)
+        XCTAssertEqual(try calculator.mode, .inline)
     }
 
     /// Types a sum in the main search of a panel with the calculator and the real API, 5 times, and times each key whose

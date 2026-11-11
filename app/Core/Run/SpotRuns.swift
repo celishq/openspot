@@ -206,7 +206,7 @@ public final class SpotRuns {
     /// Runs one call with no sheet, and returns all that it prints. A `read` runs until it gives its first frame, which is what
     /// a sheet takes as its answer.
     public func answer(of command: Spot, _ action: SpotAction, input: String? = nil, limit: TimeInterval? = nil) async throws -> String {
-        if command.stays, action == .read {
+        if command.mode.stays, action == .read {
             let (script, frames) = stay(command, limit: limit)
             defer { script.end() }
             script.send(.read, id: 1, reason: .panel)
@@ -227,8 +227,8 @@ public final class SpotRuns {
     /// Whether something other than its sheet in view wants this script. The open panel wants a staying script that answers
     /// its search.
     func wants(_ command: Spot) -> Bool {
-        if isInMenuBar(command) || command.staysAlways { return true }
-        if isPanelOpen, command.stays, command.answers != nil { return true }
+        if isInMenuBar(command) || command.mode == .always { return true }
+        if isPanelOpen, command.mode.stays, command.answers != nil { return true }
         guard let read = command.read else { return false }
         return isPanelOpen && (read.has(.panel) || placed.contains(command.id))
     }
@@ -321,7 +321,7 @@ public final class SpotRuns {
             let (stream, halt) = answered { try await sheet.answer(action.arguments) }
             return (stream, halt, nil)
         }
-        if command.isInline {
+        if command.mode == .inline {
             let script = InlineScript(spot: command, api: api)
             let call = InlineCall(arguments: action.arguments, input: input)
             script.send(call)

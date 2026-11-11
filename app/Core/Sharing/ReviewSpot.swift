@@ -100,7 +100,11 @@ public struct ReviewSpot: Equatable, Sendable {
     private static func selfRuns(in scan: ScanResult) -> [String] {
         let placed = Set(scan.plugins.flatMap(\.commands).flatMap(\.places))
         return scan.scripts.compactMap { script in
-            var moments = script.staysAlways ? ["keeps running while Openspot runs"] : script.stays ? ["keeps running while it is in use"] : []
+            var moments: [String] = switch script.mode {
+            case .always: ["keeps running while Openspot runs"]
+            case .stay: ["keeps running while it is in use"]
+            case .once, .inline: []
+            }
             for moment in script.read?.moments ?? [] {
                 switch moment {
                 case .panel: moments.append("when the panel opens")

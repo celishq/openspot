@@ -32,11 +32,11 @@ public struct TerminalRun {
     @MainActor
     public func start(frame: (String) -> Void) async -> End {
         let isRead = action == .read
-        if spot.isInline { return await inline(isRead: isRead, frame: frame) }
+        if spot.mode == .inline { return await inline(isRead: isRead, frame: frame) }
         let program = SwiftProgram.file(beside: spot.url) ?? spot.url
         let variables = ["OPENSPOT_ID": spot.id].merging(isRead ? ReadReason.sheet.variables : [:]) { _, new in new }
         let process: ScriptProcess
-        if spot.stays {
+        if spot.mode.stays {
             process = ScriptProcess(url: program, mode: .stays, limit: isRead ? Self.readLimit : nil, dataName: spot.dataName, variables: variables, errorLimit: nil)
         } else {
             let sent = action.sent(input: input)
@@ -45,10 +45,10 @@ public struct TerminalRun {
         var code: Int32 = 0
         do {
             let frames = process.start()
-            if spot.stays { process.send(action, values: input, id: Self.callID, reason: isRead ? .sheet : nil) }
+            if spot.mode.stays { process.send(action, values: input, id: Self.callID, reason: isRead ? .sheet : nil) }
             for try await text in frames {
                 frame(text)
-                if spot.stays, PluginOutput(text: text).summary?.value("end") == String(Self.callID) { process.end() }
+                if spot.mode.stays, PluginOutput(text: text).summary?.value("end") == String(Self.callID) { process.end() }
             }
         } catch {
             if let last = process.failedFrame { frame(last) }
