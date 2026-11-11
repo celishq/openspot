@@ -73,7 +73,7 @@ public struct SettingsSpot: Equatable, Sendable {
         let config = file.read()
         let panel = "row=\(Self.panelKey)\ntitle=Open Openspot\nicon=keyboard\nhides=\(Self.clear)\nshortcut=\((config.panelKey ?? .standard).text)\n"
         let fix = "row=\(Self.fixKey)\ntitle=Open a fix\nicon=wrench.and.screwdriver\nhides=\(Self.clear)\nshortcut=\((config.fixKey ?? .fix).text)\n"
-        let scan = try? PluginFolder(url: folder, core: core, enabled: config.arrangement.enabled, disabled: config.arrangement.disabled).scan()
+        let scan = try? PluginFolder(url: folder, core: core, enabled: config.arrangement.enabled, disabled: config.arrangement.disabled).keptScan()
         let scripts = (scan?.scripts ?? []).filter { only == nil || $0.id == only }
         let floats = only != nil ? [] : scripts.filter(\.offersFloat).map { script in
             keyRow(of: script, act: .float, title: "Float", icon: Self.picture(of: script), keys: config.keys)

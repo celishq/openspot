@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 
 public struct PluginFolder: Sendable {
     /// What a scan reads: the identity, mode, size and times of each file through its links, the spots that are on or off
@@ -114,6 +115,32 @@ public struct PluginFolder: Sendable {
         guard let root = roots.first(where: { path == $0 || path.hasPrefix($0 + "/") }) else { return false }
         let parts = path.dropFirst(root.count).split(separator: "/")
         return parts.count <= 2 && !parts.contains { $0.hasPrefix(".") }
+    }
+
+    /// The last scan of each folder and the stamp that it came from, by the paths of the folder and its core folder.
+    private static let scans = Mutex<[String: (stamp: Stamp, result: ScanResult)]>([:])
+    /// The last core choices of each core folder and the stamp of that folder.
+    private static let choices = Mutex<[String: (stamp: Stamp, result: [Spot])]>([:])
+
+    /// The scan of the folder, kept from the last one while its stamp holds, so that a look at a folder that did not change
+    /// reads no file.
+    public func keptScan() throws -> ScanResult {
+        let key = "\(url.path)\n\(core?.path ?? "")"
+        let stamp = stamp()
+        if let kept = Self.scans.withLock({ $0[key] }), kept.stamp == stamp { return kept.result }
+        let result = try scan()
+        Self.scans.withLock { $0[key] = (stamp, result) }
+        return result
+    }
+
+    /// The core choices, kept from the last look while no file of the core folder changed.
+    public func keptCoreChoices() -> [Spot] {
+        guard let core else { return [] }
+        let stamp = PluginFolder(url: core).stamp()
+        if let kept = Self.choices.withLock({ $0[core.path] }), kept.stamp == stamp { return kept.result }
+        let result = coreChoices()
+        Self.choices.withLock { $0[core.path] = (stamp, result) }
+        return result
     }
 
     /// The core spots that a person can turn on. A core file with no card, such as a metric that a widget places or a sheet

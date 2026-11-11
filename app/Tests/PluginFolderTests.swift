@@ -62,6 +62,26 @@ final class PluginFolderTests: XCTestCase {
         XCTAssertNotEqual(plugins.stamp(shipped: [Spot(id: "x", name: "X", url: folder)]), plugins.stamp())
     }
 
+    func testAKeptScanEqualsAScanAndSeesANewFile() throws {
+        try write("a.sh", header: "title=A")
+        let plugins = PluginFolder(url: folder)
+
+        XCTAssertEqual(try plugins.keptScan(), try scan)
+        try write("home/b.sh", header: "title=B")
+
+        XCTAssertEqual(try plugins.keptScan().commands.map(\.name), ["A", "B"])
+    }
+
+    func testKeptCoreChoicesSeeANewCoreFile() throws {
+        try write("a.sh", header: "title=A")
+        let plugins = PluginFolder(url: folder.appendingPathComponent("own"), core: folder)
+
+        XCTAssertEqual(plugins.keptCoreChoices().map(\.name), ["A"])
+        try write("b.sh", header: "title=B")
+
+        XCTAssertEqual(plugins.keptCoreChoices().map(\.name), ["A", "B"])
+    }
+
     func testAScanReadsEachEntryUpToOneFolderDownThatIsNotHidden() {
         let plugins = PluginFolder(url: folder)
 

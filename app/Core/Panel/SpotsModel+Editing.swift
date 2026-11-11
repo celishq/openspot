@@ -42,9 +42,9 @@ extension SpotsModel {
     /// The core spots of this folder that are not on, and the spots of its files that the person turned off. A sheet that
     /// another spot opens is not one.
     private static func offSpots(in folder: PluginFolder) -> [SpotDock.Item] {
-        let own = (try? PluginFolder(url: folder.url).scan())?.plugins ?? []
+        let own = (try? PluginFolder(url: folder.url).keptScan())?.plugins ?? []
         let ownIDs = Set(own.map(\.id))
-        let core = folder.coreChoices()
+        let core = folder.keptCoreChoices()
             .filter { !folder.enabled.contains(PluginFolder.coreID(of: $0)) && !ownIDs.contains(PluginFolder.coreID(of: $0)) }
         let turnedOff = own.filter { folder.disabled.contains($0.id) }.flatMap(\.commands)
         let opened = Set(turnedOff.compactMap(\.opens))

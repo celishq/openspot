@@ -60,12 +60,12 @@ public struct CatalogSpot: Equatable, Sendable {
     }
 
     private var choices: [Spot] {
-        PluginFolder(url: folder, core: core).coreChoices().sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        PluginFolder(url: folder, core: core).keptCoreChoices().sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     /// The IDs in the plugins folder, which always stay on.
     private var own: Set<String> {
-        Set(((try? PluginFolder(url: folder).scan())?.plugins ?? []).map(\.id))
+        Set(((try? PluginFolder(url: folder).keptScan())?.plugins ?? []).map(\.id))
     }
 
     private var rows: String {
