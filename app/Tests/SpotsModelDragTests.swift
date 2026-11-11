@@ -267,6 +267,21 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(model.placements.map(\.top), [0, 0, 0])
     }
 
+    func testATipGoesWhenItsControlActsOrEditSpotsEnds() {
+        model.tip = SpotTip(id: "a", isTrailing: true, text: "Hide from grid")
+        model.setOnGrid(false, for: "a")
+        XCTAssertNil(model.tip)
+
+        model.tip = SpotTip(id: "d", isTrailing: false, text: "Turn off")
+        model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
+        XCTAssertNil(model.tip)
+        model.cancelDrag()
+
+        model.tip = SpotTip(id: "b", isTrailing: false, text: "Turn off")
+        model.endEditing()
+        XCTAssertNil(model.tip)
+    }
+
     func testAPanelThatHidesEndsTheDrag() {
         model.dragSpot("d", by: move("d", to: leftHalf(of: "c")))
 

@@ -209,6 +209,8 @@ public final class SpotsModel {
     @ObservationIgnored var formAsk: UUID?
     /// Whether the grid is in Edit Spots, where it also shows the spots that are off the grid, and a press only selects.
     public var isEditing = false
+    /// The tip of the corner control that the pointer lies over in Edit Spots.
+    public var tip: SpotTip?
     /// The card that the person drags in Edit Spots, and where a release puts it.
     public internal(set) var drag: SpotDrag?
     public let lift = SpotLift()

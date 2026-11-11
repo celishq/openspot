@@ -114,29 +114,40 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + pause) { self.edit(left: left - 1) }
     }
 
-    /// Saves a picture of Edit Spots with its dock a second after it starts and, with `OPENSPOT_SPOT`, of that card carried
-    /// over the dock, a second after its release there, then carried from the dock over the grid's first card, a second
-    /// after its release there, and of the dock's first spot pulled a column wider and a row taller.
+    /// Saves a picture of Edit Spots with its dock a second after it starts, then of the tip of the first card's eye, then
+    /// the pictures of a carried card.
     private func shootEdit(into folder: String) {
         model.beginEditing()
         try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.save(to: "\(folder)/dock.png")
-            guard let id = self.spot, let index = self.model.visible.firstIndex(where: { $0.id == id }), let dock = self.model.dockFrame else {
-                return self.finish(with: "shots\n")
+            self.model.tip = self.model.visible.first.map { SpotTip(id: $0.id, isTrailing: true, text: "Hide from grid") }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                self.save(to: "\(folder)/tip.png")
+                self.model.tip = nil
+                self.shootCarry(into: folder)
             }
-            let rect = self.model.placements[index].rect
-            let origin = SpotTokens.gridOrigin(scrollOffset: self.model.gridScroll)
-            let move = CGSize(width: dock.midX - origin.x - rect.midX, height: dock.midY - origin.y - rect.midY)
-            self.model.dragSpot(id, by: CGSize(width: 1, height: 1))
-            self.model.dragSpot(id, by: move)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                self.save(to: "\(folder)/carried.png")
-                self.model.dropSpot(by: move)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    self.save(to: "\(folder)/dropped.png")
-                    self.shootArrival(of: id, into: folder)
-                }
+        }
+    }
+
+    /// Saves pictures of `OPENSPOT_SPOT` carried over the dock, a second after its release there, then carried from the dock
+    /// over the grid's first card, a second after its release there, and of the dock's first spot pulled a column wider and
+    /// a row taller.
+    private func shootCarry(into folder: String) {
+        guard let id = spot, let index = model.visible.firstIndex(where: { $0.id == id }), let dock = model.dockFrame else {
+            return finish(with: "shots\n")
+        }
+        let rect = model.placements[index].rect
+        let origin = SpotTokens.gridOrigin(scrollOffset: model.gridScroll)
+        let move = CGSize(width: dock.midX - origin.x - rect.midX, height: dock.midY - origin.y - rect.midY)
+        model.dragSpot(id, by: CGSize(width: 1, height: 1))
+        model.dragSpot(id, by: move)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.save(to: "\(folder)/carried.png")
+            self.model.dropSpot(by: move)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                self.save(to: "\(folder)/dropped.png")
+                self.shootArrival(of: id, into: folder)
             }
         }
     }

@@ -99,6 +99,7 @@ extension SpotsModel {
         stopDragWait()
         change(moving ? .edit : nil) {
             isEditing = false
+            tip = nil
             drag = nil
             landing = nil
             carry = nil
@@ -157,6 +158,7 @@ extension SpotsModel {
             let entry = visible[start]
             stopDragWait()
             scrollAtPress = gridScroll
+            tip = nil
             change(.edit) {
                 drag = lifted
                 carry = SpotCarry(entry: entry, size: lifted.placement(at: start)?.size ?? entry.size, turnsOff: turnsOff(entry))
@@ -597,6 +599,7 @@ extension SpotsModel {
     }
 
     public func setOnGrid(_ isOn: Bool, for id: String) {
+        tip = nil
         arrangement.arrange((cards.filter(\.isOnGrid) + cards.filter { !$0.isOnGrid }).map(\.id))
         arrangement.set(isOnGrid: isOn, of: id)
         saveArrangement(selecting: id)

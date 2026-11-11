@@ -24,12 +24,15 @@ struct SpotEditControls: ViewModifier {
         return content
             .overlay(alignment: .topLeading) {
                 if turnsOff {
-                    SpotCornerButton(symbol: "minus", label: "Turn Off", corner: .leading, size: size) { model.turnOff(id) }
+                    SpotCornerButton(symbol: "minus", label: "Turn off", corner: .leading, size: size, onHover: tip(isTrailing: false, text: "Turn off")) {
+                        model.turnOff(id)
+                    }
                 }
             }
             .overlay(alignment: .topTrailing) {
                 if showsEye {
-                    SpotCornerButton(symbol: isHidden ? "eye.slash" : "eye", label: isHidden ? "Show on Grid" : "Hide from Grid", corner: .trailing, size: size) {
+                    let label = isHidden ? "Show on grid" : "Hide from grid"
+                    SpotCornerButton(symbol: isHidden ? "eye.slash" : "eye", label: label, corner: .trailing, size: size, onHover: tip(isTrailing: true, text: label)) {
                         model.setOnGrid(isHidden, for: id)
                     }
                     .opacity(isHidden || eyeIsOpen ? 1 : 0.001)
@@ -44,8 +47,21 @@ struct SpotEditControls: ViewModifier {
                         .background(SpotHandleArea(model: model, id: id, size: size, sizes: sizes))
                 }
             }
+            .onDisappear { if model.tip?.id == id { model.tip = nil } }
             .onHover { hovering in
                 if isHovered != hovering { isHovered = hovering }
             }
+    }
+
+    /// Shows the tip of a corner control while the pointer lies over it.
+    private func tip(isTrailing: Bool, text: String) -> (Bool) -> Void {
+        let tip = SpotTip(id: id, isTrailing: isTrailing, text: text)
+        return { isOver in
+            if isOver {
+                model.tip = tip
+            } else if model.tip == tip {
+                model.tip = nil
+            }
+        }
     }
 }

@@ -72,6 +72,7 @@ struct SpotsView: View {
                 showsField: showsSearchField,
                 surfaceIsOut: surfaceIsOut
             )
+            SpotTipView(model: model, scrollOffset: scrollOffset)
             if let menu = model.menu {
                 Color.clear
                     .contentShape(Rectangle())
