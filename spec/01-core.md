@@ -55,7 +55,7 @@ open -a Calendar
 | `icon`     | Its picture, as for a block. A path that does not start with `/` starts at the folder of the script.                     |
 | `detail`   | The second line.                                                                                                         |
 | `size`     | The size it prefers: `wide` (the default), `small`, `square`, `strip` or `large`. The grid can change it, and the person's choice wins (F9). |
-| `read`     | When a read is safe: `sheet`, `panel`, a number of seconds or an event, split by commas (E1).                           |
+| `read`     | When a read is safe: `sheet`, `panel`, a number of seconds or an event, split by commas (B1).                           |
 | `drop`     | The files that its card takes: extensions such as `mov,mkv`, `folder`, or `*`.                                          |
 | `offers`   | The places that it is made for, split by commas: `search`, `rows` or `float`.                                           |
 | `answers`  | A regular expression of the texts of the main search that it answers, such as `^[0-9(]` (A1). See Places.               |
@@ -136,12 +136,12 @@ card on the grid until the person shows it (F7).
 | `sheet`  | When its sheet opens.                                               |
 | `panel`  | Each time the panel opens, and once as the app starts.              |
 | a number | Every that many seconds while something wants it, and when the Mac wakes. |
-| an event | Each time the event occurs (E1).                                    |
+| an event | Each time the event occurs (B1).                                    |
 
 An event is a word with a dot. Openspot raises `app.front` when another app comes to the front, `clipboard` when the
-clipboard changes and `screen.wake` when the screen wakes (E2). `openspot emit <event> [value]` raises any event, from a
-script or from a terminal, and each spot that lists it reads (E3). `OPENSPOT_REASON` gives the event, and
-`OPENSPOT_VALUE` its value (E4). A spot that lists an event reads only while something wants it, as for a number (E5).
+clipboard changes and `screen.wake` when the screen wakes (B2). `openspot emit <event> [value]` raises any event, from a
+script or from a terminal, and each spot that lists it reads (B3). `OPENSPOT_REASON` gives the event, and
+`OPENSPOT_VALUE` its value (B4). A spot that lists an event reads only while something wants it, as for a number (B5).
 
 ## Modes
 
