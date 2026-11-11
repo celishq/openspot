@@ -41,14 +41,15 @@ final class Recording {
     private var samples: [Float] = []
     private let lock = NSLock()
 
-    /// Starts the microphone. Each loudness, from 0 to 1, reaches `level` on the main thread.
-    func start(level: @escaping (Float) -> Void) throws {
+    /// Starts the microphone. Each loudness, from 0 to 1, reaches `level` on the main thread. The sound joins `kept`, the
+    /// sound of a recording that the person brought back.
+    func start(keeping kept: [Float] = [], level: @escaping (Float) -> Void) throws {
         let engine = AVAudioEngine()
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
         guard let target = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: Self.rate, channels: 1, interleaved: false),
               let converter = AVAudioConverter(from: format, to: target) else { throw CocoaError(.featureUnsupported) }
-        lock.withLock { samples = [] }
+        lock.withLock { samples = kept }
         input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             guard let self else { return }
             let loudness = Self.loudness(buffer)
@@ -513,6 +514,72 @@ final class Transcribing: NSView {
     }
 }
 
+/// [key] Undo, which a discarded dictation shows in place of its dots: the person's Dictate key in a key cap and the word, in
+/// a row, or only the key cap in a column. With no key known, the cap shows ↺.
+final class UndoLabel: NSView {
+    private let cap = NSTextField(labelWithString: "↺")
+    private let word = NSTextField(labelWithString: "Undo")
+    private let capBack = CALayer()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        capBack.backgroundColor = NSColor(white: 1, alpha: 0.22).cgColor
+        capBack.cornerRadius = 5
+        capBack.cornerCurve = .continuous
+        layer?.addSublayer(capBack)
+        cap.font = .systemFont(ofSize: 11, weight: .semibold)
+        cap.textColor = .white
+        cap.alignment = .center
+        word.font = .systemFont(ofSize: 12, weight: .medium)
+        word.textColor = .white
+        word.sizeToFit()
+        addSubview(cap)
+        addSubview(word)
+        setAccessibilityRole(.button)
+        setAccessibilityLabel("Undo")
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    /// Fills the bounds of the pill and centres the key cap, with the word beside it in a row.
+    func lay(key: String?, column: Bool, in bounds: CGRect) {
+        frame = bounds
+        cap.stringValue = key ?? "↺"
+        cap.sizeToFit()
+        word.isHidden = column
+        let capSize = CGSize(width: max(cap.frame.width + 10, 20), height: 18)
+        let gap: CGFloat = 6
+        let whole = column ? capSize.width : capSize.width + gap + word.frame.width
+        let left = bounds.midX - whole / 2
+        let capFrame = CGRect(x: left, y: bounds.midY - capSize.height / 2, width: capSize.width, height: capSize.height)
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        capBack.frame = capFrame
+        CATransaction.commit()
+        cap.frame = CGRect(x: capFrame.minX, y: capFrame.midY - cap.frame.height / 2, width: capFrame.width, height: cap.frame.height)
+        word.frame.origin = CGPoint(x: capFrame.maxX + gap, y: bounds.midY - word.frame.height / 2)
+    }
+}
+
+/// The person's Dictate key as the Mac writes it, such as ⌥ or ⌥D, read from Openspot's config beside the data folder.
+struct DictateKey {
+    static func label(near folder: URL) -> String? {
+        let config = folder.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("config.toml")
+        guard let text = try? String(contentsOf: config, encoding: .utf8) else { return nil }
+        for block in text.components(separatedBy: "[[keys]]").dropFirst() {
+            let lines = block.components(separatedBy: "\n").prefix { !$0.hasPrefix("[") }
+            func value(_ key: String) -> String? {
+                lines.first { $0.hasPrefix("\(key) = ") }.map { $0.dropFirst(key.count + 3).trimmingCharacters(in: CharacterSet(charactersIn: "\"")) }
+            }
+            guard value("spot")?.hasSuffix("dictate") == true, value("command") == "dictate", let key = value("key") else { continue }
+            let marks = ["cmd": "⌘", "ctrl": "⌃", "option": "⌥", "shift": "⇧"]
+            return key.split(separator: "+").map { marks[String($0)] ?? $0.uppercased() }.joined()
+        }
+        return nil
+    }
+}
+
 /// A round button of the pill. It takes the first click, so the front app keeps its focus and its cursor.
 final class PillButton: NSView {
     private let action: () -> Void
@@ -551,17 +618,41 @@ final class PillButton: NSView {
 final class Ground: NSVisualEffectView {
     var drag: (CGPoint) -> Void = { _ in }
     var drop: () -> Void = {}
+    /// A click with no drag, such as on the undo of a discarded dictation.
+    var click: () -> Void = {}
+    private var dragged = false
+    /// Whether the pointer shows a hand over the pill, while a click on it does something.
+    var pointsAt = false {
+        didSet { window?.invalidateCursorRects(for: self) }
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        trackingAreas.forEach(removeTrackingArea)
+        addTrackingArea(NSTrackingArea(rect: .zero, options: [.cursorUpdate, .mouseMoved, .activeAlways, .inVisibleRect], owner: self))
+    }
+
+    override func cursorUpdate(with event: NSEvent) {
+        (pointsAt ? NSCursor.pointingHand : NSCursor.arrow).set()
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        (pointsAt ? NSCursor.pointingHand : NSCursor.arrow).set()
+    }
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
-    override func mouseDown(with event: NSEvent) {}
+    override func mouseDown(with event: NSEvent) {
+        dragged = false
+    }
 
     override func mouseDragged(with event: NSEvent) {
+        dragged = true
         drag(NSEvent.mouseLocation)
     }
 
     override func mouseUp(with event: NSEvent) {
-        drop()
+        dragged ? drop() : click()
     }
 }
 
@@ -636,6 +727,7 @@ final class Pill {
     private let close: PillButton
     private let done: PillButton
     private let transcribing = Transcribing(frame: .zero)
+    private let undoLabel = UndoLabel(frame: .zero)
     private let fill = CALayer()
     private let short: CGFloat = 32
     private let long = Bars.length + 72
@@ -649,6 +741,8 @@ final class Pill {
     private var noteTimer: Timer?
     /// Counts each show and hide, so a fade that ends after a later show leaves the pill on the screen.
     private var showing = 0
+    /// What a click on the pill does while it offers one, such as undo.
+    private var onClick: (() -> Void)?
     private var bloomTimer: Timer?
     /// The full frame of a pill that shrinks, so a show that comes during the shrink grows back to it.
     private var bloomWhole: CGRect?
@@ -685,10 +779,12 @@ final class Pill {
         fill.backgroundColor = NSColor(white: 1, alpha: 0.18).cgColor
         fill.isHidden = true
         ground.layer?.addSublayer(fill)
-        for view in [bars, close, done, transcribing, note] { ground.addSubview(view) }
+        undoLabel.isHidden = true
+        for view in [bars, close, done, transcribing, note, undoLabel] { ground.addSubview(view) }
         panel.contentView = ground
         ground.drag = { [weak self] pointer in self?.drag(to: pointer) }
         ground.drop = { [weak self] in self?.keep() }
+        ground.click = { [weak self] in self?.onClick?() }
         panel.alphaValue = 0.001
         rest()
         panel.orderFrontRegardless()
@@ -697,17 +793,59 @@ final class Pill {
 
     /// Shows the pill as it records.
     func record() {
+        let wasUndo = !undoLabel.isHidden && panel.isVisible
+        onClick = nil
+        ground.pointsAt = false
         noteTimer?.invalidate()
         note.isHidden = true
-        fill.isHidden = true
         transcribing.rest()
         transcribing.isHidden = true
         bars.isHidden = false
         close.isHidden = false
         done.isHidden = false
-        for view in [bars, close, done] as [NSView] { view.alphaValue = 1 }
         bars.run()
-        show()
+        guard wasUndo else {
+            undoLabel.isHidden = true
+            Self.stopDrain(fill)
+            for view in [bars, close, done] as [NSView] { view.alphaValue = 1 }
+            return show()
+        }
+        for view in [bars, close, done] as [NSView] { view.alphaValue = 0 }
+        crossfade(in: [bars, close, done], out: [undoLabel]) { [weak self] in
+            guard let self, undoLabel.alphaValue < 0.5 else { return }
+            undoLabel.isHidden = true
+            Self.stopDrain(fill)
+        }
+        fade(fill, to: 0)
+    }
+
+    /// Fades some parts of the pill in and others out together, in place of a jump between two states.
+    private func crossfade(in arriving: [NSView], out leaving: [NSView], then end: (() -> Void)? = nil) {
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.25
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            for view in arriving { view.animator().alphaValue = 1 }
+            for view in leaving { view.animator().alphaValue = 0 }
+        }, completionHandler: end)
+    }
+
+    private func fade(_ layer: CALayer, to opacity: Float) {
+        let fade = CABasicAnimation(keyPath: "opacity")
+        fade.fromValue = layer.presentation()?.opacity ?? layer.opacity
+        fade.toValue = opacity
+        fade.duration = 0.25
+        fade.timingFunction = CAMediaTimingFunction(name: .easeOut)
+        layer.opacity = opacity
+        layer.add(fade, forKey: "fade")
+    }
+
+    /// Takes the countdown off the light and hides it, ready for a download's fill.
+    private static func stopDrain(_ fill: CALayer) {
+        fill.removeAnimation(forKey: "drain")
+        fill.removeAnimation(forKey: "fade")
+        fill.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        fill.opacity = 1
+        fill.isHidden = true
     }
 
     /// Shows Transcribing with its dots in place of the buttons and the bars, while Whisper reads the words.
@@ -731,7 +869,43 @@ final class Pill {
 
     /// Shows a short line in place of the dots, in a row beside the pill's edge, then hides the pill after `time`.
     func say(_ text: String, for time: TimeInterval = 2.5) {
+        onClick = nil
         line(text, share: nil, for: time)
+    }
+
+    /// Offers a discarded dictation back for `time`, in the pill's own size: the Dictate key and Undo in place of the dots,
+    /// or only the key in a column, while the pill's light drains away and the pointer shows a hand over it. A click on the pill calls `undo`, and the pill hides when the time is up.
+    func offerUndo(for time: TimeInterval, undo: @escaping () -> Void) {
+        for view in [transcribing, note] as [NSView] { view.isHidden = true }
+        undoLabel.alphaValue = 0
+        undoLabel.isHidden = false
+        undoLabel.lay(key: DictateKey.label(near: file.deletingLastPathComponent()), column: turn > 0.5, in: ground.bounds)
+        ground.pointsAt = true
+        crossfade(in: [undoLabel], out: [bars, close, done]) { [weak self] in
+            guard let self, !undoLabel.isHidden, undoLabel.alphaValue > 0.5 else { return }
+            bars.rest()
+            for view in [bars, close, done] as [NSView] { view.isHidden = true }
+        }
+        fill.removeAnimation(forKey: "fade")
+        fill.opacity = 0
+        fill.isHidden = false
+        fade(fill, to: 1)
+        let column = turn > 0.5
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        fill.anchorPoint = column ? CGPoint(x: 0.5, y: 0) : CGPoint(x: 0, y: 0.5)
+        fill.frame = ground.bounds
+        CATransaction.commit()
+        let drain = CABasicAnimation(keyPath: column ? "bounds.size.height" : "bounds.size.width")
+        drain.fromValue = column ? ground.bounds.height : ground.bounds.width
+        drain.toValue = 0
+        drain.duration = time
+        drain.fillMode = .forwards
+        drain.isRemovedOnCompletion = false
+        fill.add(drain, forKey: "drain")
+        onClick = undo
+        noteTimer?.invalidate()
+        noteTimer = Timer.scheduledTimer(withTimeInterval: time, repeats: false) { [weak self] _ in self?.hide() }
     }
 
     /// Shows the download of the model: its words, and the pill filling from the left as it comes.
@@ -759,6 +933,11 @@ final class Pill {
 
     private func line(_ text: String, share: Double?, for time: TimeInterval) {
         stopMotion()
+        undoLabel.isHidden = true
+        fill.removeAnimation(forKey: "drain")
+        fill.removeAnimation(forKey: "fade")
+        fill.opacity = 1
+        fill.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         bars.rest()
         bars.isHidden = true
         close.isHidden = true
@@ -784,6 +963,8 @@ final class Pill {
     }
 
     func hide() {
+        onClick = nil
+        ground.pointsAt = false
         noteTimer?.invalidate()
         bars.rest()
         transcribing.rest()
@@ -977,7 +1158,7 @@ final class EscapeKey {
 /// One dictation at a time: the key starts it, and the key or ✓ stops it and shows Transcribing until Whisper reads the
 /// words, then hides the pill and pastes them. Escape or ✕ discards it. Silence never stops it.
 final class Dictation {
-    enum Phase { case idle, recording, working }
+    enum Phase { case idle, recording, discarded, working }
 
     private(set) var phase = Phase.idle
     private let recording = Recording()
@@ -989,13 +1170,20 @@ final class Dictation {
     private let shortest = 0.3
     private let model: URL
     private var download: ModelDownload?
+    /// The sound of a discarded dictation, kept for `undoTime` so that the person can bring it back.
+    private var kept: [Float] = []
+    private var undoTimer: Timer?
+    private let undoTime: TimeInterval = 5
 
     init(model: String, folder: URL) {
         self.model = URL(fileURLWithPath: model)
         whisper = Whisper(model: model, folder: folder)
         history = History(file: folder.appendingPathComponent("history"))
         pill = Pill(folder: folder, discard: { [weak self] in self?.discard() }, finish: { [weak self] in self?.finish() })
-        escape = EscapeKey { [weak self] in self?.discard() }
+        escape = EscapeKey { [weak self] in
+            guard let self else { return }
+            phase == .discarded ? drop() : discard()
+        }
     }
 
     /// A press of the person's key.
@@ -1003,6 +1191,7 @@ final class Dictation {
         switch phase {
         case .idle: start()
         case .recording: finish()
+        case .discarded: resume()
         case .working: break
         }
     }
@@ -1064,9 +1253,35 @@ final class Dictation {
         pill.download(start)
     }
 
+    /// Stops the microphone and keeps the sound for a short time, while the pill offers it back.
     private func discard() {
         guard phase == .recording else { return }
-        _ = recording.stop()
+        kept = recording.stop()
+        phase = .discarded
+        pill.offerUndo(for: undoTime) { [weak self] in self?.resume() }
+        undoTimer?.invalidate()
+        undoTimer = Timer.scheduledTimer(withTimeInterval: undoTime, repeats: false) { [weak self] _ in self?.drop() }
+    }
+
+    /// Brings a discarded dictation back: the microphone starts again, and the new sound joins the old.
+    private func resume() {
+        guard phase == .discarded else { return }
+        undoTimer?.invalidate()
+        do {
+            try recording.start(keeping: kept) { [weak self] level in self?.pill.bars.take(level) }
+        } catch {
+            return drop()
+        }
+        kept = []
+        phase = .recording
+        pill.record()
+    }
+
+    /// Lets a discarded dictation go for good.
+    private func drop() {
+        guard phase == .discarded else { return }
+        undoTimer?.invalidate()
+        kept = []
         escape.free()
         phase = .idle
         pill.hide()
@@ -1137,8 +1352,7 @@ case "wave":
 case "preview":
     let app = NSApplication.shared
     app.setActivationPolicy(.accessory)
-    let folder = FileManager.default.temporaryDirectory.appendingPathComponent("dictate-preview")
-    try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let folder = URL(fileURLWithPath: arguments[0]).deletingLastPathComponent()
     let pill = Pill(folder: folder, discard: { exit(0) }, finish: { exit(0) })
     var phase = 0.0
     let voice = Timer(timeInterval: 1 / 30, repeats: true) { _ in
@@ -1148,7 +1362,13 @@ case "preview":
     RunLoop.main.add(voice, forMode: .common)
     func round() {
         pill.record()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            pill.offerUndo(for: 5) {}
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
+            pill.record()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 7) {
             pill.work()
             DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
                 pill.hide()
