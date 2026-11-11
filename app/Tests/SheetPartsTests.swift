@@ -389,7 +389,7 @@ final class SheetPartsTests: XCTestCase {
 
         XCTAssertEqual(tall.control, .list([.init(id: "a", title: "A"), .init(id: "b", title: "B")], value: "a"))
         XCTAssertEqual(short.control, .menu([.init(id: "a", title: "A"), .init(id: "b", title: "B")], value: "a"))
-        sheet.merge(PluginOutput(text: "choice=c\noption=a:A\nvalue=a\n"))
+        sheet.take(PluginOutput(text: "grid=c\ngrid=c\n\nchoice=c\noption=a:A\nvalue=a\n"), answering: sheet.generation)
         XCTAssertEqual(sheet.parts.first?.control, .list([.init(id: "a", title: "A")], value: "a"))
     }
 

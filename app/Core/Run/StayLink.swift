@@ -1,8 +1,9 @@
 import Foundation
 
 /// The link to a script that stays (05): one process that takes each call as a block on stdin and prints frames at any
-/// time. The frame that ends the read or the search that runs is its answer (Y7). It runs while something wants it (Y3), and
-/// after 3 failures in one minute it starts again only when its file changes (Y5).
+/// time. A frame with a block is the whole picture, and the frame that ends the read or the search that runs is its answer
+/// (Y7). It runs while something wants it (Y3), and after 3 failures in one minute it starts again only when its file
+/// changes (Y5).
 @MainActor
 final class StayLink: ScriptLink {
     private static let failureLimit = 3
@@ -15,6 +16,10 @@ final class StayLink: ScriptLink {
     private var asks: [Int: SpotRun.Ask] = [:]
     /// The call numbers of searches that a newer search stopped, whose late answers change nothing.
     private var dropped: Set<Int> = []
+    /// The call numbers of reads and searches that a picture came after, which a frame of only a head then answers.
+    private var pictured: Set<Int> = []
+    /// The last frame with a block, which answers a read that ends with only a head.
+    private var lastPicture: PluginOutput?
     private var count = 0
     private var calls: [String: ScriptCall] = [:]
     private var failures: [Date] = []
@@ -167,6 +172,7 @@ final class StayLink: ScriptLink {
     private func forgetAsks() {
         asks = [:]
         dropped = []
+        pictured = []
     }
 
     private func next() -> Int {
@@ -209,11 +215,21 @@ final class StayLink: ScriptLink {
                 }
                 let ends = lines.ends.compactMap { Int($0) }
                 if let id = ends.first(where: { asks[$0] != nil }), let ask = asks.removeValue(forKey: id) {
-                    await run.takeAnswer(lines, frame: text, to: ask)
+                    if lines.isPicture || !pictured.contains(id) {
+                        await run.takeAnswer(lines, frame: text, to: ask)
+                    } else {
+                        run.takeEffects(lines, frame: text)
+                        await run.takeAnswer(lastPicture?.withoutEffects() ?? lines, frame: text, to: ask)
+                    }
+                    pictured.remove(id)
                 } else if ends.contains(where: { dropped.remove($0) != nil }) {
                     continue
+                } else if lines.isPicture {
+                    pictured.formUnion(asks.keys)
+                    lastPicture = lines
+                    await run.takePicture(lines, frame: text, of: nil)
                 } else {
-                    await run.takeUpdate(lines, frame: text, from: .call(generation: nil, keeping: nil))
+                    run.takeEffects(lines, frame: text)
                 }
             }
         } catch {

@@ -99,8 +99,9 @@ public enum PartCatalog {
     private static let streams = """
     ## Long work and running scripts
 
-    A call can keep printing. A line `---` ends a frame, and the app draws it at once. A frame with a layout replaces the \
-    sheet, and a frame with only components changes those components, so print each one whole again.
+    A call can keep printing. A line `---` ends a frame, and the app draws it at once. A frame with a block is the whole \
+    picture and replaces all that the spot shows, so print the whole output each time. A frame of only a head changes no \
+    picture: its `toast`, `link`, `select`, `progress` and `end` act.
 
     A value over 64 KB is left out of the arguments, and stdin still holds it. In a shell script, `. "$OPENSPOT_SH"` gives \
     `value <id>`, which prints the real text of one value from stdin, and `esc <text>`, which writes text as a value. Loading \
@@ -112,15 +113,16 @@ public enum PartCatalog {
     group gets the terminate signal, and after 2 seconds Openspot kills what still runs. A press within 1 second of the start of \
     the call does nothing, so a double press does not stop it. Quitting Openspot stops each call. \
     After 1 second, a call that does work shows on its part, its action, its spot and the Openspot item in the menu bar. Its \
-    last frame reports progress: `value` from 0 to 1 draws a ring, no `value` draws a spinner, and `title` and `detail` show on \
-    the spot only while the call runs. To outlive the app, start the work with `nohup` and then exit. A stopped call changes nothing. Closing the panel \
+    last frame of only a head reports progress: `progress` from 0 to 1 draws a ring, no `progress` draws a spinner, and \
+    `title` and `detail` there show on the spot only while the call runs. To outlive the app, start the work with `nohup` and then exit. A stopped call changes nothing. Closing the panel \
     closes a sheet of parts, and one with a field drops its values.
 
     A script with `# stay=true` in its header is one process that talks both ways, such as a local server: it runs while something \
     wants it, and from the start of the app to its quit with `# stay=always`. Each call reaches it on stdin as one block and a blank line: \
     `call=<n>`, `reason=<word>` on a read, one `arg` for each argument of a normal call, and the values of the sheet. In the shell \
     helper, `while next; do case "$(arg 1)" in …` reads them, with `$call`, `$reason`, `$stop` and `value <id>`. It prints \
-    frames at any time, and ends each call with `end=<n>` in a head: the frame that ends a read is its answer. A second press \
+    frames at any time, each by the same rule, and ends each call with `end=<n>` in a head: the frame that ends a read is its \
+    answer. A second press \
     sends the block `stop=<n>`. It must end, with each process it started, when its input ends.
 
     """

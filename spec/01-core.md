@@ -153,8 +153,9 @@ stdin, and prints the whole output again, or nothing.
   once (M4).
 - Openspot draws a change at once, and drops the answer to a call that a newer change has outdated (U10).
 
-A call shows its progress with `progress=<0 to 1>` in a head, such as `progress=0.42`. Openspot reads the codes
-`ESC ] 9;4;1;<percent>` as `progress` and `ESC ] 9;<text>` as a toast, and removes each other escape code (R12).
+A call shows its progress with `progress=<0 to 1>` in a head, such as `progress=0.42`, and `title` and `detail` in that
+head show on the spot only while the call runs. Openspot reads the codes `ESC ] 9;4;1;<percent>` as `progress` and
+`ESC ] 9;<text>` as a toast, and removes each other escape code (R12).
 
 ## The life of a call
 

@@ -6,7 +6,7 @@ import XCTest
 final class SpotRunsWorkTests: SpotRunsCase {
     // MARK: L6, G1 to G4
 
-    private static let progress = "printf 'gauge=progress\\ntitle=42%%\\ndetail=2 min left\\nvalue=0.42\\n---\\n'\nsleep 30"
+    private static let progress = "printf 'title=42%%\\ndetail=2 min left\\nprogress=0.42\\n---\\n'\nsleep 30"
 
     /// A body that waits for a file before each of these frames.
     private func steps(_ steps: [(file: String, frame: String)]) -> String {
@@ -36,7 +36,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         let sheet = try sheet()
 
         sheet.pressCard()
-        try await wait("the frame") { sheet.calls.first?.output != nil }
+        try await wait("the frame") { sheet.calls.first?.status != nil }
         time += 0.9
         XCTAssertTrue(sheet.work.isEmpty)
         XCTAssertNil(sheet.cardWork)
@@ -129,10 +129,10 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
     func testTheSpotShowsASpinnerWithNoValueAndARingFromValue() async throws {
         try script(body: steps([
-            ("half", "gauge=progress\\nvalue=0.42"),
-            ("over", "gauge=progress\\nvalue=7"),
-            ("under", "gauge=progress\\nvalue=-1"),
-            ("none", "gauge=progress\\ntitle=Almost")
+            ("half", "progress=0.42"),
+            ("over", "progress=7"),
+            ("under", "progress=-1"),
+            ("none", "title=Almost")
         ]))
         let sheet = try sheet()
         sheet.pressCard()
@@ -152,10 +152,10 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAFramesWordsShowOnTheSpotOnlyWhileItsCallRuns() async throws {
-        try script(header: "title=Encode\ndetail=Videos", "printf 'gauge=progress\\ntitle=42%%\\ndetail=2 min left\\n---\\n'\nwhile [ ! -e '\(path("end"))' ]; do sleep 0.02; done")
+        try script(header: "title=Encode\ndetail=Videos", "printf 'title=42%%\\ndetail=2 min left\\n---\\n'\nwhile [ ! -e '\(path("end"))' ]; do sleep 0.02; done")
         let sheet = try sheet()
         sheet.pressCard()
-        try await wait("the frame") { sheet.calls.first?.output != nil }
+        try await wait("the frame") { sheet.calls.first?.status != nil }
         XCTAssertEqual(sheet.shownState.title, "Encode")
 
         time += 1
@@ -171,10 +171,10 @@ final class SpotRunsWorkTests: SpotRunsCase {
     }
 
     func testAFrameWithOnlyATitleKeepsTheDetailOfTheSpot() async throws {
-        try script(header: "title=Encode\ndetail=Videos", "printf 'gauge=progress\\ntitle=42%%\\n---\\n'\nsleep 30")
+        try script(header: "title=Encode\ndetail=Videos", "printf 'title=42%%\\n---\\n'\nsleep 30")
         let sheet = try sheet()
         sheet.pressCard()
-        try await wait("the frame") { sheet.calls.first?.output != nil }
+        try await wait("the frame") { sheet.calls.first?.status != nil }
         time += 1
 
         XCTAssertEqual(sheet.shownState.title, "42%")
@@ -185,7 +185,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(header: "title=Encode", Self.progress)
         let sheet = try sheet()
         sheet.pressCard()
-        try await wait("the frame") { sheet.calls.first?.output != nil }
+        try await wait("the frame") { sheet.calls.first?.status != nil }
         time += 1
         XCTAssertEqual(sheet.shownState.title, "42%")
 
@@ -202,13 +202,13 @@ final class SpotRunsWorkTests: SpotRunsCase {
 
     func testTheMenuBarShowsTheOldestCallOfAllScriptsAndHowManyRun() async throws {
         try script("a", "sleep 30")
-        try script("z", "printf 'gauge=progress\\nvalue=0.25\\n---\\n'\nsleep 30")
+        try script("z", "printf 'progress=0.25\\n---\\n'\nsleep 30")
         _ = try scanned()
         let a = try XCTUnwrap(runs.sheets["a"])
         let z = try XCTUnwrap(runs.sheets["z"])
 
         z.pressCard()
-        try await wait("the frame") { z.calls.first?.output != nil }
+        try await wait("the frame") { z.calls.first?.status != nil }
         time += 1
         a.pressCard()
         XCTAssertEqual(runs.workMark?.content, .work(fill: 0.25, count: nil))
@@ -227,8 +227,8 @@ final class SpotRunsWorkTests: SpotRunsCase {
         try script(header: "read=sheet", """
         case "$1" in
           read) printf 'grid=a b\\n\\nbutton=a\\ntitle=A\\n\\nbutton=b\\ntitle=B\\n' ;;
-          a) printf 'gauge=progress\\ntitle=A\\n---\\n'; sleep 30 ;;
-          b) printf 'gauge=progress\\ntitle=B\\n---\\n'; sleep 30 ;;
+          a) printf 'title=A\\n---\\n'; sleep 30 ;;
+          b) printf 'title=B\\n---\\n'; sleep 30 ;;
         esac
         """)
         let sheet = try sheet()
@@ -240,7 +240,7 @@ final class SpotRunsWorkTests: SpotRunsCase {
         sheet.press(parts[1])
         time += 1
         sheet.press(parts[0])
-        try await wait("both frames") { sheet.calls.count == 2 && sheet.calls.allSatisfy { $0.output != nil } }
+        try await wait("both frames") { sheet.calls.count == 2 && sheet.calls.allSatisfy { $0.status != nil } }
         time += 1
 
         XCTAssertEqual(sheet.work.count, 2)

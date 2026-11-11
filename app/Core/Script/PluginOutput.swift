@@ -1,8 +1,9 @@
 import Foundation
 
-/// What a script prints, sorted by the first key of each block: `row` or a kind of part. The one other block is the head,
-/// which says how the spot itself looks and holds the effects `toast`, `link` and `end`. A button that the drawing does not place is an action (U6). Each
-/// `run` value appears once.
+/// One frame of what a script prints, sorted by the first key of each block: `row` or a kind of part. The one other block is
+/// the head, which says how the spot itself looks and holds the effects `toast`, `link`, `select`, `progress` and `end`. A
+/// frame with a block is the whole picture, and a frame of only a head carries effects (01). A button that the drawing does
+/// not place is an action (U6). Each `run` value appears once.
 public struct PluginOutput: Equatable, Sendable {
     public private(set) var summary: TextBlock?
     public private(set) var rows: [TextBlock] = []
@@ -38,6 +39,8 @@ public struct PluginOutput: Equatable, Sendable {
     private var checkedFaults: [String] = []
     /// The row that a `select` effect selects when the call ends, such as the row that a drop added (D8).
     public private(set) var select: String?
+    /// Whether it holds a block, so that it is the whole picture of the spot (01).
+    public let isPicture: Bool
 
     private static let reserved = "read"
     /// The keys of a call block for a staying script, which a value of the sheet would take the place of.
@@ -77,6 +80,7 @@ public struct PluginOutput: Equatable, Sendable {
     private init(blocks: [TextBlock], checks: Bool) {
         self.blocks = blocks
         self.checks = checks
+        isPicture = blocks.contains { block in block.fields.first.map { Self.isKind($0.key) } ?? false }
         var runs = Set<String>()
         let head = blocks.first { block in block.fields.first.map { !Self.isKind($0.key) } ?? false }
         let repeats = blocks.filter { $0.fields.first?.key == Self.repeatKind }
@@ -184,9 +188,19 @@ public struct PluginOutput: Equatable, Sendable {
         ["text", "number", "gauge", "graph"].contains(value?.fields.first?.key ?? "") ? value : nil
     }
 
-    /// The value when it is a `gauge`, which is the progress of a call that runs (R12).
-    public var progress: TextBlock? {
-        value?.fields.first?.key == "gauge" ? value : nil
+    /// The part of a running call that is done, from 0 to 1, from `progress` in the head (R12).
+    public var progress: Double? {
+        summary?.number("progress").map { min(max($0, 0), 1) }
+    }
+
+    /// This frame with no effects, so that a head that is taken again acts none of them twice.
+    public func withoutEffects() -> PluginOutput {
+        var output = self
+        output.toast = nil
+        output.link = nil
+        output.select = nil
+        output.ends = []
+        return output
     }
 
     /// The component of the value.

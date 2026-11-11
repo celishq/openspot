@@ -32,7 +32,7 @@ final class SpotRunsReadTests: SpotRunsCase {
 
     // MARK: M6
 
-    func testALaterFrameOfAReadKeepsTheValueThatItDoesNotPrint() async throws {
+    func testALaterFrameOfAReadWithABlockReplacesItsValue() async throws {
         try script(header: "read=sheet", "printf 'main=m\\n\\ntext=m\\ntitle=3\\n---\\n'\nsleep 0.05\nprintf 'text=b\\ntitle=B\\n---\\n'")
         let sheet = try sheet()
         let frames = FrameLog(sheet)
@@ -41,7 +41,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         sheet.open {}
 
         try await wait("the later frame") { frames.last?.contains("B") == true }
-        XCTAssertEqual(sheet.reading.value?.title, "3")
+        XCTAssertEqual(sheet.reading.value?.title, "B")
     }
 
     func testALaterFrameWithAHeadReplacesThePartsOfTheRead() async throws {
@@ -57,7 +57,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(sheet.panel?.parts.first?.title, "A2")
     }
 
-    func testALaterFrameWithAHeadAndNoRowsEmptiesTheList() async throws {
+    func testALaterFrameOfOnlyAHeadKeepsTheList() async throws {
         try script(header: "read=sheet", "printf 'title=L\\n\\nrow=a\\ntitle=A\\n---\\n'\nsleep 0.05\nprintf 'title=L\\n---\\n'")
         let sheet = try sheet()
         let frames = FrameLog(sheet)
@@ -66,10 +66,10 @@ final class SpotRunsReadTests: SpotRunsCase {
         sheet.open {}
 
         try await wait("the later frame") { frames.frames.count == 2 }
-        XCTAssertEqual(sheet.list.shown.map(\.run), [])
+        XCTAssertEqual(sheet.list.shown.map(\.run), ["a"])
     }
 
-    func testALaterFrameWithNoHeadKeepsThePartsItDoesNotPrint() async throws {
+    func testALaterFrameWithNoHeadReplacesAllTheParts() async throws {
         try script(header: "read=sheet", "printf 'title=S\\n\\ntext=a\\ntitle=A\\n\\ntext=b\\ntitle=B\\n---\\n'\nsleep 0.05\nprintf 'text=a\\ntitle=A2\\n---\\n'")
         let sheet = try sheet()
         let frames = FrameLog(sheet)
@@ -78,7 +78,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         sheet.open {}
 
         try await wait("the later frame") { frames.frames.count == 2 }
-        XCTAssertEqual(sheet.panel?.parts.map(\.id), ["a", "b"])
+        XCTAssertEqual(sheet.panel?.parts.map(\.id), ["a"])
         XCTAssertEqual(sheet.panel?.parts.first?.title, "A2")
     }
 

@@ -290,8 +290,8 @@ final class DoomExampleTests: SamplePluginsCase {
 
             let run = await self.press(doom)
 
-            XCTAssertTrue(run.frames.contains { $0.contains("title=Downloading the Doom engine\nvalue=0.50\ndetail=50%") }, "\(run.frames)")
-            XCTAssertTrue(run.frames.contains { $0.contains("title=Downloading the Doom engine\nvalue=1.00\ndetail=100%") }, "\(run.frames)")
+            XCTAssertTrue(run.frames.contains { $0.contains("title=Downloading the Doom engine\nprogress=0.50\ndetail=50%") }, "\(run.frames)")
+            XCTAssertTrue(run.frames.contains { $0.contains("title=Downloading the Doom engine\nprogress=1.00\ndetail=100%") }, "\(run.frames)")
         }
     }
 
@@ -305,8 +305,8 @@ final class DoomExampleTests: SamplePluginsCase {
 
             let run = await self.press(doom)
 
-            XCTAssertTrue(run.frames.contains { $0.contains("title=Building the Doom engine\nvalue=0.50\ndetail=50%") }, "\(run.frames)")
-            XCTAssertTrue(run.frames.contains { $0.contains("title=Building the Doom engine\nvalue=1.00\ndetail=100%") }, "\(run.frames)")
+            XCTAssertTrue(run.frames.contains { $0.contains("title=Building the Doom engine\nprogress=0.50\ndetail=50%") }, "\(run.frames)")
+            XCTAssertTrue(run.frames.contains { $0.contains("title=Building the Doom engine\nprogress=1.00\ndetail=100%") }, "\(run.frames)")
         }
     }
 

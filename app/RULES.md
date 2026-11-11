@@ -35,11 +35,11 @@ Code and tests name a rule by its ID.
 | C4 | Openspot waits for a pause before it sends a change of text or of a slider. Text that the person types stays as typed until they press something. |
 | K5 | Closing the panel closes a sheet of parts. One with a field the person types in drops its values, and one with none keeps them, so that its next open shows them at once. A sheet of rows stays open. |
 | L6 | A call that runs 1 second shows on its part, its action, its spot and the menu bar item, so the person can find and stop it. |
-| L7 | When a sheet opens, Openspot reads, then adds the last frame of each running call. |
+| L7 | When a sheet opens, Openspot reads. A running call shows by its progress on its part, its action and its spot, and its frames change no picture after a later read. |
 | L11 | A press within 1 second of the start of a call does nothing, so a double press does not stop it. |
 | G1 | A running call shows a ring from the `value` of its last frame, or a spinner with no `value`. |
 | G3 | The menu bar item shows the oldest running call and how many run. A click on it opens the panel with that spot selected. |
-| G4 | A frame's `title` and `detail` show on the spot only while its call runs. |
+| G4 | The `title` and `detail` of a call's last frame of only a head show on the spot only while its call runs. |
 | D2 | During a drag, only a card whose `drop` takes every dragged file shows it and takes the drop. |
 | D6 | A `drop` call runs as any other call does. |
 | D5 | A click on a card with `drop` and no sheet opens a file chooser, and the choice runs the same call. A drag over the menu bar item opens the panel with no change of focus, and a drop closes it, unless D8 keeps it. |

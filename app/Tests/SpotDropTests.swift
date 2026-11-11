@@ -543,14 +543,14 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testADropShowsItsFramesAndItsToastAndKeepsItsLastFrame() async throws {
-        let sheet = try sheet(header: "drop=mov", "printf 'gauge=progress\\ntitle=42%%\\nvalue=0.42\\n---\\n'\n\(untilRelease)\nprintf 'toast=Done\\n'")
+        let sheet = try sheet(header: "drop=mov", "printf 'title=42%%\\nprogress=0.42\\n---\\n'\n\(untilRelease)\nprintf 'toast=Done\\n'")
         var toasts: [String] = []
         sheet.onReport = { if case .toast(let text) = $0 { toasts.append(text) } }
         let frames = FrameLog(sheet)
 
         XCTAssertTrue(sheet.drop([file("a.mov")]))
 
-        try await wait("the frame") { sheet.calls.first?.output != nil }
+        try await wait("the frame") { sheet.calls.first?.status != nil }
         XCTAssertEqual(sheet.calls.first?.action.arguments.first, "drop")
         XCTAssertEqual(sheet.calls.first?.title, "42%")
         XCTAssertEqual(sheet.calls.first?.fill, 0.42)

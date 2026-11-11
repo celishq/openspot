@@ -87,7 +87,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the stop") { self.blocks(ids: true).last == "stop=2" }
     }
 
-    func testOnlyTheFrameThatEndsAReadReplacesWhatTheSpotShows() async throws {
+    func testEachFrameWithABlockReplacesAllAndOnlyTheFrameThatEndsAReadAnswersIt() async throws {
         try script(header: "stay=true", """
         while IFS= read -r line; do
           case "$line" in
@@ -112,7 +112,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         try await wait("the late frame") { frames.last?.contains("Late") == true }
         XCTAssertTrue(isReady)
-        XCTAssertEqual(sheet.list.shown.map(\.run), ["a"])
+        XCTAssertEqual(sheet.list.shown.map(\.run), [])
     }
 
     func testAPickReachesTheRunningStayingScript() async throws {
@@ -275,13 +275,13 @@ final class SpotRunsStayTests: SpotRunsCase {
         XCTAssertEqual(log().count, 1)
     }
 
-    func testAFrameOfPartsChangesNoMarkOfAStayingTrayScript() async throws {
+    func testAFrameOfAStayingTrayScriptIsItsWholePictureAndChangesItsMark() async throws {
         try script(header: "stay=true\ntray=true", """
         while IFS= read -r line; do
           case "$line" in
             call=*) call=${line#call=} ;;
             arg=read) printf 'end=%s\\n\\ntext=n\\ntitle=3\\n---\\n' "$call" ;;
-            arg=open) printf 'text=a\\ntitle=A\\n---\\n'; touch '\(path("printed"))' ;;
+            arg=open) printf 'text=n\\ntitle=4\\n---\\n' ;;
           esac
         done
         """)
@@ -289,10 +289,8 @@ final class SpotRunsStayTests: SpotRunsCase {
         try await wait("the mark") { !self.runs.trayMarks.isEmpty }
 
         sheet.pick(SpotItem(title: "A", run: "a"))
-        try await wait("the frame") { self.exists("printed") }
-        try await pause(0.1)
 
-        XCTAssertEqual(runs.trayMarks.first?.mark.summary, "Script: 3")
+        try await wait("the new mark") { self.runs.trayMarks.first?.mark.summary == "Script: 4" }
         XCTAssertEqual(runs.trayMarks.first?.mark.isStale, false)
     }
 
@@ -535,7 +533,7 @@ final class SpotRunsStayTests: SpotRunsCase {
             stop=*) touch '\(path("stopped"))'; args=stop ;;
             '')
               case "$args" in
-                ' read a') ( \(untilRelease); printf 'search=script\\nend=%s\\n\\nrow=o\\ntitle=Old\\n---\\n' "$call"; printf 'text=d\\ntitle=Done\\n---\\n' ) & ;;
+                ' read a') ( \(untilRelease); printf 'search=script\\nend=%s\\n\\nrow=o\\ntitle=Old\\n---\\n' "$call"; printf 'toast=Done\\n---\\n' ) & ;;
                 ' read ab') printf 'search=script\\nend=%s\\n\\nrow=n\\ntitle=New\\n---\\n' "$call" ;;
                 ' read') printf 'search=script\\nend=%s\\n\\nrow=x\\ntitle=X\\n---\\n' "$call" ;;
               esac ;;

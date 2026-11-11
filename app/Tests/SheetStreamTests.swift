@@ -42,9 +42,9 @@ final class SheetStreamTests: XCTestCase {
     func testATerminalProgressCodeIsAFrameWithItsValue() {
         var reader = SheetFrameReader()
 
-        XCTAssertEqual(reader.read(Data("Copying\u{1b}]9;4;1;42\u{07}".utf8)), ["gauge=progress\nvalue=0.42\n"])
+        XCTAssertEqual(reader.read(Data("Copying\u{1b}]9;4;1;42\u{07}".utf8)), ["progress=0.42\n"])
         XCTAssertEqual(reader.read(Data("\u{1b}]9;4;1".utf8)), [])
-        XCTAssertEqual(reader.read(Data(";50\u{1b}\\\n".utf8)), ["gauge=progress\nvalue=0.5\n"])
+        XCTAssertEqual(reader.read(Data(";50\u{1b}\\\n".utf8)), ["progress=0.5\n"])
         XCTAssertEqual(reader.read(Data("\u{1b}]9;4;3;0\u{07}\u{1b}]9;4;0;0\u{07}".utf8)), [])
     }
 
@@ -112,29 +112,19 @@ final class SheetStreamTests: XCTestCase {
         XCTAssertEqual([first, second], ["text=a\n", "text=b\n"])
     }
 
-    func testALaterFrameChangesOnlyThePartsItNames() throws {
-        var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "text=a\ntitle=A\n\ntext=b\ntitle=B\n")))
+    func testAFrameReplacesTheWholeSheet() throws {
+        var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "grid=a b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n")))
 
-        panel.merge(PluginOutput(text: "text=b\ntitle=New\n"))
-        XCTAssertEqual(panel.parts.map(\.title), ["A", "New"])
-
-        panel.merge(PluginOutput(text: "text=c\ntitle=C\n"))
-        XCTAssertEqual(panel.parts.map(\.id), ["a", "b", "c"])
-    }
-
-    func testAFrameWithALayoutReplacesTheSheet() throws {
-        var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "text=a\ntitle=A\n\ntext=b\ntitle=B\n")))
-
-        panel.merge(PluginOutput(text: "grid=c\n\ntext=c\ntitle=C\n"))
+        panel.take(PluginOutput(text: "text=c\ntitle=C\n"), answering: panel.generation)
 
         XCTAssertEqual(panel.parts.map(\.id), ["c"])
-        XCTAssertNotNil(panel.layout)
+        XCTAssertNil(panel.layout)
     }
 
     func testAFrameKeepsTheTextThePersonIsTyping() throws {
         var panel = try XCTUnwrap(SheetParts(output: PluginOutput(text: "field=a\nvalue=typed\n")))
 
-        panel.merge(PluginOutput(text: "field=a\nvalue=old\n"), keeping: "a")
+        panel.take(PluginOutput(text: "field=a\nvalue=old\n"), answering: panel.generation, keeping: "a")
 
         XCTAssertEqual(panel.parts.first?.value, "typed")
     }
