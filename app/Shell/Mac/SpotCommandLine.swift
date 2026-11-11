@@ -62,10 +62,6 @@ enum SpotCommandLine {
             exit(SpotGlyphBook.write(GlyphBook(glyphs: glyphs, side: side, fontSize: fontSize), to: path) ? 0 : 1)
         case .translateLanguages:
             finish { await SpotTranslation.languages() }
-        case .windowFrame:
-            answer { try SpotWindow.front().frameText }
-        case .windowMove(let move):
-            answer { try SpotWindow.front().move(move); return "" }
         case .screenSources:
             answer { SpotScreen.sources() }
         case .screenShot(let capture):

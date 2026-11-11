@@ -24,6 +24,11 @@ final class MacCallsTests: XCTestCase {
         func copy(file: URL) throws { keep("copy file \(file.path)") }
         func clipboardText() -> String { "kept text" }
         func paste() throws { keep("paste") }
+        func windowFrame() async throws -> String { "10 20 300 400 0 33 1728 1084\n" }
+
+        func moveWindow(_ move: WindowMove) async throws {
+            keep(move == WindowMove(words: ["0 0 1/2 1", "1/2 0 1/2 1"]) ? "move halves" : "move other")
+        }
     }
 
     private var folder: URL!
@@ -85,5 +90,14 @@ final class MacCallsTests: XCTestCase {
         XCTAssertEqual([copied.code, file.code, read.code, pasted.code], [0, 0, 0, 0], copied.output + file.output + pasted.output)
         XCTAssertEqual(read.output, "kept text")
         XCTAssertEqual(host.acts, ["copy hello", "copy file \(place.path)/list.txt", "paste"])
+    }
+
+    func testTheAppReadsAndMovesTheWindowInFront() throws {
+        let frame = try run(["window", "frame"])
+        let moved = try run(["window", "move", "0 0 1/2 1", "1/2 0 1/2 1"])
+
+        XCTAssertEqual(frame.output, "10 20 300 400 0 33 1728 1084\n")
+        XCTAssertEqual([frame.code, moved.code], [0, 0], moved.output)
+        XCTAssertEqual(host.acts, ["move halves"])
     }
 }

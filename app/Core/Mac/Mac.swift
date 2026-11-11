@@ -1,8 +1,8 @@
 import Foundation
 
 /// What the Mac gives through the frameworks that Core does not import: EventKit, the apps that open, the settings of the
-/// app, the events of the Mac with the count of changes of the clipboard (B2), and the clipboard. A test gives a Mac of its
-/// own. A member with no `@MainActor` runs on the thread of its call, never on the main thread of the app.
+/// app, the events of the Mac with the count of changes of the clipboard (B2), the clipboard and the window in front. A test
+/// gives a Mac of its own. A member with no `@MainActor` runs on the thread of its call, never on the main thread of the app.
 public protocol Mac: AnyObject, Sendable {
     func eventStore() -> any EventStore
     func reminderStore() -> any ReminderStore
@@ -28,6 +28,10 @@ public protocol Mac: AnyObject, Sendable {
     func clipboardText() -> String
     /// Presses `⌘V` in the front app.
     func paste() throws
+    /// The focused window of the front app, then the usable area of its screen, as one line of eight whole numbers.
+    func windowFrame() async throws -> String
+    /// Moves the focused window of the front app.
+    func moveWindow(_ move: WindowMove) async throws
 }
 
 extension Mac {
@@ -41,4 +45,6 @@ extension Mac {
     public func copy(file: URL) throws { throw SpotError.fault("This Mac has no clipboard.") }
     public func clipboardText() -> String { "" }
     public func paste() throws { throw SpotError.fault("This Mac has no clipboard.") }
+    public func windowFrame() async throws -> String { throw SpotError.fault("This Mac has no windows.") }
+    public func moveWindow(_ move: WindowMove) async throws { throw SpotError.fault("This Mac has no windows.") }
 }

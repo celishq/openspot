@@ -52,7 +52,7 @@ public final class CommandAPI: @unchecked Sendable {
     }
 
     /// The work that answers a call, or nil for a call that runs in a process of its own: one that draws, waits for the
-    /// person, reaches the screen or a window, or runs a helper, a spot or a check of a folder. `input` reads stdin, and
+    /// person, reaches the screen, or runs a helper, a spot or a check of a folder. `input` reads stdin, and
     /// only a call that takes stdin reads it.
     public func work(for call: CommandLineCall, input: @escaping @Sendable () async -> String, environment: [String: String]) -> Work? {
         let isRead = environment["OPENSPOT_REASON"] != nil
@@ -110,8 +110,13 @@ public final class CommandAPI: @unchecked Sendable {
         case .clipboardCopy(let path): return clipboard.copy(path, input: input)
         case .clipboardRead: return clipboard.read()
         case .clipboardPaste: return clipboard.paste()
+        case .windowFrame: return CommandAnswer.work { [mac] in try await mac.windowFrame() }
+        case .windowMove(let move): return CommandAnswer.work { [mac] in
+            try await mac.moveWindow(move)
+            return ""
+        }
         case .check, .checkJSON, .spotRun, .spotShow, .renderSpot, .render, .renderCard, .sandbox, .colorPick, .folderPick,
-             .translate, .translateLanguages, .windowFrame, .windowMove, .screenSources,
+             .translate, .translateLanguages, .screenSources,
              .screenShot, .screenRecordStart, .screenRecordStop, .screenRecordStatus, .helper, .glyphBook:
             return nil
         }
