@@ -215,13 +215,62 @@ extension SpotsModel {
         return true
     }
 
+    /// Highlights the row of the open menu under a point of the panel, as a force click is dragged.
+    public func dragMenu(to point: CGPoint) {
+        if let row = menuRow(at: point) { self.point(at: .menuRow(row)) }
+    }
+
+    /// Runs the row of the open menu under a point of the panel, where a dragged force click ends. Off the rows the menu stays.
+    public func releaseMenu(at point: CGPoint) {
+        if let row = menuRow(at: point) { pressMenu(row: row) }
+    }
+
+    private func menuRow(at point: CGPoint) -> Int? {
+        guard let menu, let frame = menuSession?.frame else { return nil }
+        return frame.row(at: point, of: menu)
+    }
+
+    /// The open menu, which keys and the pointer act on. A closing menu is closed.
+    public var menu: ActionMenu? {
+        get { menuSession?.phase == .closing ? nil : menuSession?.menu }
+        set {
+            guard let newValue, menu != nil else { return }
+            menuSession?.menu = newValue
+        }
+    }
+
+    /// What the open menu acts on.
+    public var menuTarget: Target? {
+        menu == nil ? nil : menuSession?.target
+    }
+
+    /// Keeps where the view placed the open menu.
+    public func placeMenu(_ frame: ActionMenuFrame) {
+        guard menu != nil else { return }
+        menuSession?.frame = frame
+    }
+
     public func searchMenu(_ text: String) {
         menu?.search(text)
     }
 
+    /// Selects the card at this point of the panel and opens its actions menu, as `⌘K` does, for a right or force click. A
+    /// sheet or Edit Spots takes none.
+    public func openMenu(at point: CGPoint) {
+        let origin = SpotTokens.gridOrigin(scrollOffset: gridScroll)
+        guard openList == nil, !isEditing, let id = card(at: CGPoint(x: point.x - origin.x, y: point.y - origin.y)), let index = visible.firstIndex(where: { $0.id == id }) else { return }
+        selected = index
+        if let target { openMenu(on: target) }
+    }
+
     private func openMenu(on target: Target) {
-        menu = actionMenu(on: target)
-        menuTarget = target
+        menuSession = actionMenu(on: target).map { ActionMenuSession(menu: $0, target: target) }
+        DispatchQueue.main.async { [weak self] in
+            guard let self, menuSession?.phase == .opening else { return }
+            change(.sheet(isOpen: true), { self.menuSession?.phase = .open }, completion: { [weak self] in
+                if self?.menuSession?.phase == .open { self?.menuSession?.phase = .settled }
+            })
+        }
     }
 
     private func actionMenu(on target: Target) -> ActionMenu? {
@@ -272,9 +321,12 @@ extension SpotsModel {
         return entry.state.title
     }
 
+    /// Closes the menu at once for keys and the focus, and leaves its look to fade back into its item, then lets it go.
     public func closeMenu() {
-        menu = nil
-        menuTarget = nil
+        guard menu != nil else { return }
+        change(.sheet(isOpen: false), { menuSession?.phase = .closing }, completion: { [weak self] in
+            if self?.menuSession?.phase == .closing { self?.menuSession = nil }
+        })
     }
 
     public func pressMenu(row: Int) {

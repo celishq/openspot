@@ -13,7 +13,7 @@ import ScreenCaptureKit
 /// `scripts/motion-perf.sh` starts it with `OPENSPOT_PROBE`. The panel stays almost clear, takes no focus and no clicks,
 /// unless `OPENSPOT_SEEN` asks for a picture. With `OPENSPOT_SHOTS`, a drag saves a picture of each state to that folder
 /// from a panel off every screen, `edit` saves Edit Spots with its dock from the panel at its place, and a card carried to
-/// the dock, and neither times anything. `tile` pulls the corner of a spot of the dock, or with `OPENSPOT_ROW=grid` of a
+/// the dock, and neither times anything. `menu` opens and closes the actions menu, or saves it at its card and row. `tile` pulls the corner of a spot of the dock, or with `OPENSPOT_ROW=grid` of a
 /// card, with mouse events on each frame, and writes how often its size changed.
 @MainActor
 final class SpotMotionProbe: NSObject {
@@ -74,6 +74,7 @@ final class SpotMotionProbe: NSObject {
         if action == "search" { return beginSearch() }
         if action == "drag" || action == "mouse" { return beginDrag() }
         if action == "edit" { return beginEdit() }
+        if action == "menu" { return beginMenus() }
         if action == "jump" { return beginJump() }
         if action == "tile" {
             model.beginEditing()
@@ -126,6 +127,24 @@ final class SpotMotionProbe: NSObject {
         edit(left: presses)
     }
 
+    /// Opens and closes the actions menu of the first small card again and again, or with `OPENSPOT_SHOTS` saves pictures of it.
+    private func beginMenus() {
+        if let shots { return shootMenus(into: shots) }
+        guard let view = panel.contentView else { return finish(with: "no panel\n") }
+        let link = view.displayLink(target: self, selector: #selector(tick))
+        link.add(to: .main, forMode: .common)
+        self.link = link
+        model.selected = model.placements.first { $0.size == .small }?.index ?? 0
+        start = CACurrentMediaTime()
+        toggleMenu(left: presses)
+    }
+
+    private func toggleMenu(left: Int) {
+        guard left > 0 else { return end() }
+        _ = model.handleKey(ActionKey(name: "k", isCommand: true))
+        DispatchQueue.main.asyncAfter(deadline: .now() + pause * 3) { self.toggleMenu(left: left - 1) }
+    }
+
     private func edit(left: Int) {
         guard left > 0 else { return end() }
         if left % 2 == 0 { model.beginEditing() } else { model.endEditing() }
@@ -149,6 +168,82 @@ final class SpotMotionProbe: NSObject {
                     self.save(to: "\(folder)/listing.png")
                     if let id = self.model.dock.opened { self.model.openListing(id) }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.shootCarry(into: folder) }
+                }
+            }
+        }
+    }
+
+    /// Saves a picture of the actions menu on a small card on the left, a small card on the right and a wide card, of a
+    /// search in it, and of the menu on a row of `OPENSPOT_SPOT`'s list.
+    private func shootMenus(into folder: String) {
+        try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+        NSApp.activate(ignoringOtherApps: true)
+        panel.makeKeyAndOrderFront(nil)
+        let cards: [(String, (SpotPlacement) -> Bool)] = [
+            ("left", { $0.size == .small && $0.column == 0 }),
+            ("right", { $0.size == .small && $0.column == SpotTokens.columns - 1 }),
+            ("wide", { $0.size.columns > 1 }),
+        ]
+        let shots = cards.compactMap { name, fits in model.placements.first(where: fits).map { (name, $0.index) } }
+        shootMenu(shots, into: folder)
+    }
+
+    private func shootMenu(_ shots: [(String, Int)], into folder: String) {
+        guard let (name, index) = shots.first else { return shootSearch(into: folder) }
+        model.selected = index
+        _ = model.handleKey(ActionKey(name: "k", isCommand: true))
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            self.save(to: "\(folder)/\(name).png")
+            self.model.closeMenu()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self.shootMenu(Array(shots.dropFirst()), into: folder) }
+        }
+    }
+
+    private func shootSearch(into folder: String) {
+        for placement in model.placements {
+            model.selected = placement.index
+            _ = model.handleKey(ActionKey(name: "k", isCommand: true))
+            if model.menu?.isSearchable == true { break }
+            model.closeMenu()
+        }
+        save(to: "\(folder)/long-moving.png")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            self.save(to: "\(folder)/long.png")
+            self.saveSharp(to: "\(folder)/field-focused.png")
+            self.model.searchMenu("co")
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            self.save(to: "\(folder)/search.png")
+            self.panel.makeFirstResponder(nil)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            self.saveSharp(to: "\(folder)/field-unfocused.png")
+            self.model.closeMenu()
+            guard let id = self.spot else { return self.finish(with: "shots\n") }
+            self.model.press(id)
+            self.whenRowsArrive {
+                self.model.moveItemLine(by: 2)
+                _ = self.model.handleKey(ActionKey(name: "k", isCommand: true))
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    self.save(to: "\(folder)/row.png")
+                    self.model.closeMenu()
+                    self.shootResults(into: folder)
+                }
+            }
+        }
+    }
+
+    /// Saves a picture of the actions menu on the first result of a search for the first word of a spot's name.
+    private func shootResults(into folder: String) {
+        _ = model.stepBack()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            let word = self.model.visible.first?.state.title.split(separator: " ").first.map(String.init) ?? "a"
+            self.model.searchText = word
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                _ = self.model.handleKey(ActionKey(name: "k", isCommand: true))
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    self.save(to: "\(folder)/results.png")
+                    self.finish(with: "shots\n")
                 }
             }
         }
@@ -533,6 +628,17 @@ final class SpotMotionProbe: NSObject {
     }
 
     /// Writes the panel's content as a PNG over the colour of a window, since the blur draws nothing off screen.
+    /// Saves the panel at twice its size in points, as a Retina screen draws it, so that half a point shows.
+    private func saveSharp(to path: String) {
+        guard let view = panel.contentView, let bitmap = NSBitmapImageRep(
+            bitmapDataPlanes: nil, pixelsWide: Int(view.bounds.width) * 2, pixelsHigh: Int(view.bounds.height) * 2, bitsPerSample: 8,
+            samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0
+        ) else { return }
+        bitmap.size = view.bounds.size
+        view.cacheDisplay(in: view.bounds, to: bitmap)
+        FileManager.default.createFile(atPath: path, contents: bitmap.representation(using: .png, properties: [:]))
+    }
+
     private func save(to path: String) {
         guard let view = panel.contentView, let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
         view.cacheDisplay(in: view.bounds, to: bitmap)
