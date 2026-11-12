@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 /// `spots.lock` in the config folder: the source of each spot that `openspot spot add` put in the spots folder, the
@@ -13,7 +12,7 @@ public struct SpotLock: Equatable, Sendable {
         /// The paths that it took in the spots folder, each in a spot folder. A path that an older Openspot kept outside
         /// one, such as `coffee` or `notes.sh`, reads as the place where a wrap of the folder put it.
         public let paths: [String]
-        /// The SHA-256 of its files, their paths and whether each one runs.
+        /// The hash of the manifest of its files.
         public let hash: String?
         /// The uses that its scripts name, in the order of the set.
         public let uses: [SpotUse]?
@@ -150,7 +149,7 @@ public struct SpotLock: Equatable, Sendable {
                     throw SpotError.fault("Another key signed this version than the one you have. Openspot kept the one you have. Run `openspot spot add \(source.text) --yes` to update it.")
                 }
                 if let old, !isConfirmed {
-                    let before = old.uses == nil || old.canDo == nil ? try Self.facts(of: old.paths, in: folder) : nil
+                    let before = old.uses == nil || old.canDo == nil ? try? Self.facts(of: old.paths, in: folder) : nil
                     try Self.refuseGrowth(from: old.uses ?? before?.uses ?? [], old.canDo ?? before?.canDo ?? [], to: new, confirm: "openspot spot add \(source.text) --yes")
                 }
                 facts = new
@@ -208,39 +207,19 @@ public struct SpotLock: Equatable, Sendable {
 
     /// The hash of the files under the paths in a folder, and the uses that their scripts name.
     private static func facts(of paths: [String], in folder: URL) throws -> Facts {
-        var hash = SHA256()
-        var files: [(path: String, url: URL)] = []
-        for path in paths {
-            let top = folder.appendingPathComponent(path)
-            var isFolder: ObjCBool = false
-            guard FileManager.default.fileExists(atPath: top.path, isDirectory: &isFolder) else { continue }
-            guard isFolder.boolValue else {
-                files.append((path, top))
-                continue
-            }
-            for inner in FileManager.default.subpaths(atPath: top.path) ?? [] {
-                let url = top.appendingPathComponent(inner)
-                var isInner: ObjCBool = false
-                if FileManager.default.fileExists(atPath: url.path, isDirectory: &isInner), !isInner.boolValue { files.append(("\(path)/\(inner)", url)) }
-            }
-        }
-        for file in files.sorted(by: { $0.path < $1.path }) {
-            hash.update(data: Data("\(file.path)\0\(FileManager.default.isExecutableFile(atPath: file.url.path))\0".utf8))
-            hash.update(data: try Data(contentsOf: file.url))
-        }
+        let spot = try SpotFolder(paths: paths, in: folder)
         let scan = try SpotsFolder(url: folder).scan()
         let names = Set(paths.map { SpotID(path: $0).name })
         let scripts = scan.scripts.filter { script in names.contains(SpotID(script.id).name) }
         let uses = SpotUse.allCases.filter { use in scripts.contains { $0.uses.contains(use) } }
         let canDo: [String]
         do {
-            canDo = try ReviewSpot(spot: SpotFolder(paths: paths, in: folder), folder: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-none", isDirectory: true)).canDo
+            canDo = try ReviewSpot(spot: spot, folder: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-none", isDirectory: true)).canDo
         } catch {
             canDo = ["Cannot review it: \((error as? SpotError)?.reason ?? error.localizedDescription)"]
         }
-        let shared = try? SpotFolder(paths: paths, in: folder)
-        let release = try shared.flatMap { spot in try spot.roots.first.flatMap { try spot.releaseLog(in: $0)?.last } }
-        return Facts(hash: hash.finalize().map { String(format: "%02x", $0) }.joined(), uses: uses, canDo: canDo, release: release)
+        let release = try spot.roots.first.flatMap { try spot.releaseLog(in: $0)?.last }
+        return Facts(hash: SpotManifest(spot.files).hash, uses: uses, canDo: canDo, release: release)
     }
 
     /// Moves each path of the entry that holds this ID to the Trash, and drops the entry. A spot that `spot add` did not add

@@ -434,11 +434,11 @@ final class ReviewSpotTests: XCTestCase {
             ("timer.spot/preview.txt", "row=a\ntitle=5 minutes\n", false)
         ])
         let store = folder.appendingPathComponent("store")
-        try SpotPackage.write(shared, to: store)
-        let package = SpotPackage(url: SpotPackage.url(for: "timer", in: store))
+        try shared.write(to: store)
+        let package = store.appendingPathComponent("timer.spot")
         let spots = folder.appendingPathComponent("spots")
         let lock = SpotLock(url: folder.appendingPathComponent("spots.lock"))
-        let review = try ReviewSpot(file: package.url, folder: spots, lock: lock)
+        let review = try ReviewSpot(file: package, folder: spots, lock: lock)
 
         let text = try shown(review)
         XCTAssertTrue(text.hasPrefix("Timer\n\nUses nothing\n\nRuns only when you use it\n\nCounts down from a time you pick.\n\nPreview\n5 minutes\n\n"), text)
@@ -447,6 +447,6 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("timer.spot/readme.md"), encoding: .utf8), "Counts down from a time you pick.\n")
         XCTAssertEqual(try String(contentsOf: spots.appendingPathComponent("timer.spot/preview.txt"), encoding: .utf8), "row=a\ntitle=5 minutes\n")
         XCTAssertEqual(try lock.entries().map(\.paths), [["timer.spot/preview.txt", "timer.spot/readme.md", "timer.spot/timer.sh"]])
-        XCTAssertEqual(try lock.entries().map(\.source), [package.url.path])
+        XCTAssertEqual(try lock.entries().map(\.source), [package.path])
     }
 }

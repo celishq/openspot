@@ -22,7 +22,7 @@ final class SpotReleaseTests: XCTestCase {
         XCTAssertEqual(release.address, "4f6f2c1e9a8b4d2c8e7f6a5b4c3d2e1f")
         XCTAssertEqual(release.version, 1)
         XCTAssertEqual(release.publicKey, try key().publicKey)
-        XCTAssertEqual(try release.files(), [SpotRelease.File(path: "cups.spot/cups.sh", sha256: "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", size: 4, isExecutable: true)])
+        XCTAssertEqual(try release.manifest().sorted, [SpotManifest.File(path: "cups.spot/cups.sh", sha256: "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", size: 4, isExecutable: true)])
         XCTAssertEqual(release.line, signedByCelis)
     }
 
@@ -46,8 +46,8 @@ final class SpotReleaseTests: XCTestCase {
         XCTAssertEqual(release.address, "a1")
         XCTAssertEqual(release.version, 2)
         XCTAssertEqual(release.previous, "ff00")
-        XCTAssertEqual(try release.files().map(\.path), ["cups.spot/cups.sh", "cups.spot/readme.md"])
-        XCTAssertEqual(try release.files().map(\.isExecutable), [true, false])
+        XCTAssertEqual(try release.manifest().sorted.map(\.path), ["cups.spot/cups.sh", "cups.spot/readme.md"])
+        XCTAssertEqual(try release.manifest().sorted.map(\.isExecutable), [true, false])
         XCTAssertEqual(try SpotRelease(line: release.line), release)
     }
 

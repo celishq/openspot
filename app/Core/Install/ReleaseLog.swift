@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 /// The `releases.jsonl` of a spot folder: each signed release of the spot, the oldest first, one event a line. Each
@@ -37,14 +36,13 @@ public struct ReleaseLog: Equatable, Sendable {
         releases.map { $0.line + "\n" }.joined()
     }
 
-    /// Whether the last release names exactly these files, with their bytes and modes. With `built` false, a program or a
-    /// view library that the release names and the files lack still matches, since a publish builds it.
-    public func names(_ files: [SpotFolder.File], built: Bool = true) -> Bool {
-        guard let named = try? last?.files() else { return false }
-        let given = Set(files.map { SpotRelease.File(path: $0.path, sha256: AccountKey.hex(Data(CryptoKit.SHA256.hash(data: $0.contents))), size: $0.contents.count, isExecutable: $0.isExecutable) })
-        let paths = Set(given.map(\.path))
-        let expected = Set(named.filter { built || paths.contains($0.path) || !Self.isBuilt($0.path) })
-        return given == expected
+    /// Whether the last release names exactly the files of this manifest. With `built` false, a program or a view library
+    /// that the release names and the manifest lacks still matches, since a publish builds it.
+    public func names(_ manifest: SpotManifest, built: Bool = true) -> Bool {
+        guard let named = try? last?.manifest() else { return false }
+        guard !built else { return named == manifest }
+        let paths = Set(manifest.files.map(\.path))
+        return SpotManifest(Array(named.files).filter { paths.contains($0.path) || !SpotManifest.isBuilt($0.path) }) == manifest
     }
 
     /// This log with a release of these files after its last one: the next version of its address when this key signed the
@@ -61,9 +59,5 @@ public struct ReleaseLog: Equatable, Sendable {
 
     private static func newAddress() -> String {
         UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: "")
-    }
-
-    private static func isBuilt(_ path: String) -> Bool {
-        SwiftProgram.isProgram(URL(fileURLWithPath: path)) || ViewLibrary.isLibrary(path)
     }
 }

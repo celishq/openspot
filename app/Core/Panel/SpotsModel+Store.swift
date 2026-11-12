@@ -1,6 +1,6 @@
 import Foundation
 
-/// The store's publish: the spot folder of a spot of the spots folder is copied into the store folder.
+/// The store's publish: the spot folder of a spot of the spots folder is copied into the store, a folder of spot folders.
 extension SpotsModel {
     /// Publishes a spot of the spots folder to the store. A spot with no readme opens its listing, which asks for one. A
     /// spot whose files did not change since its last publish writes nothing. A spot with `preview=sample` prints its preview
@@ -21,8 +21,7 @@ extension SpotsModel {
         let folder = files.folder
         do {
             var shared = try SpotFolder(sharing: spot, from: SpotsFolder(url: folder.url).keptScan())
-            let url = SpotPackage.url(for: folder.fileID(of: spot), in: files.store)
-            guard SpotPackage(url: url).hash != SpotPackage.hash(of: shared, in: url.lastPathComponent) else {
+            guard Self.publication(of: shared, in: files.store) != .current else {
                 host.confirm("\(spot.name) has no change since its last publish.")
                 return .unchanged
             }
@@ -36,8 +35,7 @@ extension SpotsModel {
             }
             shared = try shared.signed(by: files.account.keyMadeOnce())
             try shared.keepReleaseLog(in: folder.url)
-            try FileManager.default.createDirectory(at: files.store, withIntermediateDirectories: true)
-            try SpotPackage.write(shared, to: files.store)
+            try shared.write(to: files.store)
         } catch {
             host.notify("\(spot.name) was not published. \(Self.reason(error))")
             return .failed
@@ -47,17 +45,16 @@ extension SpotsModel {
         return .published
     }
 
-    /// Copies the store's package of a spot as one `.spot` file, a zip that a chat can carry, and returns the file. A spot
-    /// with no package copies nothing. The zip holds only its own spot folder.
+    /// Copies the store's copy of a spot as one `.spot` file, a zip that a chat can carry, and returns the file. A spot that
+    /// the store lacks copies nothing. The zip holds only its own spot folder.
     @discardableResult
     public func sharePackage(_ id: String) -> URL? {
         guard let item = dock.items.first(where: { $0.id == id }), item.publication != nil else { return nil }
-        let package = SpotPackage(url: SpotPackage.url(for: files.folder.fileID(of: item.spot), in: files.store))
         let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
         let file = place.appendingPathComponent(SpotFolder.fileName(for: item.spot.name))
         do {
             try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
-            try package.spot().zip(to: file)
+            try SpotFolder(contentsOf: files.store.appendingPathComponent(SpotID(file: item.spot.url).folderName)).zip(to: file)
         } catch {
             host.notify("\(item.spot.name) was not copied. \(Self.reason(error))")
             return nil
@@ -100,14 +97,20 @@ extension SpotsModel {
         }
     }
 
-    /// Whether the package of each spot of the spots folder in the store holds its files as they are now.
+    /// Whether the store's copy of each spot of the spots folder holds its files as they are now.
     nonisolated static func publications(of scan: ScanResult, in folder: SpotsFolder, store: URL) -> [String: SpotDock.Publication] {
         var result: [String: SpotDock.Publication] = [:]
         for spot in scan.spots {
-            let package = SpotPackage(url: SpotPackage.url(for: folder.fileID(of: spot), in: store))
-            guard let hash = package.hash, let shared = try? SpotFolder(sharing: spot, from: scan) else { continue }
-            result[spot.id] = SpotPackage.hash(of: shared, in: package.url.lastPathComponent) == hash ? .current : .changed
+            guard let shared = try? SpotFolder(sharing: spot, from: scan) else { continue }
+            result[spot.id] = publication(of: shared, in: store)
         }
         return result
+    }
+
+    /// Whether the store holds a copy of a spot's own spot folder with the files that a person writes as they are now, or
+    /// older ones, or nil when it holds none. The programs and the views that a publish builds, and the release log, do not count.
+    nonisolated static func publication(of spot: SpotFolder, in store: URL) -> SpotDock.Publication? {
+        guard let root = spot.roots.first, let stored = try? SpotFolder(contentsOf: store.appendingPathComponent(root)) else { return nil }
+        return stored.manifest(of: root).written == spot.manifest(of: root).written ? .current : .changed
     }
 }

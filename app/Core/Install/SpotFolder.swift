@@ -151,12 +151,31 @@ public struct SpotFolder: Equatable, Sendable {
         files(in: root).filter { $0.path != "\(root)/\(ReleaseLog.fileName)" }
     }
 
+    /// The manifest of the files of a spot folder that a release names.
+    public func manifest(of root: String) -> SpotManifest {
+        SpotManifest(released(in: root))
+    }
+
+    /// Writes each of its spot folders into a folder, in place of the one there, such as a publish into the store.
+    public func write(to folder: URL) throws {
+        let manager = FileManager.default
+        try manager.createDirectory(at: folder, withIntermediateDirectories: true)
+        let draft = folder.appendingPathComponent(".draft-\(UUID().uuidString)", isDirectory: true)
+        defer { try? manager.removeItem(at: draft) }
+        try add(to: draft)
+        for root in roots {
+            let url = folder.appendingPathComponent(root, isDirectory: true)
+            if manager.fileExists(atPath: url.path) { try manager.removeItem(at: url) }
+            try manager.moveItem(at: draft.appendingPathComponent(root), to: url)
+        }
+    }
+
     /// The release log of one of its spot folders, or nil when it has none. Throws a fault for a log that does not check, or
     /// whose last release does not name the files beside it.
     public func releaseLog(in root: String) throws -> ReleaseLog? {
         guard let file = files.first(where: { $0.path == "\(root)/\(ReleaseLog.fileName)" }) else { return nil }
         let log = try ReleaseLog(text: file.text ?? "")
-        guard log.names(released(in: root)) else {
+        guard log.names(SpotManifest(released(in: root))) else {
             throw SpotError.fault("\(root) does not match its last release, so a file changed after it was signed.")
         }
         return log
@@ -169,7 +188,7 @@ public struct SpotFolder: Equatable, Sendable {
         let path = "\(root)/\(ReleaseLog.fileName)"
         let current = try files.first { $0.path == path }.map { try ReleaseLog(text: $0.text ?? "") } ?? ReleaseLog(releases: [])
         let released = released(in: root)
-        guard !current.names(released) else { return self }
+        guard !current.names(SpotManifest(released)) else { return self }
         let readme = files.first { $0.path == "\(root)/\(SpotListing.readmeName)" }?.text ?? ""
         let log = try current.signing(released, readme: readme, by: key, at: date)
         return try SpotFolder(files: files.filter { $0.path != path } + [File(path: path, isExecutable: false, contents: Data(log.text.utf8))])

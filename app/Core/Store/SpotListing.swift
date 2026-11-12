@@ -46,7 +46,7 @@ public struct SpotListing: Equatable, Sendable {
         guard let text = try? String(contentsOf: folder.appendingPathComponent(ReleaseLog.fileName), encoding: .utf8),
               let log = try? ReleaseLog(text: text), let version = log.last?.version,
               let spot = try? SpotFolder(contentsOf: folder) else { return nil }
-        return Release(version: version, isCurrent: log.names(spot.released(in: folder.lastPathComponent), built: false))
+        return Release(version: version, isCurrent: log.names(SpotManifest(spot.released(in: folder.lastPathComponent)), built: false))
     }
 
     public static func readme(of file: URL) -> URL {

@@ -9,14 +9,6 @@ public struct SpotRelease: Equatable, Sendable {
     /// The marker of the `e` tag that names the release before this one.
     static let previousMarker = "previous"
 
-    /// A file as a release names it.
-    public struct File: Hashable, Sendable {
-        public let path: String
-        public let sha256: String
-        public let size: Int
-        public let isExecutable: Bool
-    }
-
     public let id: String
     public let publicKey: String
     public let createdAt: Int
@@ -37,9 +29,8 @@ public struct SpotRelease: Equatable, Sendable {
     ) throws -> SpotRelease {
         var tags: [[String]] = [["d", "\(address)@\(version)"]]
         if let previous { tags.append(["e", previous, "", previousMarker]) }
-        for file in files.sorted(by: { $0.path < $1.path }) {
-            let hash = AccountKey.hex(Data(CryptoKit.SHA256.hash(data: file.contents)))
-            tags.append(["file", file.path, hash, String(file.contents.count), file.isExecutable ? "755" : "644"])
+        for file in SpotManifest(files).sorted {
+            tags.append(["file", file.path, file.sha256, String(file.size), file.isExecutable ? "755" : "644"])
         }
         let createdAt = Int(date.timeIntervalSince1970)
         let digest = Self.digest(publicKey: key.publicKey, createdAt: createdAt, kind: kind, tags: tags, content: readme)
@@ -91,14 +82,14 @@ public struct SpotRelease: Equatable, Sendable {
         tags.first { $0.count >= 4 && $0[0] == "e" && $0[3] == Self.previousMarker }?[1]
     }
 
-    /// The files that it names, each once. Throws a fault for a `file` tag that cannot be read.
-    public func files() throws -> [File] {
-        try tags.filter { $0.first == "file" }.map { tag in
+    /// The manifest of the files that it names. Throws a fault for a `file` tag that cannot be read.
+    public func manifest() throws -> SpotManifest {
+        SpotManifest(try tags.filter { $0.first == "file" }.map { tag in
             guard tag.count >= 5, let size = Int(tag[3]), ["755", "644"].contains(tag[4]) else {
                 throw SpotError.fault("A release names a file that Openspot cannot read.")
             }
-            return File(path: tag[1], sha256: tag[2], size: size, isExecutable: tag[4] == "755")
-        }
+            return SpotManifest.File(path: tag[1], sha256: tag[2], size: size, isExecutable: tag[4] == "755")
+        })
     }
 
     /// Its line in `releases.jsonl`: the event as one line of JSON.
