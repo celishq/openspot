@@ -75,6 +75,28 @@ final class AccountKeyTests: XCTestCase {
         }
     }
 
+    func testKeysReadAsOtherClientsShowThem() throws {
+        let hex = "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"
+        var one = Data(count: 32)
+        one[31] = 1
+
+        XCTAssertEqual(Bech32.encode("npub", data(hex)), "npub180cvv07tjdrrgpa0j7j7tmnyl2yr6yr7l8j4s3evf6u64th6gkwsyjh6w6")
+        XCTAssertEqual(Bech32.decode("npub180cvv07tjdrrgpa0j7j7tmnyl2yr6yr7l8j4s3evf6u64th6gkwsyjh6w6", prefix: "npub"), data(hex))
+        XCTAssertEqual(try AccountKey(nsec: Bech32.encode("nsec", one)).nsec, "nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsmhltgl")
+    }
+
+    func testASignatureChecksForItsKeyAndMessageAndNoOther() throws {
+        let mine = try AccountKey.make()
+        let theirs = try AccountKey.make()
+        let message = Data(repeating: 7, count: 32)
+
+        let signature = try mine.sign(message)
+
+        XCTAssertTrue(AccountKey.isValid(signature, of: message, by: mine.publicKey))
+        XCTAssertFalse(AccountKey.isValid(signature, of: message, by: theirs.publicKey))
+        XCTAssertFalse(AccountKey.isValid(signature, of: Data(repeating: 8, count: 32), by: mine.publicKey))
+    }
+
     func testAnNsecGivesBackTheSameKeyWithNoWords() throws {
         let key = try AccountKey(words: phrase.split(separator: " ").map(String.init))
 
