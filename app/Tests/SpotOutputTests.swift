@@ -274,6 +274,12 @@ final class SpotOutputTests: XCTestCase {
         XCTAssertEqual(output.errors, ["gauge=old"])
     }
 
+    func testSearchScriptInTheHeadNamesTheEventThatTookItsPlace() {
+        let output = SpotOutput(text: "search=script\ngrid=rows\n\nrow=a\ntitle=A\n")
+
+        XCTAssertEqual(output.retired, ["The head has search=script, which Openspot no longer reads. Write on=sheet.text in the header."])
+    }
+
     func testEachOldOutputWordNamesTheWordThatTookItsPlace() {
         let output = SpotOutput(text: "gauge=g\nvalue=1\n\nslider=s\nvalue=4\n\nhotkey=k\nvalue=ctrl+k\n\nswitch=t\nlook=tick\n")
 
