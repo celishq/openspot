@@ -22,6 +22,7 @@ final class CommandClientTests: XCTestCase {
         func checkUpdate() async -> Bool { true }
         func installUpdate() async -> Bool { true }
         func openAccount() async -> Bool { false }
+        func allows(_ reason: String) async -> Bool { false }
         func quit() async {}
         func open(_ id: String) async -> Bool { true }
         func review(_ id: String) async -> Bool { true }

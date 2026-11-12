@@ -33,7 +33,8 @@ final class CommandLineCallTests: XCTestCase {
         XCTAssertEqual(CommandLineCall(arguments: ["account", "open"]), .accountOpen)
         XCTAssertEqual(CommandLineCall(arguments: ["account", "sync", "off"]), .accountSync(false))
         XCTAssertEqual(CommandLineCall(arguments: ["account", "open"], environment: ["OPENSPOT_REASON": "sheet.open"]), .refused("`openspot account open` opens the panel, so it cannot run in a read. Run it from a pick or an action."))
-        XCTAssertEqual(CommandLineCall(arguments: ["account", "words"]), .unknown("account words"))
+        XCTAssertEqual(CommandLineCall(arguments: ["account", "words"], environment: ["OPENSPOT_REASON": "sheet.open"]), .accountWords)
+        XCTAssertEqual(CommandLineCall(arguments: ["account", "check", "4", "13"]), .unknown("account check 4 13"))
         XCTAssertEqual(CommandLineCall(arguments: ["account", "sync", "maybe"]), .unknown("account sync maybe"))
         XCTAssertTrue(CommandLineCall.usage.contains("openspot account open"))
     }

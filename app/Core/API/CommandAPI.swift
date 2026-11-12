@@ -39,13 +39,16 @@ public final class CommandAPI: @unchecked Sendable {
         case .refused, .unknown: return call
         default: break
         }
+        if call.reachesAccountKey {
+            let caller = runs?.tokens.caller(of: environment)
+            guard let caller, caller.isBuiltIn, caller.uses.contains(.account) else { return .refused("Only Openspot's Account spot can reach your account key.") }
+            return call
+        }
         guard let runs, let caller = runs.tokens.caller(of: environment) else { return call }
         if case .appCareful = call, !caller.isBuiltIn {
             return .refused("\(caller.name) cannot change Careful mode. Only you can, in Settings or with `openspot setting set --spot openspot careful true` in Terminal.")
         }
-        if case .accountSync = call, !caller.isBuiltIn {
-            return .refused("\(caller.name) cannot change where your account is kept. Only you can, in Account.")
-        }
+
         guard let needed = SpotUseCall(arguments: arguments, of: caller.id) else { return call }
         if runs.tokens.isCareful, !caller.uses.contains(needed.use) {
             return .refused("Careful mode stopped \(caller.name), because it \(needed.words) without `uses=\(needed.use.rawValue)` in its header. Add it, or turn Careful mode off.")
@@ -115,6 +118,13 @@ public final class CommandAPI: @unchecked Sendable {
         case .accountStatus(let frame): return AccountCalls(environment: environment, app: app).status(frame: frame)
         case .accountOpen: return AccountCalls(environment: environment, app: app).open()
         case .accountSync(let isOn): return AccountCalls(environment: environment, app: app).sync(isOn)
+        case .accountNew: return AccountCalls(environment: environment, app: app).new()
+        case .accountWords: return AccountCalls(environment: environment, app: app).words()
+        case .accountCheck(let places): return AccountCalls(environment: environment, app: app).check(places)
+        case .accountChecked: return AccountCalls(environment: environment, app: app).checked(input)
+        case .accountPhrase: return AccountCalls(environment: environment, app: app).phrase(input)
+        case .accountSignIn: return AccountCalls(environment: environment, app: app).signIn(input)
+        case .accountSignOut: return AccountCalls(environment: environment, app: app).signOut()
         case .eventEmit(let name, let value): return EventCalls(raise: raise).emit(name, value: value)
         case .calcSolve(let words): return CalcCalls().solve(words)
         case .emoji(let tone): return EmojiCalls(keywords: keywords).rows(tone: tone)

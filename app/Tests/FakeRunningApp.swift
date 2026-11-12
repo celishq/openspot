@@ -72,6 +72,19 @@ actor FakeRunningApp: RunningApp {
         return true
     }
 
+    /// Each reason that Touch ID was asked for, and whether the person passes it.
+    private(set) var asked: [String] = []
+    private var allowsActs = true
+
+    func allows(_ reason: String) -> Bool {
+        asked.append(reason)
+        return allowsActs
+    }
+
+    func set(allows: Bool) {
+        allowsActs = allows
+    }
+
     func set(update: String?, calls: Int, isFirstLaunch: Bool = false) {
         self.update = update
         self.calls = calls

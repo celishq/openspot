@@ -766,6 +766,7 @@ openspot app quit
 | `calendar`  | each call of `calendar` and `reminders`                                                                                                                         |
 | `network`   | No call. The spot reaches the network.                                                                                                                          |
 | `files`     | No call. The spot writes outside its data folder.                                                                                                               |
+| `account`   | `account new`, `words`, `check`, `checked`, `phrase`, `sign-in`, `sign-out` and `sync`. Only a spot that ships inside Openspot can have it.                      |
 
 - A call that needs a use the header doesn't name still runs, and shows one toast for each spot, use and day.
   `openspot check` can't report it, because only a run shows it.
@@ -779,9 +780,10 @@ openspot app quit
 - Without Careful mode, the data folder is no boundary.
 - A spot folder can hold `releases.jsonl`, the signed releases of the spot. Openspot writes it when the user shares or
   publishes the spot, and refuses a shared spot whose files don't match its last release. A spot reads nothing from it.
-- A spot never touches a secret. `openspot account` tells a spot only public facts: whether an account is signed in,
-  its `npub`, whether its words are backed up, and whether it syncs. `openspot account open` opens the app's account
-  sheet, which shows or takes the words.
+- `openspot account` tells any spot the public facts: whether an account is signed in, its `npub`, whether its words are
+  backed up, and whether it syncs. Every other call of `account` reaches the key, so it answers only a spot that ships
+  inside Openspot and names `account` in its uses. `words` and `sign-out` ask for Touch ID first, which counts for 5
+  minutes. The calls of such a spot stay out of the call log and the playground.
 
 ## Messages
 

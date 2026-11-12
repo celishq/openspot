@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import Observation
 
@@ -18,7 +19,7 @@ public final class AccountFlow {
         public var picked: String?
     }
 
-    public static let wordCount = 12
+    public nonisolated static let wordCount = 12
 
     private let store: AccountStore
     public private(set) var step: Step
@@ -199,6 +200,35 @@ public final class AccountFlow {
             try store.remove()
             step = .done
         }
+    }
+
+    /// What the phrase is so far, as one block: its counter, the places of its unknown words, a completion, a problem, or
+    /// the account it opens.
+    public var facts: String {
+        var fields = [TextBlock.Field(key: "counter", value: counter)]
+        let unknown = typed.indices.filter { !typed[$0].isKnown }.map { String($0 + 1) }
+        if !unknown.isEmpty { fields.append(.init(key: "unknown", value: unknown.joined(separator: " "))) }
+        if let completion { fields.append(.init(key: "completion", value: completion)) }
+        if let problem { fields.append(.init(key: "problem", value: problem)) }
+        if let account { fields.append(.init(key: "account", value: account)) }
+        return TextBlock(fields: fields).text
+    }
+
+    /// The 4 words to pick from for one place of a key's words: the right one and 3 others, in an order that the key and
+    /// the place fix, so that each read gives the same choices.
+    public nonisolated static func choices(at place: Int, of key: AccountKey) -> [String] {
+        guard let words = key.words, words.indices.contains(place - 1) else { return [] }
+        let seed = "\(key.publicKey):\(place)"
+        let digest = { (text: String) in Array(SHA256.hash(data: Data(text.utf8))) }
+        var picked = [words[place - 1]]
+        var round = 0
+        while picked.count < 4 {
+            let bytes = digest("\(seed):\(round)")
+            let word = AccountWords.all[(Int(bytes[0]) << 8 | Int(bytes[1])) % AccountWords.all.count]
+            if !picked.contains(word) { picked.append(word) }
+            round += 1
+        }
+        return picked.sorted { digest("\(seed):\($0)").lexicographicallyPrecedes(digest("\(seed):\($1)")) }
     }
 
     /// The words of the list that start with these letters.

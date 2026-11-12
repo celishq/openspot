@@ -92,12 +92,15 @@ extension OpenspotApp: SpotsHost {
         SpotGridDrop.paths(on: .general)
     }
 
-    /// Asks for Touch ID or the Mac password. A Mac with neither allows it.
+    /// Asks for Touch ID or the Mac password, which then counts for 5 minutes. A Mac with neither allows it.
     func allows(_ reason: String) async -> Bool {
+        if let passed = Self.touchIDPassed, Date().timeIntervalSince(passed) < Self.touchIDReuse { return true }
         let context = LAContext()
         var error: NSError?
         guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else { return true }
-        return (try? await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)) == true
+        guard (try? await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)) == true else { return false }
+        Self.touchIDPassed = Date()
+        return true
     }
 
     func copy(_ file: URL) {

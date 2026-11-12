@@ -18,6 +18,9 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     /// The seconds after a drop until the app that the drag came from has let go of the focus.
     private static let dropSettle = 0.2
+    /// The seconds that a passed Touch ID counts for, and when it last passed.
+    static let touchIDReuse: TimeInterval = 300
+    static var touchIDPassed: Date?
 
     private(set) var statusItem: NSStatusItem?
     private(set) lazy var model = SpotsModel(host: self)

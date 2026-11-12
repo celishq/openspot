@@ -54,6 +54,10 @@ struct SpotRunningApp: RunningApp {
         await model.changeSetting(key, of: spot)
     }
 
+    func allows(_ reason: String) async -> Bool {
+        await model.allows(reason)
+    }
+
     func openAccount() async -> Bool {
         await model.openAccount()
     }

@@ -78,6 +78,20 @@ public enum CommandLineCall: Equatable, Sendable {
     case accountOpen
     /// Makes the account sync through iCloud Keychain, or stay on this Mac.
     case accountSync(Bool)
+    /// Makes a key when the Mac holds none.
+    case accountNew
+    /// Prints the 12 words of the key, after Touch ID.
+    case accountWords
+    /// Prints 4 choices for each of these places of the words, the same each time.
+    case accountCheck([Int])
+    /// Takes a place and a word on each line of stdin, and marks the words backed up when each is right.
+    case accountChecked
+    /// Reads a phrase on stdin, and prints how far it is from an account.
+    case accountPhrase
+    /// Keeps the key of the phrase or the nsec on stdin.
+    case accountSignIn
+    /// Removes the key, after Touch ID.
+    case accountSignOut
     /// Restarts the app into the downloaded update.
     case updateInstall
     /// A call that cannot run here, with the line that says why and how to fix it.
@@ -189,6 +203,16 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot account [--frame]                   Prints the account that signs what you publish as JSON: signedIn,
                                                  npub, backedUp and sync. --frame prints them as one block.
     openspot account open                        Opens the account sheet: set up, back up, your words or sign out.
+    openspot account new                         Makes an account key when the Mac holds none. The calls from here
+                                                 to sign-out answer only Openspot's Account spot.
+    openspot account words                       Prints the 12 words, after Touch ID.
+    openspot account check <place> <place>       Prints 4 choices for each place of the words.
+    openspot account checked                     Takes a place and a word on each line of stdin, and marks the
+                                                 words backed up when each one is right.
+    openspot account phrase                      Reads a phrase on stdin, and prints its counter, its unknown
+                                                 words, a completion, a problem or the account it opens.
+    openspot account sign-in                     Keeps the key of the 12 words or the nsec on stdin.
+    openspot account sign-out                    Removes the account key, after Touch ID.
     openspot account sync on|off                 Keeps your account in iCloud Keychain, or on this Mac only.
     openspot clipboard copy [file]               Copies the file as Finder does, or the text on stdin.
     openspot clipboard paste                     Pastes the clipboard into the front app.
@@ -327,6 +351,15 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("update", "check") where rest.count == 1: self = Self.changing(.updateCheck, "openspot update check", "opens a window", environment)
         case ("account", nil): self = .accountStatus(frame: false)
         case ("account", "--frame") where rest.count == 1: self = .accountStatus(frame: true)
+        case ("account", "new") where rest.count == 1: self = Self.changing(.accountNew, "openspot account new", "makes an account", environment)
+        case ("account", "words") where rest.count == 1: self = .accountWords
+        case ("account", "check") where rest.count >= 2:
+            let places = rest.dropFirst().compactMap { Int($0) }.filter { (1...AccountFlow.wordCount).contains($0) }
+            self = places.count == rest.count - 1 ? .accountCheck(places) : .unknown(arguments.joined(separator: " "))
+        case ("account", "checked") where rest.count == 1: self = Self.changing(.accountChecked, "openspot account checked", "changes your account", environment)
+        case ("account", "phrase") where rest.count == 1: self = .accountPhrase
+        case ("account", "sign-in") where rest.count == 1: self = Self.changing(.accountSignIn, "openspot account sign-in", "changes your account", environment)
+        case ("account", "sign-out") where rest.count == 1: self = Self.changing(.accountSignOut, "openspot account sign-out", "changes your account", environment)
         case ("account", "open") where rest.count == 1: self = Self.changing(.accountOpen, "openspot account open", "opens the panel", environment)
         case ("account", "sync") where rest == ["sync", "on"] || rest == ["sync", "off"]:
             self = Self.changing(.accountSync(rest[1] == "on"), "openspot account sync", "changes where your account is kept", environment)
@@ -561,5 +594,15 @@ public enum CommandLineCall: Equatable, Sendable {
             options[words[index]] = words[index + 1]
         }
         return options
+    }
+}
+
+extension CommandLineCall {
+    /// Whether the call reaches the account key, which only Openspot's Account spot may do (protocol: Trust).
+    var reachesAccountKey: Bool {
+        switch self {
+        case .accountSync, .accountNew, .accountWords, .accountCheck, .accountChecked, .accountPhrase, .accountSignIn, .accountSignOut: true
+        default: false
+        }
     }
 }

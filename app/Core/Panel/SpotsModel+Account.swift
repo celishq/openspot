@@ -28,6 +28,11 @@ extension SpotsModel {
         return (try? store.key()) != nil
     }
 
+    /// Asks for Touch ID or the Mac password, and returns whether the person passed.
+    public func allows(_ reason: String) async -> Bool {
+        await host.allows(reason)
+    }
+
     /// The account key, which the account sheet makes or brings back when the Mac holds none. Nil when the person closes it.
     func accountKey() async throws -> AccountKey? {
         if let key = try files.account.key() { return key }

@@ -5,7 +5,7 @@
 # on=panel.open
 # on=sheet.open
 # offers=search
-# uses=app
+# uses=app,account
 
 state=$(openspot account --frame) || exit 1
 signed= npub= backed= sync=

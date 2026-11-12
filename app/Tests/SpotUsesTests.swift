@@ -119,7 +119,7 @@ final class SpotUsesTests: SpotRunsCase {
         let (code, errors) = try await pressed()
 
         XCTAssertEqual(code, "1")
-        XCTAssertEqual(errors, "Script cannot change where your account is kept. Only you can, in Account.\n")
+        XCTAssertEqual(errors, "Only Openspot's Account spot can reach your account key.\n")
     }
 
     func testInCarefulModeAnUndeclaredUseIsRefused() async throws {
