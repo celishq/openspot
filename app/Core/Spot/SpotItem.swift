@@ -26,8 +26,10 @@ public struct SpotItem: Equatable, Sendable {
     public let to: String?
     /// The whole block of the row, which a pick sends on stdin to the spot that `to` names. Only such a row keeps it.
     public let fields: String?
+    /// The card that an answer draws in place of its row, from the drawing and the blocks of its frame (A4).
+    public let card: SpotState?
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, takesShake: Bool = false, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, to: String? = nil, fields: String? = nil) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, takesShake: Bool = false, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, to: String? = nil, fields: String? = nil, card: SpotState? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -42,6 +44,7 @@ public struct SpotItem: Equatable, Sendable {
         self.file = file
         self.to = to
         self.fields = fields
+        self.card = card
     }
 
     /// Reads the block of one row: `row=<id>`, which a pick sends, and `title`, which is the id when it has none.

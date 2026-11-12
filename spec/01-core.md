@@ -127,7 +127,11 @@ esac
 with `OPENSPOT_REASON=search`, at each change of the text with no pause, and a newer text stops the older call (A2). Keep
 the answer fast. The rows show first in the main search, each with its `detail`, until the newest text is answered, and
 they go at once when the pattern no longer matches (A3). A pick of a row is `<script> open <row id>`. A spot with
-`answers` and no `read` has no card and shows only its answers. A staying script answers each text as a call of its own (I2). `openspot calc solve
+`answers` and no `read` has no card and shows only its answers.
+
+An answer can be a card in place of its rows. When its head draws `grid.large=` or `grid.strip=` and its main block has a
+`value`, Openspot shows one card at that size, `large` first, drawn as the spot's card is (U5), and a pick of it is
+`<script> open <value>` (A4). An answer with neither shows its rows. A staying script answers each text as a call of its own (I2). `openspot calc solve
 <words>...` prints the answer of a sum, a conversion or a date as a row, so a spot can print it as it is.
 
 A spot with an `every` or an `on`, or with `mode=stay` or `always`, and a main `text`, `number`, `gauge` or `graph` can show in the menu bar, when the
@@ -317,7 +321,7 @@ when it changes. Ids are unique in one output. Each kind keeps its data in `valu
 | Kind      | Shows                                                   | Its own keys                                                    | Sends                  |
 | --------- | ------------------------------------------------------- | --------------------------------------------------------------- | ---------------------- |
 | `text`    | Words, and a small mark: a bar from `value`, or with `max` a bar for each `value` line. | `value`, `max`               |                        |
-| `number`  | A big number, with its `title` under it.                | `value`                                                         |                        |
+| `number`  | A big number, with its `title` under it. `display` shows in place of `value`. | `value`, `display`                     |                        |
 | `gauge`   | A ring in a square area, a bar in a wide one.           | `value` from 0 to 1                                             |                        |
 | `graph`   | Bars. The last bar is the newest.                       | `value`, one line for each bar, and `max`                       |                        |
 | `picture` | A picture that fills its area.                          | `icon`                                                          |                        |

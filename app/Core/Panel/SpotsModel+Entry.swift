@@ -31,17 +31,17 @@ extension SpotsModel {
         }
 
         /// A card of a full row for an item that the main search found in a list. A row that answers the text shows its own
-        /// detail, which says how the spot read the text (A3).
+        /// detail, which says how the spot read the text (A3), and an answer card draws its own card at its size (A4).
         public init(spot: Spot, item: SpotItem, isAnswer: Bool = false) {
             id = "\(spot.id)\n\(item.run)"
-            sizeChoice = .strip
+            sizeChoice = item.card?.face.answerSize ?? .strip
             gridChoice = nil
             letter = nil
             self.item = item
             self.isAnswer = isAnswer
             run = nil
             fixedSpot = spot
-            fixedState = SpotState(title: item.title, subtitle: isAnswer ? item.subtitle ?? spot.name : item.path(in: spot))
+            fixedState = item.card ?? SpotState(title: item.title, subtitle: isAnswer ? item.subtitle ?? spot.name : item.path(in: spot))
         }
 
         @MainActor public var spot: Spot {

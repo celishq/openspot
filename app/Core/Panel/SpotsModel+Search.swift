@@ -18,11 +18,11 @@ extension SpotsModel {
     private static let unpickedRows = 3
 
     /// Shows the spots that the search finds and the items it finds in the lists that offer them, in one ranking. While the
-    /// search has text, each one is a full-width row.
+    /// search has text, each one is a full-width row, and an answer card keeps its own full-width size (A4).
     public func updateVisible() {
         let next = found()
         if next != visible { visible = next }
-        let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { _ in SpotSize.strip }
+        let sizes = query.isEmpty ? visible.map { $0.id == resize?.id ? resize?.size ?? $0.size : $0.size } : visible.map { $0.isAnswer ? $0.size : SpotSize.strip }
         let index = visible.firstIndex { $0.id == resize?.id }
         let grid = index.map(self.grid.keeping) ?? self.grid
         if sizes != laidOutSizes || grid != laidOutGrid {

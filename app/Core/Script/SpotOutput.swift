@@ -233,6 +233,14 @@ public struct SpotOutput: Equatable, Sendable {
         return output
     }
 
+    /// The rows that answer a text of the main search, or one card in their place when the head draws a `strip` or a `large`
+    /// card and the main block has a `value`, which a press sends (A4).
+    public var answers: [SpotItem] {
+        guard face.answerSize != nil, let value, let run = value.value("value") else { return items }
+        let title = value.value("display") ?? run
+        return [SpotItem(title: title, run: run, card: SpotState(output: self, header: SpotState(title: title)).holding(view))]
+    }
+
     /// The component of the value.
     public var valuePart: SpotPart? {
         value.flatMap { block in parts.first { $0.id == block.fields.first?.value } }

@@ -751,6 +751,23 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(model.visible.contains { $0.id.hasPrefix("calc") })
     }
 
+    func testAnAnswerThatDrawsALargeCardTakesTwoFullRowsAndAPressSendsItsMainValue() async throws {
+        let body = #"case "$1" in read) printf 'grid.large=sum sum sum sum\ngrid.large=answer answer answer answer\nmain=answer\n\ntext=sum\ntitle=%s\n\nnumber=answer\nvalue=14\n' "$2" ;; open) printf 'toast=Picked %s\n' "$2" ;; esac"#
+        try script("calc", header: "title=Calc\nanswers=^[0-9]", body)
+        try script("notes", header: "title=Notes 2\nread=sheet", "printf 'row=a\\ntitle=A\\n'")
+        model.reload()
+        model.isShown = true
+        model.panelWillShow(holding: [])
+
+        model.searchText = "2"
+        try await wait("the answer card") { model.visible.first?.id == "calc\n14" }
+
+        XCTAssertEqual(model.placements.map(\.size), [.large, .strip])
+        XCTAssertEqual(model.visible.first?.state.face.answerSize, .large)
+        model.runSelected()
+        try await wait("the toast of the pick") { host.confirms.contains("Picked 14") }
+    }
+
     func testEachKeyMatchesEachAnswersPatternOnce() throws {
         try script("calc", header: "title=Calc\nanswers=^[0-9]", "true")
         try script("units", header: "title=Units\nanswers=[0-9] ?(km|mi)", "true")

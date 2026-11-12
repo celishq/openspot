@@ -107,7 +107,7 @@ extension SpotRun {
     /// answers no read, such as the frame of an action, leaves the age of the answer and a sheet that waits for a read. The
     /// rows that answer a text of the main search leave all else as it is (A2).
     func takeAnswer(_ lines: SpotOutput, frame: String, to ask: Ask, keeping: String? = nil, answers: Bool = true) async {
-        if case .answer(let query) = ask { return takeAnswers(lines.items, to: query) }
+        if case .answer(let query) = ask { return takeAnswers(lines.answers, to: query) }
         let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: lines.search) } else { nil }
         lastAnswer = lines.withoutBlocks()
         report(toastOf: lines)
