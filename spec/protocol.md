@@ -14,7 +14,7 @@ A spot is one file and one loop:
 ```text
 event   ─ on= ─►  <script> read          Openspot calls the script
 script  ─ prints ─►  frames of blocks    Openspot draws them
-press   ─ on a block ─►  <script> <id>    a person or an agent acts
+press   ─ on a block ─►  <script> <id>   a person or an agent acts
 ```
 
 - A spot is one executable file, in any language, at the top of the plugins folder or one folder down.
@@ -821,15 +821,15 @@ openspot app quit
   Only the person's own processes reach the socket of the API.
 - `uses` names what a spot uses. An unknown word refuses the spot.
 
-| Use         | The calls that need it                                                                                                                                     |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app`       | `app quit`, `update check`, `update install`, and `setting set` of `menubar`, `float`, `key.<command>` or of the spot `openspot`                           |
-| `spots`     | `spot add`, `spot remove`, `spot new`, `spot run`, `spot log`, `setting list`, `setting set` of `enabled`, and `setting get`, `set` or `change` of another spot|
-| `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`                                                           |
-| `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                   |
-| `calendar`  | each call of `calendar` and `reminders`                                                                                                                    |
-| `network`   | No call. The spot reaches the network.                                                                                                                     |
-| `files`     | No call. The spot writes outside its data folder.                                                                                                          |
+| Use         | The calls that need it                                                                                                                                          |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app`       | `app quit`, `update check`, `update install`, and `setting set` of `menubar`, `float`, `key.<command>` or of the spot `openspot`                                |
+| `spots`     | `spot add`, `spot remove`, `spot new`, `spot run`, `spot log`, `setting list`, `setting set` of `enabled`, and `setting get`, `set` or `change` of another spot |
+| `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`                                                                |
+| `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                        |
+| `calendar`  | each call of `calendar` and `reminders`                                                                                                                         |
+| `network`   | No call. The spot reaches the network.                                                                                                                          |
+| `files`     | No call. The spot writes outside its data folder.                                                                                                               |
 
 - A call that needs a use that the header does not name still runs, and shows one toast for each spot, use and day.
   `openspot check` does not report it, because only a run shows it.
