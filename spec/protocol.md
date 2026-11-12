@@ -971,14 +971,6 @@ An old script never sees a word that it did not ask for, and an old app skips a 
 
 The verbs and the row keys of each `openspot` noun, such as `screen` or `calendar`, are in `openspot help <noun>`.
 
-### Where the code differs
-
-Each line goes when its phase lands.
-
-| Part        | The code today                                                                                         |
-| ----------- | ------------------------------------------------------------------------------------------------------ |
-| Trust       | Reads the uses `update` and `settings`, and the guide names `OPENSPOT_TOKEN`.                          |
-
 ### Open
 
 A stop of a call that `openspot_serve` runs does not end it early, so a slow staying call runs to its end.

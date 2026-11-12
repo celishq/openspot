@@ -138,8 +138,6 @@ final class NewSpotTests: BuiltInCase {
     }
 
     func testEachExampleScriptInTheGuideLoadsAndAnswers() async throws {
-        let spec = try String(contentsOf: repo.appendingPathComponent("spec/protocol.md"), encoding: .utf8)
-        if spec.contains("### Where the code differs") { throw XCTSkip("The code differs from the protocol until its table of gaps is gone.") }
         let scripts = blocks("sh")
         XCTAssertGreaterThan(scripts.count, 2)
         for (index, script) in scripts.enumerated() {

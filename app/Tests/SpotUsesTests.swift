@@ -58,14 +58,14 @@ final class SpotUsesTests: SpotRunsCase {
         try await press()
         try await pause()
 
-        XCTAssertEqual(toasts, ["Script read the settings of each spot without `uses=settings` in its header. Add it to stop this note."])
+        XCTAssertEqual(toasts, ["Script read the settings of each spot without `uses=spots` in its header. Add it to stop this note."])
         time += 24 * 60 * 60
         try await press()
         try await wait("the toast of the next day") { self.toasts.count == 2 }
     }
 
     func testADeclaredUseShowsNoToast() async throws {
-        try lister(header: "uses=settings")
+        try lister(header: "uses=spots")
         _ = try scanned()
 
         try await press()
@@ -118,7 +118,7 @@ final class SpotUsesTests: SpotRunsCase {
         let (code, errors) = try await pressed()
 
         XCTAssertEqual(code, "1")
-        XCTAssertEqual(errors, "Careful mode stopped Script, because it read the settings of each spot without `uses=settings` in its header. Add it, or turn Careful mode off.\n")
+        XCTAssertEqual(errors, "Careful mode stopped Script, because it read the settings of each spot without `uses=spots` in its header. Add it, or turn Careful mode off.\n")
         XCTAssertEqual(toasts, [])
     }
 
@@ -144,7 +144,7 @@ final class SpotUsesTests: SpotRunsCase {
 
     func testInCarefulModeADeclaredUseRuns() async throws {
         runs.isCareful = true
-        try caller(header: "uses=settings", "setting list")
+        try caller(header: "uses=spots", "setting list")
         _ = try scanned()
 
         let (code, _) = try await pressed()
@@ -159,7 +159,7 @@ final class SpotUsesTests: SpotRunsCase {
         try await press()
 
         try await wait("the toast") { !self.toasts.isEmpty }
-        XCTAssertEqual(toasts, ["Script read the settings of each spot without `uses=settings` in its header. Add it to stop this note."])
+        XCTAssertEqual(toasts, ["Script read the settings of each spot without `uses=spots` in its header. Add it to stop this note."])
     }
 
     func testAChildThatOutlivesItsSpotsProcessIsStillTheSpot() async throws {
@@ -190,16 +190,16 @@ final class SpotUsesTests: SpotRunsCase {
         try script(header: "uses=camera")
 
         XCTAssertEqual(try SpotFolder(url: folder).scan().refused.map(\.reason), [
-            "Script has an unknown use in its uses: camera. Use app, update, spots, settings, screen, clipboard, calendar, network or files"
+            "Script has an unknown use in its uses: camera. Use app, spots, screen, clipboard, calendar, network or files"
         ])
     }
 
     func testEachPowerCallNamesItsUse() {
         let cases: [([String], String?)] = [
             (["app", "quit"], "app"), (["app", "login", "on"], "app"), (["key", "set", "--panel", "cmd+k"], "app"),
-            (["menubar", "on", "a"], "app"), (["update", "check"], "update"), (["spot", "add", "x"], "spots"),
+            (["menubar", "on", "a"], "app"), (["update", "check"], "app"), (["spot", "add", "x"], "spots"),
             (["spot", "on", "a"], "spots"), (["spot", "run", "a"], "spots"), (["spot", "log", "a"], "spots"),
-            (["setting", "list"], "settings"), (["setting", "get", "--spot", "other", "k"], "settings"),
+            (["setting", "list"], "spots"), (["setting", "get", "--spot", "other", "k"], "spots"),
             (["setting", "get", "k"], nil), (["setting", "set", "k", "v"], nil), (["screen", "sources"], "screen"),
             (["window", "move", "0 0 1 1"], "screen"), (["clipboard", "copy"], "clipboard"), (["clipboard", "paste"], "clipboard"),
             (["clipboard", "read"], "clipboard"),

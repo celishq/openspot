@@ -6,7 +6,7 @@
 # on=panel.open
 # on=sheet.open
 # offers=search
-# uses=app,settings
+# uses=app,spots
 
 # The spot and the key of a setting row, from setting:<spot>:<key>.
 setting() {

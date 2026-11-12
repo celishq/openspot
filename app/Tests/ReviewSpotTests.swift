@@ -208,7 +208,7 @@ final class ReviewSpotTests: XCTestCase {
         Copy with pbcopy in place of openspot clipboard
         Read the clipboard with pbpaste in place of openspot clipboard
         Call openspot app quit without uses=app
-        Call openspot setting get without uses=settings
+        Call openspot setting get without uses=spots
 
 
         """), text)
