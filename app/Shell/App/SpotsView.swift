@@ -234,6 +234,7 @@ struct SpotsView: View {
                 }
                 .animation(SpotMotion.menuOpen, value: isGrown)
                 .transition(.opacity)
+                .onChange(of: place, initial: true) { model.menuPlace = place }
             }
         }
     }

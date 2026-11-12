@@ -134,6 +134,27 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertNotNil(model.menu)
     }
 
+    func testADragOfAForceClickHighlightsTheRowUnderItAndItsReleaseRunsThatRow() throws {
+        try script("weather", header: "title=Weather")
+        _ = try select("weather")
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        let menu = try XCTUnwrap(model.menu)
+        let bounds = CGRect(x: 16, y: 166, width: 437, height: 500)
+        let place = ActionMenuPlace(item: CGRect(x: 90, y: 166, width: 64, height: 64), height: SpotTokens.menuHeight(rows: menu.fullLines), bounds: bounds)
+        model.menuPlace = place
+        let step = SpotTokens.menuRowHeight + SpotTokens.menuRowGap
+        let row = { (index: Int) in CGPoint(x: place.rect.midX, y: place.rect.minY + SpotTokens.menuPadding + CGFloat(index) * step + SpotTokens.menuRowHeight / 2) }
+
+        model.dragMenu(to: row(1))
+        XCTAssertEqual(model.menu?.selected, 1)
+        model.releaseMenu(at: CGPoint(x: place.rect.maxX + 40, y: row(1).y))
+        XCTAssertNotNil(model.menu)
+
+        model.dragMenu(to: row(2))
+        model.releaseMenu(at: row(2))
+        XCTAssertNil(model.menu)
+    }
+
     func testEditOpensTheFileInTheTextEditor() async throws {
         try script("weather")
         _ = try select("weather")

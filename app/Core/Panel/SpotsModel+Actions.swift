@@ -221,6 +221,22 @@ extension SpotsModel {
         self.menu?.move(by: row - menu.selected)
     }
 
+    /// Highlights the row of the open menu under a point of the panel, as a force click is dragged.
+    public func dragMenu(to point: CGPoint) {
+        if let row = menuRow(at: point) { pointMenu(row: row) }
+    }
+
+    /// Runs the row of the open menu under a point of the panel, where a dragged force click ends. Off the rows the menu stays.
+    public func releaseMenu(at point: CGPoint) {
+        if let row = menuRow(at: point) { pressMenu(row: row) }
+    }
+
+    private func menuRow(at point: CGPoint) -> Int? {
+        guard let menu, let menuPlace else { return nil }
+        let rect = menuPlace.rect(height: SpotTokens.menuHeight(rows: menu.lines))
+        return menu.row(at: point, in: rect, fieldIsLast: menuPlace.growsUp)
+    }
+
     public func searchMenu(_ text: String) {
         menu?.search(text)
     }
@@ -294,6 +310,7 @@ extension SpotsModel {
         menu = nil
         menuTarget = nil
         menuIsGrown = false
+        menuPlace = nil
     }
 
     public func pressMenu(row: Int) {

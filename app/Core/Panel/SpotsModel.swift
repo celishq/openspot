@@ -110,6 +110,8 @@ public final class SpotsModel {
     public var menuTarget: Target?
     /// Whether the open menu has grown from its item to its full size. It opens small and grows on the next turn.
     public internal(set) var menuIsGrown = false
+    /// Where the open menu lies in the panel, which a drag of a force click reads to find its rows.
+    @ObservationIgnored public var menuPlace: ActionMenuPlace?
     public var form: FormSession?
     /// The ask for a form that waits for its script. A newer ask, a cancel, a close or a hidden panel replaces it.
     @ObservationIgnored var formAsk: UUID?
