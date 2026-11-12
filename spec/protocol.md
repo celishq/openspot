@@ -345,6 +345,9 @@ One block stands for the spot on its card and in the menu bar.
   stands for it.
 - The menu bar and a card of other spots show a main `text`, `number` or `graph`. A main `switch` shows on the card whether
   its thing is on.
+- A spot has a sheet when its header has `on=sheet.open`, `on=sheet.text`, a `clock`, `offers=search`, or `mode=stay` or
+  `always`. A spot with none of them, such as one with only `on=panel.open` or `on=app.front`, has no sheet, and the rows
+  that it prints never show.
 - With no `grid.<size>=`, a spot draws its default card: its picture, title and detail, and an arrow when it has a sheet.
 - A spot whose output is one `switch` or one slider draws that block as its card, and a press of the card changes it.
 - A press on a card area that is not a control opens the sheet, or calls `<script> open` when it has none.
@@ -600,6 +603,7 @@ A view draws what the blocks cannot: a SwiftUI view of the spot in an area.
 #!/bin/sh
 # title=Cups today
 # on=panel.open
+# on=sheet.open
 # view=cups.swift
 printf 'view=cups\ntitle=3\nvalue=1\nvalue=0\nvalue=2\n'
 ```
