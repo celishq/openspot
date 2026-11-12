@@ -34,7 +34,7 @@ extension SpotsModel {
             sheet.press(part)
             return true
         }
-        if let action = sheet.command.actions(for: item).first(where: { $0.key == key }), let entry = cards.first(where: { $0.id == id }) {
+        if let action = sheet.spot.actions(for: item).first(where: { $0.key == key }), let entry = cards.first(where: { $0.id == id }) {
             run(action, on: (entry, item), in: .float)
             return true
         }

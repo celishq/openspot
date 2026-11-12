@@ -1,117 +1,56 @@
 import XCTest
 @testable import OpenspotCore
 
-@MainActor
-final class CatalogSpotTests: XCTestCase {
-    private var root: URL!
-    private var folder: URL!
-    private var core: URL!
-    private var file: ConfigFile!
-
+/// Proves the Spots spot of the app: a small card on the grid that a search for "edit spots" finds, whose press opens the
+/// store of Edit Spots through the API.
+final class CatalogSpotTests: BuiltInCase {
     override func setUp() async throws {
-        root = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-catalog-\(UUID().uuidString)")
-        folder = root.appendingPathComponent("plugins")
-        core = root.appendingPathComponent("core")
-        file = ConfigFile(url: root.appendingPathComponent("config.toml"))
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try FileManager.default.createDirectory(at: core, withIntermediateDirectories: true)
+        try await super.setUp()
         try "#!/bin/sh\n# detail=Open app\n# icon=star\n".writeScript(to: core.appendingPathComponent("zebra.sh"))
         try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.sh"))
-        try "#!/bin/sh\n# read=5\n".writeScript(to: core.appendingPathComponent("cpu.sh"))
+        try "#!/bin/sh\n# on=clock.5\n".writeScript(to: core.appendingPathComponent("cpu.sh"))
     }
 
-    override func tearDown() async throws {
-        try? FileManager.default.removeItem(at: root)
-    }
-
-    private var spot: Spot {
+    private var catalog: Spot {
         get throws {
-            try XCTUnwrap(ShippedSpot.commands(folder: folder, guide: folder, app: "", config: file, core: core).first { $0.name == "Spots" })
+            try spot("spots")
         }
     }
 
-    func testItListsTheRowForAuthorsThenTheCoreSpotsByName() async throws {
-        let items = try await spot.items(timeout: 1).items
+    func testItIsASmallCardOnTheGridWithItsLetterThatAKeywordFinds() throws {
+        let spot = try catalog
+        let defaults = Config(text: try String(contentsOf: repoPlugins.deletingLastPathComponent().appendingPathComponent("app/defaults.toml"), encoding: .utf8))
 
-        XCTAssertEqual(items.map(\.title), ["New spot", "Apps", "Zebra"])
-        XCTAssertEqual(items[2].subtitle, "Open app")
-        XCTAssertEqual(items[2].symbol, "star")
-        XCTAssertEqual(items.map(\.isOn), [false, false, false])
+        XCTAssertEqual(spot.name, "Spots")
+        XCTAssertEqual(spot.subtitle, "Edit Spots")
+        XCTAssertNil(spot.read)
+        XCTAssertEqual(defaults.arrangement.size(of: spot.id), .small)
+        XCTAssertTrue(spot.isOnGrid)
+        XCTAssertEqual(spot.keywords, ["edit spots"])
+        XCTAssertEqual(defaults.arrangement.choices.first { $0.id == spot.id }?.letter, "p")
     }
 
-    func testAPickTurnsASpotOnAndThenOff() async throws {
-        let spot = try spot
+    func testAPressOpensTheStoreInTheApp() async throws {
+        _ = try await catalog.perform(SpotAction(arguments: ["open"]), timeout: 5)
 
-        try await spot.perform(.item(SpotItem(title: "Apps", run: "apps")), timeout: 1)
-        XCTAssertEqual(file.read().arrangement.enabled, ["apps"])
-        let on = try await spot.items(timeout: 1).items
-        XCTAssertEqual(on.first { $0.run == "apps" }?.isOn, true)
-
-        try await spot.perform(.item(SpotItem(title: "Apps", run: "apps")), timeout: 1)
-        XCTAssertEqual(file.read().arrangement.enabled, [])
+        let opened = await app.opened
+        XCTAssertEqual(opened, ["store"])
     }
 
-    func testAPickKeepsThePanelOpen() async throws {
-        let output = try await spot.items(timeout: 1)
+    func testTurningOnACoreWidgetLoadsItInAScan() throws {
+        try "#!/bin/sh\n# title=Overview\n# grid.square=cpu\n".writeScript(to: core.appendingPathComponent("overview.sh"))
 
-        XCTAssertEqual(output.pick, .stay)
-        XCTAssertFalse(output.keepsRecent)
+        try file.turn("overview", on: true)
+
+        let scan = try SpotFolder(url: plugins, core: core, enabled: file.read().arrangement.enabled).scan()
+        XCTAssertEqual(scan.spots.filter(\.headerState.isOnGrid).map(\.name), ["Overview"])
     }
 
-    func testASheetRereadsAfterAPick() async throws {
-        let runs = SpotRuns()
-        let sheet = runs.sheet(for: try spot)
-        sheet.open {}
-        for _ in 0..<200 where sheet.list.shown.isEmpty { try await Task.sleep(for: .milliseconds(5)) }
+    func testTheSpotsSpotShowsWithAnEmptyFolder() throws {
+        let scan = try SpotFolder(url: plugins, core: repoPlugins).scan()
 
-        sheet.pick(SpotItem(title: "Apps", run: "apps"))
-
-        let apps = { sheet.list.shown.first { $0.run == "apps" } }
-        for _ in 0..<200 where apps()?.isOn != true { try await Task.sleep(for: .milliseconds(5)) }
-        XCTAssertEqual(apps()?.isOn, true)
-        XCTAssertEqual(file.read().arrangement.enabled, ["apps"])
-    }
-
-    func testAFileInThePluginsFolderShowsAsOnAndAPickChangesNothing() async throws {
-        try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("apps.sh"))
-        let spot = try spot
-
-        let items = try await spot.items(timeout: 1).items
-        let apps = try XCTUnwrap(items.first { $0.run == "apps" })
-        XCTAssertEqual(apps.isOn, true)
-        XCTAssertEqual(apps.subtitle, "In your plugins folder")
-
-        try await spot.perform(.item(SpotItem(title: "Apps", run: "apps")), timeout: 1)
-        XCTAssertEqual(file.read().arrangement.enabled, [])
-    }
-
-    func testTurningOnACoreWidgetLoadsItInAScan() async throws {
-        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
-        let spot = try spot
-        let items = try await spot.items(timeout: 1).items
-        let row = try XCTUnwrap(items.first { $0.title == "Overview" })
-
-        try await spot.perform(.item(row), timeout: 1)
-
-        let scan = try PluginFolder(url: folder, core: core, enabled: file.read().arrangement.enabled).scan()
-        XCTAssertEqual(scan.commands.filter(\.headerState.isOnGrid).map(\.name), ["Overview"])
-    }
-
-    func testAReadAfterAPickIsNotAFirstAnswer() async throws {
-        let runs = SpotRuns()
-        let sheet = runs.sheet(for: try spot)
-        sheet.open {}
-        for _ in 0..<200 where sheet.list.shown.isEmpty { try await Task.sleep(for: .milliseconds(5)) }
-
-        sheet.pick(SpotItem(title: "Apps", run: "apps"))
-
-        var waited = false
-        for _ in 0..<200 where sheet.list.shown.first?.isOn != true {
-            waited = waited || sheet.kind == .waiting
-            await Task.yield()
-            try await Task.sleep(for: .milliseconds(1))
-        }
-        XCTAssertFalse(waited || sheet.kind == .waiting)
+        XCTAssertTrue(scan.spots.contains { $0.id == "openspot/spots" })
+        XCTAssertEqual(scan.refused, [])
     }
 
     func testAListWithRowsNeverWaitsForAFirstAnswerOnASlowRead() {
@@ -123,68 +62,15 @@ final class CatalogSpotTests: XCTestCase {
         XCTAssertTrue(list.holdsItems)
     }
 
-    func testSelectAllTurnsEachCoreSpotOnAndSkipsAFolderFile() async throws {
-        try "#!/bin/sh\n".writeScript(to: folder.appendingPathComponent("apps.sh"))
-        let catalog = CatalogSpot(folder: folder, core: core, config: file)
-
-        XCTAssertEqual(try catalog.answer([CatalogSpot.selectAllID]), "")
-
-        XCTAssertEqual(file.read().arrangement.enabled, ["zebra"])
-    }
-
-    func testSelectAllIsACommandActionWithAKey() async throws {
-        let actions = try await spot.items(timeout: 1).actions
-        let action = try XCTUnwrap(actions.first { $0.id == CatalogSpot.selectAllID })
-
-        XCTAssertEqual(action.title, "Select all")
-        XCTAssertEqual(action.scope, .command)
-        XCTAssertEqual(action.after, .stay)
-        XCTAssertNotNil(action.key)
-    }
-
-    func testAnUnknownSpotIsAFault() async throws {
-        let catalog = CatalogSpot(folder: folder, core: core, config: file)
-
-        do {
-            _ = try catalog.answer(["open", "gone"])
-            XCTFail("It took a spot that does not exist.")
-        } catch {}
-    }
-
-    func testTheRowForAuthorsHidesTheReview() async throws {
-        let items = try await spot.items(timeout: 1).items
-
-        XCTAssertEqual(items.first?.run, CatalogSpot.buildRun)
-        XCTAssertEqual(items.first?.hides, [CatalogSpot.reviewID])
-        XCTAssertNil(items.last?.hides)
-    }
-
-    func testItOffersAReviewOfACoreSpot() async throws {
-        let actions = try await spot.items(timeout: 1).actions
-
-        XCTAssertTrue(actions.map(\.id).contains(CatalogSpot.reviewID))
-    }
-
     func testAReviewThatCannotAddShowsTheTextWithNoAddPart() throws {
-        let scan = try PluginFolder(url: folder, core: core, enabled: ["apps"]).scan()
-        let shared = try SharedSpot(sharing: XCTUnwrap(scan.commands.first), from: scan)
+        let scan = try SpotFolder(url: plugins, core: core, enabled: ["apps"]).scan()
+        let shared = try SharedSpot(sharing: XCTUnwrap(scan.spots.first { $0.id == "apps" }), from: scan)
 
-        let review = try ReviewSpot(spot: shared, folder: folder, canAdd: false)
+        let review = try ReviewSpot(spot: shared, folder: plugins, canAdd: false)
         let sheet = try review.answer(["read"])
 
         XCTAssertFalse(sheet.contains("text=install"))
         XCTAssertTrue(sheet.contains("apps.sh"))
-    }
-
-    func testNewSpotHasASmallCardOnTheGridAfterSettings() async throws {
-        let commands = ShippedSpot.commands(folder: folder, guide: folder, app: "", config: file)
-        let new = try XCTUnwrap(commands.first { $0.id == ShippedSpot.newID })
-
-        XCTAssertTrue(new.isOnGrid)
-        XCTAssertEqual(new.size, .small)
-        XCTAssertEqual(commands.map(\.name), ["Spots", "Settings", "New spot"])
-        let output = try await new.items(timeout: 1)
-        XCTAssertFalse(output.items.isEmpty)
     }
 
     func testARowIsOnByItsValue() throws {

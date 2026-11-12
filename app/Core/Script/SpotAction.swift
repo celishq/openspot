@@ -12,12 +12,7 @@ public struct SpotAction: Equatable, Sendable {
         self.arguments = arguments
     }
 
-    /// A read for the text of a search, followed by each other form of it that the person may have meant.
-    public static func items(query: String, forms: [String] = []) -> SpotAction {
-        SpotAction(arguments: query.isEmpty ? ["read"] : ["read", query] + forms)
-    }
-
-    /// A press of a card that is a switch: its id and its new value (U12).
+    /// A press of a card that is a switch: its id and its new value (protocol: The main block and the card).
     public static func toggle(_ state: SpotState) -> SpotAction {
         SpotAction(arguments: [state.control ?? "", (state.on ?? false) ? "false" : "true"])
     }
@@ -45,18 +40,18 @@ public struct SpotAction: Equatable, Sendable {
         SpotAction(arguments: ["drop"] + paths)
     }
 
-    /// The rows that a drag took out of the sheet as files (O2).
+    /// The rows that a drag took out of the sheet as files (protocol: Files out).
     public static func drag(runs: [String]) -> SpotAction {
         SpotAction(arguments: ["drag"] + runs)
     }
 
-    /// This call as one block for a script that stays: `call=<id>`, the `reason` of a read, one `arg` for each argument of a
-    /// normal call, and each value that stdin holds in a normal call.
-    public func event(values: String? = nil, id: Int, reason: ReadReason? = nil) -> String {
-        let head = [TextBlock.Field(key: "call", value: String(id))] + (reason.map { [TextBlock.Field(key: "reason", value: $0.rawValue)] } ?? [])
-        let call = head + arguments.map { TextBlock.Field(key: "arg", value: $0) }
-        let held = values.flatMap { TextBlock.blocks(in: $0).first }?.fields ?? []
-        return TextBlock(fields: call + held).text + "\n"
+    /// This call as one block for a script that stays (protocol: Modes): `call=<id>`, an `arg` for each argument, an `env.<name>` for each
+    /// variable, and its stdin as one `input` value.
+    public func block(input: String? = nil, variables: [String: String] = [:], id: Int) -> String {
+        let call = [TextBlock.Field(key: "call", value: String(id))] + arguments.map { TextBlock.Field(key: "arg", value: $0) }
+        let env = variables.sorted { $0.key < $1.key }.map { TextBlock.Field(key: "env.\($0.key)", value: $0.value) }
+        let stdin = input.flatMap { $0.isEmpty ? nil : [TextBlock.Field(key: "input", value: $0)] } ?? []
+        return TextBlock(fields: call + env + stdin).text + "\n"
     }
 
     /// The block that asks a staying script to stop the call with this `id`.
@@ -74,7 +69,7 @@ public struct SpotAction: Equatable, Sendable {
         return (arguments.prefix(1) + arguments.dropFirst().filter { !long.contains($0) }, (input ?? "") + TextBlock(fields: missing).text)
     }
 
-    /// A new level of a card that is a slider: its id and the level (U12).
+    /// A new level of a card that is a slider: its id and the level (protocol: The main block and the card).
     public static func level(_ value: Double, of control: String) -> SpotAction {
         SpotAction(arguments: [control, String(Int(value.rounded()))])
     }

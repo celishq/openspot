@@ -3,7 +3,7 @@ import XCTest
 
 final class AppsPluginTests: SamplePluginsCase {
     private func apps() throws -> Spot {
-        try XCTUnwrap(try scan.commands.first { $0.name == "Apps" })
+        try XCTUnwrap(try scan.spots.first { $0.name == "Apps" })
     }
 
     /// Makes an app with a bundle id in a private home, and fake `find`, `ps` and `osascript`. The fake `osascript` writes
@@ -73,7 +73,7 @@ final class AppsPluginTests: SamplePluginsCase {
             let support = try Self.library(folder, "Application Support/Zed/settings.json")
             let preferences = try Self.library(folder, "Preferences/dev.zed.Zed.plist")
             _ = try Self.library(folder, "Caches/com.other.App/db")
-            setenv("OPENSPOT_REASON", "change", 1)
+            setenv("OPENSPOT_REASON", "spot.change", 1)
             defer { unsetenv("OPENSPOT_REASON") }
 
             try await apps.perform(SpotAction(arguments: ["uninstall", app.path]), timeout: 10)
@@ -83,7 +83,7 @@ final class AppsPluginTests: SamplePluginsCase {
             XCTAssertEqual(sheet.parts.map(\.id), [])
             XCTAssertEqual(sheet.actions.map(\.id), ["cancel", "remove"])
             XCTAssertEqual(sheet.actions.map(\.key), [ActionKey(name: "escape"), ActionKey(name: "return", isCommand: true)])
-            XCTAssertEqual(sheet.actions.map(\.scope), [.command, .command])
+            XCTAssertEqual(sheet.actions.map(\.scope), [.spot, .spot])
             XCTAssertEqual(Set(sheet.items.map(\.run)), [
                 app.path, support.deletingLastPathComponent().path, cache.deletingLastPathComponent().path, preferences.path
             ])
@@ -142,7 +142,7 @@ final class AppsPluginTests: SamplePluginsCase {
             do {
                 try await apps.perform(SpotAction(arguments: ["uninstall", "/System/Applications/Notes.app"]), timeout: 10)
                 XCTFail("A system app was taken for deletion")
-            } catch PluginError.failed(_, let message) {
+            } catch SpotError.failed(_, let message) {
                 XCTAssertEqual(message, "Notes is part of macOS, so it cannot be deleted.")
             }
         }

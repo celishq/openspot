@@ -38,7 +38,7 @@ public struct Events {
     public func day(of id: String) async throws -> Date {
         switch CalendarItemID(id) {
         case .event(_, let start)?: return start
-        case .reminder?: throw PluginError.failed(1, "\(id) is a reminder. Run `openspot reminders show \(id)` to open it in Reminders.")
+        case .reminder?: throw SpotError.failed(1, "\(id) is a reminder. Run `openspot reminders show \(id)` to open it in Reminders.")
         case nil: throw CalendarItemID.missing(id)
         }
     }
@@ -48,11 +48,11 @@ public struct Events {
         let entry = try CalendarEntry(titled: words)
         guard let date = entry.date else {
             let trimmed = words.trimmingCharacters(in: .whitespacesAndNewlines)
-            throw PluginError.failed(1, "Openspot found no date in `\(trimmed)`. Add one, such as `tomorrow 9am`.")
+            throw SpotError.failed(1, "Openspot found no date in `\(trimmed)`. Add one, such as `tomorrow 9am`.")
         }
         guard try await isAllowed() else { return CalendarAccess.unaskedText }
         guard let calendar = store.defaultCalendar() else {
-            throw PluginError.failed(1, "Openspot found no calendar for new events. Choose a default calendar in Calendar › Settings › General, then try again.")
+            throw SpotError.failed(1, "Openspot found no calendar for new events. Choose a default calendar in Calendar › Settings › General, then try again.")
         }
         let start = entry.hasTime ? date : clock.calendar.startOfDay(for: date)
         let end = entry.hasTime ? start.addingTimeInterval(entry.length ?? 3600) : clock.calendar.date(byAdding: .day, value: 1, to: start) ?? start

@@ -1,10 +1,11 @@
+import Foundation
+
 /// The rows of the actions menu for one command and its selected item, with the selected row.
 public struct ActionMenu: Equatable, Sendable {
     public struct Row: Equatable, Sendable {
         public let title: String
         public let keyLabel: String
         public let action: CommandAction?
-        public var opensEdit = false
         /// Whether the hint leaves it out, as a row that each spot has.
         var isQuiet = false
     }
@@ -12,8 +13,8 @@ public struct ActionMenu: Equatable, Sendable {
     /// The key that opens and closes the menu, as the footer shows it.
     public static let key = "⌘K"
 
-    /// How many rows a person takes in at a glance. A menu with more shows a field to search them.
-    private static let glance = 5
+    /// How many rows a menu needs to show a field to search them.
+    private static let searchFrom = 3
 
     public let rows: [Row]
     /// The rows that the search finds, best first. With no search, each row.
@@ -22,28 +23,32 @@ public struct ActionMenu: Equatable, Sendable {
     public private(set) var selected = 0
     public private(set) var confirming: String?
 
-    /// Lists what Enter does, the actions that fit, the rows that the app adds, then Edit Spots. Returns nil when there is
-    /// nothing to list.
-    public init?(command: Spot, item: SpotItem?, showsPrimary: Bool = true, extras: [CommandAction] = [], showsEdit: Bool = false) {
+    /// Lists what Enter does, the actions that fit, then the rows that the app adds, each of them on this spot or item.
+    /// Returns nil when there is nothing to list.
+    public init?(spot: Spot, item: SpotItem?, showsPrimary: Bool = true, extras: [CommandAction] = []) {
         var rows: [Row] = []
-        if showsPrimary, let title = command.primaryTitle(hasItem: item != nil) {
+        if showsPrimary, let title = spot.primaryTitle(hasItem: item != nil) {
             rows.append(Row(title: title, keyLabel: "⏎", action: nil))
         }
-        rows += command.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
+        rows += spot.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
         rows += extras.map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0, isQuiet: true) }
-        if showsEdit { rows.append(Row(title: "Edit Spots", keyLabel: "", action: nil, opensEdit: true)) }
         guard !rows.isEmpty else { return nil }
         self.rows = rows
         shown = rows
     }
 
     public var isSearchable: Bool {
-        rows.count > Self.glance
+        rows.count >= Self.searchFrom
     }
 
     /// How many lines it draws: one for each row that it shows, and one for the field of a menu that searches.
     public var lines: Int {
         isSearchable ? shown.count + 1 : rows.count
+    }
+
+    /// How many lines it draws with no search, which sets its place.
+    public var fullLines: Int {
+        isSearchable ? rows.count + 1 : rows.count
     }
 
     public var selectedRow: Row? {

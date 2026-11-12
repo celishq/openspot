@@ -11,7 +11,7 @@ final class TranslatePluginTests: SamplePluginsCase {
             let release = folder.appendingPathComponent("release")
             let wait = "n=0; while [ ! -f '\(release.path)' ] && [ $n -lt 1500 ]; do sleep 0.02; n=$((n + 1)); done"
             try fake.replacingOccurrences(of: "if [ \"$2\" = languages ]; then", with: "if [ \"$2\" = languages ]; then\n  \(wait)").writeScript(to: tool)
-            let translate = try XCTUnwrap(try self.scan.commands.first { $0.name == "Translate" })
+            let translate = try XCTUnwrap(try self.scan.spots.first { $0.name == "Translate" })
 
             let options = try await Self.targetOptions(of: translate, release: release)
 
@@ -26,7 +26,7 @@ final class TranslatePluginTests: SamplePluginsCase {
 
             let output = try await translate.items(timeout: 10)
 
-            XCTAssertFalse(translate.stays)
+            XCTAssertEqual(translate.mode, .once)
             XCTAssertEqual(translate.read, .sheet)
             XCTAssertEqual(translate.kind, .list)
             XCTAssertEqual(output.kind, .list)
@@ -103,6 +103,7 @@ final class TranslatePluginTests: SamplePluginsCase {
 
             XCTAssertEqual(output.summary?.value("toast"), "Copied")
             XCTAssertEqual(try self.read("clipboard", in: folder), "OnE\nTWO")
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("direct").path))
         }
     }
 

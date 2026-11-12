@@ -3,13 +3,9 @@
 # icon=tray.full
 # detail=Keeps files at hand
 # drop=*
-# read=sheet
-# offers=float
+# on=sheet.open
 list="$OPENSPOT_DATA/files"
-
-esc() {
-  printf '%s' "$1" | sed 's/\\/\\\\/g'
-}
+. "$OPENSPOT_SH"
 
 forget() {
   [ -f "$list" ] || return 0
@@ -24,14 +20,14 @@ case "$1" in
     printf 'recents=false\n\n'
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\n\n'
     printf 'button=remove\ntitle=Remove from Shelf\nshortcut=cmd+backspace\n\n'
-    printf 'button=clear\ntitle=Clear Shelf\nscope=command\n\n'
+    printf 'button=clear\ntitle=Clear Shelf\nscope=spot\n\n'
     [ -f "$list" ] || exit 0
     while IFS= read -r path; do
       [ -e "$path" ] || continue
       folder=${path%/*}
       case "$folder" in "$HOME"*) folder="~${folder#"$HOME"}" ;; esac
-      value=$(esc "$path")
-      printf 'row=%s\ntitle=%s\ndetail=%s\nicon=%s\nfile=%s\n\n' "$value" "$(esc "${path##*/}")" "$(esc "$folder")" "$value" "$value"
+      openspot_row "$path" "${path##*/}" "$folder" "$path"
+      openspot_kv file "$path"
     done < "$list"
     ;;
   drop)
@@ -40,7 +36,7 @@ case "$1" in
     for path; do
       grep -qxF "$path" "$list" || printf '%s\n' "$path" >> "$list"
     done
-    printf 'select=%s\n' "$(esc "$1")"
+    openspot_kv select "$1"
     ;;
   drag | remove)
     shift

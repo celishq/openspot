@@ -33,9 +33,9 @@ final class SharedSpotTests: XCTestCase {
     }
 
     private func sharing(_ id: String) throws -> SharedSpot {
-        let folder = PluginFolder(url: plugins)
+        let folder = SpotFolder(url: plugins)
         let scan = try folder.scan()
-        let command = try XCTUnwrap(scan.plugins.flatMap(\.commands).first { $0.id == id })
+        let command = try XCTUnwrap(scan.files.flatMap(\.spots).first { $0.id == id })
         return try SharedSpot(sharing: command, from: scan)
     }
 
@@ -45,7 +45,7 @@ final class SharedSpotTests: XCTestCase {
 
     private func assertRefused(_ data: Data, says words: String, line: UInt = #line) {
         XCTAssertThrowsError(try SharedSpot(data: data), line: line) { error in
-            XCTAssertTrue((error as? PluginError)?.reason.contains(words) == true, "\(error)", line: line)
+            XCTAssertTrue((error as? SpotError)?.reason.contains(words) == true, "\(error)", line: line)
         }
     }
 
@@ -94,42 +94,29 @@ final class SharedSpotTests: XCTestCase {
     }
 
     func testAWidgetTravelsWithEachMetricItPlacesAndTheCommandItOpens() throws {
-        try script("cpu.sh", "#!/bin/sh\n# read=5\n")
-        try script("home/disk.sh", "#!/bin/sh\n# read=5\n")
-        try script("links.sh", "#!/bin/sh\n# read=sheet\n")
+        try script("cpu.sh", "#!/bin/sh\n# on=clock.5\n")
+        try script("home/disk.sh", "#!/bin/sh\n# on=clock.5\n")
+        try script("links.sh", "#!/bin/sh\n# on=sheet.open\n")
         try script("other.sh")
-        try plain("board.toml", Data("""
-        [[widgets]]
-        title = "Desk"
-        grid = ["cpu cpu home/disk home/disk"]
-        opens = "links"
+        try script("board.sh", "#!/bin/sh\n# title=Desk\n# grid.strip=cpu cpu home/disk home/disk\n# to=links\n")
 
-        """.utf8))
+        let spot = try sharing("board")
 
-        let spot = try sharing("board/Desk")
-
-        XCTAssertEqual(spot.files.map(\.path).sorted(), ["board.toml", "cpu.sh", "home/disk.sh", "links.sh"])
-        XCTAssertEqual(spot.files.first?.path, "board.toml")
+        XCTAssertEqual(spot.files.map(\.path).sorted(), ["board.sh", "cpu.sh", "home/disk.sh", "links.sh"])
+        XCTAssertEqual(spot.files.first?.path, "board.sh")
     }
 
-    func testAWidgetThatOpensAShippedSpotCarriesNoFileForIt() throws {
-        try script("cpu.sh", "#!/bin/sh\n# read=5\n")
-        try plain("board.toml", Data("""
-        [[widgets]]
-        title = "Desk"
-        grid = ["cpu"]
-        size = "square"
-        opens = "openspot/plugins"
-
-        """.utf8))
-        let folder = PluginFolder(url: plugins)
-        let shipped = Spot(id: "openspot/plugins", name: "Plugins", url: plugins, kind: .list, shipped: .quit(QuitSpot {}))
-        let scan = try folder.scan(shipped: [shipped])
-        let widget = try XCTUnwrap(scan.commands.first { $0.id == "board/Desk" })
+    func testAWidgetThatOpensASpotOfTheAppCarriesNoFileForIt() throws {
+        try script("cpu.sh", "#!/bin/sh\n# on=clock.5\n")
+        try script("board.sh", "#!/bin/sh\n# title=Desk\n# grid.square=cpu\n# to=openspot/plugins\n")
+        let core = plugins.deletingLastPathComponent().appendingPathComponent("core")
+        _ = try script("openspot/plugins.sh", "#!/bin/sh\n# on=sheet.open\n", in: core)
+        let scan = try SpotFolder(url: plugins, core: core).scan()
+        let widget = try XCTUnwrap(scan.spots.first { $0.id == "board" })
 
         let spot = try SharedSpot(sharing: widget, from: scan)
 
-        XCTAssertEqual(spot.files.map(\.path).sorted(), ["board.toml", "cpu.sh"])
+        XCTAssertEqual(spot.files.map(\.path).sorted(), ["board.sh", "cpu.sh"])
     }
 
     func testACompiledProgramTravelsWithItsBytesAndStaysExecutable() throws {
@@ -144,10 +131,10 @@ final class SharedSpotTests: XCTestCase {
         XCTAssertTrue(FileManager.default.isExecutableFile(atPath: added.path))
     }
 
-    func testAShippedSpotDoesNotTravel() throws {
-        let shipped = Spot(id: "openspot/plugins", name: "Plugins", url: plugins, shipped: .quit(QuitSpot {}))
+    func testASpotOfTheAppDoesNotTravel() throws {
+        let shipped = Spot(id: "openspot/plugins", name: "Plugins", url: plugins).builtIn()
 
-        XCTAssertThrowsError(try SharedSpot(sharing: shipped, from: ScanResult(plugins: [], refused: [])))
+        XCTAssertThrowsError(try SharedSpot(sharing: shipped, from: ScanResult(files: [], refused: [])))
     }
 
     func testAFolderOverTheSizeLimitDoesNotTravel() throws {
@@ -155,7 +142,7 @@ final class SharedSpotTests: XCTestCase {
         try plain("home/big.bin", Data(count: SharedSpot.sizeLimit + 1))
 
         XCTAssertThrowsError(try sharing("home/coffee")) { error in
-            XCTAssertEqual((error as? PluginError)?.reason, "This spot is over the 64 MB limit.")
+            XCTAssertEqual((error as? SpotError)?.reason, "This spot is over the 64 MB limit.")
         }
     }
 

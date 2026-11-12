@@ -10,13 +10,13 @@ class SamplePluginsCase: XCTestCase {
 
     var exampleScan: ScanResult {
         get throws {
-            try PluginFolder(url: examples).scan()
+            try SpotFolder(url: examples).scan()
         }
     }
 
     /// The example spot with this name.
     func example(_ name: String) throws -> Spot {
-        try XCTUnwrap(try exampleScan.commands.first { $0.name == name })
+        try XCTUnwrap(try exampleScan.spots.first { $0.name == name })
     }
 
     var scan: ScanResult {
@@ -24,8 +24,9 @@ class SamplePluginsCase: XCTestCase {
             let root = URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             let folder = root.appendingPathComponent("plugins")
-            let shipped = ShippedSpot.commands(folder: folder, guide: root.appendingPathComponent("app/Shell/GUIDE.md"), app: "")
-            return try PluginFolder(url: folder).scan(shipped: shipped)
+            var scan = try SpotFolder(url: folder).scan()
+            scan.listKeys(in: ConfigFile(url: FileManager.default.temporaryDirectory.appendingPathComponent("openspot-samples/config.toml")))
+            return scan
         }
     }
 
@@ -67,14 +68,15 @@ class SamplePluginsCase: XCTestCase {
     }
 
     /// Runs with an empty home and temp folder and with fake clipboard, open and caffeinate tools, so a test touches nothing
-    /// of the person's. The fake caffeinate is a process of that name that only waits.
+    /// of the person's. The fake caffeinate is a process of that name that only waits, and `pbcopy` and `pbpaste` add their
+    /// names to the file `direct`.
     func withPrivateHome(_ body: (URL) async throws -> Void) async throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-home-\(UUID().uuidString)")
         let tools = folder.appendingPathComponent("tools")
         try FileManager.default.createDirectory(at: tools, withIntermediateDirectories: true)
         for (name, script) in [
-            ("pbcopy", "cat > '\(folder.path)/clipboard'"),
-            ("pbpaste", "cat '\(folder.path)/clipboard' 2>/dev/null"),
+            ("pbcopy", "echo pbcopy >> '\(folder.path)/direct'; cat > '\(folder.path)/clipboard'"),
+            ("pbpaste", "echo pbpaste >> '\(folder.path)/direct'; cat '\(folder.path)/clipboard' 2>/dev/null"),
             ("open", "echo \"$1\" > '\(folder.path)/opened'"),
             ("curl", Self.fakeCurl(log: folder.appendingPathComponent("fetched").path)),
             ("gh", Self.fakeGh(answer: folder.appendingPathComponent("gh-answer").path)),
@@ -100,13 +102,14 @@ class SamplePluginsCase: XCTestCase {
     }
 
     /// The openspot command: a sum prints the file `calc-answer` and adds its words to `calc-asked`, a copy writes the file
-    /// `clipboard`, and a paste copies it to `pasted`. A setting is the file
+    /// `clipboard`, a read prints it, and a paste copies it to `pasted`. A setting is the file
     /// `setting-<key>`, and a folder pick prints the file `picked`.
     static func fakeOpenspot(in folder: URL) -> String {
         """
         case "$1 $2" in
           'calc solve') printf '%s\\n' "$3" >> '\(folder.path)/calc-asked'; cat '\(folder.path)/calc-answer' 2>/dev/null ;;
           'clipboard copy') cat > '\(folder.path)/clipboard' ;;
+          'clipboard read') cat '\(folder.path)/clipboard' 2>/dev/null ;;
           'clipboard paste') cp '\(folder.path)/clipboard' '\(folder.path)/pasted' ;;
           'setting get') cat "\(folder.path)/setting-$3" 2>/dev/null ;;
           'setting set') if [ $# -ge 4 ]; then printf '%s' "$4" > "\(folder.path)/setting-$3"; else rm -f "\(folder.path)/setting-$3"; fi ;;
@@ -169,8 +172,8 @@ class SamplePluginsCase: XCTestCase {
     }
 
     /// Reads a script to find the action that it prints.
-    func action(_ id: String, of command: Spot) async throws -> CommandAction {
-        let actions = try await command.items(timeout: 5).actions
+    func action(_ id: String, of spot: Spot) async throws -> CommandAction {
+        let actions = try await spot.items(timeout: 5).actions
         return try XCTUnwrap(actions.first { $0.id == id })
     }
 
@@ -178,14 +181,17 @@ class SamplePluginsCase: XCTestCase {
         try String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8)
     }
 
-    /// Runs the color picker with a stand-in for the openspot command, which prints this answer.
+    /// Runs the color picker with a stand-in for the openspot command, which prints this answer and copies as the fake of
+    /// `withPrivateHome` does.
     func pickColor(answer: String, in folder: URL) async throws -> String? {
-        try "#!/bin/sh\n[ \"$1 $2\" = 'color pick' ] && printf '%s' '\(answer)'\n".writeScript(to: folder.appendingPathComponent("tools/openspot"))
-        let picker = try XCTUnwrap(try scan.commands.first { $0.name == "Color picker" })
+        let script = "#!/bin/sh\n[ \"$1 $2\" = 'color pick' ] && { printf '%s' '\(answer)'; exit 0; }\n\(Self.fakeOpenspot(in: folder))\n"
+        try script.writeScript(to: folder.appendingPathComponent("tools/openspot"))
+        let picker = try XCTUnwrap(try scan.spots.first { $0.name == "Color picker" })
         return try await picker.perform(picker.click, timeout: 5)
     }
 
-    /// Puts a stand-in for the openspot command on the path. It knows two languages and translates to upper case.
+    /// Puts a stand-in for the openspot command on the path. It knows two languages, translates to upper case, and copies as
+    /// the fake of `withPrivateHome` does.
     func fakeTranslate(in folder: URL, status: String? = nil) throws -> Spot {
         let reply = status.map { "printf 'status=\($0)\\nfrom=ru\\nto=en\\n'" } ?? #"""
         case "$text" in *[а-я]*) found=ru ;; *) found=en ;; esac
@@ -195,6 +201,10 @@ class SamplePluginsCase: XCTestCase {
         """#
         let script = """
         #!/bin/sh
+        if [ "$1" = clipboard ]; then
+          \(Self.fakeOpenspot(in: folder))
+          exit 0
+        fi
         if [ "$2" = languages ]; then
           printf 'preferred=en\\npreferred=ru\\n\\nlanguage=en\\nname=English\\n\\nlanguage=ru\\nname=Russian\\n'
           exit 0
@@ -207,22 +217,22 @@ class SamplePluginsCase: XCTestCase {
         """
         let tool = folder.appendingPathComponent("tools/openspot")
         try script.writeScript(to: tool)
-        return try XCTUnwrap(try scan.commands.first { $0.name == "Translate" })
+        return try XCTUnwrap(try scan.spots.first { $0.name == "Translate" })
     }
 
-    func text(of id: String, in output: PluginOutput) -> String? {
+    func text(of id: String, in output: SpotOutput) -> String? {
         output.parts.first { $0.id == id }?.value
     }
 
     /// Runs a handler through the calls as an open sheet does: one run for each, with the values of the sheet on stdin.
     /// Returns the answer to the last one.
     @MainActor
-    static func drive(_ command: Spot, _ actions: [SpotAction]) async throws -> PluginOutput {
-        var last = try await command.items(timeout: 10)
+    static func drive(_ spot: Spot, _ actions: [SpotAction]) async throws -> SpotOutput {
+        var last = try await spot.items(timeout: 10)
         var panel = try XCTUnwrap(SheetParts(output: last))
         for action in actions {
             if action.arguments.count == 2 { panel.set(action.arguments[1], of: action.arguments[0]) }
-            last = PluginOutput(text: try await SpotRuns().answer(of: command, action, input: panel.values, limit: 30))
+            last = SpotOutput(text: try await SpotRuns().answer(of: spot, action, input: panel.values, limit: 30))
             panel.take(last, answering: panel.generation)
         }
         return last
@@ -239,15 +249,15 @@ class SamplePluginsCase: XCTestCase {
 
         """
         try script.writeScript(to: folder.appendingPathComponent("tools/openspot"))
-        return try XCTUnwrap(try scan.commands.first { $0.name == "Emojis & Symbols" })
+        return try XCTUnwrap(try scan.spots.first { $0.name == "Emojis & Symbols" })
     }
 
     /// Reads a sheet, and returns the options of its target menu with its first parts, and after `release` appears.
     @MainActor
-    static func targetOptions(of command: Spot, release: URL) async throws -> (first: Int, last: Int) {
+    static func targetOptions(of spot: Spot, release: URL) async throws -> (first: Int, last: Int) {
         let runs = SpotRuns()
         defer { runs.quit() }
-        let sheet = runs.sheet(for: command)
+        let sheet = runs.sheet(for: spot)
         let options: () -> Int = {
             guard case .menu(let options, _)? = sheet.panel?.parts.first(where: { $0.id == "target" })?.control else { return 0 }
             return options.count

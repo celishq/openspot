@@ -2,7 +2,8 @@
 # title=Record inputs
 # icon=mic
 # detail=The sound and the camera of Record
-# read=sheet
+# on=sheet.open
+# uses=screen
 kept=$(openspot setting get inputs)
 
 case "$1" in

@@ -5,6 +5,8 @@ import SwiftUI
 struct SpotSlotView: View {
     let part: SpotPart
     var tone: MetricValue.Tone?
+    /// The height of its area on a card, which a number with no title fills.
+    var height: CGFloat?
     let onSlot: (String, String?) -> Void
 
     var body: some View {
@@ -54,10 +56,10 @@ struct SpotSlotView: View {
         case .metric(let number):
             VStack(alignment: .leading, spacing: SpotType.lineGap) {
                 Text(number)
-                    .font(.system(size: 28, weight: .semibold, design: .rounded))
+                    .font(.system(size: metricSize, weight: .semibold, design: .rounded))
                     .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                    .minimumScaleFactor(metricSize > 28 ? 0.2 : 0.5)
                 if let label = part.title {
                     Text(label).font(SpotType.detail).modifier(SpotSecondaryText()).lineLimit(1)
                 }
@@ -95,6 +97,10 @@ struct SpotSlotView: View {
                 words
             }
         }
+    }
+
+    private var metricSize: CGFloat {
+        part.title == nil ? height.map { $0 * 0.8 } ?? 28 : 28
     }
 
     /// The title over the detail. On a text, a good, warn or bad tone colours the detail, or the title when there is none.

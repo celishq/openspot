@@ -1,0 +1,5 @@
+#!/bin/sh
+# title=Cups today
+# icon=cup.and.saucer.fill
+# on=sheet.open
+printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'

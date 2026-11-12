@@ -12,7 +12,7 @@ enum SpotSheetWarmth {
 
     /// Draws each sheet once, and lets go of the window after a short life.
     static func draw() {
-        let sheets = [SheetExamples.all[0], SheetExamples.tiles].map { PluginOutput(text: $0.text) }
+        let sheets = [SheetExamples.all[0], SheetExamples.tiles].map { SpotOutput(text: $0.text) }
         let view = VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(sheets.enumerated()), id: \.offset) { _, output in
                 if let panel = SheetParts(output: output) {

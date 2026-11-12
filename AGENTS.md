@@ -13,6 +13,8 @@
 - `app/Help/` holds the guide of each `openspot` noun that has one, which `openspot help <noun>` prints. The build copies it
   into the app.
 - `plugins/` holds the source of the core spots. The build copies it into the app, and they run from there.
+  `plugins/openspot/` holds the spots of the app itself, such as Settings, which are always on and use only the `openspot`
+  API. No code outside that folder names one of them.
 - `examples/` holds plugins that show a feature, such as a view. The app does not ship them, and a test checks them.
   `make examples` copies them into the plugins of a Debug build.
 - `plans/` holds design plans. It is git-ignored.
@@ -26,7 +28,20 @@
 - A name is a noun for what a thing is. No `-er`/`-or` suffix (`Manager`, `Handler`, `Renderer`).
 - One primary type per file. The filename matches it.
 - Nouns own their data. Verbs are methods on the noun that owns the data.
-- A toast or a failure line follows "Messages" in `spec/01-core.md`.
+- A toast or a failure line follows "Messages" in `PROTOCOL.md`.
+
+## Docs
+
+Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Apple writes its developer docs.
+
+- Open each page or section with one sentence that says what the thing is for and when to use it.
+- Show it next, with an example and what it gives on screen. The rules come after the example.
+- Order a guide by the tasks of its reader, such as "Show a number on a card", not by how the code parses it.
+- Bring in a new word where the reader first needs it, with its meaning in the same sentence.
+- Keep the main idea and the edge cases apart. Put limits, errors and rare cases in a short note or in the reference.
+- Write natural English: "you" for the reader, short sentences, common words. Contractions are fine.
+- Use one word for each meaning on the page.
+- Put each rule in one place, and link to it from other places.
 
 ## Docstrings
 
@@ -79,6 +94,8 @@ too. `make perf` checks it: p99 must stay under 8.3 ms.
 make verify                # the Core and Tests checks, then the XCTest suite, with test classes in parallel
 make test T=SpotRunsTests  # one test class, while you work on it
 make perf N=3              # times a sheet that opens and closes 20 times, 3 runs; fails over the dropped-frame budget
+make shots                 # saves pictures of the actions menu in the running panel into .temp/shots
+make docs-images           # draws the image under each GUIDE.md example; GuideImageTests fail when one is out of date
 make eval-agent N=1        # gives N tasks to claude -p with only `openspot guide`, and checks each spot; it costs money
 ```
 

@@ -30,6 +30,10 @@ extension OpenspotApp: SpotsHost {
         toast?.show(text, symbol: ToastPanel.confirmSymbol)
     }
 
+    func work(_ text: String) {
+        toast?.show(text, isWorking: true, for: nil)
+    }
+
     /// Shows the float of a spot at the pointer once its first answer comes, or after the pause of a sheet (W4), or moves
     /// its float there.
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {
@@ -97,19 +101,8 @@ extension OpenspotApp: SpotsHost {
         await SpotIconStore.shared.prepare(items)
     }
 
-    func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?, offersLogin: Bool) -> [Spot] {
-        ShippedSpot.commands(
-            folder: folder.url,
-            guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder.url,
-            app: Bundle.main.executablePath ?? "",
-            config: config,
-            update: update,
-            core: folder.core,
-            login: AppLogin.item,
-            link: AppCommandLink.item,
-            offersLogin: offersLogin,
-            quit: QuitSpot { await NSApp.terminate(nil) }
-        )
+    func agentPrompt(for folder: URL) -> AgentPrompt {
+        AgentPrompt(folder: folder, guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder, app: AgentPrompt.command(of: Bundle.main.executablePath ?? ""))
     }
 
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {

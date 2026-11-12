@@ -3,6 +3,8 @@ import SwiftUI
 
 extension EnvironmentValues {
     @Entry var spotIsShown = true
+    /// Whether a blur of the desktop draws. A picture turns it off, since the system blur draws grey into a picture.
+    @Entry var spotDrawsBlur = true
 }
 
 /// The timing of the panel and its sheet: on close fill, text and backdrop fade first, and the rims last.
@@ -25,6 +27,10 @@ enum SpotMotion {
     static let edit = Animation.spring(duration: 0.3, bounce: 0)
     static let hintFade = Animation.easeOut(duration: 0.15)
     static let liftFade = Animation.easeOut(duration: 0.15)
+    /// The actions menu opens at its item by a fade and a scale from this share of its size, as its card comes forward, on
+    /// the motion of a sheet.
+    static let menuStartScale: CGFloat = 0.9
+    static let focusedScale = 1.04
     static let handleFade = Animation.easeOut(duration: 0.12)
     /// How fast the grid scrolls, in points a second, under a lifted card that lies deep in the fade at one of its ends.
     static let edgeScrollSpeed = 500.0

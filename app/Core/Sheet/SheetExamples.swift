@@ -76,7 +76,8 @@ public enum SheetExamples {
         title=Night drive
         detail=2:14 / 3:40
 
-        slider=position
+        field=position
+        type=slider
         value=60
 
         button=previous
@@ -116,7 +117,7 @@ public enum SheetExamples {
         option=mp4
         title=MP4
 
-        gauge=status
+        graph=status
         title=Converting
         detail=1:12 left
         value=0.62
@@ -263,7 +264,8 @@ public enum SheetExamples {
         title=Room
         detail=21°
 
-        slider=target
+        field=target
+        type=slider
         title=Target
         value=40
 

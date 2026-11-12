@@ -5,10 +5,6 @@ import OpenspotCore
 final class SpotReminderStore: ReminderStore {
     private let store = EKEventStore()
 
-    /// The reminders of `openspot reminders`, which know a read by `OPENSPOT_REASON` (E7).
-    static func reminders() -> Reminders {
-        Reminders(store: SpotReminderStore(), isRead: ProcessInfo.processInfo.environment["OPENSPOT_REASON"] != nil)
-    }
 
     func access() -> CalendarAccess {
         SpotEventStore.access(to: .reminder)

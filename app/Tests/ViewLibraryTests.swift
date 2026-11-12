@@ -78,7 +78,7 @@ final class ViewLibraryTests: XCTestCase {
             _ = try await views.library(of: try source())
             XCTFail("It must not build.")
         } catch {
-            XCTAssertEqual((error as? PluginError)?.reason, "This view does not compile. cups.swift:5:9: error: cannot find x in scope")
+            XCTAssertEqual((error as? SpotError)?.reason, "This view does not compile. cups.swift:5:9: error: cannot find x in scope")
         }
     }
 
@@ -89,7 +89,7 @@ final class ViewLibraryTests: XCTestCase {
             _ = try await views.library(of: try source())
             XCTFail("It must not build.")
         } catch {
-            XCTAssertEqual((error as? PluginError)?.reason, "To draw a view, install the Command Line Tools: xcode-select --install")
+            XCTAssertEqual((error as? SpotError)?.reason, "To draw a view, install the Command Line Tools: xcode-select --install")
         }
     }
 
@@ -115,7 +115,7 @@ final class ViewLibraryTests: XCTestCase {
         try Data("struct".utf8).write(to: plugins.appendingPathComponent("bad/bad.swift"))
         let views = try tools(compiler: "echo 'bad.swift:1:7: error: expected identifier' >&2; exit 1")
 
-        let faults = await PluginCheck(folder: PluginFolder(url: plugins), views: views).faults()
+        let faults = await SpotCheck(folder: SpotFolder(url: plugins), views: views).faults()
 
         XCTAssertEqual(faults, [
             "bad/bad: This view does not compile. bad.swift:1:7: error: expected identifier",
@@ -151,9 +151,9 @@ final class ViewLibraryTests: XCTestCase {
         let review = try ReviewSpot(spot: try SharedSpot(files: files), folder: folder)
 
         XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
-        let part = try XCTUnwrap(PluginOutput(text: try review.answer(["read"])).parts.first { $0.id == "review" })
-        guard case .text(let text, _, _) = part.control else { throw PluginError.badForm }
-        XCTAssertTrue(text.hasPrefix("Program that Openspot cannot show\nhome/cups.view\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
+        let part = try XCTUnwrap(SpotOutput(text: try review.answer(["read"])).parts.first { $0.id == "review" })
+        guard case .text(let text, _, _) = part.control else { throw SpotError.badForm }
+        XCTAssertTrue(text.hasPrefix("\(review.name)\n\nProgram that Openspot cannot show\nhome/cups.view\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
     }
 
     func testRemovingASpotAlsoTakesItsViewAndItsLibrary() throws {
@@ -164,8 +164,8 @@ final class ViewLibraryTests: XCTestCase {
         try "#!/bin/sh\n".writeScript(to: cups.appendingPathComponent("other.sh"))
         try Data(view.utf8).write(to: cups.appendingPathComponent("cups.swift"))
         try Data("built".utf8).write(to: cups.appendingPathComponent("cups.view"))
-        let place = PluginFolder(url: plugins)
-        let spot = try XCTUnwrap(try place.scan().commands.first { $0.id == "cups/cups" })
+        let place = SpotFolder(url: plugins)
+        let spot = try XCTUnwrap(try place.scan().spots.first { $0.id == "cups/cups" })
         var discarded: [String] = []
 
         try place.remove(spot) { discarded.append($0.lastPathComponent) }

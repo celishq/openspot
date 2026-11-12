@@ -18,7 +18,7 @@ final class FirstLaunchTests: XCTestCase {
     }
 
     private var isFirst: Bool {
-        PluginFolder(url: plugins).isFirstLaunch(config: file)
+        SpotFolder(url: plugins).isFirstLaunch(config: file)
     }
 
     func testNoConfigAndNoFolderIsAFirstLaunch() {
@@ -57,43 +57,23 @@ final class FirstLaunchTests: XCTestCase {
 
     func testOnlyQuietRepoSpotsStartOn() throws {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let place = PluginFolder(url: plugins, core: repo.appendingPathComponent("plugins"))
+        let place = SpotFolder(url: plugins, core: repo.appendingPathComponent("plugins"))
 
         let starting = place.startingSpots()
 
         XCTAssertFalse(starting.isEmpty)
         XCTAssertTrue(starting.contains("settings"))
-        let scan = try PluginFolder(url: plugins, core: place.core, enabled: Set(starting)).scan()
+        let scan = try SpotFolder(url: plugins, core: place.core, enabled: Set(starting)).scan()
         XCTAssertEqual(scan.refused, [])
         XCTAssertFalse(scan.scripts.contains { $0.read?.seconds != nil })
     }
 
     func testWithNoCoreFolderNoSpotsStartOn() {
-        XCTAssertEqual(PluginFolder(url: plugins).startingSpots(), [])
+        XCTAssertEqual(SpotFolder(url: plugins).startingSpots(), [])
     }
 
     func testTheKeyToastNamesTheKeyInUse() throws {
         XCTAssertEqual(Shortcut.standard.openHint, "Press `⌃Space` to open Openspot")
         XCTAssertEqual(try XCTUnwrap(Shortcut(text: "option+k")).openHint, "Press `⌥K` to open Openspot")
-    }
-
-    func testTheFirstLaunchListOffersTheLoginRowAndAPickTurnsItOn() throws {
-        final class Fake: @unchecked Sendable { var isOn = false }
-        let fake = Fake()
-        let item = LoginItem(isOn: { fake.isOn }, set: { fake.isOn = $0 })
-        let catalog = CatalogSpot(folder: plugins, core: nil, config: file, login: item)
-
-        let rows = PluginOutput(text: try catalog.answer(["read"])).items
-        XCTAssertEqual(rows.map(\.run), [CatalogSpot.buildRun, LoginItem.run])
-        XCTAssertEqual(rows.last?.hides, [CatalogSpot.reviewID])
-
-        XCTAssertEqual(try catalog.answer(["open", LoginItem.run]), "")
-        XCTAssertTrue(fake.isOn)
-    }
-
-    func testTheNormalListHasNoLoginRow() throws {
-        let catalog = CatalogSpot(folder: plugins, core: nil, config: file)
-
-        XCTAssertEqual(PluginOutput(text: try catalog.answer(["read"])).items.map(\.run), [CatalogSpot.buildRun])
     }
 }

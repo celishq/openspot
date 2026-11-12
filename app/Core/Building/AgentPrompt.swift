@@ -5,13 +5,21 @@ import Foundation
 public struct AgentPrompt: Equatable, Sendable {
     public let folder: URL
     public let guide: URL
-    /// The program of this app, which is the `openspot` command.
+    /// The `openspot` command that the agent runs.
     public let app: String
 
     public init(folder: URL, guide: URL, app: String) {
         self.folder = folder
         self.guide = guide
         self.app = app
+    }
+
+    /// The `openspot` client in the Helpers of the app, which reaches the running app, or the app's own program when the
+    /// app has no client.
+    public static func command(of app: String) -> String {
+        let contents = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent()
+        let client = contents.appendingPathComponent("Helpers/openspot").path
+        return FileManager.default.isExecutableFile(atPath: client) ? client : app
     }
 
     /// The toast of each copy of a prompt.
@@ -43,6 +51,27 @@ public struct AgentPrompt: Equatable, Sendable {
         return """
         Change the Openspot spot in \(file.path). Ask me what to change before you change it.
         \(failed)
+        \(steps(for: file.deletingPathExtension().lastPathComponent))
+        """
+    }
+
+    /// Asks to read a spot and tell what it does and what it runs on the person's computer, with no change.
+    public func reviewing(_ file: URL) -> String {
+        """
+        Read the Openspot spot in \(file.path), and change nothing.
+        Tell me what it does, what it runs on my computer, which files it reads or writes, and whether it uses the network.
+        First run "\(app)" guide, so that you know how a spot works.
+        """
+    }
+
+    /// Asks for the store listing of a spot: a readme beside it, a description, and a preview mode with fake data.
+    public func listing(_ file: URL) -> String {
+        let readme = SpotListing.readme(of: file).lastPathComponent
+        return """
+        Write the store listing of the Openspot spot in \(file.path). Do not change what it does.
+        1. Write \(readme) beside it: what the spot does and how to use it, in two or three short paragraphs, then what it runs on my computer, which files it reads or writes, and whether it uses the network.
+        2. Give its header a detail= line of one short sentence, if it has none.
+        3. Add preview=sample to its header, and make its read print fake rows, with no data of mine, while OPENSPOT_REASON is spot.preview.
         \(steps(for: file.deletingPathExtension().lastPathComponent))
         """
     }

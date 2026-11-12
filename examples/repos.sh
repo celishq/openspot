@@ -1,12 +1,12 @@
 #!/bin/sh
 # icon=arrow.triangle.branch
 # detail=Open a git repo
-# size=small
-# read=sheet
+# on=sheet.open
+# uses=clipboard
 #
-# setting=folder
+# field=folder
 #
-# setting=editor
+# field=editor
 # title=Default app
 export LC_ALL=en_US.UTF-8
 . "$OPENSPOT_SH"
@@ -80,9 +80,13 @@ branch() {
 
 # Prints the form that asks for the editor, with this title.
 form() {
-  printf 'title=%s\n\nchoice=editor\ntitle=Default app\nvalue=%s\n' "$1" "$(esc "$editor")"
+  openspot_kv title "$1"
+  printf '\nchoice=editor\ntitle=Default app\n'
+  openspot_kv value "$editor"
   installed | while IFS= read -r app; do
-    printf '\noption=%s\ntitle=%s\n' "$(esc "$app")" "$(esc "$(name "$app")")"
+    printf '\n'
+    openspot_kv option "$app"
+    openspot_kv title "$(name "$app")"
   done
 }
 
@@ -172,25 +176,29 @@ case "$1" in
 "
     done
     hosts=$(printf '%s' "$repos" | while IFS="$tab" read -r repo url; do [ -z "$url" ] || host "$url"; echo; done | sed '/^$/d' | sort -u)
-    printf 'button=open\ntitle=Open in %s\n\n' "$(esc "$(name "$editor")")"
+    printf 'button=open\n'
+    openspot_kv title "Open in $(name "$editor")"
+    printf '\n'
     index=0
     installed | while IFS= read -r app; do
       index=$((index + 1))
-      [ "$app" = "$editor" ] || [ "$app" = "$finder" ] || printf 'button=in-%s\ntitle=Open in %s\nclose=true\n\n' "$index" "$(esc "$(name "$app")")"
+      [ "$app" = "$editor" ] || [ "$app" = "$finder" ] || { printf 'button=in-%s\nclose=true\n' "$index"; openspot_kv title "Open in $(name "$app")"; printf '\n'; }
     done
     index=0
     printf '%s\n' "$hosts" | while IFS= read -r each; do
       [ -n "$each" ] || continue
       index=$((index + 1))
-      printf 'button=page-%s\ntitle=Open on %s\nclose=true\n\n' "$index" "$(esc "$(site "$each")")"
+      printf 'button=page-%s\nclose=true\n' "$index"
+      openspot_kv title "Open on $(site "$each")"
+      printf '\n'
     done
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+return\nclose=true\n\n'
     printf 'button=terminal\ntitle=Open in Terminal\nshortcut=cmd+t\nclose=true\n\n'
     printf 'button=copy\ntitle=Copy path\nshortcut=cmd+shift+c\nclose=true\n\n'
-    printf 'button=editor\ntitle=Change default app\nscope=command\nform=true\n\n'
-    printf 'button=folder\ntitle=Change folder\nscope=command\nclose=true\n\n'
+    printf 'button=editor\ntitle=Change default app\nscope=spot\nform=true\n\n'
+    printf 'button=folder\ntitle=Change folder\nscope=spot\nclose=true\n\n'
     printf '%s' "$repos" | while IFS="$tab" read -r repo url; do
-      printf 'row=%s\ntitle=%s\ndetail=%s\nicon=%s\n' "$(esc "$repo")" "$(esc "${repo##*/}")" "$(esc "$(branch "$repo")")" "$(esc "$repo")"
+      openspot_row "$repo" "${repo##*/}" "$(branch "$repo")" "$repo"
       own=$( [ -z "$url" ] || host "$url")
       index=0
       printf '%s\n' "$hosts" | while IFS= read -r each; do
@@ -205,7 +213,7 @@ case "$1" in
       case "$shown" in
         "$HOME"/*) shown="~${shown#"$HOME"}" ;;
       esac
-      printf 'row=choose\ntitle=No git repos in %s\ndetail=Choose another folder\nicon=folder.badge.questionmark\n' "$(esc "$shown")"
+      openspot_row choose "No git repos in $shown" "Choose another folder" folder.badge.questionmark
     fi
     ;;
   open)

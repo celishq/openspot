@@ -1,8 +1,9 @@
 #!/bin/sh
 # title=System details
 # icon=gauge.with.dots.needle.50percent
-# read=sheet
+# on=sheet.open
 here=$(dirname "$0")
+. "$OPENSPOT_SH"
 
 # Prints what a metric script in this folder shows as the value and the mark of a line. It looks, and does not read, so
 # that the trend of a metric gets no point from it.
@@ -21,20 +22,18 @@ function symbol(name, part) {
   return "headphones"
 }
 {
-  printf "text=device-%d\ntitle=%s%s\nicon=%s\ndetail=%s%%\nvalue=%.2f\n", NR, $1, ($2 == "" ? "" : ", " tolower($2)), symbol($1, $2), $3, $3 / 100
-  if ($3 <= 20) print "tone=bad"
-  print ""
-}'
+  printf "device-%d\t%s%s\t%s%%\t%s\tvalue=%.2f\t%s\n", NR, $1, ($2 == "" ? "" : ", " tolower($2)), $3, symbol($1, $2), $3 / 100, ($3 <= 20 ? "tone=bad" : "")
+}' | openspot_rows text
 
 printf 'section=cpu\ntitle=CPU\n\ntext=cpu-all\ntitle=All cores\nicon=cpu\n%s\n\n' "$(reading cpu.sh)"
 ps -Aco pcpu=,comm= -r | head -3 | awk '{
   cpu = $1; $1 = ""; sub(/^ /, "")
-  printf "text=cpu-%d\ntitle=%s\ndetail=%s%%\n\n", NR, $0, cpu
-}'
+  printf "cpu-%d\t%s\t%s%%\n", NR, $0, cpu
+}' | openspot_rows text
 
 printf 'section=memory\ntitle=Memory\n\ntext=memory-used\ntitle=Used\nicon=memorychip\n%s\n\n' "$(reading memory.sh)"
 printf 'text=swap\ntitle=Swap\ndetail=%s\n\n' "$(/usr/sbin/sysctl -n vm.swapusage | awk '{ mb = $6 + 0; print (mb >= 1024 ? sprintf("%.1f GB", mb / 1024) : sprintf("%d MB", mb)) }')"
 ps -Aco rss=,comm= -m | head -3 | awk '{
   kb = $1; $1 = ""; sub(/^ /, "")
-  printf "text=memory-%d\ntitle=%s\ndetail=%s\n\n", NR, $0, (kb >= 1048576 ? sprintf("%.1f GB", kb / 1048576) : sprintf("%d MB", kb / 1024))
-}'
+  printf "memory-%d\t%s\t%s\n", NR, $0, (kb >= 1048576 ? sprintf("%.1f GB", kb / 1048576) : sprintf("%d MB", kb / 1024))
+}' | openspot_rows text
