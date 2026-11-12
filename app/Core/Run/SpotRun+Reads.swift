@@ -47,8 +47,8 @@ extension SpotRun {
         after(Self.textPause, key: Self.searchKey) { [weak self] in self?.ask() }
     }
 
-    /// Asks the script about the current search. A newer search stops the older one. This never waits: `search` holds the
-    /// pause.
+    /// Asks the script about the current search, with the values of the sheet and the text on stdin. A newer search stops
+    /// the older one. This never waits: `search` holds the pause.
     func ask() {
         let query = list.query
         if let older = running(Self.searchKey) { stop(older) }
@@ -57,7 +57,7 @@ extension SpotRun {
         link.send(Call(
             action: .read,
             key: Self.searchKey,
-            input: SearchQuery(text: query).input,
+            input: (showsSheet ? panel?.values ?? "" : "") + SearchQuery(text: query).input,
             limit: runs.readLimit,
             reason: .text(query, inSheet: true),
             variables: ReadReason.text(query, inSheet: true).variables,

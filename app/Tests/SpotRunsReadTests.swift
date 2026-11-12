@@ -140,6 +140,18 @@ final class SpotRunsReadTests: SpotRunsCase {
         try await wait("the search read") { self.log("reasons") == ["sheet.open read", "sheet.text read"] }
     }
 
+    func testAReadOfTheSearchSendsTheFieldsOfTheSheetWithTheText() async throws {
+        try script(header: "on=sheet.open\non=sheet.text", "[ \"$OPENSPOT_REASON\" = sheet.text ] && cat >> '\(path("stdin"))'\nprintf 'field=note\\nvalue=hello\\n'")
+        let sheet = try sheet()
+        sheet.open(onReady: {})
+        try await wait("the sheet") { sheet.panel?.values == "note=hello\n" }
+
+        sheet.search("k")
+
+        try await wait("the search read") { self.log("stdin").contains("search=k") }
+        XCTAssertEqual(log("stdin"), ["note=hello", "search=k"])
+    }
+
     func testAnOpenAtLaunchRunsNoScriptThatReadsOnlyAtItsSheet() async throws {
         try script(header: "on=sheet.open", "echo run >> '\(path("runs"))'")
         _ = try sheet()
