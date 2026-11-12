@@ -1,10 +1,11 @@
 import AppKit
 import OpenspotCore
 
-/// The host of the playground's panel: it shows nothing of its own, and hands each toast and failure to the playground.
+/// The host of the playground's panel: it shows nothing of its own, and hands each toast, failure and note of work to the
+/// playground.
 @MainActor
 final class SpotPlaygroundHost: SpotsHost {
-    /// Takes each toast and failure of the panel.
+    /// Takes each toast, failure and note of work of the panel.
     var onNote: (String) -> Void = { _ in }
 
     nonisolated deinit {}
@@ -15,6 +16,7 @@ final class SpotPlaygroundHost: SpotsHost {
     func notify(_ text: String) { onNote(text) }
     func notify(_ text: String, fix: URL) { onNote(text) }
     func confirm(_ text: String) { onNote(text) }
+    func work(_ text: String) { onNote(text) }
     func applyConfig(_ config: Config) {}
     func setEntryKey(on isOn: Bool) {}
     func hold(_ keys: [GlobalKey]) {}

@@ -506,7 +506,7 @@ struct SheetPartsView: View {
 
 /// Gives the focus back once the panel has faded in. It alone reads whether the panel shows, so that a show reruns no part.
 private struct FocusOnShow: ViewModifier {
-    let focus: () -> Void
+    let focus: @MainActor @Sendable () -> Void
     @Environment(\.spotIsShown) private var isShown
 
     func body(content: Content) -> some View {

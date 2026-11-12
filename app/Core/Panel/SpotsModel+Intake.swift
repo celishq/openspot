@@ -169,7 +169,7 @@ extension SpotsModel {
                 let folder = files.folder
                 var spot = try SharedSpot(sharing: entry.spot, from: folder.scan())
                 if spot.needsCompile {
-                    host.confirm("Compiling \(entry.spot.name)")
+                    host.work("Compiling \(entry.spot.name)")
                     spot = try await spot.compiled()
                 }
                 let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)

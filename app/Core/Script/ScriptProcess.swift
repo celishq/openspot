@@ -405,7 +405,7 @@ public final class ScriptProcess: @unchecked Sendable {
         }
         posix_spawn_file_actions_adddup2(&actions, output.fileDescriptor, STDOUT_FILENO)
         posix_spawn_file_actions_adddup2(&actions, errors.fileDescriptor, STDERR_FILENO)
-        if let folder { posix_spawn_file_actions_addchdir_np(&actions, folder.path) }
+        if let folder { posix_spawn_file_actions_addchdir(&actions, folder.path) }
         var attributes: posix_spawnattr_t?
         posix_spawnattr_init(&attributes)
         defer { posix_spawnattr_destroy(&attributes) }

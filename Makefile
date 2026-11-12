@@ -1,4 +1,4 @@
-.PHONY: verify test perf eval-agent docs-images plugins dev-state examples release release-build
+.PHONY: verify test perf shots eval-agent docs-images plugins dev-state examples release release-build
 
 verify:
 	sh scripts/check-core.sh
@@ -12,6 +12,9 @@ test:
 
 perf:
 	sh scripts/motion-perf.sh $(N)
+
+shots:
+	sh scripts/menu-shots.sh
 
 eval-agent:
 	sh scripts/agent-eval.sh $(N)

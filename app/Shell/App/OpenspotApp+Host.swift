@@ -30,6 +30,10 @@ extension OpenspotApp: SpotsHost {
         toast?.show(text, symbol: ToastPanel.confirmSymbol)
     }
 
+    func work(_ text: String) {
+        toast?.show(text, isWorking: true, for: nil)
+    }
+
     /// Shows the float of a spot at the pointer once its first answer comes, or after the pause of a sheet (W4), or moves
     /// its float there.
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {

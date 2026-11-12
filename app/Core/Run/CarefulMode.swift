@@ -50,7 +50,7 @@ struct CarefulMode: Equatable, Sendable {
     private static let cache: String = {
         var buffer = [CChar](repeating: 0, count: Int(PATH_MAX))
         guard confstr(_CS_DARWIN_USER_CACHE_DIR, &buffer, buffer.count) > 0 else { return NSTemporaryDirectory() }
-        return String(cString: buffer)
+        return String(decoding: buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self)
     }()
 
     /// The folder where macOS keeps screenshots, or the Desktop of the home with none set.

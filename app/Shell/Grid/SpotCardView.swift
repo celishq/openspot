@@ -4,7 +4,7 @@ import OpenspotCore
 /// A spot: a glyph, then a title with a detail, then an accessory. A small card shows the glyph alone, and a widget shows
 /// its places. A kind differs only in what fills a slot: a slider has its track as its detail, and running work takes the
 /// place of the glyph.
-struct SpotCardView: View, Equatable {
+struct SpotCardView: View, @MainActor Equatable {
     let entry: SpotsModel.Entry
     let size: SpotSize
     /// The card's place among the visible cards, which its ring compares with the selection.
@@ -21,7 +21,7 @@ struct SpotCardView: View, Equatable {
     var onTap: (() -> Void)?
 
     /// Whether two cards show the same values, so that a run of the grid reruns only the cards that changed.
-    nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+    static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.entry == rhs.entry && lhs.size == rhs.size && lhs.index == rhs.index && lhs.isPressed == rhs.isPressed
             && lhs.takesDrag == rhs.takesDrag && lhs.isDropTarget == rhs.isDropTarget && lhs.chainLetter == rhs.chainLetter
             && lhs.model === rhs.model
@@ -40,7 +40,8 @@ struct SpotCardView: View, Equatable {
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))
             .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, blursBehind: false, rimSize: CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))))
-            .modifier(CardHover(shape: shape, isFilled: isFilled, showsPress: showsPress))
+            .modifier(CardPress(shape: shape, isFilled: isFilled, showsPress: showsPress))
+            .modifier(SpotPointerMove { model.point(at: .card(entry.id)) })
             .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).modifier(CardReveal()).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { chainLetter.map { ChainKeycap(model: model, letter: $0, size: size) } }
             .overlay(alignment: .topTrailing) { FailureMark(entry: entry, size: size) }
@@ -246,22 +247,20 @@ private struct CardRing: ViewModifier {
     let shape: RoundedRectangle
 
     func body(content: Content) -> some View {
-        content.modifier(SpotSelectionRing(isSelected: model.selected == index, shape: shape))
+        content.modifier(SpotSelectionRing(isSelected: model.selected == index, shape: shape, marksMenu: model.openList == nil))
     }
 }
 
-/// The tint of a card under the pointer or a press. It alone holds the hover, so that a hover reruns no card.
-private struct CardHover: ViewModifier {
+/// The tint of a pressed card. The pointer moves the selection ring, not a tint.
+private struct CardPress: ViewModifier {
     let shape: RoundedRectangle
     let isFilled: Bool
     let showsPress: Bool
-    @State private var isHovered = false
 
     func body(content: Content) -> some View {
         content
-            .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : isHovered ? 0.08 : 0)).allowsHitTesting(false))
+            .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : 0)).allowsHitTesting(false))
             .contentShape(shape)
-            .onHover { isHovered = $0 }
     }
 }
 

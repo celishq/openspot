@@ -253,6 +253,18 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(model.sheets["list"]?.isOpen, false)
     }
 
+    func testPointingAtARowSelectsItUnlessItsMenuIsOpen() async throws {
+        try await openList()
+        let rows = try XCTUnwrap(model.openItems?.shown)
+
+        model.point(at: .item(rows[1]))
+        XCTAssertEqual(model.openItems?.selectedItem?.run, rows[1].run)
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        model.point(at: .item(rows[0]))
+        XCTAssertEqual(model.openItems?.selectedItem?.run, rows[1].run)
+    }
+
     func testTheSearchOfAnOpenListFiltersItsRowsAndLeavesTheGridsSearch() async throws {
         try await openList()
 

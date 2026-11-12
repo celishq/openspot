@@ -1,3 +1,5 @@
+import Foundation
+
 /// The rows of the actions menu for one command and its selected item, with the selected row.
 public struct ActionMenu: Equatable, Sendable {
     public struct Row: Equatable, Sendable {
@@ -11,8 +13,8 @@ public struct ActionMenu: Equatable, Sendable {
     /// The key that opens and closes the menu, as the footer shows it.
     public static let key = "⌘K"
 
-    /// How many rows a person takes in at a glance. A menu with more shows a field to search them.
-    private static let glance = 5
+    /// How many rows a menu needs to show a field to search them.
+    private static let searchFrom = 3
 
     public let rows: [Row]
     /// The rows that the search finds, best first. With no search, each row.
@@ -36,12 +38,17 @@ public struct ActionMenu: Equatable, Sendable {
     }
 
     public var isSearchable: Bool {
-        rows.count > Self.glance
+        rows.count >= Self.searchFrom
     }
 
     /// How many lines it draws: one for each row that it shows, and one for the field of a menu that searches.
     public var lines: Int {
         isSearchable ? shown.count + 1 : rows.count
+    }
+
+    /// How many lines it draws with no search, which sets its place.
+    public var fullLines: Int {
+        isSearchable ? rows.count + 1 : rows.count
     }
 
     public var selectedRow: Row? {

@@ -31,6 +31,7 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertTrue(menu.isSearchable)
         XCTAssertEqual(menu.shown.map(\.title), ["Open in Zed", "Use Zed by default"])
         XCTAssertEqual(menu.lines, 3)
+        XCTAssertEqual(menu.fullLines, 8)
         XCTAssertEqual(menu.selectedRow?.title, "Open in Zed")
         menu.move(by: 1)
         XCTAssertEqual(menu.press()?.title, "Use Zed by default")
@@ -49,11 +50,19 @@ final class ActionMenuTests: XCTestCase {
         XCTAssertEqual(menu.selectedRow?.title, "Copy path")
     }
 
-    func testAMenuOfFiveRowsHasNoSearch() throws {
-        let menu = try XCTUnwrap(ActionMenu(spot: command(), item: item))
+    func testAMenuOfThreeRowsSearchesAndAMenuOfTwoDoesNot() throws {
+        let three = try XCTUnwrap(ActionMenu(spot: command(), item: item))
+        let two = try XCTUnwrap(ActionMenu(
+            spot: Spot(id: "b", name: "B", url: URL(fileURLWithPath: "/bin/true"), kind: .list, primary: "Copy", actions: [paste, delete]),
+            item: item,
+            showsPrimary: false
+        ))
 
-        XCTAssertFalse(menu.isSearchable)
-        XCTAssertEqual(menu.lines, 4)
+        XCTAssertTrue(three.isSearchable)
+        XCTAssertEqual(three.lines, three.rows.count + 1)
+        XCTAssertEqual(two.rows.count, 2)
+        XCTAssertFalse(two.isSearchable)
+        XCTAssertEqual(two.lines, 2)
     }
 
     func testEachRowOfAGridCardsMenuActsOnThatCard() throws {

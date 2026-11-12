@@ -30,7 +30,7 @@ extension SpotsModel {
             }
             if spot.previewsSample { try await SpotListing.capturePreview(of: spot, runs: runs) }
             if shared.needsCompile {
-                host.confirm("Compiling \(spot.name)")
+                host.work("Compiling \(spot.name)")
                 shared = try await shared.compiled()
             }
             let preview = try? String(contentsOf: SpotListing.preview(of: spot.url), encoding: .utf8)

@@ -10,6 +10,8 @@ struct SpotSelectionRing<Edge: InsettableShape>: ViewModifier {
     let shape: Edge
     var width = Self.width
     var motion: Animation?
+    /// Whether the actions menu opens at this item while it is selected.
+    var marksMenu = false
 
     func body(content: Content) -> some View {
         content.overlay(
@@ -17,5 +19,8 @@ struct SpotSelectionRing<Edge: InsettableShape>: ViewModifier {
                 .animation(motion) { $0.opacity(isSelected ? 1 : 0) }
                 .allowsHitTesting(false)
         )
+        .transformAnchorPreference(key: SpotMenuAnchor.self, value: .bounds) { item, bounds in
+            if isSelected, marksMenu { item = SpotMenuAnchor.Item(bounds: bounds, corner: (shape as? RoundedRectangle)?.cornerSize.width ?? 0) }
+        }
     }
 }
