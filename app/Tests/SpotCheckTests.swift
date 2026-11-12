@@ -47,6 +47,15 @@ final class SpotCheckTests: XCTestCase {
         ])
     }
 
+    func testACardThatNamesASpotWithNoEventIsAFaultThatNamesTheFix() async throws {
+        try "#!/bin/sh\n# title=Plain\necho\n".writeScript(to: folder.appendingPathComponent("plain.sh"))
+        try "#!/bin/sh\n# title=W\n# grid.square=plain\n".writeScript(to: folder.appendingPathComponent("w.sh"))
+
+        let findings = await SpotCheck(folder: SpotFolder(url: folder)).findings()
+
+        XCTAssertEqual(findings.map(\.fault), ["W names plain, which has no on= line, so it never prints a value. Give plain an event, such as on=clock.60."])
+    }
+
     func testAnEventThatNoSpotRaisesIsAFaultThatNamesTheFix() async throws {
         try "#!/bin/sh\n# on=music.track\n# on=clipboard.change\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.appendingPathComponent("song.sh"))
 

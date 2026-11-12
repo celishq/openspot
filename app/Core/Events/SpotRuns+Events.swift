@@ -59,6 +59,8 @@ extension SpotRuns {
         }
     }
 
+    /// Reads the spots of the open panel. A spot that a card of other spots places, with an event that neither the clock nor
+    /// `panel.open` reads, reads with `spot.want`. A placed spot with no event is never read.
     private func openPanel() {
         let wasOpen = isPanelOpen
         isPanelOpen = true
@@ -66,7 +68,8 @@ extension SpotRuns {
         raise(.clock)
         readPanel()
         for id in placed {
-            if let sheet = sheets[id], sheet.spot.read?.seconds == nil { sheet.read() }
+            guard let sheet = sheets[id], let read = sheet.spot.read, read.seconds == nil, !read.has(.panel) else { continue }
+            sheet.read(reason: .want)
         }
         updateClock()
     }

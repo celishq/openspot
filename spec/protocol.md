@@ -653,6 +653,7 @@ A card can show several spots at once. The spot that draws it names them, and Op
 
 - Each word of the `grid.<size>=` lines of a header is the ID of a spot. Openspot reads each spot that it names while the
   card shows, and shows its main block in that area.
+- A spot that a card names MUST have an `on=` event. With no event that reads it, Openspot reads it with `spot.want`.
 - A metric is a spot with a `clock` whose main block is a `text`, a `number` or a `graph`.
 - A name is a script of its own folder first, else the ID of a spot.
 - The lines of one drawing MUST have the same number of words, and each name MUST cover a rectangle. A drawing MUST use one

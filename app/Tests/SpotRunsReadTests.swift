@@ -404,6 +404,19 @@ final class SpotRunsReadTests: SpotRunsCase {
         XCTAssertEqual(log("idle"), [])
     }
 
+    func testAnOpenPanelReadsEachPlacedSpotOnceWithTheReasonOfItsEventOrSpotWant() async throws {
+        try script("sheeted", header: "on=sheet.open", log: "sheeted", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'title=1\\n'")
+        try script("paneled", header: "on=panel.open", log: "paneled", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'title=1\\n'")
+        try "#!/bin/sh\n# title=W\n# grid.large=sheeted paneled\n".writeScript(to: folder.appendingPathComponent("w.sh"))
+        _ = try scanned()
+
+        runs.panelOpened()
+
+        try await wait("the reads") { self.log("reasons").count == 2 }
+        try await allEnded()
+        XCTAssertEqual(log("reasons").sorted(), ["panel.open", "spot.want"])
+    }
+
     func testAReadAfterAChangeOfStateUsesNoYoungAnswer() async throws {
         try script(header: "on=sheet.open", """
         [ "$1" = read ] && printf 'grid=go\\n\\nbutton=go\\ntitle=Go\\n'

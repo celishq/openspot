@@ -67,7 +67,7 @@ final class SpotRunsWantTests: SpotRunsCase {
 
         let scan = try SpotFolder(url: folder).scan()
 
-        XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "w", reason: "W names no metric called once")])
+        XCTAssertEqual(scan.refused, [ScanResult.Refusal(file: "w", reason: "W names once, which has no on= line, so it never prints a value. Give once an event, such as on=clock.60.")])
     }
 
     func testTheMenuBarShowsWhatTheSheetHolds() async throws {
