@@ -54,6 +54,8 @@ public struct SpotOutput: Equatable, Sendable {
     private var takenDefaults: [String] {
         blocks.contains { $0.fields.first?.key == "row" && $0.value("file") != nil } ? ["drag"] : []
     }
+    /// The keys of stdin, which no part or action can take as its id (protocol: Blocks).
+    private static let inputKeys = ["search", "form", "value"]
     private static let button = "button"
     private static let repeatKind = "repeat"
     private static let optionKind = "option"
@@ -231,6 +233,9 @@ public struct SpotOutput: Equatable, Sendable {
         for id in [Self.reserved] + Self.defaults + takenDefaults where parts.contains(where: { $0.id == id }) {
             checkedFaults.append("a part cannot be called \(id)")
         }
+        for id in Self.inputKeys where parts.contains(where: { $0.id == id }) {
+            checkedFaults.append("a part cannot be called \(id), which stdin uses")
+        }
         for row in rows {
             if row.value("as") != nil {
                 checkedFaults.append("the row \(row.value("row") ?? "") has as=, which Openspot no longer reads. A row draws its own keys")
@@ -322,6 +327,7 @@ public struct SpotOutput: Equatable, Sendable {
     /// Keeps an action. The `open` action sets the word for Enter, and whether a pick stays in the panel.
     private mutating func take(action id: String, _ block: TextBlock) {
         if checks, id == Self.reserved || ((Self.defaults + takenDefaults).contains(id) && id != "open") { checkedFaults.append("an action cannot be called \(id)") }
+        if checks, Self.inputKeys.contains(id) { checkedFaults.append("an action cannot be called \(id), which stdin uses") }
         if id == "open" {
             primary = block.value("title")
             pick = block.flag("close") == false ? .stay : .close

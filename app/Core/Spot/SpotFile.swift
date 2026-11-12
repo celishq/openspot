@@ -212,8 +212,14 @@ public struct SpotFile: Equatable, Sendable {
 
     /// A spot whose header draws its card from other spots: each word of its `grid.<size>` lines is the ID of a spot, whose
     /// main block shows in that area, and `to` names the spot that a press opens.
+    /// The keys beside its `grid.<size>` lines that a header of a card of other spots takes (protocol: Cards of other spots).
+    private static let cardKeys: Set<String> = ["title", "icon", "detail", "keyword", "size", "to"]
+
     private static func drawn(_ header: TextBlock, name: String, id: String, url: URL) throws -> Spot {
         try refuseLetter(header.value("shortcut"), of: name)
+        if let key = header.fields.map(\.key).first(where: { !$0.hasPrefix(drawingPrefix) && !cardKeys.contains($0) }) {
+            throw SpotError.fault("\(name) draws a card of other spots, so it takes no \(key). Keep title, icon, detail, keyword, size, to and its grid lines, or draw its own blocks with grid lines in its output")
+        }
         let keys = Set(header.fields.map(\.key).filter { $0.hasPrefix(drawingPrefix) })
         guard keys.count == 1, let key = keys.first else {
             throw SpotError.fault("\(name) draws its card at more than one size. Keep the grid lines of one size, such as grid.large")

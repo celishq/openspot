@@ -253,6 +253,14 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(SpotOutput(text: "button=read\ntitle=A\n").partFaults, ["an action cannot be called read"])
     }
 
+    func testAPartOrAnActionWithAKeyOfStdinIsAFault() {
+        for id in ["search", "form", "value"] {
+            XCTAssertEqual(SpotOutput(text: "field=\(id)\nvalue=A\n").partFaults, ["a part cannot be called \(id), which stdin uses"])
+            XCTAssertEqual(SpotOutput(text: "button=\(id)\ntitle=A\n").partFaults, ["an action cannot be called \(id), which stdin uses"])
+            XCTAssertEqual(SpotOutput(text: "row=\(id)\ntitle=A\n").partFaults, [])
+        }
+    }
+
     func testAPartCanBeCalledCallOrArgBecauseAValueRidesInsideTheInputOfACall() {
         for id in ["call", "reason", "arg", "input"] {
             XCTAssertEqual(SpotOutput(text: "field=\(id)\nvalue=A\n").partFaults, [])

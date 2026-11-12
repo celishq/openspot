@@ -205,6 +205,13 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(try scan.refused.first?.reason, "Now draws its card at more than one size. Keep the grid lines of one size, such as grid.large")
     }
 
+    func testACardOfOtherSpotsRefusesAKeyOfASpotThatRuns() throws {
+        try power()
+        try widget(more: "# icon=cpu\n# detail=Now\n# keyword=load\n# size=large\n# on=clock.60\n")
+
+        XCTAssertEqual(try scan.refused.first?.reason, "Now draws a card of other spots, so it takes no on. Keep title, icon, detail, keyword, size, to and its grid lines, or draw its own blocks with grid lines in its output")
+    }
+
     func testAWidgetThatNamesAMissingMetricIsLeftOutAndReported() throws {
         try widget(grid: ["power none"])
 

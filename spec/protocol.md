@@ -120,7 +120,7 @@ esac
 ```
 
 - The comment lines right under the first line are the header. They start with `#`, `//` or `--`. The first other line
-  ends them.
+  ends them, and so do the first 4096 bytes of the file.
 - The keys of the spot come first. After each blank comment line comes a `button` or a `field` block.
 - Openspot reads the header and never runs a spot to scan it.
 - A header key that is not valid refuses that spot. The other spots still load.
@@ -206,7 +206,8 @@ confirm=Press again to forget
 
 - A spot prints blocks, and a drawing places them. The app owns each canvas, size, gap and colour.
 - A block is `<kind>=<id>`. The id names its area, the call that it sends, and the thing that moves when it changes. Ids
-  MUST be unique in one output.
+  MUST be unique in one output. The id of a block other than a `row` MUST NOT be `search`, `form` or `value`, which stdin
+  uses.
 - Each kind keeps its data in `value`. A kind that shows several values repeats it.
 
 | Kind      | Shows                                                                                                          | Its own keys                                                         | Sends                  |
@@ -226,13 +227,13 @@ confirm=Press again to forget
 | `row`     | One item of a list (see Rows).                                                                                 | the keys of Rows                                                     | `open <id>`            |
 
 - The `type` of a field: none for a line of text, `multiline` for several lines, `slider` from `min` to `max` (0 to 100 by
-  default), which sends when the person lets go, and `hotkey` for a key combination that a press records.
+  default), which sends a whole number when the person lets go, and `hotkey` for a key combination that a press records.
 - `type=multiple` lets a choice pick several (see Buttons and actions).
 - Each kind also takes `title`, `detail`, `tone` and `icon`. A key that a kind does not take is skipped.
 - `icon` says what the picture is by its value:
   - a path of a picture file, such as `cups.png`, draws the picture;
   - an `https://` URL draws a picture from the web, which Openspot fetches once and keeps;
-  - any other path draws the Finder icon of the file;
+  - any other path draws the Finder icon of the file. It MUST hold a `/` or start with `~`, such as `./notes.txt`;
   - a name of lowercase letters, digits and dots, such as `wifi`, is an SF Symbol;
   - any other text, such as `😀`, is drawn as it is.
 - `tone` is `good`, `warn` or `bad`. On a text, it colours the detail, or the title when it has no detail.
@@ -672,6 +673,8 @@ A card can show several spots at once. The spot that draws it names them, and Op
 - The lines of one drawing MUST have the same number of words, and each name MUST cover a rectangle. A drawing MUST use one
   size.
 - `to=` names the spot that a press of the card opens.
+- Such a header takes no other key than `title`, `icon`, `detail`, `keyword`, `size` and `to`. Any other key refuses the
+  spot, because the card runs no script.
 
 ## Files out
 
