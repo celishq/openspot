@@ -5,7 +5,6 @@ import SwiftUI
 struct AccountView: View {
     @Bindable var flow: AccountFlow
     let close: () -> Void
-    @FocusState private var focused: Int?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -25,6 +24,7 @@ struct AccountView: View {
     @ViewBuilder private var step: some View {
         switch flow.step {
         case .choose: choose
+        case .about: about
         case .words: words
         case .check: check
         case .restore: restore
@@ -41,6 +41,19 @@ struct AccountView: View {
                 Spacer()
                 Button("Use existing account…") { flow.start(.restore) }
                 Button("Create account", action: flow.create).keyboardShortcut(.defaultAction)
+            }
+        }
+    }
+
+    private var about: some View {
+        Group {
+            Text("Your account is 12 words").font(.title2.bold())
+            Text("They are your account. There's no email, no password and no server.")
+            Text("Anyone who has them can publish as you, so keep them private.")
+            Text("Openspot can't reset them. If you lose them and this Mac, the account is gone.")
+            HStack {
+                Spacer()
+                Button("Show my words", action: flow.showWords).keyboardShortcut(.defaultAction)
             }
         }
     }
@@ -95,34 +108,21 @@ struct AccountView: View {
     private var restore: some View {
         Group {
             Text("Sign in with your words").font(.title2.bold())
-            Text("Type or paste your 12 words. You can paste an nsec into the first box too.")
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 8) {
-                ForEach(0..<AccountFlow.wordCount, id: \.self) { index in
-                    HStack(spacing: 6) {
-                        Text("\(index + 1)").foregroundStyle(.secondary).monospacedDigit().frame(width: 20, alignment: .trailing)
-                        TextField("", text: box(index))
-                            .textFieldStyle(.roundedBorder)
-                            .focused($focused, equals: index)
-                            .foregroundStyle(flow.unknownBoxes.contains(index) && focused != index ? .red : .primary)
-                            .onSubmit { focused = index + 1 < AccountFlow.wordCount ? index + 1 : nil }
-                    }
-                }
-            }
-            if let index = focused, !flow.boxes[index].isEmpty, AccountFlow.suggestions(for: flow.boxes[index]) != [flow.boxes[index]] {
-                suggestions(for: index)
-            }
-            if let problem = flow.problem {
-                Text(problem).foregroundStyle(.red)
-            } else if let replacing = flow.replacing, flow.canSignIn {
+            TextField(flow.usesNsec ? "nsec1…" : "Type or paste your 12 words", text: $flow.phrase, axis: .vertical)
+                .lineLimit(3...4)
+                .textFieldStyle(.roundedBorder)
+            Text(flow.problem ?? flow.account.map { "Sign in as \($0)" } ?? flow.counter)
+                .foregroundStyle(flow.problem == nil ? Color.secondary : Color.red)
+            if let replacing = flow.replacing, flow.canSignIn {
                 Text(replacing).foregroundStyle(.orange)
             }
             HStack {
+                Button(flow.usesNsec ? "Use your 12 words" : "Use an nsec instead") { flow.usesNsec.toggle() }
                 Spacer()
                 Button("Cancel", action: close)
                 Button("Sign in", action: flow.signIn).keyboardShortcut(.defaultAction).disabled(!flow.canSignIn)
             }
         }
-        .onAppear { focused = 0 }
     }
 
     private var signOut: some View {
@@ -135,33 +135,5 @@ struct AccountView: View {
                 Button("Sign out", role: .destructive, action: flow.signOut)
             }
         }
-    }
-
-    private func suggestions(for index: Int) -> some View {
-        HStack {
-            ForEach(AccountFlow.suggestions(for: flow.boxes[index]).prefix(4), id: \.self) { word in
-                Button(word) {
-                    flow.boxes[index] = word
-                    focused = index + 1 < AccountFlow.wordCount ? index + 1 : nil
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-            }
-        }
-    }
-
-    /// A box that takes a pasted phrase whole.
-    private func box(_ index: Int) -> Binding<String> {
-        Binding(
-            get: { flow.boxes[index] },
-            set: { text in
-                if text.contains(where: \.isWhitespace), text.split(whereSeparator: \.isWhitespace).count > 1 {
-                    flow.paste(text)
-                    focused = nil
-                } else {
-                    flow.boxes[index] = text.trimmingCharacters(in: .whitespaces)
-                }
-            }
-        )
     }
 }

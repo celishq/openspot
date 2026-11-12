@@ -1,14 +1,14 @@
 import Foundation
 import Observation
 
-/// The steps of the account window: choose between a new account and an existing one, see the 12 words, prove they were
-/// written down by picking 2 of them, sign in with the words or an `nsec`, or sign out. Each step writes to the store
-/// at once, and a fault shows as `failure`.
+/// The steps of the account sheet: choose between a new account and an existing one, read what the 12 words are, see
+/// them, prove they were written down by picking 2 of them, sign in with the words or an `nsec`, or sign out. Each step
+/// writes to the store at once, and a fault shows as `failure`.
 @MainActor
 @Observable
 public final class AccountFlow {
     public enum Step: Equatable, Sendable {
-        case choose, words, check, restore, signOut, done
+        case choose, about, words, check, restore, signOut, done
     }
 
     /// One word of the check: its place among the 12, the 4 words to pick from, and the pick.
@@ -26,8 +26,16 @@ public final class AccountFlow {
     public private(set) var checks: [Check] = []
     public private(set) var mistake: String?
     public private(set) var failure: String?
-    /// The words typed or pasted to sign in, one per box, or an `nsec` in the first.
-    public var boxes = Array(repeating: "", count: AccountFlow.wordCount)
+    /// One word of the phrase being typed, and whether it is a word of the list, or starts one while it is being typed.
+    public struct TypedWord: Equatable, Sendable {
+        public let text: String
+        public let isKnown: Bool
+    }
+
+    /// What the person typed or pasted to sign in: the 12 words, or an `nsec`.
+    public var phrase = ""
+    /// Whether the sign-in takes an `nsec` in place of the words.
+    public var usesNsec = false
 
     public init(store: AccountStore, step: Step) {
         self.store = store
@@ -62,8 +70,13 @@ public final class AccountFlow {
         self.step = step
     }
 
-    /// Makes and keeps a new key, and shows its words.
+    /// Says what the words are, before a key is made.
     public func create() {
+        start(.about)
+    }
+
+    /// Makes and keeps a new key, and shows its words.
+    public func showWords() {
         attempt {
             let key = try AccountKey.make()
             try store.keep(key)
@@ -106,31 +119,54 @@ public final class AccountFlow {
         step = .words
     }
 
-    /// Puts a pasted phrase into the boxes, a word each, or an `nsec` into the first.
-    public func paste(_ text: String) {
-        let parts = text.split(whereSeparator: \.isWhitespace).map { $0.lowercased() }
-        boxes = (parts + Array(repeating: "", count: Self.wordCount)).prefix(Self.wordCount).map { $0 }
-    }
-
-    /// The boxes whose word is not in the list.
-    public var unknownBoxes: [Int] {
+    /// Each word of the phrase. The last one is still being typed until a space follows it.
+    public var typed: [TypedWord] {
         guard !isNsec else { return [] }
-        return boxes.indices.filter { !boxes[$0].isEmpty && !AccountWords.all.contains(boxes[$0].lowercased()) }
-    }
-
-    /// Why the boxes are not a key, once each holds a word, or nil.
-    public var problem: String? {
-        guard isNsec || boxes.allSatisfy({ !$0.isEmpty }) else { return nil }
-        do {
-            _ = try enteredKey()
-            return nil
-        } catch {
-            return (error as? SpotError)?.reason ?? error.localizedDescription
+        let words = phrase.split(whereSeparator: \.isWhitespace).map { $0.lowercased() }
+        let isTyping = phrase.last.map { !$0.isWhitespace } ?? false
+        return words.enumerated().map { index, word in
+            let isLast = index == words.count - 1 && isTyping
+            return TypedWord(text: word, isKnown: isLast ? !Self.suggestions(for: word).isEmpty : AccountWords.all.contains(word))
         }
     }
 
+    /// How many words the phrase holds, such as `8 of 12`.
+    public var counter: String {
+        "\(typed.count) of \(Self.wordCount)"
+    }
+
+    /// The word of the list that the word being typed starts, which Tab puts in its place.
+    public var completion: String? {
+        guard !isNsec, let last = phrase.last, !last.isWhitespace, let word = typed.last?.text else { return nil }
+        return Self.suggestions(for: word).first.flatMap { $0 == word ? nil : $0 }
+    }
+
+    /// Puts the completion in place of the word being typed, and a space after it.
+    public func complete() {
+        guard let completion, let word = typed.last?.text else { return }
+        phrase = String(phrase.dropLast(word.count)) + completion + " "
+    }
+
+    /// The `npub` of the account that the phrase signs in to, once it is one.
+    public var account: String? {
+        canSignIn ? (try? enteredKey())?.npub : nil
+    }
+
+    /// Why the phrase is no account, once it is long enough to be one, or nil.
+    public var problem: String? {
+        if isNsec {
+            guard trimmed.count >= Self.nsecLength else { return nil }
+            return (try? enteredKey()) == nil ? "This is not an nsec." : nil
+        }
+        let words = typed
+        guard words.count >= Self.wordCount else { return nil }
+        guard words.count == Self.wordCount else { return "An account has \(Self.wordCount) words, and this has \(words.count)." }
+        if let unknown = words.first(where: { !AccountWords.all.contains($0.text) }) { return "\(unknown.text) isn't one of the account words." }
+        return (try? enteredKey()) == nil ? "These words don't match an account. Check each word and their order." : nil
+    }
+
     public var canSignIn: Bool {
-        (isNsec || boxes.allSatisfy { !$0.isEmpty }) && problem == nil
+        (isNsec ? trimmed.count >= Self.nsecLength : typed.count == Self.wordCount) && problem == nil
     }
 
     /// What a sign-in replaces, when this Mac holds another key.
@@ -140,7 +176,7 @@ public final class AccountFlow {
         return "This replaces the account on this Mac. Spots you published with it will publish as new spots."
     }
 
-    /// Keeps the key of the boxes, marked as backed up, since the person has its words.
+    /// Keeps the key of the phrase, marked as backed up, since the person has its words.
     public func signIn() {
         attempt {
             try store.keep(try enteredKey(), isBackedUp: true)
@@ -162,12 +198,19 @@ public final class AccountFlow {
         return AccountWords.all.filter { $0.hasPrefix(letters) }
     }
 
+    private static let nsecLength = 63
+
+    private var trimmed: String {
+        phrase.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Whether the phrase is an `nsec`, by the choice of the person or by its start.
     private var isNsec: Bool {
-        boxes[0].hasPrefix("nsec") && boxes.dropFirst().allSatisfy(\.isEmpty)
+        usesNsec || trimmed.lowercased().hasPrefix("nsec1")
     }
 
     private func enteredKey() throws -> AccountKey {
-        isNsec ? try AccountKey(nsec: boxes[0]) : try AccountKey(words: boxes.map { $0.lowercased() })
+        isNsec ? try AccountKey(nsec: trimmed) : try AccountKey(words: typed.map(\.text))
     }
 
     private func attempt(_ work: () throws -> Void) {

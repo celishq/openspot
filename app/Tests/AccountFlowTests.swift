@@ -21,10 +21,20 @@ final class AccountFlowTests: XCTestCase {
         flow.words[check.position - 1]
     }
 
-    func testCreateKeepsANewKeyAndShowsItsTwelveWords() throws {
+    func testCreateFirstSaysWhatTheWordsAreAndMakesNoKeyYet() throws {
         let flow = AccountFlow(store: store, step: .choose)
 
         flow.create()
+
+        XCTAssertEqual(flow.step, .about)
+        XCTAssertNil(try store.key())
+    }
+
+    func testShowWordsKeepsANewKeyAndShowsItsTwelveWords() throws {
+        let flow = AccountFlow(store: store, step: .choose)
+        flow.create()
+
+        flow.showWords()
 
         XCTAssertEqual(flow.step, .words)
         XCTAssertEqual(flow.words, try store.key()?.words)
@@ -35,6 +45,7 @@ final class AccountFlowTests: XCTestCase {
     func testTheCheckAsksForTwoWordsEachAmongFourChoices() {
         let flow = AccountFlow(store: store, step: .choose)
         flow.create()
+        flow.showWords()
 
         flow.wroteThemDown()
 
@@ -51,6 +62,7 @@ final class AccountFlowTests: XCTestCase {
     func testTwoRightPicksMarkTheWordsBackedUp() throws {
         let flow = AccountFlow(store: store, step: .choose)
         flow.create()
+        flow.showWords()
         flow.wroteThemDown()
 
         flow.pick(right(flow.checks[0], of: flow), at: 0)
@@ -64,6 +76,7 @@ final class AccountFlowTests: XCTestCase {
     func testAWrongPickSaysWhichWordAndKeepsTheMarkOff() throws {
         let flow = AccountFlow(store: store, step: .choose)
         flow.create()
+        flow.showWords()
         flow.wroteThemDown()
         let check = flow.checks[0]
         let wrong = check.choices.first { $0 != right(check, of: flow) }!
@@ -77,55 +90,97 @@ final class AccountFlowTests: XCTestCase {
         XCTAssertNil(flow.mistake)
     }
 
-    func testAPastedPhraseFillsTheBoxesAndSignsIn() throws {
+    func testAPastedPhraseNumbersItsWordsAndNamesTheAccountItSignsInTo() throws {
         let flow = AccountFlow(store: store, step: .restore)
 
-        flow.paste(" \(phrase.uppercased())\n")
+        flow.phrase = " \(phrase.uppercased())\n"
 
-        XCTAssertEqual(flow.boxes, phrase.split(separator: " ").map(String.init))
+        XCTAssertEqual(flow.typed.map(\.text), phrase.split(separator: " ").map(String.init))
+        XCTAssertTrue(flow.typed.allSatisfy(\.isKnown))
+        XCTAssertEqual(flow.counter, "12 of 12")
+        XCTAssertEqual(flow.account, try AccountKey(words: phrase.split(separator: " ").map(String.init)).npub)
         XCTAssertTrue(flow.canSignIn)
         flow.signIn()
         XCTAssertEqual(flow.step, .done)
-        XCTAssertEqual(try store.key(), try AccountKey(words: flow.boxes))
+        XCTAssertEqual(try store.key()?.npub, flow.account)
         XCTAssertTrue(try store.isBackedUp())
+    }
+
+    func testAWordOutOfTheListIsMarkedAtOnceButTheOneBeingTypedIsNot() {
+        let flow = AccountFlow(store: store, step: .restore)
+
+        flow.phrase = "abandon abuot aba"
+
+        XCTAssertEqual(flow.typed.map(\.isKnown), [true, false, true])
+        XCTAssertEqual(flow.counter, "3 of 12")
+        XCTAssertNil(flow.problem)
+        XCTAssertFalse(flow.canSignIn)
+        flow.phrase = "abandon abandon zzz"
+        XCTAssertEqual(flow.typed.last?.isKnown, false)
+    }
+
+    func testTabCompletesTheWordBeingTyped() {
+        let flow = AccountFlow(store: store, step: .restore)
+        flow.phrase = "abandon abso"
+
+        XCTAssertEqual(flow.completion, "absorb")
+        flow.complete()
+
+        XCTAssertEqual(flow.phrase, "abandon absorb ")
+        XCTAssertNil(flow.completion)
+    }
+
+    func testTwelveWordsThatAreNoAccountSayToCheckTheOrder() {
+        let flow = AccountFlow(store: store, step: .restore)
+
+        flow.phrase = Array(repeating: "abandon", count: 12).joined(separator: " ")
+
+        XCTAssertEqual(flow.problem, "These words don't match an account. Check each word and their order.")
+        XCTAssertNil(flow.account)
+        XCTAssertFalse(flow.canSignIn)
+    }
+
+    func testMoreThanTwelveWordsSayHowMany() {
+        let flow = AccountFlow(store: store, step: .restore)
+
+        flow.phrase = phrase + " abandon"
+
+        XCTAssertEqual(flow.counter, "13 of 12")
+        XCTAssertEqual(flow.problem, "An account has 12 words, and this has 13.")
     }
 
     func testAnNsecSignsIn() throws {
         let key = try AccountKey.make()
         let flow = AccountFlow(store: store, step: .restore)
 
-        flow.paste(key.nsec)
-        flow.signIn()
+        flow.usesNsec = true
+        flow.phrase = key.nsec
 
+        XCTAssertEqual(flow.account, key.npub)
+        flow.signIn()
         XCTAssertEqual(try store.key()?.publicKey, key.publicKey)
         XCTAssertEqual(flow.step, .done)
     }
 
-    func testAWordOutOfTheListIsNamedOnceAllBoxesHoldOne() {
+    func testAPartNsecHasNoProblemYet() {
         let flow = AccountFlow(store: store, step: .restore)
-        flow.paste(phrase.replacingOccurrences(of: "about", with: "abuot"))
+        flow.usesNsec = true
 
-        XCTAssertEqual(flow.unknownBoxes, [11])
-        XCTAssertEqual(flow.problem, "abuot is not a word of an account key.")
-        XCTAssertFalse(flow.canSignIn)
-    }
-
-    func testAPartPhraseHasNoProblemYetAndCannotSignIn() {
-        let flow = AccountFlow(store: store, step: .restore)
-
-        flow.paste("abandon abandon")
+        flow.phrase = "nsec1abc"
 
         XCTAssertNil(flow.problem)
         XCTAssertFalse(flow.canSignIn)
+        flow.phrase = "nsec1" + String(repeating: "q", count: 58)
+        XCTAssertEqual(flow.problem, "This is not an nsec.")
     }
 
     func testASignInOverAnotherKeySaysWhatItReplaces() throws {
         try store.keep(try AccountKey.make())
         let flow = AccountFlow(store: store, step: .restore)
-        flow.paste(phrase)
+        flow.phrase = phrase
 
         XCTAssertEqual(flow.replacing, "This replaces the account on this Mac. Spots you published with it will publish as new spots.")
-        try store.keep(try AccountKey(words: flow.boxes))
+        try store.keep(try AccountKey(words: phrase.split(separator: " ").map(String.init)))
         XCTAssertNil(flow.replacing)
     }
 
