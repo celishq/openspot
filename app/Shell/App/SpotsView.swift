@@ -196,17 +196,17 @@ struct SpotsView: View {
     }
 
     private var menuBackdropHeight: CGFloat {
-        model.menuPlace.map { $0.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock } ?? 0
+        model.menuFrame.map { $0.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock } ?? 0
     }
 
     /// Where the menu may lie: under the field, down to the panel's foot.
     private var menuBounds: CGRect {
-        ActionMenuPlace.bounds(under: fieldIsInSheet ? SpotTokens.halo + SpotTokens.sheetFieldDrop + SpotTokens.listRowHeight + SpotTokens.rowGap : SpotTokens.gridTop)
+        ActionMenuFrame.bounds(under: fieldIsInSheet ? SpotTokens.halo + SpotTokens.sheetFieldDrop + SpotTokens.listRowHeight + SpotTokens.rowGap : SpotTokens.gridTop)
     }
 
     /// The rect of the menu's glass at a scale from its corner nearest its item, as its rows scale, so that the blur behind
     /// it stays still.
-    private static func rect(_ rect: CGRect, scaledBy scale: CGFloat, from corner: CGPoint) -> CGRect {
+    private static func rect(_ rect: CGRect, scaledBy scale: CGFloat, from corner: UnitPoint) -> CGRect {
         let size = CGSize(width: rect.width * scale, height: rect.height * scale)
         return CGRect(x: rect.minX + (rect.width - size.width) * corner.x, y: rect.minY + (rect.height - size.height) * corner.y, width: size.width, height: size.height)
     }
@@ -219,22 +219,22 @@ struct SpotsView: View {
                 let bounds = menuBounds
                 let rect = item.map { proxy[$0.bounds] } ?? SpotFieldView.rect
                 let isClosing = model.menu == nil
-                let fresh = ActionMenuPlace(item: rect, height: SpotTokens.menuHeight(rows: menu.fullLines), bounds: bounds)
-                let place = isClosing ? model.menuPlace ?? fresh : fresh
-                let shown = place.rect(height: SpotTokens.menuHeight(rows: menu.lines))
+                let fresh = ActionMenuFrame(item: rect, menu: menu, bounds: bounds)
+                let frame = isClosing ? model.menuFrame ?? fresh : fresh
+                let shown = frame.rect(of: menu)
                 let isGrown = model.menuIsGrown
                 let scale = isGrown ? 1 : SpotMotion.menuStartScale
-                let corner = UnitPoint(x: place.corner.x, y: place.corner.y)
+                let corner = UnitPoint(x: frame.side == .left ? 0 : 1, y: frame.stillEdge == .top ? 0 : 1)
                 ZStack(alignment: .topLeading) {
-                    SpotSurface(rect: Self.rect(shown, scaledBy: scale, from: place.corner), radius: SpotActionMenuView.radius * scale, glass: isGrown ? 1 : 0)
-                    SpotActionMenuView(menu: menu, fieldIsLast: place.growsUp, isSettled: model.menuIsSettled, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) }, onPoint: { model.pointMenu(row: $0) }, onSearch: { model.searchMenu($0) })
+                    SpotSurface(rect: Self.rect(shown, scaledBy: scale, from: corner), radius: SpotActionMenuView.radius * scale, glass: isGrown ? 1 : 0)
+                    SpotActionMenuView(menu: menu, frame: frame, isSettled: model.menuIsSettled, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) }, onPoint: { model.pointMenu(row: $0) }, onSearch: { model.searchMenu($0) })
                         .scaleEffect(scale, anchor: corner)
                         .opacity(isGrown ? 1 : 0)
                         .offset(x: shown.minX, y: shown.minY)
                 }
                 .allowsHitTesting(!isClosing)
                 .transition(.opacity)
-                .onChange(of: place, initial: true) { if !isClosing { model.menuPlace = place } }
+                .onChange(of: frame, initial: true) { if !isClosing { model.menuFrame = frame } }
             }
         }
     }

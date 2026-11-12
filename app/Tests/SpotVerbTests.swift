@@ -150,16 +150,13 @@ final class SpotVerbTests: XCTestCase {
         _ = try select("weather")
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
         let menu = try XCTUnwrap(model.menu)
-        let bounds = CGRect(x: 16, y: 166, width: 437, height: 500)
-        let place = ActionMenuPlace(item: CGRect(x: 90, y: 166, width: 64, height: 64), height: SpotTokens.menuHeight(rows: menu.fullLines), bounds: bounds)
-        model.menuPlace = place
-        let step = SpotTokens.menuRowHeight + SpotTokens.menuRowGap
-        let field = menu.isSearchable ? step : 0
-        let row = { (index: Int) in CGPoint(x: place.rect.midX, y: place.rect.minY + SpotTokens.menuPadding + field + CGFloat(index) * step + SpotTokens.menuRowHeight / 2) }
+        let frame = ActionMenuFrame(item: CGRect(x: 90, y: 166, width: 64, height: 64), menu: menu, bounds: CGRect(x: 16, y: 166, width: 437, height: 500))
+        model.menuFrame = frame
+        let row = { (index: Int) in CGPoint(x: frame.rect.midX, y: frame.rowRect(index, of: menu).midY) }
 
         model.dragMenu(to: row(1))
         XCTAssertEqual(model.menu?.selected, 1)
-        model.releaseMenu(at: CGPoint(x: place.rect.maxX + 40, y: row(1).y))
+        model.releaseMenu(at: CGPoint(x: frame.rect.maxX + 40, y: row(1).y))
         XCTAssertNotNil(model.menu)
 
         model.dragMenu(to: row(2))

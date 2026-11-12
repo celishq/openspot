@@ -51,17 +51,6 @@ public struct ActionMenu: Equatable, Sendable {
         isSearchable ? rows.count + 1 : rows.count
     }
 
-    /// The index of the shown row at a point, with the menu at this rect and its field first or last, or nil off its rows.
-    public func row(at point: CGPoint, in rect: CGRect, fieldIsLast: Bool) -> Int? {
-        let step = SpotTokens.menuRowHeight + SpotTokens.menuRowGap
-        let top = rect.minY + SpotTokens.menuPadding + (isSearchable && !fieldIsLast ? step : 0)
-        let inside = rect.insetBy(dx: SpotTokens.menuPadding, dy: 0)
-        guard point.x >= inside.minX, point.x <= inside.maxX, point.y >= top else { return nil }
-        let index = Int((point.y - top) / step)
-        guard shown.indices.contains(index), point.y - top - CGFloat(index) * step <= SpotTokens.menuRowHeight else { return nil }
-        return index
-    }
-
     public var selectedRow: Row? {
         shown.indices.contains(selected) ? shown[selected] : nil
     }

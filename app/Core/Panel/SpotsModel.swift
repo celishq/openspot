@@ -116,7 +116,7 @@ public final class SpotsModel {
     public internal(set) var menuIsSettled = false
     /// Where the open menu lies in the panel: a drag of a force click reads it to find its rows, and the backdrop and the
     /// hint line reach below it.
-    public var menuPlace: ActionMenuPlace?
+    public var menuFrame: ActionMenuFrame?
     public var form: FormSession?
     /// The ask for a form that waits for its script. A newer ask, a cancel, a close or a hidden panel replaces it.
     @ObservationIgnored var formAsk: UUID?

@@ -232,9 +232,8 @@ extension SpotsModel {
     }
 
     private func menuRow(at point: CGPoint) -> Int? {
-        guard let menu, let menuPlace else { return nil }
-        let rect = menuPlace.rect(height: SpotTokens.menuHeight(rows: menu.lines))
-        return menu.row(at: point, in: rect, fieldIsLast: menuPlace.growsUp)
+        guard let menu, let menuFrame else { return nil }
+        return menuFrame.row(at: point, of: menu)
     }
 
     public func searchMenu(_ text: String) {
@@ -321,7 +320,7 @@ extension SpotsModel {
         change(.sheet(isOpen: false), { menuIsGrown = false }, completion: { [weak self] in
             guard let self, menu == nil else { return }
             closingMenu = nil
-            menuPlace = nil
+            menuFrame = nil
         })
     }
 

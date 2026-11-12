@@ -210,15 +210,14 @@ final class SpotMotionProbe: NSObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             self.save(to: "\(folder)/long.png")
             self.saveSharp(to: "\(folder)/field-focused.png")
-            self.panel.makeFirstResponder(nil)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                self.save(to: "\(folder)/long-unfocused.png")
-                self.saveSharp(to: "\(folder)/field-unfocused.png")
-                self.model.searchMenu("co")
-            }
+            self.model.searchMenu("co")
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
             self.save(to: "\(folder)/search.png")
+            self.panel.makeFirstResponder(nil)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            self.saveSharp(to: "\(folder)/field-unfocused.png")
             self.model.closeMenu()
             guard let id = self.spot else { return self.finish(with: "shots\n") }
             self.model.press(id)
