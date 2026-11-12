@@ -25,14 +25,13 @@ public struct SpotLock: Equatable, Sendable {
 
         /// The name of the spot: its first spot folder with no extension.
         public var name: String {
-            Self.name(of: paths.first ?? source)
+            SpotID(path: paths.first ?? source).name
         }
 
         /// Whether a spot of this ID came from this entry: any script in one of its spot folders.
         func holds(_ id: String) -> Bool {
             paths.contains { path in
-                let name = Self.name(of: path)
-                return id == name || id.hasPrefix(name + "/")
+                SpotID(id).isSameFolder(as: SpotID(path: path))
             }
         }
 
@@ -72,10 +71,6 @@ public struct SpotLock: Equatable, Sendable {
             return "\(stem).\(SpotFolder.fileExtension)/\(name)"
         }
 
-        /// The name of the spot folder at the start of a path, with no extension.
-        static func name(of path: String) -> String {
-            URL(fileURLWithPath: String(path.split(separator: "/").first ?? Substring(path))).deletingPathExtension().lastPathComponent
-        }
 
         /// The line that tells the person what came in.
         var added: String {
@@ -234,8 +229,8 @@ public struct SpotLock: Equatable, Sendable {
             hash.update(data: try Data(contentsOf: file.url))
         }
         let scan = try SpotsFolder(url: folder).scan()
-        let names = Set(paths.map(Entry.name(of:)))
-        let scripts = scan.scripts.filter { script in names.contains(String(script.id.split(separator: "/").first ?? "")) }
+        let names = Set(paths.map { SpotID(path: $0).name })
+        let scripts = scan.scripts.filter { script in names.contains(SpotID(script.id).name) }
         let uses = SpotUse.allCases.filter { use in scripts.contains { $0.uses.contains(use) } }
         let canDo: [String]
         do {

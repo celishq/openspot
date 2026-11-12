@@ -129,7 +129,7 @@ public enum SpotSource: Equatable, Sendable {
 
     private static func checkFree(_ paths: [String], in folder: URL, replacing: [String]) throws {
         for path in paths where !replacing.contains(path) && FileManager.default.fileExists(atPath: folder.appendingPathComponent(path).path) {
-            let name = SpotLock.Entry.name(of: path)
+            let name = SpotID(path: path).name
             throw SpotError.fault("The spots folder has \(name) already. Run `openspot spot remove \(name)` first, or move it away.")
         }
     }

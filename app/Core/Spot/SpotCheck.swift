@@ -55,7 +55,7 @@ public struct SpotCheck: Sendable {
         } catch {
             return [Finding(spot: nil, file: folder.url.path, fault: "Cannot read \(folder.url.path).")]
         }
-        var findings = scan.refused.map { Finding(spot: $0.file, file: folder.file(of: $0.file)?.path, fault: $0.reason) }
+        var findings = scan.refused.map { Finding(spot: $0.file, file: SpotID($0.file).file(in: folder.url)?.path, fault: $0.reason) }
         let known = Set(SpotEvent.known + scan.scripts.flatMap(\.emits))
         for script in scan.scripts {
             for event in script.read?.events ?? [] where !known.contains(event) {

@@ -11,8 +11,7 @@ public struct SpotPackage: Equatable, Sendable {
 
     /// The place of the package of a spot with this ID in a store folder: the spot folder of its first name.
     public static func url(for id: String, in store: URL) -> URL {
-        let name = id.split(separator: "/").first.map(String.init) ?? id
-        return store.appendingPathComponent(name + "." + SpotFolder.fileExtension, isDirectory: true)
+        store.appendingPathComponent(SpotID(id).folderName, isDirectory: true)
     }
 
     /// The hash of the paths, the modes and the bytes of the files of one spot folder that a person writes, which says

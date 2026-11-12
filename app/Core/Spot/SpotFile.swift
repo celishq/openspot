@@ -103,7 +103,7 @@ public struct SpotFile: Equatable, Sendable {
             pressRuns: press == "open",
             drop: header.value("drop")?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? [],
             offersFloat: kind == .list,
-            dataName: id.split(separator: "/").first.map(String.init),
+            dataName: SpotID(id).name,
             isOnGrid: offers.isEmpty && read?.seconds == nil && !answersOnly,
             headerSymbol: symbol,
             offers: offers,
@@ -257,12 +257,12 @@ public struct SpotFile: Equatable, Sendable {
         )
     }
 
-    /// The ID of a tool that a widget names: a script of the widget's own folder by its file name first, else the name as an
-    /// ID (protocol: A spot).
+    /// The ID of a tool that a widget names: a script of the widget's own spot folder by its file name first, else the name
+    /// as an ID (protocol: A spot).
     private static func tool(_ name: String, beside url: URL, id: String) -> String {
-        guard !name.contains("/"), let folder = id.split(separator: "/").first, id.contains("/") else { return name }
+        guard !name.contains("/") else { return name }
         let files = (try? FileManager.default.contentsOfDirectory(at: url.deletingLastPathComponent(), includingPropertiesForKeys: nil)) ?? []
-        let isOwn = files.contains { $0.deletingPathExtension().lastPathComponent == name && runs($0) }
-        return isOwn ? "\(folder)/\(name)" : name
+        let own = files.first { $0.deletingPathExtension().lastPathComponent == name && $0.lastPathComponent != url.lastPathComponent && runs($0) }
+        return own.map { SpotID(file: $0).description } ?? name
     }
 }

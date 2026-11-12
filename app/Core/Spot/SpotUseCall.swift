@@ -65,6 +65,6 @@ public struct SpotUseCall: Equatable, Sendable {
 
     /// Whether a spot is the caller or a script of the caller's spot folder, which is one unit.
     private static func isOwn(_ other: String, of spot: String) -> Bool {
-        other.split(separator: "/").first == spot.split(separator: "/").first
+        SpotID(other).isSameFolder(as: SpotID(spot))
     }
 }

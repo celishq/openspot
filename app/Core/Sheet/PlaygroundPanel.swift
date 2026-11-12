@@ -31,9 +31,7 @@ public final class PlaygroundPanel {
     @discardableResult
     public func place(file: URL?, text: String, spots real: URL? = nil) throws -> String {
         let (source, id) = SheetSandbox.place(of: file, text: text, spots: real ?? spots, scratch: spots)
-        let parts = id.split(separator: "/").map(String.init)
-        let target = spots.appendingPathComponent("\(parts[0]).\(SpotFolder.fileExtension)", isDirectory: true)
-            .appendingPathComponent(parts[parts.count - 1]).appendingPathExtension(source.pathExtension)
+        let target = SpotID(id).file(in: spots, extension: source.pathExtension)
         let manager = FileManager.default
         for old in (try? manager.contentsOfDirectory(at: spots, includingPropertiesForKeys: nil)) ?? [] {
             try? manager.removeItem(at: old)

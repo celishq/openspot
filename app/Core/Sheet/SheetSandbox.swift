@@ -88,7 +88,7 @@ public struct SheetSandbox: Equatable, Sendable {
         guard let file else { return (scratch.appendingPathComponent("playground.\(fileExtension(of: text))"), "playground") }
         let folder = file.deletingLastPathComponent().resolvingSymlinksInPath()
         if folder.pathExtension == SpotFolder.fileExtension, folder.deletingLastPathComponent().path == spots.resolvingSymlinksInPath().path {
-            return (file, SpotsFolder.id(of: file))
+            return (file, SpotID(file: file).description)
         }
         return (file, file.deletingPathExtension().lastPathComponent)
     }

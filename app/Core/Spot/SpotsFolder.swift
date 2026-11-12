@@ -163,20 +163,12 @@ public struct SpotsFolder: Sendable {
 
     /// The ID that turns a core command on: the name of its spot folder.
     public static func coreID(of spot: Spot) -> String {
-        spot.url.deletingLastPathComponent().deletingPathExtension().lastPathComponent
-    }
-
-    /// The ID of a script in a spot folder: the name of the folder, after which comes the name of the script when the two
-    /// differ, such as `home/coffee` for `home.spot/coffee.sh`.
-    public static func id(of file: URL) -> String {
-        let name = file.deletingLastPathComponent().deletingPathExtension().lastPathComponent
-        let stem = file.deletingPathExtension().lastPathComponent
-        return stem == name ? name : "\(name)/\(stem)"
+        SpotID(file: spot.url).name
     }
 
     /// The ID that turns a spot on or off: the core ID of a core spot, or else the ID of its file.
     public func fileID(of spot: Spot) -> String {
-        isCore(spot) ? Self.coreID(of: spot) : Self.id(of: spot.url)
+        isCore(spot) ? Self.coreID(of: spot) : SpotID(file: spot.url).description
     }
 
     /// Whether the app runs for the first time here: no config file, and no spot in the folder.
@@ -320,7 +312,7 @@ public struct SpotsFolder: Sendable {
 
     /// The files at the top of these spot folders, by their IDs. A folder inside one, such as of shared code, is no spot.
     private static func files(in folders: [URL]) -> [(file: URL, id: String)] {
-        folders.flatMap { folder in ((try? sorted(in: folder)) ?? []).filter { !isFolder($0) }.map { ($0, id(of: $0)) } }
+        folders.flatMap { folder in ((try? sorted(in: folder)) ?? []).filter { !isFolder($0) }.map { ($0, SpotID(file: $0).description) } }
     }
 
     private static func entries(of folder: String) -> [String] {

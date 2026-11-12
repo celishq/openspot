@@ -9,7 +9,7 @@ extension SpotsFolder {
         let loaded = Set(scan.files.filter { !$0.spots.isEmpty }.map(\.id))
         let faults = Dictionary(grouping: scan.refused.filter { !loaded.contains($0.file) }, by: \.file)
         return faults.keys.sorted().compactMap { id in
-            guard let file = file(of: id) else { return nil }
+            guard let file = SpotID(id).file(in: url) else { return nil }
             let name = SpotFile.name(of: file)
             let reasons = faults[id]?.map(\.reason) ?? []
             let spot = Spot(
@@ -24,19 +24,6 @@ extension SpotsFolder {
             )
             let added = try? file.resourceValues(forKeys: [.creationDateKey]).creationDate
             return added.map(spot.added(at:)) ?? spot
-        }
-    }
-
-    /// The file of a spot ID in this folder, such as `home.spot/coffee.sh` for `home/coffee` and `home.spot/home.sh` for `home`.
-    func file(of id: String) -> URL? {
-        let parts = id.split(separator: "/").map(String.init)
-        guard let name = parts.first else { return nil }
-        let place = url.appendingPathComponent(name + "." + SpotFolder.fileExtension, isDirectory: true)
-        guard let stem = parts.last, let names = try? FileManager.default.contentsOfDirectory(atPath: place.path) else { return nil }
-        return names.sorted().lazy.map { place.appendingPathComponent($0) }.first { file in
-            var isFolder: ObjCBool = false
-            return file.deletingPathExtension().lastPathComponent == stem && !file.lastPathComponent.hasPrefix(".")
-                && FileManager.default.fileExists(atPath: file.path, isDirectory: &isFolder) && !isFolder.boolValue
         }
     }
 }
