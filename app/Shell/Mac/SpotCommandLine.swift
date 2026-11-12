@@ -93,10 +93,6 @@ enum SpotCommandLine {
             FileHandle.standardError.write(Data("\(reason)\n".utf8))
             exit(1)
         }
-        guard !SpotOutput(text: text).parts.isEmpty else {
-            FileHandle.standardError.write(Data("\(spot.name) shows rows, and `openspot render` draws only a sheet of parts. Run `openspot spot run \(id)` to see its rows, or add `--card wide` to draw its card.\n".utf8))
-            exit(1)
-        }
         SpotSheetPicture.run(text: text, path: path, view: spot.view, spot: spot)
     }
 

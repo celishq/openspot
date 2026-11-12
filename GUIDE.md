@@ -43,8 +43,10 @@ sheet opens, and the spot prints a title and a detail.
 printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'
 ```
 
-Each group of lines that the spot prints is a **block**: here, one `text` block with the id `cups`. The sheet shows a big
-**3** with **Last at 14:20** under it.
+![The sheet of Cups today: one line, 3, with Last at 14:20 at its end](docs/images/first-spot.png)
+
+Each group of lines that the spot prints is a **block**: here, one `text` block with the id `cups`. The sheet shows **3**,
+with **Last at 14:20** at the end of the line.
 
 ## Try your spot
 
@@ -81,6 +83,8 @@ case "$1" in
 esac
 ```
 
+![The sheet of Apps: two rows, Mail and Notes](docs/images/show-a-list.png)
+
 The sheet shows two rows, **Mail** and **Notes**. Type in the sheet's search field, and Openspot filters the rows for
 you. Pick **Notes**, and Openspot runs `apps.sh open Notes`.
 
@@ -91,20 +95,23 @@ Learn more in [Rows](PROTOCOL.md#rows) and [The calls](PROTOCOL.md#the-calls).
 
 ## Show a value on a card
 
-A card can show one live value, such as free disk space. Add a `clock` event, and Openspot asks your spot again every
-that many seconds while the card shows.
+A card can show one live value, such as free disk space. `on=panel.open` asks your spot each time the panel opens, and
+`on=clock.300` asks it again every 5 minutes while the card shows.
 
 ```sh
 #!/bin/sh
 # title=Disk
 # icon=internaldrive
+# on=panel.open
 # on=clock.300
 free=$(df -h / | awk 'NR==2 {print $4}')
-printf 'text=free\ntitle=%s free\n' "$free"
+printf 'detail=%s free\n\ntext=free\ntitle=%s free\n' "$free" "$free"
 ```
 
-The card shows **120Gi free**, and updates every 5 minutes. The one `text` block is the spot's **main block**: the
-value that stands for the spot on its card. The user can also put the spot in the menu bar, where the main block shows
+![The card of Disk, with the free space under its title](docs/images/show-a-value-card.png)
+
+The first block, `detail=…`, is the **head**: it isn't drawn, and its `detail` becomes the line under the card's title.
+The `text` block is the spot's **main block**. The user can put the spot in the menu bar, where the main block shows
 next to the clock.
 
 A spot with a clock stays off the grid until the user adds it, so that a new spot doesn't fill the panel.
@@ -153,6 +160,8 @@ case "$1" in
   trash) rm -f "$OPENSPOT_DATA/$2" ;;
 esac
 ```
+
+![The sheet of Notes list: one row, Today](docs/images/add-buttons.png)
 
 Select **Today** and press ⌘⌫ twice, and Openspot runs `notes-list.sh trash today`.
 
