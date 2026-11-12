@@ -51,6 +51,18 @@ final class StayLink: ScriptLink {
     private var heldScript = false
     /// The asks of the script that runs which its read limit stopped.
     private var slowAsks = 0
+    /// Each call that has not ended yet, by its number, with the frames that answered it so far.
+    private var open: [Int: OpenCall] = [:]
+
+    /// A call that the runs record once it ends.
+    private struct OpenCall {
+        let action: SpotAction
+        let input: String?
+        let reason: ReadReason?
+        let started: Date
+        let begin: Date
+        var frames: [String] = []
+    }
 
     init(runs: SpotRuns) {
         self.runs = runs
@@ -82,13 +94,14 @@ final class StayLink: ScriptLink {
             }
             let id = next()
             ask(.read(generation: generation, reports: reports, tells: tells), id: id, reason: call.variables["OPENSPOT_REASON"])
+            opened(id, .read, input: call.input, reason: call.reason)
             script.send(.read, input: call.input, variables: call.variables, id: id)
         case .ask(.search(let query)):
             stop { if case .search = $0 { true } else { false } }
-            if let id = send(.read, input: call.input, variables: call.variables) { ask(.search(query), id: id, reason: call.variables["OPENSPOT_REASON"]) }
+            if let id = send(.read, input: call.input, variables: call.variables, reason: call.reason) { ask(.search(query), id: id, reason: call.variables["OPENSPOT_REASON"]) }
         case .ask(.answer(let text)):
             stop(\.isAnswer)
-            if let id = send(call.action, input: call.input, variables: call.variables) {
+            if let id = send(call.action, input: call.input, variables: call.variables, reason: call.reason) {
                 ask(.answer(text), id: id, reason: call.variables["OPENSPOT_REASON"])
             } else {
                 run?.takeAnswers([], to: text)
@@ -118,7 +131,10 @@ final class StayLink: ScriptLink {
     func stop(_ call: ScriptCall) {
         guard let id = calls.first(where: { $0.value === call })?.key else { return }
         calls[id] = nil
-        if let number = Int(id) { dropped.insert(number) }
+        if let number = Int(id) {
+            dropped.insert(number)
+            close(number, .stopped)
+        }
     }
 
     func settle() {
@@ -133,6 +149,7 @@ final class StayLink: ScriptLink {
     func end() {
         script?.end()
         script = nil
+        closeAll(.stopped)
         forgetAsks()
         endCalls(nil)
         answerForm(with: .success(nil))
@@ -141,6 +158,7 @@ final class StayLink: ScriptLink {
 
     func leave() {
         script = nil
+        closeAll(.stopped)
         forgetAsks()
         calls = [:]
         answerForm(with: .success(nil))
@@ -171,6 +189,7 @@ final class StayLink: ScriptLink {
         let variables = (reason ?? startReason).variables
         askReason = variables["OPENSPOT_REASON"]
         asks[id] = .read(generation: nil, reports: true)
+        opened(id, .read, input: nil, reason: reason ?? startReason)
         script.send(.read, variables: variables, id: id)
         Task { await follow(script, frames) }
     }
@@ -178,13 +197,14 @@ final class StayLink: ScriptLink {
     /// Sends a call to the script, starts it if it does not run, and returns its number. With nothing that wants it, it ends
     /// after the call. A call with a `key` runs until its own `end`, and a stop sends its number (protocol: Modes).
     @discardableResult
-    private func send(_ action: SpotAction, input: String?, variables: [String: String] = [:], key: String? = nil) -> Int? {
+    private func send(_ action: SpotAction, input: String?, variables: [String: String] = [:], reason: ReadReason? = nil, key: String? = nil) -> Int? {
         if script == nil { start() }
         guard let script else {
             settle()
             return nil
         }
         let id = next()
+        opened(id, action, input: input, reason: reason)
         script.send(action, input: input, variables: variables, id: id)
         if let key {
             let call = ScriptCall(action: action, key: key, started: runs.now())
@@ -221,6 +241,7 @@ final class StayLink: ScriptLink {
     private func timeOut(_ id: Int, of script: ScriptProcess) {
         guard self.script === script, let ask = asks.removeValue(forKey: id) else { return }
         dropped.insert(id)
+        close(id, .failed(SpotError.timedOut))
         pictured.remove(id)
         script.send(text: SpotAction.stopEvent(id: id))
         slowAsks += 1
@@ -237,6 +258,7 @@ final class StayLink: ScriptLink {
             guard kind(ask) else { continue }
             asks[id] = nil
             dropped.insert(id)
+            close(id, .stopped)
             script?.send(text: SpotAction.stopEvent(id: id))
         }
     }
@@ -265,6 +287,31 @@ final class StayLink: ScriptLink {
         }
     }
 
+    /// Keeps a call that was sent until it ends.
+    private func opened(_ id: Int, _ action: SpotAction, input: String?, reason: ReadReason?) {
+        open[id] = OpenCall(action: action, input: input, reason: reason, started: runs.now(), begin: Date())
+    }
+
+    /// Adds a frame to the call that printed it: the call that its `call=<n>` starts, else each call that it ends, else the
+    /// call that prints now. Then it records each call that the frame ends.
+    private func take(_ text: String, _ lines: SpotOutput) {
+        let ends = lines.ends.compactMap { Int($0) }
+        let owners = lines.start.flatMap(Int.init).map { [$0] } ?? (ends.isEmpty ? current.map { [$0] } ?? [] : ends)
+        for id in owners { open[id]?.frames.append(text) }
+        for id in ends { close(id, .ended) }
+    }
+
+    /// Records a call that ended, once.
+    private func close(_ id: Int, _ end: ScriptCall.End, errors: String = "") {
+        guard let run, let call = open.removeValue(forKey: id) else { return }
+        runs.record(run.spot, call.action, input: call.input, frames: call.frames, errors: errors, end: end, reason: call.reason, started: call.started, begin: call.begin)
+    }
+
+    /// Records each call that has not ended, in the order they were sent.
+    private func closeAll(_ end: ScriptCall.End, errors: String = "") {
+        for id in open.keys.sorted() { close(id, end, errors: errors) }
+    }
+
     private func answerForm(with answer: Result<String?, Error>) {
         let waiting = formAnswer
         formAnswer = nil
@@ -277,7 +324,10 @@ final class StayLink: ScriptLink {
         do {
             for try await text in frames {
                 let lines = await runs.intake(text, of: run?.spot.id)
-                if self.script === script { counted(lines.ends) }
+                if self.script === script {
+                    counted(lines.ends)
+                    take(text, lines)
+                }
                 if self.script === script, !lines.ends.isEmpty {
                     endCalls(lines.ends)
                     settle()
@@ -319,11 +369,13 @@ final class StayLink: ScriptLink {
             }
         } catch {
             if self.script === script {
+                closeAll(.failed(error), errors: script.errors)
                 failed(error)
                 answerForm(with: .failure(error))
             }
         }
         guard self.script === script else { return }
+        closeAll(.ended, errors: script.errors)
         self.script = nil
         endCalls(nil)
         forgetAsks()

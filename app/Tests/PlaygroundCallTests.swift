@@ -21,6 +21,51 @@ final class PlaygroundCallTests: SpotRunsCase {
         XCTAssertTrue(calls[1].lines.contains("< search=rep"), "\(calls[1].lines)")
     }
 
+    func testTheRunsTellEachCallOfAStayingSpotOnceWhenItEnds() async throws {
+        try script(header: "mode=stay", """
+        while IFS= read -r line; do
+          case "$line" in
+            call=*) id=${line#call=}; name= ;;
+            arg=*) [ -n "$name" ] || name=${line#arg=} ;;
+            stop=*) name=stop ;;
+            '')
+              case "$name" in
+                stop) ;;
+                go) ( while [ ! -f '\(path("done"))' ]; do sleep 0.05; done; printf 'end=%s\\n---\\n' "$id" ) & ;;
+                *) printf 'button=go\\ntitle=Go\\nscope=command\\n\\nrow=a\\ntitle=A\\n\\nend=%s\\n---\\n' "$id" ;;
+              esac
+              name= ;;
+          esac
+        done
+        """)
+        var calls: [PlaygroundCall] = []
+        runs.onCall = { calls.append(PlaygroundCall(record: $0, reason: $1)) }
+        let sheet = try sheet()
+        runs.panelOpened()
+        sheet.open {}
+        try await wait("the read") { calls.count == 1 }
+        let action = try XCTUnwrap(sheet.spot.actions.first)
+
+        sheet.run(action, item: nil)
+        try await wait("the running call") { sheet.calls.count == 1 }
+        XCTAssertEqual(calls.count, 1)
+        try "".write(toFile: path("done"), atomically: true, encoding: .utf8)
+        try await wait("the end of the call") { calls.count == 2 }
+        try FileManager.default.removeItem(atPath: path("done"))
+        time += 2
+        sheet.run(action, item: nil)
+        try await wait("the second call") { sheet.calls.count == 1 }
+        time += 2
+        sheet.run(action, item: nil)
+        try await wait("the stop") { calls.count == 3 }
+
+        XCTAssertEqual(calls[0].lines.first, "$ read · OPENSPOT_REASON=sheet.open")
+        XCTAssertTrue(calls[0].lines.contains("> button=go"), "\(calls[0].lines)")
+        XCTAssertEqual(calls[0].lines.last, "= exit 0")
+        XCTAssertEqual(calls[1].lines, ["$ go", "> end=2", "= exit 0"])
+        XCTAssertEqual(calls[2].lines, ["$ go", "= stopped"])
+    }
+
     func testACallPrintsEachArgumentAndHowItEnded() {
         let record = CallLog.Record(spot: "a", arguments: ["move", "row 1", "true"], input: nil, frames: ["toast=Hi\n", "text=t\n"], errors: "", end: .failed("It took too long."), started: Date(), seconds: 1)
 
