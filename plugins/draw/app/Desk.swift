@@ -11,6 +11,8 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var side: NSView?
     private var stripLeading: NSLayoutConstraint?
     private var latchLeading: CGFloat = 0
+    /// How far down the window the middle of the window buttons lies, where the tab row lines up.
+    private var middle: CGFloat = 26
     private var stage = NSView()
     var window: NSWindow!
     var canvas: Canvas!
@@ -57,8 +59,8 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let latch = bar(Latch(drawer: drawer) { [weak self] in self?.toggleBoards(nil) }, in: root)
         let strip = bar(TabStrip(tabs: tabs, show: { [weak self] in self?.show($0.file) }, close: { [weak self] in self?.close($0) }, make: { [weak self] in self?.make() }, trash: { [weak self] in self?.trash($0) }), in: root)
         let lights = window.standardWindowButton(.zoomButton).map { $0.convert($0.bounds, to: nil) } ?? CGRect(x: 60, y: window.frame.height - 26, width: 14, height: 14)
-        let middle = window.frame.height - lights.midY
         latchLeading = lights.maxX + 16
+        middle = window.frame.height - lights.midY
         let stripLeading = strip.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: latchLeading + 46)
         self.stripLeading = stripLeading
         NSLayoutConstraint.activate([
@@ -68,7 +70,7 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
             side.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -8),
             latch.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: latchLeading),
             latch.centerYAnchor.constraint(equalTo: root.topAnchor, constant: middle),
-            stripLeading, strip.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -12),
+            stripLeading, strip.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -236),
             strip.centerYAnchor.constraint(equalTo: root.topAnchor, constant: middle)
         ])
         window.contentView = root
@@ -93,8 +95,8 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate {
             canvas.leadingAnchor.constraint(equalTo: stage.leadingAnchor), canvas.trailingAnchor.constraint(equalTo: stage.trailingAnchor),
             canvas.topAnchor.constraint(equalTo: stage.topAnchor), canvas.bottomAnchor.constraint(equalTo: stage.bottomAnchor),
             tools.centerXAnchor.constraint(equalTo: stage.centerXAnchor), tools.bottomAnchor.constraint(equalTo: stage.bottomAnchor, constant: -14),
-            corner.trailingAnchor.constraint(equalTo: stage.trailingAnchor, constant: -14), corner.topAnchor.constraint(equalTo: stage.topAnchor, constant: 58),
-            style.trailingAnchor.constraint(equalTo: stage.trailingAnchor, constant: -14), style.topAnchor.constraint(equalTo: corner.bottomAnchor, constant: 8)
+            corner.trailingAnchor.constraint(equalTo: stage.trailingAnchor, constant: -10), corner.centerYAnchor.constraint(equalTo: stage.topAnchor, constant: middle),
+            style.trailingAnchor.constraint(equalTo: stage.trailingAnchor, constant: -14), style.topAnchor.constraint(equalTo: corner.bottomAnchor, constant: 10)
         ])
         window.title = studio.board.title
         window.makeFirstResponder(canvas)

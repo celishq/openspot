@@ -303,7 +303,7 @@ final class Drawer: ObservableObject {
     @Published var changes = 0
 }
 
-/// The acts on one board in its menu: rename, show in Finder, and move to the Trash, each with its icon and its key.
+/// The acts on one board in its menu: rename, show in Finder, and delete to the Trash in red, each with its icon and its key.
 struct BoardMenu: View {
     let rename: () -> Void
     let reveal: () -> Void
@@ -315,7 +315,7 @@ struct BoardMenu: View {
         Button(action: reveal) { Label("Show in Finder", systemImage: "folder") }
             .keyboardShortcut("r", modifiers: [.command, .option])
         Divider()
-        Button(action: trash) { Label("Move to Trash", systemImage: "trash") }
+        Button(role: .destructive, action: trash) { Label("Delete", systemImage: "trash") }
             .keyboardShortcut(.delete, modifiers: .command)
     }
 }
