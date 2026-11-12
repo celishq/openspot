@@ -26,7 +26,7 @@ public struct ReviewSpot: Equatable, Sendable {
     private var source: URL?
     private var lock: SpotLock?
 
-    /// Reads a spot for a plugins folder, with the readme and the preview of its listing first. Throws a fault when it gives
+    /// Reads a spot for a plugins folder, with the readme and the preview of its listing after what it uses and does. Throws a fault when it gives
     /// no spot or cannot go into that folder. With `canAdd` false it only shows the text.
     public init(spot: SharedSpot, folder: URL, canAdd: Bool = true, readme: String? = nil, preview: String? = nil) throws {
         if let clash = spot.clash(in: folder) { throw SpotError.fault(clash) }
@@ -58,8 +58,6 @@ public struct ReviewSpot: Equatable, Sendable {
         ].compactMap { $0 }.joined()
         text = [
             grown.isEmpty ? "\(primary.name)\n\n" : "\(primary.name)\nThis version adds: \(grown.map(\.rawValue).joined(separator: ", "))\n\n",
-            readme.map { "\($0)\n\n" },
-            Self.section("Preview", rows),
             programs.isEmpty ? nil : Self.section(
                 "Program that Openspot cannot show",
                 programs + ["It can do all that you can. Add it only if you trust the sender."]
@@ -69,7 +67,9 @@ public struct ReviewSpot: Equatable, Sendable {
             Self.section("Can also", canAlso),
             runs.isEmpty ? "\(quiet)\n\n" : Self.section("Runs by itself", runs),
             Self.section("Replaces, and moves the old file to the Trash", spot.replaced(in: folder)),
-            Self.section("Will not load", scan.refused.map { "\($0.file): \($0.reason)" })
+            Self.section("Will not load", scan.refused.map { "\($0.file): \($0.reason)" }),
+            readme.map { "\($0)\n\n" },
+            Self.section("Preview", rows)
         ].compactMap { $0 }.joined() + spot.files.map(Self.shown).joined(separator: "\n")
     }
 
