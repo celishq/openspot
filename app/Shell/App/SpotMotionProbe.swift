@@ -204,6 +204,7 @@ final class SpotMotionProbe: NSObject {
             if model.menu?.isSearchable == true { break }
             model.closeMenu()
         }
+        save(to: "\(folder)/long-moving.png")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             self.save(to: "\(folder)/long.png")
             self.model.searchMenu("co")

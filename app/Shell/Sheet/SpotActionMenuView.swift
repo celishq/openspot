@@ -6,6 +6,9 @@ struct SpotActionMenuView: View {
     let menu: ActionMenu
     /// Whether the field is the last line, as in a menu that grows up from its item, whose bottom stays still.
     var fieldIsLast = false
+    /// Whether the menu has stopped moving. Until then its field is a drawn copy, since a text field of AppKit lies at its
+    /// layout place and does not follow the menu's scale.
+    var isSettled = true
     var work: (ActionMenu.Row) -> ScriptCall? = { _ in nil }
     let onPress: (Int) -> Void
     /// Takes the row that the pointer moves onto.
@@ -61,10 +64,33 @@ struct SpotActionMenuView: View {
 
     /// The field that searches the rows, at the edge of the menu that stays still while the rows change.
     private var field: some View {
-        SpotSearchField(prompt: "Search actions", text: menu.query, onSearch: onSearch, isFocused: $isSearching)
-            .onAppear {
-                DispatchQueue.main.async { isSearching = true }
-            }
+        ZStack {
+            SpotSearchField(prompt: Self.prompt, text: menu.query, onSearch: onSearch, isFocused: $isSearching)
+                .opacity(isSettled ? 1 : 0.001)
+            fieldCopy
+                .opacity(isSettled ? 0 : 1)
+        }
+        .onAppear {
+            DispatchQueue.main.async { isSearching = true }
+        }
+    }
+
+    private static let prompt = "Search actions"
+    /// How far a text field of AppKit draws its words above a SwiftUI text in the same frame.
+    private static let textFieldRise: CGFloat = 1
+
+    /// The field's words and fill, drawn by SwiftUI, which scale with the menu as it moves.
+    private var fieldCopy: some View {
+        Text(menu.query.isEmpty ? Self.prompt : menu.query)
+            .font(SpotType.body)
+            .foregroundStyle(menu.query.isEmpty ? SpotTheme.ink.opacity(SpotTheme.secondaryLight) : SpotTheme.ink)
+            .lineLimit(1)
+            .offset(y: -Self.textFieldRise)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, SpotTokens.padding - SpotTokens.menuPadding + 4)
+            .frame(height: SpotTokens.menuRowHeight)
+            .background(SpotTheme.ink.opacity(SpotTheme.fill), in: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous))
+            .allowsHitTesting(false)
     }
 
     private func isConfirming(_ row: ActionMenu.Row) -> Bool {

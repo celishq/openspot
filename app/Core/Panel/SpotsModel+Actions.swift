@@ -253,8 +253,12 @@ extension SpotsModel {
         menu = actionMenu(on: target)
         menuTarget = target
         menuIsGrown = false
+        menuIsSettled = false
         DispatchQueue.main.async { [weak self] in
-            if self?.menu != nil { self?.menuIsGrown = true }
+            guard let self, menu != nil else { return }
+            change(.sheet(isOpen: true), { self.menuIsGrown = true }, completion: { [weak self] in
+                if self?.menuIsGrown == true { self?.menuIsSettled = true }
+            })
         }
     }
 
@@ -310,6 +314,7 @@ extension SpotsModel {
         menu = nil
         menuTarget = nil
         menuIsGrown = false
+        menuIsSettled = false
         menuPlace = nil
     }
 

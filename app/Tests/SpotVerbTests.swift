@@ -118,9 +118,13 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
 
         XCTAssertFalse(model.menuIsGrown)
+        XCTAssertFalse(model.menuIsSettled)
         try await wait("the growth") { model.menuIsGrown }
+        XCTAssertEqual(host.motions.last, .sheet(isOpen: true))
+        XCTAssertTrue(model.menuIsSettled)
         model.closeMenu()
         XCTAssertFalse(model.menuIsGrown)
+        XCTAssertFalse(model.menuIsSettled)
     }
 
     func testPointingAtAMenuRowSelectsIt() throws {

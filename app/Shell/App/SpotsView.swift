@@ -224,12 +224,11 @@ struct SpotsView: View {
                 let corner = UnitPoint(x: place.corner.x, y: place.corner.y)
                 ZStack(alignment: .topLeading) {
                     SpotSurface(rect: Self.rect(shown, scaledBy: scale, from: place.corner), radius: SpotActionMenuView.radius * scale, glass: isGrown ? 1 : 0)
-                    SpotActionMenuView(menu: menu, fieldIsLast: place.growsUp, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) }, onPoint: { model.pointMenu(row: $0) }, onSearch: { model.searchMenu($0) })
+                    SpotActionMenuView(menu: menu, fieldIsLast: place.growsUp, isSettled: model.menuIsSettled, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) }, onPoint: { model.pointMenu(row: $0) }, onSearch: { model.searchMenu($0) })
                         .scaleEffect(scale, anchor: corner)
                         .opacity(isGrown ? 1 : 0)
                         .offset(x: shown.minX, y: shown.minY)
                 }
-                .animation(SpotMotion.sheet(isOpen: true), value: isGrown)
                 .transition(.opacity)
                 .onChange(of: place, initial: true) { model.menuPlace = place }
             }
