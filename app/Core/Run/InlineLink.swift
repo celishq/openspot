@@ -3,7 +3,7 @@ import Foundation
 /// The link to a JavaScript spot that runs inside the app (protocol: Modes). Each call runs on the thread of the script, which loads at
 /// the first call (A26). The main thread waits 2 ms for its frame, and a later frame lands in a later turn (protocol: Modes). A stopped
 /// call that has not run never runs, and one that ran changes nothing. Each call goes in the call log. A change of the
-/// file loads it again.
+/// file loads it again at the next call or scan.
 @MainActor
 final class InlineLink: ScriptLink {
     private static let frameWait: DispatchTimeInterval = .milliseconds(2)
@@ -76,12 +76,14 @@ final class InlineLink: ScriptLink {
         end()
     }
 
-    /// The script, which loads at its first call.
+    /// The script, which loads at its first call, and again at a call after a change of the file.
     private func current(for run: SpotRun) -> InlineScript {
-        if let script { return script }
+        let date = fileDate
+        if let script, loaded == date { return script }
+        script?.end()
         let script = runs.inline(run.spot)
         self.script = script
-        loaded = fileDate
+        loaded = date
         return script
     }
 

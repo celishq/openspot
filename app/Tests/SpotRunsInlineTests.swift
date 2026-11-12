@@ -124,6 +124,19 @@ final class SpotRunsInlineTests: SpotRunsCase {
         try await wait("the end of the dropped answer") { !sheet.isAnswering }
     }
 
+    func testACallAfterAnEditOfTheFileRunsTheNewCodeWithNoScan() async throws {
+        try inline(header: "on=search.text ^[0-9]", "function main() { return 'row=a\\ntitle=Old' }")
+        let sheet = try sheet()
+        sheet.answer("1")
+        try await wait("the old answer") { sheet.answers.map(\.title) == ["Old"] }
+
+        try inline(header: "on=search.text ^[0-9]", "function main() { return 'row=a\\ntitle=New' }")
+        try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(60)], ofItemAtPath: path("script.js"))
+        sheet.answer("2")
+
+        try await wait("the new answer") { sheet.answers.map(\.title) == ["New"] }
+    }
+
     func testMainGetsTheArgumentsTheVariablesAndTheStdinOfACall() async throws {
         try inline(header: "title=Script", "function main(args, env, input) { return `text=t\\ntitle=${args.length}|${args[0]}|${args[1]}|${env.OPENSPOT_REASON}|${env.OPENSPOT_ID}|${input}` }")
         let script = InlineScript(spot: try XCTUnwrap(try scanned().scripts.first), api: nil)
