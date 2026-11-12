@@ -134,11 +134,10 @@ public enum CommandLineCall: Equatable, Sendable {
                                                  a use and its last fault, then each such call. --frame prints a row for
                                                  each spot and a use block for each call; --json prints the days.
     openspot spot show <id>                      Opens the panel with the spot selected.
-    openspot spot list [--core] [--frame]        Prints each spot that the app loads as JSON, with its commands, its
-                                                 settings and their keys. --core prints each spot that comes with the
+    openspot spot list [--core] [--frame]        Prints each spot that the app loads as JSON, with its buttons, its
+                                                 fields and their keys. --core prints each spot that comes with the
                                                  app, and whether it is on. --frame prints a spot=<id> block for each
                                                  spot, with a button=<id> or field=<id> block for each of its own.
-    openspot spot on|off <id>...                 Turns spots that come with the app on or off.
     openspot spot add [git url | folder | file.spot] [--yes]
                                                  Puts a spot in the plugins folder, a git one at its newest commit, and
                                                  records it in spots.lock. A source that spots.lock has already updates
@@ -160,25 +159,21 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot color pick                          Prints the colour the person picks.
     openspot folder pick                         Prints the folder the person picks, or nothing after Cancel.
     openspot setting get [--spot id] <key>       Prints the value the person chose for the spot, or nothing.
-    openspot setting set [--spot id] <key> [v]   Keeps a value for the spot, or removes it with no value.
+    openspot setting set [--spot id] <key> [v]   Keeps a value for the spot, or removes it with no value. The person's
+                                                 choices of a spot: enabled, menubar (true or false), float and
+                                                 key.<command> (a key such as ctrl+option+k, or shake; none takes it
+                                                 away). Of the spot openspot: login, link, careful (true or false),
+                                                 panel-key and fix-key.
     openspot setting list [--frame]              Prints each value that a spot keeps as JSON, with its spot and key.
                                                  --frame prints a field=<key> block with spot and value for each.
     openspot setting change [--spot id] <key>    Runs the action of the setting in the panel, which can ask with a form.
     openspot prompt new <words>...               Prints a prompt that asks a coding agent to build a spot that does
                                                  what the words say.
-    openspot key set --panel|--fix <key>         Gives the key that opens the panel, or the one that opens a fix.
-    openspot key set <id> <command>|--float [key]
-                                                 Gives a command of a spot, or its float, a key such as ctrl+option+k,
-                                                 or shake. With no key, it takes the key away.
-    openspot menubar on|off <id>                 Puts a spot in the menu bar, or takes it out.
     openspot app status [--frame]                Prints the state of the app as JSON: version, panelKey, fixKey, login,
                                                  link, update, calls and firstLaunch. --frame prints them as one block.
     openspot batch                               Runs one call for each line of stdin, its words split at spaces, and
                                                  prints the output of each with a line --- after it. It stops at the first
                                                  call that fails, and takes only a call that the app answers.
-    openspot app login on|off                    Opens the app at login, or stops it.
-    openspot app link on|off                     Puts openspot on the path of Terminal, or takes it off.
-    openspot app careful on|off                  Runs each spot with only what its uses name, or as you.
     openspot app quit                            Ends the running app.
     openspot update check                        Asks for a new version of the app now.
     openspot update install                      Restarts the app into the update that it downloaded.
@@ -256,6 +251,20 @@ public enum CommandLineCall: Equatable, Sendable {
             return
         }
         guard !noun.hasPrefix("-") else { return nil }
+        if let form = ReservedSetting.replacement(of: arguments) {
+            self = .refused("`openspot \(arguments.joined(separator: " "))` is now `\(form)`.")
+            return
+        }
+        switch ReservedSetting.call(of: arguments, spot: environment["OPENSPOT_ID"].flatMap { $0.isEmpty ? nil : $0 }) {
+        case .success(let words)?: self.init(reserved: words, environment: environment)
+        case .failure(let refusal)?: self = .refused(refusal.line)
+        case nil: self.init(reserved: arguments, environment: environment)
+        }
+    }
+
+    /// Reads the words of a call, also of a call that a reserved setting runs.
+    private init(reserved arguments: [String], environment: [String: String]) {
+        let noun = arguments[0]
         if arguments == ["check", "--sheet"] {
             self = .checkSheet
             return
@@ -294,11 +303,11 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("app", "status") where Self.flags(rest.dropFirst(), within: ["--frame"]): self = .appStatus(frame: rest.contains("--frame"))
         case ("batch", nil): self = .batch
         case ("app", "login") where rest == ["login", "on"] || rest == ["login", "off"]:
-            self = Self.changing(.appLogin(rest[1] == "on"), "openspot app login", "changes your Mac", environment)
+            self = Self.changing(.appLogin(rest[1] == "on"), "openspot setting set --spot openspot login", "changes your Mac", environment)
         case ("app", "careful") where rest == ["careful", "on"] || rest == ["careful", "off"]:
-            self = Self.changing(.appCareful(rest[1] == "on"), "openspot app careful", "changes how spots run", environment)
+            self = Self.changing(.appCareful(rest[1] == "on"), "openspot setting set --spot openspot careful", "changes how spots run", environment)
         case ("app", "link") where rest == ["link", "on"] || rest == ["link", "off"]:
-            self = Self.changing(.appLink(rest[1] == "on"), "openspot app link", "changes your Mac", environment)
+            self = Self.changing(.appLink(rest[1] == "on"), "openspot setting set --spot openspot link", "changes your Mac", environment)
         case ("app", "quit") where rest.count == 1: self = Self.changing(.appQuit, "openspot app quit", "ends Openspot", environment)
         case ("update", "check") where rest.count == 1: self = Self.changing(.updateCheck, "openspot update check", "opens a window", environment)
         case ("update", "install") where rest.count == 1: self = Self.changing(.updateInstall, "openspot update install", "restarts Openspot", environment)

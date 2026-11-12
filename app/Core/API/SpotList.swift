@@ -1,7 +1,7 @@
 import Foundation
 
-/// The spots that `openspot spot list` prints as JSON or as blocks: each script that the app loads, with its commands, its
-/// settings and their keys, or with `core` each spot that comes with the app and that the person turns on or off. It also
+/// The spots that `openspot spot list` prints as JSON or as blocks: each script that the app loads, with its buttons, its
+/// fields and their keys, or with `core` each spot that comes with the app and that the person turns on or off. It also
 /// prints the values that the spots keep, for `openspot setting list`.
 struct SpotList {
     private struct Loaded: Encodable {
@@ -16,8 +16,8 @@ struct SpotList {
         let name: String
         let icon: String
         let detail: String?
-        let commands: [Offer]
-        let settings: [Offer]
+        let buttons: [Offer]
+        let fields: [Offer]
         let float: Bool
         let floatKey: String?
         let menubar: Bool
@@ -46,10 +46,10 @@ struct SpotList {
                 name: script.name,
                 icon: Self.picture(of: script),
                 detail: script.subtitle,
-                commands: script.offers.map { offer in
+                buttons: script.offers.map { offer in
                     Loaded.Offer(id: offer.id, title: offer.title, icon: offer.icon, key: keys.first { $0.spot == script.id && $0.act == .command(offer.id) }?.trigger.text)
                 },
-                settings: script.settings.map { Loaded.Offer(id: $0.id, title: $0.title, icon: $0.icon, key: nil) },
+                fields: script.settings.map { Loaded.Offer(id: $0.id, title: $0.title, icon: $0.icon, key: nil) },
                 float: script.offersFloat,
                 floatKey: keys.first { $0.spot == script.id && $0.act == .float }?.trigger.text,
                 menubar: script.canShowInMenuBar,

@@ -100,13 +100,13 @@ final class SpotUsesTests: SpotRunsCase {
     }
 
     func testASpotCannotChangeCarefulMode() async throws {
-        try caller(header: "uses=app", "app careful off")
+        try caller(header: "uses=app", "setting set --spot openspot careful false")
         _ = try scanned()
 
         let (code, errors) = try await pressed()
 
         XCTAssertEqual(code, "1")
-        XCTAssertEqual(errors, "Script cannot change Careful mode. Only you can, in Settings or with `openspot app careful on|off` in Terminal.\n")
+        XCTAssertEqual(errors, "Script cannot change Careful mode. Only you can, in Settings or with `openspot setting set --spot openspot careful true` in Terminal.\n")
         XCTAssertFalse(FileManager.default.fileExists(atPath: config.appendingPathComponent("config.toml").path))
     }
 
@@ -129,7 +129,7 @@ final class SpotUsesTests: SpotRunsCase {
         FileManager.default.createFile(atPath: errors.path, contents: nil)
         let shell = Process()
         shell.executableURL = URL(fileURLWithPath: "/usr/bin/sandbox-exec")
-        shell.arguments = ["-p", "(version 1)(allow default)", client.path, "app", "careful", "off"]
+        shell.arguments = ["-p", "(version 1)(allow default)", client.path, "setting", "set", "--spot", "openspot", "careful", "false"]
         shell.environment = ["OPENSPOT_CONFIG": config.path, "PATH": "/usr/bin:/bin"]
         shell.standardOutput = FileHandle.nullDevice
         shell.standardError = try FileHandle(forWritingTo: errors)
@@ -138,7 +138,7 @@ final class SpotUsesTests: SpotRunsCase {
         try await wait("the end of the call") { !shell.isRunning }
 
         XCTAssertEqual(shell.terminationStatus, 1)
-        XCTAssertEqual(try String(contentsOf: errors, encoding: .utf8), "A sandboxed process cannot change Careful mode. Only you can, in Settings or with `openspot app careful on|off` in Terminal.\n")
+        XCTAssertEqual(try String(contentsOf: errors, encoding: .utf8), "A sandboxed process cannot change Careful mode. Only you can, in Settings or with `openspot setting set --spot openspot careful true` in Terminal.\n")
         XCTAssertFalse(FileManager.default.fileExists(atPath: config.appendingPathComponent("config.toml").path))
     }
 
@@ -196,9 +196,9 @@ final class SpotUsesTests: SpotRunsCase {
 
     func testEachPowerCallNamesItsUse() {
         let cases: [([String], String?)] = [
-            (["app", "quit"], "app"), (["app", "login", "on"], "app"), (["key", "set", "--panel", "cmd+k"], "app"),
-            (["menubar", "on", "a"], "app"), (["update", "check"], "app"), (["spot", "add", "x"], "spots"),
-            (["spot", "on", "a"], "spots"), (["spot", "run", "a"], "spots"), (["spot", "log", "a"], "spots"),
+            (["app", "quit"], "app"), (["setting", "set", "--spot", "openspot", "login", "true"], "app"), (["setting", "set", "--spot", "openspot", "panel-key", "cmd+k"], "app"),
+            (["setting", "set", "--spot", "a", "menubar", "true"], "app"), (["update", "check"], "app"), (["spot", "add", "x"], "spots"),
+            (["setting", "set", "--spot", "a", "enabled", "true"], "spots"), (["spot", "run", "a"], "spots"), (["spot", "log", "a"], "spots"),
             (["setting", "list"], "spots"), (["setting", "get", "--spot", "other", "k"], "spots"),
             (["setting", "get", "k"], nil), (["setting", "set", "k", "v"], nil), (["screen", "sources"], "screen"),
             (["window", "move", "0 0 1 1"], "screen"), (["clipboard", "copy"], "clipboard"), (["clipboard", "paste"], "clipboard"),

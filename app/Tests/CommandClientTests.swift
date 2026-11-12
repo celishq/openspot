@@ -232,7 +232,7 @@ final class CommandClientTests: XCTestCase {
         for live in [["app", "status"], ["spot", "open", "x"], ["setting", "change", "k"], ["event", "emit", "a.b"], ["update", "check"], ["batch"]] {
             XCTAssertTrue(CommandKind.needsApp(live), live.joined(separator: " "))
         }
-        for files in [["spot", "list"], ["setting", "get", "k"], ["calc", "solve", "1"], ["app", "login", "on"], ["app", "quit"], ["spot", "stats"], ["guide"], ["screen", "shot"], []] {
+        for files in [["spot", "list"], ["setting", "get", "k"], ["calc", "solve", "1"], ["setting", "set", "--spot", "openspot", "login", "true"], ["app", "quit"], ["spot", "stats"], ["guide"], ["screen", "shot"], []] {
             XCTAssertFalse(CommandKind.needsApp(files), files.joined(separator: " "))
         }
     }

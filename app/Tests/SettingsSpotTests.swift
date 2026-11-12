@@ -311,11 +311,12 @@ final class SettingsSpotTests: BuiltInCase {
         XCTAssertEqual(mac.elevated, [])
     }
 
-    func testARowCarriesItsKeyAndWhetherAShakeCanBeIt() {
-        let items = SpotOutput(text: "row=open\ntitle=Open\nshortcut=ctrl+k\nshake=true\n\nrow=other\ntitle=Other\n").items
+    func testARowShowsItsKeyAndRecordsANewOneOnlyWithTypeHotkey() {
+        let items = SpotOutput(text: "row=open\ntitle=Open\ntype=hotkey\nshortcut=ctrl+k\nshake=true\n\nrow=shown\ntitle=Shown\nshortcut=cmd+k\n\nrow=other\ntitle=Other\n").items
 
-        XCTAssertEqual(items.map(\.shortcut), ["ctrl+k", nil])
-        XCTAssertEqual(items.map(\.takesShake), [true, false])
+        XCTAssertEqual(items.map(\.shortcut), ["ctrl+k", "cmd+k", nil])
+        XCTAssertEqual(items.map(\.records), [true, false, false])
+        XCTAssertEqual(items.map(\.takesShake), [true, false, false])
     }
 
     func testAPartRecordsAKeyAndReportsItsValue() throws {

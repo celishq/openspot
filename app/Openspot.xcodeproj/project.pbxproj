@@ -334,6 +334,7 @@
 		A5ADD51CB75B131393FBB9EA /* SpotAddDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8C8E91BF5940C14E3C95304 /* SpotAddDrop.swift */; };
 		A67D9B1197DD1C93AD53140F /* CalcRates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C1AD818DAD0892B880BF962 /* CalcRates.swift */; };
 		A67FB54C403612762B1C5185 /* TrayMarkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8871F0DEA0292B7C5FCC70 /* TrayMarkTests.swift */; };
+		A6C39DD10DC99B6B4BD18078 /* ReservedSettingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C339842FDC8CE4727F0E49D /* ReservedSettingTests.swift */; };
 		A70F8AFC48104F71F83BEF14 /* Reminders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52C57E14B4C713AF33ACC3AF /* Reminders.swift */; };
 		A75A6D234688E3CC438E7EAF /* SpotStarterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEFBBD299215E1BF739FBCE3 /* SpotStarterTests.swift */; };
 		A795B698F5CFE58867C2DC12 /* SpotGroupTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7313C5DDF13F1855B8506D7 /* SpotGroupTitle.swift */; };
@@ -457,6 +458,7 @@
 		D76F7916D5206BF1C167FCA1 /* openspot.sh in Resources */ = {isa = PBXBuildFile; fileRef = 94B0E4567AE631D558192FF8 /* openspot.sh */; };
 		D81371BCEA7BA1D45FF16691 /* SpotsModelDragTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AECA7E4958B376D25475BDFB /* SpotsModelDragTests.swift */; };
 		D8146746E1EB9C6FE5E2D733 /* SpotBlur.swift in Sources */ = {isa = PBXBuildFile; fileRef = A16D81BC1C192B2BA575CD34 /* SpotBlur.swift */; };
+		D85FE0618F2B39D7E38F91BA /* ReservedSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6D6EBAD594004DD27C4CC4 /* ReservedSetting.swift */; };
 		D8A70148E3BAE709446C0E33 /* SamplePluginsCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38E153F29DE57F5F69177C5D /* SamplePluginsCase.swift */; };
 		D8AF994BAB780D3D202A6E72 /* SpotClipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F442C00EB92417701FEE471 /* SpotClipboard.swift */; };
 		D9B3C1AD7018A0814774EFF3 /* SpotRimPicture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C9C7C457EE9DF8C3FB0C6C0 /* SpotRimPicture.swift */; };
@@ -619,6 +621,7 @@
 		19C4913213CC1385F421AA7B /* SpotCarriedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotCarriedCard.swift; sourceTree = "<group>"; };
 		19FFFBE2F3AE50C8B1C11018 /* RemindersCalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindersCalls.swift; sourceTree = "<group>"; };
 		1A24E5DCD2962EE9052D8FD5 /* HintWords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HintWords.swift; sourceTree = "<group>"; };
+		1A6D6EBAD594004DD27C4CC4 /* ReservedSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReservedSetting.swift; sourceTree = "<group>"; };
 		1A70BFBE84119FD64BFFD21C /* Spot+Answers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Spot+Answers.swift"; sourceTree = "<group>"; };
 		1A7B9BD93ED61437DAF52A78 /* Openspot.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Openspot.entitlements; sourceTree = "<group>"; };
 		1AFAF66BCC33ED18172019A7 /* FaultSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaultSpot.swift; sourceTree = "<group>"; };
@@ -656,6 +659,7 @@
 		2B23CFBEA8B591C3422CA1B7 /* SheetPush.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetPush.swift; sourceTree = "<group>"; };
 		2B251EE6DA1429855D70FB9C /* CarefulModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarefulModeTests.swift; sourceTree = "<group>"; };
 		2B4C02AADC5F649901D17E1B /* AppLogin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogin.swift; sourceTree = "<group>"; };
+		2C339842FDC8CE4727F0E49D /* ReservedSettingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReservedSettingTests.swift; sourceTree = "<group>"; };
 		2C544E7F0BD5FF71CCDB6E8C /* CalcDate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcDate.swift; sourceTree = "<group>"; };
 		2C8EA4B013951F882C97A132 /* SpotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotTests.swift; sourceTree = "<group>"; };
 		2CD5DEDA870B21A220E7D870 /* SpotsModel+Actions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotsModel+Actions.swift"; sourceTree = "<group>"; };
@@ -1478,6 +1482,7 @@
 				92A4BCB2AF5BC515EE265370 /* RemindersTests.swift */,
 				F71086C8BD269D093552477D /* RepeatDrawingTests.swift */,
 				CF378CC3D07E07EFEC0F5895 /* ReposPluginTests.swift */,
+				2C339842FDC8CE4727F0E49D /* ReservedSettingTests.swift */,
 				ED9BDEAA645A7CD91FDAD63B /* ReviewSpotTests.swift */,
 				38E153F29DE57F5F69177C5D /* SamplePluginsCase.swift */,
 				4C5939868A8BC2E7F5717AD6 /* SamplePluginsTests.swift */,
@@ -1862,6 +1867,7 @@
 				5838435FDD760DA84BE10471 /* CommandGuide.swift */,
 				24B274120A3F3CC61A5258BB /* CommandLineCall.swift */,
 				93364F1D8B0024749079178D /* CommandLink.swift */,
+				1A6D6EBAD594004DD27C4CC4 /* ReservedSetting.swift */,
 				04422C7A233E68E420AB9537 /* TerminalRun.swift */,
 				4E458884482770E1E8094D87 /* TerminalStop.swift */,
 				873E13F82984C6209F411AD8 /* WindowMove.swift */,
@@ -2421,6 +2427,7 @@
 				A70F8AFC48104F71F83BEF14 /* Reminders.swift in Sources */,
 				38A31E169AA11D6BCE73A524 /* RemindersCalls.swift in Sources */,
 				632932B0C674B0386A896951 /* RepeatDrawing.swift in Sources */,
+				D85FE0618F2B39D7E38F91BA /* ReservedSetting.swift in Sources */,
 				CE8936BBBAA99892F945E97A /* ReviewSpot.swift in Sources */,
 				C1B349168078245A17995A01 /* RunningApp.swift in Sources */,
 				D229A16C5545E7D9C1D280F1 /* SandboxCalls.swift in Sources */,
@@ -2757,6 +2764,7 @@
 				20C595D08A6C0DCB45DC58EC /* RemindersTests.swift in Sources */,
 				35ED75920A05DA20D9C70490 /* RepeatDrawingTests.swift in Sources */,
 				53820947E488B8B541174D59 /* ReposPluginTests.swift in Sources */,
+				A6C39DD10DC99B6B4BD18078 /* ReservedSettingTests.swift in Sources */,
 				07E92CC784B06FBC1E34557F /* ReviewSpotTests.swift in Sources */,
 				D8A70148E3BAE709446C0E33 /* SamplePluginsCase.swift in Sources */,
 				4E1955C194A8F2DAF8B71A1D /* SamplePluginsTests.swift in Sources */,

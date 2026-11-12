@@ -55,7 +55,7 @@ EOF
 keyrow() {
   printf '\nrow=%s\ntitle=%s\ndetail=%s\nparent=%s\nicon=%s\n' "$1" "$2" "$3" "$3" "$4"
   [ -n "$5" ] || printf 'hides=clear\n'
-  printf 'shortcut=%s\nshake=true\n' "${5:-Record}"
+  printf 'type=hotkey\nshortcut=%s\nshake=true\n' "${5:-Record}"
 }
 
 # Prints the row of a value of a spot: the spot, the key, the title, the icon and the name of the spot.
@@ -115,8 +115,8 @@ sheet() {
 $1
 EOF
   printf 'recents=false\n\nbutton=open\ntitle=Change\nclose=false\n\nbutton=clear\ntitle=Remove\nshortcut=cmd+backspace\n'
-  printf '\nrow=panel_key\ntitle=Open Openspot\nicon=keyboard\nhides=clear\nshortcut=%s\n' "$panel"
-  printf '\nrow=fix_key\ntitle=Open a fix\nicon=wrench.and.screwdriver\nhides=clear\nshortcut=%s\n' "$fix"
+  printf '\nrow=panel_key\ntitle=Open Openspot\nicon=keyboard\nhides=clear\ntype=hotkey\nshortcut=%s\n' "$panel"
+  printf '\nrow=fix_key\ntitle=Open a fix\nicon=wrench.and.screwdriver\nhides=clear\ntype=hotkey\nshortcut=%s\n' "$fix"
   printf '\nrow=careful_mode\ntitle=Careful mode\ndetail=Spots get only what their uses name\nicon=lock.shield\nvalue=%s\n' "$careful"
   [ -z "$login" ] || printf '\nrow=open_at_login\ntitle=Open at login\nicon=power\nvalue=%s\n' "$login"
   [ -z "$link" ] || printf '\nrow=command_link\ntitle=Use openspot in Terminal\ndetail=The command line tool\nicon=terminal\nvalue=%s\n' "$link"
@@ -174,21 +174,24 @@ EOF
   open)
     case "$2" in
       open_at_login)
-        if [ "$(status login)" = true ]; then exec openspot app login off; else exec openspot app login on; fi
+        if [ "$(status login)" = true ]; then on=false; else on=true; fi
+        exec openspot setting set --spot openspot login "$on"
         ;;
       careful_mode)
-        if [ "$(status careful)" = true ]; then exec openspot app careful off; else exec openspot app careful on; fi
+        if [ "$(status careful)" = true ]; then on=false; else on=true; fi
+        exec openspot setting set --spot openspot careful "$on"
         ;;
       command_link)
         if [ "$(status link)" = true ]; then
-          openspot app link off && echo 'toast=Removed openspot'
+          openspot setting set --spot openspot link false && echo 'toast=Removed openspot'
         else
-          openspot app link on && echo 'toast=Installed openspot'
+          openspot setting set --spot openspot link true && echo 'toast=Installed openspot'
         fi
         ;;
       menubar:*)
         id=${2#menubar:}
-        if in_menu_bar "$id"; then exec openspot menubar off "$id"; else exec openspot menubar on "$id"; fi
+        if in_menu_bar "$id"; then on=false; else on=true; fi
+        exec openspot setting set --spot "$id" menubar "$on"
         ;;
       setting:*)
         setting "$2"
@@ -200,17 +203,17 @@ EOF
         ;;
     esac
     ;;
-  panel_key) exec openspot key set --panel "$2" ;;
-  fix_key) exec openspot key set --fix "$2" ;;
+  panel_key) exec openspot setting set --spot openspot panel-key "$2" ;;
+  fix_key) exec openspot setting set --spot openspot fix-key "$2" ;;
   clear)
     case "$2" in
       setting:*) setting "$2"; exec openspot setting set --spot "$spot" "$key" ;;
-      key:*) command "$2"; exec openspot key set "$spot" "$key" ;;
-      float:*) exec openspot key set "${2#float:}" --float ;;
+      key:*) command "$2"; exec openspot setting set --spot "$spot" "key.$key" ;;
+      float:*) exec openspot setting set --spot "${2#float:}" float ;;
     esac
     ;;
-  key:*) command "$1"; exec openspot key set "$spot" "$key" "$2" ;;
-  float:*) exec openspot key set "${1#float:}" --float "$2" ;;
+  key:*) command "$1"; exec openspot setting set --spot "$spot" "key.$key" "$2" ;;
+  float:*) exec openspot setting set --spot "${1#float:}" float "$2" ;;
   *)
     echo 'Settings cannot do that.' >&2
     exit 1

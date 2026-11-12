@@ -119,7 +119,7 @@ extension SpotsModel {
 
     public func run(_ entry: Entry) {
         if let item = entry.item, let list = entries.first(where: { $0.id == entry.spot.id }) {
-            if item.shortcut != nil, openList != list.id {
+            if item.records, openList != list.id {
                 open(list.id, moving: true)
             }
             pick(item, of: list)

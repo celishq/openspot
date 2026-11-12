@@ -302,14 +302,16 @@ Rows are a list that the person searches and picks from.
 | `value`    | `true` draws a checkmark at the end.                                                        |
 | `hides`    | The id of an action that this row does not offer. It MAY repeat.                            |
 | `keyword`  | A word that finds the row and does not show.                                                |
-| `shortcut` | A key at the end of the row. A pick records a new key and calls `<id> <shortcut>`.          |
+| `shortcut` | A key that shows at the end of the row.                                                     |
+| `type`     | `hotkey`: a pick records a new key and calls `<id> <shortcut>`.                             |
 | `shake`    | `true` lets a shake of the pointer be the key that a pick records, as `<id> shake`.         |
 | `file`     | The file that the row stands for. See Files out.                                            |
 | `to`       | Another spot that a pick goes to, as `<spot> open <row id>` with the row's fields on stdin. |
 
 - Rows flow through a `repeat`, or through a list when there is none.
 - Openspot searches the rows itself and puts recent picks first. `recents=false` in the head turns that off.
-- With `on=sheet.text`, each change of the search of the sheet is a read, and the spot prints the rows that match. A pick
+- With `on=sheet.text`, each change of the search of the sheet is a read, and the spot prints the rows that match. It also
+  reads the spot when its sheet opens, as `on=sheet.open` does. A pick
   gets the text on stdin as `search=<text>`. A read at any event gets the typed text too.
 - A `repeat` has its own `grid=` lines, in which each word is the place of one row. The drawing repeats down for as long
   as there are rows. Rows take the places in the order in which each word first shows.
@@ -369,7 +371,7 @@ An event is what makes Openspot read a spot. The header lists the events that ar
 | `panel.open`       | Each time the panel opens, and once as the app starts.                    |               |
 | `clock.<seconds>`  | Every that many seconds while something wants it, and when the Mac wakes. |               |
 | `search.text`      | At each change of the text of the main search.                            | the text      |
-| `sheet.text`       | At each change of the text of the search of its sheet.                    | the text      |
+| `sheet.text`       | At each change of the text of the search of its sheet, and when it opens. | the text      |
 | `clipboard.change` | When the clipboard changes.                                               |               |
 | `app.front`        | When another app comes to the front.                                      | its bundle ID |
 | `app.update`       | When the app has downloaded an update.                                    | its version   |
@@ -742,6 +744,10 @@ esac
 - `openspot setting get <key>` prints the value, or nothing. `openspot setting set <key> [value]` keeps it, or removes it
   with no value. `--spot <id>` names the spot from a terminal.
 - A choice of the person SHOULD go in a setting. What the spot makes, such as a cache, SHOULD go in `OPENSPOT_DATA`.
+- Openspot keeps some keys for the person, and a `field` MUST NOT use one. Of any spot: `enabled` and `menubar`, `true` or
+  `false`, and `float` and `key.<command>`, a key such as `ctrl+option+k` or `shake`, or none to take it away. Of the spot
+  `openspot`, which is the app: `login`, `link` and `careful`, `true` or `false`, and `panel-key` and `fix-key`. Each
+  needs the use of the call that does the work (see Trust).
 
 ### Stats
 
@@ -788,8 +794,8 @@ openspot app quit
 
 | Use         | The calls that need it                                                                                                                                     |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app`       | `app login`, `app link`, `app quit`, `key set`, `menubar`, `update check` and `update install`                                                             |
-| `spots`     | `spot add`, `spot remove`, `spot on`, `spot off`, `spot new`, `spot run`, `spot log`, `setting list`, and `setting get`, `set` or `change` of another spot |
+| `app`       | `app quit`, `update check`, `update install`, and `setting set` of `menubar`, `float`, `key.<command>` or of the spot `openspot`                           |
+| `spots`     | `spot add`, `spot remove`, `spot new`, `spot run`, `spot log`, `setting list`, `setting set` of `enabled`, and `setting get`, `set` or `change` of another spot|
 | `screen`    | `screen sources`, `screen shot`, `screen record`, `window frame`, `window move` and `color pick`                                                           |
 | `clipboard` | `clipboard copy`, `clipboard paste` and `clipboard read`                                                                                                   |
 | `calendar`  | each call of `calendar` and `reminders`                                                                                                                    |

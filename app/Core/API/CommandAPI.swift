@@ -41,7 +41,7 @@ public final class CommandAPI: @unchecked Sendable {
         }
         guard let runs, let caller = runs.tokens.caller(of: environment) else { return call }
         if case .appCareful = call, !caller.isBuiltIn {
-            return .refused("\(caller.name) cannot change Careful mode. Only you can, in Settings or with `openspot app careful on|off` in Terminal.")
+            return .refused("\(caller.name) cannot change Careful mode. Only you can, in Settings or with `openspot setting set --spot openspot careful true` in Terminal.")
         }
         guard let needed = SpotUseCall(arguments: arguments, of: caller.id) else { return call }
         if runs.tokens.isCareful, !caller.uses.contains(needed.use) {

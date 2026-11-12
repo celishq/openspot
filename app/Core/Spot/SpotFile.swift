@@ -69,6 +69,9 @@ public struct SpotFile: Equatable, Sendable {
         }
         let answers = on?.answers
         let answersOnly = answers != nil && read == nil
+        if let field = header.children.compactMap({ $0.value("field") }).first(where: ReservedSetting.isReserved) {
+            throw SpotError.fault("\(name) has field=\(field), a key that Openspot keeps for the person. Give the field another name.")
+        }
         let offers = try header.children.filter { $0.fields.first?.key == "button" }.map { block in
             guard let offer = CommandOffer(block: block) else {
                 throw SpotError.fault("\(name) cannot read the button \(block.value("button") ?? ""). Give it an ID with no space and a title, such as button=left with title=Left side")

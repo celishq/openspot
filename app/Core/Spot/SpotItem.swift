@@ -12,8 +12,10 @@ public struct SpotItem: Equatable, Sendable {
     public let hides: [String]?
     /// Words that find this row in a search, though it does not show them.
     public let keywords: [String]
-    /// The key this row shows. A pick records the next key that the person presses.
+    /// The key this row shows.
     public let shortcut: String?
+    /// Whether a pick records the next key that the person presses, from `type=hotkey`.
+    public let records: Bool
     /// Whether a shake of the pointer can be its key as well.
     public let takesShake: Bool
     /// Whether this row shows that its thing is on, from its `value`.
@@ -29,7 +31,7 @@ public struct SpotItem: Equatable, Sendable {
     /// The card that an answer draws in place of its row, from the drawing and the blocks of its frame (protocol: Places).
     public let card: SpotState?
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, takesShake: Bool = false, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, to: String? = nil, fields: String? = nil, card: SpotState? = nil) {
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, to: String? = nil, fields: String? = nil, card: SpotState? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -38,6 +40,7 @@ public struct SpotItem: Equatable, Sendable {
         self.hides = hides
         self.keywords = keywords
         self.shortcut = shortcut
+        self.records = records
         self.takesShake = takesShake
         self.isOn = isOn
         self.tone = tone
@@ -61,6 +64,7 @@ public struct SpotItem: Equatable, Sendable {
             hides: hides.isEmpty ? nil : hides,
             keywords: block.values("keyword"),
             shortcut: block.value("shortcut"),
+            records: block.value("type") == "hotkey",
             takesShake: block.flag("shake") ?? false,
             isOn: block.flag("value") ?? false,
             tone: block.value("tone").flatMap(MetricValue.Tone.init),

@@ -154,7 +154,7 @@ In order. An earlier goal wins when two goals conflict.
 | `text`, `number`, `graph`, `picture`, `view`, `switch`, `field`, `choice`, `option`, `button`, `section`, `repeat`, `row` | Block kind |
 | `multiline`, `slider`, `hotkey`, `multiple`, `tick`                                                      | Type                 |
 | `title`, `detail`, `icon`, `tone`, `value`, `color`, `look`, `align`, `type`                             | Block key            |
-| `parent`, `hides`, `keyword`, `shortcut`, `shake`, `file`, `to`                                          | Row key              |
+| `parent`, `hides`, `keyword`, `shortcut`, `type`, `shake`, `file`, `to`                                        | Row key              |
 | `grid`, `grid.<size>`, `main`, `title`, `detail`, `recents`, `toast`, `link`, `progress`, `select`, `end`, `call` | Head key    |
 | `call`, `arg`, `env.<name>`, `input`, `stop`                                                             | Stdin key of a staying script |
 
