@@ -714,43 +714,13 @@ fixes the rest. Use plain words, a calm tone, and one or two short sentences, wi
 | `Oops! Something went wrong.` | `Openspot cannot find a screenshot.`                                                   |
 | `Error 1: osascript failed.`  | ``Copied, but Openspot cannot paste. Press `⌘V`, or allow Openspot in Accessibility.`` |
 
-## Maintaining this protocol
-
-This part is for the people who change Openspot: the goals, the rules of this text, and the decisions with what each one
-rejected. The build leaves it out of `openspot guide`.
-
-### Goals
-
-In order. An earlier goal wins when two goals conflict.
-
-1. **A small plugin costs almost nothing.** One executable file. No build, no manifest, no account, no SDK.
-2. **Openspot draws a plugin's data.** A script prints data, and Openspot draws it. A plugin can add its own SwiftUI
-   view to its spot, and a script can open its own Mac window.
-3. **Nothing runs by surprise.** Openspot runs a script only when a person acts or when its header says so.
-4. **A plugin has real power.** It can use any Mac API, keep state in files, stream a long process and stay running.
-5. **A coding agent writes a working plugin.** Given only `openspot guide` and one sentence, a coding agent writes a plugin
-   that passes `openspot check --json` with `[]`, so that it shows on the grid, on its first try. `make eval-agent`
-   measures it.
-
-### Versions
+## Versions
 
 The version at the top is the version of the contract. A new word raises its minor number, such as `1.1`. A draft becomes
 `final` when a real use proves it, and a final version never changes the meaning of a word. A change that breaks an old
 script raises the major number and adds a header key `protocol=<major>`, and a script with no such key is version 1.
 
-### Rules of the text
-
-1. **Only the contract.** What passes between a script and the host: the header, the arguments, stdin, stdout and the
-   environment. Not how the host draws, its keys or its timings, unless a script must be written for a number.
-2. **The example first.** One real example, then the rules as short bullets, as Nostr NIPs write them.
-3. **Plain words.** Short sentences in ASD-STE100, and MUST, SHOULD and MAY as RFC 2119 gives them. The why of a rule goes
-   in the table of decisions, not in the rule.
-4. **Each rule once.** A rule keeps an ID, such as `C6`, only when code or a test names it, and an ID is
-   never changed or used again.
-5. **A decision** that later work must not break goes in the table of decisions, with the one it rejected.
-6. **One way to do one thing,** and each word in one place, as the registry shows.
-
-### How to extend
+## How to extend
 
 An old script never sees a word that it did not ask for, and an old app skips a word that it does not know.
 
@@ -761,92 +731,3 @@ An old script never sees a word that it did not ask for, and an old app skips a 
 | A detail of a kind    | a key, or a `type` value                                    |
 | A power of the Mac    | a noun: `openspot <noun> <verb>`, its events and its `uses` word, with its guide in `app/Help` |
 | A complex look        | nothing: a `view` of the plugin                             |
-
-### Registry
-
-| Word                                                                                                     | Kind                 |
-| -------------------------------------------------------------------------------------------------------- | -------------------- |
-| `title`, `icon`, `detail`, `keyword`, `on`, `emits`, `offers`, `drop`, `size`, `preview`, `view`, `mode`, `uses`, `grid.<size>`, `to` | Header key |
-| `button`, `field`                                                                                        | Header block         |
-| `once`, `stay`, `always`                                                                                 | Mode                 |
-| `app`, `spots`, `screen`, `clipboard`, `calendar`, `network`, `files`                                    | Use                  |
-| `search`                                                                                                 | Offer                |
-| `sheet.open`, `panel.open`, `clock.<seconds>`, `search.text`, `sheet.text`, `clipboard.change`, `app.front`, `app.update`, `screen.wake` | Event |
-| `spot.change`, `spot.want`, `spot.preview`                                                               | Reason with no event |
-| `read`                                                                                                   | Reserved call        |
-| `open`, `drop`, `drag`                                                                                   | Default id           |
-| `OPENSPOT_ID`, `OPENSPOT_REASON`, `OPENSPOT_VALUE`, `OPENSPOT_DATA`, `OPENSPOT_SH`                       | Environment variable |
-| `search`, `form`, `value`                                                                                | Stdin key            |
-| `openspot <noun> <verb>`, `openspot help <noun>`                                                         | Command              |
-| `text`, `number`, `graph`, `picture`, `view`, `switch`, `field`, `choice`, `option`, `button`, `section`, `repeat`, `row` | Block kind |
-| `multiline`, `slider`, `hotkey`, `multiple`, `tick`                                                      | Type                 |
-| `title`, `detail`, `icon`, `tone`, `value`, `color`, `look`, `align`, `type`                             | Block key            |
-| `parent`, `hides`, `keyword`, `shortcut`, `shake`, `file`, `to`                                          | Row key              |
-| `grid`, `grid.<size>`, `main`, `title`, `detail`, `recents`, `toast`, `link`, `progress`, `select`, `end`, `call` | Head key    |
-| `call`, `arg`, `env.<name>`, `input`, `stop`                                                             | Stdin key of a staying script |
-
-The verbs and the row keys of each `openspot` noun, such as `screen` or `calendar`, are in `openspot help <noun>`.
-
-### Decisions
-
-| Decision                                                                                                    | Rejected                                     |
-| ----------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| One `on` key lists events, and each moment of a read is an event `<noun>.<verb>` with a value (B6).          | `read` for places, `every` for seconds, `answers` for a pattern and `on` for events. |
-| A filter on an event is a regular expression of its value, after a space.                                   | A key for each kind of filter.               |
-| The reason of a read is the name of its event.                                                              | A word for each reason beside the events.    |
-| A spot names the events that it raises in `emits`, so that a check can know each name (B7).                | Any word with a dot as an event.             |
-| The app's events are default ids, and `read` is the only reserved call.                                     | A verb for each kind of call.                |
-| A call is the id, its row and its values; what the person typed is on stdin.                                | The search text and its forms as arguments of `read`. |
-| A press of a card with no sheet is `open` with no row.                                                      | A `run` id beside `open`.                    |
-| The first key names the kind of a block.                                                                    | A kind found from any key.                   |
-| The header is a frame in comments, and its blocks are kinds of the output: `button` and `field`.            | `command` and `setting` blocks of the header alone. |
-| Each kind keeps its data in `value`.                                                                        | `point`, `on`, `level` and `text` by kind.   |
-| An input is a `field` with a `type`, and a `graph` draws one value or many.                                 | `slider`, `hotkey` and `gauge` as kinds.     |
-| A row and a card say that a thing is on only by `value`: a row's own, and the card's main `switch`.        | `on` in a row and in the head, and an `on` tone. |
-| A frame with a block is the whole picture, and a head alone carries effects.                                | A later frame that merges what it prints.    |
-| Escape codes report and never act.                                                                          | OSC 8 as `link`.                             |
-| `openspot guide` is the one text of the contract, and a part takes only the keys that it names.             | A catalog of parts beside the guide.         |
-| A value is whole, and a thing with its own title or picture is a block.                                     | `<id>:<title>:<icon>` in one value, which a URL or a time such as 09:30 breaks. |
-| A person can see and stop each call, so a call has no time limit.                                           | A `job` key.                                 |
-| A script runs once for each call, unless its header gives another `mode`, and a `.js` file runs inline (I1). | A process that stays by default, and `mode=inline`. |
-| A call is the same arguments, variables and stdin in each mode, as CGI and the socket of the API give them (C7). | `call=` blocks read with `next`, and a JavaScript function for each id. |
-| A helper writes each value from data (C8).                                                                  | An author who escapes each value by hand.    |
-| The header is in each file, and a scan runs nothing.                                                        | A manifest.                                  |
-| The header lists the events where a read is safe, because only the author knows what a read costs.         | `read=true`, with moments that the app picks. |
-| A call that needs the app starts it, and a call of files runs where it is (S12).                           | A process of its own that answers in part, or fails. |
-| One call of `openspot batch` asks several things, and `--frame` prints them as frames (K7, K8).              | A process and a `jq` for each thing.         |
-| The person gives each letter, each float and each place in the menu bar, and the header only offers the main search. | `shortcut`, `tray`, `global` and `float` in the header, which two shared spots could both claim. |
-| A pattern in the header says which text a spot answers, so a scan learns it with no run, and a key starts no other script. | Each script asked at each key. |
-| An answer is a read at `search.text`, so a script has one shape for both.                                   | A new call, such as `answer <text>`.         |
-| Answers show first, because they are about the whole text that the person typed.                            | A rank that each spot gives its rows.        |
-| A plugin runs with the full access of the person, names what it uses in `uses`, and each use shows after it happens (Z1, Z4). | A prompt at each use, a refused call, or a sandbox by default. |
-| A spot's call is known by Openspot's own record of its processes (Z2).                                      | `OPENSPOT_ID` alone, which a process can set or drop. |
-| A missing use shows when a run makes it, and `openspot check` does not guess it (Z4).                      | A check that reads the text for calls.       |
-| The person decides at an add or an update, which shows the uses and what grew (Z6, Z7).                     | A review of each call.                       |
-| Careful mode is a sandbox that the person turns on, and it allows what `uses` names (Z8).                  | A data folder that claims to be a boundary.  |
-| A script keeps a setting through `openspot setting`, and asks for it when it needs it.                      | A setting with a kind, and required settings. |
-| The app owns each canvas, and a drawing only names areas, so each result stays even.                        | Sizes, gaps and colours in points.           |
-| A drawing is CSS grid areas, which authors and models know.                                                 | Nested stacks, ratios and named layouts.     |
-| A button that no drawing places is an action, so a verb is one kind in two places.                          | An `action` block beside a `button`.         |
-| A row draws its own keys, and a richer row is an action or a view.                                          | A template with slots.                       |
-| A form is the same call twice, so each call has one shape.                                                  | A `form` word.                               |
-| One `main=` names what stands for a spot, so moving a block changes nothing.                                | The first `text`, `gauge` or `switch` of the output, and a `grid.tray` drawing. |
-| One `icon` key, whose value says what the picture is.                                                       | `symbol`, `file`, `image` and `glyph`.       |
-| A picture on the web is an `icon` URL, which Openspot fetches once and keeps.                               | A script that downloads each picture into `OPENSPOT_DATA`. |
-| A look only draws a box, and a kind, a type or a drawing says the rest.                                     | `look=large`, `look=list`, `look=section` and `look=tick`. |
-| A complex view is a `view` of the plugin in an area, so the text language stays small.                      | More words for each new look.                |
-| One Swift file, compiled by Openspot, with no package and no build step.                                    | A Swift package, or a bundle that the author builds. |
-| The script holds the state, and the view draws its own block, in Openspot's process.                        | A view that runs its own work or keeps its own data. |
-| A card of several spots is a spot whose header draws them by their IDs, and Openspot passes their data.      | A TOML file of widgets, and a spot that reads other spots itself. |
-| The header holds the size that a spot prefers, and the person's choice wins.                                | A `size` in the head of a read.              |
-| `file` names the file of a row, apart from its id and its picture.                                          | A row id that is a path, which makes the id say two things. |
-| `drag` tells the script after the drop, and the script says what stays.                                     | A key that removes a row after a drag.       |
-| Openspot drags the file itself, and the other app copies or moves it.                                       | A file promise that the script writes on request. |
-| The script never learns where it shows.                                                                     | A call or an environment variable that names the window. |
-| A staying script says so in its header, because a script that runs once reads stdin to its end before it answers. | A script that keeps running after its first answer stays. |
-| A stop is a block of its own, `stop=<n>`, so no id that an author picks can clash with it.                  | A call named `stop`.                         |
-| The script owns its sockets and its peers, and the app owns only stdio.                                     | A network capability in the app.             |
-
-### Open
-
-A stop of a call that `openspot_serve` runs does not end it early, so a slow staying call runs to its end.

@@ -150,7 +150,7 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(faults, [])
     }
 
-    func testTheGuideIsTheProtocolWithoutItsPartForMaintainers() throws {
+    func testTheGuideIsTheProtocol() throws {
         let out = root.appendingPathComponent("built.md")
         let script = Process()
         script.executableURL = URL(fileURLWithPath: "/bin/sh")
@@ -161,7 +161,6 @@ final class NewSpotTests: BuiltInCase {
         XCTAssertEqual(script.terminationStatus, 0)
         XCTAssertTrue(try String(contentsOf: out, encoding: .utf8) == guideText)
         XCTAssertTrue(guideText.hasPrefix("# Openspot protocol"))
-        XCTAssertFalse(guideText.contains("## Maintaining this protocol"))
     }
 
     func testTheGuideTeachesNoOldKeyOrCall() {
@@ -187,10 +186,9 @@ final class NewSpotTests: BuiltInCase {
         }
     }
 
-    /// The text of `spec/protocol.md` up to its part for maintainers.
+    /// The text of `spec/protocol.md`.
     private func protocolGuide() throws -> String {
-        let text = try String(contentsOf: repo.appendingPathComponent("spec/protocol.md"), encoding: .utf8)
-        return text.components(separatedBy: "## Maintaining this protocol\n").first ?? text
+        try String(contentsOf: repo.appendingPathComponent("spec/protocol.md"), encoding: .utf8)
     }
 
 }
