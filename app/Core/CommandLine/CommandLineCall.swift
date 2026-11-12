@@ -155,7 +155,8 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot render --card <size> <file.png>     Draws its card at a size, such as wide, to a picture.
     openspot render --spot <id> [--card <size>] <file.png>
                                                  Draws the sheet of an installed spot, or its card at a size.
-    openspot sandbox [file]                      Opens a window to try a sheet from text, a file or a script.
+    openspot sandbox [file]                      Opens the playground: a spot that you type or a file, its live sheet
+                                                 and card, and each call that it gets with what it printed.
     openspot color pick                          Prints the colour the person picks.
     openspot folder pick                         Prints the folder the person picks, or nothing after Cancel.
     openspot setting get [--spot id] <key>       Prints the value the person chose for the spot, or nothing.

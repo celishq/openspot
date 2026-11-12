@@ -617,6 +617,7 @@ esac
 | `openspot spot run <id> [call] [value]...`      | Makes one call as Openspot does, and prints all that it prints.        |
 | `openspot spot log <id>`                        | Prints the last calls to a spot, with stdin, stdout, stderr and exit code. |
 | `openspot check [--json] <folder>`              | Loads and reads each plugin, and prints each fault. Run it before you stop. |
+| `openspot sandbox [file]`                       | Opens the playground: type a spot, and see its sheet, its card and each call with its stdin, frames and stderr. |
 | `openspot render [--view <file>] <file.png>`    | Draws the sheet on stdin. `--card <size>` draws its card, and `--spot <id>` an installed spot. |
 | `openspot spot show <id>`                       | Opens the panel with the spot selected.                                |
 | `openspot spot add <git url, folder or file.spot>` | Adds a spot, and records it in `spots.lock` (N1, N2). An update that grows its uses needs `--yes` (Z7). |
