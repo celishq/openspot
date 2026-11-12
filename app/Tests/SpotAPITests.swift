@@ -271,7 +271,8 @@ final class SpotAPITests: XCTestCase {
     func testWithNoRunningAppTheActsOfTheAppFail() async throws {
         for arguments in [["app", "quit"], ["update", "check"], ["update", "install"]] {
             let answer = try await XCTUnwrap(appWork(arguments))()
-            XCTAssertEqual(answer.errors, "Openspot is not running. Open Openspot, then run this again.\n", arguments.joined(separator: " "))
+            let call = "openspot " + arguments.joined(separator: " ")
+            XCTAssertEqual(answer.errors, "`\(call)` needs the Openspot app, and no app answers. Open Openspot, or quit it and open it again if it is open, then run `\(call)` again.\n", call)
             XCTAssertEqual(answer.code, 1)
         }
     }

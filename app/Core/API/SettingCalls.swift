@@ -27,7 +27,7 @@ struct SettingCalls {
     }
 
     func change(_ key: String, of spot: String) -> CommandAPI.Work {
-        guard let app else { return CommandAnswer.notRunning }
+        guard let app else { return CommandAnswer.notRunning("setting change \(key)") }
         return CommandAnswer.work {
             guard await app.changeSetting(key, of: spot) else { throw SpotError.failed(1, "Openspot cannot find \(spot). Turn it on in Spots, then try again.") }
             return ""

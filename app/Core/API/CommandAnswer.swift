@@ -20,9 +20,13 @@ public struct CommandAnswer: Equatable, Sendable {
 }
 
 extension CommandAnswer {
-    /// The work of a call that only the running app can answer, when no app runs.
-    static let notRunning: CommandAPI.Work = {
-        CommandAnswer(errors: "Openspot is not running. Open Openspot, then run this again.\n", code: 1)
+    /// The work of a call that only the running app can answer, when no app answers. `call` is its words, such as
+    /// `spot store`.
+    static func notRunning(_ call: String) -> CommandAPI.Work {
+        {
+            let call = "openspot \(call)"
+            return CommandAnswer(errors: "`\(call)` needs the Openspot app, and no app answers. Open Openspot, or quit it and open it again if it is open, then run `\(call)` again.\n", code: 1)
+        }
     }
 
     /// The work that prints what the text work returns, and fails as `init(failure:)` says.
