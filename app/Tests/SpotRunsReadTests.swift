@@ -155,12 +155,12 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script("cups", header: "on=clock.30")
         try script("tool", header: "on=sheet.open")
         try script("once")
-        try "[[widgets]]\ntitle = \"W\"\ngrid = [\"cups\"]\nsize = \"square\"\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
+        try "#!/bin/sh\n# title=W\n# grid.square=cups\n".writeScript(to: folder.appendingPathComponent("w.sh"))
 
         let scan = try scanned()
 
         XCTAssertEqual(Set(runs.sheets.keys), ["cups", "tool", "once"])
-        XCTAssertEqual(Set(scan.spots.map(\.id)), ["cups", "tool", "once", "w/W"])
+        XCTAssertEqual(Set(scan.spots.map(\.id)), ["cups", "tool", "once", "w"])
         XCTAssertEqual(scan.spots.first { $0.id == "cups" }?.headerState.isOnGrid, false)
     }
 
@@ -381,7 +381,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script("tray", header: "on=clock.5", log: "tray", "printf 'title=1\\n'")
         try script("placed", header: "on=clock.5", log: "placed", "printf 'title=1\\n'")
         try script("idle", header: "on=clock.5", log: "idle", "printf 'title=1\\n'")
-        try "[[widgets]]\ntitle = \"W\"\ngrid = [\"placed\"]\nsize = \"square\"\n".write(to: folder.appendingPathComponent("w.toml"), atomically: true, encoding: .utf8)
+        try "#!/bin/sh\n# title=W\n# grid.square=placed\n".writeScript(to: folder.appendingPathComponent("w.sh"))
 
         _ = try scanned()
         try await wait("the tray read") { self.log("tray").count == 1 }

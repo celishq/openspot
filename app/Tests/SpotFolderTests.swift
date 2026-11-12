@@ -362,7 +362,7 @@ final class SpotFolderTests: XCTestCase {
         try write("details.sh", header: "on=panel.open")
         try write("other.sh", header: "on=panel.open")
         try write("cpu.sh", header: "on=clock.60")
-        try "[[widgets]]\ntitle = \"Box\"\ngrid = [\"cpu\"]\nsize = \"square\"\nopens = \"details\"\n".write(to: folder.appendingPathComponent("box.toml"), atomically: true, encoding: .utf8)
+        try "#!/bin/sh\n# title=Box\n# grid.square=cpu\n# to=details\n".writeScript(to: folder.appendingPathComponent("box.sh"))
 
         let commands = try scan.spots
 

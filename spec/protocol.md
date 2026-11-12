@@ -598,19 +598,21 @@ show any script that reads, by its ID (H1).
 printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'
 ```
 
-A TOML file in the plugins folder holds widgets, each of which shows several metrics on one card.
+A spot can draw its card from other spots. Each word of the `grid.<size>=` lines in its header is the ID of a spot, and
+Openspot shows the main block of that spot in its area. It reads each spot that it names while the card shows, so the spot
+that draws runs nothing (F10). `to=` names the spot that a press opens.
 
-```toml
-[[widgets]]
-title = "System"
-detail = "Battery, CPU, memory and devices"
-grid = ["battery battery cpu cpu", "battery battery memory memory", "battery battery devices devices"]
-opens = "system-info"
+```text
+#!/bin/sh
+# title=System
+# detail=Battery, CPU, memory and devices
+# grid.large=battery battery cpu cpu
+# grid.large=battery battery memory memory
+# to=system-info
 ```
 
-`grid` is a drawing of the names of metrics, as a card drawing is of ids, and its lines set the size of the widget, or
-`size` sets it. `opens` names the spot that a press of the widget opens. A name is the file name of a script in the
-widget's own folder first, and else the ID of a spot (F10).
+A name is the file name of a script in its own folder first, and else the ID of a spot (F10). The lines of one drawing
+have the same number of words, and each name covers a rectangle.
 
 ## Files out
 
@@ -889,8 +891,7 @@ rest with the exact step. Use plain words, a calm tone, and one or two short sen
 | A complex view is a `view` of the plugin in an area, so the text language stays small.                      | More words for each new look.                |
 | One Swift file, compiled by Openspot, with no package and no build step.                                    | A Swift package, or a bundle that the author builds. |
 | The script holds the state, and the view draws its own block, in Openspot's process.                        | A view that runs its own work or keeps its own data. |
-| A widget of several metrics is a TOML file, which a person writes by hand.                                  | A `spot` block in a script's output.         |
-| A widget's grid names its metrics, as a card drawing names its blocks.                                      | Letters, and a `places` table that names a metric for each. |
+| A card of several spots is a spot whose header draws them by their IDs, and Openspot passes their data.      | A TOML file of widgets, and a spot that reads other spots itself. |
 | The header holds the size that a spot prefers, and the person's choice wins.                                | A `size` in the head of a read.              |
 | `file` names the file of a row, apart from its id and its picture.                                          | A row id that is a path, which makes the id say two things. |
 | `drag` tells the script after the drop, and the script says what stays.                                     | A key that removes a row after a drag.       |
@@ -967,7 +968,6 @@ An old script never sees a word that it did not ask for, and an old app skips a 
 | `parent`, `hides`, `keyword`, `shortcut`, `shake`, `file`, `to`                                          | Row key              |
 | `grid`, `grid.<size>`, `main`, `title`, `detail`, `recents`, `toast`, `link`, `progress`, `select`, `end`, `call` | Head key    |
 | `call`, `arg`, `env.<name>`, `input`, `stop`                                                             | Stdin key of a staying script |
-| `title`, `detail`, `size`, `grid`, `opens`                                                               | Widget key           |
 
 The verbs and the row keys of each `openspot` noun, such as `screen` or `calendar`, are in `openspot help <noun>`.
 

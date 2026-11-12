@@ -38,7 +38,7 @@ final class CatalogSpotTests: BuiltInCase {
     }
 
     func testTurningOnACoreWidgetLoadsItInAScan() throws {
-        try "[[widgets]]\ntitle = \"Overview\"\ngrid = [\"cpu\"]\nsize = \"square\"\n".write(to: core.appendingPathComponent("overview.toml"), atomically: true, encoding: .utf8)
+        try "#!/bin/sh\n# title=Overview\n# grid.square=cpu\n".writeScript(to: core.appendingPathComponent("overview.sh"))
 
         try file.turn("overview", on: true)
 

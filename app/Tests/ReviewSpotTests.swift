@@ -113,8 +113,8 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAWidgetNamesItselfBeforeTheMetricsItPlaces() throws {
-        let widget = "[[widgets]]\ntitle = \"Desk\"\ngrid = [\"cpu\"]\nsize = \"square\"\n"
-        let review = try ReviewSpot(spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# on=clock.5\n", true)]), folder: folder)
+        let widget = "#!/bin/sh\n# title=Desk\n# grid.square=cpu\n"
+        let review = try ReviewSpot(spot: spot([("board.sh", widget, true), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# on=clock.5\n", true)]), folder: folder)
 
         XCTAssertEqual(review.name, "Desk")
     }
@@ -267,9 +267,9 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAMetricThatAWidgetPlacesRunsWhenThePanelOpens() throws {
-        let widget = "[[widgets]]\ntitle = \"Desk\"\ngrid = [\"cpu\"]\nsize = \"square\"\n"
+        let widget = "#!/bin/sh\n# title=Desk\n# grid.square=cpu\n"
         let review = try ReviewSpot(
-            spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# on=sheet.open\n", true)]),
+            spot: spot([("board.sh", widget, true), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# on=sheet.open\n", true)]),
             folder: folder
         )
 

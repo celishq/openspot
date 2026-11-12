@@ -18,13 +18,11 @@ final class WidgetContractTests: XCTestCase {
         try text.writeScript(to: url)
     }
 
-    private func widgets(_ text: String, file: String = "mine.toml") throws {
-        try text.write(to: folder.appendingPathComponent(file), atomically: true, encoding: .utf8)
-    }
-
-    private func widget(name: String = "Now", grid: [String] = ["power power"], more: String = "") throws {
-        let lines = grid.map { "\"\($0)\"" }.joined(separator: ", ")
-        try widgets("[[widgets]]\ntitle = \"\(name)\"\ngrid = [\(lines)]\n\(more)\n")
+    /// A spot whose header draws its card from other spots, at a strip for one line and else large, unless a size is given.
+    private func widget(name: String = "Now", grid: [String] = ["power power"], size: String? = nil, more: String = "", file: String = "mine.sh") throws {
+        let size = size ?? (grid.count == 1 ? "strip" : "large")
+        let lines = grid.map { "# grid.\(size)=\($0)\n" }.joined()
+        try script(file, "#!/bin/sh\n# title=\(name)\n\(lines)\(more)")
     }
 
     private func power(_ body: String = "printf 'graph=power\\ntitle=84%%\\nvalue=0.84\\ntone=good\\n'") throws {
@@ -37,7 +35,7 @@ final class WidgetContractTests: XCTestCase {
 
     private func single(size: String?) throws {
         try power()
-        try widget(grid: ["power"], more: size.map { "size = \"\($0)\"" } ?? "")
+        try widget(grid: ["power"], size: size)
     }
 
     func testAWidgetInAFolderNamesItsOwnToolsByFileNameAndOthersByID() throws {
@@ -45,8 +43,7 @@ final class WidgetContractTests: XCTestCase {
         try script("morning/power.sh", "#!/bin/sh\n# on=clock.5\nprintf 'title=1\\n'\n")
         try script("morning/notes.sh", "#!/bin/sh\n# on=sheet.open\n")
         try power()
-        try "[[widgets]]\ntitle = \"Now\"\ngrid = [\"power power morning/power morning/power\"]\nopens = \"notes\"\n"
-            .write(to: folder.appendingPathComponent("morning/widgets.toml"), atomically: true, encoding: .utf8)
+        try widget(grid: ["power power morning/power morning/power"], more: "# to=notes\n", file: "morning/widgets.sh")
 
         let result = try scan
         let widget = try XCTUnwrap(result.spots.first { $0.kind == .widget })
@@ -56,7 +53,7 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(result.refused, [])
     }
 
-    func testAOneLineDrawingIsAStripUnlessItAsksForAnotherSize() throws {
+    func testTheSizeOfTheDrawingKeyIsTheSizeOfTheCard() throws {
         try single(size: nil)
         XCTAssertEqual(try scan.spots.first?.size, .strip)
     }
@@ -95,11 +92,7 @@ final class WidgetContractTests: XCTestCase {
     func testAWidgetDrawingPlacesTheMetricThatEachWordNames() throws {
         try power()
         try script("heat.sh", "#!/bin/sh\n# on=clock.5\nprintf 'title=1\\n'\n")
-        try widgets("""
-        [[widgets]]
-        title = "Mine"
-        grid = ["heat heat power", "heat heat power"]
-        """)
+        try widget(name: "Mine", grid: ["heat heat power", "heat heat power"])
 
         let command = try XCTUnwrap(try scan.spots.first { $0.kind == .widget })
 
@@ -112,7 +105,7 @@ final class WidgetContractTests: XCTestCase {
 
     func testAWidgetDrawingCanAskForASize() throws {
         try power()
-        try widgets("[[widgets]]\ntitle = \"Mine\"\ngrid = [\"power power\"]\nsize = \"wide\"\n")
+        try widget(name: "Mine", grid: ["power power"], size: "wide")
 
         XCTAssertEqual(try scan.spots.first { $0.kind == .widget }?.size, .wide)
     }
@@ -122,14 +115,14 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testAWidgetDrawingNamesItsFault() throws {
-        let cases: [(grid: String, reason: String)] = [
-            ("\"power heat\", \"power\"", "Mine: each grid line needs the same number of columns"),
-            ("\"power -\"", "Mine: a widget's grid cannot have a divider"),
-            ("\"power heat\", \"heat power\"", "Mine: the metric power is not a rectangle")
+        let cases: [(grid: [String], reason: String)] = [
+            (["power heat", "power"], "Mine: each grid line needs the same number of columns"),
+            (["power -"], "Mine: a widget's grid cannot have a divider"),
+            (["power heat", "heat power"], "Mine: the metric power is not a rectangle")
         ]
         try power()
         for item in cases {
-            try widgets("[[widgets]]\ntitle = \"Mine\"\ngrid = [\(item.grid)]\n")
+            try widget(name: "Mine", grid: item.grid)
             XCTAssertEqual(try scan.refused.first?.reason, item.reason)
         }
     }
@@ -182,42 +175,34 @@ final class WidgetContractTests: XCTestCase {
         XCTAssertEqual(try scan.scripts.filter(\.canShowInMenuBar).map(\.id), ["four", "three"])
     }
 
-    func testAWidgetFilePlacesMetricsOfOtherScripts() throws {
+    func testASpotWhoseHeaderDrawsItsCardPlacesMetricsOfOtherScripts() throws {
         try power()
-        try widgets("""
-        [[widgets]]
-        title = "Now"
-        grid = ["power power"]
-
-        [[widgets]]
-        title = "Then"
-        grid = ["power"]
-        size = "square"
-        """)
+        try widget(grid: ["power power"])
+        try widget(name: "Then", grid: ["power"], size: "square", file: "then.sh")
 
         let scan = try scan
         let widget = try XCTUnwrap(scan.spots.first)
 
         XCTAssertEqual(scan.refused, [])
-        XCTAssertEqual(scan.spots.map(\.id), ["mine/Now", "mine/Then", "power"])
-        XCTAssertEqual(scan.spots.map(\.headerState.isOnGrid), [true, true, false])
+        XCTAssertEqual(scan.spots.map(\.id), ["mine", "power", "then"])
+        XCTAssertEqual(scan.spots.map(\.headerState.isOnGrid), [true, false, true])
         XCTAssertEqual(widget.kind, .widget)
         XCTAssertEqual(widget.size, .strip)
         XCTAssertEqual(widget.layout, WidgetLayout(drawing: ["power power"]))
         XCTAssertEqual(widget.places, ["power"])
     }
 
-    func testAWidgetWithPlacesIsRefusedAndToldToNameItsMetricsInItsGrid() throws {
-        try power()
-        try widgets("[[widgets]]\ntitle = \"Now\"\ngrid = [\"a\"]\nplaces = { a = \"power\" }\n")
+    func testAWidgetFileIsRefusedAndToldToBeASpot() throws {
+        try "[[widgets]]\ntitle = \"Now\"\ngrid = [\"power\"]\n".write(to: folder.appendingPathComponent("mine.toml"), atomically: true, encoding: .utf8)
 
-        XCTAssertEqual(try scan.refused.first?.reason, "Now has places, which Openspot no longer reads. Its grid names each metric, such as grid = [\"cpu cpu memory\"]")
+        XCTAssertEqual(try scan.refused.first?.reason, "mine.toml holds widgets, which Openspot no longer reads. Write a spot whose header draws its card from other spots, such as grid.large=cpu cpu memory")
     }
 
-    func testAWidgetWithANamedLayoutIsRefusedAndAskedForAGrid() throws {
-        try widgets("[[widgets]]\ntitle = \"Now\"\nlayout = \"pair\"\nplaces = [\"power\", \"power\"]\n")
+    func testACardDrawnAtTwoSizesIsRefused() throws {
+        try power()
+        try widget(grid: ["power"], more: "# grid.large=power\n")
 
-        XCTAssertEqual(try scan.refused.first?.reason, "Now needs a grid that names its metrics, such as grid = [\"cpu cpu memory\"]")
+        XCTAssertEqual(try scan.refused.first?.reason, "Now draws its card at more than one size. Keep the grid lines of one size, such as grid.large")
     }
 
     func testAWidgetThatNamesAMissingMetricIsLeftOutAndReported() throws {
@@ -231,7 +216,7 @@ final class WidgetContractTests: XCTestCase {
 
     func testAWidgetThatOpensAMissingCommandIsLeftOutAndReported() throws {
         try power()
-        try widget(more: "opens = \"nothing\"")
+        try widget(more: "# to=nothing\n")
 
         let scan = try scan
 
@@ -250,7 +235,7 @@ final class WidgetContractTests: XCTestCase {
 
     func testAWidgetWithAShortcutIsRefusedBecauseThePersonGivesTheLetter() throws {
         try power()
-        try widget(more: "shortcut = \"w\"")
+        try widget(more: "# shortcut=w\n")
 
         XCTAssertEqual(try scan.refused.first?.reason, "Now has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots")
     }
@@ -306,12 +291,6 @@ final class WidgetContractTests: XCTestCase {
         let faults = await SpotCheck(folder: SpotFolder(url: folder)).faults()
 
         XCTAssertEqual(faults, [])
-    }
-
-    func testATomlFaultNamesItsLine() throws {
-        try widgets("[[widgets]]\nnot a pair\n")
-
-        XCTAssertEqual(try scan.refused, [ScanResult.Refusal(file: "mine", reason: "line 2: expected a key and a value")])
     }
 
     func testTheCheckReportsARefusedHeaderAndABadMetric() async throws {
