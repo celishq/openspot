@@ -301,6 +301,24 @@ final class Drawer: ObservableObject {
     @Published var naming: URL?
 }
 
+/// The button beside the window buttons that shows the list of boards, on a small rounded back.
+struct Latch: View {
+    @ObservedObject var drawer: Drawer
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "sidebar.left")
+                .font(.system(size: 14, weight: .medium))
+                .frame(width: 34, height: 24)
+                .background(Color.primary.opacity(drawer.open ? 0.08 : 0.05), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .tip("Boards  ⌃⌘S", below: true)
+    }
+}
+
 /// The list of boards that slides in from the left: each board, newest first, opens on a click and takes a new name on a
 /// double-click, and the + makes a new board.
 struct Sidebar: View {

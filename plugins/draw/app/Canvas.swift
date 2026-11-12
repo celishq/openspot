@@ -184,11 +184,31 @@ final class Canvas: NSView, NSTextViewDelegate {
                 context.stroke(view(all).insetBy(dx: -8, dy: -8))
                 context.setLineDash(phase: 0, lengths: [])
             }
-            for (_, point) in grips() {
-                let knob = CGRect(x: point.x - 5, y: point.y - 5, width: 10, height: 10)
-                context.setFillColor(NSColor.white.cgColor)
-                context.fillEllipse(in: knob)
-                context.strokeEllipse(in: knob)
+            let landing = leads().first.flatMap { figure -> Figure? in
+                switch drag {
+                case .create, .grip: figure
+                default: nil
+                }
+            }
+            if let figure = landing {
+                let line = studio.board.path(of: figure)
+                let ends = [figure.start == nil ? line.first : studio.board.anchor(figure, start: true),
+                            figure.end == nil ? line.last : studio.board.anchor(figure, start: false)]
+                context.setStrokeColor(NSColor(white: 0.62, alpha: 1).cgColor)
+                for case let point? in ends {
+                    let dot = CGRect(x: view(point).x - 5, y: view(point).y - 5, width: 10, height: 10)
+                    context.setFillColor(NSColor.white.cgColor)
+                    context.fillEllipse(in: dot)
+                    context.strokeEllipse(in: dot)
+                }
+                context.setStrokeColor(accent.cgColor)
+            } else {
+                for (_, point) in grips() {
+                    let knob = CGRect(x: point.x - 5, y: point.y - 5, width: 10, height: 10)
+                    context.setFillColor(NSColor.white.cgColor)
+                    context.fillEllipse(in: knob)
+                    context.strokeEllipse(in: knob)
+                }
             }
         }
         context.setStrokeColor(accent.cgColor)
