@@ -103,7 +103,8 @@ final class SpotVerbTests: XCTestCase {
         let index = try XCTUnwrap(model.visible.firstIndex { $0.id == "weather" })
         let card = try XCTUnwrap(model.placements.first { $0.index == index }).rect
 
-        model.openMenu(at: CGPoint(x: card.midX, y: card.midY))
+        let origin = SpotTokens.gridOrigin(scrollOffset: model.gridScroll)
+        model.openMenu(at: CGPoint(x: origin.x + card.midX, y: origin.y + card.midY))
         model.tap("weather")
 
         XCTAssertEqual(model.selectedEntry?.id, "weather")
@@ -137,7 +138,7 @@ final class SpotVerbTests: XCTestCase {
         _ = try select("weather")
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
 
-        model.pointMenu(row: 2)
+        model.point(at: .menuRow(2))
 
         XCTAssertEqual(model.menu?.selected, 2)
         XCTAssertNotNil(model.menu)
@@ -167,16 +168,16 @@ final class SpotVerbTests: XCTestCase {
         try script("clock", header: "title=Clock")
         _ = try select("weather")
 
-        model.pointCard("clock")
+        model.point(at: .card("clock"))
         XCTAssertEqual(model.selectedEntry?.id, "clock")
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
-        model.pointCard("weather")
+        model.point(at: .card("weather"))
         XCTAssertEqual(model.selectedEntry?.id, "clock")
         model.closeMenu()
 
         model.beginEditing()
-        model.pointCard("weather")
+        model.point(at: .card("weather"))
         XCTAssertEqual(model.selectedEntry?.id, "clock")
     }
 

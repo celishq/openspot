@@ -41,7 +41,7 @@ struct SpotCardView: View, Equatable {
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))
             .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, blursBehind: false, rimSize: CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))))
             .modifier(CardPress(shape: shape, isFilled: isFilled, showsPress: showsPress))
-            .modifier(SpotPointerMove { model.pointCard(entry.id) })
+            .modifier(SpotPointerMove { model.point(at: .card(entry.id)) })
             .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).modifier(CardReveal()).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { chainLetter.map { ChainKeycap(model: model, letter: $0, size: size) } }
             .overlay(alignment: .topTrailing) { FailureMark(entry: entry, size: size) }

@@ -241,11 +241,11 @@ final class SpotsModelTests: XCTestCase {
         try await openList()
         let rows = try XCTUnwrap(model.openItems?.shown)
 
-        model.pointItem(rows[1])
+        model.point(at: .item(rows[1]))
         XCTAssertEqual(model.openItems?.selectedItem?.run, rows[1].run)
 
         XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
-        model.pointItem(rows[0])
+        model.point(at: .item(rows[0]))
         XCTAssertEqual(model.openItems?.selectedItem?.run, rows[1].run)
     }
 

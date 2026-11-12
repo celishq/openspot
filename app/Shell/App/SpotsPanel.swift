@@ -211,10 +211,7 @@ final class SpotsPanel: NSPanel {
 
     /// Opens the actions menu of the card under the pointer of this event.
     private func openMenu(at event: NSEvent) {
-        guard let model else { return }
-        let origin = SpotTokens.gridOrigin(scrollOffset: model.gridScroll)
-        let point = panelPoint(of: event)
-        model.openMenu(at: CGPoint(x: point.x - origin.x, y: point.y - origin.y))
+        model?.openMenu(at: panelPoint(of: event))
     }
 
     /// Where the pointer of this event lies in the panel, from its top left corner.

@@ -36,15 +36,9 @@ extension SpotsModel {
         return index == selected ? .focused : .faded
     }
 
-    /// Selects the card that the pointer moved onto. An open menu and Edit Spots keep their selection.
-    public func pointCard(_ id: String) {
-        guard menu == nil, !isEditing, let position = visible.firstIndex(where: { $0.id == id }) else { return }
-        selected = position
-    }
-
-    /// Runs the card, unless the actions menu is open, as after a force press whose click ends on the card.
+    /// Runs the card, unless the open menu owns the pointer, as after a force press whose click ends on the card.
     public func tap(_ id: String) {
-        guard menu == nil, let position = visible.firstIndex(where: { $0.id == id }) else { return }
+        guard !menuOwnsPointer, let position = visible.firstIndex(where: { $0.id == id }) else { return }
         selected = position
         runSelected()
     }

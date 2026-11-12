@@ -215,15 +215,9 @@ extension SpotsModel {
         return true
     }
 
-    /// Selects the row of the open menu that the pointer moved onto.
-    public func pointMenu(row: Int) {
-        guard let menu else { return }
-        self.menu?.move(by: row - menu.selected)
-    }
-
     /// Highlights the row of the open menu under a point of the panel, as a force click is dragged.
     public func dragMenu(to point: CGPoint) {
-        if let row = menuRow(at: point) { pointMenu(row: row) }
+        if let row = menuRow(at: point) { self.point(at: .menuRow(row)) }
     }
 
     /// Runs the row of the open menu under a point of the panel, where a dragged force click ends. Off the rows the menu stays.
@@ -260,10 +254,11 @@ extension SpotsModel {
         menu?.search(text)
     }
 
-    /// Selects the card at this point of the grid and opens its actions menu, as `⌘K` does, for a right or force click. A
+    /// Selects the card at this point of the panel and opens its actions menu, as `⌘K` does, for a right or force click. A
     /// sheet or Edit Spots takes none.
     public func openMenu(at point: CGPoint) {
-        guard openList == nil, !isEditing, let id = card(at: point), let index = visible.firstIndex(where: { $0.id == id }) else { return }
+        let origin = SpotTokens.gridOrigin(scrollOffset: gridScroll)
+        guard openList == nil, !isEditing, let id = card(at: CGPoint(x: point.x - origin.x, y: point.y - origin.y)), let index = visible.firstIndex(where: { $0.id == id }) else { return }
         selected = index
         if let target { openMenu(on: target) }
     }

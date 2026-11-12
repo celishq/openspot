@@ -212,12 +212,6 @@ extension SpotsModel {
         openSheet?.list.moveLine(by: lines)
     }
 
-    /// Selects the row that the pointer moved onto. The open menu of a row keeps that row.
-    public func pointItem(_ item: SpotItem) {
-        guard menu == nil else { return }
-        openSheet?.list.select(run: item.run)
-    }
-
     public func runSelectedItem() {
         guard let item = openItems?.selectedItem else {
             createFromSearch()
