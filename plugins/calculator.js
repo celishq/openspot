@@ -28,11 +28,12 @@ function card(row) {
 
 /** The card of the answer of a sum, a conversion or a date for a read, or the row of an answer from old rates, which warns.
  * A pick copies the plain value. */
-function main([id, text]) {
+function main([id, picked], env) {
   if (id === "open") {
-    if (text === "offline" || openspot.call(["clipboard", "copy"], text).code !== 0) return ""
-    return openspot.frame({ toast: `Copied ${text}` })
+    if (picked === "offline" || openspot.call(["clipboard", "copy"], picked).code !== 0) return ""
+    return openspot.frame({ toast: `Copied ${picked}` })
   }
+  const text = env.OPENSPOT_VALUE
   if (!text) return ""
   const answer = openspot.call(["calc", "solve", text]).stdout
   const why = noRates[answer.trim()]

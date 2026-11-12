@@ -85,10 +85,10 @@ final class StayLink: ScriptLink {
             script.send(.read, input: call.input, variables: call.variables, id: id)
         case .ask(.search(let query)):
             stop { if case .search = $0 { true } else { false } }
-            if let id = send(.items(query: query), input: nil, variables: call.variables) { ask(.search(query), id: id, reason: call.variables["OPENSPOT_REASON"]) }
+            if let id = send(.read, input: call.input, variables: call.variables) { ask(.search(query), id: id, reason: call.variables["OPENSPOT_REASON"]) }
         case .ask(.answer(let text)):
             stop(\.isAnswer)
-            if let id = send(call.action, input: nil, variables: call.variables) {
+            if let id = send(call.action, input: call.input, variables: call.variables) {
                 ask(.answer(text), id: id, reason: call.variables["OPENSPOT_REASON"])
             } else {
                 run?.takeAnswers([], to: text)

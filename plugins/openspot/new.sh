@@ -34,7 +34,8 @@ case "$1" in
     printf '\nbutton=open\ntitle=Choose\n'
     printf '\nbutton=guide\ntitle=Read the guide\nscope=command\nclose=true\n'
     printf '\nbutton=folder\ntitle=Open plugins folder\nscope=command\nclose=true\n'
-    row ask "Copy prompt for AI" "${2:-Type what the spot should do}" sparkles
+    typed=$(sed -n 's/^search=//p' | head -1)
+    row ask "Copy prompt for AI" "${typed:-Type what the spot should do}" sparkles
     row button Button "Runs a command when you press it" hand.tap
     row list List "Shows rows to pick from" list.bullet
     row number "Live value" "Shows a value that updates" clock

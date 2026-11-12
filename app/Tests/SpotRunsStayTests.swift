@@ -225,7 +225,7 @@ final class SpotRunsStayTests: SpotRunsCase {
 
         sheet.search("rep")
 
-        try await wait("the search") { self.blocks() == ["arg=read", "arg=read\narg=rep"] }
+        try await wait("the search") { self.blocks() == ["arg=read", "arg=read\ninput=search=rep\\n"] }
         try await wait("the answer") { !sheet.list.isWaiting }
         XCTAssertEqual(log().count, 1)
     }
@@ -238,7 +238,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$line" in
             call=*) call=${line#call=}; n=0; text= ;;
             stop=*) call= ;;
-            arg=*) n=$((n + 1)); [ $n = 2 ] && text=${line#arg=} ;;
+            env.OPENSPOT_VALUE=*) text=${line#env.OPENSPOT_VALUE=} ;;
           esac
           [ -n "$line" ] || [ -z "$call" ] || {
             if [ -n "$text" ]; then printf 'end=%s\\n\\nrow=%s\\ntitle=%s\\n---\\n' "$call" "$text" "$text"; else printf 'end=%s\\n---\\n' "$call"; fi
@@ -264,7 +264,7 @@ final class SpotRunsStayTests: SpotRunsCase {
     }
 
     func testAnAnswerOfAStayingScriptThatEndsIsNoLongerAwaited() async throws {
-        try script(header: "mode=stay\non=search.text ^[0-9]", "while IFS= read -r line; do [ \"$line\" = arg=12 ] && exit 1; done")
+        try script(header: "mode=stay\non=search.text ^[0-9]", "while IFS= read -r line; do [ \"$line\" = env.OPENSPOT_VALUE=12 ] && exit 1; done")
         let sheet = try sheet()
         runs.panelOpened()
 
@@ -299,7 +299,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         . "$OPENSPOT_SH"
         main() {
           case "$1" in
-            read) if [ -n "$2" ]; then printf 'row=%s\\ntitle=Is %s\\n' "$2" "$2"; else printf 'row=a\\ntitle=A\\n'; fi ;;
+            read) if [ -n "$OPENSPOT_VALUE" ]; then printf 'row=%s\\ntitle=Is %s\\n' "$OPENSPOT_VALUE" "$OPENSPOT_VALUE"; else printf 'row=a\\ntitle=A\\n'; fi ;;
           esac
         }
         openspot_serve main "$@"
@@ -627,6 +627,7 @@ final class SpotRunsStayTests: SpotRunsCase {
           case "$line" in
             call=*) call=${line#call=}; args= ;;
             arg=*) args="$args ${line#arg=}" ;;
+            env.OPENSPOT_VALUE=*) args="$args ${line#env.OPENSPOT_VALUE=}" ;;
             stop=*) touch '\(path("stopped"))'; args=stop ;;
             '')
               case "$args" in
@@ -643,7 +644,7 @@ final class SpotRunsStayTests: SpotRunsCase {
         sheet.open {}
         try await wait("the first rows") { sheet.list.search == .script && sheet.list.shown.count == 1 }
         sheet.search("a")
-        try await wait("the older search") { self.blocks().contains("arg=read\narg=a") }
+        try await wait("the older search") { self.blocks().contains("arg=read\ninput=search=a\\n") }
 
         sheet.search("ab")
 

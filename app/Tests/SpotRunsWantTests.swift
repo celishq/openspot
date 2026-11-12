@@ -232,7 +232,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     // MARK: C4, the main search, sandbox
 
     func testSearchTextReachesTheScriptAfterAPause() async throws {
-        try script(header: "on=sheet.open\non=sheet.text", "printf 'row=a\\ntitle=%s\\n' \"${2:-none}\"")
+        try script(header: "on=sheet.open\non=sheet.text", "printf 'row=a\\ntitle=%s\\n' \"${OPENSPOT_VALUE:-none}\"")
         let sheet = try sheet()
         sheet.open {}
         try await wait("the first answer") { sheet.list.shown.map(\.title) == ["none"] }
@@ -243,13 +243,13 @@ final class SpotRunsWantTests: SpotRunsCase {
         XCTAssertEqual(log(), ["read"])
 
         try await wait("the answer") { sheet.list.shown.map(\.title) == ["rep"] }
-        XCTAssertEqual(log(), ["read", "read rep"])
+        XCTAssertEqual(log(), ["read", "read"])
     }
 
     func testANewKeyStopsTheOlderSearch() async throws {
         try script(header: "on=sheet.open\non=sheet.text", """
-        [ "$2" = slow ] && { sleep 5; touch '\(path("went-on"))'; }
-        printf 'row=a\\ntitle=%s\\n' "${2:-none}"
+        [ "$OPENSPOT_VALUE" = slow ] && { sleep 5; touch '\(path("went-on"))'; }
+        printf 'row=a\\ntitle=%s\\n' "${OPENSPOT_VALUE:-none}"
         """)
         let sheet = try sheet()
         sheet.open {}

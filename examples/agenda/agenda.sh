@@ -181,14 +181,14 @@ case "$1" in
     printf 'repeat=items\n\n'
     printf 'button=open\ntitle=Open\n\nbutton=join\ntitle=Join call\nshortcut=cmd+j\nclose=true\n\n'
     printf 'button=tick\ntitle=Mark as done\nshortcut=cmd+shift+c\n\nbutton=calendars\ntitle=Choose calendars\nform=true\nscope=command\n\n'
-    if [ -n "$2" ]; then
-      adding reminders "$2" reminder 'Add reminder'
-      adding calendar "$2" event 'Add event'
+    typed=$(value search)
+    if [ -n "$typed" ]; then
+      adding reminders "$typed" reminder 'Add reminder'
+      adding calendar "$typed" event 'Add event'
     fi
     [ "$events" != status=unasked ] || printf 'row=allow-calendar\ntitle=Allow Calendar\ndetail=Show your events here\nicon=calendar\nhides=join\nhides=tick\n\n'
     [ "$reminders" != status=unasked ] || printf 'row=allow-reminders\ntitle=Allow Reminders\ndetail=Show and tick your reminders here\nicon=checklist\nhides=join\nhides=tick\n\n'
-    shift
-    rows "$@"
+    rows "$typed" $(value form)
     ;;
   open)
     case "$2" in

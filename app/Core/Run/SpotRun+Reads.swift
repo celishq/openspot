@@ -8,7 +8,7 @@ extension SpotRun {
         read()
     }
 
-    /// Asks the script for what it shows. A list that the script searches sends the text that is typed, so that the answer
+    /// Asks the script for what it shows. A list that the script searches sends the text that is typed on stdin, so that the answer
     /// gives the spot's new value and the rows of that text. A request joins the read that runs, and a change reads again
     /// after it (M1). A `panel` or a `sheet` moment uses an answer younger than 5 seconds (M2). A file with no `read` gets
     /// its click instead.
@@ -25,12 +25,13 @@ extension SpotRun {
             return
         }
         let query = list.search == .script && !link.keepsState ? list.query : ""
-        let read = query.isEmpty ? SpotAction.read : .items(query: query, forms: SearchQuery(text: query).forms)
+        let read = SpotAction.read
         let action = spot.read == nil ? spot.click : read
+        let values = [showsSheet ? panel?.values : nil, query.isEmpty ? nil : SearchQuery(text: query).input].compactMap { $0 }
         let isSent = link.send(Call(
             action: action,
             key: Self.readKey,
-            input: showsSheet ? panel?.values : nil,
+            input: values.isEmpty ? nil : values.joined(),
             limit: action == read ? runs.readLimit : nil,
             reason: reason,
             variables: action == read ? reason.variables : [:],
@@ -54,8 +55,9 @@ extension SpotRun {
         pauses[Self.searchKey]?.cancel()
         pauses[Self.searchKey] = nil
         link.send(Call(
-            action: .items(query: query, forms: SearchQuery(text: query).forms),
+            action: .read,
             key: Self.searchKey,
+            input: SearchQuery(text: query).input,
             limit: runs.readLimit,
             reason: .text(query, inSheet: true),
             variables: ReadReason.text(query, inSheet: true).variables,
@@ -76,8 +78,9 @@ extension SpotRun {
             return
         }
         link.send(Call(
-            action: .items(query: text, forms: SearchQuery(text: text).forms),
+            action: .read,
             key: Self.answerKey,
+            input: SearchQuery(text: text).input,
             limit: runs.readLimit,
             reason: .text(text, inSheet: false),
             variables: ReadReason.text(text, inSheet: false).variables,

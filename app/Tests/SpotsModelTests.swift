@@ -727,7 +727,7 @@ final class SpotsModelTests: XCTestCase {
 
     /// Shows the panel with a spot that answers the main search for text that starts with a digit.
     private func showAnswers(slow: String = "none") throws {
-        let body = #"case "$2" in \#(slow)) sleep 0.5 ;; esac; case "$1" in read) [ -n "$2" ] && printf 'row=%s\ntitle=Is %s\ndetail=Read %s\n' "$2" "$2" "$2" ;; open) printf 'toast=Picked %s\n' "$2" ;; esac"#
+        let body = #"case "$OPENSPOT_VALUE" in \#(slow)) sleep 0.5 ;; esac; case "$1" in read) [ -n "$OPENSPOT_VALUE" ] && printf 'row=%s\ntitle=Is %s\ndetail=Read %s\n' "$OPENSPOT_VALUE" "$OPENSPOT_VALUE" "$OPENSPOT_VALUE" ;; open) printf 'toast=Picked %s\n' "$2" ;; esac"#
         try script("calc", header: "title=Calc\non=search.text ^[0-9]", body)
         try script("notes", header: "title=Notes 2\non=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         model.reload()
@@ -752,7 +752,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAnAnswerThatDrawsALargeCardTakesTwoFullRowsAndAPressSendsItsMainValue() async throws {
-        let body = #"case "$1" in read) printf 'grid.large=sum sum sum sum\ngrid.large=answer answer answer answer\nmain=answer\n\ntext=sum\ntitle=%s\n\nnumber=answer\nvalue=14\n' "$2" ;; open) printf 'toast=Picked %s\n' "$2" ;; esac"#
+        let body = #"case "$1" in read) printf 'grid.large=sum sum sum sum\ngrid.large=answer answer answer answer\nmain=answer\n\ntext=sum\ntitle=%s\n\nnumber=answer\nvalue=14\n' "$OPENSPOT_VALUE" ;; open) printf 'toast=Picked %s\n' "$2" ;; esac"#
         try script("calc", header: "title=Calc\non=search.text ^[0-9]", body)
         try script("notes", header: "title=Notes 2\non=sheet.open", "printf 'row=a\\ntitle=A\\n'")
         model.reload()
@@ -803,7 +803,7 @@ final class SpotsModelTests: XCTestCase {
 
     func testAnAnswerIsAskedAgainWhenThePanelShowsAgain() async throws {
         let calls = folder.appendingPathComponent("calls").path
-        let body = #"[ "$1" = read ] && [ -n "$2" ] && echo x >> '\#(calls)' && printf 'row=%s\ntitle=Call %s\n' "$2" "$(wc -l < '\#(calls)' | tr -d ' ')""#
+        let body = #"[ "$1" = read ] && [ -n "$OPENSPOT_VALUE" ] && echo x >> '\#(calls)' && printf 'row=%s\ntitle=Call %s\n' "$OPENSPOT_VALUE" "$(wc -l < '\#(calls)' | tr -d ' ')""#
         try script("calc", header: "title=Calc\non=search.text ^[0-9]", body)
         model.reload()
         model.isShown = true
@@ -835,7 +835,8 @@ final class SpotsModelTests: XCTestCase {
         // title=Calc
         // mode=inline
         // on=search.text ^[0-9]
-        function main([id, text]) {
+        function main([id, row], env) {
+          const text = id === "open" ? row : env.OPENSPOT_VALUE
           if (id === "open") return `toast=Picked ${text}\\n`
           if (text === "12") { const end = Date.now() + 300; while (Date.now() < end) {} }
           return `row=${text}\\ntitle=Is ${text}\\n`
@@ -858,7 +859,7 @@ final class SpotsModelTests: XCTestCase {
     func testAStayingSpotAnswersTheKeptTextWhenThePanelShowsAgain() async throws {
         try script("calc", header: "title=Calc\nmode=stay\non=search.text ^[0-9]", """
         while IFS= read -r line; do
-          case "$line" in call=*) call=${line#call=}; text= ;; arg=read) ;; arg=*) text=${line#arg=} ;; esac
+          case "$line" in call=*) call=${line#call=}; text= ;; env.OPENSPOT_VALUE=*) text=${line#env.OPENSPOT_VALUE=} ;; esac
           [ -n "$line" ] || { [ -n "$text" ] && printf 'end=%s\\n\\nrow=%s\\ntitle=%s\\n---\\n' "$call" "$text" "$text" || printf 'end=%s\\n---\\n' "$call"; }
         done
         """)
@@ -888,7 +889,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAnAnswerLeavesTheFailureOfTheSpotsRead() async throws {
-        let body = #"[ -n "$2" ] || { echo 'Openspot cannot read.' >&2; exit 1; }; printf 'row=%s\ntitle=%s\n' "$2" "$2""#
+        let body = #"[ -n "$OPENSPOT_VALUE" ] || { echo 'Openspot cannot read.' >&2; exit 1; }; printf 'row=%s\ntitle=%s\n' "$OPENSPOT_VALUE" "$OPENSPOT_VALUE""#
         try script("calc", header: "title=Calc\non=panel.open\non=search.text ^[0-9]", body)
         model.reload()
         model.isShown = true

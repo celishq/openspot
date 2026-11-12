@@ -137,7 +137,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try await wait("the first read") { self.log("reasons") == ["sheet.open read"] }
         sheet.search("k")
 
-        try await wait("the search read") { self.log("reasons") == ["sheet.open read", "sheet.text read k"] }
+        try await wait("the search read") { self.log("reasons") == ["sheet.open read", "sheet.text read"] }
     }
 
     func testAnOpenAtLaunchRunsNoScriptThatReadsOnlyAtItsSheet() async throws {

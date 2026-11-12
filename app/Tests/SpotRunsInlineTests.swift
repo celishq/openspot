@@ -22,7 +22,8 @@ final class SpotRunsInlineTests: SpotRunsCase {
     /// A spot that answers each text with one row of it, and works for 300 ms first on the text `slow`.
     private func answering() throws {
         try inline(header: "mode=inline\non=search.text ^[0-9]", """
-        function main([id, text], env) {
+        function main([id, row], env) {
+          const text = id === "open" ? row : env.OPENSPOT_VALUE
           if (text === "12") { const end = Date.now() + 300; while (Date.now() < end) {} }
           return `row=${text}\\ntitle=Is ${text}\\ndetail=${env.OPENSPOT_REASON}\\n`
         }
@@ -70,7 +71,8 @@ final class SpotRunsInlineTests: SpotRunsCase {
     func testOpenspotCallAsksTheAPIInTheApp() async throws {
         runs.api = CommandAPI(mac: Host())
         try inline(header: "mode=inline\non=search.text ^[0-9]", """
-        function main([id, text]) {
+        function main([id, row], env) {
+          const text = id === "open" ? row : env.OPENSPOT_VALUE
           const answer = openspot.call(["calc", "solve", text])
           return answer.stdout.replace(/detail=.*/, `detail=${answer.code}`)
         }
@@ -85,7 +87,8 @@ final class SpotRunsInlineTests: SpotRunsCase {
 
     func testAPickRunsItsOpenFunctionWithTheRow() async throws {
         try inline(header: "mode=inline\non=search.text ^[0-9]", """
-        function main([id, text]) {
+        function main([id, row], env) {
+          const text = id === "open" ? row : env.OPENSPOT_VALUE
           if (id === "open") return `toast=Picked ${text}\\n`
           return `row=${text}\\ntitle=${text}\\n`
         }

@@ -977,7 +977,6 @@ Each line goes when its phase lands.
 
 | Part        | The code today                                                                                         |
 | ----------- | ------------------------------------------------------------------------------------------------------ |
-| Calls       | Gives the search text and its forms as arguments of `read`.                                            |
 | Header      | Reads `command` and `setting` blocks, `offers=rows` and `offers=float`, and `mode=inline`.             |
 | Blocks      | Reads `gauge`, `slider` and `hotkey` as kinds, and `look=tick`.                                        |
 | Trust       | Reads the uses `update` and `settings`, and the guide names `OPENSPOT_TOKEN`.                          |

@@ -4,8 +4,8 @@ import Foundation
 /// One call of a script through the owner of all runs, for a test that proves what a script answers.
 @MainActor
 extension Spot {
-    private func output(_ action: SpotAction, input: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
-        SpotOutput(text: try await SpotRuns().answer(of: self, action, input: input, limit: timeout))
+    private func output(_ action: SpotAction, input: String? = nil, variables: [String: String] = [:], timeout: TimeInterval) async throws -> SpotOutput {
+        SpotOutput(text: try await SpotRuns().answer(of: self, action, input: input, limit: timeout, variables: variables))
     }
 
     func state(timeout: TimeInterval) async throws -> SpotState {
@@ -20,7 +20,10 @@ extension Spot {
     }
 
     func items(query: String = "", input: String? = nil, timeout: TimeInterval) async throws -> SpotOutput {
-        try await output(.items(query: query), input: input, timeout: timeout)
+        let typed = query.isEmpty ? nil : TextBlock(fields: [.init(key: "search", value: query)]).text
+        let lines = [input, typed].compactMap { $0 }
+        let reason = query.isEmpty ? [:] : ReadReason.text(query, inSheet: answers == nil).variables
+        return try await output(.read, input: lines.isEmpty ? nil : lines.joined(), variables: reason, timeout: timeout)
     }
 
     func form(_ action: CommandAction, item: SpotItem?, timeout: TimeInterval) async throws -> ItemForm {
