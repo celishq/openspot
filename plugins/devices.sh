@@ -1,7 +1,8 @@
 #!/bin/sh
 # title=Devices
 # icon=airpods
-# read=60
+# every=60
+. "$OPENSPOT_SH"
 
 # Prints one line for each battery of each connected device: its name, the part, then the level.
 levels() {
@@ -25,5 +26,5 @@ levels | awk -F'\t' '
   END {
     if (low == "") { printf "gauge=devices\ntitle=–\ndetail=No devices\nvalue=0\n"; exit }
     symbol = name ~ /AirPods/ ? "airpods" : name ~ /Keyboard/ ? "keyboard" : name ~ /Mouse/ ? "magicmouse" : "headphones"
-    printf "gauge=devices\ntitle=%d%%\ndetail=%s\nicon=%s\nvalue=%.2f\ntone=%s\n", low, name, symbol, low / 100, (low <= 20 ? "bad" : "")
-  }'
+    printf "devices\t%d%%\t%s\t%s\tvalue=%.2f\t%s\n", low, name, symbol, low / 100, (low <= 20 ? "tone=bad" : "")
+  }' | openspot_rows gauge

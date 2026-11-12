@@ -14,21 +14,21 @@ public struct SheetSandbox: Equatable, Sendable {
 
     /// The command that the sandbox calls for a file: it reads a file with a `read`, and clicks any other.
     public static func command(file: URL) -> Spot {
-        let header = PluginHeader(url: file).block
+        let header = SpotHeader(url: file).block
         return Spot(
             id: file.lastPathComponent,
             name: file.lastPathComponent,
             url: file,
             kind: .list,
-            read: header.value("read").flatMap(SpotRead.init(text:)),
-            stays: header.flag("stay") ?? false
+            read: (try? SpotRead(read: header.value("read"), every: header.value("every"), on: header.value("on"), of: file.lastPathComponent)) ?? nil,
+            mode: header.value("mode").flatMap(SpotMode.init(rawValue:)).map { $0.stays ? .stay : .once } ?? .once
         )
     }
 
     /// Reads a sheet that a person typed or a script printed.
     public mutating func take(text: String) {
         self.text = text
-        let output = PluginOutput(text: text)
+        let output = SpotOutput(text: text)
         faults = text.isEmpty ? [] : output.sheetFaults
         if let panel = SheetParts(output: output) { self.panel = panel }
     }
@@ -50,7 +50,7 @@ public struct SheetSandbox: Equatable, Sendable {
     /// Shows a frame that a script printed, which its sheet draws.
     public mutating func note(frame text: String) {
         self.text = text
-        let output = PluginOutput(text: text)
+        let output = SpotOutput(text: text)
         guard !output.parts.isEmpty else { return }
         faults = output.layout == nil ? output.partFaults : output.sheetFaults
     }

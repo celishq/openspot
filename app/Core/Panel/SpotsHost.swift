@@ -14,10 +14,10 @@ public protocol SpotsHost: AnyObject {
     func notify(_ text: String, fix: URL)
     func confirm(_ text: String)
     /// Takes what the config file asks for, such as the key that opens the panel.
-    func applyConfig()
+    func applyConfig(_ config: Config)
     func setEntryKey(on isOn: Bool)
     func hold(_ keys: [GlobalKey])
-    func chooseFiles(for command: Spot, then take: @escaping ([String]) -> Void)
+    func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void)
     /// Shows the float of a spot at the pointer, or brings its float there when it shows (W4, W6). During a drag it takes no
     /// focus, so that the drag goes on (W5).
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool)
@@ -37,8 +37,8 @@ public protocol SpotsHost: AnyObject {
     /// glyphs of the whole list once, so that its rows find their pictures with no drawing in the app. No glyphs leave the
     /// glyphs drawn before as they are.
     func prepare(_ items: [SpotItem], glyphs: [String]) async
-    /// The spots that ship with the app, as its bundle gives them.
-    func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?) -> [Spot]
+    /// The prompt that asks an agent to write or fix a spot in this folder, with the `openspot` command of the app.
+    func agentPrompt(for folder: URL) -> AgentPrompt
     /// Makes a change on a motion, or with none at all, and calls `completion` when its motion reaches its end.
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void)
 }

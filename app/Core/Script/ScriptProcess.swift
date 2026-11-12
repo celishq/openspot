@@ -12,13 +12,24 @@ public final class ScriptProcess: @unchecked Sendable {
     private static let errorsPause: TimeInterval = 0.5
     private static let forcePause: TimeInterval = 0.1
 
-    private let process = Process()
+    private let url: URL
+    /// The first argument that the program sees, such as the path of the script of a built program.
+    private let name: String?
+    private let arguments: [String]
     private let mode: Mode
     private let limit: TimeInterval?
     private let dataName: String?
+    /// The sandbox of Careful mode, or nil to run as the person.
+    private let careful: CarefulMode?
     private let variables: [String: String]
+    /// The environment that the script starts from in place of the app's, such as that of a caller of `spot run`.
+    private let base: [String: String]?
+    /// The working folder of the script in place of the app's.
+    private let folder: URL?
     private let stopPause: TimeInterval
     private let input = Pipe()
+    private let output = Pipe()
+    private let errorOutput = Pipe()
     private let writes = DispatchQueue(label: "openspot.script")
     private let exit = DispatchSemaphore(value: 0)
     private let lock = NSLock()
@@ -29,18 +40,34 @@ public final class ScriptProcess: @unchecked Sendable {
     private var killsLater = false
     /// The process ID once it runs, and 0 before.
     private var id: pid_t = 0
+    /// The wait status once the process ended and Openspot reaped it.
+    private var status: Int32?
+    /// Its time once it ended.
+    private var endTime: ProcessTime?
+    private var exitWatch: DispatchSourceProcess?
+    private var exitHandlers: [@Sendable (ProcessTime) -> Void] = []
+    private var startHandlers: [@Sendable (pid_t) -> Void] = []
     private let errorText: ErrorTail
     private var unended: String?
+    /// The frames of the output so far, which only the output's handler reads, one read at a time.
+    private var reader = SheetFrameReader()
 
     /// `limit` is the time the script has to its first frame or its end. With none, it has no limit. `stopPause` is the time
     /// between each step of a stop. `variables` add to its environment. `errorLimit` is how many of the last bytes of stderr
-    /// it keeps, and nil keeps all.
-    public init(url: URL, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024) {
+    /// it keeps, and nil keeps all. `careful` runs it in Careful mode with these uses (Z8), and nil runs it as the person.
+    /// `name` is its first argument in place of its path, which `sandbox-exec` in Careful mode does not pass on. `base` and
+    /// `folder` start it with another environment and working folder than the app's, and Careful mode still takes its
+    /// folders from the app's.
+    public init(url: URL, name: String? = nil, arguments: [String] = [], mode: Mode = .once(input: nil), limit: TimeInterval? = nil, stopPause: TimeInterval = 2, dataName: String? = nil, variables: [String: String] = [:], errorLimit: Int? = 64 * 1024, careful: Set<SpotUse>? = nil, base: [String: String]? = nil, folder: URL? = nil) {
+        self.name = name
+        self.base = base
+        self.folder = folder
+        self.careful = careful.map(CarefulMode.init)
         errorText = ErrorTail(limit: errorLimit)
         self.dataName = dataName
         self.variables = variables
-        process.executableURL = url
-        process.arguments = arguments
+        self.url = url
+        self.arguments = arguments
         self.mode = mode
         self.limit = limit
         self.stopPause = stopPause
@@ -52,15 +79,24 @@ public final class ScriptProcess: @unchecked Sendable {
     public static func environment(base: [String: String], app: String, dataName: String? = nil) -> [String: String] {
         let contents = URL(fileURLWithPath: app).deletingLastPathComponent().deletingLastPathComponent()
         let helpers = contents.appendingPathComponent("Helpers").path
-        let home = base["HOME"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? FileManager.default.homeDirectoryForCurrentUser
-        let config = PluginFolder.config(environment: base, home: home)
-        var data = config.appendingPathComponent("data", isDirectory: true)
-        if let dataName { data.appendPathComponent(URL(fileURLWithPath: dataName).lastPathComponent, isDirectory: true) }
+        let config = SpotFolder.config(environment: base, home: home(of: base))
+        let data = dataFolder(base: base, dataName: dataName)
         try? FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
         var environment = base.merging(["PATH": "\(helpers):\(base["PATH"] ?? "")", "OPENSPOT_DATA": data.path, "OPENSPOT_CONFIG": config.path], uniquingKeysWith: { _, new in new })
         let shell = contents.appendingPathComponent("Resources/openspot.sh").path
         if FileManager.default.fileExists(atPath: shell) { environment["OPENSPOT_SH"] = shell }
         return environment
+    }
+
+    /// The data folder of a script in an environment: `data` in the config folder, and the folder that `dataName` names in it.
+    static func dataFolder(base: [String: String], dataName: String?) -> URL {
+        var data = SpotFolder.config(environment: base, home: home(of: base)).appendingPathComponent("data", isDirectory: true)
+        if let dataName { data.appendPathComponent(URL(fileURLWithPath: dataName).lastPathComponent, isDirectory: true) }
+        return data
+    }
+
+    private static func home(of base: [String: String]) -> URL {
+        base["HOME"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? FileManager.default.homeDirectoryForCurrentUser
     }
 
     /// Runs a process once, and returns all that it prints.
@@ -88,45 +124,52 @@ public final class ScriptProcess: @unchecked Sendable {
     /// Runs the process, unless a stop came first, and follows its output. A stop that comes while it starts reaches it.
     private func launch() {
         var text: String?
-        switch mode {
-        case .stays:
-            process.standardInput = input
-        case .once(let given):
+        var hasInput = true
+        if case .once(let given) = mode {
             text = given
-            process.standardInput = given == nil ? FileHandle.nullDevice : input
+            hasInput = given != nil
         }
-        process.environment = Self.environment(base: ProcessInfo.processInfo.environment, app: Bundle.main.executablePath ?? "", dataName: dataName).merging(variables) { _, new in new }
-        let output = Pipe()
-        process.standardOutput = output
-        let errors = Pipe()
-        process.standardError = errors
-        let exit = exit
-        process.terminationHandler = { _ in exit.signal() }
+        let app = Bundle.main.executablePath ?? ""
+        let own = Self.environment(base: ProcessInfo.processInfo.environment, app: app, dataName: dataName).merging(variables) { _, new in new }
+        let environment = base.map { Self.environment(base: $0, app: app, dataName: dataName).merging(variables) { _, new in new } } ?? own
+        let fence = careful?.words(in: own) ?? []
+        let errors = errorOutput
         signal(SIGPIPE, SIG_IGN)
-        guard !isStopped else { return lock.withLock { ended = true } }
+        guard !isStopped else {
+            lock.withLock { ended = true }
+            return abandon()
+        }
+        let started: pid_t
         do {
-            try process.run()
+            started = try spawn(input: hasInput ? input.fileHandleForReading : nil, output: output.fileHandleForWriting, errors: errors.fileHandleForWriting, environment: environment, fence: fence)
         } catch {
+            abandon()
             return finish(throwing: error)
         }
-        let wasStopped = lock.withLock {
-            id = process.processIdentifier
-            return stopped
+        if hasInput { try? input.fileHandleForReading.close() }
+        try? output.fileHandleForWriting.close()
+        try? errors.fileHandleForWriting.close()
+        TerminalStop.enter(started)
+        let (wasStopped, starts) = lock.withLock {
+            id = started
+            return (stopped, startHandlers)
         }
+        starts.forEach { $0(started) }
+        watchExit(of: started)
         if wasStopped { stopGroup() }
         if let text { writeAndClose(text) }
         if let limit {
-            DispatchQueue.global().asyncAfter(deadline: .now() + limit) { [self] in
-                if !lock.withLock({ hasFrame }) { stop(because: PluginError.timedOut) }
+            DispatchQueue.global().asyncAfter(deadline: .now() + limit) { [weak self] in
+                guard let self, !lock.withLock({ hasFrame }) else { return }
+                stop(because: SpotError.timedOut)
             }
         }
         follow(output: output, errors: errors)
     }
 
-    /// Sends one call to the script as a block, with its `id`, the `reason` of a read and the values of its sheet, in the
-    /// order of the calls.
-    public func send(_ action: SpotAction, values: String? = nil, id: Int, reason: ReadReason? = nil) {
-        send(text: action.event(values: values, id: id, reason: reason))
+    /// Sends one call to the script as a block with its `id`, its stdin and its variables, in the order of the calls (Y8).
+    public func send(_ action: SpotAction, input: String? = nil, variables: [String: String] = [:], id: Int) {
+        send(text: action.block(input: input, variables: variables, id: id))
     }
 
     /// Sends a block as it is, in the order of the calls.
@@ -170,7 +213,26 @@ public final class ScriptProcess: @unchecked Sendable {
     }
 
     public var isRunning: Bool {
-        process.isRunning
+        lock.withLock { id > 0 && status == nil }
+    }
+
+    /// The CPU time and the wakeups of the process so far, or all of them once it ended.
+    public var time: ProcessTime {
+        let (id, endTime) = lock.withLock { (self.id, self.endTime) }
+        if let endTime { return endTime }
+        guard id > 0 else { return .zero }
+        return ProcessTime(of: id) ?? .zero
+    }
+
+    /// Adds a handler that takes the ID of the process, which is also the ID of its group, once it starts. Add it before
+    /// `start`.
+    func onStart(_ handler: @escaping @Sendable (pid_t) -> Void) {
+        lock.withLock { startHandlers.append(handler) }
+    }
+
+    /// Adds a handler that takes the time of the process once it ends. Add it before `start`.
+    func onExit(_ handler: @escaping @Sendable (ProcessTime) -> Void) {
+        lock.withLock { exitHandlers.append(handler) }
     }
 
     /// Whether its output is still open, so that the call has not ended.
@@ -229,8 +291,10 @@ public final class ScriptProcess: @unchecked Sendable {
     private func stopGroup() {
         lock.withLock { killsLater = true }
         deliver(SIGTERM)
-        DispatchQueue.global().asyncAfter(deadline: .now() + stopPause) { [self] in
-            deliver(SIGKILL)
+        let id = lock.withLock { id }
+        DispatchQueue.global().asyncAfter(deadline: .now() + stopPause) { [weak self] in
+            if id > 0 { kill(-id, SIGKILL) }
+            guard let self else { return }
             lock.withLock { killsLater = false }
         }
     }
@@ -247,44 +311,47 @@ public final class ScriptProcess: @unchecked Sendable {
         if id > 0 { kill(-id, number) }
     }
 
+    /// Takes the output and stderr as each read arrives, with no thread that waits on a pipe, and ends the stream once the
+    /// output closes.
     private func follow(output: Pipe, errors: Pipe) {
         let errorsRead = DispatchSemaphore(value: 0)
         let lastErrors = LastLine()
         let errorText = errorText
-        DispatchQueue.global().async {
-            while let data = Self.next(errors) {
-                lastErrors.take(data)
-                errorText.take(data)
-            }
-            errorsRead.signal()
-        }
-        DispatchQueue.global().async { [self] in
-            var reader = SheetFrameReader()
-            while let data = Self.next(output) {
-                for frame in reader.read(data) { yield(frame) }
-            }
-            let hasExited = waitForExit(seconds: Self.exitPause)
-            _ = errorsRead.wait(timeout: .now() + Self.errorsPause)
-            guard !isStopped else { return lock.withLock { ended = true } }
-            if hasExited, process.terminationStatus != 0 {
-                let line = lastErrors.text
-                let last = reader.finish()
-                lock.withLock { unended = last }
-                let fix = last.flatMap { PluginOutput(text: $0).link }.flatMap(URL.init(string:))
-                finish(throwing: fix.map { PluginError.failedWithFix(process.terminationStatus, line, $0) } ?? PluginError.failed(process.terminationStatus, line))
+        errors.fileHandleForReading.readabilityHandler = { handle in
+            let data = handle.availableData
+            guard !data.isEmpty else {
+                handle.readabilityHandler = nil
+                errorsRead.signal()
                 return
             }
-            if let frame = reader.finish() { yield(frame) }
-            finish(throwing: nil)
+            lastErrors.take(data)
+            errorText.take(data)
+        }
+        output.fileHandleForReading.readabilityHandler = { [self] handle in
+            let data = handle.availableData
+            guard !data.isEmpty else {
+                handle.readabilityHandler = nil
+                return DispatchQueue.global().async { [self] in end(errorsRead: errorsRead, lastErrors: lastErrors) }
+            }
+            for frame in reader.read(data) { yield(frame) }
         }
     }
 
-    /// The next bytes of a pipe, or nil at its end. Each read frees its own buffer, so a long read keeps none of the last.
-    private static func next(_ pipe: Pipe) -> Data? {
-        autoreleasepool {
-            let data = pipe.fileHandleForReading.availableData
-            return data.isEmpty ? nil : data
+    /// Ends the stream once the output closed: with the reason of a failed exit, or with the last frame.
+    private func end(errorsRead: DispatchSemaphore, lastErrors: LastLine) {
+        let hasExited = waitForExit(seconds: Self.exitPause)
+        _ = errorsRead.wait(timeout: .now() + Self.errorsPause)
+        guard !isStopped else { return lock.withLock { ended = true } }
+        if hasExited, exitCode != 0 {
+            let line = lastErrors.text
+            let last = reader.finish()
+            lock.withLock { unended = last }
+            let fix = last.flatMap { SpotOutput(text: $0).link }.flatMap(URL.init(string:))
+            finish(throwing: fix.map { SpotError.failedWithFix(exitCode, line, $0) } ?? SpotError.failed(exitCode, line))
+            return
         }
+        if let frame = reader.finish() { yield(frame) }
+        finish(throwing: nil)
     }
 
     private func yield(_ frame: String) {
@@ -305,7 +372,103 @@ public final class ScriptProcess: @unchecked Sendable {
         continuation?.finish(throwing: error)
     }
 
-    /// Waits for the termination handler to signal, and leaves the signal for the next one that waits.
+    /// The code that the process exited with, or the number of the signal that ended it.
+    private var exitCode: Int32 {
+        let status = lock.withLock { self.status } ?? 0
+        return status & 0x7f == 0 ? (status >> 8) & 0xff : status & 0x7f
+    }
+
+    /// Closes each end of its pipes and gives its exit handler no time, for a process that never started.
+    private func abandon() {
+        for handle in [input.fileHandleForReading, output.fileHandleForReading, output.fileHandleForWriting, errorOutput.fileHandleForReading, errorOutput.fileHandleForWriting] {
+            try? handle.close()
+        }
+        closeInput()
+        let handlers = lock.withLock {
+            endTime = .zero
+            defer { exitHandlers = [] }
+            return exitHandlers
+        }
+        handlers.forEach { $0(.zero) }
+    }
+
+    /// Starts the program in a process group of its own, with these ends of pipes as its stdin, stdout and stderr, and with
+    /// no other open file and no signal that the app ignores. `fence` holds the words of Careful mode before the program.
+    private func spawn(input: FileHandle?, output: FileHandle, errors: FileHandle, environment: [String: String], fence wrapper: [String]) throws -> pid_t {
+        var actions: posix_spawn_file_actions_t?
+        posix_spawn_file_actions_init(&actions)
+        defer { posix_spawn_file_actions_destroy(&actions) }
+        if let input {
+            posix_spawn_file_actions_adddup2(&actions, input.fileDescriptor, STDIN_FILENO)
+        } else {
+            posix_spawn_file_actions_addopen(&actions, STDIN_FILENO, "/dev/null", O_RDONLY, 0)
+        }
+        posix_spawn_file_actions_adddup2(&actions, output.fileDescriptor, STDOUT_FILENO)
+        posix_spawn_file_actions_adddup2(&actions, errors.fileDescriptor, STDERR_FILENO)
+        if let folder { posix_spawn_file_actions_addchdir_np(&actions, folder.path) }
+        var attributes: posix_spawnattr_t?
+        posix_spawnattr_init(&attributes)
+        defer { posix_spawnattr_destroy(&attributes) }
+        posix_spawnattr_setflags(&attributes, Int16(POSIX_SPAWN_SETPGROUP | POSIX_SPAWN_SETSIGDEF | POSIX_SPAWN_SETSIGMASK | POSIX_SPAWN_CLOEXEC_DEFAULT))
+        posix_spawnattr_setpgroup(&attributes, 0)
+        var all = sigset_t()
+        sigfillset(&all)
+        posix_spawnattr_setsigdefault(&attributes, &all)
+        var none = sigset_t()
+        sigemptyset(&none)
+        posix_spawnattr_setsigmask(&attributes, &none)
+        let words = (wrapper.isEmpty ? [name ?? url.path] + arguments : wrapper + [url.path] + arguments).map { strdup($0) } + [nil]
+        let pairs = environment.map { strdup("\($0.key)=\($0.value)") } + [nil]
+        defer { (words + pairs).forEach { free($0) } }
+        var started: pid_t = 0
+        let code = posix_spawn(&started, wrapper.first ?? url.path, &actions, &attributes, words, pairs)
+        guard code == 0 else {
+            guard code == ENOENT || code == EACCES else { throw POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO) }
+            throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: url.path, NSURLErrorKey: url])
+        }
+        return started
+    }
+
+    /// Reaps the process once it ends, with no thread that waits for it. A process that ended before the watch began is
+    /// reaped at once.
+    private func watchExit(of started: pid_t) {
+        let watch = DispatchSource.makeProcessSource(identifier: started, eventMask: .exit, queue: .global())
+        watch.setEventHandler { [self] in reap(started) }
+        lock.withLock { exitWatch = watch }
+        watch.resume()
+        var info = siginfo_t()
+        if waitid(P_PID, id_t(started), &info, WEXITED | WNOHANG | WNOWAIT) == 0, info.si_pid == started { reap(started) }
+    }
+
+    /// Reads the time of the ended process before it is reaped, so that it holds all of it, then reaps it.
+    private func reap(_ started: pid_t) {
+        let isFirst = lock.withLock {
+            guard let watch = exitWatch else { return false }
+            watch.cancel()
+            exitWatch = nil
+            return true
+        }
+        guard isFirst else { return }
+        let read = ProcessTime(of: started)
+        lock.withLock { endTime = read }
+        var code: Int32 = 0
+        var usage = rusage()
+        var result: pid_t = -1
+        repeat { result = wait4(started, &code, 0, &usage) } while result == -1 && errno == EINTR
+        if result == -1 { code = 1 << 8 }
+        let time = read ?? ProcessTime(usage)
+        if kill(-started, 0) != 0 { TerminalStop.leave(started) }
+        let handlers = lock.withLock {
+            status = code
+            endTime = time
+            defer { exitHandlers = [] }
+            return exitHandlers
+        }
+        handlers.forEach { $0(time) }
+        exit.signal()
+    }
+
+    /// Waits for the reap to signal, and leaves the signal for the next one that waits.
     private func waitForExit(seconds: TimeInterval) -> Bool {
         guard exit.wait(timeout: .now() + max(seconds, 0)) == .success else { return false }
         exit.signal()

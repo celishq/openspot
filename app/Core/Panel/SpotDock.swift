@@ -81,7 +81,7 @@ public struct SpotDock: Equatable, Sendable {
 
     /// One spot in the store.
     public struct Item: Identifiable, Equatable, Sendable {
-        public let command: Spot
+        public let spot: Spot
         public let origin: Origin
         public let state: State
         /// Its package in the store, for a spot of the plugins folder that the person published.
@@ -90,7 +90,7 @@ public struct SpotDock: Equatable, Sendable {
         public let size: SpotSize
 
         public var id: String {
-            command.id
+            spot.id
         }
 
         /// Whether the spot is a file of the plugins folder, which the person can publish and move to the Trash.
@@ -107,13 +107,13 @@ public struct SpotDock: Equatable, Sendable {
             }
         }
 
-        public init(command: Spot, origin: Origin = .core, state: State = .off, size: SpotSize? = nil, publication: Publication? = nil) {
-            self.command = command
+        public init(spot: Spot, origin: Origin = .core, state: State = .off, size: SpotSize? = nil, publication: Publication? = nil) {
+            self.spot = spot
             self.origin = origin
             self.state = state
             self.publication = publication
-            let own = size ?? command.size
-            self.size = command.fault != nil && own == .small ? .wide : own
+            let own = size ?? spot.size
+            self.size = spot.fault != nil && own == .small ? .wide : own
         }
     }
 
@@ -127,7 +127,7 @@ public struct SpotDock: Equatable, Sendable {
     public var isSheetOut = false
 
     public init(items: [Item]) {
-        self.items = items.sorted { $0.command.name.localizedCaseInsensitiveCompare($1.command.name) == .orderedAscending }
+        self.items = items.sorted { $0.spot.name.localizedCaseInsensitiveCompare($1.spot.name) == .orderedAscending }
     }
 
     /// Where the rows start in the store, right of the sidebar, which is as wide as the panel's grid.
@@ -146,7 +146,7 @@ public struct SpotDock: Equatable, Sendable {
     /// The titled groups of the shown spots, each with its spots in order.
     private var parts: [(title: String, items: [Item])] {
         let found = items.filter { item in
-            query.isEmpty ? section.keeps(item) : [item.command.name, item.command.subtitle ?? ""].contains { $0.localizedStandardContains(query) }
+            query.isEmpty ? section.keeps(item) : [item.spot.name, item.spot.subtitle ?? ""].contains { $0.localizedStandardContains(query) }
         }
         let byState: [(String, [Item])] = [
             ("On Grid", found.filter { $0.state == .onGrid }), ("In Search", found.filter { $0.state == .searchOnly }), ("Not Added", found.filter { $0.state == .off })

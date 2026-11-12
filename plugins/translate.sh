@@ -3,6 +3,7 @@
 # detail=Between languages
 # size=small
 # read=sheet
+# uses=clipboard
 . "$OPENSPOT_SH"
 export LC_ALL=en_US.UTF-8
 
@@ -101,7 +102,9 @@ show() {
   options
   printf '\n'
 
-  printf 'field=input\nvalue=%s\nplaceholder=Type or paste text\n\n' "$(esc "$input")"
+  printf 'field=input\nplaceholder=Type or paste text\n'
+  openspot_kv value "$input"
+  printf '\n'
 
   printf 'choice=target\nvalue=%s\n' "$target"
   options
@@ -143,7 +146,7 @@ case "$1" in
     open "$settings"
     ;;
   copy)
-    value output | pbcopy
+    value output | openspot clipboard copy
     printf 'toast=Copied\n'
     ;;
   swap)

@@ -8,6 +8,9 @@ protocol ScriptLink: AnyObject {
     var run: SpotRun? { get set }
     /// Whether a read or a search waits for its answer.
     var isAsking: Bool { get }
+    /// Whether the script holds its own state, as one that stays does: its sheet opens only with its answer, sends no text
+    /// of its search with a read, forgets its answer when it leaves its place, and takes a filled form with no answer.
+    var keepsState: Bool { get }
     /// Whether the link holds the script for a call of its own, such as a form or a call that waits for its `end`.
     var holdsScript: Bool { get }
     /// Whether the script can answer now.

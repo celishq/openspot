@@ -68,7 +68,7 @@ struct SpotsView: View {
                 model: model,
                 isOpen: sheetOpen,
                 isInSheet: fieldIsInSheet,
-                isInstall: sheetID == ShippedSpot.installID,
+                isInstall: isInstall,
                 showsField: showsSearchField,
                 surfaceIsOut: surfaceIsOut
             )
@@ -162,12 +162,17 @@ struct SpotsView: View {
 
     /// Whether a sheet is out or a drop is taken, which sets the time of each fade and which hint shows.
     private var surfaceIsOut: Bool {
-        sheetOpen || (model.showsFieldDrop && !(model.transition.phase == .closing && sheetID == ShippedSpot.installID))
+        sheetOpen || (model.showsFieldDrop && !(model.transition.phase == .closing && isInstall))
+    }
+
+    /// Whether the sheet is the install screen, which grows out of the field.
+    private var isInstall: Bool {
+        sheetID != nil && sheetID == model.fieldSheet
     }
 
     /// Whether the field lies in the open sheet. The install screen grows out of the field, which stays where it is.
     private var fieldIsInSheet: Bool {
-        sheetOpen && sheetID != ShippedSpot.installID
+        sheetOpen && !isInstall
     }
 
     private var contentHeight: CGFloat {
@@ -198,7 +203,7 @@ struct SpotsView: View {
 
     /// Whether the install screen takes the place of the grid and the field.
     private var coversGrid: Bool {
-        sheetOpen && sheetID == ShippedSpot.installID
+        sheetOpen && isInstall
     }
 
     /// Whether the search field is drawn. A form, a sheet of parts and the install screen replace it, but a form of one choice

@@ -59,11 +59,11 @@ struct SpotFloatView: View {
                     selectedPart: { run.selectedPart?.id },
                     nudge: { run.nudge },
                     customView: { room in
-                        entry.command.view.map { SpotCustomView(source: $0, values: entry.state.values, card: .square, room: room, views: SpotViews.shared) }
+                        entry.spot.view.map { SpotCustomView(source: $0, values: entry.state.values, card: .square, room: room, views: SpotViews.shared) }
                     }
                 )
-                .task(id: parts.parts.contains { $0.kind == "view" } ? entry.command.view : nil) {
-                    if let view = entry.command.view, parts.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
+                .task(id: parts.parts.contains { $0.kind == "view" } ? entry.spot.view : nil) {
+                    if let view = entry.spot.view, parts.parts.contains(where: { $0.kind == "view" }) { await SpotViews.shared.load(view) }
                 }
             } else {
                 SpotRowsView(

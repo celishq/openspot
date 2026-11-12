@@ -37,7 +37,7 @@ final class SpotRunsCallTests: SpotRunsCase {
 
     func testAFailedTimerReadKeepsTheValueAndDimsWithNoToast() async throws {
         menuBar.insert("script")
-        try script(header: "read=5", """
+        try script(header: "every=5", """
         [ -f '\(path("second"))' ] && exit 1
         touch '\(path("second"))'
         printf 'text=m\\ntitle=3\\n'
@@ -50,7 +50,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         XCTAssertEqual(runs.trayMarks.first?.mark.isStale, false)
 
         time += 5
-        runs.tick()
+        runs.raise(.clock)
 
         try await wait("the dim") { sheet.reading.isStale }
         XCTAssertEqual(sheet.reading.value?.title, "3")
@@ -388,8 +388,8 @@ final class SpotRunsCallTests: SpotRunsCase {
         """)
         let sheet = try sheet()
         sheet.open {}
-        try await wait("the action") { sheet.command.actions.count == 1 }
-        let action = try XCTUnwrap(sheet.command.actions.first)
+        try await wait("the action") { sheet.spot.actions.count == 1 }
+        let action = try XCTUnwrap(sheet.spot.actions.first)
 
         sheet.run(action, item: nil)
         try await wait("the call") { self.log() == ["read", "go"] }
@@ -405,7 +405,7 @@ final class SpotRunsCallTests: SpotRunsCase {
         try script(header: "read=panel", "[ \"$1\" = read ] && { printf 'switch=power\\nvalue=false\\n'; exit 0; }\nsleep 5")
         let sheet = try sheet()
         runs.panelOpened()
-        try await wait("the kind") { sheet.command.kind == .toggle }
+        try await wait("the kind") { sheet.spot.kind == .toggle }
 
         sheet.pressCard()
         XCTAssertEqual(sheet.state.on, true)

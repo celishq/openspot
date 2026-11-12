@@ -3,7 +3,7 @@ import XCTest
 
 final class SpotDockTests: XCTestCase {
     private func item(_ name: String, state: SpotDock.State = .off, origin: SpotDock.Origin = .core, publication: SpotDock.Publication? = nil) -> SpotDock.Item {
-        SpotDock.Item(command: Spot(id: name.lowercased(), name: name, url: URL(fileURLWithPath: "/\(name).sh")), origin: origin, state: state, publication: publication)
+        SpotDock.Item(spot: Spot(id: name.lowercased(), name: name, url: URL(fileURLWithPath: "/\(name).sh")), origin: origin, state: state, publication: publication)
     }
 
     private var dock: SpotDock {
@@ -14,7 +14,7 @@ final class SpotDockTests: XCTestCase {
     }
 
     func testAddedShowsTheSpotsOnTheGridThenThoseInSearchEachByName() {
-        XCTAssertEqual(dock.shown.map(\.command.name), ["Apple", "Timer", "Wave", "Bell", "Disk"])
+        XCTAssertEqual(dock.shown.map(\.spot.name), ["Apple", "Timer", "Wave", "Bell", "Disk"])
         XCTAssertEqual(dock.groups.map(\.title), ["On Grid", "In Search"])
         XCTAssertEqual(dock.groups.map(\.count), [3, 2])
     }
@@ -23,7 +23,7 @@ final class SpotDockTests: XCTestCase {
         var dock = dock
         dock.section = .store
 
-        XCTAssertEqual(dock.shown.map(\.command.name), ["Coin", "Note"])
+        XCTAssertEqual(dock.shown.map(\.spot.name), ["Coin", "Note"])
         XCTAssertEqual(dock.groups.map(\.title), ["Not Added"])
     }
 
@@ -31,7 +31,7 @@ final class SpotDockTests: XCTestCase {
         var dock = dock
         dock.section = .mine
 
-        XCTAssertEqual(dock.shown.map(\.command.name), ["Note", "Wave", "Bell"])
+        XCTAssertEqual(dock.shown.map(\.spot.name), ["Note", "Wave", "Bell"])
         XCTAssertEqual(dock.groups.map(\.title), ["Not Published", "Published"])
     }
 
@@ -43,12 +43,12 @@ final class SpotDockTests: XCTestCase {
         var dock = dock
         dock.query = "e"
 
-        XCTAssertEqual(dock.shown.map(\.command.name), ["Apple", "Timer", "Wave", "Bell", "Note"])
+        XCTAssertEqual(dock.shown.map(\.spot.name), ["Apple", "Timer", "Wave", "Bell", "Note"])
         XCTAssertEqual(dock.groups.map(\.title), ["On Grid", "In Search", "Not Added"])
     }
 
     func testTheSearchFindsTheWordsUnderASpotsName() {
-        var dock = SpotDock(items: [SpotDock.Item(command: Spot(id: "system", name: "System", url: URL(fileURLWithPath: "/system.toml"), subtitle: "Battery, CPU"))])
+        var dock = SpotDock(items: [SpotDock.Item(spot: Spot(id: "system", name: "System", url: URL(fileURLWithPath: "/system.toml"), subtitle: "Battery, CPU"))])
         dock.query = "cpu"
 
         XCTAssertEqual(dock.shown.map(\.id), ["system"])
@@ -153,7 +153,7 @@ final class SpotDockTests: XCTestCase {
         XCTAssertEqual(mine.map { $0.map(\.action) }, [[.place(.onGrid), .place(.searchOnly), .place(.off)], [.share, .copyPrompt], [.edit, .moveToTrash]])
         XCTAssertEqual(mine[1][1].title, "Copy Prompt to Change")
 
-        let builtIn = SpotDock.menu(for: SpotDock.Item(command: Spot(id: "settings", name: "Settings", url: URL(fileURLWithPath: "/s")), origin: .builtIn, state: .onGrid))
+        let builtIn = SpotDock.menu(for: SpotDock.Item(spot: Spot(id: "settings", name: "Settings", url: URL(fileURLWithPath: "/s")), origin: .builtIn, state: .onGrid))
         XCTAssertEqual(builtIn[0].map(\.action), [.place(.onGrid), .place(.searchOnly)])
         let grid = SpotDock.menu(for: item("Wave", state: .onGrid, origin: .mine))
         XCTAssertEqual(grid.map { $0.map(\.action) }, [[.place(.onGrid), .place(.searchOnly), .place(.off)], [.open], [.publish, .copyPrompt], [.edit]])

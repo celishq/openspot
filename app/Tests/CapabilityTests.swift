@@ -184,7 +184,7 @@ final class CapabilityTests: XCTestCase {
         do {
             let answer = try await call("die")
             XCTFail("It answered: \(answer)")
-        } catch PluginError.failed(let code, let line) {
+        } catch SpotError.failed(let code, let line) {
             XCTAssertEqual(code, 1)
             XCTAssertTrue(line.contains("ended before it answered"), line)
         }
@@ -213,7 +213,7 @@ final class CapabilityTests: XCTestCase {
         do {
             let answer = try await call()
             XCTFail("It answered: \(answer)")
-        } catch PluginError.failed(let code, let line) {
+        } catch SpotError.failed(let code, let line) {
             XCTAssertEqual(code, 1)
             XCTAssertTrue(line.contains("could not start its \(label) helper"), line)
             XCTAssertTrue(line.contains("Permission denied"), line)
@@ -228,7 +228,7 @@ final class CapabilityTests: XCTestCase {
         do {
             let answer = try await call()
             XCTFail("It answered: \(answer)")
-        } catch PluginError.failed(_, let line) {
+        } catch SpotError.failed(_, let line) {
             XCTAssertTrue(line.contains("too long"), line)
             XCTAssertTrue(line.contains("Use a shorter folder"), line)
         }

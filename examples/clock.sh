@@ -1,7 +1,7 @@
 #!/bin/sh
 # title=World clock
 # icon=globe
-# stay=always
+# mode=always
 . "$OPENSPOT_SH"
 zone=Asia/Tokyo
 city=$(printf '%s' "${zone##*/}" | tr _ ' ')
@@ -18,14 +18,14 @@ tick() {
   done
 }
 
+main() {
+  case "$1" in
+    read) now ;;
+  esac
+}
+
 tick &
 ticker=$!
 trap 'pkill -P "$ticker"; kill "$ticker"' EXIT
 trap 'exit' TERM
-while next; do
-  [ -z "$stop" ] || continue
-  case "$(arg 1)" in
-    read) printf 'end=%s\n\n%s\n---\n' "$call" "$(now)" ;;
-    *) printf 'end=%s\n---\n' "$call" ;;
-  esac
-done
+openspot_serve main "$@"

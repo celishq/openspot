@@ -44,15 +44,15 @@ final class FilesOutTests: XCTestCase {
     }
 
     func testARowCarriesTheFileThatItNamesFromTheRoot() {
-        let output = PluginOutput(text: "row=a\nfile=/Users/me/a.png\n\nrow=b\nfile=b.png\n\nrow=c\n")
+        let output = SpotOutput(text: "row=a\nfile=/Users/me/a.png\n\nrow=b\nfile=b.png\n\nrow=c\n")
 
         XCTAssertEqual(output.items.map(\.file), ["/Users/me/a.png", nil, nil])
         XCTAssertTrue(output.partFaults.contains("the row b names the file b.png, which does not start with /"))
     }
 
     func testAComponentCannotTakeTheIdDragBesideRowsWithFiles() {
-        let files = PluginOutput(text: "row=a\nfile=/a.png\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
-        let none = PluginOutput(text: "row=a\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
+        let files = SpotOutput(text: "row=a\nfile=/a.png\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
+        let none = SpotOutput(text: "row=a\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
 
         XCTAssertTrue(files.partFaults.contains("an action cannot be called drag"))
         XCTAssertFalse(none.partFaults.contains("an action cannot be called drag"))

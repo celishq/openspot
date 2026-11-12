@@ -98,7 +98,7 @@ final class DoomExampleTests: SamplePluginsCase {
             for try await frame in ScriptProcess(url: spot.url, arguments: [call], limit: 30, dataName: spot.dataName).start() {
                 frames.append(frame)
             }
-        } catch PluginError.failed(_, let line) {
+        } catch SpotError.failed(_, let line) {
             return (frames, line)
         } catch {
             return (frames, "\(error)")
@@ -122,7 +122,7 @@ final class DoomExampleTests: SamplePluginsCase {
         var time = Date(timeIntervalSince1970: 1000)
         let runs = SpotRuns(now: { time }, stopPause: 0.2, tickPause: .milliseconds(50))
         defer { runs.quit() }
-        runs.take(try PluginFolder(url: plugins).scan())
+        runs.take(try SpotFolder(url: plugins).scan())
         let sheet = try XCTUnwrap(runs.sheets["doom/doom"])
         let log = FrameLog(sheet)
         var pictures: [(picture: String?, sheet: [[String]]?)] = []
@@ -135,7 +135,7 @@ final class DoomExampleTests: SamplePluginsCase {
                 try await Task.sleep(for: .milliseconds(10))
             }
             runs.panelClosed()
-            let drawing = PluginOutput(text: log.last ?? "").layout?.rows
+            let drawing = SpotOutput(text: log.last ?? "").layout?.rows
             pictures.append((sheet.state.face.hasView ? sheet.state.values["picture"]?.last : nil, drawing))
         }
         return pictures

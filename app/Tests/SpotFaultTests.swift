@@ -24,7 +24,6 @@ final class SpotFaultTests: XCTestCase {
         suite = "openspot-fault-\(UUID().uuidString)"
         defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         host = TestHost()
-        host.shipped = ShippedSpot.commands(folder: plugins, guide: folder.appendingPathComponent("GUIDE.md"), app: "/Apps/Openspot")
         let files = SpotFiles(
             environment: ["OPENSPOT_PLUGINS": plugins.path, "OPENSPOT_CONFIG": folder.appendingPathComponent("config").path],
             home: folder,
@@ -138,7 +137,7 @@ final class SpotFaultTests: XCTestCase {
         model.folderChanged()
 
         XCTAssertEqual(entry("weather")?.state.title, "Weather")
-        XCTAssertNil(entry("weather")?.command.fault)
+        XCTAssertNil(entry("weather")?.spot.fault)
     }
 
     func testAFailedRunMarksItsCardUntilARunSucceeds() async throws {

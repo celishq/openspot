@@ -70,7 +70,7 @@ final class TextBlockTests: XCTestCase {
     }
 
     func testAMetricReadsItsKeys() {
-        let output = PluginOutput(text: """
+        let output = SpotOutput(text: """
         text=m
         title=6 open
         detail=Today
@@ -100,8 +100,8 @@ final class TextBlockTests: XCTestCase {
     }
 
     func testAMetricSkipsABadToneAndNeedsATitle() {
-        XCTAssertNil(MetricValue(output: PluginOutput(text: "text=m\ndetail=Only")))
-        XCTAssertEqual(MetricValue(output: PluginOutput(text: "text=m\ntitle=A\ntone=purple\nfuture=key")), MetricValue(title: "A"))
+        XCTAssertNil(MetricValue(output: SpotOutput(text: "text=m\ndetail=Only")))
+        XCTAssertEqual(MetricValue(output: SpotOutput(text: "text=m\ntitle=A\ntone=purple\nfuture=key")), MetricValue(title: "A"))
     }
 
     func testAnItemNeedsARowIdAndTakesItAsItsTitleWhenItHasNone() {

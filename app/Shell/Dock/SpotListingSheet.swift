@@ -12,9 +12,9 @@ struct SpotListingSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SpotTokens.padding) {
             HStack(spacing: SpotTokens.padding) {
-                SpotItemIcon(icon: item.command.icon, glyph: item.command.glyph, symbol: item.command.symbol, size: SpotTokens.glyphSize)
+                SpotItemIcon(icon: item.spot.icon, glyph: item.spot.glyph, symbol: item.spot.symbol, size: SpotTokens.glyphSize)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(item.command.name)
+                    Text(item.spot.name)
                         .font(SpotType.title)
                         .foregroundStyle(SpotTheme.ink)
                     if let description = listing.description {

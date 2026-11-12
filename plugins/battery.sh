@@ -1,5 +1,5 @@
 #!/bin/sh
-# read=30
+# every=30
 pmset -g batt | awk '
   /InternalBattery/ && match($0, /[0-9]+%/) { line = $0 }
   !first && /[0-9]+%/ { first = $0 }

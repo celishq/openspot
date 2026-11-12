@@ -56,7 +56,7 @@ public struct Reminders {
         let entry = try CalendarEntry(titled: words)
         guard try await isAllowed() else { return CalendarAccess.unaskedText }
         guard let list = store.defaultList() else {
-            throw PluginError.failed(1, "Openspot found no list for new reminders. Choose a default list in Reminders › Settings, then try again.")
+            throw SpotError.failed(1, "Openspot found no list for new reminders. Choose a default list in Reminders › Settings, then try again.")
         }
         let due = entry.date.map { entry.hasTime ? $0 : clock.calendar.startOfDay(for: $0) }
         let reminder = Reminder(id: "new", title: entry.title, due: due, isAllDay: due != nil && !entry.hasTime, list: list, doneAt: nil)

@@ -20,7 +20,7 @@ public struct SheetParts: Equatable, Sendable {
     private var selected: String?
 
     /// Returns nil when a script prints no parts.
-    public init?(output: PluginOutput) {
+    public init?(output: SpotOutput) {
         guard !output.parts.isEmpty else { return nil }
         parts = output.parts
         layout = output.layout
@@ -129,7 +129,7 @@ public struct SheetParts: Equatable, Sendable {
     /// Takes the answer to a call, unless a newer change has outdated it. `keeping` names a part whose text the person
     /// owns while they type. Returns whether it took the answer.
     @discardableResult
-    public mutating func take(_ output: PluginOutput, answering generation: Int, keeping id: String? = nil) -> Bool {
+    public mutating func take(_ output: SpotOutput, answering generation: Int, keeping id: String? = nil) -> Bool {
         guard generation == self.generation, !output.parts.isEmpty else { return false }
         let kept = parts.first { $0.id == id }?.value
         parts = output.parts

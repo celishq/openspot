@@ -12,9 +12,9 @@ struct SpotStoreRow: View, Equatable {
         let radius = SpotTokens.corner(for: SpotSize(columns: 4, rows: 1))
         let step = SpotDock.stepRect(in: bounds)
         HStack(spacing: SpotTokens.padding - 5) {
-            SpotItemIcon(icon: item.command.icon, glyph: item.command.glyph, symbol: item.command.symbol, size: SpotTokens.glyphSize)
+            SpotItemIcon(icon: item.spot.icon, glyph: item.spot.glyph, symbol: item.spot.symbol, size: SpotTokens.glyphSize)
             VStack(alignment: .leading, spacing: 1) {
-                Text(item.command.name)
+                Text(item.spot.name)
                     .font(SpotType.title)
                     .foregroundStyle(SpotTheme.ink)
                 if let fact {
@@ -33,7 +33,7 @@ struct SpotStoreRow: View, Equatable {
         .background(SpotTheme.raised, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
         .modifier(SpotGlass(radius: radius, blursBehind: false, rimSize: bounds.size))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(item.command.name)
+        .accessibilityLabel(item.spot.name)
     }
 
     /// The line under the name: whether the store has a spot of the person's own as it is, that a built-in spot comes with
@@ -44,7 +44,7 @@ struct SpotStoreRow: View, Equatable {
         case (.mine, .changed): "Changes not published"
         case (.mine, nil): "Not published"
         case (.builtIn, _): "Comes with Openspot"
-        default: item.command.subtitle
+        default: item.spot.subtitle
         }
     }
 }

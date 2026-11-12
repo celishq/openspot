@@ -191,40 +191,20 @@ final class SpotArrangementTests: XCTestCase {
 
         XCTAssertEqual(Spot(id: "a", name: "A", url: url).sizes.count, 5)
         XCTAssertEqual(Spot(id: "w", name: "W", url: url, kind: .widget).sizes, [])
-        let updates = ShippedSpot.commands(folder: url, guide: url, app: "", update: UpdateSpot(version: "1", runningWork: { 0 }, check: {}, restart: {}))
-        XCTAssertFalse(updates[0].sizes.contains(.small))
     }
 
-    func testOnlyTheBuiltInsThatSayItChangeKeysReadOnAnUpdateOrTakeAShake() {
-        let url = URL(fileURLWithPath: "/bin/true")
-        let commands = ShippedSpot.commands(folder: url, guide: url, app: "", update: UpdateSpot(version: "1", runningWork: { 0 }, check: {}, restart: {}))
-        let settings = commands.first { $0.id == ShippedSpot.settingsID }
-        let updates = commands.first { $0.id == "openspot/updates" }
+    func testAKeyOfThePanelOpensTheSpotOfThePersonsChoiceOrElseOfTheDefaults() throws {
+        let n = ActionKey(name: "n", isCommand: true)
+        let defaults = Config(text: "[[spots]]\nid = \"new\"\nkey = \"cmd+n\"\n\n[[spots]]\nid = \"set\"\nkey = \"cmd+,\"\n").arrangement
+        let mine = Config(text: "[[spots]]\nid = \"mine\"\nkey = \"cmd+n\"\n").arrangement
+        let moved = Config(text: "[[spots]]\nid = \"new\"\nkey = \"cmd+j\"\n").arrangement
 
-        XCTAssertEqual(commands.filter(\.setsKeys).map(\.id), [ShippedSpot.settingsID])
-        XCTAssertEqual(commands.filter(\.readsOnUpdate).map(\.id), ["openspot/updates"])
-        XCTAssertEqual(settings?.shipped?.takesShake("key:apps:open"), true)
-        XCTAssertEqual(settings?.shipped?.takesShake("setting:apps:size"), false)
-        XCTAssertEqual(updates?.shipped?.takesShake("key:apps:open"), false)
-    }
-
-    func testSpotsOpensTheStoreAndEditSpotsFindsItWhileSettingsChangesASetting() {
-        let url = URL(fileURLWithPath: "/bin/true")
-        let commands = ShippedSpot.commands(folder: url, guide: url, app: "")
-        let spots = commands.first { $0.id == ShippedSpot.spotsID }
-        let settings = commands.first { $0.id == ShippedSpot.settingsID }
-
-        XCTAssertEqual(commands.filter(\.opensStore).map(\.id), [ShippedSpot.spotsID])
-        XCTAssertEqual(spots?.keywords, ["edit spots"])
-        XCTAssertEqual(settings?.shipped?.settingChange(of: "setting:apps:size")?.spot, "apps")
-    }
-
-    func testNewSpotGivesTheAgentPromptAndSettingsOpensWithTheSettingsKey() {
-        let url = URL(fileURLWithPath: "/bin/true")
-        let commands = ShippedSpot.commands(folder: url, guide: url, app: "")
-
-        XCTAssertEqual(commands.filter { $0.agentPrompt != nil }.map(\.id), [ShippedSpot.newID])
-        XCTAssertEqual(commands.filter(\.opensWithSettingsKey).map(\.id), [ShippedSpot.settingsID])
-        XCTAssertEqual(commands.filter(\.opensWithNewKey).map(\.id), [ShippedSpot.newID])
+        XCTAssertEqual(SpotArrangement().spot(openedBy: n, over: defaults), "new")
+        XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: ",", isCommand: true), over: defaults), "set")
+        XCTAssertEqual(mine.spot(openedBy: n, over: defaults), "mine")
+        XCTAssertNil(moved.spot(openedBy: n, over: defaults))
+        XCTAssertNil(SpotArrangement().spot(openedBy: ActionKey(name: "m", isCommand: true), over: defaults))
+        XCTAssertEqual(Config(text: "[[spots]]\nid = \"a\"\nkey = \"cmd+space+\"\n").faults, ["config.toml: a cannot use the key cmd+space+."])
+        XCTAssertTrue(mine.text.contains("key = \"cmd+n\""))
     }
 }

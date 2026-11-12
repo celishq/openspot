@@ -3,16 +3,17 @@ import Observation
 import OpenspotCore
 
 /// The state of the sandbox window. It reads a sheet from typed text, a file it watches, or a script that it runs through
-/// the same sheet as the panel.
+/// the same sheet as the panel. It reads, writes and watches the file away from the main thread.
 @MainActor
 @Observable
 final class SpotSandboxModel {
-    private static let watchPause: Duration = .milliseconds(500)
+    nonisolated private static let watchPause: Duration = .milliseconds(500)
 
     private(set) var sandbox = SheetSandbox()
     private let sheet: SpotRun?
     let file: URL?
-    @ObservationIgnored private var written: Date?
+    @ObservationIgnored private let disk: SpotSandboxFile?
+    @ObservationIgnored private var watch: Task<Void, Never>?
 
     var fileName: String? {
         file?.lastPathComponent
@@ -27,17 +28,20 @@ final class SpotSandboxModel {
         sheet?.panel ?? sandbox.panel
     }
 
-    init(path: String?) {
+    /// `isCareful` runs a script in Careful mode, with no use (Z8).
+    init(path: String?, isCareful: Bool = false) {
         let file = path.map { URL(fileURLWithPath: $0) }
         self.file = file
+        disk = file.map(SpotSandboxFile.init)
         if let file, FileManager.default.isExecutableFile(atPath: file.path) {
-            sheet = SpotRuns().sheet(for: SheetSandbox.command(file: file))
+            let runs = SpotRuns()
+            runs.isCareful = isCareful
+            sheet = runs.sheet(for: SheetSandbox.command(file: file))
         } else {
             sheet = nil
         }
         sheet?.onReport = { [weak self] in self?.take($0) }
-        reload()
-        watch()
+        startWatch()
     }
 
     nonisolated deinit {}
@@ -45,9 +49,8 @@ final class SpotSandboxModel {
     /// Takes text that a person typed, and saves it when the sandbox has a file.
     func edit(_ text: String) {
         sandbox.take(text: text)
-        guard let file, sheet == nil else { return }
-        try? text.write(to: file, atomically: true, encoding: .utf8)
-        written = Self.modified(file)
+        guard let disk, sheet == nil else { return }
+        Task.detached { await disk.write(text) }
     }
 
     func set(_ part: SpotPart, to value: String) {
@@ -60,6 +63,12 @@ final class SpotSandboxModel {
         sheet?.press(part)
     }
 
+    /// Stops the watch of the file and the script, once the window closes.
+    func close() {
+        watch?.cancel()
+        sheet?.close()
+    }
+
     private func take(_ report: SpotRun.Report) {
         switch report {
         case .frame(let text): sandbox.note(frame: text)
@@ -68,31 +77,26 @@ final class SpotSandboxModel {
         }
     }
 
-    /// Reads the file or runs the script again.
-    private func reload() {
-        guard let file else { return }
-        written = Self.modified(file)
-        if let sheet {
-            sheet.close()
-            sheet.open(need: .change) {}
-        } else {
-            sandbox.take(text: (try? String(contentsOf: file, encoding: .utf8)) ?? "")
-        }
-    }
-
-    /// Reads the file again each time something else changes it, such as a model that writes there.
-    private func watch() {
-        guard let file else { return }
-        Task { [weak self] in
+    /// Reads the file, or runs the script, at once and again each time something else changes the file.
+    private func startWatch() {
+        guard let disk else { return }
+        watch = Task.detached { [weak self] in
             while !Task.isCancelled {
+                if let text = await disk.change() {
+                    guard let self else { return }
+                    await self.reload(text)
+                }
                 try? await Task.sleep(for: Self.watchPause)
-                guard let self else { return }
-                if Self.modified(file) != self.written { self.reload() }
             }
         }
     }
 
-    private static func modified(_ file: URL) -> Date? {
-        (try? FileManager.default.attributesOfItem(atPath: file.path))?[.modificationDate] as? Date
+    private func reload(_ text: String) {
+        if let sheet {
+            sheet.close()
+            sheet.open(need: .change) {}
+        } else {
+            sandbox.take(text: text)
+        }
     }
 }

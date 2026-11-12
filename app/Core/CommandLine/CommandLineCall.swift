@@ -14,6 +14,28 @@ public enum CommandLineCall: Equatable, Sendable {
     case spotShow(String)
     /// Prints the record of the last calls of a spot.
     case spotLog(String)
+    /// Prints what each spot cost and used over the last days, for one spot or each one (Z10).
+    case spotStats(days: Int, spot: String?, format: StatsReport.Format)
+    /// Prints each script that the app loads as JSON, or with `core` each spot that comes with the app, and with `frame` as
+    /// `key=value` blocks (K8).
+    case spotList(core: Bool, frame: Bool)
+    /// Turns spots that come with the app on or off.
+    case spotTurn(ids: [String], on: Bool)
+    /// Puts a spot from a git URL, a folder or a `.spot` file in the plugins folder, or with none each spot of `spots.lock`
+    /// that is missing (N1, N2). An update that adds a use applies only when it is confirmed (Z7).
+    case spotAdd(String?, isConfirmed: Bool)
+    /// Takes a spot that `spot add` added out of the plugins folder.
+    case spotRemove(String)
+    /// Opens the panel on the sheet of a spot.
+    case spotOpen(String)
+    /// Shows the whole text of a spot that comes with the app.
+    case spotReview(String)
+    /// Opens the panel in Edit Spots with the store.
+    case spotStore
+    /// Runs the action of a spot's setting in the panel, as Enter on its row in Settings does.
+    case settingChange(spot: String, key: String)
+    /// Prints the prompt that asks a coding agent to build a spot that does what the words say.
+    case promptNew(String)
     /// Draws the sheet of an installed spot, or its card at a size.
     case renderSpot(id: String, size: SpotSize?, path: String)
     case checkSheet
@@ -28,11 +50,37 @@ public enum CommandLineCall: Equatable, Sendable {
     case settingGet(spot: String, key: String)
     /// Keeps the value of a spot's setting, or removes it with no value (K6).
     case settingSet(spot: String, key: String, value: String?)
+    /// Prints each value that a spot keeps, as JSON.
+    case settingList(frame: Bool)
+    /// Runs one call for each line of stdin, and prints the output of each with a line `---` after it (K7).
+    case batch
+    /// Gives the app a key of its own: `panel_key` opens the panel, and `fix_key` opens the fix of a failure.
+    case appKeySet(name: String, key: String)
+    /// Gives a command, or the float of a spot, a key or the shake, or takes its key away with none (W1, W2).
+    case keySet(spot: String, act: GlobalKey.Act, key: String?)
+    /// Puts a spot in the menu bar, or takes it out.
+    case menuBar(id: String, isShown: Bool)
+    /// Prints the state of the app as JSON: its version, its keys, its login and terminal settings, and its update.
+    case appStatus(frame: Bool)
+    /// Opens the app at login, or stops it.
+    case appLogin(Bool)
+    /// Puts `openspot` on the path of a terminal, or takes it off.
+    case appLink(Bool)
+    /// Turns Careful mode on or off (Z8).
+    case appCareful(Bool)
+    case appQuit
+    case updateCheck
+    /// Restarts the app into the downloaded update.
+    case updateInstall
     /// A call that cannot run here, with the line that says why and how to fix it.
     case refused(String)
     /// Copies a file, or the text on stdin with no file.
     case clipboardCopy(String?)
     case clipboardPaste
+    /// Prints the text on the clipboard.
+    case clipboardRead
+    /// Raises an event in the running app, with a value, so that each spot that lists it reads (B3).
+    case eventEmit(name: String, value: String?)
     case translate(from: String?, to: String?)
     case translateLanguages
     /// Prints the answer of a sum or a conversion as one row, or nothing for words that are not one.
@@ -80,7 +128,27 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot spot new <name> [--from kind]       Writes a working spot to change. A kind is button, list, number or form.
     openspot spot run <id> [call] [value]...     Makes one call of a spot as the app does, and prints all that it prints.
     openspot spot log <id>                       Prints the last calls that the app made to a spot.
+    openspot spot stats [--days n] [--spot id] [--frame|--json]
+                                                 Prints what each spot cost and used today, or over the last n days:
+                                                 its runs, failures, CPU time, disk bytes, wakeups, each call that needs
+                                                 a use and its last fault, then each such call. --frame prints a row for
+                                                 each spot and a use block for each call; --json prints the days.
     openspot spot show <id>                      Opens the panel with the spot selected.
+    openspot spot list [--core] [--frame]        Prints each spot that the app loads as JSON, with its commands, its
+                                                 settings and their keys. --core prints each spot that comes with the
+                                                 app, and whether it is on. --frame prints a spot=<id> block for each
+                                                 spot, with a command=<id> or setting=<id> block for each of its own.
+    openspot spot on|off <id>...                 Turns spots that come with the app on or off.
+    openspot spot add [git url | folder | file.spot] [--yes]
+                                                 Puts a spot in the plugins folder, a git one at its newest commit, and
+                                                 records it in spots.lock. A source that spots.lock has already updates
+                                                 its spot. With no source, it adds each spot of spots.lock that is
+                                                 missing, at its commit. An update that adds a use needs --yes.
+    openspot spot remove <id>                    Moves a spot that spot add added to the Trash, and drops it from spots.lock.
+    openspot spot open <id>                      Opens the panel on the sheet of a spot.
+    openspot spot review <id>                    Shows the whole text of a spot that comes with the app, and what of it
+                                                 runs by itself.
+    openspot spot store                          Opens the panel in Edit Spots with the store of spots.
     openspot check [--json] [folder]             Reports the faults of a plugins folder.
     openspot check --sheet                       Reports the faults of a sheet on stdin.
     openspot render [--view file] <file.png>     Draws the sheet on stdin to a picture, with its view from a Swift file.
@@ -92,8 +160,32 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot folder pick                         Prints the folder the person picks, or nothing after Cancel.
     openspot setting get [--spot id] <key>       Prints the value the person chose for the spot, or nothing.
     openspot setting set [--spot id] <key> [v]   Keeps a value for the spot, or removes it with no value.
+    openspot setting list [--frame]              Prints each value that a spot keeps as JSON, with its spot and key.
+                                                 --frame prints a setting=<key> block with spot and value for each.
+    openspot setting change [--spot id] <key>    Runs the action of the setting in the panel, which can ask with a form.
+    openspot prompt new <words>...               Prints a prompt that asks a coding agent to build a spot that does
+                                                 what the words say.
+    openspot key set --panel|--fix <key>         Gives the key that opens the panel, or the one that opens a fix.
+    openspot key set <id> <command>|--float [key]
+                                                 Gives a command of a spot, or its float, a key such as ctrl+option+k,
+                                                 or shake. With no key, it takes the key away.
+    openspot menubar on|off <id>                 Puts a spot in the menu bar, or takes it out.
+    openspot app status [--frame]                Prints the state of the app as JSON: version, panelKey, fixKey, login,
+                                                 link, update, calls and firstLaunch. --frame prints them as one block.
+    openspot batch                               Runs one call for each line of stdin, its words split at spaces, and
+                                                 prints the output of each with a line --- after it. It stops at the first
+                                                 call that fails, and takes only a call that the app answers.
+    openspot app login on|off                    Opens the app at login, or stops it.
+    openspot app link on|off                     Puts openspot on the path of Terminal, or takes it off.
+    openspot app careful on|off                  Runs each spot with only what its uses name, or as you.
+    openspot app quit                            Ends the running app.
+    openspot update check                        Asks for a new version of the app now.
+    openspot update install                      Restarts the app into the update that it downloaded.
     openspot clipboard copy [file]               Copies the file as Finder does, or the text on stdin.
     openspot clipboard paste                     Pastes the clipboard into the front app.
+    openspot clipboard read                      Prints the text on the clipboard, or nothing when it holds none.
+    openspot event emit <name> [value]           Raises an event in the running app, such as music.track. Each spot
+                                                 that lists it in its read reads, with the value in OPENSPOT_VALUE.
     openspot translate [--from code] [--to code] Translates the text on stdin.
     openspot translate languages                 Prints the languages it knows.
     openspot calc solve <words>...               Prints the answer of a sum, such as 2*(3+4) or 15% of 80, a conversion,
@@ -145,6 +237,11 @@ public enum CommandLineCall: Equatable, Sendable {
 
     private static let spotWord = "--spot"
 
+    /// Whether the words are flags of this set, each at most once.
+    private static func flags(_ words: ArraySlice<String>, within allowed: Set<String>) -> Bool {
+        Set(words).count == words.count && Set(words).isSubset(of: allowed)
+    }
+
     /// Returns nil when these arguments start the app, such as none or the flags that the system passes. The environment
     /// names the spot of a setting and tells a read, in which a command that waits for the person is refused (K4).
     public init?(arguments: [String], environment: [String: String] = ProcessInfo.processInfo.environment) {
@@ -174,6 +271,38 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("spot", "run") where rest.count >= 2: self = .spotRun(id: rest[1], arguments: Array(rest.dropFirst(2)))
         case ("spot", "show") where rest.count == 2: self = .spotShow(rest[1])
         case ("spot", "log") where rest.count == 2: self = .spotLog(rest[1])
+        case ("spot", "stats"): self = Self.stats(Array(rest.dropFirst())) ?? .unknown(arguments.joined(separator: " "))
+        case ("spot", "list") where Self.flags(rest.dropFirst(), within: ["--core", "--frame"]):
+            self = .spotList(core: rest.contains("--core"), frame: rest.contains("--frame"))
+        case ("spot", "on") where rest.count > 1, ("spot", "off") where rest.count > 1:
+            self = .spotTurn(ids: Array(rest.dropFirst()), on: rest[0] == "on")
+        case ("spot", "add") where rest.dropFirst().filter({ $0 != "--yes" }).count <= 1 && rest.filter({ $0 == "--yes" }).count <= 1:
+            self = Self.changing(.spotAdd(rest.dropFirst().first { $0 != "--yes" }, isConfirmed: rest.contains("--yes")), "openspot spot add", "changes your plugins folder", environment)
+        case ("spot", "remove") where rest.count == 2: self = Self.changing(.spotRemove(rest[1]), "openspot spot remove", "changes your plugins folder", environment)
+        case ("setting", "list") where Self.flags(rest.dropFirst(), within: ["--frame"]): self = .settingList(frame: rest.contains("--frame"))
+        case ("setting", "change"):
+            self = Self.setting(Array(rest.dropFirst()), sets: false, environment).map { call in
+                guard case .settingGet(let spot, let key) = call else { return call }
+                return Self.changing(.settingChange(spot: spot, key: key), "openspot setting change", "opens a form", environment)
+            } ?? .unknown(arguments.joined(separator: " "))
+        case ("spot", "open") where rest.count == 2: self = Self.changing(.spotOpen(rest[1]), "openspot spot open", "opens the panel", environment)
+        case ("spot", "review") where rest.count == 2: self = Self.changing(.spotReview(rest[1]), "openspot spot review", "opens the panel", environment)
+        case ("spot", "store") where rest.count == 1: self = Self.changing(.spotStore, "openspot spot store", "opens the panel", environment)
+        case ("prompt", "new") where rest.count > 1: self = .promptNew(rest.dropFirst().joined(separator: " "))
+        case ("key", "set"): self = Self.key(Array(rest.dropFirst())) ?? .unknown(arguments.joined(separator: " "))
+        case ("app", "status") where Self.flags(rest.dropFirst(), within: ["--frame"]): self = .appStatus(frame: rest.contains("--frame"))
+        case ("batch", nil): self = .batch
+        case ("app", "login") where rest == ["login", "on"] || rest == ["login", "off"]:
+            self = Self.changing(.appLogin(rest[1] == "on"), "openspot app login", "changes your Mac", environment)
+        case ("app", "careful") where rest == ["careful", "on"] || rest == ["careful", "off"]:
+            self = Self.changing(.appCareful(rest[1] == "on"), "openspot app careful", "changes how spots run", environment)
+        case ("app", "link") where rest == ["link", "on"] || rest == ["link", "off"]:
+            self = Self.changing(.appLink(rest[1] == "on"), "openspot app link", "changes your Mac", environment)
+        case ("app", "quit") where rest.count == 1: self = Self.changing(.appQuit, "openspot app quit", "ends Openspot", environment)
+        case ("update", "check") where rest.count == 1: self = Self.changing(.updateCheck, "openspot update check", "opens a window", environment)
+        case ("update", "install") where rest.count == 1: self = Self.changing(.updateInstall, "openspot update install", "restarts Openspot", environment)
+        case ("menubar", "on") where rest.count == 2, ("menubar", "off") where rest.count == 2:
+            self = .menuBar(id: rest[1], isShown: rest[0] == "on")
         case ("render", "--spot") where rest.count == 3: self = .renderSpot(id: rest[1], size: nil, path: rest[2])
         case ("render", "--spot") where rest.count == 5 && rest[2] == "--card":
             guard let size = SpotSize(name: rest[3]) else { self = .unknown(arguments.joined(separator: " ")); return }
@@ -199,6 +328,15 @@ public enum CommandLineCall: Equatable, Sendable {
             self = Self.setting(Array(rest.dropFirst()), sets: rest.first == "set", environment) ?? .unknown(arguments.joined(separator: " "))
         case ("clipboard", "copy") where rest.count <= 2: self = .clipboardCopy(rest.dropFirst().first)
         case ("clipboard", "paste") where rest.count == 1: self = .clipboardPaste
+        case ("clipboard", "read") where rest.count == 1: self = .clipboardRead
+        case ("event", "emit") where rest.count == 2 || rest.count == 3:
+            if !SpotEvent.isName(rest[1]) {
+                self = .refused("`\(rest[1])` is not an event. Name one with a dot, such as `music.track`, or `clipboard`.")
+            } else if environment["OPENSPOT_REASON"] == rest[1] {
+                self = .refused("`openspot event emit \(rest[1])` runs in a read of `\(rest[1])`, so it would read that spot again without end, and Openspot did not raise it. Raise it from an action, or raise another event.")
+            } else {
+                self = .eventEmit(name: rest[1], value: rest.count == 3 ? rest[2] : nil)
+            }
         case ("translate", "languages") where rest.count == 1: self = .translateLanguages
         case ("calc", "solve") where rest.count > 1: self = .calcSolve(rest.dropFirst().joined(separator: " "))
         case ("helper", let name?) where rest.count == 1: self = .helper(name)
@@ -310,6 +448,47 @@ public enum CommandLineCall: Equatable, Sendable {
         guard let key = words.first, !key.isEmpty, !key.hasPrefix("-"), words.count <= (sets ? 2 : 1) else { return nil }
         guard let spot else { return .refused("`openspot setting` needs a spot. Run it from a spot, or name one with `--spot <id>`.") }
         return sets ? .settingSet(spot: spot, key: key, value: words.dropFirst().first) : .settingGet(spot: spot, key: key)
+    }
+
+    /// Reads `[--days n] [--spot id] [--frame|--json]`, each at most once, or returns nil for anything else.
+    private static func stats(_ words: [String]) -> CommandLineCall? {
+        var days = 1
+        var spot: String?
+        var format = StatsReport.Format.text
+        var seen: Set<String> = []
+        var index = 0
+        while index < words.count {
+            let word = words[index]
+            guard seen.insert(["--frame", "--json"].contains(word) ? "format" : word).inserted else { return nil }
+            switch word {
+            case "--days":
+                guard index + 1 < words.count, let number = Int(words[index + 1]), number > 0 else { return nil }
+                days = min(number, SpotUsage.keptDays)
+                index += 1
+            case spotWord:
+                guard index + 1 < words.count else { return nil }
+                spot = words[index + 1]
+                index += 1
+            case "--frame": format = .frame
+            case "--json": format = .json
+            default: return nil
+            }
+            index += 1
+        }
+        return .spotStats(days: days, spot: spot, format: format)
+    }
+
+    /// Reads `--panel <key>`, `--fix <key>`, `<id> <command> [key]` or `<id> --float [key]`, or returns nil for anything else.
+    private static func key(_ words: [String]) -> CommandLineCall? {
+        switch words.first {
+        case "--panel" where words.count == 2: return .appKeySet(name: "panel_key", key: words[1])
+        case "--fix" where words.count == 2: return .appKeySet(name: "fix_key", key: words[1])
+        case let spot? where !spot.hasPrefix("-") && (words.count == 2 || words.count == 3):
+            let act: GlobalKey.Act = words[1] == "--float" ? .float : .command(words[1])
+            guard words[1] == "--float" || !words[1].hasPrefix("-") else { return nil }
+            return .keySet(spot: spot, act: act, key: words.count == 3 ? words[2] : nil)
+        default: return nil
+        }
     }
 
     /// Reads `[--days n]` and `--hide <id>`, which can repeat, or returns nil for anything else. Day 1 is today.

@@ -1,6 +1,6 @@
 #!/bin/sh
 # title=CPU
-# read=5
+# every=5
 history="${TMPDIR:-/tmp}/openspot-cpu"
 
 # Prints the use of all cores now, and the trend of the last points with the one of now. Only a read keeps the trend, so

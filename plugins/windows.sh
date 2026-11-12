@@ -2,6 +2,7 @@
 # title=Windows
 # icon=macwindow
 # detail=Give each command a key
+# uses=screen
 #
 # command=full
 # title=Full screen

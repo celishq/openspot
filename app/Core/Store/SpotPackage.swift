@@ -17,6 +17,19 @@ public struct SpotPackage: Equatable, Sendable {
             self.readme = readme
             self.preview = preview
         }
+
+        /// The files that an install puts in the plugins folder: the spot's, with its readme and its preview beside the file
+        /// of its first script, as `<name>.md` and `<name>.preview.txt`. A file of the spot at either path stays as it is.
+        public func installed() throws -> SharedSpot {
+            guard readme != nil || preview != nil, let primary = try ReviewSpot.primaryPath(of: spot) else { return spot }
+            let file = URL(fileURLWithPath: "/").appendingPathComponent(primary)
+            let beside = [(SpotListing.readme(of: file), readme), (SpotListing.preview(of: file), preview)].compactMap { url, text in
+                text.map { (path: String(url.path.dropFirst()), text: $0) }
+            }
+            let added = beside.filter { listed in !spot.files.contains { $0.path == listed.path } }
+                .map { SharedSpot.File(path: $0.path, isExecutable: false, contents: Data($0.text.utf8)) }
+            return try SharedSpot(files: spot.files + added)
+        }
     }
 
     public static let fileExtension = SharedSpot.fileExtension
@@ -79,7 +92,7 @@ public struct SpotPackage: Equatable, Sendable {
     public var listing: SpotListing {
         let readme = try? String(contentsOf: url.appendingPathComponent(Self.readmeName), encoding: .utf8)
         let preview = try? String(contentsOf: url.appendingPathComponent(Self.previewName), encoding: .utf8)
-        return SpotListing(description: value("description"), readme: readme?.trimmingCharacters(in: .whitespacesAndNewlines), preview: preview.map { PluginOutput(text: $0).items } ?? [])
+        return SpotListing(description: value("description"), readme: readme?.trimmingCharacters(in: .whitespacesAndNewlines), preview: preview.map { SpotOutput(text: $0).items } ?? [])
     }
 
     /// The readme and the preview as their text, for the files beside an installed spot.
@@ -91,12 +104,12 @@ public struct SpotPackage: Equatable, Sendable {
     public func spot() throws -> SharedSpot {
         let root = url.appendingPathComponent(Self.filesName, isDirectory: true).resolvingSymlinksInPath()
         guard let walk = FileManager.default.enumerator(at: root, includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey]) else {
-            throw PluginError.fault("The package \(url.lastPathComponent) has no files.")
+            throw SpotError.fault("The package \(url.lastPathComponent) has no files.")
         }
         var files: [SharedSpot.File] = []
         for case let file as URL in walk {
             let values = try file.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
-            guard values.isSymbolicLink != true else { throw PluginError.fault("The package \(url.lastPathComponent) holds a link, \(file.lastPathComponent).") }
+            guard values.isSymbolicLink != true else { throw SpotError.fault("The package \(url.lastPathComponent) holds a link, \(file.lastPathComponent).") }
             guard values.isRegularFile == true else { continue }
             let path = String(file.resolvingSymlinksInPath().path.dropFirst(root.path.count + 1))
             files.append(SharedSpot.File(path: path, isExecutable: FileManager.default.isExecutableFile(atPath: file.path), contents: try Data(contentsOf: file)))
@@ -121,20 +134,20 @@ public struct SpotPackage: Equatable, Sendable {
         let head = (try? FileHandle(forReadingFrom: url)).flatMap { try? $0.read(upToCount: 4) }
         guard head == Data([0x50, 0x4B, 0x03, 0x04]) else { return Contents(spot: try SharedSpot(contentsOf: url)) }
         let names = try run("/usr/bin/zipinfo", ["-1", url.path]).split(separator: "\n").map(String.init)
-        guard names.allSatisfy(isSafe(entry:)) else { throw PluginError.fault("This file holds a path that leaves its folder, so Openspot does not open it.") }
+        guard names.allSatisfy(isSafe(entry:)) else { throw SpotError.fault("This file holds a path that leaves its folder, so Openspot does not open it.") }
         let total = try run("/usr/bin/zipinfo", ["-t", url.path]).components(separatedBy: " bytes uncompressed").first?
             .split(separator: " ").last.flatMap { Int($0) } ?? .max
-        guard total <= limit else { throw PluginError.fault("This spot is over the \(limit / 1_000_000) MB limit.") }
+        guard total <= limit else { throw SpotError.fault("This spot is over the \(limit / 1_000_000) MB limit.") }
         let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-open-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: place) }
         _ = try run("/usr/bin/ditto", ["-x", "-k", url.path, place.path])
         for case let file as URL in FileManager.default.enumerator(at: place, includingPropertiesForKeys: [.isSymbolicLinkKey]) ?? FileManager.DirectoryEnumerator() {
             if try file.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink == true {
-                throw PluginError.fault("This file holds a link, \(file.lastPathComponent), so Openspot does not open it.")
+                throw SpotError.fault("This file holds a link, \(file.lastPathComponent), so Openspot does not open it.")
             }
         }
         let packages = try FileManager.default.contentsOfDirectory(at: place, includingPropertiesForKeys: nil).filter { $0.pathExtension == fileExtension }
-        guard packages.count == 1, let package = packages.first else { throw PluginError.fault("This file holds no spot.") }
+        guard packages.count == 1, let package = packages.first else { throw SpotError.fault("This file holds no spot.") }
         return try SpotPackage(url: package).contents()
     }
 
@@ -160,7 +173,7 @@ public struct SpotPackage: Equatable, Sendable {
         let data = output.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
         let text = String(decoding: data, as: UTF8.self)
-        guard process.terminationStatus == 0 else { throw PluginError.fault("Openspot cannot read this file. \(text)") }
+        guard process.terminationStatus == 0 else { throw SpotError.fault("Openspot cannot read this file. \(text)") }
         return text
     }
 

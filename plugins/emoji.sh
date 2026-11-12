@@ -4,6 +4,7 @@
 # detail=Copy an emoji or a symbol
 # size=small
 # read=sheet
+# uses=clipboard
 export LC_ALL=en_US.UTF-8
 saved="$OPENSPOT_DATA/tone"
 tones="none light medium-light medium medium-dark dark"
@@ -68,7 +69,7 @@ case "$1" in
     echo "toast=Copied"
     ;;
   paste)
-    previous=$(pbpaste; printf x)
+    previous=$(openspot clipboard read; printf x)
     printf '%s' "$2" | openspot clipboard copy
     openspot clipboard paste || exit 1
     sleep 0.3

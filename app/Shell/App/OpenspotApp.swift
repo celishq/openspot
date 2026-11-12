@@ -35,6 +35,8 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     private var update: AppUpdate?
     private var folderWatch: SpotFolderWatch?
     private var showListener: NSObjectProtocol?
+    private var commandSocket: CommandSocket?
+    private let mac = SpotMac()
     private var isLaunched = false
     private var openedAtLaunch: [URL] = []
     /// The window of each float, by the ID of its spot.
@@ -65,14 +67,18 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
             motionProbe = probe
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { probe.run(show: panel.show) }
         }
-        let update = AppUpdate(runningWork: { [model] in model.workCount }, onReady: { [model] in model.updateIsReady() })
+        let update = AppUpdate { [model] in model.updateIsReady($0) }
         self.update = update
-        model.updateSpot = update?.spot
+        let api = CommandAPI(mac: mac, raise: { [model] event in
+            await MainActor.run { model.runs.raise(event) }
+        }, app: SpotRunningApp(model: model, update: update), runs: model.runs)
+        model.runs.api = api
+        commandSocket = CommandSocket(folder: ConfigFile.standard().url.deletingLastPathComponent(), api: api)
         model.reload()
         folderWatch = SpotFolderWatch(folder: model.files.folder.url) { [weak self] in self?.model.folderChanged() }
         try? AgentNote(command: Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/openspot").path).write(in: model.files.folder.url)
         showListener = SpotShowLink.listen { [weak self] id in self?.model.reveal(id) ?? false }
-        let isFirstLaunch = PluginFolder.standard().isFirstLaunch(config: .standard())
+        let isFirstLaunch = SpotFolder.standard().isFirstLaunch(config: .standard())
         panel?.warm { [weak self] in
             guard let self else { return }
             SpotSheetWarmth.draw()
@@ -85,12 +91,11 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
         isLaunched = true
         if !openedAtLaunch.isEmpty { model.review(openedAtLaunch) }
-        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(didWake), name: NSWorkspace.didWakeNotification, object: nil)
+        model.runs.listen(to: mac)
     }
 
     /// Takes what the config file asks for. A key that macOS refuses leaves the current one in use, and the person sees why.
-    func applyConfig() {
-        let config = ConfigFile.standard().read()
+    func applyConfig(_ config: Config) {
         var faults = config.faults
         let key = config.panelKey ?? model.entryKey
         if hotKey == nil || key != model.entryKey {
@@ -180,11 +185,8 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         folderWatch?.stop()
+        commandSocket?.close()
         model.quit()
-    }
-
-    @objc private func didWake() {
-        model.woke()
     }
 
     /// A click on the Openspot item goes to running work, if any shows (G3).
@@ -237,12 +239,12 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     }
 
     /// Closes the panel and asks the person for files. Afterwards the app that was in front comes back.
-    func chooseFiles(for command: Spot, then take: @escaping ([String]) -> Void) {
+    func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {
         guard fileChooser == nil else { return }
         let previous = model.isShown && !model.isWarming ? previousApp : NSWorkspace.shared.frontmostApplication
         if model.isShown { panel?.hide() }
         NSApp.activate(ignoringOtherApps: true)
-        let chooser = SpotFileChooser(command: command)
+        let chooser = SpotFileChooser(spot: spot)
         fileChooser = chooser
         chooser.show { [weak self] paths in
             self?.fileChooser = nil
