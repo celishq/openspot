@@ -7,6 +7,8 @@ import Observation
     var panel = CGPoint.zero
     /// The dock's frame, while Edit Spots shows it.
     var dock: CGRect?
+    /// The size of the store once Edit Spots has built it. The store stays built outside the window while Edit Spots is off.
+    var storeSize: CGSize?
     var isOut = false
     /// How far below its place the panel is drawn, while it glides to its place in Edit Spots or back from it.
     var lift: CGFloat = 0

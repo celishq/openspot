@@ -59,7 +59,7 @@ enum SpotCardPicture {
         let draw = {
             let card = CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))
             let shown = model.entries.first { $0.id == id } ?? entry
-            let view = NSHostingView(rootView: SpotCardView(entry: shown, size: size, index: -1, isPressed: false, takesDrag: false, isDropTarget: false, chainLetter: nil, showsChain: false, model: model)
+            let view = NSHostingView(rootView: SpotCardView(entry: shown, size: size, index: -1, isPressed: false, takesDrag: false, isDropTarget: false, chainLetter: nil, model: model)
                 .environment(\.spotIsShown, true)
                 .padding(margin)
                 .background(SpotTheme.window)

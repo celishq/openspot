@@ -65,6 +65,15 @@ final class SpotDockTests: XCTestCase {
         XCTAssertEqual(SpotDock.Step.allCases.map(\.title), ["Open", "Add", "Add to Grid", "Publish"])
     }
 
+    func testABandOfTheRowsKeepsOnlyTheSpotsWhoseRowsReachIntoIt() {
+        let dock = dock
+        let first = dock.rects[0]
+
+        XCTAssertEqual(dock.shownIndices(within: first.minY...first.maxY), [0, 1])
+        XCTAssertEqual(dock.shownIndices(within: dock.groups[1].top...dock.height), [3, 4])
+        XCTAssertEqual(dock.shownIndices(within: -100...dock.height + 100), Array(dock.shown.indices))
+    }
+
     func testTheRowsLieTwoToALineOfTheGridsWidthUnderTheirTitlesWithAGapForALineBeforeEachLaterGroup() {
         let rects = dock.rects
         let band = SpotTokens.groupTitleBand, line = SpotTokens.rowHeight + SpotTokens.rowGap, gap = SpotTokens.groupGap

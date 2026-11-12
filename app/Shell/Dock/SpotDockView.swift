@@ -11,6 +11,8 @@ struct SpotDockView: View {
     @FocusState private var isSearching: Bool
     @State private var edges = SpotScrollEdges()
     @State private var scroll = ScrollPosition()
+    /// How many lines of rows the scroll has passed, which sets the band of rows that is built.
+    @State private var passedLines = 0
 
     var body: some View {
         let dock = model.dock
@@ -33,12 +35,13 @@ struct SpotDockView: View {
                         }
                         .offset(y: group.top)
                     }
-                    ForEach(Array(zip(dock.shown, rects)), id: \.0.id) { item, rect in
+                    ForEach(dock.shownIndices(within: builtBand).map { (dock.shown[$0], rects[$0]) }, id: \.0.id) { item, rect in
                         SpotStoreRow(item: item)
                             .equatable()
                             .simultaneousGesture(carry(item), isEnabled: item.state != .onGrid)
                             .animation(nil) { $0.opacity(model.carry?.entry.id == item.id ? 0.001 : 1) }
                             .offset(x: rect.minX, y: rect.minY)
+                            .transition(.identity)
                     }
                     if let sheet = dock.sheetRect, let index = dock.shown.firstIndex(where: { $0.id == dock.opened }), let listing = model.dockListing {
                         let row = rects[index]
@@ -57,7 +60,11 @@ struct SpotDockView: View {
                 .padding(.vertical, origin.y)
             }
             .scrollPosition($scroll)
-            .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in model.dockScrolled(to: offset) })
+            .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }, action: { _, offset in
+                model.dockScrolled(to: offset)
+                let lines = max(Int(offset / Self.line), 0)
+                if lines != passedLines { passedLines = lines }
+            })
             .modifier(SpotScrollEdgeTracker(edges: $edges))
             .mask(edgeFade)
             .frame(width: size.width - origin.x + SpotTokens.columnGap)
@@ -74,6 +81,7 @@ struct SpotDockView: View {
         .modifier(SpotGlass(rimSize: size))
         .onChange(of: dock.isSheetOut) { _, isOut in if isOut { reveal(dock.opened) } }
         .onChange(of: isSearching) { _, isOn in model.searchesDock(isOn) }
+        .onChange(of: model.isEditing) { _, isOn in if !isOn { scroll.scrollTo(y: 0) } }
         .onChange(of: model.isSearchingDock) { _, isOn in if !isOn { isSearching = false } }
     }
 
@@ -106,6 +114,15 @@ struct SpotDockView: View {
     }
 
     private static let tintEdge = (SpotDock.rowsOrigin.x - SpotTokens.columnGap / 2).rounded()
+
+    private static let line = SpotTokens.rowHeight + SpotTokens.rowGap
+
+    /// The band of the rows that is built: the part the store shows, and a line more on each side, so that a scroll finds
+    /// its next rows built.
+    private var builtBand: ClosedRange<CGFloat> {
+        let top = CGFloat(passedLines) * Self.line
+        return (top - Self.line)...(top + size.height + Self.line)
+    }
 
     /// The fade of the rows at each end, as strong as the rows have scrolled past that end, as on the panel's grid.
     private var edgeFade: some View {

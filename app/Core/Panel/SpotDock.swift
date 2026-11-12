@@ -184,6 +184,12 @@ public struct SpotDock: Equatable, Sendable {
         (rects.map(\.maxY) + [isSheetOut ? sheetRect?.maxY : nil].compactMap { $0 }).max() ?? 0
     }
 
+    /// The places in `shown` of the spots whose rows reach into this band of the rows.
+    public func shownIndices(within band: ClosedRange<CGFloat>) -> [Int] {
+        let rects = rects
+        return rects.indices.filter { rects[$0].maxY >= band.lowerBound && rects[$0].minY <= band.upperBound }
+    }
+
     /// The shown spot and the part of its row under a point of the rows, if any.
     public func part(at point: CGPoint) -> (id: String, part: Part)? {
         let rects = rects

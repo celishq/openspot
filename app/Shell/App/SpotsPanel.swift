@@ -104,6 +104,7 @@ final class SpotsPanel: NSPanel {
             place.panel = CGPoint(x: lifted.minX - whole.minX, y: whole.maxY - lifted.maxY)
             place.lift = edit.lift
             place.dock = CGRect(x: edit.dock.minX - whole.minX, y: whole.maxY - edit.dock.maxY, width: edit.dock.width, height: edit.dock.height)
+            place.storeSize = edit.dock.size
             place.isOut = false
             model.dockFrame = place.dock?.offsetBy(dx: -place.panel.x, dy: -place.panel.y)
             resize(to: whole)

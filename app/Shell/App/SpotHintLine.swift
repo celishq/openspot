@@ -2,8 +2,8 @@ import OpenspotCore
 import SwiftUI
 
 /// The hint under the grid and the hint under the sheet. Each stays at its own place and keeps the words it last showed, so
-/// that one fades out with its words before the other fades in. It alone reads the model's hint, so a change of the words
-/// reruns this view and not the panel.
+/// that one fades out with its words before the other fades in. New words at one place cross-fade with the old ones, each
+/// laid out once. It alone reads the model's hint, so a change of the words reruns this view and not the panel.
 struct SpotHintLine: View {
     let model: SpotsModel
     /// Whether a sheet is out or a drop is taken, which sets the time of each fade and which hint shows.
@@ -34,11 +34,16 @@ struct SpotHintLine: View {
     }
 
     private func hint(_ words: String, isShown: Bool, height: CGFloat) -> some View {
-        SpotHint(text: words, activeKey: model.menu == nil ? nil : ActionMenu.key, onPress: model.pressHint)
-            .frame(width: SpotTokens.panelWidth)
-            .allowsHitTesting(isShown)
-            .offset(y: height - SpotTokens.halo - SpotTokens.hintPillHeight)
-            .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: isShown)) { $0.opacity(isShown ? 1 : 0) }
+        ZStack {
+            ForEach([words], id: \.self) { words in
+                SpotHint(text: words, activeKey: model.menu == nil ? nil : ActionMenu.key, onPress: model.pressHint)
+                    .transition(.opacity)
+            }
+        }
+        .frame(width: SpotTokens.panelWidth)
+        .allowsHitTesting(isShown)
+        .offset(y: height - SpotTokens.halo - SpotTokens.hintPillHeight)
+        .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: isShown)) { $0.opacity(isShown ? 1 : 0) }
     }
 
     /// What the hint says while a sheet shows: a form has its own keys.
