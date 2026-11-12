@@ -301,8 +301,8 @@ effects of the frame.
 
 The main block stands for the spot on its card and in the menu bar.
 
-- `main=<id>` in the head names it. Without `main=`, the main block is the only `text`, `number`, `graph` or slider in
-  the frame.
+- `main=<id>` in the head names it. Without `main=`, the main block is the only `text`, `number`, `graph`, `switch` or
+  slider in the frame.
 - The menu bar and a card of other spots show a main `text`, `number` or `graph`.
 - `active=true` in the head shows on the card that the spot's thing is on, and `active=false` that it is off.
 - A spot has a sheet when its header has `on=sheet.open`, `on=sheet.text`, a `clock`, `offers=search`, or `mode=stay` or

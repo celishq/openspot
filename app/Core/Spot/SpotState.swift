@@ -70,14 +70,15 @@ public struct SpotState: Equatable, Sendable {
         return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, values: values, control: control, face: face)
     }
 
-    /// This state with what a frame of a running call changes: the value of its card's control, or of its value.
+    /// This state with what a frame of a running call changes: whether its card's switch is on, and the level of its
+    /// card's slider or of its main slider.
     /// Its words stay the spot's own.
     public func taking(_ output: SpotOutput) -> SpotState {
         var on = self.on
         var level = self.level
-        let part = output.parts.first { $0.id == control } ?? output.valuePart
+        let part = output.parts.first { $0.id == control }
         if case .toggle(let value)? = part?.control { on = value }
-        if case .slider(let value, _, _)? = part?.control { level = value }
+        if case .slider(let value, _, _)? = (part ?? output.valuePart)?.control { level = value }
         return SpotState(title: title, subtitle: subtitle, on: on, level: level, min: self.min, max: self.max, isOnGrid: isOnGrid, values: values, control: control, face: face)
     }
 
