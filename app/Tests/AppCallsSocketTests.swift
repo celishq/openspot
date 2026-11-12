@@ -166,13 +166,13 @@ final class AppCallsSocketTests: XCTestCase {
     }
 
     func testACheckAsJSONInTheAppNamesEachFault() async throws {
-        try spot("weather", header: "size=huge", "echo")
+        try spot("weather", header: "mode=huge", "echo")
         listen()
 
         let answer = try ask(["check", "--json"])
 
         let json = try JSONSerialization.jsonObject(with: Data(answer.stdout.utf8)) as? [[String: String]]
-        XCTAssertEqual(json?.map { $0["fault"] }, ["Weather has an unknown size: huge"])
+        XCTAssertEqual(json?.map { $0["fault"] }, ["Weather has an unknown mode: huge. Use once, stay or always"])
         XCTAssertEqual(answer.code, 1)
     }
 

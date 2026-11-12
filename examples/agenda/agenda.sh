@@ -2,7 +2,6 @@
 # title=Agenda
 # icon=calendar
 # detail=Today and tomorrow, with your reminders
-# size=large
 # on=panel.open
 # on=sheet.text
 # on=clock.60

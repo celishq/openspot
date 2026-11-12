@@ -59,8 +59,6 @@ public struct SpotFile: Equatable, Sendable {
             throw SpotError.fault("\(name) is a .js file, which runs inline, so it takes no mode=\(modeName)")
         }
         let mode = isInline ? SpotMode.inline : named
-        let sizeName = header.value("size") ?? "wide"
-        guard let size = SpotSize(name: sizeName) else { throw SpotError.fault("\(name) has an unknown size: \(sizeName)") }
         let places = try Self.places(header.value("offers"), of: name)
         let isGlobal = places.contains("search")
         if isGlobal {
@@ -96,7 +94,6 @@ public struct SpotFile: Equatable, Sendable {
             name: name,
             url: url,
             kind: kind,
-            size: size,
             symbol: symbol ?? "app",
             subtitle: header.value("detail"),
             read: read,
@@ -186,6 +183,7 @@ public struct SpotFile: Equatable, Sendable {
         }
         try refuseLetter(header.value("shortcut"), of: name)
         try refuseKeyword(header, of: name)
+        try refuseSize(header, of: name)
     }
 
     /// Refuses a letter that a file names, because the person gives each spot its letter.
@@ -198,6 +196,12 @@ public struct SpotFile: Equatable, Sendable {
     private static func refuseKeyword(_ header: TextBlock, of name: String) throws {
         guard let keyword = header.value("keyword") else { return }
         throw SpotError.fault("\(name) has keyword=\(keyword), which Openspot no longer reads. Write keywords=a, b")
+    }
+
+    /// Refuses a `size` line, because the person sizes each card.
+    private static func refuseSize(_ header: TextBlock, of name: String) throws {
+        guard let size = header.value("size") else { return }
+        throw SpotError.fault("\(name) has size=\(size), which Openspot no longer reads. Openspot sizes a card by the person's choice, so remove it")
     }
 
     /// A path that the header names: a full path or an https URL stays, and any other starts at the folder of the script.
@@ -220,13 +224,14 @@ public struct SpotFile: Equatable, Sendable {
     /// A spot whose header draws its card from other spots: each word of its `grid.<size>` lines is the ID of a spot, whose
     /// main block shows in that area, and `to` names the spot that a press opens.
     /// The keys beside its `grid.<size>` lines that a header of a card of other spots takes (protocol: Cards of other spots).
-    private static let cardKeys: Set<String> = ["title", "icon", "detail", "keywords", "size", "to"]
+    private static let cardKeys: Set<String> = ["title", "icon", "detail", "keywords", "to"]
 
     private static func drawn(_ header: TextBlock, name: String, id: String, url: URL) throws -> Spot {
         try refuseLetter(header.value("shortcut"), of: name)
         try refuseKeyword(header, of: name)
+        try refuseSize(header, of: name)
         if let key = header.fields.map(\.key).first(where: { !$0.hasPrefix(drawingPrefix) && !cardKeys.contains($0) }) {
-            throw SpotError.fault("\(name) draws a card of other spots, so it takes no \(key). Keep title, icon, detail, keywords, size, to and its grid lines, or draw its own blocks with grid lines in its output")
+            throw SpotError.fault("\(name) draws a card of other spots, so it takes no \(key). Keep title, icon, detail, keywords, to and its grid lines, or draw its own blocks with grid lines in its output")
         }
         let keys = Set(header.fields.map(\.key).filter { $0.hasPrefix(drawingPrefix) })
         guard keys.count == 1, let key = keys.first else {

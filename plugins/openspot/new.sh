@@ -2,7 +2,6 @@
 # title=New spot
 # icon=plus
 # detail=Make your own
-# size=small
 # on=sheet.open
 # on=sheet.text
 # uses=spots,clipboard

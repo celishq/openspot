@@ -11,6 +11,7 @@ extension SpotsModel {
         /// Whether its row is an answer of its spot to the text of the main search (protocol: Places).
         public let isAnswer: Bool
         private let sizeChoice: SpotSize?
+        private let defaultSize: SpotSize?
         private let run: SpotRun?
         private let fixedSpot: Spot
         private let fixedState: SpotState
@@ -21,6 +22,7 @@ extension SpotsModel {
         public init(spot: Spot, run: SpotRun?, choice: SpotArrangement = SpotArrangement(), defaults: SpotArrangement = SpotArrangement(), letter: CommandKey? = nil) {
             id = spot.id
             sizeChoice = choice.size(of: spot.id)
+            defaultSize = defaults.size(of: spot.id)
             gridChoice = choice.isOnGrid(of: spot.id) ?? defaults.isOnGrid(of: spot.id)
             self.letter = letter
             item = nil
@@ -35,6 +37,7 @@ extension SpotsModel {
         public init(spot: Spot, item: SpotItem, isAnswer: Bool = false) {
             id = "\(spot.id)\n\(item.run)"
             sizeChoice = item.card?.face.answerSize ?? .strip
+            defaultSize = nil
             gridChoice = nil
             letter = nil
             self.item = item
@@ -53,10 +56,10 @@ extension SpotsModel {
             sizeChoice != nil
         }
 
-        /// The size of its card: the person's choice, or else its header (protocol: The header). A card of a fault is never small, so that its
-        /// words show.
+        /// The size of its card: the person's choice, else the default config's, else its own. A card of a fault is never
+        /// small, so that its words show.
         @MainActor public var size: SpotSize {
-            let size = sizeChoice ?? spot.size
+            let size = sizeChoice ?? defaultSize ?? spot.size
             return spot.fault != nil && size == .small ? .wide : size
         }
 

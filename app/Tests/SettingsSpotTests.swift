@@ -25,7 +25,7 @@ final class SettingsSpotTests: BuiltInCase {
 
         XCTAssertEqual(spot.name, "Settings")
         XCTAssertEqual(spot.subtitle, "Choose your key")
-        XCTAssertEqual(spot.size, .small)
+        XCTAssertEqual(defaults.arrangement.size(of: spot.id), .small)
         XCTAssertEqual(spot.kind, .list)
         XCTAssertTrue(spot.isGlobal)
         XCTAssertTrue(spot.isFound)

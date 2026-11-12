@@ -207,9 +207,9 @@ final class WidgetContractTests: XCTestCase {
 
     func testACardOfOtherSpotsRefusesAKeyOfASpotThatRuns() throws {
         try power()
-        try widget(more: "# icon=cpu\n# detail=Now\n# keywords=load\n# size=large\n# on=clock.60\n")
+        try widget(more: "# icon=cpu\n# detail=Now\n# keywords=load\n# on=clock.60\n")
 
-        XCTAssertEqual(try scan.refused.first?.reason, "Now draws a card of other spots, so it takes no on. Keep title, icon, detail, keywords, size, to and its grid lines, or draw its own blocks with grid lines in its output")
+        XCTAssertEqual(try scan.refused.first?.reason, "Now draws a card of other spots, so it takes no on. Keep title, icon, detail, keywords, to and its grid lines, or draw its own blocks with grid lines in its output")
     }
 
     func testAWidgetThatNamesAMissingMetricIsLeftOutAndReported() throws {
@@ -302,11 +302,11 @@ final class WidgetContractTests: XCTestCase {
 
     func testTheCheckReportsARefusedHeaderAndABadMetric() async throws {
         try power("echo nonsense")
-        try script("broken.sh", "#!/bin/sh\n# size=huge\n")
+        try script("broken.sh", "#!/bin/sh\n# mode=huge\n")
 
         let faults = await SpotCheck(folder: SpotFolder(url: folder)).faults()
 
-        XCTAssertEqual(faults, ["broken: Broken has an unknown size: huge", "power: It sent a metric Openspot cannot read."])
+        XCTAssertEqual(faults, ["broken: Broken has an unknown mode: huge. Use once, stay or always", "power: It sent a metric Openspot cannot read."])
     }
 
     func testTheCheckReportsAListThatFails() async throws {

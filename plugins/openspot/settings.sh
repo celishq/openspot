@@ -2,7 +2,6 @@
 # title=Settings
 # icon=gearshape
 # detail=Choose your key
-# size=small
 # on=panel.open
 # on=sheet.open
 # offers=search

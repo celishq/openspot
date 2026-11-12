@@ -1,7 +1,6 @@
 #!/bin/sh
 # icon=cup.and.saucer.fill
 # detail=Keep the Mac awake
-# size=small
 # on=panel.open
 record="${TMPDIR:-/tmp}/openspot-caffeinate"
 pid=""

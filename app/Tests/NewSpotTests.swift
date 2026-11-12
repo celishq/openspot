@@ -35,7 +35,7 @@ final class NewSpotTests: BuiltInCase {
 
         XCTAssertEqual(spot.name, "New spot")
         XCTAssertEqual(spot.kind, .list)
-        XCTAssertEqual(spot.size, .small)
+        XCTAssertEqual(defaults.arrangement.size(of: spot.id), .small)
         XCTAssertTrue(spot.isOnGrid)
         XCTAssertEqual(SpotArrangement().spot(openedBy: ActionKey(name: "n", isCommand: true), over: defaults.arrangement), spot.id)
     }

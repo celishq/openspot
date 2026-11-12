@@ -144,13 +144,13 @@ final class SpotFolderTests: XCTestCase {
     }
 
     func testAnExecutableIsASpotWithItsHeader() throws {
-        try write("one.sh", header: "title=First\nsize=square\nicon=moon\ndetail=Off")
+        try write("one.sh", header: "title=First\nicon=moon\ndetail=Off")
 
         XCTAssertEqual(try scan.refused, [])
         let one = try XCTUnwrap(try scan.spots.first)
         XCTAssertEqual(one.id, "one")
         XCTAssertEqual(one.name, "First")
-        XCTAssertEqual(one.size, .square)
+        XCTAssertEqual(one.size, .wide)
         XCTAssertEqual(one.symbol, "moon")
         XCTAssertEqual(one.subtitle, "Off")
         XCTAssertEqual(one.url.lastPathComponent, "one.sh")
@@ -378,7 +378,7 @@ final class SpotFolderTests: XCTestCase {
 
     func testRefusesAHeaderWithAFault() throws {
         try write("a.sh", header: "read=sometimes")
-        try write("b.sh", header: "size=huge")
+        try write("b.sh", header: "mode=huge")
         try write("c.sh", header: "shortcut=ctrl+d")
         try write("f.sh", header: "offers=search")
         try write("h.sh", header: "on=sheet.open\noffers=search")
@@ -389,7 +389,7 @@ final class SpotFolderTests: XCTestCase {
         XCTAssertEqual(try scan.files, [])
         XCTAssertEqual(try scan.refused, [
             ScanResult.Refusal(file: "a", reason: "A has read=sometimes, which Openspot no longer reads. Write an event, such as on=sheet.open"),
-            ScanResult.Refusal(file: "b", reason: "B has an unknown size: huge"),
+            ScanResult.Refusal(file: "b", reason: "B has an unknown mode: huge. Use once, stay or always"),
             ScanResult.Refusal(file: "c", reason: "C has shortcut, which Openspot no longer reads. The person gives each spot its letter in Edit Spots"),
             ScanResult.Refusal(file: "f", reason: "F needs on=panel.open or a clock, such as on=clock.60, to join the main search"),
             ScanResult.Refusal(file: "h", reason: "H needs on=panel.open or a clock, such as on=clock.60, to join the main search"),

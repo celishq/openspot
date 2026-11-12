@@ -2,7 +2,6 @@
 # title=Emojis & Symbols
 # icon=face.smiling
 # detail=Copy an emoji or a symbol
-# size=small
 # on=sheet.open
 # uses=clipboard
 export LC_ALL=en_US.UTF-8

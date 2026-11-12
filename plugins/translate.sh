@@ -1,7 +1,6 @@
 #!/bin/sh
 # icon=translate
 # detail=Between languages
-# size=small
 # on=sheet.open
 # uses=clipboard
 . "$OPENSPOT_SH"

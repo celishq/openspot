@@ -3,7 +3,6 @@
 # icon=battery.100
 # detail=The battery as a liquid, drawn by a Metal shader
 # on=panel.open
-# size=strip
 # view=battery.swift
 [ "$1" = read ] || exit 0
 line=$(pmset -g batt | grep -E '[0-9]+%')

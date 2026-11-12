@@ -1,7 +1,6 @@
 #!/bin/sh
 # icon=/System/Applications/Shortcuts.app
 # detail=Run a shortcut
-# size=small
 # on=panel.open
 # offers=search
 # drop=*

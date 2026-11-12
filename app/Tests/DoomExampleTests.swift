@@ -363,8 +363,4 @@ final class DoomExampleTests: SamplePluginsCase {
             XCTAssertEqual(self.lines("played", in: folder).first, "old -iwad \(self.data(in: folder).path)/doom1.wad")
         }
     }
-
-    func testTheCardIsSquareTheSizeNearestToTheShapeOfTheGameScreen() throws {
-        XCTAssertEqual(try example("Doom").size, .square)
-    }
 }

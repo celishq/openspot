@@ -71,6 +71,18 @@ final class SpotHeaderTests: XCTestCase {
         XCTAssertEqual(spot.keywords, ["countdown", "pomodoro timer"])
     }
 
+    func testASizeLineRefusesThePluginAndNamesItsFix() throws {
+        for header in ["title=Timer\n# size=small", "title=Timer\n# grid.small=cpu\n# size=small"] {
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-size-\(UUID().uuidString)")
+            try "#!/bin/sh\n# \(header)\n".writeScript(to: url)
+            defer { try? FileManager.default.removeItem(at: url) }
+
+            XCTAssertThrowsError(try SpotFile(file: url, id: "timer"), header) { error in
+                XCTAssertEqual((error as? SpotError)?.reason, "Timer has size=small, which Openspot no longer reads. Openspot sizes a card by the person's choice, so remove it", header)
+            }
+        }
+    }
+
     func testAKeywordLineRefusesThePluginAndNamesTheList() throws {
         for header in ["title=Timer\n# keyword=countdown", "grid.small=cpu\n# keyword=load"] {
             let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-keyword-\(UUID().uuidString)")

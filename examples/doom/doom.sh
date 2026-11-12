@@ -3,7 +3,6 @@
 # icon=gamecontroller
 # detail=Play the first episode of Doom
 # on=panel.open
-# size=square
 # view=screen.swift
 # uses=network
 . "$OPENSPOT_SH"

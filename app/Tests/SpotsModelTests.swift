@@ -137,6 +137,22 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertEqual(ordered.entries.map(\.id), ["b", "d", "c", "a"])
     }
 
+    func testTheDefaultConfigSizesASpotUnderThePersonsSize() throws {
+        try script("a", header: "title=A", "")
+        try script("b", header: "title=B", "")
+        try script("c", header: "title=C", "")
+        let defaults = folder.appendingPathComponent("defaults.toml")
+        try "[[spots]]\nid = \"a\"\nsize = \"small\"\n\n[[spots]]\nid = \"b\"\nsize = \"small\"\n".write(to: defaults, atomically: true, encoding: .utf8)
+        let files = SpotFiles(environment: model.files.environment, home: folder, defaults: self.defaults, defaultConfig: defaults)
+        let sized = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
+        defer { sized.quit() }
+        try sized.files.config.write(SpotArrangement(choices: [SpotArrangement.Choice(id: "b", size: .large)]))
+
+        sized.reload()
+
+        XCTAssertEqual(Dictionary(uniqueKeysWithValues: sized.entries.map { ($0.id, $0.size) }), ["a": .small, "b": .large, "c": .wide])
+    }
+
     func testADownloadedUpdateReadsEachSpotThatListsItWhileThePanelIsHidden() async throws {
         let seen = folder.appendingPathComponent("seen").path
         try script("news", header: "on=panel.open\non=app.update", "[ \"$OPENSPOT_REASON\" = app.update ] && printf '%s' \"$OPENSPOT_VALUE\" > '\(seen)'; printf 'title=News\n'")
@@ -375,13 +391,13 @@ final class SpotsModelTests: XCTestCase {
         XCTAssertFalse(host.motions.isEmpty)
     }
 
-    func testASizeInAReadLeavesTheCardAtTheSizeOfItsHeader() async throws {
-        try script("grow", header: "on=panel.open\nsize=small", "printf 'detail=Read\\nsize=large\\n'")
+    func testASizeInAReadLeavesTheCardAtItsDefaultSize() async throws {
+        try script("grow", header: "on=panel.open", "printf 'detail=Read\\nsize=large\\n'")
         model.reload()
         model.panelWillShow(holding: [])
         try await wait("the read") { model.visible.first?.state.subtitle == "Read" }
 
-        XCTAssertEqual(model.visible.first?.size, .small)
+        XCTAssertEqual(model.visible.first?.size, .wide)
     }
 
     func testASubmitThatEndsAfterThePersonOpenedANewFormLeavesTheNewForm() async throws {

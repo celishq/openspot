@@ -1,7 +1,6 @@
 #!/bin/sh
 # icon=text.quote
 # detail=Copy text
-# size=small
 # on=panel.open
 # offers=search
 # uses=clipboard

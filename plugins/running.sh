@@ -2,7 +2,6 @@
 # title=Running spots
 # icon=gauge.with.dots.needle.33percent
 # detail=What each spot costs
-# size=small
 # on=sheet.open
 frame=$(openspot spot stats --frame) || exit 1
 stats=$(printf '%s\n' "$frame" | awk 'BEGIN { RS = ""; ORS = "\n\n" } /^row=/')

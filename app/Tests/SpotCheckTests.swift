@@ -17,13 +17,13 @@ final class SpotCheckTests: XCTestCase {
 
     func testAFindingNamesItsSpotItsFileAndItsFault() async throws {
         let file = folder.appendingPathComponent("weather.sh")
-        try "#!/bin/sh\n# size=huge\necho\n".writeScript(to: file)
+        try "#!/bin/sh\n# mode=huge\necho\n".writeScript(to: file)
 
         let findings = await SpotCheck(folder: SpotFolder(url: folder)).findings()
 
-        XCTAssertEqual(findings, [SpotCheck.Finding(spot: "weather", file: file.path, fault: "Weather has an unknown size: huge")])
+        XCTAssertEqual(findings, [SpotCheck.Finding(spot: "weather", file: file.path, fault: "Weather has an unknown mode: huge. Use once, stay or always")])
         let json = try JSONSerialization.jsonObject(with: Data(SpotCheck.json(findings).utf8)) as? [[String: String]]
-        XCTAssertEqual(json, [["spot": "weather", "file": file.path, "fault": "Weather has an unknown size: huge"]])
+        XCTAssertEqual(json, [["spot": "weather", "file": file.path, "fault": "Weather has an unknown mode: huge. Use once, stay or always"]])
     }
 
     func testStayIsAFaultThatNamesTheMode() async throws {

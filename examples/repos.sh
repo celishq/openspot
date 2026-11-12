@@ -1,7 +1,6 @@
 #!/bin/sh
 # icon=arrow.triangle.branch
 # detail=Open a git repo
-# size=small
 # on=sheet.open
 # uses=clipboard
 #
