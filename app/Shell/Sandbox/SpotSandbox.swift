@@ -47,14 +47,15 @@ final class SpotSandbox: NSObject, NSApplicationDelegate, NSWindowDelegate {
     static func show(path: String?, isCareful: Bool) async {
         let sandbox = SpotSandbox(path: path, isCareful: isCareful)
         kept.insert(sandbox)
+        AppPresence.open()
         sandbox.window.makeKeyAndOrderFront(nil)
-        NSApp.activate()
         await withTaskCancellationHandler {
             await withCheckedContinuation { sandbox.closed = $0 }
         } onCancel: {
             Task { @MainActor in sandbox.window.close() }
         }
         kept.remove(sandbox)
+        AppPresence.close()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
