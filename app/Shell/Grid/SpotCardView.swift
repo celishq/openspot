@@ -40,7 +40,8 @@ struct SpotCardView: View, Equatable {
             .frame(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows), alignment: .topLeading)
             .background(shape.fill(SpotTheme.accent).opacity(dropFill))
             .modifier(SpotGlass(radius: SpotTokens.corner(for: size), isSolid: isFilled, blursBehind: false, rimSize: CGSize(width: SpotTokens.width(columns: size.columns), height: SpotTokens.height(rows: size.rows))))
-            .modifier(CardHover(shape: shape, isFilled: isFilled, showsPress: showsPress))
+            .modifier(CardPress(shape: shape, isFilled: isFilled, showsPress: showsPress))
+            .modifier(SpotPointerMove { model.pointCard(entry.id) })
             .overlay(Color.clear.modifier(CardRing(model: model, index: index, shape: shape)).modifier(CardReveal()).allowsHitTesting(false))
             .overlay(alignment: .topTrailing) { chainLetter.map { ChainKeycap(model: model, letter: $0, size: size) } }
             .overlay(alignment: .topTrailing) { FailureMark(entry: entry, size: size) }
@@ -250,18 +251,16 @@ private struct CardRing: ViewModifier {
     }
 }
 
-/// The tint of a card under the pointer or a press. It alone holds the hover, so that a hover reruns no card.
-private struct CardHover: ViewModifier {
+/// The tint of a pressed card. The pointer moves the selection ring, not a tint.
+private struct CardPress: ViewModifier {
     let shape: RoundedRectangle
     let isFilled: Bool
     let showsPress: Bool
-    @State private var isHovered = false
 
     func body(content: Content) -> some View {
         content
-            .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : isHovered ? 0.08 : 0)).allowsHitTesting(false))
+            .overlay(shape.fill((isFilled ? SpotTheme.onSolid : SpotTheme.ink).opacity(showsPress ? 0.12 : 0)).allowsHitTesting(false))
             .contentShape(shape)
-            .onHover { isHovered = $0 }
     }
 }
 

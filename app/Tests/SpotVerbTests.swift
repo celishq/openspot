@@ -156,6 +156,24 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertNil(model.menu)
     }
 
+    func testPointingAtACardSelectsItUnlessAMenuIsOpenOrTheGridIsEdited() throws {
+        try script("weather", header: "title=Weather")
+        try script("clock", header: "title=Clock")
+        _ = try select("weather")
+
+        model.pointCard("clock")
+        XCTAssertEqual(model.selectedEntry?.id, "clock")
+
+        XCTAssertTrue(model.handleKey(ActionKey(name: "k", isCommand: true)))
+        model.pointCard("weather")
+        XCTAssertEqual(model.selectedEntry?.id, "clock")
+        model.closeMenu()
+
+        model.beginEditing()
+        model.pointCard("weather")
+        XCTAssertEqual(model.selectedEntry?.id, "clock")
+    }
+
     func testEditOpensTheFileInTheTextEditor() async throws {
         try script("weather")
         _ = try select("weather")
