@@ -1,5 +1,10 @@
 #!/bin/sh
 # on=clock.30
+# preview=sample
+if [ "$OPENSPOT_REASON" = spot.preview ]; then
+  printf 'graph=battery\ntitle=84%%\ndetail=3:12 left\nicon=battery.75\nvalue=0.84\n'
+  exit 0
+fi
 pmset -g batt | awk '
   /InternalBattery/ && match($0, /[0-9]+%/) { line = $0 }
   !first && /[0-9]+%/ { first = $0 }

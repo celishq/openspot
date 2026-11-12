@@ -2,19 +2,26 @@ import AppKit
 import OpenspotCore
 import SwiftUI
 
-/// A picture of the panel with each installed spot on its grid, after the reads of the open panel: the real panel view over
+/// A picture of the panel with each installed spot on its grid, after the reads of the open panel, and with the sample data
+/// of each spot that has one (protocol: The header): the real panel view over
 /// a wallpaper, with glass drawn at the field and at each card, since the panel's own blur does not show in a picture.
 @MainActor
 enum SpotPanelPicture {
     private static let settle = 0.8
 
-    /// Opens the panel of the installed spots, draws it, writes the picture as a PNG and exits.
+    /// Opens the panel of the installed spots, reads each spot with sample data for its preview, draws the panel, writes the
+    /// picture as a PNG and exits.
     static func run(path: String) -> Never {
         NSApplication.shared.setActivationPolicy(.prohibited)
         let model = SpotsModel(host: SpotQuietHost.shared, runs: SpotRuns())
         model.reload()
         model.panelWillShow(holding: [])
         Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
+            await model.waitForReads()
+            for sheet in model.sheets.values where sheet.spot.previewsSample {
+                sheet.read(need: .change, reason: .preview)
+            }
             try? await Task.sleep(for: .milliseconds(300))
             await model.waitForReads()
             model.selected = -1

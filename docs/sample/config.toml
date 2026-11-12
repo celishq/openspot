@@ -1,21 +1,16 @@
 [[spots]]
-id = "music"
-size = "wide"
+id = "now-playing/now-playing"
+size = "large"
+grid = true
+
+[[spots]]
+id = "system"
+size = "large"
 grid = true
 
 [[spots]]
 id = "weather"
 size = "small"
-grid = true
-
-[[spots]]
-id = "battery"
-size = "small"
-grid = true
-
-[[spots]]
-id = "agenda"
-size = "wide"
 grid = true
 
 [[spots]]
@@ -25,5 +20,10 @@ grid = true
 
 [[spots]]
 id = "coffee"
+size = "small"
+grid = true
+
+[[spots]]
+id = "screenshot"
 size = "small"
 grid = true
