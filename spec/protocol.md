@@ -140,7 +140,7 @@ esac
 | `view`        | A SwiftUI file beside the script, such as `view=cups.swift`. See Views.                                          |
 | `mode`        | `once` (the default), `stay` or `always`. See Modes.                                                             |
 | `uses`        | What it uses, split by commas: `app`, `spots`, `screen`, `clipboard`, `calendar`, `network`, `files`. See Trust. |
-| `grid.<size>` | A card drawn from other spots. See Cards of other spots.                                                         |
+| `grid.<size>` | A card drawn from other spots: each word is the ID of a spot, not a block. See Cards of other spots.             |
 | `to`          | The spot that a press of a card of other spots opens.                                                            |
 
 | Block         | Meaning                                                                                              |
@@ -250,6 +250,7 @@ A drawing says where each block goes, as CSS grid areas do.
   rectangle. A smaller block in a larger one sits on top of it, at the edge that it touches.
 - `grid.<size>=` lines draw the card at a size: `small`, `wide`, `square`, `strip` or `large`. A block that only a card
   drawing places shows only on the card.
+- In a header, the words of `grid.<size>=` lines are the IDs of other spots, not blocks (see Cards of other spots).
 - A card drawing MAY have more lines than the card has rows. A size with no drawing takes the drawing of the nearest
   smaller size. A spot with none keeps its default card.
 - With no `grid=` line, the sheet shows each block that is not a button in one column, in print order, then its rows. A
