@@ -69,11 +69,12 @@ struct Board: Codable, Equatable {
 
     // MARK: Paths
 
-    /// The anchor of one end of an arrow: the centre of the shape that holds it, or its own point.
+    /// The anchor of one end of an arrow: the point it aims at in the shape that holds it, or its own point.
     func anchor(_ figure: Figure, start: Bool) -> CGPoint {
         let held = start ? figure.start : figure.end
         if let held, let other = self[held], other.isBox {
-            return CGPoint(x: other.frame.midX, y: other.frame.midY)
+            let spot = (start ? figure.startAt : figure.endAt) ?? CGPoint(x: 0.5, y: 0.5)
+            return CGPoint(x: other.frame.minX + spot.x * other.frame.width, y: other.frame.minY + spot.y * other.frame.height)
         }
         return start ? figure.points[0] : figure.points[figure.points.count - 1]
     }
@@ -221,6 +222,15 @@ struct Board: Codable, Equatable {
         }
     }
 
+    /// Where a point lies in a shape, from 0 to 1 across and down, held inside it. A point near the middle pulls to the
+    /// centre, so an arrow lines up with ease.
+    func spot(of point: CGPoint, in id: UUID) -> CGPoint {
+        guard let box = self[id]?.frame, box.width > 0, box.height > 0 else { return CGPoint(x: 0.5, y: 0.5) }
+        let pull = max(8, min(20, min(box.width, box.height) * 0.15))
+        if point.distance(to: CGPoint(x: box.midX, y: box.midY)) <= pull { return CGPoint(x: 0.5, y: 0.5) }
+        return CGPoint(x: min(1, max(0, (point.x - box.minX) / box.width)), y: min(1, max(0, (point.y - box.minY) / box.height)))
+    }
+
     /// The shape or text that an arrow end at this point would hold.
     func target(at point: CGPoint, except: Set<UUID> = []) -> UUID? {
         figures.last { !except.contains($0.id) && $0.isBox && $0.holds(point) }?.id
@@ -242,10 +252,12 @@ struct Board: Codable, Equatable {
                 if let start = figure.start, !ids.contains(start) {
                     figures[index].points[0] = line[0]
                     figures[index].start = nil
+                    figures[index].startAt = nil
                 }
                 if let end = figure.end, !ids.contains(end) {
                     figures[index].points[figure.points.count - 1] = line[line.count - 1]
                     figures[index].end = nil
+                    figures[index].endAt = nil
                 }
             }
             figures[index].points = figures[index].points.map { $0 + delta }
@@ -261,10 +273,12 @@ struct Board: Codable, Equatable {
             if let start = figures[index].start, ids.contains(start) {
                 figures[index].points[0] = line[0]
                 figures[index].start = nil
+                figures[index].startAt = nil
             }
             if let end = figures[index].end, ids.contains(end) {
                 figures[index].points[figures[index].points.count - 1] = line[line.count - 1]
                 figures[index].end = nil
+                figures[index].endAt = nil
             }
         }
         figures.removeAll { ids.contains($0.id) }

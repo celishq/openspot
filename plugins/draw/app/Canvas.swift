@@ -148,6 +148,22 @@ final class Canvas: NSView, NSTextViewDelegate {
         context.setLineDash(phase: 0, lengths: [])
         context.setStrokeColor(accent.cgColor)
         context.setLineWidth(1.5)
+        for figure in leads() {
+            let line = studio.board.path(of: figure)
+            context.setStrokeColor(NSColor(white: 0.72, alpha: 1).cgColor)
+            context.setLineWidth(2)
+            context.setLineDash(phase: 0, lengths: [5, 5])
+            if figure.start != nil, let first = line.first {
+                context.addLines(between: [view(first), view(studio.board.anchor(figure, start: true))])
+            }
+            if figure.end != nil, let last = line.last {
+                context.addLines(between: [view(last), view(studio.board.anchor(figure, start: false))])
+            }
+            context.strokePath()
+            context.setLineDash(phase: 0, lengths: [])
+        }
+        context.setStrokeColor(accent.cgColor)
+        context.setLineWidth(1.5)
         let selected = studio.selection.compactMap { studio.board[$0] }
         if editing == nil {
             for figure in selected {
@@ -175,6 +191,7 @@ final class Canvas: NSView, NSTextViewDelegate {
                 context.strokeEllipse(in: knob)
             }
         }
+        context.setStrokeColor(accent.cgColor)
         if let held = heldTarget(), let figure = studio.board[held] {
             context.setStrokeColor(accent.withAlphaComponent(0.6).cgColor)
             context.setLineWidth(3)
@@ -194,6 +211,18 @@ final class Canvas: NSView, NSTextViewDelegate {
             context.setLineJoin(.round)
             context.addPath(Painting.smooth(trail.map { view($0) }))
             context.strokePath()
+        }
+    }
+
+    /// The arrows whose leads show: from where each stops at a shape to the point it aims at, while it is selected alone
+    /// or drawn.
+    private func leads() -> [Figure] {
+        switch drag {
+        case .create(let id, _, _), .grip(_, let id, _, _, _):
+            return studio.board[id].map { $0.kind == .arrow ? [$0] : [] } ?? []
+        default:
+            guard studio.selection.count == 1, let id = studio.selection.first, let figure = studio.board[id], figure.kind == .arrow else { return [] }
+            return [figure]
         }
     }
 
@@ -232,7 +261,9 @@ final class Canvas: NSView, NSTextViewDelegate {
             return grips
         case .arrow:
             let line = studio.board.path(of: figure)
-            var grips: [(Grip, CGPoint)] = [(.start, view(line[0])), (.end, view(line[line.count - 1]))]
+            let start = figure.start == nil ? line[0] : studio.board.anchor(figure, start: true)
+            let end = figure.end == nil ? line[line.count - 1] : studio.board.anchor(figure, start: false)
+            var grips: [(Grip, CGPoint)] = [(.start, view(start)), (.end, view(end))]
             if figure.ties.isEmpty { grips.append((.bend, view(line[line.count / 2]))) }
             return grips
         default:
@@ -304,6 +335,7 @@ final class Canvas: NSView, NSTextViewDelegate {
             studio.style.dress(&figure)
             if figure.kind == .arrow {
                 figure.start = studio.board.target(at: at)
+                figure.startAt = figure.start.map { studio.board.spot(of: at, in: $0) }
             }
             let before = studio.board
             studio.board.add(figure)
@@ -404,7 +436,11 @@ final class Canvas: NSView, NSTextViewDelegate {
         if studio.board[id]?.kind == .arrow {
             let start = studio.board[id]?.start
             let held = studio.board.target(at: to, except: [id]).flatMap { $0 == start ? nil : $0 }
-            studio.board.update(id) { $0.end = held }
+            let spot = held.map { studio.board.spot(of: to, in: $0) }
+            studio.board.update(id) { figure in
+                figure.end = held
+                figure.endAt = spot
+            }
         }
     }
 
@@ -440,13 +476,16 @@ final class Canvas: NSView, NSTextViewDelegate {
             board.resize(id, to: box)
         case .start, .end:
             let held = board.target(at: at, except: [id])
+            let spot = held.map { board.spot(of: at, in: $0) }
             board.update(id) { figure in
                 if grip == .start {
                     figure.points[0] = at
                     figure.start = held
+                    figure.startAt = spot
                 } else {
                     figure.points[figure.points.count - 1] = at
                     figure.end = held
+                    figure.endAt = spot
                 }
             }
         case .bend:

@@ -57,6 +57,27 @@ final class DrawBoardTests: XCTestCase {
         XCTAssertGreaterThan(near.max()!, 1)
     }
 
+    func testAnArrowAimsAtTheHeldPointAndStopsAtTheOutline() throws {
+        var (board, target, arrows) = fan()
+        board.update(arrows[0].id) { $0.endAt = CGPoint(x: 0.1, y: 0.1) }
+
+        let line = board.path(of: try XCTUnwrap(board[arrows[0].id]))
+        let held = try XCTUnwrap(board[arrows[0].id]).endAt.map { CGPoint(x: target.frame.minX + $0.x * 100, y: target.frame.minY + $0.y * 60) }
+
+        XCTAssertEqual(board.anchor(try XCTUnwrap(board[arrows[0].id]), start: false), held)
+        XCTAssertFalse(target.frame.contains(try XCTUnwrap(line.last)))
+        XCTAssertLessThan(try XCTUnwrap(line.last).distance(to: CGPoint(x: 400, y: 106)), 14)
+    }
+
+    func testAPointNearTheMiddleOfAShapeSnapsToItsCentre() {
+        let shape = box(0, 0)
+        let board = Board(figures: [shape])
+
+        XCTAssertEqual(board.spot(of: CGPoint(x: 53, y: 33), in: shape.id), CGPoint(x: 0.5, y: 0.5))
+        XCTAssertEqual(board.spot(of: CGPoint(x: 20, y: 15), in: shape.id), CGPoint(x: 0.2, y: 0.25))
+        XCTAssertEqual(board.spot(of: CGPoint(x: -40, y: 90), in: shape.id), CGPoint(x: 0, y: 1))
+    }
+
     func testTiedArrowsReachTheirShapeSideBySide() throws {
         var (board, _, arrows) = fan()
         board.bundle(along: cut)
@@ -244,6 +265,7 @@ final class DrawBoardTests: XCTestCase {
         board.figures[3].heads = .both
         board.figures[1].align = .right
         board.figures[1].place = .bottom
+        board.figures[3].startAt = CGPoint(x: 0.25, y: 0.75)
         var image = Figure(kind: .image, points: [.zero, CGPoint(x: 40, y: 30)])
         image.source = "picture.png"
         board.add(image)

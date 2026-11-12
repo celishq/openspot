@@ -131,12 +131,15 @@ final class Desk: NSObject, NSApplicationDelegate, NSWindowDelegate, NSToolbarDe
 
     func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier identifier: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
         let item = NSToolbarItem(itemIdentifier: identifier)
-        item.image = NSImage(systemSymbolName: "sidebar.left", accessibilityDescription: "Boards")
+        let button = NSButton(image: NSImage(systemSymbolName: "sidebar.left", accessibilityDescription: "Boards") ?? NSImage(), target: self, action: #selector(toggleBoards(_:)))
+        button.bezelStyle = .toolbar
+        button.controlSize = .regular
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.widthAnchor.constraint(equalToConstant: 44).isActive = true
+        button.heightAnchor.constraint(equalToConstant: 28).isActive = true
+        item.view = button
         item.label = "Boards"
         item.toolTip = "Boards  ⌃⌘S"
-        item.isBordered = true
-        item.target = self
-        item.action = #selector(toggleBoards(_:))
         return item
     }
 

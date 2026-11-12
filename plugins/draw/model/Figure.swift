@@ -67,6 +67,10 @@ struct Figure: Codable, Equatable, Identifiable {
     var start: UUID?
     /// The shape that holds the end of an arrow.
     var end: UUID?
+    /// Where in the shape that holds its start an arrow aims, from 0 to 1 across and down. None aims at the centre.
+    var startAt: CGPoint?
+    /// Where in the shape that holds its end an arrow aims, from 0 to 1 across and down. None aims at the centre.
+    var endAt: CGPoint?
     /// The ties that an arrow passes through, from its start to its end.
     var ties: [UUID] = []
     /// The arrows that a tie holds, side by side in this order.
@@ -104,7 +108,7 @@ struct Figure: Codable, Equatable, Identifiable {
     // MARK: File
 
     private enum Key: String, CodingKey {
-        case id, kind, points, form, heads, ink, weight, dashed, filled, text, align, place, source, bend, start, end, ties, members
+        case id, kind, points, form, heads, ink, weight, dashed, filled, text, align, place, source, bend, start, end, startAt, endAt, ties, members
     }
 
     /// Reads a figure, also one of an older board: a rectangle or an ellipse is a shape, a line is an arrow with no head,
@@ -142,6 +146,8 @@ struct Figure: Codable, Equatable, Identifiable {
         bend = try values.decodeIfPresent(CGFloat.self, forKey: .bend) ?? 0
         start = try values.decodeIfPresent(UUID.self, forKey: .start)
         end = try values.decodeIfPresent(UUID.self, forKey: .end)
+        startAt = try values.decodeIfPresent(CGPoint.self, forKey: .startAt)
+        endAt = try values.decodeIfPresent(CGPoint.self, forKey: .endAt)
         ties = try values.decodeIfPresent([UUID].self, forKey: .ties) ?? []
         members = try values.decodeIfPresent([UUID].self, forKey: .members) ?? []
     }
@@ -166,6 +172,8 @@ struct Figure: Codable, Equatable, Identifiable {
         if bend != 0 { try values.encode(bend, forKey: .bend) }
         try values.encodeIfPresent(start, forKey: .start)
         try values.encodeIfPresent(end, forKey: .end)
+        try values.encodeIfPresent(startAt, forKey: .startAt)
+        try values.encodeIfPresent(endAt, forKey: .endAt)
         if !ties.isEmpty { try values.encode(ties, forKey: .ties) }
         if !members.isEmpty { try values.encode(members, forKey: .members) }
     }
