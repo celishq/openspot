@@ -7,7 +7,7 @@ import Foundation
 /// leaves to a process of its own, which the caller then starts. The caller answers `stdin` with notifications `stdin` whose
 /// params hold `text`, and then one whose params hold `end`. A caller that closes its connection stops its call (S13).
 public final class CommandSocket: @unchecked Sendable {
-    public static let name = "api.socket"
+    public static let name = SocketPath.name
     /// The JSON-RPC code of a line that is not a request.
     static let unreadable = -32700
     /// The JSON-RPC code of a call that runs in a process of its own.
@@ -19,15 +19,23 @@ public final class CommandSocket: @unchecked Sendable {
     private let path: String
     private let source: any DispatchSourceRead
 
-    /// Listens at `api.socket` in the folder, in place of a socket that an app left there. Returns nil when it cannot.
+    /// Listens at the socket path of the folder, in place of a socket that an app left there. Returns nil when it cannot.
     public init?(folder: URL, api: CommandAPI) {
-        path = folder.appendingPathComponent(Self.name).path
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        guard let real = realpath(folder.path, nil) else { return nil }
+        path = SocketPath.of(config: String(cString: real))
+        free(real)
         var address = sockaddr_un()
         address.sun_family = sa_family_t(AF_UNIX)
         let bytes = Array(path.utf8)
         guard bytes.count < MemoryLayout.size(ofValue: address.sun_path) else { return nil }
         withUnsafeMutableBytes(of: &address.sun_path) { $0.copyBytes(from: bytes) }
-        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        if path.hasPrefix(SocketPath.folder + "/") {
+            mkdir(SocketPath.folder, 0o700)
+            var info = stat()
+            guard lstat(SocketPath.folder, &info) == 0, info.st_mode & S_IFMT == S_IFDIR, info.st_uid == getuid(),
+                  chmod(SocketPath.folder, 0o700) == 0 else { return nil }
+        }
         unlink(path)
         let listener = socket(AF_UNIX, SOCK_STREAM, 0)
         guard listener >= 0 else { return nil }

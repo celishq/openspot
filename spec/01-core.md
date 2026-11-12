@@ -633,7 +633,8 @@ read from its own record of the call, not from the variables of the process. Eac
 also gets `OPENSPOT_TOKEN`, a random token that Openspot maps to the spot's ID while it runs, which names the spot of a
 call from outside its group, such as a process that an inline spot starts. A call from no group of a spot and with no
 known token is the person's call. The socket of the API is a file with mode `0600`, so only the person's own processes
-reach it.
+reach it. It is `api.socket` in the config folder, or, when that path is too long for a socket, a file named by a hash of
+the folder in `/tmp/openspot-<uid>`, a folder of mode `0700` (S14).
 
 `uses` names what a spot uses (Z3). It is a closed set, and an unknown word is a fault that names the key.
 

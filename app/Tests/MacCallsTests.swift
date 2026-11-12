@@ -106,6 +106,19 @@ final class MacCallsTests: XCTestCase {
         return (printed, said, process.terminationStatus)
     }
 
+    func testTheAppAnswersThroughItsSocketWhenTheConfigFolderHasALongPath() throws {
+        let deep = folder.appendingPathComponent(String(repeating: "deep-folder-", count: 10), isDirectory: true)
+        try FileManager.default.createDirectory(at: deep, withIntermediateDirectories: true)
+        XCTAssertGreaterThan(deep.appendingPathComponent(CommandSocket.name).path.utf8.count, 103)
+        let socket = try XCTUnwrap(CommandSocket(folder: deep, api: CommandAPI(mac: host)))
+        defer { socket.close() }
+
+        let answer = try Self.run(client, config: deep, ["clipboard", "read"], input: "", in: folder)
+
+        XCTAssertEqual(answer.output, "kept text")
+        XCTAssertEqual(answer.code, 0)
+    }
+
     func testTheAppCopiesStdinAndAFileOfTheCallersFolderReadsAndPastes() throws {
         let place = folder.appendingPathComponent("notes", isDirectory: true)
         try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)

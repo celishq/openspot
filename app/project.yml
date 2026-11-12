@@ -25,6 +25,7 @@ targets:
     sources:
       - path: Core
       - path: Client/CommandKind.swift
+      - path: Client/SocketPath.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.core

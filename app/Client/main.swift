@@ -59,7 +59,7 @@ func reachStarted(_ app: AppBundle, config: String) -> Int32 {
 /// Connects to the socket of the API in the config folder, or returns -1 when nothing listens there.
 func reach(_ config: String) -> Int32 {
     guard let real = realpath(config, nil) else { return -1 }
-    let path = Array((String(cString: real) + "/api.socket").utf8)
+    let path = Array(SocketPath.of(config: String(cString: real)).utf8)
     free(real)
     var address = sockaddr_un()
     address.sun_family = sa_family_t(AF_UNIX)
