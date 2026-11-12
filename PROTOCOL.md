@@ -781,7 +781,7 @@ openspot app quit
 - A spot folder can hold `releases.jsonl`, the signed releases of the spot. Openspot writes it when the user shares or
   publishes the spot, and refuses a shared spot whose files don't match its last release. A spot reads nothing from it.
 - The account that signs releases never reaches a spot. `openspot account` tells a spot whether one is signed in and
-  its `npub`, and opens the window that shows the words. The words never pass through a script.
+  its `npub`, and opens the account sheet, which the app draws itself. The words never pass through a script.
 
 ## Messages
 

@@ -55,6 +55,6 @@ struct SpotRunningApp: RunningApp {
     }
 
     func openAccount(_ open: AccountOpen) async -> Bool {
-        await AccountWindow.show(open.step, store: MainActor.run { model.files.account })
+        await model.openAccount(open.step)
     }
 }

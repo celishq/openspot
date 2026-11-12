@@ -91,6 +91,10 @@ public final class SpotsModel {
     public var showsFieldDrop = false
     /// The shared spot that the open review shows, which exists only as long as that sheet.
     public var reviewed: ReviewSpot?
+    /// The account sheet that shows, which exists only as long as that sheet.
+    public var accountSheet: AccountSheet?
+    /// The wait of whoever opened the account sheet, which its end resumes.
+    @ObservationIgnored var accountEnd: CheckedContinuation<Void, Never>?
     public var isFirstLaunch = false
     public var isShown = false
     /// Whether the app is opening the panel unseen as it starts, which a press of the key ends.
@@ -235,7 +239,7 @@ public final class SpotsModel {
         let config = files.config.read()
         host.applyConfig(config)
         let folder = files.folder(config)
-        var scan = spotScan.look(at: folder, hosted: reviewed.map { [$0.spot] } ?? [])
+        var scan = spotScan.look(at: folder, hosted: (reviewed.map { [$0.spot] } ?? []) + (accountSheet.map { [$0.spot] } ?? []))
         let faults = folder.faultSpots(of: scan, prompt: host.agentPrompt(for: folder.url))
         if !faults.isEmpty { scan.files.append(SpotFile(id: FaultSpot.fileID, spots: faults)) }
         guard spotScan.stamp != loadedStamp || config != loadedConfig else { return holdAssignedKeys(config) }

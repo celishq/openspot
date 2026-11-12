@@ -43,13 +43,14 @@ public protocol SpotsHost: AnyObject {
     func agentPrompt(for folder: URL) -> AgentPrompt
     /// Makes a change on a motion, or with none at all, and calls `completion` when its motion reaches its end.
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void)
-    /// Opens the account window on a step, and returns once it closes, with whether the store then holds a key.
-    func openAccount(_ step: AccountFlow.Step, store: AccountStore) async -> Bool
+    /// Asks the person to prove who they are, with Touch ID or the Mac password, before an act such as showing the account
+    /// words. Returns whether they did.
+    func allows(_ reason: String) async -> Bool
 }
 
 extension SpotsHost {
-    /// A host with no window takes the choice to create an account.
-    public func openAccount(_ step: AccountFlow.Step, store: AccountStore) async -> Bool {
-        (try? store.keyMadeOnce()) != nil
+    /// A host with no Touch ID allows each act.
+    public func allows(_ reason: String) async -> Bool {
+        true
     }
 }

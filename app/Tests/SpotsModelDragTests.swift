@@ -635,6 +635,7 @@ final class SpotsModelDragTests: XCTestCase {
 
     func testPublishWritesAPackageOnceAndAgainOnlyWhenTheFilesChange() async throws {
         try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
+        _ = try model.files.account.keyMadeOnce()
         XCTAssertNil(publication(of: "a"))
 
         let first = await model.publish("a")
@@ -646,7 +647,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(publication(of: "a"), .current)
         let again = await model.publish("a")
         XCTAssertEqual(again, .unchanged)
-        XCTAssertEqual(host.accountSteps, [.choose])
+        XCTAssertNil(model.accountSheet)
 
         let script = try FileHandle(forWritingTo: spots.appendingPathComponent("a.spot/a.sh"))
         try script.seekToEnd()
@@ -661,6 +662,7 @@ final class SpotsModelDragTests: XCTestCase {
 
     func testShareCopiesTheStoresPackageAsOneZipThatOpensWithItsReadme() async throws {
         try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
+        _ = try model.files.account.keyMadeOnce()
         XCTAssertNil(model.sharePackage("a"))
         _ = await model.publish("a")
 
@@ -670,17 +672,68 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(try SpotFolder(contentsOf: file).files.first { $0.path == "a.spot/readme.md" }?.text, "Does a.")
     }
 
-    func testAPublishWithNoAccountOpensTheAccountWindowAndWritesNothingWhenItClosesWithNone() async throws {
+    /// Waits until the account sheet shows, for a call that opens it and waits for its end.
+    private func accountSheet() async throws -> AccountSheet {
+        for _ in 0..<1000 {
+            if let sheet = model.accountSheet { return sheet }
+            await Task.yield()
+        }
+        return try XCTUnwrap(model.accountSheet)
+    }
+
+    func testAPublishWithNoAccountOpensTheAccountSheetAndWritesNothingWhenItClosesWithNone() async throws {
         try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
-        host.makesAccount = false
+        let publish = Task { await model.publish("a") }
 
-        let result = await model.publish("a")
+        let sheet = try await accountSheet()
+        XCTAssertEqual(model.openList, AccountSheet.id)
+        XCTAssertEqual(sheet.flow.step, .choose)
+        _ = try sheet.answer(["close"])
 
+        let result = await publish.value
         XCTAssertEqual(result, .failed)
-        XCTAssertEqual(host.accountSteps, [.choose])
+        XCTAssertNil(model.accountSheet)
         XCTAssertEqual(host.notes, [])
         XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: spots.appendingPathComponent("a.spot/releases.jsonl").path))
+    }
+
+    func testAPublishGoesOnOnceTheSheetMadeAnAccount() async throws {
+        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
+        let publish = Task { await model.publish("a") }
+
+        let sheet = try await accountSheet()
+        _ = try sheet.answer(["create"])
+        XCTAssertEqual(sheet.flow.step, .about)
+        _ = try sheet.answer(["show"])
+        XCTAssertEqual(sheet.flow.step, .words)
+        _ = try sheet.answer(["close"])
+
+        let result = await publish.value
+        XCTAssertEqual(result, .published)
+        XCTAssertNotNil(try model.files.account.key())
+    }
+
+    func testTheWordsOfAKeptKeyShowOnlyAfterTouchID() async throws {
+        _ = try model.files.account.keyMadeOnce()
+        host.allowsActs = false
+
+        let opened = await model.openAccount(.words)
+
+        XCTAssertTrue(opened)
+        XCTAssertEqual(host.asked, ["show your account words"])
+        XCTAssertNil(model.accountSheet)
+    }
+
+    func testTheSheetPrintsTheButtonsOfItsStep() async throws {
+        Task { await model.openAccount(.choose) }
+        let sheet = try await accountSheet()
+
+        let read = try sheet.answer(["read"])
+
+        XCTAssertTrue(read.contains("view=account"))
+        XCTAssertTrue(read.contains("button=create\ntitle=Create account\nshortcut=cmd+return\nlook=strong"))
+        XCTAssertTrue(read.contains("button=sign-in\ntitle=Use existing account"))
+        _ = try sheet.answer(["close"])
     }
 
     func testASpotWithNoReadmeOpensItsListingAndIsNotPublished() async {
@@ -701,6 +754,7 @@ final class SpotsModelDragTests: XCTestCase {
 
     func testACardOfTheSpotsFolderReleasedOnTheStoreIsPublished() async throws {
         try "Does b.".write(to: spots.appendingPathComponent("b.spot/readme.md"), atomically: true, encoding: .utf8)
+        _ = try model.files.account.keyMadeOnce()
         model.dockFrame = dock
         let translation = move("b", to: inGrid(CGPoint(x: dock.midX, y: dock.midY)))
 

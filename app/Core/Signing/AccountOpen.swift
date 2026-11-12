@@ -1,6 +1,6 @@
 import Foundation
 
-/// The step that `openspot account <verb>` opens the account window on.
+/// The step that `openspot account <verb>` opens the account sheet on.
 public enum AccountOpen: String, Sendable, CaseIterable {
     /// The choice between a new account and an existing one.
     case setUp = "set-up"

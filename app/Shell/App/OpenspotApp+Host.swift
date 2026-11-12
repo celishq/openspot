@@ -1,4 +1,5 @@
 import AppKit
+import LocalAuthentication
 import OpenspotCore
 import SwiftUI
 
@@ -91,8 +92,12 @@ extension OpenspotApp: SpotsHost {
         SpotGridDrop.paths(on: .general)
     }
 
-    func openAccount(_ step: AccountFlow.Step, store: AccountStore) async -> Bool {
-        await AccountWindow.show(step, store: store)
+    /// Asks for Touch ID or the Mac password. A Mac with neither allows it.
+    func allows(_ reason: String) async -> Bool {
+        let context = LAContext()
+        var error: NSError?
+        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else { return true }
+        return (try? await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)) == true
     }
 
     func copy(_ file: URL) {

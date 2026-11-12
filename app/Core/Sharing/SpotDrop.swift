@@ -6,6 +6,12 @@ public struct SpotDrop: Equatable, Sendable {
     public let title: String
     public let detail: String?
 
+    public init(symbol: String, title: String, detail: String?) {
+        self.symbol = symbol
+        self.title = title
+        self.detail = detail
+    }
+
     /// Says what the header of a review says, for a review that starts with no drag.
     public init(reviewing review: ReviewSpot) {
         symbol = review.symbol
