@@ -163,6 +163,8 @@ public final class SpotRun {
     }
     /// The last arrow press that asks the parts to scroll. It lives apart from the parts, so that a press redraws only the scroll.
     public internal(set) var nudge = SheetParts.Nudge.rest
+    /// The last press of return that asks the menu of a part to open. It lives apart from the parts, as the nudge does.
+    public internal(set) var menuOpening: SheetParts.MenuOpening?
     /// Whether this sheet is the open one, as the runs record it.
     public var isOpen: Bool {
         runs.openID == spot.id

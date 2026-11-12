@@ -1,0 +1,15 @@
+title=Gold
+color=#FFF0A6
+color=#FFDD66
+color=#F7C836
+color=#EDB021
+color=#D99A12
+color=#C0820C
+color=#A66C08
+color=#6E4604 0.5
+shape=rect 4.5
+shape=square 2.5
+shape=dot 1.8
+shape=streamer 1.2
+finish=foil
+amount=0.9
