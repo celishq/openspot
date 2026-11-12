@@ -28,11 +28,11 @@
 - A name is a noun for what a thing is. No `-er`/`-or` suffix (`Manager`, `Handler`, `Renderer`).
 - One primary type per file. The filename matches it.
 - Nouns own their data. Verbs are methods on the noun that owns the data.
-- A toast or a failure line follows "Messages" in `spec/protocol.md`.
+- A toast or a failure line follows "Messages" in `PROTOCOL.md`.
 
 ## Docs
 
-Write a doc that people read, such as `spec/protocol.md`, the way Apple writes its developer docs.
+Write a doc that people read, such as `GUIDE.md` and `PROTOCOL.md`, the way Apple writes its developer docs.
 
 - Open each page or section with one sentence that says what the thing is for and when to use it.
 - Show it next, with an example and what it gives on screen. The rules come after the example.

@@ -159,17 +159,20 @@ final class NewSpotTests: BuiltInCase {
         }
     }
 
-    func testTheGuideIsTheProtocol() throws {
-        let out = root.appendingPathComponent("built.md")
-        let script = Process()
-        script.executableURL = URL(fileURLWithPath: "/bin/sh")
-        script.arguments = [repo.appendingPathComponent("scripts/guide.sh").path, out.path]
-        try script.run()
-        script.waitUntilExit()
+    /// The bundled guide is GUIDE.md then PROTOCOL.md, and each link in it goes to a heading of the one page.
+    func testTheGuideIsTheGuideThenTheProtocolWithEachLinkInThePage() throws {
+        let headings = Set(guideText.split(separator: "\n").filter { $0.hasPrefix("#") && $0.contains("# ") }.map { line in
+            String(line.drop { $0 == "#" }.dropFirst()).lowercased().filter { $0.isLetter || $0.isNumber || $0 == " " || $0 == "-" }.replacingOccurrences(of: " ", with: "-")
+        })
+        let links = guideText.components(separatedBy: "](#").dropFirst().map { String($0.prefix { $0 != ")" }) }
 
-        XCTAssertEqual(script.terminationStatus, 0)
-        XCTAssertTrue(try String(contentsOf: out, encoding: .utf8) == guideText)
-        XCTAssertTrue(guideText.hasPrefix("# Openspot protocol"))
+        XCTAssertTrue(guideText.hasPrefix("# Openspot guide"))
+        XCTAssertTrue(guideText.contains("\n# Openspot protocol\n"))
+        XCTAssertFalse(guideText.contains("GUIDE.md#") || guideText.contains("PROTOCOL.md#"))
+        XCTAssertGreaterThan(links.count, 20)
+        for link in links {
+            XCTAssertTrue(headings.contains(link), link)
+        }
     }
 
     func testTheGuideTeachesNoOldKeyOrCall() {
@@ -195,9 +198,16 @@ final class NewSpotTests: BuiltInCase {
         }
     }
 
-    /// The text of `spec/protocol.md`.
+    /// The guide that `scripts/guide.sh` joins from `GUIDE.md` and `PROTOCOL.md`, as the app bundles it.
     private func protocolGuide() throws -> String {
-        try String(contentsOf: repo.appendingPathComponent("spec/protocol.md"), encoding: .utf8)
+        let out = root.appendingPathComponent("built.md")
+        let script = Process()
+        script.executableURL = URL(fileURLWithPath: "/bin/sh")
+        script.arguments = [repo.appendingPathComponent("scripts/guide.sh").path, out.path]
+        try script.run()
+        script.waitUntilExit()
+        XCTAssertEqual(script.terminationStatus, 0)
+        return try String(contentsOf: out, encoding: .utf8)
     }
 
 }

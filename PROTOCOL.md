@@ -2,16 +2,14 @@
 
 `1.0` `draft`
 
-Openspot runs small programs called spots. You write a spot in any language. It prints a few lines that say what to
-show, and Openspot draws them. When something happens, such as the user opening the spot, Openspot runs it again.
-
-This page has three parts. The first part shows how a spot works and how to try one. The guides show how to do
-one thing each, such as a list or a card. The [reference](#reference) gives every rule.
+This is the contract between a spot and Openspot: what a spot prints, which calls it gets, and what it can ask. To learn
+by example, start with the [guide](GUIDE.md).
 
 ## A spot
 
-Press the Openspot hotkey, and the **panel** opens. It has a search field, and a grid of **cards** under it. Each card is
-a spot. Press a card, and its **sheet** opens: a bigger view of that spot, with its text, its controls and its list.
+Openspot shows spots in three places: the **panel**, the window that the Openspot hotkey opens, with the main search and
+a grid of **cards**; the **card** of each spot on that grid; and the **sheet**, the view of one spot that opens over the
+panel.
 
 A spot is one file. Openspot runs it, and the spot prints what to show:
 
@@ -28,261 +26,6 @@ press   ─ on a block ─►  <spot> <id>    the user or an agent acts
 - A spot only says what it has. The user decides where it shows and which key opens it.
 - An agent can do anything the user does, with `openspot spot run <id> <call>` and `openspot event emit`. A spot
   can't tell who called it.
-
-## Your first spot
-
-The smallest spot is a script. Press its card, and it runs.
-
-```sh
-#!/bin/sh
-say hello
-```
-
-Comment lines at the top give it a name and an icon. These lines are the **header**.
-
-```sh
-#!/bin/sh
-# title=Morning
-# icon=sun.max
-open -a Calendar
-```
-
-To show something, add an `on=` line. It tells Openspot when to ask the spot what to show. Here, Openspot asks when the
-sheet opens, and the spot prints a title and a detail.
-
-```sh
-#!/bin/sh
-# title=Cups today
-# icon=cup.and.saucer.fill
-# on=sheet.open
-printf 'text=cups\ntitle=3\ndetail=Last at 14:20\n'
-```
-
-Each group of lines that the spot prints is a **block**: here, one `text` block with the id `cups`. The sheet shows a big
-**3** with **Last at 14:20** under it.
-
-## Try your spot
-
-Try each example of this page in the playground before you put it in the plugins folder.
-
-- **Playground.** Open the Playground spot, or run `openspot sandbox [file]`. Type a spot, or pick one from Examples.
-  Choose where it shows: its sheet, its card or the main search. Under it, you see each call with its arguments, its
-  stdin, what it printed, its stderr and how it ended. When you open a file, edits go straight to the file.
-- **New spot.** `openspot spot new <name> --from <kind>` writes a working spot that you can change. The kinds are
-  `button`, `list`, `number` and `form`.
-- **One call.** `openspot spot run <id> [call] [value]...` runs one call the way Openspot does, and prints everything the
-  spot prints. With no call, it asks the spot what to show.
-- **Image.** `openspot render [--view <file>] <file.png>` draws the sheet that stdin holds. `--card <size>` draws its card,
-  and `--spot <id>` draws an installed spot.
-- **Log.** `openspot spot log <id>` prints the last calls to a spot, with their stdin, stdout, stderr and exit code.
-- **Check.** `openspot check [--json] <folder>` loads each spot, runs it once, and prints each error. Run it before you
-  share a spot.
-
-## Show a list
-
-A list lets the user search and pick. Print one `row` block for each item. When the user picks a row, Openspot runs your
-spot with `open` and the id of the row.
-
-```sh
-#!/bin/sh
-# title=Apps
-# icon=square.grid.2x2
-# on=sheet.open
-. "$OPENSPOT_SH"
-case "$1" in
-  read) printf 'Mail\tMail\tYour inbox\tenvelope\nNotes\tNotes\tYour notes\tnote.text\n' | openspot_rows ;;
-  open) open -a "$2" ;;
-esac
-```
-
-The sheet shows two rows, **Mail** and **Notes**. Type in the sheet's search field, and Openspot filters the rows for
-you. Pick **Notes**, and Openspot runs `apps.sh open Notes`.
-
-The first argument tells your spot what to do. `read` asks what to show. Any other word is something the user did. The
-shell helper, `$OPENSPOT_SH`, prints rows for you and escapes each value.
-
-Learn more in [Rows](#rows) and [The calls](#the-calls).
-
-## Show a value on a card
-
-A card can show one live value, such as free disk space. Add a `clock` event, and Openspot asks your spot again every
-that many seconds while the card shows.
-
-```sh
-#!/bin/sh
-# title=Disk
-# icon=internaldrive
-# on=clock.300
-free=$(df -h / | awk 'NR==2 {print $4}')
-printf 'text=free\ntitle=%s free\n' "$free"
-```
-
-The card shows **120Gi free**, and updates every 5 minutes. The one `text` block is the spot's **main block**: the
-value that stands for the spot on its card. The user can also put the spot in the menu bar, where the main block shows
-next to the clock.
-
-A spot with a clock stays off the grid until the user adds it, so that a new spot doesn't fill the panel.
-
-Learn more in [The main block and the card](#the-main-block-and-the-card) and [Events](#events).
-
-## Add buttons
-
-A button runs a command. Give each button an id. When the user presses it, Openspot runs your spot with that id.
-
-Buttons in the header turn the spot into a set of commands, with no card. The user finds each command in the main
-search, and can give it a hotkey.
-
-```sh
-#!/bin/sh
-# title=Windows
-# icon=macwindow
-# uses=screen
-#
-# button=full
-# title=Full screen
-# icon=rectangle.inset.filled
-#
-# button=left
-# title=Left side
-# icon=rectangle.lefthalf.inset.filled
-case "$1" in
-  full) openspot window move "0 0 1 1" ;;
-  left) openspot window move "0 0 1/2 1" ;;
-esac
-```
-
-A button that the spot prints acts on its rows. If no layout places it, it shows in the ⌘K menu of the sheet, and its
-shortcut works while a row is selected.
-
-```sh
-#!/bin/sh
-# title=Notes list
-# on=sheet.open
-. "$OPENSPOT_SH"
-case "$1" in
-  read)
-    openspot_row today Today
-    printf '\nbutton=trash\ntitle=Move to Trash\nshortcut=cmd+backspace\nconfirm=Press again to delete\n'
-    ;;
-  trash) rm -f "$OPENSPOT_DATA/$2" ;;
-esac
-```
-
-Select **Today** and press ⌘⌫ twice, and Openspot runs `notes-list.sh trash today`.
-
-Learn more in [Buttons and actions](#buttons-and-actions).
-
-## Ask for values
-
-A button with `form=true` asks the user for values before it runs. Openspot runs it once with empty stdin to get the
-form, then again with the values the user typed.
-
-```sh
-#!/bin/sh
-# title=Quick note
-# on=sheet.open
-. "$OPENSPOT_SH"
-case "$1" in
-  read) printf 'text=hint\ntitle=Press ⌘K to add a note\n\nbutton=add\ntitle=Add note\nform=true\nscope=spot\n' ;;
-  add)
-    note=$(value note)
-    if [ -z "$note" ]; then
-      printf 'title=New note\n\nfield=note\ntitle=Note\n'
-    else
-      printf '%s\n' "$note" >> "$OPENSPOT_DATA/notes"
-      openspot_kv toast "Saved"
-    fi
-    ;;
-esac
-```
-
-Choose **Add note**, and a form with one field opens. Type a note and press Return. The spot saves it, and a toast says
-**Saved**. `value note` reads the field from stdin.
-
-Learn more in [Buttons and actions](#buttons-and-actions) and [The head](#the-head).
-
-## Answer the main search
-
-A spot can answer what the user types in the main search, like a calculator. Add `on=search.text` with a pattern. When
-the text matches, Openspot asks your spot right away and shows its answer first.
-
-```js
-// title=Calculator
-// icon=equal.square
-// on=search.text ^[0-9(]
-// uses=clipboard
-function main(args, env) {
-  if (args[0] === "read")
-    return openspot.call(["calc", "solve", env.OPENSPOT_VALUE]).stdout;
-  return "";
-}
-```
-
-Type `2+2`, and the answer shows at the top of the main search. `OPENSPOT_VALUE` holds the typed text. A `.js` file runs
-inside Openspot, so it answers in the same keystroke.
-
-Learn more in [Places](#places) and [Modes](#modes).
-
-## Respond to the Mac
-
-Events let a spot update when something happens on the Mac, such as another app coming to the front. A filter after the
-event narrows it down.
-
-```sh
-#!/bin/sh
-# title=Notes
-# on=sheet.open
-# on=app.front com\.apple\.Notes
-printf 'text=n\ntitle=%s\n' "$OPENSPOT_REASON"
-```
-
-Bring Notes to the front while the sheet shows, and Openspot asks the spot again. `OPENSPOT_REASON` says why:
-`sheet.open` or `app.front`.
-
-Learn more in [Events](#events).
-
-## Combine spots on one card
-
-One card can show several spots side by side, such as the battery, the CPU and the memory. You write only a header, and
-Openspot fills the card with the main blocks of the spots that it names.
-
-```sh
-#!/bin/sh
-# title=System
-# grid.large=battery battery cpu    cpu
-# grid.large=battery battery memory memory
-# to=system-info
-```
-
-Each word is the id of another spot. At the large size, the card shows the battery on the left, and the CPU over the
-memory on the right. Press the card, and the spot `system-info` opens.
-
-Learn more in [Cards of other spots](#cards-of-other-spots).
-
-## Let the user choose a setting
-
-A setting keeps a choice of the user, such as a folder. Name it in the header with a `field` block, and the Settings spot
-lists it.
-
-```sh
-#!/bin/sh
-# title=Repos
-#
-# field=folder
-case "$1" in
-  folder)
-    picked=$(openspot folder pick)
-    [ -n "$picked" ] && openspot setting set folder "$picked"
-    ;;
-esac
-```
-
-In Settings, choose **folder**, and Openspot runs `repos.sh folder`. The spot asks for a folder and keeps it. Later
-calls read it with `openspot setting get folder`.
-
-Learn more in [Settings](#settings).
-
-# Reference
 
 ## The format
 
@@ -450,7 +193,7 @@ A layout says where each block goes, the way CSS grid areas do.
 ## Buttons and actions
 
 A button is a verb. If the layout places it, the sheet draws it. If not, it's an **action** in the ⌘K menu. See
-[Add buttons](#add-buttons) for an example.
+[Add buttons](GUIDE.md#add-buttons) for an example.
 
 - An action sends `<spot> <id> <row id>` while a row is selected, and `<spot> <id>` when none is.
 - `scope` says when the ⌘K menu shows an action: `scope=item`, the default, only while a row is selected, and
@@ -473,7 +216,7 @@ A button is a verb. If the layout places it, the sheet draws it. If not, it's an
 
 ## Rows
 
-Rows are a list that the user searches and picks from. See [Show a list](#show-a-list) for an example.
+Rows are a list that the user searches and picks from. See [Show a list](GUIDE.md#show-a-list) for an example.
 
 | Key        | Meaning                                                                                        |
 | ---------- | ---------------------------------------------------------------------------------------------- |
@@ -542,7 +285,7 @@ The main block stands for the spot on its card and in the menu bar.
 ## Events
 
 An event makes Openspot ask a spot what to show. The header lists the events where that is safe. See
-[Respond to the Mac](#respond-to-the-mac) for an example.
+[Respond to the Mac](GUIDE.md#respond-to-the-mac) for an example.
 
 - An event is a word `<noun>.<verb>`. It can carry a value. The table gives the value of each event Openspot raises, and
   `openspot event emit` gives the value of any other.
@@ -654,7 +397,7 @@ A call starts, prints and ends. These rules say how long it can take, and what h
 
 ## Places
 
-The user decides where a spot shows. A spot only offers. See [Answer the main search](#answer-the-main-search) for an
+The user decides where a spot shows. A spot only offers. See [Answer the main search](GUIDE.md#answer-the-main-search) for an
 example.
 
 - The user gives each spot its hotkey, puts spots in the menu bar, floats them, and orders and sizes the cards. A spot
@@ -809,7 +552,7 @@ struct SpotView: View {
 ## Cards of other spots
 
 A card of other spots shows the main blocks of the spots it names. See
-[Combine spots on one card](#combine-spots-on-one-card) for an example.
+[Combine spots on one card](GUIDE.md#combine-spots-on-one-card) for an example.
 
 - Each `grid.<size>=` line is one line of the card at that size, as in [Layouts](#layouts). Here each word is the id of
   another spot, not of a block. That spot's main block fills the cells its id covers.
@@ -886,11 +629,11 @@ A spot asks the Mac and Openspot for things through one command, which works the
 - `openspot batch` runs one call for each line of stdin, and prints `---` after each. It stops at the first failure.
 - `--frame` makes `app status`, `spot list` and `setting list` print blocks instead of JSON.
 
-The commands that try a spot are in [Try your spot](#try-your-spot). The others:
+The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The others:
 
 | Command                                            | Does                                                                                              |
 | -------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `openspot guide`                                   | Prints this page.                                                                                 |
+| `openspot guide`                                   | Prints the guide, then this protocol.                                                             |
 | `openspot spot show <id>`                          | Opens the panel with the spot selected.                                                           |
 | `openspot spot add <git url, folder or file.spot>` | Adds a spot, and records it in `spots.lock`. An update that needs a new use also needs `--yes`.   |
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                  |
@@ -898,7 +641,7 @@ The commands that try a spot are in [Try your spot](#try-your-spot). The others:
 
 ### Settings
 
-A setting keeps a choice of the user. See [Let the user choose a setting](#let-the-user-choose-a-setting) for an
+A setting keeps a choice of the user. See [Let the user choose a setting](GUIDE.md#let-the-user-choose-a-setting) for an
 example.
 
 - A `field` block in the header names a setting. The Settings spot lists it, set or not.
@@ -989,7 +732,7 @@ that fixes the rest. Use plain words, a calm tone, and one or two short sentence
 
 ## Versions
 
-The version at the top is the version of this page. A new word raises the minor number, such as `1.1`. A draft becomes
+The version at the top is the version of this protocol. The guide has no version. A new word raises the minor number, such as `1.1`. A draft becomes
 `final` when real use proves it, and a final version never changes the meaning of a word. A change that breaks an old
 spot raises the major number, and adds a header key `protocol=<major>`. A spot without that key is version 1.
 

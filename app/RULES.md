@@ -1,7 +1,7 @@
 # Rules of the app
 
 These rules are decisions about how this app works that no plugin author sees. The plugin contract is in
-`spec/protocol.md`, and this file points to its sections, never the other way.
+`PROTOCOL.md`, and this file points to its sections, never the other way.
 Code and tests name a rule by its ID.
 
 ## The app
@@ -108,7 +108,7 @@ Each colour, strength and blur radius is in `Shell/Surface/SpotTheme.swift`.
 
 ## The protocol
 
-The goals, the rules of the text, the words and the decisions of `spec/protocol.md`. Each decision names the section
+The goals, the rules of the text, the words and the decisions of `PROTOCOL.md`. Each decision names the section
 of the protocol that holds its rule.
 
 ### Goals

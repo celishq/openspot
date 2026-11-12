@@ -4,7 +4,7 @@
   <p><strong>The macOS launcher that grows with you.</strong><br>Each tool is one file that you can send to a friend.</p>
   <p>
     <a href="https://github.com/celishq/openspot/releases/latest">Download</a> ·
-    <a href="spec/protocol.md">Make a tool</a> ·
+    <a href="GUIDE.md">Make a tool</a> ·
     <a href="CONTRIBUTING.md">Contribute</a>
   </p>
   <sub>Requires macOS 26 or later.</sub>
