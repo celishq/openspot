@@ -58,7 +58,7 @@ struct AccountSheetView: View {
         VStack(alignment: .leading, spacing: Self.gap) {
             heading("Write down your words")
             Text("On paper, in this order.").modifier(SpotSecondaryText())
-            LazyVGrid(columns: Self.columns, alignment: .leading, spacing: 6) {
+            LazyVGrid(columns: Self.columns, alignment: .leading, spacing: 4) {
                 ForEach(Array(flow.words.enumerated()), id: \.offset) { index, word in
                     chip(index + 1, word, isKnown: true)
                 }
@@ -98,7 +98,7 @@ struct AccountSheetView: View {
             TextField(flow.usesNsec ? "nsec1…" : "Type or paste your 12 words", text: $flow.phrase, axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(SpotType.input)
-                .lineLimit(2...4)
+                .lineLimit(2...3)
                 .focused($isTyping)
                 .padding(8)
                 .background(SpotTheme.ink.opacity(SpotTheme.fill), in: RoundedRectangle(cornerRadius: Self.chipRadius, style: .continuous))
@@ -109,7 +109,7 @@ struct AccountSheetView: View {
                 }
                 .onAppear { isTyping = true }
             if !flow.typed.isEmpty {
-                LazyVGrid(columns: Self.columns, alignment: .leading, spacing: 6) {
+                LazyVGrid(columns: Self.columns, alignment: .leading, spacing: 4) {
                     ForEach(Array(flow.typed.enumerated()), id: \.offset) { index, word in
                         chip(index + 1, word.text, isKnown: word.isKnown)
                     }
@@ -170,7 +170,7 @@ struct AccountSheetView: View {
             Text(word).foregroundStyle(isKnown ? SpotTheme.ink : .red).lineLimit(1)
         }
         .padding(.horizontal, 6)
-        .padding(.vertical, 4)
+        .padding(.vertical, 2)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(fill(isOn: false), in: RoundedRectangle(cornerRadius: Self.chipRadius, style: .continuous))
     }

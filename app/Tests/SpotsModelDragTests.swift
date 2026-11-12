@@ -752,6 +752,7 @@ final class SpotsModelDragTests: XCTestCase {
 
         let read = try await sheet.answer(["read"])
 
+        XCTAssertTrue(read.hasPrefix("grid=account\ngrid=create\ngrid=sign-in\n"))
         XCTAssertTrue(read.contains("view=account"))
         XCTAssertTrue(read.contains("button=create\ntitle=Create account\nshortcut=cmd+return\nlook=strong"))
         XCTAssertTrue(read.contains("button=sign-in\ntitle=Use existing account"))

@@ -33,7 +33,8 @@ public final class AccountSheet: Sendable, Equatable {
         Spot(id: Self.id, name: Self.name, url: URL(fileURLWithPath: "/"), kind: .list, symbol: Self.symbol, read: .sheet, order: .max, host: .account(self), growsFromField: true)
     }
 
-    /// One button of a step: its id, its words, and whether it is the main one, which ⌘↩ presses.
+    /// One button of a step: its id, its words, and whether it is the main one, which ⌘↩ presses and which stands on top
+    /// of the others, each on a line of its own.
     struct Button: Equatable {
         let id: String
         let title: String
@@ -84,12 +85,9 @@ public final class AccountSheet: Sendable, Equatable {
 
     private var sheet: String {
         let buttons = buttons
-        let line = (buttons.count == 1 ? ["."] : []) + buttons.map(\.id)
-        var head = [TextBlock.Field(key: "grid", value: Array(repeating: Self.viewPart, count: max(line.count, 1)).joined(separator: " "))]
-        if !buttons.isEmpty {
-            head.append(.init(key: "grid", value: line.joined(separator: " ")))
-        }
-        let blocks = [TextBlock(fields: head), TextBlock(fields: [.init(key: "view", value: Self.viewPart)])] + buttons.map { button in
+        let ordered = buttons.filter(\.isMain) + buttons.filter { !$0.isMain }
+        let head = [TextBlock.Field(key: "grid", value: Self.viewPart)] + ordered.map { TextBlock.Field(key: "grid", value: $0.id) }
+        let blocks = [TextBlock(fields: head), TextBlock(fields: [.init(key: "view", value: Self.viewPart)])] + ordered.map { button in
             var fields: [TextBlock.Field] = [.init(key: "button", value: button.id), .init(key: "title", value: button.title)]
             if button.isMain {
                 fields += [.init(key: "shortcut", value: "cmd+return"), .init(key: "look", value: "strong")]
