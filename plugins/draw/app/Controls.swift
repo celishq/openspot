@@ -323,7 +323,7 @@ struct Latch: View {
 /// double-click, and the + makes a new board.
 struct Sidebar: View {
     @ObservedObject var drawer: Drawer
-    @ObservedObject var studio: Studio
+    @ObservedObject var tabs: Tabs
     let shelf: Shelf
     let open: (URL) -> Void
     let make: () -> Void
@@ -356,7 +356,7 @@ struct Sidebar: View {
         .offset(x: drawer.open ? 0 : -300)
         .onAppear(perform: reload)
         .onChange(of: drawer.open) { _, open in if open { reload() } }
-        .onReceive(studio.$board.map(\.title).removeDuplicates()) { _ in reload() }
+        .onReceive(tabs.$current) { _ in reload() }
         .onChange(of: drawer.naming) { _, file in
             if let file, let entry = entries.first(where: { $0.file == file }) { startNaming(entry) }
         }
@@ -367,7 +367,7 @@ struct Sidebar: View {
     }
 
     private func row(_ entry: Shelf.Entry) -> some View {
-        let current = entry.file.standardizedFileURL == studio.file.standardizedFileURL
+        let current = entry.file.standardizedFileURL == tabs.current.file.standardizedFileURL
         return HStack(spacing: 10) {
             Group {
                 if let picture = NSImage(contentsOf: entry.picture) {
@@ -415,8 +415,8 @@ struct Sidebar: View {
     private func finish(_ entry: Shelf.Entry) {
         guard drawer.naming == entry.file else { return }
         drawer.naming = nil
-        if entry.file.standardizedFileURL == studio.file.standardizedFileURL {
-            studio.rename(name)
+        if let open = tabs.studio(for: entry.file) {
+            open.rename(name)
         } else {
             try? shelf.rename(entry.file, to: name)
         }

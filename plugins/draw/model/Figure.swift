@@ -112,7 +112,8 @@ struct Figure: Codable, Equatable, Identifiable {
     }
 
     /// Reads a figure, also one of an older board: a rectangle or an ellipse is a shape, a line is an arrow with no head,
-    /// and a junction is a tie whose arrows the board finds.
+    /// a junction is a tie whose arrows the board finds, and a tie is never black, so one saved before ties took a colour
+    /// is blue.
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: Key.self)
         id = try values.decode(UUID.self, forKey: .id)
@@ -135,7 +136,8 @@ struct Figure: Codable, Equatable, Identifiable {
         }
         form = try values.decodeIfPresent(Form.self, forKey: .form) ?? form
         heads = try values.decodeIfPresent(Heads.self, forKey: .heads) ?? heads
-        ink = try values.decodeIfPresent(Ink.self, forKey: .ink) ?? (kind == .tie ? .blue : .black)
+        ink = try values.decodeIfPresent(Ink.self, forKey: .ink) ?? .black
+        if kind == .tie, ink == .black { ink = .blue }
         weight = try values.decodeIfPresent(Weight.self, forKey: .weight) ?? .m
         dashed = try values.decodeIfPresent(Bool.self, forKey: .dashed) ?? false
         filled = try values.decodeIfPresent(Bool.self, forKey: .filled) ?? false

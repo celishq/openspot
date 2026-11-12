@@ -102,7 +102,6 @@ case "$1" in
     [ -d "$boards/$2.assets" ] && mv "$boards/$2.assets" "$trash.assets"
     mv "$file" "$trash.json" || fail "Openspot cannot move $title to the Trash, so it stays."
     [ -f "$boards/$2.png" ] && mv "$boards/$2.png" "$trash.png"
-    rm -f "$file.lock"
     printf 'toast=%s\n' "$(esc "Moved $title to the Trash.")"
     ;;
   reveal)

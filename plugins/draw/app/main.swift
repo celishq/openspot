@@ -10,8 +10,8 @@ guard FileManager.default.fileExists(atPath: file.path) else {
     FileHandle.standardError.write("Draw cannot find \(file.path).\n".data(using: .utf8)!)
     exit(1)
 }
-guard let lock = Lock.claim(file) else {
-    DistributedNotificationCenter.default().postNotificationName(Desk.showName, object: file.path, userInfo: nil, deliverImmediately: true)
+guard let lock = Lock.claim(file.deletingLastPathComponent().appendingPathComponent(".draw")) else {
+    DistributedNotificationCenter.default().postNotificationName(Desk.openName, object: file.path, userInfo: nil, deliverImmediately: true)
     exit(0)
 }
 MainActor.assumeIsolated {

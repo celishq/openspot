@@ -14,6 +14,8 @@ final class Studio: ObservableObject {
     private var past: [Board] = []
     private var future: [Board] = []
     private var pending: DispatchWorkItem?
+    /// What to do when the board's file is gone, because Openspot deleted the board.
+    var gone: (() -> Void)?
     /// The title on disk when this board last read or wrote it, so a rename in Openspot shows here.
     private var knownTitle: String
     let file: URL
@@ -95,12 +97,12 @@ final class Studio: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
     }
 
-    /// Writes the board and its picture. A board whose file is gone was deleted in Openspot, so it closes.
+    /// Writes the board and its picture. A board whose file is gone was deleted in Openspot, so its tab closes.
     func save() {
         pending?.cancel()
         pending = nil
         guard FileManager.default.fileExists(atPath: file.path) else {
-            NSApp.terminate(nil)
+            gone?()
             return
         }
         if let title = try? Board.load(from: file).title, title != knownTitle { board.title = title }
@@ -111,9 +113,9 @@ final class Studio: ObservableObject {
         }
     }
 
-    /// Takes the title that Openspot gave the board, and closes a board that Openspot deleted.
+    /// Takes the title that Openspot gave the board, and closes the tab of a board that Openspot deleted.
     func reloadTitle() {
-        guard FileManager.default.fileExists(atPath: file.path) else { return NSApp.terminate(nil) }
+        guard FileManager.default.fileExists(atPath: file.path) else { return gone?() ?? () }
         if let title = try? Board.load(from: file).title, title != knownTitle {
             board.title = title
             knownTitle = title
