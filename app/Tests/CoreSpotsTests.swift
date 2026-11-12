@@ -66,6 +66,19 @@ final class CoreSpotsTests: XCTestCase {
         XCTAssertEqual(scan.refused, [])
     }
 
+    func testTheFolderOfACoreSpotHoldsItsFilesAndIsNoSpot() throws {
+        let files = core.appendingPathComponent("party", isDirectory: true)
+        try FileManager.default.createDirectory(at: files, withIntermediateDirectories: true)
+        try write("party.sh", in: core, header: "title=Party")
+        try write("shared.sh", in: files)
+
+        let scan = try SpotFolder(url: folder, core: core, enabled: ["party"]).scan()
+
+        XCTAssertEqual(scan.spots.map(\.id), ["party"])
+        XCTAssertEqual(scan.spots.map(\.name), ["Party"])
+        XCTAssertEqual(scan.refused, [])
+    }
+
     func testEachLetterOfTheDefaultConfigIsALetterOfOneSpotThatShips() throws {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let config = Config(text: try String(contentsOf: repo.appendingPathComponent("app/defaults.toml"), encoding: .utf8))

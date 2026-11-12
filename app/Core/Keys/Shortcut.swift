@@ -14,10 +14,26 @@ public struct Shortcut: Hashable, Sendable {
         public static let option = Modifiers(rawValue: 2)
         public static let shift = Modifiers(rawValue: 4)
         public static let command = Modifiers(rawValue: 8)
+
+        /// One modifier by its word, such as option.
+        public init?(word: String) {
+            guard let found = Shortcut.modifierWords.first(where: { $0.word == word.lowercased() }) else { return nil }
+            self = found.modifier
+        }
+
+        /// The word of one modifier for the config file, such as option.
+        public var word: String? {
+            Shortcut.modifierWords.first { $0.modifier == self }?.word
+        }
+
+        /// One modifier as the Mac writes it, such as ⌥ Option.
+        public var label: String? {
+            Shortcut.modifierWords.first { $0.modifier == self }.map { "\($0.mark) \($0.name)" }
+        }
     }
 
-    private static let modifierWords: [(word: String, modifier: Modifiers, mark: String)] = [
-        ("cmd", .command, "⌘"), ("ctrl", .control, "⌃"), ("option", .option, "⌥"), ("shift", .shift, "⇧")
+    private static let modifierWords: [(word: String, modifier: Modifiers, mark: String, name: String)] = [
+        ("cmd", .command, "⌘", "Command"), ("ctrl", .control, "⌃", "Control"), ("option", .option, "⌥", "Option"), ("shift", .shift, "⇧", "Shift")
     ]
     private static let markOrder: [Modifiers] = [.control, .option, .shift, .command]
     private static let namedCodes: [String: UInt32] = ["space": 49, "return": 36, "tab": 48, "left": 123, "right": 124, "down": 125, "up": 126]
@@ -58,6 +74,12 @@ public struct Shortcut: Hashable, Sendable {
 
     private static func isHeld(_ modifiers: Modifiers) -> Bool {
         !modifiers.isDisjoint(with: [.command, .control, .option])
+    }
+
+    /// Whether only ⌘, or ⌘ with ⇧, holds it, as the shortcuts of each app do, such as ⌘C. A key for the whole Mac must
+    /// not take one.
+    public var isAppKey: Bool {
+        modifiers == .command || modifiers == [.command, .shift]
     }
 
     /// The words for the config file, in one order.

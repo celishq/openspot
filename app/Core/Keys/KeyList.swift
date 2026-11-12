@@ -5,6 +5,15 @@ import Foundation
 public struct KeyList: Equatable, Sendable {
     private static let prefix = "key:"
     private static let clear = "clear"
+    /// The word after the command's title on the key row of a spot with one command.
+    static let soleTitle = "shortcut"
+    /// The `shortcut` of a row that has no key yet.
+    public static let unset = "Record"
+
+    /// The run of the row that gives this command of a spot its key.
+    public static func keyRun(spot: String, command: String) -> String {
+        "\(prefix)\(spot):\(command)"
+    }
 
     public let file: ConfigFile
     public let spot: String
@@ -40,10 +49,13 @@ public struct KeyList: Equatable, Sendable {
     private var sheet: String {
         let keys = file.read().keys
         let actions = ["recents=false\n", "button=open\ntitle=Change\nclose=false\n", "button=\(Self.clear)\ntitle=Remove\nshortcut=cmd+backspace\n"]
+        let isSole = offers.count == 1
         let rows = offers.map { offer in
             let key = keys.first { $0.spot == spot && $0.act == .command(offer.id) }
             let hides = key == nil ? "hides=\(Self.clear)\n" : ""
-            return "row=\(Self.prefix)\(spot):\(offer.id)\ntitle=\(offer.title)\nicon=\(offer.icon ?? picture)\n\(hides)shortcut=\(key?.trigger.text ?? "Record")\n"
+            let detail = !isSole ? "" : key == nil ? "detail=Press ⏎ to set\n" : "detail=Press ⌘↓ to select\nfocus=Press ⏎ to change\n"
+            let title = isSole ? "\(offer.title) \(Self.soleTitle)" : offer.title
+            return "row=\(Self.keyRun(spot: spot, command: offer.id))\ntitle=\(title)\n\(detail)icon=\(offer.icon ?? picture)\n\(hides)type=hotkey\nshake=true\nshortcut=\(key?.trigger.text ?? Self.unset)\n"
         }
         return (actions + rows).joined(separator: "\n")
     }

@@ -36,11 +36,12 @@ extension SpotsModel {
         return index == selected ? .focused : .faded
     }
 
-    /// Runs the card, unless the open menu owns the pointer, as after a force press whose click ends on the card.
-    public func tap(_ id: String) {
+    /// Runs the card, unless the open menu owns the pointer, as after a force press whose click ends on the card. A click
+    /// with ⌘ opens the sheet of a spot whose press runs it (`press=open`).
+    public func tap(_ id: String, opening: Bool = false) {
         guard !menuOwnsPointer, let position = visible.firstIndex(where: { $0.id == id }) else { return }
         selected = position
-        runSelected()
+        if !opening || !openSelected() { runSelected() }
     }
 
     public func setLevel(_ id: String, to value: Double) {
@@ -69,6 +70,15 @@ extension SpotsModel {
         run(entry)
     }
 
+    /// Takes ⌘ with Enter. On the grid, it opens the sheet of the selected spot whose Enter runs it (`press=open`). Returns
+    /// false for any other spot, or away from the grid, so that the key goes on to the actions and the forms.
+    @discardableResult
+    public func openSelected() -> Bool {
+        guard isOnGrid, let entry = selectedEntry, entry.item == nil, entry.spot.pressRuns, entry.kind.opensSheet else { return false }
+        open(entry.id, moving: true)
+        return true
+    }
+
     /// Runs a command by its key, with the panel open only when its spot needs it.
     public func press(_ id: String) {
         guard let entry = entries.first(where: { $0.id == id }) else { return }
@@ -76,7 +86,7 @@ extension SpotsModel {
             sheet.afterAnswer { [weak self] in self?.press(id) }
             return
         }
-        guard entry.kind.opensSheet else {
+        guard entry.kind.opensSheet, !entry.spot.pressRuns else {
             run(entry)
             return
         }
@@ -142,9 +152,14 @@ extension SpotsModel {
         case .launch:
             if isShown, sheets[entry.id]?.isCardRunning != true, !entry.spot.takesDrops { host.dismiss() }
             sheets[entry.id]?.pressCard()
+        case .list where entry.spot.pressRuns:
+            if isShown, sheets[entry.id]?.isCardRunning != true { host.dismiss() }
+            sheets[entry.id]?.pressCard()
         case .list:
             if openList == entry.id {
                 closeList(moving: true)
+            } else if let command = entry.spot.soleCommand {
+                runSole(command, of: entry)
             } else {
                 open(entry.id, moving: true)
             }
@@ -152,6 +167,37 @@ extension SpotsModel {
             break
         case .widget:
             if let opens = entry.spot.opens { press(opens) }
+        }
+    }
+
+    /// Opens the settings of the selected spot that has one command, as ⌘ Return does: the key of its command, and the
+    /// rows of its own read beside it. It is false for any other spot, so the key goes on to the actions and the forms.
+    public func openSoleSettings() -> Bool {
+        guard openList == nil, let entry = selectedEntry, entry.spot.soleCommand != nil else { return false }
+        open(entry.id, moving: true)
+        return true
+    }
+
+    /// The footer of the selected spot that has one command: Return sets its key until it has one, and runs it after, and
+    /// ⌘ Return opens its settings.
+    var soleHint: String? {
+        guard openList == nil, let entry = selectedEntry, let command = entry.spot.soleCommand else { return nil }
+        guard assignedKeys.contains(where: { $0.spot == entry.id && $0.act == .command(command) }) else {
+            return "⏎ Set key   ⌘⏎ Settings   ⌘K Actions"
+        }
+        let title = entry.spot.offers.first?.title ?? command
+        return "⏎ \(title)   ⌘⏎ Settings   ⌘K Actions"
+    }
+
+    /// Runs the one command of a spot as its key does. With no key yet, it opens the spot's key and records one, so the
+    /// first Return sets up what each later Return runs.
+    private func runSole(_ command: String, of entry: Entry) {
+        if let key = assignedKeys.first(where: { $0.spot == entry.id && $0.act == .command(command) }) {
+            if isShown { host.dismiss() }
+            press(key)
+        } else {
+            open(entry.id, moving: true)
+            toggleRecording(id: KeyList.keyRun(spot: entry.id, command: command))
         }
     }
 

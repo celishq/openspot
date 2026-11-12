@@ -28,8 +28,39 @@ final class SamplePluginsTests: SamplePluginsCase {
     func testConfettiSourceTypeChecks() async throws {
         let confetti = try XCTUnwrap(try scan.spots.first { $0.id == "confetti" })
         XCTAssertEqual(confetti.symbol, "party.popper")
+        XCTAssertTrue(confetti.pressRuns)
+        let source = confetti.url.deletingPathExtension().appendingPathComponent("confetti.swift")
 
-        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-typecheck", confetti.url.path])
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-typecheck", source.path])
+    }
+
+    func testConfettiRefusesAPlayKeyThatTheAppsUse() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let data = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-key-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: data) }
+        try "option+c".write(to: data.appendingPathComponent("key"), atomically: true, encoding: .utf8)
+
+        for key in ["cmd+c", "cmd+shift+v"] {
+            let process = Process()
+            let out = Pipe()
+            process.executableURL = root.appendingPathComponent("plugins/confetti.spot/confetti.sh")
+            process.arguments = ["key", key]
+            process.environment = [
+                "PATH": "/usr/bin:/bin", "OPENSPOT_DATA": data.path, "HOME": data.path,
+                "OPENSPOT_SH": root.appendingPathComponent("app/Shell/openspot.sh").path
+            ]
+            process.standardOutput = out
+            process.standardInput = FileHandle.nullDevice
+            try process.run()
+            process.waitUntilExit()
+            let text = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+
+            XCTAssertTrue(text.contains("belongs to the apps on your Mac"), text)
+            XCTAssertTrue(text.contains("⌥C still plays it"), text)
+            XCTAssertEqual(try String(contentsOf: data.appendingPathComponent("key"), encoding: .utf8), "option+c")
+            XCTAssertFalse(FileManager.default.fileExists(atPath: data.appendingPathComponent("listen.pid").path))
+        }
     }
 
     func testNoMetricShowsTwiceInTheGrid() throws {
@@ -149,7 +180,7 @@ final class SamplePluginsTests: SamplePluginsCase {
         }
     }
 
-    func testCaffeinateReportsIfItIsOnAndOffersItsDurations() async throws {
+    func testCaffeinateOffersItsDurationsAsASheetOfRowsAlone() async throws {
         let caffeinate = try XCTUnwrap(try scan.spots.first { $0.name == "Caffeinate" })
 
         try await withPrivateHome { _ in
@@ -161,30 +192,12 @@ final class SamplePluginsTests: SamplePluginsCase {
             XCTAssertEqual(state.on, false)
             XCTAssertEqual(lines.items.map(\.run), ["1800", "3600", "7200", "14400", "28800", "0"])
             XCTAssertEqual(lines.items.map(\.title), ["30 minutes", "1 hour", "2 hours", "4 hours", "8 hours", "Until turned off"])
-            XCTAssertEqual(lines.parts.map(\.id), ["awake"])
+            XCTAssertEqual(lines.parts.map(\.id), [])
+            XCTAssertNil(lines.layout)
             XCTAssertEqual(lines.errors, [])
             XCTAssertEqual(lines.pick, .close)
             XCTAssertEqual(lines.primary, "Select")
             XCTAssertFalse(lines.keepsRecent)
-        }
-    }
-
-    func testCaffeinatesSwitchTurnsItOnUntilOffAndOff() async throws {
-        let caffeinate = try XCTUnwrap(try scan.spots.first { $0.name == "Caffeinate" })
-        try await withPrivateHome { _ in
-            let on = try await caffeinate.perform(.set("awake", to: "true"), timeout: 5)
-            var started = try await caffeinate.state(timeout: 5)
-            for _ in 0..<100 where started.on != true {
-                try await Task.sleep(for: .milliseconds(50))
-                started = try await caffeinate.state(timeout: 5)
-            }
-            let off = try await caffeinate.perform(.set("awake", to: "false"), timeout: 5)
-            let stopped = try await caffeinate.state(timeout: 5)
-
-            XCTAssertEqual(on, "Caffeinate is on until you turn it off")
-            XCTAssertEqual(started.subtitle, "Until off")
-            XCTAssertEqual(off, "Caffeinate is off")
-            XCTAssertEqual(stopped.on, false)
         }
     }
 

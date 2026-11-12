@@ -36,6 +36,8 @@ public struct Spot: Equatable, Sendable {
     public let growsFromField: Bool
     /// How its script runs.
     public let mode: SpotMode
+    /// Whether Enter and a click on its card call `open` though it has a sheet, which ⌘ opens (`press=open`).
+    public let pressRuns: Bool
     /// The file extensions that its card takes, with `folder` and `*`.
     public let drop: [String]
     /// Whether its header offers it as a float, which the person can give a key or a shake (protocol: Places).
@@ -65,6 +67,8 @@ public struct Spot: Equatable, Sendable {
     public let settings: [CommandOffer]
     /// The Settings rows of its own commands, which its sheet shows. Nil for a spot that draws its own sheet.
     public private(set) var keyList: KeyList?
+    /// Whether its sheet shows the keys of its commands above the rows that its own read prints.
+    public private(set) var listsKeysAbove = false
     /// Whether it comes with the app as a part of it: always on, and never edited, removed or shared as a file of the
     /// person's.
     public private(set) var isBuiltIn = false
@@ -95,6 +99,7 @@ public struct Spot: Equatable, Sendable {
         host: HostSheet? = nil,
         growsFromField: Bool = false,
         mode: SpotMode = .once,
+        pressRuns: Bool = false,
         drop: [String] = [],
         offersFloat: Bool = false,
         dataName: String? = nil,
@@ -136,6 +141,7 @@ public struct Spot: Equatable, Sendable {
         self.host = host
         self.growsFromField = growsFromField
         self.mode = mode
+        self.pressRuns = pressRuns
         self.drop = drop
         self.offersFloat = offersFloat
         self.dataName = dataName
@@ -169,14 +175,24 @@ public struct Spot: Equatable, Sendable {
         Icon(text: offers.first { $0.id == command }?.icon)?.symbol ?? symbol
     }
 
-    /// The same spot, which opens to the keys of its commands in this config when it lists commands and has no read of its
-    /// own.
+    /// The one command of a spot that opens to the keys of its commands, which Return runs.
+    public var soleCommand: String? {
+        guard keyList != nil, offers.count == 1 else { return nil }
+        return offers.first?.id
+    }
+
+    /// The same spot, which opens to the keys of its commands in this config when it lists commands. With a read of its
+    /// own, its sheet shows the keys beside its own rows.
     func listingKeys(in config: ConfigFile) -> Spot {
-        guard !offers.isEmpty, read == nil, host == nil else { return self }
+        guard !offers.isEmpty, host == nil else { return self }
         var spot = self
+        spot.keyList = KeyList(file: config, spot: id, offers: offers, picture: image ?? file ?? glyph ?? symbol)
+        guard read == nil else {
+            spot.listsKeysAbove = true
+            return spot
+        }
         spot.kind = .list
         spot.read = .sheet
-        spot.keyList = KeyList(file: config, spot: id, offers: offers, picture: image ?? file ?? glyph ?? symbol)
         return spot
     }
 
@@ -294,7 +310,7 @@ public struct Spot: Equatable, Sendable {
         switch kind {
         case .launch: return "Run"
         case .toggle: return "Toggle"
-        case .list: return "Open"
+        case .list: return pressRuns ? "Run" : "Open"
         case .slider: return nil
         case .widget: return opens == nil ? nil : "Open"
         }

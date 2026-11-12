@@ -308,9 +308,9 @@ public struct SpotFolder: Sendable {
         try sorted(in: folder).filter { $0.pathExtension == spotExtension && isFolder($0) }
     }
 
-    /// The files at the top of these spot folders, by their IDs.
+    /// The files at the top of these spot folders, by their IDs. A folder inside one, such as of shared code, is no spot.
     private static func files(in folders: [URL]) -> [(file: URL, id: String)] {
-        folders.flatMap { folder in ((try? sorted(in: folder)) ?? []).map { ($0, id(of: $0)) } }
+        folders.flatMap { folder in ((try? sorted(in: folder)) ?? []).filter { !isFolder($0) }.map { ($0, id(of: $0)) } }
     }
 
     private static func entries(of folder: String) -> [String] {

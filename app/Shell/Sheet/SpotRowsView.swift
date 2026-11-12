@@ -48,8 +48,32 @@ struct SpotRowsView: View {
                 .modifier(SpotSecondaryText())
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .transition(.identity)
-        } else {
+        } else if isGrid || !list.shown.contains(where: \.isPinned) {
             scroll
+        } else {
+            VStack(spacing: SpotTokens.listRowGap) {
+                pinned(.top)
+                if list.shown.contains(where: { !$0.isPinned }) {
+                    pinnedScroll
+                } else {
+                    Spacer(minLength: 0)
+                }
+                if list.setsApart {
+                    Rectangle()
+                        .fill(SpotTheme.ink.opacity(SpotTheme.fill))
+                        .frame(height: 1)
+                        .frame(height: SpotTokens.pinRuleRoom)
+                }
+                pinned(.bottom)
+            }
+        }
+    }
+
+    /// The rows that stay above or under the rows that scroll, such as the key of a spot's command.
+    private func pinned(_ pin: SpotItem.Pin) -> some View {
+        ForEach(list.shown.filter { $0.pin == pin }, id: \.run) { item in
+            Button { onRun(item) } label: { rowLabel(item) }
+                .buttonStyle(.plain)
         }
     }
 
@@ -71,6 +95,18 @@ struct SpotRowsView: View {
 
     private var bottomInset: CGFloat {
         SpotTokens.sheetFits(rows: list.shown.count, perLine: list.perLine) ? SpotTokens.padding : Self.bottomFade
+    }
+
+    /// The rows between the pinned rows, which fill exactly the room between them, with no margin or fade to reach past it.
+    private var pinnedScroll: some View {
+        ScrollViewReader { proxy in
+            ScrollView(showsIndicators: false) { lines }
+                .modifier(RowsFollow(selection: selected, items: list.shown, proxy: proxy))
+                .onChange(of: list.query) {
+                    guard let run = list.shown.first(where: { !$0.isPinned })?.run else { return }
+                    DispatchQueue.main.async { proxy.scrollTo(run, anchor: .top) }
+                }
+        }
     }
 
     private var lineScroll: some View {
@@ -111,7 +147,7 @@ struct SpotRowsView: View {
 
     private var lines: some View {
         LazyVStack(spacing: SpotTokens.listRowGap) {
-            ForEach(list.shown, id: \.run) { item in
+            ForEach(list.shown.filter { !$0.isPinned }, id: \.run) { item in
                 Button {
                     onRun(item)
                 } label: {
@@ -195,7 +231,9 @@ struct SpotRowsView: View {
                     .font(SpotType.body)
                     .foregroundStyle(SpotTheme.ink)
                     .lineLimit(1)
-                if let subtitle = item.subtitle {
+                if let focus = item.focusSubtitle {
+                    RowDetail(text: item.subtitle, focus: focus, run: item.run, selectedRun: selectedRun)
+                } else if let subtitle = item.subtitle {
                     Text(subtitle)
                         .font(SpotType.detail)
                         .modifier(SpotSecondaryText())
@@ -218,6 +256,22 @@ struct SpotRowsView: View {
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .modifier(RowRing(run: item.run, selectedRun: selectedRun, shape: row))
         .contentShape(row)
+    }
+}
+
+/// The second line of a row that says another thing while it is selected. It alone reads the selection, so that a move
+/// redraws only it.
+private struct RowDetail: View {
+    let text: String?
+    let focus: String
+    let run: String
+    let selectedRun: () -> String?
+
+    var body: some View {
+        Text(selectedRun() == run ? focus : text ?? "")
+            .font(SpotType.detail)
+            .modifier(SpotSecondaryText())
+            .lineLimit(1)
     }
 }
 

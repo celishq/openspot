@@ -226,10 +226,11 @@ public struct SpotPart: Equatable, Sendable, Identifiable {
         return false
     }
 
-    /// Whether the return key can use it.
-    public var isSelectable: Bool {
+    /// Whether the arrows can move the focus to it: a switch, a slider, a menu, a key, a field or a button.
+    public var isFocusable: Bool {
         switch control {
-        case .toggle, .shortcut: true
+        case .toggle, .shortcut, .menu, .slider: true
+        case .text(_, _, let isReadOnly): !isReadOnly
         default: press != .none
         }
     }

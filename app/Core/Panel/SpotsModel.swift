@@ -179,6 +179,8 @@ public final class SpotsModel {
     @ObservationIgnored public unowned let host: SpotsHost
     /// Where the plugins, the config and the recent rows live.
     @ObservationIgnored public let files: SpotFiles
+    /// The global keys that the person gave and that a spot still offers, as the app holds them.
+    private(set) var assignedKeys: [GlobalKey] = []
 
     public init(host: SpotsHost, files: SpotFiles = .standard, runs: SpotRuns? = nil) {
         self.host = host
@@ -394,7 +396,8 @@ public final class SpotsModel {
     }
 
     private func holdAssignedKeys(_ config: Config) {
-        host.hold(lastScan.offered(config.keys))
+        assignedKeys = lastScan.offered(config.keys)
+        host.hold(assignedKeys)
     }
 
     private func take(_ report: SpotRun.Report, of id: String) {

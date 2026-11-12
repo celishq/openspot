@@ -204,6 +204,10 @@ extension SpotsModel {
         host.change(motion, body, completion: completion)
     }
 
+    public func moveItemToEdge(last: Bool) {
+        openSheet?.list.moveToEdge(last: last)
+    }
+
     public func moveItem(by step: Int) {
         openSheet?.list.move(by: step)
     }
@@ -267,7 +271,7 @@ extension SpotsModel {
                 openForm(form, on: (entry, item))
                 return
             }
-            if action != nil || entry.spot.pick == .close {
+            if action != nil || (entry.spot.pick == .close && !item.staysOnPick) {
                 closingPick = (item, entry)
                 if isShown {
                     host.dismiss()

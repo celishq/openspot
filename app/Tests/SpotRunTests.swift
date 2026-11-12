@@ -140,7 +140,7 @@ final class SpotRunTests: XCTestCase {
         sheet.open(waits: true) {}
         try await wait("the parts") { sheet.panel != nil }
         let first = sheet.panel?.selectedPart?.id
-        sheet.movePart(by: 1)
+        _ = sheet.movePartLine(by: 1)
         XCTAssertNotEqual(sheet.panel?.selectedPart?.id, first)
 
         sheet.close()
@@ -158,7 +158,7 @@ final class SpotRunTests: XCTestCase {
         withObservationTracking { _ = sheet.panel } onChange: { partsChanged = true }
         withObservationTracking { _ = sheet.selectedPart } onChange: { selectionChanged = true }
 
-        sheet.movePart(by: 1)
+        XCTAssertTrue(sheet.movePartLine(by: 1))
 
         XCTAssertFalse(partsChanged)
         XCTAssertTrue(selectionChanged)

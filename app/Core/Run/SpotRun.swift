@@ -163,6 +163,8 @@ public final class SpotRun {
     }
     /// The last arrow press that asks the parts to scroll. It lives apart from the parts, so that a press redraws only the scroll.
     public internal(set) var nudge = SheetParts.Nudge.rest
+    /// The last press of return that asks the menu of a part to open. It lives apart from the parts, as the nudge does.
+    public internal(set) var menuOpening: SheetParts.MenuOpening?
     /// Whether this sheet is the open one, as the runs record it.
     public var isOpen: Bool {
         runs.openID == spot.id
@@ -294,10 +296,16 @@ public final class SpotRun {
     public struct Shape: Equatable, Sendable {
         public let rows: Int
         public let perLine: Int
+        /// Whether the search field lies over the rows, which takes the room of one row.
+        public let hasField: Bool
+        /// Whether a thin line sets the rows pinned at the bottom apart from the rows that scroll.
+        public let setsApart: Bool
 
-        public init(rows: Int, perLine: Int) {
+        public init(rows: Int, perLine: Int, hasField: Bool = true, setsApart: Bool = false) {
             self.rows = rows
             self.perLine = perLine
+            self.hasField = hasField
+            self.setsApart = setsApart
         }
     }
 
@@ -305,7 +313,7 @@ public final class SpotRun {
     func settle() {
         let next = rows.isBento
             ? Shape(rows: rows.drawing.lineCount(rows: rows.shown.count) * rows.drawing.columns, perLine: rows.drawing.columns)
-            : Shape(rows: rows.shown.count, perLine: rows.perLine)
+            : Shape(rows: rows.shown.count, perLine: rows.perLine, hasField: rows.search != .off, setsApart: rows.setsApart)
         if next != shape { shape = next }
         let waits = showsSheet && answered == nil && panel == nil && rows.search == .local && rows.isLoading && !rows.holdsItems
         let nextKind = heardKind ?? (waits ? .waiting : panel?.kind ?? .rows)

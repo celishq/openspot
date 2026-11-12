@@ -61,6 +61,9 @@ public enum SpotTokens {
     public static let placeGap: CGFloat = 8
     public static let sideGap: CGFloat = 20
     public static let controlPadding: CGFloat = 7
+    /// How far the outer edge of the focus ring of a part in a sheet lies outside the part's own box. It leaves clear space
+    /// on both sides of the ring, within the gap between two parts, as a system focus ring does.
+    public static let focusGap: CGFloat = 4
     public static let formLabelHeight: CGFloat = 14
     public static let formLabelGap: CGFloat = 4
     public static let formFieldGap: CGFloat = 12
@@ -97,6 +100,9 @@ public enum SpotTokens {
         return min(fit, room.height <= listRowHeight ? listIconSize : fit * 0.6)
     }
 
+    /// The height of the room that holds the thin line between the rows that scroll and the rows pinned under them.
+    public static let pinRuleRoom: CGFloat = 9
+
     /// How far a sheet's rows start below its top edge.
     public static let sheetRowsTop: CGFloat = sheetFieldDrop + listRowHeight + rowGap
 
@@ -107,10 +113,11 @@ public enum SpotTokens {
 
     /// The frame of a sheet with these rows. An empty sheet keeps room for one row, and a long one stops at the panel.
     /// More than one row on a line makes square buttons.
-    public static func sheetRect(rows: Int, perLine: Int = 1) -> CGRect {
+    public static func sheetRect(rows: Int, perLine: Int = 1, hasField: Bool = true, setsApart: Bool = false) -> CGRect {
         let lines = CGFloat(max((rows + perLine - 1) / perLine, 1))
         let line = perLine > 1 ? square(perLine: perLine) : listRowHeight
-        let height = sheetRowsTop + lines * line + (lines - 1) * listRowGap + padding
+        let height = sheetRowsTop - (hasField ? 0 : listRowHeight + rowGap) + lines * line + (lines - 1) * listRowGap + padding
+            + (setsApart ? pinRuleRoom + listRowGap : 0)
         return CGRect(x: halo, y: halo, width: gridWidth, height: min(height, sheetMaxHeight))
     }
 

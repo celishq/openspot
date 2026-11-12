@@ -110,6 +110,14 @@ final class SpotFolderTests: XCTestCase {
         XCTAssertEqual(try scan.spots.map(\.id).sorted(), ["home/coffee", "weather"])
     }
 
+    func testAFolderInsideASpotFolderIsNoSpot() throws {
+        try write("confetti.spot/confetti.sh")
+        try write("confetti.spot/confetti/helper.sh")
+
+        XCTAssertEqual(try scan.spots.map(\.id), ["confetti"])
+        XCTAssertEqual(try scan.refused, [])
+    }
+
     func testAScanWrapsALooseScriptWithItsReadmePreviewAndProgramIntoASpotFolder() throws {
         try write("weather.sh")
         try "Shows the weather.".write(to: folder.appendingPathComponent("weather.md"), atomically: true, encoding: .utf8)

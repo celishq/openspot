@@ -138,7 +138,7 @@ struct SpotsView: View {
     private static func rect(of id: String?, in model: SpotsModel) -> CGRect {
         if let rect = model.sheets[id ?? ""]?.partsRect { return rect }
         let shape = model.sheets[id ?? ""]?.shape
-        return SpotTokens.sheetRect(rows: shape?.rows ?? 0, perLine: shape?.perLine ?? 1)
+        return SpotTokens.sheetRect(rows: shape?.rows ?? 0, perLine: shape?.perLine ?? 1, hasField: shape?.hasField ?? true, setsApart: shape?.setsApart ?? false)
     }
 
     /// The heights of blur that the grid, each sheet as it is now and the tallest sheet ask for.
@@ -255,7 +255,8 @@ struct SpotsView: View {
         guard !coversGrid else { return false }
         if let form = model.form { return form.draft.choices != nil }
         guard sheetOpen else { return true }
-        return model.sheets[sheetID ?? ""]?.kind.showsField != false
+        guard let sheet = model.sheets[sheetID ?? ""] else { return true }
+        return sheet.kind.showsField && sheet.list.search != .off
     }
 }
 

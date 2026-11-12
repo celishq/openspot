@@ -10,6 +10,11 @@ public struct ActionMenu: Equatable, Sendable {
         var isQuiet = false
     }
 
+    /// What Enter does on a row that shows a key: it records a new one.
+    static let changeTitle = "Change"
+    /// What Enter does on a row that has no key yet.
+    static let setTitle = "Set"
+
     /// The key that opens and closes the menu, as the footer shows it.
     public static let key = "⌘K"
 
@@ -27,7 +32,8 @@ public struct ActionMenu: Equatable, Sendable {
     /// Returns nil when there is nothing to list.
     public init?(spot: Spot, item: SpotItem?, showsPrimary: Bool = true, extras: [CommandAction] = []) {
         var rows: [Row] = []
-        if showsPrimary, let title = spot.primaryTitle(hasItem: item != nil) {
+        let keyTitle = item.flatMap { $0.records ? ($0.shortcut == KeyList.unset ? Self.setTitle : Self.changeTitle) : nil }
+        if showsPrimary, let title = item?.openTitle ?? keyTitle ?? spot.primaryTitle(hasItem: item != nil) {
             rows.append(Row(title: title, keyLabel: "⏎", action: nil))
         }
         rows += spot.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }
@@ -71,12 +77,13 @@ public struct ActionMenu: Equatable, Sendable {
     }
 
     /// The first two keys, an action that holds Esc, and the key of this menu, in words for a footer. The key of a running row
-    /// says that it stops the call.
-    public func hint(stopping isRunning: (Row) -> Bool) -> String {
+    /// says that it stops the call. A second key of the item, such as ⌘⏎ Settings, follows the first.
+    public func hint(stopping isRunning: (Row) -> Bool, second: String? = nil) -> String {
         let keyed = rows.filter { !$0.keyLabel.isEmpty && !$0.isQuiet }
         let isEscape = { (row: Row) in row.action?.key == ActionKey(name: "escape") }
         let shown = Array(keyed.filter { !isEscape($0) }.prefix(2)) + keyed.filter(isEscape)
-        let keys = shown.map { "\($0.keyLabel) \(isRunning($0) ? Self.stopTitle(of: $0) : $0.title)" }
+        var keys = shown.map { "\($0.keyLabel) \(isRunning($0) ? Self.stopTitle(of: $0) : $0.title)" }
+        if let second { keys.insert(second, at: min(1, keys.count)) }
         return (keys + ["\(Self.key) Actions"]).joined(separator: "   ")
     }
 

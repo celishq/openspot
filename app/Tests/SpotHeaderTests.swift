@@ -33,6 +33,28 @@ final class SpotHeaderTests: XCTestCase {
         XCTAssertFalse(launch.offersFloat)
     }
 
+    func testPressOpenMakesAPressOfASpotWithASheetRunIt() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-press-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let runs = folder.appendingPathComponent("runs.sh"), opens = folder.appendingPathComponent("opens.sh")
+        let unknown = folder.appendingPathComponent("unknown.sh")
+        try "#!/bin/sh\n# on=sheet.open\n# press=open\n".writeScript(to: runs)
+        try "#!/bin/sh\n# on=sheet.open\n".writeScript(to: opens)
+        try "#!/bin/sh\n# on=sheet.open\n# press=jump\n".writeScript(to: unknown)
+
+        let run = try XCTUnwrap(try SpotFile(file: runs, id: "runs")?.spots.first)
+        let open = try XCTUnwrap(try SpotFile(file: opens, id: "opens")?.spots.first)
+
+        XCTAssertTrue(run.pressRuns)
+        XCTAssertEqual(run.primaryTitle(hasItem: false), "Run")
+        XCTAssertFalse(open.pressRuns)
+        XCTAssertEqual(open.primaryTitle(hasItem: false), "Open")
+        XCTAssertThrowsError(try SpotFile(file: unknown, id: "unknown")) { error in
+            XCTAssertTrue((error as? SpotError)?.reason.contains("Use open or sheet") == true, "\(error)")
+        }
+    }
+
     func testAnUnknownPlaceRefusesThePlugin() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-place-\(UUID().uuidString)")
         try "#!/bin/sh\n# on=panel.open\n# offers=dock\n".writeScript(to: url)
