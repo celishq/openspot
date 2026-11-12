@@ -51,16 +51,12 @@ public final class PlaygroundPanel {
         return id
     }
 
-    /// Shows the spot in a place: opens its sheet, or closes the sheet for its card on the grid or for the main search,
-    /// whose text the person types in the panel's own field.
+    /// Shows the spot in a place: opens its sheet, or closes it for its card on the grid.
     public func show(_ place: PlaygroundPlace, id: String) {
         switch place {
         case .sheet:
             if model.openList != id { _ = model.openSheet(id) }
         case .card:
-            if model.openList != nil { model.closeList(moving: false) }
-            model.searchText = ""
-        case .search:
             if model.openList != nil { model.closeList(moving: false) }
         }
     }

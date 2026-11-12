@@ -53,7 +53,7 @@ final class PlaygroundPlaceTests: XCTestCase {
     func testTheMainSearchShowsTheRowsThatTheSpotAnswers() async throws {
         let id = try panel.place(file: nil, text: answering)
 
-        panel.show(.search, id: id)
+        panel.show(.card, id: id)
         panel.model.searchText = "21"
 
         try await wait("the answer") { self.panel.model.visible.contains { $0.item?.title == "Twice 21" } }
@@ -74,12 +74,9 @@ final class PlaygroundPlaceTests: XCTestCase {
     func testEachPlaceNamesTheLineThatTheSpotLacks() throws {
         let bare = Spot(id: "bare", name: "Bare", url: folder)
         let card = Spot(id: "card", name: "Card", url: folder, read: SpotRead(moments: [.panel]))
-        let answer = Spot(id: "answer", name: "Answer", url: folder, answers: AnswerPattern("^[0-9]"))
 
         XCTAssertNil(PlaygroundPlace.sheet.lack(of: bare))
         XCTAssertEqual(PlaygroundPlace.card.lack(of: bare), "The panel reads a card with on=panel.open or on=clock.<seconds>.")
         XCTAssertNil(PlaygroundPlace.card.lack(of: card))
-        XCTAssertEqual(PlaygroundPlace.search.lack(of: card), "The main search asks a spot with on=search.text <pattern>, such as on=search.text ^[0-9].")
-        XCTAssertNil(PlaygroundPlace.search.lack(of: answer))
     }
 }

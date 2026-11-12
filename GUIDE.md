@@ -51,8 +51,9 @@ Each group of lines that the spot prints is a **block**: here, one `text` block 
 Try each example of this page in the playground before you put it in the plugins folder.
 
 - **Playground.** Open the Playground spot, or run `openspot sandbox [file]`. Type a spot, or pick one from Examples.
-  Choose where it shows: its sheet, its card or the main search. Under it, you see each call with its arguments, its
-  stdin, what it printed, its stderr and how it ended. When you open a file, edits go straight to the file.
+  It runs in a panel of its own: pick its sheet or its card, and type in the panel's search to try its answers. Under
+  it, you see each call with its arguments, its stdin, what it printed, its stderr and how it ended. When you open a
+  file, edits go straight to the file.
 - **New spot.** `openspot spot new <name> --from <kind>` writes a working spot that you can change. The kinds are
   `button`, `list`, `number` and `form`.
 - **One call.** `openspot spot run <id> [call] [value]...` runs one call the way Openspot does, and prints everything the
