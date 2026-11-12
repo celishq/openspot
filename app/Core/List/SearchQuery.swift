@@ -16,6 +16,11 @@ public struct SearchQuery: Equatable, Sendable {
     /// The text as a glyph matches it whole: with no mark that asks for a picture or a text form.
     private let plain: String
 
+    /// The lines that give the text and its forms to a script on stdin: `search=` and a `form=` for each form.
+    public var input: String {
+        TextBlock(fields: [.init(key: "search", value: text)] + forms.map { .init(key: "form", value: $0) }).text
+    }
+
     public init(text: String, layouts: [KeyLayout] = KeyLayout.enabled) {
         self.text = text.trimmingCharacters(in: .whitespaces)
         plain = FoldedItem.plain(self.text)
@@ -44,15 +49,14 @@ public struct SearchQuery: Equatable, Sendable {
     }
 
     public func matching(_ items: [SpotItem], recent: [String] = []) -> [SpotItem] {
-        ranking(SearchIndex(items), items: items, among: Array(items.indices), recent: recent).map { items[$0] }
+        ranking(SearchIndex(items), items: items, among: Array(items.indices), weights: PickWeights(recent)).map { items[$0] }
     }
 
     /// The indices of the items among the given ones that match, best first. The index holds the texts of the items.
-    func ranking(_ index: SearchIndex, items: [SpotItem], among indices: [Int], recent: [String]) -> [Int] {
-        let weights = Self.weights(of: recent)
-        return index.withItems { folded in
+    func ranking(_ index: SearchIndex, items: [SpotItem], among indices: [Int], weights: PickWeights) -> [Int] {
+        index.withItems { folded in
             indices.compactMap { index in
-                match(folded[index]).map { (rank: $0, weight: weights[items[index].run] ?? 0, index: index) }
+                match(folded[index]).map { (rank: $0, weight: weights.weight(of: items[index].run), index: index) }
             }
         }
         .sorted { ($0.rank, -$0.weight, $0.index) < ($1.rank, -$1.weight, $1.index) }
@@ -73,37 +77,26 @@ public struct SearchQuery: Equatable, Sendable {
     }
 
     /// The best `limit` items that match in all lists, as one ranking, with the index of the list each came from. Each list
-    /// after the first that has no pick gives at most `unpickedLimit` items. Each list keeps only its own best, and only
-    /// the items kept are copied out.
+    /// after the first that has no pick gives at most `unpickedLimit` items.
     public func matching(in lists: [ItemList], unpickedLimit: Int = .max, limit: Int = .max) -> [(list: Int, item: SpotItem)] {
-        lists.enumerated()
-            .flatMap { index, list in
-                let texts = list.search == .local ? list.searchIndex : SearchIndex(list.all)
-                let count = min(limit, index > 0 && list.recent.isEmpty ? unpickedLimit : .max)
-                return Self.best(ranked(texts, items: list.all, recent: list.recent), count: count).map { (list: index, match: $0) }
-            }
-            .sorted { first, second in
-                let one = first.match, two = second.match
-                return (one.rank, -one.weight, first.list, one.offset) < (two.rank, -two.weight, second.list, two.offset)
-            }
-            .prefix(limit)
-            .map { (list: $0.list, item: lists[$0.list].all[$0.match.offset]) }
+        var search = MainSearch()
+        return search.matching(self, in: lists, unpickedLimit: unpickedLimit, limit: limit)
     }
 
     /// One item that matches: its rank, the weight of its picks and its place in its list.
-    private typealias Ranked = (rank: Int, weight: Double, offset: Int)
+    typealias Ranked = (rank: Int, weight: Double, offset: Int)
 
-    private func ranked(_ index: SearchIndex, items: [SpotItem], recent: [String]) -> [Ranked] {
-        let weights = Self.weights(of: recent)
-        return index.withItems { folded in
-            items.indices.compactMap { offset in
-                match(folded[offset]).map { (rank: $0, weight: weights[items[offset].run] ?? 0, offset: offset) }
+    /// The items among the given offsets that match, in the order of the offsets.
+    func ranked(_ index: SearchIndex, items: [SpotItem], among offsets: [Int], weights: PickWeights) -> [Ranked] {
+        index.withItems { folded in
+            offsets.compactMap { offset in
+                match(folded[offset]).map { (rank: $0, weight: weights.weight(of: items[offset].run), offset: offset) }
             }
         }
     }
 
     /// The best `count` matches of one list: by rank, then by the weight of picks, then by place.
-    private static func best(_ matches: [Ranked], count: Int) -> [Ranked] {
+    static func best(_ matches: [Ranked], count: Int) -> [Ranked] {
         guard count < matches.count else { return matches }
         let precedes = { (one: Ranked, two: Ranked) in (one.rank, -one.weight, one.offset) < (two.rank, -two.weight, two.offset) }
         var kept: [Ranked] = []
@@ -113,17 +106,6 @@ public struct SearchQuery: Equatable, Sendable {
             if kept.count > count { kept.removeLast() }
         }
         return kept
-    }
-
-    /// The weight of each picked run, from the latest pick first: each pick weighs 0.9 of the one after it.
-    private static func weights(of picks: [String]) -> [String: Double] {
-        var weights: [String: Double] = [:]
-        var weight = 1.0
-        for run in picks {
-            weights[run, default: 0] += weight
-            weight *= 0.9
-        }
-        return weights
     }
 
     private func match(_ item: FoldedItem) -> Int? {

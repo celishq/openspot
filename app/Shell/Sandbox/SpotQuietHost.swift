@@ -16,10 +16,11 @@ final class SpotQuietHost: SpotsHost {
     func notify(_ text: String) {}
     func notify(_ text: String, fix: URL) {}
     func confirm(_ text: String) {}
-    func applyConfig() {}
+    func work(_ text: String) {}
+    func applyConfig(_ config: Config) {}
     func setEntryKey(on isOn: Bool) {}
     func hold(_ keys: [GlobalKey]) {}
-    func chooseFiles(for command: Spot, then take: @escaping ([String]) -> Void) {}
+    func chooseFiles(for spot: Spot, then take: @escaping ([String]) -> Void) {}
     func float(_ entry: SpotsModel.Entry, followsDrag: Bool) {}
     func land(_ id: String) {}
     var isPointerOverDrop: Bool { false }
@@ -29,14 +30,8 @@ final class SpotQuietHost: SpotsHost {
     func copy(_ file: URL) {}
     func prepare(_ items: [SpotItem], glyphs: [String]) async {}
 
-    func shippedSpots(folder: PluginFolder, config: ConfigFile, update: UpdateSpot?) -> [Spot] {
-        ShippedSpot.commands(
-            folder: folder.url,
-            guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder.url,
-            app: Bundle.main.executablePath ?? "",
-            config: config,
-            core: folder.core
-        )
+    func agentPrompt(for folder: URL) -> AgentPrompt {
+        AgentPrompt(folder: folder, guide: Bundle.main.url(forResource: "GUIDE", withExtension: "md") ?? folder, app: AgentPrompt.command(of: Bundle.main.executablePath ?? ""))
     }
 
     func change(_ motion: PanelMotion?, _ body: () -> Void, completion: @escaping @MainActor () -> Void) {

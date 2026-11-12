@@ -2,6 +2,7 @@
 # title=Record
 # icon=record.circle
 # detail=Record the screen, again to stop
+# uses=screen,clipboard
 state=$(openspot screen record status | head -n 1)
 if [ "$state" = "state=recording" ]; then
   files=$(openspot screen record stop) || exit 1

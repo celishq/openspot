@@ -1,9 +1,9 @@
 import OpenspotCore
 import SwiftUI
 
-/// The listing of a spot in the store, in a sheet under the shelf of its card: its name and description, where it shows,
-/// where it stands in the store, its readme, the rows of its preview, and buttons that copy a prompt for the person's
-/// agent, publish it or share its package. It grows out of the bottom of its card.
+/// The listing of a spot in the store, in a sheet under the line of its row: its name and description, where it stands in
+/// the store, its readme and the rows of its preview. A spot of the person's own with no readme offers to write one. It
+/// grows out of the bottom of its row.
 struct SpotListingSheet: View {
     let item: SpotDock.Item
     let listing: SpotListing
@@ -12,9 +12,9 @@ struct SpotListingSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: SpotTokens.padding) {
             HStack(spacing: SpotTokens.padding) {
-                SpotItemIcon(icon: item.command.icon, glyph: item.command.glyph, symbol: item.command.symbol, size: SpotTokens.glyphSize)
+                SpotItemIcon(icon: item.spot.icon, glyph: item.spot.glyph, symbol: item.spot.symbol, size: SpotTokens.glyphSize)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(item.command.name)
+                    Text(item.spot.name)
                         .font(SpotType.title)
                         .foregroundStyle(SpotTheme.ink)
                     if let description = listing.description {
@@ -24,7 +24,6 @@ struct SpotListingSheet: View {
                     }
                 }
                 Spacer(minLength: 0)
-                StateChoice(state: item.state, canBeOff: item.origin != .builtIn) { model.setState($0, of: item.id) }
                 if let status {
                     Text(status)
                         .font(SpotType.detail)
@@ -33,14 +32,6 @@ struct SpotListingSheet: View {
                 if item.isOwn, listing.readme == nil {
                     ListingButton(title: "Write the readme") { model.writeReadme(item.id) }
                     ListingButton(title: "Copy prompt to write the listing") { model.copyListingWritePrompt(item.id) }
-                } else {
-                    if item.isOwn, item.publication != .current {
-                        ListingButton(title: "Publish") { Task { await model.publish(item.id) } }
-                    }
-                    if item.publication != nil {
-                        ListingButton(title: "Share") { model.sharePackage(item.id) }
-                    }
-                    ListingButton(title: item.isOwn ? "Copy prompt to change" : "Copy prompt to review") { model.copyListingPrompt(item.id) }
                 }
             }
             HStack(alignment: .top, spacing: SpotTokens.sideGap) {
@@ -93,35 +84,6 @@ struct SpotListingSheet: View {
     private var readme: AttributedString {
         guard let text = listing.readme else { return AttributedString("This spot has no readme yet.") }
         return (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
-    }
-}
-
-/// Where a spot shows, as segments drawn in SwiftUI, since an AppKit control does not clip with a sheet that grows: on the
-/// grid, in search only, or off, which a built-in spot does not offer.
-private struct StateChoice: View {
-    let state: SpotDock.State
-    let canBeOff: Bool
-    let choose: (SpotDock.State) -> Void
-
-    var body: some View {
-        let choices: [(SpotDock.State, String)] = [(.onGrid, "Grid"), (.searchOnly, "Search only")] + (canBeOff ? [(.off, "Off")] : [])
-        HStack(spacing: 2) {
-            ForEach(choices, id: \.1) { choice, title in
-                Button { choose(choice) } label: {
-                    Text(title)
-                        .font(SpotType.action)
-                        .foregroundStyle(SpotTheme.ink)
-                        .padding(.horizontal, SpotTokens.controlPadding * 1.5)
-                        .frame(height: SpotTokens.menuRowHeight - SpotTokens.controlPadding - 4)
-                        .background(choice == state ? SpotTheme.keycap : .clear, in: Capsule())
-                        .contentShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(choice == state ? .isSelected : [])
-            }
-        }
-        .padding(2)
-        .background(SpotTheme.ink.opacity(SpotTheme.fill), in: Capsule())
     }
 }
 

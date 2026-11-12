@@ -2,8 +2,8 @@ import XCTest
 @testable import OpenspotCore
 
 final class SheetLayoutTests: XCTestCase {
-    private func output(_ text: String) -> PluginOutput {
-        PluginOutput(text: text)
+    private func output(_ text: String) -> SpotOutput {
+        SpotOutput(text: text)
     }
 
     private func placement(_ text: String) throws -> SheetPlacement {
@@ -83,7 +83,7 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testTilesHaveTheOneRowHeightAndGap() throws {
-        let sheet = try XCTUnwrap(SheetParts(output: PluginOutput(text: "text=a\ntitle=A\nlook=tile\n\ntext=b\ntitle=B\nlook=tile\n"))).placement
+        let sheet = try XCTUnwrap(SheetParts(output: SpotOutput(text: "text=a\ntitle=A\nlook=tile\n\ntext=b\ntitle=B\nlook=tile\n"))).placement
 
         XCTAssertEqual(try XCTUnwrap(sheet.frames["a"]).rect.height, SheetPlacement.rowHeight)
         XCTAssertEqual(try XCTUnwrap(sheet.frames["b"]).rect.minY, SheetPlacement.rowHeight + SheetPlacement.gap)
@@ -280,7 +280,7 @@ final class SheetLayoutTests: XCTestCase {
     }
 
     func testAPartStartsWithItsPartKey() throws {
-        let first = output("grid=job\ngrid=job\n\ngauge=job\ntitle=Copying\nvalue=0.3\n")
+        let first = output("grid=job\ngrid=job\n\ngraph=job\ntitle=Copying\nvalue=0.3\n")
         let later = output("grid=p\ngrid=p\n\nblock=progress\npart=job\ncell=p\ntitle=Copying\nlevel=30\n")
 
         XCTAssertEqual(first.parts.first?.control, .progress(level: 30))
@@ -298,7 +298,7 @@ final class SheetLayoutTests: XCTestCase {
         XCTAssertEqual(faults("grid=a b\n\nbutton=a\nlook=strong\nicon=play\n\nbutton=b\nlook=strong\nicon=stop\n"), ["only one part can use look=strong"])
         XCTAssertEqual(faults("grid=a - b\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), ["the divider in row 1 is not whole"])
         XCTAssertEqual(faults("grid=a b\ngrid=b a\n\ntext=a\ntitle=A\n\ntext=b\ntitle=B\n"), ["a and b overlap at one size, so neither lies on top"])
-        XCTAssertEqual(faults("layout=pair\n\ntext=a\ntitle=A\n"), ["a sheet has no layout key, so draw it with grid= lines"])
+        XCTAssertEqual(faults("grid=a\nlayout=pair\n\ntext=a\ntitle=A\n"), ["a sheet has no layout key, so draw it with grid= lines"])
     }
 
     func testACheckOfOneSheetReportsWhatCannotBeRead() {
@@ -310,11 +310,11 @@ final class SheetLayoutTests: XCTestCase {
     func testTheFaultsThatComeFromSize() {
         func faults(_ text: String) -> [String] { output(text).partFaults }
 
-        XCTAssertEqual(faults("slider=a\nvalue=255\n"), ["the part a has a level of 255, outside 0 to 100"])
-        XCTAssertEqual(faults("slider=a\nvalue=255\nmax=255\n"), [])
+        XCTAssertEqual(faults("field=a\ntype=slider\nvalue=255\n"), ["the part a has a level of 255, outside 0 to 100"])
+        XCTAssertEqual(faults("field=a\ntype=slider\nvalue=255\nmax=255\n"), [])
         XCTAssertEqual(faults("grid=a b c d\ngrid=a b c d\n\nnumber=a\nvalue=1\n\ntext=b\ntitle=B\n\ntext=c\ntitle=C\n\ntext=d\ntitle=D\n"), ["the part a needs at least 2 columns of 4 for its number"])
         XCTAssertEqual(faults("grid=a a\n\nnumber=a\nvalue=1\ntitle=CPU\n"), ["the part a needs at least 2 rows for its number and title"])
-        XCTAssertEqual(faults("grid=p p\n\ngauge=p\nvalue=0.01\n"), ["the part p needs at least 2 rows for its title and bar"])
+        XCTAssertEqual(faults("grid=p p\n\ngraph=p\nvalue=0.01\n"), ["the part p needs at least 2 rows for its title and bar"])
         XCTAssertEqual(faults("grid=a b c d\n\ntext=a\ntitle=A very long title indeed\n\ntext=b\ntitle=B\n\ntext=c\ntitle=C\n\ntext=d\ntitle=D\n"), ["the title of the part a may not fit its cell"])
         XCTAssertEqual(faults("grid=a b\ngrid=t b\n\ntext=a\ntitle=Item\n\ntext=t\ntitle=Other\n\nfield=b\nvalue=Hi\n"), ["the part a sits in rows that stretch, so draw a choice over two lines for a list", "the part t sits in rows that stretch, so draw a choice over two lines for a list"])
         XCTAssertEqual(faults(String(repeating: "grid=a\n", count: 20) + "\nfield=a\nvalue=Hi\n"), ["the drawing is too tall: 914pt of 442pt"])

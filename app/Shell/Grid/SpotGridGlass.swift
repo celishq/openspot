@@ -19,6 +19,7 @@ struct SpotGridGlass: View {
         let isLifted: Bool
         /// Whether the card is lifted or still lands, when it shows no press.
         let isHeld: Bool
+        var focus = CardFocus.none
     }
 
     let cards: [Card]
@@ -66,6 +67,7 @@ struct SpotGridGlass: View {
             .animation(SpotMotion.press, value: isPress && card.isPressed)
             .scaleEffect(isShown ? 1 : SpotMotion.hiddenScale)
             .scaleEffect(card.isLifted ? SpotMotion.liftedScale : 1)
+            .modifier(SpotFocusLook(focus: card.focus))
             .modifier(SpotCardPlace(motion: card.motion, lift: card.isLifted ? lift : nil))
             .opacity(card.isCovered || (isPress && !card.isPressed) ? 0 : 1)
     }

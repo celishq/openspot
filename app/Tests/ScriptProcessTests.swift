@@ -22,6 +22,32 @@ final class ScriptProcessTests: XCTestCase {
         return Spot(id: name, name: name, url: url)
     }
 
+    func testRunningScriptsHoldNoThreadEach() async throws {
+        let plugin = try writePlugin("stays.sh", "#!/bin/sh\nprintf 'title=A\\n---\\n'\nexec sleep 30\n")
+        let before = Self.threadCount()
+        var processes: [ScriptProcess] = []
+        for _ in 0..<16 {
+            let process = ScriptProcess(url: plugin.url, mode: .stays, stopPause: Self.stopPause)
+            var frames = process.start().makeAsyncIterator()
+            _ = try await frames.next()
+            processes.append(process)
+        }
+
+        let during = Self.threadCount()
+        processes.forEach { $0.stop() }
+        for process in processes { process.finish(by: Date().addingTimeInterval(5)) }
+
+        XCTAssertLessThan(during - before, 16)
+    }
+
+    private static func threadCount() -> Int {
+        var list: thread_act_array_t?
+        var count: mach_msg_type_number_t = 0
+        guard task_threads(mach_task_self_, &list, &count) == KERN_SUCCESS, let list else { return 0 }
+        vm_deallocate(mach_task_self_, vm_address_t(bitPattern: list), vm_size_t(Int(count) * MemoryLayout<thread_t>.stride))
+        return Int(count)
+    }
+
     func testReturnsWhatThePluginPrintsForTheArguments() async throws {
         let plugin = try writePlugin("echo.sh", "#!/bin/sh\necho \"$1\"\n")
 
@@ -132,6 +158,40 @@ final class ScriptProcessTests: XCTestCase {
         }
     }
 
+    func testAScriptThatCannotStartClosesItsPipesAndEnds() async throws {
+        let before = Self.openFileCount()
+        var processes: [ScriptProcess] = []
+        var times = 0
+        for _ in 0..<20 {
+            let process = ScriptProcess(url: folder.appendingPathComponent("missing.sh"))
+            let ended = expectation(description: "the end")
+            process.onExit { _ in ended.fulfill() }
+            do { for try await _ in process.start() {} } catch {}
+            await fulfillment(of: [ended], timeout: 5)
+            times += 1
+            processes.append(process)
+        }
+
+        XCTAssertEqual(times, 20)
+        XCTAssertLessThan(Self.openFileCount() - before, 6)
+    }
+
+    func testAMissingScriptFailsAsAMissingFile() async throws {
+        let url = folder.appendingPathComponent("missing.sh")
+
+        do {
+            _ = try await ScriptProcess.output(url: url)
+            XCTFail("no failure")
+        } catch let error as CocoaError {
+            XCTAssertEqual(error.code, .fileNoSuchFile)
+            XCTAssertEqual(error.userInfo[NSFilePathErrorKey] as? String, url.path)
+        }
+    }
+
+    private static func openFileCount() -> Int {
+        (try? FileManager.default.contentsOfDirectory(atPath: "/dev/fd").count) ?? 0
+    }
+
     func testAStopRightAfterTheStartLeavesNoScriptRunning() async throws {
         let plugin = try writePlugin("slow.sh", "#!/bin/sh\n\(writesPid("script"))\nsleep 30\n")
         let process = ScriptProcess(url: plugin.url, stopPause: Self.stopPause)
@@ -208,6 +268,19 @@ final class ScriptProcessTests: XCTestCase {
             try await Task.sleep(for: .milliseconds(10))
         }
         XCTFail("waited too long")
+    }
+
+    func testATerminalStopEndsTheGroupOfEachScriptThatRuns() async throws {
+        let plugin = try writePlugin("long.sh", "#!/bin/sh\n\(writesPid("script"))\n\(deafChild())printf 'a=1\\n---\\n'\n\(String.longLoop)\n")
+        let process = ScriptProcess(url: plugin.url, stopPause: 30)
+        var frames = process.start().makeAsyncIterator()
+        _ = try await frames.next()
+        let script = try await pid("script")
+        let child = try await pid("child")
+
+        await Task.detached { TerminalStop.stopEach(pause: Self.stopPause) }.value
+
+        try await wait { !self.runs(script) && !self.runs(child) }
     }
 
     func testAScriptAndAChildThatIgnoreTheTerminateSignalAreGoneOnePauseAfterAStop() async throws {
@@ -309,7 +382,7 @@ final class ScriptProcessTests: XCTestCase {
             _ = try await ScriptProcess.output(url: plugin.url, limit: 5)
             XCTFail("expected a failure")
         } catch {
-            XCTAssertEqual(error as? PluginError, .failed(3, "cut short"))
+            XCTAssertEqual(error as? SpotError, .failed(3, "cut short"))
         }
     }
 
@@ -320,7 +393,7 @@ final class ScriptProcessTests: XCTestCase {
             _ = try await ScriptProcess.output(url: plugin.url, limit: 10)
             XCTFail("expected a failure")
         } catch {
-            XCTAssertEqual(error as? PluginError, .failed(3, "boom"))
+            XCTAssertEqual(error as? SpotError, .failed(3, "boom"))
         }
     }
 
@@ -331,7 +404,7 @@ final class ScriptProcessTests: XCTestCase {
             _ = try await ScriptProcess.output(url: plugin.url, limit: 10)
             XCTFail("expected a failure")
         } catch {
-            XCTAssertEqual(error as? PluginError, .failed(3, "boom"))
+            XCTAssertEqual(error as? SpotError, .failed(3, "boom"))
         }
     }
 
@@ -342,7 +415,7 @@ final class ScriptProcessTests: XCTestCase {
             _ = try await ScriptProcess.output(url: plugin.url, limit: 5)
             XCTFail("expected a failure")
         } catch {
-            XCTAssertEqual(error as? PluginError, .failed(9, ""))
+            XCTAssertEqual(error as? SpotError, .failed(9, ""))
         }
     }
 
@@ -352,7 +425,7 @@ final class ScriptProcessTests: XCTestCase {
         do {
             _ = try await ScriptProcess.output(url: plugin.url, limit: 1)
             XCTFail("expected a timeout")
-        } catch PluginError.timedOut {
+        } catch SpotError.timedOut {
         }
         let script = try await pid("script")
         try await wait { !self.runs(script) }

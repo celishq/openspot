@@ -27,6 +27,9 @@ struct SpotTheme {
     let onConfirm: NSColor
     /// The light added at the top and bottom of a surface's rim.
     let rimEnds: NSColor
+    /// The tint of the store, and the fill of a row on it.
+    let well: NSColor
+    let raised: NSColor
     /// The strengths of ink as a fill: a row or a field, a selected one, a glyph's disc and a chip.
     let fillStrength: Double
     let selectedStrength: Double
@@ -49,6 +52,8 @@ struct SpotTheme {
         confirm: NSColor(red: 0.78, green: 0.16, blue: 0.14, alpha: 1),
         onConfirm: .white,
         rimEnds: .white,
+        well: .black.withAlphaComponent(0.18),
+        raised: .white.withAlphaComponent(0.08),
         fillStrength: 0.1,
         selectedStrength: 0.22,
         discStrength: 0.2,
@@ -64,13 +69,15 @@ struct SpotTheme {
         glyphOnSolid: .white,
         glass: .white.withAlphaComponent(0.5),
         isMaterialTinted: false,
-        shade: NSColor(srgbRed: 0.8, green: 0.8, blue: 0.8, alpha: 0.2),
+        shade: .black.withAlphaComponent(0.08),
         keycap: NSColor(white: 0.98, alpha: 1),
         window: NSColor(white: 0.93, alpha: 1),
         preview: NSColor(white: 0.98, alpha: 1),
         confirm: NSColor(red: 0.78, green: 0.16, blue: 0.14, alpha: 1),
         onConfirm: .white,
         rimEnds: .white.withAlphaComponent(0.5),
+        well: .black.withAlphaComponent(0.05),
+        raised: .white.withAlphaComponent(0.55),
         fillStrength: 0.08,
         selectedStrength: 0.12,
         discStrength: 0,
@@ -98,12 +105,9 @@ struct SpotTheme {
 
     @MainActor private static var chosen: (appearance: NSAppearance, theme: SpotTheme)?
 
-    /// The radius of the blur behind a surface, and of the blur around the panel at its strongest.
+    /// The radius of the blur behind a surface, and of the blur around the panel.
     static let blur: CGFloat = 24
-    static let backdropBlur: CGFloat = 8
-    /// The control points of the curve by which the blur around the panel loses its strength from the content to the
-    /// window's edge.
-    static let backdropFalloff = (start: UnitPoint(x: 0, y: 0.25), end: UnitPoint(x: 0.25, y: 1))
+    static let backdropBlur: CGFloat = 3
     /// The thin dark line down the sides of a surface's rim, at its top, its middle and its foot.
     static let rimSides = NSColor.black
     static let rimSideStrengths: [CGFloat] = [0, 0.3, 0.3, 0]
@@ -114,6 +118,8 @@ struct SpotTheme {
     /// The shadow under a card that the person lifts in Edit Spots: its blur radius and its strength.
     static let liftShadow: CGFloat = 14
     static let liftShadowStrength = 0.25
+    /// How much of the other cards shows while the actions menu of one card is open.
+    static let unfocused = 0.35
     @MainActor static var fill: Double { current.fillStrength }
     @MainActor static var disc: Double { current.discStrength }
     @MainActor static var chip: Double { current.chipStrength }
@@ -131,6 +137,8 @@ struct SpotTheme {
     static let preview = color(\.preview)
     static let confirm = color(\.confirm)
     static let onConfirm = color(\.onConfirm)
+    static let well = color(\.well)
+    static let raised = color(\.raised)
 
     private static func color(_ part: KeyPath<SpotTheme, NSColor> & Sendable) -> Color {
         Color(nsColor: NSColor(name: nil) { palette(for: $0)[keyPath: part] })

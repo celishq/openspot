@@ -8,9 +8,11 @@ struct SpotRowsView: View {
     /// The words of the key that records.
     var recordingWords = "Press keys"
     let onRun: (SpotItem) -> Void
+    /// Takes the row that the pointer moves onto.
+    var onPoint: (SpotItem) -> Void = { _ in }
     /// Reads the selected row where it is called. Nil reads it from the list.
     var selection: (() -> Int)?
-    /// Takes the rows whose files a drag took out to another app (O2).
+    /// Takes the rows whose files a drag took out to another app (protocol: Files out).
     var onDragOut: ([SpotItem]) -> Void = { _ in }
     @State private var position = ScrollPosition(edge: .top)
     @State private var reading = GridScrollReading()
@@ -152,6 +154,7 @@ struct SpotRowsView: View {
                     rowLabel(item)
                 }
                 .buttonStyle(.plain)
+                .modifier(SpotPointerMove { onPoint(item) })
                 .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
             }
         }
@@ -166,6 +169,7 @@ struct SpotRowsView: View {
                 SpotGridCell(item: item, side: side)
                     .equatable()
                     .onTapGesture { onRun(item) }
+                    .modifier(SpotPointerMove { onPoint(item) })
                     .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
             }
         }
@@ -212,6 +216,7 @@ struct SpotRowsView: View {
         .background(SpotTheme.ink.opacity(SpotTheme.fill), in: row)
         .contentShape(row)
         .onTapGesture { onRun(item) }
+        .modifier(SpotPointerMove { onPoint(item) })
         .modifier(SpotFileDragSource(items: [item], onDrop: onDragOut))
         .accessibilityLabel(item.title)
         .accessibilityAddTraits(.isButton)
@@ -298,7 +303,7 @@ private struct RowRing: ViewModifier {
     let shape: RoundedRectangle
 
     func body(content: Content) -> some View {
-        content.modifier(SpotSelectionRing(isSelected: selectedRun() == run, shape: shape))
+        content.modifier(SpotSelectionRing(isSelected: selectedRun() == run, shape: shape, marksMenu: true))
     }
 }
 
@@ -316,7 +321,7 @@ private struct BentoRing: View {
             let size = SpotRowsView.size(of: area, step: step)
             Color.clear
                 .frame(width: size.width, height: size.height)
-                .modifier(SpotSelectionRing(isSelected: true, shape: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous)))
+                .modifier(SpotSelectionRing(isSelected: true, shape: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous), marksMenu: true))
                 .offset(x: CGFloat(area.x0) * step, y: CGFloat(area.y0) * step)
         }
     }
@@ -378,7 +383,8 @@ private struct GridRing: View {
                 .modifier(SpotSelectionRing(
                     isSelected: true,
                     shape: RoundedRectangle(cornerRadius: SpotTokens.radius - SpotTokens.padding, style: .continuous),
-                    width: SpotSelectionRing<RoundedRectangle>.thinWidth
+                    width: SpotSelectionRing<RoundedRectangle>.thinWidth,
+                    marksMenu: true
                 ))
                 .offset(x: CGFloat(index % perLine) * step, y: CGFloat(index / perLine) * step)
         }

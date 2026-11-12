@@ -16,7 +16,7 @@ extension CalendarStore {
             guard !isRead else { return false }
             access = await ask()
         }
-        guard access == .allowed else { throw PluginError.failedWithFix(1, refusal, pane) }
+        guard access == .allowed else { throw SpotError.failedWithFix(1, refusal, pane) }
         return true
     }
 }

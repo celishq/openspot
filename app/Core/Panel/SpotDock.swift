@@ -1,9 +1,10 @@
 import Foundation
 
-/// The store of Edit Spots: every spot with its state and its origin, the filter and the search that pick the spots that
-/// it shows. The person turns on a spot that is off, and deletes a file of the plugins folder that is off.
+/// The store of Edit Spots: every spot with its state and its origin, the section and the search that pick the spots that
+/// it shows, and the rows that show them, two to a line under the title of their state. Each row ends in the button of its
+/// next step and an arrow that opens its menu.
 public struct SpotDock: Equatable, Sendable {
-    /// Whether a spot shows on the grid, only in search, or not at all.
+    /// Whether a spot shows on the grid, only in search, or is not added.
     public enum State: Equatable, Sendable {
         case onGrid, searchOnly, off
     }
@@ -18,202 +19,236 @@ public struct SpotDock: Equatable, Sendable {
         case current, changed
     }
 
-    /// The spots that the store shows: all, or those of one origin. The groups of the store show the state.
-    public enum Filter: CaseIterable, Equatable, Sendable {
-        case all, core, mine
+    /// The part of the store that the sidebar picks: the spots that are added, those that are not, or the person's own.
+    public enum Section: CaseIterable, Equatable, Sendable {
+        case added, store, mine
 
         public var title: String {
             switch self {
-            case .all: "All"
-            case .core: "Core"
-            case .mine: "Mine"
+            case .added: "Added"
+            case .store: "Store"
+            case .mine: "Made by You"
             }
         }
 
         public func keeps(_ item: Item) -> Bool {
             switch self {
-            case .all: true
-            case .core: item.origin == .core
-            case .mine: item.origin == .mine
+            case .added: item.state != .off
+            case .store: item.state == .off
+            case .mine: item.isOwn
             }
         }
     }
 
-    /// The title of the shown spots of one state, the number of them, and the top of its band in the rows.
+    /// What the main part of a row's button does next: a spot climbs from not added to search to the grid, and a spot of the
+    /// person's own with changes publishes them first.
+    public enum Step: CaseIterable, Equatable, Sendable {
+        case open, add, addToGrid, publish
+
+        public var title: String {
+            switch self {
+            case .open: "Open"
+            case .add: "Add"
+            case .addToGrid: "Add to Grid"
+            case .publish: "Publish"
+            }
+        }
+    }
+
+    /// What a choice of a row's menu does.
+    public enum Action: Equatable, Sendable {
+        case place(State), open, publish, share, copyPrompt, edit, moveToTrash
+    }
+
+    /// One choice of a row's menu.
+    public struct Choice: Equatable, Sendable {
+        public let title: String
+        public let action: Action
+        public var isChecked = false
+    }
+
+    /// The title of a group of rows, the number of its spots, and the top of its band.
     public struct Group: Equatable, Sendable {
-        public let state: State
+        public let title: String
         public let count: Int
         public let top: CGFloat
     }
 
+    /// A part of a row that a pointer can be over: the main part of its button, its arrow, or the rest of the row.
+    public enum Part: Equatable, Sendable {
+        case step, menu, row
+    }
+
     /// One spot in the store.
     public struct Item: Identifiable, Equatable, Sendable {
-        public let command: Spot
+        public let spot: Spot
         public let origin: Origin
         public let state: State
         /// Its package in the store, for a spot of the plugins folder that the person published.
         public let publication: Publication?
-        /// The size of its card, as the panel gives it: the preferred size, or else its own. A fault is never 1x1.
+        /// The size of its card on the grid, as the panel gives it: the preferred size, or else its own. A fault is never 1x1.
         public let size: SpotSize
 
         public var id: String {
-            command.id
+            spot.id
         }
 
-        /// Whether the spot is a file of the plugins folder, which the store can delete while it is off.
+        /// Whether the spot is a file of the plugins folder, which the person can publish and move to the Trash.
         public var isOwn: Bool {
             origin == .mine
         }
 
-        public init(command: Spot, origin: Origin = .core, state: State = .off, size: SpotSize? = nil, publication: Publication? = nil) {
-            self.command = command
+        public var step: Step {
+            if isOwn, state != .off, publication != .current { return .publish }
+            switch state {
+            case .off: return .add
+            case .searchOnly: return .addToGrid
+            case .onGrid: return .open
+            }
+        }
+
+        public init(spot: Spot, origin: Origin = .core, state: State = .off, size: SpotSize? = nil, publication: Publication? = nil) {
+            self.spot = spot
             self.origin = origin
             self.state = state
             self.publication = publication
-            let own = size ?? command.size
-            self.size = command.fault != nil && own == .small ? .wide : own
+            let own = size ?? spot.size
+            self.size = spot.fault != nil && own == .small ? .wide : own
         }
     }
 
     public let items: [Item]
     public var query = ""
-    public var filter = Filter.all
-    /// The spot whose listing shows in a sheet under its shelf.
+    public var section = Section.added
+    /// The spot whose listing shows in a sheet under its line.
     public var opened: String?
+    /// Whether the sheet of the opened spot is out at its whole size, with the later rows pushed down. A sheet starts in,
+    /// so that it is built before it grows.
+    public var isSheetOut = false
 
     public init(items: [Item]) {
-        self.items = items.sorted { $0.command.name.localizedCaseInsensitiveCompare($1.command.name) == .orderedAscending }
+        self.items = items.sorted { $0.spot.name.localizedCaseInsensitiveCompare($1.spot.name) == .orderedAscending }
     }
 
-    /// The spots that the filter keeps and whose name, or the words under it, hold the search: off, then in search only,
-    /// then on the grid, each by name.
+    /// Where the rows start in the store, right of the sidebar, which is as wide as the panel's grid.
+    public static let rowsOrigin = CGPoint(x: SpotTokens.padding + SpotTokens.gridWidth + SpotTokens.columnGap, y: SpotTokens.dockRowsTop)
+
+    public func count(of section: Section) -> Int {
+        items.filter(section.keeps).count
+    }
+
+    /// The spots that the section keeps, or with a search the spots of every section whose name or the words under it hold
+    /// it, in the order of their groups.
     public var shown: [Item] {
-        let kept = items.filter { item in
-            filter.keeps(item) && (query.isEmpty || [item.command.name, item.command.subtitle ?? ""].contains { $0.localizedStandardContains(query) })
+        parts.flatMap(\.items)
+    }
+
+    /// The titled groups of the shown spots, each with its spots in order.
+    private var parts: [(title: String, items: [Item])] {
+        let found = items.filter { item in
+            query.isEmpty ? section.keeps(item) : [item.spot.name, item.spot.subtitle ?? ""].contains { $0.localizedStandardContains(query) }
         }
-        return Self.states.flatMap { state in kept.filter { $0.state == state } }
+        let byState: [(String, [Item])] = [
+            ("On Grid", found.filter { $0.state == .onGrid }), ("In Search", found.filter { $0.state == .searchOnly }), ("Not Added", found.filter { $0.state == .off })
+        ]
+        let groups = query.isEmpty && section == .mine
+            ? [("Not Published", found.filter { $0.publication != .current }), ("Published", found.filter { $0.publication == .current })]
+            : byState
+        return groups.filter { !$0.1.isEmpty }.map { (title: $0.0, items: $0.1) }
     }
 
-    private static let states: [State] = [.off, .searchOnly, .onGrid]
-
-    /// The titles of the groups of the shown spots, while more than one state has spots.
-    public func groups(columns: Int) -> [Group] {
-        layout(columns: columns).groups
+    /// The titles of the groups. The titles under the sheet of an opened spot lie lower by the sheet and a gap.
+    public var groups: [Group] {
+        let (rects, groups) = layout
+        guard isSheetOut, let top = sheetTop(in: rects) else { return groups }
+        return groups.map { $0.top < top ? $0 : Group(title: $0.title, count: $0.count, top: $0.top + Self.sheetDrop) }
     }
 
-    /// Where the card of each shown spot lies, in the order of `shown`, from the top left of the first row, with the grid's
-    /// gaps. The cards under the sheet of an opened spot lie lower by the sheet and a gap.
-    public func rects(columns: Int) -> [CGRect] {
-        let rects = closedRects(columns: columns)
-        guard let top = sheetTop(in: rects) else { return rects }
-        return rects.map { $0.minY < top ? $0 : $0.offsetBy(dx: 0, dy: SpotTokens.storeSheetHeight + SpotTokens.rowGap) }
+    /// Where the row of each shown spot lies, in the order of `shown`, from the top left of the rows. The rows under the sheet
+    /// of an opened spot lie lower by the sheet and a gap.
+    public var rects: [CGRect] {
+        let rects = layout.rects
+        guard isSheetOut, let top = sheetTop(in: rects) else { return rects }
+        return rects.map { $0.minY < top ? $0 : $0.offsetBy(dx: 0, dy: Self.sheetDrop) }
     }
 
-    /// Where the sheet of the opened spot lies: under the shelf of its card, as wide as the rows.
-    public func sheetRect(columns: Int) -> CGRect? {
-        sheetTop(in: closedRects(columns: columns)).map { CGRect(x: 0, y: $0, width: SpotTokens.width(columns: columns), height: SpotTokens.storeSheetHeight) }
+    private static let sheetDrop = SpotTokens.storeSheetHeight + SpotTokens.rowGap
+
+    /// Where the sheet of the opened spot lies: under the line of its row, as wide as the rows.
+    public var sheetRect: CGRect? {
+        sheetTop(in: layout.rects).map { CGRect(x: 0, y: $0, width: SpotTokens.width(columns: 8), height: SpotTokens.storeSheetHeight) }
     }
 
-    /// A part of a card in the store that a pointer can be over: the Add of a spot that is not on the grid, the cross that
-    /// deletes a spot of the plugins folder that is off, or the rest of the card.
-    public enum Part: Equatable, Sendable {
-        case add, delete, card
+    /// The height of the rows that hold the shown spots, and of the sheet of the opened spot while it is out.
+    public var height: CGFloat {
+        (rects.map(\.maxY) + [isSheetOut ? sheetRect?.maxY : nil].compactMap { $0 }).max() ?? 0
     }
 
-    /// The shown spot and the part of its card under a point of the rows, if any.
-    public func part(at point: CGPoint, columns: Int) -> (id: String, part: Part)? {
-        let rects = rects(columns: columns)
+    /// The places in `shown` of the spots whose rows reach into this band of the rows.
+    public func shownIndices(within band: ClosedRange<CGFloat>) -> [Int] {
+        let rects = rects
+        return rects.indices.filter { rects[$0].maxY >= band.lowerBound && rects[$0].minY <= band.upperBound }
+    }
+
+    /// The shown spot and the part of its row under a point of the rows, if any.
+    public func part(at point: CGPoint) -> (id: String, part: Part)? {
+        let rects = rects
         guard let index = rects.firstIndex(where: { $0.contains(point) }) else { return nil }
-        let item = shown[index], rect = rects[index]
-        let rim = SpotTokens.corner(for: item.size) * SpotTokens.rimPoint
-        if item.state != .onGrid, Self.addRect(in: rect, size: item.size).insetBy(dx: -2, dy: -2).contains(point) { return (item.id, .add) }
-        if item.isOwn, item.state == .off, hypot(point.x - rect.maxX + rim, point.y - rect.minY - rim) <= SpotTokens.keycap / 2 + 2 { return (item.id, .delete) }
-        return (item.id, .card)
+        let rect = rects[index], id = shown[index].id
+        if Self.menuRect(in: rect).contains(point) { return (id, .menu) }
+        if Self.stepRect(in: rect).contains(point) { return (id, .step) }
+        return (id, .row)
     }
 
-    /// Where the Add of a card lies: a pill on the line under its name, or a round mark on the top left rim of a 1x1 card,
-    /// which has no room for words.
-    public static func addRect(in rect: CGRect, size: SpotSize) -> CGRect {
-        guard size != .small else {
-            let rim = SpotTokens.corner(for: size) * SpotTokens.rimPoint
-            return CGRect(x: rect.minX + rim - SpotTokens.keycap / 2, y: rect.minY + rim - SpotTokens.keycap / 2, width: SpotTokens.keycap, height: SpotTokens.keycap)
-        }
-        let words = SpotTokens.nameHeight + 1 + SpotTokens.addHeight
-        guard size.rows == 1 else {
-            return CGRect(x: rect.minX + SpotTokens.padding, y: rect.maxY - SpotTokens.padding - SpotTokens.addHeight, width: SpotTokens.addWidth, height: SpotTokens.addHeight)
-        }
-        let x = rect.minX + SpotTokens.padding + SpotTokens.glyphSize + SpotTokens.padding - 5
-        return CGRect(x: x, y: rect.minY + (rect.height - words) / 2 + SpotTokens.nameHeight + 1, width: SpotTokens.addWidth, height: SpotTokens.addHeight)
+    /// Where the arrow of a row's button lies: at its trailing end, a padding inside the row.
+    public static func menuRect(in rect: CGRect) -> CGRect {
+        let height = SpotTokens.storeButtonHeight
+        return CGRect(x: rect.maxX - SpotTokens.padding - SpotTokens.storeArrowWidth, y: rect.midY - height / 2, width: SpotTokens.storeArrowWidth, height: height)
     }
 
-    /// The height of the rows that hold the shown spots, and of the sheet of the opened spot.
-    public func height(columns: Int) -> CGFloat {
-        (rects(columns: columns).map(\.maxY) + [sheetRect(columns: columns)?.maxY].compactMap { $0 }).max() ?? 0
+    /// Where the main part of a row's button lies, before its arrow. Every step has the same width, so the buttons line up.
+    public static func stepRect(in rect: CGRect) -> CGRect {
+        let arrow = menuRect(in: rect)
+        return CGRect(x: arrow.minX - SpotTokens.storeStepWidth, y: arrow.minY, width: SpotTokens.storeStepWidth, height: arrow.height)
     }
 
-    private func closedRects(columns: Int) -> [CGRect] {
-        layout(columns: columns).rects
+    /// The choices of a spot's menu, in parts that lines divide: where it shows, Open while it is added, what the person can
+    /// do with it in the store, and the file of a spot of their own. It holds only the choices that can run: a built-in spot
+    /// is never off, a package that is current has nothing to publish, and only a spot that is not added goes to the Trash.
+    public static func menu(for item: Item) -> [[Choice]] {
+        let places: [(State, String)] = [(.onGrid, "On Grid"), (.searchOnly, "In Search Only")] + (item.origin == .builtIn ? [] : [(.off, "Not Added")])
+        var parts = [places.map { Choice(title: $0.1, action: .place($0.0), isChecked: item.state == $0.0) }]
+        if item.state != .off { parts.append([Choice(title: "Open", action: .open)]) }
+        guard item.isOwn else { return parts + [[Choice(title: "Copy Prompt to Review", action: .copyPrompt)]] }
+        parts.append(
+            (item.publication == .current ? [] : [Choice(title: "Publish", action: .publish)])
+                + (item.publication == nil ? [] : [Choice(title: "Share", action: .share)])
+                + [Choice(title: "Copy Prompt to Change", action: .copyPrompt)]
+        )
+        parts.append([Choice(title: "Edit", action: .edit)] + (item.state == .off ? [Choice(title: "Move to Trash", action: .moveToTrash)] : []))
+        return parts
     }
 
-    /// The rect of each shown spot with no sheet open, and the title of each group: each state packs its own shelves, under
-    /// its title band while more than one state has spots.
-    private func layout(columns: Int) -> (rects: [CGRect], groups: [Group]) {
-        let parts = Self.states.map { state in shown.filter { $0.state == state } }.filter { !$0.isEmpty }
-        let titled = parts.count > 1
+    /// The rect of each shown spot with no sheet open, and the title of each group: two rows to a line, each group under its
+    /// title band, and each group after the first a gap lower.
+    private var layout: (rects: [CGRect], groups: [Group]) {
         var rects: [CGRect] = [], groups: [Group] = [], top: CGFloat = 0
+        let line = SpotTokens.rowHeight + SpotTokens.rowGap
         for part in parts {
-            let start = top + (titled ? SpotTokens.groupTitleBand : 0)
-            let packed = places(of: part, columns: columns).map { place in
-                CGRect(
-                    x: CGFloat(place.column) * (SpotTokens.cell + SpotTokens.columnGap),
-                    y: start + CGFloat(place.row) * (SpotTokens.rowHeight + SpotTokens.rowGap),
-                    width: SpotTokens.width(columns: place.size.columns),
-                    height: SpotTokens.height(rows: place.size.rows)
-                )
+            if !groups.isEmpty { top += SpotTokens.groupGap }
+            groups.append(Group(title: part.title, count: part.items.count, top: top))
+            let start = top + SpotTokens.groupTitleBand
+            rects += part.items.indices.map { index in
+                CGRect(x: CGFloat(index % 2) * (SpotTokens.gridWidth + SpotTokens.columnGap), y: start + CGFloat(index / 2) * line, width: SpotTokens.gridWidth, height: SpotTokens.rowHeight)
             }
-            if titled, let state = part.first?.state { groups.append(Group(state: state, count: part.count, top: top)) }
-            rects += packed
-            top = (packed.map(\.maxY).max() ?? start) + SpotTokens.rowGap
+            top = start + CGFloat((part.items.count + 1) / 2) * line
         }
         return (rects, groups)
     }
 
-    /// The top of the sheet: a gap under the lowest card that starts no lower than the opened card.
+    /// The top of the sheet: a gap under the line of the opened row.
     private func sheetTop(in rects: [CGRect]) -> CGFloat? {
         guard let opened, let index = shown.firstIndex(where: { $0.id == opened }) else { return nil }
-        let start = rects[index].minY
-        return rects.filter { $0.minY <= start }.map(\.maxY).max().map { $0 + SpotTokens.rowGap }
-    }
-
-    /// The row and column of each of these spots, and its size, no wider than the rows. The spots fill shelves in their order:
-    /// a shelf is as tall as its first spot, and a later spot no taller moves up into the first place where it fits in
-    /// that shelf. No spot grows, and none moves into an earlier shelf.
-    private func places(of items: [Item], columns: Int) -> [(row: Int, column: Int, size: SpotSize)] {
-        var queue = items.enumerated().map { (index: $0.offset, size: SpotSize(columns: min($0.element.size.columns, columns), rows: $0.element.size.rows)) }
-        var places = [(row: Int, column: Int, size: SpotSize)?](repeating: nil, count: queue.count)
-        var row = 0
-        while let first = queue.first {
-            var taken = Set<[Int]>()
-            var position = 0
-            while position < queue.count {
-                let spot = queue[position]
-                let fit = spot.size.rows > first.size.rows ? nil : (0...(columns - spot.size.columns)).lazy.flatMap { column in
-                    (0...(first.size.rows - spot.size.rows)).lazy.map { down in [down, column] }
-                }.first { cell in
-                    (0..<spot.size.rows).allSatisfy { down in (0..<spot.size.columns).allSatisfy { !taken.contains([cell[0] + down, cell[1] + $0]) } }
-                }
-                guard let cell = fit else {
-                    position += 1
-                    continue
-                }
-                for down in 0..<spot.size.rows {
-                    for across in 0..<spot.size.columns { taken.insert([cell[0] + down, cell[1] + across]) }
-                }
-                places[spot.index] = (row + cell[0], cell[1], spot.size)
-                queue.remove(at: position)
-            }
-            row += first.size.rows
-        }
-        return places.compactMap { $0 }
+        return rects[index].maxY + SpotTokens.rowGap
     }
 }

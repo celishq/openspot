@@ -20,9 +20,9 @@ final class SpotStarterTests: XCTestCase {
 
             let file = try starter.write(name: "Weather today", in: place)
 
-            let faults = await PluginCheck(folder: PluginFolder(url: place)).faults()
+            let faults = await SpotCheck(folder: SpotFolder(url: place)).faults()
             XCTAssertEqual(faults, [], "\(starter)")
-            let spot = try XCTUnwrap(PluginFolder(url: place).scan().commands.first, "\(starter)")
+            let spot = try XCTUnwrap(SpotFolder(url: place).scan().spots.first, "\(starter)")
             XCTAssertEqual(spot.id, "weather-today")
             XCTAssertEqual(spot.name, "Weather today")
             XCTAssertEqual(file.lastPathComponent, "weather-today.sh")
@@ -33,13 +33,13 @@ final class SpotStarterTests: XCTestCase {
         _ = try SpotStarter.button.write(name: "Weather", in: folder)
 
         XCTAssertThrowsError(try SpotStarter.list.write(name: "weather", in: folder)) { error in
-            XCTAssertEqual((error as? PluginError)?.reason, "A spot called weather already exists. Choose another name.")
+            XCTAssertEqual((error as? SpotError)?.reason, "A spot called weather already exists. Choose another name.")
         }
     }
 
     func testANameNeedsALetterOrADigit() {
         XCTAssertThrowsError(try SpotStarter.button.write(name: "!!", in: folder)) { error in
-            XCTAssertEqual((error as? PluginError)?.reason, "Use letters or digits in the name.")
+            XCTAssertEqual((error as? SpotError)?.reason, "Use letters or digits in the name.")
         }
     }
 }

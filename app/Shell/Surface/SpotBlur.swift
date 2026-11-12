@@ -6,6 +6,7 @@ import SwiftUI
 struct SpotBlur: View, @preconcurrency Animatable {
     var radius: CGFloat
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.spotDrawsBlur) private var drawsBlur
 
     var animatableData: CGFloat {
         get { radius }
@@ -13,7 +14,11 @@ struct SpotBlur: View, @preconcurrency Animatable {
     }
 
     var body: some View {
-        Backing(radius: radius, isTinted: SpotTheme.palette(for: scheme).isMaterialTinted)
+        if drawsBlur {
+            Backing(radius: radius, isTinted: SpotTheme.palette(for: scheme).isMaterialTinted)
+        } else {
+            Color.clear
+        }
     }
 }
 

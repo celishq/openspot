@@ -35,7 +35,7 @@ final class EmojiCatalogTests: XCTestCase {
 
     private func rows(tone: EmojiCatalog.Tone = .none, languages: [String] = ["en"]) throws -> [SpotItem] {
         let keywords = GlyphKeywords(folder: folder.appendingPathComponent("Keywords"), languages: languages)
-        return PluginOutput(text: try EmojiCatalog(resources: folder, languages: languages, keywords: keywords).rows(tone: tone)).items
+        return SpotOutput(text: try EmojiCatalog(resources: folder, languages: languages, keywords: keywords).rows(tone: tone)).items
     }
 
     func testRowsFollowTheOrderOfTheMac() throws {
@@ -105,15 +105,15 @@ final class EmojiCatalogTests: XCTestCase {
 
     func testMissingFilesSayTheCause() {
         XCTAssertThrowsError(try EmojiCatalog(resources: folder, languages: ["en"]).rows(tone: .none)) { error in
-            XCTAssertEqual((error as? PluginError)?.reason, "This Mac has no emoji names. Update macOS, or tell the spot's author.")
+            XCTAssertEqual((error as? SpotError)?.reason, "This Mac has no emoji names. Update macOS, or tell the spot's author.")
         }
     }
 
     func testTheEmojiOfThisMac() throws {
         guard FileManager.default.fileExists(atPath: EmojiCatalog.standardResources.path) else { throw XCTSkip("No emoji files.") }
         let catalog = EmojiCatalog(languages: ["en"])
-        let plain = PluginOutput(text: try catalog.rows(tone: .none)).items
-        let toned = PluginOutput(text: try catalog.rows(tone: .medium)).items
+        let plain = SpotOutput(text: try catalog.rows(tone: .none)).items
+        let toned = SpotOutput(text: try catalog.rows(tone: .medium)).items
 
         XCTAssertGreaterThan(plain.count, 1000)
         XCTAssertEqual(toned.count, plain.count)

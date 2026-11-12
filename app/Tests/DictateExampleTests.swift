@@ -202,7 +202,7 @@ final class DictateExampleTests: SamplePluginsCase {
 
             XCTAssertEqual(offer?.title, "Download speech model")
             XCTAssertEqual(offer?.pin, .top)
-            XCTAssertEqual(first.search, .off)
+            XCTAssertTrue(first.hidesSearch)
             XCTAssertEqual(offer?.openTitle, "Download")
             XCTAssertEqual(offer?.staysOnPick, true)
             XCTAssertEqual(progress?.title, "Downloading speech model")

@@ -47,7 +47,7 @@ final class WebPicturesTests: XCTestCase {
     }
 
     func testAnOutputNamesItsPicturesOnTheWebForARenderToFetch() {
-        let output = PluginOutput(text: "row=a\nicon=https://example.com/a.png\n\nchoice=c\n\noption=x\nicon=https://example.com/x.png\n\nrow=b\nicon=wifi\n")
+        let output = SpotOutput(text: "row=a\nicon=https://example.com/a.png\n\nchoice=c\n\noption=x\nicon=https://example.com/x.png\n\nrow=b\nicon=wifi\n")
 
         XCTAssertEqual(output.webPictures, ["https://example.com/a.png", "https://example.com/x.png"])
     }

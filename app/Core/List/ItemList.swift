@@ -7,6 +7,8 @@ public struct ItemList: Equatable, Sendable {
     public private(set) var search: ItemSearch
     public private(set) var query = ""
     public private(set) var recent: [String]
+    /// The weight of each recent pick, made again only when `recent` changes.
+    private(set) var weights: PickWeights
     public private(set) var shown: [SpotItem] = []
     public private(set) var selected = 0
     public private(set) var perLine = 1
@@ -32,6 +34,7 @@ public struct ItemList: Equatable, Sendable {
         self.search = search
         all = items
         self.recent = recent
+        weights = PickWeights(recent)
         reindex()
         refresh()
     }
@@ -199,6 +202,7 @@ public struct ItemList: Equatable, Sendable {
     /// Adds a pick to the front of the recent picks, which keep each pick so that a count of them shows how often.
     public mutating func remember(_ item: SpotItem) {
         recent = Array(([item.run] + recent).prefix(Self.recentLimit))
+        weights = PickWeights(recent)
         narrowings = []
         refresh()
     }
@@ -218,7 +222,7 @@ public struct ItemList: Equatable, Sendable {
         while let last = narrowings.last, !next.text.hasPrefix(last.query.text) { narrowings.removeLast() }
         if narrowings.last?.query.text != next.text {
             let among = narrowings.last.flatMap { $0.query.narrows(to: next) ? $0.matches : nil } ?? Array(all.indices)
-            narrowings.append(Narrowing(query: next, matches: next.ranking(searchIndex, items: all, among: among, recent: recent)))
+            narrowings.append(Narrowing(query: next, matches: next.ranking(searchIndex, items: all, among: among, weights: weights)))
         }
         shown = Self.pinning(narrowings.last?.matches.map { all[$0] } ?? [], all)
     }

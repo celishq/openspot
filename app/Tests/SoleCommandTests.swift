@@ -23,7 +23,6 @@ final class SoleCommandTests: XCTestCase {
         )
         model = SpotsModel(host: host, files: files, runs: SpotRuns(stopPause: 0.2))
         host.model = model
-        host.shipped = ShippedSpot.commands(folder: plugins, guide: folder.appendingPathComponent("GUIDE.md"), app: "", config: model.files.config)
     }
 
     override func tearDown() async throws {
@@ -54,7 +53,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testTheFirstReturnRecordsTheKeyAndTheNextReturnRunsTheCommand() async throws {
-        try script("dictate", header: "title=Dictate\n\ncommand=dictate\ntitle=Dictate")
+        try script("dictate", header: "title=Dictate\n\nbutton=dictate\ntitle=Dictate")
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
@@ -99,7 +98,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testReturnOnASpotWithTwoCommandsOnlyOpensTheirKeys() async throws {
-        try script("windows", header: "title=Windows\n\ncommand=left\ntitle=Left\n\ncommand=right\ntitle=Right")
+        try script("windows", header: "title=Windows\n\nbutton=left\ntitle=Left\n\nbutton=right\ntitle=Right")
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
@@ -111,7 +110,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testCommandReturnOpensTheSpotsOwnRowsAboveItsPinnedKey() async throws {
-        let lines = ["title=Dictate", "read=sheet", "", "command=dictate", "title=Dictate"].map { $0.isEmpty ? "#" : "# \($0)" }
+        let lines = ["title=Dictate", "on=sheet.open", "", "button=dictate", "title=Dictate"].map { $0.isEmpty ? "#" : "# \($0)" }
         try "#!/bin/sh\n\(lines.joined(separator: "\n"))\ncase \"$1\" in read) printf 'row=one\\ntitle=Hello there\\n\\nrow=two\\ntitle=Second\\n' ;; esac\n"
             .writeScript(to: plugins.appendingPathComponent("dictate.sh"))
         model.reload()
@@ -136,11 +135,11 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testEachRowOfTheJoinedSheetKeepsOnlyItsOwnActions() {
-        let keys = "button=open\ntitle=Change\n\nbutton=clear\ntitle=Remove\nshortcut=cmd+backspace\n\nrow=key:d:d\ntitle=Dictate\nshortcut=option\n"
+        let keys = "button=open\ntitle=Change\n\nbutton=clear\ntitle=Remove\nshortcut=cmd+backspace\n\nrow=key:d:d\ntitle=Dictate\ntype=hotkey\nshortcut=option\n"
         let own = "button=open\ntitle=Copy\n\nbutton=delete\ntitle=Delete\nshortcut=cmd+backspace\n\nrow=1\ntitle=Hello\n"
 
         let blocks = TextBlock.blocks(in: SpotRuns.joined(keys: keys, own: own))
-        let output = PluginOutput(text: SpotRuns.joined(keys: keys, own: own))
+        let output = SpotOutput(text: SpotRuns.joined(keys: keys, own: own))
         let key = try? XCTUnwrap(output.items.first { $0.run == "key:d:d" })
         let text = try? XCTUnwrap(output.items.first { $0.run == "1" })
 
@@ -150,17 +149,17 @@ final class SoleCommandTests: XCTestCase {
         XCTAssertEqual(text?.isPinned, false)
         XCTAssertEqual(ItemList(items: output.items).shown.map(\.run), ["1", "key:d:d"])
         XCTAssertTrue(ItemList(items: output.items).setsApart)
-        let unset = PluginOutput(text: SpotRuns.joined(keys: keys.replacingOccurrences(of: "shortcut=option", with: "shortcut=\(SettingsSpot.unset)"), own: own))
+        let unset = SpotOutput(text: SpotRuns.joined(keys: keys.replacingOccurrences(of: "shortcut=option", with: "shortcut=\(KeyList.unset)"), own: own))
         XCTAssertEqual(ItemList(items: unset.items).shown.map(\.run), ["key:d:d", "1"])
         XCTAssertFalse(ItemList(items: unset.items).setsApart)
         let unsetKey = unset.items.first { $0.run == "key:d:d" }
-        XCTAssertEqual(ActionMenu(command: Spot(id: "d", name: "d", url: URL(fileURLWithPath: "/d.sh")), item: unsetKey)?.rows.first?.title, "Set")
+        XCTAssertEqual(ActionMenu(spot: Spot(id: "d", name: "d", url: URL(fileURLWithPath: "/d.sh")), item: unsetKey)?.rows.first?.title, "Set")
         XCTAssertEqual(text?.hides, ["clear"])
-        XCTAssertEqual(ActionMenu(command: Spot(id: "d", name: "d", url: URL(fileURLWithPath: "/d.sh")), item: key)?.rows.first?.title, "Change")
+        XCTAssertEqual(ActionMenu(spot: Spot(id: "d", name: "d", url: URL(fileURLWithPath: "/d.sh")), item: key)?.rows.first?.title, "Change")
     }
 
     func testARowThatSaysCloseFalseNamesItsEnterAndKeepsThePanelOpen() async throws {
-        let lines = ["title=Get", "read=sheet"].map { "# \($0)" }
+        let lines = ["title=Get", "on=sheet.open"].map { "# \($0)" }
         try "#!/bin/sh\n\(lines.joined(separator: "\n"))\ncase \"$1\" in read) printf 'button=open\\ntitle=Copy\\n\\nrow=model\\ntitle=Download\\nopen=Download\\nclose=false\\n\\nrow=text\\ntitle=Hello\\n' ;; esac\n"
             .writeScript(to: plugins.appendingPathComponent("get.sh"))
         model.reload()
@@ -180,7 +179,7 @@ final class SoleCommandTests: XCTestCase {
     }
 
     func testASheetWithSearchOffHasNoFieldAndItsSetupRowFirst() async throws {
-        let lines = ["title=Dictate", "read=sheet", "", "command=dictate", "title=Dictate"].map { $0.isEmpty ? "#" : "# \($0)" }
+        let lines = ["title=Dictate", "on=sheet.open", "", "button=dictate", "title=Dictate"].map { $0.isEmpty ? "#" : "# \($0)" }
         try "#!/bin/sh\n\(lines.joined(separator: "\n"))\ncase \"$1\" in read) printf 'row=whisper\\ntitle=Download\\npin=top\\n\\nsearch=off\\n' ;; esac\n"
             .writeScript(to: plugins.appendingPathComponent("dictate.sh"))
         model.reload()

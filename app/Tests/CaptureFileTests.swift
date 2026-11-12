@@ -39,10 +39,10 @@ final class CaptureFileTests: XCTestCase {
 
     func testAnExtensionOfAnotherKindFailsWithTheOnesThatWork() {
         XCTAssertThrowsError(try file("a.gif", .picture)) {
-            XCTAssertEqual(($0 as? PluginError)?.reason, "Openspot cannot write a picture as a.gif. Name a .png, .jpg or .heic file.")
+            XCTAssertEqual(($0 as? SpotError)?.reason, "Openspot cannot write a picture as a.gif. Name a .png, .jpg or .heic file.")
         }
         XCTAssertThrowsError(try file("talk.png", .video)) {
-            XCTAssertEqual(($0 as? PluginError)?.reason, "Openspot cannot write a video as talk.png. Name a .mp4 or .mov file.")
+            XCTAssertEqual(($0 as? SpotError)?.reason, "Openspot cannot write a video as talk.png. Name a .mp4 or .mov file.")
         }
     }
 

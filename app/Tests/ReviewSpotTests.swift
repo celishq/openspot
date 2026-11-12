@@ -22,13 +22,13 @@ final class ReviewSpotTests: XCTestCase {
         return try ReviewSpot(spot: spot([(path, text, true)]), folder: folder)
     }
 
-    private func sheet(_ review: ReviewSpot) throws -> PluginOutput {
-        PluginOutput(text: try review.answer(["read"]))
+    private func sheet(_ review: ReviewSpot) throws -> SpotOutput {
+        SpotOutput(text: try review.answer(["read"]))
     }
 
     private func shown(_ review: ReviewSpot) throws -> String {
         let part = try XCTUnwrap(sheet(review).parts.first { $0.id == "review" })
-        guard case .text(let text, _, let isReadOnly) = part.control else { throw PluginError.badForm }
+        guard case .text(let text, _, let isReadOnly) = part.control else { throw SpotError.badForm }
         XCTAssertTrue(isReadOnly)
         return text
     }
@@ -43,6 +43,27 @@ final class ReviewSpotTests: XCTestCase {
 
         XCTAssertTrue(text.contains("home/a.sh\n#!/bin/sh\necho one\\two\n"), text)
         XCTAssertTrue(text.contains("home/lib.sh\nlib code\n"), text)
+    }
+
+    func testTheReviewOfTheInlineCalculatorShowsItsText() throws {
+        let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let place = SpotFolder(url: folder, core: repo.appendingPathComponent("plugins"), enabled: ["calculator"])
+        let scan = try place.scan()
+        let calculator = try XCTUnwrap(scan.spots.first { SpotFolder.coreID(of: $0) == "calculator" })
+
+        let text = try shown(ReviewSpot(spot: SharedSpot(sharing: calculator, from: scan), folder: folder, canAdd: false))
+
+        XCTAssertTrue(text.contains("calculator.js\n// title=Calculator"), text)
+        XCTAssertTrue(text.contains("function main("), text)
+    }
+
+    func testAnInlineSpotShowsItsTextAndRunsOnlyWhenItIsUsed() throws {
+        let review = try ReviewSpot(spot: spot([("sum.js", "// title=Sum\n// on=panel.open\nfunction main() { return '' }\n", false)]), folder: folder)
+
+        let text = try shown(review)
+
+        XCTAssertTrue(text.contains("sum.js\n// title=Sum"), text)
+        XCTAssertEqual(review.name, "Sum")
     }
 
     func testAFileThatIsNotTextIsNamedWithItsSize() throws {
@@ -64,7 +85,7 @@ final class ReviewSpotTests: XCTestCase {
 
         XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
         let text = try shown(review)
-        XCTAssertTrue(text.hasPrefix("Program that Openspot cannot show\ntool\nIt can do all that you can. Add it only if you trust the sender.\n\n"), text)
+        XCTAssertTrue(text.hasPrefix("\(review.name)\n\nProgram that Openspot cannot show\ntool\nIt can do all that you can. Add it only if you trust the sender.\n\n"), text)
     }
 
     func testVeryLongTextIsNamedAndNotDrawn() throws {
@@ -86,14 +107,14 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertEqual(review.name, "Weather now")
         XCTAssertEqual(review.symbol, "sun.max")
         XCTAssertEqual(review.subtitle, "Today and tomorrow")
-        let command = ShippedSpot.command(reviewing: review)
+        let command = review.spot
         XCTAssertEqual(command.name, "Weather now")
         XCTAssertEqual(command.symbol, "sun.max")
     }
 
     func testAWidgetNamesItselfBeforeTheMetricsItPlaces() throws {
-        let widget = "[[widgets]]\ntitle = \"Desk\"\ngrid = [\"cpu\"]\nsize = \"square\"\n"
-        let review = try ReviewSpot(spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# read=5\n", true)]), folder: folder)
+        let widget = "#!/bin/sh\n# title=Desk\n# grid.square=cpu\n"
+        let review = try ReviewSpot(spot: spot([("board.sh", widget, true), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# on=clock.5\n", true)]), folder: folder)
 
         XCTAssertEqual(review.name, "Desk")
     }
@@ -138,40 +159,117 @@ final class ReviewSpotTests: XCTestCase {
     }
 
     func testAPlainScriptRunsOnlyWhenItIsUsed() throws {
-        let review = try review("title=Weather\nread=sheet")
+        let review = try review("title=Weather\non=sheet.open")
 
         XCTAssertEqual(review.subtitle, "Runs only when you use it")
         let text = try shown(review)
-        XCTAssertTrue(text.hasPrefix("Runs only when you use it\n\n"), text)
+        XCTAssertTrue(text.hasPrefix("Weather\n\nUses nothing\n\nRuns only when you use it\n\n"), text)
         XCTAssertFalse(text.contains("Runs by itself"))
     }
 
     func testItSaysWhatRunsByItself() throws {
-        let review = try review("title=Weather\nread=panel,30")
+        let review = try review("title=Weather\non=panel.open\non=clock.30")
 
         XCTAssertEqual(review.subtitle, "Runs by itself")
         let text = try shown(review)
-        XCTAssertTrue(text.hasPrefix("Runs by itself\nWeather: when the panel opens, every 30 seconds\n"), text)
+        XCTAssertTrue(text.hasPrefix("Weather\n\nUses nothing\n\nRuns by itself\nWeather: when the panel opens, every 30 seconds\n"), text)
+    }
+
+    func testItShowsTheUsesThatTheHeaderNames() throws {
+        let text = try shown(review("title=Coffee\nuses=network,app"))
+
+        XCTAssertTrue(text.hasPrefix("Coffee\n\nUses\napp, network\n\n"), text)
+        XCTAssertFalse(text.contains("Can also"), text)
+    }
+
+    func testCanAlsoSaysWhatTheTextSeemsToDoAndDoesNotName() throws {
+        let body = """
+        curl -s https://example.com | nc host 80
+        rm -f "$OPENSPOT_DATA/old"
+        screencapture -x shot.png && printf x | pbcopy
+        old=$(pbpaste)
+        openspot app quit
+        openspot setting get --spot notes tone
+        openspot setting get tone
+        openspot clipboard copy
+        """
+        let review = try review("title=Coffee\nuses=clipboard", body: body)
+
+        let text = try shown(review)
+
+        XCTAssertTrue(text.contains("""
+        Uses
+        clipboard
+
+        Can also
+        Reach the network with curl and nc
+        Delete files with rm
+        Take screenshots with screencapture in place of openspot screen
+        Copy with pbcopy in place of openspot clipboard
+        Read the clipboard with pbpaste in place of openspot clipboard
+        Call openspot app quit without uses=app
+        Call openspot setting get without uses=spots
+
+
+        """), text)
+        XCTAssertNotNil(try sheet(review).parts.first { $0.id == "install" }, "a review warns and never refuses")
+    }
+
+    func testANamedNetworkIsNoCanAlso() throws {
+        let text = try shown(review("title=Coffee\nuses=network", body: "curl -s https://example.com\n"))
+
+        XCTAssertFalse(text.contains("Can also"), text)
+    }
+
+    func testCanAlsoReadsTheCallsOfAnInlineSpot() throws {
+        let review = try ReviewSpot(spot: spot([("bye.js", "// title=Bye\nfunction main() { openspot.call([\"app\", \"quit\"]) }\n", false)]), folder: folder)
+
+        XCTAssertTrue(try shown(review).contains("Can also\nCall openspot app quit without uses=app\n"))
+    }
+
+    func testAReviewOfANewVersionSaysWhatItAdds() throws {
+        try "#!/bin/sh\n# title=Weather\n# uses=app\n".writeScript(to: folder.appendingPathComponent("weather.sh"))
+
+        let text = try shown(review("title=Weather\nuses=app,network,screen"))
+
+        XCTAssertTrue(text.hasPrefix("Weather\nThis version adds: screen, network\n\n"), text)
+    }
+
+    func testAReviewReadsTheUsesOfEachInstalledFileOfTheSpot() throws {
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("home"), withIntermediateDirectories: true)
+        try "#!/bin/sh\n# uses=network\n".writeScript(to: folder.appendingPathComponent("home/main.sh"))
+        try "#!/bin/sh\necho one\n".writeScript(to: folder.appendingPathComponent("home/helper.sh"))
+        let review = try ReviewSpot(spot: spot([("home/main.sh", "#!/bin/sh\n# uses=network\n", true), ("home/helper.sh", "#!/bin/sh\necho two\n", true)]), folder: folder)
+
+        XCTAssertFalse(try shown(review).contains("This version adds"))
+    }
+
+    func testAReviewOfANewVersionThatAddsNothingSaysNothing() throws {
+        try "#!/bin/sh\n# title=Weather\n# uses=app\n".writeScript(to: folder.appendingPathComponent("weather.sh"))
+
+        let text = try shown(review("title=Weather\nuses=app"))
+
+        XCTAssertFalse(text.contains("This version adds"), text)
     }
 
     func testAStayingScriptSaysSo() throws {
-        let review = try review("title=Weather\nstay=true\nread=sheet")
+        let review = try review("title=Weather\nmode=stay\non=sheet.open")
 
         let text = try shown(review)
         XCTAssertTrue(text.contains("Weather: keeps running while it is in use"), text)
     }
 
     func testAScriptThatAlwaysStaysSaysSo() throws {
-        let review = try review("title=Relay\nstay=always")
+        let review = try review("title=Relay\nmode=always")
 
         let text = try shown(review)
         XCTAssertTrue(text.contains("Relay: keeps running while Openspot runs"), text)
     }
 
     func testAMetricThatAWidgetPlacesRunsWhenThePanelOpens() throws {
-        let widget = "[[widgets]]\ntitle = \"Desk\"\ngrid = [\"cpu\"]\nsize = \"square\"\n"
+        let widget = "#!/bin/sh\n# title=Desk\n# grid.square=cpu\n"
         let review = try ReviewSpot(
-            spot: spot([("board.toml", widget, false), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# read=sheet\n", true)]),
+            spot: spot([("board.sh", widget, true), ("cpu.sh", "#!/bin/sh\n# title=CPU\n# on=sheet.open\n", true)]),
             folder: folder
         )
 
@@ -197,7 +295,7 @@ final class ReviewSpotTests: XCTestCase {
 
     func testAFileThatGivesNoSpotIsRefused() throws {
         XCTAssertThrowsError(try ReviewSpot(spot: spot([("notes.txt", "hello", false)]), folder: folder)) { error in
-            XCTAssertEqual((error as? PluginError)?.reason, "This file holds no spot.")
+            XCTAssertEqual((error as? SpotError)?.reason, "This file holds no spot.")
         }
     }
 
@@ -208,7 +306,7 @@ final class ReviewSpotTests: XCTestCase {
         )
 
         let text = try shown(review)
-        XCTAssertTrue(text.contains("Will not load\nbad: Bad has an unknown read: never."), text)
+        XCTAssertTrue(text.contains("Will not load\nbad: Bad has read=never, which Openspot no longer reads."), text)
     }
 
     func testAClashWithAFolderIsRefusedBeforeTheReviewShows() throws {
@@ -217,34 +315,57 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertThrowsError(try review(""))
     }
 
-    func testNoScriptRunsForAReviewOrForAdd() throws {
+    /// A review of a `.spot` file with one script, which adds to the folder `plugins` and records in a lock beside it.
+    private func filed(_ header: String, body: String = "") throws -> ReviewSpot {
+        let text = "#!/bin/sh\n\(header.split(separator: "\n").map { "# \($0)\n" }.joined())\(body)"
+        let file = folder.appendingPathComponent("Weather.spot")
+        try spot([("weather.sh", text, true)]).data.write(to: file)
+        return try ReviewSpot(file: file, folder: folder.appendingPathComponent("plugins"), lock: SpotLock(url: folder.appendingPathComponent("spots.lock")))
+    }
+
+    func testNoScriptRunsForAReviewOrForAdd() async throws {
         let mark = folder.appendingPathComponent("ran")
-        let review = try review("read=panel", body: "touch \"\(mark.path)\"\n")
+        let review = try filed("on=panel.open", body: "touch \"\(mark.path)\"\n")
         _ = try review.answer(["read"])
 
-        _ = try review.answer(["install"])
+        _ = try await review.add()
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: mark.path))
     }
 
-    func testAddPutsItInTheFolderThatTheNextScanReads() throws {
-        let answer = try review("title=Weather\nicon=sun.max").answer(["install"])
+    func testAddPutsItInTheFolderThatTheNextScanReads() async throws {
+        let answer = try await filed("title=Weather\nicon=sun.max").add()
 
-        XCTAssertEqual(PluginOutput(text: answer).summary?.value("toast"), "Weather added")
-        let scan = try PluginFolder(url: folder).scan()
-        XCTAssertEqual(scan.commands.map(\.name), ["Weather"])
+        XCTAssertEqual(SpotOutput(text: answer).summary?.value("toast"), "Weather added")
+        let scan = try SpotFolder(url: folder.appendingPathComponent("plugins")).scan()
+        XCTAssertEqual(scan.spots.map(\.name), ["Weather"])
         XCTAssertEqual(scan.refused, [])
     }
 
-    func testAShippedSpotOffersTheReviewAsASheet() async throws {
+    func testAddKeepsTheSpotInTheLockAsSpotAddDoes() async throws {
+        let file = folder.appendingPathComponent("Weather.spot")
+        try spot([("weather.sh", "#!/bin/sh\n# title=Weather\n", true)]).data.write(to: file)
+        let plugins = folder.appendingPathComponent("plugins")
+        let lock = SpotLock(url: folder.appendingPathComponent("spots.lock"))
+        let review = try ReviewSpot(file: file, folder: plugins, lock: lock)
+
+        _ = try await review.add()
+
+        XCTAssertEqual(try lock.entries().map(\.source), [file.path])
+        XCTAssertEqual(try lock.entries().map(\.paths), [["weather.sh"]])
+        XCTAssertEqual(try SpotFolder(url: plugins).scan().spots.map(\.name), ["Weather"])
+    }
+
+    func testTheAppOffersTheReviewAsASheetThatGrowsOutOfTheField() async throws {
         let review = try review("title=Weather")
-        let command = ShippedSpot.command(reviewing: review)
+        let command = review.spot
 
         XCTAssertEqual(command.name, "Weather")
         XCTAssertEqual(command.subtitle, "Runs only when you use it")
         XCTAssertEqual(command.kind, .list)
         XCTAssertEqual(command.read, .sheet)
-        let answer = try await command.shipped?.answer(["read"], input: nil)
+        XCTAssertTrue(command.growsFromField)
+        let answer = try await command.host?.answer(["read"])
         XCTAssertEqual(answer, try review.answer(["read"]))
     }
 
@@ -252,20 +373,20 @@ final class ReviewSpotTests: XCTestCase {
         XCTAssertThrowsError(try review("").answer(["other"]))
     }
 
-    func testTheReviewShowsTheReadmeAndThePreviewAndTheInstallKeepsThemBesideTheSpot() throws {
-        let contents = SpotPackage.Contents(
-            spot: try spot([("timer.sh", "#!/bin/sh\n# title=Timer\n", true)]),
-            description: "Counts down",
-            readme: "Counts down from a time you pick.",
-            preview: "row=a\ntitle=5 minutes\n"
-        )
-        let review = try ReviewSpot(contents: contents, folder: folder)
+    func testTheReviewShowsTheReadmeAndThePreviewAfterWhatItUsesAndTheAddKeepsThemBesideTheSpotInTheLock() async throws {
+        let shared = try spot([("timer.sh", "#!/bin/sh\n# title=Timer\n", true)])
+        let package = try SpotPackage.write(shared, title: "Timer", description: "Counts down", readme: "Counts down from a time you pick.", preview: "row=a\ntitle=5 minutes\n", to: SpotPackage.url(for: "timer", in: folder))
+        let plugins = folder.appendingPathComponent("plugins")
+        let lock = SpotLock(url: folder.appendingPathComponent("spots.lock"))
+        let review = try ReviewSpot(file: package.url, folder: plugins, lock: lock)
 
         let text = try shown(review)
-        XCTAssertTrue(text.hasPrefix("Counts down from a time you pick.\n\nPreview\n5 minutes\n\n"), text)
+        XCTAssertTrue(text.hasPrefix("Timer\n\nUses nothing\n\nRuns only when you use it\n\nCounts down from a time you pick.\n\nPreview\n5 minutes\n\n"), text)
 
-        _ = try review.answer(["install"])
-        XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("timer.md"), encoding: .utf8), "Counts down from a time you pick.")
-        XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("timer.preview.txt"), encoding: .utf8), "row=a\ntitle=5 minutes\n")
+        _ = try await review.add()
+        XCTAssertEqual(try String(contentsOf: plugins.appendingPathComponent("timer.md"), encoding: .utf8), "Counts down from a time you pick.")
+        XCTAssertEqual(try String(contentsOf: plugins.appendingPathComponent("timer.preview.txt"), encoding: .utf8), "row=a\ntitle=5 minutes\n")
+        XCTAssertEqual(try lock.entries().map(\.paths), [["timer.sh", "timer.md", "timer.preview.txt"]])
+        XCTAssertEqual(try lock.entries().map(\.source), [package.url.path])
     }
 }

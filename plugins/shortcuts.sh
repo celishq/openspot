@@ -1,10 +1,10 @@
 #!/bin/sh
 # icon=/System/Applications/Shortcuts.app
 # detail=Run a shortcut
-# size=small
-# read=panel
+# on=panel.open
 # offers=search
 # drop=*
+# uses=clipboard
 . "$OPENSPOT_SH"
 input="$OPENSPOT_DATA/input"
 kept="$OPENSPOT_DATA/rows"
@@ -13,12 +13,8 @@ app=/System/Applications/Shortcuts.app
 # Prints a row for each shortcut in a folder, or with "none" for each shortcut in no folder.
 rows() {
   parent=''
-  [ "$1" = none ] || parent="parent=$(esc "$1")"
-  shortcuts list --folder-name "$1" | sed 's/\\/\\\\/g' | parent=$parent app=$app awk 'NF {
-    printf "row=%s\ntitle=%s\nicon=%s\n", $0, $0, ENVIRON["app"]
-    if (ENVIRON["parent"] != "") print ENVIRON["parent"]
-    print ""
-  }'
+  [ "$1" = none ] || parent="parent=$1"
+  shortcuts list --folder-name "$1" | LC_ALL=C tr -d '\t' | parent=$parent app=$app awk 'NF { printf "%s\t%s\t\t%s\t%s\n", $0, $0, ENVIRON["app"], ENVIRON["parent"] }' | openspot_rows
 }
 
 # Prints a row for each shortcut in no folder, then for each shortcut in each folder. It fails when Shortcuts gives no list.
@@ -40,7 +36,7 @@ head_of_list() {
       printf 'title=Run with %s files\n' "$count"
     fi
     printf 'detail=Pick a shortcut\n\n'
-    printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=command\n\n'
+    printf 'button=cancel\ntitle=Cancel\nshortcut=escape\nscope=spot\n\n'
   fi
   printf 'button=open\ntitle=Run\n\n'
   printf 'button=clipboard\ntitle=Run with clipboard\nshortcut=cmd+return\nclose=true\n\n'
@@ -82,7 +78,7 @@ run() {
 
 case "$1" in
   read)
-    [ "$OPENSPOT_REASON" = panel ] && rm -f "$input"
+    [ "$OPENSPOT_REASON" = panel.open ] && rm -f "$input"
     head_of_list
     if [ -s "$kept" ]; then
       cat "$kept"
@@ -108,7 +104,7 @@ case "$1" in
     ;;
   clipboard)
     text="$(mktemp -d)/clipboard.txt"
-    pbpaste >"$text"
+    openspot clipboard read >"$text"
     run "$2" "$text"
     ;;
   edit)

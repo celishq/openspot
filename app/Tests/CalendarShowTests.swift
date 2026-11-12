@@ -36,7 +36,7 @@ final class CalendarShowTests: XCTestCase {
         do {
             _ = try await events(FakeEventStore()).day(of: id)
             XCTFail("\(id) opened a day")
-        } catch PluginError.failed(1, let message) {
+        } catch SpotError.failed(1, let message) {
             XCTAssertEqual(message, "\(id) is a reminder. Run `openspot reminders show \(id)` to open it in Reminders.")
         }
     }
@@ -57,7 +57,7 @@ final class CalendarShowTests: XCTestCase {
             do {
                 _ = try await reminders(store).link(of: id)
                 XCTFail("\(id) gave a link")
-            } catch PluginError.failed(1, let message) {
+            } catch SpotError.failed(1, let message) {
                 XCTAssertEqual(message, "Openspot cannot find \(id). Read the list again, and use the id of one of its rows.")
             }
         }
@@ -70,7 +70,7 @@ final class CalendarShowTests: XCTestCase {
             do {
                 _ = try await events(store).day(of: id)
                 XCTFail("\(id) opened a day")
-            } catch PluginError.failed(1, let message) {
+            } catch SpotError.failed(1, let message) {
                 XCTAssertEqual(message, "Openspot cannot find \(id). Read the list again, and use the id of one of its rows.")
             }
         }

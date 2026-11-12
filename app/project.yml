@@ -24,6 +24,8 @@ targets:
     platform: macOS
     sources:
       - path: Core
+      - path: Client/CommandKind.swift
+      - path: Client/SocketPath.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.core
@@ -36,6 +38,9 @@ targets:
     dependencies:
       - target: OpenspotCore
       - package: Sparkle
+      - target: OpenspotClient
+        link: false
+        embed: false
     info:
       path: Shell/Info.plist
       properties:
@@ -80,11 +85,12 @@ targets:
         com.apple.security.device.camera: true
         com.apple.security.personal-information.calendars: true
     postBuildScripts:
-      - name: Link the openspot command
+      - name: Copy the openspot command
         basedOnDependencyAnalysis: false
         script: |
           mkdir -p "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers"
-          ln -sfn ../MacOS/Openspot "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers/openspot"
+          rm -f "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers/openspot"
+          cp "$BUILT_PRODUCTS_DIR/openspot" "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers/openspot"
       - name: Join the guide, and copy the guides of the nouns
         basedOnDependencyAnalysis: false
         script: |
@@ -116,12 +122,24 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: openspot.celis.ai
         DEVELOPMENT_TEAM: ""
+        INFOPLIST_OUTPUT_FORMAT: XML
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       configs:
         Debug:
           ASSETCATALOG_COMPILER_APPICON_NAME: AppIconNightly
           ENABLE_HARDENED_RUNTIME: NO
           OPENSPOT_DEV_STATE: $(SRCROOT)/../.temp/openspot
+  OpenspotClient:
+    type: tool
+    platform: macOS
+    sources:
+      - path: Client
+    settings:
+      base:
+        PRODUCT_NAME: openspot
+        PRODUCT_BUNDLE_IDENTIFIER: dev.openspot.client
+        SKIP_INSTALL: YES
+        LD_OBJC_RUNTIME_ARGS: ""
   OpenspotStandIn:
     type: tool
     platform: macOS
@@ -140,6 +158,9 @@ targets:
     dependencies:
       - target: OpenspotCore
       - target: OpenspotStandIn
+        link: false
+        embed: false
+      - target: OpenspotClient
         link: false
         embed: false
     settings:

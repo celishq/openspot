@@ -18,10 +18,10 @@ public struct SpotListing: Equatable, Sendable {
     }
 
     /// The listing that the files beside this spot's file give.
-    public init(beside command: Spot) {
-        let readme = try? String(contentsOf: Self.readme(of: command.url), encoding: .utf8)
-        let preview = (try? String(contentsOf: Self.preview(of: command.url), encoding: .utf8)).map { PluginOutput(text: $0).items } ?? []
-        self.init(description: command.subtitle, readme: readme?.trimmingCharacters(in: .whitespacesAndNewlines), preview: preview)
+    public init(beside spot: Spot) {
+        let readme = try? String(contentsOf: Self.readme(of: spot.url), encoding: .utf8)
+        let preview = (try? String(contentsOf: Self.preview(of: spot.url), encoding: .utf8)).map { SpotOutput(text: $0).items } ?? []
+        self.init(description: spot.subtitle, readme: readme?.trimmingCharacters(in: .whitespacesAndNewlines), preview: preview)
     }
 
     public static func readme(of file: URL) -> URL {
@@ -33,14 +33,12 @@ public struct SpotListing: Equatable, Sendable {
         return stem.deletingLastPathComponent().appendingPathComponent(stem.lastPathComponent + previewSuffix)
     }
 
-    /// Runs the read of a spot with `OPENSPOT_PREVIEW=1`, so that it prints fake data, and keeps the text beside its file.
-    public static func capturePreview(of command: Spot) async throws {
-        guard command.previewsSample else { throw PluginError.fault("\(command.name) has no preview mode. Add preview=sample to its header.") }
-        var text = ""
-        let process = ScriptProcess(url: command.url, arguments: ["read"], limit: 10, dataName: command.dataName, variables: ["OPENSPOT_PREVIEW": "1"])
-        for try await frame in process.start() {
-            text += frame
-        }
-        try text.write(to: preview(of: command.url), atomically: true, encoding: .utf8)
+    /// Runs the read of a spot through these runs with `OPENSPOT_REASON=spot.preview`, so that it prints fake data as the spot's own
+    /// call, and keeps the text beside its file.
+    @MainActor
+    public static func capturePreview(of spot: Spot, runs: SpotRuns) async throws {
+        guard spot.previewsSample else { throw SpotError.fault("\(spot.name) has no preview mode. Add preview=sample to its header.") }
+        let text = try await runs.answer(of: spot, .read, limit: 10, variables: ReadReason.preview.variables)
+        try text.write(to: preview(of: spot.url), atomically: true, encoding: .utf8)
     }
 }

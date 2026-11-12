@@ -33,6 +33,7 @@ struct SpotFieldView: View {
                 .opacity(model.isEditing ? 1 : 0)
                 .allowsHitTesting(model.isEditing)
         }
+        .modifier(SpotFocusLook(focus: model.menu == nil ? .none : .faded))
         .onChange(of: model.isShown) { _, isShown in
             guard isShown else {
                 isFocused = false
@@ -93,7 +94,8 @@ struct SpotFieldView: View {
             Spacer()
             SpotRoundButton(symbol: "checkmark", label: "Done", look: .strong) { model.endEditing() }
         }
-        .padding(.horizontal, SpotTokens.padding)
+        .padding(.leading, SpotTokens.padding + SpotTokens.glyphInset)
+        .padding(.trailing, SpotTokens.padding)
         .frame(width: Self.rect.width, height: Self.rect.height)
         .offset(x: Self.rect.minX, y: Self.rect.minY)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight, alignment: .topLeading)

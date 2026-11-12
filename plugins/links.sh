@@ -1,8 +1,9 @@
 #!/bin/sh
 # icon=link
 # detail=Open a link
-# read=panel
+# on=panel.open
 # offers=search
+# uses=network,clipboard
 export LC_ALL=en_US.UTF-8
 data="$OPENSPOT_DATA/links.json"
 icons="$OPENSPOT_DATA/icons"
@@ -141,7 +142,7 @@ case "$1" in
     printf 'button=reveal\ntitle=Show in Finder\nshortcut=cmd+r\nclose=true\n\n'
     printf 'button=edit\ntitle=Edit\nshortcut=cmd+e\nform=true\n\n'
     printf 'button=delete\ntitle=Delete\nshortcut=cmd+backspace\nconfirm=Press again to delete\n\n'
-    printf 'button=new\ntitle=New link\nshortcut=cmd+n\nscope=command\nform=true\n\n'
+    printf 'button=new\ntitle=New link\nshortcut=cmd+n\nscope=spot\nform=true\n\n'
     found=$(ls "$icons" 2>/dev/null | jq -R . | jq -sc .)
     load | jq -r --arg icons "$icons" --argjson found "$found" --arg home "$HOME" "$esc"'.[]
       | if (.url | test("^[/~]")) then
@@ -178,7 +179,7 @@ case "$1" in
     ;;
   copy)
     url=$(link "$2") || exit 1
-    printf '%s' "$url" | pbcopy
+    printf '%s' "$url" | openspot clipboard copy
     echo "toast=Copied"
     ;;
   reveal)

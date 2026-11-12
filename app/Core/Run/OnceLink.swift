@@ -1,12 +1,13 @@
 import Foundation
 
-/// The link to a script that runs once for each call (01). Each call is a process of its own. Each frame with a block of a
+/// The link to a script that runs once for each call. Each call is a process of its own. Each frame with a block of a
 /// read or a search answers it, and one that ended with no picture answers with its last head. A frame of only a head
 /// carries effects.
 @MainActor
 final class OnceLink: ScriptLink {
     weak var run: SpotRun?
     let holdsScript = false
+    let keepsState = false
     let isReachable = true
     private let runs: SpotRuns
     private var asking: [ScriptCall] = []
@@ -25,9 +26,9 @@ final class OnceLink: ScriptLink {
         guard let run else { return false }
         var hasAnswer = false
         var showedPicture = false
-        var lastHead: PluginOutput?
+        var lastHead: SpotOutput?
         var selected: String?
-        let made = runs.call(run.command, call.action, key: call.key, input: call.input, limit: call.limit, variables: call.variables) { [weak run] made, text, lines in
+        let made = runs.call(run.spot, call.action, key: call.key, input: call.input, limit: call.limit, reason: call.reason, variables: call.variables) { [weak run] made, text, lines in
             guard let run else { return }
             selected = lines.select ?? selected
             switch call.purpose {
@@ -49,12 +50,15 @@ final class OnceLink: ScriptLink {
             }
             if case .ask(.read) = call.purpose, lines.isPicture, !run.isWanted, !made.isStopped { run.stop(made) }
         } onEnd: { [weak self, weak run] made, end in
-            self?.asking.removeAll { $0 === made }
-            guard let run else { return }
+            guard let run else {
+                self?.asking.removeAll { $0 === made }
+                return
+            }
             if case .ended = end, !hasAnswer, case .ask(let ask) = call.purpose {
                 hasAnswer = true
-                await run.takeAnswer(lastHead?.withoutEffects() ?? PluginOutput(text: ""), frame: "", to: ask)
+                await run.takeAnswer(lastHead?.withoutEffects() ?? SpotOutput(text: ""), frame: "", to: ask)
             }
+            self?.asking.removeAll { $0 === made }
             run.ended(made, call.purpose, end, hadAnswer: hasAnswer, showedPicture: showedPicture, selected: selected)
         }
         if case .ask(let ask) = call.purpose, !ask.isAnswer { asking.append(made) }
@@ -75,7 +79,7 @@ final class OnceLink: ScriptLink {
         guard let run else { return nil }
         return try await withCheckedThrowingContinuation { continuation in
             var text = ""
-            let made = runs.call(run.command, action, key: key, input: input, limit: nil) { [weak run] _, frame, lines in
+            let made = runs.call(run.spot, action, key: key, input: input, limit: nil) { [weak run] _, frame, lines in
                 text += frame
                 run?.report(toastOf: lines)
             } onEnd: { [weak run] made, end in

@@ -87,7 +87,7 @@ public struct ItemForm: Equatable, Sendable {
     }
 
     /// Reads a form from what a script prints. It needs a title, and a title for each field.
-    public init?(output: PluginOutput) {
+    public init?(output: SpotOutput) {
         guard let title = output.summary?.value("title") else { return nil }
         let fields = output.fields.compactMap(Field.init(block:))
         guard fields.count == output.fields.count else { return nil }

@@ -1,17 +1,15 @@
 [[spots]]
-id = "openspot/spots"
-letter = "p"
-
-[[spots]]
 id = "apps"
 letter = "a"
 
 [[spots]]
 id = "caffeinate"
+size = "small"
 letter = "c"
 
 [[spots]]
 id = "color-picker"
+size = "small"
 letter = "o"
 
 [[spots]]
@@ -20,6 +18,7 @@ letter = "k"
 
 [[spots]]
 id = "emoji"
+size = "small"
 letter = "e"
 
 [[spots]]
@@ -32,16 +31,51 @@ letter = "l"
 
 [[spots]]
 id = "paste-screenshot"
+size = "small"
 letter = "v"
 
 [[spots]]
-id = "snippets"
-letter = "n"
+id = "running"
+size = "small"
 
 [[spots]]
 id = "shortcuts"
+size = "small"
 grid = false
 
 [[spots]]
+id = "snippets"
+size = "small"
+letter = "n"
+
+[[spots]]
 id = "translate"
+size = "small"
 letter = "t"
+
+[[spots]]
+id = "openspot/spots"
+size = "small"
+letter = "p"
+
+[[spots]]
+id = "openspot/settings"
+size = "small"
+key = "cmd+,"
+
+[[spots]]
+id = "openspot/new"
+size = "small"
+key = "cmd+n"
+
+[[spots]]
+id = "openspot/quit"
+grid = false
+
+[[spots]]
+id = "settings"
+grid = false
+
+[[spots]]
+id = "openspot/playground"
+grid = false

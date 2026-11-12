@@ -1,3 +1,4 @@
+import CryptoKit
 import XCTest
 @testable import OpenspotCore
 
@@ -31,6 +32,97 @@ final class SwiftProgramTests: XCTestCase {
         try text.writeScript(to: url)
     }
 
+    /// A clock that a test moves.
+    private final class Clock: @unchecked Sendable {
+        private let lock = NSLock()
+        private var date = Date()
+
+        var now: Date { lock.withLock { date } }
+
+        func move(days: Double) {
+            lock.withLock { date += days * 86_400 }
+        }
+    }
+
+    private let clock = Clock()
+    private var cache: URL { folder.appendingPathComponent("cache") }
+
+    /// Stand-ins for the build commands whose compiler logs each build and writes a C program, by default one that prints
+    /// `text=program`, with a cache in the test's folder.
+    private func caching(_ program: String = "int main(void) { return puts(\"text=program\") < 0; }", cache: URL? = nil) throws -> SwiftProgram {
+        let place = folder.appendingPathComponent("tools")
+        try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
+        let c = place.appendingPathComponent("program.c")
+        try ("#include <stdio.h>\n" + program + "\n").write(to: c, atomically: true, encoding: .utf8)
+        try "#!/bin/sh\necho \"$*\" >> '\(folder.path)/builds'\nwhile [ $# -gt 1 ]; do [ \"$1\" = -o ] && /usr/bin/cc -x c '\(c.path)' -o \"$2\"; shift; done\n"
+            .writeScript(to: place.appendingPathComponent("swiftc"))
+        let clock = clock
+        return SwiftProgram(tools: place, cache: cache ?? self.cache, now: { clock.now })
+    }
+
+    private var builds: Int {
+        ((try? String(contentsOf: folder.appendingPathComponent("builds"), encoding: .utf8)) ?? "").split(separator: "\n").count
+    }
+
+    private func source(_ text: String = "#!/bin/sh\necho text=source\n") throws -> URL {
+        let url = folder.appendingPathComponent("hello.swift")
+        try text.writeScript(to: url)
+        return url
+    }
+
+    private func wait(_ what: String, until fact: () -> Bool) async throws {
+        for _ in 0..<1000 {
+            if fact() { return }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTFail("waited for \(what)")
+    }
+
+    func testASwiftScriptRunsItsSourceWhileItBuildsOnceAndThenItsProgram() async throws {
+        let program = try caching()
+        let source = try source()
+        let runs = SpotRuns(swift: program)
+        defer { runs.quit() }
+        let spot = Spot(id: "hello", name: "Hello", url: source)
+
+        let first = try await runs.answer(of: spot, .open)
+        try await wait("the build") { program.runnable(for: source) != source }
+        let later = try await runs.answer(of: spot, .open)
+
+        XCTAssertEqual(first, "text=source\n")
+        XCTAssertEqual(later, "text=program\n")
+        XCTAssertEqual(builds, 1)
+    }
+
+    func testAChangedSourceBuildsAgain() async throws {
+        let program = try caching()
+        let source = try source()
+        _ = program.runnable(for: source)
+        try await wait("the first build") { program.runnable(for: source) != source }
+
+        try "#!/bin/sh\necho text=changed\n".writeScript(to: source)
+
+        XCTAssertEqual(program.runnable(for: source), source)
+        try await wait("the second build") { program.runnable(for: source) != source }
+        XCTAssertEqual(builds, 2)
+    }
+
+    func testABadCachedProgramIsBuiltAgain() async throws {
+        let program = try caching()
+        let source = try source()
+        _ = program.runnable(for: source)
+        try await wait("the first build") { program.runnable(for: source) != source }
+        let cached = program.runnable(for: source)
+
+        try Data("bad".utf8).write(to: cached)
+
+        XCTAssertEqual(program.runnable(for: source), source)
+        try await wait("the second build") { program.runnable(for: source) != source }
+        XCTAssertEqual(builds, 2)
+        let printed = try await ScriptProcess.output(url: cached)
+        XCTAssertEqual(printed, "text=program\n")
+    }
+
     func testASourceBuildsAProgramThatRunsForBothKindsOfMac() async throws {
         let built = try await SwiftProgram().build(source: source)
 
@@ -50,7 +142,7 @@ final class SwiftProgramTests: XCTestCase {
             _ = try await program.build(source: source)
             XCTFail("It must not build.")
         } catch {
-            XCTAssertEqual((error as? PluginError)?.reason, "To share a Swift spot, install the Command Line Tools: xcode-select --install")
+            XCTAssertEqual((error as? SpotError)?.reason, "To share a Swift spot, install the Command Line Tools: xcode-select --install")
         }
     }
 
@@ -61,7 +153,7 @@ final class SwiftProgramTests: XCTestCase {
             _ = try await program.build(source: source)
             XCTFail("It must not build.")
         } catch {
-            XCTAssertEqual((error as? PluginError)?.reason, "This Swift spot does not compile. a.swift:1: bad line")
+            XCTAssertEqual((error as? SpotError)?.reason, "This Swift spot does not compile. a.swift:1: bad line")
         }
     }
 
@@ -97,10 +189,10 @@ final class SwiftProgramTests: XCTestCase {
     func testSharingTakesTheProgramBesideATopLevelScript() throws {
         try script("hello.swift", "#!/bin/sh\n# title=Hello\n")
         try script("hello.program", "#!/bin/sh\n")
-        let place = PluginFolder(url: folder)
+        let place = SpotFolder(url: folder)
         let scan = try place.scan()
 
-        let spot = try SharedSpot(sharing: try XCTUnwrap(scan.commands.first), from: scan)
+        let spot = try SharedSpot(sharing: try XCTUnwrap(scan.spots.first), from: scan)
 
         XCTAssertEqual(spot.files.map(\.path), ["hello.swift", "hello.program"])
     }
@@ -109,16 +201,16 @@ final class SwiftProgramTests: XCTestCase {
         try script("hello.swift", "#!/bin/sh\n# title=Hello\n")
         try script("hello.program", "#!/bin/sh\n")
 
-        let scan = try PluginFolder(url: folder).scan()
+        let scan = try SpotFolder(url: folder).scan()
 
-        XCTAssertEqual(scan.commands.map(\.name), ["Hello"])
+        XCTAssertEqual(scan.spots.map(\.name), ["Hello"])
         XCTAssertEqual(scan.refused, [])
     }
 
     func testAProgramRunsInPlaceOfItsSource() async throws {
         try script("hello.swift", "#!/bin/sh\necho source\n")
         try script("hello.program", "#!/bin/sh\necho program\n")
-        let command = try XCTUnwrap(try PluginFolder(url: folder).scan().commands.first)
+        let command = try XCTUnwrap(try SpotFolder(url: folder).scan().spots.first)
 
         let answer = try await SpotRuns().answer(of: command, .open)
 
@@ -127,7 +219,7 @@ final class SwiftProgramTests: XCTestCase {
 
     func testASourceWithNoProgramRunsAsAScript() async throws {
         try script("hello.swift", "#!/bin/sh\necho source\n")
-        let command = try XCTUnwrap(try PluginFolder(url: folder).scan().commands.first)
+        let command = try XCTUnwrap(try SpotFolder(url: folder).scan().spots.first)
 
         let answer = try await SpotRuns().answer(of: command, .open)
 
@@ -138,8 +230,8 @@ final class SwiftProgramTests: XCTestCase {
         try script("hello.swift", "#!/bin/sh\n")
         try script("hello.program", "#!/bin/sh\n")
         try script("other.sh", "#!/bin/sh\n")
-        let place = PluginFolder(url: folder)
-        let command = try XCTUnwrap(try place.scan().commands.first { $0.id == "hello" })
+        let place = SpotFolder(url: folder)
+        let command = try XCTUnwrap(try place.scan().spots.first { $0.id == "hello" })
         var discarded: [String] = []
 
         try place.remove(command) { discarded.append($0.lastPathComponent) }
@@ -157,8 +249,152 @@ final class SwiftProgramTests: XCTestCase {
 
         XCTAssertEqual(review.name, "Hello")
         XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
-        let part = try XCTUnwrap(PluginOutput(text: try review.answer(["read"])).parts.first { $0.id == "review" })
-        guard case .text(let text, _, _) = part.control else { throw PluginError.badForm }
-        XCTAssertTrue(text.hasPrefix("Program that Openspot cannot show\nhello.program\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
+        let part = try XCTUnwrap(SpotOutput(text: try review.answer(["read"])).parts.first { $0.id == "review" })
+        guard case .text(let text, _, _) = part.control else { throw SpotError.badForm }
+        XCTAssertTrue(text.hasPrefix("Hello\n\nProgram that Openspot cannot show\nhello.program\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
+    }
+
+    func testABuiltProgramGetsThePathOfItsScriptAsItsFirstArgument() async throws {
+        let program = try caching("int main(int count, char **words) { return printf(\"text=%s\\n\", words[0]) < 0; }")
+        let source = try source()
+        let runs = SpotRuns(swift: program)
+        defer { runs.quit() }
+        _ = program.runnable(for: source)
+        try await wait("the build") { program.runnable(for: source) != source }
+
+        let answer = try await runs.answer(of: Spot(id: "hello", name: "Hello", url: source), .open)
+
+        XCTAssertEqual(answer, "text=\(source.path)\n")
+    }
+
+    /// Builds each source, and returns the path of its program in the cache.
+    private func built(_ sources: [URL], by program: SwiftProgram) async throws -> [URL] {
+        var programs: [URL] = []
+        for source in sources {
+            _ = program.runnable(for: source)
+            try await wait("the build") { program.runnable(for: source) != source }
+            programs.append(program.runnable(for: source))
+        }
+        return programs
+    }
+
+    private func age(_ file: URL, days: Double) throws {
+        try FileManager.default.setAttributes([.modificationDate: clock.now.addingTimeInterval(-days * 86_400)], ofItemAtPath: file.path)
+    }
+
+    private func exists(_ file: URL) -> Bool {
+        FileManager.default.fileExists(atPath: file.path)
+    }
+
+    func testAPruneRemovesEachBuildOfNoSourceAndEachNotRunFor30Days() async throws {
+        let program = try caching()
+        let used = try source()
+        let idle = folder.appendingPathComponent("idle.swift")
+        try "#!/bin/sh\necho text=idle\n".writeScript(to: idle)
+        let builds = try await built([used, idle], by: program)
+        let orphan = cache.appendingPathComponent(String(repeating: "a", count: 64))
+        try FileManager.default.copyItem(at: builds[0], to: orphan)
+        try builds.forEach { try age($0, days: 31) }
+        _ = program.runnable(for: used)
+
+        await program.prune(keeping: [used, idle])?.value
+
+        XCTAssertEqual([exists(builds[0]), exists(builds[1]), exists(orphan)], [true, false, false])
+    }
+
+    func testAPruneRunsAtMostOnceADay() async throws {
+        let program = try caching()
+        let source = try source()
+        let builds = try await built([source], by: program)
+        await program.prune(keeping: [source])?.value
+
+        XCTAssertNil(program.prune(keeping: []))
+        XCTAssertTrue(exists(builds[0]))
+        clock.move(days: 1.1)
+        await program.prune(keeping: [])?.value
+        XCTAssertFalse(exists(builds[0]))
+    }
+
+    func testAPruneKeepsABuildWhileItRuns() async throws {
+        let program = try caching("int main(void) { return getchar() == EOF ? 0 : 1; }")
+        let source = try source()
+        let builds = try await built([source], by: program)
+        let process = Process()
+        let input = Pipe()
+        process.executableURL = builds[0]
+        process.standardInput = input
+        try process.run()
+
+        await program.prune(keeping: [])?.value
+        XCTAssertTrue(exists(builds[0]))
+        try input.fileHandleForWriting.close()
+        process.waitUntilExit()
+        clock.move(days: 1.1)
+        await program.prune(keeping: [])?.value
+
+        XCTAssertFalse(exists(builds[0]))
+    }
+
+    private var root: URL { folder.appendingPathComponent("swift", isDirectory: true) }
+
+    /// Stand-ins for the build commands, as `caching` gives them, with the cache of a config folder in `root`.
+    private func caching(config: String) throws -> SwiftProgram {
+        try caching(cache: SwiftProgram.folder(of: folder.appendingPathComponent(config), in: root))
+    }
+
+    private func sha(_ file: URL) throws -> String {
+        SHA256.hash(data: try Data(contentsOf: file)).map { String(format: "%02x", $0) }.joined()
+    }
+
+    func testEachConfigFolderKeepsItsBuildsInAFolderOfItsOwn() throws {
+        let home = URL(fileURLWithPath: try XCTUnwrap(ProcessInfo.processInfo.environment["HOME"], "the test scheme gives a private home"), isDirectory: true)
+        let release = SwiftProgram.folder(of: home.appendingPathComponent(".config/openspot"), in: root)
+        let debug = SwiftProgram.folder(of: folder.appendingPathComponent(".temp/openspot"), in: root)
+
+        XCTAssertNotEqual(release, debug)
+        XCTAssertEqual([release.deletingLastPathComponent(), debug.deletingLastPathComponent()], [root, root])
+        XCTAssertEqual(release.lastPathComponent.count, 12)
+        XCTAssertEqual(SwiftProgram().cache, SwiftProgram.folder(of: home.appendingPathComponent(".config/openspot"), in: home.appendingPathComponent("Library/Caches/dev.openspot/swift")))
+    }
+
+    func testAPruneOfOneConfigFolderKeepsTheBuildsOfAnother() async throws {
+        let debug = try caching(config: "debug")
+        let release = try caching(config: "release")
+        let source = try source()
+        let kept = try await built([source], by: release)
+        try age(kept[0], days: 31)
+
+        await debug.prune(keeping: [])?.value
+
+        XCTAssertTrue(exists(kept[0]))
+    }
+
+    func testABuildInTheOldSharedFolderMovesIntoTheFolderOfItsConfig() async throws {
+        let program = try caching(config: "release")
+        let source = try source()
+        let other = try await built([source], by: try caching(config: "other"))
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let old = root.appendingPathComponent(try sha(source))
+        try FileManager.default.moveItem(at: other[0], to: old)
+
+        let runnable = program.runnable(for: source)
+
+        XCTAssertEqual(runnable, SwiftProgram.folder(of: folder.appendingPathComponent("release"), in: root).appendingPathComponent(try sha(source)))
+        XCTAssertFalse(exists(old))
+        XCTAssertEqual(builds, 1)
+    }
+
+    func testAPruneRemovesAnOldSharedBuildThatDidNotRunFor30Days() async throws {
+        let program = try caching(config: "release")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let stale = root.appendingPathComponent(String(repeating: "a", count: 64))
+        let fresh = root.appendingPathComponent(String(repeating: "b", count: 64))
+        try Data("x".utf8).write(to: stale)
+        try Data("x".utf8).write(to: fresh)
+        try age(stale, days: 31)
+
+        await program.prune(keeping: [])?.value
+
+        XCTAssertEqual([exists(stale), exists(fresh)], [false, true])
     }
 }

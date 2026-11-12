@@ -138,7 +138,7 @@ extension CallLog.End {
         case .ended: self = .exited(0)
         case .stopped: self = .stopped
         case .failed(let error):
-            switch error as? PluginError {
+            switch error as? SpotError {
             case .failed(let code, _)?, .failedWithFix(let code, _, _)?: self = .exited(code)
             case let error?: self = .failed(error.reason)
             case nil: self = .failed(error.localizedDescription)

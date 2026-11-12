@@ -1,7 +1,7 @@
 import XCTest
 @testable import OpenspotCore
 
-/// Proves the rows that a person drags out of a sheet as files (01, O1): `file` on a row, and the `drag` call after the drop.
+/// Proves the rows that a person drags out of a sheet as files (protocol: Files out): `file` on a row, and the `drag` call after the drop.
 @MainActor
 final class FilesOutTests: XCTestCase {
     private var folder: URL!
@@ -44,15 +44,15 @@ final class FilesOutTests: XCTestCase {
     }
 
     func testARowCarriesTheFileThatItNamesFromTheRoot() {
-        let output = PluginOutput(text: "row=a\nfile=/Users/me/a.png\n\nrow=b\nfile=b.png\n\nrow=c\n")
+        let output = SpotOutput(text: "row=a\nfile=/Users/me/a.png\n\nrow=b\nfile=b.png\n\nrow=c\n")
 
         XCTAssertEqual(output.items.map(\.file), ["/Users/me/a.png", nil, nil])
         XCTAssertTrue(output.partFaults.contains("the row b names the file b.png, which does not start with /"))
     }
 
     func testAComponentCannotTakeTheIdDragBesideRowsWithFiles() {
-        let files = PluginOutput(text: "row=a\nfile=/a.png\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
-        let none = PluginOutput(text: "row=a\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
+        let files = SpotOutput(text: "row=a\nfile=/a.png\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
+        let none = SpotOutput(text: "row=a\n\nbutton=drag\ntitle=Drag\n\nfield=note\n")
 
         XCTAssertTrue(files.partFaults.contains("an action cannot be called drag"))
         XCTAssertFalse(none.partFaults.contains("an action cannot be called drag"))
@@ -69,7 +69,7 @@ final class FilesOutTests: XCTestCase {
           drag) shift; printf 'toast=Took %s\\n' "$*" ;;
         esac
         """
-        try "#!/bin/sh\n# read=sheet\n\(body)\n".writeScript(to: plugins.appendingPathComponent("shelf.sh"))
+        try "#!/bin/sh\n# on=sheet.open\n\(body)\n".writeScript(to: plugins.appendingPathComponent("shelf.sh"))
         model.reload()
         model.press(GlobalKey(spot: "shelf", act: .float, trigger: .shake))
         try await wait("the rows") { model.sheets["shelf"]?.list.shown.count == 3 }

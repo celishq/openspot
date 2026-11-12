@@ -26,7 +26,7 @@ final class SpotEventLog: @unchecked Sendable {
         let url = URL(fileURLWithPath: path)
         try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         guard FileManager.default.createFile(atPath: path, contents: nil), let handle = FileHandle(forWritingAtPath: path) else {
-            throw PluginError.fault("Openspot cannot write the events to \(path). Name a file in a folder that you can write to.")
+            throw SpotError.fault("Openspot cannot write the events to \(path). Name a file in a folder that you can write to.")
         }
         self.handle = handle
         self.frame = frame
@@ -43,7 +43,7 @@ final class SpotEventLog: @unchecked Sendable {
             return Unmanaged.passUnretained(event)
         }
         guard let tap = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .tailAppendEventTap, options: .listenOnly, eventsOfInterest: mask, callback: callback, userInfo: Unmanaged.passUnretained(self).toOpaque()) else {
-            throw PluginError.fault("Openspot cannot follow the pointer for the events. Record again without `--events`.")
+            throw SpotError.fault("Openspot cannot follow the pointer for the events. Record again without `--events`.")
         }
         self.tap = tap
         let ready = DispatchSemaphore(value: 0)

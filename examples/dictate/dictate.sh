@@ -2,9 +2,10 @@
 # title=Dictate
 # icon=mic
 # detail=Convert speech to text
-# read=sheet,1
+# on=sheet.open
+# on=clock.1
 #
-# command=dictate
+# button=dictate
 # title=Dictate
 # icon=mic
 export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"

@@ -8,6 +8,7 @@ struct SpotsView: View {
     @State private var scroll = ScrollPosition()
     @State private var scrollOffset: CGFloat = 0
     @State private var dropTarget: String?
+    @Environment(\.spotDrawsBlur) private var drawsBlur
 
     /// The sheet that is built, from its first frame on its card to the end of its close.
     private var sheetID: String? {
@@ -49,7 +50,8 @@ struct SpotsView: View {
             .modifier(SpotScrollEdgeTracker(edges: Binding(get: { fade.edges }, set: { fade.edges = $0 })))
             .modifier(GridFadeMask(fade: fade, height: cardHeight))
             .animation(SpotMotion.sheetFade(isOpen: surfaceIsOut, isLate: !coversGrid)) { $0.opacity(coversGrid ? 0 : 1) }
-            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: gridHeight, sheetHeight: sheetID == nil ? gridHeight : sheetHeight)
+            SpotHintLine(model: model, surfaceIsOut: surfaceIsOut, gridHeight: cardHeight, sheetHeight: max(sheetID == nil ? gridHeight : sheetHeight, menuBackdropHeight))
+                .animation(SpotMotion.sheet(isOpen: model.menu != nil), value: menuBackdropHeight)
                 .opacity(model.isShown ? 1 : 0)
                 .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
             if let entry = model.entries.first(where: { $0.id == sheetID }) {
@@ -68,21 +70,23 @@ struct SpotsView: View {
                 model: model,
                 isOpen: sheetOpen,
                 isInSheet: fieldIsInSheet,
-                isInstall: sheetID == ShippedSpot.installID,
+                isInstall: isInstall,
                 showsField: showsSearchField,
                 surfaceIsOut: surfaceIsOut
             )
-            if let menu = model.menu {
+            if model.menu != nil {
                 Color.clear
                     .contentShape(Rectangle())
                     .onTapGesture { model.closeMenu() }
-                SpotActionMenuView(menu: menu, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) }, onSearch: { model.searchMenu($0) })
-                    .offset(x: SpotTokens.halo, y: menuTop(menu))
             }
         }
         .onDrop(of: [.fileURL], delegate: SpotAddDrop(model: model))
         .coordinateSpace(name: Self.panelSpace)
         .frame(width: SpotTokens.panelWidth, height: SpotTokens.panelHeight)
+        .overlayPreferenceValue(SpotMenuAnchor.self, alignment: .topLeading) { item in
+            menuLayer(at: item)
+                .animation(SpotMotion.sheet(isOpen: model.menu != nil), value: model.menu == nil)
+        }
         .background(softBlur)
         .environment(\.spotIsShown, model.isShown)
         .onChange(of: model.isShown) { _, isShown in
@@ -102,9 +106,12 @@ struct SpotsView: View {
         .animation(SpotMotion.surface(isShown: model.isShown), value: model.isShown)
     }
 
+    @ViewBuilder
     private func blur(height: CGFloat, isShown: Bool) -> some View {
         let height = max(height, menuBackdropHeight)
-        return SpotSoftBlur(height: height)
+        Group {
+            if drawsBlur { SpotSoftBlur(height: height) } else { Color.clear }
+        }
             .frame(height: height)
             .transaction { $0.animation = nil }
             .animation(SpotMotion.blurFade(isSheetOpen: sheetOpen)) { $0.opacity(isShown ? 1 : 0) }
@@ -162,12 +169,17 @@ struct SpotsView: View {
 
     /// Whether a sheet is out or a drop is taken, which sets the time of each fade and which hint shows.
     private var surfaceIsOut: Bool {
-        sheetOpen || (model.showsFieldDrop && !(model.transition.phase == .closing && sheetID == ShippedSpot.installID))
+        sheetOpen || (model.showsFieldDrop && !(model.transition.phase == .closing && isInstall))
+    }
+
+    /// Whether the sheet is the install screen, which grows out of the field.
+    private var isInstall: Bool {
+        sheetID != nil && sheetID == model.fieldSheet
     }
 
     /// Whether the field lies in the open sheet. The install screen grows out of the field, which stays where it is.
     private var fieldIsInSheet: Bool {
-        sheetOpen && sheetID != ShippedSpot.installID
+        sheetOpen && !isInstall
     }
 
     private var contentHeight: CGFloat {
@@ -188,17 +200,53 @@ struct SpotsView: View {
     }
 
     private var menuBackdropHeight: CGFloat {
-        model.menu.map { SpotTokens.menuHeight(rows: $0.lines) + 2 * SpotTokens.halo } ?? 0
+        model.menuSession?.frame.map { $0.rect.maxY + SpotTokens.halo + SpotTokens.hintBlock } ?? 0
     }
 
-    /// Where the menu starts: its bottom meets the bottom of the content.
-    private func menuTop(_ menu: ActionMenu) -> CGFloat {
-        max(SpotTokens.halo, contentHeight - SpotTokens.halo - SpotTokens.hintBlock - SpotTokens.menuHeight(rows: menu.lines))
+    /// Where the menu may lie: under the field, down to the panel's foot.
+    private var menuBounds: CGRect {
+        ActionMenuFrame.bounds(under: fieldIsInSheet ? SpotTokens.halo + SpotTokens.sheetFieldDrop + SpotTokens.listRowHeight + SpotTokens.rowGap : SpotTokens.gridTop)
+    }
+
+    /// The rect of the menu's glass at a scale from its corner nearest its item, as its rows scale, so that the blur behind
+    /// it stays still.
+    private static func rect(_ rect: CGRect, scaledBy scale: CGFloat, from corner: UnitPoint) -> CGRect {
+        let size = CGSize(width: rect.width * scale, height: rect.height * scale)
+        return CGRect(x: rect.minX + (rect.width - size.width) * corner.x, y: rect.minY + (rect.height - size.height) * corner.y, width: size.width, height: size.height)
+    }
+
+    /// The open menu at the selected card or row, or the closing one at its last place. With no selected item it opens under
+    /// the field.
+    private func menuLayer(at item: SpotMenuAnchor.Item?) -> some View {
+        GeometryReader { proxy in
+            if let session = model.menuSession {
+                let menu = session.menu
+                let bounds = menuBounds
+                let rect = item.map { proxy[$0.bounds] } ?? SpotFieldView.rect
+                let isClosing = session.phase == .closing
+                let fresh = ActionMenuFrame(item: rect, menu: menu, bounds: bounds)
+                let frame = isClosing ? session.frame ?? fresh : fresh
+                let shown = frame.rect(of: menu)
+                let isGrown = session.isGrown
+                let scale = isGrown ? 1 : SpotMotion.menuStartScale
+                let corner = UnitPoint(x: frame.side == .left ? 0 : 1, y: frame.stillEdge == .top ? 0 : 1)
+                ZStack(alignment: .topLeading) {
+                    SpotSurface(rect: Self.rect(shown, scaledBy: scale, from: corner), radius: SpotActionMenuView.radius * scale, glass: isGrown ? 1 : 0)
+                    SpotActionMenuView(menu: menu, frame: frame, isSettled: session.phase == .settled, work: { model.work(of: $0) }, onPress: { model.pressMenu(row: $0) }, onPoint: { model.point(at: .menuRow($0)) }, onSearch: { model.searchMenu($0) })
+                        .scaleEffect(scale, anchor: corner)
+                        .opacity(isGrown ? 1 : 0)
+                        .offset(x: shown.minX, y: shown.minY)
+                }
+                .allowsHitTesting(!isClosing)
+                .transition(.opacity)
+                .onChange(of: frame, initial: true) { model.placeMenu(frame) }
+            }
+        }
     }
 
     /// Whether the install screen takes the place of the grid and the field.
     private var coversGrid: Bool {
-        sheetOpen && sheetID == ShippedSpot.installID
+        sheetOpen && isInstall
     }
 
     /// Whether the search field is drawn. A form, a sheet of parts and the install screen replace it, but a form of one choice

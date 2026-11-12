@@ -27,6 +27,12 @@ public struct GlyphKeywords: Sendable {
         return words[String(String.UnicodeScalarView(base))] ?? []
     }
 
+    /// The `keywords` line of a row of a glyph, or none when it has no keywords.
+    func field(of glyph: String) -> [TextBlock.Field] {
+        let words = of(glyph)
+        return words.isEmpty ? [] : [.init(key: "keywords", value: words.joined(separator: ", "))]
+    }
+
     private static func read(_ text: String) -> [String: [String]] {
         var words: [String: [String]] = [:]
         for line in text.split(separator: "\n") {

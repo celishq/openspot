@@ -5,10 +5,6 @@ import OpenspotCore
 final class SpotEventStore: EventStore {
     private let store = EKEventStore()
 
-    /// The events of `openspot calendar`, which know a read by `OPENSPOT_REASON` (E7).
-    static func events() -> Events {
-        Events(store: SpotEventStore(), isRead: ProcessInfo.processInfo.environment["OPENSPOT_REASON"] != nil)
-    }
 
     func access() -> CalendarAccess {
         Self.access(to: .event)
