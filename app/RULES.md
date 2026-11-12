@@ -175,7 +175,7 @@ The verbs and the row keys of each `openspot` noun, such as `screen` or `calenda
 | The header is a frame in comments, and its blocks are kinds of the output: `button` and `field`.            | `command` and `setting` blocks of the header alone. |
 | Each kind keeps its data in `value`.                                                                        | `point`, `on`, `level` and `text` by kind.   |
 | An input is a `field` with a `type`, and a `graph` draws one value or many.                                 | `slider`, `hotkey` and `gauge` as kinds.     |
-| A row and a card say that a thing is on only by `value`: a row's own, the head's, and the card's main `switch`. | `on` in a row and in the head, and an `on` tone. |
+| A row and a card say that a thing is on by `value`, a row's own and the card's main `switch`, or by `active` in the head. | `on` in a row and in the head, and an `on` tone. |
 | A frame with a block is the whole picture, and a head alone carries effects.                                | A later frame that merges what it prints.    |
 | Escape codes report and never act.                                                                          | OSC 8 as `link`.                             |
 | `openspot guide` is the one text of the contract, and a part takes only the keys that it names.             | A catalog of parts beside the guide.         |

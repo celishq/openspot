@@ -26,10 +26,10 @@ final class SpotStateTests: XCTestCase {
         XCTAssertEqual(read.showing(title: "Busy", detail: nil).values, read.values)
     }
 
-    func testTheValueOfTheHeadSaysWhetherTheCardIsOnAndWinsOverTheMainSwitch() throws {
-        XCTAssertEqual(try state("detail=25m left\nvalue=true\n\nrow=off\ntitle=Turn off").on, true)
-        XCTAssertEqual(try state("detail=Off\nvalue=false").on, false)
-        XCTAssertEqual(try state("value=false\n\nswitch=power\nvalue=true").on, false)
+    func testActiveInTheHeadSaysWhetherTheCardIsOnAndWinsOverTheMainSwitch() throws {
+        XCTAssertEqual(try state("detail=25m left\nactive=true\n\nrow=off\ntitle=Turn off").on, true)
+        XCTAssertEqual(try state("detail=Off\nactive=false").on, false)
+        XCTAssertEqual(try state("active=false\n\nswitch=power\nvalue=true").on, false)
         XCTAssertEqual(try state("detail=Off\n\nswitch=power\nvalue=true").on, true)
         XCTAssertEqual(try state("detail=Off").on, nil)
     }
