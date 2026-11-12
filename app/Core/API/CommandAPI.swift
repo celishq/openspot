@@ -43,6 +43,9 @@ public final class CommandAPI: @unchecked Sendable {
         if case .appCareful = call, !caller.isBuiltIn {
             return .refused("\(caller.name) cannot change Careful mode. Only you can, in Settings or with `openspot setting set --spot openspot careful true` in Terminal.")
         }
+        if case .accountSync = call, !caller.isBuiltIn {
+            return .refused("\(caller.name) cannot change where your account is kept. Only you can, in Account.")
+        }
         guard let needed = SpotUseCall(arguments: arguments, of: caller.id) else { return call }
         if runs.tokens.isCareful, !caller.uses.contains(needed.use) {
             return .refused("Careful mode stopped \(caller.name), because it \(needed.words) without `uses=\(needed.use.rawValue)` in its header. Add it, or turn Careful mode off.")
@@ -109,6 +112,9 @@ public final class CommandAPI: @unchecked Sendable {
         case .appQuit: return apps.quit()
         case .updateCheck: return UpdateCalls(app: app).check()
         case .updateInstall: return UpdateCalls(app: app).install()
+        case .accountStatus(let frame): return AccountCalls(environment: environment, app: app).status(frame: frame)
+        case .accountOpen(let open): return AccountCalls(environment: environment, app: app).open(open)
+        case .accountSync(let isOn): return AccountCalls(environment: environment, app: app).sync(isOn)
         case .eventEmit(let name, let value): return EventCalls(raise: raise).emit(name, value: value)
         case .calcSolve(let words): return CalcCalls().solve(words)
         case .emoji(let tone): return EmojiCalls(keywords: keywords).rows(tone: tone)

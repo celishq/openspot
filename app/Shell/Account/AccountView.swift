@@ -35,7 +35,7 @@ struct AccountView: View {
 
     private var choose: some View {
         Group {
-            Text("Publish as you").font(.title2.bold())
+            Text("Set up your account").font(.title2.bold())
             Text("Openspot signs what you publish with your account, so people can tell that an update comes from you.")
             HStack {
                 Spacer()

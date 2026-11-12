@@ -53,4 +53,8 @@ struct SpotRunningApp: RunningApp {
     func changeSetting(_ key: String, of spot: String) async -> Bool {
         await model.changeSetting(key, of: spot)
     }
+
+    func openAccount(_ open: AccountOpen) async -> Bool {
+        await AccountWindow.show(open.step, store: MainActor.run { model.files.account })
+    }
 }

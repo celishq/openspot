@@ -112,6 +112,16 @@ final class SpotUsesTests: SpotRunsCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: config.appendingPathComponent("config.toml").path))
     }
 
+    func testASpotCannotChangeWhereTheAccountIsKept() async throws {
+        try caller(header: "uses=app", "account sync off")
+        _ = try scanned()
+
+        let (code, errors) = try await pressed()
+
+        XCTAssertEqual(code, "1")
+        XCTAssertEqual(errors, "Script cannot change where your account is kept. Only you can, in Account.\n")
+    }
+
     func testInCarefulModeAnUndeclaredUseIsRefused() async throws {
         runs.isCareful = true
         try caller("setting list")

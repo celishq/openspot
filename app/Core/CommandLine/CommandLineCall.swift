@@ -72,6 +72,12 @@ public enum CommandLineCall: Equatable, Sendable {
     case appCareful(Bool)
     case appQuit
     case updateCheck
+    /// Prints the account as JSON, or with `frame` as one block.
+    case accountStatus(frame: Bool)
+    /// Opens the account window on a step.
+    case accountOpen(AccountOpen)
+    /// Makes the account sync through iCloud Keychain, or stay on this Mac.
+    case accountSync(Bool)
     /// Restarts the app into the downloaded update.
     case updateInstall
     /// A call that cannot run here, with the line that says why and how to fix it.
@@ -180,6 +186,13 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot app quit                            Ends the running app.
     openspot update check                        Asks for a new version of the app now.
     openspot update install                      Restarts the app into the update that it downloaded.
+    openspot account status [--frame]            Prints the account that signs what you publish as JSON: signedIn,
+                                                 npub, backedUp and sync. --frame prints them as one block.
+    openspot account set-up                      Opens the window that creates an account or signs in to one.
+    openspot account sign-in                     Opens the window that signs in with your 12 words or an nsec.
+    openspot account words                       Shows your 12 words, after Touch ID or your password.
+    openspot account sign-out                    Opens the window that signs out of your account.
+    openspot account sync on|off                 Keeps your account in iCloud Keychain, or on this Mac only.
     openspot clipboard copy [file]               Copies the file as Finder does, or the text on stdin.
     openspot clipboard paste                     Pastes the clipboard into the front app.
     openspot clipboard read                      Prints the text on the clipboard, or nothing when it holds none.
@@ -315,6 +328,11 @@ public enum CommandLineCall: Equatable, Sendable {
             self = Self.changing(.appLink(rest[1] == "on"), "openspot setting set --spot openspot link", "changes your Mac", environment)
         case ("app", "quit") where rest.count == 1: self = Self.changing(.appQuit, "openspot app quit", "ends Openspot", environment)
         case ("update", "check") where rest.count == 1: self = Self.changing(.updateCheck, "openspot update check", "opens a window", environment)
+        case ("account", "status") where Self.flags(rest.dropFirst(), within: ["--frame"]): self = .accountStatus(frame: rest.contains("--frame"))
+        case ("account", "sync") where rest == ["sync", "on"] || rest == ["sync", "off"]:
+            self = Self.changing(.accountSync(rest[1] == "on"), "openspot account sync", "changes where your account is kept", environment)
+        case ("account", let verb?) where rest.count == 1 && AccountOpen(rawValue: verb) != nil:
+            self = Self.changing(.accountOpen(AccountOpen(rawValue: verb)!), "openspot account \(verb)", "opens a window", environment)
         case ("update", "install") where rest.count == 1: self = Self.changing(.updateInstall, "openspot update install", "restarts Openspot", environment)
         case ("menubar", "on") where rest.count == 2, ("menubar", "off") where rest.count == 2:
             self = Self.changing(.menuBar(id: rest[1], isShown: rest[0] == "on"), "openspot setting set menubar", "changes the menu bar", environment)
