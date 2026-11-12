@@ -360,9 +360,13 @@ An event is what makes Openspot read a spot. The header lists the events that ar
 # on=app.front com\.apple\.Notes
 ```
 
-- An event is a word `<noun>.<verb>`. It MAY carry a value.
-- Each `on=` line names one event that reads the spot. The text after a space is a regular expression, and the value of the
-  event MUST match it.
+- An event is a word `<noun>.<verb>`. It MAY carry a value: the table gives the value of each event that Openspot raises,
+  and `openspot event emit` gives the value of any other.
+- Each `on=` line names one event that reads the spot. The text after a space is a filter: a regular expression that the
+  value of the event MUST match.
+- A filter works only on an event that carries a value: `search.text`, `app.front`, `app.update` or an event that a spot
+  emits. A filter after any other event is a fault. `sheet.text` also takes none, because the spot answers each text of
+  its sheet.
 - A spot with no event is never read. A click runs `<script> open`.
 - Each read gets the event in `OPENSPOT_REASON` and its value in `OPENSPOT_VALUE`.
 

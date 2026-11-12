@@ -2,7 +2,7 @@ import Foundation
 
 /// The events that read a script, from the `on=<event> [filter]` lines of its header (protocol: Events): the open of its sheet or of
 /// the panel, a clock, a text of the main search or of its sheet, and any other event with a name. A filter is a regular
-/// expression that the value of its event must match.
+/// expression that the value of its event must match, and only `search.text`, `app.front`, `app.update` and an event that a spot emits take one.
 public struct SpotRead: Equatable, Sendable {
     public enum Moment: Equatable, Sendable {
         case panel
@@ -46,6 +46,9 @@ public struct SpotRead: Equatable, Sendable {
                     throw SpotError.fault("\(name) has an unknown filter in on=\(line). Write a regular expression after the event, such as on=search.text ^[0-9]")
                 }
                 filter = pattern
+            }
+            if filter != nil, [SpotEvent.sheetOpen, SpotEvent.panelOpen, SpotEvent.sheetText, SpotEvent.clipboard, SpotEvent.screenWake].contains(event) || event.hasPrefix(SpotEvent.clockPrefix) {
+                throw SpotError.fault("\(name) has a filter in on=\(line), and \(event) takes none. Write on=\(event) alone. A filter follows only an event with a value, such as on=app.front com\\.apple\\.Notes")
             }
             switch event {
             case SpotEvent.sheetOpen: moments.append(.sheet)

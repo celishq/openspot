@@ -61,6 +61,10 @@ final class SpotEventsTests: SpotRunsCase {
         XCTAssertEqual(fault("clock.1.5"), "Clock has an unknown clock: clock.1.5. Write a whole number of seconds, such as on=clock.60")
         XCTAssertEqual(fault("search.text"), "Clock needs a pattern of the texts that it answers, such as on=search.text ^[0-9]")
         XCTAssertEqual(fault("app.front ("), "Clock has an unknown filter in on=app.front (. Write a regular expression after the event, such as on=search.text ^[0-9]")
+        for line in ["sheet.open x", "panel.open x", "clock.60 x", "sheet.text ^a", "clipboard.change x", "screen.wake x"] {
+            let event = line.split(separator: " ")[0]
+            XCTAssertEqual(fault(line), "Clock has a filter in on=\(line), and \(event) takes none. Write on=\(event) alone. A filter follows only an event with a value, such as on=app.front com\\.apple\\.Notes")
+        }
         for word in ["music", "music.", "clipboard", "60"] {
             XCTAssertEqual(fault(word), "Clock has an unknown event in on=\(word). Write a word with a dot, such as on=sheet.open or on=music.track")
         }
