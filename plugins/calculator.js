@@ -16,11 +16,12 @@ function fields(text) {
   return Object.fromEntries(text.trim().split("\n").map((line) => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1)]))
 }
 
-/** The card of an answer: the sum as it was read over the big answer, whose pick sends the plain value. */
+/** The card of an answer: the sum as it was read, with no day of its fresh rates, over the big answer, whose pick sends the
+ * plain value. */
 function card(row) {
   return openspot.frame([
     { "grid.large": ["sum sum sum sum", "answer answer answer answer", "answer answer answer answer"], main: "answer" },
-    { number: "sum", value: row.detail },
+    { number: "sum", value: row.detail.split(" · ")[0] },
     { number: "answer", value: row.row, display: row.title },
   ])
 }

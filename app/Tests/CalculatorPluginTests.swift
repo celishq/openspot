@@ -49,6 +49,16 @@ final class CalculatorPluginTests: SamplePluginsCase {
         }
     }
 
+    func testACardOfFreshRatesShowsTheSumWithNoDayOfItsRates() async throws {
+        try await withPrivateHome { home in
+            try "row=13.46\ntitle=13,46 €\ndetail=15 USD in EUR · rates of Nov 10\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
+
+            let answers = try await self.calculator.items(query: "15 usd in eur", timeout: 5).answers
+
+            XCTAssertEqual(answers.first?.card?.face.parts.map(\.control), [.metric("15 USD in EUR"), .metric("13,46 €")])
+        }
+    }
+
     func testAnAnswerFromOldRatesStaysARowThatWarns() async throws {
         try await withPrivateHome { home in
             try "row=13.46\ntitle=13,46 €\ndetail=15 USD in EUR · rates of 3 days ago\ntone=warn\n".write(to: home.appendingPathComponent("calc-answer"), atomically: true, encoding: .utf8)
