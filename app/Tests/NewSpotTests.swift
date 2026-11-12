@@ -137,17 +137,26 @@ final class NewSpotTests: BuiltInCase {
         guideText.components(separatedBy: "```\(fence)\n").dropFirst().map { $0.components(separatedBy: "```")[0] }
     }
 
+    /// Each script of the guide passes the check in a folder of its own. A spot that its card drawing or `to=` names is a stub
+    /// metric beside it, and a script with a view stays out, since a view needs the Command Line Tools to build.
     func testEachExampleScriptInTheGuideLoadsAndAnswers() async throws {
-        let scripts = blocks("sh")
-        XCTAssertGreaterThan(scripts.count, 2)
-        for (index, script) in scripts.enumerated() {
-            let url = plugins.appendingPathComponent("example-\(index).sh")
-            try script.writeScript(to: url)
+        let scripts = blocks("sh").map { ($0, "sh") } + blocks("js").map { ($0, "js") }
+        XCTAssertGreaterThan(scripts.count, 5)
+        for (index, (script, kind)) in scripts.enumerated() where !script.contains("view=") {
+            let folder = root.appendingPathComponent("example-\(index)")
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let file = folder.appendingPathComponent("example.\(kind)")
+            if kind == "js" { try script.write(to: file, atomically: true, encoding: .utf8) } else { try script.writeScript(to: file) }
+            let header = SpotHeader(text: script).block
+            let named = header.fields.filter { $0.key.hasPrefix("grid.") }.flatMap { $0.value.split(separator: " ").map(String.init) } + header.values("to")
+            for name in Set(named) {
+                try "#!/bin/sh\n# on=clock.60\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.appendingPathComponent("\(name).sh"))
+            }
+
+            let faults = await SpotCheck(folder: SpotFolder(url: folder)).faults()
+
+            XCTAssertEqual(faults, [], script)
         }
-
-        let faults = await SpotCheck(folder: SpotFolder(url: plugins)).faults()
-
-        XCTAssertEqual(faults, [])
     }
 
     func testTheGuideIsTheProtocol() throws {
