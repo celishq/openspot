@@ -566,21 +566,21 @@ function main(args, env, input) {
 . "$OPENSPOT_SH"
 main() {
   case "$1" in
-    read) printf 'text=peer\ntitle=Waiting\n' ;;
-    ping) printf 'toast=Pong\n' ;;
+    read) printf 'field=message\ntitle=Message\n\nbutton=send\ntitle=Send\nshortcut=cmd+return\n' ;;
+    send) openspot_kv toast "Sent: $(value message)" ;;
   esac
 }
 openspot_serve main "$@"
 ```
 
 Openspot writes each call to its stdin as one block, then a blank line: `call=<n>` numbers it, an `arg` line gives each
-argument, an `env.<name>` line gives each variable, and one `input` line holds its stdin.
+argument, an `env.<name>` line gives each variable, such as `env.OPENSPOT_REASON` of a read, and one `input` line holds
+its stdin.
 
 ```ini
 call=4
 arg=send
-env.OPENSPOT_REASON=panel.open
-input=peer=127.0.0.1:47800\nmessage=Hello\n
+input=message=Hello\n
 ```
 
 - A staying spot is one process that talks both ways over stdio. Each call reaches the running process, and no call starts
