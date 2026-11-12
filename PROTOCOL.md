@@ -85,6 +85,8 @@ The header says what a spot is. Openspot reads it without running the spot.
 | `field=<key>` | A setting the user chooses, with its `title` (by default, its key) and `icon`. See [Settings](#settings). |
 
 - A spot with a `button` in its header has no card. It gives its commands instead.
+- Return on a spot with one `button` runs it, as its hotkey does. When it has no hotkey yet, Return opens the spot and
+  records one. `⌘` Return opens the spot: the hotkey of each `button`, and the rows of its read when it has `on=` events.
 
 ## Frames
 
@@ -263,12 +265,18 @@ Rows are a list that the user searches and picks from. See [Show a list](GUIDE.m
 | `keywords` | Words that find the row but don't show, split by commas.                                       |
 | `shortcut` | Any text, such as `⌃⌥K`, that shows at the end of the row.                                     |
 | `type`     | `hotkey`: a pick records a new hotkey and sends `<id> <hotkey>`.                               |
-| `shake`    | `true` lets a shake of the pointer be the hotkey that a pick records, as `<id> shake`.         |
+| `shake`    | `true` lets a shake of the pointer, or a tap of one modifier, be the hotkey a pick records.    |
+| `pin`      | `top` or `bottom`: the row stays above or under the rows that scroll, even in a search.        |
+| `focus`    | The line under the title while the row is selected, in place of `detail`.                      |
+| `open`     | What Return does on this row, in place of the `title` of `button=open`.                        |
+| `close`    | `false` keeps the panel open after a pick of this row.                                         |
 | `file`     | The file the row stands for. See [Files out](#files-out).                                      |
 | `to`       | Another spot that a pick goes to, as `<spot> open <row id>` with the keys of the row on stdin. |
 
 - Rows go into a `repeat`, or into a plain list when there's none.
-- Openspot searches the rows itself, and puts recent picks first. `recents=false` in the head turns that off.
+- Openspot searches the rows itself, and puts recent picks first. `recents=false` in the head turns that off, and
+  `search=off` shows the rows with no search field.
+- `⌘↓` selects the last row, and `⌘↑` the first.
 - With `on=sheet.text`, each change of the sheet's search text asks the spot, and the spot prints the rows that match.
   It also asks when the sheet opens, as `on=sheet.open` does. Each call gets the search text on stdin as
   `search=<text>`.
@@ -289,7 +297,7 @@ grid=a a d e
 The head is the block of a frame that starts with one of its keys. Openspot doesn't draw it. It holds the layout and the
 effects of the frame.
 
-- Its layout keys: `grid=` and `grid.<size>=` lines, `main`, `title`, `detail` and `active` for the card, and `recents`.
+- Its layout keys: `grid=` and `grid.<size>=` lines, `main`, `title`, `detail` and `active` for the card, `recents` and `search`.
 - Its effects:
   - `toast=Saved` shows a short message at once, even when the panel is closed;
   - `link=<url>` opens the URL;
@@ -695,7 +703,8 @@ example.
 - Keep a choice of the user in a setting. Keep what the spot makes, such as a cache, in `OPENSPOT_DATA`.
 - Openspot keeps some keys for the user, and a `field` can't use them:
   - of any spot: `enabled` and `menubar`, `true` or `false`, and `float` and `key.<command>`, a hotkey such as
-    `ctrl+option+k` or `shake`, or no value to remove it;
+    `ctrl+option+k`, `shake`, or one modifier alone, such as `option`, which a tap of that key presses, or no value to
+    remove it;
   - of the spot `openspot`, which is the app: `login`, `link` and `careful`, `true` or `false`, and `panel-key` and
     `fix-key`.
 - Each of these keys needs the use of the call that does the work (see [Trust](#trust)).

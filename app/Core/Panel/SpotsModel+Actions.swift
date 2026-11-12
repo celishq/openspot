@@ -191,26 +191,34 @@ extension SpotsModel {
         host.setEntryKey(on: true)
     }
 
-    /// Takes the key for the part or the row that records. A key it cannot use leaves it recording, and says why. A row
-    /// closes the panel, as a pick of any row does. In Edit Spots it takes the letter of the selected spot.
+    /// Takes the key for the part or the row that records. A key it cannot use leaves it recording, and says why. In Edit Spots it takes the letter of the selected spot.
     public func record(code: UInt32, modifiers: Shortcut.Modifiers) {
         if isEditing { return recordLetter(code: code, modifiers: modifiers) }
         guard let shortcut = Shortcut(code: code, modifiers: modifiers) else {
             host.notify("Hold cmd, ctrl or option with a letter, a digit, an arrow, space, return or tab.")
             return
         }
+        if takesShake, shortcut.isAppKey {
+            host.notify("`\(shortcut.label)` belongs to the apps on the Mac. Hold `⌥` or `⌃` with a key, or tap one key such as `⌥`.")
+            return
+        }
         let part = openPanel?.parts.first { $0.id == recording }
         let item = openItems?.shown.first { $0.run == recording }
         stopRecording()
         if let part { setPart(part, to: shortcut.text) }
-        if let item, let entry = openEntry {
-            sheets[entry.id]?.set(item, to: shortcut.text)
-            closingPick = (item, entry)
-            if isShown {
-                host.dismiss()
-            } else {
-                finishPick()
-            }
+        if let item, let entry = openEntry { give(shortcut.text, to: item, of: entry) }
+    }
+
+    /// Gives a row its new key. A spot's own key list stays open, so the person sees the key that it took. A row of Settings
+    /// closes the panel, as a pick of any row does.
+    private func give(_ key: String, to item: SpotItem, of entry: Entry) {
+        sheets[entry.id]?.set(item, to: key)
+        guard entry.spot.keyList == nil else { return }
+        closingPick = (item, entry)
+        if isShown {
+            host.dismiss()
+        } else {
+            finishPick()
         }
     }
 
@@ -226,18 +234,21 @@ extension SpotsModel {
         takesShake ? "Press keys or shake" : "Press keys"
     }
 
-    /// Takes a shake for the row of Settings that records, as it takes a key, and closes the panel. Any other row goes on
-    /// recording.
+    /// Takes a shake for the row of Settings that records, as it takes a key. Any other row goes on recording.
     public func recordShake() {
+        recordTrigger(.shake)
+    }
+
+    /// Takes a tap of one modifier alone for the row of Settings that records, as it takes a shake. Any other row goes on
+    /// recording.
+    public func recordTap(_ modifier: Shortcut.Modifiers) {
+        recordTrigger(.tap(modifier))
+    }
+
+    private func recordTrigger(_ trigger: Trigger) {
         guard takesShake, let recording, let entry = openEntry, let item = openItems?.shown.first(where: { $0.run == recording }) else { return }
         stopRecording()
-        sheets[entry.id]?.set(item, to: Trigger.shake.text)
-        closingPick = (item, entry)
-        if isShown {
-            host.dismiss()
-        } else {
-            finishPick()
-        }
+        give(trigger.text, to: item, of: entry)
     }
 
     /// Takes the keys of the open menu. In a menu that searches, a key with no ⌘ goes to its field, and returns false.
@@ -348,6 +359,7 @@ extension SpotsModel {
         if isEditing { return "S Size   H Hide   L Letter   ⇧ Arrows Move   Esc Done" }
         if spotDrop != nil { return "Nothing runs until you press ⌘⏎" }
         if let panel = openPanel, !panel.showsRows || panel.drawsKeys { return panel.hint { work(of: $0) != nil } }
+        if let soleHint { return soleHint }
         let keys = target.flatMap { target in
             let opens = openList == nil && target.item == nil && target.entry.spot.pressRuns && target.entry.kind.opensSheet
             return actionMenu(on: target)?.hint(

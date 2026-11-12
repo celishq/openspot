@@ -35,8 +35,8 @@ final class KeyListTests: XCTestCase {
         XCTAssertEqual(move.kind, .list)
         XCTAssertTrue(move.setsKeys)
         let items = try await move.items(timeout: 1).items
-        XCTAssertEqual(items.map(\.title), ["Left side"])
-        XCTAssertEqual(items.map(\.subtitle), [nil])
+        XCTAssertEqual(items.map(\.title), ["Left side shortcut"])
+        XCTAssertEqual(items.map(\.subtitle), ["Press ⏎ to set"])
         XCTAssertEqual(items.map(\.shortcut), ["Record"])
         _ = try await runs.answer(of: move, .set("key:move:left", to: "ctrl+option+left"), limit: 1)
         XCTAssertEqual(file.read().keys.map(\.act), [.command("left")])
@@ -60,12 +60,12 @@ final class KeyListTests: XCTestCase {
         XCTAssertEqual(file.read().keys, [])
     }
 
-    func testAScriptWithAReadDrawsItsOwnSheet() throws {
+    func testAScriptWithAReadShowsTheKeysBesideItsOwnSheet() throws {
         try "#!/bin/sh\n# title=Move\n# on=sheet.open\n#\n# button=left\n# title=Left side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
 
         let move = try XCTUnwrap(try scan().spots.first { $0.id == "move" })
 
-        XCTAssertNil(move.keyList)
-        XCTAssertFalse(move.setsKeys)
+        XCTAssertTrue(move.listsKeysAbove)
+        XCTAssertTrue(move.setsKeys)
     }
 }

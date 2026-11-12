@@ -63,7 +63,7 @@ public struct ItemList: Equatable, Sendable {
     /// Searches for new text, and selects the first row. Returns false when the text is the same, and changes nothing.
     @discardableResult
     public mutating func search(_ text: String) -> Bool {
-        guard text != query else { return false }
+        guard text != query, search != .off else { return false }
         begin(text)
         return true
     }
@@ -159,6 +159,16 @@ public struct ItemList: Equatable, Sendable {
         selected = shown.firstIndex { $0.run == run } ?? selected
     }
 
+    /// Whether rows pinned at the bottom lie under rows that scroll, so that a thin line sets them apart.
+    public var setsApart: Bool {
+        perLine == 1 && shown.contains { $0.pin == .bottom } && shown.contains { $0.pin == nil }
+    }
+
+    /// Selects the first row, or the last, as ⌘↑ and ⌘↓ do.
+    public mutating func moveToEdge(last: Bool) {
+        selected = last ? max(shown.count - 1, 0) : 0
+    }
+
     public mutating func move(by step: Int) {
         selected = min(max(selected + step, 0), max(shown.count - 1, 0))
     }
@@ -210,7 +220,7 @@ public struct ItemList: Equatable, Sendable {
     private mutating func refresh() {
         guard search == .local else {
             narrowings = []
-            shown = all
+            shown = Self.pinning(all, all)
             return
         }
         let next = SearchQuery(text: query)
@@ -219,6 +229,12 @@ public struct ItemList: Equatable, Sendable {
             let among = narrowings.last.flatMap { $0.query.narrows(to: next) ? $0.matches : nil } ?? Array(all.indices)
             narrowings.append(Narrowing(query: next, matches: next.ranking(searchIndex, items: all, among: among, weights: weights)))
         }
-        shown = narrowings.last?.matches.map { all[$0] } ?? []
+        shown = Self.pinning(narrowings.last?.matches.map { all[$0] } ?? [], all)
+    }
+
+    /// The found rows between the rows of all pinned at the top and those pinned at the bottom, so that a search never hides
+    /// them.
+    private static func pinning(_ found: [SpotItem], _ all: [SpotItem]) -> [SpotItem] {
+        all.filter { $0.pin == .top } + found.filter { $0.pin == nil } + all.filter { $0.pin == .bottom }
     }
 }

@@ -10,6 +10,11 @@ public struct ActionMenu: Equatable, Sendable {
         var isQuiet = false
     }
 
+    /// What Enter does on a row that shows a key: it records a new one.
+    static let changeTitle = "Change"
+    /// What Enter does on a row that has no key yet.
+    static let setTitle = "Set"
+
     /// The key that opens and closes the menu, as the footer shows it.
     public static let key = "⌘K"
 
@@ -27,7 +32,8 @@ public struct ActionMenu: Equatable, Sendable {
     /// Returns nil when there is nothing to list.
     public init?(spot: Spot, item: SpotItem?, showsPrimary: Bool = true, extras: [CommandAction] = []) {
         var rows: [Row] = []
-        if showsPrimary, let title = spot.primaryTitle(hasItem: item != nil) {
+        let keyTitle = item.flatMap { $0.records ? ($0.shortcut == KeyList.unset ? Self.setTitle : Self.changeTitle) : nil }
+        if showsPrimary, let title = item?.openTitle ?? keyTitle ?? spot.primaryTitle(hasItem: item != nil) {
             rows.append(Row(title: title, keyLabel: "⏎", action: nil))
         }
         rows += spot.actions(for: item).map { Row(title: $0.title, keyLabel: $0.key?.label ?? "", action: $0) }

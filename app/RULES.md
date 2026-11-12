@@ -82,7 +82,7 @@ A float is one spot in a window of its own, at the pointer, outside the panel.
 | ID | Rule |
 |---|---|
 | W1 | A `[[keys]]` entry with no `command` floats its spot, when its header says `offers=float` (protocol: Places): its sheet, or its card when it has no sheet. An entry with a `command` runs that command. A widget does not float. |
-| W2 | `key = "shake"` takes a shake of the pointer in place of a key press: quick turns left and right, with or without a drag. One entry at most holds it, and the app watches the pointer only while one does. The shake needs no permission, because the app reads the pointer and not the keys. |
+| W2 | `key = "shake"` takes a shake of the pointer in place of a key press: quick turns left and right, with or without a drag. One entry at most holds it, and the app watches the pointer only while one does. The shake needs no permission, because the app reads the pointer and not the keys. `key = "option"`, or another modifier alone, takes a tap of that key: pressed and let go within 0.5 s, with no other key or click between. The app hears a tap only with Accessibility. |
 | W3 | Settings lists a Float row for each spot whose header says `offers=float`, beside its commands. Its key records a key press or a shake. |
 | W4 | A float opens at the pointer, whole on the pointer's screen. It has no card to grow from, so it shows whole once its first answer comes, or after 150 ms (A9). |
 | W5 | A float that opens during a drag does not take the focus, and it stays open through the drop (D7). One that opens with no drag takes the focus, so that its keys work. |
@@ -155,8 +155,8 @@ In order. An earlier goal wins when two goals conflict.
 | `text`, `number`, `graph`, `picture`, `view`, `switch`, `field`, `choice`, `option`, `button`, `section`, `repeat`, `row` | Block kind |
 | `multiline`, `slider`, `hotkey`, `multiple`, `tick`                                                      | Type                 |
 | `title`, `detail`, `icon`, `tone`, `value`, `color`, `look`, `align`, `type`                             | Block key            |
-| `parent`, `hides`, `keyword`, `shortcut`, `type`, `shake`, `file`, `to`                                        | Row key              |
-| `grid`, `grid.<size>`, `main`, `title`, `detail`, `recents`, `toast`, `link`, `progress`, `select`, `end`, `call` | Head key    |
+| `parent`, `hides`, `keyword`, `shortcut`, `type`, `shake`, `file`, `to`, `pin`, `focus`, `open`, `close`         | Row key              |
+| `grid`, `grid.<size>`, `main`, `title`, `detail`, `recents`, `toast`, `link`, `progress`, `select`, `end`, `call`, `search` | Head key    |
 | `call`, `arg`, `env.<name>`, `input`, `stop`                                                             | Stdin key of a staying script |
 
 The verbs and the row keys of each `openspot` noun, such as `screen` or `calendar`, are in `openspot help <noun>`.
@@ -173,6 +173,7 @@ The verbs and the row keys of each `openspot` noun, such as `screen` or `calenda
 | A call is the id, its row and its values; what the person typed is on stdin.                                | The search text and its forms as arguments of `read`. |
 | A press of a card with no sheet is `open` with no row.                                                      | A `run` id beside `open`.                    |
 | `press=open` lets a spot run at a press and keep its sheet for settings, behind `⌘` (protocol: The main block and the card). | A run button in its sheet, which costs a second press. |
+| Return on a spot with one command runs it, and its first Return records the hotkey that each later Return runs (protocol: The header). | Return that opens the hotkey rows, which costs a second press each time. |
 | The first key names the kind of a block.                                                                    | A kind found from any key.                   |
 | The header is a frame in comments, and its blocks are kinds of the output: `button` and `field`.            | `command` and `setting` blocks of the header alone. |
 | Each kind keeps its data in `value`.                                                                        | `point`, `on`, `level` and `text` by kind.   |

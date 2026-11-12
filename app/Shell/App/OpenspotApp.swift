@@ -44,6 +44,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     var floats: [String: SpotFloatPanel] = [:]
     /// The watch of the pointer, while a key holds the shake or a row of Settings records one.
     private var shakeWatch: SpotShakeWatch?
+    private var tapWatch: SpotTapWatch?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -140,6 +141,27 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Watches the keys for a tap of a lone modifier while a key holds one, and stops otherwise. With no Accessibility the
+    /// watch hears nothing, so the person sees the fix once.
+    private func watchTap() {
+        let wanted = wantedKeys.contains { if case .tap = $0.trigger { true } else { false } }
+        if wanted, tapWatch == nil {
+            tapWatch = SpotTapWatch { [weak self] modifier in self?.takeTap(modifier) }
+            if !AXIsProcessTrusted() {
+                notify("Openspot cannot hear a tap of one key. Allow Openspot in Accessibility.", fix: URL(string: SpotClipboard.accessibility)!)
+            }
+        } else if !wanted {
+            tapWatch?.stop()
+            tapWatch = nil
+        }
+    }
+
+    /// Gives a tap of a lone modifier to the key that holds it, unless a row of Settings records, which takes it itself.
+    private func takeTap(_ modifier: Shortcut.Modifiers) {
+        guard model.recording == nil, let key = wantedKeys.first(where: { $0.trigger == .tap(modifier) }) else { return }
+        model.press(key)
+    }
+
     /// Gives a shake to the row of Settings that records, or else to the key that holds it.
     private func takeShake() {
         if model.recording != nil {
@@ -153,6 +175,7 @@ final class OpenspotApp: NSObject, NSApplicationDelegate {
     /// the next scan, and the person sees why once.
     func holdWantedKeys() {
         watchShake()
+        watchTap()
         guard model.recording == nil else { return }
         for (key, registration) in heldKeys where !wantedKeys.contains(key) {
             HotKey.unregister(registration)

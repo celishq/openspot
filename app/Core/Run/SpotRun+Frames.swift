@@ -105,6 +105,11 @@ extension SpotRun {
         list.stopLoading()
     }
 
+    /// Who searches the rows of this frame: no one with `search=off`, the spot with `on=sheet.text`, or else Openspot.
+    static func search(of lines: SpotOutput, in spot: Spot) -> ItemSearch {
+        lines.hidesSearch ? .off : spot.read?.searchesSheet == true ? .script : .local
+    }
+
     /// Takes the answer of a read or of a search: a frame of it with a block, the head of one that ended with no picture, or
     /// the frame that ends a call of a staying script. A read's answer replaces all that the spot shows, and a search's
     /// answer replaces its rows (protocol: Modes). `keeping` names a part whose text the person owns while they type. A picture that
@@ -112,7 +117,7 @@ extension SpotRun {
     /// rows that answer a text of the main search leave all else as it is (protocol: Places).
     func takeAnswer(_ lines: SpotOutput, frame: String, to ask: Ask, keeping: String? = nil, answers: Bool = true) async {
         if case .answer(let query) = ask { return takeAnswers(lines.answers, to: query) }
-        let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: spot.read?.searchesSheet == true ? .script : .local) } else { nil }
+        let next: ItemList.Rows? = if case .read = ask { await newRows(lines.items, search: Self.search(of: lines, in: spot)) } else { nil }
         lastAnswer = lines.withoutBlocks()
         report(toastOf: lines)
         spot = spot.taking(lines)
@@ -124,7 +129,7 @@ extension SpotRun {
             let kept = selecting
             selecting = nil
             changeList {
-                $0.take(search: spot.read?.searchesSheet == true ? .script : .local)
+                $0.take(search: Self.search(of: lines, in: spot))
                 $0.take(drawing: lines.drawing)
                 if let next { $0.replace(next) }
                 if let kept { $0.select(run: kept) }
@@ -137,7 +142,7 @@ extension SpotRun {
             await prepare(firstScreen(of: lines.items), [])
             guard query == list.query else { return }
             changeList {
-                $0.take(search: spot.read?.searchesSheet == true ? .script : .local)
+                $0.take(search: Self.search(of: lines, in: spot))
                 $0.take(drawing: lines.drawing)
                 $0.answer(lines.items, to: query)
             }

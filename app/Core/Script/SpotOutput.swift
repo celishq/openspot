@@ -73,13 +73,13 @@ public struct SpotOutput: Equatable, Sendable {
     private static let valueKinds: Set<String> = ["text", "number", "gauge", "graph", "switch", "slider"]
 
     /// Whether a first key names a row or a part, so that the block is not the head.
-    private static func isKind(_ key: String) -> Bool {
+    static func isKind(_ key: String) -> Bool {
         key == "row" || key == repeatKind || key == optionKind || retiredKinds.contains(key) || SpotPart.kinds.contains(key)
     }
 
     /// The keys that start the head. A block whose first key is neither a kind nor one of them is of an unknown kind, which
     /// is skipped and reported (protocol: The head).
-    private static let headKeys: Set<String> = ["grid", "main", "title", "detail", "active", "recents", "toast", "link", "progress", "select", "end", "call"]
+    private static let headKeys: Set<String> = ["grid", "main", "title", "detail", "active", "recents", "toast", "link", "progress", "select", "end", "call", "search"]
 
     private static func isHead(_ key: String) -> Bool {
         headKeys.contains(key) || key.hasPrefix("grid.")
@@ -308,6 +308,11 @@ public struct SpotOutput: Equatable, Sendable {
     /// How many rows go on one line, when the script prints a repeat.
     public var perLine: Int? {
         layout?.repeated?.perLine
+    }
+
+    /// Whether its rows show with no search field over them, from `search=off` in the head.
+    public var hidesSearch: Bool {
+        summary?.value("search") == "off"
     }
 
     /// Whether recent picks sort first, unless it prints `recents=false`.

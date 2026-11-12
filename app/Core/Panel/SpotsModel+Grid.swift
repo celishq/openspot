@@ -158,6 +158,8 @@ extension SpotsModel {
         case .list:
             if openList == entry.id {
                 closeList(moving: true)
+            } else if let command = entry.spot.soleCommand {
+                runSole(command, of: entry)
             } else {
                 open(entry.id, moving: true)
             }
@@ -165,6 +167,37 @@ extension SpotsModel {
             break
         case .widget:
             if let opens = entry.spot.opens { press(opens) }
+        }
+    }
+
+    /// Opens the settings of the selected spot that has one command, as ⌘ Return does: the key of its command, and the
+    /// rows of its own read beside it. It is false for any other spot, so the key goes on to the actions and the forms.
+    public func openSoleSettings() -> Bool {
+        guard openList == nil, let entry = selectedEntry, entry.spot.soleCommand != nil else { return false }
+        open(entry.id, moving: true)
+        return true
+    }
+
+    /// The footer of the selected spot that has one command: Return sets its key until it has one, and runs it after, and
+    /// ⌘ Return opens its settings.
+    var soleHint: String? {
+        guard openList == nil, let entry = selectedEntry, let command = entry.spot.soleCommand else { return nil }
+        guard assignedKeys.contains(where: { $0.spot == entry.id && $0.act == .command(command) }) else {
+            return "⏎ Set key   ⌘⏎ Settings   ⌘K Actions"
+        }
+        let title = entry.spot.offers.first?.title ?? command
+        return "⏎ \(title)   ⌘⏎ Settings   ⌘K Actions"
+    }
+
+    /// Runs the one command of a spot as its key does. With no key yet, it opens the spot's key and records one, so the
+    /// first Return sets up what each later Return runs.
+    private func runSole(_ command: String, of entry: Entry) {
+        if let key = assignedKeys.first(where: { $0.spot == entry.id && $0.act == .command(command) }) {
+            if isShown { host.dismiss() }
+            press(key)
+        } else {
+            open(entry.id, moving: true)
+            toggleRecording(id: KeyList.keyRun(spot: entry.id, command: command))
         }
     }
 

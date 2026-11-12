@@ -30,8 +30,24 @@ public struct SpotItem: Equatable, Sendable {
     public let fields: String?
     /// The card that an answer draws in place of its row, from the drawing and the blocks of its frame (protocol: Places).
     public let card: SpotState?
+    /// Where it stays, above or under the rows that scroll, from `pin=top` or `pin=bottom`. A search keeps it.
+    public let pin: Pin?
 
-    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, to: String? = nil, fields: String? = nil, card: SpotState? = nil) {
+    public enum Pin: String, Sendable {
+        case top, bottom
+    }
+
+    public var isPinned: Bool {
+        pin != nil
+    }
+    /// The second line while the row is selected, from `focus=`, in place of its `detail`.
+    public let focusSubtitle: String?
+    /// The word for Return on this row, from `open=`, in place of the title of the spot's `open` action.
+    public let openTitle: String?
+    /// Whether the panel stays open after Return on this row, from `close=false`.
+    public let staysOnPick: Bool
+
+    public init(title: String, subtitle: String? = nil, run: String, picture: Icon? = nil, parent: String? = nil, hides: [String]? = nil, keywords: [String] = [], shortcut: String? = nil, records: Bool = false, takesShake: Bool = false, isOn: Bool = false, tone: MetricValue.Tone? = nil, file: String? = nil, to: String? = nil, fields: String? = nil, card: SpotState? = nil, pin: Pin? = nil, openTitle: String? = nil, staysOnPick: Bool = false, focusSubtitle: String? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.run = run
@@ -48,6 +64,10 @@ public struct SpotItem: Equatable, Sendable {
         self.to = to
         self.fields = fields
         self.card = card
+        self.pin = pin
+        self.openTitle = openTitle
+        self.focusSubtitle = focusSubtitle
+        self.staysOnPick = staysOnPick
     }
 
     /// Reads the block of one row: `row=<id>`, which a pick sends, and `title`, which is the id when it has none.
@@ -70,7 +90,11 @@ public struct SpotItem: Equatable, Sendable {
             tone: block.value("tone").flatMap(MetricValue.Tone.init),
             file: block.value("file").flatMap { $0.hasPrefix("/") ? $0 : nil },
             to: block.value("to"),
-            fields: block.value("to") == nil ? nil : block.text
+            fields: block.value("to") == nil ? nil : block.text,
+            pin: block.value("pin").flatMap(Pin.init(rawValue:)),
+            openTitle: block.value("open"),
+            staysOnPick: block.flag("close") == false,
+            focusSubtitle: block.value("focus")
         )
     }
 
