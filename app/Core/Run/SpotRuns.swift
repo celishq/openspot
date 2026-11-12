@@ -68,6 +68,8 @@ public final class SpotRuns {
     @ObservationIgnored public var api: CommandAPI?
     /// The record of each call that runs once, or nil to keep none.
     @ObservationIgnored private let log: CallLog?
+    /// Hears each call that ends, quiet ones too, with the reason of a read, such as the playground that shows each call.
+    @ObservationIgnored public var onCall: ((CallLog.Record, ReadReason?) -> Void)?
     /// The builds of Swift scripts, which each process runs once they are ready.
     @ObservationIgnored private let swift: SwiftProgram
 
@@ -306,7 +308,7 @@ public final class SpotRuns {
             do {
                 for try await frame in stream {
                     guard !call.isStopped else { break }
-                    log?.add(frame, to: &printed)
+                    if let log { log.add(frame, to: &printed) } else if self?.onCall != nil { printed.append(frame) }
                     guard let output = await self?.intake(frame, of: id), !call.isStopped else { break }
                     call.take(output)
                     await onFrame(call, frame, output)
@@ -326,8 +328,7 @@ public final class SpotRuns {
 
     /// Keeps the record of a call that ended in the call log, unless it is a quiet one.
     func record(_ spot: Spot, _ action: SpotAction, input: String?, frames: [String], errors: String, end: ScriptCall.End, reason: ReadReason?, started: Date, begin: Date) {
-        guard let log, !Self.isQuiet(reason, end) else { return }
-        log.write(CallLog.Record(
+        let record = CallLog.Record(
             spot: spot.id,
             arguments: action.arguments,
             input: input,
@@ -336,7 +337,10 @@ public final class SpotRuns {
             end: CallLog.End(end),
             started: started,
             seconds: Date().timeIntervalSince(begin)
-        ))
+        )
+        onCall?(record, reason)
+        guard let log, !Self.isQuiet(reason, end) else { return }
+        log.write(record)
     }
 
     /// A JavaScript spot of these runs, which loads at its first call and counts the CPU time of its thread (A26).

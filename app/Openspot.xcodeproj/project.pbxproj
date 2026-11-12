@@ -59,6 +59,7 @@
 		1616312F8EC663985BB98057 /* ScrollWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B64BB648C6984AED8D1192F3 /* ScrollWindow.swift */; };
 		168369EC270DEE5510DCAEA7 /* WidgetLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42B624FB5546EC0D1B8381B /* WidgetLayout.swift */; };
 		17563E04B1B706313C62068A /* SpotCardDrawing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4841C0EB39ABC4B888FB6BF7 /* SpotCardDrawing.swift */; };
+		17D080086AA5F15C23AF1247 /* PlaygroundCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8154CD722F25157477CF454F /* PlaygroundCall.swift */; };
 		1819BF2B037E6794D4AACF65 /* SpotDrag.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BC66EA3227BE39AC4E9A0E1 /* SpotDrag.swift */; };
 		188DA828A7BB2490589D4706 /* SpotReminderStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 212290B63B7D0AE43BF65CD5 /* SpotReminderStore.swift */; };
 		1A9EE2687483E9A6322551A0 /* CalendarStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4A9335ED3170AEC3B728749 /* CalendarStore.swift */; };
@@ -153,6 +154,7 @@
 		49544FDDF533503D88DF6010 /* Toast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B8A23A7BADF6488184FC557 /* Toast.swift */; };
 		49ED95B5BD29C5790041E0AA /* SpotDropTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD47766C4E2C2715E25D50EB /* SpotDropTests.swift */; };
 		4A7BBA4F5598B4F3ECD028C7 /* Capability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 712611AA6131BCF6BEF84A88 /* Capability.swift */; };
+		4AC4210953BB05B0B3BFAC38 /* PlaygroundCallTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 808794ED0B6B75DB34BE08F3 /* PlaygroundCallTests.swift */; };
 		4AF9146236F922E801BEEA2D /* SpotUseCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 732D72EFB40C426C6811CFF1 /* SpotUseCall.swift */; };
 		4B7C93C33BDED640FF7F5819 /* CommandKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2D62D8B5553AF2E9EF9AFF3 /* CommandKeyTests.swift */; };
 		4D442A12BEF72CED68DE6C5C /* SpotSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68AA6BF3A666E5ADAB73A078 /* SpotSize.swift */; };
@@ -825,9 +827,11 @@
 		7E66CC39EB6524A50E4C4D0B /* SpotFolder+Choices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpotFolder+Choices.swift"; sourceTree = "<group>"; };
 		7E72E8505BE81F5754E18EE4 /* WindowMoveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowMoveTests.swift; sourceTree = "<group>"; };
 		7FD1F7503ABAE08771E08B27 /* SymbolCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymbolCatalogTests.swift; sourceTree = "<group>"; };
+		808794ED0B6B75DB34BE08F3 /* PlaygroundCallTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundCallTests.swift; sourceTree = "<group>"; };
 		80D063F29976A3A35734DE15 /* SpotEventsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotEventsTests.swift; sourceTree = "<group>"; };
 		8104FD67862989AC8C1DA091 /* SpotScreenPick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotScreenPick.swift; sourceTree = "<group>"; };
 		814ECF718B17193CD5DBBCE8 /* IconBody.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconBody.swift; sourceTree = "<group>"; };
+		8154CD722F25157477CF454F /* PlaygroundCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundCall.swift; sourceTree = "<group>"; };
 		81708547DDCAC262759EB258 /* FormDraftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormDraftTests.swift; sourceTree = "<group>"; };
 		8212EFF0E6981177B955332C /* ViewLibraryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewLibraryTests.swift; sourceTree = "<group>"; };
 		8253CF332DE61A8AA6479298 /* AnswerMatches.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnswerMatches.swift; sourceTree = "<group>"; };
@@ -1338,6 +1342,7 @@
 				1A24E5DCD2962EE9052D8FD5 /* HintWords.swift */,
 				D35BAF65C7F62271F335C770 /* ItemForm.swift */,
 				9E2BBBB5CFD3D9C12B7A7857 /* PartCatalog.swift */,
+				8154CD722F25157477CF454F /* PlaygroundCall.swift */,
 				B64BB648C6984AED8D1192F3 /* ScrollWindow.swift */,
 				DC9DB55A3E5991608C7EEDC4 /* SheetArea.swift */,
 				AA48912BB9570727D62BD2E2 /* SheetExamples.swift */,
@@ -1456,6 +1461,7 @@
 				4F7550D4A89B7A892745DC4B /* MacCallsTests.swift */,
 				D4D1AE408ED6C5B25919C122 /* MainSearchTests.swift */,
 				C3C751B70058362610989AA1 /* NewSpotTests.swift */,
+				808794ED0B6B75DB34BE08F3 /* PlaygroundCallTests.swift */,
 				17F7A0C925D690B8DF7148EB /* PointerShakeTests.swift */,
 				EA09C84349C2BE5E07A3084B /* QuitSpotTests.swift */,
 				8F99DEC42898AF5970046749 /* RecordingRequestTests.swift */,
@@ -2392,6 +2398,7 @@
 				2AA3FBC09252C22BB0B9D56D /* PanelMotion.swift in Sources */,
 				CF4DF2850057B528C8AFBB61 /* PartCatalog.swift in Sources */,
 				8BB52178DFB873CEDF8BCABE /* PickWeights.swift in Sources */,
+				17D080086AA5F15C23AF1247 /* PlaygroundCall.swift in Sources */,
 				97AE1043EB66B357BE276C5C /* PointerShake.swift in Sources */,
 				9AC85DF09B2C50C4B5643787 /* ProcessTime.swift in Sources */,
 				3D2A84F82E17295B02DDE30E /* PromptCalls.swift in Sources */,
@@ -2728,6 +2735,7 @@
 				467F1134177144246732FE1E /* MacCallsTests.swift in Sources */,
 				E617D4CC636D0D18B3493B8D /* MainSearchTests.swift in Sources */,
 				29EE13B662BAD186D221A43A /* NewSpotTests.swift in Sources */,
+				4AC4210953BB05B0B3BFAC38 /* PlaygroundCallTests.swift in Sources */,
 				FCDF7828A2901BB7E6555788 /* PointerShakeTests.swift in Sources */,
 				8E52FD6E40B42AAFC8C74F1F /* QuitSpotTests.swift in Sources */,
 				CAF11BC00C1A336D4407A417 /* RecordingRequestTests.swift in Sources */,
