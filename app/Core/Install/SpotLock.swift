@@ -50,24 +50,13 @@ public struct SpotLock: Equatable, Sendable {
             try self.init(
                 source: values.decode(String.self, forKey: .source),
                 commit: values.decodeIfPresent(String.self, forKey: .commit),
-                paths: values.decode([String].self, forKey: .paths).map(Self.wrapped),
+                paths: values.decode([String].self, forKey: .paths).map { SpotsFolder.wrapped($0) },
                 hash: values.decodeIfPresent(String.self, forKey: .hash),
                 uses: values.decodeIfPresent([SpotUse].self, forKey: .uses),
                 canDo: values.decodeIfPresent([String].self, forKey: .canDo),
                 address: values.decodeIfPresent(String.self, forKey: .address),
                 key: values.decodeIfPresent(String.self, forKey: .key)
             )
-        }
-
-        /// The place of a path in the spots folder after a wrap, such as `notes.spot/notes.sh` for `notes.sh`.
-        static func wrapped(_ path: String) -> String {
-            let parts = path.split(separator: "/", maxSplits: 1).map(String.init)
-            guard let first = parts.first, (first as NSString).pathExtension != SpotFolder.fileExtension else { return path }
-            if parts.count > 1 { return "\(first).\(SpotFolder.fileExtension)/\(parts[1])" }
-            let stem = String(first.prefix { $0 != "." })
-            guard first.contains(".") else { return "\(first).\(SpotFolder.fileExtension)" }
-            let name = first == "\(stem).md" ? SpotListing.readmeName : first == "\(stem).preview.txt" ? SpotListing.previewName : first
-            return "\(stem).\(SpotFolder.fileExtension)/\(name)"
         }
 
 

@@ -27,8 +27,8 @@ final class KeyListTests: XCTestCase {
     }
 
     func testAScriptWithCommandsAndNoReadOpensToTheKeysOfItsOwnCommands() async throws {
-        try "#!/bin/sh\n# title=Move\n#\n# button=left\n# title=Left side\n[ \"$1\" = left ] && printf 'toast=Left\\n'\n".writeScript(to: folder.appendingPathComponent("move.sh"))
-        try "#!/bin/sh\n# title=Other\n#\n# button=up\n# title=Up\n".writeScript(to: folder.appendingPathComponent("other.sh"))
+        try "#!/bin/sh\n# title=Move\n#\n# button=left\n# title=Left side\n[ \"$1\" = left ] && printf 'toast=Left\\n'\n".writeScript(to: folder.spotFile("move"))
+        try "#!/bin/sh\n# title=Other\n#\n# button=up\n# title=Up\n".writeScript(to: folder.spotFile("other"))
         let move = try XCTUnwrap(try scan().spots.first { $0.id == "move" })
         let runs = SpotRuns()
 
@@ -47,7 +47,7 @@ final class KeyListTests: XCTestCase {
     }
 
     func testItTakesNoKeyOfAnotherSpotAndNoKeyItCannotUse() async throws {
-        try "#!/bin/sh\n# title=Move\n#\n# button=left\n# title=Left side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# title=Move\n#\n# button=left\n# title=Left side\n".writeScript(to: folder.spotFile("move"))
         let move = try XCTUnwrap(try scan().spots.first { $0.id == "move" })
         let runs = SpotRuns()
 
@@ -61,7 +61,7 @@ final class KeyListTests: XCTestCase {
     }
 
     func testAScriptWithAReadShowsTheKeysBesideItsOwnSheet() throws {
-        try "#!/bin/sh\n# title=Move\n# on=sheet.open\n#\n# button=left\n# title=Left side\n".writeScript(to: folder.appendingPathComponent("move.sh"))
+        try "#!/bin/sh\n# title=Move\n# on=sheet.open\n#\n# button=left\n# title=Left side\n".writeScript(to: folder.spotFile("move"))
 
         let move = try XCTUnwrap(try scan().spots.first { $0.id == "move" })
 

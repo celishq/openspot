@@ -33,6 +33,7 @@ public struct SpotsFolder: Sendable {
         self.disabled = disabled
     }
 
+    /// The person's spots folder, opened: an older `plugins` folder moves to its place, and its loose files are wrapped.
     public static func standard(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         home: URL = FileManager.default.homeDirectoryForCurrentUser,
@@ -44,13 +45,16 @@ public struct SpotsFolder: Sendable {
         let arrangement = enabled == nil || disabled == nil ? ConfigFile.standard(environment: environment, home: home).read().arrangement : nil
         let enabled = enabled ?? arrangement?.enabled ?? []
         let disabled = disabled ?? arrangement?.disabled ?? []
+        let url: URL
         if let path = environment["OPENSPOT_SPOTS"], !path.isEmpty {
-            return SpotsFolder(url: URL(fileURLWithPath: path, isDirectory: true), core: core, enabled: enabled, disabled: disabled)
+            url = URL(fileURLWithPath: path, isDirectory: true)
+        } else {
+            url = config(environment: environment, home: home).appendingPathComponent(folderName, isDirectory: true)
+            moveOldFolder(to: url)
         }
-        let folder = config(environment: environment, home: home)
-        let url = folder.appendingPathComponent(folderName, isDirectory: true)
-        moveOldFolder(to: url)
-        return SpotsFolder(url: url, core: core, enabled: enabled, disabled: disabled)
+        let spots = SpotsFolder(url: url, core: core, enabled: enabled, disabled: disabled)
+        try? spots.wrap()
+        return spots
     }
 
     /// The name of the spots folder in the config folder.
@@ -76,16 +80,16 @@ public struct SpotsFolder: Sendable {
         return home.appendingPathComponent(".config/openspot", isDirectory: true)
     }
 
-    /// Wraps the loose files of the folder first. Reads each script that is not off in each spot folder at the top of the
-    /// folder, after the sheets of the app. Then it
-    /// reads each core spot that is on, each core spot that a spot needs, and the spots of the app, a source that a person
-    /// cannot change. A spot in the folder hides a core spot or a spot of the app with the same ID.
+    /// Reads each script that is not off in each spot folder of the folder, after the sheets of the app, and names each loose
+    /// script, which it does not read. Then it reads each core spot that is on, each core spot that a spot needs, and the
+    /// spots of the app, a source that a person cannot change. A spot in the folder hides one of those with the same ID.
     public func scan(hosted: [Spot] = []) throws -> ScanResult {
-        try? wrap()
         var result = ScanResult(files: hosted.isEmpty ? [] : [SpotFile(id: "openspot", spots: hosted)], refused: [])
         for file in ((try? Self.sorted(in: url)) ?? []).filter(Self.isScript) {
-            let name = Self.stem(of: file.lastPathComponent)
-            let reason = "\(file.lastPathComponent) is outside a spot folder, and \(name).\(SpotFolder.fileExtension) has a file of that name. Move it into a spot folder of its own, such as \(name)-2.\(SpotFolder.fileExtension)."
+            let target = SpotID(Self.stem(of: file.lastPathComponent)).folderName
+            let reason = FileManager.default.fileExists(atPath: url.appendingPathComponent(target).appendingPathComponent(file.lastPathComponent).path)
+                ? "\(file.lastPathComponent) is outside a spot folder, and \(target) has a file of that name. Move it into a spot folder of its own, such as \(Self.stem(of: file.lastPathComponent))-2.\(SpotFolder.fileExtension)."
+                : "\(file.lastPathComponent) is outside a spot folder. Move it into \(target)."
             result.refused.append(ScanResult.Refusal(file: file.lastPathComponent, reason: reason))
         }
         let own = Self.files(in: core == nil ? try Self.spotFolders(in: url) : (try? Self.spotFolders(in: url)) ?? [])
@@ -226,19 +230,27 @@ public struct SpotsFolder: Sendable {
             try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
             for file in group {
                 loose.removeAll { $0 == file }
-                let place = target.appendingPathComponent(Self.wrappedName(of: file.lastPathComponent, in: name))
+                let place = url.appendingPathComponent(Self.wrapped(file.lastPathComponent, into: name))
                 if !FileManager.default.fileExists(atPath: place.path) { try FileManager.default.moveItem(at: file, to: place) }
             }
         }
     }
 
-    /// The name of a file in its spot folder: the readme and the preview take their fixed names.
-    private static func wrappedName(of file: String, in name: String) -> String {
-        switch file {
-        case name + "." + SpotListing.readmeExtension: SpotListing.readmeName
-        case name + SpotListing.previewSuffix: SpotListing.previewName
-        default: file
+    /// The place that a wrap gives a path of an older layout in a spots folder: `notes.spot/notes.sh` for `notes.sh`,
+    /// `notes.spot/readme.md` for `notes.md`, `home.spot/lights.sh` for `home/lights.sh`, and `home.spot` for a folder
+    /// `home`. A file goes into the spot folder of `name` when one is given, such as the view of a script.
+    static func wrapped(_ path: String, into name: String? = nil) -> String {
+        let parts = path.split(separator: "/", maxSplits: 1).map(String.init)
+        guard let first = parts.first, (first as NSString).pathExtension != SpotFolder.fileExtension else { return path }
+        if parts.count > 1 { return SpotID(first).folderName + "/" + parts[1] }
+        guard first.contains(".") || name != nil else { return SpotID(first).folderName }
+        let stem = name ?? Self.stem(of: first)
+        let file = switch first {
+        case stem + "." + SpotListing.readmeExtension: SpotListing.readmeName
+        case stem + SpotListing.previewSuffix: SpotListing.previewName
+        default: first
         }
+        return SpotID(stem).folderName + "/" + file
     }
 
     /// The part of a file name before its first dot.

@@ -58,7 +58,7 @@ final class CoreSpotsTests: XCTestCase {
 
     func testAWidgetInTheSpotsFolderCanPlaceACorePart() throws {
         try write("cpu.sh", in: core, header: "on=clock.5")
-        try "#!/bin/sh\n# title=Mine\n# grid.square=cpu\n".writeScript(to: folder.appendingPathComponent("mine.sh"))
+        try "#!/bin/sh\n# title=Mine\n# grid.square=cpu\n".writeScript(to: folder.spotFile("mine"))
 
         let scan = try SpotsFolder(url: folder, core: core, enabled: []).scan()
 

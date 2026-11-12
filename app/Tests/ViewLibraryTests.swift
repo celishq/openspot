@@ -108,11 +108,11 @@ final class ViewLibraryTests: XCTestCase {
     func testTheCheckNamesAViewThatIsMissingOrDoesNotCompile() async throws {
         let spots = folder.appendingPathComponent("spots")
         for name in ["lost", "bad"] {
-            try FileManager.default.createDirectory(at: spots.appendingPathComponent(name), withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: spots.appendingPathComponent(name + ".spot"), withIntermediateDirectories: true)
         }
-        try "#!/bin/sh\n# view=lost.swift\n".writeScript(to: spots.appendingPathComponent("lost/lost.sh"))
-        try "#!/bin/sh\n# view=bad.swift\n".writeScript(to: spots.appendingPathComponent("bad/bad.sh"))
-        try Data("struct".utf8).write(to: spots.appendingPathComponent("bad/bad.swift"))
+        try "#!/bin/sh\n# view=lost.swift\n".writeScript(to: spots.appendingPathComponent("lost.spot/lost.sh"))
+        try "#!/bin/sh\n# view=bad.swift\n".writeScript(to: spots.appendingPathComponent("bad.spot/bad.sh"))
+        try Data("struct".utf8).write(to: spots.appendingPathComponent("bad.spot/bad.swift"))
         let views = try tools(compiler: "echo 'bad.swift:1:7: error: expected identifier' >&2; exit 1")
 
         let faults = await SpotCheck(folder: SpotsFolder(url: spots), views: views).faults()
@@ -158,7 +158,7 @@ final class ViewLibraryTests: XCTestCase {
 
     func testRemovingASpotAlsoTakesItsViewAndItsLibrary() throws {
         let spots = folder.appendingPathComponent("spots")
-        let cups = spots.appendingPathComponent("cups")
+        let cups = spots.appendingPathComponent("cups.spot")
         try FileManager.default.createDirectory(at: cups, withIntermediateDirectories: true)
         try "#!/bin/sh\n# view=cups.swift\n".writeScript(to: cups.appendingPathComponent("cups.sh"))
         try "#!/bin/sh\n".writeScript(to: cups.appendingPathComponent("other.sh"))

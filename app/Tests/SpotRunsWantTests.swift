@@ -40,7 +40,7 @@ final class SpotRunsWantTests: SpotRunsCase {
     func testAWidgetCanPlaceAnyScriptWithARead() async throws {
         try script("onpanel", header: "on=panel.open", log: "onpanel", "printf 'text=m\\ntitle=P\\n'")
         try script("onsheet", header: "on=sheet.open", log: "onsheet", "printf 'text=m\\ntitle=S\\n'")
-        try "#!/bin/sh\n# title=W\n# grid.strip=onpanel onpanel onsheet onsheet\n".writeScript(to: folder.appendingPathComponent("w.sh"))
+        try "#!/bin/sh\n# title=W\n# grid.strip=onpanel onpanel onsheet onsheet\n".writeScript(to: folder.spotFile("w"))
         _ = try scanned()
         XCTAssertEqual(log("onsheet"), [])
 
@@ -56,14 +56,14 @@ final class SpotRunsWantTests: SpotRunsCase {
         try await pause(0.2)
         XCTAssertFalse(exists("pids"))
 
-        try "#!/bin/sh\n# title=W\n# grid.strip=stayer stayer stayer stayer\n".writeScript(to: folder.appendingPathComponent("w.sh"))
+        try "#!/bin/sh\n# title=W\n# grid.strip=stayer stayer stayer stayer\n".writeScript(to: folder.spotFile("w"))
         _ = try scanned()
 
         try await wait("the start of the placed script") { self.exists("pids") }
     }
     func testAWidgetCannotPlaceAScriptWithNoRead() throws {
         try script("once")
-        try "#!/bin/sh\n# title=W\n# grid.square=once\n".writeScript(to: folder.appendingPathComponent("w.sh"))
+        try "#!/bin/sh\n# title=W\n# grid.square=once\n".writeScript(to: folder.spotFile("w"))
 
         let scan = try SpotsFolder(url: folder).scan()
 

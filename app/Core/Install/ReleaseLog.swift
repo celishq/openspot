@@ -28,6 +28,24 @@ public struct ReleaseLog: Equatable, Sendable {
         self.releases = releases
     }
 
+    /// The log of the copy of a spot folder that a spots folder holds, when it has one that checks.
+    public init?(installed root: String, in folder: URL) {
+        let file = folder.appendingPathComponent(root).appendingPathComponent(Self.fileName)
+        guard let text = try? String(contentsOf: file, encoding: .utf8), let log = try? ReleaseLog(text: text) else { return nil }
+        self = log
+    }
+
+    /// The lines that a review shows of the last release over the log of the installed copy. A new install shows nothing of
+    /// its signer. An update says its version, and a version that another key signed, or that no key signed over a signed
+    /// copy, says so first.
+    public func review(over installed: ReleaseLog?) -> (lines: [String], isOtherKey: Bool) {
+        guard let mine = installed?.last else { return ([], false) }
+        guard let theirs = last, theirs.publicKey == mine.publicKey else {
+            return (["Another key signed this version than the one you have. Add it only if you trust the sender."], true)
+        }
+        return theirs.version.map { (["Update to version \($0)"], false) } ?? ([], false)
+    }
+
     public var last: SpotRelease? {
         releases.last
     }

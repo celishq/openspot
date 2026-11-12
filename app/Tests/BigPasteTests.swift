@@ -32,7 +32,7 @@ final class BigPasteTests: XCTestCase {
 
     /// A sheet that answers a change of `input` with its value in `output`, with this body for the answer.
     private func sheet(answer: String) throws -> SpotRun {
-        let url = folder.appendingPathComponent("script.sh")
+        let url = folder.spotFile("script")
         try """
         #!/bin/sh
         # on=sheet.open

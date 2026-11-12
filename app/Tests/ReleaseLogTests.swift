@@ -107,6 +107,17 @@ final class ReleaseLogTests: XCTestCase {
         XCTAssertFalse(log.names(SpotManifest(try spot().files)))
     }
 
+    func testTheReviewOfAReleaseSaysItsVersionOrThatAnotherKeySignedIt() throws {
+        let first = try log(of: spot().signed(by: mine))
+        let second = try log(of: editing(spot().signed(by: mine), "cups.spot/cups.sh", to: "#!/bin/sh\n# title=Mugs\n").signed(by: mine))
+        let copy = try log(of: editing(spot().signed(by: mine), "cups.spot/cups.sh", to: "#!/bin/sh\n# title=Mugs\n").signed(by: theirs))
+
+        XCTAssertEqual(second.review(over: nil).lines, [])
+        XCTAssertEqual(second.review(over: first).lines, ["Update to version 2"])
+        XCTAssertTrue(copy.review(over: first).isOtherKey)
+        XCTAssertTrue(ReleaseLog(releases: []).review(over: first).isOtherKey)
+    }
+
     func testTheLogKeptInTheFolderIsTheOneTheNextSignatureFollows() throws {
         let signed = try spot().signed(by: mine)
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("cups.spot"), withIntermediateDirectories: true)

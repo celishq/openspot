@@ -47,7 +47,7 @@ final class SpotDropTests: XCTestCase {
 
     /// Writes a script with these header lines, which logs each call before its body runs, and gives its sheet.
     private func sheet(header: String = "", _ body: String = "") throws -> SpotRun {
-        let url = folder.appendingPathComponent("script.sh")
+        let url = folder.spotFile("script")
         let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
         try "#!/bin/sh\n\(lines)\necho $$ >> '\(path("pids"))'\necho \"$*\" >> '\(path("log"))'\n\(body)\n".writeScript(to: url)
         let scan = try SpotsFolder(url: folder).scan()
@@ -231,7 +231,7 @@ final class SpotDropTests: XCTestCase {
     }
 
     func testAnArgumentThatStartsWithADashReachesTheScriptAsItIs() async throws {
-        let url = folder.appendingPathComponent("plain.sh")
+        let url = folder.spotFile("plain")
         try "#!/bin/sh\nprintf '%s|' \"$@\"\n".writeScript(to: url)
 
         let text = try await runs.answer(of: Spot(id: "plain", name: "Plain", url: url), .drop(paths: ["-n", "--", "a b"]))

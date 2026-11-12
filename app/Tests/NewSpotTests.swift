@@ -145,7 +145,8 @@ final class NewSpotTests: BuiltInCase {
         for (index, (script, kind)) in scripts.enumerated() where !script.contains("view=") {
             let folder = root.appendingPathComponent("example-\(index)")
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            let file = folder.appendingPathComponent("example.\(kind)")
+            let file = folder.spotFile("example", extension: kind)
+            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
             if kind == "js" { try script.write(to: file, atomically: true, encoding: .utf8) } else { try script.writeScript(to: file) }
             let header = SpotHeader(text: script).block
             let named = header.fields.filter { $0.key.hasPrefix("grid.") }.flatMap { $0.value.split(separator: " ").map(String.init) } + header.values("to")

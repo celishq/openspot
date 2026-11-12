@@ -27,7 +27,7 @@ final class SpotCheckTests: XCTestCase {
     }
 
     func testStayIsAFaultThatNamesTheMode() async throws {
-        let file = folder.appendingPathComponent("relay.sh")
+        let file = folder.spotFile("relay")
         try "#!/bin/sh\n# stay=true\necho\n".writeScript(to: file)
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
@@ -36,7 +36,7 @@ final class SpotCheckTests: XCTestCase {
     }
 
     func testAValueWithANewLinePrintedByHandIsAFaultThatNamesTheHelper() async throws {
-        let file = folder.appendingPathComponent("notes.sh")
+        let file = folder.spotFile("notes")
         try "#!/bin/sh\n# on=sheet.open\nprintf 'row=a\\ntitle=one\\ntwo\\n\\nrow=b\\ntitle=B\\ntitle=C\\n'\n".writeScript(to: file)
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
@@ -48,8 +48,8 @@ final class SpotCheckTests: XCTestCase {
     }
 
     func testACardThatNamesASpotWithNoEventIsAFaultThatNamesTheFix() async throws {
-        try "#!/bin/sh\n# title=Plain\necho\n".writeScript(to: folder.appendingPathComponent("plain.sh"))
-        try "#!/bin/sh\n# title=W\n# grid.square=plain\n".writeScript(to: folder.appendingPathComponent("w.sh"))
+        try "#!/bin/sh\n# title=Plain\necho\n".writeScript(to: folder.spotFile("plain"))
+        try "#!/bin/sh\n# title=W\n# grid.square=plain\n".writeScript(to: folder.spotFile("w"))
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
@@ -57,10 +57,10 @@ final class SpotCheckTests: XCTestCase {
     }
 
     func testAnEventThatNoSpotRaisesIsAFaultThatNamesTheFix() async throws {
-        try "#!/bin/sh\n# on=music.track\n# on=clipboard.change\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.appendingPathComponent("song.sh"))
+        try "#!/bin/sh\n# on=music.track\n# on=clipboard.change\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.spotFile("song"))
 
         let alone = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
-        try "#!/bin/sh\n# emits=music.track\n".writeScript(to: folder.appendingPathComponent("player.sh"))
+        try "#!/bin/sh\n# emits=music.track\n".writeScript(to: folder.spotFile("player"))
         let named = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
         XCTAssertEqual(alone.map(\.fault), ["Song reads on music.track, which Openspot does not raise and no spot names in its emits. Add emits=music.track to the spot that raises it, or fix the name"])
@@ -68,7 +68,7 @@ final class SpotCheckTests: XCTestCase {
     }
 
     func testASpotThatReadsOnTheEventItRaisesIsWarned() async throws {
-        try "#!/bin/sh\n# title=Song\n# on=music.track\n# emits=music.track\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.appendingPathComponent("song.sh"))
+        try "#!/bin/sh\n# title=Song\n# on=music.track\n# emits=music.track\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.spotFile("song"))
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
@@ -76,7 +76,7 @@ final class SpotCheckTests: XCTestCase {
     }
 
     func testNoFaultIsAnEmptyList() async throws {
-        try "#!/bin/sh\necho\n".writeScript(to: folder.appendingPathComponent("hello.sh"))
+        try "#!/bin/sh\necho\n".writeScript(to: folder.spotFile("hello"))
 
         let findings = await SpotCheck(folder: SpotsFolder(url: folder)).findings()
 
@@ -87,8 +87,8 @@ final class SpotCheckTests: XCTestCase {
         let started = folder.appendingPathComponent("started")
         let far = folder.appendingPathComponent("far")
         let body = "if [ -f '\(started.path)' ]; then touch '\(far.path)'; fi; touch '\(started.path)'; sleep 30"
-        try "#!/bin/sh\n# on=sheet.open\n\(body)\n".writeScript(to: folder.appendingPathComponent("first.sh"))
-        try "#!/bin/sh\n# on=sheet.open\n\(body)\n".writeScript(to: folder.appendingPathComponent("second.sh"))
+        try "#!/bin/sh\n# on=sheet.open\n\(body)\n".writeScript(to: folder.spotFile("first"))
+        try "#!/bin/sh\n# on=sheet.open\n\(body)\n".writeScript(to: folder.spotFile("second"))
         let check = Task { await SpotCheck(folder: SpotsFolder(url: folder), timeout: 60).findings() }
         for _ in 0..<1000 {
             if FileManager.default.fileExists(atPath: started.path) { break }

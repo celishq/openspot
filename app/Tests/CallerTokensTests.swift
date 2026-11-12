@@ -67,8 +67,10 @@ final class CallerTokensTests: SpotRunsCase {
     }
 
     func testAnInlineCallHasATokenOfItsSpot() async throws {
+        let script = folder.spotFile("script", extension: "js")
+        try FileManager.default.createDirectory(at: script.deletingLastPathComponent(), withIntermediateDirectories: true)
         try "// on=sheet.open\nfunction main(args, env) { return `text=t\\ntitle=${env.OPENSPOT_TOKEN}\\n` }\n"
-            .write(to: folder.appendingPathComponent("script.js"), atomically: true, encoding: .utf8)
+            .write(to: script, atomically: true, encoding: .utf8)
         let sheet = try sheet()
         runs.panelOpened()
         sheet.open {}

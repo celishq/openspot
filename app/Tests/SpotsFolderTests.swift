@@ -15,13 +15,19 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     @discardableResult
-    private func write(_ path: String, header: String = "", body: String = "") throws -> URL {
-        let url = folder.appendingPathComponent(path)
+    /// Writes a script in its spot folder, or with `loose` true where the path says, as an older layout or an agent leaves it.
+    private func write(_ path: String, header: String = "", body: String = "", loose: Bool = false) throws -> URL {
+        let url = folder.appendingPathComponent(loose || path.split(separator: "/").contains { $0.hasSuffix(".spot") } ? path : path.inSpotFolder)
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         let lines = header.split(separator: "\n").map { "# \($0)\n" }.joined()
         try "#!/bin/sh\n\(lines)\(body)\n".writeScript(to: url)
         try FileManager.default.setAttributes([.creationDate: Date(timeIntervalSince1970: 0)], ofItemAtPath: url.path)
         return url
+    }
+
+    /// The spots folder as the app and the command open it, which wraps its loose files first.
+    private var opened: SpotsFolder {
+        SpotsFolder.standard(environment: ["OPENSPOT_SPOTS": folder.path], home: folder.appendingPathComponent("home"))
     }
 
     private var scan: ScanResult {
@@ -48,8 +54,8 @@ final class SpotsFolderTests: XCTestCase {
             ("an edit of the same size", { try "#!/bin/sh\n# title=Z\n\n".write(to: a, atomically: false, encoding: .utf8) }),
             ("a mode", { try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: a.path) }),
             ("a new file in a subfolder", { try self.write("home/c.sh", header: "title=C") }),
-            ("a rename", { try FileManager.default.moveItem(at: a, to: self.folder.appendingPathComponent("d.sh")) }),
-            ("a removed file", { try FileManager.default.removeItem(at: self.folder.appendingPathComponent("home/b.sh")) }),
+            ("a rename", { try FileManager.default.moveItem(at: a, to: self.folder.appendingPathComponent("a.spot/d.sh")) }),
+            ("a removed file", { try FileManager.default.removeItem(at: self.folder.appendingPathComponent("home.spot/b.sh")) }),
             ("an edit of a linked file", { try "#!/bin/sh\n# title=M\n".write(to: outside, atomically: false, encoding: .utf8) })
         ]
 
@@ -118,42 +124,51 @@ final class SpotsFolderTests: XCTestCase {
         XCTAssertEqual(try scan.refused, [])
     }
 
-    func testAScanWrapsALooseScriptWithItsReadmePreviewAndProgramIntoASpotFolder() throws {
-        try write("weather.sh")
+    func testAScanReadsNoLooseScriptAndNamesIt() throws {
+        try write("weather.sh", loose: true)
+
+        let result = try scan
+
+        XCTAssertEqual(result.spots, [])
+        XCTAssertEqual(result.refused.map(\.reason), ["weather.sh is outside a spot folder. Move it into weather.spot."])
+    }
+
+    func testOpeningTheFolderWrapsALooseScriptWithItsReadmePreviewAndProgramIntoASpotFolder() throws {
+        try write("weather.sh", loose: true)
         try "Shows the weather.".write(to: folder.appendingPathComponent("weather.md"), atomically: true, encoding: .utf8)
         try "row=a\n".write(to: folder.appendingPathComponent("weather.preview.txt"), atomically: true, encoding: .utf8)
         try "notes".write(to: folder.appendingPathComponent("notes.txt"), atomically: true, encoding: .utf8)
 
-        XCTAssertEqual(try scan.spots.map(\.id), ["weather"])
+        XCTAssertEqual(try opened.scan().spots.map(\.id), ["weather"])
 
         let names = try FileManager.default.contentsOfDirectory(atPath: folder.appendingPathComponent("weather.spot").path).sorted()
         XCTAssertEqual(names, ["preview.txt", "readme.md", "weather.sh"])
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted(), ["notes.txt", "weather.spot"])
     }
 
-    func testAScanWrapsAPlainFolderByItsName() throws {
-        try write("home/coffee.sh")
+    func testOpeningTheFolderWrapsAPlainFolderByItsName() throws {
+        try write("home/coffee.sh", loose: true)
 
-        XCTAssertEqual(try scan.spots.map(\.id), ["home/coffee"])
+        XCTAssertEqual(try opened.scan().spots.map(\.id), ["home/coffee"])
         XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("home.spot/coffee.sh").path))
     }
 
     func testAScriptTakesItsViewIntoItsSpotFolder() throws {
-        try write("cups.sh", header: "view=glass.swift")
+        try write("cups.sh", header: "view=glass.swift", loose: true)
         try "import SwiftUI\n".write(to: folder.appendingPathComponent("glass.swift"), atomically: true, encoding: .utf8)
 
-        _ = try scan
+        _ = opened
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("cups.spot/glass.swift").path))
     }
 
     func testAWrapNeverReplacesAFileAndTheScanNamesTheClash() throws {
-        try write("battery/battery.sh", body: "echo liquid")
-        try write("battery.sh", body: "echo metric")
-        try write("clock.sh")
+        try write("battery/battery.sh", body: "echo liquid", loose: true)
+        try write("battery.sh", body: "echo metric", loose: true)
+        try write("clock.sh", loose: true)
 
         XCTAssertNoThrow(try SpotsFolder(url: folder).wrap())
-        let result = try scan
+        let result = try opened.scan()
 
         XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("battery.spot/battery.sh"), encoding: .utf8).contains("liquid"), true)
         XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("battery.sh").path))
@@ -264,7 +279,7 @@ final class SpotsFolderTests: XCTestCase {
     func testEachExecutableInAFolderIsASpot() throws {
         try write("tools/two.sh")
         try write("tools/one.sh")
-        try "shared code".write(to: folder.appendingPathComponent("tools/shared.sh"), atomically: true, encoding: .utf8)
+        try "shared code".write(to: folder.appendingPathComponent("tools.spot/shared.sh"), atomically: true, encoding: .utf8)
 
         XCTAssertEqual(try scan.spots.map(\.id), ["tools/one", "tools/two"])
     }
@@ -325,9 +340,11 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testAJavaScriptFileWithAHeaderRunsInlineAndAnotherIsLeft() throws {
-        try "// title=Sum\nfunction main() { return '' }\n".write(to: folder.appendingPathComponent("sum.js"), atomically: true, encoding: .utf8)
-        try "function shared() { return '' }\n".write(to: folder.appendingPathComponent("plain.js"), atomically: true, encoding: .utf8)
-        try "// mode=stay\nfunction main() { return '' }\n".write(to: folder.appendingPathComponent("stays.js"), atomically: true, encoding: .utf8)
+        for (name, text) in [("sum", "// title=Sum\nfunction main() { return '' }\n"), ("plain", "function shared() { return '' }\n"), ("stays", "// mode=stay\nfunction main() { return '' }\n")] {
+            let file = folder.spotFile(name, extension: "js")
+            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try text.write(to: file, atomically: true, encoding: .utf8)
+        }
         try write("a.sh", header: "mode=inline")
 
         let scan = try scan
@@ -340,7 +357,7 @@ final class SpotsFolderTests: XCTestCase {
     }
 
     func testAnExecutableJavaScriptFileRunsAsAProcess() throws {
-        try "#!/usr/bin/env node\n// title=Node\n// mode=stay\nconsole.log('hi')\n".writeScript(to: folder.appendingPathComponent("node.js"))
+        try "#!/usr/bin/env node\n// title=Node\n// mode=stay\nconsole.log('hi')\n".writeScript(to: folder.spotFile("node", extension: "js"))
 
         XCTAssertEqual(try scan.spots.map(\.mode), [.stay])
     }
@@ -440,7 +457,7 @@ final class SpotsFolderTests: XCTestCase {
         try write("details.sh", header: "on=panel.open")
         try write("other.sh", header: "on=panel.open")
         try write("cpu.sh", header: "on=clock.60")
-        try "#!/bin/sh\n# title=Box\n# grid.square=cpu\n# to=details\n".writeScript(to: folder.appendingPathComponent("box.sh"))
+        try "#!/bin/sh\n# title=Box\n# grid.square=cpu\n# to=details\n".writeScript(to: folder.spotFile("box"))
 
         let commands = try scan.spots
 

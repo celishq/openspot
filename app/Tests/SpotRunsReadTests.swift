@@ -167,7 +167,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script("cups", header: "on=clock.30")
         try script("tool", header: "on=sheet.open")
         try script("once")
-        try "#!/bin/sh\n# title=W\n# grid.square=cups\n".writeScript(to: folder.appendingPathComponent("w.sh"))
+        try "#!/bin/sh\n# title=W\n# grid.square=cups\n".writeScript(to: folder.spotFile("w"))
 
         let scan = try scanned()
 
@@ -393,7 +393,7 @@ final class SpotRunsReadTests: SpotRunsCase {
         try script("tray", header: "on=clock.5", log: "tray", "printf 'title=1\\n'")
         try script("placed", header: "on=clock.5", log: "placed", "printf 'title=1\\n'")
         try script("idle", header: "on=clock.5", log: "idle", "printf 'title=1\\n'")
-        try "#!/bin/sh\n# title=W\n# grid.square=placed\n".writeScript(to: folder.appendingPathComponent("w.sh"))
+        try "#!/bin/sh\n# title=W\n# grid.square=placed\n".writeScript(to: folder.spotFile("w"))
 
         _ = try scanned()
         try await wait("the tray read") { self.log("tray").count == 1 }
@@ -407,7 +407,7 @@ final class SpotRunsReadTests: SpotRunsCase {
     func testAnOpenPanelReadsEachPlacedSpotOnceWithTheReasonOfItsEventOrSpotWant() async throws {
         try script("sheeted", header: "on=sheet.open", log: "sheeted", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'title=1\\n'")
         try script("paneled", header: "on=panel.open", log: "paneled", "echo \"$OPENSPOT_REASON\" >> '\(path("reasons"))'\nprintf 'title=1\\n'")
-        try "#!/bin/sh\n# title=W\n# grid.large=sheeted paneled\n".writeScript(to: folder.appendingPathComponent("w.sh"))
+        try "#!/bin/sh\n# title=W\n# grid.large=sheeted paneled\n".writeScript(to: folder.spotFile("w"))
         _ = try scanned()
 
         runs.panelOpened()

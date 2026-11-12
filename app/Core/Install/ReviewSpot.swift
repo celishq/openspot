@@ -45,7 +45,7 @@ public struct ReviewSpot: Equatable, Sendable {
         self.folder = folder
         let programs = spot.files.filter { ($0.isExecutable || ViewLibrary.isLibrary($0.path)) && !Self.canShow($0) }.map(\.path)
         let quiet = "Runs only when you use it"
-        let release = Self.release(of: logs.first ?? nil, over: Self.installedLog(of: spot.roots.first, in: folder))
+        let release = (logs.first.flatMap { $0 } ?? ReleaseLog(releases: [])).review(over: spot.roots.first.flatMap { ReleaseLog(installed: $0, in: folder) })
         subtitle = release.isOtherKey ? Self.otherKey
             : !programs.isEmpty ? "Holds a program that you cannot read" : primary.subtitle ?? (runs.isEmpty ? quiet : "Runs by itself")
         let uses = SpotUse.allCases.filter { use in scan.scripts.contains { $0.uses.contains(use) } }
@@ -144,23 +144,6 @@ public struct ReviewSpot: Equatable, Sendable {
 
     /// The subtitle of a version that another key signed than the copy that the spots folder holds.
     static let otherKey = "Signed by another key"
-
-    /// The release log of the copy of a spot folder that the spots folder holds, when it has one that checks.
-    private static func installedLog(of root: String?, in folder: URL) -> ReleaseLog? {
-        guard let root, let text = try? String(contentsOf: folder.appendingPathComponent(root).appendingPathComponent(ReleaseLog.fileName), encoding: .utf8) else { return nil }
-        return try? ReleaseLog(text: text)
-    }
-
-    /// The lines that a review shows of a release over the installed copy. A new install shows nothing of its signer. An
-    /// update says its version, and a version that another key signed, or that no key signed over a signed copy, says so
-    /// first.
-    private static func release(of log: ReleaseLog?, over installed: ReleaseLog?) -> (lines: [String], isOtherKey: Bool) {
-        guard let mine = installed?.last else { return ([], false) }
-        guard let theirs = log?.last, theirs.publicKey == mine.publicKey else {
-            return (["Another key signed this version than the one you have. Add it only if you trust the sender."], true)
-        }
-        return theirs.version.map { (["Update to version \($0)"], false) } ?? ([], false)
-    }
 
     /// A line for each script that runs with no act of a person, which says when.
     private static func selfRuns(in scan: ScanResult) -> [String] {
