@@ -12,7 +12,7 @@
 
 <br>
 
-<p align="center"><img src="docs/images/panel.png" width="469" alt="The Openspot panel: a search field over a Now playing card, the System card, and small cards for weather, Focus, coffee and screenshots"></p>
+<p align="center"><img src="docs/images/panel.png" width="469" alt="The Openspot panel: a search field over a Now playing card, the System card, and small cards for weather, Focus, coffee and the date"></p>
 
 Openspot is a minimal launcher for your Mac, like Spotlight. Tell your coding agent what a tool should do, and a moment
 later it is in your launcher. You need no Xcode, no developer account and no release.
