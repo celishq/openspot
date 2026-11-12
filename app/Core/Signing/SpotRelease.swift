@@ -35,8 +35,8 @@ public struct SpotRelease: Equatable, Sendable {
         let createdAt = Int(date.timeIntervalSince1970)
         let digest = Self.digest(publicKey: key.publicKey, createdAt: createdAt, kind: kind, tags: tags, content: readme)
         return SpotRelease(
-            id: AccountKey.hex(digest), publicKey: key.publicKey, createdAt: createdAt, kind: kind, tags: tags, content: readme,
-            signature: AccountKey.hex(try key.sign(digest))
+            id: digest.hex, publicKey: key.publicKey, createdAt: createdAt, kind: kind, tags: tags, content: readme,
+            signature: try key.sign(digest).hex
         )
     }
 
@@ -64,7 +64,7 @@ public struct SpotRelease: Equatable, Sendable {
     /// Whether its id is the hash of what it holds, and its signature is its author's over that id.
     public var isAuthentic: Bool {
         let digest = Self.digest(publicKey: publicKey, createdAt: createdAt, kind: kind, tags: tags, content: content)
-        guard AccountKey.hex(digest) == id, let signature = AccountKey.bytes(ofHex: signature) else { return false }
+        guard digest.hex == id, let signature = Data(hex: signature) else { return false }
         return AccountKey.isValid(signature, of: digest, by: publicKey)
     }
 

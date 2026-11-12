@@ -26,7 +26,7 @@ final class AccountKeyTests: XCTestCase {
     """
 
     private func data(_ hex: String) -> Data {
-        AccountKey.bytes(ofHex: hex.lowercased()) ?? Data()
+        Data(hex: hex.lowercased()) ?? Data()
     }
 
     func testTheVectorsOfBIP340VerifyAsTheyShould() {

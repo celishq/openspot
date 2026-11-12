@@ -19,7 +19,7 @@ public struct SpotManifest: Hashable, Sendable {
     }
 
     public init(_ files: [SpotFolder.File]) {
-        self.init(files.map { File(path: $0.path, sha256: AccountKey.hex(Data(CryptoKit.SHA256.hash(data: $0.contents))), size: $0.contents.count, isExecutable: $0.isExecutable) })
+        self.init(files.map { File(path: $0.path, sha256: Data(CryptoKit.SHA256.hash(data: $0.contents)).hex, size: $0.contents.count, isExecutable: $0.isExecutable) })
     }
 
     /// The files in path order.
@@ -40,6 +40,6 @@ public struct SpotManifest: Hashable, Sendable {
     /// One SHA-256 of the whole manifest, as `spots.lock` keeps it.
     public var hash: String {
         let lines = sorted.map { "\($0.path)\n\($0.sha256)\n\($0.size)\n\($0.isExecutable)\n" }.joined()
-        return AccountKey.hex(Data(CryptoKit.SHA256.hash(data: Data(lines.utf8))))
+        return Data(CryptoKit.SHA256.hash(data: Data(lines.utf8))).hex
     }
 }

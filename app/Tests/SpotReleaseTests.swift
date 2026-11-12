@@ -71,7 +71,7 @@ final class SpotReleaseTests: XCTestCase {
     func testAnEditWhoseIdIsComputedAgainStillFails() throws {
         let note = try SpotRelease(line: wild[0])
         let content = "something else"
-        let id = AccountKey.hex(SpotRelease.digest(publicKey: note.publicKey, createdAt: note.createdAt, kind: note.kind, tags: note.tags, content: content))
+        let id = (SpotRelease.digest(publicKey: note.publicKey, createdAt: note.createdAt, kind: note.kind, tags: note.tags, content: content)).hex
 
         let edited = SpotRelease(id: id, publicKey: note.publicKey, createdAt: note.createdAt, kind: note.kind, tags: note.tags, content: content, signature: note.signature)
 

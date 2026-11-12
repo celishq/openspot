@@ -56,11 +56,11 @@ public struct AccountKey: Equatable, Sendable {
 
     /// The x-only public key in lowercase hex, as nostr events name their author.
     public var publicKey: String {
-        Self.hex(Data((try? P256K.Schnorr.PrivateKey(dataRepresentation: secret))?.xonly.bytes ?? []))
+        Data((try? P256K.Schnorr.PrivateKey(dataRepresentation: secret))?.xonly.bytes ?? []).hex
     }
 
     public var npub: String {
-        Bech32.encode("npub", Self.bytes(ofHex: publicKey) ?? Data())
+        Bech32.encode("npub", Data(hex: publicKey) ?? Data())
     }
 
     public var nsec: String {
@@ -77,27 +77,10 @@ public struct AccountKey: Equatable, Sendable {
 
     /// Whether a BIP-340 signature of these bytes comes from the key of this hex.
     public static func isValid(_ signature: Data, of digest: Data, by publicKey: String) -> Bool {
-        guard let key = bytes(ofHex: publicKey), key.count == 32, signature.count == 64,
+        guard let key = Data(hex: publicKey), key.count == 32, signature.count == 64,
               let parsed = try? P256K.Schnorr.SchnorrSignature(dataRepresentation: signature) else { return false }
         var message = Array(digest)
         return P256K.Schnorr.XonlyKey(dataRepresentation: key).isValid(parsed, for: &message)
-    }
-
-    static func hex(_ data: Data) -> String {
-        data.map { String(format: "%02x", $0) }.joined()
-    }
-
-    static func bytes(ofHex text: String) -> Data? {
-        guard text.count % 2 == 0 else { return nil }
-        var data = Data()
-        var index = text.startIndex
-        while index < text.endIndex {
-            let next = text.index(index, offsetBy: 2)
-            guard let byte = UInt8(text[index..<next], radix: 16) else { return nil }
-            data.append(byte)
-            index = next
-        }
-        return data
     }
 
     /// The 12 words of 16 bytes of entropy, with the checksum of BIP-39 in the last word.

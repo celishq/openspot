@@ -35,18 +35,15 @@ public struct SpotListing: Equatable, Sendable {
 
     /// The listing that the files of this spot's folder give.
     public init(beside spot: Spot) {
-        let readme = try? String(contentsOf: Self.readme(of: spot.url), encoding: .utf8)
-        let preview = (try? String(contentsOf: Self.preview(of: spot.url), encoding: .utf8)).map { SpotOutput(text: $0).items } ?? []
-        self.init(description: spot.subtitle, readme: readme?.trimmingCharacters(in: .whitespacesAndNewlines), preview: preview, release: Self.release(of: spot.url))
+        let folder = try? SpotFolder(contentsOf: spot.url.deletingLastPathComponent())
+        let preview = folder?.preview.map { SpotOutput(text: $0).items } ?? []
+        self.init(description: spot.subtitle, readme: folder?.readme, preview: preview, release: folder.flatMap(Self.release(of:)))
     }
 
-    /// The last release of the spot folder of a file, when its log checks.
-    private static func release(of file: URL) -> Release? {
-        let folder = file.deletingLastPathComponent()
-        guard let text = try? String(contentsOf: folder.appendingPathComponent(ReleaseLog.fileName), encoding: .utf8),
-              let log = try? ReleaseLog(text: text), let version = log.last?.version,
-              let spot = try? SpotFolder(contentsOf: folder) else { return nil }
-        return Release(version: version, isCurrent: log.names(SpotManifest(spot.released(in: folder.lastPathComponent)), built: false))
+    /// The last release of a spot folder, and whether its files are still the ones it names.
+    private static func release(of folder: SpotFolder) -> Release? {
+        guard let root = folder.roots.first, let log = folder.releases, let version = log.last?.version else { return nil }
+        return Release(version: version, isCurrent: log.names(folder.manifest(of: root), built: false))
     }
 
     public static func readme(of file: URL) -> URL {

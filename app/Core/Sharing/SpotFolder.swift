@@ -151,6 +151,26 @@ public struct SpotFolder: Equatable, Sendable {
         files(in: root).filter { $0.path != "\(root)/\(ReleaseLog.fileName)" }
     }
 
+    /// The readme of its own spot folder.
+    public var readme: String? {
+        roots.first.flatMap { text(of: SpotListing.readmeName, in: $0) }?.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// The preview of its own spot folder, as its preview mode printed it.
+    public var preview: String? {
+        roots.first.flatMap { text(of: SpotListing.previewName, in: $0) }
+    }
+
+    /// The release log of its own spot folder, with no check of its files, or nil when it has none or one that does not check.
+    public var releases: ReleaseLog? {
+        roots.first.flatMap { text(of: ReleaseLog.fileName, in: $0) }.flatMap { try? ReleaseLog(text: $0) }
+    }
+
+    /// The text of a file at the top of one of its spot folders.
+    func text(of name: String, in root: String) -> String? {
+        files.first { $0.path == "\(root)/\(name)" }?.text
+    }
+
     /// The manifest of the files of a spot folder that a release names.
     public func manifest(of root: String) -> SpotManifest {
         SpotManifest(released(in: root))
@@ -173,8 +193,8 @@ public struct SpotFolder: Equatable, Sendable {
     /// The release log of one of its spot folders, or nil when it has none. Throws a fault for a log that does not check, or
     /// whose last release does not name the files beside it.
     public func releaseLog(in root: String) throws -> ReleaseLog? {
-        guard let file = files.first(where: { $0.path == "\(root)/\(ReleaseLog.fileName)" }) else { return nil }
-        let log = try ReleaseLog(text: file.text ?? "")
+        guard let text = text(of: ReleaseLog.fileName, in: root) else { return nil }
+        let log = try ReleaseLog(text: text)
         guard log.names(SpotManifest(released(in: root))) else {
             throw SpotError.fault("\(root) does not match its last release, so a file changed after it was signed.")
         }
@@ -189,7 +209,7 @@ public struct SpotFolder: Equatable, Sendable {
         let current = try files.first { $0.path == path }.map { try ReleaseLog(text: $0.text ?? "") } ?? ReleaseLog(releases: [])
         let released = released(in: root)
         guard !current.names(SpotManifest(released)) else { return self }
-        let readme = files.first { $0.path == "\(root)/\(SpotListing.readmeName)" }?.text ?? ""
+        let readme = text(of: SpotListing.readmeName, in: root) ?? ""
         let log = try current.signing(released, readme: readme, by: key, at: date)
         return try SpotFolder(files: files.filter { $0.path != path } + [File(path: path, isExecutable: false, contents: Data(log.text.utf8))])
     }
