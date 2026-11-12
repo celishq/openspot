@@ -646,6 +646,7 @@ final class SpotsModelDragTests: XCTestCase {
         XCTAssertEqual(publication(of: "a"), .current)
         let again = await model.publish("a")
         XCTAssertEqual(again, .unchanged)
+        XCTAssertEqual(host.accountSteps, [.choose])
 
         let script = try FileHandle(forWritingTo: spots.appendingPathComponent("a.spot/a.sh"))
         try script.seekToEnd()
@@ -667,6 +668,19 @@ final class SpotsModelDragTests: XCTestCase {
 
         XCTAssertEqual(file.pathExtension, "spot")
         XCTAssertEqual(try SpotFolder(contentsOf: file).files.first { $0.path == "a.spot/readme.md" }?.text, "Does a.")
+    }
+
+    func testAPublishWithNoAccountOpensTheAccountWindowAndWritesNothingWhenItClosesWithNone() async throws {
+        try "Does a.".write(to: spots.appendingPathComponent("a.spot/readme.md"), atomically: true, encoding: .utf8)
+        host.makesAccount = false
+
+        let result = await model.publish("a")
+
+        XCTAssertEqual(result, .failed)
+        XCTAssertEqual(host.accountSteps, [.choose])
+        XCTAssertEqual(host.notes, [])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: store.appendingPathComponent("a.spot").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: spots.appendingPathComponent("a.spot/releases.jsonl").path))
     }
 
     func testASpotWithNoReadmeOpensItsListingAndIsNotPublished() async {

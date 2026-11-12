@@ -151,4 +151,13 @@ final class AccountFlowTests: XCTestCase {
         XCTAssertEqual(AccountFlow.suggestions(for: "abs"), ["absent", "absorb", "abstract", "absurd"])
         XCTAssertEqual(AccountFlow.suggestions(for: ""), [])
     }
+
+    func testSignOutSaysWhenTheWordsWereNeverSaved() throws {
+        _ = try store.keyMadeOnce()
+        let flow = AccountFlow(store: store, step: .signOut)
+
+        XCTAssertEqual(flow.signOutWords, "Openspot removes your account from this Mac. You haven't saved its 12 words, so you can't sign in to it again.")
+        try store.markBackedUp()
+        XCTAssertEqual(flow.signOutWords, "Openspot removes your account from this Mac. You can sign in again with your 12 words.")
+    }
 }

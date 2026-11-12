@@ -31,7 +31,17 @@ final class TestHost: SpotsHost {
     /// The model whose show and hide steps the panel runs, as the app's window does.
     weak var model: SpotsModel?
 
+    /// The steps that the account window opened on, and whether the person makes an account in it.
+    var accountSteps: [AccountFlow.Step] = []
+    var makesAccount = true
+
     nonisolated deinit {}
+
+    func openAccount(_ step: AccountFlow.Step, store: AccountStore) async -> Bool {
+        accountSteps.append(step)
+        guard makesAccount else { return false }
+        return (try? store.keyMadeOnce()) != nil
+    }
 
     func dismiss() {
         dismissals += 1

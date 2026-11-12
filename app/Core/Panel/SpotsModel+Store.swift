@@ -25,6 +25,7 @@ extension SpotsModel {
                 host.confirm("\(spot.name) has no change since its last publish.")
                 return .unchanged
             }
+            guard let key = try await accountKey() else { return .failed }
             if spot.previewsSample {
                 try await SpotListing.capturePreview(of: spot, runs: runs)
                 shared = try SpotFolder(sharing: spot, from: SpotsFolder(url: folder.url).scan())
@@ -33,7 +34,7 @@ extension SpotsModel {
                 host.work("Compiling \(spot.name)")
                 shared = try await shared.compiled()
             }
-            shared = try shared.signed(by: files.account.keyMadeOnce())
+            shared = try shared.signed(by: key)
             try shared.keepReleaseLog(in: folder.url)
             try shared.write(to: files.store)
         } catch {

@@ -91,6 +91,10 @@ extension OpenspotApp: SpotsHost {
         SpotGridDrop.paths(on: .general)
     }
 
+    func openAccount(_ step: AccountFlow.Step, store: AccountStore) async -> Bool {
+        await AccountWindow.show(step, store: store)
+    }
+
     func copy(_ file: URL) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.writeObjects([file as NSURL])

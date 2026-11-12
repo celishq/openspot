@@ -42,6 +42,26 @@ public final class AccountFlow {
         (try? store.key())?.npub
     }
 
+    /// Whether the person has the words of the kept key.
+    public var isBackedUp: Bool {
+        (try? store.isBackedUp()) == true
+    }
+
+    /// What a sign-out takes away, and what brings the account back.
+    public var signOutWords: String {
+        let place = (try? store.isSyncing()) == true ? "this Mac and from your other Macs that use iCloud Keychain" : "this Mac"
+        guard isBackedUp else {
+            return "Openspot removes your account from \(place). You haven't saved its 12 words, so you can't sign in to it again."
+        }
+        return "Openspot removes your account from \(place). You can sign in again with your 12 words."
+    }
+
+    /// Moves to another step, such as from the choice to the sign-in.
+    public func start(_ step: Step) {
+        failure = nil
+        self.step = step
+    }
+
     /// Makes and keeps a new key, and shows its words.
     public func create() {
         attempt {

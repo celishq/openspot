@@ -167,13 +167,14 @@ extension SpotsModel {
         if isShown { host.dismiss() }
         Task {
             do {
+                guard let key = try await accountKey() else { return }
                 let folder = files.folder
                 var spot = try SpotFolder(sharing: entry.spot, from: folder.scan())
                 if spot.needsCompile {
                     host.work("Compiling \(entry.spot.name)")
                     spot = try await spot.compiled()
                 }
-                spot = try spot.signed(by: files.account.keyMadeOnce())
+                spot = try spot.signed(by: key)
                 try spot.keepReleaseLog(in: folder.url)
                 let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
                 try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
@@ -185,6 +186,13 @@ extension SpotsModel {
                 host.notify("\(entry.spot.name) was not copied. \(Self.reason(error))")
             }
         }
+    }
+
+    /// The account key, which the account window makes or brings back when the Mac holds none. Nil when the person closes it.
+    func accountKey() async throws -> AccountKey? {
+        if let key = try files.account.key() { return key }
+        guard await host.openAccount(.choose, store: files.account) else { return nil }
+        return try files.account.key()
     }
 
     /// Turns a core spot off. Its data stays, and it can come back from the Spots list.
