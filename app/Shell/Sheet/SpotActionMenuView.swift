@@ -13,7 +13,7 @@ struct SpotActionMenuView: View {
     /// Takes the row that the pointer moves onto.
     var onPoint: (Int) -> Void = { _ in }
     /// Takes the text of the field of a menu that searches its rows.
-    var onSearch: (String) -> Void = { _ in }
+    var onSearch: @MainActor @Sendable (String) -> Void = { _ in }
 
     static let radius = SpotTokens.radius - SpotTokens.padding + SpotTokens.menuPadding
 

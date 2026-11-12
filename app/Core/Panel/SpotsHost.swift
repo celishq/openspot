@@ -13,6 +13,8 @@ public protocol SpotsHost: AnyObject {
     func notify(_ text: String)
     func notify(_ text: String, fix: URL)
     func confirm(_ text: String)
+    /// Shows a toast with the work mark, which stays until the next toast.
+    func work(_ text: String)
     /// Takes what the config file asks for, such as the key that opens the panel.
     func applyConfig(_ config: Config)
     func setEntryKey(on isOn: Bool)

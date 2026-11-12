@@ -4,7 +4,7 @@ import OpenspotCore
 /// A spot: a glyph, then a title with a detail, then an accessory. A small card shows the glyph alone, and a widget shows
 /// its places. A kind differs only in what fills a slot: a slider has its track as its detail, and running work takes the
 /// place of the glyph.
-struct SpotCardView: View, Equatable {
+struct SpotCardView: View, @MainActor Equatable {
     let entry: SpotsModel.Entry
     let size: SpotSize
     /// The card's place among the visible cards, which its ring compares with the selection.
@@ -21,7 +21,7 @@ struct SpotCardView: View, Equatable {
     var onTap: (() -> Void)?
 
     /// Whether two cards show the same values, so that a run of the grid reruns only the cards that changed.
-    nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+    static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.entry == rhs.entry && lhs.size == rhs.size && lhs.index == rhs.index && lhs.isPressed == rhs.isPressed
             && lhs.takesDrag == rhs.takesDrag && lhs.isDropTarget == rhs.isDropTarget && lhs.chainLetter == rhs.chainLetter
             && lhs.model === rhs.model

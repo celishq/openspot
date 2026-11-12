@@ -10,7 +10,7 @@ struct SpotSteadyField: View {
     let text: String
     /// Whether the layer around the field has stopped moving.
     let isSettled: Bool
-    let onSearch: (String) -> Void
+    let onSearch: @MainActor @Sendable (String) -> Void
     @FocusState private var isFocused: Bool
 
     /// How far a text field of AppKit draws its words above a SwiftUI text in the same frame.
