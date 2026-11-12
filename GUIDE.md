@@ -10,9 +10,9 @@ This guide shows how to write one, a task at a time. The [protocol](PROTOCOL.md)
 Press the Openspot hotkey, and the **panel** opens. It has a search field, and a grid of **cards** under it. Each card is
 a spot. Press a card, and its **sheet** opens: a bigger view of that spot, with its text, its controls and its list.
 
-A spot is one file in the plugins folder. Openspot runs it when something happens, the spot prints what to show, and
-Openspot draws it. When the user presses something, Openspot runs the spot again with the id of what was pressed. The
-[protocol](PROTOCOL.md) gives every rule of that loop.
+A spot is a script in a spot folder, such as `cups.spot/cups.sh` in the plugins folder. Openspot runs it when something
+happens, the spot prints what to show, and Openspot draws it. When the user presses something, Openspot runs the spot
+again with the id of what was pressed. The [protocol](PROTOCOL.md) gives every rule of that loop.
 
 ## Your first spot
 

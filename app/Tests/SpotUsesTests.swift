@@ -211,7 +211,7 @@ final class SpotUsesTests: SpotRunsCase {
         for (arguments, use) in cases {
             XCTAssertEqual(SpotUseCall(arguments: arguments, of: "own")?.use.rawValue, use, arguments.joined(separator: " "))
         }
-        XCTAssertNil(SpotUseCall(arguments: ["setting", "get", "--spot", "record/inputs", "k"], of: "record/record"), "a script of the same folder is the same plugin")
-        XCTAssertNotNil(SpotUseCall(arguments: ["setting", "get", "--spot", "notes", "k"], of: "record/record"))
+        XCTAssertNil(SpotUseCall(arguments: ["setting", "get", "--spot", "record/inputs", "k"], of: "record"), "a script of the same folder is the same plugin")
+        XCTAssertNotNil(SpotUseCall(arguments: ["setting", "get", "--spot", "notes", "k"], of: "record"))
     }
 }

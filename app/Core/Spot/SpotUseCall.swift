@@ -63,8 +63,8 @@ public struct SpotUseCall: Equatable, Sendable {
         }
     }
 
-    /// Whether a spot is the caller or a script of the caller's plugin folder, which is one unit.
+    /// Whether a spot is the caller or a script of the caller's spot folder, which is one unit.
     private static func isOwn(_ other: String, of spot: String) -> Bool {
-        other == spot || (spot.contains("/") && other.split(separator: "/").first == spot.split(separator: "/").first)
+        other.split(separator: "/").first == spot.split(separator: "/").first
     }
 }

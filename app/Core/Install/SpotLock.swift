@@ -10,6 +10,8 @@ public struct SpotLock: Equatable, Sendable {
     public struct Entry: Codable, Equatable, Sendable {
         public let source: String
         public let commit: String?
+        /// The paths that it took in the plugins folder, each in a spot folder. A path that an older Openspot kept outside
+        /// one, such as `coffee` or `notes.sh`, reads as the place where a wrap of the folder put it.
         public let paths: [String]
         /// The SHA-256 of its files, their paths and whether each one runs.
         public let hash: String?
@@ -18,17 +20,54 @@ public struct SpotLock: Equatable, Sendable {
         /// The lines of what it can also do and of what runs by itself, as its review shows them.
         public var canDo: [String]?
 
-        /// The name of the spot: its first path with no extension.
+        /// The name of the spot: its first spot folder with no extension.
         public var name: String {
-            URL(fileURLWithPath: paths.first ?? source).deletingPathExtension().lastPathComponent
+            Self.name(of: paths.first ?? source)
         }
 
-        /// Whether a spot of this ID came from this entry: a script at the top of the folder, or any script in its folder.
+        /// Whether a spot of this ID came from this entry: any script in one of its spot folders.
         func holds(_ id: String) -> Bool {
             paths.contains { path in
-                id == path || id == (path as NSString).deletingPathExtension || id.hasPrefix(path + "/")
-                    || (!path.contains("/") && id == URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent)
+                let name = Self.name(of: path)
+                return id == name || id.hasPrefix(name + "/")
             }
+        }
+
+        public init(source: String, commit: String?, paths: [String], hash: String?, uses: [SpotUse]?, canDo: [String]? = nil) {
+            self.source = source
+            self.commit = commit
+            self.paths = paths
+            self.hash = hash
+            self.uses = uses
+            self.canDo = canDo
+        }
+
+        public init(from decoder: Decoder) throws {
+            let values = try decoder.container(keyedBy: CodingKeys.self)
+            try self.init(
+                source: values.decode(String.self, forKey: .source),
+                commit: values.decodeIfPresent(String.self, forKey: .commit),
+                paths: values.decode([String].self, forKey: .paths).map(Self.wrapped),
+                hash: values.decodeIfPresent(String.self, forKey: .hash),
+                uses: values.decodeIfPresent([SpotUse].self, forKey: .uses),
+                canDo: values.decodeIfPresent([String].self, forKey: .canDo)
+            )
+        }
+
+        /// The place of a path in the plugins folder after a wrap, such as `notes.spot/notes.sh` for `notes.sh`.
+        static func wrapped(_ path: String) -> String {
+            let parts = path.split(separator: "/", maxSplits: 1).map(String.init)
+            guard let first = parts.first, (first as NSString).pathExtension != SpotFolder.spotExtension else { return path }
+            if parts.count > 1 { return "\(first).\(SpotFolder.spotExtension)/\(parts[1])" }
+            let stem = String(first.prefix { $0 != "." })
+            guard first.contains(".") else { return "\(first).\(SpotFolder.spotExtension)" }
+            let name = first == "\(stem).md" ? SpotListing.readmeName : first == "\(stem).preview.txt" ? SpotListing.previewName : first
+            return "\(stem).\(SpotFolder.spotExtension)/\(name)"
+        }
+
+        /// The name of the spot folder at the start of a path, with no extension.
+        static func name(of path: String) -> String {
+            URL(fileURLWithPath: String(path.split(separator: "/").first ?? Substring(path))).deletingPathExtension().lastPathComponent
         }
 
         /// The line that tells the person what came in.
@@ -183,7 +222,8 @@ public struct SpotLock: Equatable, Sendable {
             hash.update(data: try Data(contentsOf: file.url))
         }
         let scan = try SpotFolder(url: folder).scan()
-        let scripts = scan.scripts.filter { script in paths.contains { script.id == ($0 as NSString).deletingPathExtension || script.id.hasPrefix($0 + "/") } }
+        let names = Set(paths.map(Entry.name(of:)))
+        let scripts = scan.scripts.filter { script in names.contains(String(script.id.split(separator: "/").first ?? "")) }
         let uses = SpotUse.allCases.filter { use in scripts.contains { $0.uses.contains(use) } }
         let canDo: [String]
         do {

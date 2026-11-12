@@ -10,7 +10,7 @@ final class SamplePluginsTests: SamplePluginsCase {
         try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("pbcopy"))
         try "#!/bin/sh\ncat >/dev/null\n".writeScript(to: tools.appendingPathComponent("openspot"))
         let examples = plugins.deletingLastPathComponent().appendingPathComponent("examples")
-        for (script, call) in [(plugins.appendingPathComponent("emoji.sh"), "open"), (plugins.appendingPathComponent("files.sh"), "copy"), (examples.appendingPathComponent("pulls.sh"), "copy")] {
+        for (script, call) in [(plugins.spotFile("emoji"), "open"), (plugins.spotFile("files"), "copy"), (examples.spotFile("pulls"), "copy")] {
             let process = Process()
             let out = Pipe()
             process.executableURL = script
@@ -111,7 +111,7 @@ final class SamplePluginsTests: SamplePluginsCase {
     func testRelaySendsALineOverItsSocketAndShowsTheLineThatComesBack() async throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let port = Int.random(in: 40000...60000)
-        let relay = ScriptProcess(url: root.appendingPathComponent("examples/relay.sh"), mode: .stays, limit: 10, stopPause: 0.2, variables: ["RELAY_PORT": String(port)])
+        let relay = ScriptProcess(url: root.appendingPathComponent("examples/relay.spot/relay.sh"), mode: .stays, limit: 10, stopPause: 0.2, variables: ["RELAY_PORT": String(port)])
         defer { relay.end() }
         var frames = relay.start().makeAsyncIterator()
 
@@ -242,7 +242,7 @@ final class SamplePluginsTests: SamplePluginsCase {
             try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -60)], ofItemAtPath: newest.path)
             try FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: other.path)
             let process = Process()
-            process.executableURL = plugins.appendingPathComponent("paste-screenshot.sh")
+            process.executableURL = plugins.spotFile("paste-screenshot")
             process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "HOME": folder.path]
             try process.run()
             process.waitUntilExit()

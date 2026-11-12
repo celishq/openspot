@@ -5,14 +5,14 @@
 here=$(dirname "$0")
 . "$OPENSPOT_SH"
 
-# Prints what a metric script in this folder shows as the value and the mark of a line. It looks, and does not read, so
-# that the trend of a metric gets no point from it.
+# Prints what a metric script in the spot folder beside this one shows as the value and the mark of a line. It looks, and
+# does not read, so that the trend of a metric gets no point from it.
 reading() {
-  "$here/$1" show | sed -En 's/^title=/detail=/p; /^(value|max|tone)=./p'
+  "$here/../${1%.sh}.spot/$1" show | sed -En 's/^title=/detail=/p; /^(value|max|tone)=./p'
 }
 
 printf 'section=battery\ntitle=Battery\n\ntext=mac\ntitle=This Mac\nicon=macbook\n%s\n\n' "$(reading battery.sh)"
-"$here/devices.sh" levels | awk -F'\t' '
+"$here/../devices.spot/devices.sh" levels | awk -F'\t' '
 function symbol(name, part) {
   if (name ~ /AirPods Max/) return "airpodsmax"
   if (name ~ /AirPods Pro/) return part == "Case" ? "airpodspro.chargingcase.wireless" : part == "" ? "airpodspro" : "airpodpro." tolower(part)

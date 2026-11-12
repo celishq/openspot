@@ -52,9 +52,9 @@ final class SpotAddTests: XCTestCase {
 
         XCTAssertEqual(answer.code, 0, answer.errors)
         XCTAssertTrue(answer.output.hasPrefix("Added coffee at "), answer.output)
-        XCTAssertEqual(try ids(), ["coffee/coffee"])
-        XCTAssertTrue(FileManager.default.isExecutableFile(atPath: plugins.appendingPathComponent("coffee/coffee.sh").path))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: plugins.appendingPathComponent("coffee/.git").path))
+        XCTAssertEqual(try ids(), ["coffee"])
+        XCTAssertTrue(FileManager.default.isExecutableFile(atPath: plugins.appendingPathComponent("coffee.spot/coffee.sh").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: plugins.appendingPathComponent("coffee.spot/.git").path))
     }
 
     func testAGitURLAddsAsAPathDoes() async throws {
@@ -63,7 +63,7 @@ final class SpotAddTests: XCTestCase {
         let answer = try await answer(["spot", "add", "file://\(repo.url.path)/.git"])
 
         XCTAssertEqual(answer.code, 0, answer.errors)
-        XCTAssertEqual(try ids(), ["coffee/coffee"])
+        XCTAssertEqual(try ids(), ["coffee"])
     }
 
     func testAFolderIsCopied() async throws {
@@ -75,13 +75,13 @@ final class SpotAddTests: XCTestCase {
 
         XCTAssertEqual(answer.code, 0, answer.errors)
         XCTAssertEqual(answer.output, "Added tea.\n")
-        XCTAssertEqual(try ids(), ["tea/tea"])
+        XCTAssertEqual(try ids(), ["tea"])
         XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("tea.sh").path))
     }
 
     func testASpotFileIsAdded() async throws {
         let file = root.appendingPathComponent("Cups.spot")
-        try SharedSpot(files: [.init(path: "cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).data.write(to: file)
+        try SharedSpot(files: [.init(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).zip(to: file)
 
         let answer = try await answer(["spot", "add", file.path])
 
@@ -92,8 +92,8 @@ final class SpotAddTests: XCTestCase {
 
     func testASpotThatIsThereAlreadyIsAFaultAndStays() async throws {
         let repo = try repo()
-        try FileManager.default.createDirectory(at: plugins.appendingPathComponent("coffee"), withIntermediateDirectories: true)
-        try "#!/bin/sh\necho mine\n".writeScript(to: plugins.appendingPathComponent("coffee/mine.sh"))
+        try FileManager.default.createDirectory(at: plugins.appendingPathComponent("coffee.spot"), withIntermediateDirectories: true)
+        try "#!/bin/sh\necho mine\n".writeScript(to: plugins.appendingPathComponent("coffee.spot/mine.sh"))
 
         let answer = try await answer(["spot", "add", repo.url.path])
 
@@ -172,10 +172,10 @@ final class SpotAddTests: XCTestCase {
         let repo = try repo()
         _ = try await answer(["spot", "add", repo.url.path])
 
-        let removed = try remove("coffee/coffee")
+        let removed = try remove("coffee")
 
         XCTAssertEqual(removed.name, "coffee")
-        XCTAssertEqual(removed.discarded, ["coffee"])
+        XCTAssertEqual(removed.discarded, ["coffee.spot"])
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: plugins.path), [])
         XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries(), [])
     }
@@ -205,7 +205,7 @@ final class SpotAddTests: XCTestCase {
     }
 
     func testRemoveLeavesASpotThatAddDidNotAdd() async throws {
-        try "#!/bin/sh\n".writeScript(to: plugins.appendingPathComponent("mine.sh"))
+        try "#!/bin/sh\n".writeScript(to: plugins.spotFile("mine"))
 
         let answer = try await answer(["spot", "remove", "mine"])
 
@@ -235,14 +235,14 @@ final class SpotAddTests: XCTestCase {
     func testTheLockKeepsTheSourceTheCommitAndThePathsOfEachAddedSpot() async throws {
         let repo = try repo()
         let file = root.appendingPathComponent("Cups.spot")
-        try SharedSpot(files: [.init(path: "cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).data.write(to: file)
+        try SharedSpot(files: [.init(path: "cups.spot/cups.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).zip(to: file)
 
         _ = try await answer(["spot", "add", repo.url.path])
         _ = try await answer(["spot", "add", file.path])
 
         let entries = try SpotLock(url: root.appendingPathComponent("spots.lock")).entries()
         XCTAssertEqual(entries.map(\.source), [repo.url.standardizedFileURL.path, file.path])
-        XCTAssertEqual(entries.map(\.paths), [["coffee"], ["cups.sh"]])
+        XCTAssertEqual(entries.map(\.paths), [["coffee.spot"], ["cups.spot/cups.sh"]])
         XCTAssertEqual(entries.first?.commit?.count, 40)
         XCTAssertNil(entries.last?.commit)
     }
@@ -260,7 +260,7 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(answer.code, 0, answer.errors)
         XCTAssertEqual(answer.output, "Added coffee at \(commit.prefix(7)).\n")
         XCTAssertEqual(try files(in: plugins), added)
-        XCTAssertTrue(FileManager.default.isExecutableFile(atPath: plugins.appendingPathComponent("coffee/coffee.sh").path))
+        XCTAssertTrue(FileManager.default.isExecutableFile(atPath: plugins.appendingPathComponent("coffee.spot/coffee.sh").path))
     }
 
     func testWithNoSourceASpotThatIsThereStays() async throws {
@@ -285,7 +285,7 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries(), [])
         let confirmed = try await answer(["spot", "add", repo.url.path, "--yes"])
         XCTAssertEqual(confirmed.code, 0, confirmed.errors)
-        XCTAssertEqual(try ids(), ["coffee/coffee"])
+        XCTAssertEqual(try ids(), ["coffee"])
     }
 
     func testAFirstAddThatCannotBeReviewedNeedsYes() async throws {
@@ -302,37 +302,35 @@ final class SpotAddTests: XCTestCase {
     func testAnUpdateOfASpotFileFromAnEntryOfItsFolderKeepsItsEqualFiles() async throws {
         let file = root.appendingPathComponent("Foo.spot")
         try SharedSpot(files: [
-            .init(path: "foo/a.sh", isExecutable: true, contents: Data("#!/bin/sh\necho two\n".utf8)),
-            .init(path: "foo/b.sh", isExecutable: true, contents: Data("#!/bin/sh\necho b\n".utf8))
-        ]).data.write(to: file)
-        try FileManager.default.createDirectory(at: plugins.appendingPathComponent("foo"), withIntermediateDirectories: true)
-        try "#!/bin/sh\necho one\n".writeScript(to: plugins.appendingPathComponent("foo/a.sh"))
-        try "#!/bin/sh\necho b\n".writeScript(to: plugins.appendingPathComponent("foo/b.sh"))
-        try "#!/bin/sh\necho mine\n".writeScript(to: plugins.appendingPathComponent("foo/mine.sh"))
+            .init(path: "foo.spot/a.sh", isExecutable: true, contents: Data("#!/bin/sh\necho two\n".utf8)),
+            .init(path: "foo.spot/b.sh", isExecutable: true, contents: Data("#!/bin/sh\necho b\n".utf8))
+        ]).zip(to: file)
+        try "#!/bin/sh\necho one\n".writeScript(to: plugins.appendingPathComponent("foo.spot/a.sh"))
+        try "#!/bin/sh\necho b\n".writeScript(to: plugins.appendingPathComponent("foo.spot/b.sh"))
+        try "#!/bin/sh\necho mine\n".writeScript(to: plugins.appendingPathComponent("foo.spot/mine.sh"))
         let lock = SpotLock(url: root.appendingPathComponent("spots.lock"))
-        try JSONEncoder().encode([SpotLock.Entry(source: file.path, commit: nil, paths: ["foo"], hash: nil, uses: [])]).write(to: lock.url)
+        try JSONEncoder().encode([SpotLock.Entry(source: file.path, commit: nil, paths: ["foo.spot"], hash: nil, uses: [])]).write(to: lock.url)
 
         _ = try await lock.add(.file(file), to: plugins, isConfirmed: true) { try FileManager.default.removeItem(at: $0) }
 
-        XCTAssertEqual(try String(contentsOf: plugins.appendingPathComponent("foo/a.sh"), encoding: .utf8), "#!/bin/sh\necho two\n")
-        XCTAssertTrue(FileManager.default.fileExists(atPath: plugins.appendingPathComponent("foo/b.sh").path))
-        XCTAssertTrue(FileManager.default.fileExists(atPath: plugins.appendingPathComponent("foo/mine.sh").path))
+        XCTAssertEqual(try String(contentsOf: plugins.appendingPathComponent("foo.spot/a.sh"), encoding: .utf8), "#!/bin/sh\necho two\n")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: plugins.appendingPathComponent("foo.spot/b.sh").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: plugins.appendingPathComponent("foo.spot/mine.sh").path))
     }
 
     func testRemoveTakesTheEntryOfTheSpotAndNotOneWithTheSameNameInAFolder() throws {
-        try FileManager.default.createDirectory(at: plugins.appendingPathComponent("tools"), withIntermediateDirectories: true)
-        try "#!/bin/sh\n".writeScript(to: plugins.appendingPathComponent("tools/notes.sh"))
-        try "#!/bin/sh\n".writeScript(to: plugins.appendingPathComponent("notes.sh"))
+        try "#!/bin/sh\n".writeScript(to: plugins.appendingPathComponent("tools.spot/notes.sh"))
+        try "#!/bin/sh\n".writeScript(to: plugins.spotFile("notes"))
         let lock = SpotLock(url: root.appendingPathComponent("spots.lock"))
         try JSONEncoder().encode([
-            SpotLock.Entry(source: "/a.spot", commit: nil, paths: ["tools/notes.sh"], hash: nil, uses: []),
-            SpotLock.Entry(source: "/b.spot", commit: nil, paths: ["notes.sh"], hash: nil, uses: [])
+            SpotLock.Entry(source: "/a.spot", commit: nil, paths: ["tools.spot/notes.sh"], hash: nil, uses: []),
+            SpotLock.Entry(source: "/b.spot", commit: nil, paths: ["notes.spot/notes.sh"], hash: nil, uses: [])
         ]).write(to: lock.url)
 
         let removed = try lock.remove("notes", from: plugins) { try FileManager.default.removeItem(at: $0) }
 
         XCTAssertEqual(removed.source, "/b.spot")
-        XCTAssertTrue(FileManager.default.fileExists(atPath: plugins.appendingPathComponent("tools/notes.sh").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: plugins.appendingPathComponent("tools.spot/notes.sh").path))
     }
 
     func testALockWithTheOldUsesReadsThemAsTheUsesThatTookThem() throws {
@@ -340,6 +338,13 @@ final class SpotAddTests: XCTestCase {
         try Data(#"[{"source":"/a.spot","paths":["a.sh"],"uses":["settings","update","network"]}]"#.utf8).write(to: lock.url)
 
         XCTAssertEqual(try lock.entries().map(\.uses), [[.spots, .app, .network]])
+    }
+
+    func testALockOfAnOlderOpenspotReadsEachPathInItsSpotFolder() throws {
+        let lock = SpotLock(url: root.appendingPathComponent("spots.lock"))
+        try Data(#"[{"source":"/a","paths":["coffee","notes.sh","notes.md","notes.preview.txt","tools/x.sh","tea.spot/tea.sh"]}]"#.utf8).write(to: lock.url)
+
+        XCTAssertEqual(try lock.entries().map(\.paths), [["coffee.spot", "notes.spot/notes.sh", "notes.spot/readme.md", "notes.spot/preview.txt", "tools.spot/x.sh", "tea.spot/tea.sh"]])
     }
 
     func testAddsAtTheSameTimeLoseNoEntryOfTheLock() async throws {
@@ -380,7 +385,7 @@ final class SpotAddTests: XCTestCase {
 
         XCTAssertEqual(answer.code, 0, answer.errors)
         XCTAssertEqual(answer.output, "Updated coffee to \(commit.prefix(7)).\n")
-        XCTAssertEqual(try String(contentsOf: plugins.appendingPathComponent("coffee/coffee.sh"), encoding: .utf8), "#!/bin/sh\n# title=Coffee\necho two\n")
+        XCTAssertEqual(try String(contentsOf: plugins.appendingPathComponent("coffee.spot/coffee.sh"), encoding: .utf8), "#!/bin/sh\n# title=Coffee\necho two\n")
         XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries().map(\.commit), [commit])
     }
 
@@ -432,7 +437,7 @@ final class SpotAddTests: XCTestCase {
     func testAnUpdateMovesTheOldCopyToTheTrashWithEachPathTheNewOneDrops() async throws {
         let tea = root.appendingPathComponent("sources/tea.spot")
         try FileManager.default.createDirectory(at: tea.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try SharedSpot(files: [.init(path: "tea.sh", isExecutable: true, contents: Data("#!/bin/sh\necho one\n".utf8)), .init(path: "old.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).data.write(to: tea)
+        try SharedSpot(files: [.init(path: "tea.spot/tea.sh", isExecutable: true, contents: Data("#!/bin/sh\necho one\n".utf8)), .init(path: "tea.spot/old.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))]).zip(to: tea)
         let lock = SpotLock(url: root.appendingPathComponent("spots.lock"))
         var discarded: [String] = []
         let trash = root.appendingPathComponent("trash")
@@ -442,7 +447,7 @@ final class SpotAddTests: XCTestCase {
             try FileManager.default.moveItem(at: url, to: trash.appendingPathComponent(url.lastPathComponent))
         }
         _ = try await lock.add(SpotSource(text: tea.path, place: root), to: plugins, discard: discard)
-        try SharedSpot(files: [.init(path: "tea.sh", isExecutable: true, contents: Data("#!/bin/sh\necho two\n".utf8))]).data.write(to: tea)
+        try SharedSpot(files: [.init(path: "tea.spot/tea.sh", isExecutable: true, contents: Data("#!/bin/sh\necho two\n".utf8))]).zip(to: tea)
 
         _ = try await lock.add(SpotSource(text: tea.path, place: root), to: plugins, discard: discard)
 
@@ -466,7 +471,7 @@ final class SpotAddTests: XCTestCase {
         XCTAssertEqual(try ids(), [])
         let accepted = try await answer(["spot", "add", "--yes"])
         XCTAssertEqual(accepted.code, 0, accepted.errors)
-        XCTAssertEqual(try ids(), ["tea/tea"])
+        XCTAssertEqual(try ids(), ["tea"])
         XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries().map(\.uses), [[.screen]])
     }
 
@@ -484,7 +489,7 @@ final class SpotAddTests: XCTestCase {
 
         XCTAssertEqual(answer.code, 1)
         XCTAssertEqual(answer.errors, "tea: Openspot cannot find \(tea.standardizedFileURL.path).\n")
-        XCTAssertEqual(try ids(), ["coffee/coffee"])
+        XCTAssertEqual(try ids(), ["coffee"])
         XCTAssertEqual(try SpotLock(url: root.appendingPathComponent("spots.lock")).entries().count, 2)
     }
 }

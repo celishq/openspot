@@ -73,11 +73,11 @@ final class SpotFolderTests: XCTestCase {
     }
 
     func testKeptCoreChoicesSeeANewCoreFile() throws {
-        try write("a.sh", header: "title=A")
+        try write("a.spot/a.sh", header: "title=A")
         let plugins = SpotFolder(url: folder.appendingPathComponent("own"), core: folder)
 
         XCTAssertEqual(plugins.keptCoreChoices().map(\.name), ["A"])
-        try write("b.sh", header: "title=B")
+        try write("b.spot/b.sh", header: "title=B")
 
         XCTAssertEqual(plugins.keptCoreChoices().map(\.name), ["A", "B"])
     }
@@ -103,6 +103,70 @@ final class SpotFolderTests: XCTestCase {
         XCTAssertEqual(SpotFolder.config(environment: ["OPENSPOT_CONFIG": "/x"], home: home, devState: "/repo").path, "/x")
     }
 
+    func testAScriptNamedAfterItsSpotFolderHasTheFolderNameAsItsID() throws {
+        try write("weather.spot/weather.sh")
+        try write("home.spot/coffee.sh")
+
+        XCTAssertEqual(try scan.spots.map(\.id).sorted(), ["home/coffee", "weather"])
+    }
+
+    func testAScanWrapsALooseScriptWithItsReadmePreviewAndProgramIntoASpotFolder() throws {
+        try write("weather.sh")
+        try "Shows the weather.".write(to: folder.appendingPathComponent("weather.md"), atomically: true, encoding: .utf8)
+        try "row=a\n".write(to: folder.appendingPathComponent("weather.preview.txt"), atomically: true, encoding: .utf8)
+        try "notes".write(to: folder.appendingPathComponent("notes.txt"), atomically: true, encoding: .utf8)
+
+        XCTAssertEqual(try scan.spots.map(\.id), ["weather"])
+
+        let names = try FileManager.default.contentsOfDirectory(atPath: folder.appendingPathComponent("weather.spot").path).sorted()
+        XCTAssertEqual(names, ["preview.txt", "readme.md", "weather.sh"])
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted(), ["notes.txt", "weather.spot"])
+    }
+
+    func testAScanWrapsAPlainFolderByItsName() throws {
+        try write("home/coffee.sh")
+
+        XCTAssertEqual(try scan.spots.map(\.id), ["home/coffee"])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("home.spot/coffee.sh").path))
+    }
+
+    func testAScriptTakesItsViewIntoItsSpotFolder() throws {
+        try write("cups.sh", header: "view=glass.swift")
+        try "import SwiftUI\n".write(to: folder.appendingPathComponent("glass.swift"), atomically: true, encoding: .utf8)
+
+        _ = try scan
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("cups.spot/glass.swift").path))
+    }
+
+    func testAWrapNeverReplacesAFileAndTheScanNamesTheClash() throws {
+        try write("battery/battery.sh", body: "echo liquid")
+        try write("battery.sh", body: "echo metric")
+        try write("clock.sh")
+
+        XCTAssertNoThrow(try SpotFolder(url: folder).wrap())
+        let result = try scan
+
+        XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("battery.spot/battery.sh"), encoding: .utf8).contains("liquid"), true)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("battery.sh").path))
+        XCTAssertEqual(result.refused.map(\.file), ["battery.sh"])
+        XCTAssertEqual(result.spots.map(\.id), ["battery", "clock"])
+    }
+
+    func testRemoveTakesTheWholeSpotFolderOfItsOnlySpot() throws {
+        try write("weather.spot/weather.sh")
+        try "Shows the weather.".write(to: folder.appendingPathComponent("weather.spot/readme.md"), atomically: true, encoding: .utf8)
+        var discarded: [String] = []
+        let command = try XCTUnwrap(try scan.spots.first)
+
+        try SpotFolder(url: folder).remove(command) { url in
+            discarded.append(url.lastPathComponent)
+            try FileManager.default.removeItem(at: url)
+        }
+
+        XCTAssertEqual(discarded, ["weather.spot"])
+    }
+
     func testRemoveTakesOnlyTheFileOfTheSpot() throws {
         try write("home/one.sh")
         try write("home/two.sh")
@@ -120,8 +184,8 @@ final class SpotFolderTests: XCTestCase {
 
     func testASpotOfTheAppIsAlwaysOnAndCannotBeRemoved() throws {
         let core = folder.appendingPathComponent("core")
-        _ = try write("core/openspot/plugins.sh", header: "title=Plugins")
-        _ = try write("core/apps.sh")
+        _ = try write("core/openspot.spot/plugins.sh", header: "title=Plugins")
+        _ = try write("core/apps.spot/apps.sh")
         let place = SpotFolder(url: folder.appendingPathComponent("mine"), core: core)
 
         let spot = try XCTUnwrap(try place.scan().spots.first)
@@ -134,8 +198,8 @@ final class SpotFolderTests: XCTestCase {
     }
 
     func testAFileOfThePersonHidesASpotOfTheApp() throws {
-        _ = try write("core/openspot/plugins.sh", header: "title=Plugins")
-        _ = try write("mine/openspot/plugins.sh", header: "title=Mine")
+        _ = try write("core/openspot.spot/plugins.sh", header: "title=Plugins")
+        _ = try write("mine/openspot.spot/plugins.sh", header: "title=Mine")
 
         let scan = try SpotFolder(url: folder.appendingPathComponent("mine"), core: folder.appendingPathComponent("core")).scan()
 

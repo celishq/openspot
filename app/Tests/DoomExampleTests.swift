@@ -5,7 +5,7 @@ import XCTest
 final class DoomExampleTests: SamplePluginsCase {
     /// The commit of the engine that the script pins, which names the folder of its source and its engine.
     private func engineCommit() throws -> String {
-        let script = try String(contentsOf: examples.appendingPathComponent("doom/doom.sh"), encoding: .utf8)
+        let script = try String(contentsOf: examples.appendingPathComponent("doom.spot/doom.sh"), encoding: .utf8)
         let line = try XCTUnwrap(script.split(separator: "\n").first { $0.hasPrefix("engine_commit=") })
         return String(line.dropFirst("engine_commit=".count))
     }
@@ -118,7 +118,7 @@ final class DoomExampleTests: SamplePluginsCase {
     private func plugins(in folder: URL) throws -> URL {
         let plugins = folder.appendingPathComponent("plugins")
         try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
-        try FileManager.default.copyItem(at: examples.appendingPathComponent("doom"), to: plugins.appendingPathComponent("doom"))
+        try FileManager.default.copyItem(at: examples.appendingPathComponent("doom.spot"), to: plugins.appendingPathComponent("doom.spot"))
         return plugins
     }
 
@@ -131,7 +131,7 @@ final class DoomExampleTests: SamplePluginsCase {
         let runs = SpotRuns(now: { time }, stopPause: 0.2, tickPause: .milliseconds(50))
         defer { runs.quit() }
         runs.take(try SpotFolder(url: plugins).scan())
-        let sheet = try XCTUnwrap(runs.sheets["doom/doom"])
+        let sheet = try XCTUnwrap(runs.sheets["doom"])
         let log = FrameLog(sheet)
         var pictures: [(picture: String?, sheet: [[String]]?)] = []
         for change in [{}] + changes {
@@ -197,7 +197,7 @@ final class DoomExampleTests: SamplePluginsCase {
             let compiled = self.lines("compiled", in: folder)
             XCTAssertTrue(compiled.contains { $0.split(separator: " ").contains("-c") && $0.contains("/i_main.c") }, "\(compiled)")
             XCTAssertFalse(compiled.contains { $0.contains("doomgeneric_xlib") }, "\(compiled)")
-            XCTAssertTrue(compiled.contains { $0.contains("doom/doomgeneric_mac.m") && $0.contains("-framework Cocoa") }, "\(compiled)")
+            XCTAssertTrue(compiled.contains { $0.contains("doom.spot/doomgeneric_mac.m") && $0.contains("-framework Cocoa") }, "\(compiled)")
             XCTAssertEqual(self.lines("played", in: folder).first, "built -iwad \(self.data(in: folder).path)/doom1.wad")
             XCTAssertFalse(self.exists("fetched", in: folder))
         }
@@ -214,7 +214,7 @@ final class DoomExampleTests: SamplePluginsCase {
 
             _ = await self.press(doom)
 
-            XCTAssertTrue(self.lines("compiled", in: folder).contains { $0.contains("doom/doomgeneric_mac.m") })
+            XCTAssertTrue(self.lines("compiled", in: folder).contains { $0.contains("doom.spot/doomgeneric_mac.m") })
             XCTAssertEqual(self.lines("played", in: folder).first, "built -iwad \(self.data(in: folder).path)/doom1.wad")
         }
     }

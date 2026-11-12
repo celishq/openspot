@@ -127,14 +127,16 @@ final class CarefulModeTests: SpotRunsCase {
     }
 
     func testOnTheHelperProcessOfAnInlineSpotIsCarefulToo() async throws {
-        let bin = folder.appendingPathComponent("bin", isDirectory: true)
+        let bin = outside.appendingPathComponent("bin", isDirectory: true)
         try FileManager.default.createDirectory(at: bin, withIntermediateDirectories: true)
         try "#!/bin/sh\necho a > '\(outside.path)/written' 2>/dev/null && echo files || echo kept\n".writeScript(to: bin.appendingPathComponent("openspot"))
         let path = ProcessInfo.processInfo.environment["PATH"] ?? ""
         setenv("PATH", "\(bin.path):\(path)", 1)
         defer { setenv("PATH", path, 1) }
+        let script = folder.spotFile("script", extension: "js")
+        try FileManager.default.createDirectory(at: script.deletingLastPathComponent(), withIntermediateDirectories: true)
         try "// on=sheet.open\nfunction main() { return `text=t\\ntitle=${openspot.call([\"color\", \"pick\"]).stdout.trim()}\\n` }\n"
-            .write(to: folder.appendingPathComponent("script.js"), atomically: true, encoding: .utf8)
+            .write(to: script, atomically: true, encoding: .utf8)
         let sheet = try sheet()
         let before = try await result(of: sheet)
         XCTAssertEqual(before, "files", "the helper ran as the person")

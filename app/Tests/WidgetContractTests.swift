@@ -14,7 +14,7 @@ final class WidgetContractTests: XCTestCase {
     }
 
     private func script(_ name: String, _ text: String) throws {
-        let url = folder.appendingPathComponent(name)
+        let url = folder.appendingPathComponent(name.inSpotFolder)
         try text.writeScript(to: url)
     }
 
@@ -193,7 +193,9 @@ final class WidgetContractTests: XCTestCase {
     }
 
     func testAWidgetFileIsRefusedAndToldToBeASpot() throws {
-        try "[[widgets]]\ntitle = \"Now\"\ngrid = [\"power\"]\n".write(to: folder.appendingPathComponent("mine.toml"), atomically: true, encoding: .utf8)
+        let file = folder.spotFile("mine", extension: "toml")
+        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try "[[widgets]]\ntitle = \"Now\"\ngrid = [\"power\"]\n".write(to: file, atomically: true, encoding: .utf8)
 
         XCTAssertEqual(try scan.refused.first?.reason, "mine.toml holds widgets, which Openspot no longer reads. Write a spot whose header draws its card from other spots, such as grid.large=cpu cpu memory")
     }

@@ -6,9 +6,9 @@ import XCTest
 final class CatalogSpotTests: BuiltInCase {
     override func setUp() async throws {
         try await super.setUp()
-        try "#!/bin/sh\n# detail=Open app\n# icon=star\n".writeScript(to: core.appendingPathComponent("zebra.sh"))
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.sh"))
-        try "#!/bin/sh\n# on=clock.5\n".writeScript(to: core.appendingPathComponent("cpu.sh"))
+        try "#!/bin/sh\n# detail=Open app\n# icon=star\n".writeScript(to: core.appendingPathComponent("zebra.spot/zebra.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
+        try "#!/bin/sh\n# on=clock.5\n".writeScript(to: core.appendingPathComponent("cpu.spot/cpu.sh"))
     }
 
     private var catalog: Spot {
@@ -38,7 +38,7 @@ final class CatalogSpotTests: BuiltInCase {
     }
 
     func testTurningOnACoreWidgetLoadsItInAScan() throws {
-        try "#!/bin/sh\n# title=Overview\n# grid.square=cpu\n".writeScript(to: core.appendingPathComponent("overview.sh"))
+        try "#!/bin/sh\n# title=Overview\n# grid.square=cpu\n".writeScript(to: core.appendingPathComponent("overview.spot/overview.sh"))
 
         try file.turn("overview", on: true)
 

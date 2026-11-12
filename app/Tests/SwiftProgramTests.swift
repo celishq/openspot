@@ -27,7 +27,7 @@ final class SwiftProgramTests: XCTestCase {
     }
 
     private func script(_ path: String, _ text: String) throws {
-        let url = folder.appendingPathComponent(path)
+        let url = folder.appendingPathComponent(path.inSpotFolder)
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try text.writeScript(to: url)
     }
@@ -159,16 +159,16 @@ final class SwiftProgramTests: XCTestCase {
 
     func testASharedSwiftScriptTravelsWithItsProgram() async throws {
         let spot = try SharedSpot(files: [
-            .init(path: "home/hello.swift", isExecutable: true, contents: source),
-            .init(path: "home/shared.swift", isExecutable: false, contents: source),
-            .init(path: "home/other.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))
+            .init(path: "home.spot/hello.swift", isExecutable: true, contents: source),
+            .init(path: "home.spot/shared.swift", isExecutable: false, contents: source),
+            .init(path: "home.spot/other.sh", isExecutable: true, contents: Data("#!/bin/sh\n".utf8))
         ])
 
         XCTAssertTrue(spot.needsCompile)
         let compiled = try await spot.compiled(by: tools())
 
         XCTAssertFalse(compiled.needsCompile)
-        XCTAssertEqual(compiled.files.map(\.path), ["home/hello.swift", "home/shared.swift", "home/other.sh", "home/hello.program"])
+        XCTAssertEqual(compiled.files.map(\.path), ["home.spot/hello.swift", "home.spot/shared.swift", "home.spot/other.sh", "home.spot/hello.program"])
         let added = try XCTUnwrap(compiled.files.last)
         XCTAssertTrue(added.isExecutable)
         XCTAssertEqual(added.contents, Data("built".utf8))
@@ -176,8 +176,8 @@ final class SwiftProgramTests: XCTestCase {
 
     func testAProgramThatAlreadyTravelsIsNotBuiltAgain() async throws {
         let spot = try SharedSpot(files: [
-            .init(path: "hello.swift", isExecutable: true, contents: source),
-            .init(path: "hello.program", isExecutable: true, contents: Data("old".utf8))
+            .init(path: "hello.spot/hello.swift", isExecutable: true, contents: source),
+            .init(path: "hello.spot/hello.program", isExecutable: true, contents: Data("old".utf8))
         ])
 
         XCTAssertFalse(spot.needsCompile)
@@ -194,7 +194,7 @@ final class SwiftProgramTests: XCTestCase {
 
         let spot = try SharedSpot(sharing: try XCTUnwrap(scan.spots.first), from: scan)
 
-        XCTAssertEqual(spot.files.map(\.path), ["hello.swift", "hello.program"])
+        XCTAssertEqual(spot.files.map(\.path), ["hello.spot/hello.program", "hello.spot/hello.swift"])
     }
 
     func testAProgramIsNotASpotOfItsOwn() throws {
@@ -227,11 +227,11 @@ final class SwiftProgramTests: XCTestCase {
     }
 
     func testDeletingASpotAlsoTakesItsProgram() throws {
-        try script("hello.swift", "#!/bin/sh\n")
-        try script("hello.program", "#!/bin/sh\n")
-        try script("other.sh", "#!/bin/sh\n")
+        try script("home/hello.swift", "#!/bin/sh\n")
+        try script("home/hello.program", "#!/bin/sh\n")
+        try script("home/other.sh", "#!/bin/sh\n")
         let place = SpotFolder(url: folder)
-        let command = try XCTUnwrap(try place.scan().spots.first { $0.id == "hello" })
+        let command = try XCTUnwrap(try place.scan().spots.first { $0.id == "home/hello" })
         var discarded: [String] = []
 
         try place.remove(command) { discarded.append($0.lastPathComponent) }
@@ -241,8 +241,8 @@ final class SwiftProgramTests: XCTestCase {
 
     func testTheReviewSaysThatASourceMayNotMatchItsProgram() throws {
         let spot = try SharedSpot(files: [
-            .init(path: "hello.swift", isExecutable: true, contents: source),
-            .init(path: "hello.program", isExecutable: true, contents: Data([0xCF, 0xFA, 0xED, 0xFE, 0x00]))
+            .init(path: "hello.spot/hello.swift", isExecutable: true, contents: source),
+            .init(path: "hello.spot/hello.program", isExecutable: true, contents: Data([0xCF, 0xFA, 0xED, 0xFE, 0x00]))
         ])
 
         let review = try ReviewSpot(spot: spot, folder: folder)
@@ -251,7 +251,7 @@ final class SwiftProgramTests: XCTestCase {
         XCTAssertEqual(review.subtitle, "Holds a program that you cannot read")
         let part = try XCTUnwrap(SpotOutput(text: try review.answer(["read"])).parts.first { $0.id == "review" })
         guard case .text(let text, _, _) = part.control else { throw SpotError.badForm }
-        XCTAssertTrue(text.hasPrefix("Hello\n\nProgram that Openspot cannot show\nhello.program\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
+        XCTAssertTrue(text.hasPrefix("Hello\n\nProgram that Openspot cannot show\nhello.spot/hello.program\nIt can do all that you can. Add it only if you trust the sender.\nThe source beside it may not match the program.\n\n"), text)
     }
 
     func testABuiltProgramGetsThePathOfItsScriptAsItsFirstArgument() async throws {

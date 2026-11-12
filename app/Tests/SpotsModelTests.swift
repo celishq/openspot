@@ -38,7 +38,7 @@ final class SpotsModelTests: XCTestCase {
 
     private func script(_ name: String, header: String, _ body: String) throws {
         let lines = header.split(separator: "\n", omittingEmptySubsequences: false).map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: plugins.appendingPathComponent("\(name).sh"))
+        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: plugins.spotFile(name))
     }
 
     private func wait(_ what: String, until condition: () -> Bool) async throws {
@@ -103,14 +103,13 @@ final class SpotsModelTests: XCTestCase {
 
     func testASheetTakesTheLookOfItsCardOnlyWhenItsScriptDrawsTheCard() async throws {
         try script("agenda", header: "on=panel.open", "printf 'grid.small=next\\n\\nnumber=next\\nvalue=09:30\\n\\nrow=e\\ntitle=Standup\\n'")
-        try FileManager.default.createDirectory(at: plugins.appendingPathComponent("year"), withIntermediateDirectories: true)
-        try script("year/year", header: "on=panel.open\nview=year.swift", "printf 'view=year\\ntitle=2026\\n\\nrow=e\\ntitle=Standup\\n'")
+        try script("year", header: "on=panel.open\nview=year.swift", "printf 'view=year\\ntitle=2026\\n\\nrow=e\\ntitle=Standup\\n'")
         try script("list", header: "on=panel.open", "printf 'row=a\\ntitle=Apple\\n'")
         model.reload()
         model.panelWillShow(holding: [])
 
         try await wait("the drawn cards") {
-            SpotSheetCard.of("agenda", in: model)?.look?.id == "agenda" && SpotSheetCard.of("year/year", in: model)?.look?.id == "year/year"
+            SpotSheetCard.of("agenda", in: model)?.look?.id == "agenda" && SpotSheetCard.of("year", in: model)?.look?.id == "year"
         }
         try await wait("the list") { model.sheets["list"]?.list.shown.count == 1 }
         XCTAssertNotNil(SpotSheetCard.of("list", in: model))
@@ -121,7 +120,7 @@ final class SpotsModelTests: XCTestCase {
         let added = Date(timeIntervalSince1970: 1_700_000_000)
         for name in ["a", "b", "c", "d"] {
             try script(name, header: "title=\(name.uppercased())", "")
-            try FileManager.default.setAttributes([.creationDate: added], ofItemAtPath: plugins.appendingPathComponent("\(name).sh").path)
+            try FileManager.default.setAttributes([.creationDate: added], ofItemAtPath: plugins.spotFile(name).path)
         }
         let defaults = folder.appendingPathComponent("defaults.toml")
         try "[[spots]]\nid = \"d\"\n\n[[spots]]\nid = \"b\"\n".write(to: defaults, atomically: true, encoding: .utf8)
@@ -193,7 +192,8 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAnOpenFindsAScriptMadeExecutableSinceTheOpenBefore() throws {
-        let late = plugins.appendingPathComponent("late.sh")
+        let late = plugins.spotFile("late")
+        try FileManager.default.createDirectory(at: late.deletingLastPathComponent(), withIntermediateDirectories: true)
         try "#!/bin/sh\n# title=Late\n".write(to: late, atomically: false, encoding: .utf8)
         model.panelWillShow(holding: [])
         XCTAssertFalse(model.entries.contains { $0.id == "late" })
@@ -237,7 +237,7 @@ final class SpotsModelTests: XCTestCase {
         model.panelWillShow(holding: [])
         try await wait("the first read") { model.entries.first { $0.id == "cups" }?.state.title == "One cup" }
 
-        try "#!/bin/sh\n# on=panel.open\nprintf 'title=Two cups\\n'\n".write(to: plugins.appendingPathComponent("cups.sh"), atomically: false, encoding: .utf8)
+        try "#!/bin/sh\n# on=panel.open\nprintf 'title=Two cups\\n'\n".write(to: plugins.spotFile("cups"), atomically: false, encoding: .utf8)
         model.folderChanged()
 
         try await wait("the read of the changed body") { model.entries.first { $0.id == "cups" }?.state.title == "Two cups" }
@@ -859,6 +859,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testReturnOnAKeptRowOfASlowInlineSpotWaitsForTheNewestAnswer() async throws {
+        try FileManager.default.createDirectory(at: plugins.appendingPathComponent("calc.spot"), withIntermediateDirectories: true)
         try """
         // title=Calc
         // on=search.text ^[0-9]
@@ -868,7 +869,7 @@ final class SpotsModelTests: XCTestCase {
           if (text === "12") { const end = Date.now() + 300; while (Date.now() < end) {} }
           return `row=${text}\\ntitle=Is ${text}\\n`
         }
-        """.write(to: plugins.appendingPathComponent("calc.js"), atomically: true, encoding: .utf8)
+        """.write(to: plugins.spotFile("calc", extension: "js"), atomically: true, encoding: .utf8)
         model.reload()
         model.isShown = true
         model.panelWillShow(holding: [])
@@ -974,7 +975,7 @@ final class SpotsModelTests: XCTestCase {
     }
 
     func testAKeyOfTheConfigOpensTheSheetOfItsSpotFromTheGridAndFromEditSpots() async throws {
-        let new = plugins.appendingPathComponent("new.sh")
+        let new = plugins.spotFile("new")
         try "#!/bin/sh\n# on=sheet.open\nprintf 'row=g\\ntitle=Guide\\n'\n".writeScript(to: new)
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("config"), withIntermediateDirectories: true)
         try "[[spots]]\nid = \"new\"\ngrid = false\nkey = \"cmd+n\"\n".write(to: folder.appendingPathComponent("config/config.toml"), atomically: true, encoding: .utf8)

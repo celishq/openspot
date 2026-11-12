@@ -166,7 +166,7 @@ final class CommandSocketTests: XCTestCase {
         let answer = try ask(["spot", "add", "tea"], env: ["OPENSPOT_CONFIG": folder.path, "OPENSPOT_PLUGINS": plugins], cwd: folder.appendingPathComponent("sources").path)
 
         XCTAssertEqual(answer.code, 0, answer.stderr)
-        XCTAssertTrue(FileManager.default.fileExists(atPath: plugins + "/tea/tea.sh"))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: plugins + "/tea.spot/tea.sh"))
     }
 
     func testALineThatIsNoRequestGetsAnError() throws {

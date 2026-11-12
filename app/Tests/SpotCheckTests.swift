@@ -16,7 +16,7 @@ final class SpotCheckTests: XCTestCase {
     }
 
     func testAFindingNamesItsSpotItsFileAndItsFault() async throws {
-        let file = folder.appendingPathComponent("weather.sh")
+        let file = folder.spotFile("weather")
         try "#!/bin/sh\n# mode=huge\necho\n".writeScript(to: file)
 
         let findings = await SpotCheck(folder: SpotFolder(url: folder)).findings()

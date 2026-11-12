@@ -31,12 +31,14 @@ public final class PlaygroundPanel {
     @discardableResult
     public func place(file: URL?, text: String, plugins real: URL? = nil) throws -> String {
         let (source, id) = SheetSandbox.place(of: file, text: text, plugins: real ?? plugins, scratch: plugins)
-        let target = plugins.appendingPathComponent(id).appendingPathExtension(source.pathExtension)
+        let parts = id.split(separator: "/").map(String.init)
+        let target = plugins.appendingPathComponent("\(parts[0]).\(SpotFolder.spotExtension)", isDirectory: true)
+            .appendingPathComponent(parts[parts.count - 1]).appendingPathExtension(source.pathExtension)
         let manager = FileManager.default
         for old in (try? manager.contentsOfDirectory(at: plugins, includingPropertiesForKeys: nil)) ?? [] {
             try? manager.removeItem(at: old)
         }
-        if let file, id.contains("/") {
+        if let file, file.deletingLastPathComponent().pathExtension == SpotFolder.spotExtension {
             try manager.copyItem(at: file.deletingLastPathComponent(), to: target.deletingLastPathComponent())
         }
         try manager.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)

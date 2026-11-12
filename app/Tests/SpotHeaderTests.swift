@@ -149,12 +149,4 @@ final class SpotHeaderTests: XCTestCase {
             XCTAssertEqual((error as? SpotError)?.reason, "Cups needs a Swift file for its view, such as view=cups.swift")
         }
     }
-
-    func testAViewInATopLevelScriptIsRefusedWithTheFolderToMoveTo() {
-        let header = SpotHeader(text: "#!/bin/sh\n# title=Cups\n# view=cups.swift\n").block
-
-        XCTAssertThrowsError(try SpotFile(script: URL(fileURLWithPath: "/plugins/cups.sh"), header: header, id: "cups")) { error in
-            XCTAssertEqual((error as? SpotError)?.reason, "Cups has a view, so it needs a folder of its own. Move cups.sh and cups.swift into a folder such as cups/")
-        }
-    }
 }

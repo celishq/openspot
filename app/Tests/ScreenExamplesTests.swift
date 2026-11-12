@@ -88,6 +88,6 @@ final class ScreenExamplesTests: SamplePluginsCase {
     }
 
     func testTheEditorOfShotTypeChecks() async throws {
-        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-typecheck", examples.appendingPathComponent("shot/edit.swift").path])
+        _ = try await ScriptProcess.output(url: URL(fileURLWithPath: "/usr/bin/swiftc"), arguments: ["-typecheck", examples.appendingPathComponent("shot.spot/edit.swift").path])
     }
 }

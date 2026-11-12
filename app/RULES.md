@@ -18,7 +18,7 @@ Code and tests name a rule by its ID.
 | A9 | A sheet with no answer yet holds its motion for at most 150 ms, so that it grows once, to its real size. |
 | A10 | A dragged `.spot` file shows in the search field, and a drop, a paste or a double-click opens the install screen from there. |
 | A11 | The core spots are the scripts in `plugins/` of this repo. They run in place from the app, so an update updates them. Nothing downloads. |
-| A12 | A first launch turns on each core spot that reads only local data. Each other core spot is off until the person turns it on. A file in the plugins folder with the same ID wins over a core spot, and is always on. |
+| A12 | A first launch turns on each core spot that reads only local data. Each other core spot is off until the person turns it on. A spot in the plugins folder with the same ID wins over a core spot, and is always on. |
 | A13 | Spots opens Edit Spots with the store, which shows every spot with its state. A search for "edit spots" finds Spots. |
 | A14 | A first launch has no config and no plugin, opens the panel on the grid once, and does not open at login. |
 | A15 | A toast takes no input, except a failure with a fix (protocol: The life of a call). One fix key, which the person chooses, opens it, and only while the toast shows. |
@@ -55,23 +55,18 @@ Code and tests name a rule by its ID.
 
 ## Sharing
 
-A spot travels as a `.spot` file: JSON with `"format": 1` and `files`, a list of `path`, `executable`, and `text` or
-`data` in base64. A script in a folder takes the whole folder, and a widget file takes each script that it places or
-opens. Hidden files and `$OPENSPOT_DATA` stay behind. A file of the same path replaces the old one, which goes to the
-Trash.
-
-Share in the store copies a published package as one `.spot` file that is a zip of its folder. Openspot opens a package
-folder, a zip of one, and a JSON file of format 1. A zip with a path that leaves its folder, a link, or more than the
-size limit when unpacked is refused, the last before it unpacks. The install keeps the readme and the preview beside the
-spot's file.
+A spot travels as its spot folder `<name>.spot`, zipped into one file of the same name. A spot whose widget places or
+opens another spot takes that spot's folder too. Hidden files and `$OPENSPOT_DATA` stay behind. Openspot opens a spot
+folder and a zip of spot folders. A zip with a path that leaves its folder, a link, or more than the size limit when
+unpacked is refused, the last before it unpacks. A file of the same path replaces the old one, which goes to the Trash.
 
 | ID | Rule |
 |---|---|
 | P4 | Before a person installs a shared spot, Openspot shows all the text it can, says what runs by itself and names each file that it cannot show. Only a modified key installs it. |
-| P6 | A `.spot` file can carry a Swift script's `<name>.program`, compiled for both kinds of Mac, which runs in its place. The review says first that no one can read it. |
+| P6 | A `.spot` can carry a Swift script's `<name>.program`, compiled for both kinds of Mac, which runs in its place. The review says first that no one can read it. |
 | P7 | A `.spot` file has no signature. Openspot warns the sender about secrets, and does not look for them. |
 | P9 | A core spot needs no review, because it is signed with the app. |
-| P10 | A drag of a spot of the plugins folder onto the store publishes it as a package folder `<id>.spot` in `store/` of the config folder: its files, `listing.toml`, `readme.md` and `preview.txt`. A spot with no readme opens its listing and is not published. A spot whose files did not change writes nothing. |
+| P10 | A drag of a spot of the plugins folder onto the store publishes a copy of its spot folder in `store/` of the config folder, with the program of each Swift script. A spot with no `readme.md` opens its listing and is not published. A spot whose files did not change writes nothing. |
 | P11 | A preview is the text that a spot prints with `OPENSPOT_REASON=spot.preview`, on the author's Mac at publish. Drawing a preview runs no code. |
 
 ## Floats
@@ -96,12 +91,13 @@ A float is one spot in a window of its own, at the pointer, outside the panel.
 |---|---|---|
 | A spot offers a float with `offers=float`, and the person sends it out of the panel by a key or a shake | Settings lists only the spots that offer one, so it stays short, and the script still never learns where it is drawn. | A Float row for every spot, and `command=shake`, which lets a script claim an input. |
 | One sheet model for each script | A metric and a sheet both hold what a script last printed, and a widget can place any script. | A separate table and type for metrics. |
-| Core spots run in place from the app, from `plugins/*.sh` | A first run needs no network, an update updates them, and a diff shows the changed line. | A download, a copy at first launch, `.spot` files in the repo. |
+| Core spots run in place from the app, from `plugins/*.spot` | A first run needs no network, an update updates them, and a diff shows the changed line. | A download, a copy at first launch, `.spot` files in the repo. |
 | One progressive backdrop blur close to the cards, under a shade of each theme that fades across the 90 pt margin: black at 20% in dark and at 8% in light. In the dark theme a surface keeps the system material's own fill, tone and saturation | One layer gives a soft edge with no line and no second pass. Side by side with Control Center, the material's own tint gave the cards its lightness and evenness. A blur close to the cards keeps the page behind readable, as in v0.0.7. | Three masked blur steps, which show a line at the window edge. Black at 30% over a bare blur, which can only darken. A blur and a light grey shade spread across the whole margin, which wash the page out. Liquid Glass cards, for their cost on each frame. |
 | The panel follows the Mac's appearance. Light mode has near-white bubbles with a hairline edge, dark text and a dark turned-on card | Dark text on a strong white fill reads on any backdrop. A dark turned-on card stays apart from the selection ring. | A look that reacts to what lies behind the panel. An accent turned-on card, which hides the ring. |
 | A hidden card keeps its full strength, and Edit Spots marks it with `eye.slash` | A dim card looks disabled, and it is not. | Dimming the card at 40%. A card with no fill. |
 | A DMG window that shows where to drag, with no background image | The app and Applications side by side say all that a person needs. | An image with an arrow. |
-| A `.spot` file of JSON: a format number and its files | A chat takes a file of any size, any editor shows JSON, and each header already holds each fact. | Encoded text, a zip, a link. |
+| A spot is a `<name>.spot` folder everywhere, zipped only when it leaves the Mac | Every editor, agent and git work on its plain files, and one shape serves the plugins folder, the core, the store and a share. | Loose files with a JSON `.spot` to share them, and a store package with `listing.toml`. |
+| The app moves a loose script into a spot folder of its name | A quick script and an agent's file still work, and the same move is the migration of an older plugins folder. | Refusing a loose script with a fault line. |
 | A shared file of the same path replaces the old one | A new name would break the IDs that a widget places. | A new name for each clash. |
 
 Each colour, strength and blur radius is in `Shell/Surface/SpotTheme.swift`.

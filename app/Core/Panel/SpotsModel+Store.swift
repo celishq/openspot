@@ -1,6 +1,6 @@
 import Foundation
 
-/// The store's publish: a spot of the plugins folder becomes a package in the store folder, with its listing.
+/// The store's publish: the spot folder of a spot of the plugins folder is copied into the store folder.
 extension SpotsModel {
     /// Publishes a spot of the plugins folder to the store. A spot with no readme opens its listing, which asks for one. A
     /// spot whose files did not change since its last publish writes nothing. A spot with `preview=sample` prints its preview
@@ -13,8 +13,7 @@ extension SpotsModel {
             host.notify("\(spot.name) comes with Openspot, so the store has it already.")
             return .notOwn
         }
-        let readme = SpotListing.readme(of: spot.url)
-        guard let text = try? String(contentsOf: readme, encoding: .utf8) else {
+        guard FileManager.default.fileExists(atPath: SpotListing.readme(of: spot.url).path) else {
             host.notify("Write a readme for \(spot.name), then drag it to the store again.")
             if dock.opened != id { openListing(id) }
             return .needsReadme
@@ -22,20 +21,21 @@ extension SpotsModel {
         let folder = files.folder
         do {
             var shared = try SharedSpot(sharing: spot, from: SpotFolder(url: folder.url).keptScan())
-            let hash = SpotPackage.hash(of: shared)
             let url = SpotPackage.url(for: folder.fileID(of: spot), in: files.store)
-            guard SpotPackage(url: url).hash != hash else {
+            guard SpotPackage(url: url).hash != SpotPackage.hash(of: shared, in: url.lastPathComponent) else {
                 host.confirm("\(spot.name) has no change since its last publish.")
                 return .unchanged
             }
-            if spot.previewsSample { try await SpotListing.capturePreview(of: spot, runs: runs) }
+            if spot.previewsSample {
+                try await SpotListing.capturePreview(of: spot, runs: runs)
+                shared = try SharedSpot(sharing: spot, from: SpotFolder(url: folder.url).scan())
+            }
             if shared.needsCompile {
                 host.work("Compiling \(spot.name)")
                 shared = try await shared.compiled()
             }
-            let preview = try? String(contentsOf: SpotListing.preview(of: spot.url), encoding: .utf8)
             try FileManager.default.createDirectory(at: files.store, withIntermediateDirectories: true)
-            try SpotPackage.write(shared, hash: hash, title: spot.name, description: spot.subtitle, readme: text, preview: preview, to: url)
+            try SpotPackage.write(shared, to: files.store)
         } catch {
             host.notify("\(spot.name) was not published. \(Self.reason(error))")
             return .failed
@@ -46,7 +46,7 @@ extension SpotsModel {
     }
 
     /// Copies the store's package of a spot as one `.spot` file, a zip that a chat can carry, and returns the file. A spot
-    /// with no package copies nothing.
+    /// with no package copies nothing. The zip holds only its own spot folder.
     @discardableResult
     public func sharePackage(_ id: String) -> URL? {
         guard let item = dock.items.first(where: { $0.id == id }), item.publication != nil else { return nil }
@@ -55,7 +55,7 @@ extension SpotsModel {
         let file = place.appendingPathComponent(SharedSpot.fileName(for: item.spot.name))
         do {
             try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
-            try package.zip(to: file)
+            try package.spot().zip(to: file)
         } catch {
             host.notify("\(item.spot.name) was not copied. \(Self.reason(error))")
             return nil
@@ -104,7 +104,7 @@ extension SpotsModel {
         for spot in scan.spots {
             let package = SpotPackage(url: SpotPackage.url(for: folder.fileID(of: spot), in: store))
             guard let hash = package.hash, let shared = try? SharedSpot(sharing: spot, from: scan) else { continue }
-            result[spot.id] = SpotPackage.hash(of: shared) == hash ? .current : .changed
+            result[spot.id] = SpotPackage.hash(of: shared, in: package.url.lastPathComponent) == hash ? .current : .changed
         }
         return result
     }

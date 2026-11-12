@@ -20,7 +20,7 @@ final class CoreSpotsTests: XCTestCase {
 
     private func write(_ name: String, in place: URL, header: String = "") throws {
         let lines = header.split(separator: "\n").map { "# \($0)\n" }.joined()
-        try "#!/bin/sh\n\(lines)\n".writeScript(to: place.appendingPathComponent(name))
+        try "#!/bin/sh\n\(lines)\n".writeScript(to: place.appendingPathComponent(name.inSpotFolder))
     }
 
     private func names(enabled: Set<String>) throws -> [String] {
@@ -45,7 +45,7 @@ final class CoreSpotsTests: XCTestCase {
 
     func testASpotThatIsOnLoadsThePartsItPlaces() throws {
         try write("cpu.sh", in: core, header: "on=clock.5")
-        try "#!/bin/sh\n# title=Overview\n# grid.square=cpu\n".writeScript(to: core.appendingPathComponent("overview.sh"))
+        try "#!/bin/sh\n# title=Overview\n# grid.square=cpu\n".writeScript(to: core.appendingPathComponent("overview.spot/overview.sh"))
 
         let off = try SpotFolder(url: folder, core: core, enabled: []).scan()
         XCTAssertEqual(off.scripts.map(\.id), [])
@@ -102,7 +102,7 @@ final class CoreSpotsTests: XCTestCase {
 
     func testAScanRunsNoCoreSpot() throws {
         let mark = root.appendingPathComponent("ran")
-        try "#!/bin/sh\ntouch \"\(mark.path)\"\n".writeScript(to: core.appendingPathComponent("apps.sh"))
+        try "#!/bin/sh\ntouch \"\(mark.path)\"\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
 
         _ = try SpotFolder(url: folder, core: core, enabled: ["apps"]).scan()
 
@@ -112,7 +112,7 @@ final class CoreSpotsTests: XCTestCase {
     func testTheChoicesLeaveOutPartsWithNoCard() throws {
         try write("cpu.sh", in: core, header: "on=clock.5")
         try write("apps.sh", in: core)
-        try "#!/bin/sh\n# title=Overview\n# grid.square=cpu\n".writeScript(to: core.appendingPathComponent("overview.sh"))
+        try "#!/bin/sh\n# title=Overview\n# grid.square=cpu\n".writeScript(to: core.appendingPathComponent("overview.spot/overview.sh"))
 
         XCTAssertEqual(SpotFolder(url: folder, core: core).coreChoices().map(\.name), ["Apps", "Overview"])
     }
@@ -136,12 +136,12 @@ final class CoreSpotsTests: XCTestCase {
 
     func testACoreWidgetSharesWithItsPartsFromTheCoreFolder() throws {
         try write("cpu.sh", in: core, header: "on=clock.5")
-        try "#!/bin/sh\n# title=Overview\n# grid.square=cpu\n".writeScript(to: core.appendingPathComponent("overview.sh"))
+        try "#!/bin/sh\n# title=Overview\n# grid.square=cpu\n".writeScript(to: core.appendingPathComponent("overview.spot/overview.sh"))
         let scan = try SpotFolder(url: folder, core: core, enabled: ["overview"]).scan()
 
         let spot = try SharedSpot(sharing: XCTUnwrap(scan.spots.first { $0.name == "Overview" }), from: scan)
 
-        XCTAssertEqual(spot.files.map(\.path), ["overview.sh", "cpu.sh"])
+        XCTAssertEqual(spot.files.map(\.path), ["overview.spot/overview.sh", "cpu.spot/cpu.sh"])
         XCTAssertEqual(spot.files.last?.isExecutable, true)
     }
 

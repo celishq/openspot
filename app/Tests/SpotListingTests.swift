@@ -14,15 +14,15 @@ final class SpotListingTests: XCTestCase {
     }
 
     private func spot(_ header: String, body: String = "", named name: String = "timer") throws -> Spot {
-        let url = folder.appendingPathComponent("\(name).sh")
+        let url = folder.spotFile(name)
         try "#!/bin/sh\n\(header)\n\(body)\n".writeScript(to: url)
         return try XCTUnwrap(try SpotFile(file: url, id: name)?.spots.first)
     }
 
     func testTheListingReadsTheReadmeAndThePreviewBesideTheSpot() throws {
         let spot = try self.spot("# title=Timer\n# detail=Counts down")
-        try "Counts down from a time you pick.".write(to: folder.appendingPathComponent("timer.md"), atomically: true, encoding: .utf8)
-        try "row=five\ntitle=5 minutes\n\nrow=ten\ntitle=10 minutes\n".write(to: folder.appendingPathComponent("timer.preview.txt"), atomically: true, encoding: .utf8)
+        try "Counts down from a time you pick.".write(to: folder.appendingPathComponent("timer.spot/readme.md"), atomically: true, encoding: .utf8)
+        try "row=five\ntitle=5 minutes\n\nrow=ten\ntitle=10 minutes\n".write(to: folder.appendingPathComponent("timer.spot/preview.txt"), atomically: true, encoding: .utf8)
 
         let listing = SpotListing(beside: spot)
 
@@ -42,7 +42,7 @@ final class SpotListingTests: XCTestCase {
     func testPreviewSampleMarksASpotThatPrintsFakeData() throws {
         XCTAssertTrue(try spot("# preview=sample", named: "sample").previewsSample)
         XCTAssertFalse(try spot("# title=Timer", named: "plain").previewsSample)
-        let live = folder.appendingPathComponent("live.sh")
+        let live = folder.spotFile("live")
         try "#!/bin/sh\n# preview=live\n".writeScript(to: live)
         XCTAssertThrowsError(try SpotFile(file: live, id: "live"))
     }

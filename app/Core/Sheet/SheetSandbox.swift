@@ -86,12 +86,11 @@ public struct SheetSandbox: Equatable, Sendable {
     /// it, or its name with no extension outside one. Typed text runs from a copy in the scratch folder, as `playground`.
     public static func place(of file: URL?, text: String, plugins: URL, scratch: URL) -> (url: URL, id: String) {
         guard let file else { return (scratch.appendingPathComponent("playground.\(fileExtension(of: text))"), "playground") }
-        let stem = file.deletingPathExtension().lastPathComponent
         let folder = file.deletingLastPathComponent().resolvingSymlinksInPath()
-        if folder.deletingLastPathComponent().path == plugins.resolvingSymlinksInPath().path {
-            return (file, "\(folder.lastPathComponent)/\(stem)")
+        if folder.pathExtension == SpotFolder.spotExtension, folder.deletingLastPathComponent().path == plugins.resolvingSymlinksInPath().path {
+            return (file, SpotFolder.id(of: file))
         }
-        return (file, stem)
+        return (file, file.deletingPathExtension().lastPathComponent)
     }
 
     /// The extension of the file that runs a typed spot: `js` for a header in `//` lines, and else `sh`.

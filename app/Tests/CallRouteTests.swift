@@ -80,9 +80,9 @@ final class CallRouteTests: XCTestCase {
     }
 
     func testEachCallThatTheAppAnswersGivesTheSameAnswerAlone() async throws {
-        try "#!/bin/sh\n# mode=huge\necho\n".writeScript(to: plugins.appendingPathComponent("weather.sh"))
-        try "#!/bin/sh\n# on=sheet.open\nprintf 'title=Notes\\n'\n".writeScript(to: plugins.appendingPathComponent("notes.sh"))
-        try "#!/bin/sh\nprintf 'args=%s\\nfolder=%s\\ntone=%s\\n---\\n' \"$*\" \"$PWD\" \"$TONE\"; cat; echo 'said' >&2; exit 3\n".writeScript(to: plugins.appendingPathComponent("echo.sh"))
+        try "#!/bin/sh\n# mode=huge\necho\n".writeScript(to: plugins.spotFile("weather"))
+        try "#!/bin/sh\n# on=sheet.open\nprintf 'title=Notes\\n'\n".writeScript(to: plugins.spotFile("notes"))
+        try "#!/bin/sh\nprintf 'args=%s\\nfolder=%s\\ntone=%s\\n---\\n' \"$*\" \"$PWD\" \"$TONE\"; cat; echo 'said' >&2; exit 3\n".writeScript(to: plugins.spotFile("echo"))
         let calls: [([String], String?)] = [
             (["check"], nil),
             (["check", "--json"], nil),

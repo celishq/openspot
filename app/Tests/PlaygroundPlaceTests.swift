@@ -60,12 +60,11 @@ final class PlaygroundPlaceTests: XCTestCase {
     }
 
     func testANamedFileRunsFromACopyWithTheIdOfItsPluginsFolder() throws {
-        let plugins = folder.appendingPathComponent("real-plugins/home", isDirectory: true)
-        try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
-        let file = plugins.appendingPathComponent("coffee.sh")
+        let plugins = folder.appendingPathComponent("real-plugins", isDirectory: true)
+        let file = plugins.spotFile("home/coffee")
         try "#!/bin/sh\n# title=Coffee\n".writeScript(to: file)
 
-        let id = try panel.place(file: file, text: "#!/bin/sh\n# title=Coffee\n", plugins: plugins.deletingLastPathComponent())
+        let id = try panel.place(file: file, text: "#!/bin/sh\n# title=Coffee\n", plugins: plugins)
 
         XCTAssertEqual(id, "home/coffee")
         XCTAssertEqual(panel.model.visible.map(\.id), ["home/coffee"])

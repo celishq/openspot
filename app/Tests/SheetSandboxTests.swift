@@ -22,9 +22,9 @@ final class SheetSandboxTests: XCTestCase {
             SheetSandbox.place(of: file.map { URL(fileURLWithPath: $0) }, text: text, plugins: plugins, scratch: scratch)
         }
 
-        XCTAssertEqual(place("/p/plugins/home/cups.sh", "").url.path, "/p/plugins/home/cups.sh")
-        XCTAssertEqual(place("/p/plugins/home/cups.sh", "").id, "home/cups")
-        XCTAssertEqual(place("/p/plugins/cups.js", "").id, "cups")
+        XCTAssertEqual(place("/p/plugins/home.spot/cups.sh", "").url.path, "/p/plugins/home.spot/cups.sh")
+        XCTAssertEqual(place("/p/plugins/home.spot/cups.sh", "").id, "home/cups")
+        XCTAssertEqual(place("/p/plugins/cups.spot/cups.js", "").id, "cups")
         XCTAssertEqual(place("/elsewhere/tools/cups.sh", "").id, "cups")
         XCTAssertEqual(place(nil, "// title=A\n").url.path, "/t/playground/playground.js")
         XCTAssertEqual(place(nil, "#!/bin/sh\n").id, "playground")

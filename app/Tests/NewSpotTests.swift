@@ -109,7 +109,7 @@ final class NewSpotTests: BuiltInCase {
 
         let names = try SpotFolder(url: plugins).scan().spots.map(\.id).sorted()
         XCTAssertEqual(names, ["untitled", "untitled-2"])
-        XCTAssertEqual(try saved("opened"), "-t \(plugins.appendingPathComponent("untitled-2.sh").path)\n")
+        XCTAssertEqual(try saved("opened"), "-t \(plugins.spotFile("untitled-2").path)\n")
         XCTAssertEqual(try SpotFolder(url: plugins).scan().spots.map(\.name).sorted(), ["Untitled", "Untitled 2"])
     }
 
@@ -150,7 +150,7 @@ final class NewSpotTests: BuiltInCase {
             let header = SpotHeader(text: script).block
             let named = header.fields.filter { $0.key.hasPrefix("grid.") }.flatMap { $0.value.split(separator: " ").map(String.init) } + header.values("to")
             for name in Set(named) {
-                try "#!/bin/sh\n# on=clock.60\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.appendingPathComponent("\(name).sh"))
+                try "#!/bin/sh\n# on=clock.60\nprintf 'text=t\\ntitle=T\\n'\n".writeScript(to: folder.spotFile(name))
             }
 
             let faults = await SpotCheck(folder: SpotFolder(url: folder)).faults()

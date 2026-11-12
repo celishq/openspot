@@ -51,7 +51,7 @@ final class SpotLettersTests: XCTestCase {
     }
 
     private func script(_ name: String) throws {
-        try "#!/bin/sh\n# title=\(name.capitalized)\n".writeScript(to: plugins.appendingPathComponent("\(name).sh"))
+        try "#!/bin/sh\n# title=\(name.capitalized)\n".writeScript(to: plugins.spotFile(name))
     }
 
     private func letter(of id: String) -> String? {

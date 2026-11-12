@@ -12,9 +12,11 @@ public struct SpotFolder: Sendable {
         fileprivate let hosted: [Spot]
     }
 
+    /// The extension of the folder that holds one spot: its scripts, its readme, its preview and what they need.
+    public static let spotExtension = "spot"
     private static let coreName = "spots"
-    /// The folder of the core that holds the spots of the app itself, which are always on.
-    private static let appName = "openspot"
+    /// The spot folder of the core that holds the spots of the app itself, which are always on.
+    private static let appName = "openspot.spot"
     /// The core spots that start on: each reads only local data, and only at a person's act or when the panel opens.
     private static let startingIDs: Set<String> = ["apps", "caffeinate", "color-picker", "emoji", "files", "links", "paste-screenshot", "settings", "snippets", "translate"]
 
@@ -64,12 +66,19 @@ public struct SpotFolder: Sendable {
         return home.appendingPathComponent(".config/openspot", isDirectory: true)
     }
 
-    /// Reads each executable and widget file that is not off, at the top of the folder or one folder down, after the sheets
-    /// of the app. Then it reads each core spot that is on, each core file that a spot needs, and the spots of the app, a
-    /// source that a person cannot change. A file in the folder hides a core file or a spot of the app with the same ID.
+    /// Wraps the loose files of the folder first. Reads each script that is not off in each spot folder at the top of the
+    /// folder, after the sheets of the app. Then it
+    /// reads each core spot that is on, each core spot that a spot needs, and the spots of the app, a source that a person
+    /// cannot change. A spot in the folder hides a core spot or a spot of the app with the same ID.
     public func scan(hosted: [Spot] = []) throws -> ScanResult {
+        try? wrap()
         var result = ScanResult(files: hosted.isEmpty ? [] : [SpotFile(id: "openspot", spots: hosted)], refused: [])
-        let own = Self.files(in: core == nil ? try Self.sorted(in: url) : (try? Self.sorted(in: url)) ?? [])
+        for file in ((try? Self.sorted(in: url)) ?? []).filter(Self.isScript) {
+            let name = Self.stem(of: file.lastPathComponent)
+            let reason = "\(file.lastPathComponent) is outside a spot folder, and \(name).\(Self.spotExtension) has a file of that name. Move it into a spot folder of its own, such as \(name)-2.\(Self.spotExtension)."
+            result.refused.append(ScanResult.Refusal(file: file.lastPathComponent, reason: reason))
+        }
+        let own = Self.files(in: core == nil ? try Self.spotFolders(in: url) : (try? Self.spotFolders(in: url)) ?? [])
         let ownIDs = Set(own.map(\.id))
         for (file, id) in own where !disabled.contains(id) {
             Self.read(file, id: id, into: &result, isDated: true)
@@ -142,18 +151,22 @@ public struct SpotFolder: Sendable {
         return commands.filter { !opened.contains($0.id) && $0.read?.seconds == nil }
     }
 
-    /// The ID that turns a core command on: the name of its file, which a widget shares with the others in that file.
+    /// The ID that turns a core command on: the name of its spot folder.
     public static func coreID(of spot: Spot) -> String {
-        spot.url.deletingPathExtension().lastPathComponent
+        spot.url.deletingLastPathComponent().deletingPathExtension().lastPathComponent
     }
 
-    /// The ID that turns a spot on or off: the core ID of a core spot, or the place of its file in the folder, with no
-    /// extension.
+    /// The ID of a script in a spot folder: the name of the folder, after which comes the name of the script when the two
+    /// differ, such as `home/coffee` for `home.spot/coffee.sh`.
+    public static func id(of file: URL) -> String {
+        let name = file.deletingLastPathComponent().deletingPathExtension().lastPathComponent
+        let stem = file.deletingPathExtension().lastPathComponent
+        return stem == name ? name : "\(name)/\(stem)"
+    }
+
+    /// The ID that turns a spot on or off: the core ID of a core spot, or else the ID of its file.
     public func fileID(of spot: Spot) -> String {
-        guard !isCore(spot) else { return Self.coreID(of: spot) }
-        let parent = spot.url.deletingLastPathComponent().standardizedFileURL
-        let stem = spot.url.deletingPathExtension().lastPathComponent
-        return parent.path == url.standardizedFileURL.path ? stem : "\(parent.lastPathComponent)/\(stem)"
+        isCore(spot) ? Self.coreID(of: spot) : Self.id(of: spot.url)
     }
 
     /// Whether the app runs for the first time here: no config file, and no spot in the folder.
@@ -173,16 +186,72 @@ public struct SpotFolder: Sendable {
         return spot.url.standardizedFileURL.path.hasPrefix(core.standardizedFileURL.path + "/")
     }
 
-    /// Takes the file of a spot, its program, and its view with the view's library out of the folder. They go to the Trash,
-    /// and the other files of its folder stay.
+    /// Takes a spot out of the folder, to the Trash: its whole spot folder, or only its file, its program, and its view with
+    /// the view's library when the folder holds the script of another spot.
     public func remove(_ spot: Spot, discard: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws {
         guard spot.host == nil, !spot.isBuiltIn, !isCore(spot) else { throw SpotError.fault("\(spot.name) comes with Openspot, so it cannot be removed.") }
-        try discard(spot.url)
-        if let program = SwiftProgram.file(beside: spot.url) { try discard(program) }
-        guard let view = spot.view.map(URL.init(fileURLWithPath:)), view.deletingLastPathComponent() == spot.url.deletingLastPathComponent() else { return }
-        for file in [view, URL(fileURLWithPath: ViewLibrary.path(beside: view.path))] where FileManager.default.fileExists(atPath: file.path) {
-            try discard(file)
+        let folder = spot.url.deletingLastPathComponent()
+        var own = [spot.url] + (SwiftProgram.file(beside: spot.url).map { [$0] } ?? [])
+        if let view = spot.view.map(URL.init(fileURLWithPath:)), view.deletingLastPathComponent() == folder {
+            own += [view, URL(fileURLWithPath: ViewLibrary.path(beside: view.path))].filter { FileManager.default.fileExists(atPath: $0.path) }
         }
+        let names = Set(own.map(\.lastPathComponent))
+        let others = ((try? Self.sorted(in: folder)) ?? []).filter { !names.contains($0.lastPathComponent) && Self.isScript($0) }
+        guard others.isEmpty, folder.pathExtension == Self.spotExtension else { return try own.forEach(discard) }
+        try discard(folder)
+    }
+
+    /// Moves each loose file at the top of the folder into a spot folder of its name, with the files of the same name, such
+    /// as its program, and its view. `<name>.md` becomes `readme.md` and `<name>.preview.txt` becomes `preview.txt`. A plain
+    /// folder with a script at its top takes the extension. A file that is no script stays, and so does a file whose name its
+    /// spot folder holds already: a wrap never replaces a file.
+    public func wrap() throws {
+        let entries = try Self.sorted(in: url)
+        var loose = entries.filter { !Self.isFolder($0) }
+        for entry in entries where entry.pathExtension != Self.spotExtension && Self.isFolder(entry) && ((try? Self.sorted(in: entry)) ?? []).contains(where: Self.isScript) {
+            let target = url.appendingPathComponent(entry.lastPathComponent + "." + Self.spotExtension, isDirectory: true)
+            if !FileManager.default.fileExists(atPath: target.path) { try FileManager.default.moveItem(at: entry, to: target) }
+        }
+        let scripts = loose.filter(Self.isScript)
+        for script in scripts where loose.contains(script) {
+            let name = Self.stem(of: script.lastPathComponent)
+            var group = loose.filter { Self.stem(of: $0.lastPathComponent) == name }
+            if let view = SpotHeader(url: script).block.value("view"), !view.contains("/") {
+                let names = [view, (ViewLibrary.path(beside: view) as NSString).lastPathComponent]
+                group += loose.filter { names.contains($0.lastPathComponent) && !group.contains($0) }
+            }
+            let target = url.appendingPathComponent(name + "." + Self.spotExtension, isDirectory: true)
+            try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+            for file in group {
+                loose.removeAll { $0 == file }
+                let place = target.appendingPathComponent(Self.wrappedName(of: file.lastPathComponent, in: name))
+                if !FileManager.default.fileExists(atPath: place.path) { try FileManager.default.moveItem(at: file, to: place) }
+            }
+        }
+    }
+
+    /// The name of a file in its spot folder: the readme and the preview take their fixed names.
+    private static func wrappedName(of file: String, in name: String) -> String {
+        switch file {
+        case name + "." + SpotListing.readmeExtension: SpotListing.readmeName
+        case name + SpotListing.previewSuffix: SpotListing.previewName
+        default: file
+        }
+    }
+
+    /// The part of a file name before its first dot.
+    private static func stem(of name: String) -> String {
+        String(name.prefix { $0 != "." })
+    }
+
+    /// Whether a file, not a folder, is a script that runs.
+    private static func isScript(_ url: URL) -> Bool {
+        !isFolder(url) && SpotFile.runs(url)
+    }
+
+    private static func isFolder(_ url: URL) -> Bool {
+        var isFolder: ObjCBool = false
+        return FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder) && isFolder.boolValue
     }
 
     /// Adds what one file gives, and reports its fault. A dated file takes its place in the grid by the date it was added,
@@ -221,34 +290,27 @@ public struct SpotFolder: Sendable {
         ((try? SpotFile(file: file.file, id: file.id)) ?? nil)?.spots ?? []
     }
 
-    /// The files at the top of the core folder, each a spot that the person turns on or off.
+    /// The files of the spot folders of the core, each a spot that the person turns on or off.
     private func coreFiles() -> [(file: URL, id: String)] {
-        guard let core, let files = try? Self.sorted(in: core) else { return [] }
-        return files.filter { !$0.hasDirectoryPath && (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) != true }
-            .map { ($0, $0.deletingPathExtension().lastPathComponent) }
+        guard let core, let folders = try? Self.spotFolders(in: core) else { return [] }
+        return Self.files(in: folders.filter { $0.lastPathComponent != Self.appName })
     }
 
-    /// The files of the spots of the app, in the `openspot` folder of the core, by their IDs as the folder of a person gives
-    /// them.
+    /// The files of the spots of the app, in the `openspot.spot` folder of the core, by their IDs as the folder of a person
+    /// gives them.
     private func appFiles() -> [(file: URL, id: String)] {
-        var isFolder: ObjCBool = false
-        guard let folder = core?.appendingPathComponent(Self.appName, isDirectory: true),
-              FileManager.default.fileExists(atPath: folder.path, isDirectory: &isFolder), isFolder.boolValue else { return [] }
+        guard let folder = core?.appendingPathComponent(Self.appName, isDirectory: true), Self.isFolder(folder) else { return [] }
         return Self.files(in: [folder])
     }
 
-    /// The files of these entries of a folder, each at the top or one folder down, by their IDs: the name with no extension,
-    /// after the name of its folder one down.
-    private static func files(in entries: [URL]) -> [(file: URL, id: String)] {
-        entries.flatMap { entry in
-            var isFolder: ObjCBool = false
-            FileManager.default.fileExists(atPath: entry.path, isDirectory: &isFolder)
-            let files = isFolder.boolValue ? (try? sorted(in: entry)) ?? [] : [entry]
-            return files.map { file in
-                let stem = file.deletingPathExtension().lastPathComponent
-                return (file, isFolder.boolValue ? "\(entry.lastPathComponent)/\(stem)" : stem)
-            }
-        }
+    /// The spot folders at the top of a folder.
+    private static func spotFolders(in folder: URL) throws -> [URL] {
+        try sorted(in: folder).filter { $0.pathExtension == spotExtension && isFolder($0) }
+    }
+
+    /// The files at the top of these spot folders, by their IDs.
+    private static func files(in folders: [URL]) -> [(file: URL, id: String)] {
+        folders.flatMap { folder in ((try? sorted(in: folder)) ?? []).map { ($0, id(of: $0)) } }
     }
 
     private static func entries(of folder: String) -> [String] {

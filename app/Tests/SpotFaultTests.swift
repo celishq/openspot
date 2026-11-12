@@ -46,7 +46,7 @@ final class SpotFaultTests: XCTestCase {
 
     private func script(_ name: String, header: String = "", _ body: String) throws {
         let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: plugins.appendingPathComponent("\(name).sh"))
+        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: plugins.spotFile(name))
     }
 
     private func wait(_ what: String, until condition: () -> Bool) async throws {
@@ -101,7 +101,7 @@ final class SpotFaultTests: XCTestCase {
         let sheet = try await openFault()
 
         let text = sheet.parts.compactMap { if case .text(let value, _, _) = $0.control { value } else { nil } }.joined()
-        XCTAssertTrue(text.contains(plugins.appendingPathComponent("weather.sh").path))
+        XCTAssertTrue(text.contains(plugins.spotFile("weather").path))
         XCTAssertTrue(text.contains("Weather has an unknown mode: huge. Use once, stay or always"))
         XCTAssertEqual(Set(sheet.parts.map(\.id)).intersection(["fix", "edit"]), ["fix", "edit"])
     }
@@ -115,7 +115,7 @@ final class SpotFaultTests: XCTestCase {
         try await wait("the whole prompt") { saved("clipboard")?.contains("what the spot runs on my computer.") == true }
 
         let prompt = try XCTUnwrap(saved("clipboard"))
-        XCTAssertTrue(prompt.contains(plugins.appendingPathComponent("weather.sh").path))
+        XCTAssertTrue(prompt.contains(plugins.spotFile("weather").path))
         XCTAssertTrue(prompt.contains("Weather has an unknown mode: huge. Use once, stay or always"))
         XCTAssertTrue(prompt.contains("check"))
     }
@@ -126,7 +126,7 @@ final class SpotFaultTests: XCTestCase {
         model.pressPart(try XCTUnwrap(sheet.parts.first { $0.id == "edit" }))
         try await wait("the editor") { saved("opened")?.hasSuffix("\n") == true }
 
-        XCTAssertEqual(saved("opened"), "-t \(plugins.appendingPathComponent("weather.sh").path)\n")
+        XCTAssertEqual(saved("opened"), "-t \(plugins.spotFile("weather").path)\n")
     }
 
     func testAFileThatLoadsAgainTakesBackItsCard() throws {

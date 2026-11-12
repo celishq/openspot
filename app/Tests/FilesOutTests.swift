@@ -69,7 +69,7 @@ final class FilesOutTests: XCTestCase {
           drag) shift; printf 'toast=Took %s\\n' "$*" ;;
         esac
         """
-        try "#!/bin/sh\n# on=sheet.open\n\(body)\n".writeScript(to: plugins.appendingPathComponent("shelf.sh"))
+        try "#!/bin/sh\n# on=sheet.open\n\(body)\n".writeScript(to: plugins.spotFile("shelf"))
         model.reload()
         model.press(GlobalKey(spot: "shelf", act: .float, trigger: .shake))
         try await wait("the rows") { model.sheets["shelf"]?.list.shown.count == 3 }

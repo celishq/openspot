@@ -55,7 +55,7 @@ final class AppCallsSocketTests: XCTestCase {
 
     private func spot(_ name: String, header: String = "", _ body: String) throws {
         let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: plugins.appendingPathComponent("\(name).sh"))
+        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: plugins.spotFile(name))
     }
 
     /// Waits for a fact, for 10 seconds at most.

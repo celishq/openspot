@@ -175,7 +175,7 @@ extension SpotsModel {
                 let place = FileManager.default.temporaryDirectory.appendingPathComponent("openspot-shared/\(UUID().uuidString)", isDirectory: true)
                 try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
                 let file = place.appendingPathComponent(SharedSpot.fileName(for: entry.spot.name))
-                try spot.data.write(to: file)
+                try spot.zip(to: file)
                 host.copy(file)
                 host.confirm(spot.notice(name: entry.spot.name))
             } catch {

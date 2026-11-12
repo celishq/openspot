@@ -1,11 +1,14 @@
 import Foundation
 
 /// What the store shows of a spot before the person turns it on: its one-line description, its readme, and the rows that its
-/// preview mode printed. The readme is `<name>.md` and the preview is `<name>.preview.txt`, beside the spot's file. Drawing
+/// preview mode printed. The readme is `readme.md` and the preview is `preview.txt`, at the top of the spot's folder. Drawing
 /// a preview runs no code.
 public struct SpotListing: Equatable, Sendable {
-    public static let readmeExtension = "md"
-    public static let previewSuffix = ".preview.txt"
+    public static let readmeName = "readme.md"
+    public static let previewName = "preview.txt"
+    /// The ends of the names of a loose file's readme and preview, which a wrap renames.
+    static let readmeExtension = "md"
+    static let previewSuffix = ".preview.txt"
 
     public let description: String?
     public let readme: String?
@@ -25,12 +28,11 @@ public struct SpotListing: Equatable, Sendable {
     }
 
     public static func readme(of file: URL) -> URL {
-        file.deletingPathExtension().appendingPathExtension(readmeExtension)
+        file.deletingLastPathComponent().appendingPathComponent(readmeName)
     }
 
     public static func preview(of file: URL) -> URL {
-        let stem = file.deletingPathExtension()
-        return stem.deletingLastPathComponent().appendingPathComponent(stem.lastPathComponent + previewSuffix)
+        file.deletingLastPathComponent().appendingPathComponent(previewName)
     }
 
     /// Runs the read of a spot through these runs with `OPENSPOT_REASON=spot.preview`, so that it prints fake data as the spot's own

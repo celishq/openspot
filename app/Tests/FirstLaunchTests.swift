@@ -39,7 +39,7 @@ final class FirstLaunchTests: XCTestCase {
 
     func testASpotInTheFolderIsNotAFirstLaunch() throws {
         try FileManager.default.createDirectory(at: plugins, withIntermediateDirectories: true)
-        try "#!/bin/sh\n".writeScript(to: plugins.appendingPathComponent("mine.sh"))
+        try "#!/bin/sh\n".writeScript(to: plugins.spotFile("mine"))
 
         XCTAssertFalse(isFirst)
     }

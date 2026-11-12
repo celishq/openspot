@@ -65,8 +65,8 @@ final class SpotAPITests: XCTestCase {
     }
 
     func testTheListHoldsEachScriptWithItsCommandsSettingsAndKeys() async throws {
-        try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# on=sheet.open\n#\n# button=left\n# title=Left side\n#\n# field=folder\n".writeScript(to: plugins.appendingPathComponent("move.sh"))
-        try "#!/bin/sh\n# title=Cups\n# on=clock.60\n".writeScript(to: plugins.appendingPathComponent("cups.sh"))
+        try "#!/bin/sh\n# title=Move\n# icon=macwindow\n# on=sheet.open\n#\n# button=left\n# title=Left side\n#\n# field=folder\n".writeScript(to: plugins.spotFile("move"))
+        try "#!/bin/sh\n# title=Cups\n# on=clock.60\n".writeScript(to: plugins.spotFile("cups"))
         try file.write(keys: [
             GlobalKey(spot: "move", act: .command("left"), trigger: .key(try XCTUnwrap(Shortcut(text: "ctrl+option+left")))),
             GlobalKey(spot: "move", act: .float, trigger: .shake)
@@ -89,11 +89,11 @@ final class SpotAPITests: XCTestCase {
     }
 
     func testTheCoreListHoldsEachCoreSpotByNameAndWhetherItIsOn() async throws {
-        try "#!/bin/sh\n# detail=Open app\n# icon=star\n".writeScript(to: core.appendingPathComponent("zebra.sh"))
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.sh"))
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("files.sh"))
-        try "#!/bin/sh\n# on=clock.5\n".writeScript(to: core.appendingPathComponent("cpu.sh"))
-        try "#!/bin/sh\n".writeScript(to: plugins.appendingPathComponent("files.sh"))
+        try "#!/bin/sh\n# detail=Open app\n# icon=star\n".writeScript(to: core.appendingPathComponent("zebra.spot/zebra.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("files.spot/files.sh"))
+        try "#!/bin/sh\n# on=clock.5\n".writeScript(to: core.appendingPathComponent("cpu.spot/cpu.sh"))
+        try "#!/bin/sh\n".writeScript(to: plugins.spotFile("files"))
         try file.turn("zebra", on: true)
 
         let spots = try await json(["spot", "list", "--core"])
@@ -106,8 +106,8 @@ final class SpotAPITests: XCTestCase {
     }
 
     func testOnAndOffTurnCoreSpotsAndTellTheApp() async throws {
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.sh"))
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("zebra.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("zebra.spot/zebra.sh"))
 
         let on = try await answer(["setting", "set", "--spot", "apps", "enabled", "true"])
         XCTAssertEqual(on, CommandAnswer())
@@ -121,9 +121,9 @@ final class SpotAPITests: XCTestCase {
     }
 
     func testOnRefusesAnUnknownSpotAndAFileOfTheFolderAndChangesNothing() async throws {
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.sh"))
-        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("files.sh"))
-        try "#!/bin/sh\n".writeScript(to: plugins.appendingPathComponent("files.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("apps.spot/apps.sh"))
+        try "#!/bin/sh\n".writeScript(to: core.appendingPathComponent("files.spot/files.sh"))
+        try "#!/bin/sh\n".writeScript(to: plugins.spotFile("files"))
 
         let unknown = try await answer(["setting", "set", "--spot", "gone", "enabled", "true"])
         let own = try await answer(["setting", "set", "--spot", "files", "enabled", "false"])

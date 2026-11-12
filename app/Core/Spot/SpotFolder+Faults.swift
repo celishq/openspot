@@ -27,10 +27,11 @@ extension SpotFolder {
         }
     }
 
-    /// The file of a spot ID in this folder, such as `home/coffee.sh` for `home/coffee`.
+    /// The file of a spot ID in this folder, such as `home.spot/coffee.sh` for `home/coffee` and `home.spot/home.sh` for `home`.
     func file(of id: String) -> URL? {
         let parts = id.split(separator: "/").map(String.init)
-        let place = parts.dropLast().reduce(url) { $0.appendingPathComponent($1, isDirectory: true) }
+        guard let name = parts.first else { return nil }
+        let place = url.appendingPathComponent(name + "." + Self.spotExtension, isDirectory: true)
         guard let stem = parts.last, let names = try? FileManager.default.contentsOfDirectory(atPath: place.path) else { return nil }
         return names.sorted().lazy.map { place.appendingPathComponent($0) }.first { file in
             var isFolder: ObjCBool = false

@@ -163,7 +163,7 @@ final class SpotDropTests: XCTestCase {
 
     /// Writes one more script with this header, and takes a new scan.
     private func addScript(_ name: String, header: String) throws {
-        let url = folder.appendingPathComponent("\(name).sh")
+        let url = folder.spotFile(name)
         try "#!/bin/sh\n# \(header)\n".writeScript(to: url)
         runs.take(try SpotFolder(url: folder).scan())
     }

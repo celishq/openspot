@@ -58,7 +58,7 @@ final class SpotVerbTests: XCTestCase {
 
     private func script(_ name: String, header: String = "", _ body: String = "echo") throws {
         let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: plugins.appendingPathComponent("\(name).sh"))
+        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: plugins.spotFile(name))
     }
 
     private func wait(_ what: String, until condition: () -> Bool) async throws {
@@ -201,7 +201,7 @@ final class SpotVerbTests: XCTestCase {
         try script("weather")
         _ = try select("weather")
         XCTAssertTrue(model.handleKey(ActionKey(name: "e", isCommand: true)))
-        try await wait("the editor") { saved("opened")?.hasPrefix("-t /") == true && saved("opened")?.hasSuffix("/plugins/weather.sh\n") == true }
+        try await wait("the editor") { saved("opened")?.hasPrefix("-t /") == true && saved("opened")?.hasSuffix("/plugins/weather.spot/weather.sh\n") == true }
     }
 
     func testCopyPromptForAICopiesTheFileAndTheLastFailure() async throws {
@@ -214,7 +214,7 @@ final class SpotVerbTests: XCTestCase {
         try await wait("the toast") { host.confirms.last == AgentPrompt.copied }
 
         let prompt = try XCTUnwrap(saved("clipboard"))
-        XCTAssertTrue(prompt.contains(plugins.appendingPathComponent("ping.sh").path))
+        XCTAssertTrue(prompt.contains(plugins.spotFile("ping").path))
         XCTAssertTrue(prompt.contains("Ask me what to change"))
         XCTAssertTrue(prompt.contains("Openspot cannot reach the server."))
     }
@@ -233,7 +233,7 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "z", isCommand: true)))
 
         XCTAssertEqual(model.selectedEntry?.id, "weather")
-        XCTAssertTrue(FileManager.default.fileExists(atPath: plugins.appendingPathComponent("weather.sh").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: plugins.spotFile("weather").path))
         XCTAssertFalse(model.handleKey(ActionKey(name: "z", isCommand: true)))
     }
 
@@ -247,6 +247,6 @@ final class SpotVerbTests: XCTestCase {
         XCTAssertTrue(model.handleKey(ActionKey(name: "backspace", isCommand: true)))
 
         XCTAssertFalse(model.entries.contains { $0.id == "broken" })
-        XCTAssertTrue(FileManager.default.fileExists(atPath: trash.appendingPathComponent("broken.sh").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: trash.appendingPathComponent("broken.spot").path))
     }
 }

@@ -27,7 +27,7 @@ final class LinksPluginTests: SamplePluginsCase {
             let process = Process()
             let out = Pipe()
             let errors = Pipe()
-            process.executableURL = plugins.appendingPathComponent(script)
+            process.executableURL = plugins.appendingPathComponent(script.inSpotFolder)
             process.arguments = arguments
             process.environment = ["PATH": "\(tools.path):/usr/bin:/bin", "HOME": folder.path, "OPENSPOT_DATA": folder.path]
             process.standardOutput = out

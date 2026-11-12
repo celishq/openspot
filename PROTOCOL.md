@@ -11,7 +11,7 @@ Openspot shows spots in three places: the **panel**, the window that the Openspo
 a grid of **cards**; the **card** of each spot on that grid; and the **sheet**, the view of one spot that opens over the
 panel.
 
-A spot is one file. Openspot runs it, and the spot prints what to show:
+A spot is a script. Openspot runs it, and the spot prints what to show:
 
 ```text
 event   ─ on= ─►  <spot> read           Openspot runs the spot
@@ -19,10 +19,14 @@ spot    ─ prints ─►  blocks             Openspot draws them
 press   ─ on a block ─►  <spot> <id>    the user or an agent acts
 ```
 
-- Put a spot in the plugins folder, or in a folder one level down. Its id is its path without the extension, such as
-  `home/coffee`.
-- A spot that needs several files goes in a folder of its own. The folder is shared as one unit, and its spots share
-  one data folder. A file in it that isn't executable can hold shared code.
+- A spot lives in a **spot folder**: a folder `<name>.spot` in the plugins folder, such as `coffee.spot/coffee.sh`. The
+  folder holds its scripts, its `readme.md`, its `preview.txt` and any file that they need.
+- The id of a script is the name of its folder, such as `coffee`. A script with another name adds it, such as
+  `home/lights` for `home.spot/lights.sh`.
+- The folder is shared as one unit, and its scripts share one data folder. A file in it that isn't executable can hold
+  shared code.
+- Openspot moves a loose script into a spot folder of its name, with the files of the same name, such as `coffee.md`,
+  which becomes `readme.md`.
 - A spot only says what it has. The user decides where it shows and which key opens it.
 - An agent can do anything the user does, with `openspot spot run <id> <call>` and `openspot event emit`. A spot
   can't tell who called it.
@@ -676,7 +680,7 @@ The commands that try a spot are in [Try your spot](GUIDE.md#try-your-spot). The
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `openspot guide`                                   | Prints the guide, then this protocol.                                                           |
 | `openspot spot show <id>`                          | Opens the panel with the spot selected.                                                         |
-| `openspot spot add <git url, folder or file.spot>` | Adds a spot, and records it in `spots.lock`. An update that needs a new use also needs `--yes`. |
+| `openspot spot add <git url, folder or .spot>`     | Adds a spot, and records it in `spots.lock`. An update that needs a new use also needs `--yes`. |
 | `openspot spot remove <id>`                        | Moves a spot that `spot add` added to the Trash.                                                |
 | `openspot spot stats`                              | Prints what each spot cost and used. See [Stats](#stats).                                       |
 

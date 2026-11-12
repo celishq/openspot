@@ -37,7 +37,7 @@ final class SpotFloatTests: XCTestCase {
 
     private func script(_ name: String, header: String, _ body: String) throws {
         let lines = header.split(separator: "\n").map { "# \($0)" }.joined(separator: "\n")
-        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: plugins.appendingPathComponent("\(name).sh"))
+        try "#!/bin/sh\n\(lines)\n\(body)\n".writeScript(to: plugins.spotFile(name))
     }
 
     private func wait(_ what: String, until condition: () -> Bool) async throws {
