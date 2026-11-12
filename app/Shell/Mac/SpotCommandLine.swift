@@ -42,6 +42,8 @@ enum SpotCommandLine {
             SpotSheetPicture.run(text: standardInput, path: path, view: view)
         case .renderCard(let size, let path):
             SpotCardPicture.run(text: standardInput, size: size, path: path)
+        case .renderPanel(let path):
+            SpotPanelPicture.run(path: path)
         case .helper(SpotTranslation.capability.name):
             SpotTranslation.serve()
         case .helper(SpotRecording.capability.name):

@@ -1,0 +1,29 @@
+[[spots]]
+id = "music"
+size = "wide"
+grid = true
+
+[[spots]]
+id = "weather"
+size = "small"
+grid = true
+
+[[spots]]
+id = "battery"
+size = "small"
+grid = true
+
+[[spots]]
+id = "agenda"
+size = "wide"
+grid = true
+
+[[spots]]
+id = "focus"
+size = "small"
+grid = true
+
+[[spots]]
+id = "coffee"
+size = "small"
+grid = true

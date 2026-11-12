@@ -4,7 +4,8 @@
 # A line <!-- draw: <command> --> right before the image draws what that command prints instead of a read, with the
 # example's header and $EXAMPLE as the path of the example. Each spot that a card of other spots names gets a stub with a
 # sample value. A copy of the example goes beside the image as <name>.example, which GuideImageTests compare with the
-# guide. OPENSPOT_APP names the app to draw with.
+# guide. It also draws the panel of the sample spots in docs/sample, the image of the README, as docs/images/panel.png.
+# OPENSPOT_APP names the app to draw with.
 set -e
 cd "$(dirname "$0")/.."
 app=${OPENSPOT_APP:-.temp/dd/Build/Products/Debug/Openspot.app/Contents/MacOS/Openspot}
@@ -64,3 +65,8 @@ for example in "$work"/examples/*.example; do
   cp "$example" "docs/images/$name.example"
   echo "docs/images/$name.png"
 done
+rm -rf "$work/config"/*
+cp docs/sample/config.toml "$work/config/config.toml"
+OPENSPOT_PLUGINS="$PWD/docs/sample" OPENSPOT_CONFIG="$work/config" OPENSPOT_CORE="$work/core" \
+  "$app" render --panel docs/images/panel.png
+echo docs/images/panel.png

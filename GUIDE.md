@@ -109,6 +109,7 @@ printf 'detail=%s free\n\ntext=free\ntitle=%s free\n' "$free" "$free"
 ```
 
 <!-- card: wide -->
+<!-- draw: df() { printf 'Filesystem Size Used Avail\n/dev/disk 994Gi 738Gi 256Gi\n'; }; . "$EXAMPLE" -->
 ![The card of Disk, with the free space under its title](docs/images/show-a-value.png)
 
 The first block, `detail=…`, is the **head**: it isn't drawn, and its `detail` becomes the line under the card's title.

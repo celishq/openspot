@@ -43,6 +43,8 @@ public enum CommandLineCall: Equatable, Sendable {
     case render(String, view: String?)
     /// Draws the card of the output on stdin at a size, from its drawing for that size.
     case renderCard(SpotSize, String)
+    /// Draws the panel with each installed spot on its grid to a picture.
+    case renderPanel(String)
     case sandbox(String?)
     case colorPick
     case folderPick
@@ -154,6 +156,7 @@ public enum CommandLineCall: Equatable, Sendable {
     openspot render --card <size> <file.png>     Draws its card at a size, such as wide, to a picture.
     openspot render --spot <id> [--card <size>] <file.png>
                                                  Draws the sheet of an installed spot, or its card at a size.
+    openspot render --panel <file.png>           Draws the panel with each installed spot on its grid.
     openspot sandbox [file]                      Opens the playground: a spot that you type or a file, its live sheet
                                                  and card, and each call that it gets with what it printed.
     openspot color pick                          Prints the colour the person picks.
@@ -323,6 +326,7 @@ public enum CommandLineCall: Equatable, Sendable {
         case ("render", "--card") where rest.count == 3:
             guard let size = SpotSize(name: rest[1]) else { self = .unknown(arguments.joined(separator: " ")); return }
             self = .renderCard(size, rest[2])
+        case ("render", "--panel") where rest.count == 2: self = .renderPanel(rest[1])
         case ("render", "--view") where rest.count == 3: self = .render(rest[2], view: rest[1])
         case ("render", let path?) where rest.count == 1: self = .render(path, view: nil)
         case ("screen", "sources") where rest.count == 1: self = .screenSources

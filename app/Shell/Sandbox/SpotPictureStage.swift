@@ -18,23 +18,13 @@ struct SpotPictureStage<Content: View>: View {
     }
 
     static var margin: CGFloat { 48 }
-    private static var shade: Double { 0.28 }
-    private static var blur: CGFloat { 40 }
-
-    /// The wallpaper blurred into a picture, because a blur of a view does not show when the view is drawn to a picture.
-    private var blurred: Image {
-        let whole = CGSize(width: size.width + 2 * Self.margin, height: size.height + 2 * Self.margin)
-        let renderer = ImageRenderer(content: SpotWallpaper(seed: seed).frame(width: whole.width, height: whole.height).blur(radius: Self.blur, opaque: true))
-        renderer.scale = 2
-        return renderer.cgImage.map { Image(decorative: $0, scale: 2) } ?? Image(systemName: "square")
-    }
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
         ZStack {
             SpotWallpaper(seed: seed)
-            blurred
-                .overlay(Color.black.opacity(Self.shade))
+            SpotWallpaper.blurred(seed: seed, size: CGSize(width: size.width + 2 * Self.margin, height: size.height + 2 * Self.margin))
+                .overlay(Color.black.opacity(SpotWallpaper.shade))
                 .overlay(SpotTheme.glass)
                 .mask { shape.frame(width: size.width, height: size.height) }
             content
@@ -55,6 +45,18 @@ struct SpotWallpaper: View {
     private static let ground = Color(red: 0.00, green: 0.03, blue: 0.03)
     private static let light = Color(red: 0.62, green: 0.62, blue: 1.00)
     private static let ridges = 6
+    /// The shade of the glass over the blurred wallpaper.
+    static let shade = 0.28
+    private static let blur: CGFloat = 40
+
+    /// The wallpaper of a size blurred into a picture, because a blur of a view does not show when the view is drawn to a
+    /// picture.
+    @MainActor
+    static func blurred(seed: String, size: CGSize) -> Image {
+        let renderer = ImageRenderer(content: SpotWallpaper(seed: seed).frame(width: size.width, height: size.height).blur(radius: blur, opaque: true))
+        renderer.scale = 2
+        return renderer.cgImage.map { Image(decorative: $0, scale: 2) } ?? Image(systemName: "square")
+    }
 
     var body: some View {
         Canvas { context, size in

@@ -3,6 +3,8 @@ import SwiftUI
 
 extension EnvironmentValues {
     @Entry var spotIsShown = true
+    /// Whether a blur of the desktop draws. A picture turns it off, since the system blur draws grey into a picture.
+    @Entry var spotDrawsBlur = true
 }
 
 /// The timing of the panel and its sheet: on close fill, text and backdrop fade first, and the rims last.
