@@ -330,8 +330,10 @@ public struct SpotOutput: Equatable, Sendable {
             }
         } else if let action = CommandAction(id: id, block: block) {
             actions.append(action)
-        } else {
+        } else if PartCatalog.actionFaults(in: block).isEmpty {
             errors.append(block.firstLine)
+        } else if checks {
+            checkedFaults += PartCatalog.actionFaults(in: block)
         }
     }
 }

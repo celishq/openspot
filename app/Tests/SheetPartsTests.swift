@@ -202,6 +202,16 @@ final class SheetPartsTests: XCTestCase {
         XCTAssertEqual(SpotOutput(text: "text=a\nshortcut=cmd+escape\n").partFaults, ["the part a has an unknown key combination: cmd+escape"])
     }
 
+    func testAButtonThatCannotBeAnActionIsAFaultThatSaysWhy() {
+        let key = "the button b has shortcut=ctrl+k, which a button cannot take. Use cmd or shift with a letter, a digit, return, backspace or a comma, or escape"
+        let action = SpotOutput(text: "text=t\n\nbutton=b\ntitle=B\nshortcut=ctrl+k\n\nbutton=c\nicon=trash\n\nrow=r\nshortcut=⌃⌥K\n")
+
+        XCTAssertEqual(action.actions, [])
+        XCTAssertEqual(action.unreadable, [])
+        XCTAssertEqual(action.sheetFaults, [key, "the button c needs a title"])
+        XCTAssertEqual(SpotOutput(text: "grid=b\n\nbutton=b\ntitle=B\nshortcut=ctrl+k\n").partFaults, [key])
+    }
+
     func testASheetOfRowsDrawsKeysOnlyWhenItsDrawingPlacesAButtonWithAKey() throws {
         let rows = "repeat=files\n\nrow=a\ntitle=A\n\n"
         let drawn = try XCTUnwrap(SheetParts(output: SpotOutput(text: "grid=files\ngrid=cancel\n\n\(rows)button=cancel\nshortcut=escape\n")))

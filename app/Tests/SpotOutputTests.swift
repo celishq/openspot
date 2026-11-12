@@ -97,8 +97,6 @@ final class SpotOutputTests: XCTestCase {
     }
 
     func testAnActionItCannotReadIsReportedByItsFirstLine() {
-        XCTAssertEqual(SpotOutput(text: "button=a\n").errors, ["button=a"])
-        XCTAssertEqual(SpotOutput(text: "button=b\ntitle=B\nshortcut=ctrl+b\n").errors, ["button=b"])
         XCTAssertEqual(SpotOutput(text: "button=c\ntitle=C\nscope=world\n").errors, ["button=c"])
     }
 

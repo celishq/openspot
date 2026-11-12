@@ -44,10 +44,22 @@ public enum PartCatalog {
             if let shortcut = block.value("value"), Shortcut(text: shortcut) == nil {
                 faults.append("the part \(name) needs a shortcut that holds cmd, ctrl or option: \(shortcut)")
             }
+        } else if block.fields.first?.key == "button" {
+            faults += shortcutFaults(in: block)
         } else if let key = block.value("shortcut"), ActionKey(text: key) == nil {
             faults.append("the part \(name) has an unknown key combination: \(key)")
         }
         return faults
+    }
+
+    /// What keeps a button that no drawing places from being an action: no title, or a shortcut that a button cannot take.
+    public static func actionFaults(in block: TextBlock) -> [String] {
+        (block.value("title") == nil ? ["the button \(block.value("button") ?? "") needs a title"] : []) + shortcutFaults(in: block)
+    }
+
+    private static func shortcutFaults(in block: TextBlock) -> [String] {
+        guard let key = block.value("shortcut"), ActionKey(text: key) == nil else { return [] }
+        return ["the button \(block.value("button") ?? "") has shortcut=\(key), which a button cannot take. Use cmd or shift with a letter, a digit, return, backspace or a comma, or escape"]
     }
 
     private static func isColor(_ text: String) -> Bool {

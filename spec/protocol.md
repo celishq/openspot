@@ -277,6 +277,11 @@ esac
 - An action with no row selected acts on the whole spot. An action on a row is `<script> <id> <row id>`.
   `scope=command` keeps it on the whole spot.
 - `close=true` closes the panel after it runs. `confirm` asks for a second press.
+- A button `shortcut` is a letter, a digit, `return`, `backspace` or `,`, after `cmd+`, `shift+`, both or neither, such as
+  `cmd+shift+n`, or `escape` alone. A row `shortcut` is any text (see Rows), and the key that the person gives a command
+  is a setting (see Settings).
+- A button that no drawing places MUST have a `title`. `openspot check` reports a button with no title or with another
+  shortcut, because it cannot be an action.
 - `shortcut=escape` presses the button in place of closing the sheet, such as a Cancel.
 - In a ⌘K menu of more than 5 rows, a field searches them, so only a `shortcut` with `cmd` runs an action there.
 - Enter on a row is the action `open`. `button=open` gives it its word with `title`, and `close=false` keeps the panel
@@ -303,7 +308,7 @@ Rows are a list that the person searches and picks from.
 | `value`    | `true` draws a checkmark at the end.                                                        |
 | `hides`    | The id of an action that this row does not offer. It MAY repeat.                            |
 | `keyword`  | A word that finds the row and does not show.                                                |
-| `shortcut` | A key that shows at the end of the row.                                                     |
+| `shortcut` | Any text, such as `⌃⌥K`, that shows at the end of the row.                                  |
 | `type`     | `hotkey`: a pick records a new key and calls `<id> <shortcut>`.                             |
 | `shake`    | `true` lets a shake of the pointer be the key that a pick records, as `<id> shake`.         |
 | `file`     | The file that the row stands for. See Files out.                                            |
