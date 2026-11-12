@@ -7,6 +7,15 @@ public enum SpotUse: String, CaseIterable, Codable, Sendable {
     /// The words that Openspot no longer reads, with the use that took each one.
     private static let merged: [String: SpotUse] = ["update": .app, "settings": .spots]
 
+    /// Decodes a use, and an old word as the use that took it, so that a `spots.lock` of an older Openspot still reads.
+    public init(from decoder: Decoder) throws {
+        let word = try decoder.singleValueContainer().decode(String.self)
+        guard let use = SpotUse(rawValue: word) ?? Self.merged[word] else {
+            throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "Unknown use: \(word)"))
+        }
+        self = use
+    }
+
     /// The uses that a `uses` value names. An unknown word is a fault that names the key.
     static func set(_ text: String?, of name: String) throws -> Set<SpotUse> {
         var uses: Set<SpotUse> = []
